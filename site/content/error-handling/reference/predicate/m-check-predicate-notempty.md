@@ -2,7 +2,6 @@
 title: "Check.Predicate.notEmpty"
 linkTitle: "notEmpty"
 weight: 2002
-type: docs
 ---
 
  Runs the type-directed non-empty predicate for an already parsed optional, nullable, text, or supported
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L271-271)

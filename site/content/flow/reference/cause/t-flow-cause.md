@@ -2,7 +2,6 @@
 title: "Flow.Cause"
 linkTitle: "Cause<error>"
 weight: 1000
-type: docs
 ---
 
 
@@ -31,3 +30,6 @@ type: docs
 | `Then` | Two causes happened sequentially; the left cause happened before the right cause. |
 | `Both` | Two causes happened concurrently; neither cause is ordered before the other. |
 | `Traced` | A cause annotated with diagnostic trace text. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Outcome.fs#L8-8)

@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.POST"
 linkTitle: "POST"
 weight: 2602
-type: docs
 ---
 
  Creates a POST request from an interpolated URL with encoded holes.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L605-605)

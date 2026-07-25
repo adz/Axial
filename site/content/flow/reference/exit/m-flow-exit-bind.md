@@ -2,7 +2,6 @@
 title: "Flow.Exit.bind"
 linkTitle: "bind"
 weight: 2101
-type: docs
 ---
 
 Binds the success value of an exit outcome to a function that returns a new exit outcome.
@@ -25,3 +24,6 @@ Binds the success value of an exit outcome to a function that returns a new exit
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-exit.md">Exit</a>&lt;<span>'w,&#32;'e</span>&gt;</span></code> | The result of the binder function if the exit was successful; otherwise, the original failure. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L99-99)

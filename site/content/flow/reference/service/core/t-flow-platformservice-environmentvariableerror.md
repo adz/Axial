@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariableError"
 linkTitle: "EnvironmentVariableError"
 weight: 1006
-type: docs
 ---
 
 
@@ -19,3 +18,6 @@ type: docs
 | --- | --- |
 | `MissingVariable` |  |
 | `InvalidVariable` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Services.fs#L39-39)

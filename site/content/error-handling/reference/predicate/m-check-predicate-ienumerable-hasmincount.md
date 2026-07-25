@@ -2,7 +2,6 @@
 title: "System.Collections.Generic.IEnumerable.HasMinCount"
 linkTitle: "HasMinCount"
 weight: 2404
-type: docs
 ---
 
 True when the sequence is non-null and contains at least the supplied count.
@@ -24,3 +23,6 @@ True when the sequence is non-null and contains at least the supplied count.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L138-138)

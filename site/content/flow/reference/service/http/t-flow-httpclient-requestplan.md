@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.RequestPlan"
 linkTitle: "RequestPlan"
 weight: 1004
-type: docs
 ---
 
  A redacted, serializable description of a request that would be sent.
@@ -23,3 +22,6 @@ type: docs
 | `Body` |  |
 | `Timeout` |  |
 | `Expectation` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L77-77)

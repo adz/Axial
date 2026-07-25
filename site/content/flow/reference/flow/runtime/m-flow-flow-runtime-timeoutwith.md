@@ -2,7 +2,6 @@
 title: "Flow.Runtime.timeoutWith"
 linkTitle: "timeoutWith"
 weight: 2110
-type: docs
 ---
 
 Runs a fallback flow when the source flow does not complete before the timeout.
@@ -26,3 +25,6 @@ Runs a fallback flow when the source flow does not complete before the timeout.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that returns the source outcome or the fallback outcome. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L636-636)

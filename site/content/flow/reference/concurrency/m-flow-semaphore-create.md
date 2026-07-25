@@ -2,7 +2,6 @@
 title: "Flow.Semaphore.create"
 linkTitle: "create"
 weight: 2102
-type: docs
 ---
 
 Alias for <code>make</code>.
@@ -24,3 +23,6 @@ Alias for <code>make</code>.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="t-flow-flowsemaphore.md">FlowSemaphore</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Concurrency.fs#L123-123)

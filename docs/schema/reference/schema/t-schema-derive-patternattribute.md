@@ -11,3 +11,6 @@ Constrains a text field to the given regular expression.
 <div class="fsdocs-usage">
 <code>type PatternAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L48-48)

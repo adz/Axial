@@ -39,3 +39,6 @@ weight: 2008
  because <code>IConfiguration.AsEnumerable()</code> emits every section key with a null value alongside that
  section&#39;s children.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L528-528)

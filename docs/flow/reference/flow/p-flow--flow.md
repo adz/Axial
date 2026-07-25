@@ -17,3 +17,6 @@ The universal <code>flow { }</code> computation expression.
 | Type | Description |
 | --- | --- |
 | <code><a href="builders-flow.md">FlowBuilder</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Builders.fs#L6-6)

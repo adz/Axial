@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.secret"
 linkTitle: "secret"
 weight: 2606
-type: docs
 ---
 
  Marks an interpolated URL value for diagnostic redaction.
@@ -24,4 +23,7 @@ type: docs
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-httpclient-dsl-secretvalue.html">SecretValue</a></code> |  |
+| <code><a href="t-flow-httpclient-dsl-secretvalue.md">SecretValue</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L560-560)

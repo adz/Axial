@@ -2,7 +2,6 @@
 title: "Flow.Scope.AddDisposable"
 linkTitle: "AddDisposable"
 weight: 2101
-type: docs
 ---
 
 
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>unit</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L554-554)

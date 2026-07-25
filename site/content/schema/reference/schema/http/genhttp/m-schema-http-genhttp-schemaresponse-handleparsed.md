@@ -2,7 +2,6 @@
 title: "Schema.Http.GenHttp.SchemaResponse.handleParsed"
 linkTitle: "handleParsed"
 weight: 2703
-type: docs
 ---
 
 Runs the handler with the trusted model, or short-circuits to the problem-details response.
@@ -26,3 +25,6 @@ Runs the handler with the trusted model, or short-circuits to the problem-detail
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.valuetask-1">ValueTask</a>&lt;<a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.iresponse">IResponse</a>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L65-65)

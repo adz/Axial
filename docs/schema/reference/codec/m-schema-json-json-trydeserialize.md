@@ -24,3 +24,6 @@ Deserializes a JSON string, returning decode failures as a rendered message inst
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'model,&#32;string</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1093-1093)

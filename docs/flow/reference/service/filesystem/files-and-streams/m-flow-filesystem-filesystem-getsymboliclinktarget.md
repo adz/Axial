@@ -28,3 +28,8 @@ Returns the immediate target stored in a symbolic link.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">FileSystem</span><span class="pn">.</span><span class="id">getSymbolicLinkTarget</span> <span class="s">&quot;current&quot;</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L632-632)

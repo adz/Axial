@@ -29,3 +29,8 @@ Runs an effect for each value before emitting the original value.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">tapFlow</span> <span class="id">logValue</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L159-159)

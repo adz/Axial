@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Output.console"
 linkTitle: "console"
 weight: 2702
-type: docs
 ---
 
  Forwards redirected bytes through the host console streams.
@@ -18,3 +17,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1040-1040)

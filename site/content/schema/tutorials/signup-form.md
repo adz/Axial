@@ -18,6 +18,7 @@ The schema declares each field once: external name, getter, and constraints.
 
 ```fsharp
 open Axial.Schema
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 
 type Signup = { Email: string; Age: int }
@@ -25,11 +26,10 @@ type Signup = { Email: string; Age: int }
 let signupSchema =
     schema<Signup> {
         field "email" _.Email {
-            constrain Constraint.email
-            constrain (Constraint.maxLength 254)
+            constraints [ email; maxLength 254 ]
         }
         field "age" _.Age {
-            constrain (Constraint.atLeast 13)
+            constrain (atLeast 13)
         }
         construct (fun email age -> { Email = email; Age = age })
     }
@@ -55,7 +55,7 @@ let raw =
 let parsed = Schema.parseRetainingInput signupSchema raw
 ```
 
-`parsed` is a `RetainedParseResult<Signup, SchemaError>`. On success `parsed.Result` is `Ok signup` and every constraint
+`parsed` is a [`RetainedParseResult`]({{< relref "/schema/reference/schema/interpreters/t-schema-retainedparseresult/" >}})`<Signup, `[`SchemaError`]({{< relref "/schema/reference/schema/interpreters/t-schema-schemaerror/" >}})`>`. On success `parsed.Result` is `Ok signup` and every constraint
 already holds. Here both fields fail, so no `Signup` exists anywhere:
 
 ```fsharp
@@ -73,8 +73,10 @@ Data.redisplayPath "email" parsed.Input   // "not-an-email", exactly as typed
 Data.redisplayPath "age" parsed.Input     // "12"
 ```
 
-A form template needs only `parsed.Input` and `parsed.ErrorsFor` — there is no half-valid model to guard against.
-Use `SchemaError.render` for field-level messages or `RetainedParseResult.renderErrors parsed` for a summary list.
+[`Data.redisplayPath`]({{< relref "/schema/reference/data/m-data-redisplaypath/" >}}) reads back one field. A form
+template needs only `parsed.Input` and `parsed.ErrorsFor` — there is no half-valid model to guard against.
+Use `SchemaError.render` for field-level messages or
+[`RetainedParseResult.renderErrors`]({{< relref "/schema/reference/schema/interpreters/m-schema-retainedparseresult-rendererrors/" >}}) `parsed` for a summary list.
 
 ## Use The Trusted Model
 
@@ -86,7 +88,7 @@ match parsed.Result with
 
 `Signup` here is a public record, so the guarantee belongs to the successful parse result, not to the type — other
 code can still write a `Signup` literal that skips the schema. That is the right trade for a boundary form model.
-When a value's construction history is uncertain, `Schema.check signupSchema value` runs the same constraints over an
+When a value's construction history is uncertain, [`Schema.check`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-check/" >}}) `signupSchema value` runs the same constraints over an
 already assembled value; when an invariant must hold for every value of the type, use a private representation with a
 smart constructor. [Construction Guarantees](../../trusted-construction/) covers the full division.
 

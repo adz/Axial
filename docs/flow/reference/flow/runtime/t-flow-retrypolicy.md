@@ -25,3 +25,6 @@ weight: 1000
 | `MaxAttempts` |  |
 | `Delay` |  |
 | `ShouldRetry` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L781-781)

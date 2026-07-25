@@ -1,6 +1,5 @@
 ---
 title: "NonBlankString"
-type: docs
 ---
 
 `NonBlankString` functions construct, inspect, and transform non-blank strings.

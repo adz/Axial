@@ -31,3 +31,7 @@ Acquires a resource, uses it, and always runs the release action.
 
  Use this for lexical acquire/use/release. For resources that should live until the
  surrounding scope closes, use <a href="../t-flow-flow.md#acquireRelease">Flow.acquireRelease</a>.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L209-209)

@@ -31,3 +31,6 @@ weight: 1000
  <code>withSchema</code>, <code>constrain</code>, <code>constraints</code>, <code>refine</code>, and <code>validate</code> operations before the declaration finishes
  with <code>construct</code> or <code>constructResult</code>.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaType.fs#L28-28)

@@ -11,3 +11,6 @@ Provides access to common file, directory, and path operations.
 <div class="fsdocs-usage">
 <code>type IFileSystem</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L44-44)

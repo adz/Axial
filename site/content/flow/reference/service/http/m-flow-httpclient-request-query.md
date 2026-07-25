@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.query"
 linkTitle: "query"
 weight: 2301
-type: docs
 ---
 
  Appends one URL-encoded query parameter.
@@ -27,3 +26,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L201-201)

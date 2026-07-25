@@ -16,13 +16,13 @@ differences come from F# and .NET, not from a different philosophy.
 
 | zod | Axial |
 | --- | --- |
-| `z.object({ name: z.string().max(80) })` | `schema<...> { field "name" _.Name { constrain (Constraint.maxLength 80) }; construct ctor }` |
-| `schema.safeParse(input)` | `Schema.parse schema raw` → `Result` |
+| `z.object({ name: z.string().max(80) })` | `schema<...> { field "name" _.Name { constrain (maxLength 80) }; construct ctor }` |
+| `schema.safeParse(input)` | [`Schema.parse`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parse/" >}}) `schema raw` → `Result` |
 | `result.error.issues` with paths | `SchemaErrors.toList errors` and `Path.format issue.Path` |
-| `z.string().email().brand<'Email'>()` | `Schema.refine` over a private representation and fallible constructor |
-| `z.discriminatedUnion("type", ...)` | `Schema.union "type" "value" [ UnionCase.create ... ]` |
+| `z.string().email().brand<'Email'>()` | [`Schema.refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) over a private representation and fallible constructor |
+| `z.discriminatedUnion("type", ...)` | [`Schema.union`]({{< relref "/schema/reference/schema/m-schema-schema-union/" >}}) `"type" "value" [ UnionCase.create ... ]` |
 | `z.infer<typeof schema>` | not needed — the schema is declared against your record type directly |
-| `zod-to-json-schema` | `JsonSchema.generate` (optional `Axial.Schema.JsonSchema` package, from the same metadata) |
+| `zod-to-json-schema` | [`JsonSchema.generate`]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate/" >}}) (optional `Axial.Schema.JsonSchema` package, from the same metadata) |
 
 One inversion worth noticing: zod derives the static type from the schema; Axial declares the schema against a type
 you own. Your domain type stays an ordinary F# record with real members, and the compiler checks constructor/getter
@@ -30,7 +30,7 @@ alignment field by field.
 
 ## What Axial Adds Beyond Parsing
 
-- **Trusted-path serialization**: `Json.compile` turns the same declaration into a compiled JSON codec on par with
+- **Trusted-path serialization**: [`Json.compile`]({{< relref "/schema/reference/codec/m-schema-json-json-compile/" >}}) turns the same declaration into a compiled JSON codec on par with
   `System.Text.Json` — zod validates on the way in but does not own the way out.
 - **Redisplay**: failed parses keep the structured data, so form fields re-render with the user's values next to their
   errors without extra state.
@@ -42,8 +42,8 @@ alignment field by field.
   inspection, so NativeAOT and aggressive trimming work by construction.
 - **Fable**: the schema core, including `Axial.Schema.Json`, compiles to JavaScript through Fable, so the browser and the
   server can share one declaration — encode and decode included — the role zod plays across the TypeScript stack.
-- **Errors are values with rendering**: `SchemaError` is a typed union with a default English renderer
-  (`RetainedParseResult.renderErrors`) and a one-function mapping into your own error union (`RetainedParseResult.mapErrors`), rather
+- **Errors are values with rendering**: [`SchemaError`]({{< relref "/schema/reference/schema/interpreters/t-schema-schemaerror/" >}}) is a typed union with a default English renderer
+  ([`RetainedParseResult.renderErrors`]({{< relref "/schema/reference/schema/interpreters/m-schema-retainedparseresult-rendererrors/" >}})) and a one-function mapping into your own error union (`RetainedParseResult.mapErrors`), rather
   than a bag of issue objects.
 
 ## Where zod Fits Better

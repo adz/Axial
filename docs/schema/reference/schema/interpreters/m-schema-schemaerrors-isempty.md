@@ -23,3 +23,6 @@ Reports whether the collection contains no failures.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L111-111)

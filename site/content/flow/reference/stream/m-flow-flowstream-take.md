@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.take"
 linkTitle: "take"
 weight: 2206
-type: docs
 ---
 
 Emits at most <span class="fsdocs-param-name">count</span> values.
@@ -30,3 +29,8 @@ Emits at most <span class="fsdocs-param-name">count</span> values.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">take</span> <span class="n">10</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L179-179)

@@ -24,3 +24,6 @@ Retains structured data alongside an existing schema parse result.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'value&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RetainedParseResult.fs#L64-64)

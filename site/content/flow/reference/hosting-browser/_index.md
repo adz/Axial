@@ -1,7 +1,6 @@
 ---
 title: "Browser Hosting"
 weight: 500
-type: docs
 ---
 
 This page shows the JavaScript-only `Axial.Flow.Hosting.Browser` surface. `BrowserApp.mount` gives a UI owner an `AppHandle`; `startWithSignal` connects a structural browser `AbortSignal` to coordinated stop. The package deliberately does not treat page visibility or unload events as dependable application shutdown. See the [browser hosting guide](/flow/hosting/browser/) for complete setup.

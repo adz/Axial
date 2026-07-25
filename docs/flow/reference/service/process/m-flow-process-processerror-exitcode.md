@@ -24,3 +24,6 @@ weight: 2201
 | Type | Description |
 | --- | --- |
 | <code>int</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L209-209)

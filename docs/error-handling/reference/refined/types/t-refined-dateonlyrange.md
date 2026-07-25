@@ -22,3 +22,6 @@ A date-only range where <code>Start &lt;= End</code>.
 ## Remarks
 
 netstandard2.1: not available.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L279-279)

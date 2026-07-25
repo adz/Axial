@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.dateOnlyRange"
 linkTitle: "dateOnlyRange"
-weight: 2918
+weight: 3018
 ---
 
 Builds a date-only range where <code>Start &lt;= End</code>.
@@ -28,3 +28,6 @@ Builds a date-only range where <code>Start &lt;= End</code>.
 ## Remarks
 
 netstandard2.1: not available.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L766-766)

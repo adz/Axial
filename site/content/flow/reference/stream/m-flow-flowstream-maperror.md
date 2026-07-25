@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.mapError"
 linkTitle: "mapError"
 weight: 2201
-type: docs
 ---
 
 Transforms the typed error channel of a stream.
@@ -30,3 +29,8 @@ Transforms the typed error channel of a stream.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">mapError</span> <span class="id">DomainError</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L128-128)

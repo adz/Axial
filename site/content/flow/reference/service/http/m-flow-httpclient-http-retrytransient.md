@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Http.retryTransient"
 linkTitle: "retryTransient"
 weight: 2516
-type: docs
 ---
 
  Retries a workflow on transient HTTP errors with exponential backoff.
@@ -28,3 +27,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="t-flow-httpclient-httperror.md">HttpError</a>,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L454-454)

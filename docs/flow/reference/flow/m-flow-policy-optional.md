@@ -26,3 +26,6 @@ Runs a policy only when the environment predicate is true; otherwise returns the
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'input,&#32;'error</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Policy.fs#L58-58)

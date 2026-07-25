@@ -1,7 +1,6 @@
 ---
 title: "App"
 weight: 500
-type: docs
 ---
 
 This page shows the portable `App` lifecycle in `Axial.Flow`. Use `App.run` for a finite root workflow, or `App.start` when a console signal, host, window, UI owner, or test controls stop through an `AppHandle`. The handle keeps the final structured `Exit`, makes stop idempotent, and completes only after the root Flow scope has closed. Platform event subscription and error rendering stay in the host adapter.

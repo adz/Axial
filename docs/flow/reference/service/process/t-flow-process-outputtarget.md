@@ -26,3 +26,6 @@ weight: 1003
 | `Callback` |  |
 | `Sink` |  |
 | `Tee` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L36-36)

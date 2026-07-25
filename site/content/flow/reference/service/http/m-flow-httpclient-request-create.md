@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.create"
 linkTitle: "create"
 weight: 2300
-type: docs
 ---
 
  Creates a request with the supplied method and already-formed URL.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L177-177)

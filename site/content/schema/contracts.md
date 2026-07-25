@@ -11,7 +11,7 @@ Stored configuration, queued messages, and saved events keep the shape they had 
 domain model is neither shaped by a wire format nor frozen in time. The pattern is: a permissive **wire schema**
 per format, a strict **domain schema**, an ordinary mapping function between them, and the `Contract<'model>`
 engine when the wire needs versioning. When wire schemas multiply, you stop hand-writing them: mark your DTO
-record with `[<DeriveSchema>]` and `schemagen` derives the schema from it.
+record with [`[<DeriveSchema>]`]({{< relref "/schema/reference/schema/t-schema-derive-deriveschemaattribute/" >}}) and `schemagen` derives the schema from it.
 
 Generated contract types remain wire types. Keep them public and easy to serialize. Map them into private or refined
 domain types before business code relies on their values.
@@ -41,7 +41,7 @@ let toDomain (wire: OrderWire) : Result<Order, OrderError> =
     Order.create wire.Sku wire.Quantity
 ```
 
-Parsing a boundary payload is then `Schema.parse` against the wire schema followed by `toDomain`. Keeping the
+Parsing a boundary payload is then [`Schema.parse`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parse/" >}}) against the wire schema followed by `toDomain`. Keeping the
 tiers separate is what makes the rest of this page cheap: the wire side can change shape, gain versions, and be
 generated, without the domain type ever knowing.
 
@@ -144,10 +144,10 @@ let schema : Schema<OrderWire> =
     schema<OrderWire> {
         field "sku" _.Sku {
             withSchema (Schema.text |> Schema.describe "Stock keeping unit.")
-            constrain (Constraint.pattern @"^[A-Z]{3}-\d+$")
+            constrain (pattern @"^[A-Z]{3}-\d+$")
         }
         field "quantity" _.Quantity {
-            constrain (Constraint.atLeast 1)
+            constrain (atLeast 1)
         }
         field "note" _.Note
         construct (fun sku quantity note ->
@@ -160,9 +160,11 @@ recursively resolvable options, lists, and maps use plain fields.
 
 The details:
 
-- **Constraints are opt-in attributes** mirroring the schema constraint vocabulary: `Pattern`, `Min`/`Max` (text
-  length, list/map count), `AtLeast`/`GreaterThan`/`AtMost`/`LessThan`/`MultipleOf`, `Distinct`, `Email`, and
-  `Default` (schema metadata, surfaced in generated JSON Schema). `[<SchemaName "customer_note">]` overrides one
+- **Constraints are opt-in attributes** mirroring the schema constraint vocabulary:
+  [`Pattern`]({{< relref "/schema/reference/schema/t-schema-derive-patternattribute/" >}}), `Min`/`Max` (text
+  length, list/map count), [`AtLeast`]({{< relref "/schema/reference/schema/t-schema-derive-atleastattribute/" >}})/`GreaterThan`/`AtMost`/`LessThan`/`MultipleOf`, `Distinct`, `Email`, and
+  `Default` (schema metadata, surfaced in generated JSON Schema).
+  [`[<SchemaName "customer_note">]`]({{< relref "/schema/reference/schema/t-schema-derive-schemanameattribute/" >}}) overrides one
   wire name; otherwise fields are camelCased (`--naming snake` switches the policy per run).
 - **The compiler is the drift detector.** The generated module constructs your record by name — rename, add, or
   remove a field without regenerating and the stale `.g.fs` fails to compile, pointing at the exact field.
@@ -190,7 +192,7 @@ The details:
           (VersionSource.Field "schemaVersion")
   ```
 - **A custom constructor replaces the record literal** when you want to normalise values on the way in. Mark
-  one static member with `[<SchemaConstructor>]` — fields in declaration order, returning the record type —
+  one static member with [`[<SchemaConstructor>]`]({{< relref "/schema/reference/schema/t-schema-derive-schemaconstructorattribute/" >}}) — fields in declaration order, returning the record type —
   and the generated schema calls it instead of assembling a record literal:
 
   ```fsharp
@@ -246,8 +248,8 @@ Reading a field line left to right: name, optional `as "wire_name"` rename, `?` 
 
 Generation buys more than the record and schema. Each contract emits `validate` (check an assembled draft) and
 `parse` (structured boundary data), and because the output is an ordinary `Schema`, everything schemas already do comes along: JSON Schema
-output via `JsonSchema.generate` (reject broken payloads before they enter storage), compiled codecs via
-`Json.compile`, inspection metadata, and doc comments carried through to XML docs and generated JSON Schema.
+output via [`JsonSchema.generate`]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate/" >}}) (reject broken payloads before they enter storage), compiled codecs via
+[`Json.compile`]({{< relref "/schema/reference/codec/m-schema-json-json-compile/" >}}), inspection metadata, and doc comments carried through to XML docs and generated JSON Schema.
 
 ## Generation Runs in Your Build
 

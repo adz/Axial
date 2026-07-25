@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.getRelativePath"
 linkTitle: "getRelativePath"
 weight: 2710
-type: docs
 ---
 
 Gets a relative path through an explicit file-system service.
@@ -25,3 +24,6 @@ Gets a relative path through an explicit file-system service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a>,&#32;string</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L976-976)

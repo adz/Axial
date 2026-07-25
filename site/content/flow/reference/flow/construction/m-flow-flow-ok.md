@@ -2,7 +2,6 @@
 title: "Flow.ok"
 linkTitle: "ok"
 weight: 2300
-type: docs
 ---
 
 Creates a successful synchronous flow.
@@ -24,3 +23,6 @@ Creates a successful synchronous flow.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that always succeeds with the provided value. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L331-331)

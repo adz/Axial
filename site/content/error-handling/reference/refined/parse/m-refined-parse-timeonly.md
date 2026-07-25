@@ -2,7 +2,6 @@
 title: "Refined.Parse.timeOnly"
 linkTitle: "timeOnly"
 weight: 2109
-type: docs
 ---
 
 Parses a time-only value.
@@ -28,3 +27,6 @@ Parses a time-only value.
 ## Remarks
 
 netstandard2.1: not available.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Parse.fs#L75-75)

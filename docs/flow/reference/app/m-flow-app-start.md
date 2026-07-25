@@ -24,3 +24,6 @@ Starts a root workflow and returns a handle that owns its lifetime.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-apphandle.md">AppHandle</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> | A handle for observing completion or requesting coordinated stop. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/App.fs#L140-140)

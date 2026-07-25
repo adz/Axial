@@ -2,7 +2,6 @@
 title: "Schema.Http.GenHttp.HttpEndpointEnv"
 linkTitle: "HttpEndpointEnv<app>"
 weight: 1000
-type: docs
 ---
 
 The request-scoped environment supplied to a GenHTTP endpoint Flow.
@@ -29,3 +28,6 @@ The request-scoped environment supplied to a GenHTTP endpoint Flow.
 ## Remarks
 
 The host factory supplies <code>App</code>; adapter request operations read <code>Request</code>. Keep application workflows typed against <code>&#39;app</code> and embed them with <code>EndpointFlow.run</code>.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L76-76)

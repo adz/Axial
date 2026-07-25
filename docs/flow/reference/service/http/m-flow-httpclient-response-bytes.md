@@ -23,3 +23,6 @@ weight: 2401
 | Type | Description |
 | --- | --- |
 | <code><span>byte&#32;array</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L333-333)

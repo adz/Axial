@@ -24,3 +24,6 @@ Appends a relative path to a parent path.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-path.md">Path</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L44-44)

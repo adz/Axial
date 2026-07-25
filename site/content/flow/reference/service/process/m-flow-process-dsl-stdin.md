@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.stdin"
 linkTitle: "stdin"
 weight: 2810
-type: docs
 ---
 
  Supplies a primary input source to a command or specification.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L962-962)

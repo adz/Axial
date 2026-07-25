@@ -1,7 +1,6 @@
 ---
 title: "Concurrency"
-weight: 50
-type: docs
+weight: 500
 ---
 
 This page shows the small Flow-native concurrency primitives added for coordination that needs Axial semantics rather than raw .NET behavior. `Deferred<'error, 'value>` is a one-shot typed handoff point backed by a full `Exit<'value, 'error>`. `FlowSemaphore` limits concurrent workflow sections through scoped `Semaphore.withPermit`, releasing permits after success, typed failure, defect, or interruption.

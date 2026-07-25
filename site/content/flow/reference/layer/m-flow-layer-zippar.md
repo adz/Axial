@@ -2,7 +2,6 @@
 title: "Flow.Layer.zipPar"
 linkTitle: "zipPar"
 weight: 2211
-type: docs
 ---
 
 Builds two independent layers in parallel and returns both outputs.
@@ -32,3 +31,7 @@ Builds two independent layers in parallel and returns both outputs.
  Each branch is provisioned in a parent-owned child scope. When the parent scope closes,
  child scopes are closed in deterministic left-to-right order. If both branches fail,
  both failures are returned as a parallel cause.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/RuntimeLayer.fs#L157-157)

@@ -1,8 +1,7 @@
 ---
 title: "Flow.Process.ProcessError"
 linkTitle: "ProcessError"
-weight: 1014
-type: docs
+weight: 1015
 ---
 
  A recoverable process startup, cancellation, stage, or I/O failure.
@@ -22,3 +21,6 @@ type: docs
 | `Canceled` |  |
 | `StageFailed` |  |
 | `IoFailed` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L141-141)

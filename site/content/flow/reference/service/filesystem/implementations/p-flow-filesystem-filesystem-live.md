@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.live"
 linkTitle: "live"
 weight: 2800
-type: docs
 ---
 
 Creates a live file-system service backed by <a href="https://learn.microsoft.com/dotnet/api/system.io.file">File</a>, <a href="https://learn.microsoft.com/dotnet/api/system.io.directory">Directory</a>, and <a href="https://learn.microsoft.com/dotnet/api/system.io.path">Path</a>.
@@ -18,3 +17,6 @@ Creates a live file-system service backed by <a href="https://learn.microsoft.co
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-filesystem-ifilesystem.md">IFileSystem</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L1029-1029)

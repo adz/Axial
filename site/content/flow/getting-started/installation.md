@@ -18,7 +18,7 @@ Open its namespace where workflows are defined:
 open Axial.Flow
 ```
 
-`Axial.Flow` contains the workflow type, `flow {}` builder, runtime, structured concurrency, schedules, and
+`Axial.Flow` contains the workflow type, [`flow {}`]({{< relref "/flow/reference/flow/builders-flow.md" >}}) builder, runtime, structured concurrency, schedules, and
 application lifecycle.
 
 Platform services and hosts are separate packages. Add one only when the application needs that integration:

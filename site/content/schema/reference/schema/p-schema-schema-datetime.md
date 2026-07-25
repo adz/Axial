@@ -2,7 +2,6 @@
 title: "Schema.dateTime"
 linkTitle: "dateTime"
 weight: 2104
-type: docs
 ---
 
 Describes a date and time with an offset.
@@ -18,3 +17,6 @@ Describes a date and time with an offset.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;<a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L24-24)

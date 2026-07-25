@@ -17,3 +17,6 @@ Describes a Boolean value.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;bool&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L18-18)

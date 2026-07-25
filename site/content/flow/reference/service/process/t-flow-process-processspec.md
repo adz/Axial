@@ -2,7 +2,6 @@
 title: "Flow.Process.ProcessSpec"
 linkTitle: "ProcessSpec"
 weight: 1000
-type: docs
 ---
 
  An immutable description of one command or a connected process topology and its execution policy.
@@ -26,3 +25,6 @@ type: docs
 | `MergeStdErr` |  |
 | `Framing` |  |
 | `Timeout` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L60-60)

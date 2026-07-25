@@ -8,11 +8,11 @@ type: docs
 
 Axial includes a small set of concurrency primitives only where they add Axial semantics over the .NET primitives underneath.
 
-Use .NET `Task`, `Channel<T>`, `SemaphoreSlim`, and `ConcurrentQueue<T>` directly when raw platform behavior is enough. Use Axial primitives when coordination should preserve typed `Exit` and `Cause`, participate in workflow interruption, or release resources through the `Flow` model.
+Use .NET `Task`, `Channel<T>`, `SemaphoreSlim`, and `ConcurrentQueue<T>` directly when raw platform behavior is enough. Use Axial primitives when coordination should preserve typed [`Exit`]({{< relref "/flow/reference/exit/_index.md" >}}) and [`Cause`]({{< relref "/flow/reference/cause/_index.md" >}}), participate in workflow interruption, or release resources through the [`Flow`]({{< relref "/flow/reference/flow/t-flow-flow.md" >}}) model.
 
 ## Deferred
 
-`Deferred<'error, 'value>` is a one-shot handoff point between fibers. It can be completed once with a full `Exit<'value, 'error>`, so success, typed failure, defects, and interruption all remain visible to waiters.
+[`Deferred<'error, 'value>`]({{< relref "/flow/reference/concurrency/t-flow-deferred.md" >}}) is a one-shot handoff point between fibers. It can be completed once with a full `Exit<'value, 'error>`, so success, typed failure, defects, and interruption all remain visible to waiters.
 
 Completion operations are idempotent. They return `true` to the caller that completed the deferred value and `false` to later callers.
 
@@ -37,15 +37,15 @@ let handoff : Flow<unit, string, int> =
 
 Use `Deferred` when a fiber needs to wait for a typed outcome produced elsewhere:
 
-- `Deferred.await` waits for the outcome and resumes with the same success or failure.
-- `Deferred.complete` completes with a full `Exit`.
-- `Deferred.succeed`, `Deferred.fail`, `Deferred.die`, and `Deferred.interrupt` complete common outcomes directly.
+- [`Deferred.await`]({{< relref "/flow/reference/concurrency/m-flow-deferred-await.md" >}}) waits for the outcome and resumes with the same success or failure.
+- [`Deferred.complete`]({{< relref "/flow/reference/concurrency/m-flow-deferred-complete.md" >}}) completes with a full `Exit`.
+- [`Deferred.succeed`]({{< relref "/flow/reference/concurrency/m-flow-deferred-succeed.md" >}}), [`Deferred.fail`]({{< relref "/flow/reference/concurrency/m-flow-deferred-fail.md" >}}), [`Deferred.die`]({{< relref "/flow/reference/concurrency/m-flow-deferred-die.md" >}}), and [`Deferred.interrupt`]({{< relref "/flow/reference/concurrency/m-flow-deferred-interrupt.md" >}}) complete common outcomes directly.
 
 Awaiting respects runtime cancellation. If the waiting workflow is interrupted before the deferred value is completed, the await returns `Cause.Interrupt`.
 
 ## Semaphore
 
-`FlowSemaphore` limits how many workflows can enter a section at the same time. The public API is intentionally scoped: use `Semaphore.withPermit` instead of raw acquire/release.
+[`FlowSemaphore`]({{< relref "/flow/reference/concurrency/t-flow-flowsemaphore.md" >}}) limits how many workflows can enter a section at the same time. The public API is intentionally scoped: use [`Semaphore.withPermit`]({{< relref "/flow/reference/concurrency/m-flow-semaphore-withpermit.md" >}}) instead of raw acquire/release.
 
 ```fsharp
 let limitedFetch semaphore request =

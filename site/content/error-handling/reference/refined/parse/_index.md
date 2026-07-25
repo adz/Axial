@@ -1,6 +1,5 @@
 ---
 title: "Parse"
-type: docs
 ---
 
 `Parse` functions convert serialized strings into primitive values.

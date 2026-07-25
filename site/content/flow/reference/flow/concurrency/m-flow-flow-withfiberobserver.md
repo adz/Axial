@@ -2,7 +2,6 @@
 title: "Flow.withFiberObserver"
 linkTitle: "withFiberObserver"
 weight: 2104
-type: docs
 ---
 
 Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.
@@ -32,3 +31,7 @@ Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.
  The observer is carried implicitly to every fiber forked inside <span class="fsdocs-param-name">flow</span>, so installing
  it once at the application edge covers all descendant background work. Hooks receive diagnostic data
  only and cannot alter any fiber&#39;s outcome; exceptions they throw are swallowed.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L427-427)

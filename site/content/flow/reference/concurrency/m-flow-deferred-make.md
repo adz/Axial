@@ -2,7 +2,6 @@
 title: "Flow.Deferred.make"
 linkTitle: "make"
 weight: 2001
-type: docs
 ---
 
 Creates an empty deferred value.
@@ -24,3 +23,6 @@ Creates an empty deferred value.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span><a href="t-flow-deferred.md">Deferred</a>&lt;<span>'error,&#32;'value</span>&gt;</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Concurrency.fs#L25-25)

@@ -2,7 +2,6 @@
 title: "DataPath"
 linkTitle: "DataPath"
 weight: 1002
-type: docs
 ---
 
 Helpers for constructing, parsing, and rendering structured data paths.
@@ -12,3 +11,6 @@ Helpers for constructing, parsing, and rendering structured data paths.
 <div class="fsdocs-usage">
 <code>type DataPath</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L27-27)

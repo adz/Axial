@@ -2,7 +2,6 @@
 title: "Schema.int"
 linkTitle: "int"
 weight: 2101
-type: docs
 ---
 
 Describes a 32-bit integer.
@@ -18,3 +17,6 @@ Describes a 32-bit integer.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;int&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L14-14)

@@ -23,3 +23,6 @@ Renders one line for every failed schema issue.
 | Type | Description |
 | --- | --- |
 | <code><span>string&#32;list</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RetainedParseResult.fs#L68-68)

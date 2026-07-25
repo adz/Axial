@@ -30,3 +30,8 @@ Parses an optional decimal. Absence returns <code>Ok None</code>; malformed pres
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">union case Option.Some: Value: &#39;T -&gt; Option&lt;&#39;T&gt;</div>
 <div popover class="fsdocs-tip" id="fs2">union case Result.Ok: ResultValue: &#39;T -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Parse.fs#L140-140)

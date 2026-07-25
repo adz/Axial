@@ -2,7 +2,6 @@
 title: "Check.Predicate.Reference.notNull"
 linkTitle: "notNull"
 weight: 2202
-type: docs
 ---
 
 Returns true when the reference is not null.
@@ -24,3 +23,6 @@ Returns true when the reference is not null.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L191-191)

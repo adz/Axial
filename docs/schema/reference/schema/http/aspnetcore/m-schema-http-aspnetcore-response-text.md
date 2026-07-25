@@ -29,3 +29,8 @@ Returns a plain-text response.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="k">return</span> <span class="id">Response</span><span class="pn">.</span><span class="id">text</span> <span class="n">200</span> <span class="s">&quot;ready&quot;</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L225-225)

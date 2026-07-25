@@ -24,7 +24,7 @@ open Axial.Refined
 
 ## Parse text
 
-`Parse.int` converts text to an `int`:
+[`Parse.int`]({{< relref "/error-handling/reference/refined/parse/m-refined-parse-int.md" >}}) converts text to an `int`:
 
 ```fsharp
 let count : Result<int, ParseError> =
@@ -36,12 +36,12 @@ let invalidCount : Result<int, ParseError> =
 // Error (InvalidFormat ("int", "many"))
 ```
 
-The function returns `Result` because any string can be passed to it. `Parse.guid`, `Parse.decimal`,
-`Parse.dateTimeOffset`, and the other parsing functions follow the same form.
+The function returns `Result` because any string can be passed to it. [`Parse.guid`]({{< relref "/error-handling/reference/refined/parse/m-refined-parse-guid.md" >}}), [`Parse.decimal`]({{< relref "/error-handling/reference/refined/parse/m-refined-parse-decimal.md" >}}),
+[`Parse.dateTimeOffset`]({{< relref "/error-handling/reference/refined/parse/m-refined-parse-datetimeoffset.md" >}}), and the other parsing functions follow the same form.
 
 ## Refine a value
 
-`Refine.nonBlankString` checks a string and returns `NonBlankString`:
+[`Refine.nonBlankString`]({{< relref "/error-handling/reference/refined/refine/m-refined-refine-nonblankstring.md" >}}) checks a string and returns [`NonBlankString`]({{< relref "/error-handling/reference/refined/types/t-refined-nonblankstring.md" >}}):
 
 ```fsharp
 let name : Result<NonBlankString, RefinementError> =
@@ -69,6 +69,8 @@ let slug = Refine.slug "release-notes"
 // Result<Slug, RefinementError>
 ```
 
+Types like [`PositiveInt`]({{< relref "/error-handling/reference/refined/types/t-refined-positiveint.md" >}}), [`NonEmptyList`]({{< relref "/error-handling/reference/refined/types/t-refined-nonemptylist.md" >}}), and [`Slug`]({{< relref "/error-handling/reference/refined/types/t-refined-slug.md" >}}) are available from the reference.
+
 Read the underlying value through the matching type module:
 
 ```fsharp
@@ -89,7 +91,7 @@ let quantity (raw: string) : Result<PositiveInt, RefinementError> =
     }
 ```
 
-`refine { }` converts `ParseError` to `RefinementError` and stops at the first failure. Named `Parse` and `Refine`
+[`refine { }`]({{< relref "/error-handling/reference/refined/refine-ce/" >}}) converts [`ParseError`]({{< relref "/error-handling/reference/refined/types/t-refined-parseerror.md" >}}) to [`RefinementError`]({{< relref "/error-handling/reference/refined/types/t-refined-refinementerror.md" >}}) and stops at the first failure. Named `Parse` and `Refine`
 functions remain visible, so this form is useful before learning type-directed refinement.
 
 After the direct functions are familiar, destination types can remove repeated function names:

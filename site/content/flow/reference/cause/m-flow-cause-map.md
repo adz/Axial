@@ -2,7 +2,6 @@
 title: "Flow.Cause.map"
 linkTitle: "map"
 weight: 2100
-type: docs
 ---
 
 Transforms the error value of a failure cause using the provided function.
@@ -25,3 +24,6 @@ Transforms the error value of a failure cause using the provided function.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-cause.md">Cause</a>&lt;'f&gt;</span></code> | A new cause with the transformed error value, or the original cause if it was not a <code>Fail</code>. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L14-14)

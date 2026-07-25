@@ -1,6 +1,5 @@
 ---
 title: "Environment"
-type: docs
 ---
 
 This page shows the helpers that read, reshape, and provide explicit environments for flows.

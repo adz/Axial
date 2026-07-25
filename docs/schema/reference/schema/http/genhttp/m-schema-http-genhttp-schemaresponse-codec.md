@@ -26,3 +26,6 @@ A JSON response rendering the trusted model through the compiled codec.
 | Type | Description |
 | --- | --- |
 | <code><a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.iresponse">IResponse</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L52-52)

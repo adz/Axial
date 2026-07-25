@@ -9,7 +9,7 @@ type: docs
 `Axial.Refined` does not depend on `Axial.Schema`. A refined type and its smart constructor can live in a domain
 package with no serialization or input-model dependency.
 
-Schema uses the same `Refinement<'raw, 'value>` descriptor when a boundary representation must become that domain
+Schema uses the same [`Refinement<'raw, 'value>`]({{< relref "/error-handling/reference/refined/refine/" >}}) descriptor when a boundary representation must become that domain
 type:
 
 ```fsharp
@@ -38,7 +38,7 @@ let signup =
     schema<Signup> {
         field "email" _.Email {
             withSchema Schema.text
-            constrain Constraint.required
+            constrain required
             refine
             validate validateCompanyEmail
         }

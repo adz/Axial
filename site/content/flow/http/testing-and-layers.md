@@ -10,7 +10,7 @@ This page shows how the single `IHttp.Send` boundary makes HTTP workflows testab
 
 ## A Complete Fake In A Few Lines
 
-The whole service surface is one method, and `Response.create` builds synthetic transcripts from an explicit timestamp:
+The whole service surface is one method, and [`Response.create`]({{< relref "/flow/reference/service/http/m-flow-httpclient-response-create.md" >}}) builds synthetic transcripts from an explicit timestamp:
 
 ```fsharp
 type TestEnv =
@@ -37,7 +37,7 @@ fallback paths deterministically, with no network and no clock.
 
 ## The Live Service
 
-`Http.live` adapts an explicit `IClock` and one `HttpClient`; `Http.layer` exposes them as a layer:
+[`Http.live`]({{< relref "/flow/reference/service/http/m-flow-httpclient-http-live.md" >}}) adapts an explicit [`IClock`]({{< relref "/flow/reference/service/core/t-flow-platformservice-iclock.md" >}}) and one `HttpClient`; [`Http.layer`]({{< relref "/flow/reference/service/http/m-flow-httpclient-http-layer.md" >}}) exposes them as a layer:
 
 ```fsharp
 type AppEnv =

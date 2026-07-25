@@ -2,7 +2,6 @@
 title: "Flow.Process.ProcessError.describe"
 linkTitle: "describe"
 weight: 2200
-type: docs
 ---
 
  Formats a process error with stage-aware diagnostic context.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L197-197)

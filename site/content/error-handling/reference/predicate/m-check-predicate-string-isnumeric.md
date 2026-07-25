@@ -2,7 +2,6 @@
 title: "System.String.IsNumeric"
 linkTitle: "IsNumeric"
 weight: 2310
-type: docs
 ---
 
 True when the string contains only numeric characters.
@@ -24,3 +23,6 @@ True when the string contains only numeric characters.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L48-48)

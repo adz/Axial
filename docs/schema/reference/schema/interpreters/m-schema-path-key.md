@@ -23,3 +23,6 @@ A string field or map-key location.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-path.md">Path</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L34-34)

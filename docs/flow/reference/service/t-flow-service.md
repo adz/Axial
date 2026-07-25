@@ -17,3 +17,6 @@ Typed accessors for explicit and provider-resolved services.
 | Name |
 | --- |
 | `service` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L865-865)

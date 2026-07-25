@@ -2,7 +2,6 @@
 title: "Flow.FiberObserver.none"
 linkTitle: "none"
 weight: 2101
-type: docs
 ---
 
 The default observer: every hook is a no-op.
@@ -18,3 +17,6 @@ The default observer: every hook is a no-op.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-fiberobserver.md">FiberObserver</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L329-329)

@@ -17,3 +17,6 @@ Describes one tagged union case for <code>Schema.union</code>.
 | Name |
 | --- |
 | `union` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Definitions.fs#L327-327)

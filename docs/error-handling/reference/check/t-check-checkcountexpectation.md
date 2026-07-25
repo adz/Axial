@@ -21,3 +21,6 @@ weight: 1004
 | `MaximumCount` | The sequence was expected to contain at most the supplied count. |
 | `ExactCount` | The sequence was expected to contain exactly the supplied count. |
 | `CountBetween` | The sequence was expected to contain a count inside the inclusive bounds. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L35-35)

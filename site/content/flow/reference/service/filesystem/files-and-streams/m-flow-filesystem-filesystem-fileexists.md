@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.fileExists"
 linkTitle: "fileExists"
 weight: 2300
-type: docs
 ---
 
 Checks file existence through an explicit file-system service.
@@ -24,3 +23,6 @@ Checks file existence through an explicit file-system service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a>,&#32;bool</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L581-581)

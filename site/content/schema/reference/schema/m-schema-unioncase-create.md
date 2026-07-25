@@ -2,7 +2,6 @@
 title: "Schema.UnionCase.create"
 linkTitle: "create"
 weight: 2112
-type: docs
 ---
 
 
@@ -36,3 +35,7 @@ type: docs
  Union schemas are explicit and reflection-free. The constructor builds the union case after the payload parses,
  while the extractor lets validation and encoding-oriented interpreters identify the active case of an existing
  trusted union value.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaType.fs#L61-61)

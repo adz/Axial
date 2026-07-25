@@ -1,7 +1,6 @@
 ---
 title: "Services Http"
 weight: 40
-type: docs
 ---
 
 This page shows the HTTP client service package. Immutable `HttpRequest` values carry the method, encoded URL, headers, body, timeout, and status expectation; `Http.send` converts a request through the explicit `IHttp` capability and reports connection, timeout, status, and decode failures through `HttpError` with redacted request transcripts. The `DSL` module adds interpolated URL builders and terminal fetch verbs for concise call sites.
@@ -15,6 +14,7 @@ This page shows the HTTP client service package. Immutable `HttpRequest` values 
 - [`Flow.HttpClient.RequestPlan`](./t-flow-httpclient-requestplan.md):  A redacted, serializable description of a request that would be sent.
 - [`Flow.HttpClient.HttpResponse`](./t-flow-httpclient-httpresponse.md):  The complete response transcript for one HTTP exchange.
 - [`Flow.HttpClient.HttpError`](./t-flow-httpclient-httperror.md):  A recoverable HTTP transport, timeout, status, or decoding failure.
+- [`Flow.HttpClient.DSL.SecretValue`](./t-flow-httpclient-dsl-secretvalue.md):  Marks an interpolated URL value for redaction in plans and transcripts.
 
 ## Service
 

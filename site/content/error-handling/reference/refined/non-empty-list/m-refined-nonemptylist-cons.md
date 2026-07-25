@@ -1,8 +1,7 @@
 ---
 title: "Refined.NonEmptyList.cons"
 linkTitle: "cons"
-weight: 2809
-type: docs
+weight: 2909
 ---
 
 Prepends a head item to a list, producing a non-empty list without failure.
@@ -25,3 +24,6 @@ Prepends a head item to a list, producing a non-empty list without failure.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'a&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L511-511)

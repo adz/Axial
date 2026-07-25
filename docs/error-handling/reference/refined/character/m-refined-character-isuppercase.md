@@ -23,3 +23,6 @@ Returns true when the character is uppercase according to invariant Unicode casi
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L428-428)

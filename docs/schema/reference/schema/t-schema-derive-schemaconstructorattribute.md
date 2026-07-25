@@ -14,3 +14,6 @@ Marks the static member the derived schema calls to assemble the record, instead
 <div class="fsdocs-usage">
 <code>type SchemaConstructorAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L43-43)

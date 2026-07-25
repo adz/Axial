@@ -2,7 +2,6 @@
 title: "Schema.Json.deserializeStreamAsync"
 linkTitle: "deserializeStreamAsync"
 weight: 2106
-type: docs
 ---
 
 Reads a stream to end into a pooled buffer, then deserializes it as UTF-8 JSON through a compiled codec.
@@ -31,3 +30,7 @@ Reads a stream to end into a pooled buffer, then deserializes it as UTF-8 JSON t
 
  This reads the whole stream before decoding; there is no incremental/streaming JSON parser pre-1.0. Not available
  on Fable.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1129-1129)

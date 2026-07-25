@@ -2,7 +2,6 @@
 title: "Schema.Http.Endpoint.delete"
 linkTitle: "delete"
 weight: 2206
-type: docs
 ---
 
 Starts a DELETE endpoint spec at the supplied path.
@@ -24,3 +23,6 @@ Starts a DELETE endpoint spec at the supplied path.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-endpointspec.md">EndpointSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L70-70)

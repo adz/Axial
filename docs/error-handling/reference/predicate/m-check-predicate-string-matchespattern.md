@@ -23,3 +23,6 @@ True when the string matches the supplied regular expression pattern.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L71-71)

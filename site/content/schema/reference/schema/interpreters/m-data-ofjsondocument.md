@@ -2,7 +2,6 @@
 title: "Data.ofJsonDocument"
 linkTitle: "ofJsonDocument"
 weight: 2007
-type: docs
 ---
 
 Builds structured data from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
@@ -28,3 +27,6 @@ Builds structured data from the root element of a <a href="https://learn.microso
 ## Remarks
 
 netstandard2.1: not available.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L504-504)

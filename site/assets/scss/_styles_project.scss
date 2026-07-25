@@ -1188,46 +1188,64 @@ body.axial-home .axial-doors {
   font-weight: 700;
   line-height: 1.25;
 
+  // Non-primary package titles never change color on hover/select — only
+  // the primary package's title (below) carries the accent color, so it
+  // reads as the one fixed anchor while peer packages stay neutral.
   a {
     display: block;
     padding: 0.55rem 0.75rem 0.45rem;
     color: #475569;
     overflow-wrap: anywhere;
     text-decoration: none;
-
-    &:hover,
-    &.active {
-      color: #0b55d9;
-      text-decoration: none;
-    }
   }
 }
 
 .axial-package-nav.active-path {
   padding-bottom: 0.55rem;
-
-  .axial-package-nav__title a {
-    color: #0b55d9;
-  }
 }
 
 // Primary packages (a product's meta-package or core package) get a
 // visually heavier header so they read as the entry point, not a peer
-// of the focused packages listed below them.
+// of the focused packages listed below them. --pkg-accent (set per section
+// in the .td-section-nav--* rules below) ties this to the package's accent
+// color, matching the home page door and the section index page's heading.
+// Unlike other package titles, the primary title stays in its accent color
+// whether or not it's the active group.
 .axial-package-nav--primary {
   margin-bottom: 1.05rem;
   border-radius: 0.4rem;
-  background: rgba(11, 85, 217, 0.06);
+  background: var(--pkg-accent-bg, rgba(11, 85, 217, 0.06));
 
   .axial-package-nav__title {
-    border-bottom-color: rgba(11, 85, 217, 0.25);
+    border-bottom-color: var(--pkg-accent-border, rgba(11, 85, 217, 0.25));
 
-    a {
+    a,
+    a:hover,
+    a.active {
+      color: var(--pkg-accent, #0b55d9);
       padding: 0.6rem 0.75rem 0.3rem;
       font-size: 1rem;
       font-weight: 800;
     }
   }
+}
+
+.td-section-nav--error-handling {
+  --pkg-accent: #{$axial-result};
+  --pkg-accent-bg: rgba(10, 125, 98, 0.06);
+  --pkg-accent-border: rgba(10, 125, 98, 0.25);
+}
+
+.td-section-nav--schema {
+  --pkg-accent: #{$axial-parse};
+  --pkg-accent-bg: rgba(11, 85, 217, 0.06);
+  --pkg-accent-border: rgba(11, 85, 217, 0.25);
+}
+
+.td-section-nav--flow {
+  --pkg-accent: #{$axial-flow};
+  --pkg-accent-bg: rgba(109, 79, 196, 0.06);
+  --pkg-accent-border: rgba(109, 79, 196, 0.25);
 }
 
 .axial-package-nav__caption {
@@ -1244,11 +1262,12 @@ body.axial-home .axial-doors {
   display: none;
 }
 
-.axial-package-nav.active-path > .axial-package-nav__caption {
+.axial-package-nav.active-path > .axial-package-nav__caption,
+.axial-package-nav--primary > .axial-package-nav__caption {
   display: block;
 }
 
-.axial-package-nav:not(.active-path) {
+.axial-package-nav:not(.active-path):not(.axial-package-nav--primary) {
   position: relative;
 
   // Only the header link triggers the tooltip, not the whole (mostly empty)
@@ -1280,6 +1299,7 @@ body.axial-home .axial-doors {
     color: #aebbc0;
   }
 }
+
 
 .axial-package-nav__items {
   margin: 0;
@@ -1337,7 +1357,23 @@ body.axial-home .axial-doors {
 
   &:hover,
   &.active {
-    color: #0b55d9;
+    color: var(--pkg-accent, #0b55d9);
+  }
+
+  &.active {
+    font-weight: 700;
+  }
+
+  // Nested here (rather than in the [data-bs-theme="dark"] block further
+  // down) so the dark variant sits next to the color it's overriding, and
+  // wins on specificity alone rather than depending on source order.
+  [data-bs-theme="dark"] & {
+    color: #8fb8ff;
+
+    &:hover,
+    &.active {
+      color: var(--pkg-accent, #8fb8ff);
+    }
   }
 }
 
@@ -1347,13 +1383,11 @@ body.axial-home .axial-doors {
   .td-content h3,
   .td-content h4,
   .axial-landing h1,
-  .axial-package-nav__title a {
+  .axial-package-nav:not(.axial-package-nav--primary) .axial-package-nav__title a {
     color: #e4ebed;
   }
 
-  .td-content a,
-  .axial-package-nav .td-sidebar-link,
-  .axial-package-nav.active-path .axial-package-nav__title a {
+  .td-content a {
     color: #8fb8ff;
   }
 

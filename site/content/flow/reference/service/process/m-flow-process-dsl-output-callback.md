@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Output.callback"
 linkTitle: "callback"
 weight: 2707
-type: docs
 ---
 
  Sends exact byte chunks to an asynchronous backpressured callback.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1050-1050)

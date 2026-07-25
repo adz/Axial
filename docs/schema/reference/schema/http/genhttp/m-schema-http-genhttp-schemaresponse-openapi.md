@@ -24,3 +24,6 @@ Serves a pre-assembled OpenAPI document (see <a href="https://learn.microsoft.co
 | Type | Description |
 | --- | --- |
 | <code><a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.iresponse">IResponse</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L61-61)

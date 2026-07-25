@@ -2,7 +2,6 @@
 title: "Schema.Http.OpenApi.info"
 linkTitle: "info"
 weight: 2301
-type: docs
 ---
 
 Builds document metadata with no description.
@@ -25,3 +24,6 @@ Builds document metadata with no description.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-openapiinfo.md">OpenApiInfo</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L125-125)

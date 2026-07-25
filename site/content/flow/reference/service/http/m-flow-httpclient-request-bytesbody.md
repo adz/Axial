@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.bytesBody"
 linkTitle: "bytesBody"
 weight: 2314
-type: docs
 ---
 
  Sends raw bytes with an explicit content type.
@@ -27,3 +26,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L259-259)

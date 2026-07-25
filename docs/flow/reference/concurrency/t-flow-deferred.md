@@ -27,3 +27,7 @@ weight: 1000
  Use <code>Deferred</code> when fibers need to coordinate through Axial Flow outcomes rather than raw platform-native
  primitives. Completion functions are idempotent and return <code>true</code> only to the caller that won the
  completion race.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Concurrency.fs#L16-16)

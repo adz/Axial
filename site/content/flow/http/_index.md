@@ -31,7 +31,7 @@ let user =
     |> fetchJson decodeUser
 ```
 
-`user` is a `Flow<#IHas<IHttp>, HttpError, User>`. The URL hole is URL-encoded as one value, the bearer token is
+`user` is a `Flow<#IHas<IHttp>, HttpError, User>` (see [`IHttp`]({{< relref "/flow/reference/service/http/t-flow-httpclient-ihttp.md" >}}) and [`HttpError`]({{< relref "/flow/reference/service/http/t-flow-httpclient-httperror.md" >}})). The URL hole is URL-encoded as one value, the bearer token is
 redacted from every plan and error transcript, connection failures, timeouts, unexpected statuses, and decode
 failures all arrive as one typed `HttpError`, and nothing is sent until a Flow runtime runs the workflow.
 
@@ -44,7 +44,7 @@ failures all arrive as one typed `HttpError`, and nothing is sent until a Flow r
 2. **The `DSL` module** adds interpolated URL builders (`GET $"..."`), pipe-friendly configuration, and terminal
    verbs (`fetch`, `fetchText`, `fetchJson`) for the everyday call that should read as one line.
 
-Both levels build the same immutable `HttpRequest` value, so they mix freely: start a request with `GET $"..."`
+Both levels build the same immutable [`HttpRequest`]({{< relref "/flow/reference/service/http/t-flow-httpclient-httprequest.md" >}}) value, so they mix freely: start a request with `GET $"..."`
 and finish it with `Request.expect [ 200; 404 ] >> Http.sendResult`.
 
 ## Mental Model
@@ -55,7 +55,7 @@ and finish it with `Request.expect [ 200; 404 ] >> Http.sendResult`.
 4. The Flow runtime resolves `IHttp` from the environment and performs the exchange.
 
 Because the service boundary is one `IHttp.Send` method, a complete test fake is a few lines, and
-`Request.plan` renders a redacted description of any request without sending it.
+[`Request.plan`]({{< relref "/flow/reference/service/http/m-flow-httpclient-request-plan.md" >}}) renders a redacted description of any request without sending it.
 
 ## Choose A Guide
 

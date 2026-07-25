@@ -2,7 +2,6 @@
 title: "Schema.Json.deserialize"
 linkTitle: "deserialize"
 weight: 2104
-type: docs
 ---
 
 Deserializes a JSON string to a trusted model through a compiled codec.
@@ -25,3 +24,6 @@ Deserializes a JSON string to a trusted model through a compiled codec.
 | Type | Description |
 | --- | --- |
 | <code>'model</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1082-1082)

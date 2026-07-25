@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.render"
 linkTitle: "render"
 weight: 2318
-type: docs
 ---
 
  Renders the redacted request line used in error transcripts.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L292-292)

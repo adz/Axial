@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariable.tryGet"
 linkTitle: "tryGet"
 weight: 2608
-type: docs
 ---
 
 Reads a raw string environment variable without wrapping it in a result.
@@ -24,3 +23,6 @@ Reads a raw string environment variable without wrapping it in a result.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>string&#32;option</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L309-309)

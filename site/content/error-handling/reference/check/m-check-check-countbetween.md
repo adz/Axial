@@ -2,7 +2,6 @@
 title: "Check.countBetween"
 linkTitle: "countBetween"
 weight: 2222
-type: docs
 ---
 
 Returns a sequence-shaped check requiring a count inside the supplied inclusive bounds.
@@ -25,3 +24,6 @@ Returns a sequence-shaped check requiring a count inside the supplied inclusive 
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;'a&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L602-602)

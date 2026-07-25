@@ -1,6 +1,5 @@
 ---
 title: "Numeric"
-type: docs
 ---
 
 `Numeric` functions construct refined numeric values.

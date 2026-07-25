@@ -1,6 +1,5 @@
 ---
 title: "Random"
-type: docs
 ---
 
 This page shows the `Core.Random` helpers for reading values from an explicit random-number service.

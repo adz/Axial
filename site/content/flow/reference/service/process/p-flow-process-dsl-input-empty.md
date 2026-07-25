@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Input.empty"
 linkTitle: "empty"
 weight: 2600
-type: docs
 ---
 
  Supplies no bytes and closes stdin.
@@ -18,3 +17,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-inputsource.md">InputSource</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1009-1009)

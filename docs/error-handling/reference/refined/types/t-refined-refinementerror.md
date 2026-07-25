@@ -23,3 +23,6 @@ Structural failures returned by built-in refinement constructors and the <code>r
 | `InvalidStructure` | The value had an invalid structure for the target refined type that a single-value
  <a href="../../check/t-check-check.md">Check</a> program cannot express, such as a cross-field ordering
  invariant. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Errors.fs#L15-15)

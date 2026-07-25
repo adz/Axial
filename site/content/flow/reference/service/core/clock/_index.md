@@ -1,6 +1,5 @@
 ---
 title: "Clock"
-type: docs
 ---
 
 This page shows the `Core.Clock` helpers for reading time from an explicit clock service.

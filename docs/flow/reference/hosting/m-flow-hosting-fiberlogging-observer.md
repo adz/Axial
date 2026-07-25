@@ -23,3 +23,6 @@ Logs fiber defects as errors and unobserved defects as critical entries.
 | Type | Description |
 | --- | --- |
 | <code><a href="../fiber/t-flow-fiberobserver.md">FiberObserver</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L53-53)

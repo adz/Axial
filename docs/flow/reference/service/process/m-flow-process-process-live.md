@@ -25,3 +25,6 @@ weight: 3000
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-iprocess.md">IProcess</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L513-513)

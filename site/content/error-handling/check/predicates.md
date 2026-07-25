@@ -76,10 +76,10 @@ Predicate.empty (None: int option) // true
 
 Both describe the same facts. The difference is what the caller does next:
 
-- Use `Predicate`/`PredicateExtensions` when you're branching locally and never need to carry the failure anywhere —
+- Use [`Predicate`]({{< relref "/error-handling/reference/predicate/" >}})/`PredicateExtensions` when you're branching locally and never need to carry the failure anywhere —
   an `if` guard, an early return, a condition inside another expression.
-- Use [`Check`](./checks/) when the outcome needs to become a `Result` — because it feeds a domain error, gets
-  piped through `Result` helpers, or needs to compose with `Check.all`/`Check.any`.
+- Use `Check` when the outcome needs to become a `Result` — because it feeds a domain error, gets
+  piped through `Result` helpers, or needs to compose with [`Check.all`]({{< relref "/error-handling/reference/check/m-check-check-all.md" >}})/[`Check.any`]({{< relref "/error-handling/reference/check/m-check-check-any.md" >}}).
 
 ```fsharp
 // Predicate: the bool is consumed immediately, nothing downstream needs the failure.
@@ -94,5 +94,5 @@ let validateName name : Result<string, NameError> =
 ```
 
 If you start with a `Predicate` and find yourself converting its `bool` into an `Error` by hand
-(`if not ok then Error ... else Ok value`), that's the sign to use `Check` instead — `Result.requireTrue` and
-`Result.okIf` exist for the cases where a `Check` genuinely doesn't fit; see [Checks](./checks/).
+(`if not ok then Error ... else Ok value`), that's the sign to use `Check` instead — [`Result.requireTrue`]({{< relref "/error-handling/reference/result/result/m-result-result-requiretrue.md" >}}) and
+[`Result.okIf`]({{< relref "/error-handling/reference/result/result/m-result-result-okif.md" >}}) exist for the cases where a `Check` genuinely doesn't fit; see [Checks](./checks/).

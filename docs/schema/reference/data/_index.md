@@ -26,5 +26,7 @@ This page shows `Axial.Data`: one source-neutral tree for nulls, primitives, lis
 
 ## Redisplay
 
-- [`Data.redisplay`](./m-data-redisplay.md):  Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
+- [`Data.redisplay`](./m-data-redisplay.md):
+ Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
+
 - [`Data.redisplayPath`](./m-data-redisplaypath.md): Parses an input path and redisplays the addressed scalar structured data value.

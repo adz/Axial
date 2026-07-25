@@ -28,3 +28,6 @@ Distinguishes invalid request input from an expected application failure.
 ## Remarks
 
 Request operations create <code>InvalidRequest</code>; <code>EndpointFlow.run</code> wraps the application error channel as <code>ApplicationError</code>. <code>flowEndpoint</code> renders the two cases separately.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L95-95)

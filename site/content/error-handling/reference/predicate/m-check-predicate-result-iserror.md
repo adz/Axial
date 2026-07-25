@@ -2,7 +2,6 @@
 title: "Microsoft.FSharp.Core.FSharpResult.IsError"
 linkTitle: "IsError"
 weight: 2105
-type: docs
 ---
 
 True when the result is failed.
@@ -24,3 +23,6 @@ True when the result is failed.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L114-114)

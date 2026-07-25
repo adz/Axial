@@ -11,3 +11,6 @@ Provides environment-variable access supplied by the application host.
 <div class="fsdocs-usage">
 <code>type IEnvironmentVariables</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Services.fs#L32-32)

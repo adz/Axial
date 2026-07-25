@@ -2,7 +2,6 @@
 title: "Refined.Parse.guidOption"
 linkTitle: "guidOption"
 weight: 2114
-type: docs
 ---
 
 Parses an optional GUID. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
@@ -31,3 +30,8 @@ Parses an optional GUID. Absence returns <code>Ok None</code>; malformed present
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">union case Option.None: Option&lt;&#39;T&gt;</div>
 <div popover class="fsdocs-tip" id="fs2">union case Result.Ok: ResultValue: &#39;T -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Parse.fs#L145-145)

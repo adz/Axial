@@ -12,7 +12,7 @@ UI metadata.
 
 ## Describe A Schema
 
-`Inspect.model` turns a built schema into a plain metadata tree:
+[`Inspect.model`]({{< relref "/schema/reference/schema/m-schema-inspect-model/" >}}) turns a built schema into a plain metadata tree:
 
 ```fsharp
 open Axial.Schema
@@ -27,7 +27,7 @@ Nothing executes: no getters run, no constructors are called, no checks fire. Th
 
 ## Read Field Shapes And Constraints
 
-Each field carries a `SchemaDescription` — shape, declared format, and constraint metadata:
+Each field carries a [`SchemaDescription`]({{< relref "/schema/reference/schema/t-schema-schemadescription/" >}}) — shape, declared format, and constraint metadata:
 
 ```fsharp
 let email = description.Fields |> List.find (fun field -> field.Name = "email")
@@ -42,7 +42,7 @@ match email.Schema.Shape with
 | SchemaShape.Union union -> printfn "union with cases %A" (union.Cases |> List.map _.Tag)
 ```
 
-Refined values expose their raw representation through `SchemaShape.Refined`, so a boundary interpreter can render an
+Refined values expose their raw representation through [`SchemaShape`]({{< relref "/schema/reference/schema/t-schema-schemashape/" >}})`.Refined`, so a boundary interpreter can render an
 `Email` field as a constrained string without knowing the domain type.
 
 ## Lower Constraints To Another Format

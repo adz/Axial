@@ -22,3 +22,7 @@ weight: 1000
  <code>Check.Nullable</code>, and <code>Check.Result</code> contain the type-specific implementations. Top-level helpers such
  as <code>lengthBetween</code>, <code>between</code>, and <code>countBetween</code> forward to those single implementations, while
  <code>present</code>, <code>empty</code>, and <code>notEmpty</code> are the type-directed facade that dispatches across all of them.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L194-194)

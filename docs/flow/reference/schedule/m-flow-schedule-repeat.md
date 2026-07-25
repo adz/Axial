@@ -32,3 +32,8 @@ Repeats a successful flow according to the supplied schedule.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val work: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val repeated: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Schedule.fs#L180-180)

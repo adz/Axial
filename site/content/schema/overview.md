@@ -12,11 +12,11 @@ One schema declaration, several interpreters:
 
 | Input | Interpreter | Result |
 | --- | --- | --- |
-| `Data` | `Schema.parse schema` | model or `SchemaErrors` |
-| draft or imported value | `Schema.check schema` | the same value or `SchemaErrors` |
-| schema | `Inspect.model` | finite metadata without execution |
-| schema | `Json.compile` | reusable compiled JSON codec |
-| schema | `JsonSchema.generate` | JSON Schema document |
+| `Data` | [`Schema.parse`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parse/" >}}) `schema` | model or `SchemaErrors` |
+| draft or imported value | [`Schema.check`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-check/" >}}) `schema` | the same value or `SchemaErrors` |
+| schema | [`Inspect.model`]({{< relref "/schema/reference/schema/m-schema-inspect-model/" >}}) | finite metadata without execution |
+| schema | [`Json.compile`]({{< relref "/schema/reference/codec/m-schema-json-json-compile/" >}}) | reusable compiled JSON codec |
+| schema | [`JsonSchema.generate`]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate/" >}}) | JSON Schema document |
 | versioned `Data` | `Contract.parse` | current model or `ContractError` |
 | schema | repository-only `SchemaGen.raw` / `SchemaGen.model` adapter | FsCheck generators |
 

@@ -2,7 +2,6 @@
 title: "Schema.Http.BoundaryInput.ofForm"
 linkTitle: "ofForm"
 weight: 2001
-type: docs
 ---
 
 Builds structured data from form pairs, where dotted names such as <code>address.street</code> nest.
@@ -33,3 +32,7 @@ Builds structured data from form pairs, where dotted names such as <code>address
  field names produced when a form is rendered from a schema&#39;s inspection metadata. A name that appears once
  stays a scalar, so a list field submitted with a single selection should be posted as a repeated or indexed
  name; only the schema knows which fields are collections, and this builder deliberately does not.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/BoundaryInput.fs#L66-66)

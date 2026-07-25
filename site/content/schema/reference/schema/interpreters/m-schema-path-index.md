@@ -2,7 +2,6 @@
 title: "Schema.Path.index"
 linkTitle: "index"
 weight: 2204
-type: docs
 ---
 
 A zero-based collection-item location.
@@ -24,3 +23,6 @@ A zero-based collection-item location.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-path.md">Path</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L39-39)

@@ -25,3 +25,6 @@ Starts a root workflow linked to an external cancellation token.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-apphandle.md">AppHandle</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> | A handle for observing completion or requesting coordinated stop. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/App.fs#L152-152)

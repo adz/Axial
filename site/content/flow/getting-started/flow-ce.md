@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-Use `flow {}` when later work depends on earlier success.
+Use [`flow {}`]({{< relref "/flow/reference/flow/builders-flow.md" >}}) when later work depends on earlier success.
 
 Suppose the block calls these functions:
 

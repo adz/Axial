@@ -2,7 +2,6 @@
 title: "Refined.Character.isNumeric"
 linkTitle: "isNumeric"
 weight: 2606
-type: docs
 ---
 
 Returns true when the character is numeric according to Unicode character data.
@@ -24,3 +23,6 @@ Returns true when the character is numeric according to Unicode character data.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L440-440)

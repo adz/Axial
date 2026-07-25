@@ -24,3 +24,6 @@ Starts an application owned explicitly by the calling UI or browser module.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../app/t-flow-apphandle.md">AppHandle</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting.Browser/BrowserHosting.fs#L31-31)

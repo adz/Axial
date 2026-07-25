@@ -17,3 +17,6 @@ Builds the live environment-variable service as a layer.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../layer/t-flow-layer.md">Layer</a>&lt;<span>unit,&#32;<a href="../../../flow/t-flow-never.md">Never</a>,&#32;<a href="../t-flow-platformservice-ienvironmentvariables.md">IEnvironmentVariables</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L273-273)

@@ -13,7 +13,7 @@ runtime.
 
 | Package | .NET | Fable JavaScript: Node | Fable JavaScript: browser | Notes |
 | --- | --- | --- | --- | --- |
-| `Axial.Flow` | Yes | Yes | Yes | Core workflows, runtime, layers, concurrency, streams, schedules, and `App`. |
+| `Axial.Flow` | Yes | Yes | Yes | Core workflows, runtime, layers, concurrency, streams, schedules, and [`App`]({{< relref "/flow/reference/app/_index.md" >}}). |
 | `Axial.Flow.PlatformService` | Yes | Yes | Yes | Clock, logging, randomness, GUID, and environment-variable services; live behavior follows the host. |
 | `Axial.Flow.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.Flow.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |

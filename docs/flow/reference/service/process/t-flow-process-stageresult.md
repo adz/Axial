@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.StageResult"
 linkTitle: "StageResult"
-weight: 1005
+weight: 1006
 ---
 
  The redacted command, exit decision, timing, and diagnostic stderr tail for one stage.
@@ -23,3 +23,6 @@ weight: 1005
 | `StartedAt` |  |
 | `Duration` |  |
 | `StdErrTail` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L86-86)

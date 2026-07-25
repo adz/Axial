@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Response.statusCode"
 linkTitle: "statusCode"
 weight: 2402
-type: docs
 ---
 
  Returns the response status code. <example><code>response |&gt; Response.statusCode</code></example>
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>int</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L335-335)

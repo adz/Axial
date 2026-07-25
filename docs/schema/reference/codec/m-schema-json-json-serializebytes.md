@@ -24,3 +24,6 @@ Serializes a trusted model to UTF-8 JSON bytes through a compiled codec.
 | Type | Description |
 | --- | --- |
 | <code><span>byte[]</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1044-1044)

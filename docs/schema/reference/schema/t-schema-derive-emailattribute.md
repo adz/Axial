@@ -11,3 +11,6 @@ Constrains a text field to the email format.
 <div class="fsdocs-usage">
 <code>type EmailAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L112-112)

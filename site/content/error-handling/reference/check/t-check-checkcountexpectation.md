@@ -2,7 +2,6 @@
 title: "Check.CheckCountExpectation"
 linkTitle: "CheckCountExpectation"
 weight: 1004
-type: docs
 ---
 
 <pre>Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
@@ -22,3 +21,6 @@ type: docs
 | `MaximumCount` | The sequence was expected to contain at most the supplied count. |
 | `ExactCount` | The sequence was expected to contain exactly the supplied count. |
 | `CountBetween` | The sequence was expected to contain a count inside the inclusive bounds. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L35-35)

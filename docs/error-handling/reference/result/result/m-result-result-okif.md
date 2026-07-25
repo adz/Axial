@@ -29,3 +29,6 @@ Keeps the input value when the predicate holds, or returns the supplied error.
 
 Mirrors <code>Option.filter</code>: predicate first, subject piped last. The error is attached
  separately with <code>orError</code> so this stays a pure filter, same shape as its <code>Option</code> counterpart.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L65-65)

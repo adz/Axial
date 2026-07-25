@@ -2,7 +2,6 @@
 title: "System.Nullable.IsAbsent"
 linkTitle: "IsAbsent"
 weight: 2201
-type: docs
 ---
 
 True when the nullable value contains no value.
@@ -24,3 +23,6 @@ True when the nullable value contains no value.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L102-102)

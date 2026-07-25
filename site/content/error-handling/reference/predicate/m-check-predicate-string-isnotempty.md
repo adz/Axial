@@ -2,7 +2,6 @@
 title: "System.String.IsNotEmpty"
 linkTitle: "IsNotEmpty"
 weight: 2301
-type: docs
 ---
 
 True when the string has at least one character and is non-null.
@@ -24,3 +23,6 @@ True when the string has at least one character and is non-null.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L30-30)

@@ -26,3 +26,6 @@ Adds a JSON response whose body is described by the schema's generated JSON Sche
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-endpointspec.md">EndpointSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L86-86)

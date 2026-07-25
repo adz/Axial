@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.HttpRequest"
 linkTitle: "HttpRequest"
 weight: 1003
-type: docs
 ---
 
  An immutable, fully described HTTP request.
@@ -25,3 +24,6 @@ type: docs
 | `Body` |  |
 | `Timeout` |  |
 | `Expectation` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L65-65)

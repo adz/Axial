@@ -2,7 +2,6 @@
 title: "Flow.Cause.thenCause"
 linkTitle: "thenCause"
 weight: 2101
-type: docs
 ---
 
 Combines causes that happened sequentially.
@@ -25,3 +24,6 @@ Combines causes that happened sequentially.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L24-24)

@@ -24,3 +24,6 @@ Builds document metadata with no description.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-openapiinfo.md">OpenApiInfo</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L125-125)

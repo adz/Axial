@@ -2,7 +2,6 @@
 title: "Flow.App.run"
 linkTitle: "run"
 weight: 2102
-type: docs
 ---
 
 Runs a root workflow to completion using the caller&#39;s asynchronous cancellation token.
@@ -25,3 +24,6 @@ Runs a root workflow to completion using the caller&#39;s asynchronous cancellat
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-control-fsharpasync-1">Async</a>&lt;<span><a href="../exit/t-flow-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&gt;</span></code> | The final exit after the root scope has closed. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/App.fs#L164-164)

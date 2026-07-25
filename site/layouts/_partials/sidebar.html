@@ -17,7 +17,7 @@
     </button>
   </form>
 
-  <nav class="td-sidebar-nav collapse show" id="td-section-nav">
+  <nav class="td-sidebar-nav collapse show td-section-nav--{{ $context.Section }}" id="td-section-nav">
     {{- if $sidebar -}}
       {{- range $sidebar.groups -}}
         {{- $home := $context.Site.GetPage .home -}}

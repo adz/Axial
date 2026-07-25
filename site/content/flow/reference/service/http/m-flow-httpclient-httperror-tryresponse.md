@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.HttpError.tryResponse"
 linkTitle: "tryResponse"
 weight: 2201
-type: docs
 ---
 
  Returns the response transcript when the error carries one.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-httpclient-httpresponse.md">HttpResponse</a>&#32;option</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L140-140)

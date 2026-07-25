@@ -6,9 +6,9 @@ type: docs
 ---
 
 
-A `Schedule` is a value, not an action: it describes when a workflow *should* run again and how long to wait, but
-building one does nothing by itself. It only takes effect once you hand it to `Schedule.retry` (rerun on failure) or
-`Schedule.repeat` (rerun on success) — those two are what actually run a flow against the schedule. Use schedules for
+A [`Schedule`]({{< relref "/flow/reference/schedule/_index.md" >}}) is a value, not an action: it describes when a workflow *should* run again and how long to wait, but
+building one does nothing by itself. It only takes effect once you hand it to [`Schedule.retry`]({{< relref "/flow/reference/schedule/m-flow-schedule-retry.md" >}}) (rerun on failure) or
+[`Schedule.repeat`]({{< relref "/flow/reference/schedule/m-flow-schedule-repeat.md" >}}) (rerun on success) — those two are what actually run a flow against the schedule. Use schedules for
 retries, exponential backoff with jitter, and recurring tasks.
 
 > **Note:** `Schedule` is currently available on **.NET** only.

@@ -23,3 +23,6 @@ Returns a string check requiring equality with one of the supplied choices.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L550-550)

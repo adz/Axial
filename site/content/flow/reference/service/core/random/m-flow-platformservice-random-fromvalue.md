@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.Random.fromValue"
 linkTitle: "fromValue"
 weight: 2408
-type: docs
 ---
 
 Creates a deterministic random generator that always returns the supplied value.
@@ -24,3 +23,6 @@ Creates a deterministic random generator that always returns the supplied value.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-irandom.md">IRandom</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L175-175)

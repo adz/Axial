@@ -2,7 +2,6 @@
 title: "Check.CheckRangeExpectation"
 linkTitle: "CheckRangeExpectation"
 weight: 1003
-type: docs
 ---
 
 <pre>Describes the ordering requirement that a value check expected a comparable value to satisfy against a
@@ -24,3 +23,6 @@ type: docs
 | `AtMost` | The value was expected to be less than or equal to the supplied upper bound. |
 | `Between` | The value was expected to be between the supplied inclusive bounds. |
 | `NotMultipleOf` | The value was expected to be an integer multiple of the supplied divisor. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L19-19)

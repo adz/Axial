@@ -2,7 +2,6 @@
 title: "Flow.Hosting.addAppWith"
 linkTitle: "addAppWith"
 weight: 2103
-type: docs
 ---
 
 Registers a root application with explicit Generic Host completion options.
@@ -28,3 +27,6 @@ Registers a root application with explicit Generic Host completion options.
 | Type | Description |
 | --- | --- |
 | <code><a href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection">IServiceCollection</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L166-166)

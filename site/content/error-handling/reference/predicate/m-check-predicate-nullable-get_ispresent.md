@@ -2,7 +2,6 @@
 title: "System.Nullable.IsPresent"
 linkTitle: "IsPresent"
 weight: 2200
-type: docs
 ---
 
 True when the nullable value contains a value.
@@ -24,3 +23,6 @@ True when the nullable value contains a value.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L99-99)

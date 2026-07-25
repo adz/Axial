@@ -23,3 +23,6 @@ weight: 2402
 | Type | Description |
 | --- | --- |
 | <code>int</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L335-335)

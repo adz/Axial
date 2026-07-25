@@ -19,3 +19,6 @@ Document-level OpenAPI metadata.
 | `Title` |  |
 | `Version` |  |
 | `Description` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L116-116)

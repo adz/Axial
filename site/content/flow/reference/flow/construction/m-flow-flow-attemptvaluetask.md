@@ -2,7 +2,6 @@
 title: "Flow.attemptValueTask"
 linkTitle: "attemptValueTask"
 weight: 2313
-type: docs
 ---
 
 Creates a flow from a value task operation and treats thrown exceptions as recoverable typed errors.
@@ -28,3 +27,6 @@ Creates a flow from a value task operation and treats thrown exceptions as recov
 ## Remarks
 
 Successful completion returns <code>Exit.Success</code>. <code>OperationCanceledException</code> returns <code>Cause.Interrupt</code>. Other exceptions return <code>Cause.Fail exn</code>.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L313-313)

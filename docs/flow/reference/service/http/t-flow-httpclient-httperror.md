@@ -22,3 +22,6 @@ weight: 1006
 | `Canceled` |  The workflow was canceled while the request was in flight. |
 | `Status` |  The response arrived with a status outside the request's expectation. |
 | `DecodeFailed` |  The response body could not be decoded into the requested value. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L106-106)

@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.run"
 linkTitle: "run"
 weight: 2814
-type: docs
 ---
 
  Runs a command or specification in the current Flow runtime.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L973-973)

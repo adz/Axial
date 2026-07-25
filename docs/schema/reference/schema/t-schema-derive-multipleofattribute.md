@@ -11,3 +11,6 @@ Constrains a numeric field's value to whole multiples of the given step.
 <div class="fsdocs-usage">
 <code>type MultipleOfAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L99-99)

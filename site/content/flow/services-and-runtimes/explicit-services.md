@@ -11,7 +11,7 @@ That value can be a small record, a larger application record, or an object that
 
 ## Plain Records For Feature-Local Code
 
-For feature-local code, prefer records and `Flow.read`.
+For feature-local code, prefer records and [`Flow.read`]({{< relref "/flow/reference/flow/environment/m-flow-flow-read.md" >}}).
 
 ```fsharp
 type CheckoutEnv =
@@ -32,7 +32,7 @@ This is the default because the requirement is visible and the test setup is jus
 
 ## Use IHas For Reusable Services
 
-Use `IHas<'service>` when a helper module should advertise one named dependency without caring about the concrete
+Use [`IHas<'service>`]({{< relref "/flow/reference/service/t-flow-ihas.md" >}}) when a helper module should advertise one named dependency without caring about the concrete
 environment record.
 
 ```fsharp
@@ -60,7 +60,7 @@ type AppEnv =
         member this.Service = this.Email
 ```
 
-`Service<'service>.get()` is statically checked. If the environment does not implement `IHas<'service>`, the workflow
+[`Service<'service>.get()`]({{< relref "/flow/reference/service/m-flow-service-get.md" >}}) is statically checked. If the environment does not implement `IHas<'service>`, the workflow
 does not type-check.
 
 Layers do not automatically compose `IHas<'service>` implementations for you. Build a named environment record and
@@ -80,7 +80,7 @@ fields or distinct service contracts.
 
 ## Keep Resolve At The Edge
 
-`Service<'service>.resolve()` reads from `IServiceProvider`. Use it in host glue or adapters where dynamic container
+[`Service<'service>.resolve()`]({{< relref "/flow/reference/service/m-flow-service-resolve.md" >}}) reads from `IServiceProvider`. Use it in host glue or adapters where dynamic container
 lookup is the intended behavior.
 
 ```fsharp

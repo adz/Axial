@@ -29,3 +29,7 @@ A host-neutral description of one schema-driven endpoint, used to assemble OpenA
 
  The spec deliberately does not describe routing or handlers: hosts keep their own idioms for those. It records
  the boundary contract — method, path, request schema, and responses — which is the part every host shares.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L25-25)

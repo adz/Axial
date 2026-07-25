@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.readAllLinesWithEncoding"
 linkTitle: "readAllLinesWithEncoding"
 weight: 2204
-type: docs
 ---
 
 Reads all lines with the specified encoding through an explicit file-system service.
@@ -25,3 +24,6 @@ Reads all lines with the specified encoding through an explicit file-system serv
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a>,&#32;<span>string&#32;array</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L461-461)

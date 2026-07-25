@@ -2,7 +2,6 @@
 title: "System.Collections.Generic.IEnumerable.HasCountBetween"
 linkTitle: "HasCountBetween"
 weight: 2406
-type: docs
 ---
 
 True when the sequence is non-null and its count lies inside the supplied inclusive bounds.
@@ -25,3 +24,6 @@ True when the sequence is non-null and its count lies inside the supplied inclus
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L146-146)

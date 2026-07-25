@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.cwd"
 linkTitle: "cwd"
 weight: 2808
-type: docs
 ---
 
 
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L958-958)

@@ -2,7 +2,6 @@
 title: "Flow.STM.atomically"
 linkTitle: "atomically"
 weight: 2104
-type: docs
 ---
 
 
@@ -56,3 +55,8 @@ type: docs
 <div popover class="fsdocs-tip" id="fs4">val toAcc: &#39;b</div>
 <div popover class="fsdocs-tip" id="fs5">val amount: &#39;c</div>
 <div popover class="fsdocs-tip" id="fs6">val flow: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stm.fs#L263-263)

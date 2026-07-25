@@ -2,7 +2,6 @@
 title: "Schema.SchemaErrors.toString"
 linkTitle: "toString"
 weight: 2213
-type: docs
 ---
 
 Renders one line per failure.
@@ -24,3 +23,6 @@ Renders one line per failure.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L114-114)

@@ -2,7 +2,6 @@
 title: "Result.fromTry"
 linkTitle: "fromTry"
 weight: 2204
-type: docs
 ---
 
 Converts a .NET <code>Try*</code> tuple into a unit-error result.
@@ -25,3 +24,6 @@ Converts a .NET <code>Try*</code> tuple into a unit-error result.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;unit</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L80-80)

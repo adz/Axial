@@ -1,7 +1,6 @@
 ---
 title: "Cause"
 weight: 40
-type: docs
 ---
 
 This page shows the `Cause<'error>` type, which distinguishes expected domain failures, unexpected technical defects, administrative interruptions, sequential failure composition, parallel failure composition, and diagnostic traces. Understanding the cause tree lets Axial preserve what happened during retries, cleanup, parallel execution, and observability boundaries without flattening everything into one exception or one typed error.

@@ -2,7 +2,6 @@
 title: "Flow.FiberMetadata"
 linkTitle: "FiberMetadata"
 weight: 1003
-type: docs
 ---
 
 Diagnostic metadata for a running fiber.
@@ -29,3 +28,6 @@ Diagnostic metadata for a running fiber.
  detached at birth (<code>Flow.forkDetached</code>). A fiber that dies with a defect while unobserved is
  reported through the runtime&#39;s fiber observer once no observation can happen anymore.
   |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L164-164)

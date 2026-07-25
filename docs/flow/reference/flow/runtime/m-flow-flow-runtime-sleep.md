@@ -23,3 +23,6 @@ Suspends the flow for the specified duration, observing cancellation.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that completes after the specified delay. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L560-560)

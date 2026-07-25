@@ -2,7 +2,6 @@
 title: "Result.notNullOr"
 linkTitle: "notNullOr"
 weight: 2305
-type: docs
 ---
 
 Keeps a non-null reference, or returns the supplied error.
@@ -25,3 +24,6 @@ Keeps a non-null reference, or returns the supplied error.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L138-138)

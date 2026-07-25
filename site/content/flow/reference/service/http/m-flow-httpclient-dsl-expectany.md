@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.expectAny"
 linkTitle: "expectAny"
 weight: 2618
-type: docs
 ---
 
  Treats every status as success. <example><code>request |&gt; expectAny</code></example>
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L636-636)

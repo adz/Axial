@@ -2,7 +2,6 @@
 title: "Flow.Cause.defects"
 linkTitle: "defects"
 weight: 2105
-type: docs
 ---
 
 Returns every defect exception contained in a cause tree.
@@ -24,3 +23,6 @@ Returns every defect exception contained in a cause tree.
 | Type | Description |
 | --- | --- |
 | <code><span>exn&#32;list</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L46-46)

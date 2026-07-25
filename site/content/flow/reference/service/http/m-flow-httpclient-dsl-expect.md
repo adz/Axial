@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.expect"
 linkTitle: "expect"
 weight: 2617
-type: docs
 ---
 
  Replaces the statuses treated as success. <example><code>request |&gt; expect [ 200; 404 ]</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L634-634)

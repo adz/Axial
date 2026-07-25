@@ -2,7 +2,6 @@
 title: "Flow.provide"
 linkTitle: "provide"
 weight: 2333
-type: docs
 ---
 
 Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.
@@ -32,3 +31,7 @@ Builds an environment with a layer, runs a downstream flow, and always closes th
  This is the provisioning boundary for explicit services. It creates a fresh scope, builds the
  supplied layer inside that scope, runs the downstream flow with the built environment, and
  finalizes all acquired resources when the downstream flow completes or fails.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1389-1389)

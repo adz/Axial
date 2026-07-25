@@ -2,7 +2,6 @@
 title: "Result.toOption"
 linkTitle: "toOption"
 weight: 2206
-type: docs
 ---
 
 Drops the error channel and returns <code>Some</code> for success.
@@ -24,3 +23,6 @@ Drops the error channel and returns <code>Some</code> for success.
 | Type | Description |
 | --- | --- |
 | <code><span>'value&#32;option</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L92-92)

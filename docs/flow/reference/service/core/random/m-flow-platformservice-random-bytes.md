@@ -23,3 +23,6 @@ Creates a byte array filled through an explicit random-number service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<span>byte&#32;array</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L161-161)

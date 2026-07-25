@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.dateTimeOffsetRange"
 linkTitle: "dateTimeOffsetRange"
-weight: 2917
+weight: 3017
 ---
 
 Builds a date and time range where <code>Start &lt;= End</code>.
@@ -24,3 +24,6 @@ Builds a date and time range where <code>Start &lt;= End</code>.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-datetimeoffsetrange.md">DateTimeOffsetRange</a>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L752-752)

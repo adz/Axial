@@ -1,8 +1,7 @@
 ---
 title: "Refined.NonEmptyList.filter"
 linkTitle: "filter"
-weight: 2811
-type: docs
+weight: 2911
 ---
 
 Filters the list, returning a standard list because filtering can remove every item.
@@ -25,3 +24,6 @@ Filters the list, returning a standard list because filtering can remove every i
 | Type | Description |
 | --- | --- |
 | <code><span>'value&#32;list</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L523-523)

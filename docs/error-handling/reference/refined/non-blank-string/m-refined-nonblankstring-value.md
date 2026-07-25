@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonBlankString.value"
 linkTitle: "value"
-weight: 2800
+weight: 2900
 ---
 
 Returns the underlying string value.
@@ -23,3 +23,6 @@ Returns the underlying string value.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L397-397)

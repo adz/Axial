@@ -2,7 +2,6 @@
 title: "Schema.Http.ProblemDetails.ofErrors"
 linkTitle: "ofErrors"
 weight: 2104
-type: docs
 ---
 
 Builds a 400 problem-details value from accumulated schema errors.
@@ -24,3 +23,6 @@ Builds a 400 problem-details value from accumulated schema errors.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-problemdetails.md">ProblemDetails</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/ProblemDetails.fs#L49-49)

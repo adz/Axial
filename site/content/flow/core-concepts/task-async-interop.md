@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-Use `flow {}` for flows, results, F# async work, and .NET tasks. The same block can use all of them.
+Use [`flow {}`]({{< relref "/flow/reference/flow/builders-flow.md" >}}) for flows, results, F# async work, and .NET tasks. The same block can use all of them.
 
 ## Direct Binds
 
@@ -88,7 +88,7 @@ let workflow : Flow<unit, int> =
     }
 ```
 
-If you need a specific error when an option is `None`, use `Flow.fromOption`:
+If you need a specific error when an option is `None`, use [`Flow.fromOption`]({{< relref "/flow/reference/flow/construction/m-flow-flow-fromoption.md" >}}):
 
 ```fsharp
 let workflow : Flow<unit, string, int> =
@@ -128,7 +128,7 @@ let myFlow =
 
 ### Pitfall: Don't Register a Second Cancellation Observer on the Same Token
 
-`Flow.zipPar`, `Flow.race`, and `Flow.Runtime.timeout` interrupt a branch by cancelling the
+[`Flow.zipPar`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-zippar.md" >}}), [`Flow.race`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-race.md" >}}), and [`Flow.Runtime.timeout`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-timeout.md" >}}) interrupt a branch by cancelling the
 `CancellationToken` your adapter was handed. If your adapter already awaits a cancellation-aware
 operation on that token (`Task.Delay(ms, ct)`, an `HttpClient` call, `File.ReadAllTextAsync(path, ct)`,
 etc.), that is sufficient — the awaited call will throw `OperationCanceledException` /
@@ -172,7 +172,7 @@ combine a manual `Register` with another cancellation-aware call on the same tok
 
 ## Bind: Bridging with Error Packaging
 
-When a source needs its error assigned or mapped before `flow {}` binds it, use **`Bind`** at the binding site.
+When a source needs its error assigned or mapped before `flow {}` binds it, use **[`Bind`]({{< relref "/flow/reference/bind/_index.md" >}})** at the binding site.
 
 ```fsharp
 let myFlow =

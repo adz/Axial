@@ -23,3 +23,6 @@ Returns a typed error immediately when the runtime token is already canceled.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> | A flow that succeeds with unit when cancellation has not been requested. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L550-550)

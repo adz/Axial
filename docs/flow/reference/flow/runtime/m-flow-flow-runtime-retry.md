@@ -28,3 +28,6 @@ Retries typed failures according to the specified policy.
 ## Remarks
 
 Defects and interruptions are not retried.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L654-654)

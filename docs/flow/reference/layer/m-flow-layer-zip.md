@@ -29,3 +29,7 @@ Builds two layers from the same input and scope and returns both outputs.
 
 <code>zip</code> is sequential: the left layer is provisioned before the right layer.
  Use <code>zipPar</code> or <code>merge</code> for independent parallel provisioning.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/RuntimeLayer.fs#L127-127)

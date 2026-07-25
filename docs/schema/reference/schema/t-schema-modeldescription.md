@@ -18,3 +18,6 @@ Describes a built model schema as an ordered list of field descriptions.
 | --- | --- |
 | `Fields` | The field descriptions in declared order. |
 | `Description` | The description metadata, when one was attached with <code>Schema.describe</code>. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L70-70)

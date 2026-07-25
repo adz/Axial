@@ -11,3 +11,6 @@ Constructors and combinators for environment-aware workflow requirements.
 <div class="fsdocs-usage">
 <code>type Policy</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Policy.fs#L15-15)

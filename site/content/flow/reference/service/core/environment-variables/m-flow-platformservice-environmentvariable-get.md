@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariable.get"
 linkTitle: "get"
 weight: 2609
-type: docs
 ---
 
 Reads a raw string environment variable through an explicit service.
@@ -24,3 +23,6 @@ Reads a raw string environment variable through an explicit service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-platformservice-environmentvariableerror.md">EnvironmentVariableError</a>,&#32;string</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L297-297)

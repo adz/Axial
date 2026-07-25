@@ -2,7 +2,6 @@
 title: "Refined.DistinctList"
 linkTitle: "DistinctList<value>"
 weight: 1013
-type: docs
 ---
 
 A list with no duplicate items, preserving first-seen order.
@@ -18,3 +17,6 @@ A list with no duplicate items, preserving first-seen order.
 | Name |
 | --- |
 | `value` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L191-191)

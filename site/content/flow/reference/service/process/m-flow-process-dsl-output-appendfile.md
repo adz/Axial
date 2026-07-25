@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Output.appendFile"
 linkTitle: "appendFile"
 weight: 2706
-type: docs
 ---
 
  Writes output to an appending file.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1048-1048)

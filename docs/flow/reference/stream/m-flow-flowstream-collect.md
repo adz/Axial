@@ -29,3 +29,8 @@ Maps each value to a stream and concatenates the resulting streams.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">collect</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">fromSeq</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L255-255)

@@ -25,3 +25,6 @@ A JSON response streaming the trusted model through the compiled codec.
 | Type | Description |
 | --- | --- |
 | <code><a href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.iresult">IResult</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L68-68)

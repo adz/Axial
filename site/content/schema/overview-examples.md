@@ -9,6 +9,7 @@ type: docs
 ```fsharp
 open Axial
 open Axial.Schema
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 ```
 
@@ -21,7 +22,7 @@ type Address =
     static member Schema(_: Address) : Schema<Address> =
         schema<Address> {
             field "city" _.City {
-                constrain (Constraint.minLength 1)
+                constrain (minLength 1)
             }
             construct (fun city -> { City = city })
         }
@@ -70,7 +71,7 @@ A local raw schema can instead transition to the getter type:
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain Constraint.required
+    constrain required
     refine
 }
 ```

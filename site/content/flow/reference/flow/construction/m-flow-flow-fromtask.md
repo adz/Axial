@@ -2,7 +2,6 @@
 title: "Flow.fromTask"
 linkTitle: "fromTask"
 weight: 2310
-type: docs
 ---
 
 Creates a flow from a raw task operation.
@@ -30,3 +29,6 @@ Creates a flow from a raw task operation.
 ## Remarks
 
 Thrown exceptions are recorded as defects (<code>Cause.Die</code>), while cancellation is recorded as interruption. Use <code>attemptTask</code> when expected exceptions should enter the typed error channel.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L268-268)

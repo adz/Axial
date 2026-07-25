@@ -2,7 +2,6 @@
 title: "Flow.Hosting.DotNetApp.run"
 linkTitle: "run"
 weight: 2000
-type: docs
 ---
 
  Runs a standalone application, translating Ctrl+C into coordinated stop and returning a process exit code.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;int&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L199-199)

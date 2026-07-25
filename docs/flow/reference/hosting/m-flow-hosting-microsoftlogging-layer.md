@@ -23,3 +23,6 @@ Builds an Axial logger from a Microsoft logger factory supplied in the layer inp
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../layer/t-flow-layer.md">Layer</a>&lt;<span><a href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.iloggerfactory">ILoggerFactory</a>,&#32;<a href="../flow/t-flow-never.md">Never</a>,&#32;<a href="../service/core/t-flow-platformservice-ilog.md">ILog</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L45-45)

@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Output.capture"
 linkTitle: "capture"
 weight: 2700
-type: docs
 ---
 
  Retains all output bytes and their decoded text view.
@@ -18,3 +17,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1036-1036)

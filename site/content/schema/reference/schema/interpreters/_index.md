@@ -1,7 +1,6 @@
 ---
 title: "Schema Interpreters"
 weight: 500
-type: docs
 ---
 
 This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, and refined schemas. Core schema metadata stays in [Schema](../); interpreters attach path-aware `SchemaErrors` and optional redisplay behavior to it.
@@ -21,7 +20,9 @@ This page shows structured boundary data, universal schema parsing into `Result`
 - [`Data.ofConfiguration`](./m-data-ofconfiguration.md):
  Builds structured data from flattened configuration keys using <code>:</code> as the path separator.
 
-- [`Data.redisplay`](./m-data-redisplay.md):  Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
+- [`Data.redisplay`](./m-data-redisplay.md):
+ Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
+
 - [`Data.redisplayPath`](./m-data-redisplaypath.md): Parses an input path and redisplays the addressed scalar structured data value.
 
 ## Input parsing

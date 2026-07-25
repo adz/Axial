@@ -1,8 +1,7 @@
 ---
 title: "Refined.Refine.boundedList"
 linkTitle: "boundedList"
-weight: 2915
-type: docs
+weight: 3015
 ---
 
 Builds a bounded list from a sequence.
@@ -26,3 +25,6 @@ Builds a bounded list from a sequence.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="../types/t-refined-boundedlist.md">BoundedList</a>&lt;'a&gt;</span>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L744-744)

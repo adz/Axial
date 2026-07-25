@@ -2,7 +2,6 @@
 title: "System.Collections.Generic.IEnumerable.HasNoItems"
 linkTitle: "HasNoItems"
 weight: 2400
-type: docs
 ---
 
 True when the sequence is non-null and empty.
@@ -24,3 +23,6 @@ True when the sequence is non-null and empty.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L120-120)

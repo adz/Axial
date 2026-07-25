@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Http.sendResult"
 linkTitle: "sendResult"
 weight: 2507
-type: docs
 ---
 
  Sends a request and returns the transcript without interpreting the status expectation.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="t-flow-httpclient-httperror.md">HttpError</a>,&#32;<a href="t-flow-httpclient-httpresponse.md">HttpResponse</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L380-380)

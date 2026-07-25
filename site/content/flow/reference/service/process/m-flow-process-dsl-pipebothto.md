@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.pipeBothTo"
 linkTitle: "pipeBothTo"
 weight: 2804
-type: docs
 ---
 
  Connects both stdout and stderr from the current final stage to the next command.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L981-981)

@@ -2,7 +2,6 @@
 title: "Flow.acquireRelease"
 linkTitle: "acquireRelease"
 weight: 2503
-type: docs
 ---
 
 Acquires a resource and registers its release with the current runtime scope.
@@ -32,3 +31,7 @@ Acquires a resource and registers its release with the current runtime scope.
  The resource is not released when this expression finishes. It is released when the
  surrounding runtime scope closes, which makes it suitable for resources acquired by
  subflows and then shared by later work in the same execution boundary.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L190-190)

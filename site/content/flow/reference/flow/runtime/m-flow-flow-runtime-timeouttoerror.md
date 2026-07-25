@@ -2,7 +2,6 @@
 title: "Flow.Runtime.timeoutToError"
 linkTitle: "timeoutToError"
 weight: 2109
-type: docs
 ---
 
 Alias for <code>timeout</code> that emphasizes typed failure on timeout.
@@ -26,3 +25,6 @@ Alias for <code>timeout</code> that emphasizes typed failure on timeout.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L624-624)

@@ -19,3 +19,6 @@ weight: 2201
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-stmbuilder.md">StmBuilder</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stm.fs#L176-176)

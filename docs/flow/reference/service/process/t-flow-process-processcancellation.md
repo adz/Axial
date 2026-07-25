@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.ProcessCancellation"
 linkTitle: "ProcessCancellation"
-weight: 1011
+weight: 1012
 ---
 
  Diagnostic details for caller-initiated process cancellation.
@@ -17,3 +17,6 @@ weight: 1011
 | Field | Description |
 | --- | --- |
 | `Message` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L131-131)

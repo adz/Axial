@@ -2,7 +2,6 @@
 title: "Refined.Character.isAsciiHexDigit"
 linkTitle: "isAsciiHexDigit"
 weight: 2601
-type: docs
 ---
 
 Returns true when the character is an ASCII hexadecimal digit.
@@ -24,3 +23,6 @@ Returns true when the character is an ASCII hexadecimal digit.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L418-418)

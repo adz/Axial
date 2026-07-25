@@ -7,9 +7,10 @@
 - Declare records with `schema<Model> { field ...; construct ... }`.
 - `field "wire-name" _.Member` resolves the member type's canonical schema.
 - `field _.Member` derives the wire name from a quotation and is .NET-only. Use explicit names for Fable.
-- A field block may contain `withSchema`, `constrain`, type-directed `refine`, and `validate`.
+- Open `Axial.Schema.Syntax` for the complete unqualified, typed constraint vocabulary.
+- A field block may contain `withSchema`, `constrain`, `constraints`, type-directed `refine`, and `validate`.
 - `withSchema` sets the current field schema.
-- `constrain` adds portable metadata and executable checking while preserving the current type.
+- `constrain` adds one portable constraint. `constraints [ ... ]` adds several in declaration order.
 - `refine` resolves `Refinement<'raw,'field>` and changes the current type to the getter type.
 - `validate` runs executable value-preserving logic over the current type. It is not portable constraint metadata.
 - A field does not need `refine` when its schema already returns the getter type, such as `Schema.int` for `int`.
@@ -29,13 +30,13 @@ let signupSchema =
     schema<Signup> {
         field "email" _.Email {
             withSchema Schema.text
-            constrain Constraint.required
+            constrain required
             refine
             validate validateCompanyEmail
         }
 
         field "age" _.Age {
-            constrain (Constraint.atLeast 18)
+            constrain (atLeast 18)
         }
 
         construct Signup.create

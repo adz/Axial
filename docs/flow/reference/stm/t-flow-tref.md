@@ -19,3 +19,6 @@ weight: 1000
 | Name |
 | --- |
 | `T` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stm.fs#L19-19)

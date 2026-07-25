@@ -23,3 +23,6 @@ True when the sequence is non-null and contains at most the supplied count.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L142-142)

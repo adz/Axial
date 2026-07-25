@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Output.captureTail"
 linkTitle: "captureTail"
 weight: 2701
-type: docs
 ---
 
  Retains only the final maximum number of bytes.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1038-1038)

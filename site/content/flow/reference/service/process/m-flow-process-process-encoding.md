@@ -2,7 +2,6 @@
 title: "Flow.Process.encoding"
 linkTitle: "encoding"
 weight: 2306
-type: docs
 ---
 
  Selects text decoding for this stage. <example><code>command |&gt; Process.encoding Encoding.Latin1</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L306-306)

@@ -32,7 +32,7 @@ files. The features it leans on, and why they matter at this size:
   `schema<Model> { field ...; construct ... }` is the only record construction mechanism to learn
   ([schema syntax]({{< relref "/schema/syntax.md" >}})).
 - **Refined fields call the domain's own smart constructors.** `WorkspaceName`, `PersonName`, and
-  `WorkItemTitle` have private representations; `Schema.refine` runs the same fallible `create` the rest of the
+  `WorkItemTitle` have private representations; [`Schema.refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) runs the same fallible `create` the rest of the
   application uses, so there is no second copy of the invariant to drift
   ([Construction Guarantees]({{< relref "/schema/trusted-construction.md" >}})).
 - **Versioned contracts revalidate migrations.** v1 payloads parse through the frozen v1 schema, migrate through
@@ -47,7 +47,7 @@ files. The features it leans on, and why they matter at this size:
   are readable typed workflows. `BaseRuntime.liveValue` supplies the standard platform-service bundle,
   `Axial.Flow.FileSystem` makes persistence effects explicit, and
   `Axial.Schema.Http.AspNetCore` parses routes, JSON, and forms before embedding those application workflows with
-  `EndpointFlow.run`. Flow is never part of the schema entry price.
+  [`EndpointFlow.run`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-endpointflow-run/" >}}). Flow is never part of the schema entry price.
 
 `examples/Axial.ReferenceApp/README.md` explains the current boundary and domain split in the runnable app.
 
@@ -73,6 +73,9 @@ dotnet run --project examples/Axial.ReferenceApp.Wire/Axial.ReferenceApp.Wire.fs
 The wire slice answers the question the hand-written tier leaves open: what does the day-to-day authoring
 experience look like once wire schemas are generated? You own an ordinary record with constraint attributes:
 
+Marked with [`[<DeriveSchema>]`]({{< relref "/schema/reference/schema/t-schema-derive-deriveschemaattribute/" >}}) and a custom
+[`[<SchemaConstructor>]`]({{< relref "/schema/reference/schema/t-schema-derive-schemaconstructorattribute/" >}}):
+
 ```fsharp
 [<DeriveSchema>]
 type WorkspaceCard =
@@ -92,7 +95,9 @@ type WorkspaceCard =
 naming convention — a `WorkspaceCard.contract` builder that takes your typed v1 → v2 migration. The hand-written
 surface shrinks to exactly the parts that carry meaning: the migration, the strict domain mapping (`TrustedCard`
 rejects an owner listed as a member — a rule the wire deliberately cannot express), and a head-version write
-through a compiled codec. Generated schemas are ordinary schemas, so `JsonSchema.generate` and `Json.compile`
+through a compiled codec. Generated schemas are ordinary schemas, so
+[`JsonSchema.generate`]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate/" >}}) and
+[`Json.compile`]({{< relref "/schema/reference/codec/m-schema-json-json-compile/" >}})
 come along for free.
 
 See [Versioned Contracts]({{< relref "/schema/contracts.md" >}}) for the full attribute vocabulary, the

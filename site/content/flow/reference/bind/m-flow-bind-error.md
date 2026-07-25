@@ -2,7 +2,6 @@
 title: "Flow.Bind.error"
 linkTitle: "error"
 weight: 2100
-type: docs
 ---
 
 Assigns an error to a missing or unit-error source before <code>flow { }</code> binds it.
@@ -39,3 +38,8 @@ from Microsoft.FSharp.Core<br /><br />--------------------<br />
 type Result&lt;&#39;T,&#39;TError&gt; =
   | Ok of ResultValue: &#39;T
   | Error of ErrorValue: &#39;TError</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/BindError.fs#L293-293)

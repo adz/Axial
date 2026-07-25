@@ -2,7 +2,6 @@
 title: "Refined.Parse.dateTimeOffset"
 linkTitle: "dateTimeOffset"
 weight: 2107
-type: docs
 ---
 
 Parses a date and time value with offset.
@@ -24,3 +23,6 @@ Parses a date and time value with offset.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a>,&#32;<a href="../types/t-refined-parseerror.md">ParseError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Parse.fs#L60-60)

@@ -2,7 +2,6 @@
 title: "Refined.PositiveInt"
 linkTitle: "PositiveInt"
 weight: 1006
-type: docs
 ---
 
 An integer greater than zero.
@@ -12,3 +11,6 @@ An integer greater than zero.
 <div class="fsdocs-usage">
 <code>type PositiveInt</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L73-73)

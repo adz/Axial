@@ -2,7 +2,6 @@
 title: "Check.Predicate.Number.greaterThan"
 linkTitle: "greaterThan"
 weight: 2500
-type: docs
 ---
 
 Returns true when the value is greater than the supplied exclusive lower bound.
@@ -25,3 +24,6 @@ Returns true when the value is greater than the supplied exclusive lower bound.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L197-197)

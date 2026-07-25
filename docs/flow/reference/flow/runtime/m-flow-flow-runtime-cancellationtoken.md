@@ -17,3 +17,6 @@ Reads the current runtime cancellation token.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></span>&gt;</span></code> | A flow that succeeds with the token supplied at the workflow execution boundary. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L524-524)

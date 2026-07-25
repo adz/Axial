@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.expectAny"
 linkTitle: "expectAny"
 weight: 2317
-type: docs
 ---
 
  Treats every status as success so the caller can branch on the code explicitly.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L275-275)

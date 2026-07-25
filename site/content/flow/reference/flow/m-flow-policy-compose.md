@@ -2,7 +2,6 @@
 title: "Flow.Policy.compose"
 linkTitle: "compose"
 weight: 2405
-type: docs
 ---
 
 Composes two policies left to right.
@@ -27,3 +26,6 @@ Composes two policies left to right.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'output,&#32;'error</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Policy.fs#L48-48)

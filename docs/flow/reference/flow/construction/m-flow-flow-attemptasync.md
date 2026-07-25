@@ -27,3 +27,6 @@ Creates a flow from an async operation and treats thrown exceptions as recoverab
 ## Remarks
 
 Successful completion returns <code>Exit.Success</code>. <code>OperationCanceledException</code> returns <code>Cause.Interrupt</code>. Other exceptions return <code>Cause.Fail exn</code>.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L255-255)

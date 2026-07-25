@@ -2,7 +2,6 @@
 title: "Flow.Process.stream"
 linkTitle: "stream"
 weight: 2502
-type: docs
 ---
 
  Streams process events in the current Flow runtime. The last event is <c>Completed</c>.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../stream/t-flow-flowstream.md">FlowStream</a>&lt;<span>'env,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processevent.md">ProcessEvent</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L441-441)

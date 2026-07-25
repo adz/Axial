@@ -2,7 +2,6 @@
 title: "Flow.Process.workingDirectory"
 linkTitle: "workingDirectory"
 weight: 2303
-type: docs
 ---
 
  Sets the working directory. <example><code>command |&gt; Process.workingDirectory repo</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L300-300)

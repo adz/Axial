@@ -23,3 +23,6 @@ Runs the type-directed presence predicate for an already parsed optional, nullab
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L257-257)

@@ -1,7 +1,6 @@
 ---
 title: "Refined"
-weight: 50
-type: docs
+weight: 500
 ---
 
 `Parse` converts serialized strings into primitive values. `Refine` constructs the built-in refined values. `Refine.from` runs the `Refinement` defined for its source and expected destination types. `refine { }` binds parsing and refinement results and stops at the first failure.
@@ -92,6 +91,13 @@ type: docs
 
 - [`Refined.Choice.orElse`](./choice/m-refined-choice-orelse.md): Tries the left parser first, then the right parser, mapping either success into your output type.
 - [`Refined.Choice.tryAny`](./choice/m-refined-choice-tryany.md): Tries parser strategies in order and returns the first success.
+
+## Refinement
+
+- [`Refined.Refinement`](./t-refined-refinement.md): Defines fallible construction of a refined value and total inspection of its raw representation.
+- [`Refined.Refinement.define`](./m-refined-refinement-define.md): Defines a refinement from its smart constructor and raw-value projection.
+- [`Refined.Refinement.create`](./m-refined-refinement-create.md): Runs the refinement&#39;s smart constructor.
+- [`Refined.Refinement.inspect`](./m-refined-refinement-inspect.md): Returns the raw representation stored by a refined value.
 
 ## Re-certifying helpers
 

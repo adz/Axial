@@ -2,7 +2,6 @@
 title: "Flow.Runtime.catchCancellation"
 linkTitle: "catchCancellation"
 weight: 2101
-type: docs
 ---
 
 Catches <a href="https://learn.microsoft.com/dotnet/api/operationcanceledexception">OperationCanceledException</a> raised by a flow and converts it into a typed error.
@@ -31,3 +30,7 @@ Catches <a href="https://learn.microsoft.com/dotnet/api/operationcanceledexcepti
 
  This handles cancellation exceptions thrown during execution. A flow that has already returned
  <code>Cause.Interrupt</code> remains interrupted.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L535-535)

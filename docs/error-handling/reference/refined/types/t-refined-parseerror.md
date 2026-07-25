@@ -19,3 +19,6 @@ Primitive parse failures returned by <code>Parse</code> helpers.
 | `MissingValue` | The input was missing for the target primitive type. |
 | `InvalidFormat` | The input did not match the expected format for the target primitive type. |
 | `OutOfRange` | The input was outside the supported range for the target primitive type. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Errors.fs#L6-6)

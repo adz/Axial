@@ -2,7 +2,6 @@
 title: "Flow.Process.stderr"
 linkTitle: "stderr"
 weight: 2405
-type: docs
 ---
 
  Configures combined stderr handling. <example><code>specification |&gt; Process.stderr (OutputTarget.CaptureTail 65536)</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L370-370)

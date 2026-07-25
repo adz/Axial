@@ -1,7 +1,6 @@
 ---
 title: "Data"
-weight: 30
-type: docs
+weight: 500
 ---
 
 This page shows `Axial.Data`: one source-neutral tree for nulls, primitives, lists, and objects, with constructors for maps, name/value pairs, CLI arguments, JSON, and configuration. Use it to shape data in tests and fixtures, to carry boundary input before a type is assigned, and to redisplay raw values by path. It has no dependencies on other Axial packages.
@@ -27,5 +26,7 @@ This page shows `Axial.Data`: one source-neutral tree for nulls, primitives, lis
 
 ## Redisplay
 
-- [`Data.redisplay`](./m-data-redisplay.md):  Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
+- [`Data.redisplay`](./m-data-redisplay.md):
+ Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
+
 - [`Data.redisplayPath`](./m-data-redisplaypath.md): Parses an input path and redisplays the addressed scalar structured data value.

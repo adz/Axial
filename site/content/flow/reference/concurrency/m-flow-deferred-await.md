@@ -2,7 +2,6 @@
 title: "Flow.Deferred.await"
 linkTitle: "await"
 weight: 2002
-type: docs
 ---
 
 Waits for the deferred outcome, preserving success, typed failure, defect, or interruption.
@@ -24,3 +23,6 @@ Waits for the deferred outcome, preserving success, typed failure, defect, or in
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Concurrency.fs#L29-29)

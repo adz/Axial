@@ -23,3 +23,6 @@ weight: 2604
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-inputsource.md">InputSource</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1017-1017)

@@ -2,7 +2,6 @@
 title: "Refined.Parse.dateOnly"
 linkTitle: "dateOnly"
 weight: 2108
-type: docs
 ---
 
 Parses a date-only value.
@@ -28,3 +27,6 @@ Parses a date-only value.
 ## Remarks
 
 netstandard2.1: not available.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Parse.fs#L68-68)

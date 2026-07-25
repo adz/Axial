@@ -13,7 +13,7 @@ let workflow = Flow.succeed "Hello"
 let exit = workflow.RunSynchronously(())
 ```
 
-Execution completes with `Exit<'value, 'error>`:
+Execution completes with [`Exit<'value, 'error>`]({{< relref "/flow/reference/exit/_index.md" >}}):
 
 ```fsharp
 match exit with
@@ -34,7 +34,7 @@ On Fable, use `ToAsync`.
 Every call starts a fresh execution with its own root scope. Await the returned handle to receive the final Exit.
 
 Direct execution is useful at interop boundaries. A complete application normally starts its root workflow with
-`App.run`, introduced at the end of this section.
+[`App.run`]({{< relref "/flow/reference/app/m-flow-app-run.md" >}}), introduced at the end of this section.
 
 ## Go Further
 

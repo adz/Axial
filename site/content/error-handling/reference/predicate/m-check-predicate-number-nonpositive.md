@@ -2,7 +2,6 @@
 title: "Check.Predicate.Number.nonPositive"
 linkTitle: "nonPositive"
 weight: 2508
-type: docs
 ---
 
 Returns true when the value is less than or equal to zero.
@@ -24,3 +23,6 @@ Returns true when the value is less than or equal to zero.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L229-229)

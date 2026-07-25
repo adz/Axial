@@ -23,3 +23,6 @@ Returns an ordered-value check requiring a value greater than or equal to the su
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;'value&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L566-566)

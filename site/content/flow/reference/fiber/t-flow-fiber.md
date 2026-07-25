@@ -2,7 +2,6 @@
 title: "Flow.Fiber"
 linkTitle: "Fiber<error, value>"
 weight: 1000
-type: docs
 ---
 
 
@@ -37,3 +36,7 @@ type: docs
  work&#39;s typed failure and success channels available through <code>Flow.join</code>,
  and it carries an interruption source so parent workflows can ask the child
  to stop and then wait for cleanup to finish.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L464-464)

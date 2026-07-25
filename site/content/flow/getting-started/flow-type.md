@@ -35,9 +35,9 @@ Short aliases remove a channel that is not used:
 | --- | --- |
 | `Flow<'value>` | No environment and no typed failure |
 | `Flow<'error, 'value>` | Typed failure, no environment |
-| `EnvFlow<'env, 'value>` | Environment, no typed failure |
-| `ExnFlow<'value>` | Recoverable exceptions as typed failures |
-| `ExnEnvFlow<'env, 'value>` | Environment and recoverable exceptions |
+| [`EnvFlow<'env, 'value>`]({{< relref "/flow/reference/flow/t-flow-envflow.md" >}}) | Environment, no typed failure |
+| [`ExnFlow<'value>`]({{< relref "/flow/reference/flow/t-flow-exnflow.md" >}}) | Recoverable exceptions as typed failures |
+| [`ExnEnvFlow<'env, 'value>`]({{< relref "/flow/reference/flow/t-flow-exnenvflow.md" >}}) | Environment and recoverable exceptions |
 
 Start by reading the full shape. Use an alias when it makes a real signature shorter without hiding information.
 

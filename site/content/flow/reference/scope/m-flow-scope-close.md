@@ -2,7 +2,6 @@
 title: "Flow.Scope.Close"
 linkTitle: "Close"
 weight: 2104
-type: docs
 ---
 
 
@@ -23,4 +22,7 @@ type: docs
 
 | Type | Description |
 | --- | --- |
-| <code><a href="/reference/Axial/axial-flow-platform-deed.html">Deed</a></code> |  |
+| <code>Deed</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L575-575)

@@ -11,3 +11,6 @@ Provides synchronous random-number generation.
 <div class="fsdocs-usage">
 <code>type IRandom</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Services.fs#L20-20)

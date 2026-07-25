@@ -2,7 +2,6 @@
 title: "Result.map"
 linkTitle: "map"
 weight: 2102
-type: docs
 ---
 
 Maps the success value of a result.
@@ -25,3 +24,6 @@ Maps the success value of a result.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'b,&#32;'c</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L15-15)

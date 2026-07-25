@@ -2,7 +2,6 @@
 title: "System.Collections.Generic.IEnumerable.HasCount"
 linkTitle: "HasCount"
 weight: 2403
-type: docs
 ---
 
 True when the sequence is non-null and contains exactly the supplied count.
@@ -24,3 +23,6 @@ True when the sequence is non-null and contains exactly the supplied count.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L134-134)

@@ -23,3 +23,6 @@ Builds a 400 problem-details value from a failed parse, or <code>None</code> whe
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-http-problemdetails.md">ProblemDetails</a>&#32;option</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/ProblemDetails.fs#L61-61)

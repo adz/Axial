@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariable.getGuid"
 linkTitle: "getGuid"
 weight: 2614
-type: docs
 ---
 
 Reads a GUID environment variable through an explicit service.
@@ -24,3 +23,6 @@ Reads a GUID environment variable through an explicit service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-platformservice-environmentvariableerror.md">EnvironmentVariableError</a>,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.guid">Guid</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L351-351)

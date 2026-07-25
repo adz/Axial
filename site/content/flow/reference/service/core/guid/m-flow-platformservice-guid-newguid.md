@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.Guid.newGuid"
 linkTitle: "newGuid"
 weight: 2500
-type: docs
 ---
 
 Reads a GUID from an explicit GUID service.
@@ -18,3 +17,6 @@ Reads a GUID from an explicit GUID service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.guid">Guid</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L208-208)

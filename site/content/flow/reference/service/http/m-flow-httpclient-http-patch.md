@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Http.patch"
 linkTitle: "patch"
 weight: 2504
-type: docs
 ---
 
  Creates a PATCH request. <example><code>Http.patch "https://api.example.com/users/1"</code></example>
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L374-374)

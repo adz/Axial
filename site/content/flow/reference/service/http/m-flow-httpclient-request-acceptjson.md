@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.acceptJson"
 linkTitle: "acceptJson"
 weight: 2308
-type: docs
 ---
 
  Sets the Accept header to <c>application/json</c>. <example><code>request |&gt; Request.acceptJson</code></example>
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L233-233)

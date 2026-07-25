@@ -2,7 +2,6 @@
 title: "Data.ofMap"
 linkTitle: "ofMap"
 weight: 2003
-type: docs
 ---
 
 Builds object-shaped structured data from a map of scalar field values.
@@ -24,3 +23,6 @@ Builds object-shaped structured data from a map of scalar field values.
 | Type | Description |
 | --- | --- |
 | <code><a href="../../data/t-data.md">Data</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L358-358)

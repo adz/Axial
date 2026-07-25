@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Input.file"
 linkTitle: "file"
 weight: 2603
-type: docs
 ---
 
  Streams bytes from a file when execution begins.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-inputsource.md">InputSource</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1015-1015)

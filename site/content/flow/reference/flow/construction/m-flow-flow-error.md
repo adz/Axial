@@ -2,7 +2,6 @@
 title: "Flow.error"
 linkTitle: "error"
 weight: 2301
-type: docs
 ---
 
 Creates a failing synchronous flow.
@@ -24,3 +23,6 @@ Creates a failing synchronous flow.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that always fails with the provided error. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L361-361)

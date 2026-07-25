@@ -1,7 +1,6 @@
 ---
 title: "Service"
-weight: 110
-type: docs
+weight: 140
 ---
 
 This page shows the service helpers around Axial's explicit environment model. In Axial, a service is a named dependency contract such as `IClock`, `IConsole`, or `IHttp`. Prefer plain records plus `Flow.read` for local workflow code, use `IHas<'T>` plus `Service<'service>.get()` when reusable helpers need a nominal service contract, and keep `Service<'service>.resolve()` at .NET host boundaries where `IServiceProvider` interop is useful. Layers provision explicit services, while the ambient runtime is reserved for closed executor mechanics only.

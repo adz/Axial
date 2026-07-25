@@ -2,7 +2,6 @@
 title: "Flow.RetryPolicy"
 linkTitle: "RetryPolicy<error>"
 weight: 1000
-type: docs
 ---
 
  Defines how runtime retry helpers repeat typed failures in a controlled way.
@@ -26,3 +25,6 @@ type: docs
 | `MaxAttempts` |  |
 | `Delay` |  |
 | `ShouldRetry` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L781-781)

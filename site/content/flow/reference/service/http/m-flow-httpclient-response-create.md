@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Response.create"
 linkTitle: "create"
 weight: 2405
-type: docs
 ---
 
  Creates a synthetic response transcript at an explicit start time, primarily for test fakes.
@@ -27,3 +26,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httpresponse.md">HttpResponse</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L352-352)

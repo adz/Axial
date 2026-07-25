@@ -2,7 +2,6 @@
 title: "Flow.Cause.traced"
 linkTitle: "traced"
 weight: 2103
-type: docs
 ---
 
 Attaches diagnostic trace text to a cause.
@@ -25,3 +24,6 @@ Attaches diagnostic trace text to a cause.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L32-32)

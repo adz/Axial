@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.getFullPath"
 linkTitle: "getFullPath"
 weight: 2708
-type: docs
 ---
 
 Gets the full path through an explicit file-system service.
@@ -24,3 +23,6 @@ Gets the full path through an explicit file-system service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a>,&#32;string</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L964-964)

@@ -1,6 +1,5 @@
 ---
 title: "Files and streams"
-type: docs
 ---
 
 This page shows the `FileSystem.FileSystem` helpers for file existence, mutation, and stream access.

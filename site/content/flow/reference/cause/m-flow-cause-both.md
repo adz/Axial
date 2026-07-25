@@ -2,7 +2,6 @@
 title: "Flow.Cause.both"
 linkTitle: "both"
 weight: 2102
-type: docs
 ---
 
 Combines causes that happened concurrently.
@@ -25,3 +24,6 @@ Combines causes that happened concurrently.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-cause.md">Cause</a>&lt;'error&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L28-28)

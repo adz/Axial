@@ -27,3 +27,6 @@ Builds object-shaped structured data from query-string pairs, grouping repeated 
 ## Remarks
 
 Names are used verbatim; query strings do not carry nesting.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/BoundaryInput.fs#L16-16)

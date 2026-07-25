@@ -2,7 +2,6 @@
 title: "System.Collections.Generic.IEnumerable.HasMoreThanOneItem"
 linkTitle: "HasMoreThanOneItem"
 weight: 2409
-type: docs
 ---
 
 True when the sequence is non-null and contains more than one item.
@@ -24,3 +23,6 @@ True when the sequence is non-null and contains more than one item.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L156-156)

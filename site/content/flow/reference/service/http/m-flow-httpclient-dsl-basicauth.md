@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.basicAuth"
 linkTitle: "basicAuth"
 weight: 2611
-type: docs
 ---
 
  Adds a redacted basic-auth Authorization header. <example><code>request |&gt; basicAuth user password</code></example>
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L622-622)

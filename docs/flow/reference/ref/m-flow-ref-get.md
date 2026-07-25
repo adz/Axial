@@ -28,3 +28,8 @@ Reads the current value of the reference.
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Ref</span><span class="pn">.</span><span class="id">get</span> <span class="id">myRef</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Ref.fs#L43-43)

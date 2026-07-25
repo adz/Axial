@@ -2,7 +2,6 @@
 title: "Flow.ToAsync"
 linkTitle: "ToAsync"
 weight: 2200
-type: docs
 ---
 
 Starts the workflow and returns an F# async handle that completes with the final exit.
@@ -27,3 +26,6 @@ Starts the workflow and returns an F# async handle that completes with the final
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-control-fsharpasync-1">Async</a>&lt;<span><a href="../../exit/t-flow-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&gt;</span></code> | An async handle that completes with the workflow exit. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L706-706)

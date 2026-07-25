@@ -2,7 +2,6 @@
 title: "Flow.Policy.withError"
 linkTitle: "withError"
 weight: 2402
-type: docs
 ---
 
 Lifts a pure result-returning function and replaces any error with a fixed workflow error.
@@ -25,3 +24,6 @@ Lifts a pure result-returning function and replaces any error with a fixed workf
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-policy.md">Policy</a>&lt;<span>'env,&#32;'error,&#32;'input,&#32;'output</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Policy.fs#L27-27)

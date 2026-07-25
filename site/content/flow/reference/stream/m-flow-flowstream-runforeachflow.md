@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.runForEachFlow"
 linkTitle: "runForEachFlow"
 weight: 2401
-type: docs
 ---
 
 Runs an effectful action for every stream value.
@@ -30,3 +29,8 @@ Runs an effectful action for every stream value.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">runForEachFlow</span> <span class="id">save</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L297-297)

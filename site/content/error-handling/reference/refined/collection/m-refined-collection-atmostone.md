@@ -2,7 +2,6 @@
 title: "Refined.Collection.atMostOne"
 linkTitle: "atMostOne"
 weight: 2406
-type: docs
 ---
 
 Extracts zero or one item from a sequence.
@@ -24,3 +23,6 @@ Extracts zero or one item from a sequence.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span>'value&#32;option</span>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L496-496)

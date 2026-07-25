@@ -2,7 +2,6 @@
 title: "Flow.FlowSemaphore"
 linkTitle: "FlowSemaphore"
 weight: 1100
-type: docs
 ---
 
 A Flow-native semaphore handle used to limit concurrent workflow sections.
@@ -12,3 +11,6 @@ A Flow-native semaphore handle used to limit concurrent workflow sections.
 <div class="fsdocs-usage">
 <code>type FlowSemaphore</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Concurrency.fs#L66-66)

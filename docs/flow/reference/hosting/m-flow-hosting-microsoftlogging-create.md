@@ -23,3 +23,6 @@ Creates an Axial logger backed by a supplied Microsoft logger.
 | Type | Description |
 | --- | --- |
 | <code><a href="../service/core/t-flow-platformservice-ilog.md">ILog</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L31-31)

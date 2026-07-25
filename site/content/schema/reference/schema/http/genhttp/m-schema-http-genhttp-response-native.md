@@ -2,7 +2,6 @@
 title: "Schema.Http.GenHttp.Response.native"
 linkTitle: "native"
 weight: 2403
-type: docs
 ---
 
 Builds a host-native response plan from the current GenHTTP request.
@@ -29,3 +28,8 @@ Builds a host-native response plan from the current GenHTTP request.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="k">return</span> <span class="id">Response</span><span class="pn">.</span><span class="id">native</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">request</span> <span class="k">-&gt;</span> <span class="id">request</span><span class="pn">.</span><span class="id">Respond</span><span class="pn">(</span><span class="pn">)</span><span class="pn">.</span><span class="id">Build</span><span class="pn">(</span><span class="pn">)</span><span class="pn">)</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L191-191)

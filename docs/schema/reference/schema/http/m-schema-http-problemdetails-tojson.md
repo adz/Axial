@@ -23,3 +23,6 @@ Renders the problem-details JSON body as a string.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/ProblemDetails.fs#L100-100)

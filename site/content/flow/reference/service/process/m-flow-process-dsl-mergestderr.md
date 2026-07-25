@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.mergeStderr"
 linkTitle: "mergeStderr"
 weight: 2807
-type: docs
 ---
 
  Routes final stderr through final stdout targets.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L983-983)

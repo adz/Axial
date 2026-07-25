@@ -1,8 +1,7 @@
 ---
 title: "Refined.NonEmptyList.map"
 linkTitle: "map"
-weight: 2810
-type: docs
+weight: 2910
 ---
 
 Transforms each item while preserving non-emptiness.
@@ -25,3 +24,6 @@ Transforms each item while preserving non-emptiness.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'next&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L515-515)

@@ -27,3 +27,6 @@ Starts the workflow and blocks until the final exit is available.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../exit/t-flow-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> | The final workflow exit. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L739-739)

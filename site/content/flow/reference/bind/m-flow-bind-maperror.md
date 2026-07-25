@@ -2,7 +2,6 @@
 title: "Flow.Bind.mapError"
 linkTitle: "mapError"
 weight: 2101
-type: docs
 ---
 
 Maps an existing source error before <code>flow { }</code> binds it.
@@ -32,3 +31,8 @@ Maps an existing source error before <code>flow { }</code> binds it.
      <span class="k">do!</span> <span class="id">authorize</span> <span class="id">user</span> <span class="o">|&gt;</span> <span class="id">Bind</span><span class="pn">.</span><span class="id">mapError</span> <span class="id">Unauthorized</span>
  <span class="pn">}</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/BindError.fs#L307-307)

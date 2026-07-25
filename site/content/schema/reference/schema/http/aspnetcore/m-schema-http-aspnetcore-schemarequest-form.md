@@ -2,7 +2,6 @@
 title: "Schema.Http.AspNetCore.SchemaRequest.form"
 linkTitle: "form"
 weight: 2601
-type: docs
 ---
 
 Parses the posted form through the schema; dotted field names such as <code>address.street</code> nest.
@@ -25,3 +24,6 @@ Parses the posted form through the schema; dotted field names such as <code>addr
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<span><a href="../../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'model&gt;</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L25-25)

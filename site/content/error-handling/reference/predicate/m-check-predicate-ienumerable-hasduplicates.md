@@ -2,7 +2,6 @@
 title: "System.Collections.Generic.IEnumerable.HasDuplicates"
 linkTitle: "HasDuplicates"
 weight: 2410
-type: docs
 ---
 
 True when the sequence is non-null and contains duplicate values.
@@ -24,3 +23,6 @@ True when the sequence is non-null and contains duplicate values.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L167-167)

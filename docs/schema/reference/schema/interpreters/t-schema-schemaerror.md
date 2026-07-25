@@ -29,3 +29,6 @@ Schema input, checking, and contextual rule failures attached to diagnostics pat
 | `Duplicate` |  |
 | `ConstructorFailed` |  |
 | `Custom` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaError.fs#L14-14)

@@ -30,3 +30,8 @@ Generates a compact JSON Schema document from any completed schema declaration.
  <span class="c">// {&quot;$schema&quot;:&quot;https://json-schema.org/draft/2020-12/schema&quot;,&quot;type&quot;:&quot;object&quot;,&quot;properties&quot;:{...},&quot;required&quot;:[...]}</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val document: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.JsonSchema/JsonSchema.fs#L314-314)

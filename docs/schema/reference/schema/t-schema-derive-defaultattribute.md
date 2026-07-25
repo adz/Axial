@@ -12,3 +12,6 @@ Supplies the field&#39;s default when the payload omits it. Not valid on optiona
 <div class="fsdocs-usage">
 <code>type DefaultAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L118-118)

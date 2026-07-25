@@ -24,3 +24,6 @@ weight: 2319
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-requestplan.md">RequestPlan</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L302-302)

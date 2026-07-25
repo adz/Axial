@@ -24,3 +24,6 @@ Appends an OpenAPI tag used to group operations.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-endpointspec.md">EndpointSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L79-79)

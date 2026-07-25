@@ -2,7 +2,6 @@
 title: "Check.atLeast"
 linkTitle: "atLeast"
 weight: 2213
-type: docs
 ---
 
 Returns an ordered-value check requiring a value greater than or equal to the supplied lower bound.
@@ -24,3 +23,6 @@ Returns an ordered-value check requiring a value greater than or equal to the su
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;'value&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L566-566)

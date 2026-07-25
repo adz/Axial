@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.merge"
 linkTitle: "merge"
 weight: 2805
-type: docs
 ---
 
  Creates line-framed fan-in producers ready to connect to one consumer.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L895-895)

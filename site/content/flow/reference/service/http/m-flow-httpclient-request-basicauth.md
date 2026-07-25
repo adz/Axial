@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.basicAuth"
 linkTitle: "basicAuth"
 weight: 2306
-type: docs
 ---
 
  Adds a basic-auth Authorization header. The credentials are always redacted in diagnostics.
@@ -27,3 +26,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L226-226)

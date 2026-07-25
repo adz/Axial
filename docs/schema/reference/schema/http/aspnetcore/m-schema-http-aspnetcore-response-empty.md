@@ -28,3 +28,8 @@ Returns an empty response with the supplied status code.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="k">return</span> <span class="id">Response</span><span class="pn">.</span><span class="id">empty</span> <span class="n">204</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L217-217)

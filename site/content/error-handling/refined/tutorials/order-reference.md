@@ -25,7 +25,7 @@ type OrderReference =
       Customer: CustomerRef }
 ```
 
-`PositiveInt` can only hold an integer greater than zero, and `Slug` only lowercase ASCII letters, digits, and single
+[`PositiveInt`]({{< relref "/error-handling/reference/refined/types/t-refined-positiveint.md" >}}) can only hold an integer greater than zero, and [`Slug`]({{< relref "/error-handling/reference/refined/types/t-refined-slug.md" >}}) only lowercase ASCII letters, digits, and single
 hyphens — the types carry the proof.
 
 ## Parse, Then Refine

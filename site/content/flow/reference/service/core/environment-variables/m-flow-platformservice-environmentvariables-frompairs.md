@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariables.fromPairs"
 linkTitle: "fromPairs"
 weight: 2607
-type: docs
 ---
 
 Creates a deterministic provider from a fixed set of name/value pairs.
@@ -24,3 +23,6 @@ Creates a deterministic provider from a fixed set of name/value pairs.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-ienvironmentvariables.md">IEnvironmentVariables</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L269-269)

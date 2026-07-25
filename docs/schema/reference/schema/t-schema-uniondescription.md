@@ -19,3 +19,6 @@ Describes a tagged union value schema.
 | `DiscriminatorField` | The structured data field name that carries the case tag. |
 | `PayloadField` | The structured data field name that carries the case payload. |
 | `Cases` | The union cases in declaration order. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L88-88)

@@ -24,3 +24,6 @@ Returns the success value or the supplied fallback value.
 | Type | Description |
 | --- | --- |
 | <code>'value</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L104-104)

@@ -35,3 +35,6 @@ Builds structured data from a <a href="https://learn.microsoft.com/dotnet/api/sy
  The adapter is available on .NET 8+ targets where <code>System.Text.Json</code> ships in-box, keeping the package
  dependency-free and Fable-safe on other targets.
  </p><p class='fsdocs-para'>netstandard2.1: not available.</p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L485-485)

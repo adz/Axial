@@ -2,7 +2,6 @@
 title: "Flow.zipPar"
 linkTitle: "zipPar"
 weight: 2600
-type: docs
 ---
 
 Combines two flows into a tuple of their values, running them concurrently.
@@ -37,3 +36,8 @@ Combines two flows into a tuple of their values, running them concurrently.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">combined</span> <span class="o">=</span> <span class="id">Flow</span><span class="pn">.</span><span class="id">zipPar</span> <span class="id">flow1</span> <span class="id">flow2</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val combined: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L889-889)

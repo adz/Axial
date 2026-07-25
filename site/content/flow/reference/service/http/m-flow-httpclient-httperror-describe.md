@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.HttpError.describe"
 linkTitle: "describe"
 weight: 2200
-type: docs
 ---
 
  Formats an HTTP error with its redacted request context.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L125-125)

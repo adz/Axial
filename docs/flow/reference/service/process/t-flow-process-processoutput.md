@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.ProcessOutput"
 linkTitle: "ProcessOutput"
-weight: 1007
+weight: 1008
 ---
 
  A timestamped decoded output event attributed to one specification stage.
@@ -20,3 +20,6 @@ weight: 1007
 | `Channel` |  |
 | `Text` |  |
 | `Timestamp` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L79-79)

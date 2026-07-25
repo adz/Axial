@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Http.getJson"
 linkTitle: "getJson"
 weight: 2513
-type: docs
 ---
 
  Sends a GET request and decodes the JSON response.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="t-flow-httpclient-httperror.md">HttpError</a>,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L430-430)

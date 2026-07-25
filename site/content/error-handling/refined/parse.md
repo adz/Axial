@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-`Parse` converts strings into primitive values. Each parser returns `Result<'value, ParseError>`.
+`Parse` converts strings into primitive values. Each parser returns `Result<'value, [`ParseError`]({{< relref "/error-handling/reference/refined/types/t-refined-parseerror.md" >}})>`.
 
 ```fsharp
 open Axial.Refined
@@ -70,6 +70,8 @@ let quantity raw : Result<PositiveInt, RefinementError> =
         return! Refine.positiveInt value
     }
 ```
+
+Types like [`PositiveInt`]({{< relref "/error-handling/reference/refined/types/t-refined-positiveint.md" >}}) wrap the parsed value and ensure a refinement rule has been validated.
 
 Continue with [Built-in Refined Values](../catalog/). The
 [Parse API reference]({{< relref "/error-handling/reference/refined/parse/" >}}) lists every parser.

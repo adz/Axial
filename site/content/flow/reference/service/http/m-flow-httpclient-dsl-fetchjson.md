@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.fetchJson"
 linkTitle: "fetchJson"
 weight: 2622
-type: docs
 ---
 
  Sends the request and decodes the JSON response.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'b,&#32;<a href="t-flow-httpclient-httperror.md">HttpError</a>,&#32;'a</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L647-647)

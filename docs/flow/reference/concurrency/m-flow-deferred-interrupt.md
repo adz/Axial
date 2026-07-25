@@ -23,3 +23,6 @@ Attempts to complete the deferred value as interrupted.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'workflowError,&#32;bool</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Concurrency.fs#L62-62)

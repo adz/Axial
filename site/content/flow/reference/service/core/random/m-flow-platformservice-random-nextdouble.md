@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.Random.nextDouble"
 linkTitle: "nextDouble"
 weight: 2403
-type: docs
 ---
 
 Reads a random floating-point value from an explicit random-number service.
@@ -18,3 +17,6 @@ Reads a random floating-point value from an explicit random-number service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;float</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L149-149)

@@ -24,3 +24,6 @@ True when the string length lies inside the supplied inclusive bounds.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L63-63)

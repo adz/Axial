@@ -30,3 +30,8 @@ Projects untrusted input directly from the native request without schema parsing
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val signature: obj</div>
 <div popover class="fsdocs-tip" id="fs2">Multiple items<br />val string: value: &#39;T -&gt; string<br /><br />--------------------<br />type string = System.String</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L135-135)

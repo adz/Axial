@@ -1,7 +1,6 @@
 ---
 title: "Schema"
-weight: 10
-type: docs
+weight: 500
 ---
 
 This page shows `Schema<'value>`, the universal catalog for primitive, collection, optional, union, refined, and record declarations. The same declaration can be parsed, checked, inspected, encoded, documented, and used for generation.
@@ -32,6 +31,9 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 - [`Schema.union`](./m-schema-schema-union.md): Describes an externally tagged union.
 - [`Schema.UnionCase.create`](./m-schema-unioncase-create.md):
  Describes one tagged union case from a tag, a payload constructor, a payload extractor, and a payload schema.
+
+- [`Schema.Constraint`](./t-schema-constraint.md):
+ Describes a portable schema constraint as inspectable metadata.
 
 
 ## Record builder

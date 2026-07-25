@@ -21,7 +21,7 @@ A compiled JSON codec for one schema-described model.
 ## Remarks
 
 <p class='fsdocs-para'>
- Compile once with <a href="/reference/Axial/axial-schema-json-json.html">Json.compile</a> and reuse the codec for every value. Compilation
+ Compile once with <a href="_index.md">Json.compile</a> and reuse the codec for every value. Compilation
  compiles the schema&#39;s retained typed shape into a direct record plan — ordered field descriptors, cached wire-name
  bytes, and typed field decoders applied to the original curried constructor — so per-value encoding and decoding
  use no reflection and no boxed <code>obj array</code> dispatch for record fields.
@@ -31,3 +31,6 @@ A compiled JSON codec for one schema-described model.
  (<code>Schema.parse</code>) when complete path-aware diagnostics are needed, and use the codec where the payload producer
  is trusted, such as internal services, storage, caches, and message queues.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L27-27)

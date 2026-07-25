@@ -16,7 +16,8 @@ schema<Signup> {
 }
 ```
 
-`field` and `construct` use implicit yield. Do not write `yield`.
+[`field`]({{< relref "/schema/reference/schema/m-schema-schemace-field/" >}}) and
+[`construct`]({{< relref "/schema/reference/schema/m-schema-schemace-construct/" >}}) use implicit yield. Do not write `yield`.
 
 ## Fields without blocks
 
@@ -53,7 +54,7 @@ A block groups transformations for one field:
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain Constraint.required
+    constrain required
     refine
     validate validateCompanyEmail
 }
@@ -62,25 +63,36 @@ field "email" _.Email {
 Operations run from top to bottom:
 
 1. `withSchema` sets the current raw schema.
-2. `constrain` adds portable metadata and an executable check without changing the value type.
-3. `refine` changes the current schema from its raw type to the getter type.
-4. `validate` runs executable value-preserving logic over the current type.
+2. [`constrain`]({{< relref "/schema/reference/schema/m-schema-schema-constrain/" >}}) adds one portable constraint; `constraints` adds a list in declaration order. Both preserve the value type.
+3. [`refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) changes the current schema from its raw type to the getter type.
+4. [`validate`]({{< relref "/schema/reference/schema/m-schema-schema-validate/" >}}) runs executable value-preserving logic over the current type.
 
 The block must finish with the getter type. A plain `int` field does not need refinement:
 
 ```fsharp
 field "age" _.Age {
     withSchema Schema.int
-    constrain (Constraint.atLeast 18)
+    constrain (atLeast 18)
 }
 ```
+
+Group adjacent rules with `constraints`:
+
+```fsharp
+field "email" _.Email {
+    constraints [ required; email; maxLength 254 ]
+}
+```
+
+The typed vocabulary in `Axial.Schema.Syntax` covers every portable schema constraint. The field type checks every
+entry, so `email` cannot be applied to an `int` field and `minCount` cannot be applied to a string field.
 
 ## Refinement changes the stage
 
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain Constraint.required       // operates on string
+    constrain required       // operates on string
     refine                              // string -> ContactEmail
     validate validateCompanyEmail       // operates on ContactEmail
 }
@@ -97,7 +109,7 @@ compile error; Schema does not use reflection or a runtime registry.
 construct (fun email age -> { Email = email; Age = age })
 ```
 
-`constructResult` accepts cross-field construction that can fail:
+[`constructResult`]({{< relref "/schema/reference/schema/m-schema-schemace-constructresult/" >}}) accepts cross-field construction that can fail:
 
 ```fsharp
 constructResult Signup.createChecked

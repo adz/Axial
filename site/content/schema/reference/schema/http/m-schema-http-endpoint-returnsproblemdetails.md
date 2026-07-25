@@ -2,7 +2,6 @@
 title: "Schema.Http.Endpoint.returnsProblemDetails"
 linkTitle: "returnsProblemDetails"
 weight: 2213
-type: docs
 ---
 
 Adds the standard 400 problem-details response every schema-parsing endpoint produces.
@@ -24,3 +23,6 @@ Adds the standard 400 problem-details response every schema-parsing endpoint pro
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-endpointspec.md">EndpointSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L106-106)

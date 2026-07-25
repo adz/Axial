@@ -1,9 +1,9 @@
 ---
 title: API Reference
 weight: 100
-type: docs
 ---
 
+# ErrorHandling API Reference
 
 `Axial.ErrorHandling` installs three focused packages:
 

@@ -2,7 +2,6 @@
 title: "Result..result"
 linkTitle: "result { }"
 weight: 2500
-type: docs
 ---
 
 The fail-fast <code>result { }</code> computation expression.
@@ -18,3 +17,6 @@ The fail-fast <code>result { }</code> computation expression.
 | Type | Description |
 | --- | --- |
 | <code><a href="p-errorhandling--result.md">ResultBuilder</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Builders.fs#L6-6)

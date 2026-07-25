@@ -2,7 +2,6 @@
 title: "Schema.Http.ProblemDetails.writeTo"
 linkTitle: "writeTo"
 weight: 2106
-type: docs
 ---
 
 Writes the problem-details JSON body to a stream.
@@ -25,3 +24,6 @@ Writes the problem-details JSON body to a stream.
 | Type | Description |
 | --- | --- |
 | <code>unit</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/ProblemDetails.fs#L77-77)

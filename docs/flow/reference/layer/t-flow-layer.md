@@ -21,3 +21,6 @@ weight: 1000
 | `input` |
 | `error` |
 | `output` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/RuntimeLayer.fs#L12-12)

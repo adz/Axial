@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Response.tryHeader"
 linkTitle: "tryHeader"
 weight: 2403
-type: docs
 ---
 
  Finds the first header with the given case-insensitive name.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span>string&#32;option</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L338-338)

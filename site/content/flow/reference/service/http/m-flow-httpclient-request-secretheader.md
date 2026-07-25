@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.secretHeader"
 linkTitle: "secretHeader"
 weight: 2304
-type: docs
 ---
 
  Appends a header whose value is replaced with <c>***</c> in plans and error transcripts.
@@ -27,3 +26,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L216-216)

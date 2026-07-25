@@ -27,3 +27,6 @@ Parses a time-only value.
 ## Remarks
 
 netstandard2.1: not available.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Parse.fs#L75-75)

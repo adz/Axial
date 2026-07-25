@@ -17,3 +17,6 @@ A list that contains at least one item.
 | Name |
 | --- |
 | `value` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L138-138)

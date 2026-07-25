@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.Clock.now"
 linkTitle: "now"
 weight: 2200
-type: docs
 ---
 
 Reads the current UTC timestamp from an explicit clock service.
@@ -18,3 +17,6 @@ Reads the current UTC timestamp from an explicit clock service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L27-27)

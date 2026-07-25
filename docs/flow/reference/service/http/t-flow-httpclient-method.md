@@ -24,3 +24,6 @@ weight: 1000
 | `Delete` |  |
 | `Options` |  |
 | `Custom` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L16-16)

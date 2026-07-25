@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.runForEach"
 linkTitle: "runForEach"
 weight: 2400
-type: docs
 ---
 
 Executes the stream and performs a synchronous action for each successful value.
@@ -34,3 +33,8 @@ Executes the stream and performs a synchronous action for each successful value.
 <div popover class="fsdocs-tip" id="fs1">val stream: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val flow: obj</div>
 <div popover class="fsdocs-tip" id="fs3">val printfn: format: Printf.TextWriterFormat&lt;&#39;T&gt; -&gt; &#39;T</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L88-88)

@@ -2,7 +2,6 @@
 title: "Refined.Parse.int"
 linkTitle: "int"
 weight: 2100
-type: docs
 ---
 
 Parses a 32-bit integer.
@@ -24,3 +23,6 @@ Parses a 32-bit integer.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>int,&#32;<a href="../types/t-refined-parseerror.md">ParseError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Parse.fs#L26-26)

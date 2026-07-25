@@ -2,7 +2,6 @@
 title: "Flow.AppHandle"
 linkTitle: "AppHandle<error, value>"
 weight: 1001
-type: docs
 ---
 
 
@@ -29,3 +28,7 @@ type: docs
  final <a href="../exit/t-flow-exit.md">Exit</a> after the root scope has closed. Disposing the handle requests stop but
  cannot wait for asynchronous finalizers; await <code>Stop()</code> or <code>Completion</code> when cleanup must finish before
  the surrounding process or host exits.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/App.fs#L25-25)

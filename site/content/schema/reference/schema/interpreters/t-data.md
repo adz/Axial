@@ -2,7 +2,6 @@
 title: "Data"
 linkTitle: "Data"
 weight: 1000
-type: docs
 ---
 
 A portable tree representing the meaning and shape of unowned structured data.
@@ -34,3 +33,6 @@ A portable tree representing the meaning and shape of unowned structured data.
  locations, or other format-specific syntax. Number values currently retain a lexical token so adapters do not
  narrow arbitrary-size integers, decimal precision, or exponent notation to one runtime numeric type.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/Data.fs#L20-20)

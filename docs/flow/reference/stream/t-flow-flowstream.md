@@ -28,3 +28,6 @@ weight: 1000
 | Case | Description |
 | --- | --- |
 | `FlowStream` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L22-22)

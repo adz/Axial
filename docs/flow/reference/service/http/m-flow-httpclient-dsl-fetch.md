@@ -24,3 +24,6 @@ weight: 2619
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;<a href="t-flow-httpclient-httperror.md">HttpError</a>,&#32;<a href="t-flow-httpclient-httpresponse.md">HttpResponse</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L640-640)

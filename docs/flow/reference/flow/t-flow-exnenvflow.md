@@ -18,3 +18,6 @@ A flow that reads an environment and uses exceptions as recoverable typed errors
 | --- |
 | `env` |
 | `value` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L840-840)

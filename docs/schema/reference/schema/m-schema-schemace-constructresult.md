@@ -22,4 +22,7 @@ Closes a record schema with a checked constructor.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-schema-checkedconstructorstep-2.html">CheckedConstructorStep</a>&lt;<span>'model,&#32;'constructor</span>&gt;</span></code> |  |
+| <code><span>CheckedConstructorStep&lt;<span>'model,&#32;'constructor</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L505-505)

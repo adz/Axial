@@ -11,6 +11,7 @@ This page shows the external-process service package. Immutable `ProcessSpec` va
 - [`Flow.Process.ProcessPlan`](./t-flow-process-processplan.md):  A redacted, serializable description of work that would be executed.
 - [`Flow.Process.InputSource`](./t-flow-process-inputsource.md):  Supplies bytes to the first process stage.
 - [`Flow.Process.OutputTarget`](./t-flow-process-outputtarget.md):  Receives bytes from a process topology. Capture limits are measured in bytes.
+- [`Flow.Process.OutputFraming`](./t-flow-process-outputframing.md):  Selects arbitrary decoded chunks or complete decoded lines for streamed events.
 - [`Flow.Process.ProcessResult`](./t-flow-process-processresult.md):  The complete structured transcript returned by a process execution.
 - [`Flow.Process.StageResult`](./t-flow-process-stageresult.md):  The redacted command, exit decision, timing, and diagnostic stderr tail for one stage.
 - [`Flow.Process.CapturedOutput`](./t-flow-process-capturedoutput.md):  Exact captured bytes plus their decoded text view and truncation status.
@@ -22,6 +23,8 @@ This page shows the external-process service package. Immutable `ProcessSpec` va
 - [`Flow.Process.StageFailure`](./t-flow-process-stagefailure.md):  Diagnostic details for an unsuccessful process stage.
 - [`Flow.Process.ProcessIoFailure`](./t-flow-process-processiofailure.md):  Diagnostic details for a process I/O failure.
 - [`Flow.Process.ProcessError`](./t-flow-process-processerror.md):  A recoverable process startup, cancellation, stage, or I/O failure.
+- [`Flow.Process.ScriptEnvironment`](./t-flow-process-scriptenvironment.md):
+- [`Flow.Process.DSL.SecretArgument`](./t-flow-process-dsl-secretargument.md):  Marks an interpolated command value for redaction in plans and transcripts.
 
 ## Service
 

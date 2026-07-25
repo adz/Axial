@@ -1,6 +1,5 @@
 ---
 title: "Character"
-type: docs
 ---
 
 `Character` functions test individual characters.

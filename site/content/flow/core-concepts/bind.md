@@ -6,13 +6,13 @@ description: Flow bind-site error assignment and mapping.
 ---
 
 
-Use `Bind` to assign or map a source error immediately before `flow {}` binds that source.
+Use [`Bind`]({{< relref "/flow/reference/bind/_index.md" >}}) to assign or map a source error immediately before `flow {}` binds that source.
 
 `flow {}` can bind many source shapes directly. When the source already has the right error type, bind it directly. Use `Bind` only when the bind source needs a different error at the call site.
 
 ## Assign an Error
 
-Use `Bind.error` when the source fails with option/value-option absence or a `unit` error.
+Use [`Bind.error`]({{< relref "/flow/reference/bind/m-flow-bind-error.md" >}}) when the source fails with option/value-option absence or a `unit` error.
 
 ```fsharp
 type User = { Name: string }
@@ -56,7 +56,7 @@ do!
 
 ## Map an Error
 
-Use `Bind.mapError` when the source already carries a meaningful error, but it is not the error type of the surrounding flow.
+Use [`Bind.mapError`]({{< relref "/flow/reference/bind/m-flow-bind-maperror.md" >}}) when the source already carries a meaningful error, but it is not the error type of the surrounding flow.
 
 ```fsharp
 type AuthError = Denied of string
@@ -100,7 +100,7 @@ let login user =
 - use `Policy` when the requirement is a reusable, named verification step — especially when it should read the
   workflow environment, compose with other requirements, or switch on and off per environment
 
-A `Policy<'env, 'error, 'input, 'output>` is a value you define once and run anywhere with `Flow.verify`:
+A [`Policy<'env, 'error, 'input, 'output>`]({{< relref "/flow/reference/flow/t-flow-policy.md" >}}) is a value you define once and run anywhere with [`Flow.verify`]({{< relref "/flow/reference/flow/composition/m-flow-flow-verify.md" >}}):
 
 ```fsharp
 let withinLimit =

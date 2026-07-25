@@ -50,3 +50,8 @@ Catches exceptions raised during execution and simple defect outcomes, then maps
   member HelpLink: string
   member InnerException: exn
   ...<br /><em>&lt;summary&gt;Represents errors that occur during application execution.&lt;/summary&gt;</em><br /><br />--------------------<br />System.Exception() : System.Exception<br />System.Exception(message: string) : System.Exception<br />System.Exception(message: string, innerException: exn) : System.Exception</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1213-1213)

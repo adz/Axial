@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.indexed"
 linkTitle: "indexed"
 weight: 2210
-type: docs
 ---
 
 Emits each value paired with its zero-based index.
@@ -29,3 +28,8 @@ Emits each value paired with its zero-based index.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">indexed</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L218-218)

@@ -2,7 +2,6 @@
 title: "Flow.TRef"
 linkTitle: "TRef<T>"
 weight: 1000
-type: docs
 ---
 
 
@@ -20,3 +19,6 @@ type: docs
 | Name |
 | --- |
 | `T` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stm.fs#L19-19)

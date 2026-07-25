@@ -2,7 +2,6 @@
 title: "Flow.FlowStream"
 linkTitle: "FlowStream<env, error, value>"
 weight: 1000
-type: docs
 ---
 
 
@@ -29,3 +28,6 @@ type: docs
 | Case | Description |
 | --- | --- |
 | `FlowStream` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L22-22)

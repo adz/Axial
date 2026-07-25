@@ -15,3 +15,6 @@ A response plan that GenHTTP executes against the current native request.
 ## Remarks
 
 The plan stays opaque so successful and typed-error responses are constructed from the same request that entered <code>flowEndpoint</code>.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L93-93)

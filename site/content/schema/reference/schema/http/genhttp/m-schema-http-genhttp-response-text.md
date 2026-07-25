@@ -2,7 +2,6 @@
 title: "Schema.Http.GenHttp.Response.text"
 linkTitle: "text"
 weight: 2401
-type: docs
 ---
 
 Returns a plain-text response.
@@ -30,3 +29,8 @@ Returns a plain-text response.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="k">return</span> <span class="id">Response</span><span class="pn">.</span><span class="id">text</span> <span class="id">ResponseStatus</span><span class="pn">.</span><span class="id">Ok</span> <span class="s">&quot;ready&quot;</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L184-184)

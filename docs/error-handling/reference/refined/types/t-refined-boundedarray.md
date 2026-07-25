@@ -17,3 +17,6 @@ An array whose count is within a caller-supplied inclusive range.
 | Name |
 | --- |
 | `value` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L235-235)

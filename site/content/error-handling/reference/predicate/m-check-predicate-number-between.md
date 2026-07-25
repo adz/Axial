@@ -2,7 +2,6 @@
 title: "Check.Predicate.Number.between"
 linkTitle: "between"
 weight: 2504
-type: docs
 ---
 
 Returns true when the value lies inside the supplied inclusive bounds.
@@ -26,3 +25,6 @@ Returns true when the value lies inside the supplied inclusive bounds.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L213-213)

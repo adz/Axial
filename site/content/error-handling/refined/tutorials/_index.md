@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-These tutorials use `Parse`, `Refine`, and `refine {}` to turn boundary values into typed domain values.
+These tutorials use [`Parse`]({{< relref "/error-handling/reference/refined/parse/" >}}), [`Refine`]({{< relref "/error-handling/reference/refined/refine/" >}}), and [`refine {}`]({{< relref "/error-handling/reference/refined/refine-ce/" >}}) to turn boundary values into typed domain values.
 
 ## Guides
 

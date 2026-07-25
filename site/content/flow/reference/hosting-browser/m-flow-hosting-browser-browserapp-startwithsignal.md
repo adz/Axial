@@ -2,7 +2,6 @@
 title: "Flow.Hosting.Browser.BrowserApp.startWithSignal"
 linkTitle: "startWithSignal"
 weight: 2002
-type: docs
 ---
 
 Starts an application and translates an AbortSignal into coordinated application stop.
@@ -26,3 +25,6 @@ Starts an application and translates an AbortSignal into coordinated application
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../app/t-flow-apphandle.md">AppHandle</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting.Browser/BrowserHosting.fs#L39-39)

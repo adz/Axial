@@ -17,3 +17,6 @@ Unique identifier for a running fiber.
 | Case | Description |
 | --- | --- |
 | `FiberId` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L155-155)

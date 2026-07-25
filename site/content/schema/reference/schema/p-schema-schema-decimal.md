@@ -2,7 +2,6 @@
 title: "Schema.decimal"
 linkTitle: "decimal"
 weight: 2102
-type: docs
 ---
 
 Describes a decimal number.
@@ -18,3 +17,6 @@ Describes a decimal number.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;decimal&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L16-16)

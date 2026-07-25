@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.append"
 linkTitle: "append"
 weight: 2300
-type: docs
 ---
 
 Concatenates two streams, evaluating the second only after the first ends.
@@ -30,3 +29,8 @@ Concatenates two streams, evaluating the second only after the first ends.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">first</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">append</span> <span class="id">second</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L246-246)

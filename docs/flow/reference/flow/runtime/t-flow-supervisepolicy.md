@@ -27,3 +27,7 @@ weight: 1001
 
  The defect-channel sibling of <a href="t-flow-retrypolicy.md">RetryPolicy</a>: it decides restarts from the
  defect exception rather than the typed error, because defects are bugs that escaped the typed channel.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L805-805)

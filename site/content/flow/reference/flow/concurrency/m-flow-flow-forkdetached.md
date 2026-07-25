@@ -2,7 +2,6 @@
 title: "Flow.forkDetached"
 linkTitle: "forkDetached"
 weight: 2101
-type: docs
 ---
 
 Starts a flow in a new fiber that is deliberately never awaited.
@@ -32,3 +31,7 @@ Starts a flow in a new fiber that is deliberately never awaited.
  never reported as an unobserved defect through the runtime&#39;s fiber observer. Use this instead of
  discarding a <code>Flow.fork</code> handle when silence is intended; a discarded <code>fork</code> handle whose
  fiber dies of a defect is reported.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L841-841)

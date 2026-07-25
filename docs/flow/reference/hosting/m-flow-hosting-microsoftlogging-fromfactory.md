@@ -24,3 +24,6 @@ Creates an Axial logger with an explicit Microsoft logging category.
 | Type | Description |
 | --- | --- |
 | <code><a href="../service/core/t-flow-platformservice-ilog.md">ILog</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L39-39)

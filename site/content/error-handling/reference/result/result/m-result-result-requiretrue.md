@@ -2,7 +2,6 @@
 title: "Result.requireTrue"
 linkTitle: "requireTrue"
 weight: 2200
-type: docs
 ---
 
 Returns <code>Ok ()</code> when the condition is true, or the supplied error when it is false.
@@ -30,3 +29,6 @@ Returns <code>Ok ()</code> when the condition is true, or the supplied error whe
 
 The condition is already computed and stands alone, so there is no subject value to preserve on
  success. Use <code>okIf</code>/<code>failIf</code> instead when the value under test should flow through.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L59-59)

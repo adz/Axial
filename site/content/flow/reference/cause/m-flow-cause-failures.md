@@ -2,7 +2,6 @@
 title: "Flow.Cause.failures"
 linkTitle: "failures"
 weight: 2104
-type: docs
 ---
 
 Returns every typed failure value contained in a cause tree.
@@ -24,3 +23,6 @@ Returns every typed failure value contained in a cause tree.
 | Type | Description |
 | --- | --- |
 | <code><span>'error&#32;list</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L36-36)

@@ -16,6 +16,8 @@ let quantity (raw: string) : Result<PositiveInt, RefinementError> =
     }
 ```
 
+This uses [`Parse.int`]({{< relref "/error-handling/reference/refined/parse/m-refined-parse-int.md" >}}) to convert the text, then [`Refine.positiveInt`]({{< relref "/error-handling/reference/refined/refine/m-refined-refine-positiveint.md" >}}) to ensure it's positive.
+
 `let!` takes the value from a successful `Parse` or `Refine` result. `return!` returns an existing refinement result.
 `refine {}` converts `ParseError` into `RefinementError` and stops at the first failure.
 
@@ -68,7 +70,7 @@ refine {
 
 ## Why the annotation is sometimes required
 
-One `string` can become an `int`, `Guid`, `DateTimeOffset`, `NonBlankString`, or an application type. F# must know the
+One `string` can become an `int`, `Guid`, `DateTimeOffset`, [`NonBlankString`]({{< relref "/error-handling/reference/refined/types/t-refined-nonblankstring.md" >}}), or an application type. F# must know the
 destination while it resolves `let!`:
 
 ```fsharp

@@ -23,3 +23,6 @@ Formats a path with dot-separated keys and bracketed indexes.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L50-50)

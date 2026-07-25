@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.shText"
 linkTitle: "shText"
 weight: 2904
-type: docs
 ---
 
  Builds an explicitly assembled POSIX shell program. Values in the text are not escaped by Axial.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L952-952)

@@ -17,3 +17,6 @@ Creates a no-op logger for tests and local service bundles.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-ilog.md">ILog</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L110-110)

@@ -12,7 +12,7 @@ from joining into one pipeline.
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain Constraint.required
+    constrain required
     refine
     validate validateCompanyEmail
 }
@@ -47,12 +47,11 @@ Portable constraints can be inspected by JSON Schema, documentation, and UI inte
 
 ```fsharp
 field "name" _.Name {
-    constrain Constraint.required
-    constrain (Constraint.maxLength 80)
+    constraints [ required; maxLength 80 ]
 }
 ```
 
-The plain function is `Schema.constrain`.
+The plain function is [`Schema.constrain`]({{< relref "/schema/reference/schema/m-schema-schema-constrain/" >}}).
 
 ## `refine`
 
@@ -64,7 +63,8 @@ let contactEmailSchema =
     |> Schema.refine ContactEmail.refinement
 ```
 
-Inside the field block, the raw schema and getter supply the two types, so `refine` resolves the contributed descriptor:
+Inside the field block, the raw schema and getter supply the two types, so
+[`refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) resolves the contributed descriptor:
 
 ```fsharp
 field "email" _.Email {
@@ -75,7 +75,7 @@ field "email" _.Email {
 
 ## `validate`
 
-Executable validation preserves the current type:
+Executable validation ([`Schema.validate`]({{< relref "/schema/reference/schema/m-schema-schema-validate/" >}})) preserves the current type:
 
 ```fsharp
 let companyEmailSchema =

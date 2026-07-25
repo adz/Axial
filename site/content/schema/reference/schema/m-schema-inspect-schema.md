@@ -2,7 +2,6 @@
 title: "Schema.Inspect.schema"
 linkTitle: "schema"
 weight: 2307
-type: docs
 ---
 
 Describes a value schema as inspectable shape, format, and constraint metadata.
@@ -24,3 +23,6 @@ Describes a value schema as inspectable shape, format, and constraint metadata.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-schemadescription.md">SchemaDescription</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L243-243)

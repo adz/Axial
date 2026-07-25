@@ -23,3 +23,6 @@ Drops the error channel and returns <code>ValueSome</code> for success.
 | Type | Description |
 | --- | --- |
 | <code><span>'value&#32;voption</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L98-98)

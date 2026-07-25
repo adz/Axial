@@ -2,7 +2,6 @@
 title: "Flow.Hosting.Node.NodeApp.run"
 linkTitle: "run"
 weight: 2002
-type: docs
 ---
 
 Starts a Node application and waits for its final exit.
@@ -26,3 +25,6 @@ Starts a Node application and waits for its final exit.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-control-fsharpasync-1">Async</a>&lt;<span><a href="../exit/t-flow-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting.Node/NodeHosting.fs#L132-132)

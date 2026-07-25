@@ -41,3 +41,8 @@ Lowers an endpoint Flow to the native ASP.NET Core handler expected by minimal-A
  <span class="id">app</span><span class="pn">.</span><span class="id">MapPost</span><span class="pn">(</span><span class="s">&quot;/signups&quot;</span><span class="pn">,</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="2" class="id">endpoint</span> <span class="id">signupEndpoint</span><span class="pn">)</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val endpoint: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L262-262)

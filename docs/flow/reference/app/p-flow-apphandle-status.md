@@ -17,3 +17,6 @@ Gets the current application lifecycle state.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-appstatus.md">AppStatus</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/App.fs#L34-34)

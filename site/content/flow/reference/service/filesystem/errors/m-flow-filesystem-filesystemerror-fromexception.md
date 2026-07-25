@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.FileSystemError.fromException"
 linkTitle: "fromException"
 weight: 2100
-type: docs
 ---
 
 Classifies an exception raised by a file-system operation.
@@ -25,3 +24,6 @@ Classifies an exception raised by a file-system operation.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L346-346)

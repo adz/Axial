@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.jsonBodyWith"
 linkTitle: "jsonBodyWith"
 weight: 2313
-type: docs
 ---
 
  Encodes a value with the supplied serializer and sends it as JSON.
@@ -27,3 +26,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L254-254)

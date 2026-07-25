@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-`Scope` owns cleanup for resources acquired during provisioning or execution. It is not a dependency container. It only
+[`Scope`]({{< relref "/flow/reference/scope/_index.md" >}}) owns cleanup for resources acquired during provisioning or execution. It is not a dependency container. It only
 registers finalizers and closes them in a predictable order.
 
 This solves a different problem from `use` / `use!` in `flow { }`.
@@ -27,7 +27,7 @@ The contract is:
 
 ## Local Acquire/Use/Release
 
-Use `Flow.acquireReleaseWith` when acquisition, use, and release all belong to one flow expression.
+Use [`Flow.acquireReleaseWith`]({{< relref "/flow/reference/flow/resources/m-flow-flow-acquirereleasewith.md" >}}) when acquisition, use, and release all belong to one flow expression.
 
 ```fsharp
 let readFirstLine path =
@@ -47,7 +47,7 @@ finishes, whether that flow succeeds, fails, defects, or is interrupted.
 
 ## Scoped Acquisition
 
-Use `Flow.acquireRelease` when the acquired resource should live until the current runtime scope closes.
+Use [`Flow.acquireRelease`]({{< relref "/flow/reference/flow/resources/m-flow-flow-acquirerelease.md" >}}) when the acquired resource should live until the current runtime scope closes.
 
 ```fsharp
 let acquireRequestCache =
@@ -63,7 +63,7 @@ released when the surrounding execution scope or `Flow.provide` scope closes.
 
 ## Layer Resources
 
-Use `Layer.acquireRelease` when a layer provisions a service implementation or resource that must be closed after the
+Use [`Layer.acquireRelease`]({{< relref "/flow/reference/layer/m-flow-layer-acquirerelease.md" >}}) when a layer provisions a service implementation or resource that must be closed after the
 provided flow finishes.
 
 ```fsharp
@@ -77,7 +77,7 @@ let connectionLayer : Layer<ConnectionString, DbError, IDbConnection> =
             Task.CompletedTask)
 ```
 
-For lower-level cases, register finalizers directly through `Flow.addFinalizer`, `Layer.addFinalizer`, or `Scope`.
+For lower-level cases, register finalizers directly through [`Flow.addFinalizer`]({{< relref "/flow/reference/flow/resources/m-flow-flow-addfinalizer.md" >}}), [`Layer.addFinalizer`]({{< relref "/flow/reference/layer/m-flow-layer-addfinalizer.md" >}}), or `Scope`.
 
 ```fsharp
 Flow.addFinalizer(fun cancellationToken ->
@@ -87,12 +87,12 @@ Flow.addFinalizer(fun cancellationToken ->
 ## Root Scope
 
 The root scope is owned by the execution boundary or `Flow.provide`. Most application code should not create a scope directly. Use
-`Flow.acquireRelease`, `Layer.acquireRelease`, and the finalizer helpers first. Use `Flow.Runtime.scope` only for advanced
+`Flow.acquireRelease`, `Layer.acquireRelease`, and the finalizer helpers first. Use [`Flow.Runtime.scope`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-scope.md" >}}) only for advanced
 helpers that need direct access to the scope object.
 
 ## Child Scopes
 
-`Scope.AddChild()` creates a parent-owned scope. Axial uses this internally for `Layer.zipPar` and `Layer.merge` so each
+[`Scope.AddChild()`]({{< relref "/flow/reference/scope/m-flow-scope-addchild.md" >}}) creates a parent-owned scope. Axial uses this internally for `Layer.zipPar` and `Layer.merge` so each
 parallel provisioning branch can acquire resources independently.
 
 If one parallel branch fails after another branch acquired resources, the successful branch cleanup still runs when

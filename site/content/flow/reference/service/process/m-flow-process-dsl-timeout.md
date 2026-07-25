@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.timeout"
 linkTitle: "timeout"
 weight: 2813
-type: docs
 ---
 
  Sets the maximum execution time for a command or specification.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L971-971)

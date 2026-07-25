@@ -23,3 +23,6 @@ A 400 <code>application/problem+json</code> response rendering the failed parse&
 | Type | Description |
 | --- | --- |
 | <code><a href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.iresult">IResult</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L62-62)

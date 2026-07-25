@@ -2,7 +2,6 @@
 title: "Flow.Hosting.FiberLogging.observe"
 linkTitle: "observe"
 weight: 2204
-type: docs
 ---
 
 Installs fiber defect logging at the root application edge.
@@ -25,3 +24,6 @@ Installs fiber defect logging at the root application edge.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L71-71)

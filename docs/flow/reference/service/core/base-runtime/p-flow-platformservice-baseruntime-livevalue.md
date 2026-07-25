@@ -17,3 +17,6 @@ Creates the standard live base runtime as an explicit service bundle.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-baseruntime.md">BaseRuntime</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L401-401)

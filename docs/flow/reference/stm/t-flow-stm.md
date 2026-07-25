@@ -25,3 +25,6 @@ weight: 1001
 | Case | Description |
 | --- | --- |
 | `STM` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stm.fs#L51-51)

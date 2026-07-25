@@ -2,7 +2,6 @@
 title: "Result.Collection.traverseResult"
 linkTitle: "traverseResult"
 weight: 2400
-type: docs
 ---
 
 Maps each value with a result-returning function, stopping at the first error.
@@ -25,3 +24,6 @@ Maps each value with a result-returning function, stopping at the first error.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span>'output&#32;list</span>,&#32;'error</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Collection.fs#L7-7)

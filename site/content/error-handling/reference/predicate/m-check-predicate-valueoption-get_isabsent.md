@@ -2,7 +2,6 @@
 title: "Microsoft.FSharp.Core.FSharpValueOption.IsAbsent"
 linkTitle: "IsAbsent"
 weight: 2103
-type: docs
 ---
 
 True when the value option contains no value.
@@ -24,3 +23,6 @@ True when the value option contains no value.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L93-93)

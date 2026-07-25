@@ -24,3 +24,6 @@ Parses the JSON request body through the schema.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<span><a href="../../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'model&gt;</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L18-18)

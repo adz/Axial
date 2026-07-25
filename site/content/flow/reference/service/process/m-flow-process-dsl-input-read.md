@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Input.read"
 linkTitle: "read"
 weight: 2604
-type: docs
 ---
 
  Reads one asynchronous byte block when execution begins.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-inputsource.md">InputSource</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1017-1017)

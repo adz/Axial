@@ -24,3 +24,6 @@ Describes why an executable value check failed, without attaching source paths o
 | `NotOneOf` | The value was not one of the expected choices. |
 | `Duplicate` | A duplicate value was found. |
 | `Custom` | A custom value check identified by an application-defined code failed. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L46-46)

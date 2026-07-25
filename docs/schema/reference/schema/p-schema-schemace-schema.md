@@ -16,4 +16,7 @@ Record-schema computation expression.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-schema-schemabuilder-1.html">SchemaBuilder</a>&lt;'model&gt;</span></code> |  |
+| <code><span>SchemaBuilder&lt;'model&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L491-491)

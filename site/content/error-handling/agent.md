@@ -9,14 +9,14 @@ type: docs
 `Axial.Check` and `Axial.Refined` do not depend on `Axial.Result`.
 
 - Return ordinary `Result<'value,'error>` from domain functions.
-- Use `result { }` when a later step depends on an earlier success.
-- Use `Check<'value>` for reusable rules over one already-typed value. Checks contain no input paths.
-- Use named `Parse` functions for serialized primitive input.
-- Use named `Refine` functions for built-in refined values.
-- Introduce `refine { }` with explicit `Parse` and `Refine` results before using type-directed `let!`.
+- Use [`result { }`]({{< relref "/error-handling/reference/result/result-ce/" >}}) when a later step depends on an earlier success.
+- Use [`Check<'value>`]({{< relref "/error-handling/reference/check/" >}}) for reusable rules over one already-typed value. Checks contain no input paths.
+- Use named [`Parse`]({{< relref "/error-handling/reference/refined/parse/" >}}) functions for serialized primitive input.
+- Use named [`Refine`]({{< relref "/error-handling/reference/refined/refine/" >}}) functions for built-in refined values.
+- Introduce [`refine { }`]({{< relref "/error-handling/reference/refined/refine-ce/" >}}) with explicit `Parse` and `Refine` results before using type-directed `let!`.
 - Use a private wrapper and smart constructor when success should be visible in the type.
-- Store construction and inspection together with `Refinement.define`.
-- Add a static `Refinement` member to make an application type work with `Refine.from` and `refine { }`.
+- Store construction and inspection together with [`Refinement.define`]({{< relref "/error-handling/reference/refined/refine/" >}}).
+- Add a static `Refinement` member to make an application type work with [`Refine.from`]({{< relref "/error-handling/reference/refined/refine/m-refined-refine-from.md" >}}) and [`refine { }`]({{< relref "/error-handling/reference/refined/refine-ce/" >}}).
 
 ```fsharp
 let count = Parse.int "42"

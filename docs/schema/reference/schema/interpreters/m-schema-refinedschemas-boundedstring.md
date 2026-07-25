@@ -24,3 +24,6 @@ Describes a bounded string as a schema refined value over required text with inc
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-boundedstring.md">BoundedString</a>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L25-25)

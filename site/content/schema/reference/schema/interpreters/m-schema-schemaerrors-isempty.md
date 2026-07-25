@@ -2,7 +2,6 @@
 title: "Schema.SchemaErrors.isEmpty"
 linkTitle: "isEmpty"
 weight: 2212
-type: docs
 ---
 
 Reports whether the collection contains no failures.
@@ -24,3 +23,6 @@ Reports whether the collection contains no failures.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L111-111)

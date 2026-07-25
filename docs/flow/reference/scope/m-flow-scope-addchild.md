@@ -17,3 +17,6 @@ weight: 2103
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-scope.md">Scope</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L568-568)

@@ -2,7 +2,6 @@
 title: "Flow.Process.mergeStderr"
 linkTitle: "mergeStderr"
 weight: 2406
-type: docs
 ---
 
  Routes final stderr through the final stdout targets, like the intent of <c>2&gt;&amp;1</c>.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L380-380)

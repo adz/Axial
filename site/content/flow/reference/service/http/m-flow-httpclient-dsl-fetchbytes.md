@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.fetchBytes"
 linkTitle: "fetchBytes"
 weight: 2621
-type: docs
 ---
 
  Sends the request and returns the body bytes. <example><code>GET $"{root}/logo.png" |&gt; fetchBytes</code></example>
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;<a href="t-flow-httpclient-httperror.md">HttpError</a>,&#32;<span>byte&#32;array</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L644-644)

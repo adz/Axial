@@ -1,6 +1,5 @@
 ---
 title: "Resources"
-type: docs
 ---
 
 This page shows the Flow helpers that register cleanup and manage scoped resources during execution.

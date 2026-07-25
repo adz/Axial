@@ -1,6 +1,5 @@
 ---
 title: "Scheduling"
-type: docs
 ---
 
 This page shows the Flow helpers that apply retry and repeat schedules.

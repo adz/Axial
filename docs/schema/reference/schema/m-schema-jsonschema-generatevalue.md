@@ -23,3 +23,6 @@ Generates a compact JSON Schema document for a standalone value schema.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.JsonSchema/JsonSchema.fs#L324-324)

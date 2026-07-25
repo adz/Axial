@@ -1,6 +1,5 @@
 ---
 title: "Logging"
-type: docs
 ---
 
 This page shows the `Core.Log` helpers for writing messages through an explicit logging service.

@@ -2,7 +2,6 @@
 title: "Flow.Process.timeout"
 linkTitle: "timeout"
 weight: 2408
-type: docs
 ---
 
  Sets the maximum execution time for the complete process topology.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L385-385)

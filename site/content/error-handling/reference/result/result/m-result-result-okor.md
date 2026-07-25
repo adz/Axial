@@ -2,7 +2,6 @@
 title: "Result.okOr"
 linkTitle: "okOr"
 weight: 2306
-type: docs
 ---
 
 Takes the successful value from a result, or returns the supplied error.
@@ -25,3 +24,6 @@ Takes the successful value from a result, or returns the supplied error.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;'nextError</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L144-144)

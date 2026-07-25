@@ -25,3 +25,6 @@ weight: 2700
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-ihttp.md">IHttp</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L496-496)

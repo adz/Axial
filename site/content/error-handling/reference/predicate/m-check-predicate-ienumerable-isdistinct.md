@@ -2,7 +2,6 @@
 title: "System.Collections.Generic.IEnumerable.IsDistinct"
 linkTitle: "IsDistinct"
 weight: 2411
-type: docs
 ---
 
 True when the sequence is non-null and contains no duplicate values.
@@ -24,3 +23,6 @@ True when the sequence is non-null and contains no duplicate values.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L175-175)

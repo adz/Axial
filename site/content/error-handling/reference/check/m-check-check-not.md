@@ -2,7 +2,6 @@
 title: "Check.``not``"
 linkTitle: "``not``"
 weight: 2102
-type: docs
 ---
 
 Inverts a check. A successful inner check becomes a custom-code failure, while any failed inner check succeeds.
@@ -25,3 +24,6 @@ Inverts a check. A successful inner check becomes a custom-code failure, while a
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L742-742)

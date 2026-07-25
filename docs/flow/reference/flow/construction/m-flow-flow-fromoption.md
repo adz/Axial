@@ -33,3 +33,8 @@ Lifts an option into a synchronous flow with the supplied error.
 <div popover class="fsdocs-tip" id="fs1">val opt: string option</div>
 <div popover class="fsdocs-tip" id="fs2">union case Option.Some: Value: &#39;T -&gt; Option&lt;&#39;T&gt;</div>
 <div popover class="fsdocs-tip" id="fs3">val flow: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L933-933)

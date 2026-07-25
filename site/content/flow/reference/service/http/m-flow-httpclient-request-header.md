@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.header"
 linkTitle: "header"
 weight: 2303
-type: docs
 ---
 
  Appends one request header.
@@ -27,3 +26,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L211-211)

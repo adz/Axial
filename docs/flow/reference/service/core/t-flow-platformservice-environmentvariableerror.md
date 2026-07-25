@@ -18,3 +18,6 @@ weight: 1006
 | --- | --- |
 | `MissingVariable` |  |
 | `InvalidVariable` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Services.fs#L39-39)

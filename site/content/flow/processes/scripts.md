@@ -34,6 +34,6 @@ let workflow =
     |> capture
 ```
 
-The DSL's execution verbs are `run`, `capture`, `console`, and `stream`. `capture` selects complete stdout and stderr capture before running. `console` forwards both channels while retaining structured completion data. `stream` yields `ProcessEvent` values.
+The DSL's execution verbs are `run`, `capture`, `console`, and `stream`. `capture` selects complete stdout and stderr capture before running. `console` forwards both channels while retaining structured completion data. `stream` yields [`ProcessEvent`]({{< relref "/flow/reference/service/process/t-flow-process-processevent.md" >}}) values.
 
-At a command-line host boundary, `Script.run console workflow` executes against live services, prints a typed process failure through the supplied console service, and returns a host exit code.
+At a command-line host boundary, [`Script.run`]({{< relref "/flow/reference/service/process/m-flow-process-script-run.md" >}}) `console workflow` executes against live services, prints a typed process failure through the supplied console service, and returns a host exit code.

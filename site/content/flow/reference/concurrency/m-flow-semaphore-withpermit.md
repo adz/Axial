@@ -2,7 +2,6 @@
 title: "Flow.Semaphore.withPermit"
 linkTitle: "withPermit"
 weight: 2103
-type: docs
 ---
 
 Runs a workflow while holding one permit and always releases the permit afterward.
@@ -25,3 +24,6 @@ Runs a workflow while holding one permit and always releases the permit afterwar
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Concurrency.fs#L127-127)

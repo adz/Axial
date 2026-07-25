@@ -2,7 +2,6 @@
 title: "Schema"
 linkTitle: "Schema<model>"
 weight: 1000
-type: docs
 ---
 
 
@@ -29,6 +28,9 @@ type: docs
  </p><p class='fsdocs-para'>
  Primitive, collection, optional, union, refined, and record declarations all produce <code>Schema&lt;&#39;value&gt;</code>.
  Record declarations use the <code>schema&lt;&#39;value&gt; { }</code> computation expression. Each <code>field</code> may contain
- <code>withSchema</code>, <code>constrain</code>, <code>refine</code>, and <code>validate</code> operations before the declaration finishes
+ <code>withSchema</code>, <code>constrain</code>, <code>constraints</code>, <code>refine</code>, and <code>validate</code> operations before the declaration finishes
  with <code>construct</code> or <code>constructResult</code>.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaType.fs#L28-28)

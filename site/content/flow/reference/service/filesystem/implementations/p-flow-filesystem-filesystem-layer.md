@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.layer"
 linkTitle: "layer"
 weight: 2801
-type: docs
 ---
 
 Builds the live file-system service as a layer.
@@ -18,3 +17,6 @@ Builds the live file-system service as a layer.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../layer/t-flow-layer.md">Layer</a>&lt;<span>unit,&#32;<a href="../../../flow/t-flow-never.md">Never</a>,&#32;<a href="../t-flow-filesystem-ifilesystem.md">IFileSystem</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L1162-1162)

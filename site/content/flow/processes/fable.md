@@ -5,7 +5,7 @@ weight: 50
 type: docs
 ---
 
-`ProcessSpec`, `ProcessResult`, `ProcessError`, the DSL, and `IProcess` are target-neutral. A browser cannot start an operating-system process, so `Process.live` and native stream adapters are available only on .NET.
+[`ProcessSpec`]({{< relref "/flow/reference/service/process/t-flow-process-processspec.md" >}}), [`ProcessResult`]({{< relref "/flow/reference/service/process/t-flow-process-processresult.md" >}}), [`ProcessError`]({{< relref "/flow/reference/service/process/t-flow-process-processerror.md" >}}), the DSL, and [`IProcess`]({{< relref "/flow/reference/service/process/t-flow-process-iprocess.md" >}}) are target-neutral. A browser cannot start an operating-system process, so [`Process.live`]({{< relref "/flow/reference/service/process/m-flow-process-process-live.md" >}}) and native stream adapters are available only on .NET.
 
 Fable applications can construct specifications and run them against an `IProcess` implementation that delegates execution to a worker or another host:
 

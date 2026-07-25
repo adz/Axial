@@ -1,8 +1,7 @@
 ---
 title: "Refined..refine"
 linkTitle: "refine"
-weight: 3000
-type: docs
+weight: 3100
 ---
 
 
@@ -39,3 +38,8 @@ type: docs
 <div popover class="fsdocs-tip" id="fs5">val id: x: &#39;T -&gt; &#39;T</div>
 <div popover class="fsdocs-tip" id="fs6">Multiple items<br />val int: value: &#39;T -&gt; int (requires member op_Explicit)<br /><br />--------------------<br />type int = int32<br /><br />--------------------<br />type int&lt;&#39;Measure&gt; =
   int</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Builders.fs#L20-20)

@@ -36,3 +36,6 @@ weight: 1300
  Shape descriptions carry no getters, constructors, or executable checks. JSON Schema emitters, documentation
  generators, and UI metadata producers can walk them without parsing structured data or running validation.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L17-17)

@@ -2,7 +2,6 @@
 title: "Flow.Scope.AddFinalizer"
 linkTitle: "AddFinalizer"
 weight: 2100
-type: docs
 ---
 
 
@@ -17,10 +16,13 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `finalizer` | <code><a href="/reference/Axial/axial-flow-platform-finalizer.html">Finalizer</a></code> |  |
+| `finalizer` | <code>Finalizer</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
 | <code>unit</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L544-544)

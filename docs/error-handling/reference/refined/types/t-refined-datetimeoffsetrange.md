@@ -18,3 +18,6 @@ A date and time range where <code>Start &lt;= End</code>.
 | --- | --- |
 | `StartValue` |  |
 | `EndValue` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L262-262)

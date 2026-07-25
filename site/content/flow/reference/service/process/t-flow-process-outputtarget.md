@@ -2,7 +2,6 @@
 title: "Flow.Process.OutputTarget"
 linkTitle: "OutputTarget"
 weight: 1003
-type: docs
 ---
 
  Receives bytes from a process topology. Capture limits are measured in bytes.
@@ -27,3 +26,6 @@ type: docs
 | `Callback` |  |
 | `Sink` |  |
 | `Tee` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L36-36)

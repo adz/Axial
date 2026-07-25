@@ -7,7 +7,7 @@ type: docs
 
 
 This tutorial validates a signup request using all three pieces together: `Predicate` for a cheap local guard,
-`Check` for the reusable named constraints on each field, and `Result` for the one-off condition and the domain
+[`Check`]({{< relref "/error-handling/reference/check/" >}}) for the reusable named constraints on each field, and `Result` for the one-off condition and the domain
 error that ties it all together.
 
 ## The Shape Of The Problem
@@ -85,7 +85,7 @@ because `SignupError` doesn't need to describe *which* constraint failed, only t
 ## Result: The Condition That Isn't A Check
 
 Password confirmation isn't a reusable, named fact about one value — it's a comparison between two fields, bespoke
-to this call site. That's `Result.requireTrue`, not `Check`:
+to this call site. That's [`Result.requireTrue`]({{< relref "/error-handling/reference/result/result/m-result-result-requiretrue.md" >}}), not `Check`:
 
 ```fsharp
 let private validatePasswords request : Result<unit, SignupError> =

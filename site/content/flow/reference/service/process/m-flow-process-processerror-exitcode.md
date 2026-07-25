@@ -2,7 +2,6 @@
 title: "Flow.Process.ProcessError.exitCode"
 linkTitle: "exitCode"
 weight: 2201
-type: docs
 ---
 
  Returns a suitable host exit code for a process failure.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>int</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L209-209)

@@ -22,3 +22,6 @@ weight: 1002
 | `File` |  |
 | `Read` |  |
 | `Produce` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L26-26)

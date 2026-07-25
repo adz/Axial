@@ -19,3 +19,6 @@ weight: 1002
 | `Success` |  Any status in the 200-299 range succeeds. This is the default. |
 | `Statuses` |  Only the listed statuses succeed. |
 | `Any` |  Every status succeeds; the caller inspects the status explicitly. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L50-50)

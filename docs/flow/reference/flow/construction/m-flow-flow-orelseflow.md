@@ -47,3 +47,8 @@ type Result&lt;&#39;T,&#39;TError&gt; =
   | Error of ErrorValue: &#39;TError</div>
 <div popover class="fsdocs-tip" id="fs3">union case Result.Error: ErrorValue: &#39;TError -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
 <div popover class="fsdocs-tip" id="fs4">val flow: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L962-962)

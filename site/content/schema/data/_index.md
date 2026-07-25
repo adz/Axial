@@ -115,7 +115,8 @@ meaningful, rejected, or resolved according to a boundary format's rules.
 
 ## Read values back by path
 
-`Data.redisplay` and `Data.redisplayPath` recover the raw value at a path — useful when a form needs
+[`Data.redisplay`]({{< relref "/schema/reference/data/m-data-redisplay/" >}}) and
+[`Data.redisplayPath`]({{< relref "/schema/reference/data/m-data-redisplaypath/" >}}) recover the raw value at a path — useful when a form needs
 to re-show exactly what the user typed, or a log needs the offending input fragment.
 
 ## Going further

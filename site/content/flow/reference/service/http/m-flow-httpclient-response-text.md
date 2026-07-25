@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Response.text"
 linkTitle: "text"
 weight: 2400
-type: docs
 ---
 
  Returns the response body text. <example><code>response |&gt; Response.text</code></example>
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L331-331)

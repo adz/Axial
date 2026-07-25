@@ -17,3 +17,6 @@ Controls how a root Flow application participates in Generic Host lifetime.
 | Field | Description |
 | --- | --- |
 | `StopHostOnCompletion` |  Request host shutdown when the root application completes for any reason. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L75-75)

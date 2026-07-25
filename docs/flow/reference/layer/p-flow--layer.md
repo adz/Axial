@@ -17,3 +17,6 @@ The <code>layer { }</code> computation expression for provisioning explicit serv
 | Type | Description |
 | --- | --- |
 | <code><a href="p-flow--layer.md">LayerBuilder</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Builders.fs#L9-9)

@@ -8,6 +8,10 @@ open System.Collections.Generic
 open System.Net
 open System.Text.RegularExpressions
 
+let repoRoot = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
+let githubRepoUrl = "https://github.com/adz/Axial"
+let githubBranch = "main"
+
 type PageSpec = {
     OutPath: string list
     Title: string
@@ -310,7 +314,11 @@ let renderEntityPage (rewriteHtml: string -> string) (weight: int) (e: ApiDocEnt
         content <- content + "## Examples\n\n"
         for ex in e.Comment.Examples do
             content <- content + rewriteHtml ex.HtmlText + "\n\n"
-    
+
+    match e.SourceLocation with
+    | Some url -> content <- content + $"\n[Source]({url})\n\n"
+    | None -> ()
+
     content
 
 let pageSpecs = [
@@ -321,7 +329,7 @@ let pageSpecs = [
         Intro = "This page shows `Schema<'value>`, the universal catalog for primitive, collection, optional, union, refined, and record declarations. The same declaration can be parsed, checked, inspected, encoded, documented, and used for generation."
         SymbolIds = [
             "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.Field`2"; "T:Axial.Schema.UnionCase`1"]
-            "Catalog", ["P:Axial.Schema.Schema.text"; "P:Axial.Schema.Schema.int"; "P:Axial.Schema.Schema.decimal"; "P:Axial.Schema.Schema.bool"; "P:Axial.Schema.Schema.dateTime"; "P:Axial.Schema.Schema.guid"; "M:Axial.Schema.Schema.list"; "M:Axial.Schema.Schema.option"; "M:Axial.Schema.Schema.constrain"; "M:Axial.Schema.Schema.refine"; "M:Axial.Schema.Schema.validate"; "M:Axial.Schema.Schema.union"; "M:Axial.Schema.UnionCase.create"]
+            "Catalog", ["P:Axial.Schema.Schema.text"; "P:Axial.Schema.Schema.int"; "P:Axial.Schema.Schema.decimal"; "P:Axial.Schema.Schema.bool"; "P:Axial.Schema.Schema.dateTime"; "P:Axial.Schema.Schema.guid"; "M:Axial.Schema.Schema.list"; "M:Axial.Schema.Schema.option"; "M:Axial.Schema.Schema.constrain"; "M:Axial.Schema.Schema.refine"; "M:Axial.Schema.Schema.validate"; "M:Axial.Schema.Schema.union"; "M:Axial.Schema.UnionCase.create"; "T:Axial.Schema.Constraint"]
             "Record builder", ["P:Axial.Schema.SchemaCE.schema"; "M:Axial.Schema.SchemaCE.field"; "M:Axial.Schema.SchemaCE.construct"; "M:Axial.Schema.SchemaCE.constructResult"]
             "Inspection", ["T:Axial.Schema.SchemaShape"; "T:Axial.Schema.SchemaDescription"; "T:Axial.Schema.FieldDescription"; "T:Axial.Schema.ModelDescription"; "T:Axial.Schema.UnionDescription"; "T:Axial.Schema.UnionCaseDescription"; "M:Axial.Schema.Inspect.model"; "M:Axial.Schema.Inspect.schema"; "M:Axial.Schema.Inspect.field"]
             "JSON Schema generation", ["M:Axial.Schema.JsonSchema.generate"; "M:Axial.Schema.JsonSchema.generateValue"]
@@ -664,6 +672,7 @@ let pageSpecs = [
             "Temporal", ["M:Axial.Refined.Temporal.dateTimeOffsetRange"; "M:Axial.Refined.Temporal.dateOnlyRange"]
             "Character", ["M:Axial.Refined.Character.isAsciiDigit"; "M:Axial.Refined.Character.isAsciiHexDigit"; "M:Axial.Refined.Character.isLowercase"; "M:Axial.Refined.Character.isUppercase"; "M:Axial.Refined.Character.isWhitespace"; "M:Axial.Refined.Character.isControl"; "M:Axial.Refined.Character.isNumeric"]
             "Choice", ["M:Axial.Refined.Choice.orElse"; "M:Axial.Refined.Choice.tryAny"]
+            "Refinement", ["T:Axial.Refined.Refinement`2"; "M:Axial.Refined.Refinement.define"; "M:Axial.Refined.Refinement.create"; "M:Axial.Refined.Refinement.inspect"]
             "Re-certifying helpers", ["M:Axial.Refined.NonBlankString.value"; "M:Axial.Refined.NonBlankString.create"; "M:Axial.Refined.NonBlankString.map"; "M:Axial.Refined.PositiveInt.value"; "M:Axial.Refined.PositiveInt.create"; "M:Axial.Refined.PositiveInt.map"; "M:Axial.Refined.PositiveInt.replace"; "M:Axial.Refined.NonEmptyList.toList"; "M:Axial.Refined.NonEmptyList.create"; "M:Axial.Refined.NonEmptyList.cons"; "M:Axial.Refined.NonEmptyList.map"; "M:Axial.Refined.NonEmptyList.filter"; "M:Axial.Refined.NonEmptyList.tryFilter"]
             "Refine facade", ["M:Axial.Refined.Refine.from"; "M:Axial.Refined.Refine.withCheck"; "M:Axial.Refined.Refine.withChecks"; "M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.trimmedString"; "M:Axial.Refined.Refine.boundedString"; "M:Axial.Refined.Refine.slug"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonNegativeInt"; "M:Axial.Refined.Refine.nonZeroInt"; "M:Axial.Refined.Refine.negativeInt"; "M:Axial.Refined.Refine.nonPositiveInt"; "M:Axial.Refined.Refine.nonEmptyList"; "M:Axial.Refined.Refine.nonEmptyArray"; "M:Axial.Refined.Refine.distinctList"; "M:Axial.Refined.Refine.boundedList"; "M:Axial.Refined.Refine.boundedArray"; "M:Axial.Refined.Refine.dateTimeOffsetRange"; "M:Axial.Refined.Refine.dateOnlyRange"; "M:Axial.Refined.Refine.exactlyOne"; "M:Axial.Refined.Refine.atMostOne"]
             "Builder", ["P:Axial.Refined.Builders.refine"]
@@ -856,7 +865,7 @@ let pageSpecs = [
         Description = "Source-documented HTTP client service for Axial.Flow.HttpClient."
         Intro = "This page shows the HTTP client service package. Immutable `HttpRequest` values carry the method, encoded URL, headers, body, timeout, and status expectation; `Http.send` converts a request through the explicit `IHttp` capability and reports connection, timeout, status, and decode failures through `HttpError` with redacted request transcripts. The `DSL` module adds interpolated URL builders and terminal fetch verbs for concise call sites."
         SymbolIds = [
-            "Model", ["T:Axial.Flow.HttpClient.Method"; "T:Axial.Flow.HttpClient.RequestBody"; "T:Axial.Flow.HttpClient.StatusExpectation"; "T:Axial.Flow.HttpClient.HttpRequest"; "T:Axial.Flow.HttpClient.RequestPlan"; "T:Axial.Flow.HttpClient.HttpResponse"; "T:Axial.Flow.HttpClient.HttpError"]
+            "Model", ["T:Axial.Flow.HttpClient.Method"; "T:Axial.Flow.HttpClient.RequestBody"; "T:Axial.Flow.HttpClient.StatusExpectation"; "T:Axial.Flow.HttpClient.HttpRequest"; "T:Axial.Flow.HttpClient.RequestPlan"; "T:Axial.Flow.HttpClient.HttpResponse"; "T:Axial.Flow.HttpClient.HttpError"; "T:Axial.Flow.HttpClient.DSL.SecretValue"]
             "Service", ["T:Axial.Flow.HttpClient.IHttp"]
             "Errors", ["M:Axial.Flow.HttpClient.HttpError.describe"; "M:Axial.Flow.HttpClient.HttpError.tryResponse"; "M:Axial.Flow.HttpClient.HttpError.isTransient"; "M:Axial.Flow.HttpClient.HttpError.transientPolicy"]
             "Request building", ["M:Axial.Flow.HttpClient.Request.create"; "M:Axial.Flow.HttpClient.Request.query"; "M:Axial.Flow.HttpClient.Request.secretQuery"; "M:Axial.Flow.HttpClient.Request.header"; "M:Axial.Flow.HttpClient.Request.secretHeader"; "M:Axial.Flow.HttpClient.Request.bearer"; "M:Axial.Flow.HttpClient.Request.basicAuth"; "M:Axial.Flow.HttpClient.Request.accept"; "M:Axial.Flow.HttpClient.Request.acceptJson"; "M:Axial.Flow.HttpClient.Request.userAgent"; "M:Axial.Flow.HttpClient.Request.timeout"; "M:Axial.Flow.HttpClient.Request.textBody"; "M:Axial.Flow.HttpClient.Request.jsonBody"; "M:Axial.Flow.HttpClient.Request.jsonBodyWith"; "M:Axial.Flow.HttpClient.Request.bytesBody"; "M:Axial.Flow.HttpClient.Request.formBody"; "M:Axial.Flow.HttpClient.Request.expect"; "M:Axial.Flow.HttpClient.Request.expectAny"; "M:Axial.Flow.HttpClient.Request.render"; "M:Axial.Flow.HttpClient.Request.plan"]
@@ -873,7 +882,7 @@ let pageSpecs = [
         Description = "Source-documented external process service for Axial.Flow.Process."
         Intro = "This page shows the external-process service package. Immutable `ProcessSpec` values describe safely tokenized commands, connected topologies, I/O routing, and execution policy. `Process.run` composes the selected `IProcess` interpreter into the current Flow runtime; `Process.stream` emits output incrementally."
         SymbolIds = [
-            "Model", ["T:Axial.Flow.Process.ProcessSpec"; "T:Axial.Flow.Process.ProcessPlan"; "T:Axial.Flow.Process.InputSource"; "T:Axial.Flow.Process.OutputTarget"; "T:Axial.Flow.Process.ProcessResult"; "T:Axial.Flow.Process.StageResult"; "T:Axial.Flow.Process.CapturedOutput"; "T:Axial.Flow.Process.ProcessOutput"; "T:Axial.Flow.Process.ProcessEvent"; "T:Axial.Flow.Process.ProcessStartFailure"; "T:Axial.Flow.Process.ProcessTimeout"; "T:Axial.Flow.Process.ProcessCancellation"; "T:Axial.Flow.Process.StageFailure"; "T:Axial.Flow.Process.ProcessIoFailure"; "T:Axial.Flow.Process.ProcessError"]
+            "Model", ["T:Axial.Flow.Process.ProcessSpec"; "T:Axial.Flow.Process.ProcessPlan"; "T:Axial.Flow.Process.InputSource"; "T:Axial.Flow.Process.OutputTarget"; "T:Axial.Flow.Process.OutputFraming"; "T:Axial.Flow.Process.ProcessResult"; "T:Axial.Flow.Process.StageResult"; "T:Axial.Flow.Process.CapturedOutput"; "T:Axial.Flow.Process.ProcessOutput"; "T:Axial.Flow.Process.ProcessEvent"; "T:Axial.Flow.Process.ProcessStartFailure"; "T:Axial.Flow.Process.ProcessTimeout"; "T:Axial.Flow.Process.ProcessCancellation"; "T:Axial.Flow.Process.StageFailure"; "T:Axial.Flow.Process.ProcessIoFailure"; "T:Axial.Flow.Process.ProcessError"; "T:Axial.Flow.Process.ScriptEnvironment"; "T:Axial.Flow.Process.DSL.SecretArgument"]
             "Service", ["T:Axial.Flow.Process.IProcess"]
             "Errors", ["M:Axial.Flow.Process.ProcessError.describe"; "M:Axial.Flow.Process.ProcessError.exitCode"]
             "Commands", ["M:Axial.Flow.Process.Process.command"; "M:Axial.Flow.Process.Process.arg"; "M:Axial.Flow.Process.Process.secretArg"; "M:Axial.Flow.Process.Process.workingDirectory"; "M:Axial.Flow.Process.Process.environment"; "M:Axial.Flow.Process.Process.removeEnvironment"; "M:Axial.Flow.Process.Process.encoding"; "M:Axial.Flow.Process.Process.successCodes"; "M:Axial.Flow.Process.Process.render"]
@@ -1146,21 +1155,39 @@ let findBestSymbol (allEntities: ApiDocEntity list) (id: string) =
 let relativeLinkFrom (fromFile: string) (toFile: string) =
     Path.GetRelativePath(Path.GetDirectoryName(fromFile), toFile).Replace("\\", "/")
 
+// Slugs for public types that intentionally have no standalone reference page (compiler-plumbing
+// CE step types marked [<EditorBrowsable(EditorBrowsableState.Never)>] / <exclude />). Links to
+// these slugs are unwrapped to plain text instead of being left as broken hrefs.
+let noLinkGeneratedReferenceSlugs =
+    set [
+        "axial-schema-fieldbuilder-2"          // FieldBuilder<'model, 'value> (<exclude/>, EditorBrowsable.Never)
+        "axial-schema-constructorstep-2"       // ConstructorStep<'model, 'constructor> (EditorBrowsable.Never)
+        "axial-schema-checkedconstructorstep-2" // CheckedConstructorStep<'model, 'constructor> (EditorBrowsable.Never)
+        "axial-schema-schemabuilder-1"         // SchemaBuilder<'model> (<exclude/>, EditorBrowsable.Never)
+        "axial-flow-platform-finalizer"        // Axial.Flow.Platform.Finalizer: source-internal module, leaked into
+        "axial-flow-platform-deed"             // public signatures only via reflection visibility, not a documented type
+    ]
+
 let rewriteApiDocHtml (slugMap: IDictionary<string, string>) (filePath: string) (content: string) =
     let unresolved = ResizeArray<string>()
 
     let rewritten =
         Regex.Replace(
             content,
-            "(?:https://adz\\.github\\.io/Axial)?/reference/Axial/([a-z0-9\\-]+)\\.html",
+            "<a href=\"(?:https://adz\\.github\\.io/Axial)?/reference/Axial/([a-z0-9\\-]+)\\.html(#[^\"]*)?\">((?:(?!</a>).)*)</a>",
             MatchEvaluator(fun m ->
                 let slug = m.Groups[1].Value
+                let fragment = m.Groups[2].Value
+                let text = m.Groups[3].Value
                 match slugMap.TryGetValue slug with
                 | true, target ->
-                    relativeLinkFrom filePath target
+                    $"<a href=\"{relativeLinkFrom filePath target}{fragment}\">{text}</a>"
                 | _ ->
-                    unresolved.Add slug
-                    m.Value))
+                    if noLinkGeneratedReferenceSlugs.Contains slug then
+                        text
+                    else
+                        unresolved.Add slug
+                        m.Value))
 
     if unresolved.Count > 0 then
         let unique = unresolved |> Seq.distinct |> String.concat ", "
@@ -1294,7 +1321,11 @@ let main argv =
     let apiDocInputs = [
         for dll in dllPaths do
             if File.Exists dll then
-                yield ApiDocInput.FromFile(dll)
+                yield ApiDocInput.FromFile(
+                    dll,
+                    sourceFolder = repoRoot,
+                    sourceRepo = $"{githubRepoUrl}/blob/{githubBranch}"
+                )
     ]
 
     let substitutions = Substitutions.Empty
@@ -1416,6 +1447,7 @@ let main argv =
             formatterApiSlug "Axial.Flow.FileSystem.FileSystemError", Path.Combine(outRoot, "service", "filesystem", "_index.md")
             formatterApiSlug "Axial.Flow.HttpClient.Http", Path.Combine(outRoot, "service", "http", "_index.md")
             formatterApiSlug "Axial.Flow.Process.Process", Path.Combine(outRoot, "service", "process", "_index.md")
+            formatterApiSlug "Axial.Schema.Json.Json", Path.Combine(outRoot, "codec", "_index.md")
         ]
 
     for KeyValue(slug, path) in canonicalAliases do

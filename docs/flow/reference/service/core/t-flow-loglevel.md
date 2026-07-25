@@ -22,3 +22,6 @@ weight: 1002
 | `Warning` |  |
 | `Error` |  |
 | `Critical` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L770-770)

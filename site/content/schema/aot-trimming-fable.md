@@ -21,7 +21,7 @@ natively to prove it.
 - **Schemas declare construction explicitly.** `schema<Customer> { field ...; construct ctor }`
   captures the real constructor and typed getters as values. There is no property discovery, no attribute scanning,
   and no `Activator.CreateInstance`.
-- **Codecs compile from the typed shape.** `Json.compile` turns the schema's retained typed constructor and fields
+- **Codecs compile from the typed shape.** [`Json.compile`]({{< relref "/schema/reference/codec/m-schema-json-json-compile/" >}}) turns the schema's retained typed constructor and fields
   into encode/decode plans — cached wire-name bytes and typed field decoders — where `System.Text.Json`'s default path
   builds converters through reflection and asks you to switch to source generators for AOT. Axial has nothing to
   switch: the explicit path is the only path.
@@ -45,7 +45,7 @@ The same explicitness is what makes Fable compilation work: `Axial.Flow`, `Axial
 `Axial.Schema` all compile to JavaScript, so a browser front end can parse
 and redisplay through the same schema declaration the server uses. CI compiles the Fable JavaScript surface
 (`bash scripts/check-fable-js-surface.sh`), and the [benchmarks]({{< relref "/schema/benchmarks.md" >}}) include
-Node and Erlang runs of the same workloads. .NET-only conveniences — such as `Data.ofJsonDocument` and the
+Node and Erlang runs of the same workloads. .NET-only conveniences — such as [`Data.ofJsonDocument`]({{< relref "/schema/reference/data/m-data-ofjsondocument/" >}}) and the
 `DateOnly` field type — are compile-time gated so the Fable surface never references them.
 
 The quotation-based bare field form is also .NET-only:

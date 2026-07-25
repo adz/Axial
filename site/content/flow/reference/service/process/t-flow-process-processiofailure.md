@@ -1,8 +1,7 @@
 ---
 title: "Flow.Process.ProcessIoFailure"
 linkTitle: "ProcessIoFailure"
-weight: 1013
-type: docs
+weight: 1014
 ---
 
  Diagnostic details for a process I/O failure.
@@ -18,3 +17,6 @@ type: docs
 | Field | Description |
 | --- | --- |
 | `Message` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L137-137)

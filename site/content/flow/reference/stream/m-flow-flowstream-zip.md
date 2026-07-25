@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.zip"
 linkTitle: "zip"
 weight: 2302
-type: docs
 ---
 
 Pairs values from two streams until either stream ends.
@@ -30,3 +29,8 @@ Pairs values from two streams until either stream ends.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">left</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">zip</span> <span class="id">right</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L270-270)

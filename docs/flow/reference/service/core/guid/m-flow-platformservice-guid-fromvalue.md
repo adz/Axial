@@ -23,3 +23,6 @@ Creates a deterministic GUID service that always returns the supplied value.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-iguid.md">IGuid</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L218-218)

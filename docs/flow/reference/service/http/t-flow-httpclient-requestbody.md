@@ -20,3 +20,6 @@ weight: 1001
 | `Text` |  |
 | `Bytes` |  |
 | `Form` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L42-42)

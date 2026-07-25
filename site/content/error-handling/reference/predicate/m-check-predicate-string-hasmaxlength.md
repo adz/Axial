@@ -2,7 +2,6 @@
 title: "System.String.HasMaxLength"
 linkTitle: "HasMaxLength"
 weight: 2305
-type: docs
 ---
 
 True when the string length is at most the supplied maximum.
@@ -24,3 +23,6 @@ True when the string length is at most the supplied maximum.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L59-59)

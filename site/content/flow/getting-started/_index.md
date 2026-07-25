@@ -15,9 +15,9 @@ combine, and run workflows before adding dependencies or application lifecycle.
 | 2 | [Installation](./installation/) | Package and namespace setup |
 | 3 | [The Flow Type](./flow-type/) | Success, expected failure, and environment types |
 | 4 | [Creating Flows](./creating-flows/) | Successful, failed, async, and task-backed descriptions |
-| 5 | [Running Flows](./running-flows/) | Explicit execution and the first `Exit` |
+| 5 | [Running Flows](./running-flows/) | Explicit execution and the first [`Exit`]({{< relref "/flow/reference/exit/_index.md" >}}) |
 | 6 | [The Flow CE](./flow-ce/) | `let!`, `do!`, and `return!` |
 | 7 | [Combining Flows](./combining-flows/) | Mapping, binding, zipping, and error mapping |
 | 8 | [Failures and Defects](./failures-and-defects/) | Expected errors, defects, and interruption |
 | 9 | [Dependencies](./dependencies/) | Reading an explicit environment |
-| 10 | [Your First Application](./first-application/) | Running a root Flow with `App.run` |
+| 10 | [Your First Application](./first-application/) | Running a root Flow with [`App.run`]({{< relref "/flow/reference/app/m-flow-app-run.md" >}}) |

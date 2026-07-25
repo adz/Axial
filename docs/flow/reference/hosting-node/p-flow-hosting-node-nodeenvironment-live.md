@@ -17,3 +17,6 @@ Creates an environment-variable service backed by <code>process.env</code>.
 | Type | Description |
 | --- | --- |
 | <code><a href="../service/core/t-flow-platformservice-ienvironmentvariables.md">IEnvironmentVariables</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting.Node/NodeHosting.fs#L32-32)

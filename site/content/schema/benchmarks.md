@@ -140,9 +140,9 @@ Measured with a BenchmarkDotNet short job on the recorded toolchain:
 | `Axial Json.deserialize` | 3.10 us | 2.84 KB |
 | `System.Text.Json Deserialize` | 3.11 us | 2.01 KB |
 
-The codec compiles once per schema and runs with no runtime reflection, so it stays on par with `System.Text.Json`'s reflection-based serializer while remaining AOT- and trimming-safe by construction. `deserializeBytes` skips the string-to-UTF-8 conversion and is the faster decode entry point when the payload already arrives as bytes.
+The codec compiles once per schema and runs with no runtime reflection, so it stays on par with `System.Text.Json`'s reflection-based serializer while remaining AOT- and trimming-safe by construction. [`deserializeBytes`]({{< relref "/schema/reference/codec/m-schema-json-json-deserializebytes/" >}}) skips the string-to-UTF-8 conversion and is the faster decode entry point when the payload already arrives as bytes.
 
-The boundary suite compares the trusted codec against full boundary parsing — `JsonDocument` to `Data` to `Schema.parse` with complete path-aware diagnostics:
+The boundary suite compares the trusted codec against full boundary parsing — `JsonDocument` to [`Data`]({{< relref "/schema/reference/data/t-data/" >}}) to [`Schema.parse`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parse/" >}}) with complete path-aware diagnostics:
 
 | Method | Mean | Allocated |
 | --- | --- | --- |

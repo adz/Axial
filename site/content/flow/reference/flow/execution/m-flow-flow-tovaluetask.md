@@ -2,7 +2,6 @@
 title: "Flow.ToValueTask"
 linkTitle: "ToValueTask"
 weight: 2202
-type: docs
 ---
 
 Starts the workflow and returns a value-task handle that completes with the final exit.
@@ -27,3 +26,6 @@ Starts the workflow and returns a value-task handle that completes with the fina
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.valuetask-1">ValueTask</a>&lt;<span><a href="../../exit/t-flow-exit.md">Exit</a>&lt;<span>'value,&#32;'error</span>&gt;</span>&gt;</span></code> | A value task that completes with the workflow exit. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L722-722)

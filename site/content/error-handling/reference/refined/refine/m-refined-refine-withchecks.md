@@ -1,8 +1,7 @@
 ---
 title: "Refined.Refine.withChecks"
 linkTitle: "withChecks"
-weight: 2902
-type: docs
+weight: 3002
 ---
 
 Runs the supplied <a href="../../check/t-check-check.md">Check</a> values with <code>Check.all</code> and calls the
@@ -28,3 +27,6 @@ Runs the supplied <a href="../../check/t-check-check.md">Check</a> values with <
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'refined,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L692-692)

@@ -17,3 +17,6 @@ Creates a live file-system service backed by <a href="https://learn.microsoft.co
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-filesystem-ifilesystem.md">IFileSystem</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L1029-1029)

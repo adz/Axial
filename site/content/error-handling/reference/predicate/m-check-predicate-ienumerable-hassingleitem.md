@@ -2,7 +2,6 @@
 title: "System.Collections.Generic.IEnumerable.HasSingleItem"
 linkTitle: "HasSingleItem"
 weight: 2407
-type: docs
 ---
 
 True when the sequence is non-null and contains exactly one item.
@@ -24,3 +23,6 @@ True when the sequence is non-null and contains exactly one item.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L150-150)

@@ -2,7 +2,6 @@
 title: "Schema.SchemaCE.construct"
 linkTitle: "construct"
 weight: 2202
-type: docs
 ---
 
 Closes a record schema with a total constructor.
@@ -23,4 +22,7 @@ Closes a record schema with a total constructor.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="/reference/Axial/axial-schema-constructorstep-2.html">ConstructorStep</a>&lt;<span>'model,&#32;'constructor</span>&gt;</span></code> |  |
+| <code><span>ConstructorStep&lt;<span>'model,&#32;'constructor</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L500-500)

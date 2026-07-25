@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.toList"
 linkTitle: "toList"
-weight: 2807
+weight: 2907
 ---
 
 Returns the refined value as a standard list.
@@ -23,3 +23,6 @@ Returns the refined value as a standard list.
 | Type | Description |
 | --- | --- |
 | <code><span>'value&#32;list</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L503-503)

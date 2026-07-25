@@ -2,7 +2,6 @@
 title: "Flow.Process.live"
 linkTitle: "live"
 weight: 3000
-type: docs
 ---
 
  Creates a live process service using an explicit clock for transcript timestamps and durations.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-iprocess.md">IProcess</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L513-513)

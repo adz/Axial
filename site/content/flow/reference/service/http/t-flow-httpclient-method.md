@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Method"
 linkTitle: "Method"
 weight: 1000
-type: docs
 ---
 
  Identifies one HTTP request method.
@@ -25,3 +24,6 @@ type: docs
 | `Delete` |  |
 | `Options` |  |
 | `Custom` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L16-16)

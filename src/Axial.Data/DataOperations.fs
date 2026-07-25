@@ -596,6 +596,18 @@ module Data =
     /// <summary>
     /// Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
     /// </summary>
+    /// <example>
+    /// <code>
+    /// Data.Text "42" |> Data.redisplay
+    /// // "42"
+    ///
+    /// Data.Null |> Data.redisplay
+    /// // ""
+    ///
+    /// Data.objectOfList [ "name", Data.Text "Ada" ] |> Data.redisplay
+    /// // "" (object-shaped input has no scalar to redisplay)
+    /// </code>
+    /// </example>
     let redisplay (input: Data) : string =
         tryRedisplay input |> Option.defaultValue ""
 
@@ -615,5 +627,23 @@ module Data =
         DataPath.tryParse path |> Option.bind (fun parsedPath -> tryRedisplayAt parsedPath input)
 
     /// <summary>Parses an input path and redisplays the addressed scalar structured data value.</summary>
+    /// <example>
+    /// <code>
+    /// let input =
+    ///     Data.objectOfList [
+    ///         "address", Data.objectOfList [ "city", Data.Text "Boston" ]
+    ///         "tags", Data.List [ Data.Text "admin"; Data.Text "billing" ]
+    ///     ]
+    ///
+    /// Data.redisplayPath "address.city" input
+    /// // "Boston"
+    ///
+    /// Data.redisplayPath "tags[1]" input
+    /// // "billing"
+    ///
+    /// Data.redisplayPath "address.zip" input
+    /// // "" (path not present)
+    /// </code>
+    /// </example>
     let redisplayPath (path: string) (input: Data) : string =
         DataPath.parse path |> fun parsedPath -> redisplayAt parsedPath input

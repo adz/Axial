@@ -16,7 +16,7 @@ Adds one portable constraint to a schema.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `constraint'` | <code><a href="/reference/Axial/axial-schema-constraint.html">Constraint</a></code> |  |
+| `constraint'` | <code><a href="t-schema-constraint.md">Constraint</a></code> |  |
 | `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
 
 ## Returns
@@ -24,3 +24,6 @@ Adds one portable constraint to a schema.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L61-61)

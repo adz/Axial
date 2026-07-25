@@ -13,7 +13,7 @@ dotnet run --project examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.
 
 ## Reusable checks
 
-`Check` functions describe rules over one typed value. `Result.orError` translates their structured failure into an
+[`Check`]({{< relref "/error-handling/reference/check/" >}}) functions describe rules over one typed value. [`Result.orError`]({{< relref "/error-handling/reference/result/result/m-result-result-orerror.md" >}}) translates their structured failure into an
 application error:
 
 ```fsharp
@@ -38,7 +38,7 @@ result {
 
 ## Constructing domain values
 
-`refine { }` turns raw values into types that record successful construction:
+[`refine { }`]({{< relref "/error-handling/reference/refined/refine-ce/" >}}) turns raw values into types that record successful construction:
 
 ```fsharp
 refine {
@@ -48,6 +48,8 @@ refine {
     return AttendeeId positiveId, ContactEmail email
 }
 ```
+
+Types like [`PositiveInt`]({{< relref "/error-handling/reference/refined/types/t-refined-positiveint.md" >}}) and [`NonBlankString`]({{< relref "/error-handling/reference/refined/types/t-refined-nonblankstring.md" >}}) are built-in refined values.
 
 The full reference app adds Schema for structured input, complete path-aware error reports, codecs, and contracts, then
 adds Flow for effectful application work.

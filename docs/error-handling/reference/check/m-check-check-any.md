@@ -30,3 +30,7 @@ Combines checks disjunctively by running checks until one succeeds, or returns a
 
  As with <code>Check.all</code>, declare the composed program&#39;s value type when its first list element is a
  type-directed inline check; F# visits that first check before later elements can constrain its SRTP overload.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L729-729)

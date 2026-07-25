@@ -2,7 +2,6 @@
 title: "Flow.Process.pipe"
 linkTitle: "pipe"
 weight: 2400
-type: docs
 ---
 
  Connects the current stdout to the next one-command specification's stdin.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L331-331)

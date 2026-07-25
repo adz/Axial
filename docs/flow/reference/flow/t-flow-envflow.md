@@ -18,3 +18,6 @@ A flow that reads an environment and cannot fail with a typed error.
 | --- |
 | `env` |
 | `value` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L834-834)

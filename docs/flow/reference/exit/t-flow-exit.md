@@ -27,3 +27,6 @@ weight: 1000
 | --- | --- |
 | `Success` | The workflow completed successfully. |
 | `Failure` | The workflow failed due to a specific cause. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Outcome.fs#L28-28)

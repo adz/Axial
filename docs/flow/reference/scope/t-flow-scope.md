@@ -19,3 +19,7 @@ weight: 1000
 
  Scopes aggregate cleanup in reverse registration order, prevent double-disposal, and surface
  cleanup failures as defects rather than typed business errors.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L539-539)

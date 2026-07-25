@@ -2,7 +2,6 @@
 title: "Schema.Http.JsonPointer.ofPath"
 linkTitle: "ofPath"
 weight: 2107
-type: docs
 ---
 
 Renders a diagnostics path as a JSON pointer. The empty path renders as <code>&quot;&quot;</code> (the whole document).
@@ -24,3 +23,6 @@ Renders a diagnostics path as a JSON pointer. The empty path renders as <code>&q
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/ProblemDetails.fs#L14-14)

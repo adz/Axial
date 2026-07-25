@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Http.post"
 linkTitle: "post"
 weight: 2502
-type: docs
 ---
 
  Creates a POST request. <example><code>Http.post "https://api.example.com/users"</code></example>
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L370-370)

@@ -2,7 +2,6 @@
 title: "Schema.Http.GenHttp.SchemaResponse.problem"
 linkTitle: "problem"
 weight: 2700
-type: docs
 ---
 
 A 400 <code>application/problem+json</code> response rendering the failed parse&#39;s diagnostics.
@@ -25,3 +24,6 @@ A 400 <code>application/problem+json</code> response rendering the failed parse&
 | Type | Description |
 | --- | --- |
 | <code><a href="https://learn.microsoft.com/dotnet/api/genhttp.api.protocol.iresponse">IResponse</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L40-40)

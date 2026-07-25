@@ -2,7 +2,6 @@
 title: "Check.count"
 linkTitle: "count"
 weight: 2219
-type: docs
 ---
 
 Returns a sequence-shaped check requiring exactly the supplied count.
@@ -24,3 +23,6 @@ Returns a sequence-shaped check requiring exactly the supplied count.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;'a&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L590-590)

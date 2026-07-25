@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.unfoldFlow"
 linkTitle: "unfoldFlow"
 weight: 2104
-type: docs
 ---
 
 Creates a cold stream by repeatedly running an effectful state transition.
@@ -32,3 +31,8 @@ Creates a cold stream by repeatedly running an effectful state transition.
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">union case Option.Some: Value: &#39;T -&gt; Option&lt;&#39;T&gt;</div>
 <div popover class="fsdocs-tip" id="fs2">union case Option.None: Option&lt;&#39;T&gt;</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L32-32)

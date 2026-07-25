@@ -2,7 +2,6 @@
 title: "Flow.Exit.mapError"
 linkTitle: "mapError"
 weight: 2102
-type: docs
 ---
 
 Transforms the error value of a failed exit outcome using the provided function.
@@ -25,3 +24,6 @@ Transforms the error value of a failed exit outcome using the provided function.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-exit.md">Exit</a>&lt;<span>'v,&#32;'f</span>&gt;</span></code> | A new exit outcome with the transformed error value. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L108-108)

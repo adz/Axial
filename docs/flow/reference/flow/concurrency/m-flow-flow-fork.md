@@ -30,3 +30,7 @@ Starts a flow in a new fiber without waiting for it to complete.
  Forking turns a cold flow description into hot child work and returns a handle
  that can later be joined or interrupted. Prefer <code>zipPar</code> or <code>race</code>
  when the caller only needs a simple parallel composition.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L818-818)

@@ -2,7 +2,6 @@
 title: "Flow.verify"
 linkTitle: "verify"
 weight: 2314
-type: docs
 ---
 
 Runs an environment-aware policy against an input value inside a workflow.
@@ -25,3 +24,6 @@ Runs an environment-aware policy against an input value inside a workflow.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'output</span>&gt;</span></code> | A flow that succeeds or fails with the policy result. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L403-403)

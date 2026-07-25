@@ -2,7 +2,6 @@
 title: "Check.String.oneOf"
 linkTitle: "oneOf"
 weight: 2311
-type: docs
 ---
 
 Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.
@@ -24,3 +23,6 @@ Requires an already parsed string value to equal one of the supplied choices. Nu
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L277-277)

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.withCheck"
 linkTitle: "withCheck"
-weight: 2901
+weight: 3001
 ---
 
 Runs a <a href="../../check/t-check-check.md">Check</a> and calls the constructor when the check succeeds.
@@ -26,3 +26,6 @@ Runs a <a href="../../check/t-check-check.md">Check</a> and calls the constructo
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'refined,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L687-687)

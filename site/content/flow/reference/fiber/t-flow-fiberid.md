@@ -2,7 +2,6 @@
 title: "Flow.FiberId"
 linkTitle: "FiberId"
 weight: 1001
-type: docs
 ---
 
 Unique identifier for a running fiber.
@@ -18,3 +17,6 @@ Unique identifier for a running fiber.
 | Case | Description |
 | --- | --- |
 | `FiberId` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L155-155)

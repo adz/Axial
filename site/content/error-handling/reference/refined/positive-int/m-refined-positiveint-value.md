@@ -1,8 +1,7 @@
 ---
 title: "Refined.PositiveInt.value"
 linkTitle: "value"
-weight: 2803
-type: docs
+weight: 2903
 ---
 
 Returns the underlying integer value.
@@ -24,3 +23,6 @@ Returns the underlying integer value.
 | Type | Description |
 | --- | --- |
 | <code>int</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L343-343)

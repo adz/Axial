@@ -24,3 +24,6 @@ weight: 1005
 | `Request` |  The redacted request line, such as <c>GET https://api.example.com/users/***</c>. |
 | `StartedAt` |  When the request started. |
 | `Duration` |  Total exchange duration including body download. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L86-86)

@@ -2,7 +2,6 @@
 title: "ExnFlow"
 linkTitle: "ExnFlow<value>"
 weight: 1004
-type: docs
 ---
 
 A flow that requires no environment and uses exceptions as recoverable typed errors.
@@ -18,3 +17,6 @@ A flow that requires no environment and uses exceptions as recoverable typed err
 | Name |
 | --- |
 | `value` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L837-837)

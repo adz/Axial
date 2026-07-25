@@ -2,7 +2,6 @@
 title: "Data.ofNameValues"
 linkTitle: "ofNameValues"
 weight: 2101
-type: docs
 ---
 
 Builds object-shaped structured data from name/value pairs, grouping repeated names into <code>Many</code>.
@@ -24,3 +23,6 @@ Builds object-shaped structured data from name/value pairs, grouping repeated na
 | Type | Description |
 | --- | --- |
 | <code><a href="t-data.md">Data</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L384-384)

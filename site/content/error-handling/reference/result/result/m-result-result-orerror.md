@@ -2,7 +2,6 @@
 title: "Result.orError"
 linkTitle: "orError"
 weight: 2203
-type: docs
 ---
 
 Replaces whatever error a result carries with the supplied typed error. <code>Ok</code> passes through unchanged.
@@ -30,3 +29,6 @@ Replaces whatever error a result carries with the supplied typed error. <code>Ok
 
 The natural follow-up to <code>okIf</code>/<code>failIf</code>, and to any <code>Check</code> call whose
  <code>CheckFailure list</code> should become a domain error: <code>value |&gt; Check.String.present |&gt; Result.orError MyError</code>.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L76-76)

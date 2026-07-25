@@ -2,7 +2,6 @@
 title: "Schema.Http.Endpoint.put"
 linkTitle: "put"
 weight: 2204
-type: docs
 ---
 
 Starts a PUT endpoint spec at the supplied path.
@@ -24,3 +23,6 @@ Starts a PUT endpoint spec at the supplied path.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-endpointspec.md">EndpointSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L64-64)

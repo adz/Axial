@@ -17,3 +17,6 @@ Creates a live random-number generator backed by <a href="https://learn.microsof
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-irandom.md">IRandom</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L171-171)

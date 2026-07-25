@@ -2,7 +2,6 @@
 title: "Flow.FiberObserver.compose"
 linkTitle: "compose"
 weight: 2102
-type: docs
 ---
 
 Combines two observers so every hook runs both, each guarded independently.
@@ -29,3 +28,6 @@ Combines two observers so every hook runs both, each guarded independently.
 ## Remarks
 
 Use this to stack integrations — for example telemetry spans plus logging — from one edge-level install.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L338-338)

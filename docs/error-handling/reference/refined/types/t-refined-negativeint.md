@@ -11,3 +11,6 @@ An integer less than zero.
 <div class="fsdocs-usage">
 <code>type NegativeInt</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L112-112)

@@ -2,7 +2,6 @@
 title: "Flow.Hosting.Node.NodeApp.arguments"
 linkTitle: "arguments"
 weight: 2000
-type: docs
 ---
 
 Gets command-line arguments after the Node executable and script path.
@@ -24,3 +23,6 @@ Gets command-line arguments after the Node executable and script path.
 | Type | Description |
 | --- | --- |
 | <code><span>string&#32;list</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting.Node/NodeHosting.fs#L67-67)

@@ -13,3 +13,6 @@ weight: 1501
 <div class="fsdocs-usage">
 <code>type SchemaNameAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L26-26)

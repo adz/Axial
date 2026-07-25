@@ -2,7 +2,6 @@
 title: "Flow.FiberObserver"
 linkTitle: "FiberObserver"
 weight: 1005
-type: docs
 ---
 
 
@@ -37,3 +36,7 @@ type: docs
  descendant fork. All hooks default to no-ops, receive only diagnostic data (<code>FiberMetadata</code> and defect
  exceptions, never typed exits), and must not throw; exceptions raised by hooks are swallowed so a
  diagnostics hook can never alter a fiber&#39;s outcome.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L307-307)

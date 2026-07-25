@@ -29,3 +29,7 @@ Merges two independent service layers in parallel.
 
 <code>merge</code> is the layer-domain name for <code>zipPar</code>. Use it when combining
  service bundles or environment fragments that do not depend on each other.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/RuntimeLayer.fs#L178-178)

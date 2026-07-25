@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.createFileSymbolicLink"
 linkTitle: "createFileSymbolicLink"
 weight: 2305
-type: docs
 ---
 
 Creates a symbolic link to a file through an explicit file-system service.
@@ -30,3 +29,8 @@ Creates a symbolic link to a file through an explicit file-system service.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">FileSystem</span><span class="pn">.</span><span class="id">createFileSymbolicLink</span> <span class="s">&quot;current.json&quot;</span> <span class="s">&quot;releases/v2.json&quot;</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L616-616)

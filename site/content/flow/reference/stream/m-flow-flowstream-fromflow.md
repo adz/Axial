@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.fromFlow"
 linkTitle: "fromFlow"
 weight: 2103
-type: docs
 ---
 
 Creates a one-element stream from an effectful value.
@@ -29,3 +28,8 @@ Creates a one-element stream from an effectful value.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">FlowStream</span><span class="pn">.</span><span class="id">fromFlow</span> <span class="pn">(</span><span class="id">Flow</span><span class="pn">.</span><span class="id">ok</span> <span class="n">42</span><span class="pn">)</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L75-75)

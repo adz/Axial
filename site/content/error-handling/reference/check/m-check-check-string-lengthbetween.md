@@ -2,7 +2,6 @@
 title: "Check.String.lengthBetween"
 linkTitle: "lengthBetween"
 weight: 2305
-type: docs
 ---
 
 Requires an already parsed string value length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.
@@ -26,3 +25,6 @@ Requires an already parsed string value length to lie inside the supplied inclus
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>string,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L237-237)

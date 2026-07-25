@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.Random.nextMax"
 linkTitle: "nextMax"
 weight: 2401
-type: docs
 ---
 
 Reads a random integer less than the supplied maximum from an explicit random-number service.
@@ -24,3 +23,6 @@ Reads a random integer less than the supplied maximum from an explicit random-nu
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;int</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L134-134)

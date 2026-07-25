@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.pipeTo"
 linkTitle: "pipeTo"
 weight: 2803
-type: docs
 ---
 
  Connects stdout from a command or specification to the next command's stdin.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L964-964)

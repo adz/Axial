@@ -23,3 +23,6 @@ weight: 2817
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../stream/t-flow-flowstream.md">FlowStream</a>&lt;<span>'a,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processevent.md">ProcessEvent</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L979-979)

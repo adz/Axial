@@ -8,7 +8,7 @@ type: docs
 
 
 `Axial.Flow.Hosting` connects root Flow applications to .NET process and Generic Host lifecycle. It also adapts
-`Microsoft.Extensions.Logging` to the explicit `ILog` service and provides fiber-defect logging.
+`Microsoft.Extensions.Logging` to the explicit [`ILog`]({{< relref "/flow/reference/service/core/t-flow-platformservice-ilog.md" >}}) service and provides fiber-defect logging.
 
 ```sh
 dotnet add package Axial.Flow.Hosting
@@ -19,7 +19,7 @@ Microsoft.Extensions.Hosting or a dependency-injection container.
 
 ## Standalone CLI or Script
 
-Use `DotNetApp.run` when the application owns a console process but does not use Generic Host:
+Use [`DotNetApp.run`]({{< relref "/flow/reference/hosting/m-flow-hosting-dotnetapp-run.md" >}}) when the application owns a console process but does not use Generic Host:
 
 ```fsharp
 open Axial.Flow
@@ -102,31 +102,31 @@ The registered `FlowHostedService`:
 Use `Hosting.addAppWith { StopHostOnCompletion = false }` when the root Flow is one hosted participant and another
 hosted service owns process completion.
 
-`IServiceProvider` stays at the application edge. Prefer constructing an explicit record or providing a `Layer` before
+`IServiceProvider` stays at the application edge. Prefer constructing an explicit record or providing a [`Layer`]({{< relref "/flow/reference/layer/_index.md" >}}) before
 domain workflows run. See [Service-provider boundaries](../services-and-runtimes/service-provider-boundaries/).
 
 ## Microsoft Logging as `ILog`
 
-Create the explicit Axial logging service from an existing logger:
+Create the explicit Axial logging service from an existing logger with [`MicrosoftLogging.create`]({{< relref "/flow/reference/hosting/m-flow-hosting-microsoftlogging-create.md" >}}):
 
 ```fsharp
 let axialLog : ILog =
     MicrosoftLogging.create logger
 ```
 
-Or choose a category through a factory:
+Or choose a category through a factory with [`MicrosoftLogging.fromFactory`]({{< relref "/flow/reference/hosting/m-flow-hosting-microsoftlogging-fromfactory.md" >}}):
 
 ```fsharp
 let axialLog : ILog =
     MicrosoftLogging.fromFactory "MyApp" loggerFactory
 ```
 
-`MicrosoftLogging.layer "MyApp"` provisions `ILog` from an `ILoggerFactory` layer input. All Axial log levels and
+[`MicrosoftLogging.layer`]({{< relref "/flow/reference/hosting/m-flow-hosting-microsoftlogging-layer.md" >}}) `"MyApp"` provisions `ILog` from an `ILoggerFactory` layer input. All Axial log levels and
 exception objects are preserved. The adapter never silently substitutes a no-op logger.
 
 ## Fiber Defect Logging
 
-Install the observer once around the root application:
+Install the [`FiberLogging.observe`]({{< relref "/flow/reference/hosting/m-flow-hosting-fiberlogging-observe.md" >}}) observer once around the root application:
 
 ```fsharp
 let observed =

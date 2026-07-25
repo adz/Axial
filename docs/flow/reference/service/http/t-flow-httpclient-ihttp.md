@@ -11,3 +11,6 @@ weight: 1100
 <div class="fsdocs-usage">
 <code>type IHttp</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L163-163)

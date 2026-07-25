@@ -2,7 +2,6 @@
 title: "Result.nullableOr"
 linkTitle: "nullableOr"
 weight: 2304
-type: docs
 ---
 
 Takes the value from a nullable when it has a value, or returns the supplied error.
@@ -25,3 +24,6 @@ Takes the value from a nullable when it has a value, or returns the supplied err
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L134-134)

@@ -11,3 +11,6 @@ Bounds a numeric field&#39;s value exclusively from above (<code>&lt;</code> in 
 <div class="fsdocs-usage">
 <code>type LessThanAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L91-91)

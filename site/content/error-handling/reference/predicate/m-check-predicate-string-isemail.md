@@ -2,7 +2,6 @@
 title: "System.String.IsEmail"
 linkTitle: "IsEmail"
 weight: 2309
-type: docs
 ---
 
 True when the string matches Axial's pragmatic email format.
@@ -24,3 +23,6 @@ True when the string matches Axial's pragmatic email format.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L45-45)

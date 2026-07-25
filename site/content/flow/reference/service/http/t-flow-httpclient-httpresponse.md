@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.HttpResponse"
 linkTitle: "HttpResponse"
 weight: 1005
-type: docs
 ---
 
  The complete response transcript for one HTTP exchange.
@@ -25,3 +24,6 @@ type: docs
 | `Request` |  The redacted request line, such as <c>GET https://api.example.com/users/***</c>. |
 | `StartedAt` |  When the request started. |
 | `Duration` |  Total exchange duration including body download. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L86-86)

@@ -2,7 +2,6 @@
 title: "Flow.FlowStream.runDrain"
 linkTitle: "runDrain"
 weight: 2404
-type: docs
 ---
 
 Consumes a stream and ignores its values.
@@ -29,3 +28,8 @@ Consumes a stream and ignores its values.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">runDrain</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L293-293)

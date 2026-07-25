@@ -2,7 +2,6 @@
 title: "Flow.Layer.map2"
 linkTitle: "map2"
 weight: 2213
-type: docs
 ---
 
 Combines two layers with a mapping function.
@@ -26,3 +25,6 @@ Combines two layers with a mapping function.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-layer.md">Layer</a>&lt;<span>'input,&#32;'error,&#32;'output</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/RuntimeLayer.fs#L185-185)

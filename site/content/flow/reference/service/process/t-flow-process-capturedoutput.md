@@ -1,8 +1,7 @@
 ---
 title: "Flow.Process.CapturedOutput"
 linkTitle: "CapturedOutput"
-weight: 1006
-type: docs
+weight: 1007
 ---
 
  Exact captured bytes plus their decoded text view and truncation status.
@@ -20,3 +19,6 @@ type: docs
 | `Text` |  |
 | `Bytes` |  |
 | `Truncated` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L73-73)

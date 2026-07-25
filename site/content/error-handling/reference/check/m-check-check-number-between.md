@@ -2,7 +2,6 @@
 title: "Check.Number.between"
 linkTitle: "between"
 weight: 2400
-type: docs
 ---
 
 Requires a value to lie inside the supplied inclusive bounds.
@@ -26,3 +25,6 @@ Requires a value to lie inside the supplied inclusive bounds.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L288-288)

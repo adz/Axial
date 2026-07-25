@@ -31,3 +31,8 @@ Adds jitter to a schedule&#39;s delay using a caller-supplied sample source.
  <span class="c">// Every delay becomes 750ms.</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val schedule: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Schedule.fs#L104-104)

@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Http.head"
 linkTitle: "head"
 weight: 2501
-type: docs
 ---
 
  Creates a HEAD request. <example><code>Http.head "https://api.example.com/users"</code></example>
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L368-368)

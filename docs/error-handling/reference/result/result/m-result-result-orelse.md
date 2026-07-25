@@ -39,3 +39,8 @@ type Result&lt;&#39;T,&#39;TError&gt; =
   | Ok of ResultValue: &#39;T
   | Error of ErrorValue: &#39;TError</div>
 <div popover class="fsdocs-tip" id="fs4">union case Result.Ok: ResultValue: &#39;T -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L53-53)

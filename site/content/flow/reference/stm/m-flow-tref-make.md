@@ -2,7 +2,6 @@
 title: "Flow.TRef.make"
 linkTitle: "make"
 weight: 2100
-type: docs
 ---
 
 Creates a new <a href="https://learn.microsoft.com/dotnet/api/axial.tref-1">TRef</a> with the initial value within an STM transaction.
@@ -33,3 +32,8 @@ Creates a new <a href="https://learn.microsoft.com/dotnet/api/axial.tref-1">TRef
  <span class="pn">}</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val tx: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stm.fs#L67-67)

@@ -2,7 +2,6 @@
 title: "Schema.list"
 linkTitle: "list"
 weight: 2106
-type: docs
 ---
 
 Describes a list by resolving its item schema from <typeparamref name="'item" />.
@@ -24,3 +23,6 @@ Describes a list by resolving its item schema from <typeparamref name="'item" />
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;<span>^item&#32;list</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L31-31)

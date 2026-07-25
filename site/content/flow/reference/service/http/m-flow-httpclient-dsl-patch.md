@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.PATCH"
 linkTitle: "PATCH"
 weight: 2604
-type: docs
 ---
 
  Creates a PATCH request from an interpolated URL with encoded holes.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L609-609)

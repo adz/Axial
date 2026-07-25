@@ -2,7 +2,6 @@
 title: "Flow.Process.removeEnvironment"
 linkTitle: "removeEnvironment"
 weight: 2305
-type: docs
 ---
 
  Removes an inherited environment variable. <example><code>command |&gt; Process.removeEnvironment "TOKEN"</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L304-304)

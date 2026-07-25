@@ -6,14 +6,14 @@ type: docs
 ---
 
 
-`Flow.succeed` creates a description that succeeds with a value:
+[`Flow.succeed`]({{< relref "/flow/reference/flow/construction/m-flow-flow-succeed.md" >}}) creates a description that succeeds with a value:
 
 ```fsharp
 let greeting : Flow<string> =
     Flow.succeed "Hello"
 ```
 
-`Flow.fail` creates an expected typed failure:
+[`Flow.fail`]({{< relref "/flow/reference/flow/construction/m-flow-flow-fail.md" >}}) creates an expected typed failure:
 
 ```fsharp
 type LoadError = UserNotFound
@@ -24,7 +24,7 @@ let missing : Flow<LoadError, User> =
 
 Neither value runs when it is created.
 
-Use `Flow.fromTask` or `Flow.fromAsync` when the operation is already represented by a Task or Async and thrown
+Use [`Flow.fromTask`]({{< relref "/flow/reference/flow/construction/m-flow-flow-fromtask.md" >}}) or [`Flow.fromAsync`]({{< relref "/flow/reference/flow/construction/m-flow-flow-fromasync.md" >}}) when the operation is already represented by a Task or Async and thrown
 exceptions are defects:
 
 ```fsharp

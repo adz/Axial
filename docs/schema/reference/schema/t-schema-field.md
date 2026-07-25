@@ -33,3 +33,6 @@ weight: 1001
  Constructor application, ordering, and public construction helpers are introduced by the schema operations that
  follow this core type.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Definitions.fs#L384-384)

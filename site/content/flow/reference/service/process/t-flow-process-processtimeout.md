@@ -1,8 +1,7 @@
 ---
 title: "Flow.Process.ProcessTimeout"
 linkTitle: "ProcessTimeout"
-weight: 1010
-type: docs
+weight: 1011
 ---
 
  Diagnostic details for an elapsed process deadline.
@@ -19,3 +18,6 @@ type: docs
 | --- | --- |
 | `Specification` |  |
 | `Timeout` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L128-128)

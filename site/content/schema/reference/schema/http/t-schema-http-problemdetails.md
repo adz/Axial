@@ -2,7 +2,6 @@
 title: "Schema.Http.ProblemDetails"
 linkTitle: "ProblemDetails"
 weight: 1100
-type: docs
 ---
 
 An RFC 9457 problem-details value carrying path-aware parse errors.
@@ -28,3 +27,7 @@ An RFC 9457 problem-details value carrying path-aware parse errors.
 
  This is the shared error contract for schema-driven endpoints: every host adapter renders the same JSON body with
  media type <code>application/problem+json</code>, so clients handle one error shape regardless of the server behind it.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/ProblemDetails.fs#L35-35)

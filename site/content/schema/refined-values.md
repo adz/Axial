@@ -41,7 +41,7 @@ let emailSchema : Schema<Email> =
     |> Schema.withFormat SchemaFormat.email
 ```
 
-`Schema.refine` receives one named value instead of separate construction, error mapping, and inspection functions.
+[`Schema.refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) receives one named value instead of separate construction, error mapping, and inspection functions.
 
 ## A type-directed field
 
@@ -50,8 +50,7 @@ let contactSchema =
     schema<Contact> {
         field "email" _.Email {
             withSchema Schema.text
-            constrain Constraint.required
-            constrain Constraint.email
+            constraints [ required; email ]
             refine
         }
 
@@ -82,7 +81,7 @@ Options, lists, and string-keyed maps resolve the canonical item schema recursiv
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain Constraint.required       // portable raw text rule
+    constrain required       // portable raw text rule
     refine                              // string -> Email
     validate validateCompanyEmail       // executable Email rule
 }

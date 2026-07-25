@@ -23,3 +23,6 @@ True when the sequence is non-null and contains exactly one item.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L150-150)

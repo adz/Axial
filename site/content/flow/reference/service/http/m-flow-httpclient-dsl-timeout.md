@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.timeout"
 linkTitle: "timeout"
 weight: 2612
-type: docs
 ---
 
  Sets a per-request timeout. <example><code>request |&gt; timeout (TimeSpan.FromSeconds 5.0)</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L624-624)

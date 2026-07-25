@@ -2,7 +2,6 @@
 title: "Flow.FiberStatus"
 linkTitle: "FiberStatus"
 weight: 1002
-type: docs
 ---
 
 Describes the current lifecycle state of a fiber.
@@ -21,3 +20,6 @@ Describes the current lifecycle state of a fiber.
 | `Succeeded` | The fiber completed with a successful value. |
 | `Failed` | The fiber completed with a typed failure or defect. |
 | `Interrupted` | The fiber completed with an interruption cause. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Outcome.fs#L36-36)

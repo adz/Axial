@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.stderr"
 linkTitle: "stderr"
 weight: 2812
-type: docs
 ---
 
  Configures combined stderr on the specification.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L968-968)

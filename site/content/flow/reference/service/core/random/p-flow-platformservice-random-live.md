@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.Random.live"
 linkTitle: "live"
 weight: 2406
-type: docs
 ---
 
 Creates a live random-number generator backed by <a href="https://learn.microsoft.com/dotnet/api/system.random">Random</a>.
@@ -18,3 +17,6 @@ Creates a live random-number generator backed by <a href="https://learn.microsof
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-irandom.md">IRandom</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L171-171)

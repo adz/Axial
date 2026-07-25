@@ -1,6 +1,5 @@
 ---
 title: "NonEmptyList"
-type: docs
 ---
 
 `NonEmptyList` functions construct, inspect, and transform non-empty lists.

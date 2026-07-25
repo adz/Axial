@@ -17,3 +17,6 @@ Creates a live console service backed by <a href="https://learn.microsoft.com/do
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-console-iconsole.md">IConsole</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Console/Console.fs#L86-86)

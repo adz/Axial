@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.secretQuery"
 linkTitle: "secretQuery"
 weight: 2302
-type: docs
 ---
 
  Appends a query parameter whose value is replaced with <c>***</c> in plans and error transcripts.
@@ -27,3 +26,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L206-206)

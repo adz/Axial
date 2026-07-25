@@ -2,7 +2,6 @@
 title: "Schema.Http.GenHttp.SchemaRequest.query"
 linkTitle: "query"
 weight: 2601
-type: docs
 ---
 
 Parses the query string through the schema.
@@ -25,3 +24,6 @@ Parses the query string through the schema.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../interpreters/t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'model&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L32-32)

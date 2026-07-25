@@ -29,3 +29,8 @@ Reads and schema-parses a JSON request body; malformed JSON and schema diagnosti
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="k">let!</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="fn">signup</span> <span class="o">=</span> <span class="id">Request</span><span class="pn">.</span><span class="id">json</span> <span class="id">Signup</span><span class="pn">.</span><span class="id">schema</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val signup: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L108-108)

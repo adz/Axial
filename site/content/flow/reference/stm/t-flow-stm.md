@@ -2,7 +2,6 @@
 title: "Flow.STM"
 linkTitle: "STM<T>"
 weight: 1001
-type: docs
 ---
 
 
@@ -26,3 +25,6 @@ type: docs
 | Case | Description |
 | --- | --- |
 | `STM` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stm.fs#L51-51)

@@ -48,3 +48,8 @@ type Result&lt;&#39;T,&#39;TError&gt; =
 
 from Microsoft.FSharp.Core</div>
 <div popover class="fsdocs-tip" id="fs6">val length: str: string -&gt; int</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L41-41)

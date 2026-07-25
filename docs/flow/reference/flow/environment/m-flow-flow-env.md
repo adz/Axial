@@ -31,3 +31,8 @@ Reads the current environment as the successful flow value.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">myFlow</span> <span class="o">=</span> <span class="id">Flow</span><span class="pn">.</span><span class="id">env</span> <span class="o">|&gt;</span> <span class="id">Flow</span><span class="pn">.</span><span class="id">map</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">env</span> <span class="k">-&gt;</span> <span class="id">env</span><span class="pn">)</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val myFlow: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L985-985)

@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.bearer"
 linkTitle: "bearer"
 weight: 2305
-type: docs
 ---
 
  Adds a bearer-token Authorization header. The token is always redacted in diagnostics.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L221-221)

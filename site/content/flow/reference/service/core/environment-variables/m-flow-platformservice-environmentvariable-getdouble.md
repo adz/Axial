@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariable.getDouble"
 linkTitle: "getDouble"
 weight: 2612
-type: docs
 ---
 
 Reads a floating-point environment variable through an explicit service.
@@ -24,3 +23,6 @@ Reads a floating-point environment variable through an explicit service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-platformservice-environmentvariableerror.md">EnvironmentVariableError</a>,&#32;float</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L333-333)

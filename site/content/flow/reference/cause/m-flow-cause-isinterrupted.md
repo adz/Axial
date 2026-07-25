@@ -2,7 +2,6 @@
 title: "Flow.Cause.isInterrupted"
 linkTitle: "isInterrupted"
 weight: 2106
-type: docs
 ---
 
 Returns whether the cause tree contains an interruption signal.
@@ -24,3 +23,6 @@ Returns whether the cause tree contains an interruption signal.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L56-56)

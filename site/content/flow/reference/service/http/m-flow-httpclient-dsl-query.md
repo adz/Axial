@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.query"
 linkTitle: "query"
 weight: 2607
-type: docs
 ---
 
  Appends a URL-encoded query parameter. <example><code>GET $"{root}/search" |&gt; query "q" term</code></example>
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L614-614)

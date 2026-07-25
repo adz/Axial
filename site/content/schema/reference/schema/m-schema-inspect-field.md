@@ -2,7 +2,6 @@
 title: "Schema.Inspect.field"
 linkTitle: "field"
 weight: 2308
-type: docs
 ---
 
 Describes a standalone schema field as inspectable field metadata.
@@ -24,3 +23,6 @@ Describes a standalone schema field as inspectable field metadata.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-fielddescription.md">FieldDescription</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L252-252)

@@ -92,6 +92,13 @@ weight: 500
 - [`Refined.Choice.orElse`](./choice/m-refined-choice-orelse.md): Tries the left parser first, then the right parser, mapping either success into your output type.
 - [`Refined.Choice.tryAny`](./choice/m-refined-choice-tryany.md): Tries parser strategies in order and returns the first success.
 
+## Refinement
+
+- [`Refined.Refinement`](./t-refined-refinement.md): Defines fallible construction of a refined value and total inspection of its raw representation.
+- [`Refined.Refinement.define`](./m-refined-refinement-define.md): Defines a refinement from its smart constructor and raw-value projection.
+- [`Refined.Refinement.create`](./m-refined-refinement-create.md): Runs the refinement&#39;s smart constructor.
+- [`Refined.Refinement.inspect`](./m-refined-refinement-inspect.md): Returns the raw representation stored by a refined value.
+
 ## Re-certifying helpers
 
 - [`Refined.NonBlankString.value`](./non-blank-string/m-refined-nonblankstring-value.md): Returns the underlying string value.

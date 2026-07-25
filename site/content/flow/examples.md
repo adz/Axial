@@ -265,7 +265,7 @@ let main _ =
 
 ## Supervision and Fiber Observability Example
 
-This example shows Flow.Runtime.supervise restarting a background worker that dies with a defect, a FiberObserver reporting the defect of a fiber whose fork handle was discarded, and Flow.forkDetached stating intentional fire-and-forget so the report is suppressed.
+This example shows [`Flow.Runtime.supervise`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-supervise.md" >}}) restarting a background worker that dies with a defect, a [`FiberObserver`]({{< relref "/flow/reference/fiber/t-flow-fiberobserver.md" >}}) reporting the defect of a fiber whose fork handle was discarded, and [`Flow.forkDetached`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-forkdetached.md" >}}) stating intentional fire-and-forget so the report is suppressed.
 
 Run it:
 

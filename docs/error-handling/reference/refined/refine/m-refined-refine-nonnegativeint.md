@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.nonNegativeInt"
 linkTitle: "nonNegativeInt"
-weight: 2908
+weight: 3008
 ---
 
 Builds a non-negative integer.
@@ -23,3 +23,6 @@ Builds a non-negative integer.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-nonnegativeint.md">NonNegativeInt</a>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L716-716)

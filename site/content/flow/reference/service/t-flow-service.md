@@ -2,7 +2,6 @@
 title: "Flow.Service"
 linkTitle: "Service<service>"
 weight: 1001
-type: docs
 ---
 
 Typed accessors for explicit and provider-resolved services.
@@ -18,3 +17,6 @@ Typed accessors for explicit and provider-resolved services.
 | Name |
 | --- |
 | `service` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L865-865)

@@ -27,3 +27,7 @@ weight: 1000
 
  Use <code>Bind.error</code> for sources that fail with missingness or <code>unit</code>.
  Use <code>Bind.mapError</code> for sources that already carry a meaningful error.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/BindError.fs#L15-15)

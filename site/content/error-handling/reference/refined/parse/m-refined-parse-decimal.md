@@ -2,7 +2,6 @@
 title: "Refined.Parse.decimal"
 linkTitle: "decimal"
 weight: 2102
-type: docs
 ---
 
 Parses a decimal number.
@@ -24,3 +23,6 @@ Parses a decimal number.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>decimal,&#32;<a href="../types/t-refined-parseerror.md">ParseError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Parse.fs#L34-34)

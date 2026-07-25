@@ -2,7 +2,6 @@
 title: "Flow.Runtime.timeoutToOk"
 linkTitle: "timeoutToOk"
 weight: 2108
-type: docs
 ---
 
 Returns the supplied success value when the flow does not complete before the timeout.
@@ -26,3 +25,6 @@ Returns the supplied success value when the flow does not complete before the ti
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that returns the source outcome or the supplied success value. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L610-610)

@@ -2,7 +2,6 @@
 title: "Flow.interrupt"
 linkTitle: "interrupt"
 weight: 2103
-type: docs
 ---
 
 Signals a fiber to stop and waits for it to finish its cleanup.
@@ -31,3 +30,7 @@ Signals a fiber to stop and waits for it to finish its cleanup.
  Interruption requests cooperative cancellation through the fiber&#39;s cancellation
  source and then waits for the child operation to report its final
  <a href="https://learn.microsoft.com/dotnet/api/axial.exit-2">Exit</a>.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L871-871)

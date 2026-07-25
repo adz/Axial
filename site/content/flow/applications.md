@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-`App` runs one root `Flow` as an owned application. Use it when the workflow represents the lifetime of a CLI,
+[`App`]({{< relref "/flow/reference/app/_index.md" >}}) runs one root [`Flow`]({{< relref "/flow/reference/flow/t-flow-flow.md" >}}) as an owned application. Use it when the workflow represents the lifetime of a CLI,
 desktop process, browser mount, Node process, worker, or another application rather than one request or operation.
 
 Application code remains an ordinary Flow value. Provision its environment before handing it to `App`:
@@ -36,7 +36,7 @@ acquired by `Live.appLayer` scoped to the root execution.
 
 ## Run a Finite Application
 
-Use `App.run` when the caller only needs the final outcome:
+Use [`App.run`]({{< relref "/flow/reference/app/m-flow-app-run.md" >}}) when the caller only needs the final outcome:
 
 ```fsharp
 let run inputs = async {
@@ -51,11 +51,11 @@ let run inputs = async {
 ```
 
 `App.run` uses the caller's F# async cancellation token. It waits until the root scope closes, so layer and Flow
-finalizers have finished when the returned `Exit` becomes available.
+finalizers have finished when the returned [`Exit`]({{< relref "/flow/reference/exit/_index.md" >}}) becomes available.
 
 ## Own a Long-Running Application
 
-Use `App.start` when another module controls when the application stops:
+Use [`App.start`]({{< relref "/flow/reference/app/m-flow-app-start.md" >}}) when another module controls when the application stops:
 
 ```fsharp
 let running = App.start inputs root
@@ -69,7 +69,7 @@ let stop = async {
 }
 ```
 
-An `AppHandle<'error,'value>` exposes:
+An [`AppHandle<'error,'value>`]({{< relref "/flow/reference/app/t-flow-apphandle.md" >}}) exposes:
 
 - `Status`: `Running`, `Stopping`, or `Completed`.
 - `Completion`: the one final `Exit`, available to any number of observers.

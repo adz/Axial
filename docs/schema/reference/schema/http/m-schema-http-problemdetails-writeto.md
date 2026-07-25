@@ -24,3 +24,6 @@ Writes the problem-details JSON body to a stream.
 | Type | Description |
 | --- | --- |
 | <code>unit</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/ProblemDetails.fs#L77-77)

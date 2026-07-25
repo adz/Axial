@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.FileSystemError"
 linkTitle: "FileSystemError"
 weight: 1001
-type: docs
 ---
 
 Describes a meaningful file-system failure.
@@ -27,3 +26,6 @@ Describes a meaningful file-system failure.
 | `Io` | The operation failed with a general I/O error. |
 | `Unsupported` | The operation is not supported by the current platform or path shape. |
 | `Unexpected` | An unexpected exception escaped a file-system operation. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L12-12)

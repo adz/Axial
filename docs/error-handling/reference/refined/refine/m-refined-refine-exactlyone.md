@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.exactlyOne"
 linkTitle: "exactlyOne"
-weight: 2919
+weight: 3019
 ---
 
 Extracts the only item from a sequence.
@@ -23,3 +23,6 @@ Extracts the only item from a sequence.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L756-756)

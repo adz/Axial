@@ -23,3 +23,6 @@ True when the string contains only letter or digit characters.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L51-51)

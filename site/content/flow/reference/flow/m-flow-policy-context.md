@@ -2,7 +2,6 @@
 title: "Flow.Policy.context"
 linkTitle: "context"
 weight: 2403
-type: docs
 ---
 
 Lifts an environment-aware result-returning function and maps its error into the workflow error type.
@@ -27,3 +26,6 @@ Lifts an environment-aware result-returning function and maps its error into the
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'output,&#32;'error</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Policy.fs#L34-34)

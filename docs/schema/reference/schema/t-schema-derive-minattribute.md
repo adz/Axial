@@ -11,3 +11,6 @@ Bounds the natural size of the field's type from below: text length, list count,
 <div class="fsdocs-usage">
 <code>type MinAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L54-54)

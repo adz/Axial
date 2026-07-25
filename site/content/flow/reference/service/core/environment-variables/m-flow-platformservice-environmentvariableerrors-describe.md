@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariableErrors.describe"
 linkTitle: "describe"
 weight: 2618
-type: docs
 ---
 
 Formats a human-readable description for an error.
@@ -24,3 +23,6 @@ Formats a human-readable description for an error.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L390-390)

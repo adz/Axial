@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Request.plan"
 linkTitle: "plan"
 weight: 2319
-type: docs
 ---
 
  Returns a redacted request plan without sending anything.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-requestplan.md">RequestPlan</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L302-302)

@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Http.live"
 linkTitle: "live"
 weight: 2700
-type: docs
 ---
 
  Creates a live HTTP service backed by an explicit clock and <see cref="T:System.Net.Http.HttpClient" />.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-ihttp.md">IHttp</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L496-496)

@@ -28,3 +28,8 @@ Creates a new <a href="https://learn.microsoft.com/dotnet/api/axial.ref-1">Ref</
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="pn">(</span><span class="id">Ref</span><span class="pn">.</span><span class="id">make</span> <span class="n">10</span><span class="pn">)</span><span class="pn">.</span><span class="id">RunSynchronously</span><span class="pn">(</span><span class="pn">(</span><span class="pn">)</span><span class="pn">)</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Ref.fs#L32-32)

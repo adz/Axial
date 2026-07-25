@@ -2,7 +2,6 @@
 title: "Schema.Http.Endpoint.returns"
 linkTitle: "returns"
 weight: 2212
-type: docs
 ---
 
 Adds a body-less response.
@@ -26,3 +25,6 @@ Adds a body-less response.
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-endpointspec.md">EndpointSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L96-96)

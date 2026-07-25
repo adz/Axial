@@ -2,7 +2,6 @@
 title: "Schema.Http.OpenApi.writeTo"
 linkTitle: "writeTo"
 weight: 2303
-type: docs
 ---
 
 Writes an OpenAPI 3.1 JSON document covering the supplied endpoints to a stream.
@@ -32,3 +31,7 @@ Writes an OpenAPI 3.1 JSON document covering the supplied endpoints to a stream.
 
  Request and response schemas are embedded verbatim from the generated JSON Schema text, so the published
  contract cannot drift from what the parser accepts.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L135-135)

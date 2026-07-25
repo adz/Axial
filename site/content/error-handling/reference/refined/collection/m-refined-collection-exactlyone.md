@@ -2,7 +2,6 @@
 title: "Refined.Collection.exactlyOne"
 linkTitle: "exactlyOne"
 weight: 2405
-type: docs
 ---
 
 Extracts the only item from a sequence.
@@ -32,3 +31,7 @@ Extracts the only item from a sequence.
  lives here rather than as a <code>Check</code>: <code>Check.Seq.count 1</code> proves the fact and keeps the sequence,
  while this extracts the element itself, the same distinction <a href="https://learn.microsoft.com/dotnet/api/axial.refined.refine.withcheck">Refine.withCheck</a>
  draws between proving and constructing.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L492-492)

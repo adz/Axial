@@ -25,3 +25,6 @@ A segment in a structured data path.
  Structured data paths address boundary data by source field names and zero-based collection indexes. They are intentionally
  separate from diagnostics graphs, but can be lowered to diagnostics paths when schema input errors are interpreted.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L15-15)

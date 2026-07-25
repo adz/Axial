@@ -2,7 +2,6 @@
 title: "Schema.Path"
 linkTitle: "Path"
 weight: 1201
-type: docs
 ---
 
 An immutable location within structured schema input.
@@ -12,3 +11,6 @@ An immutable location within structured schema input.
 <div class="fsdocs-usage">
 <code>type Path</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L11-11)

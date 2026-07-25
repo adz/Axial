@@ -2,7 +2,6 @@
 title: "Flow.Schedule.recurs"
 linkTitle: "recurs"
 weight: 2100
-type: docs
 ---
 
 Creates a schedule that recurs a fixed number of times.
@@ -31,3 +30,8 @@ Creates a schedule that recurs a fixed number of times.
  <span class="c">// Will run for attempts 0, 1, 2 and then stop.</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val schedule: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Schedule.fs#L46-46)

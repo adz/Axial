@@ -25,3 +25,6 @@ weight: 2701
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../layer/t-flow-layer.md">Layer</a>&lt;<span>unit,&#32;<a href="../../flow/t-flow-never.md">Never</a>,&#32;<a href="t-flow-httpclient-ihttp.md">IHttp</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L548-548)

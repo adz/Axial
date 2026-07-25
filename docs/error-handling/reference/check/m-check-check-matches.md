@@ -23,3 +23,6 @@ Returns a string check requiring a match for the supplied regular expression pat
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L546-546)

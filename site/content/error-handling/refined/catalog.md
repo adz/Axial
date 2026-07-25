@@ -41,11 +41,11 @@ let databaseId : Result<NonZeroInt, RefinementError> =
 
 Available integer wrappers:
 
-- `PositiveInt`: greater than zero.
-- `NonNegativeInt`: greater than or equal to zero.
-- `NonZeroInt`: not zero.
-- `NegativeInt`: less than zero.
-- `NonPositiveInt`: less than or equal to zero.
+- [`PositiveInt`]({{< relref "/error-handling/reference/refined/types/t-refined-positiveint.md" >}}): greater than zero.
+- [`NonNegativeInt`]({{< relref "/error-handling/reference/refined/types/t-refined-nonnegativeint.md" >}}): greater than or equal to zero.
+- [`NonZeroInt`]({{< relref "/error-handling/reference/refined/types/t-refined-nonzeroint.md" >}}): not zero.
+- [`NegativeInt`]({{< relref "/error-handling/reference/refined/types/t-refined-negativeint.md" >}}): less than zero.
+- [`NonPositiveInt`]({{< relref "/error-handling/reference/refined/types/t-refined-nonpositiveint.md" >}}): less than or equal to zero.
 
 Float refinements and `Percentage` are intentionally absent. They need explicit decisions about `NaN`, infinities, negative zero, and percentage scale.
 
@@ -69,10 +69,10 @@ let shortCode =
 
 Important semantics:
 
-- `NonBlankString` rejects null, empty, and whitespace-only strings. It preserves the accepted value exactly.
-- `TrimmedString` proves the value already has no leading or trailing whitespace. It does not trim during construction.
-- `BoundedString` stores the min/max bounds used for construction.
-- `Slug` is ASCII-only: lowercase letters, digits, and hyphens, with no leading, trailing, or repeated hyphen.
+- [`NonBlankString`]({{< relref "/error-handling/reference/refined/types/t-refined-nonblankstring.md" >}}) rejects null, empty, and whitespace-only strings. It preserves the accepted value exactly.
+- [`TrimmedString`]({{< relref "/error-handling/reference/refined/types/t-refined-trimmedstring.md" >}}) proves the value already has no leading or trailing whitespace. It does not trim during construction.
+- [`BoundedString`]({{< relref "/error-handling/reference/refined/types/t-refined-boundedstring.md" >}}) stores the min/max bounds used for construction.
+- [`Slug`]({{< relref "/error-handling/reference/refined/types/t-refined-slug.md" >}}) is ASCII-only: lowercase letters, digits, and hyphens, with no leading, trailing, or repeated hyphen.
 
 Regex-backed values, email addresses, URLs, telephone numbers, postal codes, and sanitized text are intentionally absent. Regex adds dependency and timeout concerns; sanitizing text transforms input rather than simply refining it.
 
@@ -96,11 +96,11 @@ let batch =
 
 Available collection wrappers:
 
-- `NonEmptyList<'T>`: exposes `Head`, `Tail`, `ToList()`, and `seq<'T>`.
-- `NonEmptyArray<'T>`: exposes `Head`, `Tail`, `ToArray()`, and `seq<'T>`.
-- `DistinctList<'T>`: rejects duplicates and preserves first-seen order.
-- `BoundedList<'T>`: stores list plus inclusive min/max length.
-- `BoundedArray<'T>`: stores array plus inclusive min/max length.
+- [`NonEmptyList<'T>`]({{< relref "/error-handling/reference/refined/types/t-refined-nonemptylist.md" >}}): exposes `Head`, `Tail`, `ToList()`, and `seq<'T>`.
+- [`NonEmptyArray<'T>`]({{< relref "/error-handling/reference/refined/types/t-refined-nonemptyarray.md" >}}): exposes `Head`, `Tail`, `ToArray()`, and `seq<'T>`.
+- [`DistinctList<'T>`]({{< relref "/error-handling/reference/refined/types/t-refined-distinctlist.md" >}}): rejects duplicates and preserves first-seen order.
+- [`BoundedList<'T>`]({{< relref "/error-handling/reference/refined/types/t-refined-boundedlist.md" >}}): stores list plus inclusive min/max length.
+- [`BoundedArray<'T>`]({{< relref "/error-handling/reference/refined/types/t-refined-boundedarray.md" >}}): stores array plus inclusive min/max length.
 
 Filtering can destroy a collection invariant. Use helpers whose result type admits that:
 
@@ -132,9 +132,9 @@ let range =
     Refine.dateTimeOffsetRange start finish
 ```
 
-`DateTimeOffsetRange` proves `Start <= End`.
+[`DateTimeOffsetRange`]({{< relref "/error-handling/reference/refined/types/t-refined-datetimeoffsetrange.md" >}}) proves `Start <= End`.
 
-`DateOnlyRange` is available on target frameworks that support `DateOnly`.
+[`DateOnlyRange`]({{< relref "/error-handling/reference/refined/types/t-refined-dateonlyrange.md" >}}) is available on target frameworks that support `DateOnly`.
 
 `FutureDateTime` and `PastDateTime` are intentionally absent. A value that is future now can become past later without mutation, so clock-relative facts need an explicit clock policy.
 

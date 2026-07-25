@@ -1,6 +1,5 @@
 ---
 title: "Collection"
-type: docs
 ---
 
 Functions in this section operate on collections.

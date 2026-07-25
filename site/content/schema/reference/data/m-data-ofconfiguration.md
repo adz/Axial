@@ -2,7 +2,6 @@
 title: "Data.ofConfiguration"
 linkTitle: "ofConfiguration"
 weight: 2105
-type: docs
 ---
 
 
@@ -40,3 +39,6 @@ type: docs
  because <code>IConfiguration.AsEnumerable()</code> emits every section key with a null value alongside that
  section&#39;s children.
  </p>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L528-528)

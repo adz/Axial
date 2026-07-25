@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Output.textWriter"
 linkTitle: "textWriter"
 weight: 2710
-type: docs
 ---
 
  Decodes output incrementally into a .NET text writer.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1060-1060)

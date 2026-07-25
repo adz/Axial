@@ -2,7 +2,6 @@
 title: "Flow.Runtime.timeout"
 linkTitle: "timeout"
 weight: 2107
-type: docs
 ---
 
 Fails with the supplied typed error when the flow does not complete before the timeout.
@@ -26,3 +25,6 @@ Fails with the supplied typed error when the flow does not complete before the t
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;'value</span>&gt;</span></code> | A flow that returns the source outcome or the timeout error. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L592-592)

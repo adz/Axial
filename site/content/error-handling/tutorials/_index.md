@@ -10,7 +10,7 @@ These tutorials stay in pure F# code. Use them when one failure should stop the 
 
 ## Guides
 
-- [Check and Result](./check-result/): attach domain errors to `Check` results, then compose with `result {}`.
+- [Check and Result](./check-result/): attach domain errors to [`Check`]({{< relref "/error-handling/reference/check/" >}}) results, then compose with [`result {}`]({{< relref "/error-handling/reference/result/result-ce/" >}}).
 
 Move to [Schema tutorials]({{< relref "/schema/tutorials/" >}}) when independent fields should report all sibling
 failures together.

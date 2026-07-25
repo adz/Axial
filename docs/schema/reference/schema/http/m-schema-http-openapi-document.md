@@ -24,3 +24,6 @@ Renders an OpenAPI 3.1 JSON document covering the supplied endpoints.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L216-216)

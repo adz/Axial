@@ -2,7 +2,6 @@
 title: "Schema.Http.AspNetCore.SchemaResult.openApi"
 linkTitle: "openApi"
 weight: 2702
-type: docs
 ---
 
 Serves a pre-assembled OpenAPI document (see <a href="https://learn.microsoft.com/dotnet/api/axial.schema.http.openapimodule.document">OpenApiModule.document</a>).
@@ -24,3 +23,6 @@ Serves a pre-assembled OpenAPI document (see <a href="https://learn.microsoft.co
 | Type | Description |
 | --- | --- |
 | <code><a href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.iresult">IResult</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L72-72)

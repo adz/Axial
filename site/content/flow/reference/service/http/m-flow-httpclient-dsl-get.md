@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.GET"
 linkTitle: "GET"
 weight: 2600
-type: docs
 ---
 
  Creates a GET request from an interpolated URL. Every hole is URL-encoded as one value.
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L600-600)

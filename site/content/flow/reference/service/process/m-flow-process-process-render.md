@@ -2,7 +2,6 @@
 title: "Flow.Process.render"
 linkTitle: "render"
 weight: 2308
-type: docs
 ---
 
  Renders a redacted shell-like description of the complete process specification.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L328-328)

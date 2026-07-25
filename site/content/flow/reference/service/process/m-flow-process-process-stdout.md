@@ -2,7 +2,6 @@
 title: "Flow.Process.stdout"
 linkTitle: "stdout"
 weight: 2404
-type: docs
 ---
 
  Configures final stdout handling. <example><code>specification |&gt; Process.stdout OutputTarget.Console</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L360-360)

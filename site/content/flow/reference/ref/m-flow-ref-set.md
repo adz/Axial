@@ -2,7 +2,6 @@
 title: "Flow.Ref.set"
 linkTitle: "set"
 weight: 2102
-type: docs
 ---
 
 Sets the value of the reference to the specified value.
@@ -30,3 +29,8 @@ Sets the value of the reference to the specified value.
 
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="id">Ref</span><span class="pn">.</span><span class="id">set</span> <span class="n">20</span> <span class="id">myRef</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Ref.fs#L55-55)

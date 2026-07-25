@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.getDirectoryLastWriteTime"
 linkTitle: "getDirectoryLastWriteTime"
 weight: 2608
-type: docs
 ---
 
 Gets directory last write time through an explicit file-system service.
@@ -24,3 +23,6 @@ Gets directory last write time through an explicit file-system service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a>,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.datetime">DateTime</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L901-901)

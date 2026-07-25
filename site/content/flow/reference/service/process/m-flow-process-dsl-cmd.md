@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.cmd"
 linkTitle: "cmd"
 weight: 2800
-type: docs
 ---
 
  Builds a command-line-shaped command while preserving every interpolation hole as one argument.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L882-882)

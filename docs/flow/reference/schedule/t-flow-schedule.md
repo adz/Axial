@@ -19,3 +19,6 @@ weight: 1000
 | `env` |
 | `input` |
 | `output` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Schedule.fs#L8-8)

@@ -2,7 +2,6 @@
 title: "Flow.Process.ProcessPlan"
 linkTitle: "ProcessPlan"
 weight: 1001
-type: docs
 ---
 
  A redacted, serializable description of work that would be executed.
@@ -25,3 +24,6 @@ type: docs
 | `MergeStdErr` |  |
 | `Framing` |  |
 | `Timeout` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L108-108)

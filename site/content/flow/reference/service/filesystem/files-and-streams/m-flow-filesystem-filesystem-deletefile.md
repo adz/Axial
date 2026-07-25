@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.deleteFile"
 linkTitle: "deleteFile"
 weight: 2302
-type: docs
 ---
 
 Deletes a file through an explicit file-system service.
@@ -24,3 +23,6 @@ Deletes a file through an explicit file-system service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a>,&#32;unit</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L593-593)

@@ -19,3 +19,7 @@ The exception raised when JSON text cannot be decoded through a compiled schema 
  is the trusted hot path: it reports the first structural failure and does not accumulate path-aware diagnostics.
  Use schema input parsing (<code>Schema.parse</code> over <code>Data</code>) at untrusted boundaries where complete
  diagnostics matter more than throughput.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/JsonRuntime.fs#L14-14)

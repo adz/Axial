@@ -47,3 +47,8 @@ Nominal contract for an explicit service dependency.
   interface obj
   override Service: IDb</div>
 <div popover class="fsdocs-tip" id="fs7">type unit = Unit</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L860-860)

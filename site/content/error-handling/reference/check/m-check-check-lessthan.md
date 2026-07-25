@@ -2,7 +2,6 @@
 title: "Check.lessThan"
 linkTitle: "lessThan"
 weight: 2212
-type: docs
 ---
 
 Returns an ordered-value check requiring a value less than the supplied exclusive upper bound.
@@ -24,3 +23,6 @@ Returns an ordered-value check requiring a value less than the supplied exclusiv
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;'value&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L562-562)

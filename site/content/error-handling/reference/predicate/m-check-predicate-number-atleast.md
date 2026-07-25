@@ -2,7 +2,6 @@
 title: "Check.Predicate.Number.atLeast"
 linkTitle: "atLeast"
 weight: 2502
-type: docs
 ---
 
 Returns true when the value is greater than or equal to the supplied lower bound.
@@ -25,3 +24,6 @@ Returns true when the value is greater than or equal to the supplied lower bound
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L205-205)

@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.textBody"
 linkTitle: "textBody"
 weight: 2615
-type: docs
 ---
 
  Sends a plain-text body. <example><code>request |&gt; textBody "hello"</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L630-630)

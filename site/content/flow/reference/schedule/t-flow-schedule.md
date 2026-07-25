@@ -2,7 +2,6 @@
 title: "Flow.Schedule"
 linkTitle: "Schedule<env, input, output>"
 weight: 1000
-type: docs
 ---
 
  Represents a stateful schedule that can decide whether to continue and how long to delay.
@@ -20,3 +19,6 @@ type: docs
 | `env` |
 | `input` |
 | `output` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Schedule.fs#L8-8)

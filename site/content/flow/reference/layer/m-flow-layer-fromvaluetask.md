@@ -2,7 +2,6 @@
 title: "Flow.Layer.fromValueTask"
 linkTitle: "fromValueTask"
 weight: 2202
-type: docs
 ---
 
 Creates a layer from a raw value task provisioning function.
@@ -26,3 +25,6 @@ Creates a layer from a raw value task provisioning function.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-layer.md">Layer</a>&lt;<span>'input,&#32;'error,&#32;'output</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/RuntimeLayer.fs#L44-44)

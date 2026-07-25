@@ -1,8 +1,7 @@
 ---
 title: "Refined.Refine.from"
 linkTitle: "from"
-weight: 2900
-type: docs
+weight: 3000
 ---
 
 
@@ -41,3 +40,8 @@ type Result&lt;&#39;T,&#39;TError&gt; =
   | Error of ErrorValue: &#39;TError</div>
 <div popover class="fsdocs-tip" id="fs3">Multiple items<br />val int: value: &#39;T -&gt; int (requires member op_Explicit)<br /><br />--------------------<br />type int = int32<br /><br />--------------------<br />type int&lt;&#39;Measure&gt; =
   int</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L682-682)

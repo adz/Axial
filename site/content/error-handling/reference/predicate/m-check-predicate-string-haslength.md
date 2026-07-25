@@ -2,7 +2,6 @@
 title: "System.String.HasLength"
 linkTitle: "HasLength"
 weight: 2306
-type: docs
 ---
 
 True when the string length equals the supplied expected length.
@@ -24,3 +23,6 @@ True when the string length equals the supplied expected length.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L67-67)

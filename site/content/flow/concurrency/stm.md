@@ -9,7 +9,7 @@ type: docs
 Software Transactional Memory (STM) is a concurrency primitive that lets you compose multiple
 atomic operations into a single **transaction**.
 
-While `Ref` is perfect for updating a single variable, `STM` is designed for scenarios where you
+While [`Ref`]({{< relref "/flow/reference/ref/_index.md" >}}) is perfect for updating a single variable, [`STM`]({{< relref "/flow/reference/stm/_index.md" >}}) is designed for scenarios where you
 need to update **multiple** variables consistently. Axial ensures that the entire transaction is
 executed atomically, and supports `retry` / `orElse` style coordination for transactions
 that need to wait on state changes or fall back to alternate branches.
@@ -18,11 +18,11 @@ that need to wait on state changes or fall back to alternate branches.
 
 ## Core Concepts
 
-- **`TRef<'T>`**: A transactional reference. Similar to `Ref<'T>`, but designed to be used inside an STM transaction.
+- **[`TRef<'T>`]({{< relref "/flow/reference/stm/t-flow-tref.md" >}})**: A transactional reference. Similar to `Ref<'T>`, but designed to be used inside an STM transaction.
 - **`stm { ... }`**: A computation expression used to compose transactional operations.
 - **`STM.retry`**: Aborts the current branch and waits for a committed state change before retrying.
 - **`STM.orElse`**: Tries a fallback branch when the first branch retries.
-- **`STM.atomically`**: The bridge that executes an `stm` block as a single atomic effect within a `flow`.
+- **[`STM.atomically`]({{< relref "/flow/reference/stm/m-flow-stm-atomically.md" >}})**: The bridge that executes an `stm` block as a single atomic effect within a `flow`.
 
 ## Basic Usage
 

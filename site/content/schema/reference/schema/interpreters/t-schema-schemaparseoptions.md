@@ -2,7 +2,6 @@
 title: "Schema.SchemaParseOptions"
 linkTitle: "SchemaParseOptions"
 weight: 1103
-type: docs
 ---
 
 Options that customize how structured data is parsed through a schema.
@@ -18,3 +17,6 @@ Options that customize how structured data is parsed through a schema.
 | Field | Description |
 | --- | --- |
 | `ConstructorErrorPath` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Parsing.fs#L16-16)

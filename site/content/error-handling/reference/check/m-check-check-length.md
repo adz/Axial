@@ -2,7 +2,6 @@
 title: "Check.length"
 linkTitle: "length"
 weight: 2203
-type: docs
 ---
 
 Returns a string check requiring exactly the supplied length.
@@ -24,3 +23,6 @@ Returns a string check requiring exactly the supplied length.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L526-526)

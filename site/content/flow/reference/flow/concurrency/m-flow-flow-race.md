@@ -2,7 +2,6 @@
 title: "Flow.race"
 linkTitle: "race"
 weight: 2601
-type: docs
 ---
 
 Runs two flows concurrently and returns the result of the first one to complete.
@@ -37,3 +36,8 @@ Runs two flows concurrently and returns the result of the first one to complete.
 <pre class="fssnip highlighted"><code lang="fsharp"> <span class="k">let</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">fastOrSlow</span> <span class="o">=</span> <span class="id">Flow</span><span class="pn">.</span><span class="id">race</span> <span class="id">fastFlow</span> <span class="id">slowFlow</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val fastOrSlow: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L912-912)

@@ -2,7 +2,6 @@
 title: "Schema.SchemaDescription"
 linkTitle: "SchemaDescription"
 weight: 1301
-type: docs
 ---
 
 Describes one value schema: its shape, declared format, and portable constraint metadata.
@@ -22,3 +21,6 @@ Describes one value schema: its shape, declared format, and portable constraint 
 | `Constraints` | The portable constraint metadata attached to this value schema layer, in declaration order. |
 | `Description` | The description metadata, when one was attached with <code>Schema.describe</code>. |
 | `Default` | The default-value metadata, when one was attached with <code>Schema.withDefault</code>. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L42-42)

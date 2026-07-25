@@ -17,3 +17,6 @@ Builds a 400 problem-details value for a syntactically invalid JSON request body
 | Type | Description |
 | --- | --- |
 | <code><a href="t-schema-http-problemdetails.md">ProblemDetails</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/ProblemDetails.fs#L67-67)

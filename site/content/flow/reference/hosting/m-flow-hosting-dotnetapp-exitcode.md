@@ -2,7 +2,6 @@
 title: "Flow.Hosting.DotNetApp.exitCode"
 linkTitle: "exitCode"
 weight: 2001
-type: docs
 ---
 
 Maps a final application exit to the conventional standalone process exit codes.
@@ -24,3 +23,6 @@ Maps a final application exit to the conventional standalone process exit codes.
 | Type | Description |
 | --- | --- |
 | <code>int</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting/Hosting.fs#L189-189)

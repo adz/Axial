@@ -20,3 +20,6 @@ One documented response of an endpoint.
 | `Description` | Human-readable description required by OpenAPI. |
 | `JsonSchema` | JSON Schema text for the response body, or <code>None</code> for a body-less response. |
 | `MediaType` | Media type of the response body; ignored when <a href="t-schema-http-responsespec.md">ResponseSpec.JsonSchema</a> is <code>None</code>. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L8-8)

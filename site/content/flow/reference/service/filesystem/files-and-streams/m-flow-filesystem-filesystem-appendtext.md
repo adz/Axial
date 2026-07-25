@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.appendText"
 linkTitle: "appendText"
 weight: 2317
-type: docs
 ---
 
 Creates an append text writer through an explicit file-system service.
@@ -24,3 +23,6 @@ Creates an append text writer through an explicit file-system service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a>,&#32;<a href="https://learn.microsoft.com/dotnet/api/system.io.streamwriter">StreamWriter</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L700-700)

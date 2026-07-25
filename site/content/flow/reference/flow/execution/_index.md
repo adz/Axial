@@ -1,6 +1,5 @@
 ---
 title: "Execution"
-type: docs
 ---
 
 This page shows the execution members that turn a cold flow description into a running handle or a blocking exit.

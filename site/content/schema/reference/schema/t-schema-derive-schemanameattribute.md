@@ -2,7 +2,6 @@
 title: "Schema.Derive.SchemaNameAttribute"
 linkTitle: "SchemaNameAttribute"
 weight: 1501
-type: docs
 ---
 
 <pre>Overrides the external name of one record field or one nullary union case. Without it, field
@@ -14,3 +13,6 @@ type: docs
 <div class="fsdocs-usage">
 <code>type SchemaNameAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L26-26)

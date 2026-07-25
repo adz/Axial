@@ -2,7 +2,6 @@
 title: "Schema.Http.GenHttp.Response.json"
 linkTitle: "json"
 weight: 2400
-type: docs
 ---
 
 Serializes a trusted value as JSON through a compiled codec.
@@ -31,3 +30,8 @@ Serializes a trusted value as JSON through a compiled codec.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="k">return</span> <span class="id">Response</span><span class="pn">.</span><span class="id">json</span> <span class="id">ResponseStatus</span><span class="pn">.</span><span class="id">Created</span> <span class="id">Signup</span><span class="pn">.</span><span class="id">codec</span> <span class="id">signup</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.GenHttp/GenHttp.fs#L169-169)

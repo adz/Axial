@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.Response.json"
 linkTitle: "json"
 weight: 2404
-type: docs
 ---
 
  Decodes the response body with the supplied decoder, mapping failure to <c>HttpError.DecodeFailed</c>.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<a href="t-flow-httpclient-httperror.md">HttpError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L345-345)

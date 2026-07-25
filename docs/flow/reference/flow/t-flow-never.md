@@ -11,3 +11,6 @@ weight: 1006
 <div class="fsdocs-usage">
 <code>type Never</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L825-825)

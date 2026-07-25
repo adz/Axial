@@ -2,7 +2,6 @@
 title: "Schema.RefinedSchemas.nonPositiveInt"
 linkTitle: "nonPositiveInt"
 weight: 2308
-type: docs
 ---
 
 Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.
@@ -18,3 +17,6 @@ Describes a non-positive integer as a schema refined value over an integer less 
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-nonpositiveint.md">NonPositiveInt</a>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L70-70)

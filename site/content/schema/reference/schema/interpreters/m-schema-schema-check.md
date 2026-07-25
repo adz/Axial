@@ -2,7 +2,6 @@
 title: "Schema.check"
 linkTitle: "check"
 weight: 2400
-type: docs
 ---
 
 Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.
@@ -25,3 +24,6 @@ Checks an existing typed value, such as a freely constructed draft, through the 
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<a href="t-schema-schemaerrors.md">SchemaErrors</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L98-98)

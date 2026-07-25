@@ -29,3 +29,6 @@ Creates a flow from a raw value task operation.
 ## Remarks
 
 Thrown exceptions are recorded as defects (<code>Cause.Die</code>), while cancellation is recorded as interruption. Use <code>attemptValueTask</code> when expected exceptions should enter the typed error channel.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L299-299)

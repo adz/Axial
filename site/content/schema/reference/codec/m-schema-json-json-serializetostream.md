@@ -2,7 +2,6 @@
 title: "Schema.Json.serializeToStream"
 linkTitle: "serializeToStream"
 weight: 2103
-type: docs
 ---
 
 Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled codec, flushing once when complete.
@@ -32,3 +31,7 @@ Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled
 
  Encodes into a pooled buffer and writes it to <span class="fsdocs-param-name">stream</span> in one call, so the response path never
  materializes an intermediate string. Not available on Fable.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1106-1106)

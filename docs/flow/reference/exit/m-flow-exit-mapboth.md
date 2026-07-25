@@ -25,3 +25,6 @@ Transforms both success and failure outcomes of an exit using the provided funct
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-exit.md">Exit</a>&lt;<span>'w,&#32;'f</span>&gt;</span></code> | A new exit outcome with transformed values. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L118-118)

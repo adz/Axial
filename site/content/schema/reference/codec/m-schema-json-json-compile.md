@@ -2,7 +2,6 @@
 title: "Schema.Json.compile"
 linkTitle: "compile"
 weight: 2100
-type: docs
 ---
 
 Compiles a completed schema into a reusable JSON codec.
@@ -42,3 +41,8 @@ Compiles a completed schema into a reusable JSON codec.
 <div popover class="fsdocs-tip" id="fs1">val codec: obj</div>
 <div popover class="fsdocs-tip" id="fs2">val json: obj</div>
 <div popover class="fsdocs-tip" id="fs3">val roundTripped: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1006-1006)

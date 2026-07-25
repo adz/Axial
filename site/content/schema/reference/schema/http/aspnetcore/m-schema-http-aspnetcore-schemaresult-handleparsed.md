@@ -2,7 +2,6 @@
 title: "Schema.Http.AspNetCore.SchemaResult.handleParsed"
 linkTitle: "handleParsed"
 weight: 2703
-type: docs
 ---
 
 Runs the handler with the trusted model, or short-circuits to the problem-details response.
@@ -25,3 +24,6 @@ Runs the handler with the trusted model, or short-circuits to the problem-detail
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1">Task</a>&lt;<a href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.iresult">IResult</a>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http.AspNetCore/AspNetCore.fs#L76-76)

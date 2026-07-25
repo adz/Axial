@@ -2,7 +2,6 @@
 title: "Schema.Http.OpenApiInfo"
 linkTitle: "OpenApiInfo"
 weight: 1300
-type: docs
 ---
 
 Document-level OpenAPI metadata.
@@ -20,3 +19,6 @@ Document-level OpenAPI metadata.
 | `Title` |  |
 | `Version` |  |
 | `Description` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/Endpoint.fs#L116-116)

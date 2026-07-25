@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariables.expand"
 linkTitle: "expand"
 weight: 2604
-type: docs
 ---
 
 Expands environment-variable references in text through an explicit environment-variable service.
@@ -24,3 +23,6 @@ Expands environment-variable references in text through an explicit environment-
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;string</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L258-258)

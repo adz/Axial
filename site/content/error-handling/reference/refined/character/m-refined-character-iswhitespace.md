@@ -2,7 +2,6 @@
 title: "Refined.Character.isWhitespace"
 linkTitle: "isWhitespace"
 weight: 2604
-type: docs
 ---
 
 Returns true when the character is whitespace.
@@ -24,3 +23,6 @@ Returns true when the character is whitespace.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L432-432)

@@ -2,7 +2,6 @@
 title: "Schema.Derive.AtMostAttribute"
 linkTitle: "AtMostAttribute"
 weight: 1509
-type: docs
 ---
 
 Bounds a numeric field&#39;s value inclusively from above (<code>&lt;=</code> in the contract grammar).
@@ -12,3 +11,6 @@ Bounds a numeric field&#39;s value inclusively from above (<code>&lt;=</code> in
 <div class="fsdocs-usage">
 <code>type AtMostAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L83-83)

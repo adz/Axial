@@ -22,3 +22,6 @@ weight: 1004
 | `Body` |  |
 | `Timeout` |  |
 | `Expectation` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L77-77)

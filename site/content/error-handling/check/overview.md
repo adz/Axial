@@ -57,16 +57,16 @@ being proven.
 
 ## The `CheckFailure` Type
 
-Every `Check` that fails produces one or more [`CheckFailure`]({{< relref "/error-handling/reference/check/t-errorhandling-checkfailure.md" >}})
+Every `Check` that fails produces one or more [`CheckFailure`]({{< relref "/error-handling/reference/check/t-check-checkfailure.md" >}})
 values — a closed set of describable reasons, not free-form text:
 
 ```fsharp
 type CheckFailure =
     | Required                                                  // a required value was missing
     | InvalidFormat of expected: string                         // didn't match an expected format (e.g. email)
-    | InvalidLength of expectation: CheckLengthExpectation * actualLength: int option
-    | OutOfRange of expectation: CheckRangeExpectation * actual: string option
-    | InvalidCount of expectation: CheckCountExpectation * actualCount: int option
+    | InvalidLength of expectation: [`CheckLengthExpectation`]({{< relref "/error-handling/reference/check/t-check-checklengthexpectation.md" >}}) * actualLength: int option
+    | OutOfRange of expectation: [`CheckRangeExpectation`]({{< relref "/error-handling/reference/check/t-check-checkrangeexpectation.md" >}}) * actual: string option
+    | InvalidCount of expectation: [`CheckCountExpectation`]({{< relref "/error-handling/reference/check/t-check-checkcountexpectation.md" >}}) * actualCount: int option
     | NotOneOf of choices: string
     | Duplicate
     | Custom of code: string
@@ -112,10 +112,10 @@ call site, or when success changes the shape of the value.
 
 - `Check` handles rules such as “this string is present” or “this number is at least 18.” It returns the same value
   when the rule passes.
-- `Result.requireTrue` and `Result.okIf` handle one-off conditions. Helpers such as `Result.someOr` take a value out
+- [`Result.requireTrue`]({{< relref "/error-handling/reference/result/result/m-result-result-requiretrue.md" >}}) and [`Result.okIf`]({{< relref "/error-handling/reference/result/result/m-result-result-okif.md" >}}) handle one-off conditions. Helpers such as [`Result.someOr`]({{< relref "/error-handling/reference/result/result/m-result-result-someor.md" >}}) take a value out
   of another shape.
 
-Use `Result.requireTrue` for a condition used in one place:
+Use [`Result.requireTrue`]({{< relref "/error-handling/reference/result/result/m-result-result-requiretrue.md" >}}) for a condition used in one place:
 
 ```fsharp
 type RegistrationError = PasswordRequired
@@ -176,4 +176,4 @@ let requiredName : Check<string> =
 failures only if every alternative fails; `Check.not` inverts a check; `Check.mapFailure` transforms the failures a
 check produces without changing what it checks.
 
-Use [`Predicate`](../predicates/) instead when a local branch needs a raw `bool` rather than a structured result.
+Use [`Predicate`]({{< relref "/error-handling/reference/predicate/" >}}) instead when a local branch needs a raw `bool` rather than a structured result.

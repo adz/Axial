@@ -25,3 +25,6 @@ weight: 2203
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/runtime/t-flow-retrypolicy.md">RetryPolicy</a>&lt;<a href="t-flow-httpclient-httperror.md">HttpError</a>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L157-157)

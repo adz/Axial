@@ -29,3 +29,8 @@ Resolves a symbolic link target, optionally following the complete chain.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">FileSystem</span><span class="pn">.</span><span class="id">resolveSymbolicLinkTarget</span> <span class="k">true</span> <span class="s">&quot;current&quot;</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L639-639)

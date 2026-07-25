@@ -29,3 +29,8 @@ Keeps values that satisfy a predicate.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">filter</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">value</span> <span class="k">-&gt;</span> <span class="id">value</span> <span class="pn">&gt;</span> <span class="n">0</span><span class="pn">)</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L137-137)

@@ -13,6 +13,7 @@ package, useful beyond schemas — see [its docs]({{< relref "/schema/data/" >}}
 ## The Schema
 
 ```fsharp
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 type Contact = { Kind: string; Value: string }
 
@@ -29,7 +30,7 @@ let customerSchema =
         }
         field "contacts" _.Contacts {
             withSchema (Schema.listWith contactSchema)
-            constrain (Constraint.minCount 1)
+            constrain (minCount 1)
         }
         construct (fun name address contacts ->
             { Name = name; Address = address; Contacts = contacts })
@@ -54,7 +55,7 @@ let raw =
           "tag", "beta" ]      // repeated names accumulate into Data.List
 ```
 
-`Data.ofMap` handles single-valued maps, and `Data.ofNameValueCollection` adapts
+[`Data.ofMap`]({{< relref "/schema/reference/data/m-data-ofmap/" >}}) handles single-valued maps, and `Data.ofNameValueCollection` adapts
 `System.Collections.Specialized.NameValueCollection` directly from ASP.NET-style APIs. Name/value sources are flat; use
 the configuration or JSON adapters below when the input carries nested models or indexed collections.
 
@@ -64,7 +65,7 @@ the configuration or JSON adapters below when the input carries nested models or
 let raw = Data.ofCliArgs [ "--name"; "Ada Lovelace"; "--verbose"; "--no-color" ]
 ```
 
-`--name value`, `--name=value`, `-n value`, boolean flags, `--no-name`, and repeated options are supported; positional
+[`Data.ofCliArgs`]({{< relref "/schema/reference/data/m-data-ofcliargs/" >}}): `--name value`, `--name=value`, `-n value`, boolean flags, `--no-name`, and repeated options are supported; positional
 arguments collect under the `_` field.
 
 ## JSON Bodies With System.Text.Json
@@ -76,6 +77,8 @@ request bodies:
 use! document = JsonDocument.ParseAsync request.Body
 let raw = Data.ofJsonDocument document
 ```
+
+[`Data.ofJsonDocument`]({{< relref "/schema/reference/data/m-data-ofjsondocument/" >}}):
 
 JSON null, numbers, Booleans, arrays, and objects retain their corresponding `Data` cases. Number tokens keep their
 exact lexical representation. The adapter uses the in-box `System.Text.Json`, so the package stays dependency-free.
@@ -92,7 +95,7 @@ Nested `Data.List` and `Data.Object` values parse with no extra shaping.
 
 ## Configuration
 
-Configuration keys use `:`-separated sections and numeric segments for collection indexes:
+[`Data.ofConfiguration`]({{< relref "/schema/reference/data/m-data-ofconfiguration/" >}}) keys use `:`-separated sections and numeric segments for collection indexes:
 
 ```fsharp
 let raw =
@@ -110,6 +113,8 @@ segments, never from repetition — repeated names as multi-value input is a wir
 children, never override those children, so real layered `IConfiguration` output round-trips directly.
 
 ## One Parse For All Of Them
+
+[`Schema.parseRetainingInput`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parseretaininginput/" >}}):
 
 ```fsharp
 let parsed = Schema.parseRetainingInput customerSchema raw
@@ -149,7 +154,7 @@ else
 }
 ```
 
-`Schema.parseWith` takes an F# function for its `configure` parameter, which C# cannot pass a lambda to directly. Use
+[`Schema.parseWith`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parsewith/" >}}) takes an F# function for its `configure` parameter, which C# cannot pass a lambda to directly. Use
 `Schema.parseWithOptions`, which takes a `Func<Options, Options>` instead:
 
 ```csharp

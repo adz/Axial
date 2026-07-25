@@ -2,7 +2,6 @@
 title: "Flow.Layer.map"
 linkTitle: "map"
 weight: 2207
-type: docs
 ---
 
 Maps the successful output of a layer.
@@ -25,3 +24,6 @@ Maps the successful output of a layer.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-flow-layer.md">Layer</a>&lt;<span>'input,&#32;'error,&#32;'next</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/RuntimeLayer.fs#L95-95)

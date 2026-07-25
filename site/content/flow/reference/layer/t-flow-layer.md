@@ -2,7 +2,6 @@
 title: "Flow.Layer"
 linkTitle: "Layer<input, error, output>"
 weight: 1000
-type: docs
 ---
 
 
@@ -22,3 +21,6 @@ type: docs
 | `input` |
 | `error` |
 | `output` |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/RuntimeLayer.fs#L12-12)

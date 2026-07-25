@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.ProcessResult"
 linkTitle: "ProcessResult"
-weight: 1004
+weight: 1005
 ---
 
  The complete structured transcript returned by a process execution.
@@ -25,3 +25,6 @@ weight: 1004
 | `Stages` |  |
 | `StartedAt` |  |
 | `Duration` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L96-96)

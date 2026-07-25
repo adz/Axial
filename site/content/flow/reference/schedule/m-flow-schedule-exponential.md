@@ -2,7 +2,6 @@
 title: "Flow.Schedule.exponential"
 linkTitle: "exponential"
 weight: 2102
-type: docs
 ---
 
 Creates a schedule that recurs with exponential backoff.
@@ -31,3 +30,8 @@ Creates a schedule that recurs with exponential backoff.
  <span class="c">// Delays: 100ms, 200ms, 400ms, 800ms...</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">val schedule: obj</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Schedule.fs#L79-79)

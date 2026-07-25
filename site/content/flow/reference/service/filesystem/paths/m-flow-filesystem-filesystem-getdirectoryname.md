@@ -2,7 +2,6 @@
 title: "Flow.FileSystem.getDirectoryName"
 linkTitle: "getDirectoryName"
 weight: 2702
-type: docs
 ---
 
 Gets the directory name for a path through an explicit file-system service.
@@ -24,3 +23,6 @@ Gets the directory name for a path through an explicit file-system service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-filesystem-filesystemerror.md">FileSystemError</a>,&#32;<span>string&#32;option</span></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L930-930)

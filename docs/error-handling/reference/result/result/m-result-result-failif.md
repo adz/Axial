@@ -28,3 +28,6 @@ Keeps the input value when the predicate does not hold, or returns the supplied 
 ## Remarks
 
 The inverse of <code>okIf</code>: fails when the predicate is true, succeeds otherwise.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L70-70)

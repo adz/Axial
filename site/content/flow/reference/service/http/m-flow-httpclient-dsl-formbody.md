@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.formBody"
 linkTitle: "formBody"
 weight: 2616
-type: docs
 ---
 
  Sends URL-encoded form fields. <example><code>request |&gt; formBody [ "q", "axial" ]</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L632-632)

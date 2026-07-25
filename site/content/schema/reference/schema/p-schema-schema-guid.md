@@ -2,7 +2,6 @@
 title: "Schema.guid"
 linkTitle: "guid"
 weight: 2105
-type: docs
 ---
 
 Describes a GUID.
@@ -18,3 +17,6 @@ Describes a GUID.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;<a href="https://learn.microsoft.com/dotnet/api/system.guid">Guid</a>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L26-26)

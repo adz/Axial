@@ -1,6 +1,5 @@
 ---
 title: "GUID"
-type: docs
 ---
 
 This page shows the `Core.Guid` helpers for reading GUID values from an explicit GUID service.

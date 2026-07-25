@@ -35,14 +35,15 @@ An Axial schema owns construction. Parsing either produces a trusted model or pa
 intermediate invalid object:
 
 ```fsharp
+open Axial.Schema.Syntax
 open type Axial.Schema.Syntax
 let customerSchema =
     schema<Customer> {
         field "name" _.Name {
-            constrain (Constraint.maxLength 80)
+            constrain (maxLength 80)
         }
         field "age" _.Age {
-            constrain (Constraint.between 13 120)
+            constrain (between 13 120)
         }
         construct (fun name age -> { Name = name; Age = age })
     }
@@ -59,7 +60,9 @@ a question the rest of the codebase can ask.
 
 FluentValidation rules are lambdas inside a class: they can run, but nothing else can read them. Axial constraints are
 inspectable metadata, so the same declaration also produces the JSON Schema/OpenAPI contract
-(`JsonSchema.generate`), UI metadata (`Inspect.model`), a compiled JSON codec (`Json.compile`), and redisplayable form
+([`JsonSchema.generate`]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate/" >}})), UI metadata
+([`Inspect.model`]({{< relref "/schema/reference/schema/m-schema-inspect-model/" >}})), a compiled JSON codec
+([`Json.compile`]({{< relref "/schema/reference/codec/m-schema-json-json-compile/" >}})), and redisplayable form
 errors. With FluentValidation, each of those is a separate artifact to keep in sync by hand.
 
 ## Where FluentValidation Fits Better
@@ -68,7 +71,7 @@ errors. With FluentValidation, each of those is a separate artifact to keep in s
 - Validation of objects you genuinely do not construct (third-party types, EF entities mid-flight).
 - Teams that want C#-first fluent syntax rather than F# declarations.
 
-`Schema.check schema model` re-checks an existing value against the same field schemas and constructor. It returns
+[`Schema.check`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-check/" >}}) `schema model` re-checks an existing value against the same field schemas and constructor. It returns
 `SchemaErrors` with the same paths as parsing.
 
 ## Side By Side

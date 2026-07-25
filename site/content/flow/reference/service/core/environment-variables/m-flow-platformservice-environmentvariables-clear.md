@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariables.clear"
 linkTitle: "clear"
 weight: 2603
-type: docs
 ---
 
 Clears an environment variable through an explicit environment-variable service.
@@ -24,3 +23,6 @@ Clears an environment variable through an explicit environment-variable service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;'error,&#32;unit</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L251-251)

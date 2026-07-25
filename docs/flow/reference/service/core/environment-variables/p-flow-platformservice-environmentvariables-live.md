@@ -17,3 +17,6 @@ Creates a live provider backed by the current process environment.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-ienvironmentvariables.md">IEnvironmentVariables</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L265-265)

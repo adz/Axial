@@ -1,6 +1,5 @@
 ---
 title: "Concurrency"
-type: docs
 ---
 
 This page shows the Flow helpers that fork work, coordinate fibers, and run independent workflows in parallel.

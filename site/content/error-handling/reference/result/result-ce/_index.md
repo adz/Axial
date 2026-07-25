@@ -1,6 +1,5 @@
 ---
 title: "Result CE"
-type: docs
 ---
 
 This page shows the `result { }` computation expression.

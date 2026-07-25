@@ -32,3 +32,8 @@ Skips values while a predicate remains true.
 <div popover class="fsdocs-tip" id="fs1">module String
 
 from Microsoft.FSharp.Core</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L208-208)

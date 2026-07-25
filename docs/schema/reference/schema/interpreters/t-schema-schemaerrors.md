@@ -11,3 +11,6 @@ One or more accumulated schema failures.
 <div class="fsdocs-usage">
 <code>type SchemaErrors</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L83-83)

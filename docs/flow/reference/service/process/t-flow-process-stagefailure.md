@@ -1,7 +1,7 @@
 ---
 title: "Flow.Process.StageFailure"
 linkTitle: "StageFailure"
-weight: 1012
+weight: 1013
 ---
 
  Diagnostic details for an unsuccessful process stage.
@@ -18,3 +18,6 @@ weight: 1012
 | --- | --- |
 | `Stage` |  |
 | `Result` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L134-134)

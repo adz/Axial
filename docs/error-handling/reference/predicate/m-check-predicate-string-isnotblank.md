@@ -23,3 +23,6 @@ True when the string is non-null and contains at least one non-whitespace charac
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L36-36)

@@ -2,7 +2,6 @@
 title: "Refined.Slug"
 linkTitle: "Slug"
 weight: 1005
-type: docs
 ---
 
 An ASCII slug containing lowercase letters, digits, and hyphens.
@@ -12,3 +11,6 @@ An ASCII slug containing lowercase letters, digits, and hyphens.
 <div class="fsdocs-usage">
 <code>type Slug</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L60-60)

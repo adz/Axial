@@ -2,7 +2,6 @@
 title: "Flow.Service.resolve"
 linkTitle: "resolve"
 weight: 2101
-type: docs
 ---
 
 Resolves a service dynamically from an <a href="https://learn.microsoft.com/dotnet/api/system.iserviceprovider">IServiceProvider</a> environment.
@@ -24,3 +23,7 @@ Resolves a service dynamically from an <a href="https://learn.microsoft.com/dotn
 
  Missing registrations are treated as configuration defects and therefore fail through
  <code>Cause.Die</code> rather than the typed error channel.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L886-886)

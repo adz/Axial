@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-`Ref<'T>` is a handle to a mutable reference that can be updated atomically. It is the simplest way to manage shared state between multiple concurrent parts of your application.
+[`Ref<'T>`]({{< relref "/flow/reference/ref/t-flow-ref.md" >}}) is a handle to a mutable reference that can be updated atomically. It is the simplest way to manage shared state between multiple concurrent parts of your application.
 
 > **Note:** `Ref` is currently available on **.NET** only.
 
@@ -18,7 +18,7 @@ In a functional program, state is usually passed as parameters or through the en
 
 ## Creating a Ref
 
-Use `Ref.make` to create a new reference with an initial value. Like all things in Axial, creating a `Ref` is an effectful operation that returns a `Flow`.
+Use [`Ref.make`]({{< relref "/flow/reference/ref/m-flow-ref-make.md" >}}) to create a new reference with an initial value. Like all things in Axial, creating a `Ref` is an effectful operation that returns a [`Flow`]({{< relref "/flow/reference/flow/t-flow-flow.md" >}}).
 
 ```fsharp
 let counterWorkflow =
@@ -30,7 +30,7 @@ let counterWorkflow =
 
 ## Reading and Writing
 
-Use `Ref.get` to read the current value and `Ref.set` to overwrite it.
+Use [`Ref.get`]({{< relref "/flow/reference/ref/m-flow-ref-get.md" >}}) to read the current value and [`Ref.set`]({{< relref "/flow/reference/ref/m-flow-ref-set.md" >}}) to overwrite it.
 
 ```fsharp
 let workWithRef (counter: Ref<int>) =
@@ -43,7 +43,7 @@ let workWithRef (counter: Ref<int>) =
 
 ## Atomic Updates
 
-For concurrent safety, you should use `Ref.update` or `Ref.modify`. These operations ensure that the update is atomic, preventing race conditions when multiple fibers are updating the same reference simultaneously.
+For concurrent safety, you should use [`Ref.update`]({{< relref "/flow/reference/ref/m-flow-ref-update.md" >}}) or [`Ref.modify`]({{< relref "/flow/reference/ref/m-flow-ref-modify.md" >}}). These operations ensure that the update is atomic, preventing race conditions when multiple fibers are updating the same reference simultaneously.
 
 ### `Ref.update`
 Updates the value using a transformation function.

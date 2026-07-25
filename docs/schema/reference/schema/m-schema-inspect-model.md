@@ -48,3 +48,8 @@ from Microsoft.FSharp.Collections<br /><br />--------------------<br />type List
   member Item: index: int -&gt; &#39;T with get
   ...</div>
 <div popover class="fsdocs-tip" id="fs4">val map: mapping: (&#39;T -&gt; &#39;U) -&gt; list: &#39;T list -&gt; &#39;U list</div>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L231-231)

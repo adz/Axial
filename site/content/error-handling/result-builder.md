@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-Use `result {}` to connect steps that return `Result`. Each successful step passes its value to the next line, while
+Use [`result {}`]({{< relref "/error-handling/reference/result/result-ce/" >}}) to connect steps that return `Result`. Each successful step passes its value to the next line, while
 the first `Error` becomes the result of the whole block.
 
 ## What the keywords do
@@ -66,7 +66,7 @@ let validateUser name email : Result<User, UserError> =
 
 ## Options and Checks
 
-`result {}` binds `Result` directly. Use `Result.someOr` when success should take a value out of an option.
+`result {}` binds `Result` directly. Use [`Result.someOr`]({{< relref "/error-handling/reference/result/result/m-result-result-someor.md" >}}) when success should take a value out of an option.
 
 A `Check` already returns the checked value on success, so it can appear directly on the right of `let!`.
 

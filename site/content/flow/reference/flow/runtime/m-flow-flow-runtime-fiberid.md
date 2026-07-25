@@ -2,7 +2,6 @@
 title: "Flow.Runtime.fiberId"
 linkTitle: "fiberId"
 weight: 2113
-type: docs
 ---
 
 Reads the current fiber id from the ambient runtime context.
@@ -24,3 +23,7 @@ Reads the current fiber id from the ambient runtime context.
 
  The root workflow runs on a fiber id of its own; every <code>Flow.fork</code> child gets a fresh id.
  Telemetry integrations use this to correlate workflow spans with fiber lifecycle events.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L584-584)

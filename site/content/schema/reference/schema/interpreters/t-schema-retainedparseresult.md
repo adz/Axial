@@ -2,7 +2,6 @@
 title: "Schema.RetainedParseResult"
 linkTitle: "RetainedParseResult<value>"
 weight: 1104
-type: docs
 ---
 
 A schema parse result that retains its original structured input.
@@ -25,3 +24,6 @@ A schema parse result that retains its original structured input.
 | --- | --- |
 | `Input` | The structured boundary data that was parsed. |
 | `Result` | The parsed model or accumulated schema failures. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RetainedParseResult.fs#L19-19)

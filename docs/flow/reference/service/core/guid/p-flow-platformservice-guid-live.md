@@ -17,3 +17,6 @@ Creates a live GUID service backed by <code>Guid.NewGuid()</code>.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-iguid.md">IGuid</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L213-213)

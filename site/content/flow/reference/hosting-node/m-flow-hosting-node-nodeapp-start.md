@@ -2,7 +2,6 @@
 title: "Flow.Hosting.Node.NodeApp.start"
 linkTitle: "start"
 weight: 2001
-type: docs
 ---
 
  Starts a Node application, translating SIGINT and SIGTERM into coordinated stop and publishing its exit code.
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../app/t-flow-apphandle.md">AppHandle</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting.Node/NodeHosting.fs#L82-82)

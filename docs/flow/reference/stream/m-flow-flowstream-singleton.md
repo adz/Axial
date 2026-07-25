@@ -28,3 +28,8 @@ Creates a stream containing one value.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">FlowStream</span><span class="pn">.</span><span class="id">singleton</span> <span class="n">42</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L71-71)

@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.jsonBody"
 linkTitle: "jsonBody"
 weight: 2613
-type: docs
 ---
 
  Sends an already-serialized JSON body. <example><code>request |&gt; jsonBody """{"name":"Ada"}"""</code></example>
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L626-626)

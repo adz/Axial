@@ -2,7 +2,6 @@
 title: "System.String.IsBlank"
 linkTitle: "IsBlank"
 weight: 2302
-type: docs
 ---
 
 True when the string is null, empty, or whitespace.
@@ -24,3 +23,6 @@ True when the string is null, empty, or whitespace.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L33-33)

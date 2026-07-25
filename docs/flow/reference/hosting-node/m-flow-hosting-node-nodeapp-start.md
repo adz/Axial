@@ -25,3 +25,6 @@ weight: 2001
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../app/t-flow-apphandle.md">AppHandle</a>&lt;<span>'error,&#32;'value</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting.Node/NodeHosting.fs#L82-82)

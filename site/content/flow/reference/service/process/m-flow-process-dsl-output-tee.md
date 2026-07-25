@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.Output.tee"
 linkTitle: "tee"
 weight: 2708
-type: docs
 ---
 
  Sends every byte chunk to each target in order.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-outputtarget.md">OutputTarget</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L1052-1052)

@@ -17,3 +17,6 @@ Options that customize how structured data is parsed through a schema.
 | Field | Description |
 | --- | --- |
 | `ConstructorErrorPath` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Parsing.fs#L16-16)

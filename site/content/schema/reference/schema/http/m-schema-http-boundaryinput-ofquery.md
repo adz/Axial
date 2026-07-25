@@ -2,7 +2,6 @@
 title: "Schema.Http.BoundaryInput.ofQuery"
 linkTitle: "ofQuery"
 weight: 2000
-type: docs
 ---
 
 Builds object-shaped structured data from query-string pairs, grouping repeated names into collections.
@@ -28,3 +27,6 @@ Builds object-shaped structured data from query-string pairs, grouping repeated 
 ## Remarks
 
 Names are used verbatim; query strings do not carry nesting.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Http/BoundaryInput.fs#L16-16)

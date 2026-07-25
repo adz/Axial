@@ -20,3 +20,6 @@ Describes the length requirement that a value check expected a string-like value
 | `MaximumLength` | The value was expected to have at most the supplied length. |
 | `ExactLength` | The value was expected to have exactly the supplied length. |
 | `LengthBetween` | The value was expected to have a length inside the inclusive bounds. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L7-7)

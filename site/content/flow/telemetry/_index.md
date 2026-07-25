@@ -28,12 +28,12 @@ stamped onto it:
 | `Cause.Interrupt` | unset | `axial.flow.outcome = interrupt`, `axial.flow.interrupted = true` |
 | composite | dominant branch | plus `axial.flow.cause` with the pretty-printed cause tree |
 
-Spans also carry `axial.flow.fiber.id` (see `Flow.Runtime.fiberId`), the environment identity traits
+Spans also carry `axial.flow.fiber.id` (see [`Flow.Runtime.fiberId`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-fiberid.md" >}})), the environment identity traits
 (`axial.flow.request_id`, `axial.flow.correlation_id`, `axial.flow.tenant_id`), any tags from an
 `IHasTelemetryTags` environment, and every runtime annotation as `axial.flow.annotation.*` — including
 annotations set in nested regions, since `Activity.trace` composes annotation sinks rather than replacing
 them. Typed errors are rendered with `string`; use `Activity.traceWith` to supply a custom renderer.
-`Flow.tracedError` adds `Cause.Traced` nodes that show up in the `axial.flow.cause` tree.
+[`Flow.tracedError`]({{< relref "/flow/reference/flow/composition/m-flow-flow-tracederror.md" >}}) adds `Cause.Traced` nodes that show up in the `axial.flow.cause` tree.
 
 ## Fiber defect spans
 
@@ -48,12 +48,12 @@ application
 ```
 
 - Every fiber that settles with a defect produces an `axial.flow.fiber.defect` error span.
-- Every defect the runtime proves unobservable — a discarded `Flow.fork` handle, or a `Flow.race`/timeout loser —
+- Every defect the runtime proves unobservable — a discarded [`Flow.fork`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-fork.md" >}}) handle, or a [`Flow.race`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-race.md" >}})/timeout loser —
   produces an `axial.flow.fiber.unobserved_defect` error span.
 
 Spans carry `axial.flow.fiber.id`, `axial.flow.fiber.parent_id`, `axial.flow.fiber.status`, and
 OpenTelemetry-convention `exception.*` tags. Use `FiberTelemetry.observer` directly with
-`Flow.withFiberObserver` if you want to combine it with your own hooks.
+[`Flow.withFiberObserver`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-withfiberobserver.md" >}}) if you want to combine it with your own hooks.
 
 ## Span-per-fiber
 
@@ -65,7 +65,7 @@ hot paths forking many fibers can stay on the defect-only `FiberTelemetry.observ
 
 ## Logging
 
-`Axial.Flow.Hosting` ships the `Microsoft.Extensions.Logging` counterpart: `FiberLogging.observe logger`
+`Axial.Flow.Hosting` ships the `Microsoft.Extensions.Logging` counterpart: [`FiberLogging.observe`]({{< relref "/flow/reference/hosting/m-flow-hosting-fiberlogging-observe.md" >}}) `logger`
 writes fiber defects as errors and unobserved defects as critical entries, with the exception attached so
 stack traces survive. Stack it with telemetry from one edge install:
 
@@ -77,5 +77,5 @@ application
     (FiberObserver.compose FiberTelemetry.observerWithSpans (FiberLogging.observer logger))
 ```
 
-The explicit `ILog` service also carries exceptions now: `Log.errorExn`/`Log.criticalExn` (and the general
+The explicit [`ILog`]({{< relref "/flow/reference/service/core/t-flow-platformservice-ilog.md" >}}) service also carries exceptions now: `Log.errorExn`/`Log.criticalExn` (and the general
 `Log.logException`) preserve the exception through the Hosting bridge to the host logger.

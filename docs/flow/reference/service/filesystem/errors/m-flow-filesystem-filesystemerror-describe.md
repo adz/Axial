@@ -23,3 +23,6 @@ Formats a human-readable description for a file-system error.
 | Type | Description |
 | --- | --- |
 | <code>string</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.FileSystem/FileSystem.fs#L368-368)

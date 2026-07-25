@@ -27,3 +27,6 @@ Builds structured data from the root element of a <a href="https://learn.microso
 ## Remarks
 
 netstandard2.1: not available.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L504-504)

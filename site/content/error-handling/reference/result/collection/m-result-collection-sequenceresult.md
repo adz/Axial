@@ -2,7 +2,6 @@
 title: "Result.Collection.sequenceResult"
 linkTitle: "sequenceResult"
 weight: 2401
-type: docs
 ---
 
 Turns a sequence of results into one fail-fast result containing all successes.
@@ -24,3 +23,6 @@ Turns a sequence of results into one fail-fast result containing all successes.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span>'value&#32;list</span>,&#32;'error</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Collection.fs#L22-22)

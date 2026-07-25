@@ -2,7 +2,6 @@
 title: "Flow.Process.framing"
 linkTitle: "framing"
 weight: 2407
-type: docs
 ---
 
  Selects chunk or line event framing. <example><code>specification |&gt; Process.framing OutputFraming.Lines</code></example>
@@ -17,7 +16,7 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `value` | <code><a href="/reference/Axial/axial-flow-process-outputframing.html">OutputFraming</a></code> |  |
+| `value` | <code><a href="t-flow-process-outputframing.md">OutputFraming</a></code> |  |
 | `specification` | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
 
 ## Returns
@@ -25,3 +24,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-process-processspec.md">ProcessSpec</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L382-382)

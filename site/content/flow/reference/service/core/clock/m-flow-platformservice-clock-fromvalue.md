@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.Clock.fromValue"
 linkTitle: "fromValue"
 weight: 2206
-type: docs
 ---
 
 Creates a deterministic clock that always returns the supplied instant.
@@ -24,3 +23,6 @@ Creates a deterministic clock that always returns the supplied instant.
 | Type | Description |
 | --- | --- |
 | <code><a href="../t-flow-platformservice-iclock.md">IClock</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L49-49)

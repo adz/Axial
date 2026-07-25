@@ -2,7 +2,6 @@
 title: "Microsoft.FSharp.Core.FSharpValueOption.IsPresent"
 linkTitle: "IsPresent"
 weight: 2102
-type: docs
 ---
 
 True when the value option contains a value.
@@ -24,3 +23,6 @@ True when the value option contains a value.
 | Type | Description |
 | --- | --- |
 | <code>bool</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Predicate.fs#L87-87)

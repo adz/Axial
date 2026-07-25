@@ -1,6 +1,5 @@
 ---
 title: "Types"
-type: docs
 ---
 
 Errors and refined value types defined by `Axial.Refined`.

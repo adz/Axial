@@ -16,7 +16,7 @@ Maps a raw schema through a reusable bidirectional refinement.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `refinement` | <code><span><a href="/reference/Axial/axial-refined-refinement-2.html">Refinement</a>&lt;<span>'raw,&#32;'value</span>&gt;</span></code> |  |
+| `refinement` | <code><span><a href="../../../error-handling/reference/refined/t-refined-refinement.md">Refinement</a>&lt;<span>'raw,&#32;'value</span>&gt;</span></code> |  |
 | `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'raw&gt;</span></code> |  |
 
 ## Returns
@@ -28,3 +28,6 @@ Maps a raw schema through a reusable bidirectional refinement.
 ## Remarks
 
 The smart constructor runs during parsing. Inspection supplies the raw representation during checking and encoding.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L44-44)

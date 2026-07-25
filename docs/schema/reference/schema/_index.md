@@ -32,6 +32,9 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 - [`Schema.UnionCase.create`](./m-schema-unioncase-create.md):
  Describes one tagged union case from a tag, a payload constructor, a payload extractor, and a payload schema.
 
+- [`Schema.Constraint`](./t-schema-constraint.md):
+ Describes a portable schema constraint as inspectable metadata.
+
 
 ## Record builder
 

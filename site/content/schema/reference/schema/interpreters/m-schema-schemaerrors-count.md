@@ -2,7 +2,6 @@
 title: "Schema.SchemaErrors.count"
 linkTitle: "count"
 weight: 2211
-type: docs
 ---
 
 Returns the number of accumulated failures.
@@ -24,3 +23,6 @@ Returns the number of accumulated failures.
 | Type | Description |
 | --- | --- |
 | <code>int</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L108-108)

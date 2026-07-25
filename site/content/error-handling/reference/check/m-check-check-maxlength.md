@@ -2,7 +2,6 @@
 title: "Check.maxLength"
 linkTitle: "maxLength"
 weight: 2205
-type: docs
 ---
 
 Returns a string check requiring at most the supplied length.
@@ -24,3 +23,6 @@ Returns a string check requiring at most the supplied length.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L534-534)

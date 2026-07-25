@@ -1,7 +1,6 @@
 ---
 title: ".NET Hosting"
 weight: 500
-type: docs
 ---
 
 This page shows `Axial.Flow.Hosting` for .NET. `DotNetApp` owns Ctrl+C and process exit codes without requiring Generic Host. `Hosting.addApp` installs one root Flow application into Generic Host lifetime. `MicrosoftLogging` adapts MEL to the explicit `ILog` service, while `FiberLogging` reports fiber defects at the root edge. See the [.NET hosting guide](/flow/hosting/) for complete setup.

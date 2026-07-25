@@ -2,7 +2,6 @@
 title: "Flow.PlatformService.EnvironmentVariable.getInt64"
 linkTitle: "getInt64"
 weight: 2611
-type: docs
 ---
 
 Reads a 64-bit integer environment variable through an explicit service.
@@ -24,3 +23,6 @@ Reads a 64-bit integer environment variable through an explicit service.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../../flow/t-flow-flow.md">Flow</a>&lt;<span>'env,&#32;<a href="../t-flow-platformservice-environmentvariableerror.md">EnvironmentVariableError</a>,&#32;int64</span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.PlatformService/Operations.fs#L324-324)

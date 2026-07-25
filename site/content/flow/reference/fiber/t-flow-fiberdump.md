@@ -2,7 +2,6 @@
 title: "Flow.FiberDump"
 linkTitle: "FiberDump"
 weight: 1004
-type: docs
 ---
 
 Structured diagnostic snapshot of a fiber, taken at a single point in time.
@@ -24,3 +23,6 @@ Structured diagnostic snapshot of a fiber, taken at a single point in time.
 | `StartedAt` | The UTC timestamp when the fiber started. |
 | `SettledAt` | The UTC timestamp when the fiber settled, if it had settled when the snapshot was taken. |
 | `Status` | The fiber status when the snapshot was taken. |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L189-189)

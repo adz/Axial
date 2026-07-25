@@ -14,3 +14,6 @@ Marks a plain record for schema derivation: <code>schemagen</code> generates its
 <div class="fsdocs-usage">
 <code>type DeriveSchemaAttribute</code>
 </div>
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L13-13)

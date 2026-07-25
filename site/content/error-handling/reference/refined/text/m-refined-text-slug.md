@@ -2,7 +2,6 @@
 title: "Refined.Text.slug"
 linkTitle: "slug"
 weight: 2203
-type: docs
 ---
 
 Builds an ASCII slug made of lowercase letters, digits, and hyphens.
@@ -24,3 +23,6 @@ Builds an ASCII slug made of lowercase letters, digits, and hyphens.
 | Type | Description |
 | --- | --- |
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-slug.md">Slug</a>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L390-390)

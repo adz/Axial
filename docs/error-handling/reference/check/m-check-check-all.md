@@ -31,3 +31,7 @@ Combines checks conjunctively by running every check against the value and accum
  F# visits list elements from left to right. When the first check is a type-directed inline check such as
  <code>Check.present</code>, declare the composed program&#39;s value type so the compiler can select its SRTP overload:
  <code>let requiredName : Check&lt;string&gt; = Check.all [ Check.present; Check.lengthBetween 2 40 ]</code>.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L713-713)

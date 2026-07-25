@@ -30,3 +30,8 @@ Emits successive accumulator states.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="id">stream</span> <span class="o">|&gt;</span> <span class="id">FlowStream</span><span class="pn">.</span><span class="id">scan</span> <span class="pn">(</span><span class="o">+</span><span class="pn">)</span> <span class="n">0</span>
 </code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Stream.fs#L225-225)

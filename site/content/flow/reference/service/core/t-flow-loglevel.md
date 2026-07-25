@@ -2,7 +2,6 @@
 title: "Flow.LogLevel"
 linkTitle: "LogLevel"
 weight: 1002
-type: docs
 ---
 
  Log levels used by runtime logging helpers and environment-provided logging functions.
@@ -23,3 +22,6 @@ type: docs
 | `Warning` |  |
 | `Error` |  |
 | `Critical` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Core.fs#L770-770)

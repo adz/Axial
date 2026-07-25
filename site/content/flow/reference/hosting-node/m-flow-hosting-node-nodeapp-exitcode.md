@@ -2,7 +2,6 @@
 title: "Flow.Hosting.Node.NodeApp.exitCode"
 linkTitle: "exitCode"
 weight: 2003
-type: docs
 ---
 
 Maps a final application exit to conventional Node process exit codes.
@@ -24,3 +23,6 @@ Maps a final application exit to conventional Node process exit codes.
 | Type | Description |
 | --- | --- |
 | <code>int</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Hosting.Node/NodeHosting.fs#L72-72)

@@ -2,7 +2,6 @@
 title: "Flow.HttpClient.DSL.secretQuery"
 linkTitle: "secretQuery"
 weight: 2608
-type: docs
 ---
 
  Appends a redacted query parameter. <example><code>request |&gt; secretQuery "api_key" key</code></example>
@@ -26,3 +25,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><a href="t-flow-httpclient-httprequest.md">HttpRequest</a></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.HttpClient/Http.fs#L616-616)

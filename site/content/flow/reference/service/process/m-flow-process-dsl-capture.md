@@ -2,7 +2,6 @@
 title: "Flow.Process.DSL.capture"
 linkTitle: "capture"
 weight: 2815
-type: docs
 ---
 
  Runs a command or specification and captures stdout and stderr.
@@ -24,3 +23,6 @@ type: docs
 | Type | Description |
 | --- | --- |
 | <code><span><a href="../../flow/t-flow-flow.md">Flow</a>&lt;<span>'a,&#32;<a href="t-flow-process-processerror.md">ProcessError</a>,&#32;<a href="t-flow-process-processresult.md">ProcessResult</a></span>&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L975-975)

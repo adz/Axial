@@ -24,3 +24,6 @@ weight: 1001
 | `MergeStdErr` |  |
 | `Framing` |  |
 | `Timeout` |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow.Process/Process.fs#L108-108)

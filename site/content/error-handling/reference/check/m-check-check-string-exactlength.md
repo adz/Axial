@@ -2,7 +2,6 @@
 title: "Check.String.exactLength"
 linkTitle: "exactLength"
 weight: 2306
-type: docs
 ---
 
 Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.
@@ -24,3 +23,6 @@ Requires an already parsed string value to have exactly the supplied length. Nul
 | Type | Description |
 | --- | --- |
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L249-249)
