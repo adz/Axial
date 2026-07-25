@@ -33,6 +33,10 @@
     <Project Path="benchmarks/Axial.Schema.Benchmarks/Axial.Schema.Benchmarks.fsproj" />
     <Project Path="benchmarks/Axial.Benchmarks.Fable/Axial.Benchmarks.Fable.fsproj" />
   </Folder>
+  <Folder Name="/scripts/">
+    <Project Path="scripts/docgen/docgen.fsproj" />
+    <Project Path="scripts/schemagen/schemagen.fsproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Axial/Axial.fsproj" />
     <Project Path="src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj" />

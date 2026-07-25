@@ -38,7 +38,7 @@ module Signup =
                 constrain (maxLength 80)
             }
             field "email" _.Email {
-                constrain emailFormat
+                constrain email
             }
             field "age" _.Age {
                 constrain (between 13 120)
