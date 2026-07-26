@@ -7,4 +7,4 @@ type: docs
 
 
 Detailed guides for defects, bind-site error handling, Task and Async interop, and type troubleshooting. Start with
-[Getting Started](../getting-started/) for the progressive introduction to Flow itself.
+[Getting Started](/flow/getting-started/) for the progressive introduction to Flow itself.

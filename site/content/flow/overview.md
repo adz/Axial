@@ -8,7 +8,7 @@ type: docs
 
 ## Core Flow
 
-- [Getting Started](../getting-started/) — learn the Flow type, creation, execution, composition, failures,
+- [Getting Started](/flow/getting-started/) — learn the Flow type, creation, execution, composition, failures,
   dependencies, and application lifecycle one step at a time.
 - [Application Lifecycle](../applications/) — root applications with `App.run`, `App.start`, and coordinated stop.
 - [Task and Async Interop](../core-concepts/task-async-interop/) — binding `Async`, `Task`, `ValueTask`, and attempt constructors.

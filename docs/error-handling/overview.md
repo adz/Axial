@@ -62,7 +62,7 @@ See [Refined](../refined/) for the supplied types, dependent construction, and a
 
 ## Guides
 
-- [Getting Started](../getting-started/)
+- [Getting Started](/error-handling/getting-started/)
 - [Check](../check/)
 - [Result Builder](../result-builder/)
 - [Refined](../refined/)
