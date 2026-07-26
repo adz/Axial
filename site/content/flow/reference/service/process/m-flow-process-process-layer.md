@@ -2,6 +2,7 @@
 title: "Flow.Process.layer"
 linkTitle: "layer"
 weight: 3001
+type: docs
 ---
 
  Builds a live process service from an explicit clock as a layer.

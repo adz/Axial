@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.Response.empty"
 linkTitle: "empty"
 weight: 2402
+type: docs
 ---
 
 Returns an empty response with the supplied status code.

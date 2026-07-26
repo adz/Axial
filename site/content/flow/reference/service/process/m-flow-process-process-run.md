@@ -2,6 +2,7 @@
 title: "Flow.Process.run"
 linkTitle: "run"
 weight: 2500
+type: docs
 ---
 
  Runs a process specification in the current Flow runtime.

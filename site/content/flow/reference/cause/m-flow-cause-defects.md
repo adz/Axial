@@ -2,6 +2,7 @@
 title: "Flow.Cause.defects"
 linkTitle: "defects"
 weight: 2105
+type: docs
 ---
 
 Returns every defect exception contained in a cause tree.

@@ -2,6 +2,7 @@
 title: "Flow.Cause"
 linkTitle: "Cause<error>"
 weight: 1000
+type: docs
 ---
 
 

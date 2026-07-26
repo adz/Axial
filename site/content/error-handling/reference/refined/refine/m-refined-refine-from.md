@@ -2,6 +2,7 @@
 title: "Refined.Refine.from"
 linkTitle: "from"
 weight: 3000
+type: docs
 ---
 
 

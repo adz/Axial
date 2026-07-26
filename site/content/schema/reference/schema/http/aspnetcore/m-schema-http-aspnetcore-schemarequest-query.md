@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.SchemaRequest.query"
 linkTitle: "query"
 weight: 2602
+type: docs
 ---
 
 Parses the query string through the schema.

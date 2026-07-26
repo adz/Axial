@@ -2,6 +2,7 @@
 title: "Flow.Deferred.interrupt"
 linkTitle: "interrupt"
 weight: 2007
+type: docs
 ---
 
 Attempts to complete the deferred value as interrupted.

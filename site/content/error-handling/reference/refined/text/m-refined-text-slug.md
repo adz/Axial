@@ -2,6 +2,7 @@
 title: "Refined.Text.slug"
 linkTitle: "slug"
 weight: 2203
+type: docs
 ---
 
 Builds an ASCII slug made of lowercase letters, digits, and hyphens.

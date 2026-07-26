@@ -2,6 +2,7 @@
 title: "Result.okIf"
 linkTitle: "okIf"
 weight: 2201
+type: docs
 ---
 
 Keeps the input value when the predicate holds, or returns the supplied error.

@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.boundedList"
 linkTitle: "boundedList"
 weight: 2312
+type: docs
 ---
 
 Describes a bounded list as a schema refined value over a collection with inclusive count bounds.

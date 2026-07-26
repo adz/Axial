@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.withRetries"
 linkTitle: "withRetries"
 weight: 2623
+type: docs
 ---
 
  Retries transient failures with exponential backoff.

@@ -2,6 +2,7 @@
 title: "Refined.NonPositiveInt"
 linkTitle: "NonPositiveInt"
 weight: 1010
+type: docs
 ---
 
 An integer less than or equal to zero.

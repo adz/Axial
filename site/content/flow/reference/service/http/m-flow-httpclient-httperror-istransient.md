@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.HttpError.isTransient"
 linkTitle: "isTransient"
 weight: 2202
+type: docs
 ---
 
  Indicates whether retrying the same request could plausibly succeed.

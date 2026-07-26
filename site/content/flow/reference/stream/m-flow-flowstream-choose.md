@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.choose"
 linkTitle: "choose"
 weight: 2203
+type: docs
 ---
 
 Maps and filters values in one operation.

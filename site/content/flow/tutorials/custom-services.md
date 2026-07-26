@@ -31,7 +31,7 @@ let priceInAud<'env, 'error when 'env :> IHas<IExchangeRates>>
     }
 ```
 
-This helper no longer cares whether the caller stores the service in `Rates`, `Runtime.ExchangeRates`, or any other field. It only needs [`IHas<IExchangeRates>`]({{< relref "/flow/reference/service/t-flow-ihas.md" >}}).
+This helper no longer cares whether the caller stores the service in `Rates`, `Runtime.ExchangeRates`, or any other field. It only needs `IHas<IExchangeRates>`.
 
 ## Provide An App Environment
 

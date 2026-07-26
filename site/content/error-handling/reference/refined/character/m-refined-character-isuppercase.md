@@ -2,6 +2,7 @@
 title: "Refined.Character.isUppercase"
 linkTitle: "isUppercase"
 weight: 2603
+type: docs
 ---
 
 Returns true when the character is uppercase according to invariant Unicode casing.

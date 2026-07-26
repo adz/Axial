@@ -2,6 +2,7 @@
 title: "Check.empty"
 linkTitle: "empty"
 weight: 2201
+type: docs
 ---
 
  Runs the type-directed empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.

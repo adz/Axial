@@ -2,6 +2,7 @@
 title: "Refined.Refine.nonBlankString"
 linkTitle: "nonBlankString"
 weight: 3003
+type: docs
 ---
 
 Builds a non-blank string.

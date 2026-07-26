@@ -2,6 +2,7 @@
 title: "Flow.Layer.merge"
 linkTitle: "merge"
 weight: 2212
+type: docs
 ---
 
 Merges two independent service layers in parallel.

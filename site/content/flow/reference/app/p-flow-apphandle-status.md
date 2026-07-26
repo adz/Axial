@@ -2,6 +2,7 @@
 title: "Flow.AppHandle.Status"
 linkTitle: "Status"
 weight: 2002
+type: docs
 ---
 
 Gets the current application lifecycle state.

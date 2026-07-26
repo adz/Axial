@@ -1,6 +1,7 @@
 ---
 title: "Data"
-weight: 500
+weight: 30
+type: docs
 ---
 
 This page shows `Axial.Data`: one source-neutral tree for nulls, primitives, lists, and objects, with constructors for maps, name/value pairs, CLI arguments, JSON, and configuration. Use it to shape data in tests and fixtures, to carry boundary input before a type is assigned, and to redisplay raw values by path. It has no dependencies on other Axial packages.

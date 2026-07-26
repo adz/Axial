@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Clock.now"
 linkTitle: "now"
 weight: 2200
+type: docs
 ---
 
 Reads the current UTC timestamp from an explicit clock service.

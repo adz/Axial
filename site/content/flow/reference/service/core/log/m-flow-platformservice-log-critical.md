@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.critical"
 linkTitle: "critical"
 weight: 2306
+type: docs
 ---
 
 Writes a critical log message through an explicit logging service.

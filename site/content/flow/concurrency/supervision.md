@@ -8,18 +8,18 @@ type: docs
 
 A forked fiber whose handle is discarded can die silently.
 
-[`Flow.fork`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-fork.md" >}}) returns a [`Fiber`]({{< relref "/flow/reference/fiber/_index.md" >}}) handle, and nothing stops a caller writing `|> Flow.map ignore` or `let! _ = ...` and dropping it. When such a fiber hits an unhandled exception, the runtime contains it as `Exit.Failure (Cause.Die _)` — but nobody is awaiting that exit. Because Axial converts every exception into an `Exit` *value*, the underlying task never faults, so even .NET's `TaskScheduler.UnobservedTaskException` net never fires. Without help, that is a production failure with no log line.
+`Flow.fork` returns a `Fiber` handle, and nothing stops a caller writing `|> Flow.map ignore` or `let! _ = ...` and dropping it. When such a fiber hits an unhandled exception, the runtime contains it as `Exit.Failure (Cause.Die _)` — but nobody is awaiting that exit. Because Axial converts every exception into an `Exit` *value*, the underlying task never faults, so even .NET's `TaskScheduler.UnobservedTaskException` net never fires. Without help, that is a production failure with no log line.
 
-Axial answers this with two pieces: **[`Flow.Runtime.supervise`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-supervise.md" >}})** restarts background work that dies with defects, and the **fiber observer** reports the defects that still escape.
+Axial answers this with two pieces: **`Flow.Runtime.supervise`** restarts background work that dies with defects, and the **fiber observer** reports the defects that still escape.
 
 Both stay inside Axial's error model:
 
 - **Typed errors (`Cause.Fail`) are untouched.** They are domain values in your `Flow<'env, 'error, 'value>` signature, not diagnostics. Supervision and observation apply only to *defects* (`Cause.Die`) — bugs that escaped the typed channel.
-- **Joining is the opt-out.** A fiber whose outcome someone consumed ([`Flow.join`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-join.md" >}}), [`Flow.interrupt`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-interrupt.md" >}})) belongs to that caller; the runtime says nothing about it.
+- **Joining is the opt-out.** A fiber whose outcome someone consumed (`Flow.join`, `Flow.interrupt`) belongs to that caller; the runtime says nothing about it.
 
 ## Restarting defects: `Flow.Runtime.supervise`
 
-`supervise` is the defect-channel sibling of [`Flow.Runtime.retry`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-retry.md" >}}):
+`supervise` is the defect-channel sibling of `Flow.Runtime.retry`:
 
 - `retry` re-runs typed `Cause.Fail` errors and never touches defects.
 - `supervise` re-runs `Cause.Die` defects and never touches typed errors or interruptions.
@@ -42,7 +42,7 @@ Two semantics worth knowing:
 - **Each attempt runs in its own child scope.** Finalizers registered by a failed attempt run before the next attempt starts, so a supervised worker that acquires resources does not leak one acquisition per restart.
 - **Restart is not an Erlang restart.** Re-evaluating the cold flow resets state that lives *inside* the flow. If your environment holds mutable state that the crashed attempt corrupted, restarting does not heal it.
 
-## Deliberate fire-and-forget: [`Flow.forkDetached`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-forkdetached.md" >}})
+## Deliberate fire-and-forget: `Flow.forkDetached`
 
 If a background fiber's outcome genuinely does not matter, say so at the call site:
 
@@ -52,7 +52,7 @@ let! _fiber = Flow.forkDetached bestEffortCacheWarmup
 
 A detached fiber counts as observed from birth, so a defect it dies with is never reported as unobserved. Use it instead of discarding a `Flow.fork` handle: a discarded `fork` handle whose fiber dies of a defect *is* reported.
 
-## The safety net: [`FiberObserver`]({{< relref "/flow/reference/fiber/t-flow-fiberobserver.md" >}})
+## The safety net: `FiberObserver`
 
 `FiberObserver` is a record of lifecycle hooks installed once at the application edge and carried implicitly to every descendant fork:
 

@@ -1,5 +1,6 @@
 ---
 title: "Paths"
+type: docs
 ---
 
 This page shows the `FileSystem.FileSystem` helpers for path manipulation and inspection.

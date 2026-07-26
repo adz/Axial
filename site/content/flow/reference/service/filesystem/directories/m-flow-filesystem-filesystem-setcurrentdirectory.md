@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setCurrentDirectory"
 linkTitle: "setCurrentDirectory"
 weight: 2514
+type: docs
 ---
 
 Sets the current working directory through an explicit file-system service.

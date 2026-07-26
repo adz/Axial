@@ -2,6 +2,7 @@
 title: "Schema.SchemaErrors.toString"
 linkTitle: "toString"
 weight: 2213
+type: docs
 ---
 
 Renders one line per failure.

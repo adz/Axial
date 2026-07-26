@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.openText"
 linkTitle: "openText"
 weight: 2313
+type: docs
 ---
 
 Opens a text reader through an explicit file-system service.

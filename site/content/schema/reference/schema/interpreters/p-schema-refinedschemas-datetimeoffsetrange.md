@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.dateTimeOffsetRange"
 linkTitle: "dateTimeOffsetRange"
 weight: 2314
+type: docs
 ---
 
 Describes a date-time range as a record schema with <code>start</code> and <code>end</code> fields.

@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.PUT"
 linkTitle: "PUT"
 weight: 2603
+type: docs
 ---
 
  Creates a PUT request from an interpolated URL with encoded holes.

@@ -2,6 +2,7 @@
 title: "System.String.HasMinLength"
 linkTitle: "HasMinLength"
 weight: 2304
+type: docs
 ---
 
 True when the string length is at least the supplied minimum.

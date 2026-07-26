@@ -2,6 +2,7 @@
 title: "Flow.Semaphore.create"
 linkTitle: "create"
 weight: 2102
+type: docs
 ---
 
 Alias for <code>make</code>.

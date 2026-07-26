@@ -2,6 +2,7 @@
 title: "Flow.Schedule.recurs"
 linkTitle: "recurs"
 weight: 2100
+type: docs
 ---
 
 Creates a schedule that recurs a fixed number of times.

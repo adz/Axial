@@ -2,6 +2,7 @@
 title: "Check.String.notEmpty"
 linkTitle: "notEmpty"
 weight: 2302
+type: docs
 ---
 
 Requires an already parsed string value to contain at least one character. Whitespace counts as present text.

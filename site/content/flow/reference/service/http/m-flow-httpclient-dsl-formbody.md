@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.formBody"
 linkTitle: "formBody"
 weight: 2616
+type: docs
 ---
 
  Sends URL-encoded form fields. <example><code>request |&gt; formBody [ "q", "axial" ]</code></example>

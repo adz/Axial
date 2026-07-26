@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.json"
 linkTitle: "json"
 weight: 2510
+type: docs
 ---
 
  Sends a request and decodes the JSON response body with the supplied decoder.

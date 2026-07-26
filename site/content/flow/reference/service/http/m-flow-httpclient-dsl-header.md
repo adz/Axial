@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.header"
 linkTitle: "header"
 weight: 2609
+type: docs
 ---
 
  Appends one request header. <example><code>request |&gt; header "Accept" "text/csv"</code></example>

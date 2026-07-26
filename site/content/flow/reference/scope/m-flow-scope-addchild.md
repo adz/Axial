@@ -2,6 +2,7 @@
 title: "Flow.Scope.AddChild"
 linkTitle: "AddChild"
 weight: 2103
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Flow.STM"
 linkTitle: "STM<T>"
 weight: 1001
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Schema.FieldDescription"
 linkTitle: "FieldDescription"
 weight: 1302
+type: docs
 ---
 
 Describes one field of a model schema for inspection interpreters.

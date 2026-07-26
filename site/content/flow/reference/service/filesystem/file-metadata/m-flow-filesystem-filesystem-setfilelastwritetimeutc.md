@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setFileLastWriteTimeUtc"
 linkTitle: "setFileLastWriteTimeUtc"
 weight: 2413
+type: docs
 ---
 
 Sets file last write time in UTC through an explicit file-system service.

@@ -2,6 +2,7 @@
 title: "Check"
 linkTitle: "Check"
 weight: 1000
+type: docs
 ---
 
 

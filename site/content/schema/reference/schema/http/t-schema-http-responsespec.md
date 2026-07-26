@@ -2,6 +2,7 @@
 title: "Schema.Http.ResponseSpec"
 linkTitle: "ResponseSpec"
 weight: 1201
+type: docs
 ---
 
 One documented response of an endpoint.

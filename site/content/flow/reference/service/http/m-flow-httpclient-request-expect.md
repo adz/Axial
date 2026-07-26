@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.expect"
 linkTitle: "expect"
 weight: 2316
+type: docs
 ---
 
  Replaces the statuses treated as success.

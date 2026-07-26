@@ -2,6 +2,7 @@
 title: "Check.lengthBetween"
 linkTitle: "lengthBetween"
 weight: 2206
+type: docs
 ---
 
 Returns a string check requiring a length inside the supplied inclusive bounds.

@@ -2,6 +2,7 @@
 title: "Flow.Console.layer"
 linkTitle: "layer"
 weight: 2103
+type: docs
 ---
 
 Builds the live console service as a layer.

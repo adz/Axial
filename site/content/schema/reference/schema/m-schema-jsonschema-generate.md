@@ -2,6 +2,7 @@
 title: "Schema.JsonSchema.generate"
 linkTitle: "generate"
 weight: 2400
+type: docs
 ---
 
 Generates a compact JSON Schema document from any completed schema declaration.

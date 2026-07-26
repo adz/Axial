@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.SchemaRequest.json"
 linkTitle: "json"
 weight: 2600
+type: docs
 ---
 
 Parses the JSON request body through the schema.

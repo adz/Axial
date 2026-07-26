@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getCurrentDirectory"
 linkTitle: "getCurrentDirectory"
 weight: 2513
+type: docs
 ---
 
 Gets the current working directory through an explicit file-system service.

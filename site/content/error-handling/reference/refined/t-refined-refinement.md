@@ -2,6 +2,7 @@
 title: "Refined.Refinement"
 linkTitle: "Refinement<raw, value>"
 weight: 1800
+type: docs
 ---
 
 Defines fallible construction of a refined value and total inspection of its raw representation.

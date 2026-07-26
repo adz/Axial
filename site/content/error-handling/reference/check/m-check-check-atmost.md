@@ -2,6 +2,7 @@
 title: "Check.atMost"
 linkTitle: "atMost"
 weight: 2214
+type: docs
 ---
 
 Returns an ordered-value check requiring a value less than or equal to the supplied upper bound.

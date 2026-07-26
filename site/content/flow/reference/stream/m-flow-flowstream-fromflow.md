@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.fromFlow"
 linkTitle: "fromFlow"
 weight: 2103
+type: docs
 ---
 
 Creates a one-element stream from an effectful value.

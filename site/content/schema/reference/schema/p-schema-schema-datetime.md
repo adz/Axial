@@ -2,6 +2,7 @@
 title: "Schema.dateTime"
 linkTitle: "dateTime"
 weight: 2104
+type: docs
 ---
 
 Describes a date and time with an offset.

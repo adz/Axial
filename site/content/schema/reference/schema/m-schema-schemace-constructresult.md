@@ -2,6 +2,7 @@
 title: "Schema.SchemaCE.constructResult"
 linkTitle: "constructResult"
 weight: 2203
+type: docs
 ---
 
 Closes a record schema with a checked constructor.

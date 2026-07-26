@@ -2,6 +2,7 @@
 title: "Flow.Process.OutputFraming"
 linkTitle: "OutputFraming"
 weight: 1004
+type: docs
 ---
 
  Selects arbitrary decoded chunks or complete decoded lines for streamed events.

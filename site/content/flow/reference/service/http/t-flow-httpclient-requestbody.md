@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.RequestBody"
 linkTitle: "RequestBody"
 weight: 1001
+type: docs
 ---
 
  Supplies the request payload and its media type.

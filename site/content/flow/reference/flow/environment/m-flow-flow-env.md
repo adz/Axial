@@ -2,6 +2,7 @@
 title: "Flow.env"
 linkTitle: "env"
 weight: 2316
+type: docs
 ---
 
 Reads the current environment as the successful flow value.

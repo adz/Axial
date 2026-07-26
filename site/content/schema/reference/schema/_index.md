@@ -1,6 +1,7 @@
 ---
 title: "Schema"
-weight: 500
+weight: 10
+type: docs
 ---
 
 This page shows `Schema<'value>`, the universal catalog for primitive, collection, optional, union, refined, and record declarations. The same declaration can be parsed, checked, inspected, encoded, documented, and used for generation.

@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.boundedArray"
 linkTitle: "boundedArray"
 weight: 2313
+type: docs
 ---
 
 Describes a bounded array as a schema refined value over a collection with inclusive count bounds.

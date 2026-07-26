@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getTempFileName"
 linkTitle: "getTempFileName"
 weight: 2712
+type: docs
 ---
 
 Creates a temporary file through an explicit file-system service and returns its path.

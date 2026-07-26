@@ -2,6 +2,7 @@
 title: "Flow.Ref.update"
 linkTitle: "update"
 weight: 2103
+type: docs
 ---
 
 Updates the value of the reference using the supplied function.

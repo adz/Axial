@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Clock.utcDateTime"
 linkTitle: "utcDateTime"
 weight: 2201
+type: docs
 ---
 
 Reads the current UTC date/time from an explicit clock service.

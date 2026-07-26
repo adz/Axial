@@ -2,6 +2,7 @@
 title: "Schema.Inspect.model"
 linkTitle: "model"
 weight: 2306
+type: docs
 ---
 
 Describes a built model schema as inspectable field metadata.

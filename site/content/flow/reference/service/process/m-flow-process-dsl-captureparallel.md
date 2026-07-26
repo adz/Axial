@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.captureParallel"
 linkTitle: "captureParallel"
 weight: 2820
+type: docs
 ---
 
  Captures commands concurrently with a fixed upper bound while preserving input order.

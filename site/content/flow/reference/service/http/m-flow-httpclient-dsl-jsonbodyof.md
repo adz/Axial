@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.jsonBodyOf"
 linkTitle: "jsonBodyOf"
 weight: 2614
+type: docs
 ---
 
  Encodes and sends a JSON body. <example><code>request |&gt; jsonBodyOf (Json.serialize codec) user</code></example>

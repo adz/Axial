@@ -2,6 +2,7 @@
 title: "Refined.Parse.decimalOption"
 linkTitle: "decimalOption"
 weight: 2113
+type: docs
 ---
 
 Parses an optional decimal. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.

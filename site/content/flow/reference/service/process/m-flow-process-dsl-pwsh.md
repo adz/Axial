@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.pwsh"
 linkTitle: "pwsh"
 weight: 2902
+type: docs
 ---
 
  Builds a PowerShell 7 program with interpolation values passed through <c>$args</c>.

@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariables.fromPairs"
 linkTitle: "fromPairs"
 weight: 2607
+type: docs
 ---
 
 Creates a deterministic provider from a fixed set of name/value pairs.

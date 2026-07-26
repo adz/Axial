@@ -2,6 +2,7 @@
 title: "Refined.Parse.guidOption"
 linkTitle: "guidOption"
 weight: 2114
+type: docs
 ---
 
 Parses an optional GUID. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.

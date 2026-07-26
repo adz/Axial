@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Response.bytes"
 linkTitle: "bytes"
 weight: 2401
+type: docs
 ---
 
  Returns the exact response body bytes. <example><code>response |&gt; Response.bytes</code></example>

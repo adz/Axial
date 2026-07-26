@@ -1,6 +1,7 @@
 ---
 title: "Services Console"
 weight: 20
+type: docs
 ---
 
 This page shows the console service package. `IConsole` models standard input and output as an explicit workflow service. Keep business logic typed against the service contract, provide `Console.live` only at the edge, and replace it with a test implementation when you need deterministic input or captured output.

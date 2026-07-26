@@ -2,6 +2,7 @@
 title: "Check.oneOf"
 linkTitle: "oneOf"
 weight: 2209
+type: docs
 ---
 
 Returns a string check requiring equality with one of the supplied choices.

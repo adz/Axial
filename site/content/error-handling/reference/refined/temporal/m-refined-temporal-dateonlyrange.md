@@ -2,6 +2,7 @@
 title: "Refined.Temporal.dateOnlyRange"
 linkTitle: "dateOnlyRange"
 weight: 2501
+type: docs
 ---
 
 Builds a date-only range where <code>Start &lt;= End</code>.

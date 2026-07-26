@@ -2,6 +2,7 @@
 title: "Refined.PositiveInt.map"
 linkTitle: "map"
 weight: 2905
+type: docs
 ---
 
 Transforms the value and re-certifies the positive integer invariant.

@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.timeout"
 linkTitle: "timeout"
 weight: 2310
+type: docs
 ---
 
  Sets a per-request timeout enforced by the live service.

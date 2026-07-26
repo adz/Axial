@@ -2,6 +2,7 @@
 title: "Check.Result.error"
 linkTitle: "error"
 weight: 2607
+type: docs
 ---
 
 Requires a result to contain an error value.

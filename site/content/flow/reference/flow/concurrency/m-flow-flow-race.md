@@ -2,6 +2,7 @@
 title: "Flow.race"
 linkTitle: "race"
 weight: 2601
+type: docs
 ---
 
 Runs two flows concurrently and returns the result of the first one to complete.

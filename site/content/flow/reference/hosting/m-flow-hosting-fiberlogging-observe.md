@@ -2,6 +2,7 @@
 title: "Flow.Hosting.FiberLogging.observe"
 linkTitle: "observe"
 weight: 2204
+type: docs
 ---
 
 Installs fiber defect logging at the root application edge.

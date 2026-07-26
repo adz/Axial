@@ -2,6 +2,7 @@
 title: "Flow.withFiberObserver"
 linkTitle: "withFiberObserver"
 weight: 2104
+type: docs
 ---
 
 Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.

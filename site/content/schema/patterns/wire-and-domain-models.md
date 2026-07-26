@@ -16,7 +16,7 @@ Keep those jobs in separate types.
 
 ## Define a permissive wire record
 
-[`[<DeriveSchema>]`]({{< relref "/schema/reference/schema/t-schema-derive-deriveschemaattribute/" >}}) marks a public, namespace-level record whose Axial schema is generated from its source declaration. The
+`[<DeriveSchema>]` marks a public, namespace-level record whose Axial schema is generated from its source declaration. The
 schema describes how input fields parse and which portable constraints apply.
 
 ```fsharp

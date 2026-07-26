@@ -2,6 +2,7 @@
 title: "Refined.Character.isAsciiHexDigit"
 linkTitle: "isAsciiHexDigit"
 weight: 2601
+type: docs
 ---
 
 Returns true when the character is an ASCII hexadecimal digit.

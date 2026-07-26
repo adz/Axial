@@ -2,6 +2,7 @@
 title: "Flow.Hosting.Node.NodeApp.start"
 linkTitle: "start"
 weight: 2001
+type: docs
 ---
 
  Starts a Node application, translating SIGINT and SIGTERM into coordinated stop and publishing its exit code.

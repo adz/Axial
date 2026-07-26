@@ -2,6 +2,7 @@
 title: "Check.String.email"
 linkTitle: "email"
 weight: 2307
+type: docs
 ---
 
 Requires an already parsed string value to match Axial's pragmatic email format.

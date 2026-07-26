@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getDirectoryLastAccessTimeUtc"
 linkTitle: "getDirectoryLastAccessTimeUtc"
 weight: 2605
+type: docs
 ---
 
 Gets directory last access time in UTC through an explicit file-system service.

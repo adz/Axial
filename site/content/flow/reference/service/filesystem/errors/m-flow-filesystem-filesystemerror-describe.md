@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.FileSystemError.describe"
 linkTitle: "describe"
 weight: 2101
+type: docs
 ---
 
 Formats a human-readable description for a file-system error.

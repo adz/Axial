@@ -2,6 +2,7 @@
 title: "Flow.Layer.acquireRelease"
 linkTitle: "acquireRelease"
 weight: 2206
+type: docs
 ---
 
 Acquires a resource and registers its release with the layer scope.

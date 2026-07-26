@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getLogicalDrives"
 linkTitle: "getLogicalDrives"
 weight: 2510
+type: docs
 ---
 
 Gets logical drives through an explicit file-system service.

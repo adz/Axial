@@ -2,6 +2,7 @@
 title: "Flow.Fiber"
 linkTitle: "Fiber<error, value>"
 weight: 1000
+type: docs
 ---
 
 

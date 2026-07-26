@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.HEAD"
 linkTitle: "HEAD"
 weight: 2601
+type: docs
 ---
 
  Creates a HEAD request from an interpolated URL with encoded holes.

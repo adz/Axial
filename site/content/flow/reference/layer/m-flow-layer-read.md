@@ -2,6 +2,7 @@
 title: "Flow.Layer.read"
 linkTitle: "read"
 weight: 2204
+type: docs
 ---
 
 Projects part of the input environment into the layer output.

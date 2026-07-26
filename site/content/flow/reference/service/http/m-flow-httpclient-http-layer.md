@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.layer"
 linkTitle: "layer"
 weight: 2701
+type: docs
 ---
 
  Builds a live HTTP service from an explicit clock as a layer.

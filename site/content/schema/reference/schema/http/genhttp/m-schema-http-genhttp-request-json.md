@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.Request.json"
 linkTitle: "json"
 weight: 2100
+type: docs
 ---
 
 Reads and schema-parses a JSON request body; malformed JSON and schema diagnostics become invalid-request failures.

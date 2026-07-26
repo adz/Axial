@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.stream"
 linkTitle: "stream"
 weight: 2817
+type: docs
 ---
 
  Produces a bounded stream of structured output and completion events.

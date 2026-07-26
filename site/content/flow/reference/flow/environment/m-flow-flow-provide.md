@@ -2,6 +2,7 @@
 title: "Flow.provide"
 linkTitle: "provide"
 weight: 2333
+type: docs
 ---
 
 Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.

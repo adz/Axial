@@ -2,6 +2,7 @@
 title: "Refined.Collection.distinctList"
 linkTitle: "distinctList"
 weight: 2402
+type: docs
 ---
 
 Builds a list that contains no duplicate items.

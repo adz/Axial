@@ -2,6 +2,7 @@
 title: "Refined.NonEmptyList.filter"
 linkTitle: "filter"
 weight: 2911
+type: docs
 ---
 
 Filters the list, returning a standard list because filtering can remove every item.

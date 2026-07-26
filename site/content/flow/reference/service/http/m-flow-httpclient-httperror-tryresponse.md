@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.HttpError.tryResponse"
 linkTitle: "tryResponse"
 weight: 2201
+type: docs
 ---
 
  Returns the response transcript when the error carries one.

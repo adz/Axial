@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.fetchBytes"
 linkTitle: "fetchBytes"
 weight: 2621
+type: docs
 ---
 
  Sends the request and returns the body bytes. <example><code>GET $"{root}/logo.png" |&gt; fetchBytes</code></example>

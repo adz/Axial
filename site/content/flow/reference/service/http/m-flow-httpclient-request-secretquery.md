@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.secretQuery"
 linkTitle: "secretQuery"
 weight: 2302
+type: docs
 ---
 
  Appends a query parameter whose value is replaced with <c>***</c> in plans and error transcripts.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setDirectoryLastAccessTime"
 linkTitle: "setDirectoryLastAccessTime"
 weight: 2606
+type: docs
 ---
 
 Sets directory last access time through an explicit file-system service.

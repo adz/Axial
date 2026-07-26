@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getInvalidFileNameChars"
 linkTitle: "getInvalidFileNameChars"
 weight: 2703
+type: docs
 ---
 
 Gets invalid file-name characters through an explicit file-system service.

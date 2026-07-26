@@ -2,6 +2,7 @@
 title: "Flow.Scope.AddFinalizer"
 linkTitle: "AddFinalizer"
 weight: 2100
+type: docs
 ---
 
 

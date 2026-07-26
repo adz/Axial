@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.BaseRuntimeError"
 linkTitle: "BaseRuntimeError"
 weight: 1007
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Flow.Process.capture"
 linkTitle: "capture"
 weight: 2501
+type: docs
 ---
 
  Runs a process specification with complete stdout and stderr capture.

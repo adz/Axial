@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.console"
 linkTitle: "console"
 weight: 2816
+type: docs
 ---
 
  Forwards stdout and stderr to the host console while retaining structured completion data.

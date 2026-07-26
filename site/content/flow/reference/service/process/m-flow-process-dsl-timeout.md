@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.timeout"
 linkTitle: "timeout"
 weight: 2813
+type: docs
 ---
 
  Sets the maximum execution time for a command or specification.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.FileSystemError"
 linkTitle: "FileSystemError"
 weight: 1001
+type: docs
 ---
 
 Describes a meaningful file-system failure.

@@ -2,6 +2,7 @@
 title: "Flow.Scope"
 linkTitle: "Scope"
 weight: 1000
+type: docs
 ---
 
 

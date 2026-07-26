@@ -2,6 +2,7 @@
 title: "Check.Predicate.Number.negative"
 linkTitle: "negative"
 weight: 2507
+type: docs
 ---
 
 Returns true when the value is less than zero.

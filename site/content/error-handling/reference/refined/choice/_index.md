@@ -1,5 +1,6 @@
 ---
 title: "Choice"
+type: docs
 ---
 
 `Choice` functions try alternative refinement functions.

@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.HasMaxCount"
 linkTitle: "HasMaxCount"
 weight: 2405
+type: docs
 ---
 
 True when the sequence is non-null and contains at most the supplied count.

@@ -1,5 +1,6 @@
 ---
 title: "Errors"
+type: docs
 ---
 
 This page shows the `FileSystemError` helpers for classifying and describing file-system failures.

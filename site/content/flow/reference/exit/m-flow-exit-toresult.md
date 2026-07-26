@@ -2,6 +2,7 @@
 title: "Flow.Exit.toResult"
 linkTitle: "toResult"
 weight: 2105
+type: docs
 ---
 
 Converts an exit outcome to a standard F# <code>Result</code>.

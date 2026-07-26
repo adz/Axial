@@ -2,6 +2,7 @@
 title: "Schema.Path.fold"
 linkTitle: "fold"
 weight: 2207
+type: docs
 ---
 
 Folds over string keys and integer indexes without exposing a path-segment type.

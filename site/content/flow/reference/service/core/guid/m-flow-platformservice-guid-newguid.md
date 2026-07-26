@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Guid.newGuid"
 linkTitle: "newGuid"
 weight: 2500
+type: docs
 ---
 
 Reads a GUID from an explicit GUID service.

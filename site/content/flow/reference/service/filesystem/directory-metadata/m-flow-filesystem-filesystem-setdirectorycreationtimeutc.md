@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setDirectoryCreationTimeUtc"
 linkTitle: "setDirectoryCreationTimeUtc"
 weight: 2603
+type: docs
 ---
 
 Sets directory creation time in UTC through an explicit file-system service.

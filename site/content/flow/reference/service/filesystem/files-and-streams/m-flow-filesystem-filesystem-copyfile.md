@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.copyFile"
 linkTitle: "copyFile"
 weight: 2303
+type: docs
 ---
 
 Copies a file through an explicit file-system service.

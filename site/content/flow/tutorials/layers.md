@@ -88,7 +88,7 @@ let failingOrdersLayer : Layer<unit, string, IOrders> =
         })
 ```
 
-If provisioning fails, [`Flow.provide`]({{< relref "/flow/reference/layer/m-flow-flow-provide.md" >}}) never runs the downstream business workflow. That separation is one of the main reasons to use layers.
+If provisioning fails, `Flow.provide` never runs the downstream business workflow. That separation is one of the main reasons to use layers.
 
 ## 5. Resource Ownership
 

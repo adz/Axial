@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.fetchJson"
 linkTitle: "fetchJson"
 weight: 2622
+type: docs
 ---
 
  Sends the request and decodes the JSON response.

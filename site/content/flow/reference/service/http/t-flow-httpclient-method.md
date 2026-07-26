@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Method"
 linkTitle: "Method"
 weight: 1000
+type: docs
 ---
 
  Identifies one HTTP request method.

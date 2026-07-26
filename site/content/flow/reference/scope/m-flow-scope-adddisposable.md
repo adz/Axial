@@ -2,6 +2,7 @@
 title: "Flow.Scope.AddDisposable"
 linkTitle: "AddDisposable"
 weight: 2101
+type: docs
 ---
 
 

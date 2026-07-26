@@ -1,5 +1,6 @@
 ---
 title: "Composition"
+type: docs
 ---
 
 This page shows the everyday Flow combinators for mapping, binding, zipping, and otherwise shaping workflow logic.

@@ -2,6 +2,7 @@
 title: "Schema.Http.ProblemDetails.writeTo"
 linkTitle: "writeTo"
 weight: 2106
+type: docs
 ---
 
 Writes the problem-details JSON body to a stream.

@@ -2,6 +2,7 @@
 title: "ExnEnvFlow"
 linkTitle: "ExnEnvFlow<env, value>"
 weight: 1005
+type: docs
 ---
 
 A flow that reads an environment and uses exceptions as recoverable typed errors.

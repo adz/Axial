@@ -2,6 +2,7 @@
 title: "Flow.Layer.zipPar"
 linkTitle: "zipPar"
 weight: 2211
+type: docs
 ---
 
 Builds two independent layers in parallel and returns both outputs.

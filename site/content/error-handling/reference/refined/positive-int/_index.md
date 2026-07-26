@@ -1,5 +1,6 @@
 ---
 title: "PositiveInt"
+type: docs
 ---
 
 `PositiveInt` functions construct, inspect, and transform positive integers.

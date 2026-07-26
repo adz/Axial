@@ -58,7 +58,7 @@ request |> bearer token
 request |> basicAuth user password
 ```
 
-[`Request.render`]({{< relref "/flow/reference/service/http/m-flow-httpclient-request-render.md" >}}) produces the redacted request line (for example `GET https://api.example.com/lookup?key=***`)
+`Request.render` produces the redacted request line (for example `GET https://api.example.com/lookup?key=***`)
 that appears inside `HttpError` values, so error logging is safe by default.
 
 ## Headers
@@ -70,7 +70,7 @@ request
 |> Request.secretHeader "X-Api-Key" apiKey   // value redacted in plans
 ```
 
-[`Request.acceptJson`]({{< relref "/flow/reference/service/http/m-flow-httpclient-request-acceptjson.md" >}}) is shorthand for the JSON accept header; `fetchJson` and `Http.getJson` add it for you.
+`Request.acceptJson` is shorthand for the JSON accept header; `fetchJson` and `Http.getJson` add it for you.
 
 ## Bodies
 
@@ -93,7 +93,7 @@ any other JSON library without coupling this package to one.
 
 ## Plans Show What Would Be Sent
 
-[`Request.plan`]({{< relref "/flow/reference/service/http/m-flow-httpclient-request-plan.md" >}}) returns a redacted, serializable description without performing any I/O — useful for logging,
+`Request.plan` returns a redacted, serializable description without performing any I/O — useful for logging,
 dry runs, and approval flows:
 
 ```fsharp

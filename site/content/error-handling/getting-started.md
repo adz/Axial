@@ -31,10 +31,10 @@ Already use FsToolkit.ErrorHandling or your own Result helpers? `Axial.Check` an
 
 | Problem | API | Result |
 | --- | --- | --- |
-| Sequence dependent operations that may fail | [`result { }`]({{< relref "/error-handling/reference/result/result-ce/" >}}) | `Result<'value, 'error>` |
-| Describe and run reusable rules over one typed value | [`Check<'value>`]({{< relref "/error-handling/reference/check/" >}}) | `Result<'value, [`CheckFailure`]({{< relref "/error-handling/reference/check/t-check-checkfailure.md" >}}) list>` |
-| Parse serialized text | [`Parse.int`]({{< relref "/error-handling/reference/refined/parse/m-refined-parse-int.md" >}}), [`Parse.guid`]({{< relref "/error-handling/reference/refined/parse/m-refined-parse-guid.md" >}}), and other [`Parse`]({{< relref "/error-handling/reference/refined/parse/" >}}) functions | `Result<'value, [`ParseError`]({{< relref "/error-handling/reference/refined/types/t-refined-parseerror.md" >}})>` |
-| Construct a type that records a successful check | [`Refine.nonBlankString`]({{< relref "/error-handling/reference/refined/refine/m-refined-refine-nonblankstring.md" >}}), [`Refine.positiveInt`]({{< relref "/error-handling/reference/refined/refine/m-refined-refine-positiveint.md" >}}), and other [`Refine`]({{< relref "/error-handling/reference/refined/refine/" >}}) functions | `Result<'value, [`RefinementError`]({{< relref "/error-handling/reference/refined/types/t-refined-refinementerror.md" >}})>` |
+| Sequence dependent operations that may fail | `result { }` | `Result<'value, 'error>` |
+| Describe and run reusable rules over one typed value | `Check<'value>` | `Result<'value, CheckFailure list>` |
+| Parse serialized text | `Parse.int`, `Parse.guid`, and other `Parse` functions | `Result<'value, ParseError>` |
+| Construct a type that records a successful check | `Refine.nonBlankString`, `Refine.positiveInt`, and other `Refine` functions | `Result<'value, RefinementError>` |
 
 `Result` is the common return type. `Check` preserves the checked value and can report several failures about that one
 value. A refinement changes the type, so later code knows construction succeeded.

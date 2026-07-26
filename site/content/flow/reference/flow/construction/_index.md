@@ -1,5 +1,6 @@
 ---
 title: "Construction"
+type: docs
 ---
 
 This page shows the helpers that create or adapt flows before you start composing them with domain logic.

@@ -2,6 +2,7 @@
 title: "Refined.Temporal.dateTimeOffsetRange"
 linkTitle: "dateTimeOffsetRange"
 weight: 2500
+type: docs
 ---
 
 Builds a date and time range where <code>Start &lt;= End</code>.

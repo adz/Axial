@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.RequestPlan"
 linkTitle: "RequestPlan"
 weight: 1004
+type: docs
 ---
 
  A redacted, serializable description of a request that would be sent.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.readAllLinesAsync"
 linkTitle: "readAllLinesAsync"
 weight: 2205
+type: docs
 ---
 
 Asynchronously reads all lines through an explicit file-system service.

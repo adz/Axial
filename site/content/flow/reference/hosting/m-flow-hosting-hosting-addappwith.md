@@ -2,6 +2,7 @@
 title: "Flow.Hosting.addAppWith"
 linkTitle: "addAppWith"
 weight: 2103
+type: docs
 ---
 
 Registers a root application with explicit Generic Host completion options.

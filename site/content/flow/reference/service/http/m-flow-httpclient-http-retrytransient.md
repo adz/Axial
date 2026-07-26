@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.retryTransient"
 linkTitle: "retryTransient"
 weight: 2516
+type: docs
 ---
 
  Retries a workflow on transient HTTP errors with exponential backoff.

@@ -2,6 +2,7 @@
 title: "Check.Predicate.Number.between"
 linkTitle: "between"
 weight: 2504
+type: docs
 ---
 
 Returns true when the value lies inside the supplied inclusive bounds.

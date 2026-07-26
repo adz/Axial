@@ -7,7 +7,7 @@ type: docs
 ---
 
 
-`Axial.Flow.Hosting.Browser` is a JavaScript-only Fable package. It connects a root [`App`]({{< relref "/flow/reference/app/_index.md" >}}) to browser ownership without
+`Axial.Flow.Hosting.Browser` is a JavaScript-only Fable package. It connects a root `App` to browser ownership without
 pretending the browser has a dependable process-shutdown phase.
 
 ```sh
@@ -19,7 +19,7 @@ JavaScript fails immediately.
 
 ## UI-Owned Mount
 
-Mount the application when the UI root or feature is created with [`BrowserApp.mount`]({{< relref "/flow/reference/hosting-browser/m-flow-hosting-browser-browserapp-mount.md" >}}):
+Mount the application when the UI root or feature is created:
 
 ```fsharp
 open Axial.Flow.Hosting.Browser
@@ -42,7 +42,7 @@ package does not depend on one framework.
 
 ## AbortSignal Ownership
 
-Use [`startWithSignal`]({{< relref "/flow/reference/hosting-browser/m-flow-hosting-browser-browserapp-startwithsignal.md" >}}) when the owner already exposes an `AbortSignal`:
+Use `startWithSignal` when the owner already exposes an `AbortSignal`:
 
 ```fsharp
 open Fable.Core.JsInterop
@@ -76,7 +76,7 @@ browser's persistence or delivery mechanisms rather than relying on Flow finaliz
 
 ## Outcomes
 
-Browsers have no process exit code. Observe `running.Completion` and translate the structured [`Exit`]({{< relref "/flow/reference/exit/_index.md" >}}) into application
+Browsers have no process exit code. Observe `running.Completion` and translate the structured `Exit` into application
 state, a fatal-error screen, or an error-reporting adapter:
 
 ```fsharp

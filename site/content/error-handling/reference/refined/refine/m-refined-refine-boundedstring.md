@@ -2,6 +2,7 @@
 title: "Refined.Refine.boundedString"
 linkTitle: "boundedString"
 weight: 3005
+type: docs
 ---
 
 Builds a string whose length is within an inclusive range.

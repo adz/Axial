@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessCancellation"
 linkTitle: "ProcessCancellation"
 weight: 1012
+type: docs
 ---
 
  Diagnostic details for caller-initiated process cancellation.

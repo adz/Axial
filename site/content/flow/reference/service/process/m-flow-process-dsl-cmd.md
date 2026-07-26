@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.cmd"
 linkTitle: "cmd"
 weight: 2800
+type: docs
 ---
 
  Builds a command-line-shaped command while preserving every interpolation hole as one argument.

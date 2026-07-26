@@ -2,6 +2,7 @@
 title: "System.String.IsNotEmpty"
 linkTitle: "IsNotEmpty"
 weight: 2301
+type: docs
 ---
 
 True when the string has at least one character and is non-null.

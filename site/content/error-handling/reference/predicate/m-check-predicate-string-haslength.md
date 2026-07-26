@@ -2,6 +2,7 @@
 title: "System.String.HasLength"
 linkTitle: "HasLength"
 weight: 2306
+type: docs
 ---
 
 True when the string length equals the supplied expected length.

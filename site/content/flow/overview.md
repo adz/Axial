@@ -10,7 +10,7 @@ type: docs
 
 - [Getting Started](../getting-started/) — learn the Flow type, creation, execution, composition, failures,
   dependencies, and application lifecycle one step at a time.
-- [Application Lifecycle](../applications/) — root applications with [`App.run`]({{< relref "/flow/reference/app/m-flow-app-run.md" >}}), [`App.start`]({{< relref "/flow/reference/app/m-flow-app-start.md" >}}), and coordinated stop.
+- [Application Lifecycle](../applications/) — root applications with `App.run`, `App.start`, and coordinated stop.
 - [Task and Async Interop](../core-concepts/task-async-interop/) — binding `Async`, `Task`, `ValueTask`, and attempt constructors.
 - [Defects and Exceptions](../core-concepts/defects/) — typed failures, defects, interruption, and exception recovery.
 - [Bind](../core-concepts/bind/) — bind-site error assignment and mapping inside `flow {}`.
@@ -19,7 +19,7 @@ type: docs
 ## Dependencies and Resources
 
 - [Dependencies](../services-and-runtimes/dependencies/) — records, services, layers, scopes, and host boundaries.
-- [Explicit Services](../services-and-runtimes/explicit-services/) — reusable service contracts with [`IHas<'service>`]({{< relref "/flow/reference/service/t-flow-ihas.md" >}}).
+- [Explicit Services](../services-and-runtimes/explicit-services/) — reusable service contracts with `IHas<'service>`.
 - [Layers](../services-and-runtimes/layers/) — building explicit environments.
 - [Scopes and Resources](../services-and-runtimes/scopes-and-resources/) — resource lifetime and cleanup.
 - [Building a Base Runtime](../services-and-runtimes/building-a-base-runtime/) — standard operational services.

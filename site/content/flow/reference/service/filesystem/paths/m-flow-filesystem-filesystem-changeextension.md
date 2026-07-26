@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.changeExtension"
 linkTitle: "changeExtension"
 weight: 2701
+type: docs
 ---
 
 Changes a path extension through an explicit file-system service.

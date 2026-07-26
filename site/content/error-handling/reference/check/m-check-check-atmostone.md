@@ -2,6 +2,7 @@
 title: "Check.atMostOne"
 linkTitle: "atMostOne"
 weight: 2226
+type: docs
 ---
 
 Runs a sequence-shaped check requiring zero or one item.

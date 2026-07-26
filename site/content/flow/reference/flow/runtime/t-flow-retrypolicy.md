@@ -2,6 +2,7 @@
 title: "Flow.RetryPolicy"
 linkTitle: "RetryPolicy<error>"
 weight: 1000
+type: docs
 ---
 
  Defines how runtime retry helpers repeat typed failures in a controlled way.

@@ -2,6 +2,7 @@
 title: "Flow.Console.live"
 linkTitle: "live"
 weight: 2102
+type: docs
 ---
 
 Creates a live console service backed by <a href="https://learn.microsoft.com/dotnet/api/system.console">Console</a>.

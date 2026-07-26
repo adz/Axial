@@ -2,6 +2,7 @@
 title: "Flow.Schedule.retry"
 linkTitle: "retry"
 weight: 2105
+type: docs
 ---
 
 Retries a failing flow according to the supplied schedule.

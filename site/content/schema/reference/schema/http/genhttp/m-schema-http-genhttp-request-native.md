@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.Request.native"
 linkTitle: "native"
 weight: 2201
+type: docs
 ---
 
 Returns the native GenHTTP request for host-specific boundary handling.

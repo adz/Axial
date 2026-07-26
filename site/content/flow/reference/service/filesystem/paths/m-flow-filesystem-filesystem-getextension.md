@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getExtension"
 linkTitle: "getExtension"
 weight: 2705
+type: docs
 ---
 
 Gets the extension for a path through an explicit file-system service.

@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.put"
 linkTitle: "put"
 weight: 2204
+type: docs
 ---
 
 Starts a PUT endpoint spec at the supplied path.

@@ -2,6 +2,7 @@
 title: "Check.between"
 linkTitle: "between"
 weight: 2210
+type: docs
 ---
 
 Returns an ordered-value check requiring a value inside the supplied inclusive bounds.

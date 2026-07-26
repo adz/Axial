@@ -2,6 +2,7 @@
 title: "Check.Number.greaterThan"
 linkTitle: "greaterThan"
 weight: 2401
+type: docs
 ---
 
 Requires a value to be greater than the supplied exclusive lower bound.

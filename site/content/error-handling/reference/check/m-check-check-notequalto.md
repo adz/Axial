@@ -2,6 +2,7 @@
 title: "Check.notEqualTo"
 linkTitle: "notEqualTo"
 weight: 2230
+type: docs
 ---
 
 Returns a value check requiring inequality with the supplied unexpected value.

@@ -2,6 +2,7 @@
 title: "Flow.Process.StageFailure"
 linkTitle: "StageFailure"
 weight: 1013
+type: docs
 ---
 
  Diagnostic details for an unsuccessful process stage.

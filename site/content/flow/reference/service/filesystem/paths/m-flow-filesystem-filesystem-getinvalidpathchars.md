@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getInvalidPathChars"
 linkTitle: "getInvalidPathChars"
 weight: 2704
+type: docs
 ---
 
 Gets invalid path characters through an explicit file-system service.

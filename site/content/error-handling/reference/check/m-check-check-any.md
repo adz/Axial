@@ -2,6 +2,7 @@
 title: "Check.any"
 linkTitle: "any"
 weight: 2101
+type: docs
 ---
 
 Combines checks disjunctively by running checks until one succeeds, or returns accumulated failures when every check fails. An empty list fails with no failures.

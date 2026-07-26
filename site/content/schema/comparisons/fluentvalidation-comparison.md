@@ -60,9 +60,7 @@ a question the rest of the codebase can ask.
 
 FluentValidation rules are lambdas inside a class: they can run, but nothing else can read them. Axial constraints are
 inspectable metadata, so the same declaration also produces the JSON Schema/OpenAPI contract
-([`JsonSchema.generate`]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate/" >}})), UI metadata
-([`Inspect.model`]({{< relref "/schema/reference/schema/m-schema-inspect-model/" >}})), a compiled JSON codec
-([`Json.compile`]({{< relref "/schema/reference/codec/m-schema-json-json-compile/" >}})), and redisplayable form
+(`JsonSchema.generate`), UI metadata (`Inspect.model`), a compiled JSON codec (`Json.compile`), and redisplayable form
 errors. With FluentValidation, each of those is a separate artifact to keep in sync by hand.
 
 ## Where FluentValidation Fits Better
@@ -71,7 +69,7 @@ errors. With FluentValidation, each of those is a separate artifact to keep in s
 - Validation of objects you genuinely do not construct (third-party types, EF entities mid-flight).
 - Teams that want C#-first fluent syntax rather than F# declarations.
 
-[`Schema.check`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-check/" >}}) `schema model` re-checks an existing value against the same field schemas and constructor. It returns
+`Schema.check schema model` re-checks an existing value against the same field schemas and constructor. It returns
 `SchemaErrors` with the same paths as parsing.
 
 ## Side By Side

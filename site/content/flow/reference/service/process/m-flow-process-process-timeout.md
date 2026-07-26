@@ -2,6 +2,7 @@
 title: "Flow.Process.timeout"
 linkTitle: "timeout"
 weight: 2408
+type: docs
 ---
 
  Sets the maximum execution time for the complete process topology.

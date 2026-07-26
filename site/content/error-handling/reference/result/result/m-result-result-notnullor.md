@@ -2,6 +2,7 @@
 title: "Result.notNullOr"
 linkTitle: "notNullOr"
 weight: 2305
+type: docs
 ---
 
 Keeps a non-null reference, or returns the supplied error.

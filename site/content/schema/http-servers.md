@@ -51,17 +51,16 @@ its path as an RFC 6901 JSON pointer, so clients can attach errors to fields mec
 }
 ```
 
-[`ProblemDetails.ofParsed`]({{< relref "/schema/reference/schema/http/m-schema-http-problemdetails-ofparsed/" >}}) builds that value from any failed `RetainedParseResult`;
-[`ProblemDetails.ofErrors`]({{< relref "/schema/reference/schema/http/m-schema-http-problemdetails-oferrors/" >}}) accepts
-`SchemaErrors` directly. [`ProblemDetails.malformedJson`]({{< relref "/schema/reference/schema/http/p-schema-http-problemdetails-malformedjson/" >}}) is the stable 400 value used
+`ProblemDetails.ofParsed` builds that value from any failed `RetainedParseResult`; `ProblemDetails.ofErrors` accepts
+`SchemaErrors` directly. `ProblemDetails.malformedJson` is the stable 400 value used
 when a JSON body is not syntactically valid. Schema diagnostics and malformed JSON therefore share one media type and
 response shape.
 
 ## Declaring endpoints for OpenAPI
 
-[`EndpointSpec`]({{< relref "/schema/reference/schema/http/t-schema-http-endpointspec/" >}}) describes the boundary contract of one endpoint — method, path, request schema, responses — and
-[`OpenApi.document`]({{< relref "/schema/reference/schema/http/m-schema-http-openapi-document/" >}}) assembles the specs into an OpenAPI 3.1 document. Request and response schemas are embedded from
-[`JsonSchema.generate`]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate/" >}}) output, so the published contract cannot drift from what the parser accepts:
+`EndpointSpec` describes the boundary contract of one endpoint — method, path, request schema, responses — and
+`OpenApi.document` assembles the specs into an OpenAPI 3.1 document. Request and response schemas are embedded from
+`JsonSchema.generate` output, so the published contract cannot drift from what the parser accepts:
 
 ```fsharp
 open Axial.Schema.Http
@@ -112,15 +111,13 @@ let endpoint =
 app.MapPost("/signups", endpoint signupEndpoint)
 ```
 
-([`flowEndpoint`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-flowendpoint-flowendpoint/" >}}))
-
 The application workflow stays independent of ASP.NET Core:
 
 ```fsharp
 createSignup : Signup -> Flow<AppEnv, string, Signup>
 ```
 
-[`EndpointFlow.run`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-endpointflow-run/" >}}) `createSignup signup` adapts it to the endpoint Flow by projecting `HttpEndpointEnv.App` and wrapping
+`EndpointFlow.run createSignup signup` adapts it to the endpoint Flow by projecting `HttpEndpointEnv.App` and wrapping
 typed failures as `EndpointError.ApplicationError`. The endpoint Flow itself has this shape:
 
 ```fsharp
@@ -164,12 +161,12 @@ ASP.NET Core request operations are:
 
 | Operation | Result |
 | --- | --- |
-| [`Request.json`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-request-json/" >}}) `schema` | Parses the JSON body; malformed JSON and schema failures become 400 problem details. |
-| [`Request.form`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-request-form/" >}}) `schema` | Reads the posted form and parses its name/value input. |
-| [`Request.query`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-request-query/" >}}) `schema` | Parses the complete query string. |
-| [`Request.route`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-request-route/" >}}) `name schema` | Parses one scalar route value, or `Data.Null` when absent. |
-| [`Request.raw`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-request-raw/" >}}) `projection` | Projects an untrusted value directly from `HttpRequest` without establishing schema trust. |
-| [`Request.native`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-request-native/" >}}) | Returns `HttpRequest` for deliberately host-specific handling. |
+| `Request.json schema` | Parses the JSON body; malformed JSON and schema failures become 400 problem details. |
+| `Request.form schema` | Reads the posted form and parses its name/value input. |
+| `Request.query schema` | Parses the complete query string. |
+| `Request.route name schema` | Parses one scalar route value, or `Data.Null` when absent. |
+| `Request.raw projection` | Projects an untrusted value directly from `HttpRequest` without establishing schema trust. |
+| `Request.native` | Returns `HttpRequest` for deliberately host-specific handling. |
 
 `Request.raw` does not catch exceptions from the projection. Such exceptions remain Flow defects and reach ASP.NET
 exception middleware.
@@ -178,10 +175,10 @@ exception middleware.
 
 | Operation | Result |
 | --- | --- |
-| [`Response.json`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-response-json/" >}}) `status codec value` | Streams a trusted value as JSON through the compiled codec. |
-| [`Response.text`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-response-text/" >}}) `status value` | Returns plain text with the supplied status. |
-| [`Response.empty`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-response-empty/" >}}) `status` | Returns an empty response with the supplied status. |
-| [`Response.native`]({{< relref "/schema/reference/schema/http/aspnetcore/m-schema-http-aspnetcore-response-native/" >}}) `result` | Returns an existing ASP.NET `IResult` unchanged. |
+| `Response.json status codec value` | Streams a trusted value as JSON through the compiled codec. |
+| `Response.text status value` | Returns plain text with the supplied status. |
+| `Response.empty status` | Returns an empty response with the supplied status. |
+| `Response.native result` | Returns an existing ASP.NET `IResult` unchanged. |
 
 The endpoint Flow may branch and return different response values. The typed application-error renderer is separate
 from these successful response choices.
@@ -292,8 +289,8 @@ lower-level `SchemaRequest`, `SchemaResult`, and `SchemaResponse` surfaces.
 The core package also owns the host-neutral input rules, so every adapter produces identical `Data` for
 identical wire data:
 
-- [`BoundaryInput.ofQuery`]({{< relref "/schema/reference/schema/http/m-schema-http-boundaryinput-ofquery/" >}}) builds flat input from query pairs; repeated names become collections.
-- [`BoundaryInput.ofForm`]({{< relref "/schema/reference/schema/http/m-schema-http-boundaryinput-ofform/" >}}) nests dotted names (`address.street`), turns repeated names into collections, and turns
+- `BoundaryInput.ofQuery` builds flat input from query pairs; repeated names become collections.
+- `BoundaryInput.ofForm` nests dotted names (`address.street`), turns repeated names into collections, and turns
   sibling numeric segments (`tags.0`, `tags.1`) into ordered collections.
 
 Form input is hostile, so `ofForm` drops contradictory pairs instead of raising. One consequence to know: a name

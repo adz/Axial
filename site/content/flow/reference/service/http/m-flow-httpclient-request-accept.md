@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.accept"
 linkTitle: "accept"
 weight: 2307
+type: docs
 ---
 
  Sets the Accept header. <example><code>request |&gt; Request.accept "application/json"</code></example>

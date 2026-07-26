@@ -2,6 +2,7 @@
 title: "Flow.Deferred.complete"
 linkTitle: "complete"
 weight: 2003
+type: docs
 ---
 
 Attempts to complete the deferred value with a full outcome.

@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.info"
 linkTitle: "info"
 weight: 2303
+type: docs
 ---
 
 Writes an informational log message through an explicit logging service.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getDirectoryName"
 linkTitle: "getDirectoryName"
 weight: 2702
+type: docs
 ---
 
 Gets the directory name for a path through an explicit file-system service.

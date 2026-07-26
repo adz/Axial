@@ -2,6 +2,7 @@
 title: "Refined.Parse.intOption"
 linkTitle: "intOption"
 weight: 2111
+type: docs
 ---
 
 Parses an optional integer. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.

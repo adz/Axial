@@ -1,5 +1,6 @@
 ---
 title: "Refine"
+type: docs
 ---
 
 `Refine` contains type-directed construction and the common built-in refinement functions.

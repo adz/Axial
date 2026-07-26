@@ -2,6 +2,7 @@
 title: "Check.present"
 linkTitle: "present"
 weight: 2200
+type: docs
 ---
 
 Runs the type-directed presence check for an already parsed optional, nullable, text, or sequence-shaped value.

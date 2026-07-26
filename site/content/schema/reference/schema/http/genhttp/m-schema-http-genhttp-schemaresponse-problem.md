@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.SchemaResponse.problem"
 linkTitle: "problem"
 weight: 2700
+type: docs
 ---
 
 A 400 <code>application/problem+json</code> response rendering the failed parse&#39;s diagnostics.

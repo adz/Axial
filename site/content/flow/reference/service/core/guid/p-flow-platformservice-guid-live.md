@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Guid.live"
 linkTitle: "live"
 weight: 2501
+type: docs
 ---
 
 Creates a live GUID service backed by <code>Guid.NewGuid()</code>.

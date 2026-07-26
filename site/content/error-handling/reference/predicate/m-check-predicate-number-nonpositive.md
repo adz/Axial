@@ -2,6 +2,7 @@
 title: "Check.Predicate.Number.nonPositive"
 linkTitle: "nonPositive"
 weight: 2508
+type: docs
 ---
 
 Returns true when the value is less than or equal to zero.

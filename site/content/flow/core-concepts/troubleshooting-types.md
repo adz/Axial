@@ -144,11 +144,11 @@ If the compiler error mentions one of these shapes, check the boundary first:
 - `Task<Result<...>>`
 - `Flow<...>`
 
-Retry and repeat live on [`Schedule`]({{< relref "/flow/reference/schedule/_index.md" >}}) (`Schedule.retry`, `Schedule.repeat`), not on [`Flow`]({{< relref "/flow/reference/flow/t-flow-flow.md" >}}), to avoid ambiguity with shorter `Flow` aliases.
+Retry and repeat live on `Schedule` (`Schedule.retry`, `Schedule.repeat`), not on `Flow`, to avoid ambiguity with shorter `Flow` aliases.
 
 Most fixes are one of:
 
 - add a type annotation to disambiguate `let!` overloads
 - derive a smaller local environment with `localEnv`
-- use [`Bind.error`]({{< relref "/flow/reference/bind/m-flow-bind-error.md" >}}) or [`Bind.mapError`]({{< relref "/flow/reference/bind/m-flow-bind-maperror.md" >}}) at a `flow {}` bind site when the source error must be assigned or mapped first
+- use `Bind.error` or `Bind.mapError` at a `flow {}` bind site when the source error must be assigned or mapped first
 - move back to plain Result until the real workflow boundary appears

@@ -2,6 +2,7 @@
 title: "Refined.Character.isControl"
 linkTitle: "isControl"
 weight: 2605
+type: docs
 ---
 
 Returns true when the character is a control character.

@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.HasAtMostOneItem"
 linkTitle: "HasAtMostOneItem"
 weight: 2408
+type: docs
 ---
 
 True when the sequence is non-null and contains zero or one item.

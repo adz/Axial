@@ -2,6 +2,7 @@
 title: "Check.count"
 linkTitle: "count"
 weight: 2219
+type: docs
 ---
 
 Returns a sequence-shaped check requiring exactly the supplied count.

@@ -16,7 +16,9 @@ body_class: axial-home
 <div class="docs-home-copy" style="max-width: 78ch; margin: 0 auto;">
 <span class="eyebrow">F# libraries for .NET and Fable JavaScript</span>
 
-<h1 id="axial-tagline">If it compiles, the invariant already held.</h1>
+<h1>Encode each invariant once. Enforce it across the project.</h1>
+
+<p id="axial-tagline" class="axial-tagline">If it compiles, the invariant already held.</p>
 <script>
 (function () {
   var taglines = [
@@ -35,7 +37,11 @@ body_class: axial-home
 </script>
 
 <div class="lede">
-Axial's goal is to push what you'd otherwise check at runtime into a type that can't be ignored, and keep the diagnostics when reality disagrees.
+<p>F# already provides strong foundations: discriminated unions and records for modelling, immutability by default, and explicit handling of missing values.</p>
+
+<p>Axial builds on those foundations to enforce project-wide rules across values, boundaries, failures, dependencies, and concurrent work.</p>
+
+<p>The goal is to replace repetitive, error-prone code with APIs that are ergonomic for humans and predictable for LLMs, reducing the context both need to produce reliable software.</p>
 </div>
 </div>
 

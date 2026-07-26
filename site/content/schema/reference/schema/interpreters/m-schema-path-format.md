@@ -2,6 +2,7 @@
 title: "Schema.Path.format"
 linkTitle: "format"
 weight: 2206
+type: docs
 ---
 
 Formats a path with dot-separated keys and bracketed indexes.

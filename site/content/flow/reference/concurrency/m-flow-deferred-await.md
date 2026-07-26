@@ -2,6 +2,7 @@
 title: "Flow.Deferred.await"
 linkTitle: "await"
 weight: 2002
+type: docs
 ---
 
 Waits for the deferred outcome, preserving success, typed failure, defect, or interruption.

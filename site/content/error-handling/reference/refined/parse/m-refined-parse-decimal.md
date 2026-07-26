@@ -2,6 +2,7 @@
 title: "Refined.Parse.decimal"
 linkTitle: "decimal"
 weight: 2102
+type: docs
 ---
 
 Parses a decimal number.

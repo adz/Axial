@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.head"
 linkTitle: "head"
 weight: 2501
+type: docs
 ---
 
  Creates a HEAD request. <example><code>Http.head "https://api.example.com/users"</code></example>

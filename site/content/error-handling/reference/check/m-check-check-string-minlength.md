@@ -2,6 +2,7 @@
 title: "Check.String.minLength"
 linkTitle: "minLength"
 weight: 2303
+type: docs
 ---
 
 Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.

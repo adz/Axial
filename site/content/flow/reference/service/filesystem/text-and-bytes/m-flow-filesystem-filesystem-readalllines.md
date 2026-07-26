@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.readAllLines"
 linkTitle: "readAllLines"
 weight: 2203
+type: docs
 ---
 
 Reads all lines through an explicit file-system service.

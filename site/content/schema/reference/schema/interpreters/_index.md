@@ -1,6 +1,7 @@
 ---
 title: "Schema Interpreters"
 weight: 500
+type: docs
 ---
 
 This page shows structured boundary data, universal schema parsing into `Result`, opt-in input retention with `RetainedParseResult`, checking of existing values, and refined schemas. Core schema metadata stays in [Schema](../); interpreters attach path-aware `SchemaErrors` and optional redisplay behavior to it.

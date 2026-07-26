@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getDirectoryLastWriteTime"
 linkTitle: "getDirectoryLastWriteTime"
 weight: 2608
+type: docs
 ---
 
 Gets directory last write time through an explicit file-system service.

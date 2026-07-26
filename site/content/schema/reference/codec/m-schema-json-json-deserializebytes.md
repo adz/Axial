@@ -2,6 +2,7 @@
 title: "Schema.Json.deserializeBytes"
 linkTitle: "deserializeBytes"
 weight: 2105
+type: docs
 ---
 
 Deserializes UTF-8 JSON bytes to a trusted model through a compiled codec.

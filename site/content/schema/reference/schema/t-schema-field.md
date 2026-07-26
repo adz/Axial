@@ -2,6 +2,7 @@
 title: "Schema.Field"
 linkTitle: "Field<model, value>"
 weight: 1001
+type: docs
 ---
 
 

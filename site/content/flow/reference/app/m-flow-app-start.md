@@ -2,6 +2,7 @@
 title: "Flow.App.start"
 linkTitle: "start"
 weight: 2100
+type: docs
 ---
 
 Starts a root workflow and returns a handle that owns its lifetime.

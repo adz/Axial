@@ -2,6 +2,7 @@
 title: "Flow.Bind.error"
 linkTitle: "error"
 weight: 2100
+type: docs
 ---
 
 Assigns an error to a missing or unit-error source before <code>flow { }</code> binds it.

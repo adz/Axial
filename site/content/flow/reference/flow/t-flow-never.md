@@ -2,6 +2,7 @@
 title: "Flow.Never"
 linkTitle: "Never"
 weight: 1006
+type: docs
 ---
 
  Represents an error channel that cannot occur.

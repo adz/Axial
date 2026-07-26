@@ -2,6 +2,7 @@
 title: "Check.Seq.countBetween"
 linkTitle: "countBetween"
 weight: 2505
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.

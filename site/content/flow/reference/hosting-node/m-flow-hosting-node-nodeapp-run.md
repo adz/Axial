@@ -2,6 +2,7 @@
 title: "Flow.Hosting.Node.NodeApp.run"
 linkTitle: "run"
 weight: 2002
+type: docs
 ---
 
 Starts a Node application and waits for its final exit.

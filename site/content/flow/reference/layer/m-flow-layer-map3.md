@@ -2,6 +2,7 @@
 title: "Flow.Layer.map3"
 linkTitle: "map3"
 weight: 2215
+type: docs
 ---
 
 Combines three layers with a mapping function.

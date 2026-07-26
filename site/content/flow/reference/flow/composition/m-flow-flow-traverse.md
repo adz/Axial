@@ -2,6 +2,7 @@
 title: "Flow.traverse"
 linkTitle: "traverse"
 weight: 2335
+type: docs
 ---
 
 Transforms a sequence of values into a flow and stops at the first failure.

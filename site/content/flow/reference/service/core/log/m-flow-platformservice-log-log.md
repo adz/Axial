@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.log"
 linkTitle: "log"
 weight: 2300
+type: docs
 ---
 
 Writes a log message at the requested level through an explicit logging service.

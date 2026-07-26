@@ -2,6 +2,7 @@
 title: "Flow.attemptTask"
 linkTitle: "attemptTask"
 weight: 2311
+type: docs
 ---
 
 Creates a flow from a task operation and treats thrown exceptions as recoverable typed errors.

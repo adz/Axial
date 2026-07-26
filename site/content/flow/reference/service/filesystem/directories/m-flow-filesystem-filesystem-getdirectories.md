@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getDirectories"
 linkTitle: "getDirectories"
 weight: 2507
+type: docs
 ---
 
 Gets directories through an explicit file-system service.

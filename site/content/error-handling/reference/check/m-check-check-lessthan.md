@@ -2,6 +2,7 @@
 title: "Check.lessThan"
 linkTitle: "lessThan"
 weight: 2212
+type: docs
 ---
 
 Returns an ordered-value check requiring a value less than the supplied exclusive upper bound.

@@ -2,6 +2,7 @@
 title: "Refined.Parse.dateTime"
 linkTitle: "dateTime"
 weight: 2106
+type: docs
 ---
 
 Parses a date and time value.

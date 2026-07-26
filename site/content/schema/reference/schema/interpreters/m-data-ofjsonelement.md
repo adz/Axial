@@ -2,6 +2,7 @@
 title: "Data.ofJsonElement"
 linkTitle: "ofJsonElement"
 weight: 2006
+type: docs
 ---
 
 Builds structured data from a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement">JsonElement</a>.

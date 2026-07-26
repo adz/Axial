@@ -2,6 +2,7 @@
 title: "Flow.Layer"
 linkTitle: "Layer<input, error, output>"
 weight: 1000
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.FileSystemError.fromException"
 linkTitle: "fromException"
 weight: 2100
+type: docs
 ---
 
 Classifies an exception raised by a file-system operation.

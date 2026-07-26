@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.postJson"
 linkTitle: "postJson"
 weight: 2515
+type: docs
 ---
 
  Encodes a value as JSON, POSTs it, and decodes the JSON response.

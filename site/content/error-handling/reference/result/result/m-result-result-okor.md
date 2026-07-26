@@ -2,6 +2,7 @@
 title: "Result.okOr"
 linkTitle: "okOr"
 weight: 2306
+type: docs
 ---
 
 Takes the successful value from a result, or returns the supplied error.

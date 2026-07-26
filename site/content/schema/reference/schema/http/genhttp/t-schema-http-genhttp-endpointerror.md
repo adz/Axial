@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.EndpointError"
 linkTitle: "EndpointError<error>"
 weight: 1001
+type: docs
 ---
 
 Distinguishes invalid request input from an expected application failure.

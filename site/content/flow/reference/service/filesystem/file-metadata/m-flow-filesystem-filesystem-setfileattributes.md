@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setFileAttributes"
 linkTitle: "setFileAttributes"
 weight: 2401
+type: docs
 ---
 
 Sets file attributes through an explicit file-system service.

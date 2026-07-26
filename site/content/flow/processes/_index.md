@@ -5,7 +5,7 @@ weight: 40
 type: docs
 ---
 
-`Axial.Flow.Process` represents external work as an immutable [`ProcessSpec`]({{< relref "/flow/reference/service/process/t-flow-process-processspec.md" >}}). Building a specification performs no I/O. [`Process.run`]({{< relref "/flow/reference/service/process/m-flow-process-process-run.md" >}}) asks the [`IProcess`]({{< relref "/flow/reference/service/process/t-flow-process-iprocess.md" >}}) service to interpret it in the current Flow runtime.
+`Axial.Flow.Process` represents external work as an immutable `ProcessSpec`. Building a specification performs no I/O. `Process.run` asks the `IProcess` service to interpret it in the current Flow runtime.
 
 ```fsharp
 open Axial.Flow.Process
@@ -16,15 +16,13 @@ let version =
     |> Process.run
 ```
 
-[`Process.command`]({{< relref "/flow/reference/service/process/m-flow-process-process-command.md" >}}) creates a runnable one-stage specification. Configuration functions return updated values, and [`Process.pipe`]({{< relref "/flow/reference/service/process/m-flow-process-process-pipe.md" >}}) connects specifications through real standard streams. `Process.run` returns `Flow<#IHas<IProcess>, ProcessError, ProcessResult>`; [`Process.stream`]({{< relref "/flow/reference/service/process/m-flow-process-process-stream.md" >}}) returns output and completion events with backpressure.
+`Process.command` creates a runnable one-stage specification. Configuration functions return updated values, and `Process.pipe` connects specifications through real standard streams. `Process.run` returns `Flow<#IHas<IProcess>, ProcessError, ProcessResult>`; `Process.stream` returns output and completion events with backpressure.
 
 The live interpreter receives its operational dependencies explicitly:
 
 ```fsharp
 let process = Process.live clock fileSystem console
 ```
-
-[`Process.live`]({{< relref "/flow/reference/service/process/m-flow-process-process-live.md" >}}) builds that interpreter.
 
 Flow owns scheduling, cancellation, timeout racing, and scope cleanup. The live interpreter translates interruption into process-tree termination and cleans up every stage that started, including partial startup.
 

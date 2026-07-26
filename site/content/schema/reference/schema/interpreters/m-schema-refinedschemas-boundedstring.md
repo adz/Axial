@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.boundedString"
 linkTitle: "boundedString"
 weight: 2302
+type: docs
 ---
 
 Describes a bounded string as a schema refined value over required text with inclusive length bounds.

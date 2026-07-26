@@ -2,6 +2,7 @@
 title: "Flow.ToValueTask"
 linkTitle: "ToValueTask"
 weight: 2202
+type: docs
 ---
 
 Starts the workflow and returns a value-task handle that completes with the final exit.

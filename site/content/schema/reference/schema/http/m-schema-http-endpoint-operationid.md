@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.operationId"
 linkTitle: "operationId"
 weight: 2208
+type: docs
 ---
 
 Sets the OpenAPI operation id.

@@ -2,6 +2,7 @@
 title: "Schema.RetainedParseResult.create"
 linkTitle: "create"
 weight: 2105
+type: docs
 ---
 
 Retains structured data alongside an existing schema parse result.

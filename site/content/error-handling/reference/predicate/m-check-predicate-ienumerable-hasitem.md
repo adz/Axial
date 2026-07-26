@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.HasItem"
 linkTitle: "HasItem"
 weight: 2402
+type: docs
 ---
 
 True when the sequence is non-null and contains the supplied value.

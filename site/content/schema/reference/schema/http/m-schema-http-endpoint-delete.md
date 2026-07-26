@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.delete"
 linkTitle: "delete"
 weight: 2206
+type: docs
 ---
 
 Starts a DELETE endpoint spec at the supplied path.

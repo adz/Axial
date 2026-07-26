@@ -2,6 +2,7 @@
 title: "Schema.bool"
 linkTitle: "bool"
 weight: 2103
+type: docs
 ---
 
 Describes a Boolean value.

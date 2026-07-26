@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.writeAllBytesAsync"
 linkTitle: "writeAllBytesAsync"
 weight: 2215
+type: docs
 ---
 
 Asynchronously writes all bytes through an explicit file-system service.

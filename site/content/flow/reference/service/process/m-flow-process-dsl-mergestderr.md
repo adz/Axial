@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.mergeStderr"
 linkTitle: "mergeStderr"
 weight: 2807
+type: docs
 ---
 
  Routes final stderr through final stdout targets.

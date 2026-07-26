@@ -2,6 +2,7 @@
 title: "Flow.App.run"
 linkTitle: "run"
 weight: 2102
+type: docs
 ---
 
 Runs a root workflow to completion using the caller&#39;s asynchronous cancellation token.

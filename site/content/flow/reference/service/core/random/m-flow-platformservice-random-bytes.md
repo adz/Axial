@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Random.bytes"
 linkTitle: "bytes"
 weight: 2405
+type: docs
 ---
 
 Creates a byte array filled through an explicit random-number service.

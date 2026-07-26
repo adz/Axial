@@ -2,6 +2,7 @@
 title: "Schema.SchemaCE.schema"
 linkTitle: "schema"
 weight: 2200
+type: docs
 ---
 
 Record-schema computation expression.

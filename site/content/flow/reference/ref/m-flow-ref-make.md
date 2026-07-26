@@ -2,6 +2,7 @@
 title: "Flow.Ref.make"
 linkTitle: "make"
 weight: 2100
+type: docs
 ---
 
 Creates a new <a href="https://learn.microsoft.com/dotnet/api/axial.ref-1">Ref</a> with the initial value.

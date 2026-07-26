@@ -2,6 +2,7 @@
 title: "Check.matches"
 linkTitle: "matches"
 weight: 2208
+type: docs
 ---
 
 Returns a string check requiring a match for the supplied regular expression pattern.

@@ -2,6 +2,7 @@
 title: "Flow.FiberObserver.none"
 linkTitle: "none"
 weight: 2101
+type: docs
 ---
 
 The default observer: every hook is a no-op.

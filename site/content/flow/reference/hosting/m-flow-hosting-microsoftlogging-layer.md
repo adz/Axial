@@ -2,6 +2,7 @@
 title: "Flow.Hosting.MicrosoftLogging.layer"
 linkTitle: "layer"
 weight: 2202
+type: docs
 ---
 
 Builds an Axial logger from a Microsoft logger factory supplied in the layer input.

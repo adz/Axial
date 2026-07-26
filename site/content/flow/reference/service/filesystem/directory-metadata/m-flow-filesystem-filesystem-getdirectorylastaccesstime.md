@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getDirectoryLastAccessTime"
 linkTitle: "getDirectoryLastAccessTime"
 weight: 2604
+type: docs
 ---
 
 Gets directory last access time through an explicit file-system service.

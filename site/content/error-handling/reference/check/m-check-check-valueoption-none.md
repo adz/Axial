@@ -2,6 +2,7 @@
 title: "Check.ValueOption.none"
 linkTitle: "none"
 weight: 2603
+type: docs
 ---
 
 Requires a value option to contain no value.

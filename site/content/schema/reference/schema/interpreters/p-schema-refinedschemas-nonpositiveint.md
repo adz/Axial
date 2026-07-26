@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.nonPositiveInt"
 linkTitle: "nonPositiveInt"
 weight: 2308
+type: docs
 ---
 
 Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.

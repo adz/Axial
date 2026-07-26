@@ -2,6 +2,7 @@
 title: "Flow.apply"
 linkTitle: "apply"
 weight: 2330
+type: docs
 ---
 
 Applies a flow-wrapped function to a flow-wrapped value.

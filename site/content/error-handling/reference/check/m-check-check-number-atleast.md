@@ -2,6 +2,7 @@
 title: "Check.Number.atLeast"
 linkTitle: "atLeast"
 weight: 2403
+type: docs
 ---
 
 Requires a value to be greater than or equal to the supplied lower bound.

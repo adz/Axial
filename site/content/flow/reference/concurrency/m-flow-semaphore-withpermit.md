@@ -2,6 +2,7 @@
 title: "Flow.Semaphore.withPermit"
 linkTitle: "withPermit"
 weight: 2103
+type: docs
 ---
 
 Runs a workflow while holding one permit and always releases the permit afterward.

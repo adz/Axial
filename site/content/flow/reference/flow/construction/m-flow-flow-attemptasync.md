@@ -2,6 +2,7 @@
 title: "Flow.attemptAsync"
 linkTitle: "attemptAsync"
 weight: 2309
+type: docs
 ---
 
 Creates a flow from an async operation and treats thrown exceptions as recoverable typed errors.

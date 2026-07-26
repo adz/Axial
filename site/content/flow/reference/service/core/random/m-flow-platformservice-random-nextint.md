@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Random.nextInt"
 linkTitle: "nextInt"
 weight: 2402
+type: docs
 ---
 
 Reads a random integer from an explicit random-number service.

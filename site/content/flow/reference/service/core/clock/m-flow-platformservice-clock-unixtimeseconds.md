@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Clock.unixTimeSeconds"
 linkTitle: "unixTimeSeconds"
 weight: 2202
+type: docs
 ---
 
 Reads the current Unix timestamp in seconds from an explicit clock service.

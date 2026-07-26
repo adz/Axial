@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.patch"
 linkTitle: "patch"
 weight: 2205
+type: docs
 ---
 
 Starts a PATCH endpoint spec at the supplied path.

@@ -2,6 +2,7 @@
 title: "Flow.Layer.addFinalizer"
 linkTitle: "addFinalizer"
 weight: 2205
+type: docs
 ---
 
 Registers an asynchronous finalizer with the layer scope.

@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.returns"
 linkTitle: "returns"
 weight: 2212
+type: docs
 ---
 
 Adds a body-less response.

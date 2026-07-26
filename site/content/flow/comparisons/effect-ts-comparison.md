@@ -24,9 +24,9 @@ These ideas are shared:
 
 Axial is aimed at ordinary F# application code, especially the point where orchestration becomes visible:
 
-- [`flow {}`]({{< relref "/flow/reference/flow/builders-flow.md" >}}) instead of generator-based syntax, with direct binding for `Async`, `Task`, `ValueTask`, and `ColdTask`
+- `flow {}` instead of generator-based syntax, with direct binding for `Async`, `Task`, `ValueTask`, and `ColdTask`
 - first-class interop with `Result`, `Async`, and `.NET Task`
-- explicit environment reads such as [`Flow.read`]({{< relref "/flow/reference/flow/environment/m-flow-flow-read.md" >}}) `_.Gateway`
+- explicit environment reads such as `Flow.read _.Gateway`
 - a smaller surface focused on application flows rather than a broader runtime platform
 
 ## What Effect-TS Still Has That Axial Does Not
@@ -61,6 +61,6 @@ The closest Axial substitute is not the whole Effect-TS runtime. It is the combi
 
 - `Check` for pure guards
 - `Validation` for accumulating validation
-- [`Flow`]({{< relref "/flow/reference/flow/t-flow-flow.md" >}}) for explicit application boundaries
+- `Flow` for explicit application boundaries
 
 That is the part Axial intentionally covers.

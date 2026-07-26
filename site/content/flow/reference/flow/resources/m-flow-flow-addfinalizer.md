@@ -2,6 +2,7 @@
 title: "Flow.addFinalizer"
 linkTitle: "addFinalizer"
 weight: 2500
+type: docs
 ---
 
 Registers an asynchronous finalizer with the current runtime scope.

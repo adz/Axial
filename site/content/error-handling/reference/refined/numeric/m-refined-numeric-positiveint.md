@@ -2,6 +2,7 @@
 title: "Refined.Numeric.positiveInt"
 linkTitle: "positiveInt"
 weight: 2300
+type: docs
 ---
 
 Builds a positive integer.

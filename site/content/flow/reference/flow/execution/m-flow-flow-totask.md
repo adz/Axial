@@ -2,6 +2,7 @@
 title: "Flow.ToTask"
 linkTitle: "ToTask"
 weight: 2201
+type: docs
 ---
 
 Starts the workflow and returns a task handle that completes with the final exit.

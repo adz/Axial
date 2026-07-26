@@ -2,6 +2,7 @@
 title: "Schema.Http.BoundaryInput.ofQuery"
 linkTitle: "ofQuery"
 weight: 2000
+type: docs
 ---
 
 Builds object-shaped structured data from query-string pairs, grouping repeated names into collections.

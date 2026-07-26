@@ -2,6 +2,7 @@
 title: "Schema.Json.deserializeStreamAsync"
 linkTitle: "deserializeStreamAsync"
 weight: 2106
+type: docs
 ---
 
 Reads a stream to end into a pooled buffer, then deserializes it as UTF-8 JSON through a compiled codec.

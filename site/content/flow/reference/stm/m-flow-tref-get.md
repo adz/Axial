@@ -2,6 +2,7 @@
 title: "Flow.TRef.get"
 linkTitle: "get"
 weight: 2101
+type: docs
 ---
 
 Reads the current value of the transactional reference within a transaction.

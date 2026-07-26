@@ -2,6 +2,7 @@
 title: "Flow.Policy.context"
 linkTitle: "context"
 weight: 2403
+type: docs
 ---
 
 Lifts an environment-aware result-returning function and maps its error into the workflow error type.

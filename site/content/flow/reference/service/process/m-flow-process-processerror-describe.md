@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessError.describe"
 linkTitle: "describe"
 weight: 2200
+type: docs
 ---
 
  Formats a process error with stage-aware diagnostic context.

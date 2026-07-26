@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFileCreationTimeUtc"
 linkTitle: "getFileCreationTimeUtc"
 weight: 2403
+type: docs
 ---
 
 Gets file creation time in UTC through an explicit file-system service.

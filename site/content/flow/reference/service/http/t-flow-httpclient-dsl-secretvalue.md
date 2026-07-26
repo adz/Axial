@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.SecretValue"
 linkTitle: "SecretValue"
 weight: 1007
+type: docs
 ---
 
  Marks an interpolated URL value for redaction in plans and transcripts.

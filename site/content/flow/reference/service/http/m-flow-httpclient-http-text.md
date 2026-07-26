@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.text"
 linkTitle: "text"
 weight: 2508
+type: docs
 ---
 
  Sends a request and returns the response body text.

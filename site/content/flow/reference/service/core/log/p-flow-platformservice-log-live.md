@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.live"
 linkTitle: "live"
 weight: 2307
+type: docs
 ---
 
 Creates a no-op logger for tests and local service bundles.

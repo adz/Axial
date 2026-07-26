@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Response.tryHeader"
 linkTitle: "tryHeader"
 weight: 2403
+type: docs
 ---
 
  Finds the first header with the given case-insensitive name.

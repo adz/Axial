@@ -2,6 +2,7 @@
 title: "Schema.Derive.SchemaNameAttribute"
 linkTitle: "SchemaNameAttribute"
 weight: 1501
+type: docs
 ---
 
 <pre>Overrides the external name of one record field or one nullary union case. Without it, field

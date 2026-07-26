@@ -2,6 +2,7 @@
 title: "Data.redisplayPath"
 linkTitle: "redisplayPath"
 weight: 2010
+type: docs
 ---
 
 Parses an input path and redisplays the addressed scalar structured data value.

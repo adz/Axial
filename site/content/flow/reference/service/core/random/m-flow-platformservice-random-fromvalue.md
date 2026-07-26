@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Random.fromValue"
 linkTitle: "fromValue"
 weight: 2408
+type: docs
 ---
 
 Creates a deterministic random generator that always returns the supplied value.

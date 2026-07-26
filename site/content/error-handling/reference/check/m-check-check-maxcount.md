@@ -2,6 +2,7 @@
 title: "Check.maxCount"
 linkTitle: "maxCount"
 weight: 2221
+type: docs
 ---
 
 Returns a sequence-shaped check requiring at most the supplied count.

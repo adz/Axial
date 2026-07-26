@@ -2,6 +2,7 @@
 title: "Check.Seq.minCount"
 linkTitle: "minCount"
 weight: 2503
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.

@@ -2,6 +2,7 @@
 title: "Flow.Schedule"
 linkTitle: "Schedule<env, input, output>"
 weight: 1000
+type: docs
 ---
 
  Represents a stateful schedule that can decide whether to continue and how long to delay.

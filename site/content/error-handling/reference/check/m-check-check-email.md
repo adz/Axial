@@ -2,6 +2,7 @@
 title: "Check.email"
 linkTitle: "email"
 weight: 2207
+type: docs
 ---
 
 Runs Axial's pragmatic email-format check against an already parsed string value.

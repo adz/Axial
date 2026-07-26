@@ -1,6 +1,7 @@
 ---
 title: "Codec"
-weight: 500
+weight: 20
+type: docs
 ---
 
 This page shows the `Axial.Schema.Json` surface: `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with compiler-directed, runtime-reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for serialization; parse untrusted boundary input with [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter.

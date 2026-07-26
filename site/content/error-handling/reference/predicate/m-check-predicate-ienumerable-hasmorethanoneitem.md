@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.HasMoreThanOneItem"
 linkTitle: "HasMoreThanOneItem"
 weight: 2409
+type: docs
 ---
 
 True when the sequence is non-null and contains more than one item.

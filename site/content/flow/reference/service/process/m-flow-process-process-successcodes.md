@@ -2,6 +2,7 @@
 title: "Flow.Process.successCodes"
 linkTitle: "successCodes"
 weight: 2307
+type: docs
 ---
 
  Replaces the set of exit codes considered successful for this command.

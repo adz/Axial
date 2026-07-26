@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.HttpResponse"
 linkTitle: "HttpResponse"
 weight: 1002
+type: docs
 ---
 
 A response plan that GenHTTP executes against the current native request.

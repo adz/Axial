@@ -2,6 +2,7 @@
 title: "Flow..flow"
 linkTitle: "flow { }"
 weight: 2000
+type: docs
 ---
 
 The universal <code>flow { }</code> computation expression.

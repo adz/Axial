@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.negativeInt"
 linkTitle: "negativeInt"
 weight: 2307
+type: docs
 ---
 
 Describes a negative integer as a schema refined value over an integer less than zero.

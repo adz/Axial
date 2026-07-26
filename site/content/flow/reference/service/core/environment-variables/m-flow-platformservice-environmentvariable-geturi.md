@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.getUri"
 linkTitle: "getUri"
 weight: 2615
+type: docs
 ---
 
 Reads a URI environment variable through an explicit service.

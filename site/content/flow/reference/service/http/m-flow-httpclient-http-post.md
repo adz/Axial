@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.post"
 linkTitle: "post"
 weight: 2502
+type: docs
 ---
 
  Creates a POST request. <example><code>Http.post "https://api.example.com/users"</code></example>

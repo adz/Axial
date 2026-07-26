@@ -2,6 +2,7 @@
 title: "Flow.tracedError"
 linkTitle: "tracedError"
 weight: 2323
+type: docs
 ---
 
 Attaches diagnostic trace text to any failure cause of the flow.

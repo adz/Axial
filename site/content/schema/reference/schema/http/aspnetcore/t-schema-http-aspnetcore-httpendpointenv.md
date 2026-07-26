@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.HttpEndpointEnv"
 linkTitle: "HttpEndpointEnv<app>"
 weight: 1000
+type: docs
 ---
 
 The request-scoped environment supplied to an ASP.NET Core endpoint Flow.

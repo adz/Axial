@@ -2,6 +2,7 @@
 title: "Flow.Deferred"
 linkTitle: "Deferred<error, value>"
 weight: 1000
+type: docs
 ---
 
 

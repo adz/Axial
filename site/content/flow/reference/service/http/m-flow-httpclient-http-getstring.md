@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.getString"
 linkTitle: "getString"
 weight: 2511
+type: docs
 ---
 
  Sends a GET request and returns the response body, mirroring <c>HttpClient.GetStringAsync</c>.

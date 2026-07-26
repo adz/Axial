@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessTimeout"
 linkTitle: "ProcessTimeout"
 weight: 1011
+type: docs
 ---
 
  Diagnostic details for an elapsed process deadline.

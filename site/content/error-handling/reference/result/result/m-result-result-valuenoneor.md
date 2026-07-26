@@ -2,6 +2,7 @@
 title: "Result.valueNoneOr"
 linkTitle: "valueNoneOr"
 weight: 2303
+type: docs
 ---
 
 Returns success when the value option is <code>ValueNone</code>, or returns the supplied error.

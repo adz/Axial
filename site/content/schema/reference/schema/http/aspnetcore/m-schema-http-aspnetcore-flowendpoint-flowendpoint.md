@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.FlowEndpoint.flowEndpoint"
 linkTitle: "flowEndpoint"
 weight: 2500
+type: docs
 ---
 
 Lowers an endpoint Flow to the native ASP.NET Core handler expected by minimal-API routing.

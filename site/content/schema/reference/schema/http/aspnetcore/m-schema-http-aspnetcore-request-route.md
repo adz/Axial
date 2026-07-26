@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.Request.route"
 linkTitle: "route"
 weight: 2103
+type: docs
 ---
 
 Schema-parses one named ASP.NET route value.

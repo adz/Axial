@@ -2,6 +2,7 @@
 title: "Flow.Cause.isInterrupted"
 linkTitle: "isInterrupted"
 weight: 2106
+type: docs
 ---
 
 Returns whether the cause tree contains an interruption signal.

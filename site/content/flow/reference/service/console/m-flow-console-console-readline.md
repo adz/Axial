@@ -2,6 +2,7 @@
 title: "Flow.Console.readLine"
 linkTitle: "readLine"
 weight: 2100
+type: docs
 ---
 
 

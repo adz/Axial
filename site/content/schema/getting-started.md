@@ -42,18 +42,16 @@ let signupSchema =
     }
 ```
 
-Each [`field`]({{< relref "/schema/reference/schema/m-schema-schemace-field/" >}}) records a wire name, getter, value
-schema, and local rules. The final [`construct`]({{< relref "/schema/reference/schema/m-schema-schemace-construct/" >}})
-receives the fields in declaration order. The compiler checks its argument types and final result.
+Each `field` records a wire name, getter, value schema, and local rules. The final constructor receives the fields in
+declaration order. The compiler checks its argument types and final result.
 
-The getter normally resolves the field schema automatically. `string` resolves
-[`Schema.text`]({{< relref "/schema/reference/schema/p-schema-schema-text/" >}}); `int` resolves
-[`Schema.int`]({{< relref "/schema/reference/schema/p-schema-schema-int/" >}}); options, lists, maps, built-in refined
-values, and application types with a static `Schema` member can also resolve canonical schemas.
+The getter normally resolves the field schema automatically. `string` resolves `Schema.text`; `int` resolves
+`Schema.int`; options, lists, maps, built-in refined values, and application types with a static `Schema` member can
+also resolve canonical schemas.
 
 ## Parse structured input
 
-[`Data`]({{< relref "/schema/reference/data/t-data/" >}}) is a source-neutral input tree:
+`Data` is a source-neutral input tree:
 
 ```fsharp
 let input =
@@ -112,15 +110,14 @@ let contactSchema =
     }
 ```
 
-`withSchema` starts the field as `Schema<string>`. [`refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) resolves the contributed
+`withSchema` starts the field as `Schema<string>`. `refine` resolves the contributed
 `Refinement<string,ContactEmail>` from the raw schema and getter type. The constructor receives `ContactEmail`.
 
 See [Define Refined Types]({{< relref "/error-handling/refined/domain-values/" >}}) for the complete application type.
 
 ## Check an existing value
 
-[`Schema.check`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-check/" >}}) covers drafts or
-imported values that did not come through [`Schema.parse`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parse/" >}}):
+`Schema.check` covers drafts or imported values that did not come through `Schema.parse`:
 
 ```fsharp
 let checkedDraft : Result<Signup, SchemaErrors> =

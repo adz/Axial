@@ -51,7 +51,7 @@ field "name" _.Name {
 }
 ```
 
-The plain function is [`Schema.constrain`]({{< relref "/schema/reference/schema/m-schema-schema-constrain/" >}}).
+The plain function is `Schema.constrain`.
 
 ## `refine`
 
@@ -63,8 +63,7 @@ let contactEmailSchema =
     |> Schema.refine ContactEmail.refinement
 ```
 
-Inside the field block, the raw schema and getter supply the two types, so
-[`refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) resolves the contributed descriptor:
+Inside the field block, the raw schema and getter supply the two types, so `refine` resolves the contributed descriptor:
 
 ```fsharp
 field "email" _.Email {
@@ -75,7 +74,7 @@ field "email" _.Email {
 
 ## `validate`
 
-Executable validation ([`Schema.validate`]({{< relref "/schema/reference/schema/m-schema-schema-validate/" >}})) preserves the current type:
+Executable validation preserves the current type:
 
 ```fsharp
 let companyEmailSchema =

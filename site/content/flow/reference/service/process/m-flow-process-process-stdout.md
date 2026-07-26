@@ -2,6 +2,7 @@
 title: "Flow.Process.stdout"
 linkTitle: "stdout"
 weight: 2404
+type: docs
 ---
 
  Configures final stdout handling. <example><code>specification |&gt; Process.stdout OutputTarget.Console</code></example>

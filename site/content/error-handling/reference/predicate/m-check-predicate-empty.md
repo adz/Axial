@@ -2,6 +2,7 @@
 title: "Check.Predicate.empty"
 linkTitle: "empty"
 weight: 2001
+type: docs
 ---
 
  Runs the type-directed empty predicate for an already parsed optional, nullable, text, or supported

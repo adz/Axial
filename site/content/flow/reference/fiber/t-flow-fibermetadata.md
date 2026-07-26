@@ -2,6 +2,7 @@
 title: "Flow.FiberMetadata"
 linkTitle: "FiberMetadata"
 weight: 1003
+type: docs
 ---
 
 Diagnostic metadata for a running fiber.

@@ -2,6 +2,7 @@
 title: "Flow.FlowStream"
 linkTitle: "FlowStream<env, error, value>"
 weight: 1000
+type: docs
 ---
 
 

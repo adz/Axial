@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFileLastAccessTime"
 linkTitle: "getFileLastAccessTime"
 weight: 2406
+type: docs
 ---
 
 Gets file last access time through an explicit file-system service.

@@ -2,6 +2,7 @@
 title: "Schema.Http.ProblemDetails.malformedJson"
 linkTitle: "malformedJson"
 weight: 2102
+type: docs
 ---
 
 Builds a 400 problem-details value for a syntactically invalid JSON request body.

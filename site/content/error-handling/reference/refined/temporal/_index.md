@@ -1,5 +1,6 @@
 ---
 title: "Temporal"
+type: docs
 ---
 
 `Temporal` functions construct refined date and time values.

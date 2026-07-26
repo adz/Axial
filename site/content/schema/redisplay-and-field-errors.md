@@ -9,11 +9,11 @@ description: Failed parses that keep the user's input.
 This page shows how failed schema parses retain structured data, path-aware field errors, and default display strings.
 
 When boundary input fails to parse, a form should show the user's original text next to each field's errors. Axial's
-[`RetainedParseResult`]({{< relref "/schema/reference/schema/interpreters/t-schema-retainedparseresult/" >}}) keeps both: the structured data exactly as submitted, and diagnostics addressed by path.
+`RetainedParseResult` keeps both: the structured data exactly as submitted, and diagnostics addressed by path.
 
 ## The Handoff Value
 
-Use [`Schema.parseRetainingInput`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parseretaininginput/" >}}) when the boundary needs the submitted representation after parsing:
+Use `Schema.parseRetainingInput` when the boundary needs the submitted representation after parsing:
 
 ```fsharp
 let parsed = Schema.parseRetainingInput customerSchema raw
@@ -25,8 +25,7 @@ parsed.Errors         // flattened path-aware errors ([] when valid)
 ```
 
 Schema parsing, schema validation, primitive `Parse` failures, `Refine`
-failures, and path-free `CheckFailure` values all lower to the same boundary taxonomy:
-[`SchemaError`]({{< relref "/schema/reference/schema/interpreters/t-schema-schemaerror/" >}}).
+failures, and path-free `CheckFailure` values all lower to the same boundary taxonomy: `SchemaError`.
 
 ## Field Error Lookup
 
@@ -42,8 +41,7 @@ renders correctly wherever it is attached.
 
 ## Redisplay
 
-[`Data`]({{< relref "/schema/reference/data/t-data/" >}}) addresses submitted values by the same paths, through
-[`Data.redisplayPath`]({{< relref "/schema/reference/data/m-data-redisplaypath/" >}}):
+`Data` addresses submitted values by the same paths:
 
 ```fsharp
 Data.redisplayPath "email" parsed.Input          // "not-an-email", exactly as typed
@@ -66,7 +64,7 @@ for field in formFields do
 Because failed parses never construct the model, there is no half-valid object to guard against — the template works
 from structured data and diagnostics only.
 
-For summary output, [`RetainedParseResult.renderErrors`]({{< relref "/schema/reference/schema/interpreters/m-schema-retainedparseresult-rendererrors/" >}}) renders every failed diagnostic in one line:
+For summary output, render every failed diagnostic in one line:
 
 ```fsharp
 let messages = RetainedParseResult.renderErrors parsed

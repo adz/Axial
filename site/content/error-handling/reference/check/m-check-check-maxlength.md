@@ -2,6 +2,7 @@
 title: "Check.maxLength"
 linkTitle: "maxLength"
 weight: 2205
+type: docs
 ---
 
 Returns a string check requiring at most the supplied length.

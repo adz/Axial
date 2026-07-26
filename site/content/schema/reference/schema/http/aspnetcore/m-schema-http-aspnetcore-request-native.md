@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.Request.native"
 linkTitle: "native"
 weight: 2201
+type: docs
 ---
 
 Returns the native ASP.NET request for host-specific boundary handling.

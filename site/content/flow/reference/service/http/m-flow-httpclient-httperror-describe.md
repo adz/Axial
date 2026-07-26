@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.HttpError.describe"
 linkTitle: "describe"
 weight: 2200
+type: docs
 ---
 
  Formats an HTTP error with its redacted request context.

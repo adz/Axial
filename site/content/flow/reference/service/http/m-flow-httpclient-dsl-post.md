@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.POST"
 linkTitle: "POST"
 weight: 2602
+type: docs
 ---
 
  Creates a POST request from an interpolated URL with encoded holes.

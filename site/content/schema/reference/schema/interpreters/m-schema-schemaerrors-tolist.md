@@ -2,6 +2,7 @@
 title: "Schema.SchemaErrors.toList"
 linkTitle: "toList"
 weight: 2210
+type: docs
 ---
 
 Returns failures in deterministic path order.

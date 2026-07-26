@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.getDecimal"
 linkTitle: "getDecimal"
 weight: 2613
+type: docs
 ---
 
 Reads a decimal environment variable through an explicit service.

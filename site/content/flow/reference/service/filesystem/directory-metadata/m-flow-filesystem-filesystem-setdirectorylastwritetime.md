@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setDirectoryLastWriteTime"
 linkTitle: "setDirectoryLastWriteTime"
 weight: 2610
+type: docs
 ---
 
 Sets directory last write time through an explicit file-system service.

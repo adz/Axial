@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.SchemaResponse.openApi"
 linkTitle: "openApi"
 weight: 2702
+type: docs
 ---
 
 Serves a pre-assembled OpenAPI document (see <a href="https://learn.microsoft.com/dotnet/api/axial.schema.http.openapimodule.document">OpenApiModule.document</a>).

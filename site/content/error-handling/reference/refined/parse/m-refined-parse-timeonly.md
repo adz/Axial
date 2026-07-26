@@ -2,6 +2,7 @@
 title: "Refined.Parse.timeOnly"
 linkTitle: "timeOnly"
 weight: 2109
+type: docs
 ---
 
 Parses a time-only value.

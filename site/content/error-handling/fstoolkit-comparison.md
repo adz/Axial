@@ -11,7 +11,7 @@ results, validation, and related standard F# types.
 
 Axial separates four roles:
 
-- `Axial.Result` contains a smaller `Result` surface, [`Check`]({{< relref "/error-handling/reference/check/" >}}), predicates, and [`result { }`]({{< relref "/error-handling/reference/result/result-ce/" >}}).
+- `Axial.Result` contains a smaller `Result` surface, `Check`, predicates, and `result { }`.
 - `Axial.Refined` constructs values whose types record successful checks.
 - `Axial.Schema` declares structured boundaries and accumulates path-aware failures.
 - `Axial.Flow` runs effectful workflows with explicit dependencies.
@@ -20,9 +20,9 @@ Existing FsToolkit Result helpers can remain in an application. Both libraries u
 
 | FsToolkit pattern | Axial equivalent |
 | --- | --- |
-| [`Result.requireTrue`]({{< relref "/error-handling/reference/result/result/m-result-result-requiretrue.md" >}}) | [`Result.requireTrue`]({{< relref "/error-handling/reference/result/result/m-result-result-requiretrue.md" >}}) |
-| `Result.requireSome` | [`Result.someOr`]({{< relref "/error-handling/reference/result/result/m-result-result-someor.md" >}}) |
-| [`result { }`]({{< relref "/error-handling/reference/result/result-ce/" >}}) | [`result { }`]({{< relref "/error-handling/reference/result/result-ce/" >}}) |
+| `Result.requireTrue` | `Result.requireTrue` |
+| `Result.requireSome` | `Result.someOr` |
+| `result { }` | `result { }` |
 | `asyncResult { }`, `taskResult { }` | `flow { }` |
 | accumulating validation over boundary fields | a record `schema<'model> { }` interpreted by `Schema.parse` or `Schema.check` |
 

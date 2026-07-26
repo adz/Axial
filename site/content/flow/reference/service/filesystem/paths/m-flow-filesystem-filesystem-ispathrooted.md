@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.isPathRooted"
 linkTitle: "isPathRooted"
 weight: 2718
+type: docs
 ---
 
 Checks whether a path is rooted through an explicit file-system service.

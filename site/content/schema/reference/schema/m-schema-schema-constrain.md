@@ -2,6 +2,7 @@
 title: "Schema.constrain"
 linkTitle: "constrain"
 weight: 2108
+type: docs
 ---
 
 Adds one portable constraint to a schema.

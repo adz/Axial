@@ -2,6 +2,7 @@
 title: "Result.orElse"
 linkTitle: "orElse"
 weight: 2105
+type: docs
 ---
 
 Falls back to another result when the source result fails.

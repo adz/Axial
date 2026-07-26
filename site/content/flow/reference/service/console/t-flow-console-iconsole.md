@@ -2,6 +2,7 @@
 title: "Flow.Console.IConsole"
 linkTitle: "IConsole"
 weight: 1000
+type: docs
 ---
 
 Provides explicit access to standard console and terminal I/O.

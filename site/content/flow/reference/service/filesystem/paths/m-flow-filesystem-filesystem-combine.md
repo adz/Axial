@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.combine"
 linkTitle: "combine"
 weight: 2700
+type: docs
 ---
 
 Combines path segments through an explicit file-system service.

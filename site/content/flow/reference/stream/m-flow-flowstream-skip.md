@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.skip"
 linkTitle: "skip"
 weight: 2207
+type: docs
 ---
 
 Skips the first <span class="fsdocs-param-name">count</span> values.

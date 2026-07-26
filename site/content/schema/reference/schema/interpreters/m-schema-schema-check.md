@@ -2,6 +2,7 @@
 title: "Schema.check"
 linkTitle: "check"
 weight: 2400
+type: docs
 ---
 
 Checks an existing typed value, such as a freely constructed draft, through the schema's constraints, refinements, and record constructor.

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.appendFile"
 linkTitle: "appendFile"
 weight: 2706
+type: docs
 ---
 
  Writes output to an appending file.

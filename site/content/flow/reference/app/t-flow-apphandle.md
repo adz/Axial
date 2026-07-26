@@ -2,6 +2,7 @@
 title: "Flow.AppHandle"
 linkTitle: "AppHandle<error, value>"
 weight: 1001
+type: docs
 ---
 
 

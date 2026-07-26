@@ -2,6 +2,7 @@
 title: "Refined.Refine.withCheck"
 linkTitle: "withCheck"
 weight: 3001
+type: docs
 ---
 
 Runs a <a href="../../check/t-check-check.md">Check</a> and calls the constructor when the check succeeds.

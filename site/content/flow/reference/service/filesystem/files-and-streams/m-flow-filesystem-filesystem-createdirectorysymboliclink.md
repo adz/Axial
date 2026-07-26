@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.createDirectorySymbolicLink"
 linkTitle: "createDirectorySymbolicLink"
 weight: 2306
+type: docs
 ---
 
 Creates a symbolic link to a directory through an explicit file-system service.

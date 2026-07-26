@@ -2,6 +2,7 @@
 title: "Check.String.lengthBetween"
 linkTitle: "lengthBetween"
 weight: 2305
+type: docs
 ---
 
 Requires an already parsed string value length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.

@@ -2,6 +2,7 @@
 title: "Flow.Process.IProcess"
 linkTitle: "IProcess"
 weight: 1100
+type: docs
 ---
 
  Interprets process specifications as lazy Axial workflows for a concrete host platform.

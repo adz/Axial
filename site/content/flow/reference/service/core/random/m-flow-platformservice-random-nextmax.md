@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Random.nextMax"
 linkTitle: "nextMax"
 weight: 2401
+type: docs
 ---
 
 Reads a random integer less than the supplied maximum from an explicit random-number service.

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.pipeTo"
 linkTitle: "pipeTo"
 weight: 2803
+type: docs
 ---
 
  Connects stdout from a command or specification to the next command's stdin.

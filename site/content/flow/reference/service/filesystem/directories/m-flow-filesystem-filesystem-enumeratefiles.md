@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.enumerateFiles"
 linkTitle: "enumerateFiles"
 weight: 2504
+type: docs
 ---
 
 Enumerates files through an explicit file-system service.

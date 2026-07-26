@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.collect"
 linkTitle: "collect"
 weight: 2301
+type: docs
 ---
 
 Maps each value to a stream and concatenates the resulting streams.

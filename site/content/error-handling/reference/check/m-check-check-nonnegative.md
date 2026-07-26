@@ -2,6 +2,7 @@
 title: "Check.nonNegative"
 linkTitle: "nonNegative"
 weight: 2216
+type: docs
 ---
 
 Runs an ordered-value check requiring a value greater than or equal to zero.

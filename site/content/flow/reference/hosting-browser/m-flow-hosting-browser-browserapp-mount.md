@@ -2,6 +2,7 @@
 title: "Flow.Hosting.Browser.BrowserApp.mount"
 linkTitle: "mount"
 weight: 2001
+type: docs
 ---
 
 Starts an application owned explicitly by the calling UI or browser module.

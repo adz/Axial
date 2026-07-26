@@ -2,6 +2,7 @@
 title: "Flow.Layer.map2"
 linkTitle: "map2"
 weight: 2213
+type: docs
 ---
 
 Combines two layers with a mapping function.

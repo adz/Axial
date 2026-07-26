@@ -22,7 +22,7 @@ the workflow's typed error:
 Flow.die (InvalidOperationException "broken invariant")
 ```
 
-An [`Exit`]({{< relref "/flow/reference/exit/_index.md" >}}) distinguishes the cases:
+An Exit distinguishes the cases:
 
 | Cause | Meaning |
 | --- | --- |
@@ -33,10 +33,10 @@ An [`Exit`]({{< relref "/flow/reference/exit/_index.md" >}}) distinguishes the c
 | `Cause.Both (left, right)` | Concurrently combined causes |
 | `Cause.Traced (cause, trace)` | Cause with diagnostic context |
 
-Use an `attempt` constructor only when an exception from an interop API is an expected outcome. Use [`Flow.catch`]({{< relref "/flow/reference/flow/composition/m-flow-flow-catch.md" >}}) only
+Use an `attempt` constructor only when an exception from an interop API is an expected outcome. Use `Flow.catch` only
 when the application deliberately translates a defect into a typed error.
 
-[`Exit.toResult`]({{< relref "/flow/reference/exit/m-flow-exit-toresult.md" >}}) is intentionally lossy. Use it only at a boundary that has decided how defects, interruption, and
+`Exit.toResult` is intentionally lossy. Use it only at a boundary that has decided how defects, interruption, and
 combined causes should be represented.
 
 ## Go Further

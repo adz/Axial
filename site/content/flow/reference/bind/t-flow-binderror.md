@@ -2,6 +2,7 @@
 title: "Flow.BindError"
 linkTitle: "BindError<env, error, value>"
 weight: 1000
+type: docs
 ---
 
 

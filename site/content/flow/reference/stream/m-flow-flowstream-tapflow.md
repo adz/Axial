@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.tapFlow"
 linkTitle: "tapFlow"
 weight: 2205
+type: docs
 ---
 
 Runs an effect for each value before emitting the original value.

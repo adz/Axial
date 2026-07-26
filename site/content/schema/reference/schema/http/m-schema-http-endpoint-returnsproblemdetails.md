@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.returnsProblemDetails"
 linkTitle: "returnsProblemDetails"
 weight: 2213
+type: docs
 ---
 
 Adds the standard 400 problem-details response every schema-parsing endpoint produces.

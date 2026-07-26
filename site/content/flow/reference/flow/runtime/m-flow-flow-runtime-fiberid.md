@@ -2,6 +2,7 @@
 title: "Flow.Runtime.fiberId"
 linkTitle: "fiberId"
 weight: 2113
+type: docs
 ---
 
 Reads the current fiber id from the ambient runtime context.

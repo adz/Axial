@@ -2,6 +2,7 @@
 title: "Flow.Process.render"
 linkTitle: "render"
 weight: 2308
+type: docs
 ---
 
  Renders a redacted shell-like description of the complete process specification.

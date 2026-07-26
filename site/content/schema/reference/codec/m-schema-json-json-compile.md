@@ -2,6 +2,7 @@
 title: "Schema.Json.compile"
 linkTitle: "compile"
 weight: 2100
+type: docs
 ---
 
 Compiles a completed schema into a reusable JSON codec.

@@ -9,9 +9,7 @@ type: docs
 The compiler checks type shape and visibility. It cannot prove that a constructor contains the right business rule or
 that a total transition preserves it.
 
-A **schema guarantee** here means the behavior established by a successful
-[`Schema.parse`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parse/" >}}) or
-[`Schema.check`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-check/" >}}) call. It is
+A **schema guarantee** here means the behavior established by a successful `Schema.parse` or `Schema.check` call. It is
 not a permanent property of a public record that callers can construct elsewhere.
 
 A **transition** is a function that changes one accepted domain value into another. A total transition returns the new

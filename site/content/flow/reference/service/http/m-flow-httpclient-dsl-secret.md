@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.secret"
 linkTitle: "secret"
 weight: 2606
+type: docs
 ---
 
  Marks an interpolated URL value for diagnostic redaction.

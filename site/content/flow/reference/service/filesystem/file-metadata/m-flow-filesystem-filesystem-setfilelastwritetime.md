@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setFileLastWriteTime"
 linkTitle: "setFileLastWriteTime"
 weight: 2412
+type: docs
 ---
 
 Sets file last write time through an explicit file-system service.

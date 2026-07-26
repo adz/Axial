@@ -2,6 +2,7 @@
 title: "Check.Nullable.hasValue"
 linkTitle: "hasValue"
 weight: 2604
+type: docs
 ---
 
 Requires a nullable value to contain a value.

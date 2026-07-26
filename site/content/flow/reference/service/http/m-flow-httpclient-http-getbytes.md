@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.getBytes"
 linkTitle: "getBytes"
 weight: 2512
+type: docs
 ---
 
  Sends a GET request and returns the body bytes, mirroring <c>HttpClient.GetByteArrayAsync</c>.

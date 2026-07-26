@@ -2,6 +2,7 @@
 title: "Flow.Layer.zip"
 linkTitle: "zip"
 weight: 2210
+type: docs
 ---
 
 Builds two layers from the same input and scope and returns both outputs.

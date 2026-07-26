@@ -2,6 +2,7 @@
 title: "Result.bind"
 linkTitle: "bind"
 weight: 2104
+type: docs
 ---
 
 Binds a result to the next fail-fast operation.

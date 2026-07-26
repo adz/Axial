@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.expect"
 linkTitle: "expect"
 weight: 2617
+type: docs
 ---
 
  Replaces the statuses treated as success. <example><code>request |&gt; expect [ 200; 404 ]</code></example>

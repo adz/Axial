@@ -15,7 +15,7 @@ type AppEnv =
       Audit: IAuditLog }
 ```
 
-[`Flow.read`]({{< relref "/flow/reference/flow/environment/m-flow-flow-read.md" >}}) projects the dependency needed by the current operation:
+`Flow.read` projects the dependency needed by the current operation:
 
 ```fsharp
 let loadUser id : EnvFlow<AppEnv, User> =

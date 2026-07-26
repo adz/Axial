@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.getInt64"
 linkTitle: "getInt64"
 weight: 2611
+type: docs
 ---
 
 Reads a 64-bit integer environment variable through an explicit service.

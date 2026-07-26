@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariables.live"
 linkTitle: "live"
 weight: 2605
+type: docs
 ---
 
 Creates a live provider backed by the current process environment.

@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Random.nextDouble"
 linkTitle: "nextDouble"
 weight: 2403
+type: docs
 ---
 
 Reads a random floating-point value from an explicit random-number service.

@@ -2,6 +2,7 @@
 title: "Data.ofCliArgs"
 linkTitle: "ofCliArgs"
 weight: 2005
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Random.nextBytes"
 linkTitle: "nextBytes"
 weight: 2404
+type: docs
 ---
 
 Fills a byte buffer through an explicit random-number service.

@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.mapError"
 linkTitle: "mapError"
 weight: 2201
+type: docs
 ---
 
 Transforms the typed error channel of a stream.

@@ -15,33 +15,6 @@ menu:
 <div class="docs-home-hero">
 
 <div class="docs-home-copy">
-<span class="eyebrow" style="color:#6d4fc4">Axial.Flow &middot; Effects</span>
-
-<h1>A type, not a framework.</h1>
-
-<div class="lede">
-It fits your app, not the other way around. Without it, dependencies get threaded through call after call by hand,
-and cancellation, retries, and cleanup get scattered across whatever async code happens to touch them.
-</div>
-
-<div class="lede">
-<code>Flow&lt;'env, 'error, 'value&gt;</code> puts async execution, expected failures, and required dependencies in one
-type. The host supplies live dependencies once; tests supply a small record of fakes. The runtime owns cancellation,
-retry scheduling, resource scopes, and child fibers.
-Add packages that take advantage of these abilities for platform
-services, HTTP, processes, telemetry, and .NET, Node, or browser hosting.
-</div>
-
-<div class="docs-home-meta">
-<a class="docs-home-cta" href="{{< relref "/flow/tutorials/" >}}">Get started &gt;</a>
-<a class="docs-chip" href="{{< relref "/flow/getting-started/" >}}">Getting started guide</a>
-<a class="docs-chip" href="{{< relref "/flow/reference/flow/" >}}">Flow API</a>
-<a class="docs-chip" href="{{< relref "/flow/comparisons/task-vs-flow-scenarios.md" >}}">Task vs Flow, seven scenarios</a>
-</div>
-</div>
-
-</div>
-
 <section>
 <span class="label" style="color:#6d4fc4">Everything coordinates through Flow</span>
 
@@ -77,6 +50,33 @@ services, HTTP, processes, telemetry, and .NET, Node, or browser hosting.
 <p class="axial-coord-caption">Bring your own types and libraries on one side; reach services and runtimes on the
 other. Flow is the seam where structure meets execution &mdash; on .NET, NativeAOT, Fable, browser and server.</p>
 </section>
+
+<span class="eyebrow" style="color:#6d4fc4">Axial.Flow &middot; Effects</span>
+
+<h1>A type, not a framework.</h1>
+
+<div class="lede">
+It fits your app, not the other way around. Without it, dependencies get threaded through call after call by hand,
+and cancellation, retries, and cleanup get scattered across whatever async code happens to touch them.
+</div>
+
+<div class="lede">
+<code>Flow&lt;'env, 'error, 'value&gt;</code> puts async execution, expected failures, and required dependencies in one
+type. The host supplies live dependencies once; tests supply a small record of fakes. The runtime owns cancellation,
+retry scheduling, resource scopes, and child fibers.
+Add packages that take advantage of these abilities for platform
+services, HTTP, processes, telemetry, and .NET, Node, or browser hosting.
+</div>
+
+<div class="docs-home-meta">
+<a class="docs-home-cta" href="{{< relref "/flow/tutorials/" >}}">Get started &gt;</a>
+<a class="docs-chip" href="{{< relref "/flow/getting-started/" >}}">Getting started guide</a>
+<a class="docs-chip" href="{{< relref "/flow/reference/flow/" >}}">Flow API</a>
+<a class="docs-chip" href="{{< relref "/flow/comparisons/task-vs-flow-scenarios.md" >}}">Task vs Flow, seven scenarios</a>
+</div>
+</div>
+
+</div>
 
 <div style="max-width: 68ch;">
 

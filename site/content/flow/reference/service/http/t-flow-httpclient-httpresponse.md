@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.HttpResponse"
 linkTitle: "HttpResponse"
 weight: 1005
+type: docs
 ---
 
  The complete response transcript for one HTTP exchange.

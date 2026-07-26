@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.fetch"
 linkTitle: "fetch"
 weight: 2619
+type: docs
 ---
 
  Sends the request and returns the full transcript, failing on unexpected statuses.

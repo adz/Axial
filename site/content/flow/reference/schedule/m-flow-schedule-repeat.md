@@ -2,6 +2,7 @@
 title: "Flow.Schedule.repeat"
 linkTitle: "repeat"
 weight: 2106
+type: docs
 ---
 
 Repeats a successful flow according to the supplied schedule.

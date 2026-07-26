@@ -2,6 +2,7 @@
 title: "Flow.read"
 linkTitle: "read"
 weight: 2200
+type: docs
 ---
 
 Projects one value from the current environment.

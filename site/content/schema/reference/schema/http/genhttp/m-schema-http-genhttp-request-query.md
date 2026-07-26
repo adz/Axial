@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.Request.query"
 linkTitle: "query"
 weight: 2101
+type: docs
 ---
 
 Schema-parses the query string.

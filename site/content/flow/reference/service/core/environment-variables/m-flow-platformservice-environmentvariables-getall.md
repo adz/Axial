@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariables.getAll"
 linkTitle: "getAll"
 weight: 2601
+type: docs
 ---
 
 Returns all visible environment variables from an explicit environment-variable service.

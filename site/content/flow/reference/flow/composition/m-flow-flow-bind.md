@@ -2,6 +2,7 @@
 title: "Flow.bind"
 linkTitle: "bind"
 weight: 2319
+type: docs
 ---
 
 Sequences a dependent flow after a successful value.

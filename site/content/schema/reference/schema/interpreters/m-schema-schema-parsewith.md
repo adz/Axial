@@ -2,6 +2,7 @@
 title: "Schema.parseWith"
 linkTitle: "parseWith"
 weight: 2102
+type: docs
 ---
 
 Parses structured data after configuring parser options.

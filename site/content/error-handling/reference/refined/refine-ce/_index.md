@@ -1,5 +1,6 @@
 ---
 title: "Refine CE"
+type: docs
 ---
 
 `refine { }` binds parsing and refinement results and stops at the first failure.

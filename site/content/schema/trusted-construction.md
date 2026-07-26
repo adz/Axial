@@ -16,7 +16,7 @@ An **aggregate** is a group of related values created and updated as one thing.
 There are four useful levels:
 
 1. A raw, wire, or draft value is editable and proves nothing.
-2. A successful [`Schema.parse`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parse/" >}}) or [`Schema.check`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-check/" >}}) result passed that operation's gates.
+2. A successful `Schema.parse` or `Schema.check` result passed that operation's gates.
 3. A private refined field preserves one field-local invariant wherever the value is used.
 4. A private aggregate plus controlled transitions preserves relationships between fields.
 
@@ -71,8 +71,7 @@ module WorkspaceName =
         |> Schema.refine (Refinement.define create value)
 ```
 
-`Refinement.define` keeps the fallible smart constructor beside the projection back to raw text.
-[`Schema.refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}})
+`Refinement.define` keeps the fallible smart constructor beside the projection back to raw text. `Schema.refine`
 applies that definition. Raw constraints can report common failures with familiar codes and metadata; the smart
 constructor remains authoritative. If the two declarations drift, refinement returns an error instead of throwing.
 

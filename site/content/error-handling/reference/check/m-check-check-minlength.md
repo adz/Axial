@@ -2,6 +2,7 @@
 title: "Check.minLength"
 linkTitle: "minLength"
 weight: 2204
+type: docs
 ---
 
 Returns a string check requiring at least the supplied length.

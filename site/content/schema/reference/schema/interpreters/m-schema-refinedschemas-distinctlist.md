@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.distinctList"
 linkTitle: "distinctList"
 weight: 2311
+type: docs
 ---
 
 Describes a distinct list as a schema refined value over a distinct collection of item schemas.

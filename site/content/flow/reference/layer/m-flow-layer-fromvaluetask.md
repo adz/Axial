@@ -2,6 +2,7 @@
 title: "Flow.Layer.fromValueTask"
 linkTitle: "fromValueTask"
 weight: 2202
+type: docs
 ---
 
 Creates a layer from a raw value task provisioning function.

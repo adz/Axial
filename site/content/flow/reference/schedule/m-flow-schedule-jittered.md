@@ -2,6 +2,7 @@
 title: "Flow.Schedule.jittered"
 linkTitle: "jittered"
 weight: 2103
+type: docs
 ---
 
 Adds random jitter to a schedule&#39;s delay.

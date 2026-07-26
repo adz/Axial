@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.fetchText"
 linkTitle: "fetchText"
 weight: 2620
+type: docs
 ---
 
  Sends the request and returns the body text. <example><code>GET $"{root}/readme" |&gt; fetchText</code></example>

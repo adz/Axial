@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setFileCreationTime"
 linkTitle: "setFileCreationTime"
 weight: 2404
+type: docs
 ---
 
 Sets file creation time through an explicit file-system service.

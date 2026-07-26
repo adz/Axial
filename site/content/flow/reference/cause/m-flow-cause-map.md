@@ -2,6 +2,7 @@
 title: "Flow.Cause.map"
 linkTitle: "map"
 weight: 2100
+type: docs
 ---
 
 Transforms the error value of a failure cause using the provided function.

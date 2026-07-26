@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.post"
 linkTitle: "post"
 weight: 2203
+type: docs
 ---
 
 Starts a POST endpoint spec at the supplied path.

@@ -2,6 +2,7 @@
 title: "Flow.TRef"
 linkTitle: "TRef<T>"
 weight: 1000
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Schema.Json.serializeToStream"
 linkTitle: "serializeToStream"
 weight: 2103
+type: docs
 ---
 
 Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled codec, flushing once when complete.

@@ -2,6 +2,7 @@
 title: "Check.String.present"
 linkTitle: "present"
 weight: 2300
+type: docs
 ---
 
 Requires an already parsed string value to be non-null and contain at least one non-whitespace character.

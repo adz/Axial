@@ -2,6 +2,7 @@
 title: "Refined.Refinement.create"
 linkTitle: "create"
 weight: 2802
+type: docs
 ---
 
 Runs the refinement&#39;s smart constructor.

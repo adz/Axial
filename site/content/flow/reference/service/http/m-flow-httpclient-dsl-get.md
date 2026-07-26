@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.GET"
 linkTitle: "GET"
 weight: 2600
+type: docs
 ---
 
  Creates a GET request from an interpolated URL. Every hole is URL-encoded as one value.

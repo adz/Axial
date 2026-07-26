@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.trimEndingDirectorySeparator"
 linkTitle: "trimEndingDirectorySeparator"
 weight: 2716
+type: docs
 ---
 
 Trims one trailing directory separator through an explicit file-system service.

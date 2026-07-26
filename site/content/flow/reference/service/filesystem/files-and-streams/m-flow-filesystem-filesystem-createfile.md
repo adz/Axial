@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.createFile"
 linkTitle: "createFile"
 weight: 2315
+type: docs
 ---
 
 Creates or overwrites a file through an explicit file-system service.

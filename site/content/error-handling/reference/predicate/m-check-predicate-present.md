@@ -2,6 +2,7 @@
 title: "Check.Predicate.present"
 linkTitle: "present"
 weight: 2000
+type: docs
 ---
 
 Runs the type-directed presence predicate for an already parsed optional, nullable, or text value.

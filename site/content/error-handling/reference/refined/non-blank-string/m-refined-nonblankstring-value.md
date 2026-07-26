@@ -2,6 +2,7 @@
 title: "Refined.NonBlankString.value"
 linkTitle: "value"
 weight: 2900
+type: docs
 ---
 
 Returns the underlying string value.

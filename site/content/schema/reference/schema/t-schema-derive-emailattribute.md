@@ -2,6 +2,7 @@
 title: "Schema.Derive.EmailAttribute"
 linkTitle: "EmailAttribute"
 weight: 1513
+type: docs
 ---
 
 Constrains a text field to the email format.

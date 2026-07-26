@@ -2,6 +2,7 @@
 title: "Check.String.oneOf"
 linkTitle: "oneOf"
 weight: 2311
+type: docs
 ---
 
 Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.

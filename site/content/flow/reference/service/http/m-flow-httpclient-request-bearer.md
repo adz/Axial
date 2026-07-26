@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.bearer"
 linkTitle: "bearer"
 weight: 2305
+type: docs
 ---
 
  Adds a bearer-token Authorization header. The token is always redacted in diagnostics.

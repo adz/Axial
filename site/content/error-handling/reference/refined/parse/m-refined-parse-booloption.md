@@ -2,6 +2,7 @@
 title: "Refined.Parse.boolOption"
 linkTitle: "boolOption"
 weight: 2112
+type: docs
 ---
 
 Parses an optional Boolean. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.

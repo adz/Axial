@@ -2,6 +2,7 @@
 title: "Result.valueSomeOr"
 linkTitle: "valueSomeOr"
 weight: 2302
+type: docs
 ---
 
 Takes the value from a value option when it is <code>ValueSome</code>, or returns the supplied error.

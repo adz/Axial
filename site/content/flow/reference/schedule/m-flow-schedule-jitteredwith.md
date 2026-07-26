@@ -2,6 +2,7 @@
 title: "Flow.Schedule.jitteredWith"
 linkTitle: "jitteredWith"
 weight: 2104
+type: docs
 ---
 
 Adds jitter to a schedule&#39;s delay using a caller-supplied sample source.

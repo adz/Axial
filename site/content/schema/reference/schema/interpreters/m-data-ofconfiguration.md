@@ -2,6 +2,7 @@
 title: "Data.ofConfiguration"
 linkTitle: "ofConfiguration"
 weight: 2008
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.run"
 linkTitle: "run"
 weight: 2814
+type: docs
 ---
 
  Runs a command or specification in the current Flow runtime.

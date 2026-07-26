@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.SchemaResult.codec"
 linkTitle: "codec"
 weight: 2701
+type: docs
 ---
 
 A JSON response streaming the trusted model through the compiled codec.

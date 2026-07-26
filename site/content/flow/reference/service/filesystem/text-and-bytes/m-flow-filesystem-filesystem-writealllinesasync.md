@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.writeAllLinesAsync"
 linkTitle: "writeAllLinesAsync"
 weight: 2213
+type: docs
 ---
 
 Asynchronously writes all lines through an explicit file-system service.

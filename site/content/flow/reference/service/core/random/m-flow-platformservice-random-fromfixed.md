@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Random.fromFixed"
 linkTitle: "fromFixed"
 weight: 2409
+type: docs
 ---
 
 Creates a deterministic random generator from fixed integer, double, and byte values.

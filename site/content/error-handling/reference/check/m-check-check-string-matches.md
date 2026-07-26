@@ -2,6 +2,7 @@
 title: "Check.String.matches"
 linkTitle: "matches"
 weight: 2308
+type: docs
 ---
 
 Requires an already parsed string value to match the supplied regular expression pattern.

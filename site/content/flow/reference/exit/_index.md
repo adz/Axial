@@ -1,6 +1,7 @@
 ---
 title: "Exit"
 weight: 30
+type: docs
 ---
 
 This page shows the `Exit<'value, 'error>` type, which is Axial's name for `Result<'value, Cause<'error>>`. We name it `Exit` because it represents a completed workflow execution, not an ordinary domain result. Use the `Exit` module functions to transform completed outcomes without manually pattern matching at every boundary.

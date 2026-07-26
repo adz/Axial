@@ -19,7 +19,7 @@ OpenTelemetry. The fuller guides are linked from each section.
 
 Two general-purpose channels feed those signals and are part of core `Axial.Flow`, not the telemetry
 package: **runtime annotations** (`Flow.annotate`, ambient key–value diagnostics metadata) and **fiber
-observers** ([`FiberObserver`]({{< relref "/flow/reference/fiber/t-flow-fiberobserver.md" >}}), lifecycle hooks for every forked fiber — see
+observers** (`FiberObserver`, lifecycle hooks for every forked fiber — see
 [Supervision and fiber observability]({{< relref "/flow/concurrency/supervision.md" >}})).
 
 ## How .NET tracing works: `ActivitySource` and `ActivityListener`
@@ -142,9 +142,9 @@ For a quick local look without infrastructure, use `.AddConsoleExporter()`, or r
 ## Logs
 
 Logging is deliberately the opposite design from tracing: *which logger* is an application dependency you
-substitute, so [`ILog`]({{< relref "/flow/reference/service/core/t-flow-platformservice-ilog.md" >}}) is an explicit environment service, not ambient instrumentation.
+substitute, so `ILog` is an explicit environment service, not ambient instrumentation.
 
-- Workflows log through [`Log.info`]({{< relref "/flow/reference/service/core/log/m-flow-platformservice-log-info.md" >}})/`Log.error`/`Log.errorExn`/... against `IHas<ILog>`.
+- Workflows log through `Log.info`/`Log.error`/`Log.errorExn`/... against `IHas<ILog>`.
 - [`Axial.Flow.Hosting`]({{< relref "/flow/hosting/_index.md" >}}) bridges `ILog` to
   `Microsoft.Extensions.Logging`, exceptions included, so entries flow into the host's providers.
 - `FiberLogging.observe logger` is the logging counterpart of `FiberTelemetry.observe`: fiber defects are

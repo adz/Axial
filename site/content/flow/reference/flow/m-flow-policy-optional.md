@@ -2,6 +2,7 @@
 title: "Flow.Policy.optional"
 linkTitle: "optional"
 weight: 2406
+type: docs
 ---
 
 Runs a policy only when the environment predicate is true; otherwise returns the input unchanged.

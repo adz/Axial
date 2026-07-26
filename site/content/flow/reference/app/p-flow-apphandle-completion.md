@@ -2,6 +2,7 @@
 title: "Flow.AppHandle.Completion"
 linkTitle: "Completion"
 weight: 2003
+type: docs
 ---
 
 Waits for the root workflow and its scope finalizers to complete.

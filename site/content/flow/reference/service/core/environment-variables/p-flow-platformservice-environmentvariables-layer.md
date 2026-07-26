@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariables.layer"
 linkTitle: "layer"
 weight: 2606
+type: docs
 ---
 
 Builds the live environment-variable service as a layer.

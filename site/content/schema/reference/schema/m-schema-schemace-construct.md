@@ -2,6 +2,7 @@
 title: "Schema.SchemaCE.construct"
 linkTitle: "construct"
 weight: 2202
+type: docs
 ---
 
 Closes a record schema with a total constructor.

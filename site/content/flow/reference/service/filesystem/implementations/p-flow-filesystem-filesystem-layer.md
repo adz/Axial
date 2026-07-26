@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.layer"
 linkTitle: "layer"
 weight: 2801
+type: docs
 ---
 
 Builds the live file-system service as a layer.

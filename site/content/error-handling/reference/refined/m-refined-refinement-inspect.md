@@ -2,6 +2,7 @@
 title: "Refined.Refinement.inspect"
 linkTitle: "inspect"
 weight: 2803
+type: docs
 ---
 
 Returns the raw representation stored by a refined value.

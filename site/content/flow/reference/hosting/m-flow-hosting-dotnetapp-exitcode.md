@@ -2,6 +2,7 @@
 title: "Flow.Hosting.DotNetApp.exitCode"
 linkTitle: "exitCode"
 weight: 2001
+type: docs
 ---
 
 Maps a final application exit to the conventional standalone process exit codes.

@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.secretHeader"
 linkTitle: "secretHeader"
 weight: 2304
+type: docs
 ---
 
  Appends a header whose value is replaced with <c>***</c> in plans and error transcripts.

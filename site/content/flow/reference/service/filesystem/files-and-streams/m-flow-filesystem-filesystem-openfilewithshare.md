@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.openFileWithShare"
 linkTitle: "openFileWithShare"
 weight: 2311
+type: docs
 ---
 
 Opens a file with the specified mode, access, and sharing behavior through an explicit file-system service.

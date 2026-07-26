@@ -2,6 +2,7 @@
 title: "Flow.map2"
 linkTitle: "map2"
 weight: 2328
+type: docs
 ---
 
 Combines two flows with a mapping function.

@@ -2,6 +2,7 @@
 title: "Schema.Path.root"
 linkTitle: "root"
 weight: 2202
+type: docs
 ---
 
 The root of a schema value.

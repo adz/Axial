@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setDirectoryCreationTime"
 linkTitle: "setDirectoryCreationTime"
 weight: 2602
+type: docs
 ---
 
 Sets directory creation time through an explicit file-system service.

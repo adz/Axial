@@ -2,6 +2,7 @@
 title: "Flow.FiberId"
 linkTitle: "FiberId"
 weight: 1001
+type: docs
 ---
 
 Unique identifier for a running fiber.

@@ -2,6 +2,7 @@
 title: "Flow.Process.InputSource"
 linkTitle: "InputSource"
 weight: 1002
+type: docs
 ---
 
  Supplies bytes to the first process stage.

@@ -2,6 +2,7 @@
 title: "Check.Number.positive"
 linkTitle: "positive"
 weight: 2405
+type: docs
 ---
 
 Requires a value to be greater than zero.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getDirectoryCreationTimeUtc"
 linkTitle: "getDirectoryCreationTimeUtc"
 weight: 2601
+type: docs
 ---
 
 Gets directory creation time in UTC through an explicit file-system service.

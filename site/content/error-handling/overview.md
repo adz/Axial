@@ -17,7 +17,7 @@ dotnet add package Axial.ErrorHandling   # installs all three
 
 ## Result and Check
 
-Use ordinary `Result<'value,'error>` for operations that stop at the first failure. [`Check<'value>`]({{< relref "/error-handling/reference/check/" >}}) describes reusable
+Use ordinary `Result<'value,'error>` for operations that stop at the first failure. `Check<'value>` describes reusable
 rules over one typed value and returns the original value after success.
 
 ```fsharp
@@ -57,8 +57,6 @@ Refine an ordinary value with a named constructor:
 let quantity : Result<PositiveInt, RefinementError> =
     Refine.positiveInt 42
 ```
-
-[`Parse`]({{< relref "/error-handling/reference/refined/parse/" >}}) converts text and [`Refine`]({{< relref "/error-handling/reference/refined/refine/" >}}) wraps values with their invariants.
 
 See [Refined](../refined/) for the supplied types, dependent construction, and application-defined refined types.
 

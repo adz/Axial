@@ -2,6 +2,7 @@
 title: "Refined.RefinementError"
 linkTitle: "RefinementError"
 weight: 1001
+type: docs
 ---
 
 Structural failures returned by built-in refinement constructors and the <code>refine { }</code> builder.

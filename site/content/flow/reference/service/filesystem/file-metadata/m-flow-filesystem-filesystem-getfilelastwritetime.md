@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFileLastWriteTime"
 linkTitle: "getFileLastWriteTime"
 weight: 2410
+type: docs
 ---
 
 Gets file last write time through an explicit file-system service.

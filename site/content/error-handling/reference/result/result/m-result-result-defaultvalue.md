@@ -2,6 +2,7 @@
 title: "Result.defaultValue"
 linkTitle: "defaultValue"
 weight: 2208
+type: docs
 ---
 
 Returns the success value or the supplied fallback value.

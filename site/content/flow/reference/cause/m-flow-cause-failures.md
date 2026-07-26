@@ -2,6 +2,7 @@
 title: "Flow.Cause.failures"
 linkTitle: "failures"
 weight: 2104
+type: docs
 ---
 
 Returns every typed failure value contained in a cause tree.

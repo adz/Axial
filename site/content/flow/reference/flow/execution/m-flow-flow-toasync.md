@@ -2,6 +2,7 @@
 title: "Flow.ToAsync"
 linkTitle: "ToAsync"
 weight: 2200
+type: docs
 ---
 
 Starts the workflow and returns an F# async handle that completes with the final exit.

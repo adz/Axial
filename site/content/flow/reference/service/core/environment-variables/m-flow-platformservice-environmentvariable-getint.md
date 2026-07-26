@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.getInt"
 linkTitle: "getInt"
 weight: 2610
+type: docs
 ---
 
 Reads an integer environment variable through an explicit service.

@@ -2,6 +2,7 @@
 title: "Flow.addAsyncDisposable"
 linkTitle: "addAsyncDisposable"
 weight: 2502
+type: docs
 ---
 
 Registers an asynchronously disposable resource with the current runtime scope.

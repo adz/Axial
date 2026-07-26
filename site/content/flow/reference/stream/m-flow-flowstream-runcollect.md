@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.runCollect"
 linkTitle: "runCollect"
 weight: 2403
+type: docs
 ---
 
 Collects all emitted values into a list.

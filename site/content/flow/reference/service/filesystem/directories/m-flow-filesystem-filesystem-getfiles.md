@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFiles"
 linkTitle: "getFiles"
 weight: 2505
+type: docs
 ---
 
 Gets files through an explicit file-system service.

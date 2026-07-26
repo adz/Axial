@@ -2,6 +2,7 @@
 title: "Refined.NonEmptyList.cons"
 linkTitle: "cons"
 weight: 2909
+type: docs
 ---
 
 Prepends a head item to a list, producing a non-empty list without failure.

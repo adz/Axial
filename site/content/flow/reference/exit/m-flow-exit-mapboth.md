@@ -2,6 +2,7 @@
 title: "Flow.Exit.mapBoth"
 linkTitle: "mapBoth"
 weight: 2103
+type: docs
 ---
 
 Transforms both success and failure outcomes of an exit using the provided functions.

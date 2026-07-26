@@ -2,6 +2,7 @@
 title: "Refined.NonBlankString.map"
 linkTitle: "map"
 weight: 2902
+type: docs
 ---
 
 Transforms the value and re-certifies the non-blank invariant.

@@ -2,6 +2,7 @@
 title: "Schema.Json.deserialize"
 linkTitle: "deserialize"
 weight: 2104
+type: docs
 ---
 
 Deserializes a JSON string to a trusted model through a compiled codec.

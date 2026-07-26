@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.layer"
 linkTitle: "layer"
 weight: 2308
+type: docs
 ---
 
 Builds the live logger as a layer.

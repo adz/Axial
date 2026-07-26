@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.readAllTextWithEncoding"
 linkTitle: "readAllTextWithEncoding"
 weight: 2201
+type: docs
 ---
 
 Reads all text with the specified encoding through an explicit file-system service.

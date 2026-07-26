@@ -2,6 +2,7 @@
 title: "Result.mapError"
 linkTitle: "mapError"
 weight: 2103
+type: docs
 ---
 
 Maps the error value of a result.

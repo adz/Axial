@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.discard"
 linkTitle: "discard"
 weight: 2704
+type: docs
 ---
 
  Drains and discards output.

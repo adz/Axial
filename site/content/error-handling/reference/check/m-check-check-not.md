@@ -2,6 +2,7 @@
 title: "Check.``not``"
 linkTitle: "``not``"
 weight: 2102
+type: docs
 ---
 
 Inverts a check. A successful inner check becomes a custom-code failure, while any failed inner check succeeds.

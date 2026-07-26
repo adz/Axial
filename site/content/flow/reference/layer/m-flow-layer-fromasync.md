@@ -2,6 +2,7 @@
 title: "Flow.Layer.fromAsync"
 linkTitle: "fromAsync"
 weight: 2200
+type: docs
 ---
 
 Creates a layer from a raw async provisioning function.

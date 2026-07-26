@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.appendAllText"
 linkTitle: "appendAllText"
 weight: 2216
+type: docs
 ---
 
 Appends all text through an explicit file-system service.

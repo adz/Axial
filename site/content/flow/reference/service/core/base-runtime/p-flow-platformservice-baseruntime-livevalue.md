@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.BaseRuntime.liveValue"
 linkTitle: "liveValue"
 weight: 2100
+type: docs
 ---
 
 Creates the standard live base runtime as an explicit service bundle.

@@ -2,6 +2,7 @@
 title: "Flow.TRef.make"
 linkTitle: "make"
 weight: 2100
+type: docs
 ---
 
 Creates a new <a href="https://learn.microsoft.com/dotnet/api/axial.tref-1">TRef</a> with the initial value within an STM transaction.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.resolveSymbolicLinkTarget"
 linkTitle: "resolveSymbolicLinkTarget"
 weight: 2308
+type: docs
 ---
 
 Resolves a symbolic link target, optionally following the complete chain.

@@ -2,6 +2,7 @@
 title: "Check.Number.nonPositive"
 linkTitle: "nonPositive"
 weight: 2408
+type: docs
 ---
 
 Requires a value to be less than or equal to zero.

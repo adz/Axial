@@ -2,6 +2,7 @@
 title: "Check.String.numeric"
 linkTitle: "numeric"
 weight: 2309
+type: docs
 ---
 
 Requires an already parsed string value to contain one or more numeric characters.

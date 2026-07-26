@@ -2,6 +2,7 @@
 title: "Check.negative"
 linkTitle: "negative"
 weight: 2217
+type: docs
 ---
 
 Runs an ordered-value check requiring a value less than zero.

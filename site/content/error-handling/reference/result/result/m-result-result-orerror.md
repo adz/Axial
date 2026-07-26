@@ -2,6 +2,7 @@
 title: "Result.orError"
 linkTitle: "orError"
 weight: 2203
+type: docs
 ---
 
 Replaces whatever error a result carries with the supplied typed error. <code>Ok</code> passes through unchanged.

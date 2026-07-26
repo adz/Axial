@@ -2,6 +2,7 @@
 title: "Refined.Refinement.define"
 linkTitle: "define"
 weight: 2801
+type: docs
 ---
 
 Defines a refinement from its smart constructor and raw-value projection.

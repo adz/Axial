@@ -2,6 +2,7 @@
 title: "Result.error"
 linkTitle: "error"
 weight: 2101
+type: docs
 ---
 
 Creates an <code>Error</code> result.

@@ -2,6 +2,7 @@
 title: "Data.ofMap"
 linkTitle: "ofMap"
 weight: 2100
+type: docs
 ---
 
 Builds object-shaped structured data from a map of scalar field values.

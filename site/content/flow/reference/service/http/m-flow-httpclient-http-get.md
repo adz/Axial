@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.get"
 linkTitle: "get"
 weight: 2500
+type: docs
 ---
 
  Creates a GET request. <example><code>Http.get "https://api.example.com/users"</code></example>

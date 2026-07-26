@@ -2,6 +2,7 @@
 title: "Check.String.empty"
 linkTitle: "empty"
 weight: 2301
+type: docs
 ---
 
 Requires an already parsed string value to be exactly empty. Null fails as a missing value.

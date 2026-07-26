@@ -2,6 +2,7 @@
 title: "Flow.Cause.traced"
 linkTitle: "traced"
 weight: 2103
+type: docs
 ---
 
 Attaches diagnostic trace text to a cause.

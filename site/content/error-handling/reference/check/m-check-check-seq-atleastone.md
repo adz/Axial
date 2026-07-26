@@ -2,6 +2,7 @@
 title: "Check.Seq.atLeastOne"
 linkTitle: "atLeastOne"
 weight: 2510
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain at least one item.

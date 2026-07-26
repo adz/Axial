@@ -2,6 +2,7 @@
 title: "Flow.Runtime.catchCancellation"
 linkTitle: "catchCancellation"
 weight: 2101
+type: docs
 ---
 
 Catches <a href="https://learn.microsoft.com/dotnet/api/operationcanceledexception">OperationCanceledException</a> raised by a flow and converts it into a typed error.

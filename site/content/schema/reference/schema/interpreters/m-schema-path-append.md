@@ -2,6 +2,7 @@
 title: "Schema.Path.append"
 linkTitle: "append"
 weight: 2205
+type: docs
 ---
 
 Appends a relative path to a parent path.

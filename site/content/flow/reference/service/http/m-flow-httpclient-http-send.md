@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.send"
 linkTitle: "send"
 weight: 2506
+type: docs
 ---
 
  Sends a request and fails with <c>HttpError.Status</c> when the response is outside the expectation.

@@ -6,8 +6,8 @@ type: docs
 ---
 
 
-A [`Layer<'input, 'error, 'output>`]({{< relref "/flow/reference/layer/_index.md" >}}) builds an environment or service bundle from an input value. It runs inside a
-[`Scope`]({{< relref "/flow/reference/scope/_index.md" >}}), so resources acquired during provisioning can be finalized when the provided flow finishes.
+A `Layer<'input, 'error, 'output>` builds an environment or service bundle from an input value. It runs inside a
+`Scope`, so resources acquired during provisioning can be finalized when the provided flow finishes.
 
 ```fsharp
 let appFlow : Flow<AppEnv, AppError, unit> =
@@ -16,8 +16,6 @@ let appFlow : Flow<AppEnv, AppError, unit> =
 let runnable : Flow<IServiceProvider, AppError, unit> =
     appFlow |> Flow.provide appLayer
 ```
-
-[`Flow.provide`]({{< relref "/flow/reference/layer/m-flow-flow-provide.md" >}}) applies a layer to a flow.
 
 ## Primary Shape
 
@@ -87,8 +85,8 @@ Layer.map2 mapper left right
 Layer.map3 mapper left middle right
 ```
 
-Use [`Layer.succeed`]({{< relref "/flow/reference/layer/m-flow-layer-succeed.md" >}}) for already-built values, [`Layer.fromValueTask`]({{< relref "/flow/reference/layer/m-flow-layer-fromvaluetask.md" >}}) when construction can fail or register cleanup, and
-[`Layer.bind`]({{< relref "/flow/reference/layer/m-flow-layer-bind.md" >}}) / `layer { let! }` when the next provisioning step depends on an earlier value.
+Use `Layer.succeed` for already-built values, `Layer.fromValueTask` when construction can fail or register cleanup, and
+`Layer.bind` / `layer { let! }` when the next provisioning step depends on an earlier value.
 
 ## Example
 
@@ -161,11 +159,11 @@ scope error, which is the desired signal: if a service needs another value, sepa
 
 ## zip, zipPar, And merge
 
-[`Layer.zip`]({{< relref "/flow/reference/layer/m-flow-layer-zip.md" >}}) provisions left then right, sequentially. Use it when ordering is intentional.
+`Layer.zip` provisions left then right, sequentially. Use it when ordering is intentional.
 
-[`Layer.zipPar`]({{< relref "/flow/reference/layer/m-flow-layer-zippar.md" >}}) provisions both sides independently in parallel and returns a tuple.
+`Layer.zipPar` provisions both sides independently in parallel and returns a tuple.
 
-[`Layer.merge`]({{< relref "/flow/reference/layer/m-flow-layer-merge.md" >}}) is the layer-domain name for `zipPar`. Prefer it when combining service bundles or environment fragments:
+`Layer.merge` is the layer-domain name for `zipPar`. Prefer it when combining service bundles or environment fragments:
 
 ```fsharp
 let combined =
@@ -189,7 +187,7 @@ This keeps service requirements visible to people, the compiler, and LLMs. It al
 services with the same implementation type. If an application needs multiple instances of the same service shape, give
 them named record fields or distinct nominal contracts rather than relying on tags.
 
-[`Layer.map2`]({{< relref "/flow/reference/layer/m-flow-layer-map2.md" >}}) and [`Layer.map3`]({{< relref "/flow/reference/layer/m-flow-layer-map3.md" >}}) are sequential mapping helpers that avoid nested tuple reshaping. In a computation
+`Layer.map2` and `Layer.map3` are sequential mapping helpers that avoid nested tuple reshaping. In a computation
 expression, sibling `and!` bindings use `merge` instead.
 
 ## Cleanup
@@ -197,7 +195,7 @@ expression, sibling `and!` bindings use `merge` instead.
 `Flow.provide` creates a root scope, builds the layer, runs the downstream flow, and closes the scope. Cleanup runs when
 the layer fails, the downstream flow fails, or the downstream flow succeeds.
 
-Use [`Layer.acquireRelease`]({{< relref "/flow/reference/layer/m-flow-layer-acquirerelease.md" >}}) when a layer provisions a service implementation or resource that must live for the whole
+Use `Layer.acquireRelease` when a layer provisions a service implementation or resource that must live for the whole
 provided flow:
 
 ```fsharp

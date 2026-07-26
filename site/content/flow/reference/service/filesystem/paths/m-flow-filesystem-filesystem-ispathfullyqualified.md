@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.isPathFullyQualified"
 linkTitle: "isPathFullyQualified"
 weight: 2717
+type: docs
 ---
 
 Checks whether a path is fully qualified through an explicit file-system service.

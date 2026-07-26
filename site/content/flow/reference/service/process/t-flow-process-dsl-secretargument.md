@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.SecretArgument"
 linkTitle: "SecretArgument"
 weight: 1017
+type: docs
 ---
 
  Marks an interpolated command value for redaction in plans and transcripts.

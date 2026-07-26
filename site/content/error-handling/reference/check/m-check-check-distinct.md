@@ -2,6 +2,7 @@
 title: "Check.distinct"
 linkTitle: "distinct"
 weight: 2223
+type: docs
 ---
 
 Runs a sequence-shaped check requiring no duplicate values.

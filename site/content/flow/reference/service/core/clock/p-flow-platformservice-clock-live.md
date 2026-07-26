@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Clock.live"
 linkTitle: "live"
 weight: 2204
+type: docs
 ---
 
 Creates a live clock backed by <a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset.utcnow">DateTimeOffset.UtcNow</a>.

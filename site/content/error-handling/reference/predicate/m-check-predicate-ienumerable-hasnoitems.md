@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.HasNoItems"
 linkTitle: "HasNoItems"
 weight: 2400
+type: docs
 ---
 
 True when the sequence is non-null and empty.

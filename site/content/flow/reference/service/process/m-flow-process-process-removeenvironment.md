@@ -2,6 +2,7 @@
 title: "Flow.Process.removeEnvironment"
 linkTitle: "removeEnvironment"
 weight: 2305
+type: docs
 ---
 
  Removes an inherited environment variable. <example><code>command |&gt; Process.removeEnvironment "TOKEN"</code></example>

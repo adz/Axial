@@ -2,6 +2,7 @@
 title: "Check.moreThanOne"
 linkTitle: "moreThanOne"
 weight: 2228
+type: docs
 ---
 
 Runs a sequence-shaped check requiring more than one item.

@@ -2,6 +2,7 @@
 title: "Microsoft.FSharp.Core.FSharpResult.IsError"
 linkTitle: "IsError"
 weight: 2105
+type: docs
 ---
 
 True when the result is failed.

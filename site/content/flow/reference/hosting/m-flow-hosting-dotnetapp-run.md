@@ -2,6 +2,7 @@
 title: "Flow.Hosting.DotNetApp.run"
 linkTitle: "run"
 weight: 2000
+type: docs
 ---
 
  Runs a standalone application, translating Ctrl+C into coordinated stop and returning a process exit code.

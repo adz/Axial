@@ -2,6 +2,7 @@
 title: "Schema.SchemaCE.field"
 linkTitle: "field"
 weight: 2201
+type: docs
 ---
 
 Declares a field with an explicit wire name.

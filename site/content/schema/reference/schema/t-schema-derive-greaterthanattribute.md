@@ -2,6 +2,7 @@
 title: "Schema.Derive.GreaterThanAttribute"
 linkTitle: "GreaterThanAttribute"
 weight: 1508
+type: docs
 ---
 
 Bounds a numeric field&#39;s value exclusively from below (<code>&gt;</code> in the contract grammar).

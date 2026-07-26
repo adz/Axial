@@ -2,6 +2,7 @@
 title: "Flow.acquireRelease"
 linkTitle: "acquireRelease"
 weight: 2503
+type: docs
 ---
 
 Acquires a resource and registers its release with the current runtime scope.

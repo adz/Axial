@@ -2,6 +2,7 @@
 title: "Schema.option"
 linkTitle: "option"
 weight: 2107
+type: docs
 ---
 
 Describes an optional value.

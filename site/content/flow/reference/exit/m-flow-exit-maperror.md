@@ -2,6 +2,7 @@
 title: "Flow.Exit.mapError"
 linkTitle: "mapError"
 weight: 2102
+type: docs
 ---
 
 Transforms the error value of a failed exit outcome using the provided function.

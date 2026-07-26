@@ -2,6 +2,7 @@
 title: "Refined.NonEmptyList.create"
 linkTitle: "create"
 weight: 2908
+type: docs
 ---
 
 Builds a non-empty list from a sequence.

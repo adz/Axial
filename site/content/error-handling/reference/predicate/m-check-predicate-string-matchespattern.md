@@ -2,6 +2,7 @@
 title: "System.String.MatchesPattern"
 linkTitle: "MatchesPattern"
 weight: 2308
+type: docs
 ---
 
 True when the string matches the supplied regular expression pattern.

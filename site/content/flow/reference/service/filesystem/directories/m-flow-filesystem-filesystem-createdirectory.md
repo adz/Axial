@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.createDirectory"
 linkTitle: "createDirectory"
 weight: 2501
+type: docs
 ---
 
 Creates a directory through an explicit file-system service.

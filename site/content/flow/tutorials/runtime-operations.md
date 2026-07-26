@@ -74,7 +74,7 @@ let retryingCheckout =
         | _ -> None)
 ```
 
-Use [`Flow.Runtime.retry`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-retry.md" >}}) when the retry decision depends on the actual typed error. Use [`Schedule`]({{< relref "/flow/reference/schedule/_index.md" >}}) when you want a reusable retry policy value.
+Use `Flow.Runtime.retry` when the retry decision depends on the actual typed error. Use `Schedule` when you want a reusable retry policy value.
 
 ## Exceptions
 
@@ -92,7 +92,7 @@ let safeGatewayCall =
     |> Flow.catch (fun ex -> UnexpectedGatewayFailure ex.Message)
 ```
 
-Use [`Flow.catch`]({{< relref "/flow/reference/flow/composition/m-flow-flow-catch.md" >}}) when you are deliberately translating technical exceptions into your typed error channel. If you do not catch them, they surface as `Cause.Die` in the final [`Exit`]({{< relref "/flow/reference/exit/_index.md" >}}).
+Use `Flow.catch` when you are deliberately translating technical exceptions into your typed error channel. If you do not catch them, they surface as `Cause.Die` in the final `Exit`.
 
 ## Cancellation
 

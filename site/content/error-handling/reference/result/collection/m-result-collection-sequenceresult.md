@@ -2,6 +2,7 @@
 title: "Result.Collection.sequenceResult"
 linkTitle: "sequenceResult"
 weight: 2401
+type: docs
 ---
 
 Turns a sequence of results into one fail-fast result containing all successes.

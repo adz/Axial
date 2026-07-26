@@ -2,6 +2,7 @@
 title: "Schema.list"
 linkTitle: "list"
 weight: 2106
+type: docs
 ---
 
 Describes a list by resolving its item schema from <typeparamref name="'item" />.

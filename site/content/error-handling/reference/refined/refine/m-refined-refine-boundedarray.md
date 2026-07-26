@@ -2,6 +2,7 @@
 title: "Refined.Refine.boundedArray"
 linkTitle: "boundedArray"
 weight: 3016
+type: docs
 ---
 
 Builds a bounded array from a sequence.

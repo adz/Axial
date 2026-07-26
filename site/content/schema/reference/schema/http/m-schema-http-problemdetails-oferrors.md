@@ -2,6 +2,7 @@
 title: "Schema.Http.ProblemDetails.ofErrors"
 linkTitle: "ofErrors"
 weight: 2104
+type: docs
 ---
 
 Builds a 400 problem-details value from accumulated schema errors.

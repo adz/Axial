@@ -2,6 +2,7 @@
 title: "Refined.Refine.boundedList"
 linkTitle: "boundedList"
 weight: 3015
+type: docs
 ---
 
 Builds a bounded list from a sequence.

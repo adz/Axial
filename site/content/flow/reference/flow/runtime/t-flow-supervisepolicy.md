@@ -2,6 +2,7 @@
 title: "Flow.SupervisePolicy"
 linkTitle: "SupervisePolicy"
 weight: 1001
+type: docs
 ---
 
 

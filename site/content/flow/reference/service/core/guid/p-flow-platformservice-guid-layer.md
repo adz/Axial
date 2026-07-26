@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Guid.layer"
 linkTitle: "layer"
 weight: 2502
+type: docs
 ---
 
 Builds the live GUID service as a layer.

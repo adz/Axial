@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getDirectoryRoot"
 linkTitle: "getDirectoryRoot"
 weight: 2511
+type: docs
 ---
 
 Gets the directory root through an explicit file-system service.

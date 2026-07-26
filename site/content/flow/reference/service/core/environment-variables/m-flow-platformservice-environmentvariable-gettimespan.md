@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.getTimeSpan"
 linkTitle: "getTimeSpan"
 weight: 2616
+type: docs
 ---
 
 Reads a time span environment variable through an explicit service.

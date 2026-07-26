@@ -2,6 +2,7 @@
 title: "Refined.NonZeroInt"
 linkTitle: "NonZeroInt"
 weight: 1008
+type: docs
 ---
 
 An integer that is not zero.

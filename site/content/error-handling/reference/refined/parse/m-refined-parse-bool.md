@@ -2,6 +2,7 @@
 title: "Refined.Parse.bool"
 linkTitle: "bool"
 weight: 2104
+type: docs
 ---
 
 Parses a boolean.

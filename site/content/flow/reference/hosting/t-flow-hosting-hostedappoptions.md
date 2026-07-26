@@ -2,6 +2,7 @@
 title: "Flow.Hosting.HostedAppOptions"
 linkTitle: "HostedAppOptions"
 weight: 1100
+type: docs
 ---
 
 Controls how a root Flow application participates in Generic Host lifetime.

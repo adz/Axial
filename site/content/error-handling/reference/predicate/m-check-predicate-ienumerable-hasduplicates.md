@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.HasDuplicates"
 linkTitle: "HasDuplicates"
 weight: 2410
+type: docs
 ---
 
 True when the sequence is non-null and contains duplicate values.

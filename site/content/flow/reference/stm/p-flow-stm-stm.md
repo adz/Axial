@@ -2,6 +2,7 @@
 title: "Flow.Stm.stm"
 linkTitle: "stm { }"
 weight: 2201
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Check.Seq.contains"
 linkTitle: "contains"
 weight: 2507
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain the supplied value.

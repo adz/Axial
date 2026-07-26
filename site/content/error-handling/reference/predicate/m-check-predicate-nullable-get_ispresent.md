@@ -2,6 +2,7 @@
 title: "System.Nullable.IsPresent"
 linkTitle: "IsPresent"
 weight: 2200
+type: docs
 ---
 
 True when the nullable value contains a value.

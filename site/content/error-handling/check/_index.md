@@ -12,8 +12,8 @@ condition inline each time works until the rule changes and one call site is mis
 rule to explain itself the same way everywhere it fails.
 
 `Axial.Check` gives that kind of rule a name and a type. A `Check<'value>` takes a value and returns the same value
-on success or a structured [`CheckFailure`]({{< relref "/error-handling/reference/check/t-check-checkfailure.md" >}})
-list on failure — not a loose string, and not a different shape than what went in. Checks compose ([`Check.all`]({{< relref "/error-handling/reference/check/m-check-check-all.md" >}}), [`Check.any`]({{< relref "/error-handling/reference/check/m-check-check-any.md" >}}), [`Check.not`]({{< relref "/error-handling/reference/check/m-check-check-not.md" >}}))
+on success or a structured [`CheckFailure`]({{< relref "/error-handling/reference/check/t-errorhandling-checkfailure.md" >}})
+list on failure — not a loose string, and not a different shape than what went in. Checks compose (`Check.all`, `Check.any`, `Check.not`),
 attach to a domain error with `orError`/`mapError`, and return the standard F# `Result`, so they work directly in
 `result {}`, [`flow {}`]({{< relref "/flow/" >}}), or your own composition style.
 

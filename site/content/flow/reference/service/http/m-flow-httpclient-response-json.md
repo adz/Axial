@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Response.json"
 linkTitle: "json"
 weight: 2404
+type: docs
 ---
 
  Decodes the response body with the supplied decoder, mapping failure to <c>HttpError.DecodeFailed</c>.

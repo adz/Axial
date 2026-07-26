@@ -1,6 +1,7 @@
 ---
 title: "Node Hosting"
 weight: 500
+type: docs
 ---
 
 This page shows the JavaScript-only `Axial.Flow.Hosting.Node` surface. `NodeApp` connects SIGINT/SIGTERM and `process.exitCode` to a root `App`; `NodeEnvironment.live` exposes `process.env` as the explicit `IEnvironmentVariables` service. See the [Node hosting guide](/flow/hosting/node/) for complete Fable setup.

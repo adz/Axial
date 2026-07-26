@@ -1,6 +1,7 @@
 ---
 title: "Refined"
-weight: 500
+weight: 50
+type: docs
 ---
 
 `Parse` converts serialized strings into primitive values. `Refine` constructs the built-in refined values. `Refine.from` runs the `Refinement` defined for its source and expected destination types. `refine { }` binds parsing and refinement results and stops at the first failure.

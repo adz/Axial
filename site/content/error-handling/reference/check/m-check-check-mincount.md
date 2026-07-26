@@ -2,6 +2,7 @@
 title: "Check.minCount"
 linkTitle: "minCount"
 weight: 2220
+type: docs
 ---
 
 Returns a sequence-shaped check requiring at least the supplied count.

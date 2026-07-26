@@ -57,8 +57,6 @@ let orderSchema =
 Configuration-style keys carry nesting with `:` separators and numeric collection indexes; JSON-like input nests
 naturally. Both produce the same shape:
 
-[`Data.ofConfiguration`]({{< relref "/schema/reference/data/m-data-ofconfiguration/" >}}):
-
 ```fsharp
 let raw =
     Data.ofConfiguration
@@ -74,8 +72,6 @@ let raw =
 
 Every item is parsed and every item error is kept — one bad line item does not hide the others:
 
-[`Schema.parseRetainingInput`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parseretaininginput/" >}}):
-
 ```fsharp
 let parsed = Schema.parseRetainingInput orderSchema raw
 
@@ -89,8 +85,6 @@ Nested diagnostics are prefixed with the field name (`address.city`), collection
 ```fsharp
 Data.redisplayPath "items[1].quantity" parsed.Input   // "0"
 ```
-
-([`Data.redisplayPath`]({{< relref "/schema/reference/data/m-data-redisplaypath/" >}}))
 
 ## Count Constraints
 

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setFileLastAccessTime"
 linkTitle: "setFileLastAccessTime"
 weight: 2408
+type: docs
 ---
 
 Sets file last access time through an explicit file-system service.

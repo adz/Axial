@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.getDouble"
 linkTitle: "getDouble"
 weight: 2612
+type: docs
 ---
 
 Reads a floating-point environment variable through an explicit service.

@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.basicAuth"
 linkTitle: "basicAuth"
 weight: 2306
+type: docs
 ---
 
  Adds a basic-auth Authorization header. The credentials are always redacted in diagnostics.

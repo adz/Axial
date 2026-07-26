@@ -2,6 +2,7 @@
 title: "Check.Number.atMost"
 linkTitle: "atMost"
 weight: 2404
+type: docs
 ---
 
 Requires a value to be less than or equal to the supplied upper bound.

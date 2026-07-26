@@ -2,6 +2,7 @@
 title: "Refined.Collection.boundedArray"
 linkTitle: "boundedArray"
 weight: 2404
+type: docs
 ---
 
 Builds an array whose count is within an inclusive range.

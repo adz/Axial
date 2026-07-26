@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.returnsJson"
 linkTitle: "returnsJson"
 weight: 2211
+type: docs
 ---
 
 Adds a JSON response whose body is described by the schema's generated JSON Schema.

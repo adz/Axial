@@ -2,6 +2,7 @@
 title: "Refined.PositiveInt.value"
 linkTitle: "value"
 weight: 2903
+type: docs
 ---
 
 Returns the underlying integer value.

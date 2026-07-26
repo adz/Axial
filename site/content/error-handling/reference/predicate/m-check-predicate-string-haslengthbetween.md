@@ -2,6 +2,7 @@
 title: "System.String.HasLengthBetween"
 linkTitle: "HasLengthBetween"
 weight: 2307
+type: docs
 ---
 
 True when the string length lies inside the supplied inclusive bounds.

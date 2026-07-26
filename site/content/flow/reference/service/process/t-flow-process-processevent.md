@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessEvent"
 linkTitle: "ProcessEvent"
 weight: 1009
+type: docs
 ---
 
  Values emitted by a native process FlowStream.

@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.textBody"
 linkTitle: "textBody"
 weight: 2311
+type: docs
 ---
 
  Sends a plain-text body. <example><code>request |&gt; Request.textBody "hello"</code></example>

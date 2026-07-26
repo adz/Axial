@@ -2,6 +2,7 @@
 title: "Flow.Layer.bind"
 linkTitle: "bind"
 weight: 2209
+type: docs
 ---
 
 Sequences layer provisioning with a dependent follow-up layer.

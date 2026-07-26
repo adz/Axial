@@ -1,6 +1,7 @@
 ---
 title: "Stream"
-weight: 130
+weight: 90
+type: docs
 ---
 
 This page shows the Fable-compatible `FlowStream` surface for cold, pull-based streams that participate in Axial's environment, typed-error, cancellation, and scope model. Construct streams from values or effectful state transitions, transform them without starting work, and consume them back into an ordinary `Flow`.

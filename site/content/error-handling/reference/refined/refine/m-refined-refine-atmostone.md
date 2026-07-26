@@ -2,6 +2,7 @@
 title: "Refined.Refine.atMostOne"
 linkTitle: "atMostOne"
 weight: 3020
+type: docs
 ---
 
 Extracts zero or one item from a sequence.

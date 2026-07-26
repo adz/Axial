@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.capture"
 linkTitle: "capture"
 weight: 2815
+type: docs
 ---
 
  Runs a command or specification and captures stdout and stderr.

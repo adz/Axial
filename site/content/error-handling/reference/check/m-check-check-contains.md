@@ -2,6 +2,7 @@
 title: "Check.contains"
 linkTitle: "contains"
 weight: 2224
+type: docs
 ---
 
 Returns a sequence-shaped check requiring the supplied value to be present.

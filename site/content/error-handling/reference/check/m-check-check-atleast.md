@@ -2,6 +2,7 @@
 title: "Check.atLeast"
 linkTitle: "atLeast"
 weight: 2213
+type: docs
 ---
 
 Returns an ordered-value check requiring a value greater than or equal to the supplied lower bound.

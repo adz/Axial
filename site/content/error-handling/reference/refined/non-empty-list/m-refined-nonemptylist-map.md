@@ -2,6 +2,7 @@
 title: "Refined.NonEmptyList.map"
 linkTitle: "map"
 weight: 2910
+type: docs
 ---
 
 Transforms each item while preserving non-emptiness.

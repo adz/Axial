@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.appendAllTextAsync"
 linkTitle: "appendAllTextAsync"
 weight: 2218
+type: docs
 ---
 
 Asynchronously appends all text through an explicit file-system service.

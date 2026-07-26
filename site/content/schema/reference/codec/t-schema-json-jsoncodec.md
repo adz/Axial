@@ -2,6 +2,7 @@
 title: "Schema.Json.JsonCodec"
 linkTitle: "JsonCodec<model>"
 weight: 1000
+type: docs
 ---
 
 A compiled JSON codec for one schema-described model.

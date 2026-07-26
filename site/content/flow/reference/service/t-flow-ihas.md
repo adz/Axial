@@ -2,6 +2,7 @@
 title: "Flow.IHas"
 linkTitle: "IHas<service>"
 weight: 1000
+type: docs
 ---
 
 Nominal contract for an explicit service dependency.

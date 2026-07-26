@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.captureTail"
 linkTitle: "captureTail"
 weight: 2701
+type: docs
 ---
 
  Retains only the final maximum number of bytes.

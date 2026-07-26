@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.bearer"
 linkTitle: "bearer"
 weight: 2610
+type: docs
 ---
 
  Adds a redacted bearer-token Authorization header. <example><code>request |&gt; bearer token</code></example>

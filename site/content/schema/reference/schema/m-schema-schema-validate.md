@@ -2,6 +2,7 @@
 title: "Schema.validate"
 linkTitle: "validate { }"
 weight: 2110
+type: docs
 ---
 
 Adds executable value validation to a schema.

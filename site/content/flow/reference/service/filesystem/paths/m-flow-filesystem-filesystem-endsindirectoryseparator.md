@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.endsInDirectorySeparator"
 linkTitle: "endsInDirectorySeparator"
 weight: 2715
+type: docs
 ---
 
 Checks whether a path ends in a directory separator through an explicit file-system service.

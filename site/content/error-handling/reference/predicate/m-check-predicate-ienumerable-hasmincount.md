@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.HasMinCount"
 linkTitle: "HasMinCount"
 weight: 2404
+type: docs
 ---
 
 True when the sequence is non-null and contains at least the supplied count.

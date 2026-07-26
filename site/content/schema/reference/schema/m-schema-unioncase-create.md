@@ -2,6 +2,7 @@
 title: "Schema.UnionCase.create"
 linkTitle: "create"
 weight: 2112
+type: docs
 ---
 
 

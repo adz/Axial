@@ -10,7 +10,7 @@ A refined type prevents invalid values from entering ordinary application code. 
 smart constructor is the only function that can create it.
 
 This guide starts with an ordinary F# wrapper and smart constructor. It then makes that constructor available to
-[`Refine.from`]({{< relref "/error-handling/reference/refined/refine/m-refined-refine-from.md" >}}) and [`refine { }`]({{< relref "/error-handling/reference/refined/refine-ce/" >}}).
+`Refine.from` and `refine { }`.
 
 ## Wrap the raw value
 
@@ -73,8 +73,6 @@ module ContactEmail =
     let refinement : Refinement<string, ContactEmail> =
         Refinement.define create value
 ```
-
-A [`Refinement`]({{< relref "/error-handling/reference/refined/refine/" >}}) encapsulates both construction and inspection.
 
 The functions can also be called through the refinement:
 

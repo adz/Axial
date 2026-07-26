@@ -2,6 +2,7 @@
 title: "Flow.Process.command"
 linkTitle: "command"
 weight: 2300
+type: docs
 ---
 
  Creates a runnable, safely tokenized one-command process specification.

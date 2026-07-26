@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.header"
 linkTitle: "header"
 weight: 2303
+type: docs
 ---
 
  Appends one request header.

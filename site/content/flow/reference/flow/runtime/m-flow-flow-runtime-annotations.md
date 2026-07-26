@@ -2,6 +2,7 @@
 title: "Flow.Runtime.annotations"
 linkTitle: "annotations"
 weight: 2105
+type: docs
 ---
 
 Reads the current runtime annotations.

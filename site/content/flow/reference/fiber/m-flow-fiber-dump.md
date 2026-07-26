@@ -2,6 +2,7 @@
 title: "Flow.Fiber.dump"
 linkTitle: "dump"
 weight: 2100
+type: docs
 ---
 
 Returns a snapshot of the current fiber metadata.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.appendAllLines"
 linkTitle: "appendAllLines"
 weight: 2219
+type: docs
 ---
 
 Appends all lines through an explicit file-system service.

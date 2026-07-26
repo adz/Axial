@@ -2,6 +2,7 @@
 title: "Check.atLeastOne"
 linkTitle: "atLeastOne"
 weight: 2227
+type: docs
 ---
 
 Runs a sequence-shaped check requiring at least one item.

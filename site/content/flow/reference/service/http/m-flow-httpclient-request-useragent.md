@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.userAgent"
 linkTitle: "userAgent"
 weight: 2309
+type: docs
 ---
 
  Sets the User-Agent header. <example><code>request |&gt; Request.userAgent "axial-app/1.0"</code></example>

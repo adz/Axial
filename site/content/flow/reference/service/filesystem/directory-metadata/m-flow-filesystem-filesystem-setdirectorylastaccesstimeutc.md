@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.setDirectoryLastAccessTimeUtc"
 linkTitle: "setDirectoryLastAccessTimeUtc"
 weight: 2607
+type: docs
 ---
 
 Sets directory last access time in UTC through an explicit file-system service.

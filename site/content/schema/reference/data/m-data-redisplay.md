@@ -2,6 +2,7 @@
 title: "Data.redisplay"
 linkTitle: "redisplay"
 weight: 2200
+type: docs
 ---
 
 

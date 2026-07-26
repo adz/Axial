@@ -2,6 +2,7 @@
 title: "Refined.Choice.tryAny"
 linkTitle: "tryAny"
 weight: 2701
+type: docs
 ---
 
 Tries parser strategies in order and returns the first success.

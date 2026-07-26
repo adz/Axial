@@ -2,6 +2,7 @@
 title: "Flow.Hosting.MicrosoftLogging.create"
 linkTitle: "create"
 weight: 2200
+type: docs
 ---
 
 Creates an Axial logger backed by a supplied Microsoft logger.

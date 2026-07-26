@@ -2,6 +2,7 @@
 title: "Result.orElseWith"
 linkTitle: "orElseWith"
 weight: 2106
+type: docs
 ---
 
 Computes a fallback result from the source error when the result fails.

@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.query"
 linkTitle: "query"
 weight: 2607
+type: docs
 ---
 
  Appends a URL-encoded query parameter. <example><code>GET $"{root}/search" |&gt; query "q" term</code></example>

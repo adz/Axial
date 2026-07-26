@@ -2,6 +2,7 @@
 title: "Flow.Runtime.scope"
 linkTitle: "scope"
 weight: 2104
+type: docs
 ---
 
 Reads the current runtime scope.

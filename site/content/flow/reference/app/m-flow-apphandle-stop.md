@@ -2,6 +2,7 @@
 title: "Flow.AppHandle.Stop"
 linkTitle: "Stop"
 weight: 2004
+type: docs
 ---
 
 Requests cooperative interruption and waits for the final application exit.

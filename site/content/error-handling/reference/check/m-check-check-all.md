@@ -2,6 +2,7 @@
 title: "Check.all"
 linkTitle: "all"
 weight: 2100
+type: docs
 ---
 
 Combines checks conjunctively by running every check against the value and accumulating all failures. An empty list succeeds.

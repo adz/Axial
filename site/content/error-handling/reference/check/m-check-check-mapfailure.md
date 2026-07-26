@@ -2,6 +2,7 @@
 title: "Check.mapFailure"
 linkTitle: "mapFailure"
 weight: 2103
+type: docs
 ---
 
 Maps every failure produced by a check.

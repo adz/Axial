@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.Response.json"
 linkTitle: "json"
 weight: 2400
+type: docs
 ---
 
 Serializes a trusted value as JSON through a compiled codec.

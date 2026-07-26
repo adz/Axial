@@ -2,6 +2,7 @@
 title: "Refined.Refine.trimmedString"
 linkTitle: "trimmedString"
 weight: 3004
+type: docs
 ---
 
 Builds a string that has no leading or trailing whitespace.

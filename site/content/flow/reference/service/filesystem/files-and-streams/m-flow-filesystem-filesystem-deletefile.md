@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.deleteFile"
 linkTitle: "deleteFile"
 weight: 2302
+type: docs
 ---
 
 Deletes a file through an explicit file-system service.

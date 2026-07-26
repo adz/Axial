@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.Response.native"
 linkTitle: "native"
 weight: 2403
+type: docs
 ---
 
 Returns a host-native ASP.NET result unchanged.

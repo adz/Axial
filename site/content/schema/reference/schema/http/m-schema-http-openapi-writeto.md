@@ -2,6 +2,7 @@
 title: "Schema.Http.OpenApi.writeTo"
 linkTitle: "writeTo"
 weight: 2303
+type: docs
 ---
 
 Writes an OpenAPI 3.1 JSON document covering the supplied endpoints to a stream.

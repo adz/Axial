@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.readAllBytes"
 linkTitle: "readAllBytes"
 weight: 2206
+type: docs
 ---
 
 Reads all bytes through an explicit file-system service.

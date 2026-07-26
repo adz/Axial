@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.slug"
 linkTitle: "slug"
 weight: 2303
+type: docs
 ---
 
 Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.

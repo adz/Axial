@@ -49,7 +49,7 @@ NodeApp.run AppError.describe inputs application
 |> Async.StartImmediate
 ```
 
-[`NodeApp.run`]({{< relref "/flow/reference/hosting-node/m-flow-hosting-node-nodeapp-run.md" >}}):
+`NodeApp.run`:
 
 - subscribes to `SIGINT` and `SIGTERM`;
 - requests coordinated `App.Stop()` on either signal;
@@ -63,7 +63,7 @@ finish.
 The exit-code mapping is success `0`, typed failure `1`, defect `2`, SIGINT `130`, and SIGTERM `143`. An interruption
 not caused by an installed signal uses `130`. A cleanup defect takes precedence over the interruption code.
 
-Use [`NodeApp.start`]({{< relref "/flow/reference/hosting-node/m-flow-hosting-node-nodeapp-start.md" >}}) when another Node module needs the [`AppHandle`]({{< relref "/flow/reference/app/t-flow-apphandle.md" >}}):
+Use `NodeApp.start` when another Node module needs the `AppHandle`:
 
 ```fsharp
 let running = NodeApp.start AppError.describe inputs application

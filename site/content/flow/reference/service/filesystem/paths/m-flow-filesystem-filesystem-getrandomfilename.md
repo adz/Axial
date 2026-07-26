@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getRandomFileName"
 linkTitle: "getRandomFileName"
 weight: 2713
+type: docs
 ---
 
 Gets a random file name through an explicit file-system service.

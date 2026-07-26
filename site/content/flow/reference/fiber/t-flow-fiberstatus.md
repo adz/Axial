@@ -2,6 +2,7 @@
 title: "Flow.FiberStatus"
 linkTitle: "FiberStatus"
 weight: 1002
+type: docs
 ---
 
 Describes the current lifecycle state of a fiber.

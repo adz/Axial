@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.enumerateDirectories"
 linkTitle: "enumerateDirectories"
 weight: 2506
+type: docs
 ---
 
 Enumerates directories through an explicit file-system service.

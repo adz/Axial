@@ -2,6 +2,7 @@
 title: "Flow.Policy.compose"
 linkTitle: "compose"
 weight: 2405
+type: docs
 ---
 
 Composes two policies left to right.

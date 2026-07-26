@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.timeout"
 linkTitle: "timeout"
 weight: 2612
+type: docs
 ---
 
  Sets a per-request timeout. <example><code>request |&gt; timeout (TimeSpan.FromSeconds 5.0)</code></example>

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.fileExists"
 linkTitle: "fileExists"
 weight: 2300
+type: docs
 ---
 
 Checks file existence through an explicit file-system service.

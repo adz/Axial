@@ -2,6 +2,7 @@
 title: "Flow.verify"
 linkTitle: "verify"
 weight: 2314
+type: docs
 ---
 
 Runs an environment-aware policy against an input value inside a workflow.

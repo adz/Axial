@@ -2,6 +2,7 @@
 title: "Schema.union"
 linkTitle: "union"
 weight: 2111
+type: docs
 ---
 
 Describes an externally tagged union.

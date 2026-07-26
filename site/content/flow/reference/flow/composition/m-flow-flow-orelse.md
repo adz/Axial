@@ -2,6 +2,7 @@
 title: "Flow.orElse"
 linkTitle: "orElse"
 weight: 2326
+type: docs
 ---
 
 Falls back to another flow when the source flow fails.

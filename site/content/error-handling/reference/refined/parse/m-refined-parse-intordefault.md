@@ -2,6 +2,7 @@
 title: "Refined.Parse.intOrDefault"
 linkTitle: "intOrDefault"
 weight: 2115
+type: docs
 ---
 
 Parses an optional integer, using the supplied fallback only when the input is absent.

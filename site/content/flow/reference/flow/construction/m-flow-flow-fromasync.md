@@ -2,6 +2,7 @@
 title: "Flow.fromAsync"
 linkTitle: "fromAsync"
 weight: 2308
+type: docs
 ---
 
 Creates a flow from a raw async operation.

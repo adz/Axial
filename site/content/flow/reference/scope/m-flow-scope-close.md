@@ -2,6 +2,7 @@
 title: "Flow.Scope.Close"
 linkTitle: "Close"
 weight: 2104
+type: docs
 ---
 
 

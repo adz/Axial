@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFileLastWriteTimeUtc"
 linkTitle: "getFileLastWriteTimeUtc"
 weight: 2411
+type: docs
 ---
 
 Gets file last write time in UTC through an explicit file-system service.

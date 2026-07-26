@@ -2,6 +2,7 @@
 title: "Flow.FiberDump"
 linkTitle: "FiberDump"
 weight: 1004
+type: docs
 ---
 
 Structured diagnostic snapshot of a fiber, taken at a single point in time.

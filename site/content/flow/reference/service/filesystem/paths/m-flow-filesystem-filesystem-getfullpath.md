@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFullPath"
 linkTitle: "getFullPath"
 weight: 2708
+type: docs
 ---
 
 Gets the full path through an explicit file-system service.

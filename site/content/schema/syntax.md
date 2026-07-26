@@ -16,8 +16,7 @@ schema<Signup> {
 }
 ```
 
-[`field`]({{< relref "/schema/reference/schema/m-schema-schemace-field/" >}}) and
-[`construct`]({{< relref "/schema/reference/schema/m-schema-schemace-construct/" >}}) use implicit yield. Do not write `yield`.
+`field` and `construct` use implicit yield. Do not write `yield`.
 
 ## Fields without blocks
 
@@ -63,9 +62,9 @@ field "email" _.Email {
 Operations run from top to bottom:
 
 1. `withSchema` sets the current raw schema.
-2. [`constrain`]({{< relref "/schema/reference/schema/m-schema-schema-constrain/" >}}) adds one portable constraint; `constraints` adds a list in declaration order. Both preserve the value type.
-3. [`refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) changes the current schema from its raw type to the getter type.
-4. [`validate`]({{< relref "/schema/reference/schema/m-schema-schema-validate/" >}}) runs executable value-preserving logic over the current type.
+2. `constrain` adds one portable constraint; `constraints` adds a list in declaration order. Both preserve the value type.
+3. `refine` changes the current schema from its raw type to the getter type.
+4. `validate` runs executable value-preserving logic over the current type.
 
 The block must finish with the getter type. A plain `int` field does not need refinement:
 
@@ -109,7 +108,7 @@ compile error; Schema does not use reflection or a runtime registry.
 construct (fun email age -> { Email = email; Age = age })
 ```
 
-[`constructResult`]({{< relref "/schema/reference/schema/m-schema-schemace-constructresult/" >}}) accepts cross-field construction that can fail:
+`constructResult` accepts cross-field construction that can fail:
 
 ```fsharp
 constructResult Signup.createChecked

@@ -2,6 +2,7 @@
 title: "Flow.Process.ScriptEnvironment"
 linkTitle: "ScriptEnvironment"
 weight: 1016
+type: docs
 ---
 
 

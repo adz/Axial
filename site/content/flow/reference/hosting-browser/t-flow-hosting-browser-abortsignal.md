@@ -2,6 +2,7 @@
 title: "Flow.Hosting.Browser.AbortSignal"
 linkTitle: "AbortSignal"
 weight: 1000
+type: docs
 ---
 
 A structural binding for the browser and JavaScript <code>AbortSignal</code> contract.

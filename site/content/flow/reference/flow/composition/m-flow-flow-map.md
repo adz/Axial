@@ -2,6 +2,7 @@
 title: "Flow.map"
 linkTitle: "map"
 weight: 2318
+type: docs
 ---
 
 Transforms the successful value of a flow.

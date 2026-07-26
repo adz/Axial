@@ -2,6 +2,7 @@
 title: "Check.Predicate.Number.atLeast"
 linkTitle: "atLeast"
 weight: 2502
+type: docs
 ---
 
 Returns true when the value is greater than or equal to the supplied lower bound.

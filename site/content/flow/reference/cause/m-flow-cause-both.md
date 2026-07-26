@@ -2,6 +2,7 @@
 title: "Flow.Cause.both"
 linkTitle: "both"
 weight: 2102
+type: docs
 ---
 
 Combines causes that happened concurrently.

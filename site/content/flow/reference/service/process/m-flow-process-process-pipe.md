@@ -2,6 +2,7 @@
 title: "Flow.Process.pipe"
 linkTitle: "pipe"
 weight: 2400
+type: docs
 ---
 
  Connects the current stdout to the next one-command specification's stdin.

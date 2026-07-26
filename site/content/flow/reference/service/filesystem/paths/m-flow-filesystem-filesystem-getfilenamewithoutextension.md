@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFileNameWithoutExtension"
 linkTitle: "getFileNameWithoutExtension"
 weight: 2707
+type: docs
 ---
 
 Gets the file name without extension for a path through an explicit file-system service.

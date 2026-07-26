@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.writeAllText"
 linkTitle: "writeAllText"
 weight: 2208
+type: docs
 ---
 
 Writes all text through an explicit file-system service.

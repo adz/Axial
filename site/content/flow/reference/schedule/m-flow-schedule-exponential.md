@@ -2,6 +2,7 @@
 title: "Flow.Schedule.exponential"
 linkTitle: "exponential"
 weight: 2102
+type: docs
 ---
 
 Creates a schedule that recurs with exponential backoff.

@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.basicAuth"
 linkTitle: "basicAuth"
 weight: 2611
+type: docs
 ---
 
  Adds a redacted basic-auth Authorization header. <example><code>request |&gt; basicAuth user password</code></example>

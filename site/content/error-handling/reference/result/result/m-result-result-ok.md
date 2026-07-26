@@ -2,6 +2,7 @@
 title: "Result.ok"
 linkTitle: "ok"
 weight: 2100
+type: docs
 ---
 
 Creates an <code>Ok</code> result.

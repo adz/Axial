@@ -2,6 +2,7 @@
 title: "Check.Seq.atMostOne"
 linkTitle: "atMostOne"
 weight: 2509
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain zero or one item.

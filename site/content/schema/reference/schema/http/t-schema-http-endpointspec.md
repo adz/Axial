@@ -2,6 +2,7 @@
 title: "Schema.Http.EndpointSpec"
 linkTitle: "EndpointSpec"
 weight: 1200
+type: docs
 ---
 
 A host-neutral description of one schema-driven endpoint, used to assemble OpenAPI documents.

@@ -2,6 +2,7 @@
 title: "Schema.SchemaErrors.isEmpty"
 linkTitle: "isEmpty"
 weight: 2212
+type: docs
 ---
 
 Reports whether the collection contains no failures.

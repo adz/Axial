@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.render"
 linkTitle: "render"
 weight: 2318
+type: docs
 ---
 
  Renders the redacted request line used in error transcripts.

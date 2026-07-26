@@ -2,6 +2,7 @@
 title: "Refined.Parse.dateOnly"
 linkTitle: "dateOnly"
 weight: 2108
+type: docs
 ---
 
 Parses a date-only value.

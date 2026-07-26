@@ -2,6 +2,7 @@
 title: "Flow.Runtime.supervise"
 linkTitle: "supervise"
 weight: 2112
+type: docs
 ---
 
 Restarts a flow that terminates with an unexpected defect, according to the specified policy.

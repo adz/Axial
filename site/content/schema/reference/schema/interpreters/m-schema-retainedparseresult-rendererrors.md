@@ -2,6 +2,7 @@
 title: "Schema.RetainedParseResult.renderErrors"
 linkTitle: "renderErrors"
 weight: 2106
+type: docs
 ---
 
 Renders one line for every failed schema issue.

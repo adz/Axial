@@ -2,6 +2,7 @@
 title: "Result.errorOr"
 linkTitle: "errorOr"
 weight: 2307
+type: docs
 ---
 
 Takes the error value from a result, or returns the supplied error when the result is successful.

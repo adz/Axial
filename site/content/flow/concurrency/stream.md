@@ -14,7 +14,7 @@ FlowStream<'env, 'error, 'value>
 ```
 
 Each pull produces one value or completes. The consumer requests the next value, so producers cannot outrun consumers.
-The implementation uses Axial's [`Execution`]({{< relref "/flow/reference/flow/execution/_index.md" >}}) abstraction rather than `IAsyncEnumerable`; the same model works on .NET
+The implementation uses Axial's `Execution` abstraction rather than `IAsyncEnumerable`; the same model works on .NET
 and Fable.
 
 ## Construct Streams
@@ -102,7 +102,7 @@ incremental consumer for unbounded streams.
 
 ## Process Output
 
-[`Axial.Flow.Process.Process.stream`]({{< relref "/flow/reference/service/process/m-flow-process-process-stream.md" >}}) is a concrete example of an effectful, backpressured source. It emits structured
+`Axial.Flow.Process.Process.stream` is a concrete example of an effectful, backpressured source. It emits structured
 stdout/stderr events followed by a completion transcript and cancels the child pipeline if stream consumption stops.
 See [Output and streaming](processes/output-streaming/).
 

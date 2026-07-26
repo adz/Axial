@@ -2,6 +2,7 @@
 title: "Flow.Hosting.addApp"
 linkTitle: "addApp"
 weight: 2102
+type: docs
 ---
 
 Registers a root application that owns the Generic Host lifetime.

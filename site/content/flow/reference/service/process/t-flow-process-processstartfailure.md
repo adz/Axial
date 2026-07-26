@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessStartFailure"
 linkTitle: "ProcessStartFailure"
 weight: 1010
+type: docs
 ---
 
  Diagnostic details for a process that could not be started.

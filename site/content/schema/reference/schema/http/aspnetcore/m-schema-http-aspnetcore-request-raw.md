@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.Request.raw"
 linkTitle: "raw"
 weight: 2200
+type: docs
 ---
 
 Projects untrusted input directly from the native request without schema parsing.

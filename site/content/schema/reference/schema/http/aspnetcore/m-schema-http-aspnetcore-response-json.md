@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.Response.json"
 linkTitle: "json"
 weight: 2400
+type: docs
 ---
 
 Streams a trusted value as JSON through a compiled codec.

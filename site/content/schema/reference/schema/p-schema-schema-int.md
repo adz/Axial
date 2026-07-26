@@ -2,6 +2,7 @@
 title: "Schema.int"
 linkTitle: "int"
 weight: 2101
+type: docs
 ---
 
 Describes a 32-bit integer.

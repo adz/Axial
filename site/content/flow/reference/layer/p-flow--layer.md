@@ -2,6 +2,7 @@
 title: "Flow..layer"
 linkTitle: "layer"
 weight: 2100
+type: docs
 ---
 
 The <code>layer { }</code> computation expression for provisioning explicit service environments.

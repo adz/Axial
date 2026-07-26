@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariables.set"
 linkTitle: "set"
 weight: 2602
+type: docs
 ---
 
 Sets or updates an environment variable through an explicit environment-variable service.

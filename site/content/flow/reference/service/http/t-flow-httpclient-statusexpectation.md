@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.StatusExpectation"
 linkTitle: "StatusExpectation"
 weight: 1002
+type: docs
 ---
 
  Decides which response status codes count as success for a request.

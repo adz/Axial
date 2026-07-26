@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.ILog"
 linkTitle: "ILog"
 weight: 1001
+type: docs
 ---
 
 Provides synchronous access to workflow logging as an explicit service.

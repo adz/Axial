@@ -2,6 +2,7 @@
 title: "Result.requireTrue"
 linkTitle: "requireTrue"
 weight: 2200
+type: docs
 ---
 
 Returns <code>Ok ()</code> when the condition is true, or the supplied error when it is false.

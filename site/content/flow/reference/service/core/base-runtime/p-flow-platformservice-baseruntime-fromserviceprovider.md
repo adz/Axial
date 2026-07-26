@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.BaseRuntime.fromServiceProvider"
 linkTitle: "fromServiceProvider"
 weight: 2102
+type: docs
 ---
 
 Builds the base runtime from an <a href="https://learn.microsoft.com/dotnet/api/system.iserviceprovider">IServiceProvider</a>.

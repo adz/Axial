@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.HasSingleItem"
 linkTitle: "HasSingleItem"
 weight: 2407
+type: docs
 ---
 
 True when the sequence is non-null and contains exactly one item.

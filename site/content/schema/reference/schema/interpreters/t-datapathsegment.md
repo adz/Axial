@@ -2,6 +2,7 @@
 title: "DataPathSegment"
 linkTitle: "DataPathSegment"
 weight: 1001
+type: docs
 ---
 
 A segment in a structured data path.

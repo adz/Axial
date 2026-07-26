@@ -2,6 +2,7 @@
 title: "Refined.NonEmptyList.tryFilter"
 linkTitle: "tryFilter"
 weight: 2912
+type: docs
 ---
 
 Filters the list and re-certifies that at least one item remains.

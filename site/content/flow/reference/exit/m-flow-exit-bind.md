@@ -2,6 +2,7 @@
 title: "Flow.Exit.bind"
 linkTitle: "bind"
 weight: 2101
+type: docs
 ---
 
 Binds the success value of an exit outcome to a function that returns a new exit outcome.

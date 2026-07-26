@@ -2,6 +2,7 @@
 title: "Schema.SchemaIssue"
 linkTitle: "SchemaIssue"
 weight: 1208
+type: docs
 ---
 
 One schema failure and its complete structural location.

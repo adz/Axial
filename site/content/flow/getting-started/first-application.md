@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-Use [`App.run`]({{< relref "/flow/reference/app/m-flow-app-run.md" >}}) when a Flow is the root of an application. It carries cancellation from the calling Async and returns
+Use `App.run` when a Flow is the root of an application. It carries cancellation from the calling Async and returns
 after the root scope and its resources have closed.
 
 ```fsharp
@@ -30,7 +30,7 @@ let run () =
 The `()` value is the environment because this workflow has no dependencies. An application with an `AppEnv` record
 passes its live value in the same position.
 
-Use [`App.start`]({{< relref "/flow/reference/app/m-flow-app-start.md" >}}) when a signal handler, desktop window, UI component, or external host will request shutdown later.
+Use `App.start` when a signal handler, desktop window, UI component, or external host will request shutdown later.
 
 The [Application Lifecycle]({{< relref "/flow/applications/" >}}) guide covers start and stop ownership. Hosting
 guides show the .NET, Node, and browser boundaries.

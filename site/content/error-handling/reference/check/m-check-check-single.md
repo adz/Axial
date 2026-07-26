@@ -2,6 +2,7 @@
 title: "Check.single"
 linkTitle: "single"
 weight: 2225
+type: docs
 ---
 
 Runs a sequence-shaped check requiring exactly one item.

@@ -2,6 +2,7 @@
 title: "Flow.Runtime.sleep"
 linkTitle: "sleep"
 weight: 2103
+type: docs
 ---
 
 Suspends the flow for the specified duration, observing cancellation.

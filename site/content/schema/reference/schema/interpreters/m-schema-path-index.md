@@ -2,6 +2,7 @@
 title: "Schema.Path.index"
 linkTitle: "index"
 weight: 2204
+type: docs
 ---
 
 A zero-based collection-item location.

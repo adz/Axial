@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.openWrite"
 linkTitle: "openWrite"
 weight: 2314
+type: docs
 ---
 
 Opens a file for writing through an explicit file-system service.

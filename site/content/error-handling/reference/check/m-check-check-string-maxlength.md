@@ -2,6 +2,7 @@
 title: "Check.String.maxLength"
 linkTitle: "maxLength"
 weight: 2304
+type: docs
 ---
 
 Requires an already parsed string value to have at most the supplied length. Null fails with an unknown actual length.

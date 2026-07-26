@@ -2,6 +2,7 @@
 title: "Flow.Semaphore.make"
 linkTitle: "make"
 weight: 2101
+type: docs
 ---
 
 Creates a semaphore with the supplied initial permit count.

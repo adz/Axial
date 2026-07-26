@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.jsonBody"
 linkTitle: "jsonBody"
 weight: 2312
+type: docs
 ---
 
  Sends an already-serialized JSON body with the <c>application/json</c> content type.

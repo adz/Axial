@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.stdout"
 linkTitle: "stdout"
 weight: 2811
+type: docs
 ---
 
  Configures final stdout on the specification.

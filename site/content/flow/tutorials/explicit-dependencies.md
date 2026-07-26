@@ -83,7 +83,7 @@ Nothing is hidden here:
 
 - pure validation stays in `Result`
 - each dependency is passed explicitly
-- [`Flow`]({{< relref "/flow/reference/flow/t-flow-flow.md" >}}) is only used where async work and typed execution outcomes matter
+- `Flow` is only used where async work and typed execution outcomes matter
 
 ## 3. Realistic Implementations
 

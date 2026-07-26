@@ -2,6 +2,7 @@
 title: "Refined.Character.isNumeric"
 linkTitle: "isNumeric"
 weight: 2606
+type: docs
 ---
 
 Returns true when the character is numeric according to Unicode character data.

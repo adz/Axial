@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.getBool"
 linkTitle: "getBool"
 weight: 2617
+type: docs
 ---
 
 Reads a boolean environment variable through an explicit service.

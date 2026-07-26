@@ -2,6 +2,7 @@
 title: "Result..result"
 linkTitle: "result { }"
 weight: 2500
+type: docs
 ---
 
 The fail-fast <code>result { }</code> computation expression.

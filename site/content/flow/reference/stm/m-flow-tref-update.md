@@ -2,6 +2,7 @@
 title: "Flow.TRef.update"
 linkTitle: "update"
 weight: 2103
+type: docs
 ---
 
 Updates the value of the transactional reference within a transaction using the supplied function.

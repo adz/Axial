@@ -2,6 +2,7 @@
 title: "Refined.Parse.float"
 linkTitle: "float"
 weight: 2103
+type: docs
 ---
 
 Parses a double-precision floating point number.

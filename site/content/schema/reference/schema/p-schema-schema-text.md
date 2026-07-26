@@ -2,6 +2,7 @@
 title: "Schema.text"
 linkTitle: "text"
 weight: 2100
+type: docs
 ---
 
 Describes text input.

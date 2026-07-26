@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.trace"
 linkTitle: "trace"
 weight: 2301
+type: docs
 ---
 
 Writes a trace log message through an explicit logging service.

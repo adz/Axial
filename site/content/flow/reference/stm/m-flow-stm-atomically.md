@@ -2,6 +2,7 @@
 title: "Flow.STM.atomically"
 linkTitle: "atomically"
 weight: 2104
+type: docs
 ---
 
 

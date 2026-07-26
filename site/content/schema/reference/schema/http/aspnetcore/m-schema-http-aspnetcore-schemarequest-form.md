@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.SchemaRequest.form"
 linkTitle: "form"
 weight: 2601
+type: docs
 ---
 
 Parses the posted form through the schema; dotted field names such as <code>address.street</code> nest.

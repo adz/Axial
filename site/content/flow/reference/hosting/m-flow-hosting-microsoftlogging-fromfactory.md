@@ -2,6 +2,7 @@
 title: "Flow.Hosting.MicrosoftLogging.fromFactory"
 linkTitle: "fromFactory"
 weight: 2201
+type: docs
 ---
 
 Creates an Axial logger with an explicit Microsoft logging category.

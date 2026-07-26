@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.openFileWithAccess"
 linkTitle: "openFileWithAccess"
 weight: 2310
+type: docs
 ---
 
 Opens a file with the specified mode and access through an explicit file-system service.

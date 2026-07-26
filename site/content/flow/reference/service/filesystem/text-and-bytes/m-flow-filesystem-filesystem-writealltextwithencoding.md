@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.writeAllTextWithEncoding"
 linkTitle: "writeAllTextWithEncoding"
 weight: 2209
+type: docs
 ---
 
 Writes all text with the specified encoding through an explicit file-system service.

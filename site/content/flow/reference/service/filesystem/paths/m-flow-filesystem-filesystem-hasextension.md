@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.hasExtension"
 linkTitle: "hasExtension"
 weight: 2714
+type: docs
 ---
 
 Checks whether a path has an extension through an explicit file-system service.

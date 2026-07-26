@@ -2,6 +2,7 @@
 title: "Check.Predicate.Reference.notNull"
 linkTitle: "notNull"
 weight: 2202
+type: docs
 ---
 
 Returns true when the reference is not null.

@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.runDrain"
 linkTitle: "runDrain"
 weight: 2404
+type: docs
 ---
 
 Consumes a stream and ignores its values.

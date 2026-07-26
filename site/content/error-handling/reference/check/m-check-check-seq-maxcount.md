@@ -2,6 +2,7 @@
 title: "Check.Seq.maxCount"
 linkTitle: "maxCount"
 weight: 2504
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.

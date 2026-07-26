@@ -2,6 +2,7 @@
 title: "Schema.Http.OpenApi.document"
 linkTitle: "document"
 weight: 2302
+type: docs
 ---
 
 Renders an OpenAPI 3.1 JSON document covering the supplied endpoints.

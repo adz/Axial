@@ -2,6 +2,7 @@
 title: "Check.Seq.moreThanOne"
 linkTitle: "moreThanOne"
 weight: 2511
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain more than one item.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFileSystemEntries"
 linkTitle: "getFileSystemEntries"
 weight: 2509
+type: docs
 ---
 
 Gets files and directories through an explicit file-system service.

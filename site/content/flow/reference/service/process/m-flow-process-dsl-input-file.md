@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Input.file"
 linkTitle: "file"
 weight: 2603
+type: docs
 ---
 
  Streams bytes from a file when execution begins.

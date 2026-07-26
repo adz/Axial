@@ -2,6 +2,7 @@
 title: "Refined.Parse.long"
 linkTitle: "long"
 weight: 2101
+type: docs
 ---
 
 Parses a 64-bit integer.

@@ -2,6 +2,7 @@
 title: "Flow.TRef.set"
 linkTitle: "set"
 weight: 2102
+type: docs
 ---
 
 Sets the value of the transactional reference within a transaction.

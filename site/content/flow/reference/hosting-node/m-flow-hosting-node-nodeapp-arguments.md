@@ -2,6 +2,7 @@
 title: "Flow.Hosting.Node.NodeApp.arguments"
 linkTitle: "arguments"
 weight: 2000
+type: docs
 ---
 
 Gets command-line arguments after the Node executable and script path.

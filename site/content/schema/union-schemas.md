@@ -88,6 +88,6 @@ The failing payload field reports at `payment.value.number`. An unknown tag repo
 
 ## Metadata
 
-`Inspect` exposes union schemas as [`SchemaShape.Union`]({{< relref "/schema/reference/schema/t-schema-schemashape/" >}}) with the discriminator field, payload field, and per-case payload
+`Inspect` exposes union schemas as `SchemaShape.Union` with the discriminator field, payload field, and per-case payload
 descriptions. Prototype JSON Schema interpreters can lower this to `oneOf`, while UI interpreters can render the tag
 selector and then render the selected payload schema.

@@ -2,6 +2,7 @@
 title: "System.String.HasMaxLength"
 linkTitle: "HasMaxLength"
 weight: 2305
+type: docs
 ---
 
 True when the string length is at most the supplied maximum.

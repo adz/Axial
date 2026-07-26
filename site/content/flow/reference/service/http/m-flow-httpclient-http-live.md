@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.live"
 linkTitle: "live"
 weight: 2700
+type: docs
 ---
 
  Creates a live HTTP service backed by an explicit clock and <see cref="T:System.Net.Http.HttpClient" />.

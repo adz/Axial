@@ -2,6 +2,7 @@
 title: "Flow.Process.stdin"
 linkTitle: "stdin"
 weight: 2403
+type: docs
 ---
 
  Supplies stdin to the first stage.

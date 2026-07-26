@@ -2,6 +2,7 @@
 title: "Schema.Http.ProblemError"
 linkTitle: "ProblemError"
 weight: 1101
+type: docs
 ---
 
 One boundary error: a JSON pointer into the request body plus a rendered message.

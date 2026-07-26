@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.runForEachFlow"
 linkTitle: "runForEachFlow"
 weight: 2401
+type: docs
 ---
 
 Runs an effectful action for every stream value.

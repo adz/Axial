@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.plan"
 linkTitle: "plan"
 weight: 2319
+type: docs
 ---
 
  Returns a redacted request plan without sending anything.

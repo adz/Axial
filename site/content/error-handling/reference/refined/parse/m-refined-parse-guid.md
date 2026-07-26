@@ -2,6 +2,7 @@
 title: "Refined.Parse.guid"
 linkTitle: "guid"
 weight: 2105
+type: docs
 ---
 
 Parses a GUID.

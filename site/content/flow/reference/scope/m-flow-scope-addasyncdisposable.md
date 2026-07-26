@@ -2,6 +2,7 @@
 title: "Flow.Scope.AddAsyncDisposable"
 linkTitle: "AddAsyncDisposable"
 weight: 2102
+type: docs
 ---
 
 

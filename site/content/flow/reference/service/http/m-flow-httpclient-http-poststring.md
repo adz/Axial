@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.postString"
 linkTitle: "postString"
 weight: 2514
+type: docs
 ---
 
  Sends a POST request with a text body, mirroring <c>HttpClient.PostAsync</c> with string content.

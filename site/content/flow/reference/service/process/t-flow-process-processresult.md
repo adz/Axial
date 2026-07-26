@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessResult"
 linkTitle: "ProcessResult"
 weight: 1005
+type: docs
 ---
 
  The complete structured transcript returned by a process execution.

@@ -2,6 +2,7 @@
 title: "Check.Option.some"
 linkTitle: "some"
 weight: 2600
+type: docs
 ---
 
 Requires an option to contain a value.

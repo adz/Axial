@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.appendTo"
 linkTitle: "appendTo"
 weight: 2819
+type: docs
 ---
 
  Writes final stdout to an appending file and runs the specification.

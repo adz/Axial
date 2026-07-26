@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.Response.native"
 linkTitle: "native"
 weight: 2403
+type: docs
 ---
 
 Builds a host-native response plan from the current GenHTTP request.

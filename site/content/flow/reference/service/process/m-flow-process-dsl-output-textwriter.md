@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.Output.textWriter"
 linkTitle: "textWriter"
 weight: 2710
+type: docs
 ---
 
  Decodes output incrementally into a .NET text writer.

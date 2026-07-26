@@ -2,6 +2,7 @@
 title: "Result.map"
 linkTitle: "map"
 weight: 2102
+type: docs
 ---
 
 Maps the success value of a result.

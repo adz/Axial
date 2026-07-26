@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.trimmedString"
 linkTitle: "trimmedString"
 weight: 2301
+type: docs
 ---
 
 Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.

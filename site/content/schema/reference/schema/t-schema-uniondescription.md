@@ -2,6 +2,7 @@
 title: "Schema.UnionDescription"
 linkTitle: "UnionDescription"
 weight: 1304
+type: docs
 ---
 
 Describes a tagged union value schema.

@@ -2,6 +2,7 @@
 title: "System.String.IsAlphaNumeric"
 linkTitle: "IsAlphaNumeric"
 weight: 2311
+type: docs
 ---
 
 True when the string contains only letter or digit characters.

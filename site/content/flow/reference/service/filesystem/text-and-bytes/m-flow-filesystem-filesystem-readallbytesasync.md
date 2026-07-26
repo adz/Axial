@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.readAllBytesAsync"
 linkTitle: "readAllBytesAsync"
 weight: 2207
+type: docs
 ---
 
 Asynchronously reads all bytes through an explicit file-system service.

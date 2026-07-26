@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.HttpError.transientPolicy"
 linkTitle: "transientPolicy"
 weight: 2203
+type: docs
 ---
 
  Builds a retry policy with exponential backoff that retries only transient HTTP errors.

@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.fromSink"
 linkTitle: "fromSink"
 weight: 2309
+type: docs
 ---
 
 Creates a logger from a synchronous sink function. Exceptions are appended to the message text.

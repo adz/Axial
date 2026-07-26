@@ -2,6 +2,7 @@
 title: "Schema.Path.key"
 linkTitle: "key"
 weight: 2203
+type: docs
 ---
 
 A string field or map-key location.

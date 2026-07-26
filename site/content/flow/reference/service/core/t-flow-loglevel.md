@@ -2,6 +2,7 @@
 title: "Flow.LogLevel"
 linkTitle: "LogLevel"
 weight: 1002
+type: docs
 ---
 
  Log levels used by runtime logging helpers and environment-provided logging functions.

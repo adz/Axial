@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.get"
 linkTitle: "get"
 weight: 2609
+type: docs
 ---
 
 Reads a raw string environment variable through an explicit service.

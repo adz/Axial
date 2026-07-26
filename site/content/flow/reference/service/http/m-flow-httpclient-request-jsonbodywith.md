@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.jsonBodyWith"
 linkTitle: "jsonBodyWith"
 weight: 2313
+type: docs
 ---
 
  Encodes a value with the supplied serializer and sends it as JSON.

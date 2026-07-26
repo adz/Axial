@@ -2,6 +2,7 @@
 title: "Refined..refine"
 linkTitle: "refine"
 weight: 3100
+type: docs
 ---
 
 

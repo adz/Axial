@@ -2,6 +2,7 @@
 title: "Schema.parse"
 linkTitle: "parse"
 weight: 2100
+type: docs
 ---
 
 Parses source-neutral structured data, runs constraints and refinements, and invokes record constructors.

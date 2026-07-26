@@ -2,6 +2,7 @@
 title: "Schema.Json.JsonCodecException"
 linkTitle: "JsonCodecException"
 weight: 1001
+type: docs
 ---
 
 The exception raised when JSON text cannot be decoded through a compiled schema codec.

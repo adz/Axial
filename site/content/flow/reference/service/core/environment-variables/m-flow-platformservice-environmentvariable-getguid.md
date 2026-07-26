@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariable.getGuid"
 linkTitle: "getGuid"
 weight: 2614
+type: docs
 ---
 
 Reads a GUID environment variable through an explicit service.

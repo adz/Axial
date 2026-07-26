@@ -1,6 +1,7 @@
 ---
 title: "Services Process"
 weight: 50
+type: docs
 ---
 
 This page shows the external-process service package. Immutable `ProcessSpec` values describe safely tokenized commands, connected topologies, I/O routing, and execution policy. `Process.run` composes the selected `IProcess` interpreter into the current Flow runtime; `Process.stream` emits output incrementally.

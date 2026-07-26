@@ -1,5 +1,6 @@
 ---
 title: "Base runtime"
+type: docs
 ---
 
 This page shows the `Core.BaseRuntime` helpers for building the standard explicit service bundle used by Axial workflow hosts.

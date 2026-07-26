@@ -2,6 +2,7 @@
 title: "Schema.Inspect.field"
 linkTitle: "field"
 weight: 2308
+type: docs
 ---
 
 Describes a standalone schema field as inspectable field metadata.

@@ -2,6 +2,7 @@
 title: "Schema.Derive.SchemaConstructorAttribute"
 linkTitle: "SchemaConstructorAttribute"
 weight: 1503
+type: docs
 ---
 
 Marks the static member the derived schema calls to assemble the record, instead of a

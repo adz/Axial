@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.DELETE"
 linkTitle: "DELETE"
 weight: 2605
+type: docs
 ---
 
  Creates a DELETE request from an interpolated URL with encoded holes.

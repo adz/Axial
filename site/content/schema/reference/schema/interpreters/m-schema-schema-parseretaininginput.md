@@ -2,6 +2,7 @@
 title: "Schema.parseRetainingInput"
 linkTitle: "parseRetainingInput"
 weight: 2101
+type: docs
 ---
 
 Parses source-neutral structured data while retaining it for redisplay and error lookup.

@@ -11,10 +11,10 @@ helpers name service contracts, and layers build the environment at the boundary
 
 Use this order:
 
-1. Use records plus [`Flow.read`]({{< relref "/flow/reference/flow/environment/m-flow-flow-read.md" >}}) for most application code.
-2. Use [`IHas<'service>`]({{< relref "/flow/reference/service/t-flow-ihas.md" >}}) plus [`Service<'service>.get()`]({{< relref "/flow/reference/service/m-flow-service-get.md" >}}) for reusable named services.
-3. Use [`Layer`]({{< relref "/flow/reference/layer/_index.md" >}}) and [`Flow.provide`]({{< relref "/flow/reference/layer/m-flow-flow-provide.md" >}}) to build environments and own resource cleanup.
-4. Use [`Service<'service>.resolve()`]({{< relref "/flow/reference/service/m-flow-service-resolve.md" >}}) only at .NET host edges where direct `IServiceProvider` lookup is intentional.
+1. Use records plus `Flow.read` for most application code.
+2. Use `IHas<'service>` plus `Service<'service>.get()` for reusable named services.
+3. Use `Layer` and `Flow.provide` to build environments and own resource cleanup.
+4. Use `Service<'service>.resolve()` only at .NET host edges where direct `IServiceProvider` lookup is intentional.
 
 ## Default Shape
 
@@ -49,7 +49,7 @@ let save order : Flow<#IHasOrders, OrderError, unit> =
 
 ## Layers
 
-Layers build explicit environments and own cleanup through [`Scope`]({{< relref "/flow/reference/scope/_index.md" >}}). Use `layer { }` when application startup needs to
+Layers build explicit environments and own cleanup through `Scope`. Use `layer { }` when application startup needs to
 combine several services into one environment.
 
 ```fsharp
@@ -63,7 +63,7 @@ let appLayer =
 ```
 
 Use layers when construction can fail, when resources need cleanup, or when a host container should be validated once at
-startup. Plain `let!` is sequential and dependent; sibling `and!` bindings are independent and use [`Layer.merge`]({{< relref "/flow/reference/layer/m-flow-layer-merge.md" >}}).
+startup. Plain `let!` is sequential and dependent; sibling `and!` bindings are independent and use `Layer.merge`.
 
 ## Tutorials
 

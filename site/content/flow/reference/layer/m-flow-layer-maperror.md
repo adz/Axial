@@ -2,6 +2,7 @@
 title: "Flow.Layer.mapError"
 linkTitle: "mapError"
 weight: 2208
+type: docs
 ---
 
 Maps the typed provisioning failure of a layer.

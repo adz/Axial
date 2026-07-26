@@ -2,6 +2,7 @@
 title: "Flow.App.startWithCancellation"
 linkTitle: "startWithCancellation"
 weight: 2101
+type: docs
 ---
 
 Starts a root workflow linked to an external cancellation token.

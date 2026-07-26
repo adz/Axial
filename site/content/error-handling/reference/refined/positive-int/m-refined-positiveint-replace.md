@@ -2,6 +2,7 @@
 title: "Refined.PositiveInt.replace"
 linkTitle: "replace"
 weight: 2906
+type: docs
 ---
 
 Replaces the value and re-certifies the positive integer invariant.

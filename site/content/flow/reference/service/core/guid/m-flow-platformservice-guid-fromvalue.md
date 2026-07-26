@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Guid.fromValue"
 linkTitle: "fromValue"
 weight: 2503
+type: docs
 ---
 
 Creates a deterministic GUID service that always returns the supplied value.

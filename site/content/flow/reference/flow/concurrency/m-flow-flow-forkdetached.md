@@ -2,6 +2,7 @@
 title: "Flow.forkDetached"
 linkTitle: "forkDetached"
 weight: 2101
+type: docs
 ---
 
 Starts a flow in a new fiber that is deliberately never awaited.

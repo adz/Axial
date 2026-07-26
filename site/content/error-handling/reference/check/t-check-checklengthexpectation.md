@@ -2,6 +2,7 @@
 title: "Check.CheckLengthExpectation"
 linkTitle: "CheckLengthExpectation"
 weight: 1002
+type: docs
 ---
 
 Describes the length requirement that a value check expected a string-like value to satisfy.

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.merge"
 linkTitle: "merge"
 weight: 2805
+type: docs
 ---
 
  Creates line-framed fan-in producers ready to connect to one consumer.

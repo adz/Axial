@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.stderr"
 linkTitle: "stderr"
 weight: 2812
+type: docs
 ---
 
  Configures combined stderr on the specification.

@@ -2,6 +2,7 @@
 title: "Flow.Hosting.Browser.BrowserApp.startWithSignal"
 linkTitle: "startWithSignal"
 weight: 2002
+type: docs
 ---
 
 Starts an application and translates an AbortSignal into coordinated application stop.

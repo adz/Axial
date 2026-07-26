@@ -11,10 +11,9 @@ serialization and boundary parsing come from one declaration.
 
 Axial has two paths for JSON, and they exist because they optimize for different things:
 
-- **Boundary parsing** — [`Data`]({{< relref "/schema/reference/data/t-data/" >}}) + [`Schema.parse`]({{< relref "/schema/reference/schema/interpreters/m-schema-schema-parse/" >}}): for untrusted input. It runs constraint metadata, accumulates
+- **Boundary parsing** — `Data` + `Schema.parse`: for untrusted input. It runs constraint metadata, accumulates
   path-aware diagnostics, and keeps the structured data for redisplay.
-- **Trusted path** — [`Json.compile`]({{< relref "/schema/reference/codec/m-schema-json-json-compile/" >}}) +
-  [`Json.serialize`]({{< relref "/schema/reference/codec/m-schema-json-json-serialize/" >}})/[`Json.deserialize`]({{< relref "/schema/reference/codec/m-schema-json-json-deserialize/" >}}): for payloads whose producer you trust, such
+- **Trusted path** — `Json.compile` + `Json.serialize`/`Json.deserialize`: for payloads whose producer you trust, such
   as internal services, storage, caches, and queues. It enforces the wire shape and required fields, skips constraint
   checking, and runs about 6x faster with a fraction of the allocations (see the
   [benchmarks]({{< relref "/schema/benchmarks.md#schema-json-codec" >}})).
@@ -73,9 +72,8 @@ let orderCodec = Json.compile orderSchema
 
 ## Decode Failures Carry Paths
 
-Decoding trusted input can still meet malformed payloads. Failures raise
-[`JsonCodecException`]({{< relref "/schema/reference/codec/t-schema-json-jsoncodecexception/" >}}) with a schema-relative
-path, or use [`tryDeserialize`]({{< relref "/schema/reference/codec/m-schema-json-json-trydeserialize/" >}}) for a `Result`:
+Decoding trusted input can still meet malformed payloads. Failures raise `JsonCodecException` with a schema-relative
+path, or use `tryDeserialize` for a `Result`:
 
 ```fsharp
 match Json.tryDeserialize codec """{"name":"Ada","age":"not-a-number"}""" with
@@ -93,8 +91,7 @@ let parsed = Schema.parse customerSchema (Data.ofJsonDocument document)
 
 ## Bytes In, Bytes Out
 
-[`Json.serializeBytes`]({{< relref "/schema/reference/codec/m-schema-json-json-serializebytes/" >}}) and
-[`Json.deserializeBytes`]({{< relref "/schema/reference/codec/m-schema-json-json-deserializebytes/" >}}) avoid the string conversion when the payload already lives as UTF-8
+`Json.serializeBytes` and `Json.deserializeBytes` avoid the string conversion when the payload already lives as UTF-8
 bytes, which is the faster path for network and storage boundaries:
 
 ```fsharp
@@ -127,12 +124,11 @@ Customer roundTripped = Json.deserialize(codec, json);
 var attempt = Json.tryDeserialize(codec, json); // FSharpResult<Customer, string>
 ```
 
-[`serializeToStream`]({{< relref "/schema/reference/codec/m-schema-json-json-serializetostream/" >}}) and
-[`deserializeStreamAsync`]({{< relref "/schema/reference/codec/m-schema-json-json-deserializestreamasync/" >}}) (both `async`/`Task`-based) are also plain static calls, so they work
+`serializeToStream` and `deserializeStreamAsync` (both `async`/`Task`-based) are also plain static calls, so they work
 directly against `HttpContext.Response.Body` / `Request.Body` in an ASP.NET Core handler.
 
 ## Next
 
-- Serve the same declaration as a contract with [`JsonSchema.generate`]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate/" >}}).
+- Serve the same declaration as a contract with [`JsonSchema.generate`]({{< relref "/schema/reference/schema/" >}}).
 - See the two paths together in the runnable
   [minimal API sample]({{< relref "/schema/examples.md#minimal-api-boundary-example" >}}).

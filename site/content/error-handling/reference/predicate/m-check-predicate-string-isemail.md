@@ -2,6 +2,7 @@
 title: "System.String.IsEmail"
 linkTitle: "IsEmail"
 weight: 2309
+type: docs
 ---
 
 True when the string matches Axial's pragmatic email format.

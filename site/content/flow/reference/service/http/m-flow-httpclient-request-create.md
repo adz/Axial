@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.create"
 linkTitle: "create"
 weight: 2300
+type: docs
 ---
 
  Creates a request with the supplied method and already-formed URL.

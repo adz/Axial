@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.nonEmptyList"
 linkTitle: "nonEmptyList"
 weight: 2309
+type: docs
 ---
 
 Describes a non-empty list as a schema refined value over a collection of item schemas.

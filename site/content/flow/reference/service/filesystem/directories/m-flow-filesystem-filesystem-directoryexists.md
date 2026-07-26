@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.directoryExists"
 linkTitle: "directoryExists"
 weight: 2500
+type: docs
 ---
 
 Checks directory existence through an explicit file-system service.

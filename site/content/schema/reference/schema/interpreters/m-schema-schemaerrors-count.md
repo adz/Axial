@@ -2,6 +2,7 @@
 title: "Schema.SchemaErrors.count"
 linkTitle: "count"
 weight: 2211
+type: docs
 ---
 
 Returns the number of accumulated failures.

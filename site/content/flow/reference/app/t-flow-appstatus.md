@@ -2,6 +2,7 @@
 title: "Flow.AppStatus"
 linkTitle: "AppStatus"
 weight: 1000
+type: docs
 ---
 
 Describes the lifecycle state of a running application.

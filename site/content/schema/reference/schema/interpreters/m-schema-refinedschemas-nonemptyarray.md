@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.nonEmptyArray"
 linkTitle: "nonEmptyArray"
 weight: 2310
+type: docs
 ---
 
 Describes a non-empty array as a schema refined value over a collection of item schemas.

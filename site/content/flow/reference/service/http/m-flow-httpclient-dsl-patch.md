@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.PATCH"
 linkTitle: "PATCH"
 weight: 2604
+type: docs
 ---
 
  Creates a PATCH request from an interpolated URL with encoded holes.

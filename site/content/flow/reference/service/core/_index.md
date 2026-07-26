@@ -1,6 +1,7 @@
 ---
 title: "Services Core"
 weight: 10
+type: docs
 ---
 
 This page shows the core service package: clock, logging, random numbers, GUID generation, and environment-variable lookup. These are explicit services, not ambient runtime slots. Use the helper modules when a workflow needs one of these services, and use `BaseRuntime` or custom environments to supply deterministic or live implementations.

@@ -2,6 +2,7 @@
 title: "Flow.Cause.thenCause"
 linkTitle: "thenCause"
 weight: 2101
+type: docs
 ---
 
 Combines causes that happened sequentially.

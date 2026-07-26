@@ -2,6 +2,7 @@
 title: "Check.Predicate.Number.lessThan"
 linkTitle: "lessThan"
 weight: 2501
+type: docs
 ---
 
 Returns true when the value is less than the supplied exclusive upper bound.

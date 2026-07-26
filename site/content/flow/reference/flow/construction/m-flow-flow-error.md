@@ -2,6 +2,7 @@
 title: "Flow.error"
 linkTitle: "error"
 weight: 2301
+type: docs
 ---
 
 Creates a failing synchronous flow.

@@ -2,6 +2,7 @@
 title: "Flow.Hosting.FiberLogging.observer"
 linkTitle: "observer"
 weight: 2203
+type: docs
 ---
 
 Logs fiber defects as errors and unobserved defects as critical entries.

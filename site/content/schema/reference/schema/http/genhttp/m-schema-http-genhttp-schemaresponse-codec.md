@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.SchemaResponse.codec"
 linkTitle: "codec"
 weight: 2701
+type: docs
 ---
 
 A JSON response rendering the trusted model through the compiled codec.

@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.get"
 linkTitle: "get"
 weight: 2202
+type: docs
 ---
 
 Starts a GET endpoint spec at the supplied path.

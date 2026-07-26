@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.nonBlankString"
 linkTitle: "nonBlankString"
 weight: 2300
+type: docs
 ---
 
 Describes a non-blank string as a schema refined value over required text.

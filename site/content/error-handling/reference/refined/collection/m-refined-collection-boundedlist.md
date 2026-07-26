@@ -2,6 +2,7 @@
 title: "Refined.Collection.boundedList"
 linkTitle: "boundedList"
 weight: 2403
+type: docs
 ---
 
 Builds a list whose count is within an inclusive range.

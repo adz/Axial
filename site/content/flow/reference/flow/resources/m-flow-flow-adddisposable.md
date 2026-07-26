@@ -2,6 +2,7 @@
 title: "Flow.addDisposable"
 linkTitle: "addDisposable"
 weight: 2501
+type: docs
 ---
 
 Registers a disposable resource with the current runtime scope.

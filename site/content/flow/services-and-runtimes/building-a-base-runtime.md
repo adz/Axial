@@ -7,7 +7,7 @@ type: docs
 
 
 Clock, logging, random, GUID, and environment-variable access are explicit services. `Axial.Flow.PlatformService` provides a
-[`BaseRuntime`]({{< relref "/flow/reference/service/core/t-flow-platformservice-baseruntime.md" >}}) record that groups the standard services most hosts need:
+`BaseRuntime` record that groups the standard services most hosts need:
 
 The service contracts live in `Axial.Flow.PlatformService`, not `Axial.Flow`: the core package only owns workflow
 execution. This keeps operational dependencies optional and lets .NET, browser, Node, and other Fable hosts provide
@@ -22,12 +22,12 @@ type BaseRuntime =
       EnvironmentVariables: IEnvironmentVariables }
 ```
 
-`BaseRuntime` implements `IHas<'service>` for each service, so helpers such as [`Clock.now`]({{< relref "/flow/reference/service/core/clock/m-flow-platformservice-clock-now.md" >}}) and `EnvironmentVariable.get`
+`BaseRuntime` implements `IHas<'service>` for each service, so helpers such as `Clock.now` and `EnvironmentVariable.get`
 work against it directly.
 
 ## Live Runtime
 
-Use [`BaseRuntime.liveValue`]({{< relref "/flow/reference/service/core/base-runtime/p-flow-platformservice-baseruntime-livevalue.md" >}}) when you already want a concrete value:
+Use `BaseRuntime.liveValue` when you already want a concrete value:
 
 ```fsharp
 let result =
@@ -38,7 +38,7 @@ On Fable, the live environment-variable service is empty because browsers do not
 `EnvironmentVariables.fromPairs` or your own `IEnvironmentVariables` implementation when configuration comes from a
 JavaScript host, page bootstrap data, or another source. The clock, random, and GUID services remain live and portable.
 
-Use [`BaseRuntime.live`]({{< relref "/flow/reference/service/core/base-runtime/p-flow-platformservice-baseruntime-live.md" >}}) when composing with layers:
+Use `BaseRuntime.live` when composing with layers:
 
 ```fsharp
 let runnable =
@@ -48,7 +48,7 @@ let runnable =
 
 ## Provider-Backed Runtime
 
-Use [`BaseRuntime.fromServiceProvider`]({{< relref "/flow/reference/service/core/base-runtime/p-flow-platformservice-baseruntime-fromserviceprovider.md" >}}) when a .NET host container owns the service implementations and you want typed
+Use `BaseRuntime.fromServiceProvider` when a .NET host container owns the service implementations and you want typed
 startup validation.
 
 ```fsharp
@@ -58,7 +58,7 @@ let runnable =
 ```
 
 The provider must contain `IClock`, `ILog`, `IRandom`, `IGuid`, and `IEnvironmentVariables`. Missing registrations are
-reported as [`BaseRuntimeError`]({{< relref "/flow/reference/service/core/t-flow-platformservice-baseruntimeerror.md" >}})`.MissingService`.
+reported as `BaseRuntimeError.MissingService`.
 
 ## Custom Runtime
 

@@ -2,6 +2,7 @@
 title: "Refined.Parse.enum"
 linkTitle: "enum"
 weight: 2110
+type: docs
 ---
 
 Parses an enum value by name or numeric text.

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getDirectoryCreationTime"
 linkTitle: "getDirectoryCreationTime"
 weight: 2600
+type: docs
 ---
 
 Gets directory creation time through an explicit file-system service.

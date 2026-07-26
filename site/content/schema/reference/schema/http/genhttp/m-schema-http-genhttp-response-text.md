@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.Response.text"
 linkTitle: "text"
 weight: 2401
+type: docs
 ---
 
 Returns a plain-text response.

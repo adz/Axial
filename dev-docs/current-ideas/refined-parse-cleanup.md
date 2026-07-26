@@ -1,308 +1,643 @@
-# Axial — Parse / Refine / Schema: implementation brief
+# Axial — Parse / Check / Refine / Schema cleanup
 
-**Audience:** an engineer or LLM implementing against the `adz/Axial` repository.
-**Status:** design brief, not yet implemented. Nothing committed.
-**Breakage:** the maintainer does not care about backward compatibility. Ship the
-ideal end state as a breaking major.
+**Status:** design brief; not implemented or accepted.
 
-**Thesis:** parse and refine are **different operations** and stay distinct at every
-layer (type, verbs, CEs, schema DSL, errors). A *refinement* narrows a value while
-preserving its representation (`int → PositiveInt`); a *parse* changes representation
-(`string → int`, `Data → User`). Only refine needs a first-class type; parse is
-functions + codecs. Proof-carrying is opt-in at the schema.
+**Compatibility:** pre-1.0 compatibility does not constrain the design.
 
----
+## 1. Semantic model
 
-## Summary — benefits and costs
-
-Core idea: validation is one pattern — a value plus a proof it passed a checker, the
-proof living in a private constructor with the checker as sole door, not in the data.
-
-- **Named refined types** (`PositiveInt`, `BoundedString`), kept distinct and enriched
-  with members. *Benefit:* names in errors, methods (no wrap/unwrap), familiar. *Cost:*
-  a hand-written type each (earned by the members).
-- **`Refined<'proof,'a>` — the low-ceremony way to construct a refined value without a
-  full named type.** *Benefit:* proof-carrying values with almost no authoring; sound.
-  *Cost:* generic, so reads go through `raw`/accessors — less ergonomic than a named type.
-- **One transform type, `Refinement` (repr-preserving); no `Parser` type.** *Benefit:*
-  matches the definition of a refinement type; parse stays plain functions/codecs; less
-  vocabulary. *Cost:* the asymmetry (only refine has a type) must be understood.
-- **Opt-in proof at the schema** (`parse`/`check` stay naked; `RefinedSchema<'m>` returns
-  `Refined<'m>`). *Benefit:* the common path pays no unwrap tax. *Cost:* two schema surfaces.
-- **Flipped error hierarchy: `Check ⊂ Refine ⊂ Parse`.** *Benefit:* `parse {}` is a real
-  umbrella boundary CE (accepts either), errors auto-lift. *Cost:* `Parse` depends on
-  `Refined` (no longer a light zero-dep on-ramp).
-- **Two tier CEs, `parse {}` and `refine {}` (no `check {}`).** *Benefit over the Result
-  CE:* raw-value auto-dispatch + automatic cross-tier error lifting. *Cost:* two builders.
-- **`[<DeriveRefinedSchema>]` + `[<SchemaConstructor>]`.** *Benefit:* proof-carrying domain
-  records with no boilerplate; compile-time, AOT/Fable-safe. *Cost:* an attribute.
-- **Packages split at taught concepts under `Axial.ErrorHandling`, prefix kept.**
-  *Benefit:* searchability, on-ramps, cross-language safety. *Cost:* more packages.
-
-Overall: a breaking major with more vocabulary, buying proof-carrying domain types at
-the library level, opt-in so nobody pays who doesn't use it.
-
----
-
-## 1. Decision log (all locked)
-
-| # | Decision | Rationale |
+| Concern | Owner | Rule |
 |---|---|---|
-| D1 | **Parse ≠ refine, everywhere.** Refinement = `{x:T | P(x)}`, representation-preserving. Parse changes representation. | The accepted definition of a refinement type; a parse is categorically not a refinement. |
-| D2 | **One transform type, `Refinement<'raw,'value>` (repr-preserving), in `Axial.Refined`. No `Parser` type.** | Only refine needs a reusable, SRTP-dispatched, schema-consumable type. A parse is a plain function; forcing a symmetric `Parser` type was the source of churn. |
-| D3 | **`Refined<'proof,'a>`** (private case, `Axial.Refined`) — low-ceremony way to construct a refined value without a full named type. `Refined<'m>` = `Refined<'m,'m>`. Never double-wrap. | Definition-clean (`{T|P}`, wraps `'a`). |
-| D4 | **Wrapper doors:** `Refined.make` (checked entry, bring-your-own-checker) + `Refined.trust` (unchecked entry, greppable). Exit `Refined.raw`/`.Value` (total). | Private case blocks forging. `raw` safe out; `trust` the one dangerous in. No `InternalsVisibleTo`. |
-| D5 | **Named primitives stay distinct nominal types, enriched** (re-validating `map`; Bounded* keep bounds + `.Length`/`.Remaining`/`.MinLength`/`.MaxLength`). No abbreviations. | Names in diagnostics; members; no wrap/unwrap. |
-| D6 | **Proof is OPT-IN at the schema via the output type.** `Schema.parse`/`check` stay naked (`Result<'m, SchemaErrors>`). No `validate`/`certify`. | No unwrap tax on the common path. |
-| D7 | **`RefinedSchema<'m>`** (thin real type via `Schema.refined`) hosts `.Parse`/`.ParseRetainingInput`/`.Check`/`.Update` returning `Refined<'m>`; `.Update` edits the naked inner and re-checks. | Carries the schema so nothing is threaded; the `with` problem solved. |
-| D8 | **`Schema.refine` = genuine refinements only; repr-changing fields use `Schema.convert`** (generalized to a fallible construct). Remove `Refinement.parsing`. | The DSL already has `convert` for representation changes; parses were wrongly routed through `refine`. |
-| D9 | **FLIP the error hierarchy: `ParseError ⊃ RefinementError ⊃ CheckFailure`.** Dep reorders to `Parse → Refined → Check`. | Makes `parse {}` a real umbrella CE (accepts either); matches "the boundary act is parsing." Parse stops being a zero-dep root (accepted). |
-| D10 | **Two tier CEs: `parse {}` (`ParseError`, accepts parse+refine+check) and `refine {}` (`RefinementError`, accepts refine+check). No `check {}`.** | Value over the Result CE = raw auto-dispatch + auto cross-tier lifting. `check {}` adds nothing `Check.all`/Schema don't. |
-| D11 | **`[<DeriveSchema>]`→`Schema<'m>`; `[<DeriveRefinedSchema>]`→`RefinedSchema<'m>`.** `[<SchemaConstructor>]` = smart-ctor hook (cross-field invariants, can fail). | Closes the original goal with no hand-written boilerplate; source-gen, AOT/Fable-safe. |
-| D12 | **Refined-type contract = an interface (static-abstract member) for owned types AND SRTP for third-party types.** | Owned types self-describe (observable, good errors); foreign types still participate. Verify Fable static-abstract support; fallback = plain interface + SRTP. |
-| D13 | **Packages:** `Axial.Parse`, `Axial.Refined`, `Axial.Check`, `Axial.Result` under metapackage `Axial.ErrorHandling`. `Predicate` stays in Check. Keep the `Axial.` prefix. | Package list matches taught tiers; searchability; on-ramps; cross-language collision safety. |
+| Decode serialized input | `Parse` | Parsing changes representation and returns `ParseError`. |
+| Test an existing typed value | `Check` | A check returns `unit`; it never replaces the value. |
+| Describe a portable value restriction | `Constraint` | A constraint couples a check with inspectable metadata. |
+| Construct an invariant-carrying type | `Refinement` | Construction follows checking and has a total reverse projection. |
+| Perform a general typed mapping | conversion | Conversion may fail and need not describe subset admission. |
+| Parse and validate structured boundaries | `Schema` | Schema owns paths, accumulation, reconstruction, and wire metadata. |
+| Construct a domain model from a structured draft | `Schema.admit` | Admission preserves field structure while applying domain construction. |
+| Pair one schema with one refinement | `RefinedSchema` | The capability parses, refines, and safely updates refined values. |
 
----
+These operations may compose, but their public names remain distinct. For example:
 
-## 2. Vocabulary
-
-| Name | Kind | Lives in | Meaning |
-|---|---|---|---|
-| `Refinement<'raw,'value>` | transform TYPE | `Axial.Refined` | repr-PRESERVING refine: `create : 'raw -> Result<'value, RefinementError>` + `raw : 'value -> 'raw` (total reverse, free from repr-preservation). A partial embedding (prism), **not** an iso. |
-| `Refined<'proof,'a>` | result WRAPPER | `Axial.Refined` | value carrying phantom proof `'proof`; low-ceremony refined value. |
-| `Refine.*` | verb SURFACE | `Axial.Refined` | narrowing constructors (`Refine.positive`). |
-| `Parse.*` | plain functions | `Axial.Parse` | `string -> Result<_, ParseError>`. No `Parser` type. |
-| `Check` / `Check.all` | predicates | `Axial.Check` | value predicates → `CheckFailure`. Contains `Predicate`. |
-| `Schema<'m>` / `RefinedSchema<'m>` | schema | `Axial.Schema` | naked vs proof-returning schema surfaces. |
-| errors | | | `ParseError` ⊃ `RefinementError` ⊃ `CheckFailure` (linear). |
-
----
-
-## 3. Ground truth + dependency graph
-
-Confirm against the tree before coding.
-
-**Today (pre-change):** `Refinement<'raw,'value>` (`create` + `inspect`) exists in
-`Axial.Refined`; it currently double-duties for parses (`Refinement.parsing`,
-`RefinementFrom.Refinement(string,int/…)`). `Schema.parse`/`check` return the naked
-model; `check`'s docstring says no proof wrapper. `Schema.refine` and `Schema.convert`
-both exist (`convert`'s construct is total). `RefineBuilder.Bind` is SRTP-dispatched.
-`Derive` = inert attributes read by `schemagen` (source generator, no runtime
-reflection). `ValueSchema.refined` requires `construct` + `inspect`: `construct` serves
-construction/parse interpreters, `inspect` serves **only** inspection interpreters
-(codecs, JSON Schema, UI, docs). Current deps: Check/Data/Result zero-dep; Refined→Check
-(Parse is a *module inside* Refined); Schema→Check+Data+Refined.
-
-**Target graph (after the flip, D9):**
-
-```
-Check   Data   Result          (zero Axial deps)
-  \
- Refined → Check
-  \
- Parse → Refined  (→ Check)     (Parse is NOT a root; its ERROR type reaches Refined)
-  \
- Schema → Parse + Data          (Refined, Check transitive)
-ErrorHandling = metapackage(Check, Refined, Parse, Result)
+```text
+Data --schema parse/admission--> Booking --refinement--> ValidBooking
 ```
 
-Only `ParseError`'s `RefinementFailed` case makes `Axial.Parse` depend on `Axial.Refined`;
-the plain `Parse.*` functions still don't use Refined.
+The whole pipeline parses and refines; parsing itself is not refinement.
 
----
+## 2. Package ownership
 
-## 4. The transform: `Refinement` only (D1, D2)
+Target graph:
+
+```text
+Check   Parse   Data   Result      zero Axial dependencies
+  |
+Refined                            depends on Check
+  |       |
+  +-------+
+      |
+    Schema                         depends on Check, Parse, Refined, Data
+
+ErrorHandling = metapackage(Check, Parse, Refined, Result)
+```
+
+- `Axial.Check` owns `Check`, `Constraint`, and portable constraint metadata.
+- `Axial.Parse` owns `ParseError` and `Parse.*` and depends on no Axial package.
+- `Axial.Refined` owns `Refinement` and named refined types.
+- `Axial.Schema` owns `Schema`, `Schema.refine`, `Schema.admit`, and `RefinedSchema`.
+- `Axial.Result` remains independent. Helpers that accept checks use structural function
+  signatures rather than depending on `Axial.Check`.
+
+This intentionally changes the current repository instruction that places parsing in
+`Axial.Refined`. If this brief is accepted, update `AGENTS.md` and the package map in
+`dev-docs/AGENT_INDEX.md` before implementation.
+
+## 3. Operation routing
+
+Route an operation by what it does, not merely because it can fail.
+
+| Operation | API home |
+|---|---|
+| Test without changing the typed value | `Check` |
+| Attach executable and inspectable restriction data | `Constraint` |
+| Interpret serialized input | `Parse` |
+| Extract `Some`, a choice, or a collection element into `Result` | `Result` |
+| Normalize a typed value | ordinary function or explicit Schema normalization |
+| Construct an invariant-carrying destination | `Refinement` |
+| Perform arbitrary fallible typed mapping | conversion / `Schema.tryConvert` |
+| Parse and check structured boundary data | `Schema` |
+
+Consequences:
+
+- `Check.String.trimmed` means “already trimmed” and returns `Ok ()`; it does not trim.
+- Actual trimming is normalization, not parsing or checking.
+- `Result.someOr` stays in Result because it extracts from `option` or returns an error.
+- `required` and `optional` describe Schema field presence. Non-blank is a string
+  constraint.
+
+### Pipeline authoring rule
+
+APIs intended for pipeline use place the primary transformed value last. Documentation,
+tests, and public examples must then use the pipeline form consistently rather than
+teaching an equivalent call-first style:
 
 ```fsharp
-// Axial.Refined — the ONE reusable transform. Representation-preserving.
+bookingSchema
+|> RefinedSchema.define ValidBooking.refinement
+
+input
+|> RefinedSchema.parse validBookingSchema
+
+current
+|> RefinedSchema.update validBookingSchema edit
+```
+
+Use direct calls only for APIs that are not pipeline-oriented or where pipeline form
+would obscure the operation.
+
+## 4. Checks and Result guards
+
+```fsharp
+type Check<'value> =
+    'value -> Result<unit,CheckFailure list>
+```
+
+Returning `unit` prevents checks from silently normalizing or replacing values.
+`Check.all` runs every child against the same original value, accumulates failures, and
+returns `Ok ()` only when all checks pass.
+
+Value-preserving Result pipelines use:
+
+```fsharp
+Result.guard :
+    ('value -> Result<unit,'error>) ->
+    'value ->
+    Result<'value,'error>
+```
+
+`Result.guard check value` returns the original value after a successful check. Its
+structural signature keeps `Axial.Result` independent of `Axial.Check`.
+
+There are no `check { }`, `refine { }`, or `parse { }` computation expressions. Use the
+ordinary `result { }` builder and map errors explicitly when domains differ.
+
+## 5. Constraints
+
+```fsharp
 [<Sealed>]
-type Refinement<'raw, 'value> internal
-        (create: 'raw -> Result<'value, RefinementError>,   // forward: partial (may fail)
-         raw:    'value -> 'raw)                            // reverse: TOTAL, free (was `inspect`)
+type Constraint<'value> internal
+    (
+        check: Check<'value>,
+        details: ConstraintDetails
+    )
+
+[<RequireQualifiedAccess>]
+module Constraint =
+    val check : Constraint<'value> -> Check<'value>
+    val details : Constraint<'value> -> ConstraintDetails
+    val checkAll : Constraint<'value> list -> Check<'value>
+
+    val minLength : int -> Constraint<string>
+    val maxLength : int -> Constraint<string>
+    val lengthBetween : int -> int -> Constraint<string>
+    val atLeast : 'value -> Constraint<'value>
+    val atMost : 'value -> Constraint<'value>
+    val greaterThan : 'value -> Constraint<'value>
+    val lessThan : 'value -> Constraint<'value>
+```
+
+Built-ins cover portable restrictions shared by Check and Schema:
+
+- non-blank, length bounds, email, already-trimmed, patterns, and known formats;
+- inclusive and exclusive bounds, ranges, equality, and multiples;
+- collection count bounds and distinctness;
+- closed choices with portable literal values.
+
+### Portable metadata
+
+Do not use `obj` for constraint arguments. Use a closed, immutable model suitable for
+structural equality, serialization, generators, AOT, and Fable:
+
+```fsharp
+type ConstraintArgument =
+    | Text of string
+    | Integer of int64
+    | Decimal of decimal
+    | Boolean of bool
+    | List of ConstraintArgument list
+
+type ConstraintDetails = {
+    Code: string
+    Arguments: Map<string,ConstraintArgument>
+}
+```
+
+The concrete record and `Map` provide immutable, structural metadata rather than relying
+on an interface-backed dictionary. Confirm `Map` and the final numeric cases against
+Fable and JSON Schema before implementation. Reject blank codes, duplicate argument
+names, invalid bounds, and reversed ranges.
+
+Built-in constraints guarantee that metadata and executable behavior agree. Custom
+constraints cannot prove that relationship; their metadata is author-declared:
+
+```fsharp
+Constraint.define :
+    code: string ->
+    arguments: (string * ConstraintArgument) seq ->
+    check: Check<'value> ->
+    Constraint<'value>
+```
+
+Reserve all built-in codes so custom constraints cannot impersonate standard semantics.
+Generic interpreters expose unknown custom codes and arguments but emit standard JSON
+Schema keywords only for built-ins or explicit interpreter extensions.
+
+`Check.*`, `CheckDSL.*`, and Schema syntax delegate portable operations to the same
+`Constraint` constructors. Pure combinators such as `Check.any`, conditional checks, and
+failure mapping remain ordinary checks.
+
+## 6. Parsing
+
+Parsing stays function-shaped:
+
+```fsharp
+module Parse =
+    val int : string -> Result<int,ParseError>
+    val guid : string -> Result<Guid,ParseError>
+    val dateTimeOffset : string -> Result<DateTimeOffset,ParseError>
+    val optional :
+        ('a -> Result<'b,'error>) ->
+        'a option ->
+        Result<'b option,'error>
+```
+
+There is no `Parser` type, parser registry, target-type lookup, or parser SRTP dispatch.
+Custom parsers are ordinary functions.
+
+```fsharp
+result {
+    let! quantity = Parse.int text
+    let! positive = Refine.positiveInt quantity
+    return positive
+}
+```
+
+Schema primitive nodes continue to own their wire decoding. `Schema.int` does not route
+through a parser attached to `Schema.text`.
+
+`ParseError`, `CheckFailure`, and `SchemaErrors` remain separate. A check failure after a
+successful parse is not a parse error. Remove `RefinementError` when it only wraps
+`CheckFailure list`.
+
+## 7. Refinement
+
+A refinement admits a subset of an existing typed value into an invariant-carrying
+destination:
+
+```fsharp
+[<Sealed>]
+type Refinement<'underlying,'refined> internal
+    (
+        check: Check<'underlying>,
+        constraints: Constraint<'underlying> list,
+        construct: 'underlying -> 'refined,
+        project: 'refined -> 'underlying
+    )
+
+[<RequireQualifiedAccess>]
 module Refinement =
-    let define : ('raw -> Result<'value,RefinementError>) -> ('value -> 'raw) -> Refinement<'raw,'value>
-    let create : Refinement<'raw,'value> -> 'raw -> Result<'value,RefinementError>
-    let raw    : Refinement<'raw,'value> -> 'value -> 'raw
+    val define :
+        constraint': Constraint<'underlying> ->
+        construct: ('underlying -> 'refined) ->
+        project: ('refined -> 'underlying) ->
+        Refinement<'underlying,'refined>
+
+    val defineAll :
+        constraints: Constraint<'underlying> list ->
+        construct: ('underlying -> 'refined) ->
+        project: ('refined -> 'underlying) ->
+        Refinement<'underlying,'refined>
+
+    val defineWithCheck :
+        check: Check<'underlying> ->
+        construct: ('underlying -> 'refined) ->
+        project: ('refined -> 'underlying) ->
+        Refinement<'underlying,'refined>
+
+    val create :
+        Refinement<'underlying,'refined> ->
+        'underlying ->
+        Result<'refined,CheckFailure list>
+
+    val underlying :
+        Refinement<'underlying,'refined> ->
+        'refined ->
+        'underlying
+
+    val constraints :
+        Refinement<'underlying,'refined> ->
+        Constraint<'underlying> list
 ```
 
-There is **no `Parser` type.** A standalone parse is a plain function
-(`Parse.int : string -> Result<int, ParseError>`, in `Axial.Parse`). A repr-changing
-schema field is a codec (`Schema.convert`, §8).
+`define` is the normal single-constraint path. `defineAll` requires a non-empty list and
+uses `Constraint.checkAll`. `defineWithCheck` is the explicitly metadata-free escape
+hatch.
 
-**Why refinements are the schema's inspectable building block — stated correctly.** A
-refinement is a *partial embedding* (a prism), **not** a round-trip: the reverse
-(`value → raw`, e.g. `PositiveInt.Value`) is **total and free** because representation is
-preserved; the forward is partial (the check can fail). `int → refine → .Value` does
-**not** round-trip (invalid ints are rejected). It is the always-available **total
-reverse** — not any round-trip property — that lets the inspection interpreters (codecs,
-JSON Schema, UI, docs) recover the raw from a refined value. A repr-*changing* parse has
-no free reverse, which is why the inspectable building block is a `Refinement`, not a parse.
+`Refinement.create` runs the check and invokes the total constructor only after `Ok ()`.
+Normalization and arbitrary fallible mapping are not refinement.
 
-**Purify:** remove `Refinement.parsing` and the `RefinementFrom.Refinement(string, *)`
-instances. Their jobs are already covered — schema primitive decoding by the schema's own
-interpreters; parse-inside-a-CE by the CE dispatch (§7). `Refinement` becomes
-repr-preserving only.
-
----
-
-## 5. Errors — the flipped hierarchy (D9)
+### Law
 
 ```fsharp
-// Axial.Check
-type CheckFailure = ...                                   // base
-
-// Axial.Refined  (depends on Check)
-type RefinementError =
-    | CheckFailed of CheckFailure list                    // a refinement is a check + construct
-    | InvalidStructure of target: string * reason: string
-    // NO ParseFailed anymore
-
-// Axial.Parse  (depends on Refined — the flip)
-type ParseError =
-    | MissingValue of ...
-    | InvalidFormat of ...
-    | OutOfRange of ...
-    | RefinementFailed of RefinementError                 // the umbrella case
+Refinement.create refinement underlying = Ok refined
+    implies
+Refinement.underlying refinement refined = underlying
 ```
 
-`Check ⊂ Refine ⊂ Parse`. The dependency direction follows: `Parse → Refined → Check`.
+Use one canonical underlying representation per refinement. A collection refinement
+should use a concrete representation such as `'a array`, not treat every `seq<'a>` as an
+interchangeable underlying value.
 
----
-
-## 6. Named primitives (D5) and the wrapper (D3, D4)
-
-Named primitives stay distinct nominal types and gain members — re-validating `map` on
-all; `BoundedString`/`BoundedList`/`BoundedArray` keep stored bounds and gain `.Length`,
-`.Remaining`, `.MinLength`, `.MaxLength`; keep the `seq`/`.Head`/`.Tail` surface on
-collections. No abbreviations over the wrapper.
+## 8. Schema conversion, refinement, and admission
 
 ```fsharp
-// Axial.Refined — the wrapper
-type Refined<'proof, 'a> = private | Refined of 'a
-    member this.Value = let (Refined v) = this in v
-module Refined =
-    val make  : ('input -> Result<'value,'error>) -> 'input -> Result<Refined<'proof,'value>, 'error>  // checked ENTRY
-    val trust : 'a -> Refined<'proof,'a>                                                                // unchecked ENTRY (greppable)
-    val raw   : Refined<'proof,'a> -> 'a                                                                // total EXIT (+ .Value)
+module Schema =
+    val tryConvert :
+        forward: ('a -> Result<'b,SchemaError list>) ->
+        backward: ('b -> 'a) ->
+        schema: Schema<'a> ->
+        Schema<'b>
+
+    val convert :
+        forward: ('a -> 'b) ->
+        backward: ('b -> 'a) ->
+        schema: Schema<'a> ->
+        Schema<'b>
+
+    val refine :
+        Refinement<'underlying,'refined> ->
+        Schema<'underlying> ->
+        Schema<'refined>
+
+    val admit :
+        create: ('draft -> Result<'domain,SchemaError list>) ->
+        project: ('domain -> 'draft) ->
+        draft: Schema<'draft> ->
+        Schema<'domain>
 ```
 
-`raw`/`.Value` is the safe exit; `trust` is the one dangerous entry. `Refined<'m>` =
-`Refined<'m,'m>` for the schema/record case.
+- `tryConvert` is the fallible projected mapping.
+- `convert` is the ordinary total mapping.
 
----
+The names follow common F# convention: an unqualified function is total, while `try*`
+signals expected failure. `convertTotal` is avoided because `Total` is uncommon in F#
+API names.
+- `refine` accepts only a genuine `Refinement` and retains its portable constraints.
+- `admit` preserves structured fields and paths while applying domain construction.
 
-## 7. Computation expressions: `parse {}` and `refine {}` (D10)
+All may share one internal projected-mapping node. Public names communicate different
+operations.
 
-Two CEs, each with its own error, related by the flipped hierarchy so the higher one
-absorbs the lower:
+A refinement-owned constraint executes once through `Refinement.create`; retained
+constraint details are metadata and must not trigger duplicate execution. Remove duplicate
+constraints from stock `RefinedSchemas` definitions.
 
-- `refine {}` : `RefinementError` — accepts refine + check steps (check auto-lifts).
-- `parse {}` : `ParseError` — accepts parse + refine + check steps (all auto-lift up).
+`Schema.check` returns the canonical value rebuilt by the complete schema. It must not
+discard constructor normalization.
 
-**Their value is measured against the existing Result CE, not against nothing.** Over
-`result {}` they add: (1) SRTP **auto-dispatch of raw values** by target type, and (2)
-**automatic cross-tier error lifting**.
+## 9. RefinedSchema: the deep capability
+
+`RefinedSchema` closes over values that must remain coordinated:
 
 ```fsharp
-// refine {} vs result {}
-refine {
-    let! name = Refine.nonBlankString rawName
-    do!  Check.matches emailRegex rawEmail          // CheckFailure auto-lifts
-    let! age  = Refine.positiveInt rawAge
-    return { Name = name; Email = rawEmail; Age = age }
+type RefinedSchema<'underlying,'refined>
+
+[<RequireQualifiedAccess>]
+module RefinedSchema =
+    val define :
+        refinement: Refinement<'underlying,'refined> ->
+        underlying: Schema<'underlying> ->
+        RefinedSchema<'underlying,'refined>
+
+    val schema :
+        RefinedSchema<'underlying,'refined> ->
+        Schema<'refined>
+
+    val parse :
+        RefinedSchema<'underlying,'refined> ->
+        Data ->
+        Result<'refined,SchemaErrors>
+
+    val parseRetainingInput :
+        RefinedSchema<'underlying,'refined> ->
+        Data ->
+        RetainedParseResult<'refined>
+
+    val refine :
+        RefinedSchema<'underlying,'refined> ->
+        'underlying ->
+        Result<'refined,SchemaErrors>
+
+    val update :
+        RefinedSchema<'underlying,'refined> ->
+        ('underlying -> 'underlying) ->
+        'refined ->
+        Result<'refined,SchemaErrors>
+```
+
+`define` is a declaration operation, not per-call plumbing. It stores one coordinated
+schema/refinement pair. A domain may designate one binding as canonical, but the type
+system does not prevent another capability for the same types. The capability:
+
+- exposes `Schema.refine refinement underlying` through `schema`;
+- parses through that refined schema;
+- retains original boundary input for redisplay through `parseRetainingInput` without
+  introducing another result type;
+- refines by running `Schema.check`, then applying the refinement to the canonical
+  underlying value returned by the schema;
+- updates by projecting, editing, rechecking the underlying schema, and re-refining.
+
+Normalization is therefore explicit in the execution order:
+
+```text
+supplied underlying value
+  -> Schema.check
+  -> canonical underlying value
+  -> Refinement.create
+  -> refined value
+```
+
+The refinement law applies between the canonical underlying value and the resulting
+refined value, not necessarily the originally supplied value. Refinement failures are
+lowered to `SchemaErrors` at the schema root. During update, errors produced while
+reconstructing the underlying schema retain their existing meaningful paths.
+
+The verb `refine` is intentional: it constructs `'refined`. Reserve `check` for
+non-transforming `Check<'value>`. `parseRetainingInput` stays because retained-input
+parsing is an established Schema boundary operation; exposing it here avoids making
+callers unpack the capability and repeat its coordinated plumbing.
+
+This is an auxiliary capability over ordinary Schema, not a second schema hierarchy.
+Users who do not need it continue to use `Schema.parse`, `Schema.check`, and
+`Schema.refine` directly.
+
+## 10. Golden path: named refined primitive
+
+The user owns the domain type and invariant; Axial provides the reusable machinery.
+
+```fsharp
+type PositiveInt =
+    private
+    | PositiveInt of int
+
+    member this.Value =
+        let (PositiveInt value) = this
+        value
+
+module PositiveInt =
+    let refinement =
+        Refinement.define
+            (Constraint.greaterThan 0)
+            PositiveInt
+            _.Value
+
+    let create value =
+        Refinement.create refinement value
+```
+
+Schema use:
+
+```fsharp
+let quantitySchema : Schema<PositiveInt> =
+    Schema.int
+    |> Schema.refine PositiveInt.refinement
+
+let parsed = Schema.parse quantitySchema input
+```
+
+The same constraint drives checking, diagnostics, inspection metadata, and applicable
+interpreters. Encoding and inspection project through `PositiveInt.Value`.
+
+## 11. Golden path: aggregate model and safe editing
+
+The user defines the model, its ordinary schema, a nominal valid type, and a refinement.
+No generator is required.
+
+```fsharp
+type Booking = {
+    Start: DateTimeOffset
+    Finish: DateTimeOffset
 }
-result {
-    let! name = Refine.nonBlankString rawName
-    do!  Check.matches emailRegex rawEmail |> Result.mapError RefinementError.CheckFailed   // manual
-    let! age  = Refine.positiveInt rawAge
-    return { Name = name; Email = rawEmail; Age = age }
-}
 
-// parse {} (umbrella boundary flow) vs result {}
-parse {
-    let! raw : int = qtyStr             // string→int by target type (auto-dispatch)
-    let! qty = Refine.positiveInt raw   // RefinementError auto-lifts to ParseError
-    return qty
-}                                        // Result<PositiveInt, ParseError>
-result {
-    let! raw = Parse.int qtyStr
-    let! qty = Refine.positiveInt raw |> Result.mapError ParseError.RefinementFailed        // manual
-    return qty
-}
+let bookingSchema : Schema<Booking> =
+    schema<Booking> {
+        field "start" _.Start
+        field "finish" _.Finish
+        construct Booking
+    }
+
+type ValidBooking =
+    private
+    | ValidBooking of Booking
+
+module ValidBooking =
+    let value (ValidBooking booking) = booking
+
+    let private validRange : Check<Booking> =
+        fun booking ->
+            if booking.Finish > booking.Start then
+                Ok ()
+            else
+                Error [ invalidRangeFailure ]
+
+    let refinement =
+        Refinement.defineWithCheck
+            validRange
+            ValidBooking
+            value
 ```
 
-**No `check {}`.** Its only distinctive over `result {}` would be collect-all vs
-short-circuit, but `Check.all [checks]` already collects for pure validation, and
-collect-all-while-building-a-value is the Schema layer's job (`SchemaErrors`). Keep the
-Check tier function-shaped.
-
----
-
-## 8. Schema DSL: `refine` vs `convert` (D8)
-
-`Schema.refine` narrows to genuine (repr-preserving) refinements only — keeps its name,
-honest. Representation-changing fields use `Schema.convert`, which already exists; its
-`construct` is total today — generalize it to a fallible `construct` returning
-`ParseError` (or add a fallible sibling) so it hosts parse fields. Remove
-`Refinement.parsing`. The field combinator can't be named `Schema.parse` (collides with
-the top-level `Schema.parse : Schema -> Data -> Result`; module bindings don't overload) —
-use fallible `convert` or `Schema.parseWith` (cf. the existing `mapWith`).
-
----
-
-## 9. Schema proof mode (D6, D7) and Derive (D11)
-
-`Schema.parse`/`check` stay naked (`Result<'m, SchemaErrors>`). Proof is opt-in via the
-output type: a "refined schema" is `Schema<T>` where `T` is proof-carrying (a self-proving
-nominal like `PositiveInt`, or `Refined<record>`). `Schema.refined : Schema<'m> ->
-RefinedSchema<'m>` promotes; `RefinedSchema<'m>` carries the schema and exposes:
+Pair it once with the domain-declared schema:
 
 ```fsharp
-type RefinedSchema<'m> =
-    member Parse               : Data -> Result<Refined<'m>, SchemaErrors>
-    member ParseRetainingInput : Data -> RetainedParseResult<Refined<'m>>
-    member Check               : 'm   -> Result<Refined<'m>, SchemaErrors>
-    member Update              : ('m -> 'm) -> Refined<'m> -> Result<Refined<'m>, SchemaErrors>
+let validBookingSchema : RefinedSchema<Booking,ValidBooking> =
+    bookingSchema
+    |> RefinedSchema.define ValidBooking.refinement
 ```
 
-`Update` edits the naked inner model (`'m -> 'm`, so `{ with }` works), re-checks, re-wraps.
-`RetainedParseResult` stays transient/form-oriented (keeps verbatim input for redisplay;
-`.Value` raises); it composes with proof for free because it's generic.
+Use the capability:
 
-Derive: `[<DeriveSchema>]`→`Schema<'m>` (naked; DTOs); `[<DeriveRefinedSchema>]`→
-`RefinedSchema<'m>` (generated promotion — free, reflection-free, source-gen). `[<SchemaConstructor>]`
-is the smart-ctor hook: routes assembly through a static member, normalizes, and can fail
-on cross-field invariants (same path `Schema.check` uses for the date-range rule).
+```fsharp
+let parsed =
+    input
+    |> RefinedSchema.parse validBookingSchema
 
----
+let retained =
+    input
+    |> RefinedSchema.parseRetainingInput validBookingSchema
 
-## 10. The contract: interface + SRTP (D12)
+let refined =
+    candidate
+    |> RefinedSchema.refine validBookingSchema
 
-Give the shared refined-type contract (`create`, `.Value`, the `Refinement`) an explicit
-**interface with a static-abstract `Refinement` member** for the types Axial owns — so
-they're observable/discoverable with good errors — **and** keep **SRTP** resolution for
-third-party types the user can't add an interface to. Verify Fable supports static-abstract
-interface members; fallback = plain interface for owned types + SRTP for the rest.
+let changed =
+    current
+    |> RefinedSchema.update
+        validBookingSchema
+        (fun booking -> { booking with Finish = newFinish })
+```
 
----
+An invalid edit returns `SchemaErrors`; it never preserves `ValidBooking`. The schema
+returned by `RefinedSchema.schema validBookingSchema` remains available to codecs, inspection,
+documentation, and other Schema interpreters.
 
-## 11. Soundness, Fable
+Portable aggregate restrictions should use `Constraint` and `define`/`defineAll` where
+possible. `defineWithCheck` is appropriate for metadata-free domain logic such as the
+example until a portable record-level constraint is defined.
 
-No transparent badge on a public record (unsound across `with`). Enforcement = the private
-case + `make`/`trust`. Never double-wrap. `Update`/`Check` re-run the whole checker. Wrapper
-and named types are plain reference DUs (Fable-fine); no `[<Struct>]`/`[<Measure>]` tricks;
-`schemagen` stays compile-time. No `InternalsVisibleTo` anywhere.
+## 12. Generation
 
-## 12. Migration checklist
+The manual API above is the guaranteed and teachable path. Generation is optional,
+transparent shorthand only.
 
-- [ ] Flip the errors (D9): `RefinementError` drops `ParseFailed`, keeps `CheckFailed`; `ParseError` gains `RefinementFailed`. Reorder deps `Parse → Refined → Check`; move `ParseError` + plain `Parse.*` into `Axial.Parse`; add `Axial.Parse → Axial.Refined`.
-- [ ] Purify `Refinement` to repr-preserving only; rename `inspect`→`raw`; delete `Refinement.parsing` + `RefinementFrom(string,*)` instances; keep SRTP for genuine refinements.
-- [ ] No `Parser` type. Standalone parses = plain functions.
-- [ ] Enrich named primitives; add `Refined<'proof,'a>` + `make`/`trust`/`raw`/`.Value` + `Refined<'m>` alias.
-- [ ] Add `parse {}` and `refine {}` CEs (auto-dispatch + auto cross-tier lifting); no `check {}`.
-- [ ] Schema: keep `parse`/`check` naked; add `RefinedSchema<'m>` + `Schema.refined` + `.Parse`/`.ParseRetainingInput`/`.Check`/`.Update`; no `validate`/`certify`.
-- [ ] Schema DSL: `Schema.refine` refinements-only; generalize `Schema.convert` to fallible for parse fields; remove `Refinement.parsing` routing.
-- [ ] `[<DeriveRefinedSchema>]` emitting the promotion; `[<SchemaConstructor>]` as the smart-ctor hook.
-- [ ] Contract as interface (static-abstract member) for owned types + SRTP for third-party; verify Fable.
-- [ ] Packages: `Axial.Parse`/`Refined`/`Check`/`Result` under `Axial.ErrorHandling`; `Predicate` stays in Check; keep the `Axial.` prefix.
-- [ ] Ship as a breaking major.
+`[<DeriveSchema>]` continues to generate ordinary `Schema<'model>` declarations and
+constructor routing. A future refined-schema convenience may generate the repetitive
+nominal wrapper, refinement, and `RefinedSchema.define` declaration only if:
+
+1. its documentation shows the equivalent manual code;
+2. generated public signatures contain no hidden proof types or authority interfaces;
+3. compiler diagnostics use the same public concepts as the manual API;
+4. users can obtain the same behavior without generation.
+
+Do not make safety depend on source generation. Do not generate generic proof markers,
+static-abstract authority implementations, or a parallel set of schema operations.
+
+Generation remains compile-time, syntax-driven, AOT-safe, trimming-safe, and Fable-safe.
+Do not introduce runtime reflection.
+
+## 13. Deferred generic proof carrier
+
+A generic carrier such as `Proven<'proof,'value>` would reduce nominal wrapper
+boilerplate, but this API is not sound enough:
+
+```fsharp
+Proven.refinement<ValidBooking,Booking> Check.pass
+```
+
+Any caller able to name the marker could associate it with a weaker check. A private
+marker constructor does not prevent its use as a type argument.
+
+Therefore generic `Proven` is not part of the normative API. Prototype it separately
+only if construction can resolve domain-owned authority from the proof identity itself.
+No strict API may accept both a caller-selected proof type and caller-selected
+`Check`/`Constraint`.
+
+If a generated sealed authority using static abstract members is awkward in F#, AOT, or
+Fable, omit generic `Proven`. Nominal wrappers plus `RefinedSchema` already provide the
+complete safe path.
+
+## 14. Soundness and platform constraints
+
+- Refined types use private constructors; construction occurs only after checks pass.
+- `Refinement` constructors are total and projections obey the successful-projection law.
+- `RefinedSchema.update` reruns schema reconstruction and refinement.
+- Evidence applies to one value snapshot. Reachable mutable state can invalidate it, so
+  refined models should normally be immutable.
+- No runtime reflection, `InternalsVisibleTo`, struct tricks, or units of measure form the
+  foundation of the design.
+- Public APIs and generated code must remain AOT-, trimming-, and Fable-safe.
+
+## 15. Implementation checklist
+
+### Check, Result, and Constraint
+
+- [ ] Restore `Check<'value> = 'value -> Result<unit,CheckFailure list>`.
+- [ ] Add structurally typed `Result.guard` without adding a Result-to-Check dependency.
+- [ ] Audit transforming checks; keep predicates in Check and move normalization out.
+- [ ] Keep extraction helpers such as `Result.someOr` in Result.
+- [ ] Move public typed `Constraint<'value>` from Schema to Check.
+- [ ] Replace `obj` metadata with a closed portable argument model.
+- [ ] Reserve built-in constraint codes and document custom metadata as author-declared.
+- [ ] Make Check DSL and Schema syntax delegate portable operations to Constraint.
+- [ ] Add inventory tests for built-in behavior, metadata, and interpreter coverage.
+
+### Parse and Refined
+
+- [ ] Create independent `Axial.Parse`; move `ParseError` and `Parse.*` into it.
+- [ ] Update `AGENTS.md` and `dev-docs/AGENT_INDEX.md` when this direction is accepted.
+- [ ] Remove parsing refinements, string-to-primitive refinement instances, and parse/refine builders.
+- [ ] Replace arbitrary fallible `Refinement.define` with `define`, `defineAll`, and `defineWithCheck`.
+- [ ] Remove target strings and `RefinementError`; return `CheckFailure list` directly.
+- [ ] Reject empty `defineAll` input and test the successful-projection law.
+- [ ] Keep named `Refine.*` convenience functions and explicit refinement values.
+
+### Schema
+
+- [ ] Rename the fallible mapping to `Schema.tryConvert` and keep `Schema.convert` for total mappings.
+- [ ] Lower conversion and refinement through one projected internal node where practical.
+- [ ] Execute refinement-owned constraints once while retaining their metadata.
+- [ ] Keep `Schema.admit` as structured draft-to-domain admission.
+- [ ] Make `Schema.check` return canonical reconstructed output.
+- [ ] Add `RefinedSchema<'underlying,'refined>` and its define/schema/parse/parseRetainingInput/refine/update operations.
+- [ ] Test normalization, constructor failure, rejected updates, root/path error lowering, encoding, and inspection.
+- [ ] Do not add generic `Proven` until an authority prototype satisfies the stated guarantee.
+
+### Documentation and conformance
+
+- [ ] Update source comments and generator inputs, then regenerate affected references.
+- [ ] Add API-shape tests for removed CEs, SRTP entries, and `RefinementError`.
+- [ ] Add API-shape tests for Constraint, Refinement, conversion, and RefinedSchema signatures.
+- [ ] Run focused Check, Result, Refined, Schema, generator, and API-shape tests.
+- [ ] Defer full documentation validation until the phase or release boundary.
+- [ ] Update `dev-docs/PLAN.md` and durable decisions only after this brief is accepted.
+
+## 16. Rejected or deferred alternatives
+
+- **Universal parser/refinement CEs:** hide operations behind target-type dispatch.
+- **Linear parse/refinement/check error hierarchy:** conflates independent failures.
+- **Checks returning their input:** permits hidden transformation; use `Result.guard`.
+- **Arbitrary fallible refinement construction:** belongs to conversion.
+- **Public generic proof tagging:** cannot guarantee that a marker identifies one rule set.
+- **Generation-only safety:** makes the public model difficult to understand and debug.
+- **Parallel proof-aware Schema hierarchy:** `RefinedSchema` is a small capability over
+  ordinary Schema and Refinement instead.

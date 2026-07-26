@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getTempPath"
 linkTitle: "getTempPath"
 weight: 2711
+type: docs
 ---
 
 Gets the temporary directory path through an explicit file-system service.

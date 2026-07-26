@@ -2,6 +2,7 @@
 title: "Flow.Exit.map"
 linkTitle: "map"
 weight: 2100
+type: docs
 ---
 
 Transforms the success value of an exit outcome using the provided function.

@@ -2,6 +2,7 @@
 title: "Refined.Character.isWhitespace"
 linkTitle: "isWhitespace"
 weight: 2604
+type: docs
 ---
 
 Returns true when the character is whitespace.

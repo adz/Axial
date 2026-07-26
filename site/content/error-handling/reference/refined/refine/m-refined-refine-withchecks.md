@@ -2,6 +2,7 @@
 title: "Refined.Refine.withChecks"
 linkTitle: "withChecks"
 weight: 3002
+type: docs
 ---
 
 Runs the supplied <a href="../../check/t-check-check.md">Check</a> values with <code>Check.all</code> and calls the

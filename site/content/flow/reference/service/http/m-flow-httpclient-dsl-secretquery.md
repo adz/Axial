@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.secretQuery"
 linkTitle: "secretQuery"
 weight: 2608
+type: docs
 ---
 
  Appends a redacted query parameter. <example><code>request |&gt; secretQuery "api_key" key</code></example>

@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.moveDirectory"
 linkTitle: "moveDirectory"
 weight: 2503
+type: docs
 ---
 
 Moves a directory through an explicit file-system service.

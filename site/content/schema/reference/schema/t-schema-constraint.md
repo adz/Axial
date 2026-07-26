@@ -2,6 +2,7 @@
 title: "Schema.Constraint"
 linkTitle: "Constraint"
 weight: 1113
+type: docs
 ---
 
 

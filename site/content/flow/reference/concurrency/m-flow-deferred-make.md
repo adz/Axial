@@ -2,6 +2,7 @@
 title: "Flow.Deferred.make"
 linkTitle: "make"
 weight: 2001
+type: docs
 ---
 
 Creates an empty deferred value.

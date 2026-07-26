@@ -2,6 +2,7 @@
 title: "Microsoft.FSharp.Core.FSharpResult.IsOk"
 linkTitle: "IsOk"
 weight: 2104
+type: docs
 ---
 
 True when the result is successful.

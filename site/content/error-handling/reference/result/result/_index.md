@@ -1,5 +1,6 @@
 ---
 title: "Result"
+type: docs
 ---
 
 This page shows the helpers on the `Result` module.

@@ -2,6 +2,7 @@
 title: "Flow.Policy.withError"
 linkTitle: "withError"
 weight: 2402
+type: docs
 ---
 
 Lifts a pure result-returning function and replaces any error with a fixed workflow error.

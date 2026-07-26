@@ -2,6 +2,7 @@
 title: "Flow.Deferred.die"
 linkTitle: "die"
 weight: 2006
+type: docs
 ---
 
 Attempts to complete the deferred value with a defect.

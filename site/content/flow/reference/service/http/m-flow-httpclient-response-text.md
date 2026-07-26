@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Response.text"
 linkTitle: "text"
 weight: 2400
+type: docs
 ---
 
  Returns the response body text. <example><code>response |&gt; Response.text</code></example>

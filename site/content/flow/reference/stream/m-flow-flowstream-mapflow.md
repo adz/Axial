@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.mapFlow"
 linkTitle: "mapFlow"
 weight: 2204
+type: docs
 ---
 
 Transforms every value with a Flow effect.

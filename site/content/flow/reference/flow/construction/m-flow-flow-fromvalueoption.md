@@ -2,6 +2,7 @@
 title: "Flow.fromValueOption"
 linkTitle: "fromValueOption"
 weight: 2307
+type: docs
 ---
 
 Lifts a value option into a synchronous flow with the supplied error.

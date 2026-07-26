@@ -2,6 +2,7 @@
 title: "Refined.Collection.nonEmptyArray"
 linkTitle: "nonEmptyArray"
 weight: 2401
+type: docs
 ---
 
 Builds a non-empty array from a sequence.

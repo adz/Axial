@@ -2,6 +2,7 @@
 title: "Refined.Numeric.nonZeroInt"
 linkTitle: "nonZeroInt"
 weight: 2302
+type: docs
 ---
 
 Builds a non-zero integer.

@@ -2,6 +2,7 @@
 title: "Flow.Deferred.succeed"
 linkTitle: "succeed"
 weight: 2004
+type: docs
 ---
 
 Attempts to complete the deferred value successfully.

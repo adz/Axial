@@ -2,6 +2,7 @@
 title: "Flow.Layer.apply"
 linkTitle: "apply"
 weight: 2214
+type: docs
 ---
 
 Applies a layer-wrapped function to a layer-wrapped value.

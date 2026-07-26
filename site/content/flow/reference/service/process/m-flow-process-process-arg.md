@@ -2,6 +2,7 @@
 title: "Flow.Process.arg"
 linkTitle: "arg"
 weight: 2301
+type: docs
 ---
 
  Appends one ordinary argument.

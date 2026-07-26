@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.EndpointFlow.run"
 linkTitle: "run"
 weight: 2300
+type: docs
 ---
 
 Supplies <code>HttpEndpointEnv.App</code> to the application workflow and marks its typed failures as application errors.

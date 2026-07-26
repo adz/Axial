@@ -2,6 +2,7 @@
 title: "Result.Collection.traverseResult"
 linkTitle: "traverseResult"
 weight: 2400
+type: docs
 ---
 
 Maps each value with a result-returning function, stopping at the first error.

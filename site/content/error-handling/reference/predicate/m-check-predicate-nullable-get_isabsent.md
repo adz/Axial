@@ -2,6 +2,7 @@
 title: "System.Nullable.IsAbsent"
 linkTitle: "IsAbsent"
 weight: 2201
+type: docs
 ---
 
 True when the nullable value contains no value.

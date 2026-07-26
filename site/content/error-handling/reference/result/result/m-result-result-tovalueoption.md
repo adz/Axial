@@ -2,6 +2,7 @@
 title: "Result.toValueOption"
 linkTitle: "toValueOption"
 weight: 2207
+type: docs
 ---
 
 Drops the error channel and returns <code>ValueSome</code> for success.

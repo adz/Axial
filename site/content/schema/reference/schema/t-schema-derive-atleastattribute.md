@@ -2,6 +2,7 @@
 title: "Schema.Derive.AtLeastAttribute"
 linkTitle: "AtLeastAttribute"
 weight: 1507
+type: docs
 ---
 
 Bounds a numeric field&#39;s value inclusively from below (<code>&gt;=</code> in the contract grammar).

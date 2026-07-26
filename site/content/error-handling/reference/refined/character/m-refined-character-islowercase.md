@@ -2,6 +2,7 @@
 title: "Refined.Character.isLowercase"
 linkTitle: "isLowercase"
 weight: 2602
+type: docs
 ---
 
 Returns true when the character is lowercase according to invariant Unicode casing.

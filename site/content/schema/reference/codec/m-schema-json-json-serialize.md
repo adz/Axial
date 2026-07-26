@@ -2,6 +2,7 @@
 title: "Schema.Json.serialize"
 linkTitle: "serialize"
 weight: 2101
+type: docs
 ---
 
 Serializes a trusted model to a JSON string through a compiled codec.

@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Response.create"
 linkTitle: "create"
 weight: 2405
+type: docs
 ---
 
  Creates a synthetic response transcript at an explicit start time, primarily for test fakes.

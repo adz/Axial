@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.warning"
 linkTitle: "warning"
 weight: 2304
+type: docs
 ---
 
 Writes a warning log message through an explicit logging service.

@@ -2,6 +2,7 @@
 title: "Flow.RunSynchronously"
 linkTitle: "RunSynchronously"
 weight: 2203
+type: docs
 ---
 
 Starts the workflow and blocks until the final exit is available.

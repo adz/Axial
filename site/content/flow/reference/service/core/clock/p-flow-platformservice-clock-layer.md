@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Clock.layer"
 linkTitle: "layer"
 weight: 2205
+type: docs
 ---
 
 Builds the live clock as a layer.

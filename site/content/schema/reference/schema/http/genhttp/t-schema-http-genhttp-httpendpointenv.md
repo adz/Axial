@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.HttpEndpointEnv"
 linkTitle: "HttpEndpointEnv<app>"
 weight: 1000
+type: docs
 ---
 
 The request-scoped environment supplied to a GenHTTP endpoint Flow.

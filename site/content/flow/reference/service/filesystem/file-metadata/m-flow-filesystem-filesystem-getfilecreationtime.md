@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFileCreationTime"
 linkTitle: "getFileCreationTime"
 weight: 2402
+type: docs
 ---
 
 Gets file creation time through an explicit file-system service.

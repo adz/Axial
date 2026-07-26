@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getSymbolicLinkTarget"
 linkTitle: "getSymbolicLinkTarget"
 weight: 2307
+type: docs
 ---
 
 Returns the immediate target stored in a symbolic link.

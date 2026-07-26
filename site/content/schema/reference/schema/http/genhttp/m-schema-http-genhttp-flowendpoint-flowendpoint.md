@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.FlowEndpoint.flowEndpoint"
 linkTitle: "flowEndpoint"
 weight: 2500
+type: docs
 ---
 
 Lowers an endpoint Flow to the native handler expected by GenHTTP routing.

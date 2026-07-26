@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.appendAllLinesWithEncoding"
 linkTitle: "appendAllLinesWithEncoding"
 weight: 2220
+type: docs
 ---
 
 Appends all lines with the specified encoding through an explicit file-system service.

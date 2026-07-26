@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.accepts"
 linkTitle: "accepts"
 weight: 2210
+type: docs
 ---
 
 Declares the request body: JSON described by the schema's generated JSON Schema.

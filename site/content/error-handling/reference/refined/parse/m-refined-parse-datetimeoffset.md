@@ -2,6 +2,7 @@
 title: "Refined.Parse.dateTimeOffset"
 linkTitle: "dateTimeOffset"
 weight: 2107
+type: docs
 ---
 
 Parses a date and time value with offset.

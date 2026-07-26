@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.sendResult"
 linkTitle: "sendResult"
 weight: 2507
+type: docs
 ---
 
  Sends a request and returns the transcript without interpreting the status expectation.

@@ -2,6 +2,7 @@
 title: "Flow.zip"
 linkTitle: "zip"
 weight: 2327
+type: docs
 ---
 
 Runs two flows sequentially and combines their successful values into a tuple.

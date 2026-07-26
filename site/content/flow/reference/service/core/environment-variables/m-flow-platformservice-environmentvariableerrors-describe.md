@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariableErrors.describe"
 linkTitle: "describe"
 weight: 2618
+type: docs
 ---
 
 Formats a human-readable description for an error.

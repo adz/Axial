@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.unfoldFlow"
 linkTitle: "unfoldFlow"
 weight: 2104
+type: docs
 ---
 
 Creates a cold stream by repeatedly running an effectful state transition.

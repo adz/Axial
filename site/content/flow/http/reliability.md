@@ -25,7 +25,7 @@ deadline passes, not merely abandoned.
 
 ## Retry Only Transient Failures
 
-Retrying a 404 or a decode failure wastes time and can duplicate side effects. [`HttpError.isTransient`]({{< relref "/flow/reference/service/http/m-flow-httpclient-httperror-istransient.md" >}})
+Retrying a 404 or a decode failure wastes time and can duplicate side effects. `HttpError.isTransient`
 classifies exactly the failures where a retry can help: connection failures, timeouts, and 408/429/5xx statuses.
 
 ```fsharp
@@ -34,7 +34,7 @@ let users =
     |> Http.retryTransient 4 (TimeSpan.FromMilliseconds 200.0)
 ```
 
-[`retryTransient`]({{< relref "/flow/reference/service/http/m-flow-httpclient-http-retrytransient.md" >}}) uses exponential backoff (200ms, 400ms, 800ms, ...) and gives up after the attempt budget.
+`retryTransient` uses exponential backoff (200ms, 400ms, 800ms, ...) and gives up after the attempt budget.
 A permanent failure such as `HttpError.Status 404` or `HttpError.DecodeFailed` fails immediately on the first
 attempt. The DSL shorthand `withRetries 4` applies the same policy with a 200ms base delay.
 
@@ -50,9 +50,7 @@ let policy =
 workflow |> Flow.Runtime.retry policy
 ```
 
-[`HttpError.transientPolicy`]({{< relref "/flow/reference/service/http/m-flow-httpclient-httperror-transientpolicy.md" >}}) builds the base policy; [`Flow.Runtime.retry`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-retry.md" >}}) applies it.
-
-[`Schedule.retry`]({{< relref "/flow/reference/schedule/m-flow-schedule-retry.md" >}}) from `Axial.Flow` also composes with HTTP workflows when you need jitter or custom cadence:
+`Schedule.retry` from `Axial.Flow` also composes with HTTP workflows when you need jitter or custom cadence:
 
 ```fsharp
 workflow |> Schedule.retry (Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |> Schedule.jittered)

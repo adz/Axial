@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.writeAllBytes"
 linkTitle: "writeAllBytes"
 weight: 2214
+type: docs
 ---
 
 Writes all bytes through an explicit file-system service.

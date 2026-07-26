@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.query"
 linkTitle: "query"
 weight: 2301
+type: docs
 ---
 
  Appends one URL-encoded query parameter.

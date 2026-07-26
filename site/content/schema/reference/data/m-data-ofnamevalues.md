@@ -2,6 +2,7 @@
 title: "Data.ofNameValues"
 linkTitle: "ofNameValues"
 weight: 2101
+type: docs
 ---
 
 Builds object-shaped structured data from name/value pairs, grouping repeated names into <code>Many</code>.

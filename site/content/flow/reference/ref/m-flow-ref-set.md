@@ -2,6 +2,7 @@
 title: "Flow.Ref.set"
 linkTitle: "set"
 weight: 2102
+type: docs
 ---
 
 Sets the value of the reference to the specified value.

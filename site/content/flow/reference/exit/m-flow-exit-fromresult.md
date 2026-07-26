@@ -2,6 +2,7 @@
 title: "Flow.Exit.fromResult"
 linkTitle: "fromResult"
 weight: 2104
+type: docs
 ---
 
 Creates an exit outcome from a standard F# <code>Result</code>.

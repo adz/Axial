@@ -2,6 +2,7 @@
 title: "Check.length"
 linkTitle: "length"
 weight: 2203
+type: docs
 ---
 
 Returns a string check requiring exactly the supplied length.

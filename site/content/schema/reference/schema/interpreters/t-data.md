@@ -2,6 +2,7 @@
 title: "Data"
 linkTitle: "Data"
 weight: 1000
+type: docs
 ---
 
 A portable tree representing the meaning and shape of unowned structured data.

@@ -1,5 +1,6 @@
 ---
 title: "Environment variables"
+type: docs
 ---
 
 This page shows the `Core.EnvironmentVariables`, `Core.EnvironmentVariable`, and `Core.EnvironmentVariableErrors` helpers for explicit environment-variable access.

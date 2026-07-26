@@ -2,6 +2,7 @@
 title: "System.Collections.Generic.IEnumerable.IsDistinct"
 linkTitle: "IsDistinct"
 weight: 2411
+type: docs
 ---
 
 True when the sequence is non-null and contains no duplicate values.

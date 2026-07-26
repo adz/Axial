@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariableError"
 linkTitle: "EnvironmentVariableError"
 weight: 1006
+type: docs
 ---
 
 

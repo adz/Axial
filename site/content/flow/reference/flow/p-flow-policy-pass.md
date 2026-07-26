@@ -2,6 +2,7 @@
 title: "Flow.Policy.pass"
 linkTitle: "pass"
 weight: 2404
+type: docs
 ---
 
 A policy that returns the input unchanged.

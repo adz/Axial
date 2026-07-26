@@ -2,6 +2,7 @@
 title: "Flow.fork"
 linkTitle: "fork"
 weight: 2100
+type: docs
 ---
 
 Starts a flow in a new fiber without waiting for it to complete.

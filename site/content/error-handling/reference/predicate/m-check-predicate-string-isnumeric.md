@@ -2,6 +2,7 @@
 title: "System.String.IsNumeric"
 linkTitle: "IsNumeric"
 weight: 2310
+type: docs
 ---
 
 True when the string contains only numeric characters.

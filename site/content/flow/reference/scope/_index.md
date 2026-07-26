@@ -1,6 +1,7 @@
 ---
 title: "Scope"
-weight: 160
+weight: 130
+type: docs
 ---
 
 This page shows the `Scope` surface used to own cleanup for resources acquired during provisioning and execution. Scopes register finalizers, disposables, and async disposables, and they close in reverse registration order.

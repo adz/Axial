@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Clock.fromValue"
 linkTitle: "fromValue"
 weight: 2206
+type: docs
 ---
 
 Creates a deterministic clock that always returns the supplied instant.

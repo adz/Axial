@@ -2,6 +2,7 @@
 title: "Schema.Http.GenHttp.SchemaResponse.handleParsed"
 linkTitle: "handleParsed"
 weight: 2703
+type: docs
 ---
 
 Runs the handler with the trusted model, or short-circuits to the problem-details response.

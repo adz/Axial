@@ -2,6 +2,7 @@
 title: "Flow.Service.resolve"
 linkTitle: "resolve"
 weight: 2101
+type: docs
 ---
 
 Resolves a service dynamically from an <a href="https://learn.microsoft.com/dotnet/api/system.iserviceprovider">IServiceProvider</a> environment.

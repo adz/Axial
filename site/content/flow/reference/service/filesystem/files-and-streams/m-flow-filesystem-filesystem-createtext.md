@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.createText"
 linkTitle: "createText"
 weight: 2316
+type: docs
 ---
 
 Creates a text writer through an explicit file-system service.

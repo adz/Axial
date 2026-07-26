@@ -2,6 +2,7 @@
 title: "Check.Seq.noDuplicates"
 linkTitle: "noDuplicates"
 weight: 2506
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain no duplicate values.

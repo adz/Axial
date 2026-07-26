@@ -2,6 +2,7 @@
 title: "Check.Result.ok"
 linkTitle: "ok"
 weight: 2606
+type: docs
 ---
 
 Requires a result to contain a successful value.

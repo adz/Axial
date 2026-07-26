@@ -2,6 +2,7 @@
 title: "Schema.refine"
 linkTitle: "refine"
 weight: 2109
+type: docs
 ---
 
 Maps a raw schema through a reusable bidirectional refinement.

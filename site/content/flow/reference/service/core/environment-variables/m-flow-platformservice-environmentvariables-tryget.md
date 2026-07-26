@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariables.tryGet"
 linkTitle: "tryGet"
 weight: 2600
+type: docs
 ---
 
 Reads a raw environment-variable value from an explicit environment-variable service.

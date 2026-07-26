@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getParent"
 linkTitle: "getParent"
 weight: 2512
+type: docs
 ---
 
 Gets the parent directory through an explicit file-system service.

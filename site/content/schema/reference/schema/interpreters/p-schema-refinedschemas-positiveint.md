@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.positiveInt"
 linkTitle: "positiveInt"
 weight: 2304
+type: docs
 ---
 
 Describes a positive integer as a schema refined value over an integer greater than zero.

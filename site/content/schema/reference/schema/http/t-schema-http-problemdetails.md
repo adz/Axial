@@ -2,6 +2,7 @@
 title: "Schema.Http.ProblemDetails"
 linkTitle: "ProblemDetails"
 weight: 1100
+type: docs
 ---
 
 An RFC 9457 problem-details value carrying path-aware parse errors.

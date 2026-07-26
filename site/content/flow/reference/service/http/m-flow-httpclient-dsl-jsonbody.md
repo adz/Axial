@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.jsonBody"
 linkTitle: "jsonBody"
 weight: 2613
+type: docs
 ---
 
  Sends an already-serialized JSON body. <example><code>request |&gt; jsonBody """{"name":"Ada"}"""</code></example>

@@ -2,6 +2,7 @@
 title: "Flow.Exit"
 linkTitle: "Exit<value, error>"
 weight: 1000
+type: docs
 ---
 
 

@@ -2,6 +2,7 @@
 title: "Schema.Json.serializeBytes"
 linkTitle: "serializeBytes"
 weight: 2102
+type: docs
 ---
 
 Serializes a trusted model to UTF-8 JSON bytes through a compiled codec.

@@ -41,7 +41,7 @@ let emailSchema : Schema<Email> =
     |> Schema.withFormat SchemaFormat.email
 ```
 
-[`Schema.refine`]({{< relref "/schema/reference/schema/m-schema-schema-refine/" >}}) receives one named value instead of separate construction, error mapping, and inspection functions.
+`Schema.refine` receives one named value instead of separate construction, error mapping, and inspection functions.
 
 ## A type-directed field
 

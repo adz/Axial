@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.HttpError"
 linkTitle: "HttpError"
 weight: 1006
+type: docs
 ---
 
  A recoverable HTTP transport, timeout, status, or decoding failure.

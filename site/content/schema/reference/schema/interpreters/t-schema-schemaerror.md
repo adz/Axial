@@ -2,6 +2,7 @@
 title: "Schema.SchemaError"
 linkTitle: "SchemaError"
 weight: 1200
+type: docs
 ---
 
 Schema input, checking, and contextual rule failures attached to diagnostics paths.

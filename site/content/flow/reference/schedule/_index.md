@@ -1,6 +1,7 @@
 ---
 title: "Schedule"
-weight: 100
+weight: 60
+type: docs
 ---
 
 This page shows the `Schedule` surface for describing retry and repeat policies as values. A `Schedule` on its own does nothing — it is a definition of when to run again (recur or stop) and how long to wait, not an action. Build one with `recurs` (bounded repetition), `spaced` (fixed delay), `exponential` (backoff), and `jittered`/`jitteredWith` (randomized delay, so callers don't retry in lockstep; `jitteredWith` takes the sample source for deterministic schedules), then apply it to a flow with `Schedule.retry` (rerun on a typed failure) or `Schedule.repeat` (rerun on a success) — nothing happens until one of those two runs the schedule against an actual workflow. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried.

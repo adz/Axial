@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariables.expand"
 linkTitle: "expand"
 weight: 2604
+type: docs
 ---
 
 Expands environment-variable references in text through an explicit environment-variable service.

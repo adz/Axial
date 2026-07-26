@@ -2,6 +2,7 @@
 title: "Flow.Layer.map"
 linkTitle: "map"
 weight: 2207
+type: docs
 ---
 
 Maps the successful output of a layer.

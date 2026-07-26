@@ -2,6 +2,7 @@
 title: "Flow.Process.stream"
 linkTitle: "stream"
 weight: 2502
+type: docs
 ---
 
  Streams process events in the current Flow runtime. The last event is <c>Completed</c>.

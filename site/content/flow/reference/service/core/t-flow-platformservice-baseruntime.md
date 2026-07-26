@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.BaseRuntime"
 linkTitle: "BaseRuntime"
 weight: 1008
+type: docs
 ---
 
 Groups the standard operational services commonly used by workflow hosts.

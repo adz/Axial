@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Random.layer"
 linkTitle: "layer"
 weight: 2407
+type: docs
 ---
 
 Builds the live random-number generator as a layer.

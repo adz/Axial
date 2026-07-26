@@ -2,6 +2,7 @@
 title: "Result.fromChoice"
 linkTitle: "fromChoice"
 weight: 2205
+type: docs
 ---
 
 Converts an F# <code>Choice</code> into a result.

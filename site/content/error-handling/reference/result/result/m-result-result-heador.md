@@ -2,6 +2,7 @@
 title: "Result.headOr"
 linkTitle: "headOr"
 weight: 2308
+type: docs
 ---
 
 Takes the first item from a sequence, or returns the supplied error.

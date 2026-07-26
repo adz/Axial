@@ -2,6 +2,7 @@
 title: "Schema.decimal"
 linkTitle: "decimal"
 weight: 2102
+type: docs
 ---
 
 Describes a decimal number.

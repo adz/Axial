@@ -2,6 +2,7 @@
 title: "Flow.Ref"
 linkTitle: "Ref<T>"
 weight: 1000
+type: docs
 ---
 
 

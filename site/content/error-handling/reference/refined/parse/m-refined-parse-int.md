@@ -2,6 +2,7 @@
 title: "Refined.Parse.int"
 linkTitle: "int"
 weight: 2100
+type: docs
 ---
 
 Parses a 32-bit integer.

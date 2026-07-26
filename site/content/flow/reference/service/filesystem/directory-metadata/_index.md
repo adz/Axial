@@ -1,5 +1,6 @@
 ---
 title: "Directory metadata"
+type: docs
 ---
 
 This page shows the `FileSystem.FileSystem` helpers for reading and updating directory metadata.

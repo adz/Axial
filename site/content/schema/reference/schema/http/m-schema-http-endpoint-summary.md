@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.summary"
 linkTitle: "summary"
 weight: 2207
+type: docs
 ---
 
 Sets the operation summary shown in generated documents.

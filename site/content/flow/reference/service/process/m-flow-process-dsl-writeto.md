@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.writeTo"
 linkTitle: "writeTo"
 weight: 2818
+type: docs
 ---
 
  Writes final stdout to a truncating file and runs the specification.

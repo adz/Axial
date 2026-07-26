@@ -2,6 +2,7 @@
 title: "Flow.App.runWithCancellation"
 linkTitle: "runWithCancellation"
 weight: 2103
+type: docs
 ---
 
 Runs a root workflow to completion using an explicit host-owned cancellation token.

@@ -2,6 +2,7 @@
 title: "Flow.join"
 linkTitle: "join"
 weight: 2102
+type: docs
 ---
 
 Waits for a fiber to complete and returns its successful value or typed failure.

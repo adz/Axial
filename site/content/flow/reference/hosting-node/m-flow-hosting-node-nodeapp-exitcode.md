@@ -2,6 +2,7 @@
 title: "Flow.Hosting.Node.NodeApp.exitCode"
 linkTitle: "exitCode"
 weight: 2003
+type: docs
 ---
 
 Maps a final application exit to conventional Node process exit codes.

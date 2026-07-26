@@ -2,6 +2,7 @@
 title: "Schema.Http.BoundaryInput.ofForm"
 linkTitle: "ofForm"
 weight: 2001
+type: docs
 ---
 
 Builds structured data from form pairs, where dotted names such as <code>address.street</code> nest.

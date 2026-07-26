@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.IHttp"
 linkTitle: "IHttp"
 weight: 1100
+type: docs
 ---
 
  Sends fully described HTTP requests for a concrete host platform.

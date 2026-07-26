@@ -2,6 +2,7 @@
 title: "Schema.RetainedParseResult"
 linkTitle: "RetainedParseResult<value>"
 weight: 1104
+type: docs
 ---
 
 A schema parse result that retains its original structured input.

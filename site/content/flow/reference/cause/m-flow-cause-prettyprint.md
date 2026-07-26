@@ -2,6 +2,7 @@
 title: "Flow.Cause.prettyPrint"
 linkTitle: "prettyPrint"
 weight: 2107
+type: docs
 ---
 
 Pretty prints a cause tree for diagnostics.

@@ -63,9 +63,9 @@ request                                          // Flow<'env, RateError, Rate>,
 ```
 
 Retry and timeout are policies applied to a cold workflow from outside. The retry predicate selects typed failures;
-defects and interruption are structurally out of its reach — [`Flow.Runtime.retry`]({{< relref "/flow/reference/flow/runtime/m-flow-flow-runtime-retry.md" >}}) re-runs `Cause.Fail` only. The
+defects and interruption are structurally out of its reach — `Flow.Runtime.retry` re-runs `Cause.Fail` only. The
 tests pin all four behaviors: recovery within the budget, budget exhaustion, no retry of `Malformed`, and the
-timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed [`Schedule`]({{< relref "/flow/reference/schedule/_index.md" >}}), `retry`.
+timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed `Schedule`, `retry`.
 
 - **Made visible by the type**: the transient/terminal error taxonomy and the `IHas<IHttp>` requirement.
 - **Enforced by the runtime**: only predicate-accepted typed failures are retried; the timeout reaches sleeps and
@@ -90,7 +90,7 @@ The ordinary `Task.WhenAll` version must cancel siblings by hand through a linke
 failures surface as whichever exception `WhenAll` publishes first. With `zipPar` the interruption is the runtime's
 job — the test's slow sibling awaits `Task.Delay` on its runtime token and asserts the resulting
 `OperationCanceledException` was observed — and concurrent failures merge as `Cause.Both`. First-success semantics
-are a different contract, so they appear as a separate [`Flow.race`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-race.md" >}}) example rather than a subtle change to this one.
+are a different contract, so they appear as a separate `Flow.race` example rather than a subtle change to this one.
 ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
 
 - **Made visible by the type**: which branch may fail silently (none — the fallback is explicit at the composition).
@@ -107,7 +107,7 @@ steps, remove the directory exactly once on every exit shape.
 
 The ordinary comparison includes `importBatchLeaky`, the classic leak: construction succeeds, then a setup check
 throws *before* ownership transfers into `try/finally`. The test proves the directory survives. In the Flow version
-there is no such gap — [`Flow.acquireReleaseWith`]({{< relref "/flow/reference/flow/resources/m-flow-flow-acquirereleasewith.md" >}}) owns the resource from the instant acquisition succeeds, and the
+there is no such gap — `Flow.acquireReleaseWith` owns the resource from the instant acquisition succeeds, and the
 failing gate lives inside the resource's lifetime:
 
 ```fsharp
@@ -122,8 +122,8 @@ Flow.acquireReleaseWith
     })
 ```
 
-ZIO correspondence: [`Scope`]({{< relref "/flow/reference/scope/_index.md" >}}) and `ZIO.acquireRelease`; for resources that should live as long as a provided layer,
-Axial has [`Flow.acquireRelease`]({{< relref "/flow/reference/flow/resources/m-flow-flow-acquirerelease.md" >}}) and `Layer.acquireRelease`.
+ZIO correspondence: `Scope` and `ZIO.acquireRelease`; for resources that should live as long as a provided layer,
+Axial has `Flow.acquireRelease` and `Layer.acquireRelease`.
 
 - **Made visible by the type**: acquisition and finalization form one construct with one signature.
 - **Enforced by the runtime**: the finalizer runs on success, typed failure, defect, and interruption, and a
@@ -185,7 +185,7 @@ Process.stream specification
 |> ...  // same consumer as the in-memory variant
 ```
 
-Where a producer must genuinely run ahead, [`Flow.fork`]({{< relref "/flow/reference/flow/concurrency/m-flow-flow-fork.md" >}}) returns a [`Fiber`]({{< relref "/flow/reference/fiber/_index.md" >}}) the caller owns and must `join` or
+Where a producer must genuinely run ahead, `Flow.fork` returns a `Fiber` the caller owns and must `join` or
 `interrupt`. ZIO correspondence: `ZStream`, scoped fibers, interruption.
 
 - **Made visible by the type**: stream failure and environment requirements stay typed through the pipeline; a

@@ -2,6 +2,7 @@
 title: "Flow.catch"
 linkTitle: "catch"
 weight: 2324
+type: docs
 ---
 
 Catches exceptions raised during execution and simple defect outcomes, then maps them to a typed error.

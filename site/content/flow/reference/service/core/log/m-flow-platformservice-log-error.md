@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.Log.error"
 linkTitle: "error"
 weight: 2305
+type: docs
 ---
 
 Writes an error log message through an explicit logging service.

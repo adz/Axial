@@ -2,6 +2,7 @@
 title: "Flow.FiberObserver.compose"
 linkTitle: "compose"
 weight: 2102
+type: docs
 ---
 
 Combines two observers so every hook runs both, each guarded independently.

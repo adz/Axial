@@ -2,6 +2,7 @@
 title: "Flow.localEnv"
 linkTitle: "localEnv"
 weight: 2332
+type: docs
 ---
 
 Runs a flow against an environment derived from the outer environment.

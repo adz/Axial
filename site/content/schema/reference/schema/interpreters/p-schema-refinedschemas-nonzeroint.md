@@ -2,6 +2,7 @@
 title: "Schema.RefinedSchemas.nonZeroInt"
 linkTitle: "nonZeroInt"
 weight: 2306
+type: docs
 ---
 
 Describes a non-zero integer as a schema refined value over an integer not equal to zero.

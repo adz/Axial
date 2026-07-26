@@ -2,6 +2,7 @@
 title: "Check.String.alphaNumeric"
 linkTitle: "alphaNumeric"
 weight: 2310
+type: docs
 ---
 
 Requires an already parsed string value to contain one or more letter or digit characters.

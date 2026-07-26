@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.readAllTextAsync"
 linkTitle: "readAllTextAsync"
 weight: 2202
+type: docs
 ---
 
 Asynchronously reads all text through an explicit file-system service.

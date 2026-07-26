@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Http.getJson"
 linkTitle: "getJson"
 weight: 2513
+type: docs
 ---
 
  Sends a GET request and decodes the JSON response.

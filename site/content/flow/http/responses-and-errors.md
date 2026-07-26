@@ -11,7 +11,7 @@ handling.
 
 ## The Response Transcript
 
-Every exchange produces a complete [`HttpResponse`]({{< relref "/flow/reference/service/http/t-flow-httpclient-httpresponse.md" >}}):
+Every exchange produces a complete `HttpResponse`:
 
 ```fsharp
 let workflow =
@@ -22,7 +22,6 @@ let workflow =
     }
 ```
 
-- [`Response.tryHeader`]({{< relref "/flow/reference/service/http/m-flow-httpclient-response-tryheader.md" >}}) reads a header case-insensitively.
 - `StatusCode`, `ReasonPhrase`, and `Headers` (response plus content headers, in arrival order).
 - `Body` is the exact bytes; `Text` is decoded with the response charset, defaulting to UTF-8.
 - `Request` is the redacted request line, so the transcript is safe to log as-is.
@@ -30,7 +29,7 @@ let workflow =
 
 ## Typed JSON Decoding
 
-[`Response.json`]({{< relref "/flow/reference/service/http/m-flow-httpclient-response-json.md" >}}) and the `fetchJson`/`Http.getJson` terminals take a decoder of type
+`Response.json` and the `fetchJson`/`Http.getJson` terminals take a decoder of type
 `string -> Result<'value, string>`. Any JSON library fits that shape:
 
 ```fsharp
@@ -54,7 +53,7 @@ let created =
 
 ## One Error Type
 
-Every way an HTTP call can fail is one case of [`HttpError`]({{< relref "/flow/reference/service/http/t-flow-httpclient-httperror.md" >}}):
+Every way an HTTP call can fail is one case of `HttpError`:
 
 ```fsharp
 match error with
@@ -66,13 +65,13 @@ match error with
 | HttpError.DecodeFailed(message, response) -> ...   // body did not decode, full transcript
 ```
 
-[`HttpError.describe`]({{< relref "/flow/reference/service/http/m-flow-httpclient-httperror-describe.md" >}}) formats any case with its redacted request context and a bounded body preview, so a single
-`Flow.mapError HttpError.describe` produces loggable messages. [`HttpError.tryResponse`]({{< relref "/flow/reference/service/http/m-flow-httpclient-httperror-tryresponse.md" >}}) extracts the transcript
+`HttpError.describe` formats any case with its redacted request context and a bounded body preview, so a single
+`Flow.mapError HttpError.describe` produces loggable messages. `HttpError.tryResponse` extracts the transcript
 from the cases that carry one.
 
 ## Statuses Are Data, Not Exceptions
 
-[`Http.send`]({{< relref "/flow/reference/service/http/m-flow-httpclient-http-send.md" >}}) fails with `HttpError.Status` for anything outside the request's expectation (2xx by default).
+`Http.send` fails with `HttpError.Status` for anything outside the request's expectation (2xx by default).
 When a "failure" status is a normal outcome, widen the expectation and branch on the code:
 
 ```fsharp
@@ -87,7 +86,7 @@ let findUser userId =
     }
 ```
 
-[`Http.sendResult`]({{< relref "/flow/reference/service/http/m-flow-httpclient-http-sendresult.md" >}}) skips status interpretation entirely and returns whatever arrived; use it when a proxy or
+`Http.sendResult` skips status interpretation entirely and returns whatever arrived; use it when a proxy or
 health check needs the raw exchange.
 
 ## When Not To Decode

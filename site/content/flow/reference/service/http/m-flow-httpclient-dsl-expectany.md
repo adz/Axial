@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.DSL.expectAny"
 linkTitle: "expectAny"
 weight: 2618
+type: docs
 ---
 
  Treats every status as success. <example><code>request |&gt; expectAny</code></example>

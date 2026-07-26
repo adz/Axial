@@ -2,6 +2,7 @@
 title: "Refined.PositiveInt"
 linkTitle: "PositiveInt"
 weight: 1006
+type: docs
 ---
 
 An integer greater than zero.

@@ -2,6 +2,7 @@
 title: "Schema.Http.AspNetCore.Request.form"
 linkTitle: "form"
 weight: 2101
+type: docs
 ---
 
 Reads and schema-parses a posted form.

@@ -2,6 +2,7 @@
 title: "Flow.Process.DSL.sh"
 linkTitle: "sh"
 weight: 2901
+type: docs
 ---
 
  Builds a POSIX shell program with interpolation values passed as positional arguments.

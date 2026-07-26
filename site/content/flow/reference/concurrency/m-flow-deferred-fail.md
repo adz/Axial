@@ -2,6 +2,7 @@
 title: "Flow.Deferred.fail"
 linkTitle: "fail"
 weight: 2005
+type: docs
 ---
 
 Attempts to complete the deferred value with a typed failure.

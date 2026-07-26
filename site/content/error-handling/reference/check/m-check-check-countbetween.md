@@ -2,6 +2,7 @@
 title: "Check.countBetween"
 linkTitle: "countBetween"
 weight: 2222
+type: docs
 ---
 
 Returns a sequence-shaped check requiring a count inside the supplied inclusive bounds.

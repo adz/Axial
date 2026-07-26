@@ -2,6 +2,7 @@
 title: "Flow.orElseWith"
 linkTitle: "orElseWith"
 weight: 2325
+type: docs
 ---
 
 Computes a fallback flow from the typed error when the source flow fails.

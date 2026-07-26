@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getFileAttributes"
 linkTitle: "getFileAttributes"
 weight: 2400
+type: docs
 ---
 
 Gets file attributes through an explicit file-system service.

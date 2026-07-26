@@ -2,6 +2,7 @@
 title: "Flow.FlowStream.runFold"
 linkTitle: "runFold"
 weight: 2402
+type: docs
 ---
 
 Folds a stream into one value inside Flow.

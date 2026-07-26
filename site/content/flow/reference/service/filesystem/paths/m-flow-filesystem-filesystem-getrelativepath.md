@@ -2,6 +2,7 @@
 title: "Flow.FileSystem.getRelativePath"
 linkTitle: "getRelativePath"
 weight: 2710
+type: docs
 ---
 
 Gets a relative path through an explicit file-system service.

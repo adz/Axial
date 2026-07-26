@@ -2,6 +2,7 @@
 title: "Microsoft.FSharp.Core.FSharpValueOption.IsPresent"
 linkTitle: "IsPresent"
 weight: 2102
+type: docs
 ---
 
 True when the value option contains a value.

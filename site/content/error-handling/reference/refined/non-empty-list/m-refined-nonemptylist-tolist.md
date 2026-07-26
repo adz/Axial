@@ -2,6 +2,7 @@
 title: "Refined.NonEmptyList.toList"
 linkTitle: "toList"
 weight: 2907
+type: docs
 ---
 
 Returns the refined value as a standard list.

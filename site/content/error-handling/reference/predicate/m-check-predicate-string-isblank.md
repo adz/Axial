@@ -2,6 +2,7 @@
 title: "System.String.IsBlank"
 linkTitle: "IsBlank"
 weight: 2302
+type: docs
 ---
 
 True when the string is null, empty, or whitespace.

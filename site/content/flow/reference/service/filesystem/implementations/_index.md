@@ -1,5 +1,6 @@
 ---
 title: "Implementations"
+type: docs
 ---
 
 This page shows the live `FileSystem.FileSystem` implementations used to provide the explicit file-system service.

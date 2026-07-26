@@ -2,6 +2,7 @@
 title: "Flow.Ref.modify"
 linkTitle: "modify"
 weight: 2104
+type: docs
 ---
 
 Updates the value of the reference using the supplied function and returns a derived value.

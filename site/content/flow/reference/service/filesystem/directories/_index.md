@@ -1,5 +1,6 @@
 ---
 title: "Directories"
+type: docs
 ---
 
 This page shows the `FileSystem.FileSystem` helpers for directory creation, discovery, and enumeration.

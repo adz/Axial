@@ -2,6 +2,7 @@
 title: "Schema.Derive.PatternAttribute"
 linkTitle: "PatternAttribute"
 weight: 1504
+type: docs
 ---
 
 Constrains a text field to the given regular expression.

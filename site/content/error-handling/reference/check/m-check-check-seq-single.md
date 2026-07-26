@@ -2,6 +2,7 @@
 title: "Check.Seq.single"
 linkTitle: "single"
 weight: 2508
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain exactly one item.

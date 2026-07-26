@@ -2,6 +2,7 @@
 title: "Flow.HttpClient.Request.bytesBody"
 linkTitle: "bytesBody"
 weight: 2314
+type: docs
 ---
 
  Sends raw bytes with an explicit content type.

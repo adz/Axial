@@ -2,6 +2,7 @@
 title: "Refined.Refine.nonNegativeInt"
 linkTitle: "nonNegativeInt"
 weight: 3008
+type: docs
 ---
 
 Builds a non-negative integer.

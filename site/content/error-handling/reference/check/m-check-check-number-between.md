@@ -2,6 +2,7 @@
 title: "Check.Number.between"
 linkTitle: "between"
 weight: 2400
+type: docs
 ---
 
 Requires a value to lie inside the supplied inclusive bounds.

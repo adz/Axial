@@ -2,6 +2,7 @@
 title: "Refined.ParseError"
 linkTitle: "ParseError"
 weight: 1000
+type: docs
 ---
 
 Primitive parse failures returned by <code>Parse</code> helpers.

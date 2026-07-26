@@ -2,6 +2,7 @@
 title: "Schema.Http.Endpoint.tag"
 linkTitle: "tag"
 weight: 2209
+type: docs
 ---
 
 Appends an OpenAPI tag used to group operations.

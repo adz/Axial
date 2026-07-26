@@ -2,6 +2,7 @@
 title: "Schema.guid"
 linkTitle: "guid"
 weight: 2105
+type: docs
 ---
 
 Describes a GUID.

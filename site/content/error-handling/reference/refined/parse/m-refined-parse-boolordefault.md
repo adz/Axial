@@ -2,6 +2,7 @@
 title: "Refined.Parse.boolOrDefault"
 linkTitle: "boolOrDefault"
 weight: 2116
+type: docs
 ---
 
 Parses an optional Boolean, using the supplied fallback only when the input is absent.

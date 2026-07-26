@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.EnvironmentVariables.clear"
 linkTitle: "clear"
 weight: 2603
+type: docs
 ---
 
 Clears an environment variable through an explicit environment-variable service.

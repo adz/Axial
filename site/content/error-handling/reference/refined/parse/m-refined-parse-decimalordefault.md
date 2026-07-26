@@ -2,6 +2,7 @@
 title: "Refined.Parse.decimalOrDefault"
 linkTitle: "decimalOrDefault"
 weight: 2117
+type: docs
 ---
 
 Parses an optional decimal, using the supplied fallback only when the input is absent.

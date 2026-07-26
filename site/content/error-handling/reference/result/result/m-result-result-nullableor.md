@@ -2,6 +2,7 @@
 title: "Result.nullableOr"
 linkTitle: "nullableOr"
 weight: 2304
+type: docs
 ---
 
 Takes the value from a nullable when it has a value, or returns the supplied error.

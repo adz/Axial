@@ -2,6 +2,7 @@
 title: "Refined.Choice.orElse"
 linkTitle: "orElse"
 weight: 2700
+type: docs
 ---
 
 Tries the left parser first, then the right parser, mapping either success into your output type.

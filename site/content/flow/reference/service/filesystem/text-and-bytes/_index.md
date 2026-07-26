@@ -1,5 +1,6 @@
 ---
 title: "Text and bytes"
+type: docs
 ---
 
 This page shows the `FileSystem.FileSystem` helpers for reading and writing text and byte content through an explicit file-system service.

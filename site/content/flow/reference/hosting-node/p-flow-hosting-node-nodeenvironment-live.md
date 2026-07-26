@@ -2,6 +2,7 @@
 title: "Flow.Hosting.Node.NodeEnvironment.live"
 linkTitle: "live"
 weight: 2100
+type: docs
 ---
 
 Creates an environment-variable service backed by <code>process.env</code>.

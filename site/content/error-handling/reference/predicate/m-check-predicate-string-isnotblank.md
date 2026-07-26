@@ -2,6 +2,7 @@
 title: "System.String.IsNotBlank"
 linkTitle: "IsNotBlank"
 weight: 2303
+type: docs
 ---
 
 True when the string is non-null and contains at least one non-whitespace character.

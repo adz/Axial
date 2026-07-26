@@ -2,6 +2,7 @@
 title: "Flow.Process.ProcessIoFailure"
 linkTitle: "ProcessIoFailure"
 weight: 1014
+type: docs
 ---
 
  Diagnostic details for a process I/O failure.

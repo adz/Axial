@@ -2,6 +2,7 @@
 title: "Microsoft.FSharp.Core.FSharpOption.IsAbsent"
 linkTitle: "IsAbsent"
 weight: 2101
+type: docs
 ---
 
 True when the option contains no value.

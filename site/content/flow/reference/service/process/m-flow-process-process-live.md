@@ -2,6 +2,7 @@
 title: "Flow.Process.live"
 linkTitle: "live"
 weight: 3000
+type: docs
 ---
 
  Creates a live process service using an explicit clock for transcript timestamps and durations.

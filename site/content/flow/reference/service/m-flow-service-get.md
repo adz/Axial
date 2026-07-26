@@ -2,6 +2,7 @@
 title: "Flow.Service.get"
 linkTitle: "get"
 weight: 2100
+type: docs
 ---
 
 Reads a statically declared service from an environment that implements <code>IHas&lt;&#39;service&gt;</code>.

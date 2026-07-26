@@ -2,6 +2,7 @@
 title: "Flow.Bind.mapError"
 linkTitle: "mapError"
 weight: 2101
+type: docs
 ---
 
 Maps an existing source error before <code>flow { }</code> binds it.

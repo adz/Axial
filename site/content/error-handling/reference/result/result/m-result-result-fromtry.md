@@ -2,6 +2,7 @@
 title: "Result.fromTry"
 linkTitle: "fromTry"
 weight: 2204
+type: docs
 ---
 
 Converts a .NET <code>Try*</code> tuple into a unit-error result.

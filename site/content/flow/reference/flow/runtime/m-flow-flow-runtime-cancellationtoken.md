@@ -2,6 +2,7 @@
 title: "Flow.Runtime.cancellationToken"
 linkTitle: "cancellationToken"
 weight: 2100
+type: docs
 ---
 
 Reads the current runtime cancellation token.

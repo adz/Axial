@@ -2,6 +2,7 @@
 title: "Check.Predicate.Number.positive"
 linkTitle: "positive"
 weight: 2505
+type: docs
 ---
 
 Returns true when the value is greater than zero.

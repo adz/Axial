@@ -2,6 +2,7 @@
 title: "Flow.Runtime.traceId"
 linkTitle: "traceId"
 weight: 2106
+type: docs
 ---
 
 Reads the current runtime trace id annotation if one is present.

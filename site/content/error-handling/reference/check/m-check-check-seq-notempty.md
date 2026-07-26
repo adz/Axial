@@ -2,6 +2,7 @@
 title: "Check.Seq.notEmpty"
 linkTitle: "notEmpty"
 weight: 2501
+type: docs
 ---
 
 Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.

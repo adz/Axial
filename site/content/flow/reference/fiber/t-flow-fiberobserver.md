@@ -2,6 +2,7 @@
 title: "Flow.FiberObserver"
 linkTitle: "FiberObserver"
 weight: 1005
+type: docs
 ---
 
 

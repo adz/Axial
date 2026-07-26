@@ -2,6 +2,7 @@
 title: "Schema.Http.OpenApiInfo"
 linkTitle: "OpenApiInfo"
 weight: 1300
+type: docs
 ---
 
 Document-level OpenAPI metadata.

@@ -2,6 +2,7 @@
 title: "Flow.Process.Script.run"
 linkTitle: "run"
 weight: 2503
+type: docs
 ---
 
  Runs a process workflow with live services, writes failures through the supplied console, and returns a host exit code.

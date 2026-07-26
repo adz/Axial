@@ -2,6 +2,7 @@
 title: "Schema.Http.OpenApi.info"
 linkTitle: "info"
 weight: 2301
+type: docs
 ---
 
 Builds document metadata with no description.

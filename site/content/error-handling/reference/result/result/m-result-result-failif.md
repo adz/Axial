@@ -2,6 +2,7 @@
 title: "Result.failIf"
 linkTitle: "failIf"
 weight: 2202
+type: docs
 ---
 
 Keeps the input value when the predicate does not hold, or returns the supplied error.

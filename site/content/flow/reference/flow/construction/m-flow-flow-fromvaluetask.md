@@ -2,6 +2,7 @@
 title: "Flow.fromValueTask"
 linkTitle: "fromValueTask"
 weight: 2312
+type: docs
 ---
 
 Creates a flow from a raw value task operation.

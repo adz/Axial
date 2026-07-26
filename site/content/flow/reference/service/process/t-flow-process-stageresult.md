@@ -2,6 +2,7 @@
 title: "Flow.Process.StageResult"
 linkTitle: "StageResult"
 weight: 1006
+type: docs
 ---
 
  The redacted command, exit decision, timing, and diagnostic stderr tail for one stage.

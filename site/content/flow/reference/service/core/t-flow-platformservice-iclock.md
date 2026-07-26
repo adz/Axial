@@ -2,6 +2,7 @@
 title: "Flow.PlatformService.IClock"
 linkTitle: "IClock"
 weight: 1000
+type: docs
 ---
 
 Provides synchronous access to the current UTC clock.
