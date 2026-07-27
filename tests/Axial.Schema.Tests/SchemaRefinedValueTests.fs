@@ -74,14 +74,9 @@ module SchemaRefinedValueTests =
         let schema =
             Schema.text
             |> Schema.refine
-                (Refinement.define
-                    (fun _ ->
-                        Error(
-                            RefinementError.InvalidStructure(
-                                "email.blocked",
-                                "This address is blocked."
-                            )
-                        ))
+                (Refinement.defineWithCheck
+                    (fun _ -> Error [ Axial.Check.CheckFailure.Custom "email.blocked" ])
+                    Email.create
                     Email.value)
 
         let parsed = Schema.parseRetainingInput schema (Data.Text "ada@example.com")
@@ -91,7 +86,7 @@ module SchemaRefinedValueTests =
         | Error diagnostics ->
             let errors = diagnostics |> SchemaErrors.toList
             test <@ errors |> List.map _.Path = [ Path.root ] @>
-            test <@ errors |> List.map _.Error = [ SchemaError.Custom("email.blocked", Some "This address is blocked.") ] @>
+            test <@ errors |> List.map _.Error = [ SchemaError.Custom("email.blocked", None) ] @>
 
     [<Fact>]
     let ``refined retains the raw value schema as inspectable metadata`` () =

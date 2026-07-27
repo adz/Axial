@@ -1,131 +1,75 @@
-// A named catalog of stock schemas for Axial.Refined types (non-blank strings, positive ints,
-// bounded collections, ranges). Members are ordinary Schema<'value> values — this module exists so
-// common refinements need no hand-written schema.
 namespace Axial.Schema
 
+open Axial.Check
 open Axial.Refined
-open Axial.Schema
 open Axial.Schema.Syntax
 
-/// <summary>Ready-made schema values for the built-in <c>Axial.Refined</c> catalog.</summary>
-/// <remarks>
-/// <para>The catalog lives in <c>Axial.Schema</c> so <c>Axial.Refined</c> can remain independent of
-/// <c>Axial.Schema</c>. Each schema carries the same constraint meaning as the matching standalone <c>Refine</c>
-/// constructor before constructing the refined value.</para>
-/// </remarks>
+/// Ready-made schemas for the built-in refined values.
 [<RequireQualifiedAccess>]
 module RefinedSchemas =
-    /// <summary>Describes a non-blank string as a schema refined value over required text.</summary>
-    let nonBlankString : Schema<NonBlankString> =
-        Schema.text
-        |> Schema.constrain Constraint.required
-        |> Schema.refine (Refinement.define NonBlankString.create NonBlankString.value)
+    let nonBlankString : Schema<NonBlankString> = Schema.text |> Schema.refine NonBlankString.refinement
 
-    /// <summary>Describes a bounded string as a schema refined value over required text with inclusive length bounds.</summary>
     let boundedString minLength maxLength : Schema<BoundedString> =
+        let refinement =
+            Refinement.defineAll
+                [ Axial.Check.Constraint.required; Axial.Check.Constraint.lengthBetween minLength maxLength ]
+                (fun value ->
+                    match Refine.boundedString minLength maxLength value with
+                    | Ok refined -> refined
+                    | Error _ -> failwith "unreachable")
+                _.Value
         Schema.text
-        |> Schema.constrainAll [ Constraint.required; Constraint.lengthBetween minLength maxLength ]
-        |> Schema.refine
-            (Refinement.define (Refine.boundedString minLength maxLength) _.Value)
+        |> Schema.constrainAll [ Axial.Schema.Constraint.required; Axial.Schema.Constraint.lengthBetween minLength maxLength ]
+        |> Schema.refine refinement
 
-    /// <summary>Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.</summary>
-    let trimmedString : Schema<TrimmedString> =
-        Schema.text
-        |> Schema.constrain Constraint.trimmed
-        |> Schema.refine (Refinement.define Refine.trimmedString _.Value)
+    let trimmedString : Schema<TrimmedString> = Schema.text |> Schema.refine Text.trimmedStringRefinement
+    let slug : Schema<Slug> = Schema.text |> Schema.refine Text.slugRefinement
+    let positiveInt : Schema<PositiveInt> = Schema.int |> Schema.refine PositiveInt.refinement
+    let nonNegativeInt : Schema<NonNegativeInt> = Schema.int |> Schema.refine Numeric.nonNegativeIntRefinement
+    let nonZeroInt : Schema<NonZeroInt> = Schema.int |> Schema.refine Numeric.nonZeroIntRefinement
+    let negativeInt : Schema<NegativeInt> = Schema.int |> Schema.refine Numeric.negativeIntRefinement
+    let nonPositiveInt : Schema<NonPositiveInt> = Schema.int |> Schema.refine Numeric.nonPositiveIntRefinement
 
-    /// <summary>Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.</summary>
-    let slug : Schema<Slug> =
-        Schema.text
-        |> Schema.constrainAll
-            [ Constraint.required
-              Constraint.pattern "^[a-z0-9]+(-[a-z0-9]+)*$" ]
-        |> Schema.refine (Refinement.define Refine.slug _.Value)
-
-    /// <summary>Describes a positive integer as a schema refined value over an integer greater than zero.</summary>
-    let positiveInt : Schema<PositiveInt> =
-        Schema.int
-        |> Schema.constrain (Constraint.greaterThan 0)
-        |> Schema.refine (Refinement.define PositiveInt.create PositiveInt.value)
-
-    /// <summary>Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.</summary>
-    let nonNegativeInt : Schema<NonNegativeInt> =
-        Schema.int
-        |> Schema.constrain (Constraint.atLeast 0)
-        |> Schema.refine (Refinement.define Refine.nonNegativeInt _.Value)
-
-    /// <summary>Describes a non-zero integer as a schema refined value over an integer not equal to zero.</summary>
-    let nonZeroInt : Schema<NonZeroInt> =
-        Schema.int
-        |> Schema.constrain (Constraint.notEqualTo 0)
-        |> Schema.refine (Refinement.define Refine.nonZeroInt _.Value)
-
-    /// <summary>Describes a negative integer as a schema refined value over an integer less than zero.</summary>
-    let negativeInt : Schema<NegativeInt> =
-        Schema.int
-        |> Schema.constrain (Constraint.lessThan 0)
-        |> Schema.refine (Refinement.define Refine.negativeInt _.Value)
-
-    /// <summary>Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.</summary>
-    let nonPositiveInt : Schema<NonPositiveInt> =
-        Schema.int
-        |> Schema.constrain (Constraint.atMost 0)
-        |> Schema.refine (Refinement.define Refine.nonPositiveInt _.Value)
-
-    /// <summary>Describes a non-empty list as a schema refined value over a collection of item schemas.</summary>
     let nonEmptyList (itemSchema: Schema<'value>) : Schema<NonEmptyList<'value>> =
-        Schema.listWith itemSchema
-        |> Schema.constrain (Constraint.minCount 1)
-        |> Schema.refine (Refinement.define Refine.nonEmptyList NonEmptyList.toList)
+        let refinement: Refinement<'value list, NonEmptyList<'value>> = Collection.nonEmptyListRefinement<'value> ()
+        Schema.listWith itemSchema |> Schema.refine refinement
 
-    /// <summary>Describes a non-empty array as a schema refined value over a collection of item schemas.</summary>
     let nonEmptyArray (itemSchema: Schema<'value>) : Schema<NonEmptyArray<'value>> =
-        Schema.listWith itemSchema
-        |> Schema.constrain (Constraint.minCount 1)
-        |> Schema.refine
-            (Refinement.define Refine.nonEmptyArray (fun value -> value.ToArray() |> Array.toList))
+        let refinement =
+            Refinement.define (Axial.Check.Constraint.minCount 1)
+                (List.toArray >> fun values -> match Refine.nonEmptyArray values with Ok value -> value | Error _ -> failwith "unreachable")
+                (fun value -> value.ToArray() |> Array.toList)
+        Schema.listWith itemSchema |> Schema.refine refinement
 
-    /// <summary>Describes a distinct list as a schema refined value over a distinct collection of item schemas.</summary>
-    let distinctList<'value when 'value: equality>
-        (itemSchema: Schema<'value>)
-        : Schema<DistinctList<'value>> =
-        Schema.listWith itemSchema
-        |> Schema.constrain Constraint.distinct
-        |> Schema.refine (Refinement.define Refine.distinctList _.ToList())
+    let distinctList<'value when 'value: equality> (itemSchema: Schema<'value>) : Schema<DistinctList<'value>> =
+        let refinement: Refinement<'value list, DistinctList<'value>> = Collection.distinctListRefinement<'value> ()
+        Schema.listWith itemSchema |> Schema.refine refinement
 
-    /// <summary>Describes a bounded list as a schema refined value over a collection with inclusive count bounds.</summary>
     let boundedList minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedList<'value>> =
-        Schema.listWith itemSchema
-        |> Schema.constrain (Constraint.countBetween minCount maxCount)
-        |> Schema.refine
-            (Refinement.define (Refine.boundedList minCount maxCount) _.ToList())
+        let refinement = Refinement.define (Axial.Check.Constraint.countBetween minCount maxCount)
+                            (fun values -> match Refine.boundedList minCount maxCount values with Ok value -> value | Error _ -> failwith "unreachable") _.ToList()
+        Schema.listWith itemSchema |> Schema.refine refinement
 
-    /// <summary>Describes a bounded array as a schema refined value over a collection with inclusive count bounds.</summary>
     let boundedArray minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedArray<'value>> =
-        Schema.listWith itemSchema
-        |> Schema.constrain (Constraint.countBetween minCount maxCount)
-        |> Schema.refine
-            (Refinement.define
-                (Refine.boundedArray minCount maxCount)
-                (fun value -> value.ToArray() |> Array.toList))
+        let refinement = Refinement.define (Axial.Check.Constraint.countBetween minCount maxCount)
+                            (fun values -> match Refine.boundedArray minCount maxCount values with Ok value -> value | Error _ -> failwith "unreachable")
+                            (fun value -> value.ToArray() |> Array.toList)
+        Schema.listWith itemSchema |> Schema.refine refinement
 
-    /// <summary>Describes a date-time range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
+    let private describe failures = CheckFailure.describeAll failures
+
     let dateTimeOffsetRange : Schema<DateTimeOffsetRange> =
         schema<DateTimeOffsetRange> {
             field "start" (fun (value: DateTimeOffsetRange) -> value.Start)
             field "end" (fun (value: DateTimeOffsetRange) -> value.End)
-            constructResult (fun start finish ->
-                Refine.dateTimeOffsetRange start finish |> Result.mapError RefinementError.describe)
+            constructResult (fun start finish -> Refine.dateTimeOffsetRange start finish |> Result.mapError describe)
         }
 
 #if NET8_0_OR_GREATER
-    /// <summary>Describes a date-only range as a record schema with <c>start</c> and <c>end</c> fields.</summary>
-    /// <remarks>netstandard2.1: not available.</remarks>
     let dateOnlyRange : Schema<DateOnlyRange> =
         schema<DateOnlyRange> {
             field "start" (fun (value: DateOnlyRange) -> value.Start)
             field "end" (fun (value: DateOnlyRange) -> value.End)
-            constructResult (fun start finish ->
-                Refine.dateOnlyRange start finish |> Result.mapError RefinementError.describe)
+            constructResult (fun start finish -> Refine.dateOnlyRange start finish |> Result.mapError describe)
         }
 #endif

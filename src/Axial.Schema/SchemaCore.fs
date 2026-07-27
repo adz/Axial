@@ -146,8 +146,9 @@ module internal SchemaCore =
     let constrainValues constraint' schema = ValueSchema.constrainValues constraint' schema
     /// <summary>Defers a recursive schema.</summary>
     let defer schema = ValueSchema.lazyOf schema
+    let tryConvert forward backward schema = ValueSchema.tryConvert forward backward schema
     /// <summary>Converts a schema through total construction and inspection functions.</summary>
-    let convert construct inspect schema = ValueSchema.refined construct inspect schema
+    let convert forward backward schema = ValueSchema.refined forward backward schema
     let refine refinement schema = ValueSchema.refine refinement schema
     let validate validation schema = ValueSchema.validate validation schema
     /// <summary>Describes a tagged union.</summary>

@@ -15,22 +15,9 @@ type CeEmail =
         let (CeEmail value) = this
         value
 
-    static member Refinement(_: string, _: CeEmail) =
-        Refinement.define
-            (fun (raw: string) ->
-                if raw.Contains "@" then
-                    Ok(CeEmail raw)
-                else
-                    Error(RefinementError.InvalidStructure("email", "Expected an email address.")))
-            _.Value
-
 [<RequireQualifiedAccess>]
 module private CeEmail =
-    let create (raw: string) =
-        if raw.Contains "@" then
-            Ok(CeEmail raw)
-        else
-            Error(RefinementError.InvalidStructure("email", "Expected an email address."))
+    let refinement = Refinement.define (Axial.Check.Constraint.pattern ".+@.+") CeEmail _.Value
 
 type CeSignup =
     {
@@ -61,7 +48,7 @@ module SchemaCeTests =
             field "email" _.Email {
                 withSchema Schema.text
                 constrain (Syntax.minLength 3)
-                refine
+                refine CeEmail.refinement
                 validate validateCompanyEmail
             }
 
@@ -73,7 +60,7 @@ module SchemaCeTests =
         schema<CeSignup> {
             field "email" _.Email {
                 withSchema Schema.text
-                refine
+                refine CeEmail.refinement
             }
 
             field "age" _.Age {

@@ -37,8 +37,10 @@ module Schema =
     let inline map () : Schema<Map<string, ^item>> = mapWith (SchemaDefaults.Resolve())
     /// <summary>Defers a recursive schema reference until an interpreter needs it.</summary>
     let defer schema = SchemaCore.defer schema
+    /// <summary>Maps a schema through a fallible projected conversion.</summary>
+    let tryConvert forward backward schema = SchemaCore.tryConvert forward backward schema
     /// <summary>Maps a schema through a total, reversible domain conversion.</summary>
-    let convert construct inspect schema = SchemaCore.convert construct inspect schema
+    let convert forward backward schema = SchemaCore.convert forward backward schema
     /// <summary>Maps a raw schema through a reusable bidirectional refinement.</summary>
     /// <remarks>The smart constructor runs during parsing. Inspection supplies the raw representation during checking and encoding.</remarks>
     let refine (refinement: Refinement<'raw, 'value>) (schema: Schema<'raw>) : Schema<'value> =
@@ -99,5 +101,5 @@ module Schema =
 
     /// <summary>Admits a permissive draft model schema into a trusted domain schema through an admission
     /// function and a projection, preserving fields, wire names, constraints, and metadata.</summary>
-    let admit (create: 'draft -> Result<'domain, string>) (project: 'domain -> 'draft) (draft: Schema<'draft>) : Schema<'domain> =
-        ShapeOps.admit create project draft
+    let admit (create: 'draft -> Result<'domain, SchemaError list>) (project: 'domain -> 'draft) (draft: Schema<'draft>) : Schema<'domain> =
+        ShapeOps.admit (create >> Result.mapError (List.map SchemaError.render >> String.concat "; ")) project draft

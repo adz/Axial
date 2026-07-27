@@ -174,9 +174,11 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     /// <summary>Refines the current raw schema into the field getter's result type.</summary>
     [<CustomOperation("refine")>]
     member _.Refine
-        (field: FieldWorking<'model, 'target, 'raw>)
-        : FieldRefining<'model, 'target, 'raw> =
-        FieldRefining(field.Initial, field.Schema, [])
+        (
+            field: FieldWorking<'model, 'target, 'raw>,
+            refinement: Refinement<'raw, 'target>
+        ) : FieldWorking<'model, 'target, 'target> =
+        FieldWorking(field.Initial, field.Schema |> SchemaCore.refine refinement)
 
     /// <summary>Adds executable validation to the field's current schema value.</summary>
     [<CustomOperation("validate")>]
@@ -431,12 +433,6 @@ type SchemaBuilder<'model>() =
         : FieldStep<'model, ^target> =
         let schema: Schema< ^target> = SchemaDefaults.Resolve()
         SchemaBuilder<'model>.ConfiguredField(field, schema)
-
-    member inline _.Yield
-        (field: RefiningFieldDeclaration<'model, ^raw, ^target>)
-        : FieldStep<'model, ^target> =
-        let refinement: Refinement<^raw, ^target> = RefinementFrom.Resolve()
-        SchemaBuilder<'model>.RefinedField(field, refinement)
 
     member _.Yield(step: ConstructorStep<'model, 'constructor>) =
         SchemaPlan<'model, 'model, 'model, 'constructor>(

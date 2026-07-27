@@ -227,7 +227,7 @@ module ShapeSyntaxTests =
             if draft.Start <= draft.End then
                 Ok { Start = draft.Start; End = draft.End }
             else
-                Error "End must not precede start"
+                Error [ SchemaError.ConstructorFailed "End must not precede start" ]
 
         member this.ToDraft: BookingDraft = { Start = this.Start; End = this.End }
         member this.Nights = (this.End - this.Start).Days
@@ -281,6 +281,6 @@ module ShapeSyntaxTests =
             { BookingDraft.Start = DateTimeOffset(System.DateTime(2026, 8, 1), TimeSpan.Zero)
               End = DateTimeOffset(System.DateTime(2026, 8, 5), TimeSpan.Zero) }
             |> Booking.Create
-            |> Result.defaultWith (fun message -> failwith message)
+            |> Result.defaultWith (fun errors -> failwithf "%A" errors)
 
         test <@ Schema.check bookingSchema booking = Ok booking @>

@@ -7,9 +7,6 @@ namespace Axial.Schema
 open Axial.Parse
 
 open Axial.Check
-#if !AXIAL_SCHEMA_CORE_ONLY
-open Axial.Refined
-#endif
 
 /// <summary>Schema input, checking, and contextual rule failures attached to diagnostics paths.</summary>
 [<RequireQualifiedAccess>]
@@ -94,12 +91,6 @@ module SchemaError =
         | CheckFailure.NotOneOf choices -> SchemaError.NotOneOf choices
         | CheckFailure.Duplicate -> SchemaError.Duplicate
         | CheckFailure.Custom code -> SchemaError.Custom(code, None)
-
-    let ofRefinementError error =
-        match error with
-        | RefinementError.ParseFailed parseError -> [ ofParseError parseError ]
-        | RefinementError.CheckFailed(_, failures) -> failures |> List.map ofCheckFailure
-        | RefinementError.InvalidStructure(target, reason) -> [ SchemaError.Custom(target, Some reason) ]
 
     let render error =
         match error with

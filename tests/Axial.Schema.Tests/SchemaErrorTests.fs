@@ -32,16 +32,6 @@ module SchemaErrorTests =
         test <@ lengthError = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 3, Some 1) @>
 
     [<Fact>]
-    let ``refinement errors lower into schema boundary errors`` () =
-        let parseError = RefinementError.ParseFailed(ParseError.InvalidFormat("int", "nope"))
-        let checkError = RefinementError.CheckFailed("Email", [ CheckFailure.Required; CheckFailure.InvalidFormat "email" ])
-        let structureError = RefinementError.InvalidStructure("DateRange", "End must be on or after start.")
-
-        test <@ SchemaError.ofRefinementError parseError = [ SchemaError.InvalidFormat "int" ] @>
-        test <@ SchemaError.ofRefinementError checkError = [ SchemaError.Required; SchemaError.InvalidFormat "email" ] @>
-        test <@ SchemaError.ofRefinementError structureError = [ SchemaError.Custom("DateRange", Some "End must be on or after start.") ] @>
-
-    [<Fact>]
     let ``schema boundary errors render default English messages`` () =
         test <@ SchemaError.render SchemaError.Required = "This value is required." @>
         test <@ SchemaError.render (SchemaError.InvalidFormat "email") = "Expected email format." @>

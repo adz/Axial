@@ -361,14 +361,12 @@ module ApiShapeTests =
         assertContainsAll [ "ColdTask`1"; "Task`1"; "ValueTask`1"; "FSharpAsync`1"; "Flow`3" ] argumentTypeNames
 
     [<Fact>]
-    let ``result and refinement builders keep expected public shape`` () =
+    let ``result builder remains while refinement builder is absent`` () =
         typeof<ResultBuilder>
         |> publicInstanceMethodNames
         |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine"; "TryWith"; "TryFinally"; "Using"; "While"; "For" ]
 
-        typeof<RefineBuilder>
-        |> publicInstanceMethodNames
-        |> assertContainsAll [ "Return"; "ReturnFrom"; "Bind"; "Delay"; "Run"; "Combine" ]
+        assertTypeAbsentFromAssembly "Axial.Refined" "Axial.Refined.RefineBuilder"
 
     [<Fact>]
     let ``schema inspection and input interpreter modules expose the expected surface`` () =
@@ -1674,13 +1672,14 @@ module ApiShapeTests =
               "headOr" ]
 
         let parseMembers =
-            moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Parse"
+            moduleTypeFromAssembly "Axial.Parse" "Axial.Parse.Parse"
             |> publicStaticMemberNames
 
-        test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Refined" @>
+        test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Parse" @>
         test <@ typeof<Refinement<int, PositiveInt>>.Assembly.GetName().Name = "Axial.Refined" @>
         assertModuleAbsentFromAssembly "Axial.Result" "Axial.Result.Parse"
-        assertModuleAbsentFromAssembly "Axial.Schema" "Axial.Refined.Parse"
+        assertModuleAbsentFromAssembly "Axial.Refined" "Axial.Refined.Parse"
+        test <@ not (referencedAssemblyNames (Assembly.Load "Axial.Refined") |> Set.contains "Axial.Parse") @>
 
         parseMembers
         |> assertContainsAll
@@ -1710,11 +1709,12 @@ module ApiShapeTests =
             |> publicStaticMemberNames
 
         refineMembers
-        |> assertContainsAll [ "from"; "nonBlankString"; "positiveInt"; "nonEmptyList"; "exactlyOne"; "atMostOne" ]
+        |> assertContainsAll [ "nonBlankString"; "positiveInt"; "nonEmptyList"; "exactlyOne"; "atMostOne" ]
+        refineMembers |> assertContainsNone [ "from"; "withCheck"; "withChecks" ]
 
         moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Refinement"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "define"; "create"; "inspect" ]
+        |> assertContainsAll [ "define"; "defineAll"; "defineWithCheck"; "create"; "underlying"; "constraints" ]
 
         moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Bind"
         |> publicStaticMemberNames

@@ -75,9 +75,9 @@ module RefinedCatalogSchemaTests =
 
         let parsed = Schema.parseRetainingInput (productSchema ()) raw
 
-        test <@ Refine.nonBlankString "   " |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.Required ] @>
-        test <@ Refine.slug "Ada" |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" ] @>
-        test <@ Refine.positiveInt 0 |> Result.mapError SchemaError.ofRefinementError = Error [ SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ] @>
+        test <@ Refine.nonBlankString "   " |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.Required ] @>
+        test <@ Refine.slug "Ada" |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" ] @>
+        test <@ Refine.positiveInt 0 |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ] @>
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Required }
@@ -114,11 +114,11 @@ module RefinedCatalogSchemaTests =
         let parsed = Schema.parseRetainingInput schema raw
 
         test
-            <@ Refine.trimmedString " deploy " |> Result.mapError SchemaError.ofRefinementError =
+            <@ Refine.trimmedString " deploy " |> Result.mapError (List.map SchemaError.ofCheckFailure) =
                 Error [ SchemaError.InvalidFormat "trimmed" ] @>
 
         test
-            <@ Refine.nonZeroInt 0 |> Result.mapError SchemaError.ofRefinementError =
+            <@ Refine.nonZeroInt 0 |> Result.mapError (List.map SchemaError.ofCheckFailure) =
                 Error [ SchemaError.Custom("notEqualTo:0", None) ] @>
 
         test
@@ -209,8 +209,7 @@ module RefinedCatalogSchemaTests =
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy []
                                    Error =
-                                     SchemaError.ConstructorFailed
-                                         "DateTimeOffsetRange: Expected Start to be less than or equal to End." } ] @>
+                                     SchemaError.ConstructorFailed "failed custom check 'dateTimeOffsetRange'" } ] @>
 
     [<Fact>]
     let ``date only range schema parses trusted ranges`` () =

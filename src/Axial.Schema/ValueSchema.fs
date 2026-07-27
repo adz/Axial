@@ -157,6 +157,18 @@ module internal ValueSchema =
     /// <exception cref="T:System.ArgumentNullException">
     /// Thrown when <paramref name="construct" />, <paramref name="inspect" />, or <paramref name="raw" /> is null.
     /// </exception>
+    let tryConvert (forward: 'raw -> Result<'value, SchemaError list>) (backward: 'value -> 'raw) (raw: Schema<'raw>) : Schema<'value> =
+        if isNull (box forward) then nullArg (nameof forward)
+        if isNull (box backward) then nullArg (nameof backward)
+        if isNull (box raw) then nullArg (nameof raw)
+        let ops = RefinedValueOps((fun value -> value |> unbox<'raw> |> forward |> Result.map box), (fun value -> value |> unbox<'value> |> backward |> box))
+        Schema(ValueDefinition
+            { Shape = RefinedValueDefinition(raw.ValueDefinition, ops)
+              Format = None
+              Constraints = []
+              Description = None
+              Default = None })
+
     let refined (construct: 'raw -> 'value) (inspect: 'value -> 'raw) (raw: Schema<'raw>) : Schema<'value> =
         if isNull (box construct) then
             nullArg (nameof construct)
@@ -194,8 +206,8 @@ module internal ValueSchema =
                 (fun value ->
                     match Refinement.create refinement (unbox<'raw> value) with
                     | Ok refined -> Ok(box refined)
-                    | Error error -> Error(SchemaError.ofRefinementError error)),
-                (fun value -> value |> unbox<'value> |> Refinement.inspect refinement |> box)
+                    | Error failures -> Error(failures |> List.map SchemaError.ofCheckFailure)),
+                (fun value -> value |> unbox<'value> |> Refinement.underlying refinement |> box)
             )
 
         Schema(ValueDefinition
