@@ -4,6 +4,8 @@
 // consumers that only need the core shape.
 namespace Axial.Schema
 
+open Axial.Parse
+
 open Axial.Check
 #if !AXIAL_SCHEMA_CORE_ONLY
 open Axial.Refined

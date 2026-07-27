@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open Axial.Parse
+
 open Axial
 
 open Axial.Check

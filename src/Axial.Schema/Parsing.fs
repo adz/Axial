@@ -4,6 +4,8 @@
 // (Checking existing values reuses this pipeline with getters as the value source.)
 namespace Axial.Schema
 
+open Axial.Parse
+
 open Axial
 
 open System

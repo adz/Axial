@@ -3,6 +3,8 @@
 /// into one workflow error type that Flow.verify can run inside a flow.
 module PolicyExamples
 
+open Axial.Parse
+
 open Axial
 open Axial.Flow
 open Axial.Refined

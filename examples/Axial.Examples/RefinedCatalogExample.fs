@@ -1,5 +1,7 @@
 module RefinedCatalogExample
 
+open Axial.Parse
+
 open System
 open Axial.Result
 open Axial.Check

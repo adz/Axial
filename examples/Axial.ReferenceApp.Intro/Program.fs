@@ -1,3 +1,4 @@
+open Axial.Parse
 // The introductory reference app: a conference registration desk built with only
 // Axial.ErrorHandling. No schemas, no Flow — plain Result with your own error union,
 // terse checks, fail-fast refined construction, and accumulated form validation.

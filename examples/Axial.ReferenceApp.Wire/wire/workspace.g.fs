@@ -19,8 +19,10 @@ module WorkspaceCardV1 =
         schema<WorkspaceCardV1> {
             field "name" (fun (value: WorkspaceCardV1) -> value.Name) {
                 withSchema (Schema.text |> Schema.describe "Display name of the workspace.")
-                constrain (minLength 1)
-                constrain (maxLength 60)
+                constraints [
+                    minLength 1
+                    maxLength 60
+                ]
             }
             field "owner" (fun (value: WorkspaceCardV1) -> value.Owner)
             construct (fun name owner ->
@@ -54,11 +56,13 @@ module WorkspaceCard =
         schema<WorkspaceCard> {
             field "name" (fun (value: WorkspaceCard) -> value.Name) {
                 withSchema (Schema.text |> Schema.describe "Display name of the workspace.")
-                constrain (minLength 1)
-                constrain (maxLength 60)
+                constraints [
+                    minLength 1
+                    maxLength 60
+                ]
             }
             field "owner_email" (fun (value: WorkspaceCard) -> value.OwnerEmail) {
-                constrain emailFormat
+                constrain email
             }
             field "visibility" (fun (value: WorkspaceCard) -> value.Visibility) {
                 withSchema (Schema.enum visibilityCases |> Schema.withDefault Visibility.Private)
