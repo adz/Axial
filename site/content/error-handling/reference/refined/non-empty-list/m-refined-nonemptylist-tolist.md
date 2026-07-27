@@ -5,7 +5,7 @@ weight: 2907
 type: docs
 ---
 
-Returns the refined value as a standard list.
+
 
 ## Signature
 
@@ -26,4 +26,4 @@ Returns the refined value as a standard list.
 | <code><span>'value&#32;list</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L503-503)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L439-439)

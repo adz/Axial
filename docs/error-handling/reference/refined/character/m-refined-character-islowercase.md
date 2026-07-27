@@ -4,7 +4,7 @@ linkTitle: "isLowercase"
 weight: 2602
 ---
 
-Returns true when the character is lowercase according to invariant Unicode casing.
+
 
 ## Signature
 
@@ -25,4 +25,4 @@ Returns true when the character is lowercase according to invariant Unicode casi
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L424-424)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L400-400)

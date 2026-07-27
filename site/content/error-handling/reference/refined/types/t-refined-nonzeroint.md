@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonZeroInt"
 linkTitle: "NonZeroInt"
-weight: 1008
+weight: 1007
 type: docs
 ---
 

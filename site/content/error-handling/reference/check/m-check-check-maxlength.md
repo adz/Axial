@@ -26,4 +26,4 @@ Returns a string check requiring at most the supplied length.
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L534-534)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L532-532)

@@ -4,7 +4,7 @@ linkTitle: "negativeInt"
 weight: 2303
 ---
 
-Builds a negative integer.
+
 
 ## Signature
 
@@ -22,7 +22,7 @@ Builds a negative integer.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-negativeint.md">NegativeInt</a>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-negativeint.md">NegativeInt</a>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L332-332)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L360-360)

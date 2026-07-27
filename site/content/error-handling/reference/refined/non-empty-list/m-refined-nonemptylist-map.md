@@ -5,7 +5,7 @@ weight: 2910
 type: docs
 ---
 
-Transforms each item while preserving non-emptiness.
+
 
 ## Signature
 
@@ -17,14 +17,14 @@ Transforms each item while preserving non-emptiness.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `mapping` | <code><span>'value&#32;->&#32;'next</span></code> |  |
+| `mapping` | <code><span>'value&#32;->&#32;'a</span></code> |  |
 | `input` | <code><span><a href="../types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'value&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'next&gt;</span></code> |  |
+| <code><span><a href="../types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L515-515)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L442-442)

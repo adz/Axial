@@ -4,7 +4,7 @@ linkTitle: "value"
 weight: 2903
 ---
 
-Returns the underlying integer value.
+
 
 ## Signature
 
@@ -25,4 +25,4 @@ Returns the underlying integer value.
 | <code>int</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L343-343)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L366-366)

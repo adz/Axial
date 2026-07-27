@@ -26,4 +26,4 @@ Returns a sequence-shaped check requiring a count inside the supplied inclusive 
 | <code><span><a href="t-check-check.md">Check</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L602-602)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L600-600)

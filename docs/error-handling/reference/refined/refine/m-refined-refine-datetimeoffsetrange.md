@@ -1,29 +1,22 @@
 ---
 title: "Refined.Refine.dateTimeOffsetRange"
 linkTitle: "dateTimeOffsetRange"
-weight: 3017
+weight: 3014
 ---
 
-Builds a date and time range where <code>Start &lt;= End</code>.
+
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Refined.Refine.dateTimeOffsetRange&#32;<span>start&#32;finish</span></span></code>
+<code><span>Refined.Refine.dateTimeOffsetRange&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `start` | <code><a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a></code> |  |
-| `finish` | <code><a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-datetimeoffsetrange.md">DateTimeOffsetRange</a>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a>&#32;->&#32;<a href="https://learn.microsoft.com/dotnet/api/system.datetimeoffset">DateTimeOffset</a>&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-datetimeoffsetrange.md">DateTimeOffsetRange</a>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L752-752)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L489-489)

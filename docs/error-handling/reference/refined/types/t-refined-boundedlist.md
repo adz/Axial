@@ -1,7 +1,7 @@
 ---
 title: "Refined.BoundedList"
 linkTitle: "BoundedList<value>"
-weight: 1014
+weight: 1013
 ---
 
 A list whose count is within a caller-supplied inclusive range.

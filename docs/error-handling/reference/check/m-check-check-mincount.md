@@ -25,4 +25,4 @@ Returns a sequence-shaped check requiring at least the supplied count.
 | <code><span><a href="t-check-check.md">Check</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L594-594)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L592-592)

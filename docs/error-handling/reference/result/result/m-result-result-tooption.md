@@ -25,4 +25,4 @@ Drops the error channel and returns <code>Some</code> for success.
 | <code><span>'value&#32;option</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L92-92)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L100-100)

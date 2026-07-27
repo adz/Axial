@@ -1,29 +1,23 @@
 ---
 title: "Refined.Refine.trimmedString"
 linkTitle: "trimmedString"
-weight: 3004
+weight: 3001
 type: docs
 ---
 
-Builds a string that has no leading or trailing whitespace.
+
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Refined.Refine.trimmedString&#32;<span>value</span></span></code>
+<code><span>Refined.Refine.trimmedString&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `value` | <code>string</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-trimmedstring.md">TrimmedString</a>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span>string&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-trimmedstring.md">TrimmedString</a>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L700-700)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L474-474)

@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonBlankString"
 linkTitle: "NonBlankString"
-weight: 1002
+weight: 1001
 ---
 
 A string that is not null, empty, or whitespace.

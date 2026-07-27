@@ -1,24 +1,24 @@
 ---
 title: "Refined.Refinement"
-linkTitle: "Refinement<raw, value>"
+linkTitle: "Refinement<underlying, refined>"
 weight: 1800
 type: docs
 ---
 
-Defines fallible construction of a refined value and total inspection of its raw representation.
+ Defines admission into an invariant-carrying value and its total reverse projection.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code>type Refinement<'raw, 'value></code>
+<code>type Refinement<'underlying, 'refined></code>
 </div>
 
 ## Type Parameters
 
 | Name |
 | --- |
-| `raw` |
-| `value` |
+| `underlying` |
+| `refined` |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L592-592)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L296-296)

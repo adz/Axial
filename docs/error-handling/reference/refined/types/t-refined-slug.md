@@ -1,7 +1,7 @@
 ---
 title: "Refined.Slug"
 linkTitle: "Slug"
-weight: 1005
+weight: 1004
 ---
 
 An ASCII slug containing lowercase letters, digits, and hyphens.

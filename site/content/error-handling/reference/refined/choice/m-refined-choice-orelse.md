@@ -5,7 +5,7 @@ weight: 2700
 type: docs
 ---
 
-Tries the left parser first, then the right parser, mapping either success into your output type.
+
 
 ## Signature
 
@@ -17,18 +17,18 @@ Tries the left parser first, then the right parser, mapping either success into 
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `leftMap` | <code><span>'left&#32;->&#32;'output</span></code> |  |
-| `left` | <code><span>'raw&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'left,&#32;'error</span>&gt;</span></span></code> |  |
-| `rightMap` | <code><span>'right&#32;->&#32;'output</span></code> |  |
-| `right` | <code><span>'raw&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'right,&#32;'error</span>&gt;</span></span></code> |  |
-| `fallbackError` | <code>'error</code> |  |
-| `input` | <code>'raw</code> |  |
+| `leftMap` | <code><span>'a&#32;->&#32;'b</span></code> |  |
+| `left` | <code><span>'c&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;'d</span>&gt;</span></span></code> |  |
+| `rightMap` | <code><span>'e&#32;->&#32;'b</span></code> |  |
+| `right` | <code><span>'c&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'e,&#32;'f</span>&gt;</span></span></code> |  |
+| `fallbackError` | <code>'g</code> |  |
+| `input` | <code>'c</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'output,&#32;'error</span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'b,&#32;'g</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L557-557)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L461-461)

@@ -26,4 +26,4 @@ Returns the success value or the supplied fallback value.
 | <code>'value</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L104-104)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L112-112)

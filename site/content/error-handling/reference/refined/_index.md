@@ -8,8 +8,7 @@ type: docs
 
 ## Errors and refined types
 
-- [`Refined.ParseError`](./types/t-refined-parseerror.md): Primitive parse failures returned by <code>Parse</code> helpers.
-- [`Refined.RefinementError`](./types/t-refined-refinementerror.md): Structural failures returned by built-in refinement constructors and the <code>refine { }</code> builder.
+- [`Parse.ParseError`](./types/t-parse-parseerror.md): Primitive parse failures returned by <code>Parse</code> helpers.
 - [`Refined.NonBlankString`](./types/t-refined-nonblankstring.md): A string that is not null, empty, or whitespace.
 - [`Refined.TrimmedString`](./types/t-refined-trimmedstring.md): A string that has no leading or trailing whitespace.
 - [`Refined.BoundedString`](./types/t-refined-boundedstring.md): A string whose length is within a caller-supplied inclusive range.
@@ -29,123 +28,113 @@ type: docs
 
 ## Parse
 
-- [`Refined.Parse.int`](./parse/m-refined-parse-int.md): Parses a 32-bit integer.
-- [`Refined.Parse.long`](./parse/m-refined-parse-long.md): Parses a 64-bit integer.
-- [`Refined.Parse.decimal`](./parse/m-refined-parse-decimal.md): Parses a decimal number.
-- [`Refined.Parse.float`](./parse/m-refined-parse-float.md): Parses a double-precision floating point number.
-- [`Refined.Parse.bool`](./parse/m-refined-parse-bool.md): Parses a boolean.
-- [`Refined.Parse.guid`](./parse/m-refined-parse-guid.md): Parses a GUID.
-- [`Refined.Parse.dateTime`](./parse/m-refined-parse-datetime.md): Parses a date and time value.
-- [`Refined.Parse.dateTimeOffset`](./parse/m-refined-parse-datetimeoffset.md): Parses a date and time value with offset.
-- [`Refined.Parse.dateOnly`](./parse/m-refined-parse-dateonly.md): Parses a date-only value.
-- [`Refined.Parse.timeOnly`](./parse/m-refined-parse-timeonly.md): Parses a time-only value.
-- [`Refined.Parse.enum`](./parse/m-refined-parse-enum.md): Parses an enum value by name or numeric text.
-- [`Refined.Parse.intOption`](./parse/m-refined-parse-intoption.md): Parses an optional integer. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
-- [`Refined.Parse.boolOption`](./parse/m-refined-parse-booloption.md): Parses an optional Boolean. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
-- [`Refined.Parse.decimalOption`](./parse/m-refined-parse-decimaloption.md): Parses an optional decimal. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
-- [`Refined.Parse.guidOption`](./parse/m-refined-parse-guidoption.md): Parses an optional GUID. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
-- [`Refined.Parse.intOrDefault`](./parse/m-refined-parse-intordefault.md): Parses an optional integer, using the supplied fallback only when the input is absent.
-- [`Refined.Parse.boolOrDefault`](./parse/m-refined-parse-boolordefault.md): Parses an optional Boolean, using the supplied fallback only when the input is absent.
-- [`Refined.Parse.decimalOrDefault`](./parse/m-refined-parse-decimalordefault.md): Parses an optional decimal, using the supplied fallback only when the input is absent.
+- [`Parse.int`](./parse/m-parse-parse-int.md): Parses a 32-bit integer.
+- [`Parse.long`](./parse/m-parse-parse-long.md): Parses a 64-bit integer.
+- [`Parse.decimal`](./parse/m-parse-parse-decimal.md): Parses a decimal number.
+- [`Parse.float`](./parse/m-parse-parse-float.md): Parses a double-precision floating point number.
+- [`Parse.bool`](./parse/m-parse-parse-bool.md): Parses a boolean.
+- [`Parse.guid`](./parse/m-parse-parse-guid.md): Parses a GUID.
+- [`Parse.dateTime`](./parse/m-parse-parse-datetime.md): Parses a date and time value.
+- [`Parse.dateTimeOffset`](./parse/m-parse-parse-datetimeoffset.md): Parses a date and time value with offset.
+- [`Parse.dateOnly`](./parse/m-parse-parse-dateonly.md): Parses a date-only value.
+- [`Parse.timeOnly`](./parse/m-parse-parse-timeonly.md): Parses a time-only value.
+- [`Parse.enum`](./parse/m-parse-parse-enum.md): Parses an enum value by name or numeric text.
+- [`Parse.intOption`](./parse/m-parse-parse-intoption.md): Parses an optional integer. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
+- [`Parse.boolOption`](./parse/m-parse-parse-booloption.md): Parses an optional Boolean. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
+- [`Parse.decimalOption`](./parse/m-parse-parse-decimaloption.md): Parses an optional decimal. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
+- [`Parse.guidOption`](./parse/m-parse-parse-guidoption.md): Parses an optional GUID. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
+- [`Parse.intOrDefault`](./parse/m-parse-parse-intordefault.md): Parses an optional integer, using the supplied fallback only when the input is absent.
+- [`Parse.boolOrDefault`](./parse/m-parse-parse-boolordefault.md): Parses an optional Boolean, using the supplied fallback only when the input is absent.
+- [`Parse.decimalOrDefault`](./parse/m-parse-parse-decimalordefault.md): Parses an optional decimal, using the supplied fallback only when the input is absent.
 
 ## Text
 
-- [`Refined.Text.nonBlankString`](./text/m-refined-text-nonblankstring.md): Builds a non-blank string.
-- [`Refined.Text.trimmedString`](./text/m-refined-text-trimmedstring.md): Builds a string that has no leading or trailing whitespace.
-- [`Refined.Text.boundedString`](./text/m-refined-text-boundedstring.md): Builds a string whose length is within an inclusive range.
-- [`Refined.Text.slug`](./text/m-refined-text-slug.md): Builds an ASCII slug made of lowercase letters, digits, and hyphens.
+- [`Refined.Text.nonBlankString`](./text/m-refined-text-nonblankstring.md):
+- [`Refined.Text.trimmedString`](./text/m-refined-text-trimmedstring.md):
+- [`Refined.Text.boundedString`](./text/m-refined-text-boundedstring.md):
+- [`Refined.Text.slug`](./text/m-refined-text-slug.md):
 
 ## Numeric
 
-- [`Refined.Numeric.positiveInt`](./numeric/m-refined-numeric-positiveint.md): Builds a positive integer.
-- [`Refined.Numeric.nonNegativeInt`](./numeric/m-refined-numeric-nonnegativeint.md): Builds a non-negative integer.
-- [`Refined.Numeric.nonZeroInt`](./numeric/m-refined-numeric-nonzeroint.md): Builds a non-zero integer.
-- [`Refined.Numeric.negativeInt`](./numeric/m-refined-numeric-negativeint.md): Builds a negative integer.
-- [`Refined.Numeric.nonPositiveInt`](./numeric/m-refined-numeric-nonpositiveint.md): Builds a non-positive integer.
+- [`Refined.Numeric.positiveInt`](./numeric/m-refined-numeric-positiveint.md):
+- [`Refined.Numeric.nonNegativeInt`](./numeric/m-refined-numeric-nonnegativeint.md):
+- [`Refined.Numeric.nonZeroInt`](./numeric/m-refined-numeric-nonzeroint.md):
+- [`Refined.Numeric.negativeInt`](./numeric/m-refined-numeric-negativeint.md):
+- [`Refined.Numeric.nonPositiveInt`](./numeric/m-refined-numeric-nonpositiveint.md):
 
 ## Collection
 
-- [`Refined.Collection.nonEmptyList`](./collection/m-refined-collection-nonemptylist.md): Builds a non-empty list from a sequence.
-- [`Refined.Collection.nonEmptyArray`](./collection/m-refined-collection-nonemptyarray.md): Builds a non-empty array from a sequence.
-- [`Refined.Collection.distinctList`](./collection/m-refined-collection-distinctlist.md): Builds a list that contains no duplicate items.
-- [`Refined.Collection.boundedList`](./collection/m-refined-collection-boundedlist.md): Builds a list whose count is within an inclusive range.
-- [`Refined.Collection.boundedArray`](./collection/m-refined-collection-boundedarray.md): Builds an array whose count is within an inclusive range.
-- [`Refined.Collection.exactlyOne`](./collection/m-refined-collection-exactlyone.md): Extracts the only item from a sequence.
-- [`Refined.Collection.atMostOne`](./collection/m-refined-collection-atmostone.md): Extracts zero or one item from a sequence.
+- [`Refined.Collection.nonEmptyList`](./collection/m-refined-collection-nonemptylist.md):
+- [`Refined.Collection.nonEmptyArray`](./collection/m-refined-collection-nonemptyarray.md):
+- [`Refined.Collection.distinctList`](./collection/m-refined-collection-distinctlist.md):
+- [`Refined.Collection.boundedList`](./collection/m-refined-collection-boundedlist.md):
+- [`Refined.Collection.boundedArray`](./collection/m-refined-collection-boundedarray.md):
+- [`Refined.Collection.exactlyOne`](./collection/m-refined-collection-exactlyone.md):
+- [`Refined.Collection.atMostOne`](./collection/m-refined-collection-atmostone.md):
 
 ## Temporal
 
-- [`Refined.Temporal.dateTimeOffsetRange`](./temporal/m-refined-temporal-datetimeoffsetrange.md): Builds a date and time range where <code>Start &lt;= End</code>.
-- [`Refined.Temporal.dateOnlyRange`](./temporal/m-refined-temporal-dateonlyrange.md): Builds a date-only range where <code>Start &lt;= End</code>.
+- [`Refined.Temporal.dateTimeOffsetRange`](./temporal/m-refined-temporal-datetimeoffsetrange.md):
+- [`Refined.Temporal.dateOnlyRange`](./temporal/m-refined-temporal-dateonlyrange.md):
 
 ## Character
 
-- [`Refined.Character.isAsciiDigit`](./character/m-refined-character-isasciidigit.md): Returns true when the character is an ASCII digit.
-- [`Refined.Character.isAsciiHexDigit`](./character/m-refined-character-isasciihexdigit.md): Returns true when the character is an ASCII hexadecimal digit.
-- [`Refined.Character.isLowercase`](./character/m-refined-character-islowercase.md): Returns true when the character is lowercase according to invariant Unicode casing.
-- [`Refined.Character.isUppercase`](./character/m-refined-character-isuppercase.md): Returns true when the character is uppercase according to invariant Unicode casing.
-- [`Refined.Character.isWhitespace`](./character/m-refined-character-iswhitespace.md): Returns true when the character is whitespace.
-- [`Refined.Character.isControl`](./character/m-refined-character-iscontrol.md): Returns true when the character is a control character.
-- [`Refined.Character.isNumeric`](./character/m-refined-character-isnumeric.md): Returns true when the character is numeric according to Unicode character data.
+- [`Refined.Character.isAsciiDigit`](./character/m-refined-character-isasciidigit.md):
+- [`Refined.Character.isAsciiHexDigit`](./character/m-refined-character-isasciihexdigit.md):
+- [`Refined.Character.isLowercase`](./character/m-refined-character-islowercase.md):
+- [`Refined.Character.isUppercase`](./character/m-refined-character-isuppercase.md):
+- [`Refined.Character.isWhitespace`](./character/m-refined-character-iswhitespace.md):
+- [`Refined.Character.isControl`](./character/m-refined-character-iscontrol.md):
+- [`Refined.Character.isNumeric`](./character/m-refined-character-isnumeric.md):
 
 ## Choice
 
-- [`Refined.Choice.orElse`](./choice/m-refined-choice-orelse.md): Tries the left parser first, then the right parser, mapping either success into your output type.
-- [`Refined.Choice.tryAny`](./choice/m-refined-choice-tryany.md): Tries parser strategies in order and returns the first success.
+- [`Refined.Choice.orElse`](./choice/m-refined-choice-orelse.md):
+- [`Refined.Choice.tryAny`](./choice/m-refined-choice-tryany.md):
 
 ## Refinement
 
-- [`Refined.Refinement`](./t-refined-refinement.md): Defines fallible construction of a refined value and total inspection of its raw representation.
-- [`Refined.Refinement.define`](./m-refined-refinement-define.md): Defines a refinement from its smart constructor and raw-value projection.
-- [`Refined.Refinement.create`](./m-refined-refinement-create.md): Runs the refinement&#39;s smart constructor.
-- [`Refined.Refinement.inspect`](./m-refined-refinement-inspect.md): Returns the raw representation stored by a refined value.
+- [`Refined.Refinement`](./t-refined-refinement.md):  Defines admission into an invariant-carrying value and its total reverse projection.
+- [`Refined.Refinement.define`](./m-refined-refinement-define.md):  Defines a refinement from one portable constraint.
+- [`Refined.Refinement.defineAll`](./m-refined-refinement-defineall.md):  Defines a refinement from one or more portable constraints.
+- [`Refined.Refinement.defineWithCheck`](./m-refined-refinement-definewithcheck.md):  Defines a metadata-free refinement from an executable check.
+- [`Refined.Refinement.create`](./m-refined-refinement-create.md):  Constructs a refined value after its check succeeds.
+- [`Refined.Refinement.underlying`](./m-refined-refinement-underlying.md):  Returns the canonical underlying representation.
+- [`Refined.Refinement.constraints`](./m-refined-refinement-constraints.md):  Returns portable constraints retained by the refinement.
 
 ## Re-certifying helpers
 
-- [`Refined.NonBlankString.value`](./non-blank-string/m-refined-nonblankstring-value.md): Returns the underlying string value.
-- [`Refined.NonBlankString.create`](./non-blank-string/m-refined-nonblankstring-create.md): Builds a non-blank string.
-- [`Refined.NonBlankString.map`](./non-blank-string/m-refined-nonblankstring-map.md): Transforms the value and re-certifies the non-blank invariant.
-- [`Refined.PositiveInt.value`](./positive-int/m-refined-positiveint-value.md): Returns the underlying integer value.
-- [`Refined.PositiveInt.create`](./positive-int/m-refined-positiveint-create.md): Builds a positive integer.
-- [`Refined.PositiveInt.map`](./positive-int/m-refined-positiveint-map.md): Transforms the value and re-certifies the positive integer invariant.
-- [`Refined.PositiveInt.replace`](./positive-int/m-refined-positiveint-replace.md): Replaces the value and re-certifies the positive integer invariant.
-- [`Refined.NonEmptyList.toList`](./non-empty-list/m-refined-nonemptylist-tolist.md): Returns the refined value as a standard list.
-- [`Refined.NonEmptyList.create`](./non-empty-list/m-refined-nonemptylist-create.md): Builds a non-empty list from a sequence.
-- [`Refined.NonEmptyList.cons`](./non-empty-list/m-refined-nonemptylist-cons.md): Prepends a head item to a list, producing a non-empty list without failure.
-- [`Refined.NonEmptyList.map`](./non-empty-list/m-refined-nonemptylist-map.md): Transforms each item while preserving non-emptiness.
-- [`Refined.NonEmptyList.filter`](./non-empty-list/m-refined-nonemptylist-filter.md): Filters the list, returning a standard list because filtering can remove every item.
-- [`Refined.NonEmptyList.tryFilter`](./non-empty-list/m-refined-nonemptylist-tryfilter.md): Filters the list and re-certifies that at least one item remains.
+- [`Refined.NonBlankString.value`](./non-blank-string/m-refined-nonblankstring-value.md):
+- [`Refined.NonBlankString.create`](./non-blank-string/m-refined-nonblankstring-create.md):
+- [`Refined.NonBlankString.map`](./non-blank-string/m-refined-nonblankstring-map.md):
+- [`Refined.PositiveInt.value`](./positive-int/m-refined-positiveint-value.md):
+- [`Refined.PositiveInt.create`](./positive-int/m-refined-positiveint-create.md):
+- [`Refined.PositiveInt.map`](./positive-int/m-refined-positiveint-map.md):
+- [`Refined.PositiveInt.replace`](./positive-int/m-refined-positiveint-replace.md):
+- [`Refined.NonEmptyList.toList`](./non-empty-list/m-refined-nonemptylist-tolist.md):
+- [`Refined.NonEmptyList.create`](./non-empty-list/m-refined-nonemptylist-create.md):
+- [`Refined.NonEmptyList.cons`](./non-empty-list/m-refined-nonemptylist-cons.md):
+- [`Refined.NonEmptyList.map`](./non-empty-list/m-refined-nonemptylist-map.md):
+- [`Refined.NonEmptyList.filter`](./non-empty-list/m-refined-nonemptylist-filter.md):
+- [`Refined.NonEmptyList.tryFilter`](./non-empty-list/m-refined-nonemptylist-tryfilter.md):
 
 ## Refine facade
 
-- [`Refined.Refine.from`](./refine/m-refined-refine-from.md):
- Resolves the <code>Refinement</code> definition for the raw value and expected destination type, then runs its smart
- constructor. A destination type participates by defining a static <code>Refinement</code> member.
-
-- [`Refined.Refine.withCheck`](./refine/m-refined-refine-withcheck.md): Runs a <a href="../../check/t-check-check.md">Check</a> and calls the constructor when the check succeeds.
-- [`Refined.Refine.withChecks`](./refine/m-refined-refine-withchecks.md): Runs the supplied <a href="../../check/t-check-check.md">Check</a> values with <code>Check.all</code> and calls the
- constructor when every check succeeds.
-- [`Refined.Refine.nonBlankString`](./refine/m-refined-refine-nonblankstring.md): Builds a non-blank string.
-- [`Refined.Refine.trimmedString`](./refine/m-refined-refine-trimmedstring.md): Builds a string that has no leading or trailing whitespace.
-- [`Refined.Refine.boundedString`](./refine/m-refined-refine-boundedstring.md): Builds a string whose length is within an inclusive range.
-- [`Refined.Refine.slug`](./refine/m-refined-refine-slug.md): Builds an ASCII slug.
-- [`Refined.Refine.positiveInt`](./refine/m-refined-refine-positiveint.md): Builds a positive integer.
-- [`Refined.Refine.nonNegativeInt`](./refine/m-refined-refine-nonnegativeint.md): Builds a non-negative integer.
-- [`Refined.Refine.nonZeroInt`](./refine/m-refined-refine-nonzeroint.md): Builds a non-zero integer.
-- [`Refined.Refine.negativeInt`](./refine/m-refined-refine-negativeint.md): Builds a negative integer.
-- [`Refined.Refine.nonPositiveInt`](./refine/m-refined-refine-nonpositiveint.md): Builds a non-positive integer.
-- [`Refined.Refine.nonEmptyList`](./refine/m-refined-refine-nonemptylist.md): Builds a non-empty list from a sequence.
-- [`Refined.Refine.nonEmptyArray`](./refine/m-refined-refine-nonemptyarray.md): Builds a non-empty array from a sequence.
-- [`Refined.Refine.distinctList`](./refine/m-refined-refine-distinctlist.md): Builds a distinct list from a sequence.
-- [`Refined.Refine.boundedList`](./refine/m-refined-refine-boundedlist.md): Builds a bounded list from a sequence.
-- [`Refined.Refine.boundedArray`](./refine/m-refined-refine-boundedarray.md): Builds a bounded array from a sequence.
-- [`Refined.Refine.dateTimeOffsetRange`](./refine/m-refined-refine-datetimeoffsetrange.md): Builds a date and time range where <code>Start &lt;= End</code>.
-- [`Refined.Refine.dateOnlyRange`](./refine/m-refined-refine-dateonlyrange.md): Builds a date-only range where <code>Start &lt;= End</code>.
-- [`Refined.Refine.exactlyOne`](./refine/m-refined-refine-exactlyone.md): Extracts the only item from a sequence.
-- [`Refined.Refine.atMostOne`](./refine/m-refined-refine-atmostone.md): Extracts zero or one item from a sequence.
-
-## Builder
-
-- [`refine`](./refine-ce/p-refined--refine.md):
- The fail-fast <code>refine { }</code> computation expression. A raw value can be parsed or refined according to the
- type annotation on the left side of <code>let!</code>; explicit <code>Parse</code> and <code>Refine</code> results also bind directly.
+- [`Refined.Refine.nonBlankString`](./refine/m-refined-refine-nonblankstring.md):
+- [`Refined.Refine.trimmedString`](./refine/m-refined-refine-trimmedstring.md):
+- [`Refined.Refine.boundedString`](./refine/m-refined-refine-boundedstring.md):
+- [`Refined.Refine.slug`](./refine/m-refined-refine-slug.md):
+- [`Refined.Refine.positiveInt`](./refine/m-refined-refine-positiveint.md):
+- [`Refined.Refine.nonNegativeInt`](./refine/m-refined-refine-nonnegativeint.md):
+- [`Refined.Refine.nonZeroInt`](./refine/m-refined-refine-nonzeroint.md):
+- [`Refined.Refine.negativeInt`](./refine/m-refined-refine-negativeint.md):
+- [`Refined.Refine.nonPositiveInt`](./refine/m-refined-refine-nonpositiveint.md):
+- [`Refined.Refine.nonEmptyList`](./refine/m-refined-refine-nonemptylist.md):
+- [`Refined.Refine.nonEmptyArray`](./refine/m-refined-refine-nonemptyarray.md):
+- [`Refined.Refine.distinctList`](./refine/m-refined-refine-distinctlist.md):
+- [`Refined.Refine.boundedList`](./refine/m-refined-refine-boundedlist.md):
+- [`Refined.Refine.boundedArray`](./refine/m-refined-refine-boundedarray.md):
+- [`Refined.Refine.dateTimeOffsetRange`](./refine/m-refined-refine-datetimeoffsetrange.md):
+- [`Refined.Refine.dateOnlyRange`](./refine/m-refined-refine-dateonlyrange.md):
+- [`Refined.Refine.exactlyOne`](./refine/m-refined-refine-exactlyone.md):
+- [`Refined.Refine.atMostOne`](./refine/m-refined-refine-atmostone.md):

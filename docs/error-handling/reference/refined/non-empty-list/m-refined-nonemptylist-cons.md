@@ -4,7 +4,7 @@ linkTitle: "cons"
 weight: 2909
 ---
 
-Prepends a head item to a list, producing a non-empty list without failure.
+
 
 ## Signature
 
@@ -26,4 +26,4 @@ Prepends a head item to a list, producing a non-empty list without failure.
 | <code><span><a href="../types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L511-511)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L441-441)

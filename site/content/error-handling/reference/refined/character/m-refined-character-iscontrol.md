@@ -5,7 +5,7 @@ weight: 2605
 type: docs
 ---
 
-Returns true when the character is a control character.
+
 
 ## Signature
 
@@ -26,4 +26,4 @@ Returns true when the character is a control character.
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L436-436)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L403-403)

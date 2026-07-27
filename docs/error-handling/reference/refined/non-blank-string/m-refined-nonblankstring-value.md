@@ -4,7 +4,7 @@ linkTitle: "value"
 weight: 2900
 ---
 
-Returns the underlying string value.
+
 
 ## Signature
 
@@ -25,4 +25,4 @@ Returns the underlying string value.
 | <code>string</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L397-397)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L391-391)

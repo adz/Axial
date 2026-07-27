@@ -26,4 +26,4 @@ Returns a sequence-shaped check requiring at most the supplied count.
 | <code><span><a href="t-check-check.md">Check</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L598-598)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L596-596)

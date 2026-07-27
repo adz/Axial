@@ -54,7 +54,7 @@ let parsed : Result<int, ParseError> =
 Refine an ordinary value with a named constructor:
 
 ```fsharp
-let quantity : Result<PositiveInt, RefinementError> =
+let quantity : Result<PositiveInt, CheckFailure list> =
     Refine.positiveInt 42
 ```
 

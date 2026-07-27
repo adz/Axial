@@ -4,7 +4,7 @@ linkTitle: "isAsciiHexDigit"
 weight: 2601
 ---
 
-Returns true when the character is an ASCII hexadecimal digit.
+
 
 ## Signature
 
@@ -25,4 +25,4 @@ Returns true when the character is an ASCII hexadecimal digit.
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L418-418)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L399-399)

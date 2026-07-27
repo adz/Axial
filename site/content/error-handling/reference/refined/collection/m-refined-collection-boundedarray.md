@@ -5,7 +5,7 @@ weight: 2404
 type: docs
 ---
 
-Builds an array whose count is within an inclusive range.
+
 
 ## Signature
 
@@ -19,13 +19,13 @@ Builds an array whose count is within an inclusive range.
 | --- | --- | --- |
 | `minCount` | <code>int</code> |  |
 | `maxCount` | <code>int</code> |  |
-| `values` | <code><span>'value&#32;seq</span></code> |  |
+| `values` | <code><span>'a&#32;seq</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="../types/t-refined-boundedarray.md">BoundedArray</a>&lt;'value&gt;</span>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="../types/t-refined-boundedarray.md">BoundedArray</a>&lt;'a&gt;</span>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L476-476)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L423-423)

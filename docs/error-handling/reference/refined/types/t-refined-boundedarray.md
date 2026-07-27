@@ -1,7 +1,7 @@
 ---
 title: "Refined.BoundedArray"
 linkTitle: "BoundedArray<value>"
-weight: 1015
+weight: 1014
 ---
 
 An array whose count is within a caller-supplied inclusive range.

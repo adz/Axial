@@ -5,7 +5,7 @@ weight: 2604
 type: docs
 ---
 
-Returns true when the character is whitespace.
+
 
 ## Signature
 
@@ -26,4 +26,4 @@ Returns true when the character is whitespace.
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L432-432)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L402-402)

@@ -27,4 +27,4 @@ Returns a string check requiring a length inside the supplied inclusive bounds.
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L538-538)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L536-536)

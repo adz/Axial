@@ -1,11 +1,11 @@
 ---
 title: "Refined.Refine.distinctList"
 linkTitle: "distinctList"
-weight: 3014
+weight: 3011
 type: docs
 ---
 
-Builds a distinct list from a sequence.
+
 
 ## Signature
 
@@ -23,7 +23,7 @@ Builds a distinct list from a sequence.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="../types/t-refined-distinctlist.md">DistinctList</a>&lt;'a&gt;</span>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="../types/t-refined-distinctlist.md">DistinctList</a>&lt;'a&gt;</span>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L740-740)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L484-484)

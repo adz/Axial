@@ -1,30 +1,22 @@
 ---
 title: "Refined.Refine.boundedArray"
 linkTitle: "boundedArray"
-weight: 3016
+weight: 3013
 ---
 
-Builds a bounded array from a sequence.
+
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Refined.Refine.boundedArray&#32;<span>minCount&#32;maxCount&#32;values</span></span></code>
+<code><span>Refined.Refine.boundedArray&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `minCount` | <code>int</code> |  |
-| `maxCount` | <code>int</code> |  |
-| `values` | <code><span>'a&#32;seq</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="../types/t-refined-boundedarray.md">BoundedArray</a>&lt;'a&gt;</span>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span>int&#32;->&#32;int&#32;->&#32;<span>'a&#32;seq</span>&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="../types/t-refined-boundedarray.md">BoundedArray</a>&lt;'a&gt;</span>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L748-748)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L486-486)

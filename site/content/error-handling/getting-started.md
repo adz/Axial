@@ -34,7 +34,7 @@ Already use FsToolkit.ErrorHandling or your own Result helpers? `Axial.Check` an
 | Sequence dependent operations that may fail | `result { }` | `Result<'value, 'error>` |
 | Describe and run reusable rules over one typed value | `Check<'value>` | `Result<'value, CheckFailure list>` |
 | Parse serialized text | `Parse.int`, `Parse.guid`, and other `Parse` functions | `Result<'value, ParseError>` |
-| Construct a type that records a successful check | `Refine.nonBlankString`, `Refine.positiveInt`, and other `Refine` functions | `Result<'value, RefinementError>` |
+| Construct a type that records a successful check | `Refine.nonBlankString`, `Refine.positiveInt`, and other `Refine` functions | `Result<'value, CheckFailure list>` |
 
 `Result` is the common return type. `Check` preserves the checked value and can report several failures about that one
 value. A refinement changes the type, so later code knows construction succeeded.

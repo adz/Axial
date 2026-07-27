@@ -4,7 +4,7 @@ linkTitle: "isNumeric"
 weight: 2606
 ---
 
-Returns true when the character is numeric according to Unicode character data.
+
 
 ## Signature
 
@@ -25,4 +25,4 @@ Returns true when the character is numeric according to Unicode character data.
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L440-440)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L404-404)

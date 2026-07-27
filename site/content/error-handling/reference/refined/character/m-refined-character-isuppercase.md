@@ -5,7 +5,7 @@ weight: 2603
 type: docs
 ---
 
-Returns true when the character is uppercase according to invariant Unicode casing.
+
 
 ## Signature
 
@@ -26,4 +26,4 @@ Returns true when the character is uppercase according to invariant Unicode casi
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L428-428)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L401-401)

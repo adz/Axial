@@ -4,8 +4,7 @@ title: "Types"
 
 Errors and refined value types defined by `Axial.Refined`.
 
-- [`Refined.ParseError`](./t-refined-parseerror.md): Primitive parse failures returned by <code>Parse</code> helpers.
-- [`Refined.RefinementError`](./t-refined-refinementerror.md): Structural failures returned by built-in refinement constructors and the <code>refine { }</code> builder.
+- [`Parse.ParseError`](./t-parse-parseerror.md): Primitive parse failures returned by <code>Parse</code> helpers.
 - [`Refined.NonBlankString`](./t-refined-nonblankstring.md): A string that is not null, empty, or whitespace.
 - [`Refined.TrimmedString`](./t-refined-trimmedstring.md): A string that has no leading or trailing whitespace.
 - [`Refined.BoundedString`](./t-refined-boundedstring.md): A string whose length is within a caller-supplied inclusive range.

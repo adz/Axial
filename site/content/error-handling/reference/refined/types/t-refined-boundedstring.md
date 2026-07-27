@@ -1,7 +1,7 @@
 ---
 title: "Refined.BoundedString"
 linkTitle: "BoundedString"
-weight: 1004
+weight: 1003
 type: docs
 ---
 

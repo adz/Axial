@@ -1,28 +1,22 @@
 ---
 title: "Refined.Refine.nonPositiveInt"
 linkTitle: "nonPositiveInt"
-weight: 3011
+weight: 3008
 ---
 
-Builds a non-positive integer.
+
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Refined.Refine.nonPositiveInt&#32;<span>value</span></span></code>
+<code><span>Refined.Refine.nonPositiveInt&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `value` | <code>int</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-nonpositiveint.md">NonPositiveInt</a>,&#32;<a href="../types/t-refined-refinementerror.md">RefinementError</a></span>&gt;</span></code> |  |
+| <code><span>int&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-nonpositiveint.md">NonPositiveInt</a>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L728-728)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L481-481)

@@ -1,7 +1,7 @@
 ---
 title: "Refined.NegativeInt"
 linkTitle: "NegativeInt"
-weight: 1009
+weight: 1008
 type: docs
 ---
 

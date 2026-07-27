@@ -25,4 +25,4 @@ Requires an already parsed string value to have exactly the supplied length. Nul
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L249-249)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L247-247)
