@@ -28,7 +28,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
 - Keep `Axial.Flow` and `Axial.Schema` independent; neither package may depend on the other.
 - Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
-- Keep `Check` as a complete typed value-constraint subsystem: `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs; value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in `Axial.Refined`.
+- Keep `Check` as a complete typed value-constraint subsystem: `Check<'value> = 'value -> Result<unit, CheckFailure list>`. Checks are path-free, raw-input-free value programs; portable constraints belong in `Axial.Check`, value-preserving guards and extraction helpers belong in `Result`, parsing belongs in `Axial.Parse`, and refined value construction belongs in `Axial.Refined`.
 - Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.
 - Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for core workflow, validation, schema, or service-access APIs; use explicit definitions first and consider build-time generation only after the API shape stabilizes.
 

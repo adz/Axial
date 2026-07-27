@@ -21,10 +21,11 @@ and contracts) and should be treated as settling rather than settled.
 Axial began as a Reader-Async-Result workflow monad in the ZIO tradition; the result side has since expanded into a
 full input and value toolkit. The public surface has three identities:
 
-- **Error Handling**: three focused packages — ordinary `Result` and `result { }` in `Axial.Result`; reusable,
-  path-free value checks in `Axial.Check` (returns the standard F# `Result` type, no dependency on `Axial.Result`);
-  and parsing/refined domain values in `Axial.Refined` (depends only on `Axial.Check`). `Axial.ErrorHandling`
-  installs all three as a dependency-only meta-package with no API of its own.
+- **Error Handling**: four focused packages — ordinary `Result` and `result { }` in `Axial.Result`; reusable,
+  path-free value checks and portable constraints in `Axial.Check` (returns the standard F# `Result` type, no dependency
+  on `Axial.Result`); primitive parsing in the independent `Axial.Parse`; and refined domain values in `Axial.Refined`
+  (depends only on `Axial.Check`). `Axial.ErrorHandling` installs all four as a dependency-only meta-package with no API
+  of its own.
 - **Schema**: structured input, accumulated path-aware errors, model construction, codecs, contracts, and boundary
   interpreters.
 - **Flow**: effectful workflows. Useful with or without Schema, and always installed separately.

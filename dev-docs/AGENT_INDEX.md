@@ -20,10 +20,11 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `Axial.Schema`.
 - `Axial.Result` (`src/Axial.Result/`): generic Result combinators, conversions/extraction helpers, and `result { }`
   in the `Axial.Result` namespace. Independent leaf.
-- `Axial.Check` (`src/Axial.Check/`): `Check`, `Predicate`, and `CheckDSL` in the `Axial.Check` namespace. Returns
-  the standard F# `Result` type; does not depend on `Axial.Result`. Independent leaf.
-- `Axial.Refined` (`src/Axial.Refined/`): parsing, refined types, and `refine { }`. Depends only on `Axial.Check`.
-- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): dependency-only meta-package installing Result, Check, and
+- `Axial.Check` (`src/Axial.Check/`): `Check`, `Constraint`, `Predicate`, and `CheckDSL` in the `Axial.Check` namespace.
+  Returns the standard F# `Result` type; does not depend on `Axial.Result`. Independent leaf.
+- `Axial.Parse` (`src/Axial.Parse/`): `ParseError` and primitive `Parse.*` functions. Independent leaf.
+- `Axial.Refined` (`src/Axial.Refined/`): refined types and reusable refinements. Depends only on `Axial.Check`.
+- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): dependency-only meta-package installing Result, Check, Parse, and
   Refined. No source files, no public API, `IncludeBuildOutput=false` so its `.nupkg` carries no assembly.
 - `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
   `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
@@ -58,7 +59,7 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 - Check/Result: `src/Axial.Check/Check.fs`, `src/Axial.Result/Result.fs`,
   `tests/Axial.Check.Tests/CheckTests.fs`, `tests/Axial.Result.Tests/ResultTests.fs`,
   `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
-- Refined values: `src/Axial.Refined/Refine.fs`, `src/Axial.Refined/Parse.fs`,
+- Parsing and refined values: `src/Axial.Parse/{Errors,Parse}.fs`, `src/Axial.Refined/Refine.fs`,
   `tests/Axial.Refined.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
