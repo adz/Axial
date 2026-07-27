@@ -93,10 +93,7 @@ let check : Check<string> =
 Built-in constraints include text formats and lengths, ordered bounds, collection counts, distinctness, multiples,
 and closed choices. Metadata arguments use the closed `ConstraintArgument` union rather than `obj`.
 
-Use the same constraint in the next layers:
-
-- [Define a refined type]({{< relref "/error-handling/refined/domain-values/" >}}) when successful checking should produce an invariant-carrying type.
-- [Apply a refinement in Schema]({{< relref "/schema/refined-values/" >}}) when structured input needs paths, accumulated diagnostics, reconstruction, and wire metadata.
+Constraints are the building blocks used by [Refined]({{< relref "/error-handling/refined/domain-values/" >}}) and [Schema]({{< relref "/schema/refined-values/" >}}).
 
 Custom metadata is author-declared:
 
