@@ -10,9 +10,8 @@ type Email =
     | Email of string
 
 module Email =
-    let create raw = Ok(Email raw)
     let value (Email value) = value
-    let refinement = Refinement.define create value
+    let refinement = Refinement.define (Axial.Check.Constraint.pattern ".+@.+") Email value
 
 type Email with
     static member Refinement(_: string, _: Email) = Email.refinement
