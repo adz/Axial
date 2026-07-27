@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isControl"
 linkTitle: "isControl"
-weight: 2605
+weight: 2505
 ---
 
 

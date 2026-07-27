@@ -1,7 +1,7 @@
 ---
 title: "Refined.Numeric.negativeInt"
 linkTitle: "negativeInt"
-weight: 2303
+weight: 2203
 ---
 
 

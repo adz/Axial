@@ -1,45 +1,27 @@
 ---
 weight: 20
 title: Built-in Refined Values
-description: Built-in refined values and helper modules in Axial.Refined.
+description: Supplied invariant-carrying text, numeric, collection, and temporal types.
 ---
 
 # Built-in Refined Values
 
-The built-in types represent common rules such as positive integers, non-blank strings, and non-empty collections.
-Each `Refine` function takes an ordinary F# value and returns a refined value in `Result`.
-
-## Module Layout
-
-Open `Axial.Refined` for common type names and use submodules for discovery:
+Every constructor returns `Result<'refined, CheckFailure list>`.
 
 ```fsharp
+open Axial.Check
 open Axial.Refined
-
-let name = Refine.nonBlankString "Ada"
-let sameName = Text.nonBlankString "Ada"
-let count = Numeric.positiveInt 3
 ```
-
-`Refine` contains the common constructors. The same functions are grouped under `Text`, `Numeric`, `Collection`, and
-`Temporal` for API discovery.
 
 ## Numeric
 
-Use numeric refinements when a raw `int` would permit invalid domain values.
-
 ```fsharp
-let quantity : Result<PositiveInt, RefinementError> =
-    Refine.positiveInt 3
-
-let optionalOffset : Result<NonNegativeInt, RefinementError> =
-    Refine.nonNegativeInt 0
-
-let databaseId : Result<NonZeroInt, RefinementError> =
-    Refine.nonZeroInt 42
+let quantity : Result<PositiveInt, CheckFailure list> = Refine.positiveInt 3
+let offset : Result<NonNegativeInt, CheckFailure list> = Refine.nonNegativeInt 0
+let databaseId : Result<NonZeroInt, CheckFailure list> = Refine.nonZeroInt 42
 ```
 
-Available integer wrappers:
+Available wrappers:
 
 - `PositiveInt`: greater than zero.
 - `NonNegativeInt`: greater than or equal to zero.
@@ -47,186 +29,73 @@ Available integer wrappers:
 - `NegativeInt`: less than zero.
 - `NonPositiveInt`: less than or equal to zero.
 
-Float refinements and `Percentage` are intentionally absent. They need explicit decisions about `NaN`, infinities, negative zero, and percentage scale.
+`PositiveInt.refinement` exposes the reusable `Refinement<int, PositiveInt>` value.
 
 ## Text
 
-Use text refinements to distinguish raw strings from strings that have already passed boundary rules.
-
 ```fsharp
-let displayName =
-    Refine.nonBlankString "Ada Lovelace"
-
-let commandName =
-    Refine.trimmedString "deploy"
-
-let slug =
-    Refine.slug "release-notes"
-
-let shortCode =
-    Refine.boundedString 2 8 "AX42"
+let displayName = Refine.nonBlankString "Ada Lovelace"
+let command = Refine.trimmedString "deploy"
+let slug = Refine.slug "release-notes"
+let shortCode = Refine.boundedString 2 8 "AX42"
 ```
 
-Important semantics:
-
-- `NonBlankString` rejects null, empty, and whitespace-only strings. It preserves the accepted value exactly.
-- `TrimmedString` proves the value already has no leading or trailing whitespace. It does not trim during construction.
-- `BoundedString` stores the min/max bounds used for construction.
-- `Slug` is ASCII-only: lowercase letters, digits, and hyphens, with no leading, trailing, or repeated hyphen.
-
-Regex-backed values, email addresses, URLs, telephone numbers, postal codes, and sanitized text are intentionally absent. Regex adds dependency and timeout concerns; sanitizing text transforms input rather than simply refining it.
+- `NonBlankString` preserves accepted text exactly.
+- `TrimmedString` requires text that already has no surrounding whitespace.
+- `BoundedString` stores the bounds used for construction.
+- `Slug` accepts lowercase ASCII letters, digits, and separated hyphens.
 
 ## Collections
 
-Use collection refinements when the collection shape matters to later logic.
-
 ```fsharp
-let ids =
-    Refine.nonEmptyList [ 1; 2; 3 ]
-
-let names =
-    Refine.nonEmptyArray [ "Ada"; "Grace" ]
-
-let tags =
-    Refine.distinctList [ "fsharp"; "typed-errors" ]
-
-let batch =
-    Refine.boundedList 1 100 [ 1; 2; 3 ]
+let ids = Refine.nonEmptyList [ 1; 2; 3 ]
+let names = Refine.nonEmptyArray [ "Ada"; "Grace" ]
+let tags = Refine.distinctList [ "fsharp"; "typed-errors" ]
+let batch = Refine.boundedList 1 100 [ 1; 2; 3 ]
 ```
 
-Available collection wrappers:
+Collection wrappers use concrete canonical representations:
 
-- `NonEmptyList<'T>`: exposes `Head`, `Tail`, `ToList()`, and `seq<'T>`.
-- `NonEmptyArray<'T>`: exposes `Head`, `Tail`, `ToArray()`, and `seq<'T>`.
-- `DistinctList<'T>`: rejects duplicates and preserves first-seen order.
-- `BoundedList<'T>`: stores list plus inclusive min/max length.
-- `BoundedArray<'T>`: stores array plus inclusive min/max length.
+- `NonEmptyList<'T>` projects to `'T list`.
+- `NonEmptyArray<'T>` projects to `'T array`.
+- `DistinctList<'T>` projects to `'T list`.
+- `BoundedList<'T>` projects to `'T list`.
+- `BoundedArray<'T>` projects to `'T array`.
 
-Filtering can destroy a collection invariant. Use helpers whose result type admits that:
-
-```fsharp
-let values =
-    Refine.nonEmptyList [ 1; 2; 3 ]
-
-let evens : int list =
-    values
-    |> Result.map (NonEmptyList.filter (fun value -> value % 2 = 0))
-    |> Result.defaultValue []
-
-let nonEmptyEvens : Result<NonEmptyList<int>, RefinementError> =
-    values
-    |> Result.bind (NonEmptyList.tryFilter (fun value -> value % 2 = 0))
-```
-
-`BoundedSeq` and fixed-size arrays are intentionally absent. A .NET sequence may be lazy, single-use, infinite, or effectful, and plain F# does not make array length a normal type-level value.
+Filtering can remove every item, so `NonEmptyList.filter` returns an ordinary list. `NonEmptyList.tryFilter` checks the
+result and returns another `NonEmptyList` when possible.
 
 ## Temporal
 
-Use temporal refinements only for stable facts.
-
 ```fsharp
-let start = DateTimeOffset.Parse "2026-06-28T09:00:00Z"
+let start = System.DateTimeOffset.Parse "2026-06-28T09:00:00Z"
 let finish = start.AddDays 7.0
-
-let range =
-    Refine.dateTimeOffsetRange start finish
+let range = Refine.dateTimeOffsetRange start finish
 ```
 
-`DateTimeOffsetRange` proves `Start <= End`.
+`DateTimeOffsetRange` and `DateOnlyRange` require `Start <= End`.
 
-`DateOnlyRange` is available on target frameworks that support `DateOnly`.
+## Extraction and choice
 
-`FutureDateTime` and `PastDateTime` are intentionally absent. A value that is future now can become past later without mutation, so clock-relative facts need an explicit clock policy.
-
-## Character
-
-Character helpers are predicates rather than wrappers:
+`Refine.exactlyOne` and `Refine.atMostOne` extract values after checking collection cardinality. `Choice.orElse` and
+`Choice.tryAny` combine ordinary conversion functions that already share an error type.
 
 ```fsharp
-Character.isAsciiDigit '7'
-Character.isAsciiHexDigit 'f'
-Character.isLowercase 'a'
-Character.isUppercase 'A'
-Character.isWhitespace ' '
-Character.isControl '\u0001'
-Character.isNumeric '9'
+type Discount = Percent of PositiveInt | Code of Slug
+
+type DiscountError =
+    | InvalidPercentText of Axial.Parse.ParseError
+    | InvalidPercent of CheckFailure list
+    | InvalidCode of CheckFailure list
+
+let percent raw =
+    Axial.Parse.Parse.int raw
+    |> Result.mapError InvalidPercentText
+    |> Result.bind (Refine.positiveInt >> Result.mapError InvalidPercent)
+    |> Result.map Percent
+
+let code raw =
+    Refine.slug raw |> Result.mapError InvalidCode |> Result.map Code
 ```
 
-Use these helpers when building your own named wrappers such as `HexDigitChar` or `UppercaseInitial`.
-
-## Optional serialized input
-
-Optional parsing distinguishes absent input from malformed present input:
-
-```fsharp
-Parse.optional Parse.int None
-// Ok None
-
-Parse.optional Parse.int (Some "42")
-// Ok (Some 42)
-
-Parse.optional Parse.int (Some "bad")
-// Error (InvalidFormat ("int", "bad"))
-```
-
-Use `Parse.optionalOr` when absence has a domain default. The fallback applies only to `None`; a present malformed
-value remains an error:
-
-```fsharp
-maybePort |> Parse.optionalOr 80 Parse.int
-```
-
-Primitive-specific helpers provide the same behavior with discoverable names:
-
-```fsharp
-maybeCount |> Parse.intOption
-maybePort |> Parse.intOrDefault 80
-```
-
-`Parse.intOption` returns `Result<int option, ParseError>`, and `Parse.intOrDefault` returns
-`Result<int, ParseError>`. The corresponding Boolean, decimal, and GUID helpers follow the same rule: optionality
-handles absence, never parsing failure.
-
-## Choice
-
-Use `Choice` when one source value may parse into several refined shapes and you want to return your own domain union.
-
-```fsharp
-type Discount =
-    | Percent of PositiveInt
-    | Code of Slug
-
-let parsePercent text =
-    Parse.int text
-    |> Result.mapError RefinementError.ParseFailed
-    |> Result.bind Refine.positiveInt
-
-let parseDiscount raw =
-    Choice.orElse
-        Percent
-        parsePercent
-        Code
-        Refine.slug
-        (RefinementError.InvalidFormat("Discount", "Expected percent or code."))
-        raw
-```
-
-Use `Choice.tryAny` when there are more than two alternatives:
-
-```fsharp
-let parseContact raw =
-    [
-        parseEmail
-        parseTelephone
-        parseUserName
-    ]
-    |> Choice.tryAny (RefinementError.InvalidFormat("Contact", "Expected email, telephone, or user name."))
-    <| raw
-```
-
-Prefer this style over exposing a generic `Or<'Left, 'Right>` in domain models. The result should speak your domain language.
-
-## Next
-
-[Refine Computation Expression](../refine-builder/) shows how to combine these constructors with parsing.
-[Define Refined Types](../domain-values/) applies the same pattern to an application type.
+Continue with [Compose Parse and Refinement](../composition/) and [Define Refined Types](../domain-values/).

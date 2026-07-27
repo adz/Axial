@@ -4,11 +4,10 @@ weight: 50
 type: docs
 ---
 
-`Parse` converts serialized strings into primitive values. `Refine` constructs the built-in refined values. `Refine.from` runs the `Refinement` defined for its source and expected destination types. `refine { }` binds parsing and refinement results and stops at the first failure.
+`Axial.Refined` constructs invariant-carrying values from already-typed underlying values. `Refinement` couples checking, total construction, and a total reverse projection.
 
-## Errors and refined types
+## Refined types
 
-- [`Parse.ParseError`](./types/t-parse-parseerror.md): Primitive parse failures returned by <code>Parse</code> helpers.
 - [`Refined.NonBlankString`](./types/t-refined-nonblankstring.md): A string that is not null, empty, or whitespace.
 - [`Refined.TrimmedString`](./types/t-refined-trimmedstring.md): A string that has no leading or trailing whitespace.
 - [`Refined.BoundedString`](./types/t-refined-boundedstring.md): A string whose length is within a caller-supplied inclusive range.
@@ -25,27 +24,6 @@ type: docs
 - [`Refined.BoundedArray`](./types/t-refined-boundedarray.md): An array whose count is within a caller-supplied inclusive range.
 - [`Refined.DateTimeOffsetRange`](./types/t-refined-datetimeoffsetrange.md): A date and time range where <code>Start &lt;= End</code>.
 - [`Refined.DateOnlyRange`](./types/t-refined-dateonlyrange.md): A date-only range where <code>Start &lt;= End</code>.
-
-## Parse
-
-- [`Parse.int`](./parse/m-parse-parse-int.md): Parses a 32-bit integer.
-- [`Parse.long`](./parse/m-parse-parse-long.md): Parses a 64-bit integer.
-- [`Parse.decimal`](./parse/m-parse-parse-decimal.md): Parses a decimal number.
-- [`Parse.float`](./parse/m-parse-parse-float.md): Parses a double-precision floating point number.
-- [`Parse.bool`](./parse/m-parse-parse-bool.md): Parses a boolean.
-- [`Parse.guid`](./parse/m-parse-parse-guid.md): Parses a GUID.
-- [`Parse.dateTime`](./parse/m-parse-parse-datetime.md): Parses a date and time value.
-- [`Parse.dateTimeOffset`](./parse/m-parse-parse-datetimeoffset.md): Parses a date and time value with offset.
-- [`Parse.dateOnly`](./parse/m-parse-parse-dateonly.md): Parses a date-only value.
-- [`Parse.timeOnly`](./parse/m-parse-parse-timeonly.md): Parses a time-only value.
-- [`Parse.enum`](./parse/m-parse-parse-enum.md): Parses an enum value by name or numeric text.
-- [`Parse.intOption`](./parse/m-parse-parse-intoption.md): Parses an optional integer. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
-- [`Parse.boolOption`](./parse/m-parse-parse-booloption.md): Parses an optional Boolean. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
-- [`Parse.decimalOption`](./parse/m-parse-parse-decimaloption.md): Parses an optional decimal. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
-- [`Parse.guidOption`](./parse/m-parse-parse-guidoption.md): Parses an optional GUID. Absence returns <code>Ok None</code>; malformed present text returns its parsing error.
-- [`Parse.intOrDefault`](./parse/m-parse-parse-intordefault.md): Parses an optional integer, using the supplied fallback only when the input is absent.
-- [`Parse.boolOrDefault`](./parse/m-parse-parse-boolordefault.md): Parses an optional Boolean, using the supplied fallback only when the input is absent.
-- [`Parse.decimalOrDefault`](./parse/m-parse-parse-decimalordefault.md): Parses an optional decimal, using the supplied fallback only when the input is absent.
 
 ## Text
 

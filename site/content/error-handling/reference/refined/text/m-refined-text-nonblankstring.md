@@ -1,7 +1,7 @@
 ---
 title: "Refined.Text.nonBlankString"
 linkTitle: "nonBlankString"
-weight: 2200
+weight: 2100
 type: docs
 ---
 

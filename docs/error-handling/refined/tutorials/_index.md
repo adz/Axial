@@ -1,13 +1,11 @@
 ---
 weight: 60
-title: Refined Tutorials
-description: Tutorials for parsing and refining boundary values into domain types.
+title: Tutorials
+type: docs
 ---
 
 # Refined Tutorials
 
-These tutorials use `Parse`, `Refine`, and `refine {}` to turn boundary values into typed domain values.
+These tutorials keep decoding, value checking, and domain construction explicit.
 
-## Guides
-
-- [Order Reference](./order-reference/): parse strings, apply built-in refinements, and construct a domain record.
+- [Order Reference](./order-reference/) decodes an integer, constructs refined values, and maps each failure into an application error.

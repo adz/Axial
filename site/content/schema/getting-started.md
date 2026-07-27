@@ -6,6 +6,16 @@ type: docs
 ---
 
 
+The focused [Error Handling packages]({{< relref "/error-handling/getting-started/" >}}) operate on individual
+values: Check tests them, Parse decodes serialized primitives, Refined constructs invariant-carrying types, and Result
+composes failures. Schema uses those value-level pieces to describe a complete structured boundary.
+
+A `Schema<'model>` names fields, associates each field with its input representation, applies constraints and
+refinements, accumulates failures with paths, and invokes the model constructor only after the fields succeed. Other
+interpreters can read the same declaration to produce codecs, contract descriptions, forms, or inspection metadata.
+Use Schema for requests, forms, configuration, and other structured inputs; continue using the focused packages
+directly for local value operations and workflow composition.
+
 Install Schema:
 
 ```bash
@@ -93,7 +103,9 @@ type ContactEmail =
     private
     | ContactEmail of string
 
-// ContactEmail.refinement and its static Refinement contribution are defined beside the type.
+// ContactEmail.refinement is defined beside the type.
+type ContactEmail with
+    static member Refinement(_: string, _: ContactEmail) = ContactEmail.refinement
 
 type Contact =
     { Email: ContactEmail }
@@ -102,7 +114,6 @@ let contactSchema =
     schema<Contact> {
         field "email" _.Email {
             withSchema Schema.text
-            constrain required
             refine
         }
 
@@ -110,8 +121,9 @@ let contactSchema =
     }
 ```
 
-`withSchema` starts the field as `Schema<string>`. `refine` resolves the contributed
-`Refinement<string,ContactEmail>` from the raw schema and getter type. The constructor receives `ContactEmail`.
+`withSchema` starts the field as `Schema<string>`. Bare `refine` resolves the canonical
+`Refinement<string,ContactEmail>` contribution and changes it to `Schema<ContactEmail>`. Pass
+`ContactEmail.refinement` after `refine` when selection should be explicit. The constructor receives `ContactEmail`.
 
 See [Define Refined Types]({{< relref "/error-handling/refined/domain-values/" >}}) for the complete application type.
 

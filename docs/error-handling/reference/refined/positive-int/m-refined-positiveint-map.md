@@ -1,7 +1,7 @@
 ---
 title: "Refined.PositiveInt.map"
 linkTitle: "map"
-weight: 2905
+weight: 2805
 ---
 
 

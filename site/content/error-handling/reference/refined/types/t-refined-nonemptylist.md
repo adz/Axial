@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList"
 linkTitle: "NonEmptyList<value>"
-weight: 1010
+weight: 1009
 type: docs
 ---
 

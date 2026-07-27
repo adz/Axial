@@ -1,9 +1,9 @@
 ---
-title: "Error Handling: Result, checks, and refined values"
+title: "Error Handling: Result, Check, Parse, and Refined"
 linkTitle: Error Handling
 type: docs
 notoc: true
-description: Fail-fast results, reusable constraints, and domain values that record successful construction.
+description: Compose typed failures, reusable checks, primitive parsing, and invariant-carrying values.
 weight: 6
 menu:
   main:
@@ -15,43 +15,36 @@ menu:
 <div class="docs-home-hero">
 
 <div class="docs-home-copy">
-<span class="eyebrow" style="color:#0a7d62">Axial &middot; Result, Check, Refined</span>
+<span class="eyebrow" style="color:#0a7d62">Axial &middot; Result, Check, Parse, Refined</span>
 
-<h1>Fail fast, reuse checks, carry the proof.</h1>
-
-<div class="lede">
-Most F# code already returns `Result<'value,'error>`. The gap is everything around it: rules you want to reuse
-across several fields, and values whose type should record that a rule already passed. Axial splits that gap into
-three small, independently installable packages instead of one large validation library.
-</div>
+<h1>Keep each failure at the operation that owns it.</h1>
 
 <div class="lede">
-None of the three requires the others. `Axial.Check` and `Axial.Refined` do not depend on `Axial.Result` — already
-use FsToolkit.ErrorHandling, or your own `Result` helpers? Add Check and/or Refined on their own, with no builder or
-module ambiguity.
+Use ordinary Result composition, reusable value checks, named primitive parsers, and private domain types built from
+reusable refinements. Each package can be installed independently.
 </div>
 
 <div class="docs-home-meta">
 <a class="docs-home-cta" style="color:#0a7d62" href="{{< relref "/error-handling/overview/" >}}">Get started &gt;</a>
-<a class="docs-chip" href="{{< relref "/error-handling/overview/" >}}">Result, Check, and Refined</a>
+<a class="docs-chip" href="{{< relref "/error-handling/refined/domain-values/" >}}">Define a refined type</a>
 </div>
 </div>
 
 <div class="docs-home-hero-visual">
 <svg viewBox="0 0 680 270" role="img" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">
-  <title>Axial.ErrorHandling: each construct carries its own error type</title>
-  <desc>Check defines CheckFailure, Parse defines ParseError, and Refined defines RefinementError. A thin Result module and computation expression sits underneath as the common surface.</desc>
+  <title>Result composes explicit Check, Parse, and Refinement operations</title>
+  <desc>Check returns CheckFailure values, Parse returns ParseError values, and Refinement construction returns CheckFailure values. Applications map these failures into their own Result error.</desc>
   <g font-size="13">
-    <text x="20" y="24" fill="currentColor" opacity="0.55">Each construct carries its own error type</text>
+    <text x="20" y="24" fill="currentColor" opacity="0.55">Explicit operations, deliberate application errors</text>
     <g stroke="currentColor" stroke-opacity="0.35" fill="none">
       <rect x="20" y="60" width="186" height="92" rx="8"/>
       <rect x="227" y="60" width="186" height="92" rx="8"/>
       <rect x="434" y="60" width="186" height="92" rx="8"/>
     </g>
     <g fill="currentColor" text-anchor="middle">
-      <text x="113" y="84">Check</text>
+      <text x="113" y="84">Check / Constraint</text>
       <text x="320" y="84">Parse</text>
-      <text x="527" y="84">Refined</text>
+      <text x="527" y="84">Refinement</text>
     </g>
     <g fill="none" stroke="#0a7d62" stroke-width="1.25">
       <rect x="40" y="104" width="146" height="30" rx="4"/>
@@ -59,9 +52,9 @@ module ambiguity.
       <rect x="454" y="104" width="146" height="30" rx="4"/>
     </g>
     <g fill="#0a7d62" text-anchor="middle" font-family="var(--font-mono, monospace)" font-size="12">
-      <text x="113" y="123">CheckFailure</text>
+      <text x="113" y="123">CheckFailure list</text>
       <text x="320" y="123">ParseError</text>
-      <text x="527" y="123">RefinementError</text>
+      <text x="527" y="123">CheckFailure list</text>
     </g>
     <g stroke="currentColor" stroke-opacity="0.35">
       <line x1="113" y1="152" x2="113" y2="192"/>
@@ -69,8 +62,8 @@ module ambiguity.
       <line x1="527" y1="152" x2="527" y2="192"/>
     </g>
     <rect x="20" y="192" width="600" height="48" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.5"/>
-    <text x="320" y="212" text-anchor="middle" fill="currentColor">Result</text>
-    <text x="320" y="230" text-anchor="middle" fill="currentColor" opacity="0.6" font-size="11">lightweight module and computation expression</text>
+    <text x="320" y="212" text-anchor="middle" fill="currentColor">Application Result</text>
+    <text x="320" y="230" text-anchor="middle" fill="currentColor" opacity="0.6" font-size="11">map each source failure into the application's error type</text>
   </g>
 </svg>
 </div>
@@ -83,16 +76,15 @@ module ambiguity.
 
 | Package | Use it for | Documentation |
 | --- | --- | --- |
-| `Axial.Result` | Fail-fast `Result` composition, conversions, extraction helpers, and `result { }` | [Result](./result/) |
-| `Axial.Check` | Reusable, path-free constraints over one typed value, returning the standard F# `Result` | [Check](./check/) |
-| `Axial.Refined` | Parsing and constructing values whose types record successful checks | [Refined](./refined/) |
+| `Axial.Result` | Result combinators, extraction helpers, and `result { }` | [Result](./result/) |
+| `Axial.Check` | Reusable value checks and portable typed constraints | [Check](./check/) |
+| `Axial.Parse` | Serialized primitive decoding | [Parse](/error-handling/parse/) |
+| `Axial.Refined` | Invariant-carrying domain values | [Refined](./refined/) |
 
-[Axial.Schema]({{< relref "/schema/" >}}) builds on Check and Refined for structured, path-aware boundaries.
-[Axial.Flow]({{< relref "/flow/" >}}) uses ordinary `Result` for typed workflow failures; neither depends on Result,
-Check, or Refined.
+`Axial.ErrorHandling` installs all four packages and exposes no API of its own.
 
-See [Result, Check, and Refined](./overview/) for installation commands and a first look at each package, or go
-straight to the one you need.
+[Axial.Schema]({{< relref "/schema/" >}}) adds structured input, paths, accumulated diagnostics, reconstruction, and
+wire metadata.
 
 </div>
 

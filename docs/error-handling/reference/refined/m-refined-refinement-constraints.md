@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.constraints"
 linkTitle: "constraints"
-weight: 2806
+weight: 2706
 ---
 
  Returns portable constraints retained by the refinement.

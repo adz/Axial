@@ -1,7 +1,7 @@
 ---
 title: "Refined.Collection.atMostOne"
 linkTitle: "atMostOne"
-weight: 2406
+weight: 2306
 ---
 
 

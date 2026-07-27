@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.map"
 linkTitle: "map"
-weight: 2910
+weight: 2810
 ---
 
 

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.defineWithCheck"
 linkTitle: "defineWithCheck"
-weight: 2803
+weight: 2703
 ---
 
  Defines a metadata-free refinement from an executable check.

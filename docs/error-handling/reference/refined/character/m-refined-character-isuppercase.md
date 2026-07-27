@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isUppercase"
 linkTitle: "isUppercase"
-weight: 2603
+weight: 2503
 ---
 
 

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.create"
 linkTitle: "create"
-weight: 2804
+weight: 2704
 ---
 
  Constructs a refined value after its check succeeds.

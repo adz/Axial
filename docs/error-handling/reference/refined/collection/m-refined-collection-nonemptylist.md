@@ -1,7 +1,7 @@
 ---
 title: "Refined.Collection.nonEmptyList"
 linkTitle: "nonEmptyList"
-weight: 2400
+weight: 2300
 ---
 
 

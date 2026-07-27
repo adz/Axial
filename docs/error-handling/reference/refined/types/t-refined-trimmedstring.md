@@ -1,7 +1,7 @@
 ---
 title: "Refined.TrimmedString"
 linkTitle: "TrimmedString"
-weight: 1002
+weight: 1001
 ---
 
 A string that has no leading or trailing whitespace.

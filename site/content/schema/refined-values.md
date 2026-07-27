@@ -2,106 +2,184 @@
 weight: 40
 title: Refined Schemas
 type: docs
-description: Reuse one bidirectional refinement in direct construction, schema parsing, checking, and encoding.
+description: Move between canonical refined fields, explicit raw schemas, local constraints, and reusable domain refinements.
 ---
 
 
-`Axial.Refined` owns the domain construction definition. Schema applies that definition at a structured boundary.
+A field can be short when its type contributes a canonical schema:
 
 ```fsharp
-type Email =
-    private
-    | Email of string
+let contactSchema =
+    schema<Contact> {
+        field "email" _.Email
+        construct Contact.create
+    }
+```
+
+This is the form to prefer at use sites. The rest of this page expands what `Email` contributes and shows where
+schema-local constraints fit.
+
+## Define the domain type
+
+```fsharp
+open Axial.Check
+open Axial.Refined
+
+type Email = private Email of string
 
 module Email =
-    let create raw =
-        if System.Net.Mail.MailAddress.TryCreate raw |> fst then
-            Ok(Email raw)
-        else
-            Error(RefinementError.custom "email" "Expected an email address.")
+    let value (Email value) = value
 
-    let value (Email raw) = raw
-    let refinement = Refinement.define create value
+    let refinement =
+        Refinement.define
+            Constraint.email
+            Email
+            value
 
-type Email with
-    static member Refinement(_: string, _: Email) =
-        Email.refinement
+    let create value = Refinement.create refinement value
 ```
 
-The descriptor contains both directions. Parsing calls its fallible constructor; checking and encoding inspect an
-existing `Email` back to `string`.
+The `email` format is intrinsic to `Email`, so its refinement owns that constraint.
 
-## A standalone value schema
+## Apply constraints in the Schema DSL
+
+Expand the field to expose its wire schema:
 
 ```fsharp
-let emailSchema : Schema<Email> =
-    Schema.text
-    |> Schema.constrainAll [ Constraint.required; Constraint.email ]
-    |> Schema.refine Email.refinement
-    |> Schema.withFormat SchemaFormat.email
+open Axial.Schema
+open Axial.Schema.Syntax
+
+field "email" _.Email {
+    withSchema Schema.text
+    constraints [ required; maxLength 80 ]
+}
 ```
 
-`Schema.refine` receives one named value instead of separate construction, error mapping, and inspection functions.
+Schema constraints remain available directly inside a field block. Here both constraints apply to the incoming
+`string`, so interpreters can retain their metadata for diagnostics, forms, and generated schemas.
 
-## A type-directed field
+Constraints preserve the value type, however. This block still contains a `Schema<string>`, while `_.Email` returns
+`Email`; by itself, the declaration cannot complete the field.
+
+## Refine after constraining the raw value
+
+Add `refine` after the raw-text constraints to perform that type transition:
 
 ```fsharp
 let contactSchema =
     schema<Contact> {
         field "email" _.Email {
             withSchema Schema.text
-            constraints [ required; email ]
-            refine
+            constraints [ required; maxLength 80 ]
+            refine Email.refinement
         }
 
         construct Contact.create
     }
 ```
 
-Before `refine`, the current field type is `string`. The getter returns `Email`, so the operation resolves
-`Refinement<string,Email>`. The block must finish at `Email`.
+The operations run in declaration order:
 
-If `Email` contributes a canonical schema, the field is shorter:
+1. `withSchema Schema.text` starts with `Schema<string>`.
+2. `constraints` checks facts that belong to the incoming text while preserving `string`.
+3. `refine Email.refinement` constructs `Email`, producing `Schema<Email>` to match the getter.
+
+A raw-text constraint must appear before refinement because it cannot be applied to the resulting `Email` value.
+
+## Keep one-off constraints at the schema boundary
+
+Suppose only the billing form imposes an 80-character transport limit:
 
 ```fsharp
-type Email with
-    static member Schema(_: Email) =
-        emailSchema
+field "billingEmail" _.BillingEmail {
+    withSchema Schema.text
+    constraints [ required; maxLength 80 ]
+    refine Email.refinement
+}
+```
 
+That limit belongs in this field block rather than in every `Email`. `Email.refinement` still enforces the intrinsic
+email-format invariant for every construction path.
+
+Use this inline form for boundary-specific restrictions. If a constraint must hold for every instance of the domain
+type, lift it into the refinement instead.
+
+## Lift universal constraints into the refinement
+
+If required presence and the length limit define every `ContactEmail`, put them beside the domain type instead:
+
+```fsharp
+type ContactEmail = private ContactEmail of string
+
+module ContactEmail =
+    let value (ContactEmail value) = value
+
+    let refinement =
+        Refinement.defineAll
+            [ Axial.Check.Constraint.required
+              Axial.Check.Constraint.email
+              Axial.Check.Constraint.maxLength 254 ]
+            ContactEmail
+            value
+
+    let create value = Refinement.create refinement value
+```
+
+The schema then carries the complete invariant through one value:
+
+```fsharp
+let contactEmailSchema : Schema<ContactEmail> =
+    Schema.text
+    |> Schema.refine ContactEmail.refinement
+    |> Schema.withFormat SchemaFormat.email
+```
+
+Contribute that canonical schema once:
+
+```fsharp
+type ContactEmail with
+    static member Schema(_: ContactEmail) = contactEmailSchema
+```
+
+Fields return to the compressed form:
+
+```fsharp
 schema<Contact> {
     field "email" _.Email
     construct Contact.create
 }
 ```
 
-Options, lists, and string-keyed maps resolve the canonical item schema recursively.
+The constraint-backed refinement now drives direct construction, Schema diagnostics, inspection metadata, and
+applicable wire interpreters.
 
-## Portable constraints and executable validation
+## Canonical refinement inference inside a field
+
+A type may also contribute one canonical refinement for an underlying/destination pair:
+
+```fsharp
+type ContactEmail with
+    static member Refinement(_: string, _: ContactEmail) = ContactEmail.refinement
+```
+
+Then an explicitly selected raw schema can use bare `refine`:
 
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain required       // portable raw text rule
-    refine                              // string -> Email
-    validate validateCompanyEmail       // executable Email rule
+    refine
 }
 ```
 
-Constraints can become JSON Schema, HTML attributes, documentation, or generators. An arbitrary `validate` function
-runs during parsing and checking but cannot be translated automatically.
+Schema knows both `string` and `ContactEmail` at that declaration site. Use `refine ContactEmail.refinement` when a
+local variant must be selected explicitly. Parsing and ordinary refinement construction remain named operations.
 
-The smart constructor must still enforce the intrinsic domain invariant. Direct `Refine.from` calls do not pass
-through Schema constraints.
+## Choose the operation by meaning
 
-## Built-in schemas
+- `Schema.refine` constructs an invariant-carrying destination and retains refinement metadata.
+- `Schema.convert` performs a total projected mapping.
+- `Schema.tryConvert` performs a fallible projected mapping returning `SchemaError list`.
+- `Schema.admit` constructs a domain model from a structured draft while preserving its fields.
+- `validate` adds executable Schema behavior that has no portable metadata.
 
-Built-in refined types have canonical schemas. `RefinedSchemas` also exposes configured forms:
-
-```fsharp
-RefinedSchemas.boundedString 2 80
-RefinedSchemas.boundedList 1 10 Schema.guid
-RefinedSchemas.dateTimeOffsetRange
-```
-
-See [Define Refined Types]({{< relref "/error-handling/refined/domain-values/" >}}) for the complete domain-side
-definition.
+See [Define Refined Types]({{< relref "/error-handling/refined/domain-values/" >}}) for domain-side definitions.

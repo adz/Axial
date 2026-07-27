@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isAsciiHexDigit"
 linkTitle: "isAsciiHexDigit"
-weight: 2601
+weight: 2501
 ---
 
 

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.underlying"
 linkTitle: "underlying"
-weight: 2805
+weight: 2705
 ---
 
  Returns the canonical underlying representation.

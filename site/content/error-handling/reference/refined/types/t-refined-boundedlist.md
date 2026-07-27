@@ -1,7 +1,7 @@
 ---
 title: "Refined.BoundedList"
 linkTitle: "BoundedList<value>"
-weight: 1013
+weight: 1012
 type: docs
 ---
 

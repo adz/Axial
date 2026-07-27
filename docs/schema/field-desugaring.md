@@ -12,8 +12,7 @@ from joining into one pipeline.
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain required
-    refine
+    refine ContactEmail.refinement
     validate validateCompanyEmail
 }
 ```
@@ -22,7 +21,6 @@ Its schema transformation is:
 
 ```fsharp
 Schema.text
-|> Schema.constrain Constraint.required
 |> Schema.refine ContactEmail.refinement
 |> Schema.validate validateCompanyEmail
 ```
@@ -63,14 +61,26 @@ let contactEmailSchema =
     |> Schema.refine ContactEmail.refinement
 ```
 
-Inside the field block, the raw schema and getter supply the two types, so `refine` resolves the contributed descriptor:
+Inside the field block, either supply the same value or use the destination type's canonical contribution:
 
 ```fsharp
+field "email" _.Email {
+    withSchema Schema.text
+    refine ContactEmail.refinement
+}
+```
+
+```fsharp
+type ContactEmail with
+    static member Refinement(_: string, _: ContactEmail) = ContactEmail.refinement
+
 field "email" _.Email {
     withSchema Schema.text
     refine
 }
 ```
+
+The bare form uses the current `string` schema and the `ContactEmail` getter type as its compile-time dispatch key.
 
 ## `validate`
 

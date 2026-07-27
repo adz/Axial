@@ -1,46 +1,54 @@
 ---
 weight: 50
 title: Schema Integration
-description: Apply the same refinement descriptor during schema parsing, checking, and encoding.
+description: Apply refinements, conversions, and domain admission at structured boundaries.
 type: docs
 ---
 
 
-`Axial.Refined` does not depend on `Axial.Schema`. A refined type and its smart constructor can live in a domain
-package with no serialization or input-model dependency.
+Schema describes structured input: fields, wire representations, path-aware failures, accumulation, and reconstruction.
+A refinement supplies the value-level step that turns an already-decoded underlying value into an
+invariant-carrying domain value. Schema can apply that refinement at a field boundary and report its failures at the
+field's path.
 
-Schema uses the same `Refinement<'raw, 'value>` descriptor when a boundary representation must become that domain
-type:
+`Axial.Refined` has no Schema dependency. Domain types can define refinements without choosing a wire format; an
+application that uses `Axial.Schema` decides where those refinements participate in structured decoding and encoding.
+
+If Schema is new to you, start with [Schema Getting Started]({{< relref "/schema/getting-started/" >}}) for fields,
+record construction, and path-aware diagnostics. Then read [Refined Values in Schema]({{< relref
+"/schema/refined-values/" >}}) for canonical field schemas, raw-value constraints, explicit refinement, and
+schema-local restrictions. This page is the shorter API-oriented view of that integration.
+
+## Refine a primitive schema
 
 ```fsharp
-let quantity : Schema<PositiveInt> =
+open Axial.Refined
+open Axial.Schema
+
+let quantitySchema : Schema<PositiveInt> =
     Schema.int
-    |> Schema.refine (Refinement.define Refine.positiveInt _.Value)
+    |> Schema.refine PositiveInt.refinement
 ```
 
-The descriptor supplies both directions:
+Parsing checks the underlying `int`, constructs `PositiveInt`, and reports failures at the schema path. Encoding and
+checking project through `PositiveInt.Value`.
 
-- parsing runs the fallible constructor from `int` to `PositiveInt`;
-- checking and encoding inspect an existing `PositiveInt` back to `int`.
-
-For an application type, keep the descriptor beside the type:
+For an application type:
 
 ```fsharp
-let contactEmail : Schema<ContactEmail> =
+let emailSchema : Schema<ContactEmail> =
     Schema.text
     |> Schema.refine ContactEmail.refinement
 ```
 
-The record-schema CE can infer the descriptor at the `refine` line:
+A field block receives the refinement explicitly:
 
 ```fsharp
-let signup =
+let signupSchema =
     schema<Signup> {
         field "email" _.Email {
             withSchema Schema.text
-            constrain required
-            refine
-            validate validateCompanyEmail
+            refine ContactEmail.refinement
         }
 
         field "age" _.Age
@@ -48,15 +56,24 @@ let signup =
     }
 ```
 
-Operations run from top to bottom:
+## Choose the operation by meaning
 
-1. `withSchema Schema.text` establishes the raw boundary type.
-2. `constrain` adds portable rules to that raw schema.
-3. `refine` resolves `Refinement<string, ContactEmail>` from the getter result type.
-4. `validate` receives `ContactEmail`, because it appears after `refine`.
+- `Schema.refine refinement schema` constructs an invariant-carrying destination and retains refinement metadata.
+- `Schema.convert forward backward schema` performs a total projected mapping.
+- `Schema.tryConvert forward backward schema` performs a fallible projected mapping returning `SchemaError list`.
+- `Schema.admit create project draftSchema` constructs a domain model from a structured draft while preserving fields.
 
-`validate` is executable application logic. `constrain` is schema metadata that JSON Schema and other interpreters can
-inspect. `refine` changes the field's value type. Keeping those roles separate lets one field describe all three
-without nesting several builders.
+```fsharp
+let centsSchema : Schema<decimal> =
+    Schema.int
+    |> Schema.convert decimal int
+```
 
-See the [Schema guide]({{< relref "/schema/" >}}) for record construction and input handling.
+```fsharp
+let bookingSchema : Schema<Booking> =
+    bookingDraftSchema
+    |> Schema.admit Booking.create Booking.toDraft
+```
+
+For the complete progression from a raw field schema to a canonical refined field, continue to
+[Refined Values in Schema]({{< relref "/schema/refined-values/" >}}).

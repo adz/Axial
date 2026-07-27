@@ -1,7 +1,7 @@
 ---
 title: "Refined.Numeric.nonZeroInt"
 linkTitle: "nonZeroInt"
-weight: 2302
+weight: 2202
 ---
 
 

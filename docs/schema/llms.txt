@@ -8,10 +8,10 @@
 - `field "wire-name" _.Member` resolves the member type's canonical schema.
 - `field _.Member` derives the wire name from a quotation and is .NET-only. Use explicit names for Fable.
 - Open `Axial.Schema.Syntax` for the complete unqualified, typed constraint vocabulary.
-- A field block may contain `withSchema`, `constrain`, `constraints`, type-directed `refine`, and `validate`.
+- A field block may contain `withSchema`, `constrain`, `constraints`, `refine`, and `validate`.
 - `withSchema` sets the current field schema.
 - `constrain` adds one portable constraint. `constraints [ ... ]` adds several in declaration order.
-- `refine` resolves `Refinement<'raw,'field>` and changes the current type to the getter type.
+- `refine SomeType.refinement` is explicit. Bare `refine` resolves one canonical static `Refinement<'raw,'field>` contribution from the known current and getter types.
 - `validate` runs executable value-preserving logic over the current type. It is not portable constraint metadata.
 - A field does not need `refine` when its schema already returns the getter type, such as `Schema.int` for `int`.
 - `construct` is total. `constructResult` runs only after all fields succeed.

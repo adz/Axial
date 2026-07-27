@@ -1,7 +1,7 @@
 ---
 title: "Refined.DistinctList"
 linkTitle: "DistinctList<value>"
-weight: 1012
+weight: 1011
 ---
 
 A list with no duplicate items, preserving first-seen order.

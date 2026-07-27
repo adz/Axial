@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.defineAll"
 linkTitle: "defineAll"
-weight: 2802
+weight: 2702
 type: docs
 ---
 

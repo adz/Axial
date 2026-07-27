@@ -60,20 +60,23 @@ Private refined fields make illegal field values unrepresentable:
 type WorkspaceName = private WorkspaceName of NonBlankString
 
 module WorkspaceName =
-    let create raw =
-        Refine.nonBlankString raw |> Result.map WorkspaceName
-
     let value (WorkspaceName name) = name.Value
 
+    let refinement =
+        Refinement.defineAll
+            [ Axial.Check.Constraint.required
+              Axial.Check.Constraint.maxLength 80 ]
+            (Refine.nonBlankString >> Result.defaultWith (CheckFailure.describeAll >> failwith) >> WorkspaceName)
+            value
+
+    let create raw = Refinement.create refinement raw
+
     let schema : Schema<WorkspaceName> =
-        Schema.text
-        |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ]
-        |> Schema.refine (Refinement.define create value)
+        Schema.text |> Schema.refine refinement
 ```
 
-`Refinement.define` keeps the fallible smart constructor beside the projection back to raw text. `Schema.refine`
-applies that definition. Raw constraints can report common failures with familiar codes and metadata; the smart
-constructor remains authoritative. If the two declarations drift, refinement returns an error instead of throwing.
+`Refinement.defineAll` keeps executable checks, portable metadata, total construction, and projection in one value.
+`Schema.refine` applies that definition, so direct construction and Schema interpretation share the invariant.
 
 Any `WorkspaceName` is valid because its representation is private and every exposed constructor returns `Result`.
 The schema participates in that construction; it is not the sole guardian.
@@ -224,7 +227,7 @@ domain representation carries a stronger, durable guarantee.
 The reference app uses all three levels deliberately:
 
 - `WorkspaceV1` and `WorkspaceV2` are public wire records.
-- `WorkspaceName`, `PersonName`, and `WorkItemTitle` have private representations and fallible constructors.
+- `WorkspaceName`, `PersonName`, and `WorkItemTitle` have private representations and checked refinements.
 - `Workspace` business transitions accept only refined fields and return `Result` for relational business rules.
 - persisted contracts are parsed again when read; contextual production rules run only at the relevant admission
   boundary.

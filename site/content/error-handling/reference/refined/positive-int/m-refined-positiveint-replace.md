@@ -1,7 +1,7 @@
 ---
 title: "Refined.PositiveInt.replace"
 linkTitle: "replace"
-weight: 2906
+weight: 2806
 type: docs
 ---
 

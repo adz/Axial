@@ -78,8 +78,7 @@ Both describe the same facts. The difference is what the caller does next:
 
 - Use `Predicate`/`PredicateExtensions` when you're branching locally and never need to carry the failure anywhere —
   an `if` guard, an early return, a condition inside another expression.
-- Use [`Check`](./checks/) when the outcome needs to become a `Result` — because it feeds a domain error, gets
-  piped through `Result` helpers, or needs to compose with `Check.all`/`Check.any`.
+- Use [`Check`](../) when the outcome needs structured failures or composition with `Check.all`/`Check.any`.
 
 ```fsharp
 // Predicate: the bool is consumed immediately, nothing downstream needs the failure.
@@ -90,9 +89,10 @@ let describeName name =
 open Axial.Check.CheckDSL
 
 let validateName name : Result<string, NameError> =
-    name |> present |> orError NameMissing
+    name
+    |> Result.guard present
+    |> Result.mapError (fun _ -> NameMissing)
 ```
 
-If you start with a `Predicate` and find yourself converting its `bool` into an `Error` by hand
-(`if not ok then Error ... else Ok value`), that's the sign to use `Check` instead — `Result.requireTrue` and
-`Result.okIf` exist for the cases where a `Check` genuinely doesn't fit; see [Checks](./checks/).
+If a predicate needs structured, reusable failures, define a `Check`. Keep `Result.requireTrue` and `Result.okIf` for
+one-off conditions; see [Using Check](../overview/).

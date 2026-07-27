@@ -1,7 +1,7 @@
 ---
 title: "Refined.DateOnlyRange"
 linkTitle: "DateOnlyRange"
-weight: 1016
+weight: 1015
 type: docs
 ---
 

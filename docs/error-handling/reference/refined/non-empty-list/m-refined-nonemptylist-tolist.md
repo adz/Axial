@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.toList"
 linkTitle: "toList"
-weight: 2907
+weight: 2807
 ---
 
 

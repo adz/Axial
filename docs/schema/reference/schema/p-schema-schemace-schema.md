@@ -19,4 +19,4 @@ Record-schema computation expression.
 | <code><span>SchemaBuilder&lt;'model&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L487-487)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L517-517)

@@ -1,15 +1,16 @@
 ---
-title: API Reference
 weight: 100
+title: API Reference
+type: docs
 ---
 
-# ErrorHandling API Reference
+# API Reference
 
-`Axial.ErrorHandling` installs three focused packages:
+`Axial.ErrorHandling` installs four focused packages:
 
-- [`Axial.Result`](./result/): `Result` helpers and `result { }`.
-- [`Axial.Check`](./check/): `Check`, predicates, and `CheckDSL`.
-- [`Axial.Refined`](./refined/): parsing, refinements, built-in refined values, `Refine.from`, and `refine { }`.
+- [`Axial.Result`](./result/): generic Result combinators, extraction helpers, and `result { }`.
+- [`Axial.Check`](./check/): checks, check failures, and portable typed constraints.
+- [`Axial.Parse`](./parse/): named primitive parsers and `ParseError`.
+- [`Axial.Refined`](./refined/): reusable refinements and invariant-carrying values.
 
-Schema error paths and accumulated boundary failures are documented under the
-[Schema reference]({{< relref "/schema/reference/" >}}).
+`Axial.ErrorHandling` is a dependency-only package and contributes no assembly or namespace.

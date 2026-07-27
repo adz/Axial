@@ -599,7 +599,7 @@ let pageSpecs = [
         OutPath = ["check"; "_index.md"]
         Title = "Check"
         Description = "Source-documented pure validation helpers for Axial."
-        Intro = "This page shows the `Check` surface for reusable, path-free value constraints. `Check.*` helpers return `Result<'value, CheckFailure list>`: a passing check hands back the same value unchanged, so it pipes directly into the next step. They compose with `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`. Use [`Predicate`](../predicate/) when a local branch needs a raw boolean instead of a structured result. `Axial.Check.CheckDSL` opens the deduplicated root names unqualified for use inside a validation module; `not`, `contains`, `distinct`, `all`, `any`, `length`, and `between` stay reachable only as `Check.___` there, since they shadow FSharp.Core names."
+        Intro = "This page shows reusable value checks and portable typed constraints. `Check<'value>` returns `Result<unit, CheckFailure list>` and never replaces its input. Use `Result.guard` when a Result pipeline should continue with the original value. Checks compose with `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`; `Constraint<'value>` adds inspectable metadata to executable checking."
         SymbolIds = [
             "Core types", ["T:Axial.Check.Check`1"; "T:Axial.Check.CheckFailure"; "T:Axial.Check.CheckLengthExpectation"; "T:Axial.Check.CheckRangeExpectation"; "T:Axial.Check.CheckCountExpectation"]
             "Executable composition", ["M:Axial.Check.CheckModule.all"; "M:Axial.Check.CheckModule.any"; "M:Axial.Check.CheckModule.not"; "M:Axial.Check.CheckModule.mapFailure"]
@@ -653,19 +653,28 @@ let pageSpecs = [
         Alias = None
     }
     {
+        OutPath = ["parse"; "_index.md"]
+        Title = "Parse"
+        Description = "Source-documented serialized primitive parsers for Axial."
+        Intro = "`Axial.Parse` decodes serialized strings into primitive F# values. Every named parser returns `Result<'value, ParseError>` and remains independent of Check, Refined, Result, and Schema."
+        SymbolIds = [
+            "Error", ["T:Axial.Parse.ParseError"]
+            "Functions", ["M:Axial.Parse.Parse.int"; "M:Axial.Parse.Parse.long"; "M:Axial.Parse.Parse.decimal"; "M:Axial.Parse.Parse.float"; "M:Axial.Parse.Parse.bool"; "M:Axial.Parse.Parse.guid"; "M:Axial.Parse.Parse.dateTime"; "M:Axial.Parse.Parse.dateTimeOffset"; "M:Axial.Parse.Parse.dateOnly"; "M:Axial.Parse.Parse.timeOnly"; "M:Axial.Parse.Parse.enum"; "M:Axial.Parse.Parse.optional"; "M:Axial.Parse.Parse.optionalOr"; "M:Axial.Parse.Parse.intOption"; "M:Axial.Parse.Parse.boolOption"; "M:Axial.Parse.Parse.decimalOption"; "M:Axial.Parse.Parse.guidOption"; "M:Axial.Parse.Parse.intOrDefault"; "M:Axial.Parse.Parse.boolOrDefault"; "M:Axial.Parse.Parse.decimalOrDefault"]
+        ]
+        Alias = None
+    }
+    {
         OutPath = ["refined"; "_index.md"]
         Title = "Refined"
-        Description = "Source-documented parsing and structural refinement helpers for Axial."
-        Intro = "`Parse` converts serialized strings into primitive values. `Refine` constructs the built-in refined values. `Refine.from` runs the `Refinement` defined for its source and expected destination types. `refine { }` binds parsing and refinement results and stops at the first failure."
+        Description = "Source-documented invariant-carrying values and refinements for Axial."
+        Intro = "`Axial.Refined` constructs invariant-carrying values from already-typed underlying values. `Refinement` couples checking, total construction, and a total reverse projection."
         SymbolIds = [
-            "Errors and refined types", [
-                "T:Axial.Parse.ParseError"
+            "Refined types", [
                 "T:Axial.Refined.NonBlankString"; "T:Axial.Refined.TrimmedString"; "T:Axial.Refined.BoundedString"; "T:Axial.Refined.Slug"
                 "T:Axial.Refined.PositiveInt"; "T:Axial.Refined.NonNegativeInt"; "T:Axial.Refined.NonZeroInt"; "T:Axial.Refined.NegativeInt"; "T:Axial.Refined.NonPositiveInt"
                 "T:Axial.Refined.NonEmptyList`1"; "T:Axial.Refined.NonEmptyArray`1"; "T:Axial.Refined.DistinctList`1"; "T:Axial.Refined.BoundedList`1"; "T:Axial.Refined.BoundedArray`1"
                 "T:Axial.Refined.DateTimeOffsetRange"; "T:Axial.Refined.DateOnlyRange"
             ]
-            "Parse", ["M:Axial.Parse.Parse.int"; "M:Axial.Parse.Parse.long"; "M:Axial.Parse.Parse.decimal"; "M:Axial.Parse.Parse.float"; "M:Axial.Parse.Parse.bool"; "M:Axial.Parse.Parse.guid"; "M:Axial.Parse.Parse.dateTime"; "M:Axial.Parse.Parse.dateTimeOffset"; "M:Axial.Parse.Parse.dateOnly"; "M:Axial.Parse.Parse.timeOnly"; "M:Axial.Parse.Parse.enum"; "M:Axial.Parse.Parse.intOption"; "M:Axial.Parse.Parse.boolOption"; "M:Axial.Parse.Parse.decimalOption"; "M:Axial.Parse.Parse.guidOption"; "M:Axial.Parse.Parse.intOrDefault"; "M:Axial.Parse.Parse.boolOrDefault"; "M:Axial.Parse.Parse.decimalOrDefault"]
             "Text", ["M:Axial.Refined.Text.nonBlankString"; "M:Axial.Refined.Text.trimmedString"; "M:Axial.Refined.Text.boundedString"; "M:Axial.Refined.Text.slug"]
             "Numeric", ["M:Axial.Refined.Numeric.positiveInt"; "M:Axial.Refined.Numeric.nonNegativeInt"; "M:Axial.Refined.Numeric.nonZeroInt"; "M:Axial.Refined.Numeric.negativeInt"; "M:Axial.Refined.Numeric.nonPositiveInt"]
             "Collection", ["M:Axial.Refined.Collection.nonEmptyList"; "M:Axial.Refined.Collection.nonEmptyArray"; "M:Axial.Refined.Collection.distinctList"; "M:Axial.Refined.Collection.boundedList"; "M:Axial.Refined.Collection.boundedArray"; "M:Axial.Refined.Collection.exactlyOne"; "M:Axial.Refined.Collection.atMostOne"]
@@ -964,8 +973,8 @@ let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
     | ["result"; "_index.md"], "Traversal" -> Some "collection"
     | ["result"; "_index.md"], "Builder" -> Some "result-ce"
     | ["result"; "_index.md"], _ -> Some "result"
-    | ["refined"; "_index.md"], "Errors and refined types" -> Some "types"
-    | ["refined"; "_index.md"], "Parse" -> Some "parse"
+    | ["parse"; "_index.md"], _ -> None
+    | ["refined"; "_index.md"], "Refined types" -> Some "types"
     | ["refined"; "_index.md"], "Text" -> Some "text"
     | ["refined"; "_index.md"], "Numeric" -> Some "numeric"
     | ["refined"; "_index.md"], "Collection" -> Some "collection"
@@ -1046,7 +1055,7 @@ let sectionIntroForDirectory = function
     | "positive-int" -> "`PositiveInt` functions construct, inspect, and transform positive integers."
     | "non-empty-list" -> "`NonEmptyList` functions construct, inspect, and transform non-empty lists."
     | "refine" -> "`Refine` contains type-directed construction and the common built-in refinement functions."
-    | "refine-ce" -> "`refine { }` binds parsing and refinement results and stops at the first failure."
+    | "refine-ce" -> ""
     | "construction" -> "This page shows the helpers that create or adapt flows before you start composing them with domain logic."
     | "environment" -> "This page shows the helpers that read, reshape, and provide explicit environments for flows."
     | "composition" -> "This page shows the everyday Flow combinators for mapping, binding, zipping, and otherwise shaping workflow logic."
@@ -1357,7 +1366,7 @@ let main argv =
         |> Seq.toList
 
     let validationReferenceGroups =
-        set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "refined" ]
+        set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "parse"; "refined" ]
 
     let schemaReferenceGroups =
         set [ "schema"; "codec"; "data" ]

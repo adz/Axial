@@ -11,7 +11,8 @@ Use this section for `Axial.Schema` and `Axial.Data`. These packages do not requ
 - Start domain models with `Schema<'model>` and constructor-last declarations.
 - Use plain F# `Result` with an application error type for smaller fail-fast operations.
 - Declare records with `schema<Model> { field ...; construct ... }`.
-- Use an optional field block for `withSchema`, `constrain`, type-directed `refine`, and `validate`.
+- Use an optional field block for `withSchema`, `constrain`, `refine`, and `validate`.
+- Prefer `refine Type.refinement` when selection should be explicit. Use bare `refine` for the destination type's single canonical static refinement contribution.
 - Treat `Data`, wire records, and editable drafts as untrusted values.
 - Use `Schema.parse` at structured input boundaries and `Schema.check` for already assembled typed drafts.
 - Use private refined fields or private aggregates when later code must rely on an invariant.

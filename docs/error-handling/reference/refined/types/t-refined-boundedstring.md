@@ -1,7 +1,7 @@
 ---
 title: "Refined.BoundedString"
 linkTitle: "BoundedString"
-weight: 1003
+weight: 1002
 ---
 
 A string whose length is within a caller-supplied inclusive range.

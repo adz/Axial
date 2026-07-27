@@ -55,10 +55,10 @@ open Axial.Check.CheckDSL
 let validateUser name email : Result<User, UserError> =
     result {
         // If name is blank, it returns Error MissingName and stops.
-        let! validName = name |> present |> orError MissingName
+        let! validName = name |> Result.guard present |> Result.mapError (fun _ -> MissingName)
         
         // This line only runs if the name was valid.
-        let! validEmail = email |> present |> orError MissingEmail
+        let! validEmail = email |> Result.guard present |> Result.mapError (fun _ -> MissingEmail)
         
         return { Name = validName; Email = validEmail }
     }
@@ -80,10 +80,10 @@ let tryGetUser username =
 let login username password =
     result {
         let! user = tryGetUser username |> Result.someOr Unauthorized
-        let! _ =
+        do!
             password
             |> present
-            |> orError MissingPassword
+            |> Result.mapError (fun _ -> MissingPassword)
 
         return user
     }

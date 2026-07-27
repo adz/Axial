@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.nonBlankString"
 linkTitle: "nonBlankString"
-weight: 3000
+weight: 2900
 ---
 
 

@@ -2,7 +2,7 @@ groups:
   - title: Axial.ErrorHandling
     home: /error-handling
     kind: primary
-    caption: Installs Result, Check, and Refined together.
+    caption: Installs Result, Check, Parse, and Refined together.
     descendants: false
     entries:
       - /error-handling/getting-started
@@ -11,7 +11,7 @@ groups:
 
   - title: Axial.Result
     home: /error-handling/result
-    caption: Fail-fast Result helpers, reusable checks, predicates, and the result computation expression.
+    caption: Fail-fast Result helpers and the result computation expression.
     descendants: false
     entries:
       - /error-handling/tutorials
@@ -31,9 +31,17 @@ groups:
       entries:
         - /error-handling/reference/predicate
 
+  - title: Axial.Parse
+    home: /error-handling/parse
+    caption: Named parsers for serialized primitive values.
+    descendants: false
+    reference:
+      children_of:
+        - /error-handling/reference/parse
+
   - title: Axial.Refined
     home: /error-handling/refined
-    caption: Parse text and construct values whose types record successful checks.
+    caption: Construct values whose types record successful checks.
     children_of:
       - /error-handling/refined
     reference:

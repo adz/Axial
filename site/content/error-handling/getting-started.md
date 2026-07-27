@@ -1,51 +1,79 @@
 ---
 weight: 10
 title: Getting Started
-description: Use Result, Check, and Refined values for typed failures and domain construction.
+description: Use Result, Check, Parse, and Refined for typed failures and domain construction.
 type: docs
 ---
 
 
-Install the focused package you need, or the combined package for all three:
+Install the complete error-handling toolkit:
 
 ```bash
-dotnet add package Axial.Result    # Result composition and result { }
-dotnet add package Axial.Check     # reusable, path-free value checks
-dotnet add package Axial.Refined   # parsing and refined domain values
-dotnet add package Axial.ErrorHandling   # installs all three
+dotnet add package Axial.ErrorHandling   # Result, Check, Parse, and Refined
 ```
 
-`Axial.ErrorHandling` installs `Axial.Result`, `Axial.Check`, and `Axial.Refined` and exposes no API of its own —
-open the package you need directly.
+Or install only the focused packages an application needs:
+
+```bash
+dotnet add package Axial.Result    # Result combinators and result { }
+dotnet add package Axial.Check     # reusable checks and portable constraints
+dotnet add package Axial.Parse     # serialized primitive decoding
+dotnet add package Axial.Refined   # invariant-carrying domain values
+```
 
 ```fsharp
 open Axial.Result
 open Axial.Check
+open Axial.Parse
 open Axial.Refined
 ```
 
-Already use FsToolkit.ErrorHandling or your own Result helpers? `Axial.Check` and `Axial.Refined` do not depend on
-`Axial.Result`, so you can add either (or both) without opening `Axial.Result` or creating builder/module ambiguity.
+The packages remain focused:
 
-## The three layers
-
-| Problem | API | Result |
+| Concern | API | Result |
 | --- | --- | --- |
-| Sequence dependent operations that may fail | `result { }` | `Result<'value, 'error>` |
-| Describe and run reusable rules over one typed value | `Check<'value>` | `Result<'value, CheckFailure list>` |
-| Parse serialized text | `Parse.int`, `Parse.guid`, and other `Parse` functions | `Result<'value, ParseError>` |
-| Construct a type that records a successful check | `Refine.nonBlankString`, `Refine.positiveInt`, and other `Refine` functions | `Result<'value, CheckFailure list>` |
+| Compose dependent failures | `result { }` | `Result<'value,'error>` |
+| Test one typed value | `Check<'value>` | `Result<unit, CheckFailure list>` |
+| Keep a checked input | `Result.guard` | `Result<'value,'error>` |
+| Decode serialized primitives | `Parse.int`, `Parse.guid`, and other parsers | `Result<'value, ParseError>` |
+| Construct an invariant-carrying type | `Refinement.create`, `Refine.*` | `Result<'refined, CheckFailure list>` |
 
-`Result` is the common return type. `Check` preserves the checked value and can report several failures about that one
-value. A refinement changes the type, so later code knows construction succeeded.
+## Where Schema fits
+
+These packages handle explicit operations over individual values and compose their failures through ordinary
+`Result`. The caller decides which input each failure belongs to and how to represent the application's error type.
+
+[Axial.Schema]({{< relref "/schema/" >}}) is the structured-boundary layer. A `Schema<'model>` declares fields and
+constructors, applies Check constraints and refinements at those fields, and returns accumulated `SchemaError` values
+with input paths. The same declaration can also drive JSON codecs, JSON Schema, forms, contracts, and inspection.
+
+Use these focused Error Handling packages directly for local functions, domain constructors, and workflows. Use
+Schema when an entire form, request, configuration document, or other structured input must become a model with
+field-aware diagnostics. The approaches compose: Schema uses constraints and refinements defined independently in
+Check and Refined. Start with [Schema Getting Started]({{< relref "/schema/getting-started/" >}}) when that is your
+boundary.
+
+## A complete boundary function
 
 ```fsharp
-let parsed = Parse.int "12"
-let refined = Refine.positiveInt 12
+type QuantityError =
+    | InvalidInteger of ParseError
+    | InvalidQuantity of CheckFailure list
+
+let quantity raw =
+    result {
+        let! parsed = Parse.int raw |> Result.mapError InvalidInteger
+        let! quantity = Refine.positiveInt parsed |> Result.mapError InvalidQuantity
+        return quantity
+    }
 ```
+
+`Parse.int` changes representation. `Refine.positiveInt` admits only positive integers into `PositiveInt`. Mapping both
+errors at the bind sites gives the application one deliberate error type.
 
 ## Continue
 
-- [Result](./result/): fail-fast composition and extraction helpers.
-- [Check](./check/): reusable constraints over one value.
-- [Refined](./refined/): parsing, built-in refined values, dependent construction, and application-defined types.
+- [Result](./result/)
+- [Check](./check/)
+- [Parse and Refined](./refined/)
+- [Define Refined Types](./refined/domain-values/)

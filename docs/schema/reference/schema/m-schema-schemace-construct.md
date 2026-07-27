@@ -25,4 +25,4 @@ Closes a record schema with a total constructor.
 | <code><span>ConstructorStep&lt;<span>'model,&#32;'constructor</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L496-496)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L526-526)

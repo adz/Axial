@@ -1,7 +1,7 @@
 ---
 title: "Refined.BoundedArray"
 linkTitle: "BoundedArray<value>"
-weight: 1014
+weight: 1013
 type: docs
 ---
 

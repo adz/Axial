@@ -1,21 +1,21 @@
 ---
 weight: 10
 title: Order Reference Tutorial
-description: Parse strings into refined values and your own domain type.
+description: Decode text, construct refined values, and return a domain record.
 ---
 
 # Order Reference Tutorial
 
-This tutorial parses two raw strings — an order id and a customer reference — into a domain record whose fields cannot
-hold invalid values. Once construction succeeds, no downstream code re-checks anything.
+This tutorial converts an order id and customer reference into a domain record whose fields cannot hold unchecked
+values.
 
-## The Target Domain Type
-
-Wrap refined values in your own types so signatures use the domain's language:
+## Define the domain
 
 ```fsharp
-open Axial
+open Axial.Check
+open Axial.Parse
 open Axial.Refined
+open Axial.Result
 
 type OrderId = OrderId of PositiveInt
 type CustomerRef = CustomerRef of Slug
@@ -25,20 +25,23 @@ type OrderReference =
       Customer: CustomerRef }
 ```
 
-`PositiveInt` can only hold an integer greater than zero, and `Slug` only lowercase ASCII letters, digits, and single
-hyphens — the types carry the proof.
-
-## Parse, Then Refine
-
-`Parse` turns text into primitives; `Refine` turns primitives into refined values. `refine {}` sequences both
-fail-fast, unifying their errors as `RefinementError`:
+## Define boundary errors
 
 ```fsharp
-let createOrderReference (rawId: string) (rawCustomer: string) : Result<OrderReference, RefinementError> =
-    refine {
-        let! parsedId = Parse.int rawId          // ParseError becomes RefinementError.ParseFailed
-        let! positiveId = Refine.positiveInt parsedId
-        let! customer = Refine.slug rawCustomer
+type OrderReferenceError =
+    | InvalidOrderIdText of ParseError
+    | InvalidOrderId of CheckFailure list
+    | InvalidCustomerReference of CheckFailure list
+```
+
+## Decode and construct
+
+```fsharp
+let createOrderReference rawId rawCustomer =
+    result {
+        let! parsedId = Parse.int rawId |> Result.mapError InvalidOrderIdText
+        let! positiveId = Refine.positiveInt parsedId |> Result.mapError InvalidOrderId
+        let! customer = Refine.slug rawCustomer |> Result.mapError InvalidCustomerReference
 
         return
             { Id = OrderId positiveId
@@ -46,29 +49,20 @@ let createOrderReference (rawId: string) (rawCustomer: string) : Result<OrderRef
     }
 ```
 
-## Exercise It
+Each operation keeps its meaning visible: `Parse.int` decodes text, while the two `Refine` functions construct
+invariant-carrying values.
+
+## Read values at an output boundary
 
 ```fsharp
-createOrderReference "42" "acme-north"   // Ok { Id = OrderId (PositiveInt 42); Customer = ... }
-createOrderReference "0" "acme-north"    // Error — zero is not positive
-createOrderReference "42" "Acme North"   // Error — not a slug
-createOrderReference "many" "acme-north" // Error (ParseFailed) — not an int
-```
-
-The first failure stops the pipeline.
-
-## Read The Value Back Out
-
-Refined types expose their underlying value for boundaries that need the primitive again:
-
-```fsharp
-let (OrderId id) = order.Id
-let rawId = PositiveInt.value id
+let orderIdValue (reference: OrderReference) =
+    let (OrderId id) = reference.Id
+    PositiveInt.value id
 ```
 
 ## Next
 
-- [Parse](../../parse/) for the primitive parsers.
-- [Built-in Refined Values](../../catalog/) for every supplied refined type.
-- [Refine Computation Expression](../../refine-builder/) for the builder operations and type-directed form.
-- [Define Refined Types](../../domain-values/) to add a private wrapper and smart constructor.
+- [Parse](/error-handling/parse/)
+- [Built-in Refined Values](../../catalog/)
+- [Compose Parse and Refinement](../../composition/)
+- [Define Refined Types](../../domain-values/)

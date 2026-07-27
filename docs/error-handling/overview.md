@@ -1,69 +1,80 @@
 ---
 weight: 1
-title: "Result, Check, and Refined"
+title: "Result, Check, Parse, and Refined"
 description: Install commands and a first look at each focused package.
 ---
 
-# Result, Check, and Refined
+# Result, Check, Parse, and Refined
 
-Install any focused package directly, or install `Axial.ErrorHandling` for all three:
+These packages perform explicit operations over individual values: compose `Result`, check a typed value, decode a
+serialized primitive, or construct a refined domain value. For structured input with named fields, accumulated
+path-aware errors, and reusable interpreters, use [Axial.Schema]({{< relref "/schema/" >}}). Schema applies the same
+constraints and refinements at model boundaries rather than replacing them.
+
+Install packages independently or install the dependency-only meta-package:
 
 ```bash
 dotnet add package Axial.Result
 dotnet add package Axial.Check
+dotnet add package Axial.Parse
 dotnet add package Axial.Refined
-dotnet add package Axial.ErrorHandling   # installs all three
+dotnet add package Axial.ErrorHandling
 ```
 
-## Result and Check
-
-Use ordinary `Result<'value,'error>` for operations that stop at the first failure. `Check<'value>` describes reusable
-rules over one typed value and returns the original value after success.
+## Check a typed value
 
 ```fsharp
 open Axial.Check
-open Axial.Check.CheckDSL
 
-let validateName name =
-    name
-    |> minLength 3
-    |> orError NameTooShort
+let nameCheck : Check<string> =
+    Check.all [ Check.String.present; Check.String.maxLength 80 ]
+
+let checkedName : Result<string, CheckFailure list> =
+    "Ada" |> Result.guard nameCheck
 ```
 
-`result { }` keeps dependent steps linear:
+A check returns `unit`. `Result.guard` returns the unchanged input after success.
+
+## Decode serialized input
 
 ```fsharp
-open Axial.Result
+open Axial.Parse
 
-result {
-    let! quantity = Parse.int rawQuantity |> Result.mapError InvalidQuantity
-    do! quantity > 0 |> Result.requireTrue QuantityMustBePositive
-    return quantity
-}
+let parsed : Result<int, ParseError> = Parse.int "42"
 ```
 
-## Refined values
-
-Parse text with a named parser:
+## Construct an invariant-carrying value
 
 ```fsharp
-let parsed : Result<int, ParseError> =
-    Parse.int "42"
-```
+open Axial.Refined
 
-Refine an ordinary value with a named constructor:
-
-```fsharp
 let quantity : Result<PositiveInt, CheckFailure list> =
     Refine.positiveInt 42
 ```
 
-See [Refined](../refined/) for the supplied types, dependent construction, and application-defined refined types.
+## Compose through an application error
+
+```fsharp
+open Axial.Result
+
+type QuantityError =
+    | InvalidInteger of ParseError
+    | InvalidQuantity of CheckFailure list
+
+let quantity raw =
+    result {
+        let! parsed = Parse.int raw |> Result.mapError InvalidInteger
+        let! quantity = Refine.positiveInt parsed |> Result.mapError InvalidQuantity
+        return quantity
+    }
+```
 
 ## Guides
 
 - [Getting Started](/error-handling/getting-started/)
 - [Check](../check/)
-- [Result Builder](../result-builder/)
+- [Result](../result/)
+- [Parse](../parse/)
 - [Refined](../refined/)
+- [Schema Getting Started]({{< relref "/schema/getting-started/" >}})
 - [Introductory Reference App](../reference-app/)

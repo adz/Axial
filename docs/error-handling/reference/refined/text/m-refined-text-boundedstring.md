@@ -1,7 +1,7 @@
 ---
 title: "Refined.Text.boundedString"
 linkTitle: "boundedString"
-weight: 2202
+weight: 2102
 ---
 
 

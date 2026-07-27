@@ -1,7 +1,7 @@
 ---
 title: "Refined.PositiveInt.value"
 linkTitle: "value"
-weight: 2903
+weight: 2803
 type: docs
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Collection.boundedArray"
 linkTitle: "boundedArray"
-weight: 2404
+weight: 2304
 ---
 
 

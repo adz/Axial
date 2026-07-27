@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.define"
 linkTitle: "define"
-weight: 2801
+weight: 2701
 ---
 
  Defines a refinement from one portable constraint.

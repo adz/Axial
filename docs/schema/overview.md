@@ -6,6 +6,11 @@ description: The core package's mental model, installation, and guides.
 
 # Axial.Schema
 
+[Axial.ErrorHandling]({{< relref "/error-handling/" >}}) supplies operations over individual values and ordinary
+`Result` composition. Axial.Schema assembles checks, constraints, parsing steps, and refinements into declarations for
+whole structured models. It adds field identity, path-aware accumulated errors, checked reconstruction, and multiple
+interpreters; it does not replace the underlying value-level APIs.
+
 ## Mental Model
 
 One schema declaration, several interpreters:
@@ -24,7 +29,7 @@ One schema declaration, several interpreters:
 literal (named fields, any order, compiler-checked completeness), or an existing value from an import or database
 mapper. It runs every field's constraints and refinements again and re-invokes the record constructor, so
 cross-field invariants hold too. Success returns the value itself, not a proof wrapper — when every value of a type
-must satisfy an invariant, give the type a private representation and a fallible constructor;
+must satisfy an invariant, give the type a private representation and a checked `Refinement`;
 [Trusted Construction](../trusted-construction/) shows how drafts keep record syntax and `with` updates alongside
 that guarantee.
 

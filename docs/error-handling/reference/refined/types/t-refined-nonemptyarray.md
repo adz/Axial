@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyArray"
 linkTitle: "NonEmptyArray<value>"
-weight: 1011
+weight: 1010
 ---
 
 An array that contains at least one item.

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isWhitespace"
 linkTitle: "isWhitespace"
-weight: 2604
+weight: 2504
 type: docs
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Text.trimmedString"
 linkTitle: "trimmedString"
-weight: 2201
+weight: 2101
 ---
 
 

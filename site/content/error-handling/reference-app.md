@@ -1,11 +1,11 @@
 ---
 title: Introductory Reference App
-description: Checks, result {}, and refine {} in one small program.
+description: Checks, result {}, parsing, and refinement in one small program.
 type: docs
 ---
 
 
-The introductory app uses only `Axial.ErrorHandling`. It demonstrates three stages without Schema or Flow.
+The introductory app uses `Axial.ErrorHandling` without Schema or Flow.
 
 ```bash
 dotnet run --project examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.fsproj --nologo
@@ -13,41 +13,37 @@ dotnet run --project examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.
 
 ## Reusable checks
 
-`Check` functions describe rules over one typed value. `Result.orError` translates their structured failure into an
-application error:
+A check proves a fact without replacing the value. `Result.guard` keeps the original value after success:
 
 ```fsharp
-let validateBadgeName name =
-    name
-    |> Check.String.minLength 3
-    |> Result.orError NameTooShort
+let validateBadgeName =
+    Check.String.minLength 3
+    |> Result.guard
 ```
 
-## Dependent fail-fast work
+Map check failures when the application has its own error vocabulary.
 
-`result { }` stops when one step fails. The quantity check cannot run until parsing succeeds:
+## Dependent work
 
 ```fsharp
 result {
     let! tier = parseTier rawTier
-    let! quantity = Parse.int rawQuantity |> Result.orError (QuantityNotANumber rawQuantity)
+    let! quantity = Parse.int rawQuantity |> Result.mapError (fun _ -> QuantityNotANumber rawQuantity)
     do! (quantity >= 1 && quantity <= 6) |> Result.requireTrue (QuantityOutOfRange quantity)
     return tier, quantity
 }
 ```
 
-## Constructing domain values
-
-`refine { }` turns raw values into types that record successful construction:
+## Construct domain values
 
 ```fsharp
-refine {
-    let! (parsedId: int) = rawId
-    let! (positiveId: PositiveInt) = parsedId
-    let! (email: NonBlankString) = rawEmail
+result {
+    let! parsedId = Parse.int rawId |> Result.mapError (fun _ -> InvalidId)
+    let! positiveId = Refine.positiveInt parsedId |> Result.mapError (fun _ -> InvalidId)
+    let! email = Refine.nonBlankString rawEmail |> Result.mapError (fun _ -> InvalidEmail)
     return AttendeeId positiveId, ContactEmail email
 }
 ```
 
-The full reference app adds Schema for structured input, complete path-aware error reports, codecs, and contracts, then
-adds Flow for effectful application work.
+The full reference app adds Schema for structured input, path-aware diagnostics, codecs, and contracts, then adds Flow
+for effectful application work.

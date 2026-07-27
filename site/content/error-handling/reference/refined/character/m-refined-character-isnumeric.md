@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isNumeric"
 linkTitle: "isNumeric"
-weight: 2606
+weight: 2506
 type: docs
 ---
 

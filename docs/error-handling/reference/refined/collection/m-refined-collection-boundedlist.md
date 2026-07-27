@@ -1,7 +1,7 @@
 ---
 title: "Refined.Collection.boundedList"
 linkTitle: "boundedList"
-weight: 2403
+weight: 2303
 ---
 
 

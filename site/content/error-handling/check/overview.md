@@ -1,179 +1,134 @@
 ---
 weight: 10
 title: Using Check
-description: The Check DSL, CheckFailure, composition, and how Check relates to Result and Predicate.
+description: Checks, portable constraints, failure accumulation, and Result.guard.
 type: docs
 ---
 
 
-Open the Check DSL in a module that checks several values:
+```fsharp
+open Axial.Check
+
+type Check<'value> =
+    'value -> Result<unit, CheckFailure list>
+```
+
+A check tests an existing typed value. Successful checks return `Ok ()`; they never trim, normalize, or replace the
+input.
+
+## Name reusable checks
+
+```fsharp
+let nameCheck : Check<string> =
+    Check.all [ Check.String.present; Check.String.lengthBetween 2 40 ]
+
+nameCheck "Ada"
+// Ok ()
+```
+
+`Check.all` runs every child against the same original value and accumulates failures. `Check.any` succeeds when one
+alternative succeeds. `Check.not` inverts a check, and `Check.mapFailure` changes its failure values.
+
+Open [`Axial.Check.CheckDSL`](../check-dsl/) inside a check-definition module when unqualified names improve readability:
 
 ```fsharp
 open Axial.Check.CheckDSL
 
-let requiredName : Check<string> = Check.all [ present; minLength 2 ]
-let adultAge : Check<int> = atLeast 18
-
-let checkName value = value |> requiredName |> orError NameInvalid
+let emailCheck : Check<string> =
+    Check.all [ present; email; maxLength 254 ]
 ```
 
-A `Check<'value>` is a function from a value to itself-or-a-failure:
+## Keep the value with guard
+
+The Check DSL provides `guard` beside `orError` and `mapError`:
 
 ```fsharp
-type Check<'value> = 'value -> Result<'value, CheckFailure list>
+open Axial.Check.CheckDSL
+
+let checkedName : Result<string, CheckFailure list> =
+    "Ada" |> guard nameCheck
+
+let requiredName =
+    "Ada" |> guard present |> orError NameRequired
 ```
 
-A `Check` is useful when the same rule is needed in several places. It keeps the original value when the rule passes
-and returns a `CheckFailure` value, rather than a loose string, when the rule fails.
+`CheckDSL.guard`, `orError`, and `mapError` are small structural adapters implemented in `Axial.Check` because that
+package does not depend on `Axial.Result`. `Result.guard` provides the same value-preserving operation for code that
+already uses `Axial.Result`.
 
-## Use the DSL for check modules
-
-The presence functions work with strings, options, value options, nullable values, lists, and arrays:
+Map failures at an application boundary:
 
 ```fsharp
-present "Ada"           // Result<string, CheckFailure list>
-present (Some 1)        // Result<int option, CheckFailure list>
-present (Nullable 1)    // Result<Nullable<int>, CheckFailure list>
-present [ 1; 2 ]        // Result<int list, CheckFailure list>
+type SignupError = InvalidName of CheckFailure list
+
+let validateName name =
+    name
+    |> Result.guard nameCheck
+    |> Result.mapError InvalidName
 ```
 
-F# chooses the right function from the value's type. If it cannot work out the type, add a type annotation or use a
-specific name such as `Check.String.present`.
+## Portable constraints
 
-This page has the full DSL list. It includes `orError` and `mapError`, so a complete check pipeline can use the same
-short style.
-
-## Dot Into A Type's Module To Browse
-
-When you know the type and want to see what can be checked about it, the per-type modules are the catalog:
-`Check.String`, `Check.Number`, `Check.Seq`, `Check.Option`, `Check.ValueOption`, `Check.Nullable`, and
-`Check.Result`. Typing `Check.String.` lists every string check in completions; `Check.Seq.` lists every collection
-check. Root names like `Check.minLength` are thin forwarders into these modules — one implementation, two entry
-points — so the qualified form is never a different behavior, just a browsable one.
-
-The qualified form is also the disambiguator when a name would otherwise collide, and it states the rule precisely
-where a call site reads better with the container named — `Check.Option.some ticket.Assignee` says exactly what is
-being proven.
-
-## The `CheckFailure` Type
-
-Every `Check` that fails produces one or more [`CheckFailure`]({{< relref "/error-handling/reference/check/t-errorhandling-checkfailure.md" >}})
-values — a closed set of describable reasons, not free-form text:
+A `Constraint<'value>` combines executable behavior and metadata. See [Constraints](../constraints/) for why the
+metadata matters and how Refined and Schema consume it.
 
 ```fsharp
-type CheckFailure =
-    | Required                                                  // a required value was missing
-    | InvalidFormat of expected: string                         // didn't match an expected format (e.g. email)
-    | InvalidLength of expectation: CheckLengthExpectation * actualLength: int option
-    | OutOfRange of expectation: CheckRangeExpectation * actual: string option
-    | InvalidCount of expectation: CheckCountExpectation * actualCount: int option
-    | NotOneOf of choices: string
-    | Duplicate
-    | Custom of code: string
+let maximumNameLength : Constraint<string> =
+    Constraint.maxLength 80
 ```
 
-The failure can be rendered with `CheckFailure.describe` or `describeAll`, matched in code, or changed into a schema
-error. `CheckFailureResources` supplies translated messages when the default English text is not suitable.
+The complete [Constraints guide](../constraints/) covers inspection, custom codes, refined domain values, and Schema
+interpreters.
 
-## Attach a Domain Error
-
-When the caller needs an application error, use `orError` to replace the check details or `mapError` to carry those
-details into the new error:
+A constraint exposes both forms:
 
 ```fsharp
-type SignUpError =
-    | NameRequired
-    | AgeInvalid
+let details : ConstraintDetails =
+    Constraint.details maximumNameLength
 
-let requireAdult age : Result<int, SignUpError> =
-    age
-    |> atLeast 18
-    |> orError AgeInvalid
-
-let requireName name : Result<string, SignUpError> =
-    name |> present |> orError NameRequired
+let check : Check<string> =
+    Constraint.check maximumNameLength
 ```
 
-For example, `mapError` can keep the complete failure list:
+Built-in constraints include text formats and lengths, ordered bounds, collection counts, distinctness, multiples,
+and closed choices. Metadata arguments use the closed `ConstraintArgument` union rather than `obj`.
+
+Use the same constraint in the next layers:
+
+- [Define a refined type]({{< relref "/error-handling/refined/domain-values/" >}}) when successful checking should produce an invariant-carrying type.
+- [Apply a refinement in Schema]({{< relref "/schema/refined-values/" >}}) when structured input needs paths, accumulated diagnostics, reconstruction, and wire metadata.
+
+Custom metadata is author-declared:
 
 ```fsharp
-type OrderError = InvalidQuantity of CheckFailure list
-
-let quantity value : Result<int, OrderError> =
-    value
-    |> greaterThan 0
-    |> mapError InvalidQuantity
+let even : Constraint<int> =
+    Constraint.define
+        "even"
+        Seq.empty
+        (fun value ->
+            if value % 2 = 0 then Ok ()
+            else Error [ CheckFailure.Custom "even" ])
 ```
 
-## Check Is Not Result
+Built-in codes are reserved.
 
-Use `Check` for a rule you want to name and reuse. A `Result` helper fits better when a condition only matters at one
-call site, or when success changes the shape of the value.
+## Structured failures
 
-- `Check` handles rules such as “this string is present” or “this number is at least 18.” It returns the same value
-  when the rule passes.
-- `Result.requireTrue` and `Result.okIf` handle one-off conditions. Helpers such as `Result.someOr` take a value out
-  of another shape.
+`CheckFailure` distinguishes required values, formats, lengths, ordered ranges, collection counts, choices,
+duplicates, and custom codes. Render failures with `CheckFailure.describe` or `CheckFailure.describeAll`, or pattern
+match when the application needs structured behavior.
 
-Use `Result.requireTrue` for a condition used in one place:
+## Check or extract
 
-```fsharp
-type RegistrationError = PasswordRequired
+Checks preserve shape by returning `unit`. Extraction changes shape and belongs to Result or an explicit conversion:
 
-let validatePassword password : Result<unit, RegistrationError> =
-    not (System.String.IsNullOrWhiteSpace password)
-    |> Result.requireTrue PasswordRequired
-```
-
-Use `Result.someOr` when success takes the value out of an option:
-
-```fsharp
-let user : Result<User, LoginError> =
-    tryFindUser username |> Result.someOr UserNotFound
-```
-
-If the same condition appears more than once, give it a name as a `Check`. If a `bool` is used directly by `if` or
-`match`, see [Predicates](../predicates/).
-
-A check followed by `orError` or `mapError` is an ordinary `Result`. It works directly in `result {}` and in
-[`flow {}`]({{< relref "/flow/" >}}).
-
-## Check Or Extract
-
-A `Check` always hands back the same type it received. When success should instead *unwrap* a value — the inner
-value of an option, the head of a sequence — that's extraction, and it lives elsewhere:
-
-| Check (proves, keeps the shape) | Extract (unwraps) |
+| Prove a fact | Extract a value |
 | --- | --- |
 | `Check.Option.some` | `Result.someOr` |
 | `Check.ValueOption.some` | `Result.valueSomeOr` |
 | `Check.Nullable.hasValue` | `Result.nullableOr` |
 | `Check.Result.ok` | `Result.okOr` |
-| `Check.Result.error` | `Result.errorOr` |
-| `Check.Seq.notEmpty` | `Result.headOr` (first item) |
-| `Check.single` | `Refine.exactlyOne` (extracts the element) |
-| `Check.atMostOne` | `Refine.atMostOne` (extracts the element) |
+| `Check.Seq.notEmpty` | `Result.headOr` |
+| `Check.Seq.count 1` | `Refine.exactlyOne` |
 
-Cardinality — "this collection has exactly one item" — is a collection-level structural fact, not a value-level
-constraint. `Check.single`/`Check.atMostOne` prove the fact and keep the sequence; extracting the element itself
-lives in `Refine` instead, reusing `CheckFailed` rather than a separate error type:
-
-```fsharp
-ids |> Check.single      // proves the fact, keeps the sequence
-ids |> Refine.exactlyOne // extracts the single element
-```
-
-## Composition
-
-`Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure` combine `Check<'value>` values:
-
-```fsharp
-let requiredName : Check<string> =
-    Check.all [ present; lengthBetween 2 40 ]
-```
-
-`Check.all` runs every check and accumulates all failures; `Check.any` stops at the first success and accumulates
-failures only if every alternative fails; `Check.not` inverts a check; `Check.mapFailure` transforms the failures a
-check produces without changing what it checks.
-
-Use [`Predicate`](../predicates/) instead when a local branch needs a raw `bool` rather than a structured result.
+Use [Predicates](../predicates/) when a local branch needs `bool` rather than structured failures.

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Collection.distinctList"
 linkTitle: "distinctList"
-weight: 2402
+weight: 2302
 ---
 
 

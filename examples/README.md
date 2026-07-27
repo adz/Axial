@@ -54,7 +54,7 @@ dotnet run --project examples/Axial.Api/Axial.Api.fsproj
 AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --nologo
 ```
 
-Introductory reference app (Axial.ErrorHandling only — checks, `result {}`, and `refine {}`):
+Introductory reference app (Axial.ErrorHandling only — checks, parsing, refinement, and `result {}`):
 
 ```bash
 dotnet run --project examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.fsproj --nologo
@@ -140,7 +140,7 @@ mode on every push.
 
 The intro app in [`examples/Axial.ReferenceApp.Intro`](./Axial.ReferenceApp.Intro/) is the first reference tier:
 a conference registration desk using only `Axial.ErrorHandling`. It shows reusable checks with your own error
-union, fail-fast `result {}` pipelines, and refined domain values through `refine {}` — with no schemas and no Flow.
+union, fail-fast `result {}` pipelines, explicit parsing, and refined domain construction — with no schemas and no Flow.
 
 ## Reference Architecture App
 

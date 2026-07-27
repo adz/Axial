@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonZeroInt"
 linkTitle: "NonZeroInt"
-weight: 1007
+weight: 1006
 ---
 
 An integer that is not zero.
