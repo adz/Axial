@@ -767,3 +767,32 @@ module CheckTests =
             test <@ requiredName "Ada" = Ok () @>
             test <@ requiredName "" = Error "name-required" @>
             test <@ invalidLength "Ad" = Error 1 @>
+
+        [<Fact>]
+        let ``portable constraints keep executable behavior and structural metadata together`` () =
+            let constraint' = Constraint.lengthBetween 2 4
+
+            test <@ Constraint.check constraint' "abc" = Ok () @>
+            test <@ Constraint.check constraint' "a" = Error [ InvalidLength(LengthBetween(2, 4), Some 1) ] @>
+            test
+                <@
+                    Constraint.details constraint' =
+                        { Code = "lengthBetween"
+                          Arguments =
+                            Map
+                                [ "maximum", ConstraintArgument.Integer 4L
+                                  "minimum", ConstraintArgument.Integer 2L ] }
+                @>
+
+        [<Fact>]
+        let ``custom constraints reject reserved codes and duplicate arguments`` () =
+            raises<ArgumentException> <@ Constraint.define "email" [] Check.String.email |> ignore @>
+            raises<ArgumentException>
+                <@
+                    Constraint.define
+                        "custom"
+                        [ "value", ConstraintArgument.Text "a"
+                          "value", ConstraintArgument.Text "b" ]
+                        (fun (_: string) -> Ok ())
+                    |> ignore
+                @>

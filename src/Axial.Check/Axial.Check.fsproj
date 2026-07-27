@@ -35,6 +35,7 @@
   <ItemGroup>
     <Compile Include="Predicate.fs" />
     <Compile Include="Check.fs" />
+    <Compile Include="Constraint.fs" />
     <Compile Include="CheckDSL.fs" />
   </ItemGroup>
 
