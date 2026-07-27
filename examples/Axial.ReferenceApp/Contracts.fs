@@ -35,9 +35,14 @@ module Contracts =
     open Axial.Schema.Syntax
 
     let private requiredText create inspect maximum : Schema<'value> =
+        let refinement =
+            Refinement.defineAll
+                [ Axial.Check.Constraint.required; Axial.Check.Constraint.maxLength maximum ]
+                (fun value -> create value |> Result.defaultWith (CheckFailure.describeAll >> failwith))
+                inspect
         Schema.text
         |> Schema.constrainAll [ Constraint.required; Constraint.maxLength maximum ]
-        |> Schema.refine (Refinement.define create inspect)
+        |> Schema.refine refinement
 
     let workspaceName = requiredText WorkspaceName.create WorkspaceName.value 80
     let personName = requiredText PersonName.create PersonName.value 80

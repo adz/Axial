@@ -29,13 +29,8 @@ module WorkItemId =
     let value (WorkItemId value) = value
 
 module private RequiredText =
-    let create label wrap value =
-        value
-        |> Refine.nonBlankString
-        |> Result.map wrap
-        |> Result.mapError (function
-            | RefinementError.CheckFailed(_, failures) -> RefinementError.CheckFailed(label, failures)
-            | error -> error)
+    let create _label wrap value =
+        value |> Refine.nonBlankString |> Result.map wrap
 
 [<RequireQualifiedAccess>]
 module WorkspaceName =

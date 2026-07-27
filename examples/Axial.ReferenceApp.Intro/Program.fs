@@ -6,7 +6,7 @@ open Axial.Parse
 // Read it top to bottom:
 //   1. single-field checks that stay ordinary Result values
 //   2. a fail-fast result {} pipeline for dependent steps
-//   3. refine {} constructing refined domain values from raw strings
+//   3. explicit parsing and refinement constructing domain values
 // Schema owns accumulated, path-aware input failures; the next reference app adds it.
 
 open Axial
@@ -59,20 +59,20 @@ let parseTicketRequest (rawTier: string) (rawQuantity: string) : Result<Tier * i
     }
 
 // ---------------------------------------------------------------------------
-// 3. refine {}: raw strings become refined domain values, fail-fast.
+// 3. Parse and refinement stay explicit and map into the application's error.
 // ---------------------------------------------------------------------------
 
 type AttendeeId = AttendeeId of PositiveInt
 type ContactEmail = ContactEmail of NonBlankString
+type ContactError = InvalidId | InvalidEmail
 
 type Contact = { Id: AttendeeId; Email: ContactEmail }
 
-/// Both parses must succeed before a Contact can exist; the types carry the proof.
-let createContact (rawId: string) (rawEmail: string) : Result<Contact, RefinementError> =
-    refine {
-        let! parsedId = Parse.int rawId
-        let! positiveId = Refine.positiveInt parsedId
-        let! email = Refine.nonBlankString rawEmail
+let createContact (rawId: string) (rawEmail: string) : Result<Contact, ContactError> =
+    result {
+        let! parsedId = Parse.int rawId |> Result.mapError (fun _ -> InvalidId)
+        let! positiveId = Refine.positiveInt parsedId |> Result.mapError (fun _ -> InvalidId)
+        let! email = Refine.nonBlankString rawEmail |> Result.mapError (fun _ -> InvalidEmail)
         return { Id = AttendeeId positiveId; Email = ContactEmail email }
     }
 
@@ -92,7 +92,7 @@ let main _ =
     show "result {} (quantity out of range):" (parseTicketRequest "general" "9")
     show "result {} (unknown tier stops first):" (parseTicketRequest "vip" "9")
 
-    show "refine {} (valid contact):" (createContact "41" "ada@example.org")
-    show "refine {} (zero id fails fast):" (createContact "0" "ada@example.org")
+    show "parse/refine (valid contact):" (createContact "41" "ada@example.org")
+    show "parse/refine (zero id fails fast):" (createContact "0" "ada@example.org")
 
     0

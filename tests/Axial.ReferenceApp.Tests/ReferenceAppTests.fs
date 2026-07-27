@@ -32,7 +32,7 @@ module ReferenceAppTests =
         let workspaceId = WorkspaceId.create Guid.Empty
         let expectInvalidValue (workflow: Flow<AppEnv, AppError, 'value>) =
             match workflow.RunSynchronously(env) with
-            | Exit.Failure(Cause.Fail(AppError.InvalidValue(RefinementError.CheckFailed(_, _)))) -> ()
+            | Exit.Failure(Cause.Fail(AppError.InvalidValue(_ :: _))) -> ()
             | result -> failwithf "Expected a structured invalid-value error, got %A" result
 
         expectInvalidValue (Application.createWorkspace " ")

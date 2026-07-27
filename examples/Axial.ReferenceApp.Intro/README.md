@@ -21,7 +21,7 @@ Read `Program.fs` top to bottom:
    `BadgeError` union without hand-rolled `if`/`Error` plumbing.
 2. **`result {}`** — dependent steps (`parseTier`, then `Parse.int`, then a range gate) fail fast and stay one
    ordinary `Result<Tier * int, TicketError>`.
-3. **`refine {}`** — raw strings become refined domain values (`PositiveInt`, `NonBlankString`) wrapped in
+3. **Explicit parse/refine pipelines** — raw strings become refined domain values (`PositiveInt`, `NonBlankString`) wrapped in
    domain types; a `Contact` cannot exist unless every parse succeeded.
 
 ## What it deliberately avoids

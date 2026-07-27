@@ -34,7 +34,7 @@ let private renderError = function
         |> SchemaErrors.toList
         |> List.map (fun issue -> $"{Path.format issue.Path}: {SchemaError.render issue.Error}")
         |> String.concat "; "
-    | AppError.InvalidValue error -> RefinementError.describe error
+    | AppError.InvalidValue failures -> CheckFailure.describeAll failures
     | AppError.ProductionRejected error -> ProductionAdmissionError.describe error
     | error -> string error
 

@@ -17,7 +17,7 @@ open Axial.Refined
 [<RequireQualifiedAccess>]
 type AppError =
     | InvalidInput of SchemaErrors
-    | InvalidValue of RefinementError
+    | InvalidValue of CheckFailure list
     | InvalidContract of ContractError
     | ProductionRejected of ProductionAdmissionError
     | Domain of DomainError

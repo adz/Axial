@@ -22,11 +22,8 @@
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
-    <ProjectReference Include="..\Axial.Parse\Axial.Parse.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Errors.fs" />
     <Compile Include="Refine.fs" />
-    <Compile Include="Builders.fs" />
   </ItemGroup>
 </Project>
