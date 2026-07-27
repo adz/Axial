@@ -1,5 +1,7 @@
 namespace Axial.Refined.Tests
 
+open Axial.Parse
+
 open System
 open Axial.Check
 open Axial.Refined

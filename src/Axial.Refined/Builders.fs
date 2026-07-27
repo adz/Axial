@@ -1,5 +1,7 @@
 namespace Axial.Refined
 
+open Axial.Parse
+
 [<AutoOpen>]
 module Builders =
     /// <summary>

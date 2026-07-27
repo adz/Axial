@@ -48,6 +48,7 @@
     <Project Path="src/Axial.Data/Axial.Data.fsproj" />
     <Project Path="src/Axial.Result/Axial.Result.fsproj" />
     <Project Path="src/Axial.Check/Axial.Check.fsproj" />
+    <Project Path="src/Axial.Parse/Axial.Parse.fsproj" />
     <Project Path="src/Axial.Refined/Axial.Refined.fsproj" />
     <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
     <Project Path="src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />

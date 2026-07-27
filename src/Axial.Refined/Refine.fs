@@ -6,6 +6,7 @@ open System
 open System.Collections.Generic
 open System.Globalization
 open Axial.Check
+open Axial.Parse
 
 /// <summary>A string that is not null, empty, or whitespace.</summary>
 type NonBlankString =
@@ -363,7 +364,7 @@ module Text =
     let private notTrimmed : Check<string> =
         fun value ->
             if isNull value then Error [ Required ]
-            elif value.Trim() <> value then Error [ InvalidFormat "trimmed" ]
+            elif value.Trim() <> value then Error [ CheckFailure.InvalidFormat "trimmed" ]
             else Ok ()
 
     let private slugPattern = "^[a-z0-9]+(-[a-z0-9]+)*$"

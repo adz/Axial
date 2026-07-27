@@ -21,5 +21,6 @@
     <ProjectReference Include="..\Axial.Result\Axial.Result.fsproj" />
     <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
     <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
+    <ProjectReference Include="..\Axial.Parse\Axial.Parse.fsproj" />
   </ItemGroup>
 </Project>

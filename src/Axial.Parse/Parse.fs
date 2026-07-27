@@ -1,4 +1,4 @@
-namespace Axial.Refined
+namespace Axial.Parse
 
 open System
 open System.Globalization

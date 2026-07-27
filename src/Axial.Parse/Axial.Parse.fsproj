@@ -3,30 +3,23 @@
     <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
-    <PackageId>Axial.Refined</PackageId>
-    <AssemblyName>Axial.Refined</AssemblyName>
-    <RootNamespace>Axial.Refined</RootNamespace>
+    <PackageId>Axial.Parse</PackageId>
+    <AssemblyName>Axial.Parse</AssemblyName>
+    <RootNamespace>Axial.Parse</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Parsed and refined domain values for F#.</Description>
+    <Description>Primitive parsers for untrusted serialized input, returning standard Result values.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <PackageTags>fsharp;refined-types;refinement-types;domain-types;value-objects;smart-constructors;parse-dont-validate</PackageTags>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageTags>fsharp;parsing;result;error-handling</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
-    <ProjectReference Include="..\Axial.Parse\Axial.Parse.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Errors.fs" />
-    <Compile Include="Refine.fs" />
-    <Compile Include="Builders.fs" />
+    <Compile Include="Parse.fs" />
   </ItemGroup>
 </Project>

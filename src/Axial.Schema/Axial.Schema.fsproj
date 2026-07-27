@@ -36,6 +36,7 @@
     <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
     <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
     <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
+    <ProjectReference Include="..\Axial.Parse\Axial.Parse.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
