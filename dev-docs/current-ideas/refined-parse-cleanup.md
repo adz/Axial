@@ -1,6 +1,6 @@
 # Axial — Parse / Check / Refine / Schema cleanup
 
-**Status:** accepted design direction; not implemented.
+**Status:** implemented.
 
 **Compatibility:** pre-1.0 compatibility does not constrain the design.
 
@@ -390,43 +390,43 @@ interpreters. Encoding and inspection project through `PositiveInt.Value`.
 
 ### Check, Result, and Constraint
 
-- [ ] Restore `Check<'value> = 'value -> Result<unit,CheckFailure list>`.
-- [ ] Add structurally typed `Result.guard` without adding a Result-to-Check dependency.
-- [ ] Audit transforming checks; keep predicates in Check and move normalization out.
-- [ ] Keep extraction helpers such as `Result.someOr` in Result.
-- [ ] Move public typed `Constraint<'value>` from Schema to Check.
-- [ ] Replace `obj` metadata with a closed portable argument model.
-- [ ] Reserve built-in constraint codes and document custom metadata as author-declared.
-- [ ] Make Check DSL and Schema syntax delegate portable operations to Constraint.
-- [ ] Add inventory tests for built-in behavior, metadata, and interpreter coverage.
+- [x] Restore `Check<'value> = 'value -> Result<unit,CheckFailure list>`.
+- [x] Add structurally typed `Result.guard` without adding a Result-to-Check dependency.
+- [x] Audit transforming checks; keep predicates in Check and move normalization out.
+- [x] Keep extraction helpers such as `Result.someOr` in Result.
+- [x] Move public typed `Constraint<'value>` from Schema to Check.
+- [x] Replace `obj` metadata with a closed portable argument model.
+- [x] Reserve built-in constraint codes and document custom metadata as author-declared.
+- [x] Make Check DSL and Schema syntax delegate portable operations to Constraint.
+- [x] Add inventory tests for built-in behavior, metadata, and interpreter coverage.
 
 ### Parse and Refined
 
-- [ ] Create independent `Axial.Parse`; move `ParseError` and `Parse.*` into it.
-- [ ] Update `AGENTS.md` and `dev-docs/AGENT_INDEX.md` when this direction is accepted.
-- [ ] Remove parsing refinements, string-to-primitive refinement instances, and parse/refine builders.
-- [ ] Replace arbitrary fallible `Refinement.define` with `define`, `defineAll`, and `defineWithCheck`.
-- [ ] Remove target strings and `RefinementError`; return `CheckFailure list` directly.
-- [ ] Reject empty `defineAll` input and test the successful-projection law.
-- [ ] Keep named `Refine.*` convenience functions and explicit refinement values.
+- [x] Create independent `Axial.Parse`; move `ParseError` and `Parse.*` into it.
+- [x] Update `AGENTS.md` and `dev-docs/AGENT_INDEX.md` when this direction is accepted.
+- [x] Remove parsing refinements, string-to-primitive refinement instances, and parse/refine builders.
+- [x] Replace arbitrary fallible `Refinement.define` with `define`, `defineAll`, and `defineWithCheck`.
+- [x] Remove target strings and `RefinementError`; return `CheckFailure list` directly.
+- [x] Reject empty `defineAll` input and test the successful-projection law.
+- [x] Keep named `Refine.*` convenience functions and explicit refinement values.
 
 ### Schema
 
-- [ ] Rename the fallible mapping to `Schema.tryConvert` and keep `Schema.convert` for total mappings.
-- [ ] Lower conversion and refinement through one projected internal node where practical.
-- [ ] Execute refinement-owned constraints once while retaining their metadata.
-- [ ] Keep `Schema.admit` as structured draft-to-domain admission.
-- [ ] Make `Schema.check` return canonical reconstructed output.
-- [ ] Test normalization, constructor failure, root/path error lowering, encoding, and inspection.
+- [x] Rename the fallible mapping to `Schema.tryConvert` and keep `Schema.convert` for total mappings.
+- [x] Lower conversion and refinement through one projected internal node where practical.
+- [x] Execute refinement-owned constraints once while retaining their metadata.
+- [x] Keep `Schema.admit` as structured draft-to-domain admission.
+- [x] Make `Schema.check` return canonical reconstructed output.
+- [x] Test normalization, constructor failure, root/path error lowering, encoding, and inspection.
 
 ### Documentation and conformance
 
-- [ ] Update source comments and generator inputs, then regenerate affected references.
-- [ ] Add API-shape tests for removed CEs, SRTP entries, and `RefinementError`.
-- [ ] Add API-shape tests for Constraint, Refinement, and conversion signatures.
-- [ ] Run focused Check, Result, Refined, Schema, generator, and API-shape tests.
-- [ ] Defer full documentation validation until the phase or release boundary.
-- [ ] Update `dev-docs/PLAN.md` and durable decisions only after this brief is accepted.
+- [x] Update source comments and generator inputs, then regenerate affected references.
+- [x] Add API-shape tests for removed CEs, SRTP entries, and `RefinementError`.
+- [x] Add API-shape tests for Constraint, Refinement, and conversion signatures.
+- [x] Run focused Check, Result, Refined, Schema, generator, and API-shape tests.
+- [x] Defer full documentation validation until the phase or release boundary.
+- [x] Update `dev-docs/PLAN.md` and durable decisions only after this brief is accepted.
 
 ## 12. Rejected or deferred alternatives
 
