@@ -6,9 +6,11 @@ description: Couple a portable constraint to total construction and projection.
 
 # Define Refined Types
 
-A refined type has a private representation, a checked construction path, and one canonical underlying representation.
+A refined type is a private wrapper with a smart constructor and one canonical way to recover its underlying value.
+The smart constructor prevents invalid values from entering domain code; the projection lets adapters and persistence
+code recover the ordinary representation without rechecking.
 
-## Define the type and projection
+## Define the wrapper and Value projection
 
 ```fsharp
 open Axial.Check
@@ -22,7 +24,7 @@ module ContactEmail =
     let value (ContactEmail value) = value
 ```
 
-## Define the invariant
+## Guard construction with a refinement
 
 Use `Refinement.define` when one portable constraint describes admission:
 
@@ -40,7 +42,7 @@ module ContactEmail =
         Refinement.create refinement raw
 ```
 
-Construction returns check failures directly:
+`ContactEmail.create` is now the smart constructor. Construction returns check failures directly:
 
 ```fsharp
 let email : Result<ContactEmail, CheckFailure list> =

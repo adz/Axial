@@ -6,8 +6,18 @@ description: Construct invariant-carrying values from already-typed underlying v
 ---
 
 
-`Axial.Refined` constructs types whose private representation records that a check passed. It depends only on
-`Axial.Check`.
+`Axial.Refined` provides smart constructors for types whose private representation records that a check passed. A
+smart constructor is useful when accepting a plain `int`, `string`, or collection everywhere would force every caller
+to remember the same rule. Construction checks the value once; code that receives the refined type can rely on that
+invariant.
+
+In Axial, refinement is mainly the pair of operations around a private wrapper:
+
+- **guard construction** — check an underlying value, then wrap it only on success;
+- **project the value** — unwrap it through its canonical `Value` member or module `value` function.
+
+A `Refinement<'underlying,'refined>` packages the checks or constraints, the total wrapping function, and the total
+reverse projection. It does not parse text or normalize the input. `Axial.Refined` depends only on `Axial.Check`.
 
 ```sh
 dotnet add package Axial.Refined
@@ -18,7 +28,7 @@ open Axial.Check
 open Axial.Refined
 ```
 
-## Construct a supplied refined value
+## Use a smart constructor
 
 ```fsharp
 let quantity : Result<PositiveInt, CheckFailure list> =
@@ -31,35 +41,50 @@ let tags : Result<NonEmptyList<string>, CheckFailure list> =
     Refine.nonEmptyList [ "fsharp"; "schema" ]
 ```
 
-Read the canonical representation through the matching type module or member:
+After successful construction, downstream functions can require `PositiveInt` instead of repeatedly checking `int`.
+Read the canonical underlying representation through the matching `Value` member or module `value` function:
 
 ```fsharp
 let printQuantity (quantity: PositiveInt) =
     printfn "%d" quantity.Value
 ```
 
-## Define an application refinement
+## Wrap and unwrap an application type
 
 ```fsharp
 type CustomerId =
     private
     | CustomerId of int
 
-module CustomerId =
-    let value (CustomerId value) = value
+    member this.Value =
+        let (CustomerId value) = this
+        value
 
+module CustomerId =
     let refinement =
         Refinement.define
             (Constraint.greaterThan 0)
             CustomerId
-            value
+            _.Value
 
     let create value =
         Refinement.create refinement value
 ```
 
-`Refinement.create` runs the constraint before invoking the total constructor. `Refinement.underlying` applies the
-reverse projection. `Refinement.constraints` exposes portable metadata for Schema and other interpreters.
+`CustomerId.create` is the public smart constructor. `Refinement.create` checks the `int` before invoking the private
+`CustomerId` wrapper. `id.Value`—or equivalently `Refinement.underlying CustomerId.refinement id`—unwraps a
+constructed value without failure. `Refinement.constraints` exposes the same portable rules to Schema and other
+interpreters.
+
+This makes application signatures carry useful facts:
+
+```fsharp
+let loadCustomer (id: CustomerId) =
+    // id is already known to be greater than zero
+    repository.load id.Value
+```
+
+Keep the raw type at input and storage boundaries. Use the refined type in domain code where the invariant matters.
 
 ## Compose with parsing
 

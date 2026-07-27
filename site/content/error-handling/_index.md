@@ -31,39 +31,48 @@ reusable refinements. Each package can be installed independently.
 </div>
 
 <div class="docs-home-hero-visual">
-<svg viewBox="0 0 680 270" role="img" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">
-  <title>Result composes explicit Check, Parse, and Refinement operations</title>
-  <desc>Check returns CheckFailure values, Parse returns ParseError values, and Refinement construction returns CheckFailure values. Applications map these failures into their own Result error.</desc>
+<svg viewBox="0 0 680 285" role="img" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">
+  <title>Result composes Check, Parse, and Refined operations</title>
+  <desc>Check tests an existing value, Parse decodes a serialized primitive, and Refined guards construction and exposes the underlying Value. Check and refined construction return CheckFailure values, while Parse returns ParseError. Result maps each failure into the application's error type.</desc>
   <g font-size="13">
-    <text x="20" y="24" fill="currentColor" opacity="0.55">Explicit operations, deliberate application errors</text>
+    <text x="20" y="22" fill="currentColor" opacity="0.55">Explicit value operations, composed with Result</text>
     <g stroke="currentColor" stroke-opacity="0.35" fill="none">
-      <rect x="20" y="60" width="186" height="92" rx="8"/>
-      <rect x="227" y="60" width="186" height="92" rx="8"/>
-      <rect x="434" y="60" width="186" height="92" rx="8"/>
+      <rect x="20" y="42" width="186" height="136" rx="8"/>
+      <rect x="227" y="42" width="186" height="136" rx="8"/>
+      <rect x="434" y="42" width="186" height="136" rx="8"/>
     </g>
     <g fill="currentColor" text-anchor="middle">
-      <text x="113" y="84">Check / Constraint</text>
-      <text x="320" y="84">Parse</text>
-      <text x="527" y="84">Refinement</text>
+      <text x="113" y="66">Check</text>
+      <text x="320" y="66">Parse</text>
+      <text x="527" y="66">Refined</text>
+    </g>
+    <g fill="currentColor" text-anchor="middle" opacity="0.62" font-size="11">
+      <text x="113" y="84">test an existing value</text>
+      <text x="320" y="84">decode serialized input</text>
+      <text x="527" y="84">guard construction · read Value</text>
     </g>
     <g fill="none" stroke="#0a7d62" stroke-width="1.25">
-      <rect x="40" y="104" width="146" height="30" rx="4"/>
-      <rect x="247" y="104" width="146" height="30" rx="4"/>
-      <rect x="454" y="104" width="146" height="30" rx="4"/>
+      <rect x="40" y="100" width="146" height="30" rx="4"/>
+      <rect x="247" y="100" width="146" height="30" rx="4"/>
+      <rect x="454" y="100" width="146" height="30" rx="4"/>
     </g>
     <g fill="#0a7d62" text-anchor="middle" font-family="var(--font-mono, monospace)" font-size="12">
-      <text x="113" y="123">CheckFailure list</text>
-      <text x="320" y="123">ParseError</text>
-      <text x="527" y="123">CheckFailure list</text>
+      <text x="113" y="119">CheckFailure list</text>
+      <text x="320" y="119">ParseError</text>
+      <text x="527" y="119">CheckFailure list</text>
+    </g>
+    <g fill="currentColor" text-anchor="middle" opacity="0.55" font-size="10.5">
+      <text x="113" y="151">Constraint adds portable metadata</text>
+      <text x="527" y="151">Refinement owns constraints</text>
     </g>
     <g stroke="currentColor" stroke-opacity="0.35">
-      <line x1="113" y1="152" x2="113" y2="192"/>
-      <line x1="320" y1="152" x2="320" y2="192"/>
-      <line x1="527" y1="152" x2="527" y2="192"/>
+      <line x1="113" y1="178" x2="113" y2="210"/>
+      <line x1="320" y1="178" x2="320" y2="210"/>
+      <line x1="527" y1="178" x2="527" y2="210"/>
     </g>
-    <rect x="20" y="192" width="600" height="48" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.5"/>
-    <text x="320" y="212" text-anchor="middle" fill="currentColor">Application Result</text>
-    <text x="320" y="230" text-anchor="middle" fill="currentColor" opacity="0.6" font-size="11">map each source failure into the application's error type</text>
+    <rect x="20" y="210" width="600" height="50" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.5"/>
+    <text x="320" y="231" text-anchor="middle" fill="currentColor">Application Result</text>
+    <text x="320" y="249" text-anchor="middle" fill="currentColor" opacity="0.6" font-size="11">map each source failure into the application's error type</text>
   </g>
 </svg>
 </div>
