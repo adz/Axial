@@ -36,7 +36,8 @@ module Constraint =
         if String.IsNullOrWhiteSpace value then invalidArg parameterName "Constraint names must not be blank."
 
     let private ensureNonNegative parameterName value =
-        if value < 0 then raise (ArgumentOutOfRangeException(parameterName, value, "Constraint bounds must be non-negative."))
+        if value < 0 then
+            Platform.argumentOutOfRange parameterName value "Constraint bounds must be non-negative."
 
     let private ensureBounds parameterName minimum maximum =
         if minimum > maximum then invalidArg parameterName "The minimum bound must not exceed the maximum bound."

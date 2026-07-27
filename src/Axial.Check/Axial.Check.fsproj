@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Platform.fs" />
     <Compile Include="Predicate.fs" />
     <Compile Include="Check.fs" />
     <Compile Include="Constraint.fs" />
