@@ -19,7 +19,7 @@ module ConstraintCheckTests =
                   Constraint.notEqualTo "root@example.com"
                   Constraint.oneOf [ "ada@example.com"; "grace@example.com" ] ]
 
-        test <@ check "ada@example.com" = Ok "ada@example.com" @>
+        test <@ check "ada@example.com" = Ok () @>
         test <@
             check "" =
                 Error
@@ -43,7 +43,7 @@ module ConstraintCheckTests =
                   Constraint.atMost 17
                   Constraint.notEqualTo 15 ]
 
-        test <@ check 16 = Ok 16 @>
+        test <@ check 16 = Ok () @>
         test <@
             check 10 =
                 Error
@@ -55,22 +55,22 @@ module ConstraintCheckTests =
 
     [<Fact>]
     let ``zero-relative schema constraints lower to executable Check programs`` () =
-        test <@ ConstraintCheck.ordered<int> [ Constraint.positive<int> () ] 1 = Ok 1 @>
+        test <@ ConstraintCheck.ordered<int> [ Constraint.positive<int> () ] 1 = Ok () @>
         test <@
             ConstraintCheck.ordered<int> [ Constraint.positive<int> () ] 0 =
                 Error [ OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ]
         @>
-        test <@ ConstraintCheck.ordered<int> [ Constraint.nonNegative<int> () ] 0 = Ok 0 @>
+        test <@ ConstraintCheck.ordered<int> [ Constraint.nonNegative<int> () ] 0 = Ok () @>
         test <@
             ConstraintCheck.ordered<int> [ Constraint.nonNegative<int> () ] -1 =
                 Error [ OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") ]
         @>
-        test <@ ConstraintCheck.ordered<int> [ Constraint.negative<int> () ] -1 = Ok -1 @>
+        test <@ ConstraintCheck.ordered<int> [ Constraint.negative<int> () ] -1 = Ok () @>
         test <@
             ConstraintCheck.ordered<int> [ Constraint.negative<int> () ] 0 =
                 Error [ OutOfRange(CheckRangeExpectation.LessThan "0", Some "0") ]
         @>
-        test <@ ConstraintCheck.ordered<int> [ Constraint.nonPositive<int> () ] 0 = Ok 0 @>
+        test <@ ConstraintCheck.ordered<int> [ Constraint.nonPositive<int> () ] 0 = Ok () @>
         test <@
             ConstraintCheck.ordered<int> [ Constraint.nonPositive<int> () ] 1 =
                 Error [ OutOfRange(CheckRangeExpectation.AtMost "0", Some "1") ]
@@ -84,7 +84,7 @@ module ConstraintCheckTests =
                   Constraint.maxCount 3
                   Constraint.distinct ]
 
-        test <@ check [ 1; 2 ] = Ok [ 1; 2 ] @>
+        test <@ check [ 1; 2 ] = Ok () @>
         test <@
             check [ 1; 1; 2; 3 ] =
                 Error
@@ -97,7 +97,7 @@ module ConstraintCheckTests =
     let ``contains schema constraint lowers to an executable Check program`` () =
         let check = ConstraintCheck.sequence<int> [ Constraint.contains 2 ]
 
-        test <@ check [ 1; 2; 3 ] = Ok [ 1; 2; 3 ] @>
+        test <@ check [ 1; 2; 3 ] = Ok () @>
         test <@ check [ 1; 3 ] = Error [ NotOneOf "2" ] @>
 
     [<Fact>]
@@ -106,7 +106,7 @@ module ConstraintCheckTests =
             Constraint.createWithArguments "maxLength" [ "maximum", box "not-an-int" ]
 
         test <@ ConstraintCheck.tryText customMaxLengthWithWrongArgumentType |> Option.isNone @>
-        test <@ ConstraintCheck.text [ Constraint.optional ] "anything" = Ok "anything" @>
+        test <@ ConstraintCheck.text [ Constraint.optional ] "anything" = Ok () @>
         raises<ArgumentNullException> <@ ConstraintCheck.tryText null |> ignore @>
         raises<ArgumentNullException> <@ ConstraintCheck.text null |> ignore @>
         raises<ArgumentNullException> <@ ConstraintCheck.text [ null ] |> ignore @>

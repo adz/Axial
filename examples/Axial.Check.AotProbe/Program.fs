@@ -4,9 +4,8 @@ open Axial.Check.CheckDSL
 [<EntryPoint>]
 let main _ =
     "Ada"
-    |> present
-    |> Result.bind (minLength 3)
+    |> Check.all [ present; minLength 3 ]
     |> orError "invalid name"
     |> function
-        | Ok "Ada" -> 0
-        | other -> failwithf "Unexpected Validation probe result: %A" other
+        | Ok () -> 0
+        | other -> failwithf "Unexpected Check probe result: %A" other

@@ -203,7 +203,7 @@ module ApiShapeTests =
 
         let arguments = checkType.GetGenericArguments()
         test <@ arguments[0] = typeof<'value> @>
-        test <@ arguments[1] = typeof<Result<'value, CheckFailure list>> @>
+        test <@ arguments[1] = typeof<Result<unit, CheckFailure list>> @>
 
     let private assertMethodsReturnCheckResult methodNames (targetType: Type) =
         let methods = targetType |> publicStaticMethods
@@ -1332,10 +1332,10 @@ module ApiShapeTests =
         let checkProgram : Check<string> =
             fun value ->
                 if String.IsNullOrWhiteSpace value then Error [ Required ]
-                else Ok value
+                else Ok ()
 
-        let checkFunction : string -> Result<string, CheckFailure list> = checkProgram
-        test <@ checkFunction "Ada" = Ok "Ada" @>
+        let checkFunction : string -> Result<unit, CheckFailure list> = checkProgram
+        test <@ checkFunction "Ada" = Ok () @>
         test <@ checkFunction "" = Error [ Required ] @>
 
         typeof<CheckFailure>

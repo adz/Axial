@@ -25,9 +25,9 @@ type BadgeError =
 /// A badge name must print on one line: 3 to 40 characters.
 let validateBadgeName (name: string) : Result<string, BadgeError> =
     name
-    |> minLength 3
+    |> Result.guard (minLength 3)
     |> orError NameTooShort
-    |> Result.bind (fun name -> name |> maxLength 40 |> orError NameTooLong)
+    |> Result.bind (Result.guard (maxLength 40) >> orError NameTooLong)
 
 // ---------------------------------------------------------------------------
 // 2. result {}: fail-fast sequencing of dependent steps.

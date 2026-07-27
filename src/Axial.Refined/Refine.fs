@@ -297,7 +297,7 @@ type DateOnlyRange =
 module private Checked =
     let withCheck (target: string) (check: Check<'raw>) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
         match check value with
-        | Ok value -> Ok(construct value)
+        | Ok () -> Ok(construct value)
         | Error failures -> Error(RefinementError.CheckFailed(target, failures))
 
     let withChecks (target: string) (checks: Check<'raw> list) (construct: 'raw -> 'refined) (value: 'raw) : Result<'refined, RefinementError> =
@@ -364,7 +364,7 @@ module Text =
         fun value ->
             if isNull value then Error [ Required ]
             elif value.Trim() <> value then Error [ InvalidFormat "trimmed" ]
-            else Ok value
+            else Ok ()
 
     let private slugPattern = "^[a-z0-9]+(-[a-z0-9]+)*$"
 

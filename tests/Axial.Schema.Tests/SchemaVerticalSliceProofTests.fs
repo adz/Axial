@@ -212,7 +212,7 @@ module SchemaVerticalSliceProofTests =
         // path-free value program.
         let emailCheck = ConstraintCheck.text emailDescriptor.ValueSchema.Constraints
 
-        test <@ emailCheck "ada@example.com" = Ok "ada@example.com" @>
+        test <@ emailCheck "ada@example.com" = Ok () @>
         test <@ emailCheck "" = Error [ Required ] @>
         test <@ emailCheck (String.replicate 255 "a") = Error [ InvalidLength(MaximumLength 254, Some 255) ] @>
 

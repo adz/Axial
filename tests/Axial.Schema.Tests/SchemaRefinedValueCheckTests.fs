@@ -108,14 +108,14 @@ module SchemaRefinedValueCheckTests =
     let ``a refined value schema's raw and refined constraint metadata runs as one Check program`` () =
         let check = Email.schema |> SchemaCheck.text
 
-        test <@ check (Email.create "ada@example.com") = Ok(Email.create "ada@example.com") @>
+        test <@ check (Email.create "ada@example.com") = Ok () @>
         test <@ check (Email.create "") = Error [ Required; InvalidFormat "email" ] @>
 
     [<Fact>]
     let ``raw text constraint metadata checks the refined value's underlying text`` () =
         let check = ContactName.schema |> SchemaCheck.text
 
-        test <@ check (ContactName.create "Ada") = Ok(ContactName.create "Ada") @>
+        test <@ check (ContactName.create "Ada") = Ok () @>
         test <@ check (ContactName.create "A") = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
         test <@
             check (ContactName.create (String.replicate 41 "a")) =
@@ -126,7 +126,7 @@ module SchemaRefinedValueCheckTests =
     let ``layered refined value schemas run every layer's checks through composed inspection`` () =
         let check = NormalizedEmail.schema |> SchemaCheck.text
 
-        test <@ check (NormalizedEmail.create (Email.create "ada@example.com")) = Ok(NormalizedEmail.create (Email.create "ada@example.com")) @>
+        test <@ check (NormalizedEmail.create (Email.create "ada@example.com")) = Ok () @>
 
         // The raw text layer's checks fire for blank input; the outer refined layer's maxLength passes at length 0.
         test <@ check (NormalizedEmail.create (Email.create "")) = Error [ Required; InvalidFormat "email" ] @>
@@ -143,7 +143,7 @@ module SchemaRefinedValueCheckTests =
     let ``refined value schemas over ordered primitives run range Check programs`` () =
         let check = Age.schema |> SchemaCheck.ordered<int, _>
 
-        test <@ check (Age.create 30) = Ok(Age.create 30) @>
+        test <@ check (Age.create 30) = Ok () @>
         test <@ check (Age.create -1) = Error [ OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") ] @>
         test <@ check (Age.create 200) = Error [ OutOfRange(CheckRangeExpectation.AtMost "130", Some "200") ] @>
 
@@ -153,7 +153,7 @@ module SchemaRefinedValueCheckTests =
             Email.schema
             |> SchemaCheck.fromUnderlying (Check.all [ Check.String.present; Check.String.matches "@example\\.com$" ])
 
-        test <@ check (Email.create "ada@example.com") = Ok(Email.create "ada@example.com") @>
+        test <@ check (Email.create "ada@example.com") = Ok () @>
         test <@ check (Email.create "ada@example.org") = Error [ InvalidFormat "@example\\.com$" ] @>
 
     [<Fact>]
@@ -163,7 +163,7 @@ module SchemaRefinedValueCheckTests =
             |> Schema.constrain (Constraint.minLength 2)
             |> SchemaCheck.text
 
-        test <@ check "Ada" = Ok "Ada" @>
+        test <@ check "Ada" = Ok () @>
         test <@ check "A" = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
 
     [<Fact>]

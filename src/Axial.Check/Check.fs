@@ -172,13 +172,11 @@ module CheckFailure =
 /// An executable, path-free value constraint over an already parsed value.
 /// </summary>
 /// <remarks>
-/// A check succeeds with the original value (<c>Ok value</c>, unchanged) or returns one or more structured
-/// <see cref="T:Axial.Check.CheckFailure" /> values. A passing check never transforms its input — the same
-/// value that went in comes back out — so a check result is directly pipeable into the next step without a separate
-/// "keep the value" helper. Checks do not carry input paths, structured data, schema metadata, or refined-value
+/// A check succeeds with the original value (<c>Ok ()</c>, unchanged) or returns one or more structured
+/// <see cref="T:Axial.Check.CheckFailure" /> values. A passing check never transforms its input — it never returns or replaces the checked value. Use <c>Axial.Result.Result.guard</c> when the original value must continue through a Result pipeline. Checks do not carry input paths, structured data, schema metadata, or refined-value
 /// construction; keep those concerns in validation, parsing, schema, or refinement layers.
 /// </remarks>
-type Check<'value> = 'value -> Result<'value, CheckFailure list>
+type Check<'value> = 'value -> Result<unit, CheckFailure list>
 
 /// <summary>
 /// Typed value-check programs for local structural facts.
@@ -194,7 +192,7 @@ type Check<'value> = 'value -> Result<'value, CheckFailure list>
 module Check =
     /// <summary>Executable, path-free value checks for already parsed strings.</summary>
     module String =
-        let private fail failure : Result<string, CheckFailure list> =
+        let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
 
         let private actualLength (value: string) =
@@ -205,44 +203,44 @@ module Check =
             fun value ->
                 if isNull value then fail Required
                 elif value.IsBlank then fail Required
-                else Ok value
+                else Ok ()
 
         /// <summary>Requires an already parsed string value to be exactly empty. Null fails as a missing value.</summary>
         let empty : Check<string> =
             fun value ->
                 if isNull value then fail Required
-                elif value.IsEmpty then Ok value
+                elif value.IsEmpty then Ok ()
                 else fail (InvalidLength(ExactLength 0, actualLength value))
 
         /// <summary>Requires an already parsed string value to contain at least one character. Whitespace counts as present text.</summary>
         let notEmpty : Check<string> =
             fun value ->
                 if isNull value then fail Required
-                elif value.IsNotEmpty then Ok value
+                elif value.IsNotEmpty then Ok ()
                 else fail (InvalidLength(MinimumLength 1, Some 0))
 
         /// <summary>Requires an already parsed string value to have at least the supplied length. Null fails with an unknown actual length.</summary>
         let minLength (minimum: int) : Check<string> =
             fun value ->
-                if value.HasMinLength minimum then Ok value
+                if value.HasMinLength minimum then Ok ()
                 else fail (InvalidLength(MinimumLength minimum, actualLength value))
 
         /// <summary>Requires an already parsed string value to have at most the supplied length. Null fails with an unknown actual length.</summary>
         let maxLength (maximum: int) : Check<string> =
             fun value ->
-                if value.HasMaxLength maximum then Ok value
+                if value.HasMaxLength maximum then Ok ()
                 else fail (InvalidLength(MaximumLength maximum, actualLength value))
 
         /// <summary>Requires an already parsed string value length to lie inside the supplied inclusive bounds. Null fails with an unknown actual length.</summary>
         let lengthBetween (minimum: int) (maximum: int) : Check<string> =
             fun value ->
-                if value.HasLengthBetween(minimum, maximum) then Ok value
+                if value.HasLengthBetween(minimum, maximum) then Ok ()
                 else fail (InvalidLength(LengthBetween(minimum, maximum), actualLength value))
 
         /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
         let length (expected: int) : Check<string> =
             fun value ->
-                if value.HasLength expected then Ok value
+                if value.HasLength expected then Ok ()
                 else fail (InvalidLength(ExactLength expected, actualLength value))
 
         /// <summary>Requires an already parsed string value to have exactly the supplied length. Null fails with an unknown actual length.</summary>
@@ -252,25 +250,25 @@ module Check =
         /// <summary>Requires an already parsed string value to match Axial's pragmatic email format.</summary>
         let email : Check<string> =
             fun value ->
-                if value.IsEmail then Ok value
+                if value.IsEmail then Ok ()
                 else fail (InvalidFormat "email")
 
         /// <summary>Requires an already parsed string value to match the supplied regular expression pattern.</summary>
         let matches (pattern: string) : Check<string> =
             fun value ->
-                if value.MatchesPattern pattern then Ok value
+                if value.MatchesPattern pattern then Ok ()
                 else fail (InvalidFormat pattern)
 
         /// <summary>Requires an already parsed string value to contain one or more numeric characters.</summary>
         let numeric : Check<string> =
             fun value ->
-                if value.IsNumeric then Ok value
+                if value.IsNumeric then Ok ()
                 else fail (InvalidFormat "numeric")
 
         /// <summary>Requires an already parsed string value to contain one or more letter or digit characters.</summary>
         let alphaNumeric : Check<string> =
             fun value ->
-                if value.IsAlphaNumeric then Ok value
+                if value.IsAlphaNumeric then Ok ()
                 else fail (InvalidFormat "alphaNumeric")
 
         /// <summary>Requires an already parsed string value to equal one of the supplied choices. Null fails with an unknown actual value.</summary>
@@ -279,7 +277,7 @@ module Check =
             let expected = System.String.Join("|", choices)
 
             fun value ->
-                if not (isNull value) && List.contains value choices then Ok value
+                if not (isNull value) && List.contains value choices then Ok ()
                 else fail (NotOneOf expected)
 
     /// <summary>Executable, path-free value checks for already parsed ordered values.</summary>
@@ -287,51 +285,51 @@ module Check =
         /// <summary>Requires a value to lie inside the supplied inclusive bounds.</summary>
         let inline between minimum maximum : Check<'value> =
             fun value ->
-                if Predicate.Number.between minimum maximum value then Ok value
+                if Predicate.Number.between minimum maximum value then Ok ()
                 else Error [ OutOfRange(Between(string minimum, string maximum), Some(string value)) ]
 
         /// <summary>Requires a value to be greater than the supplied exclusive lower bound.</summary>
         let inline greaterThan minimum : Check<'value> =
             fun value ->
-                if Predicate.Number.greaterThan minimum value then Ok value
+                if Predicate.Number.greaterThan minimum value then Ok ()
                 else Error [ OutOfRange(GreaterThan(string minimum), Some(string value)) ]
 
         /// <summary>Requires a value to be less than the supplied exclusive upper bound.</summary>
         let inline lessThan maximum : Check<'value> =
             fun value ->
-                if Predicate.Number.lessThan maximum value then Ok value
+                if Predicate.Number.lessThan maximum value then Ok ()
                 else Error [ OutOfRange(LessThan(string maximum), Some(string value)) ]
 
         /// <summary>Requires a value to be greater than or equal to the supplied lower bound.</summary>
         let inline atLeast minimum : Check<'value> =
             fun value ->
-                if Predicate.Number.atLeast minimum value then Ok value
+                if Predicate.Number.atLeast minimum value then Ok ()
                 else Error [ OutOfRange(AtLeast(string minimum), Some(string value)) ]
 
         /// <summary>Requires a value to be less than or equal to the supplied upper bound.</summary>
         let inline atMost maximum : Check<'value> =
             fun value ->
-                if Predicate.Number.atMost maximum value then Ok value
+                if Predicate.Number.atMost maximum value then Ok ()
                 else Error [ OutOfRange(AtMost(string maximum), Some(string value)) ]
 
         /// <summary>Requires a value to be greater than zero.</summary>
-        let inline positive (value: 'value) : Result<'value, CheckFailure list> =
-            if Predicate.Number.positive value then Ok value
+        let inline positive (value: 'value) : Result<unit, CheckFailure list> =
+            if Predicate.Number.positive value then Ok ()
             else Error [ OutOfRange(GreaterThan "0", Some(string value)) ]
 
         /// <summary>Requires a value to be greater than or equal to zero.</summary>
-        let inline nonNegative (value: 'value) : Result<'value, CheckFailure list> =
-            if Predicate.Number.nonNegative value then Ok value
+        let inline nonNegative (value: 'value) : Result<unit, CheckFailure list> =
+            if Predicate.Number.nonNegative value then Ok ()
             else Error [ OutOfRange(AtLeast "0", Some(string value)) ]
 
         /// <summary>Requires a value to be less than zero.</summary>
-        let inline negative (value: 'value) : Result<'value, CheckFailure list> =
-            if Predicate.Number.negative value then Ok value
+        let inline negative (value: 'value) : Result<unit, CheckFailure list> =
+            if Predicate.Number.negative value then Ok ()
             else Error [ OutOfRange(LessThan "0", Some(string value)) ]
 
         /// <summary>Requires a value to be less than or equal to zero.</summary>
-        let inline nonPositive (value: 'value) : Result<'value, CheckFailure list> =
-            if Predicate.Number.nonPositive value then Ok value
+        let inline nonPositive (value: 'value) : Result<unit, CheckFailure list> =
+            if Predicate.Number.nonPositive value then Ok ()
             else Error [ OutOfRange(AtMost "0", Some(string value)) ]
 
     /// <summary>Executable, path-free value checks for already parsed sequence-shaped values.</summary>
@@ -340,7 +338,7 @@ module Check =
     /// retained in this pre-1.0 API.
     /// </remarks>
     module Seq =
-        let private fail failure : Result<#seq<'value>, CheckFailure list> =
+        let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
 
         let private actualCount (values: #seq<'value>) =
@@ -350,79 +348,79 @@ module Check =
         /// <summary>Requires an already parsed sequence-shaped value to contain at least one item. Null fails with an unknown actual count.</summary>
         let notEmpty : Check<#seq<'value>> =
             fun values ->
-                if values.HasItems then Ok values
+                if values.HasItems then Ok ()
                 else fail (InvalidCount(MinimumCount 1, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no items. Null fails with an unknown actual count.</summary>
         let empty : Check<#seq<'value>> =
             fun values ->
-                if values.HasNoItems then Ok values
+                if values.HasNoItems then Ok ()
                 else fail (InvalidCount(ExactCount 0, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.</summary>
         let count (expected: int) : Check<#seq<'value>> =
             fun values ->
-                if values.HasCount expected then Ok values
+                if values.HasCount expected then Ok ()
                 else fail (InvalidCount(ExactCount expected, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.</summary>
         let minCount (minimum: int) : Check<#seq<'value>> =
             fun values ->
-                if values.HasMinCount minimum then Ok values
+                if values.HasMinCount minimum then Ok ()
                 else fail (InvalidCount(MinimumCount minimum, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.</summary>
         let maxCount (maximum: int) : Check<#seq<'value>> =
             fun values ->
-                if values.HasMaxCount maximum then Ok values
+                if values.HasMaxCount maximum then Ok ()
                 else fail (InvalidCount(MaximumCount maximum, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
         let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
             fun values ->
-                if values.HasCountBetween(minimum, maximum) then Ok values
+                if values.HasCountBetween(minimum, maximum) then Ok ()
                 else fail (InvalidCount(CountBetween(minimum, maximum), actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
         let noDuplicates : Check<#seq<'value>> =
             fun values ->
                 if Object.ReferenceEquals(values, null) then fail Required
-                elif values.IsDistinct then Ok values
+                elif values.IsDistinct then Ok ()
                 else fail Duplicate
 
         /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
         let contains (expected: 'value) : Check<#seq<'value>> =
             fun values ->
                 if Object.ReferenceEquals(values, null) then fail Required
-                elif values.HasItem expected then Ok values
+                elif values.HasItem expected then Ok ()
                 else fail (NotOneOf(string expected))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain exactly one item.</summary>
-        let single (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+        let single (values: #seq<'value>) : Result<unit, CheckFailure list> =
             count 1 values
 
         /// <summary>Requires an already parsed sequence-shaped value to contain zero or one item.</summary>
-        let atMostOne (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+        let atMostOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
             maxCount 1 values
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at least one item.</summary>
-        let atLeastOne (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+        let atLeastOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
             notEmpty values
 
         /// <summary>Requires an already parsed sequence-shaped value to contain more than one item.</summary>
-        let moreThanOne (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+        let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
             minCount 2 values
 
     /// <summary>Executable, path-free value checks for already parsed optional values.</summary>
     module Option =
-        let private fail failure : Result<'value option, CheckFailure list> =
+        let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
 
         /// <summary>Requires an option to contain a value.</summary>
         let some : Check<'value option> =
             fun value ->
                 match value with
-                | Some _ -> Ok value
+                | Some _ -> Ok ()
                 | None -> fail Required
 
         /// <summary>Alias for <c>some</c>; requires an option to contain a value.</summary>
@@ -433,7 +431,7 @@ module Check =
         let none : Check<'value option> =
             fun value ->
                 match value with
-                | None -> Ok value
+                | None -> Ok ()
                 | Some _ -> fail (NotOneOf "None")
 
         /// <summary>Alias for <c>none</c>; requires an option to contain no value.</summary>
@@ -446,14 +444,14 @@ module Check =
 
     /// <summary>Executable, path-free value checks for already parsed value option values.</summary>
     module ValueOption =
-        let private fail failure : Result<'value voption, CheckFailure list> =
+        let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
 
         /// <summary>Requires a value option to contain a value.</summary>
         let some : Check<'value voption> =
             fun value ->
                 match value with
-                | ValueSome _ -> Ok value
+                | ValueSome _ -> Ok ()
                 | ValueNone -> fail Required
 
         /// <summary>Alias for <c>some</c>; requires a value option to contain a value.</summary>
@@ -464,7 +462,7 @@ module Check =
         let none : Check<'value voption> =
             fun value ->
                 match value with
-                | ValueNone -> Ok value
+                | ValueNone -> Ok ()
                 | ValueSome _ -> fail (NotOneOf "ValueNone")
 
         /// <summary>Alias for <c>none</c>; requires a value option to contain no value.</summary>
@@ -477,12 +475,12 @@ module Check =
 
     /// <summary>Executable, path-free value checks for already parsed nullable values.</summary>
     module Nullable =
-        let private fail failure : Result<System.Nullable<'value>, CheckFailure list> =
+        let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
 
         /// <summary>Requires a nullable value to contain a value.</summary>
         let hasValue : Check<System.Nullable<'value>> =
-            fun value -> if value.HasValue then Ok value else fail Required
+            fun value -> if value.HasValue then Ok () else fail Required
 
         /// <summary>Alias for <c>hasValue</c>; requires a nullable value to contain a value.</summary>
         let present : Check<System.Nullable<'value>> =
@@ -490,7 +488,7 @@ module Check =
 
         /// <summary>Requires a nullable value to contain no value.</summary>
         let hasNoValue : Check<System.Nullable<'value>> =
-            fun value -> if value.HasValue then fail (NotOneOf "null") else Ok value
+            fun value -> if value.HasValue then fail (NotOneOf "null") else Ok ()
 
         /// <summary>Alias for <c>hasNoValue</c>; requires a nullable value to contain no value.</summary>
         let empty : Check<System.Nullable<'value>> =
@@ -502,24 +500,24 @@ module Check =
 
     /// <summary>Executable, path-free value checks for result values.</summary>
     module Result =
-        let private fail failure : Result<Result<'value, 'error>, CheckFailure list> =
+        let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
 
         /// <summary>Requires a result to contain a successful value.</summary>
         let ok : Check<Result<'value, 'error>> =
             fun value ->
                 match value with
-                | Ok _ -> Ok value
+                | Ok _ -> Ok ()
                 | Error _ -> fail (NotOneOf "Ok")
 
         /// <summary>Requires a result to contain an error value.</summary>
         let error : Check<Result<'value, 'error>> =
             fun value ->
                 match value with
-                | Error _ -> Ok value
+                | Error _ -> Ok ()
                 | Ok _ -> fail (NotOneOf "Error")
 
-    let private fail failure : Result<'value, CheckFailure list> =
+    let private fail failure : Result<unit, CheckFailure list> =
         Error [ failure ]
 
     /// <summary>Returns a string check requiring exactly the supplied length.</summary>
@@ -539,7 +537,7 @@ module Check =
         String.lengthBetween minimum maximum
 
     /// <summary>Runs Axial's pragmatic email-format check against an already parsed string value.</summary>
-    let email (value: string) : Result<string, CheckFailure list> =
+    let email (value: string) : Result<unit, CheckFailure list> =
         String.email value
 
     /// <summary>Returns a string check requiring a match for the supplied regular expression pattern.</summary>
@@ -603,7 +601,7 @@ module Check =
         Seq.countBetween minimum maximum
 
     /// <summary>Runs a sequence-shaped check requiring no duplicate values.</summary>
-    let distinct (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+    let distinct (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.noDuplicates values
 
     /// <summary>Returns a sequence-shaped check requiring the supplied value to be present.</summary>
@@ -611,97 +609,97 @@ module Check =
         fun values -> Seq.contains expected values
 
     /// <summary>Runs a sequence-shaped check requiring exactly one item.</summary>
-    let single (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+    let single (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.single values
 
     /// <summary>Runs a sequence-shaped check requiring zero or one item.</summary>
-    let atMostOne (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+    let atMostOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.atMostOne values
 
     /// <summary>Runs a sequence-shaped check requiring at least one item.</summary>
-    let atLeastOne (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+    let atLeastOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.atLeastOne values
 
     /// <summary>Runs a sequence-shaped check requiring more than one item.</summary>
-    let moreThanOne (values: #seq<'value>) : Result<#seq<'value>, CheckFailure list> =
+    let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
         Seq.moreThanOne values
 
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type Present =
-        static member inline Invoke(value: ^value) : Result<^value, CheckFailure list> =
+        static member inline Invoke(value: ^value) : Result<unit, CheckFailure list> =
             let inline call (method: ^method, input: ^input, output: ^output) =
                 ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-            call (Unchecked.defaultof<Present>, value, Unchecked.defaultof<Result<^value, CheckFailure list>>)
+            call (Unchecked.defaultof<Present>, value, Unchecked.defaultof<Result<unit, CheckFailure list>>)
 
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type Empty =
-        static member inline Invoke(value: ^value) : Result<^value, CheckFailure list> =
+        static member inline Invoke(value: ^value) : Result<unit, CheckFailure list> =
             let inline call (method: ^method, input: ^input, output: ^output) =
                 ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-            call (Unchecked.defaultof<Empty>, value, Unchecked.defaultof<Result<^value, CheckFailure list>>)
+            call (Unchecked.defaultof<Empty>, value, Unchecked.defaultof<Result<unit, CheckFailure list>>)
 
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     type NotEmpty =
-        static member inline Invoke(value: ^value) : Result<^value, CheckFailure list> =
+        static member inline Invoke(value: ^value) : Result<unit, CheckFailure list> =
             let inline call (method: ^method, input: ^input, output: ^output) =
                 ((^method or ^input or ^output): (static member Apply: _ * _ * _ -> _) (input, output, method))
 
-            call (Unchecked.defaultof<NotEmpty>, value, Unchecked.defaultof<Result<^value, CheckFailure list>>)
+            call (Unchecked.defaultof<NotEmpty>, value, Unchecked.defaultof<Result<unit, CheckFailure list>>)
 
     /// <summary>Runs the type-directed presence check for an already parsed optional, nullable, text, or sequence-shaped value.</summary>
-    let inline present (value: ^value) : Result<^value, CheckFailure list> =
+    let inline present (value: ^value) : Result<unit, CheckFailure list> =
         Present.Invoke value
 
     /// <summary>
     /// Runs the type-directed empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
     /// </summary>
-    let inline empty (value: ^value) : Result<^value, CheckFailure list> =
+    let inline empty (value: ^value) : Result<unit, CheckFailure list> =
         Empty.Invoke value
 
     /// <summary>
     /// Runs the type-directed non-empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
     /// </summary>
-    let inline notEmpty (value: ^value) : Result<^value, CheckFailure list> =
+    let inline notEmpty (value: ^value) : Result<unit, CheckFailure list> =
         NotEmpty.Invoke value
 
     // These overloads must remain after the inline facades. Otherwise F# visits the first concrete overload while
     // compiling the facade and fixes the supposedly generic function to that overload's type.
     type Present with
-        static member Apply(value: string, _: Result<string, CheckFailure list>, _: Present) = String.present value
-        static member Apply(value: 'value option, _: Result<'value option, CheckFailure list>, _: Present) = Option.present value
-        static member Apply(value: 'value voption, _: Result<'value voption, CheckFailure list>, _: Present) = ValueOption.present value
-        static member Apply(value: System.Nullable<'value>, _: Result<System.Nullable<'value>, CheckFailure list>, _: Present) = Nullable.present value
-        static member Apply(value: 'value list, _: Result<'value list, CheckFailure list>, _: Present) = Seq.notEmpty value
-        static member Apply(value: 'value array, _: Result<'value array, CheckFailure list>, _: Present) = Seq.notEmpty value
+        static member Apply(value: string, _: Result<unit, CheckFailure list>, _: Present) = String.present value
+        static member Apply(value: 'value option, _: Result<unit, CheckFailure list>, _: Present) = Option.present value
+        static member Apply(value: 'value voption, _: Result<unit, CheckFailure list>, _: Present) = ValueOption.present value
+        static member Apply(value: System.Nullable<'value>, _: Result<unit, CheckFailure list>, _: Present) = Nullable.present value
+        static member Apply(value: 'value list, _: Result<unit, CheckFailure list>, _: Present) = Seq.notEmpty value
+        static member Apply(value: 'value array, _: Result<unit, CheckFailure list>, _: Present) = Seq.notEmpty value
 
     type Empty with
-        static member Apply(value: string, _: Result<string, CheckFailure list>, _: Empty) = String.empty value
-        static member Apply(value: 'value option, _: Result<'value option, CheckFailure list>, _: Empty) = Option.empty value
-        static member Apply(value: 'value voption, _: Result<'value voption, CheckFailure list>, _: Empty) = ValueOption.empty value
-        static member Apply(value: System.Nullable<'value>, _: Result<System.Nullable<'value>, CheckFailure list>, _: Empty) = Nullable.empty value
-        static member Apply(value: 'value list, _: Result<'value list, CheckFailure list>, _: Empty) = Seq.empty value
-        static member Apply(value: 'value array, _: Result<'value array, CheckFailure list>, _: Empty) = Seq.empty value
+        static member Apply(value: string, _: Result<unit, CheckFailure list>, _: Empty) = String.empty value
+        static member Apply(value: 'value option, _: Result<unit, CheckFailure list>, _: Empty) = Option.empty value
+        static member Apply(value: 'value voption, _: Result<unit, CheckFailure list>, _: Empty) = ValueOption.empty value
+        static member Apply(value: System.Nullable<'value>, _: Result<unit, CheckFailure list>, _: Empty) = Nullable.empty value
+        static member Apply(value: 'value list, _: Result<unit, CheckFailure list>, _: Empty) = Seq.empty value
+        static member Apply(value: 'value array, _: Result<unit, CheckFailure list>, _: Empty) = Seq.empty value
 
     type NotEmpty with
-        static member Apply(value: string, _: Result<string, CheckFailure list>, _: NotEmpty) = String.notEmpty value
-        static member Apply(value: 'value option, _: Result<'value option, CheckFailure list>, _: NotEmpty) = Option.notEmpty value
-        static member Apply(value: 'value voption, _: Result<'value voption, CheckFailure list>, _: NotEmpty) = ValueOption.notEmpty value
-        static member Apply(value: System.Nullable<'value>, _: Result<System.Nullable<'value>, CheckFailure list>, _: NotEmpty) = Nullable.notEmpty value
-        static member Apply(value: 'value list, _: Result<'value list, CheckFailure list>, _: NotEmpty) = Seq.notEmpty value
-        static member Apply(value: 'value array, _: Result<'value array, CheckFailure list>, _: NotEmpty) = Seq.notEmpty value
+        static member Apply(value: string, _: Result<unit, CheckFailure list>, _: NotEmpty) = String.notEmpty value
+        static member Apply(value: 'value option, _: Result<unit, CheckFailure list>, _: NotEmpty) = Option.notEmpty value
+        static member Apply(value: 'value voption, _: Result<unit, CheckFailure list>, _: NotEmpty) = ValueOption.notEmpty value
+        static member Apply(value: System.Nullable<'value>, _: Result<unit, CheckFailure list>, _: NotEmpty) = Nullable.notEmpty value
+        static member Apply(value: 'value list, _: Result<unit, CheckFailure list>, _: NotEmpty) = Seq.notEmpty value
+        static member Apply(value: 'value array, _: Result<unit, CheckFailure list>, _: NotEmpty) = Seq.notEmpty value
 
     /// <summary>Returns a value check requiring equality with the supplied expected value.</summary>
     let equalTo (expected: 'value) : Check<'value> =
         fun actual ->
-            if actual = expected then Ok actual
+            if actual = expected then Ok ()
             else fail (NotOneOf(string expected))
 
     /// <summary>Returns a value check requiring inequality with the supplied unexpected value.</summary>
     let notEqualTo (unexpected: 'value) : Check<'value> =
         fun actual ->
-            if actual <> unexpected then Ok actual
+            if actual <> unexpected then Ok ()
             else fail (Custom(sprintf "notEqualTo:%O" unexpected))
 
     /// <summary>Combines checks conjunctively by running every check against the value and accumulating all failures. An empty list succeeds.</summary>
@@ -719,7 +717,7 @@ module Check =
                     | Ok _ -> []
                     | Error failures -> failures)
 
-            if List.isEmpty failures then Ok value else Error failures
+            if List.isEmpty failures then Ok () else Error failures
 
     /// <summary>Combines checks disjunctively by running checks until one succeeds, or returns accumulated failures when every check fails. An empty list fails with no failures.</summary>
     /// <remarks>
@@ -733,7 +731,7 @@ module Check =
                 | [] -> Error(List.rev failures)
                 | check :: rest ->
                     match check value with
-                    | Ok _ -> Ok value
+                    | Ok _ -> Ok ()
                     | Error nextFailures -> loop (List.rev nextFailures @ failures) rest
 
             loop [] checks
@@ -743,7 +741,7 @@ module Check =
         fun value ->
             match check value with
             | Ok _ -> Error [ Custom "check.not" ]
-            | Error _ -> Ok value
+            | Error _ -> Ok ()
 
     /// <summary>Maps every failure produced by a check.</summary>
     let mapFailure (mapper: CheckFailure -> CheckFailure) (check: Check<'value>) : Check<'value> =

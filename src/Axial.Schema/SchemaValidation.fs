@@ -79,7 +79,7 @@ module ConstraintCheck =
                 if isNull value then
                     Error [ CheckFailure.Required ]
                 elif value.Trim() = value then
-                    Ok value
+                    Ok ()
                 else
                     Error [ CheckFailure.InvalidFormat "trimmed" ])
         | ConstraintMetadata.Pattern pattern -> Some(Check.String.matches pattern)
@@ -98,35 +98,35 @@ module ConstraintCheck =
     let private betweenCheck minimum maximum : Check<'value> =
         fun value ->
             if value >= minimum && value <= maximum then
-                Ok value
+                Ok ()
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.Between(string minimum, string maximum), Some(string value)) ]
 
     let private greaterThanCheck minimum : Check<'value> =
         fun value ->
             if value > minimum then
-                Ok value
+                Ok ()
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.GreaterThan(string minimum), Some(string value)) ]
 
     let private lessThanCheck maximum : Check<'value> =
         fun value ->
             if value < maximum then
-                Ok value
+                Ok ()
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.LessThan(string maximum), Some(string value)) ]
 
     let private atLeastCheck minimum : Check<'value> =
         fun value ->
             if value >= minimum then
-                Ok value
+                Ok ()
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.AtLeast(string minimum), Some(string value)) ]
 
     let private atMostCheck maximum : Check<'value> =
         fun value ->
             if value <= maximum then
-                Ok value
+                Ok ()
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.AtMost(string maximum), Some(string value)) ]
 
@@ -162,7 +162,7 @@ module ConstraintCheck =
         : Check<'value> =
         fun value ->
             if value % divisor = LanguagePrimitives.GenericZero<'value> then
-                Ok value
+                Ok ()
             else
                 Error [ CheckFailure.OutOfRange(CheckRangeExpectation.NotMultipleOf(string divisor), Some(string value)) ]
 
@@ -273,7 +273,7 @@ module SchemaCheck =
             nullArg (nameof schema)
 
         let inspect = SchemaCore.inspectUnderlying<'value, 'primitive> schema
-        fun value -> check (inspect value) |> Result.map (fun _ -> value)
+        fun value -> check (inspect value)
 
     /// <summary>
     /// Lowers the text-meaning constraint metadata carried by every layer of a value schema into one executable check
@@ -365,7 +365,7 @@ module internal ModelFieldCheck =
 
     let private runCheck constraints check value =
         match check value with
-        | Ok _ -> Ok value
+        | Ok _ -> Ok ()
         | Error failures -> failures |> SchemaCheckFailure.toSchemaErrors constraints |> Error
 
     let private checkPrimitive kind constraints value =
@@ -385,7 +385,7 @@ module internal ModelFieldCheck =
             |> unbox<decimal>
             |> runCheck constraints (fun v -> Check.all [ ConstraintCheck.ordered<decimal> constraints; ConstraintCheck.multipleOf<decimal> constraints ] v)
             |> Result.map box
-        | PrimitiveValueKind.Bool -> Ok value
+        | PrimitiveValueKind.Bool -> Ok ()
 #if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date ->
             value
@@ -393,14 +393,14 @@ module internal ModelFieldCheck =
             |> runCheck constraints (ConstraintCheck.ordered<DateOnly> constraints)
             |> Result.map box
 #else
-        | PrimitiveValueKind.Date -> Ok value
+        | PrimitiveValueKind.Date -> Ok ()
 #endif
         | PrimitiveValueKind.DateTime ->
             value
             |> unbox<DateTimeOffset>
             |> runCheck constraints (ConstraintCheck.ordered<DateTimeOffset> constraints)
             |> Result.map box
-        | PrimitiveValueKind.Guid -> Ok value
+        | PrimitiveValueKind.Guid -> Ok ()
 
     let rec private validateValue valueSchema fieldConstraints path (value: obj) =
         let constraints = allConstraints valueSchema @ fieldConstraints

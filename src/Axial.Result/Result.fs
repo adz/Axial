@@ -76,6 +76,14 @@ module Result =
     let inline orError (failure: 'error) (result: Result<'value, 'discardedError>) : Result<'value, 'error> =
         result |> mapError (fun _ -> failure)
 
+    /// <summary>Runs a check and preserves the original value when it succeeds.</summary>
+    /// <example><code>42 |> Result.guard (fun value -> if value > 0 then Ok () else Error "positive")</code></example>
+    let guard
+        (check: 'value -> Result<unit, 'error>)
+        (value: 'value)
+        : Result<'value, 'error> =
+        check value |> map (fun () -> value)
+
     /// <summary>Converts a .NET <c>Try*</c> tuple into a unit-error result.</summary>
     let fromTry (tryResult: bool * 'value) : Result<'value, unit> =
         match tryResult with
