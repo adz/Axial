@@ -17,7 +17,8 @@ In Axial, refinement is mainly the pair of operations around a private wrapper:
 - **project the value** — unwrap it through its canonical `Value` member or module `value` function.
 
 A `Refinement<'underlying,'refined>` packages the checks or constraints, the total wrapping function, and the total
-reverse projection. It does not parse text or normalize the input. `Axial.Refined` depends only on `Axial.Check`.
+reverse projection. It does not [parse text]({{< relref "/error-handling/parse/" >}}) or normalize the input.
+`Axial.Refined` depends only on `Axial.Check`.
 
 ```sh
 dotnet add package Axial.Refined
@@ -51,6 +52,9 @@ let printQuantity (quantity: PositiveInt) =
 
 ## Wrap and unwrap an application type
 
+`Refinement.define` needs three parts: a constraint over the underlying value, a total function that wraps an
+accepted value, and a total function that unwraps the refined value again.
+
 ```fsharp
 type CustomerId =
     private
@@ -63,9 +67,9 @@ type CustomerId =
 module CustomerId =
     let refinement =
         Refinement.define
-            (Constraint.greaterThan 0)
-            CustomerId
-            _.Value
+            (Constraint.greaterThan 0) // constrain the underlying int
+            CustomerId                 // wrap an accepted int
+            _.Value                    // unwrap CustomerId back to int
 
     let create value =
         Refinement.create refinement value
@@ -86,9 +90,10 @@ let loadCustomer (id: CustomerId) =
 
 Keep the raw type at input and storage boundaries. Use the refined type in domain code where the invariant matters.
 
-## Compose with parsing
+## Compose with Parse
 
-Parsing changes representation; refinement admits a subset of an already-typed value. Keep both operations visible:
+[Parsing]({{< relref "/error-handling/parse/" >}}) changes representation; refinement admits a subset of an
+already-typed value. Keep both operations visible:
 
 ```fsharp
 open Axial.Parse
@@ -108,8 +113,7 @@ let quantity raw =
 
 ## Read next
 
-1. [Parse](/error-handling/parse/) covers serialized primitive input.
-2. [Built-in Refined Values](./catalog/) covers supplied domain types.
-3. [Compose Parse and Refinement](./composition/) shows application-error mapping.
-4. [Define Refined Types](./domain-values/) defines a private type and reusable refinement.
-5. [Schema Integration](./schema/) applies refinements at structured boundaries.
+1. [Built-in Refined Values](./catalog/) covers supplied domain types.
+2. [Define Refined Types](./domain-values/) defines a private type and reusable refinement.
+3. [Schema Integration](./schema/) applies refinements at structured boundaries.
+4. [Compose Parse and Refinement](./composition/) shows application-error mapping when both operations are needed.
