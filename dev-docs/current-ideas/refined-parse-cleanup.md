@@ -117,6 +117,10 @@ structural signature keeps `Axial.Result` independent of `Axial.Check`.
 There are no `check { }`, `refine { }`, or `parse { }` computation expressions. Use the
 ordinary `result { }` builder and map errors explicitly when domains differ.
 
+`Axial.Check.CheckDSL` provides structural `guard`, `orError`, and `mapError` adapters locally. They intentionally
+mirror the corresponding Result helpers because `Axial.Check` cannot depend on `Axial.Result`. `guard` runs a check
+and returns its original input after `Ok ()`; direct check calls still return `Result<unit,CheckFailure list>`.
+
 ## 5. Constraints
 
 ```fsharp
@@ -419,6 +423,30 @@ interpreters. Encoding and inspection project through `PositiveInt.Value`.
 - [x] Make `Schema.check` return canonical reconstructed output.
 - [x] Test normalization, constructor failure, root/path error lowering, encoding, and inspection.
 
+### Narrow Schema refinement inference
+
+Schema field blocks support both explicit and canonical refinement forms:
+
+```fsharp
+field "email" _.Email {
+    withSchema Schema.text
+    refine ContactEmail.refinement
+}
+
+field "email" _.Email {
+    withSchema Schema.text
+    refine
+}
+```
+
+The bare form is deliberately narrow SRTP inference. At that field site, Schema already knows the current underlying
+type and getter destination type, and resolves one static
+`Refinement : 'underlying * 'refined -> Refinement<'underlying,'refined>` contribution on the destination type.
+The explicit form remains the escape hatch for local variants and clearer diagnostics.
+
+This does not restore universal type-directed parsing, `Refine.from`, or parser/refinement bind dispatch. Parsing and
+non-Schema refinement construction remain named, explicit operations.
+
 ### Documentation and conformance
 
 - [x] Update source comments and generator inputs, then regenerate affected references.
@@ -430,7 +458,8 @@ interpreters. Encoding and inspection project through `PositiveInt.Value`.
 
 ## 12. Rejected or deferred alternatives
 
-- **Universal parser/refinement CEs:** hide operations behind target-type dispatch.
+- **Universal parser/refinement CEs:** hide operations behind target-type dispatch. Narrow Schema field inference is
+  retained because both source and destination types are already fixed at that declaration site.
 - **Linear parse/refinement/check error hierarchy:** conflates independent failures.
 - **Checks returning their input:** permits hidden transformation; use `Result.guard`.
 - **Arbitrary fallible refinement construction:** belongs to conversion.

@@ -69,6 +69,23 @@ type RefiningFieldDeclaration<'model, 'raw, 'target> internal
     member internal _.RawSchema = rawSchema
     member internal _.Validations = validations
 
+/// Compile-time resolution of one canonical refinement for a known underlying and destination type.
+/// <exclude />
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+type RefinementDefaults =
+    static member inline Resolve() : Refinement<^underlying, ^refined> =
+        let inline call (witness: ^w, underlying: ^underlying, refined: ^refined) =
+            ((^w or ^refined):
+                (static member Refinement:
+                    ^underlying * ^refined -> Refinement<^underlying, ^refined>)
+                    (underlying, refined))
+
+        call (
+            Unchecked.defaultof<RefinementDefaults>,
+            Unchecked.defaultof<^underlying>,
+            Unchecked.defaultof<^refined>
+        )
+
 /// <summary>Configures one field inside <c>schema&lt;'model&gt; { }</c>.</summary>
 /// <exclude />
 [<EditorBrowsable(EditorBrowsableState.Never)>]
@@ -171,7 +188,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
             FieldBuilder<'model, 'target>.ConstrainAll(constraints, field.Schema)
         )
 
-    /// <summary>Refines the current raw schema into the field getter's result type.</summary>
+    /// <summary>Refines the current raw schema with an explicit refinement.</summary>
     [<CustomOperation("refine")>]
     member _.Refine
         (
@@ -179,6 +196,13 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
             refinement: Refinement<'raw, 'target>
         ) : FieldWorking<'model, 'target, 'target> =
         FieldWorking(field.Initial, field.Schema |> SchemaCore.refine refinement)
+
+    /// <summary>Refines the current raw schema with the destination type's canonical refinement.</summary>
+    [<CustomOperation("refine")>]
+    member _.Refine
+        (field: FieldWorking<'model, 'target, 'raw>)
+        : FieldRefining<'model, 'target, 'raw> =
+        FieldRefining(field.Initial, field.Schema, [])
 
     /// <summary>Adds executable validation to the field's current schema value.</summary>
     [<CustomOperation("validate")>]
@@ -427,6 +451,12 @@ type SchemaBuilder<'model>() =
 
     member _.Yield(field: FieldDeclaration<'model, 'value>) =
         FieldStep(field.Definition)
+
+    member inline _.Yield
+        (field: RefiningFieldDeclaration<'model, ^raw, ^target>)
+        : FieldStep<'model, ^target> =
+        let refinement: Refinement<^raw, ^target> = RefinementDefaults.Resolve()
+        SchemaBuilder<'model>.RefinedField(field, refinement)
 
     member inline _.Yield
         (field: ConfiguredFieldDeclaration<'model, ^target>)

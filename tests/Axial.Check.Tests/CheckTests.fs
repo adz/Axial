@@ -757,14 +757,14 @@ module CheckTests =
             test <@ Check.single [ 5 ] = Ok () @>
 
         [<Fact>]
-        let ``Check DSL maps check failures to application errors`` () =
+        let ``Check DSL guards values and maps check failures to application errors`` () =
             let requiredName value =
-                value |> CheckDSL.present |> CheckDSL.orError "name-required"
+                value |> CheckDSL.guard CheckDSL.present |> CheckDSL.orError "name-required"
 
             let invalidLength value =
-                value |> CheckDSL.minLength 3 |> CheckDSL.mapError List.length
+                value |> CheckDSL.guard (CheckDSL.minLength 3) |> CheckDSL.mapError List.length
 
-            test <@ requiredName "Ada" = Ok () @>
+            test <@ requiredName "Ada" = Ok "Ada" @>
             test <@ requiredName "" = Error "name-required" @>
             test <@ invalidLength "Ad" = Error 1 @>
 

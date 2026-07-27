@@ -72,7 +72,7 @@ module Result =
 
     /// <summary>Replaces whatever error a result carries with the supplied typed error. <c>Ok</c> passes through unchanged.</summary>
     /// <remarks>The natural follow-up to <c>okIf</c>/<c>failIf</c>, and to any <c>Check</c> call whose
-    /// <c>CheckFailure list</c> should become a domain error: <c>value |> Check.String.present |> Result.orError MyError</c>.</remarks>
+    /// <c>CheckFailure list</c> should become a domain error: <c>value |> Result.guard Check.String.present |> Result.orError MyError</c>.</remarks>
     let inline orError (failure: 'error) (result: Result<'value, 'discardedError>) : Result<'value, 'error> =
         result |> mapError (fun _ -> failure)
 

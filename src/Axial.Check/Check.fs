@@ -169,7 +169,7 @@ module CheckFailure =
         describeAllWith english failures
 
 /// <summary>
-/// An executable, path-free value constraint over an already parsed value.
+/// An executable value constraint over an already parsed value.
 /// </summary>
 /// <remarks>
 /// A check succeeds with the original value (<c>Ok ()</c>, unchanged) or returns one or more structured
@@ -190,7 +190,7 @@ type Check<'value> = 'value -> Result<unit, CheckFailure list>
 /// </remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Check =
-    /// <summary>Executable, path-free value checks for already parsed strings.</summary>
+    /// <summary>Executable value checks for already parsed strings.</summary>
     module String =
         let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
@@ -280,7 +280,7 @@ module Check =
                 if not (isNull value) && List.contains value choices then Ok ()
                 else fail (NotOneOf expected)
 
-    /// <summary>Executable, path-free value checks for already parsed ordered values.</summary>
+    /// <summary>Executable value checks for already parsed ordered values.</summary>
     module Number =
         /// <summary>Requires a value to lie inside the supplied inclusive bounds.</summary>
         let inline between minimum maximum : Check<'value> =
@@ -332,7 +332,7 @@ module Check =
             if Predicate.Number.nonPositive value then Ok ()
             else Error [ OutOfRange(AtMost "0", Some(string value)) ]
 
-    /// <summary>Executable, path-free value checks for already parsed sequence-shaped values.</summary>
+    /// <summary>Executable value checks for already parsed sequence-shaped values.</summary>
     /// <remarks>
     /// Use <c>Check.Seq</c> for sequence-shaped checks. The earlier <c>Check.Collection</c> surface is intentionally not
     /// retained in this pre-1.0 API.
@@ -411,7 +411,7 @@ module Check =
         let moreThanOne (values: #seq<'value>) : Result<unit, CheckFailure list> =
             minCount 2 values
 
-    /// <summary>Executable, path-free value checks for already parsed optional values.</summary>
+    /// <summary>Executable value checks for already parsed optional values.</summary>
     module Option =
         let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
@@ -442,7 +442,7 @@ module Check =
         let notEmpty : Check<'value option> =
             some
 
-    /// <summary>Executable, path-free value checks for already parsed value option values.</summary>
+    /// <summary>Executable value checks for already parsed value option values.</summary>
     module ValueOption =
         let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
@@ -473,7 +473,7 @@ module Check =
         let notEmpty : Check<'value voption> =
             some
 
-    /// <summary>Executable, path-free value checks for already parsed nullable values.</summary>
+    /// <summary>Executable value checks for already parsed nullable values.</summary>
     module Nullable =
         let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]
@@ -498,7 +498,7 @@ module Check =
         let notEmpty : Check<System.Nullable<'value>> =
             hasValue
 
-    /// <summary>Executable, path-free value checks for result values.</summary>
+    /// <summary>Executable value checks for result values.</summary>
     module Result =
         let private fail failure : Result<unit, CheckFailure list> =
             Error [ failure ]

@@ -19,6 +19,9 @@ type CeEmail =
 module private CeEmail =
     let refinement = Refinement.define (Axial.Check.Constraint.pattern ".+@.+") CeEmail _.Value
 
+type CeEmail with
+    static member Refinement(_: string, _: CeEmail) = CeEmail.refinement
+
 type CeSignup =
     {
         Email: CeEmail
@@ -60,7 +63,7 @@ module SchemaCeTests =
         schema<CeSignup> {
             field "email" _.Email {
                 withSchema Schema.text
-                refine CeEmail.refinement
+                refine
             }
 
             field "age" _.Age {

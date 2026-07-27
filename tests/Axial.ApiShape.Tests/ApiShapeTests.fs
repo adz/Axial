@@ -1611,6 +1611,10 @@ module ApiShapeTests =
               "takeSome"
               "orError" ]
 
+        moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckDSL"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "guard"; "orError"; "mapError" ]
+
         let predicateModule =
             moduleTypeFromAssembly "Axial.Check" "Axial.Check.Predicate"
 

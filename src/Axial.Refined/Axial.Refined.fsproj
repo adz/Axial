@@ -7,13 +7,13 @@
     <AssemblyName>Axial.Refined</AssemblyName>
     <RootNamespace>Axial.Refined</RootNamespace>
     <Authors>Adam Davies</Authors>
-    <Description>Parsed and refined domain values for F#.</Description>
+    <Description>Constraint-backed invariant-carrying domain values for F#.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <PackageTags>fsharp;refined-types;refinement-types;domain-types;value-objects;smart-constructors;parse-dont-validate</PackageTags>
+    <PackageTags>fsharp;refined-types;refinement-types;domain-types;value-objects;smart-constructors</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

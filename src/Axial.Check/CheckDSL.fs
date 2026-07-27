@@ -18,8 +18,9 @@ namespace Axial.Check
 /// <c>Check.between</c> even inside a module that has opened this DSL.
 /// </para>
 /// <para>
-/// <c>orError</c> and <c>mapError</c> are short forms of the matching <c>Result</c> functions. They let a check
-/// pipeline finish with the application's error type without leaving the opened DSL.
+/// <c>guard</c>, <c>orError</c>, and <c>mapError</c> are structural adapters matching the corresponding
+/// <c>Result</c> operations. They let a check pipeline retain its input and finish with the application's error type
+/// without adding an Axial.Result package dependency.
 /// </para>
 /// <code>
 /// module SignupChecks =
@@ -27,7 +28,7 @@ namespace Axial.Check
 ///
 ///     let validateAge : Check&lt;int&gt; = atLeast 13
 ///     let validateEmail : Check&lt;string&gt; = Check.all [ present; email ]
-///     let requireEmail value = value |> validateEmail |> orError EmailRequired
+///     let requireEmail value = value |> guard validateEmail |> orError EmailRequired
 /// </code>
 /// </remarks>
 module CheckDSL =
@@ -103,15 +104,25 @@ module CheckDSL =
     /// <summary>Alias for <see cref="M:Axial.Check.Check.mapFailure" />.</summary>
     let mapFailure = Check.mapFailure
 
+    /// <summary>Runs a structurally typed check and returns its original input after success.</summary>
+    /// <remarks>This small adapter is defined here because Axial.Check does not depend on Axial.Result.</remarks>
+    /// <example><code>value |> guard present |> orError NameRequired</code></example>
+    let inline guard check value =
+        match check value with
+        | Ok () -> Ok value
+        | Error failure -> Error failure
+
     /// <summary>Replaces a failed check's errors with the supplied error.</summary>
-    /// <example><code>value |> present |> orError NameRequired</code></example>
+    /// <remarks>This small adapter is defined here because Axial.Check does not depend on Axial.Result.</remarks>
+    /// <example><code>value |> guard present |> orError NameRequired</code></example>
     let inline orError failure result =
         match result with
         | Ok value -> Ok value
         | Error _ -> Error failure
 
     /// <summary>Changes a failed check's errors with the supplied function.</summary>
-    /// <example><code>value |> positive |> mapError InvalidQuantity</code></example>
+    /// <remarks>This small adapter is defined here because Axial.Check does not depend on Axial.Result.</remarks>
+    /// <example><code>value |> guard positive |> mapError InvalidQuantity</code></example>
     let inline mapError mapper result =
         match result with
         | Ok value -> Ok value
