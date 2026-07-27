@@ -27,4 +27,4 @@ Parses structured data after configuring parser options.
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<a href="t-schema-schemaerrors.md">SchemaErrors</a></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L90-90)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L92-92)

@@ -55,21 +55,21 @@ This page shows structured boundary data, universal schema parsing into `Result`
 
 ## Refined catalog schemas
 
-- [`Schema.RefinedSchemas.nonBlankString`](./p-schema-refinedschemas-nonblankstring.md): Describes a non-blank string as a schema refined value over required text.
-- [`Schema.RefinedSchemas.trimmedString`](./p-schema-refinedschemas-trimmedstring.md): Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.
-- [`Schema.RefinedSchemas.boundedString`](./m-schema-refinedschemas-boundedstring.md): Describes a bounded string as a schema refined value over required text with inclusive length bounds.
-- [`Schema.RefinedSchemas.slug`](./p-schema-refinedschemas-slug.md): Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.
-- [`Schema.RefinedSchemas.positiveInt`](./p-schema-refinedschemas-positiveint.md): Describes a positive integer as a schema refined value over an integer greater than zero.
-- [`Schema.RefinedSchemas.nonNegativeInt`](./p-schema-refinedschemas-nonnegativeint.md): Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.
-- [`Schema.RefinedSchemas.nonZeroInt`](./p-schema-refinedschemas-nonzeroint.md): Describes a non-zero integer as a schema refined value over an integer not equal to zero.
-- [`Schema.RefinedSchemas.negativeInt`](./p-schema-refinedschemas-negativeint.md): Describes a negative integer as a schema refined value over an integer less than zero.
-- [`Schema.RefinedSchemas.nonPositiveInt`](./p-schema-refinedschemas-nonpositiveint.md): Describes a non-positive integer as a schema refined value over an integer less than or equal to zero.
-- [`Schema.RefinedSchemas.nonEmptyList`](./m-schema-refinedschemas-nonemptylist.md): Describes a non-empty list as a schema refined value over a collection of item schemas.
-- [`Schema.RefinedSchemas.nonEmptyArray`](./m-schema-refinedschemas-nonemptyarray.md): Describes a non-empty array as a schema refined value over a collection of item schemas.
-- [`Schema.RefinedSchemas.distinctList`](./m-schema-refinedschemas-distinctlist.md): Describes a distinct list as a schema refined value over a distinct collection of item schemas.
-- [`Schema.RefinedSchemas.boundedList`](./m-schema-refinedschemas-boundedlist.md): Describes a bounded list as a schema refined value over a collection with inclusive count bounds.
-- [`Schema.RefinedSchemas.boundedArray`](./m-schema-refinedschemas-boundedarray.md): Describes a bounded array as a schema refined value over a collection with inclusive count bounds.
-- [`Schema.RefinedSchemas.dateTimeOffsetRange`](./p-schema-refinedschemas-datetimeoffsetrange.md): Describes a date-time range as a record schema with <code>start</code> and <code>end</code> fields.
+- [`Schema.RefinedSchemas.nonBlankString`](./p-schema-refinedschemas-nonblankstring.md):
+- [`Schema.RefinedSchemas.trimmedString`](./p-schema-refinedschemas-trimmedstring.md):
+- [`Schema.RefinedSchemas.boundedString`](./m-schema-refinedschemas-boundedstring.md):
+- [`Schema.RefinedSchemas.slug`](./p-schema-refinedschemas-slug.md):
+- [`Schema.RefinedSchemas.positiveInt`](./p-schema-refinedschemas-positiveint.md):
+- [`Schema.RefinedSchemas.nonNegativeInt`](./p-schema-refinedschemas-nonnegativeint.md):
+- [`Schema.RefinedSchemas.nonZeroInt`](./p-schema-refinedschemas-nonzeroint.md):
+- [`Schema.RefinedSchemas.negativeInt`](./p-schema-refinedschemas-negativeint.md):
+- [`Schema.RefinedSchemas.nonPositiveInt`](./p-schema-refinedschemas-nonpositiveint.md):
+- [`Schema.RefinedSchemas.nonEmptyList`](./m-schema-refinedschemas-nonemptylist.md):
+- [`Schema.RefinedSchemas.nonEmptyArray`](./m-schema-refinedschemas-nonemptyarray.md):
+- [`Schema.RefinedSchemas.distinctList`](./m-schema-refinedschemas-distinctlist.md):
+- [`Schema.RefinedSchemas.boundedList`](./m-schema-refinedschemas-boundedlist.md):
+- [`Schema.RefinedSchemas.boundedArray`](./m-schema-refinedschemas-boundedarray.md):
+- [`Schema.RefinedSchemas.dateTimeOffsetRange`](./p-schema-refinedschemas-datetimeoffsetrange.md):
 
 ## Existing values
 

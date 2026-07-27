@@ -5,7 +5,7 @@ weight: 2301
 type: docs
 ---
 
-Describes a trimmed string as a schema refined value over text with no leading or trailing whitespace.
+
 
 ## Signature
 
@@ -20,4 +20,4 @@ Describes a trimmed string as a schema refined value over text with no leading o
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-trimmedstring.md">TrimmedString</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L32-32)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L25-25)

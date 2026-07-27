@@ -54,7 +54,7 @@ type RequestEnv =
 
 let validateName (name: string) : Result<string, string> =
     name
-    |> Check.present
+    |> Result.guard Check.present
     |> Result.mapError (fun _ -> "name is required")
 
 let loadUser : Flow<RequestEnv, string, User> =
@@ -149,7 +149,7 @@ let greetingAsync : Flow<AppEnv, string, string> =
         let! greeting = greetingFlow
         let! (checkedGreeting: string) =
             greeting
-            |> Check.present
+            |> Result.guard Check.present
             |> Result.mapError (fun _ -> "Blanko")
 
         return checkedGreeting.ToUpperInvariant()

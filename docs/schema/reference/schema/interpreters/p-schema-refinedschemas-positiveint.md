@@ -4,7 +4,7 @@ linkTitle: "positiveInt"
 weight: 2304
 ---
 
-Describes a positive integer as a schema refined value over an integer greater than zero.
+
 
 ## Signature
 
@@ -19,4 +19,4 @@ Describes a positive integer as a schema refined value over an integer greater t
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-positiveint.md">PositiveInt</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L46-46)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L27-27)

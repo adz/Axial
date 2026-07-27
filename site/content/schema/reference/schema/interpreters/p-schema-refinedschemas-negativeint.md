@@ -5,7 +5,7 @@ weight: 2307
 type: docs
 ---
 
-Describes a negative integer as a schema refined value over an integer less than zero.
+
 
 ## Signature
 
@@ -20,4 +20,4 @@ Describes a negative integer as a schema refined value over an integer less than
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-negativeint.md">NegativeInt</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L64-64)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L30-30)

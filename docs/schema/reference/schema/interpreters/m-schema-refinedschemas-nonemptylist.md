@@ -4,7 +4,7 @@ linkTitle: "nonEmptyList"
 weight: 2309
 ---
 
-Describes a non-empty list as a schema refined value over a collection of item schemas.
+
 
 ## Signature
 
@@ -25,4 +25,4 @@ Describes a non-empty list as a schema refined value over a collection of item s
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L76-76)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L33-33)

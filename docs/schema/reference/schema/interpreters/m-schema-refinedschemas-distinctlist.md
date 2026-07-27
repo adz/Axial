@@ -4,7 +4,7 @@ linkTitle: "distinctList"
 weight: 2311
 ---
 
-Describes a distinct list as a schema refined value over a distinct collection of item schemas.
+
 
 ## Signature
 
@@ -25,4 +25,4 @@ Describes a distinct list as a schema refined value over a distinct collection o
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-distinctlist.md">DistinctList</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L89-89)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L44-44)

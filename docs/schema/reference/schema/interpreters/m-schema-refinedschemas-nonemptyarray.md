@@ -4,7 +4,7 @@ linkTitle: "nonEmptyArray"
 weight: 2310
 ---
 
-Describes a non-empty array as a schema refined value over a collection of item schemas.
+
 
 ## Signature
 
@@ -25,4 +25,4 @@ Describes a non-empty array as a schema refined value over a collection of item 
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-nonemptyarray.md">NonEmptyArray</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L82-82)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L37-37)

@@ -659,23 +659,23 @@ let pageSpecs = [
         Intro = "`Parse` converts serialized strings into primitive values. `Refine` constructs the built-in refined values. `Refine.from` runs the `Refinement` defined for its source and expected destination types. `refine { }` binds parsing and refinement results and stops at the first failure."
         SymbolIds = [
             "Errors and refined types", [
-                "T:Axial.Refined.ParseError"; "T:Axial.Refined.RefinementError"
+                "T:Axial.Parse.ParseError"
                 "T:Axial.Refined.NonBlankString"; "T:Axial.Refined.TrimmedString"; "T:Axial.Refined.BoundedString"; "T:Axial.Refined.Slug"
                 "T:Axial.Refined.PositiveInt"; "T:Axial.Refined.NonNegativeInt"; "T:Axial.Refined.NonZeroInt"; "T:Axial.Refined.NegativeInt"; "T:Axial.Refined.NonPositiveInt"
                 "T:Axial.Refined.NonEmptyList`1"; "T:Axial.Refined.NonEmptyArray`1"; "T:Axial.Refined.DistinctList`1"; "T:Axial.Refined.BoundedList`1"; "T:Axial.Refined.BoundedArray`1"
                 "T:Axial.Refined.DateTimeOffsetRange"; "T:Axial.Refined.DateOnlyRange"
             ]
-            "Parse", ["M:Axial.Refined.Parse.int"; "M:Axial.Refined.Parse.long"; "M:Axial.Refined.Parse.decimal"; "M:Axial.Refined.Parse.float"; "M:Axial.Refined.Parse.bool"; "M:Axial.Refined.Parse.guid"; "M:Axial.Refined.Parse.dateTime"; "M:Axial.Refined.Parse.dateTimeOffset"; "M:Axial.Refined.Parse.dateOnly"; "M:Axial.Refined.Parse.timeOnly"; "M:Axial.Refined.Parse.enum"; "M:Axial.Refined.Parse.intOption"; "M:Axial.Refined.Parse.boolOption"; "M:Axial.Refined.Parse.decimalOption"; "M:Axial.Refined.Parse.guidOption"; "M:Axial.Refined.Parse.intOrDefault"; "M:Axial.Refined.Parse.boolOrDefault"; "M:Axial.Refined.Parse.decimalOrDefault"]
+            "Parse", ["M:Axial.Parse.Parse.int"; "M:Axial.Parse.Parse.long"; "M:Axial.Parse.Parse.decimal"; "M:Axial.Parse.Parse.float"; "M:Axial.Parse.Parse.bool"; "M:Axial.Parse.Parse.guid"; "M:Axial.Parse.Parse.dateTime"; "M:Axial.Parse.Parse.dateTimeOffset"; "M:Axial.Parse.Parse.dateOnly"; "M:Axial.Parse.Parse.timeOnly"; "M:Axial.Parse.Parse.enum"; "M:Axial.Parse.Parse.intOption"; "M:Axial.Parse.Parse.boolOption"; "M:Axial.Parse.Parse.decimalOption"; "M:Axial.Parse.Parse.guidOption"; "M:Axial.Parse.Parse.intOrDefault"; "M:Axial.Parse.Parse.boolOrDefault"; "M:Axial.Parse.Parse.decimalOrDefault"]
             "Text", ["M:Axial.Refined.Text.nonBlankString"; "M:Axial.Refined.Text.trimmedString"; "M:Axial.Refined.Text.boundedString"; "M:Axial.Refined.Text.slug"]
             "Numeric", ["M:Axial.Refined.Numeric.positiveInt"; "M:Axial.Refined.Numeric.nonNegativeInt"; "M:Axial.Refined.Numeric.nonZeroInt"; "M:Axial.Refined.Numeric.negativeInt"; "M:Axial.Refined.Numeric.nonPositiveInt"]
             "Collection", ["M:Axial.Refined.Collection.nonEmptyList"; "M:Axial.Refined.Collection.nonEmptyArray"; "M:Axial.Refined.Collection.distinctList"; "M:Axial.Refined.Collection.boundedList"; "M:Axial.Refined.Collection.boundedArray"; "M:Axial.Refined.Collection.exactlyOne"; "M:Axial.Refined.Collection.atMostOne"]
             "Temporal", ["M:Axial.Refined.Temporal.dateTimeOffsetRange"; "M:Axial.Refined.Temporal.dateOnlyRange"]
             "Character", ["M:Axial.Refined.Character.isAsciiDigit"; "M:Axial.Refined.Character.isAsciiHexDigit"; "M:Axial.Refined.Character.isLowercase"; "M:Axial.Refined.Character.isUppercase"; "M:Axial.Refined.Character.isWhitespace"; "M:Axial.Refined.Character.isControl"; "M:Axial.Refined.Character.isNumeric"]
             "Choice", ["M:Axial.Refined.Choice.orElse"; "M:Axial.Refined.Choice.tryAny"]
-            "Refinement", ["T:Axial.Refined.Refinement`2"; "M:Axial.Refined.Refinement.define"; "M:Axial.Refined.Refinement.create"; "M:Axial.Refined.Refinement.inspect"]
+            "Refinement", ["T:Axial.Refined.Refinement`2"; "M:Axial.Refined.Refinement.define"; "M:Axial.Refined.Refinement.defineAll"; "M:Axial.Refined.Refinement.defineWithCheck"; "M:Axial.Refined.Refinement.create"; "M:Axial.Refined.Refinement.underlying"; "M:Axial.Refined.Refinement.constraints"]
             "Re-certifying helpers", ["M:Axial.Refined.NonBlankString.value"; "M:Axial.Refined.NonBlankString.create"; "M:Axial.Refined.NonBlankString.map"; "M:Axial.Refined.PositiveInt.value"; "M:Axial.Refined.PositiveInt.create"; "M:Axial.Refined.PositiveInt.map"; "M:Axial.Refined.PositiveInt.replace"; "M:Axial.Refined.NonEmptyList.toList"; "M:Axial.Refined.NonEmptyList.create"; "M:Axial.Refined.NonEmptyList.cons"; "M:Axial.Refined.NonEmptyList.map"; "M:Axial.Refined.NonEmptyList.filter"; "M:Axial.Refined.NonEmptyList.tryFilter"]
-            "Refine facade", ["M:Axial.Refined.Refine.from"; "M:Axial.Refined.Refine.withCheck"; "M:Axial.Refined.Refine.withChecks"; "M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.trimmedString"; "M:Axial.Refined.Refine.boundedString"; "M:Axial.Refined.Refine.slug"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonNegativeInt"; "M:Axial.Refined.Refine.nonZeroInt"; "M:Axial.Refined.Refine.negativeInt"; "M:Axial.Refined.Refine.nonPositiveInt"; "M:Axial.Refined.Refine.nonEmptyList"; "M:Axial.Refined.Refine.nonEmptyArray"; "M:Axial.Refined.Refine.distinctList"; "M:Axial.Refined.Refine.boundedList"; "M:Axial.Refined.Refine.boundedArray"; "M:Axial.Refined.Refine.dateTimeOffsetRange"; "M:Axial.Refined.Refine.dateOnlyRange"; "M:Axial.Refined.Refine.exactlyOne"; "M:Axial.Refined.Refine.atMostOne"]
-            "Builder", ["P:Axial.Refined.Builders.refine"]
+            "Refine facade", ["M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.trimmedString"; "M:Axial.Refined.Refine.boundedString"; "M:Axial.Refined.Refine.slug"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonNegativeInt"; "M:Axial.Refined.Refine.nonZeroInt"; "M:Axial.Refined.Refine.negativeInt"; "M:Axial.Refined.Refine.nonPositiveInt"; "M:Axial.Refined.Refine.nonEmptyList"; "M:Axial.Refined.Refine.nonEmptyArray"; "M:Axial.Refined.Refine.distinctList"; "M:Axial.Refined.Refine.boundedList"; "M:Axial.Refined.Refine.boundedArray"; "M:Axial.Refined.Refine.dateTimeOffsetRange"; "M:Axial.Refined.Refine.dateOnlyRange"; "M:Axial.Refined.Refine.exactlyOne"; "M:Axial.Refined.Refine.atMostOne"]
+
         ]
         Alias = None
     }
@@ -1285,6 +1285,7 @@ let main argv =
     let validationDllPaths = [
         Path.Combine(artifactsDir, "Axial.Result/debug_net8.0/Axial.Result.dll")
         Path.Combine(artifactsDir, "Axial.Check/debug_net8.0/Axial.Check.dll")
+        Path.Combine(artifactsDir, "Axial.Parse/debug_net8.0/Axial.Parse.dll")
         Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
     ]
 

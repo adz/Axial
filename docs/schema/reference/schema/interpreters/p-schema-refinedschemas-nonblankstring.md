@@ -4,7 +4,7 @@ linkTitle: "nonBlankString"
 weight: 2300
 ---
 
-Describes a non-blank string as a schema refined value over required text.
+
 
 ## Signature
 
@@ -19,4 +19,4 @@ Describes a non-blank string as a schema refined value over required text.
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-nonblankstring.md">NonBlankString</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L19-19)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L10-10)

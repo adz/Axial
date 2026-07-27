@@ -30,4 +30,4 @@ Maps a raw schema through a reusable bidirectional refinement.
 The smart constructor runs during parsing. Inspection supplies the raw representation during checking and encoding.
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L44-44)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L46-46)

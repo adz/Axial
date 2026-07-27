@@ -31,4 +31,4 @@ Adds executable value validation to a schema.
 The validation runs during parsing and when checking an existing value. It remains executable behavior and is not emitted as portable constraint metadata.
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L48-48)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L50-50)

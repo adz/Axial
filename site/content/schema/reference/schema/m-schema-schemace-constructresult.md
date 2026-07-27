@@ -26,4 +26,4 @@ Closes a record schema with a checked constructor.
 | <code><span>CheckedConstructorStep&lt;<span>'model,&#32;'constructor</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L505-505)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L501-501)

@@ -32,6 +32,8 @@ Source code:
 ```fsharp
 module RefinedCatalogExample
 
+open Axial.Parse
+
 open System
 open Axial.Result
 open Axial.Check
@@ -51,34 +53,26 @@ type UnitPrice = private UnitPrice of decimal
 module ContactEmail =
     let value (ContactEmail value) = value
 
-    let create value : Result<ContactEmail, RefinementError> =
-        Refine.withChecks
-            "ContactEmail"
-            [ present; email; maxLength 254 ]
-            ContactEmail
-            value
+    let create value : Result<ContactEmail, CheckFailure list> =
+        Check.all [ present; email; maxLength 254 ] value |> Result.map (fun () -> ContactEmail value)
 
 module Sku =
     let value (Sku value) = value
 
-    let create value : Result<Sku, RefinementError> =
-        Refine.withChecks
-            "Sku"
-            [ present; lengthBetween 3 12; matches "^[A-Z0-9-]+$" ]
-            Sku
-            value
+    let create value : Result<Sku, CheckFailure list> =
+        Check.all [ present; lengthBetween 3 12; matches "^[A-Z0-9-]+$" ] value |> Result.map (fun () -> Sku value)
 
 module Rating =
     let value (Rating value) = value
 
-    let create value : Result<Rating, RefinementError> =
-        Refine.withCheck "Rating" (Check.between 1 5) Rating value
+    let create value : Result<Rating, CheckFailure list> =
+        Check.between 1 5 value |> Result.map (fun () -> Rating value)
 
 module UnitPrice =
     let value (UnitPrice value) = value
 
-    let create value : Result<UnitPrice, RefinementError> =
-        Refine.withCheck "UnitPrice" (greaterThan 0m) UnitPrice value
+    let create value : Result<UnitPrice, CheckFailure list> =
+        greaterThan 0m value |> Result.map (fun () -> UnitPrice value)
 
 type Discount =
     | Percent of PositiveInt
@@ -111,103 +105,45 @@ let sequenceResults values =
     |> List.foldBack folder
     <| Ok []
 
-let parseDiscount (raw: string) : Result<Discount, RefinementError> =
+let private parseError error = Error(sprintf "%A" error)
+let private checkError failures = Error(CheckFailure.describeAll failures)
+
+let parseDiscount (raw: string) : Result<Discount, string> =
     let parsePercent value =
-        Parse.int value
-        |> Result.mapError RefinementError.ParseFailed
-        |> Result.bind Refine.positiveInt
-
-    Choice.orElse
-        Percent
-        parsePercent
-        Code
-        Refine.slug
-        (RefinementError.CheckFailed("Discount", [ CheckFailure.InvalidFormat "positive integer percent or slug code" ]))
-        raw
-
-let createProductRequest
-    rawId
-    rawSlug
-    rawDisplayName
-    rawTags
-    rawQuantity
-    rawContactEmail
-    rawSku
-    rawRating
-    rawUnitPrice
-    rawDiscount
-    publishStart
-    publishEnd
-    : Result<ProductRequest, RefinementError> =
-    refine {
-        let! parsedId = Parse.int rawId
-        let! id = Refine.nonZeroInt parsedId
-        let! slug = Refine.slug rawSlug
-        let! displayName = Refine.nonBlankString rawDisplayName
-        let! tags = rawTags |> List.map Refine.slug |> sequenceResults
-        let! distinctTags = Refine.distinctList tags
-        let! parsedQuantity = Parse.int rawQuantity
-        let! quantity = Refine.positiveInt parsedQuantity
-        let! contactEmail = ContactEmail.create rawContactEmail
-        let! sku = Sku.create rawSku
-        let! parsedRating = Parse.int rawRating
-        let! rating = Rating.create parsedRating
-        let! parsedUnitPrice = Parse.decimal rawUnitPrice
-        let! unitPrice = UnitPrice.create parsedUnitPrice
-        let! discount = parseDiscount rawDiscount
-        let! publishWindow = Refine.dateTimeOffsetRange publishStart publishEnd
-
-        return {
-            Id = ProductId id
-            Slug = ProductSlug slug
-            DisplayName = DisplayName displayName
-            Tags = ProductTags distinctTags
-            Quantity = Quantity quantity
-            ContactEmail = contactEmail
-            Sku = sku
-            Rating = rating
-            UnitPrice = unitPrice
-            Discount = discount
-            PublishWindow = { Range = publishWindow }
+        result {
+            let! parsed = Parse.int value |> Result.mapError (sprintf "%A")
+            let! positive = Refine.positiveInt parsed |> Result.mapError CheckFailure.describeAll
+            return Percent positive
         }
+    match parsePercent raw with
+    | Ok value -> Ok value
+    | Error _ -> Refine.slug raw |> Result.map Code |> Result.mapError CheckFailure.describeAll
+
+let createProductRequest rawId rawSlug rawDisplayName rawTags rawQuantity rawContactEmail rawSku rawRating rawUnitPrice rawDiscount publishStart publishEnd : Result<ProductRequest, string> =
+    result {
+        let! parsedId = Parse.int rawId |> Result.mapError (sprintf "%A")
+        let! id = Refine.nonZeroInt parsedId |> Result.mapError CheckFailure.describeAll
+        let! slug = Refine.slug rawSlug |> Result.mapError CheckFailure.describeAll
+        let! displayName = Refine.nonBlankString rawDisplayName |> Result.mapError CheckFailure.describeAll
+        let! tags = rawTags |> List.map Refine.slug |> sequenceResults |> Result.mapError CheckFailure.describeAll
+        let! distinctTags = Refine.distinctList tags |> Result.mapError CheckFailure.describeAll
+        let! parsedQuantity = Parse.int rawQuantity |> Result.mapError (sprintf "%A")
+        let! quantity = Refine.positiveInt parsedQuantity |> Result.mapError CheckFailure.describeAll
+        let! contactEmail = ContactEmail.create rawContactEmail |> Result.mapError CheckFailure.describeAll
+        let! sku = Sku.create rawSku |> Result.mapError CheckFailure.describeAll
+        let! parsedRating = Parse.int rawRating |> Result.mapError (sprintf "%A")
+        let! rating = Rating.create parsedRating |> Result.mapError CheckFailure.describeAll
+        let! parsedUnitPrice = Parse.decimal rawUnitPrice |> Result.mapError (sprintf "%A")
+        let! unitPrice = UnitPrice.create parsedUnitPrice |> Result.mapError CheckFailure.describeAll
+        let! discount = parseDiscount rawDiscount
+        let! range = Refine.dateTimeOffsetRange publishStart publishEnd |> Result.mapError CheckFailure.describeAll
+        return { Id = ProductId id; Slug = ProductSlug slug; DisplayName = DisplayName displayName; Tags = ProductTags distinctTags; Quantity = Quantity quantity; ContactEmail = contactEmail; Sku = sku; Rating = rating; UnitPrice = unitPrice; Discount = discount; PublishWindow = { Range = range } }
     }
 
+
 let run () =
-    let start = DateTimeOffset(2026, 6, 28, 9, 0, 0, TimeSpan.Zero)
-    let finish = start.AddDays 7.0
-
-    let valid =
-        createProductRequest
-            "42"
-            "axial-guide"
-            "Axial Guide"
-            [ "fsharp"; "typed-errors" ]
-            "3"
-            "ada@example.com"
-            "AX-42"
-            "5"
-            "19.95"
-            "launch-sale"
-            start
-            finish
-
-    let invalid =
-        createProductRequest
-            "0"
-            "Bad Slug"
-            " "
-            [ "fsharp"; "fsharp" ]
-            "-1"
-            "not-email"
-            "x"
-            "6"
-            "0"
-            ""
-            finish
-            start
-
-    printfn "Refined product result: %A" valid
-    printfn "Refined product error: %A" invalid
+    createProductRequest "1" "product" "Product" [ "featured" ] "2" "ada@example.com" "SKU-1" "5" "12.50" "10" DateTimeOffset.UtcNow DateTimeOffset.UtcNow
+    |> printfn "Refined catalog: %A"
 
 ```
 
@@ -702,6 +638,8 @@ Source code:
 /// construction, schema input parsing, intrinsic validation, and environment-aware policy —
 /// into one workflow error type that Flow.verify can run inside a flow.
 module PolicyExamples
+
+open Axial.Parse
 
 open Axial
 open Axial.Flow

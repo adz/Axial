@@ -4,7 +4,7 @@ linkTitle: "nonZeroInt"
 weight: 2306
 ---
 
-Describes a non-zero integer as a schema refined value over an integer not equal to zero.
+
 
 ## Signature
 
@@ -19,4 +19,4 @@ Describes a non-zero integer as a schema refined value over an integer not equal
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-nonzeroint.md">NonZeroInt</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L58-58)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L29-29)

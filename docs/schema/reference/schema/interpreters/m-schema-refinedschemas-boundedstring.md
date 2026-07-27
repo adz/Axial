@@ -4,7 +4,7 @@ linkTitle: "boundedString"
 weight: 2302
 ---
 
-Describes a bounded string as a schema refined value over required text with inclusive length bounds.
+
 
 ## Signature
 
@@ -26,4 +26,4 @@ Describes a bounded string as a schema refined value over required text with inc
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-boundedstring.md">BoundedString</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L25-25)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L12-12)

@@ -5,7 +5,7 @@ weight: 2305
 type: docs
 ---
 
-Describes a non-negative integer as a schema refined value over an integer greater than or equal to zero.
+
 
 ## Signature
 
@@ -20,4 +20,4 @@ Describes a non-negative integer as a schema refined value over an integer great
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-nonnegativeint.md">NonNegativeInt</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L52-52)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L28-28)

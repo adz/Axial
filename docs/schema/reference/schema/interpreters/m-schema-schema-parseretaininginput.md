@@ -26,4 +26,4 @@ Parses source-neutral structured data while retaining it for redisplay and error
 | <code><span><a href="t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L94-94)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L96-96)

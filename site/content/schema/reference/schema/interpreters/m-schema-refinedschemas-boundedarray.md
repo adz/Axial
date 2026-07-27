@@ -5,7 +5,7 @@ weight: 2313
 type: docs
 ---
 
-Describes a bounded array as a schema refined value over a collection with inclusive count bounds.
+
 
 ## Signature
 
@@ -28,4 +28,4 @@ Describes a bounded array as a schema refined value over a collection with inclu
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-boundedarray.md">BoundedArray</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L104-104)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L53-53)

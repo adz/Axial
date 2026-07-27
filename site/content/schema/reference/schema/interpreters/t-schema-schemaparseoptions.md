@@ -20,4 +20,4 @@ Options that customize how structured data is parsed through a schema.
 | `ConstructorErrorPath` |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Parsing.fs#L16-16)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Parsing.fs#L18-18)

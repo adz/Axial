@@ -4,7 +4,7 @@ linkTitle: "slug"
 weight: 2303
 ---
 
-Describes an ASCII slug as a schema refined value over required text with the built-in slug pattern.
+
 
 ## Signature
 
@@ -19,4 +19,4 @@ Describes an ASCII slug as a schema refined value over required text with the bu
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-slug.md">Slug</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L38-38)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L26-26)
