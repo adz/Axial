@@ -43,4 +43,4 @@ type: docs
 | `Custom` |  An application-defined constraint with a stable external code and inspectable operands. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Constraint.fs#L22-22)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Constraint.fs#L24-24)

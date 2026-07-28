@@ -5,7 +5,6 @@ type: docs
 description: Move between canonical refined fields, explicit raw schemas, local constraints, and reusable domain refinements.
 ---
 
-# Refined Schemas
 
 A field can be short when its type contributes a canonical schema:
 

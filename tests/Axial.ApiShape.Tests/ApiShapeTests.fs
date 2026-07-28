@@ -522,7 +522,7 @@ module ApiShapeTests =
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ConstraintCheck"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "tryText"; "text"; "tryOrdered"; "ordered"; "trySequence"; "sequence" ]
+        |> assertContainsAll [ "complete"; "tryText"; "text"; "tryOrdered"; "ordered" ]
 
         let typedConstraintMembers =
             moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SyntaxModule"

@@ -2,9 +2,9 @@
 weight: 10
 title: Using Check
 description: Checks, portable constraints, failure accumulation, and Result.guard.
+type: docs
 ---
 
-# Using Check
 
 ```fsharp
 open Axial.Check

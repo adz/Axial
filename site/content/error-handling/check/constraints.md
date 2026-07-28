@@ -5,7 +5,6 @@ type: docs
 description: Give executable checks typed metadata that other code can inspect.
 ---
 
-# Constraints
 
 A `Check<'value>` can execute a rule, but other code cannot inspect an F# function to learn what that rule means. A
 `Constraint<'value>` keeps the check together with typed `ConstraintMetadata`.

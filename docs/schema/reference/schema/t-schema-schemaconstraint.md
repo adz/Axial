@@ -20,4 +20,4 @@ weight: 1114
 | `value` |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L30-30)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L31-31)

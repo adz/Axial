@@ -2,9 +2,9 @@
 weight: 25
 title: Inspecting Schema Metadata Tutorial
 description: Walk the same schema as data for docs and JSON Schema.
+type: docs
 ---
 
-# Inspecting Schema Metadata Tutorial
 
 A schema is data, not a validator. This tutorial reads a schema's fields, shapes, formats, and constraints without
 parsing any input or constructing any model — the foundation for JSON Schema emitters, documentation generators, and
