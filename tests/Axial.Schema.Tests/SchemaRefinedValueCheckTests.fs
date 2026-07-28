@@ -61,6 +61,20 @@ module SchemaRefinedValueCheckTests =
             |> Schema.convert create value
 
     [<Fact>]
+    let ``constraints attached after refinement execute against the refined value`` () =
+        let allowed = Email.create "ada@example.com"
+        let constraint' =
+            Axial.Check.Constraint.define "allowedEmail" [] (fun value ->
+                if value = allowed then Ok () else Error [ CheckFailure.Custom "allowedEmail" ])
+            |> Constraint.fromCheck
+        let schema = Email.schema |> Schema.constrain constraint'
+
+        test <@ Schema.check schema allowed = Ok allowed @>
+        test <@ Schema.check schema (Email.create "grace@example.com") |> Result.isError @>
+        test <@ Schema.parse schema (Axial.Data.Text "ada@example.com") = Ok allowed @>
+        test <@ Schema.parse schema (Axial.Data.Text "grace@example.com") |> Result.isError @>
+
+    [<Fact>]
     let ``inspectUnderlying projects a refined value to its primitive representation`` () =
         let inspect = Email.schema |> Schema.inspectUnderlying<Email, string>
         test <@ inspect (Email.create "ada@example.com") = "ada@example.com" @>

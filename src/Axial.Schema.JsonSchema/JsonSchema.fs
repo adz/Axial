@@ -44,9 +44,27 @@ module JsonSchema =
 
     let private literal (value: obj) =
         match value with
+        | null -> "null"
         | :? string as text -> sprintf "\"%s\"" (escape text)
+        | :? char as character -> sprintf "\"%s\"" (escape (string character))
         | :? bool as flag -> if flag then "true" else "false"
-        | other -> Convert.ToString(other, CultureInfo.InvariantCulture)
+        | other ->
+            match Type.GetTypeCode(other.GetType()) with
+            | TypeCode.SByte
+            | TypeCode.Byte
+            | TypeCode.Int16
+            | TypeCode.UInt16
+            | TypeCode.Int32
+            | TypeCode.UInt32
+            | TypeCode.Int64
+            | TypeCode.UInt64
+            | TypeCode.Decimal
+            | TypeCode.Single
+            | TypeCode.Double -> Convert.ToString(other, CultureInfo.InvariantCulture)
+            | _ ->
+                Convert.ToString(other, CultureInfo.InvariantCulture)
+                |> escape
+                |> sprintf "\"%s\""
 
     /// Collects the constraint metadata visible at a boundary: the layer's own constraints plus every refinement
     /// layer down to the primitive foundation.

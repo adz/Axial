@@ -91,3 +91,10 @@ module SchemaMapValueTests =
         let document = JsonSchema.generateValue (Schema.``int`` |> Schema.constrain (Constraint.multipleOf 5))
 
         test <@ document.Contains "\"multipleOf\":5" @>
+
+    [<Fact>]
+    let ``JsonSchema quotes non-numeric equality operands`` () =
+        let expected = System.Guid.Parse "4f489f3b-cd3c-4f53-b99b-fca552f8994d"
+        let document = JsonSchema.generateValue (Schema.guid |> Schema.constrain (Constraint.equalTo expected))
+
+        test <@ document.Contains "\"const\":\"4f489f3b-cd3c-4f53-b99b-fca552f8994d\"" @>

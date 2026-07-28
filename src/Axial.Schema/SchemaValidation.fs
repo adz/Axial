@@ -288,44 +288,26 @@ module internal ModelFieldCheck =
         | LazyValueDefinition deferred ->
             validateValue (deferred.Force()) (valueSchema.Constraints @ fieldConstraints) path value
         | RefinedValueDefinition(raw, ops) ->
-            let rawValidation =
-                match raw.Shape with
-                | NestedValueDefinition _
-                | ManyValueDefinition _
-                | UnionValueDefinition _
-                | UnionInlineValueDefinition _
-                | EnumValueDefinition _
-                | OptionValueDefinition _
-                | MapValueDefinition _
-                | LazyValueDefinition _ ->
-                    validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
-                    |> SchemaResult.map (fun _ -> value)
-                | PrimitiveValueDefinition _
-                | RefinedValueDefinition _ ->
-                    let kind = underlyingPrimitiveKind valueSchema
-                    let primitive = inspectUnderlying valueSchema value
-
-                    match checkPrimitive kind constraints primitive with
-                    | Ok _ -> SchemaResult.ok value
-                    | Error errors ->
-                        errors
-                        |> List.map (diagnosticsAt path)
-                        |> mergeErrors
-                        |> SchemaResult.error
+            let rawValue = ops.Inspect value
+            let outerConstraints = valueSchema.Constraints @ fieldConstraints
+            let rawValidation = validateValue raw [] path rawValue |> SchemaResult.map (fun _ -> value)
 
             let refinementValidation =
-                match ops.Construct(ops.Inspect value) with
+                match ops.Construct rawValue with
                 | Ok _ -> SchemaResult.ok value
                 | Error errors ->
-                    errors
-                    |> List.map (diagnosticsAt path)
-                    |> mergeErrors
-                    |> SchemaResult.error
+                    errors |> List.map (diagnosticsAt path) |> mergeErrors |> SchemaResult.error
+
+            let constraintValidation =
+                match value |> runCheck outerConstraints (ConstraintCheck.complete<obj> outerConstraints) with
+                | Ok _ -> SchemaResult.ok value
+                | Error errors ->
+                    errors |> List.map (diagnosticsAt path) |> mergeErrors |> SchemaResult.error
 
             SchemaResult.map2
                 (fun _ _ -> value)
-                rawValidation
-                refinementValidation
+                (SchemaResult.map2 (fun _ _ -> value) rawValidation refinementValidation)
+                constraintValidation
         | PrimitiveValueDefinition _ ->
             let kind = underlyingPrimitiveKind valueSchema
             let primitive = inspectUnderlying valueSchema value

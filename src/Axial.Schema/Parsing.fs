@@ -182,8 +182,22 @@ module internal SchemaParsing =
             | Data.List _ ->
                 parseValue options optional.Payload (valueSchema.Constraints @ fieldConstraints) path raw
                 |> Result.map optional.WrapSome
+        | RefinedValueDefinition(rawSchema, ops) ->
+            let constraints = valueSchema.Constraints @ fieldConstraints
+
+            match raw with
+            | Data.Null when hasRequiredConstraint constraints ->
+                errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "required" SchemaError.Required)
+            | _ ->
+                parseValue options rawSchema [] path raw
+                |> Result.bind (fun rawValue ->
+                    ops.Construct rawValue
+                    |> Result.mapError (fun errors -> errors |> List.map (diagnosticsAt path) |> mergeErrors))
+                |> Result.bind (fun value ->
+                    match value |> runCheck constraints (ConstraintCheck.complete<obj> constraints) with
+                    | Ok checkedValue -> Ok checkedValue
+                    | Error errors -> errors |> List.map (diagnosticsAt path) |> mergeErrors |> Error)
         | PrimitiveValueDefinition _
-        | RefinedValueDefinition _
         | NestedValueDefinition _
         | ManyValueDefinition _
         | UnionValueDefinition _
