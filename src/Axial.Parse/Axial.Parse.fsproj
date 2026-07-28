@@ -12,7 +12,17 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageTags>fsharp;parsing;result;error-handling</PackageTags>
+    <FsDocsCollectionName>Axial</FsDocsCollectionName>
+    <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
+    <FsDocsLogoAlt>Axial.Parse</FsDocsLogoAlt>
+    <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
+    <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
+    <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />

@@ -2,51 +2,39 @@
 
 ## Unreleased
 
-- Added `Axial.Schema.Contracts.Build`: a targets-only MSBuild package that runs wire schema generation before
-  compile. Declare `<AxialDeriveSchema>` (and optionally `<AxialContract>`) items and the checked-in `.g.fs`
-  siblings stay fresh on every build — timestamp-incremental, no tool to install or run by hand. The package
-  ships the generator framework-dependent (net8.0, major roll-forward).
+## 0.7.0 - 2026-07-28
 
-- Added record-first wire schema generation: mark a plain record with `[<DeriveSchema>]` (attributes in the new
-  `Axial.Schema.Derive` namespace mirror the contract constraint vocabulary — `Pattern`, `Min`/`Max`, comparison
-  bounds, `Distinct`, `Email`, `Default`, `SchemaName`, `DeriveUnion`) and `schemagen` derives the permissive wire
-  schema module from it: `schema`, `parse`, `validate`, typed `Fields`, and version-chain `contract` builders via
-  the `ProfileV1`/`Profile` naming convention. The frontend parses F# source with the compiler's syntax tree at
-  generation time only — no runtime reflection, Fable and NativeAOT surfaces unchanged — and generated modules
-  construct your record by name, so the compiler catches record/schema drift. `.contract` files remain supported
-  as the declaration-owns-the-record alternative; both kinds resolve as one generation set.
+First public release under the `Axial` name and repository identity (previously published as `FsFlow`). This
+release settles the package family shape; treat it as the project's actual debut rather than an increment on
+prior `FsFlow`/`Axial` previews. See the docs site for guides and API reference — these notes stay at the
+package level.
 
-- Enriched fiber diagnostics: `FiberMetadata`/`FiberDump` gained `Name` (from the new `Flow.forkNamed`), fork-site `Annotations`, and `SettledAt`; `FiberDump.render`/`renderTree` produce human-readable snapshots. A new `FiberRegistry` (installed with `Flow.withFiberRegistry`, or composed via the new `Flow.addFiberObserver`) tracks every live fiber and renders the whole runtime as a parent/child tree on demand.
-- Added `FiberMetrics` to `Axial.Flow.Telemetry`: an `Axial.Flow` meter with fibers started/live/settled counters, a fork-to-settle duration histogram, and an unobserved-defects counter — register with `.AddMeter("Axial.Flow")` for OTLP backends including the Aspire dashboard. `FiberDumpTelemetry.record` attaches a registry's live-fiber tree to the current activity as an `axial.flow.fiber.dump` event; named fibers set the fiber span's display name.
-- `schemagen` generates whole version chains: a `.contract` file may declare several versions of one contract (oldest first, contiguous). Superseded versions emit frozen version-suffixed types and modules (`ConfigV1`), the latest keeps the bare name, and its module gains a `contract` builder that takes each typed n-1 -> n migration as a parameter plus the `VersionSource` — migrations stay hand-written F# and the compiler enforces the chain.
-- Added the Versioned Contracts guide (`docs/schema/contracts.md`): the `Contract<'model>` versioning engine, the `.contract` grammar by example, `schemagen` usage with `--check` drift guarding in CI, and the wire-tier-only positioning.
+- **`Axial.Flow`** — the effect and runtime package: explicit environments, typed failures, async/task/`ColdTask`
+  interop, layers, scoped cleanup, fibers and structured concurrency, STM, streams, scheduling, and runtime
+  policy. Companion service packages (`Axial.Flow.Console`, `.FileSystem`, `.HttpClient`, `.Process`,
+  `.PlatformService`), hosting adapters (`Axial.Flow.Hosting`, `.Hosting.Node`, `.Hosting.Browser`), and
+  telemetry (`Axial.Flow.Telemetry` for .NET, `Axial.Flow.Telemetry.JavaScript` for Fable) round out the runtime
+  story with fiber diagnostics, a `FiberRegistry`, and OpenTelemetry integration on both platforms.
+- **`Axial.ErrorHandling`** (the error-handling family) — fail-fast `Result` composition and `result {}`
+  (`Axial.Result`), reusable value checks and predicates (`Axial.Check`), constraint-backed refined/domain types
+  and `refine {}` (`Axial.Refined`), and primitive parsers for untrusted input (`Axial.Parse`), with
+  `Axial.ErrorHandling` itself a dependency-only meta-package installing the core pieces together.
+- **`Axial.Schema`** — portable `Schema<'model>` metadata for validation, codecs, documentation, and UI
+  interpreters, plus the packages built on it: reflection-free compiled JSON codecs (`Axial.Schema.Json`), JSON
+  Schema document generation (`Axial.Schema.JsonSchema`), host-neutral HTTP boundary support with OpenAPI and
+  RFC 9457 problem details (`Axial.Schema.Http`, with ASP.NET Core and GenHTTP hosting adapters), and compile-time
+  wire schema generation from `[<DeriveSchema>]` records or `.contract` files via `schemagen` and the
+  `Axial.Schema.Contracts.Build` MSBuild package, including versioned contract chains.
+- **`Axial`** — the top-level umbrella package installing `Axial.ErrorHandling`, `Axial.Schema`, and `Axial.Flow`
+  together. App templates built on this umbrella are planned as follow-up work, not part of this release.
+- Standardized pre-1.0 release versioning so every public Axial package in the release train ships at the same
+  version from `Directory.Build.props`.
+- Refreshed package metadata, README content, examples, generated reference pages, and documentation site content
+  across the full package family.
 
-- Added `Axial.Flow.Telemetry.JavaScript`: OpenTelemetry tracing for Axial workflows compiled with Fable (Node and browser). `Otel.install` takes a host-supplied `@opentelemetry/api` object through structural bindings; `Otel.trace`/`traceWith` mirror the .NET `Activity.trace` span semantics and tag vocabulary, and `FiberTelemetry.observe`/`observeWithSpans` mirror the fiber observers. JavaScript targets only; the .NET build is inert.
-
-- Renamed the fail-fast package from `Axial.Result` to `Axial.ErrorHandling`, keeping `Check`, focused `Result` helpers, collection traversal, and `result {}` together.
-- Added `Axial.Refined` for parse helpers, initial refined value types, and `refine {}`.
-- Added environment-aware `Policy` helpers and `Flow.verify` for running pure checks at workflow boundaries.
-- Added `Axial.Schema`: portable `Schema<'model>` metadata authored with constructor-last object shapes, inferred or explicit field schemas, adjacent typed constraints, refined/domain values, nested models, collections, formats, and inspectable constraint metadata.
-- Added the public `Inspect` API (`Inspect.model`, `Inspect.value`, `Inspect.field`) describing built schemas as metadata trees for JSON Schema, documentation, and UI interpreters without running validation.
-- Added `Axial.Validation.Schema`: source-agnostic `Data` with adapters (map, name/value, CLI args, JSON-like, configuration), `Input.parse` into `ParsedInput` with raw redisplay and field error lookup, `SchemaError` diagnostics, constructor-level intrinsic errors, `Validation.validate` for existing models, and contextual `RuleSet`/`Rules.apply` over already-trusted models.
-- Added a Schema docs section (trusted construction, choosing a tool, refined values, redisplay and field errors, rules and policies, input sources) and a runnable policy example.
-- Added `Axial.Schema.Json`: compiled, reflection-free JSON codecs over built model schemas. `Json.compile` compiles the schema's retained typed shape into constructor-specialized encode/decode plans (cached wire-name bytes, typed field decoders, no `obj array` dispatch); `Json.serialize`/`serializeBytes`/`deserialize`/`deserializeBytes`/`tryDeserialize` run the trusted lane, and decode failures raise path-aware `JsonCodecException`.
-- Promoted JSON Schema generation into `Axial.Schema` as `JsonSchema.generate`/`generateValue`, lowering shapes, formats, and constraint metadata to JSON Schema keywords, with tagged unions as `oneOf` and `const` discriminators.
-- Added `Data.ofJsonElement` and `Data.ofJsonDocument` on .NET 8+ targets for adapting System.Text.Json bodies into schema input parsing.
-- Added the runnable ASP.NET Core minimal-API sample (`examples/Axial.Api`): one schema declaration drives JSON parsing with 400 path diagnostics, codec responses, a generated OpenAPI document, and an HTML form with error redisplay; CI smoke-runs it.
-- Added codec benchmarks against `System.Text.Json` plus a trusted-lane vs boundary-lane comparison, recorded in the benchmarks page.
-- Renamed `Policy.pure` to `Policy.lift` so the recommended surface needs no double-backtick identifiers, and removed unnecessary backticks from `Value.int`/`Value.decimal`/`Value.bool` call sites in docs and samples.
-- Added comparison docs (`vs FluentValidation`, `vs zod`, a sharpened FsToolkit.ErrorHandling page) and the public zero-reflection/AOT/trimming/Fable story page.
-
-## 0.7.0 - 2026-06-21
-
-- First public release under the `Axial` package and repository identity, replacing the previous `FsFlow` naming.
-- Split the library into the coordinated Axial package family: `Axial.Flow`, `Axial.Result`, `Axial.Validation`, the umbrella `Axial` package, and focused `Axial.Flow.*` service packages.
-- Made `Axial.Flow` the primary effect package for explicit environment, typed failure, async/task interop, runtime policy, layers, scoped cleanup, fibers, STM, streams, and scheduling.
-- Added focused `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined` packages, plus the `Axial.ErrorHandling`
-  meta-package that installs all three.
-- Refreshed package metadata, README content, examples, generated reference pages, and documentation site content for the Axial identity and split package surface.
-- Standardized pre-1.0 release versioning so every public Axial package in the release train ships at the same version from `Directory.Build.props`.
+Looking ahead: the repository itself is expected to split into `Axial`, `Axial.Schema`, and `Axial.Flow` repos
+post-release, with the current repo becoming home to the root docs site and reference apps. Not yet decided
+whether reference docs stay centralized or move per sub-repo.
 
 ## 0.6.0 - 2026-05-17
 

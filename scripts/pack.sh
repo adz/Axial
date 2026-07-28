@@ -26,12 +26,14 @@ projects=(
   "src/Axial.Check/Axial.Check.fsproj"
   "src/Axial.Refined/Axial.Refined.fsproj"
   "src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj"
+  "src/Axial.Parse/Axial.Parse.fsproj"
   "src/Axial.Schema/Axial.Schema.fsproj"
+  "src/Axial.Schema.Json/Axial.Schema.Json.fsproj"
+  "src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj"
   "src/Axial.Schema.Http/Axial.Schema.Http.fsproj"
   "src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj"
   "src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj"
   "src/Axial.Schema.Contracts.Build/Axial.Schema.Contracts.Build.fsproj"
-  "src/Axial.Schema.Json/Axial.Schema.Json.fsproj"
   "src/Axial/Axial.fsproj"
   "src/Axial.Flow.Console/Axial.Flow.Console.fsproj"
   "src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj"
@@ -42,6 +44,7 @@ projects=(
   "src/Axial.Flow.Hosting.Node/Axial.Flow.Hosting.Node.fsproj"
   "src/Axial.Flow.Hosting.Browser/Axial.Flow.Hosting.Browser.fsproj"
   "src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj"
+  "src/Axial.Flow.Telemetry.JavaScript/Axial.Flow.Telemetry.JavaScript.fsproj"
 )
 
 echo "Packing projects to $output_dir..."
