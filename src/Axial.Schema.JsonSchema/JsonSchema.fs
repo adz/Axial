@@ -48,6 +48,10 @@ module JsonSchema =
         | :? string as text -> sprintf "\"%s\"" (escape text)
         | :? char as character -> sprintf "\"%s\"" (escape (string character))
         | :? bool as flag -> if flag then "true" else "false"
+        | :? float as number when Double.IsNaN number || Double.IsInfinity number ->
+            sprintf "\"%s\"" (Convert.ToString(number, CultureInfo.InvariantCulture))
+        | :? float32 as number when Single.IsNaN number || Single.IsInfinity number ->
+            sprintf "\"%s\"" (Convert.ToString(number, CultureInfo.InvariantCulture))
         | other ->
             match Type.GetTypeCode(other.GetType()) with
             | TypeCode.SByte
@@ -88,38 +92,39 @@ module JsonSchema =
 
     let private constraintKeywords (constraints: ConstraintMetadata list) =
         constraints
-        |> List.collect (fun metadata ->
-            match metadata with
-            | ConstraintMetadata.MinLength minimum -> [ sprintf "\"minLength\":%d" minimum ]
-            | ConstraintMetadata.MaxLength maximum -> [ sprintf "\"maxLength\":%d" maximum ]
-            | ConstraintMetadata.LengthBetween(minimum, maximum) ->
-                [ sprintf "\"minLength\":%d" minimum; sprintf "\"maxLength\":%d" maximum ]
-            | ConstraintMetadata.Email -> [ "\"format\":\"email\"" ]
-            | ConstraintMetadata.Trimmed -> []
-            | ConstraintMetadata.Pattern pattern -> [ sprintf "\"pattern\":%s" (literal pattern) ]
-            | ConstraintMetadata.OneOf choices ->
-                [ choices |> List.map literal |> String.concat "," |> sprintf "\"enum\":[%s]" ]
-            | ConstraintMetadata.EqualTo expected -> [ sprintf "\"const\":%s" (literal expected) ]
-            | ConstraintMetadata.NotEqualTo _ -> []
-            | ConstraintMetadata.Between(minimum, maximum) ->
-                [ sprintf "\"minimum\":%s" (literal minimum); sprintf "\"maximum\":%s" (literal maximum) ]
-            | ConstraintMetadata.GreaterThan minimum -> [ sprintf "\"exclusiveMinimum\":%s" (literal minimum) ]
-            | ConstraintMetadata.LessThan maximum -> [ sprintf "\"exclusiveMaximum\":%s" (literal maximum) ]
-            | ConstraintMetadata.AtLeast minimum -> [ sprintf "\"minimum\":%s" (literal minimum) ]
-            | ConstraintMetadata.AtMost maximum -> [ sprintf "\"maximum\":%s" (literal maximum) ]
-            | ConstraintMetadata.Count expected ->
-                [ sprintf "\"minItems\":%d" expected; sprintf "\"maxItems\":%d" expected ]
-            | ConstraintMetadata.MinCount minimum -> [ sprintf "\"minItems\":%d" minimum ]
-            | ConstraintMetadata.MaxCount maximum -> [ sprintf "\"maxItems\":%d" maximum ]
-            | ConstraintMetadata.CountBetween(minimum, maximum) ->
-                [ sprintf "\"minItems\":%d" minimum; sprintf "\"maxItems\":%d" maximum ]
-            | ConstraintMetadata.Distinct -> [ "\"uniqueItems\":true" ]
-            | ConstraintMetadata.Contains item ->
-                [ sprintf "\"contains\":{\"const\":%s}" (literal item) ]
-            | ConstraintMetadata.MultipleOf divisor -> [ sprintf "\"multipleOf\":%s" (literal divisor) ]
-            | ConstraintMetadata.Required
-            | ConstraintMetadata.Optional
-            | ConstraintMetadata.Custom _ -> [])
+        |> List.collect (function
+            | ConstraintMetadata.Presence _ -> []
+            | ConstraintMetadata.ValueConstraint metadata ->
+                match metadata with
+                | Axial.Check.ConstraintMetadata.Present -> []
+                | Axial.Check.ConstraintMetadata.MinLength minimum -> [ sprintf "\"minLength\":%d" minimum ]
+                | Axial.Check.ConstraintMetadata.MaxLength maximum -> [ sprintf "\"maxLength\":%d" maximum ]
+                | Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum) ->
+                    [ sprintf "\"minLength\":%d" minimum; sprintf "\"maxLength\":%d" maximum ]
+                | Axial.Check.ConstraintMetadata.Email -> [ "\"format\":\"email\"" ]
+                | Axial.Check.ConstraintMetadata.Trimmed -> []
+                | Axial.Check.ConstraintMetadata.Pattern pattern -> [ sprintf "\"pattern\":%s" (literal pattern) ]
+                | Axial.Check.ConstraintMetadata.OneOf choices ->
+                    [ choices |> List.map literal |> String.concat "," |> sprintf "\"enum\":[%s]" ]
+                | Axial.Check.ConstraintMetadata.EqualTo expected -> [ sprintf "\"const\":%s" (literal expected) ]
+                | Axial.Check.ConstraintMetadata.NotEqualTo _ -> []
+                | Axial.Check.ConstraintMetadata.Between(minimum, maximum) ->
+                    [ sprintf "\"minimum\":%s" (literal minimum); sprintf "\"maximum\":%s" (literal maximum) ]
+                | Axial.Check.ConstraintMetadata.GreaterThan minimum -> [ sprintf "\"exclusiveMinimum\":%s" (literal minimum) ]
+                | Axial.Check.ConstraintMetadata.LessThan maximum -> [ sprintf "\"exclusiveMaximum\":%s" (literal maximum) ]
+                | Axial.Check.ConstraintMetadata.AtLeast minimum -> [ sprintf "\"minimum\":%s" (literal minimum) ]
+                | Axial.Check.ConstraintMetadata.AtMost maximum -> [ sprintf "\"maximum\":%s" (literal maximum) ]
+                | Axial.Check.ConstraintMetadata.Count expected ->
+                    [ sprintf "\"minItems\":%d" expected; sprintf "\"maxItems\":%d" expected ]
+                | Axial.Check.ConstraintMetadata.MinCount minimum -> [ sprintf "\"minItems\":%d" minimum ]
+                | Axial.Check.ConstraintMetadata.MaxCount maximum -> [ sprintf "\"maxItems\":%d" maximum ]
+                | Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum) ->
+                    [ sprintf "\"minItems\":%d" minimum; sprintf "\"maxItems\":%d" maximum ]
+                | Axial.Check.ConstraintMetadata.Distinct -> [ "\"uniqueItems\":true" ]
+                | Axial.Check.ConstraintMetadata.Contains item ->
+                    [ sprintf "\"contains\":{\"const\":%s}" (literal item) ]
+                | Axial.Check.ConstraintMetadata.MultipleOf divisor -> [ sprintf "\"multipleOf\":%s" (literal divisor) ]
+                | Axial.Check.ConstraintMetadata.Custom _ -> [])
 
     let private primitiveKeywords kind =
         match kind with
@@ -148,7 +153,7 @@ module JsonSchema =
 
         let formatKeyword =
             match boundaryFormat description with
-            | Some format when constraints |> List.contains ConstraintMetadata.Email |> not ->
+            | Some format when constraints |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) |> not ->
                 [ sprintf "\"format\":\"%s\"" (escape format.Name) ]
             | _ -> []
 

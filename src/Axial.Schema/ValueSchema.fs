@@ -349,7 +349,7 @@ module internal ValueSchema =
         )
 
     /// <summary>Adds a constraint to every item described by a list schema.</summary>
-    let constrainItems (constraint': Constraint) (schema: Schema<'item list>) : Schema<'item list> =
+    let constrainItems (constraint': ConstraintDescriptor) (schema: Schema<'item list>) : Schema<'item list> =
         if isNull (box constraint') then nullArg (nameof constraint')
         if isNull (box schema) then nullArg (nameof schema)
 
@@ -364,7 +364,7 @@ module internal ValueSchema =
         | _ -> invalidArg (nameof schema) "Expected a list schema."
 
     /// <summary>Adds a constraint to every value described by a string-keyed map schema.</summary>
-    let constrainValues (constraint': Constraint) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
+    let constrainValues (constraint': ConstraintDescriptor) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
         if isNull (box constraint') then nullArg (nameof constraint')
         if isNull (box schema) then nullArg (nameof schema)
 
@@ -968,7 +968,7 @@ module internal ValueSchema =
 
         gather schema.ValueDefinition
 
-    let private ensureNotRequiredOnOptional parameterName (constraint': Constraint) (schema: Schema<'value>) =
+    let private ensureNotRequiredOnOptional parameterName (constraint': ConstraintDescriptor) (schema: Schema<'value>) =
         match schema.ValueDefinition.Shape with
         | OptionValueDefinition _ when constraint'.Code = "required" ->
             invalidArg parameterName "Optional value schemas cannot carry the required constraint."
@@ -978,7 +978,7 @@ module internal ValueSchema =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when the <c>required</c> constraint is attached to an optional value schema.
     /// </exception>
-    let withConstraint (constraint': Constraint) (schema: Schema<'value>) : Schema<'value> =
+    let withConstraint (constraint': ConstraintDescriptor) (schema: Schema<'value>) : Schema<'value> =
         if isNull constraint' then
             nullArg (nameof constraint')
 
@@ -996,7 +996,7 @@ module internal ValueSchema =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when the <c>required</c> constraint is attached to an optional value schema.
     /// </exception>
-    let withConstraints (constraints: Constraint list) (schema: Schema<'value>) : Schema<'value> =
+    let withConstraints (constraints: ConstraintDescriptor list) (schema: Schema<'value>) : Schema<'value> =
         if isNull (box constraints) then
             nullArg (nameof constraints)
 

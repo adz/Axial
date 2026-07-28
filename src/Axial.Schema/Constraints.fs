@@ -5,12 +5,21 @@ open System.Collections
 open System.Collections.Generic
 open Axial.Check
 
-/// The value-constraint taxonomy owned by Axial.Check and interpreted by Schema.
-type ConstraintMetadata = Axial.Check.ConstraintMetadata
+/// Describes boundary presence before a typed value exists.
+[<RequireQualifiedAccess>]
+type Presence =
+    | Required
+    | Optional
+
+/// Distinguishes executable value-constraint metadata from Schema boundary-presence metadata.
+[<RequireQualifiedAccess>]
+type ConstraintMetadata =
+    | ValueConstraint of Axial.Check.ConstraintMetadata
+    | Presence of Presence
 
 /// Describes a constraint after its typed Check constraint has been attached to a heterogeneous schema.
 [<AllowNullLiteral>]
-type Constraint internal (
+type ConstraintDescriptor internal (
     code: string,
     metadata: ConstraintMetadata,
     arguments: IReadOnlyDictionary<string, obj>,
@@ -28,9 +37,9 @@ type Constraint internal (
 /// A typed Schema constraint annotation. Value constraints retain a complete Axial.Check.Constraint;
 /// presence declarations remain Schema boundary metadata.
 [<Sealed; AllowNullLiteral>]
-type SchemaConstraint<'value> internal (untyped: Constraint) =
-    inherit Constraint(untyped.Code, untyped.Metadata, untyped.Arguments, untyped.Check, untyped.Message)
-    member internal this.Untyped = this :> Constraint
+type SchemaConstraint<'value> internal (untyped: ConstraintDescriptor) =
+    inherit ConstraintDescriptor(untyped.Code, untyped.Metadata, untyped.Arguments, untyped.Check, untyped.Message)
+    member internal this.Untyped = this :> ConstraintDescriptor
 
 /// Creates typed Schema constraints and inspects their erased descriptors.
 /// <example>
@@ -58,20 +67,20 @@ module Constraint =
     /// <summary>Returns the constraint arguments as an immutable dictionary.</summary>
         let arguments = Axial.Check.Constraint.arguments constraint' |> Map.toSeq |> dictionary
         let check value = Axial.Check.Constraint.check constraint' (unbox<'value> value)
-        Constraint(code, Axial.Check.Constraint.metadata constraint', arguments, Some check, None)
+        ConstraintDescriptor(code, ConstraintMetadata.ValueConstraint(Axial.Check.Constraint.metadata constraint'), arguments, Some check, None)
 
     let private presence code metadata =
-        Constraint(code, metadata, dictionary [], None, None)
+        ConstraintDescriptor(code, metadata, dictionary [], None, None)
 
     /// Adapts a complete Check constraint for use by Schema.
     let fromCheck (constraint': Axial.Check.Constraint<'value>) : SchemaConstraint<'value> =
         SchemaConstraint<'value>(eraseCheck constraint')
 
     /// Requires boundary input to be present. Presence is handled before a typed value exists.
-    let required<'value> : SchemaConstraint<'value> = SchemaConstraint<'value>(presence "required" ConstraintMetadata.Required)
+    let required<'value> : SchemaConstraint<'value> = SchemaConstraint<'value>(presence "required" (ConstraintMetadata.Presence Presence.Required))
 
     /// Marks boundary input as optional. Presence is handled before a typed value exists.
-    let optional<'value> : SchemaConstraint<'value> = SchemaConstraint<'value>(presence "optional" ConstraintMetadata.Optional)
+    let optional<'value> : SchemaConstraint<'value> = SchemaConstraint<'value>(presence "optional" (ConstraintMetadata.Presence Presence.Optional))
 
     /// <summary>Requires text to contain at least the supplied number of characters.</summary>
     let minLength minimum : SchemaConstraint<string> = fromCheck (Axial.Check.Constraint.minLength minimum)
@@ -142,22 +151,22 @@ module Constraint =
         atMost LanguagePrimitives.GenericZero<'value>
 
     /// <summary>Returns the stable external code.</summary>
-    let code (constraint': Constraint) =
+    let code (constraint': ConstraintDescriptor) =
         if isNull constraint' then nullArg (nameof constraint')
         constraint'.Code
 
     /// <summary>Returns the typed metadata case and retained runtime operands.</summary>
-    let metadata (constraint': Constraint) =
+    let metadata (constraint': ConstraintDescriptor) =
         if isNull constraint' then nullArg (nameof constraint')
         constraint'.Metadata
 
     /// <summary>Returns the constraint arguments as an immutable dictionary.</summary>
-    let arguments (constraint': Constraint) =
+    let arguments (constraint': ConstraintDescriptor) =
         if isNull constraint' then nullArg (nameof constraint')
         constraint'.Arguments
 
     /// <summary>Returns a named constraint argument when present.</summary>
-    let tryFindArgument name (constraint': Constraint) =
+    let tryFindArgument name (constraint': ConstraintDescriptor) =
         ensureText (nameof name) name
         if isNull constraint' then nullArg (nameof constraint')
         match constraint'.Arguments.TryGetValue name with
@@ -165,11 +174,11 @@ module Constraint =
         | false, _ -> None
 
     /// <summary>Returns the custom diagnostic message when one was attached.</summary>
-    let message (constraint': Constraint) =
+    let message (constraint': ConstraintDescriptor) =
         if isNull constraint' then nullArg (nameof constraint')
         constraint'.Message
 
-    let internal tryCheck<'value> (constraint': Constraint) : Check<'value> option =
+    let internal tryCheck<'value> (constraint': ConstraintDescriptor) : Check<'value> option =
         if isNull constraint' then nullArg (nameof constraint')
         constraint'.Check
         |> Option.map (fun check value -> check (box value))
@@ -179,4 +188,4 @@ module Constraint =
         ensureText (nameof message) message
         if isNull constraint' then nullArg (nameof constraint')
         let untyped = constraint'.Untyped
-        SchemaConstraint<'value>(Constraint(untyped.Code, untyped.Metadata, untyped.Arguments, untyped.Check, Some message))
+        SchemaConstraint<'value>(ConstraintDescriptor(untyped.Code, untyped.Metadata, untyped.Arguments, untyped.Check, Some message))

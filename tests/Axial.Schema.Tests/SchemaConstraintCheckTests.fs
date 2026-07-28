@@ -195,7 +195,7 @@ module ConstraintCheckTests =
         |> List.iter (fun constraint' ->
             test <@ ConstraintCheck.tryOrdered<int> constraint' |> Option.isSome @>)
 
-        let erasedSequenceConstraints = sequenceConstraints |> List.map (fun constraint' -> constraint' :> Constraint)
+        let erasedSequenceConstraints = sequenceConstraints |> List.map (fun constraint' -> constraint' :> ConstraintDescriptor)
         test <@ ConstraintCheck.complete<int list> erasedSequenceConstraints [ 1 ] = Ok () @>
 
         test <@ ConstraintCheck.tryText Constraint.optional |> Option.isNone @>

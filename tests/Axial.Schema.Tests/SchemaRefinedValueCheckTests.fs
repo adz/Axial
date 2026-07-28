@@ -71,6 +71,8 @@ module SchemaRefinedValueCheckTests =
 
         test <@ Schema.check schema allowed = Ok allowed @>
         test <@ Schema.check schema (Email.create "grace@example.com") |> Result.isError @>
+        test <@ SchemaCheck.text schema allowed = Ok () @>
+        test <@ SchemaCheck.text schema (Email.create "grace@example.com") = Error [ CheckFailure.Custom "allowedEmail" ] @>
         test <@ Schema.parse schema (Axial.Data.Text "ada@example.com") = Ok allowed @>
         test <@ Schema.parse schema (Axial.Data.Text "grace@example.com") |> Result.isError @>
 
@@ -121,7 +123,10 @@ module SchemaRefinedValueCheckTests =
         let check = Email.schema |> SchemaCheck.text
 
         test <@ check (Email.create "ada@example.com") = Ok () @>
-        test <@ check (Email.create "") = Error [ Required; InvalidFormat "email" ] @>
+        Assert.Equal<Result<unit, CheckFailure list>>(
+            Error [ Required; InvalidFormat "email" ],
+            check (Email.create "")
+        )
 
     [<Fact>]
     let ``raw text constraint metadata checks the refined value's underlying text`` () =
@@ -141,7 +146,10 @@ module SchemaRefinedValueCheckTests =
         test <@ check (NormalizedEmail.create (Email.create "ada@example.com")) = Ok () @>
 
         // The raw text layer's checks fire for blank input; the outer refined layer's maxLength passes at length 0.
-        test <@ check (NormalizedEmail.create (Email.create "")) = Error [ Required; InvalidFormat "email" ] @>
+        Assert.Equal<Result<unit, CheckFailure list>>(
+            Error [ Required; InvalidFormat "email" ],
+            check (NormalizedEmail.create (Email.create ""))
+        )
 
         // The outer refined layer's own constraint fires once the raw layers pass.
         let overlong = String.replicate 250 "a" + "@example.com"

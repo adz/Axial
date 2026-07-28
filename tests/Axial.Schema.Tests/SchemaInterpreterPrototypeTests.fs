@@ -47,13 +47,13 @@ module SchemaInterpreterPrototypes =
 
         let private constraintSummary metadata =
             match metadata with
-            | ConstraintMetadata.Required -> Some "required"
-            | ConstraintMetadata.Optional -> Some "optional"
-            | ConstraintMetadata.MinLength minimum -> Some(sprintf "at least %d characters" minimum)
-            | ConstraintMetadata.MaxLength maximum -> Some(sprintf "at most %d characters" maximum)
-            | ConstraintMetadata.Email -> Some "email format"
-            | ConstraintMetadata.MinCount minimum -> Some(sprintf "at least %d items" minimum)
-            | ConstraintMetadata.AtLeast minimum ->
+            | (ConstraintMetadata.Presence Presence.Required) -> Some "required"
+            | (ConstraintMetadata.Presence Presence.Optional) -> Some "optional"
+            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength minimum) -> Some(sprintf "at least %d characters" minimum)
+            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some(sprintf "at most %d characters" maximum)
+            | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "email format"
+            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinCount minimum) -> Some(sprintf "at least %d items" minimum)
+            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtLeast minimum) ->
                 Some(sprintf "at least %s" (Convert.ToString(minimum, CultureInfo.InvariantCulture)))
             | _ -> None
 
@@ -113,7 +113,7 @@ module SchemaInterpreterPrototypes =
 
             match underlyingShape description with
             | SchemaShape.Primitive PrimitiveValueKind.Text ->
-                if constraints |> List.contains ConstraintMetadata.Email then EmailBox else TextBox
+                if constraints |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) then EmailBox else TextBox
             | SchemaShape.Primitive PrimitiveValueKind.Int
             | SchemaShape.Primitive PrimitiveValueKind.Decimal -> NumberBox
             | SchemaShape.Primitive PrimitiveValueKind.Bool -> CheckBox
@@ -133,13 +133,13 @@ module SchemaInterpreterPrototypes =
 
                 { Label = field.Name
                   Control = controlFor field.Schema
-                  IsRequired = constraints |> List.contains ConstraintMetadata.Required
+                  IsRequired = constraints |> List.contains (ConstraintMetadata.Presence Presence.Required)
                   MaxLength =
                     constraints
                     |> List.tryPick (fun metadata ->
                         match metadata with
-                        | ConstraintMetadata.MaxLength maximum -> Some maximum
-                        | ConstraintMetadata.LengthBetween(_, maximum) -> Some maximum
+                        | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some maximum
+                        | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(_, maximum)) -> Some maximum
                         | _ -> None) })
 
         /// <summary>Describes a built model schema as UI field metadata without creating a UI framework.</summary>
@@ -310,7 +310,7 @@ module SchemaInterpreterPrototypeTests =
         match email.Schema.Shape with
         | SchemaShape.Refined underlying ->
             test <@ underlying.Shape = SchemaShape.Primitive PrimitiveValueKind.Text @>
-            test <@ underlying.Constraints |> List.map _.Metadata |> List.contains ConstraintMetadata.Required @>
+            test <@ underlying.Constraints |> List.map _.Metadata |> List.contains (ConstraintMetadata.Presence Presence.Required) @>
         | other -> failwithf "Expected the email field to be refined, but got %A." other
 
         test <@ constructions.Value = 0 @>
@@ -323,6 +323,6 @@ module SchemaInterpreterPrototypeTests =
 
         let description = Inspect.schema emailSchema
 
-        test <@ boundaryConstraints description |> List.contains ConstraintMetadata.Email @>
+        test <@ boundaryConstraints description |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) @>
         test <@ (Inspect.field (Field.create "email" _.Email emailSchema)).Name = "email" @>
         test <@ constructions.Value = 0 && getterReads.Value = 0 @>

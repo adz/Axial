@@ -53,15 +53,14 @@ let contactEmail =
 
 The built-in set covers:
 
-- required text and boundary-presence annotations used by Schema
+- required text
 - text length, email format, trimming, patterns, and closed choices
 - equality and ordered bounds
 - collection counts, distinctness, and containment
 - numeric multiples
 
-`Required` and `Optional` are the two presence cases in the shared metadata vocabulary. Schema uses them before a typed
-value exists, so its `required` and `optional` descriptors intentionally have no retained value check. All other Schema
-constraints retain and execute a complete `Constraint<'value>`.
+Schema owns boundary presence separately because `required` and `optional` apply before a typed value exists. Other
+Schema constraints retain and execute a complete `Constraint<'value>`.
 
 The discriminated-union cases identify each rule without string dispatch. Operands of generic rules are retained as
 `obj`, preserving application types at runtime; consumers inspect the case before interpreting those operands. When

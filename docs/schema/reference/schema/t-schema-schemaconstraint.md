@@ -1,7 +1,7 @@
 ---
 title: "Schema.SchemaConstraint"
 linkTitle: "SchemaConstraint<value>"
-weight: 1114
+weight: 1115
 ---
 
  A typed Schema constraint annotation. Value constraints retain a complete Axial.Check.Constraint;
@@ -20,4 +20,4 @@ weight: 1114
 | `value` |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L31-31)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L40-40)

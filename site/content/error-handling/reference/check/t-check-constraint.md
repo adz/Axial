@@ -20,4 +20,4 @@ type: docs
 | `value` |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Constraint.fs#L81-81)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Constraint.fs#L79-79)

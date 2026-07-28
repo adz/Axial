@@ -4,7 +4,13 @@ linkTitle: "Constraint"
 weight: 1113
 ---
 
- Describes a constraint after its typed Check constraint has been attached to a heterogeneous schema.
+ Creates typed Schema constraints and inspects their erased descriptors.
+ <example>
+ <code>
+ let schema = Schema.text |> Schema.constrain (Constraint.maxLength 80)
+ let custom = Axial.Check.Constraint.define "named" [] check |> Constraint.fromCheck
+ </code>
+ </example>
 
 ## Signature
 
@@ -13,4 +19,4 @@ weight: 1113
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L13-13)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L52-52)

@@ -185,7 +185,7 @@ type internal RefinedValueOps(construct: obj -> Result<obj, SchemaError list>, i
 type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
       Format: SchemaFormat option
-      Constraints: Constraint list
+      Constraints: ConstraintDescriptor list
       Description: string option
       Default: obj option }
 
@@ -315,7 +315,7 @@ and [<ReferenceEquality>] internal FieldDescriptor<'model> =
       Order: FieldOrder
       Getter: 'model -> obj
       ValueSchema: ValueSchemaDefinition
-      Constraints: Constraint list }
+      Constraints: ConstraintDescriptor list }
 
 and [<ReferenceEquality>] internal ModelSchemaDefinition<'model> =
     { Constructor: ConstructorApplication<'model>
@@ -362,7 +362,7 @@ type internal FieldDefinition<'model, 'value> =
       Order: FieldOrder
       Getter: 'model -> 'value
       ValueSchema: ValueSchemaDefinition
-      Constraints: Constraint list }
+      Constraints: ConstraintDescriptor list }
 
 /// <summary>
 /// Describes one typed field of a trusted model for schema interpreters.

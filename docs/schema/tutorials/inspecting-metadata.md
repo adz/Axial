@@ -49,7 +49,7 @@ Refined values expose their raw representation through `SchemaShape.Refined`, so
 
 Schema authoring uses `SchemaConstraint<'value>`, which prevents attaching a string constraint to an integer schema.
 `Constraint.fromCheck` creates one from a complete `Axial.Check.Constraint<'value>`. After Schema combines differently
-typed fields into one model description, inspectors see the non-generic `Axial.Schema.Constraint` descriptor. The
+typed fields into one model description, inspectors see the non-generic `Axial.Schema.ConstraintDescriptor`. The
 `Constraint` module creates and inspects Schema constraints; it is not another constraint value type.
 
 `required` and `optional` describe boundary presence before a typed value exists. Other constructors retain complete
@@ -61,11 +61,14 @@ Constraint metadata is the discriminated-union `ConstraintMetadata` vocabulary o
 [Axial.Check]({{< relref "/error-handling/check/constraints/" >}}), so lowering is one `match`:
 
 ```fsharp
-let jsonKeyword (constraint': Constraint) =
+let jsonKeyword (constraint': ConstraintDescriptor) =
     match constraint'.Metadata with
-    | ConstraintMetadata.MaxLength maximum -> Some $"\"maxLength\":{maximum}"
-    | ConstraintMetadata.Pattern pattern -> Some $"\"pattern\":\"{pattern}\""
-    | ConstraintMetadata.Required -> None   // handled at the object level
+    | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) ->
+        Some $"\"maxLength\":{maximum}"
+    | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) ->
+        Some $"\"pattern\":\"{pattern}\""
+    | ConstraintMetadata.Presence Presence.Required ->
+        None // handled at the object level
     | _ -> None
 ```
 

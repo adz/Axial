@@ -50,50 +50,50 @@ module ConstraintInspectionTests =
 
         test <@
             emailField.ValueSchema.Constraints |> List.map Constraint.metadata =
-                [ ConstraintMetadata.Required
-                  ConstraintMetadata.Email
-                  ConstraintMetadata.MinLength 3
-                  ConstraintMetadata.MaxLength 254
-                  ConstraintMetadata.Trimmed ]
+                [ (ConstraintMetadata.Presence Presence.Required)
+                  (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email)
+                  ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength 3)
+                  ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254)
+                  (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Trimmed) ]
         @>
 
         test <@
             ageField.ValueSchema.Constraints |> List.map Constraint.metadata =
-                [ ConstraintMetadata.AtLeast(box 13)
-                  ConstraintMetadata.AtMost(box 120)
-                  ConstraintMetadata.NotEqualTo(box 99) ]
+                [ ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtLeast(box 13))
+                  ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtMost(box 120))
+                  ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.NotEqualTo(box 99)) ]
         @>
 
     [<Fact>]
     let ``constraint constructors preserve the complete built-in metadata catalog`` () =
-        let catalog : (Constraint * string * ConstraintMetadata) list =
-            [ Constraint.required, "required", ConstraintMetadata.Required
-              Constraint.optional, "optional", ConstraintMetadata.Optional
-              Constraint.minLength 2, "minLength", ConstraintMetadata.MinLength 2
-              Constraint.maxLength 20, "maxLength", ConstraintMetadata.MaxLength 20
-              Constraint.lengthBetween 2 20, "lengthBetween", ConstraintMetadata.LengthBetween(2, 20)
-              Constraint.email, "email", ConstraintMetadata.Email
-              Constraint.trimmed, "trimmed", ConstraintMetadata.Trimmed
-              Constraint.pattern "^[a-z]+$", "pattern", ConstraintMetadata.Pattern "^[a-z]+$"
-              Constraint.oneOf [ "a"; "b" ], "oneOf", ConstraintMetadata.OneOf [ "a"; "b" ]
-              Constraint.equalTo 3, "equalTo", ConstraintMetadata.EqualTo(box 3)
-              Constraint.notEqualTo 3, "notEqualTo", ConstraintMetadata.NotEqualTo(box 3)
-              Constraint.between 1 3, "between", ConstraintMetadata.Between(box 1, box 3)
-              Constraint.greaterThan 1, "greaterThan", ConstraintMetadata.GreaterThan(box 1)
-              Constraint.lessThan 3, "lessThan", ConstraintMetadata.LessThan(box 3)
-              Constraint.atLeast 1, "atLeast", ConstraintMetadata.AtLeast(box 1)
-              Constraint.atMost 3, "atMost", ConstraintMetadata.AtMost(box 3)
-              Constraint.count 2, "count", ConstraintMetadata.Count 2
-              Constraint.minCount 1, "minCount", ConstraintMetadata.MinCount 1
-              Constraint.maxCount 3, "maxCount", ConstraintMetadata.MaxCount 3
-              Constraint.countBetween 1 3, "countBetween", ConstraintMetadata.CountBetween(1, 3)
-              Constraint.distinct, "distinct", ConstraintMetadata.Distinct
-              Constraint.contains 2, "contains", ConstraintMetadata.Contains(box 2)
-              Constraint.multipleOf 2, "multipleOf", ConstraintMetadata.MultipleOf(box 2)
+        let catalog : (ConstraintDescriptor * string * ConstraintMetadata) list =
+            [ Constraint.required, "required", (ConstraintMetadata.Presence Presence.Required)
+              Constraint.optional, "optional", (ConstraintMetadata.Presence Presence.Optional)
+              Constraint.minLength 2, "minLength", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength 2)
+              Constraint.maxLength 20, "maxLength", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 20)
+              Constraint.lengthBetween 2 20, "lengthBetween", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(2, 20))
+              Constraint.email, "email", (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email)
+              Constraint.trimmed, "trimmed", (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Trimmed)
+              Constraint.pattern "^[a-z]+$", "pattern", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern "^[a-z]+$")
+              Constraint.oneOf [ "a"; "b" ], "oneOf", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf [ "a"; "b" ])
+              Constraint.equalTo 3, "equalTo", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.EqualTo(box 3))
+              Constraint.notEqualTo 3, "notEqualTo", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.NotEqualTo(box 3))
+              Constraint.between 1 3, "between", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(box 1, box 3))
+              Constraint.greaterThan 1, "greaterThan", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.GreaterThan(box 1))
+              Constraint.lessThan 3, "lessThan", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LessThan(box 3))
+              Constraint.atLeast 1, "atLeast", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtLeast(box 1))
+              Constraint.atMost 3, "atMost", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtMost(box 3))
+              Constraint.count 2, "count", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Count 2)
+              Constraint.minCount 1, "minCount", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinCount 1)
+              Constraint.maxCount 3, "maxCount", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxCount 3)
+              Constraint.countBetween 1 3, "countBetween", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(1, 3))
+              Constraint.distinct, "distinct", (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct)
+              Constraint.contains 2, "contains", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Contains(box 2))
+              Constraint.multipleOf 2, "multipleOf", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MultipleOf(box 2))
               ((Axial.Check.Constraint.define "custom" [] (fun (_: int) -> Ok ())
-                |> Constraint.fromCheck) :> Constraint),
+                |> Constraint.fromCheck) :> ConstraintDescriptor),
               "custom",
-              ConstraintMetadata.Custom("custom", Map.empty) ]
+              ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Custom("custom", Map.empty)) ]
 
         catalog
         |> List.iter (fun (constraint', code, metadata) ->
@@ -159,10 +159,10 @@ module ConstraintInspectionTests =
         @>
         test <@
             email.ValueSchema.Constraints |> List.map Constraint.metadata =
-                [ ConstraintMetadata.Required
-                  ConstraintMetadata.Email
-                  ConstraintMetadata.MaxLength 254
-                  ConstraintMetadata.Required ]
+                [ (ConstraintMetadata.Presence Presence.Required)
+                  (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email)
+                  ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254)
+                  (ConstraintMetadata.Presence Presence.Required) ]
         @>
 
         test <@ age.Constraints |> List.isEmpty @>
@@ -211,7 +211,7 @@ module ConstraintInspectionTests =
         let postal = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "postalCode")
         let patternConstraint = postal.ValueSchema.Constraints |> List.last
 
-        test <@ Constraint.metadata patternConstraint = ConstraintMetadata.Pattern "^[0-9]{5}$" @>
+        test <@ Constraint.metadata patternConstraint = ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern "^[0-9]{5}$") @>
         test <@ Constraint.tryFindArgument "pattern" patternConstraint = Some(box "^[0-9]{5}$") @>
 
     [<Fact>]
@@ -222,7 +222,7 @@ module ConstraintInspectionTests =
         test <@ Constraint.message required = None @>
         test <@ Constraint.message customized = Some "Email is required." @>
         test <@ Constraint.code customized = "required" @>
-        test <@ Constraint.metadata customized = ConstraintMetadata.Required @>
+        test <@ Constraint.metadata customized = (ConstraintMetadata.Presence Presence.Required) @>
 
         let maxLength = Constraint.maxLength 80 |> Constraint.withMessage "Too long."
 

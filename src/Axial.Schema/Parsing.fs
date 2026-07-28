@@ -134,7 +134,7 @@ module internal SchemaParsing =
         match kind with
         | PrimitiveValueKind.Text ->
             let presence =
-                if constraints |> List.exists (Constraint.metadata >> (=) ConstraintMetadata.Required) then
+                if constraints |> List.exists (Constraint.metadata >> (=) (ConstraintMetadata.Presence Presence.Required)) then
                     fun value -> Check.String.present (unbox<string> value)
                 else
                     fun _ -> Ok ()

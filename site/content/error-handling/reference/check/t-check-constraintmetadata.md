@@ -17,8 +17,7 @@ type: docs
 
 | Case | Description |
 | --- | --- |
-| `Required` |  A value must be present. |
-| `Optional` |  A boundary value may be omitted. |
+| `Present` |  Text must contain at least one non-whitespace character. |
 | `MinLength` |  Text must contain at least the supplied number of characters. |
 | `MaxLength` |  Text must contain at most the supplied number of characters. |
 | `LengthBetween` |  Text length must lie inside the supplied inclusive bounds. |

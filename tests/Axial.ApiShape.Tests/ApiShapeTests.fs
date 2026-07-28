@@ -566,7 +566,7 @@ module ApiShapeTests =
         test <@ typedConstraintMembers = expectedTypedConstraintMembers @>
 
         let untypedConstraintMembers =
-            moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ConstraintModule"
+            moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Constraint"
             |> publicStaticMemberNames
             |> Set.filter (fun name -> not (name.Contains "$"))
 
@@ -611,7 +611,7 @@ module ApiShapeTests =
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaCheck"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "fromUnderlying"; "text"; "ordered" ]
+        |> assertContainsAll [ "fromUnderlying"; "complete"; "text"; "ordered" ]
 
     [<Fact>]
     let ``schema types stay out of the flow package`` () =
@@ -620,12 +620,12 @@ module ApiShapeTests =
         let fieldType = typedefof<Field<_, _>>
         let primitiveValueKindType = typeof<PrimitiveValueKind>
         let schemaConstraintMetadataType = typeof<ConstraintMetadata>
-        let schemaConstraintType = typeof<Constraint>
+        let schemaConstraintType = typeof<ConstraintDescriptor>
         let externalFieldNameType = typeof<ExternalFieldName>
         let fieldOrderType = typeof<FieldOrder>
         let schemaModule = moduleType schemaType "Axial.Schema.Schema"
         let fieldModule = moduleType fieldType "Axial.Schema.Field"
-        let schemaConstraintModule = moduleType schemaConstraintType "Axial.Schema.ConstraintModule"
+        let schemaConstraintModule = moduleType schemaConstraintType "Axial.Schema.Constraint"
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
         let publicConstructors =
@@ -758,31 +758,17 @@ module ApiShapeTests =
         |> assertContainsAll [ "Text"; "Int"; "Decimal"; "Bool"; "Date"; "DateTime"; "Guid" ]
         schemaConstraintMetadataType
         |> publicUnionCaseNames
-        |> assertContainsAll
-            [ "Required"
-              "Optional"
-              "MinLength"
-              "MaxLength"
-              "LengthBetween"
-              "Email"
-              "Pattern"
-              "OneOf"
-              "Between"
-              "GreaterThan"
-              "LessThan"
-              "AtLeast"
-              "AtMost"
-              "Count"
-              "MinCount"
-              "MaxCount"
-              "CountBetween"
-              "Distinct"
-              "Contains"
-              "Custom" ]
+        |> assertContainsAll [ "ValueConstraint"; "Presence" ]
+
+        let checkConstraintCases = typeof<Axial.Check.ConstraintMetadata> |> publicUnionCaseNames
+        checkConstraintCases |> assertContainsAll [ "Present"; "MinLength"; "Custom" ]
+        checkConstraintCases |> assertContainsNone [ "Required"; "Optional" ]
+
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
         test <@ primitiveValueKindType.Assembly = schemaAssembly @>
-        test <@ schemaConstraintMetadataType.Assembly = typeof<CheckFailure>.Assembly @>
+        test <@ schemaConstraintMetadataType.Assembly = schemaAssembly @>
+        test <@ typeof<Axial.Check.ConstraintMetadata>.Assembly = typeof<CheckFailure>.Assembly @>
         test <@ schemaConstraintType.Assembly = schemaAssembly @>
         test <@ externalFieldNameType.Assembly = schemaAssembly @>
         test <@ fieldOrderType.Assembly = schemaAssembly @>
@@ -866,8 +852,8 @@ module ApiShapeTests =
         let descriptor = field |> schemaFieldDescriptor
 
         test <@ Constraint.code required = "required" @>
-        test <@ Constraint.metadata required = ConstraintMetadata.Required @>
-        test <@ Constraint.metadata maxLength = ConstraintMetadata.MaxLength 20 @>
+        test <@ Constraint.metadata required = (ConstraintMetadata.Presence Presence.Required) @>
+        test <@ Constraint.metadata maxLength = ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 20) @>
         test <@ string required = "required" @>
         test <@ Constraint.arguments required |> Seq.isEmpty @>
         test <@ Constraint.tryFindArgument "maximum" maxLength = Some(box 20) @>
@@ -948,7 +934,7 @@ module ApiShapeTests =
 
         test <@
             Constraint.metadata tenantOnly =
-                ConstraintMetadata.Custom("tenantOnly", Map [ "tenant", box "north" ])
+                ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Custom("tenantOnly", Map [ "tenant", box "north" ]))
         @>
         raises<ArgumentOutOfRangeException> <@ Constraint.minLength -1 |> ignore @>
         raises<ArgumentOutOfRangeException> <@ Constraint.count -1 |> ignore @>
@@ -983,60 +969,60 @@ module ApiShapeTests =
         let diagnostics =
             constraints
             |> List.choose (Constraint.metadata >> function
-                | ConstraintMetadata.Required -> Some "SchemaError.Required"
-                | ConstraintMetadata.MaxLength maximum -> Some $"SchemaError.InvalidLength maxLength {maximum}"
-                | ConstraintMetadata.Email -> Some "SchemaError.InvalidFormat email"
-                | ConstraintMetadata.Pattern pattern -> Some $"SchemaError.InvalidFormat {pattern}"
-                | ConstraintMetadata.OneOf choices ->
+                | (ConstraintMetadata.Presence Presence.Required) -> Some "SchemaError.Required"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"SchemaError.InvalidLength maxLength {maximum}"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "SchemaError.InvalidFormat email"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"SchemaError.InvalidFormat {pattern}"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) ->
                     Some(sprintf "SchemaError.NotOneOf %s" (String.concat "|" choices))
-                | ConstraintMetadata.Between(minimum, maximum) ->
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
                     Some $"SchemaError.OutOfRange {minimum}-{maximum}"
-                | ConstraintMetadata.CountBetween(minimum, maximum) ->
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum)) ->
                     Some $"SchemaError.InvalidCount {minimum}-{maximum}"
-                | ConstraintMetadata.Distinct -> Some "SchemaError.Duplicate"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "SchemaError.Duplicate"
                 | _ -> None)
 
         let jsonSchema =
             constraints
             |> List.choose (Constraint.metadata >> function
-                | ConstraintMetadata.Required -> Some "required"
-                | ConstraintMetadata.MaxLength maximum -> Some $"maxLength={maximum}"
-                | ConstraintMetadata.Email -> Some "format=email"
-                | ConstraintMetadata.Pattern pattern -> Some $"pattern={pattern}"
-                | ConstraintMetadata.OneOf choices -> Some(sprintf "enum=%s" (String.concat "," choices))
-                | ConstraintMetadata.Between(minimum, maximum) ->
+                | (ConstraintMetadata.Presence Presence.Required) -> Some "required"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"maxLength={maximum}"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "format=email"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"pattern={pattern}"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> Some(sprintf "enum=%s" (String.concat "," choices))
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
                     Some $"minimum={minimum};maximum={maximum}"
-                | ConstraintMetadata.CountBetween(minimum, maximum) ->
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum)) ->
                     Some $"minItems={minimum};maxItems={maximum}"
-                | ConstraintMetadata.Distinct -> Some "uniqueItems=true"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "uniqueItems=true"
                 | _ -> None)
 
         let ui =
             constraints
             |> List.choose (Constraint.metadata >> function
-                | ConstraintMetadata.Required -> Some "required"
-                | ConstraintMetadata.MaxLength maximum -> Some $"maxlength={maximum}"
-                | ConstraintMetadata.Email -> Some "input=email"
-                | ConstraintMetadata.Pattern pattern -> Some $"pattern={pattern}"
-                | ConstraintMetadata.OneOf choices -> Some $"choices={choices.Length}"
-                | ConstraintMetadata.Between(minimum, maximum) ->
+                | (ConstraintMetadata.Presence Presence.Required) -> Some "required"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"maxlength={maximum}"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "input=email"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"pattern={pattern}"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> Some $"choices={choices.Length}"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
                     Some $"min={minimum};max={maximum}"
-                | ConstraintMetadata.CountBetween(minimum, maximum) ->
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum)) ->
                     Some $"min-items={minimum};max-items={maximum}"
-                | ConstraintMetadata.Distinct -> Some "unique-items"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "unique-items"
                 | _ -> None)
 
         let docs =
             constraints
             |> List.map (Constraint.metadata >> function
-                | ConstraintMetadata.Required -> "Required"
-                | ConstraintMetadata.MaxLength maximum -> $"Maximum length {maximum}"
-                | ConstraintMetadata.Email -> "Email format"
-                | ConstraintMetadata.Pattern pattern -> $"Matches {pattern}"
-                | ConstraintMetadata.OneOf choices -> sprintf "One of %s" (String.concat ", " choices)
-                | ConstraintMetadata.Between(minimum, maximum) -> $"Between {minimum} and {maximum}"
-                | ConstraintMetadata.CountBetween(minimum, maximum) -> $"Between {minimum} and {maximum} items"
-                | ConstraintMetadata.Distinct -> "No duplicates"
+                | (ConstraintMetadata.Presence Presence.Required) -> "Required"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> $"Maximum length {maximum}"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> "Email format"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> $"Matches {pattern}"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> sprintf "One of %s" (String.concat ", " choices)
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) -> $"Between {minimum} and {maximum}"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum)) -> $"Between {minimum} and {maximum} items"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> "No duplicates"
                 | other -> string other)
 
         test <@

@@ -22,10 +22,8 @@ type ConstraintArgument =
 /// The inspectable meaning of an executable value constraint.
 [<RequireQualifiedAccess>]
 type ConstraintMetadata =
-    /// A value must be present.
-    | Required
-    /// A boundary value may be omitted.
-    | Optional
+    /// Text must contain at least one non-whitespace character.
+    | Present
     /// Text must contain at least the supplied number of characters.
     | MinLength of minimum: int
     /// Text must contain at most the supplied number of characters.
@@ -98,8 +96,7 @@ module Constraint =
     let private known metadata check = Constraint(check, metadata)
 
     let private metadataCode = function
-        | ConstraintMetadata.Required -> "required"
-        | ConstraintMetadata.Optional -> "optional"
+        | ConstraintMetadata.Present -> "required"
         | ConstraintMetadata.MinLength _ -> "minLength"
         | ConstraintMetadata.MaxLength _ -> "maxLength"
         | ConstraintMetadata.LengthBetween _ -> "lengthBetween"
@@ -146,7 +143,7 @@ module Constraint =
         | _ -> Map.empty
 
     let private builtInCodes =
-        [ ConstraintMetadata.Required; ConstraintMetadata.Optional; ConstraintMetadata.MinLength 0; ConstraintMetadata.MaxLength 0
+        [ ConstraintMetadata.Present; ConstraintMetadata.MinLength 0; ConstraintMetadata.MaxLength 0
           ConstraintMetadata.LengthBetween(0, 0); ConstraintMetadata.Email; ConstraintMetadata.Trimmed
           ConstraintMetadata.Pattern "x"; ConstraintMetadata.OneOf []; ConstraintMetadata.EqualTo(box 0)
           ConstraintMetadata.NotEqualTo(box 0); ConstraintMetadata.Between(box 0, box 0)
@@ -228,8 +225,7 @@ module Constraint =
         if isNull (box project) then nullArg (nameof project)
         known (metadata constraint') (project >> check constraint')
 
-    let required : Constraint<string> = known ConstraintMetadata.Required Check.String.present
-    let optional<'value> : Constraint<'value option> = known ConstraintMetadata.Optional (fun _ -> Ok ())
+    let required : Constraint<string> = known ConstraintMetadata.Present Check.String.present
     let minLength minimum = ensureNonNegative (nameof minimum) minimum; known (ConstraintMetadata.MinLength minimum) (Check.String.minLength minimum)
     let maxLength maximum = ensureNonNegative (nameof maximum) maximum; known (ConstraintMetadata.MaxLength maximum) (Check.String.maxLength maximum)
     let lengthBetween minimum maximum = ensureNonNegative (nameof minimum) minimum; ensureNonNegative (nameof maximum) maximum; ensureBounds (nameof minimum) minimum maximum; known (ConstraintMetadata.LengthBetween(minimum, maximum)) (Check.String.lengthBetween minimum maximum)

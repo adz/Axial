@@ -46,7 +46,7 @@ and SchemaDescription =
         /// <summary>The declared boundary format, when one was attached with <c>Schema.withFormat</c>.</summary>
         Format: SchemaFormat option
         /// <summary>The portable constraint metadata attached to this value schema layer, in declaration order.</summary>
-        Constraints: Constraint list
+        Constraints: ConstraintDescriptor list
         /// <summary>The description metadata, when one was attached with <c>Schema.describe</c>.</summary>
         Description: string option
         /// <summary>The default-value metadata, when one was attached with <c>Schema.withDefault</c>.</summary>
@@ -63,7 +63,7 @@ and FieldDescription =
         /// <summary>The description of the field's value schema.</summary>
         Schema: SchemaDescription
         /// <summary>The portable constraint metadata attached at the field level, in declaration order.</summary>
-        Constraints: Constraint list
+        Constraints: ConstraintDescriptor list
     }
 
 /// <summary>Describes a built model schema as an ordered list of field descriptions.</summary>

@@ -98,3 +98,11 @@ module SchemaMapValueTests =
         let document = JsonSchema.generateValue (Schema.guid |> Schema.constrain (Constraint.equalTo expected))
 
         test <@ document.Contains "\"const\":\"4f489f3b-cd3c-4f53-b99b-fca552f8994d\"" @>
+
+        let nonFinite =
+            Schema.``int``
+            |> Schema.convert box unbox<int>
+            |> Schema.constrain (Constraint.equalTo (box System.Double.NaN))
+            |> JsonSchema.generateValue
+
+        test <@ nonFinite.Contains "\"const\":\"NaN\"" @>
