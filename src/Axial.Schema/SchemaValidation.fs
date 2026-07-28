@@ -127,10 +127,8 @@ module internal SchemaCheckFailure =
 /// the primitive-level check on the result. Primitive value schemas work the same way with an identity projection.
 /// </para>
 /// <para>
-/// The metadata lowerers gather constraint metadata from every refinement layer with
-/// <see cref="M:Axial.Schema.Schema.allConstraints``1" /> and lower it through
-/// <see cref="T:Axial.Schema.ConstraintCheck" />, so raw-layer and refined-layer constraints run as
-/// one check program.
+/// Each refinement layer executes the complete checks attached at that layer. Raw constraints run against the raw
+/// value; constraints attached after refinement run against the refined value.
 /// </para>
 /// </remarks>
 [<RequireQualifiedAccess>]
@@ -161,8 +159,7 @@ module SchemaCheck =
         fun value -> check (inspect value)
 
     /// <summary>
-    /// Lowers the text-meaning constraint metadata carried by every layer of a value schema into one executable check
-    /// over the schema's values.
+    /// Combines retained text checks into one executable check over the schema's underlying text value.
     /// </summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">
@@ -175,8 +172,7 @@ module SchemaCheck =
         fromUnderlying (ConstraintCheck.text (SchemaCore.allConstraints schema)) schema
 
     /// <summary>
-    /// Lowers the range-meaning constraint metadata carried by every layer of a value schema into one executable check
-    /// over the schema's values.
+    /// Combines retained ordered-value checks into one executable check over the schema's underlying value.
     /// </summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">

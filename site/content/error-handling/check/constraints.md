@@ -5,6 +5,7 @@ type: docs
 description: Give executable checks typed metadata that other code can inspect.
 ---
 
+# Constraints
 
 A `Check<'value>` can execute a rule, but other code cannot inspect an F# function to learn what that rule means. A
 `Constraint<'value>` keeps the check together with typed `ConstraintMetadata`.
@@ -52,14 +53,19 @@ let contactEmail =
 
 The built-in set covers:
 
-- required and optional values
+- required text and boundary-presence annotations used by Schema
 - text length, email format, trimming, patterns, and closed choices
 - equality and ordered bounds
 - collection counts, distinctness, and containment
 - numeric multiples
 
-The typed metadata retains runtime operands, including application types accepted by generic constraints. When metadata
-must cross a serialization boundary, `Constraint.tryPortableArguments` projects supported operands to the closed
+`Required` and `Optional` are the two presence cases in the shared metadata vocabulary. Schema uses them before a typed
+value exists, so its `required` and `optional` descriptors intentionally have no retained value check. All other Schema
+constraints retain and execute a complete `Constraint<'value>`.
+
+The discriminated-union cases identify each rule without string dispatch. Operands of generic rules are retained as
+`obj`, preserving application types at runtime; consumers inspect the case before interpreting those operands. When
+metadata must cross a serialization boundary, `Constraint.tryPortableArguments` projects supported operands to the closed
 `ConstraintArgument` union. It returns `None` rather than converting an unsupported value to a lossy string.
 
 ## Define application constraints
