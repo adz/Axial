@@ -17,8 +17,27 @@ let contactSchema =
     }
 ```
 
-This is the form to prefer at use sites. The rest of this page expands what `Email` contributes and shows where
-schema-local constraints fit.
+This is the form to prefer at use sites. The built-in refined types from
+[Axial.Refined]({{< relref "/error-handling/refined/" >}}) already work this way — `NonBlankString`, `PositiveInt`,
+`Slug`, `NonEmptyList<_>`, and the rest resolve without a `withSchema`, as
+[Getting Started](../getting-started/) shows. Refinements that take parameters, such as `boundedString` and
+`boundedList`, have no single canonical schema and need one selected explicitly:
+
+```fsharp
+field "name" _.Name {
+    withSchema (RefinedSchemas.boundedString 2 80)
+}
+```
+
+`BoundedString` is one type whose values each record the bounds they were refined under, rather than a distinct type
+per bound. So the type alone does not say what the bounds are — `2` and `80` belong to this field, and a
+`BoundedString` built elsewhere under different bounds is the same type. `Schema.check` re-runs the schema's bounds
+against such a value rather than trusting the ones it carries. `BoundedList` and `BoundedArray` work the same way.
+
+Where you want the bounds to be part of the type, wrap them in your own refined type, as
+[Lift universal constraints into the refinement](#lift-universal-constraints-into-the-refinement) shows.
+
+The rest of this page expands what a domain type like `Email` contributes and shows where schema-local constraints fit.
 
 ## Define the domain type
 

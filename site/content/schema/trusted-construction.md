@@ -11,6 +11,10 @@ This page shows which correctness claims Schema can enforce and which claims req
 An **invariant** is a rule that must hold for every valid value, such as a booking start date not following its end date.
 An **aggregate** is a group of related values created and updated as one thing.
 
+[Getting Started](../getting-started/) introduces refined fields, field constraints, and the private-model-plus-draft
+shape in order. This page is the reference behind those choices: what each level promises, where the promise stops, and
+how updates work at each one.
+
 ## Choose the guarantee you need
 
 There are four useful levels:

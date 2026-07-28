@@ -6,8 +6,11 @@ description: Tutorials for parsing boundary input into trusted models.
 
 # Schema Tutorials
 
-These tutorials build up the schema toolkit one step at a time: declare a schema, parse structured data, handle nested
-models and collections, and read schema metadata without running validation.
+[Getting Started]({{< relref "/schema/getting-started" >}}) is the first thing to read: it builds one model up through
+plain fields, refined fields, field constraints, and a private model behind a checked constructor.
+
+These tutorials then take single topics further — a complete form, nested models and collections, and reading schema
+metadata without running validation.
 
 ## Guides
 
