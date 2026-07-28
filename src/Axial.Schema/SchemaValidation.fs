@@ -45,10 +45,17 @@ module ConstraintCheck =
 
     let private retained<'value> constraint' = Constraint.tryCheck<'value> constraint'
 
-    /// Combines every complete constraint retained for the supplied value type. Presence declarations have no check.
+    /// <summary>Combines every complete constraint retained for the supplied value type.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.complete&lt;int&gt; descriptors</code>
+    /// </example>
     let complete<'value> constraints : Check<'value> =
         ensureConstraints constraints |> List.choose retained<'value> |> Check.all
 
+    /// <summary>Returns the retained text check when the descriptor applies to text.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.tryText descriptor</code>
+    /// </example>
     let tryText (constraint': ConstraintDescriptor) : Check<string> option =
         ensureConstraint constraint'
         match Constraint.metadata constraint' with
@@ -69,9 +76,17 @@ module ConstraintCheck =
             | _ -> None
         | ConstraintMetadata.Presence Presence.Optional -> None
 
+    /// <summary>Combines the retained checks and required presence declaration that apply to text.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.text descriptors</code>
+    /// </example>
     let text constraints =
         ensureConstraints constraints |> List.choose tryText |> Check.all
 
+    /// <summary>Returns the retained ordered-value check when the descriptor applies to the supplied value type.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.tryOrdered&lt;int&gt; descriptor</code>
+    /// </example>
     let tryOrdered<'value when 'value: comparison> (constraint': ConstraintDescriptor) : Check<'value> option =
         ensureConstraint constraint'
         match Constraint.metadata constraint' with
@@ -88,6 +103,10 @@ module ConstraintCheck =
             | _ -> None
         | ConstraintMetadata.Presence _ -> None
 
+    /// <summary>Combines retained ordered-value checks for the supplied value type.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.ordered&lt;int&gt; descriptors</code>
+    /// </example>
     let ordered<'value when 'value: comparison> constraints =
         ensureConstraints constraints |> List.choose tryOrdered<'value> |> Check.all
 
@@ -155,6 +174,9 @@ module SchemaCheck =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when the check's value type does not match the schema's underlying primitive kind.
     /// </exception>
+    /// <example>
+    /// <code>let checkEmail = SchemaCheck.fromUnderlying Check.String.email emailSchema</code>
+    /// </example>
     let fromUnderlying (check: Check<'primitive>) (schema: Schema<'value>) : Check<'value> =
         if isNull (box check) then
             nullArg (nameof check)
@@ -194,6 +216,9 @@ module SchemaCheck =
     /// <summary>Runs each complete constraint against the value at the refinement layer where it was attached.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a value schema.</exception>
+    /// <example>
+    /// <code>let checkName = SchemaCheck.complete constrainedNameSchema</code>
+    /// </example>
     let complete (schema: Schema<'value>) : Check<'value> =
         if isNull (box schema) then nullArg (nameof schema)
 
@@ -205,6 +230,9 @@ module SchemaCheck =
     /// <summary>Runs complete constraints for a schema whose underlying primitive value is text.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when the schema's underlying primitive kind is not text.</exception>
+    /// <example>
+    /// <code>let checkEmail = SchemaCheck.text emailSchema</code>
+    /// </example>
     let text (schema: Schema<'value>) : Check<'value> =
         SchemaCore.inspectUnderlying<'value, string> schema |> ignore
         complete schema
@@ -212,6 +240,9 @@ module SchemaCheck =
     /// <summary>Runs complete constraints for a schema whose underlying primitive has the supplied ordered type.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">Thrown when the ordered type does not match the underlying primitive.</exception>
+    /// <example>
+    /// <code>let checkAge = SchemaCheck.ordered&lt;int, int&gt; ageSchema</code>
+    /// </example>
     let ordered<'primitive, 'value when 'primitive: comparison> (schema: Schema<'value>) : Check<'value> =
         SchemaCore.inspectUnderlying<'value, 'primitive> schema |> ignore
         complete schema
