@@ -2,9 +2,9 @@
 weight: 10
 title: Using Check
 description: Checks, portable constraints, failure accumulation, and Result.guard.
-type: docs
 ---
 
+# Using Check
 
 ```fsharp
 open Axial.Check
@@ -91,8 +91,7 @@ let check : Check<string> =
 ```
 
 Built-in constraints include text formats and lengths, ordered bounds, collection counts, distinctness, multiples,
-and closed choices. Typed metadata retains each rule's operands; `Constraint.tryPortableArguments` projects supported
-operands to `ConstraintArgument` values when serialization is needed.
+and closed choices. Each constraint retains metadata describing the rule and its operands.
 
 Constraints are the building blocks used by [Refined]({{< relref "/error-handling/refined/domain-values/" >}}) and [Schema]({{< relref "/schema/refined-values/" >}}).
 

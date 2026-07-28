@@ -59,21 +59,6 @@ field "email" _.Email {
 Schema constraints remain available directly inside a field block. Here both constraints apply to the incoming
 `string`, so interpreters can retain their metadata for diagnostics, forms, and generated schemas. The named Schema
 constraints use the same executable metadata defined by [Check constraints]({{< relref "/error-handling/check/constraints/" >}}).
-For an application constraint, define the complete constraint in Check and adapt it with `fromCheck`:
-
-```fsharp
-let even =
-    Axial.Check.Constraint.define "even" [] (fun value ->
-        if value % 2 = 0 then Ok ()
-        else Error [ Axial.Check.CheckFailure.Custom "even" ])
-
-field "quantity" _.Quantity {
-    constrain (fromCheck even)
-}
-```
-
-Schema does not accept metadata-only custom constraints: the Check must be present so parsing and validation enforce the
-same rule that inspectors see.
 
 Constraints preserve the value type, however. This block still contains a `Schema<string>`, while `_.Email` returns
 `Email`; by itself, the declaration cannot complete the field.
@@ -120,6 +105,24 @@ email-format invariant for every construction path.
 
 Use this inline form for boundary-specific restrictions. If a constraint must hold for every instance of the domain
 type, lift it into the refinement instead.
+
+## Attach an application constraint
+
+Define an application constraint as a complete Check constraint, then adapt it with `fromCheck`:
+
+```fsharp
+let even =
+    Axial.Check.Constraint.define "even" [] (fun value ->
+        if value % 2 = 0 then Ok ()
+        else Error [ Axial.Check.CheckFailure.Custom "even" ])
+
+field "quantity" _.Quantity {
+    constrain (fromCheck even)
+}
+```
+
+Schema does not accept metadata without a Check. Parsing and validation therefore enforce the same rule that inspectors
+see. See [Check constraints]({{< relref "/error-handling/check/constraints/" >}}) for custom codes and arguments.
 
 ## Lift universal constraints into the refinement
 
