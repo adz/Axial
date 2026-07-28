@@ -27,4 +27,4 @@ type: docs
 | <code><span><a href="../types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L442-442)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L453-453)

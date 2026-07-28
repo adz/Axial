@@ -2,6 +2,7 @@ namespace Axial.Tests
 
 open Axial
 open Axial.Schema
+open Axial.Refined
 open Swensen.Unquote
 open Xunit
 
@@ -205,3 +206,66 @@ module SchemaWideShapeTests =
 
         let description = Inspect.model schema
         test <@ description.Fields |> List.map _.Name = [ "fullName"; "age"; "tags" ] @>
+
+    // ---- bare-getter fields over refined types ----
+
+    type private Registration =
+        { Owner: NonBlankString
+          Slug: Slug
+          Seats: PositiveInt
+          Refunds: NonPositiveInt
+          Aliases: NonEmptyList<NonBlankString>
+          Codes: DistinctList<string>
+          Rows: NonEmptyArray<int> }
+
+        static member Create owner slug seats refunds aliases codes rows =
+            { Owner = owner; Slug = slug; Seats = seats; Refunds = refunds
+              Aliases = aliases; Codes = codes; Rows = rows }
+
+    let private registrationSchema =
+        schema<Registration> {
+            field _.Owner
+            field _.Slug
+            field _.Seats
+            field _.Refunds
+            field _.Aliases
+            field _.Codes
+            field _.Rows
+            construct Registration.Create
+        }
+
+    [<Fact>]
+    let ``bare getters resolve refined field types`` () =
+        let input =
+            Data.objectOfMap (
+                Map.ofList
+                    [ "owner", Data.Text "Ada"
+                      "slug", Data.Text "ada-lovelace"
+                      "seats", Data.Text "3"
+                      "refunds", Data.Text "0"
+                      "aliases", Data.List [ Data.Text "Lovelace" ]
+                      "codes", Data.List [ Data.Text "a"; Data.Text "b" ]
+                      "rows", Data.List [ Data.Text "7" ] ]
+            )
+
+        match Schema.parse registrationSchema input with
+        | Ok registration ->
+            test <@ registration.Owner.Value = "Ada" @>
+            test <@ registration.Seats.Value = 3 @>
+            test <@ registration.Aliases.ToList() |> List.map _.Value = [ "Lovelace" ] @>
+            test <@ registration.Codes.ToList() = [ "a"; "b" ] @>
+            test <@ registration.Rows.ToArray() = [| 7 |] @>
+        | Error errors -> failwithf "Expected a parse, got %A" errors
+
+    [<Fact>]
+    let ``refined bare-getter fields publish their retained constraints`` () =
+        let description = Inspect.model registrationSchema
+        let constraintsFor name =
+            description.Fields
+            |> List.find (fun field -> field.Name = name)
+            |> fun field -> field.Schema.Constraints |> List.map Constraint.code
+
+        test <@ constraintsFor "owner" = [ "required" ] @>
+        test <@ constraintsFor "aliases" = [ "minCount" ] @>
+        test <@ constraintsFor "codes" = [ "distinct" ] @>
+        test <@ constraintsFor "rows" = [ "minCount" ] @>

@@ -142,10 +142,10 @@ module Inspect =
         let expanding = System.Collections.Generic.HashSet<DeferredValueDefinition>(HashIdentity.Reference)
 
         let rec describeValueDefinition (definition: ValueSchemaDefinition) : SchemaDescription =
-            let metadata shape =
+            let metadata constraints shape =
                 { Shape = shape
                   Format = definition.Format
-                  Constraints = definition.Constraints
+                  Constraints = constraints @ definition.Constraints
                   Description = definition.Description
                   Default = definition.Default }
 
@@ -160,12 +160,12 @@ module Inspect =
                         value
 
                 if expanding.Contains deferred then
-                    metadata (SchemaShape.Recursive reference)
+                    metadata [] (SchemaShape.Recursive reference)
                 else
                     expanding.Add deferred |> ignore
                     let value = describeValueDefinition (deferred.Force())
                     expanding.Remove deferred |> ignore
-                    metadata (SchemaShape.Deferred(reference, value))
+                    metadata [] (SchemaShape.Deferred(reference, value))
             | _ ->
                 let shape =
                     match definition.Shape with
@@ -195,7 +195,12 @@ module Inspect =
                     | OptionValueDefinition optional -> SchemaShape.Optional(describeValueDefinition optional.Payload)
                     | MapValueDefinition collection -> SchemaShape.MapOf(describeValueDefinition collection.Item)
                     | LazyValueDefinition _ -> invalidOp "Deferred definitions are handled before ordinary shapes."
-                metadata shape
+                let refinementConstraints =
+                    match definition.Shape with
+                    | RefinedValueDefinition(_, ops) -> ops.Constraints
+                    | _ -> []
+
+                metadata refinementConstraints shape
 
         and describeFieldDescriptor (field: FieldDescriptor<obj>) : FieldDescription =
             { Name = ExternalFieldName.value field.ExternalName

@@ -38,6 +38,25 @@ type SchemaDefaults =
     static member Schema(_: bool) : Schema<bool> = SchemaCore.``bool``
     static member Schema(_: System.DateTimeOffset) : Schema<System.DateTimeOffset> = SchemaCore.dateTime
     static member Schema(_: System.Guid) : Schema<System.Guid> = SchemaCore.guid
+    // Refined types whose refinement takes no parameters have exactly one canonical schema, so a bare
+    // field can resolve it. Parameterised refinements (boundedString, boundedList) have no canonical
+    // bounds and must still be supplied with `withSchema`.
+    static member Schema(_: Axial.Refined.NonBlankString) : Schema<Axial.Refined.NonBlankString> =
+        SchemaCore.refine Axial.Refined.NonBlankString.refinement SchemaCore.text
+    static member Schema(_: Axial.Refined.TrimmedString) : Schema<Axial.Refined.TrimmedString> =
+        SchemaCore.refine Axial.Refined.Text.trimmedStringRefinement SchemaCore.text
+    static member Schema(_: Axial.Refined.Slug) : Schema<Axial.Refined.Slug> =
+        SchemaCore.refine Axial.Refined.Text.slugRefinement SchemaCore.text
+    static member Schema(_: Axial.Refined.PositiveInt) : Schema<Axial.Refined.PositiveInt> =
+        SchemaCore.refine Axial.Refined.PositiveInt.refinement SchemaCore.``int``
+    static member Schema(_: Axial.Refined.NonNegativeInt) : Schema<Axial.Refined.NonNegativeInt> =
+        SchemaCore.refine Axial.Refined.Numeric.nonNegativeIntRefinement SchemaCore.``int``
+    static member Schema(_: Axial.Refined.NonZeroInt) : Schema<Axial.Refined.NonZeroInt> =
+        SchemaCore.refine Axial.Refined.Numeric.nonZeroIntRefinement SchemaCore.``int``
+    static member Schema(_: Axial.Refined.NegativeInt) : Schema<Axial.Refined.NegativeInt> =
+        SchemaCore.refine Axial.Refined.Numeric.negativeIntRefinement SchemaCore.``int``
+    static member Schema(_: Axial.Refined.NonPositiveInt) : Schema<Axial.Refined.NonPositiveInt> =
+        SchemaCore.refine Axial.Refined.Numeric.nonPositiveIntRefinement SchemaCore.``int``
 #if NET8_0_OR_GREATER
     static member Schema(_: System.DateOnly) : Schema<System.DateOnly> = SchemaCore.date
 #endif
@@ -47,6 +66,52 @@ type SchemaDefaults =
             ((^w or ^value): (static member Schema: ^value -> Schema< ^value>) marker)
 
         SchemaDefaults.ListWith(
+            resolve (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^item>)
+        )
+
+    /// <summary>Builds a non-empty list schema from an explicitly resolved item schema.</summary>
+    static member NonEmptyListWith(item: Schema<'item>) : Schema<Axial.Refined.NonEmptyList<'item>> =
+        SchemaCore.refine (Axial.Refined.Collection.nonEmptyListRefinement<'item> ()) (SchemaCore.listWith item)
+
+    static member inline Schema(_: Axial.Refined.NonEmptyList< ^item>) : Schema<Axial.Refined.NonEmptyList< ^item>> =
+        let inline resolve (witness: ^w, marker: ^value) : Schema< ^value> =
+            ((^w or ^value): (static member Schema: ^value -> Schema< ^value>) marker)
+
+        SchemaDefaults.NonEmptyListWith(
+            resolve (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^item>)
+        )
+
+    /// <summary>Builds a non-empty array schema from an explicitly resolved item schema.</summary>
+    static member NonEmptyArrayWith(item: Schema<'item>) : Schema<Axial.Refined.NonEmptyArray<'item>> =
+        // The wire shape is a list; the refinement bridges list -> NonEmptyArray while retaining minCount 1.
+        let refinement =
+            Axial.Refined.Refinement.define
+                (Axial.Check.Constraint.minCount 1)
+                (fun (values: 'item list) ->
+                    match Axial.Refined.Refine.nonEmptyArray (List.toArray values) with
+                    | Ok value -> value
+                    | Error _ -> failwith "unreachable")
+                (fun value -> value.ToArray() |> Array.toList)
+
+        SchemaCore.refine refinement (SchemaCore.listWith item)
+
+    static member inline Schema(_: Axial.Refined.NonEmptyArray< ^item>) : Schema<Axial.Refined.NonEmptyArray< ^item>> =
+        let inline resolve (witness: ^w, marker: ^value) : Schema< ^value> =
+            ((^w or ^value): (static member Schema: ^value -> Schema< ^value>) marker)
+
+        SchemaDefaults.NonEmptyArrayWith(
+            resolve (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^item>)
+        )
+
+    /// <summary>Builds a duplicate-free list schema from an explicitly resolved item schema.</summary>
+    static member DistinctListWith(item: Schema<'item>) : Schema<Axial.Refined.DistinctList<'item>> =
+        SchemaCore.refine (Axial.Refined.Collection.distinctListRefinement<'item> ()) (SchemaCore.listWith item)
+
+    static member inline Schema(_: Axial.Refined.DistinctList< ^item>) : Schema<Axial.Refined.DistinctList< ^item>> =
+        let inline resolve (witness: ^w, marker: ^value) : Schema< ^value> =
+            ((^w or ^value): (static member Schema: ^value -> Schema< ^value>) marker)
+
+        SchemaDefaults.DistinctListWith(
             resolve (Unchecked.defaultof<SchemaDefaults>, Unchecked.defaultof< ^item>)
         )
 

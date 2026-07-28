@@ -207,7 +207,13 @@ module SchemaCheck =
 
         let underlying =
             match definition.Shape with
-            | RefinedValueDefinition(raw, ops) -> runDefinition raw (ops.Inspect value)
+            | RefinedValueDefinition(raw, ops) ->
+                // A refined value already exists here, so Refinement.create does not run and cannot re-establish the
+                // refinement's own invariant. Its retained constraints are typed over the underlying representation,
+                // so run them against the projection alongside the raw layer's own constraints. Parsing takes a
+                // different path (ConstraintCheck over definition.Constraints), so this does not double-execute.
+                let projected = ops.Inspect value
+                combine (runDefinition raw projected) (ConstraintCheck.complete<obj> ops.Constraints projected)
             | LazyValueDefinition deferred -> runDefinition (deferred.Force()) value
             | _ -> Ok ()
 

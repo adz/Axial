@@ -161,7 +161,7 @@ module internal ValueSchema =
         if isNull (box forward) then nullArg (nameof forward)
         if isNull (box backward) then nullArg (nameof backward)
         if isNull (box raw) then nullArg (nameof raw)
-        let ops = RefinedValueOps((fun value -> value |> unbox<'raw> |> forward |> Result.map box), (fun value -> value |> unbox<'value> |> backward |> box))
+        let ops = RefinedValueOps((fun value -> value |> unbox<'raw> |> forward |> Result.map box), (fun value -> value |> unbox<'value> |> backward |> box), [])
         Schema(ValueDefinition
             { Shape = RefinedValueDefinition(raw.ValueDefinition, ops)
               Format = None
@@ -182,7 +182,8 @@ module internal ValueSchema =
         let ops =
             RefinedValueOps(
                 (fun value -> value |> unbox<'raw> |> construct |> box |> Ok),
-                (fun value -> value |> unbox<'value> |> inspect |> box)
+                (fun value -> value |> unbox<'value> |> inspect |> box),
+                []
             )
 
         Schema(ValueDefinition
@@ -201,13 +202,18 @@ module internal ValueSchema =
         if isNull (box refinement) then nullArg (nameof refinement)
         if isNull (box raw) then nullArg (nameof raw)
 
+        let retainedConstraints =
+            Refinement.constraints refinement
+            |> List.map (fun constraint' -> (Constraint.fromCheck constraint').Untyped)
+
         let ops =
             RefinedValueOps(
                 (fun value ->
                     match Refinement.create refinement (unbox<'raw> value) with
                     | Ok refined -> Ok(box refined)
                     | Error failures -> Error(failures |> List.map SchemaError.ofCheckFailure)),
-                (fun value -> value |> unbox<'value> |> Refinement.underlying refinement |> box)
+                (fun value -> value |> unbox<'value> |> Refinement.underlying refinement |> box),
+                retainedConstraints
             )
 
         Schema(ValueDefinition
@@ -232,7 +238,8 @@ module internal ValueSchema =
                     match validation typed with
                     | Ok () -> Ok value
                     | Error error -> Error [ error ]),
-                id
+                id,
+                []
             )
 
         Schema(ValueDefinition
@@ -956,7 +963,7 @@ module internal ValueSchema =
         let rec gather (definition: ValueSchemaDefinition) =
             match definition.Shape with
             | PrimitiveValueDefinition _ -> definition.Constraints
-            | RefinedValueDefinition(raw, _) -> gather raw @ definition.Constraints
+            | RefinedValueDefinition(raw, ops) -> gather raw @ ops.Constraints @ definition.Constraints
             | NestedValueDefinition _ -> definition.Constraints
             | ManyValueDefinition _ -> definition.Constraints
             | UnionValueDefinition _ -> definition.Constraints

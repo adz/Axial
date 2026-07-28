@@ -171,7 +171,11 @@ module SchemaFormat =
 /// cannot support structural equality, and reference equality is enough for the internal schema-shape union.
 /// </para>
 /// </remarks>
-type internal RefinedValueOps(construct: obj -> Result<obj, SchemaError list>, inspect: obj -> obj) =
+type internal RefinedValueOps(
+    construct: obj -> Result<obj, SchemaError list>,
+    inspect: obj -> obj,
+    constraints: ConstraintDescriptor list
+) =
     do
         if isNull (box construct) then
             nullArg (nameof construct)
@@ -179,8 +183,16 @@ type internal RefinedValueOps(construct: obj -> Result<obj, SchemaError list>, i
         if isNull (box inspect) then
             nullArg (nameof inspect)
 
+        if isNull (box constraints) then
+            nullArg (nameof constraints)
+
+    new(construct, inspect) = RefinedValueOps(construct, inspect, [])
+
     member _.Construct = construct
     member _.Inspect = inspect
+    /// Portable constraints owned and executed by the refinement. Metadata interpreters expose these,
+    /// but schema validation must not execute them a second time.
+    member _.Constraints = constraints
 
 type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
