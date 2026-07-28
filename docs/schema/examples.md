@@ -176,9 +176,8 @@ type Email =
 
     static member Schema(_: Email) : Schema<Email> =
         Schema.text
-        |> Schema.constrain Constraint.required
+        |> Schema.constrainAll [ Constraint.required; Constraint.email ]
         |> Schema.convert Email (fun (Email value) -> value)
-        |> Schema.constrain Constraint.email
         |> Schema.withFormat SchemaFormat.email
 
 module Email =

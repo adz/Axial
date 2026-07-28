@@ -1,5 +1,7 @@
 namespace Axial.Tests
 
+open System
+open System.Collections.Generic
 open Axial.Schema
 open Microsoft.FSharp.Reflection
 open Swensen.Unquote
@@ -64,7 +66,7 @@ module ConstraintInspectionTests =
 
     [<Fact>]
     let ``constraint constructors preserve the complete built-in metadata catalog`` () =
-        let catalog =
+        let catalog : (Constraint * string * ConstraintMetadata) list =
             [ Constraint.required, "required", ConstraintMetadata.Required
               Constraint.optional, "optional", ConstraintMetadata.Optional
               Constraint.minLength 2, "minLength", ConstraintMetadata.MinLength 2
@@ -74,6 +76,7 @@ module ConstraintInspectionTests =
               Constraint.trimmed, "trimmed", ConstraintMetadata.Trimmed
               Constraint.pattern "^[a-z]+$", "pattern", ConstraintMetadata.Pattern "^[a-z]+$"
               Constraint.oneOf [ "a"; "b" ], "oneOf", ConstraintMetadata.OneOf [ "a"; "b" ]
+              Constraint.equalTo 3, "equalTo", ConstraintMetadata.EqualTo(box 3)
               Constraint.notEqualTo 3, "notEqualTo", ConstraintMetadata.NotEqualTo(box 3)
               Constraint.between 1 3, "between", ConstraintMetadata.Between(box 1, box 3)
               Constraint.greaterThan 1, "greaterThan", ConstraintMetadata.GreaterThan(box 1)
@@ -87,12 +90,18 @@ module ConstraintInspectionTests =
               Constraint.distinct, "distinct", ConstraintMetadata.Distinct
               Constraint.contains 2, "contains", ConstraintMetadata.Contains(box 2)
               Constraint.multipleOf 2, "multipleOf", ConstraintMetadata.MultipleOf(box 2)
-              Constraint.create "custom", "custom", ConstraintMetadata.Custom "custom" ]
+              ((Axial.Check.Constraint.define "custom" [] (fun (_: int) -> Ok ())
+                |> Constraint.fromCheck) :> Constraint),
+              "custom",
+              ConstraintMetadata.Custom("custom", Map.empty) ]
 
         catalog
         |> List.iter (fun (constraint', code, metadata) ->
             test <@ Constraint.code constraint' = code @>
             test <@ Constraint.metadata constraint' = metadata @>)
+
+        let arguments = Constraint.arguments (Constraint.minLength 2) :?> IDictionary<string, obj>
+        raises<NotSupportedException> <@ arguments.["minimum"] <- box 3 @>
 
         let representedCases =
             catalog

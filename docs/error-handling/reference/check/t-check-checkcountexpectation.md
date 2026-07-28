@@ -1,7 +1,7 @@
 ---
 title: "Check.CheckCountExpectation"
 linkTitle: "CheckCountExpectation"
-weight: 1004
+weight: 1007
 ---
 
 <pre>Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a

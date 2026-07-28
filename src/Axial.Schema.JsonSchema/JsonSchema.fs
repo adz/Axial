@@ -81,6 +81,7 @@ module JsonSchema =
             | ConstraintMetadata.Pattern pattern -> [ sprintf "\"pattern\":%s" (literal pattern) ]
             | ConstraintMetadata.OneOf choices ->
                 [ choices |> List.map literal |> String.concat "," |> sprintf "\"enum\":[%s]" ]
+            | ConstraintMetadata.EqualTo expected -> [ sprintf "\"const\":%s" (literal expected) ]
             | ConstraintMetadata.NotEqualTo _ -> []
             | ConstraintMetadata.Between(minimum, maximum) ->
                 [ sprintf "\"minimum\":%s" (literal minimum); sprintf "\"maximum\":%s" (literal maximum) ]

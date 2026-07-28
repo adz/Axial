@@ -47,14 +47,15 @@ Refined values expose their raw representation through `SchemaShape.Refined`, so
 
 ## Lower Constraints To Another Format
 
-Constraint metadata is a closed, typed vocabulary (`SchemaConstraintMetadata`), so lowering is one `match`:
+Value-constraint metadata is the typed `ConstraintMetadata` vocabulary owned by
+[Axial.Check]({{< relref "/error-handling/check/constraints/" >}}), so lowering is one `match`:
 
 ```fsharp
 let jsonKeyword (constraint': Constraint) =
     match constraint'.Metadata with
-    | SchemaConstraintMetadata.MaxLength maximum -> Some $"\"maxLength\":{maximum}"
-    | SchemaConstraintMetadata.Pattern pattern -> Some $"\"pattern\":\"{pattern}\""
-    | SchemaConstraintMetadata.Required -> None   // handled at the object level
+    | ConstraintMetadata.MaxLength maximum -> Some $"\"maxLength\":{maximum}"
+    | ConstraintMetadata.Pattern pattern -> Some $"\"pattern\":\"{pattern}\""
+    | ConstraintMetadata.Required -> None   // handled at the object level
     | _ -> None
 ```
 

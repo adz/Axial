@@ -1,12 +1,17 @@
 namespace Axial.Tests
 
 open System
+open Axial
 open Axial.Check
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
 
 module ConstraintCheckTests =
+    type private ConstraintProbe =
+        { Enabled: bool
+          Id: Guid }
+
     [<Fact>]
     let ``text schema constraints lower to executable Check programs`` () =
         let check =
@@ -79,10 +84,10 @@ module ConstraintCheckTests =
     [<Fact>]
     let ``sequence schema constraints lower to executable Check programs`` () =
         let check =
-            ConstraintCheck.sequence<int>
-                [ Constraint.minCount 2
-                  Constraint.maxCount 3
-                  Constraint.distinct ]
+            ConstraintCheck.complete<int list>
+                [ Constraint.minCount<int list> 2
+                  Constraint.maxCount<int list> 3
+                  Constraint.distinct<int> ]
 
         test <@ check [ 1; 2 ] = Ok () @>
         test <@
@@ -91,21 +96,63 @@ module ConstraintCheckTests =
                     [ CheckFailure.InvalidCount(CheckCountExpectation.MaximumCount 3, Some 4)
                       Duplicate ]
         @>
-        test <@ ConstraintCheck.trySequence<int> Constraint.email |> Option.isNone @>
 
     [<Fact>]
     let ``contains schema constraint lowers to an executable Check program`` () =
-        let check = ConstraintCheck.sequence<int> [ Constraint.contains 2 ]
+        let check = ConstraintCheck.complete<int list> [ Constraint.contains 2 ]
 
         test <@ check [ 1; 2; 3 ] = Ok () @>
         test <@ check [ 1; 3 ] = Error [ NotOneOf "2" ] @>
 
     [<Fact>]
-    let ``schema constraint lowerers ignore unsupported metadata and reject null inputs`` () =
-        let customMaxLengthWithWrongArgumentType =
-            Constraint.createWithArguments "maxLength" [ "maximum", box "not-an-int" ]
+    let ``schema executes complete custom constraints and rejects null inputs`` () =
+        let even =
+            Axial.Check.Constraint.define "even" [] (fun value ->
+                if value % 2 = 0 then Ok () else Error [ Custom "even" ])
+            |> Constraint.fromCheck
 
-        test <@ ConstraintCheck.tryText customMaxLengthWithWrongArgumentType |> Option.isNone @>
+        test <@ ConstraintCheck.tryOrdered<int> even |> Option.isSome @>
+        test <@ ConstraintCheck.ordered<int> [ even ] 3 = Error [ Custom "even" ] @>
+
+        let schemaCheck = Schema.``int`` |> Schema.constrain even |> SchemaCheck.ordered<int, int>
+        test <@ schemaCheck 2 = Ok () @>
+        test <@ schemaCheck 3 = Error [ Custom "even" ] @>
+
+        let mustBeTrue =
+            Axial.Check.Constraint.define "mustBeTrue" [] (fun value ->
+                if value then Ok () else Error [ Custom "mustBeTrue" ])
+            |> Constraint.fromCheck
+
+        let expectedGuid = Guid.NewGuid()
+        let matchingGuid =
+            Axial.Check.Constraint.define "matchingGuid" [] (fun value ->
+                if value = expectedGuid then Ok () else Error [ Custom "matchingGuid" ])
+            |> Constraint.fromCheck
+
+        test <@ Schema.check (Schema.bool |> Schema.constrain mustBeTrue) true = Ok true @>
+        test <@ Schema.check (Schema.bool |> Schema.constrain mustBeTrue) false |> Result.isError @>
+        test <@ Schema.check (Schema.guid |> Schema.constrain matchingGuid) expectedGuid = Ok expectedGuid @>
+        test <@ Schema.check (Schema.guid |> Schema.constrain matchingGuid) Guid.Empty |> Result.isError @>
+        test <@ Schema.check (Schema.bool |> Schema.constrain (Constraint.equalTo true)) false |> Result.isError @>
+        test <@ Schema.check (Schema.guid |> Schema.constrain (Constraint.equalTo expectedGuid)) Guid.Empty |> Result.isError @>
+
+        let probeSchema =
+            schema<ConstraintProbe> {
+                field "enabled" _.Enabled {
+                    withSchema (Schema.bool |> Schema.constrain mustBeTrue)
+                }
+                field "id" _.Id {
+                    withSchema (Schema.guid |> Schema.constrain matchingGuid)
+                }
+                construct (fun enabled id -> { Enabled = enabled; Id = id })
+            }
+
+        let invalidInput =
+            Data.objectOfMap
+                (Map [ "enabled", Data.Text "false"; "id", Data.Text(Guid.Empty.ToString("D")) ])
+
+        test <@ (Schema.parseRetainingInput probeSchema invalidInput).Result |> Result.isError @>
+
         test <@ ConstraintCheck.text [ Constraint.optional ] "anything" = Ok () @>
         raises<ArgumentNullException> <@ ConstraintCheck.tryText null |> ignore @>
         raises<ArgumentNullException> <@ ConstraintCheck.text null |> ignore @>
@@ -133,11 +180,11 @@ module ConstraintCheckTests =
               Constraint.notEqualTo 5 ]
 
         let sequenceConstraints =
-            [ Constraint.count 1
-              Constraint.minCount 1
-              Constraint.maxCount 2
-              Constraint.countBetween 1 2
-              Constraint.distinct
+            [ Constraint.count<int list> 1
+              Constraint.minCount<int list> 1
+              Constraint.maxCount<int list> 2
+              Constraint.countBetween<int list> 1 2
+              Constraint.distinct<int>
               Constraint.contains 1 ]
 
         textConstraints
@@ -148,9 +195,13 @@ module ConstraintCheckTests =
         |> List.iter (fun constraint' ->
             test <@ ConstraintCheck.tryOrdered<int> constraint' |> Option.isSome @>)
 
-        sequenceConstraints
-        |> List.iter (fun constraint' ->
-            test <@ ConstraintCheck.trySequence<int> constraint' |> Option.isSome @>)
+        let erasedSequenceConstraints = sequenceConstraints |> List.map (fun constraint' -> constraint' :> Constraint)
+        test <@ ConstraintCheck.complete<int list> erasedSequenceConstraints [ 1 ] = Ok () @>
 
         test <@ ConstraintCheck.tryText Constraint.optional |> Option.isNone @>
-        test <@ ConstraintCheck.tryText (Constraint.create "custom") |> Option.isNone @>
+
+        let customText =
+            Axial.Check.Constraint.define "custom" [] (fun (_: string) -> Ok ())
+            |> Constraint.fromCheck
+
+        test <@ ConstraintCheck.tryText customText |> Option.isSome @>

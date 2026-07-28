@@ -169,6 +169,7 @@ module SchemaInterpreterPrototypeTests =
     let private emailSchemaWith (constructions: int ref) (getterReads: int ref) =
         Schema.text
         |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254 ]
+        |> Schema.constrain Constraint.email
         |> Schema.convert
             (fun raw ->
                 constructions.Value <- constructions.Value + 1
@@ -176,7 +177,6 @@ module SchemaInterpreterPrototypeTests =
             (fun (EmailValue raw) ->
                 getterReads.Value <- getterReads.Value + 1
                 raw)
-        |> Schema.constrain Constraint.email
         |> Schema.withFormat SchemaFormat.email
 
     let private addressSchema () =
@@ -225,7 +225,7 @@ module SchemaInterpreterPrototypeTests =
         let generated = JsonSchema.generate (signupSchemaWith constructions getterReads)
 
         test <@ generated.Contains "\"type\":\"object\"" @>
-        test <@ generated.Contains "\"email\":{\"type\":\"string\",\"format\":\"email\",\"maxLength\":254}" @>
+        test <@ generated.Contains "\"email\":{\"type\":\"string\",\"maxLength\":254,\"format\":\"email\"}" @>
         test <@ generated.Contains "\"age\":{\"type\":\"integer\",\"minimum\":13,\"maximum\":120}" @>
         test <@ generated.Contains "\"newsletter\":{\"type\":\"boolean\"}" @>
         test <@ generated.Contains "\"address\":{\"type\":\"object\",\"properties\":{\"street\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"}},\"required\":[\"street\",\"city\"]}" @>
@@ -262,7 +262,7 @@ module SchemaInterpreterPrototypeTests =
         let constructions, getterReads = counters ()
         let lines = Docs.describe (signupSchemaWith constructions getterReads)
 
-        test <@ lines |> List.contains "- email (text) — email format, required, at most 254 characters" @>
+        test <@ lines |> List.contains "- email (text) — required, at most 254 characters, email format" @>
         test <@ lines |> List.contains "- age (int)" @>
         test <@ lines |> List.contains "- address (object) — required" @>
         test <@ lines |> List.contains "  - street (text)" @>

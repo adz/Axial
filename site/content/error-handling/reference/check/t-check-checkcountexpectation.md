@@ -1,7 +1,7 @@
 ---
 title: "Check.CheckCountExpectation"
 linkTitle: "CheckCountExpectation"
-weight: 1004
+weight: 1007
 type: docs
 ---
 

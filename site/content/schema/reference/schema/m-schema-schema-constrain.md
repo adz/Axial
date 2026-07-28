@@ -17,7 +17,7 @@ Adds one portable constraint to a schema.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `constraint'` | <code><a href="t-schema-constraint.md">Constraint</a></code> |  |
+| `constraint'` | <code><span><a href="t-schema-schemaconstraint.md">SchemaConstraint</a>&lt;'a&gt;</span></code> |  |
 | `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
 
 ## Returns

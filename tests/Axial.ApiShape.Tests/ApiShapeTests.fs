@@ -542,6 +542,7 @@ module ApiShapeTests =
                   "trimmed"
                   "pattern"
                   "oneOf"
+                  "equalTo"
                   "notEqualTo"
                   "between"
                   "greaterThan"
@@ -559,8 +560,7 @@ module ApiShapeTests =
                   "nonNegative"
                   "negative"
                   "nonPositive"
-                  "custom"
-                  "customWithArguments"
+                  "fromCheck"
                   "withMessage" ]
 
         test <@ typedConstraintMembers = expectedTypedConstraintMembers @>
@@ -572,8 +572,7 @@ module ApiShapeTests =
 
         let expectedUntypedConstraintMembers =
             set
-                [ "create"
-                  "createWithArguments"
+                [ "fromCheck"
                   "required"
                   "optional"
                   "minLength"
@@ -583,6 +582,7 @@ module ApiShapeTests =
                   "trimmed"
                   "pattern"
                   "oneOf"
+                  "equalTo"
                   "notEqualTo"
                   "between"
                   "greaterThan"
@@ -722,8 +722,7 @@ module ApiShapeTests =
         schemaConstraintModule
         |> publicStaticMemberNames
         |> assertContainsAll
-            [ "create"
-              "createWithArguments"
+            [ "fromCheck"
               "required"
               "optional"
               "minLength"
@@ -733,6 +732,7 @@ module ApiShapeTests =
               "trimmed"
               "pattern"
               "oneOf"
+              "equalTo"
               "notEqualTo"
               "between"
               "greaterThan"
@@ -782,7 +782,7 @@ module ApiShapeTests =
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
         test <@ primitiveValueKindType.Assembly = schemaAssembly @>
-        test <@ schemaConstraintMetadataType.Assembly = schemaAssembly @>
+        test <@ schemaConstraintMetadataType.Assembly = typeof<CheckFailure>.Assembly @>
         test <@ schemaConstraintType.Assembly = schemaAssembly @>
         test <@ externalFieldNameType.Assembly = schemaAssembly @>
         test <@ fieldOrderType.Assembly = schemaAssembly @>
@@ -876,36 +876,33 @@ module ApiShapeTests =
         test <@ descriptor.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
         test <@ descriptor.ValueSchema.Constraints = [] @>
         test <@ text.ValueDefinition.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
-        raises<ArgumentException> <@ Constraint.create "" |> ignore @>
-        raises<ArgumentException> <@ Constraint.createWithArguments "maxLength" [ "", box 20 ] |> ignore @>
-        raises<ArgumentException> <@ Constraint.createWithArguments "maxLength" [ "maximum", box 20; "maximum", box 30 ] |> ignore @>
         raises<ArgumentNullException> <@ Schema.constrain null Schema.text |> ignore @>
         raises<ArgumentNullException> <@ Field.constraints Unchecked.defaultof<Field<Customer, string>> |> ignore @>
 
     [<Fact>]
     let ``named schema constraints expose stable codes and structured arguments`` () =
         let codes =
-            [ Constraint.required
-              Constraint.optional
-              Constraint.minLength 2
-              Constraint.maxLength 20
-              Constraint.lengthBetween 2 20
-              Constraint.email
-              Constraint.trimmed
-              Constraint.pattern "^[a-z]+$"
-              Constraint.oneOf [ "draft"; "published" ]
-              Constraint.notEqualTo "archived"
-              Constraint.between 1 10
-              Constraint.greaterThan 0
-              Constraint.lessThan 100
-              Constraint.atLeast 1
-              Constraint.atMost 10
-              Constraint.count 2
-              Constraint.minCount 1
-              Constraint.maxCount 5
-              Constraint.countBetween 1 5
-              Constraint.distinct ]
-            |> List.map Constraint.code
+            [ Constraint.code (Constraint.required)
+              Constraint.code (Constraint.optional)
+              Constraint.code (Constraint.minLength 2)
+              Constraint.code (Constraint.maxLength 20)
+              Constraint.code (Constraint.lengthBetween 2 20)
+              Constraint.code (Constraint.email)
+              Constraint.code (Constraint.trimmed)
+              Constraint.code (Constraint.pattern "^[a-z]+$")
+              Constraint.code (Constraint.oneOf [ "draft"; "published" ])
+              Constraint.code (Constraint.equalTo "active")
+              Constraint.code (Constraint.notEqualTo "archived")
+              Constraint.code (Constraint.between 1 10)
+              Constraint.code (Constraint.greaterThan 0)
+              Constraint.code (Constraint.lessThan 100)
+              Constraint.code (Constraint.atLeast 1)
+              Constraint.code (Constraint.atMost 10)
+              Constraint.code (Constraint.count 2)
+              Constraint.code (Constraint.minCount 1)
+              Constraint.code (Constraint.maxCount 5)
+              Constraint.code (Constraint.countBetween 1 5)
+              Constraint.code (Constraint.distinct) ]
 
         let length = Constraint.lengthBetween 2 20
         let pattern = Constraint.pattern "^[a-z]+$"
@@ -924,6 +921,7 @@ module ApiShapeTests =
                   "trimmed"
                   "pattern"
                   "oneOf"
+                  "equalTo"
                   "notEqualTo"
                   "between"
                   "greaterThan"
@@ -939,17 +937,18 @@ module ApiShapeTests =
         test <@ Constraint.tryFindArgument "minimum" length = Some(box 2) @>
         test <@ Constraint.tryFindArgument "maximum" length = Some(box 20) @>
         test <@ Constraint.tryFindArgument "pattern" pattern = Some(box "^[a-z]+$") @>
-        test <@ Constraint.tryFindArgument "choices" choices |> Option.map unbox<string array> = Some [| "draft"; "published" |] @>
+        test <@ Constraint.tryFindArgument "choices" choices |> Option.map unbox<string list> = Some [ "draft"; "published" ] @>
         test <@ Constraint.tryFindArgument "minimum" range = Some(box 1.5m) @>
         test <@ Constraint.tryFindArgument "maximum" range = Some(box 3.5m) @>
         test <@ Constraint.tryFindArgument "minimum" count = Some(box 1) @>
         test <@ Constraint.tryFindArgument "maximum" count = Some(box 5) @>
+        let tenantOnly =
+            Axial.Check.Constraint.define "tenantOnly" [ "tenant", box "north" ] (fun (_: string) -> Ok ())
+            |> Constraint.fromCheck
+
         test <@
-            Constraint.metadata (Constraint.create "tenantOnly") = ConstraintMetadata.Custom "tenantOnly"
-        @>
-        test <@
-            Constraint.metadata (Constraint.createWithArguments "tenantOnly" [ "tenant", box "north" ]) =
-                ConstraintMetadata.Custom "tenantOnly"
+            Constraint.metadata tenantOnly =
+                ConstraintMetadata.Custom("tenantOnly", Map [ "tenant", box "north" ])
         @>
         raises<ArgumentOutOfRangeException> <@ Constraint.minLength -1 |> ignore @>
         raises<ArgumentOutOfRangeException> <@ Constraint.count -1 |> ignore @>
@@ -961,15 +960,25 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema constraints retain typed metadata for non validation interpreters`` () =
-        let constraints =
-            [ Constraint.required
-              Constraint.maxLength 20
-              Constraint.email
-              Constraint.pattern "^[^@]+@example.com$"
-              Constraint.oneOf [ "ada@example.com"; "grace@example.com" ]
-              Constraint.between 1 10
-              Constraint.countBetween 1 3
-              Constraint.distinct ]
+        let textConstraints =
+            Schema.text
+            |> Schema.constrainAll
+                [ Constraint.required
+                  Constraint.maxLength 20
+                  Constraint.email
+                  Constraint.pattern "^[^@]+@example.com$"
+                  Constraint.oneOf [ "ada@example.com"; "grace@example.com" ] ]
+            |> Schema.constraints
+
+        let numberConstraints =
+            Schema.``int`` |> Schema.constrain (Constraint.between 1 10) |> Schema.constraints
+
+        let listConstraints =
+            Schema.listWith Schema.int
+            |> Schema.constrainAll [ Constraint.countBetween 1 3; Constraint.distinct ]
+            |> Schema.constraints
+
+        let constraints = textConstraints @ numberConstraints @ listConstraints
 
         let diagnostics =
             constraints

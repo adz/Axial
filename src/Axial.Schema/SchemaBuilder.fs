@@ -98,7 +98,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
 
     static member private ConstrainAll
         (
-            constraints: Constraint<'value> list,
+            constraints: SchemaConstraint<'value> list,
             schema: Schema<'value>
         ) : Schema<'value> =
         if isNull (box constraints) then nullArg (nameof constraints)
@@ -109,7 +109,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
                 nullArg (nameof constraints))
 
         schema
-        |> SchemaCore.constrainAll (constraints |> List.map _.Untyped)
+        |> SchemaCore.constrainAll constraints
 
     /// <summary>Supplies the schema transformed by the remaining operations in this field block.</summary>
     [<CustomOperation("withSchema")>]
@@ -126,22 +126,22 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constrain
         (
             initial: FieldInitial<'model, 'target>,
-            constraint': Constraint<'target>
+            constraint': SchemaConstraint<'target>
         ) : FieldConfigured<'model, 'target> =
         if isNull (box constraint') then nullArg (nameof constraint')
-        FieldConfigured(initial, SchemaCore.constrain constraint'.Untyped)
+        FieldConfigured(initial, SchemaCore.constrain constraint')
 
     /// <summary>Adds another portable constraint to an inferred field schema.</summary>
     [<CustomOperation("constrain")>]
     member _.Constrain
         (
             field: FieldConfigured<'model, 'target>,
-            constraint': Constraint<'target>
+            constraint': SchemaConstraint<'target>
         ) : FieldConfigured<'model, 'target> =
         if isNull (box constraint') then nullArg (nameof constraint')
         FieldConfigured(
             field.Initial,
-            field.Configure >> SchemaCore.constrain constraint'.Untyped
+            field.Configure >> SchemaCore.constrain constraint'
         )
 
     /// <summary>Adds a portable constraint to the field's current schema value.</summary>
@@ -149,17 +149,17 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constrain
         (
             field: FieldWorking<'model, 'target, 'current>,
-            constraint': Constraint<'current>
+            constraint': SchemaConstraint<'current>
         ) : FieldWorking<'model, 'target, 'current> =
         if isNull (box constraint') then nullArg (nameof constraint')
-        FieldWorking(field.Initial, field.Schema |> SchemaCore.constrain constraint'.Untyped)
+        FieldWorking(field.Initial, field.Schema |> SchemaCore.constrain constraint')
 
     /// <summary>Adds portable constraints to the field's inferred schema in declaration order.</summary>
     [<CustomOperation("constraints")>]
     member _.Constraints
         (
             initial: FieldInitial<'model, 'target>,
-            constraints: Constraint<'target> list
+            constraints: SchemaConstraint<'target> list
         ) : FieldConfigured<'model, 'target> =
         FieldConfigured(initial, fun schema -> FieldBuilder<'model, 'target>.ConstrainAll(constraints, schema))
 
@@ -168,7 +168,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constraints
         (
             field: FieldConfigured<'model, 'target>,
-            constraints: Constraint<'target> list
+            constraints: SchemaConstraint<'target> list
         ) : FieldConfigured<'model, 'target> =
         FieldConfigured(
             field.Initial,
@@ -181,7 +181,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constraints
         (
             field: FieldWorking<'model, 'target, 'current>,
-            constraints: Constraint<'current> list
+            constraints: SchemaConstraint<'current> list
         ) : FieldWorking<'model, 'target, 'current> =
         FieldWorking(
             field.Initial,

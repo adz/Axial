@@ -129,38 +129,23 @@ module internal SchemaParsing =
         | Error failures -> failures |> SchemaCheckFailure.toSchemaErrors constraints |> Error
 
     let private checkPrimitive kind constraints value =
+        let complete = ConstraintCheck.complete<obj> constraints
+
         match kind with
         | PrimitiveValueKind.Text ->
-            value
-            |> unbox<string>
-            |> runCheck constraints (ConstraintCheck.text constraints)
-            |> Result.map box
-        | PrimitiveValueKind.Int ->
-            value
-            |> unbox<int>
-            |> runCheck constraints (fun v -> Check.all [ ConstraintCheck.ordered<int> constraints; ConstraintCheck.multipleOf<int> constraints ] v)
-            |> Result.map box
-        | PrimitiveValueKind.Decimal ->
-            value
-            |> unbox<decimal>
-            |> runCheck constraints (fun v -> Check.all [ ConstraintCheck.ordered<decimal> constraints; ConstraintCheck.multipleOf<decimal> constraints ] v)
-            |> Result.map box
-        | PrimitiveValueKind.Bool -> Ok value
-#if NET8_0_OR_GREATER
-        | PrimitiveValueKind.Date ->
-            value
-            |> unbox<DateOnly>
-            |> runCheck constraints (ConstraintCheck.ordered<DateOnly> constraints)
-            |> Result.map box
-#else
-        | PrimitiveValueKind.Date -> Ok value
-#endif
-        | PrimitiveValueKind.DateTime ->
-            value
-            |> unbox<DateTimeOffset>
-            |> runCheck constraints (ConstraintCheck.ordered<DateTimeOffset> constraints)
-            |> Result.map box
-        | PrimitiveValueKind.Guid -> Ok value
+            let presence =
+                if constraints |> List.exists (Constraint.metadata >> (=) ConstraintMetadata.Required) then
+                    fun value -> Check.String.present (unbox<string> value)
+                else
+                    fun _ -> Ok ()
+
+            value |> runCheck constraints (Check.all [ presence; complete ])
+        | PrimitiveValueKind.Int
+        | PrimitiveValueKind.Decimal
+        | PrimitiveValueKind.Bool
+        | PrimitiveValueKind.Date
+        | PrimitiveValueKind.DateTime
+        | PrimitiveValueKind.Guid -> value |> runCheck constraints complete
 
     let private parsePrimitive kind text =
         match kind with
@@ -419,9 +404,9 @@ module internal SchemaParsing =
                 | Error message -> errorAtConstructor options path message
         | diagnostics -> Error(mergeErrors diagnostics)
 
-    and private checkMany constraints path items =
-        match items |> runCheck constraints (ConstraintCheck.sequence<obj> constraints) with
-        | Ok checkedItems -> Ok checkedItems
+    and private checkMany constraints path value =
+        match value |> runCheck constraints (ConstraintCheck.complete<obj> constraints) with
+        | Ok checkedValue -> Ok checkedValue
         | Error errors ->
             errors
             |> List.map (diagnosticsAt path)
@@ -440,8 +425,10 @@ module internal SchemaParsing =
                 parsedItems
                 |> List.map (function Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
 
-            match checkMany constraints path items with
-            | Ok checkedItems -> checkedItems |> collection.BoxItems |> Ok
+            let collectionValue = collection.BoxItems items
+
+            match checkMany constraints path collectionValue with
+            | Ok checkedValue -> Ok checkedValue
             | Error diagnostics -> Error diagnostics
         | diagnostics -> Error(mergeErrors diagnostics)
 
@@ -459,10 +446,10 @@ module internal SchemaParsing =
         match errors with
         | [] ->
             let items = parsedEntries |> List.map (fun (_, result) -> match result with Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
+            let collectionValue = List.zip (entries |> List.map fst) items |> collection.BoxEntries
 
-            match checkMany constraints path items with
-            | Ok checkedItems ->
-                List.zip (entries |> List.map fst) checkedItems |> collection.BoxEntries |> Ok
+            match checkMany constraints path collectionValue with
+            | Ok checkedValue -> Ok checkedValue
             | Error diagnostics -> Error diagnostics
         | diagnostics -> Error(mergeErrors diagnostics)
 

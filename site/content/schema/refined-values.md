@@ -56,7 +56,23 @@ field "email" _.Email {
 ```
 
 Schema constraints remain available directly inside a field block. Here both constraints apply to the incoming
-`string`, so interpreters can retain their metadata for diagnostics, forms, and generated schemas.
+`string`, so interpreters can retain their metadata for diagnostics, forms, and generated schemas. The named Schema
+constraints use the same executable metadata defined by [Check constraints]({{< relref "/error-handling/check/constraints/" >}}).
+For an application constraint, define the complete constraint in Check and adapt it with `fromCheck`:
+
+```fsharp
+let even =
+    Axial.Check.Constraint.define "even" [] (fun value ->
+        if value % 2 = 0 then Ok ()
+        else Error [ Axial.Check.CheckFailure.Custom "even" ])
+
+field "quantity" _.Quantity {
+    constrain (fromCheck even)
+}
+```
+
+Schema does not accept metadata-only custom constraints: the Check must be present so parsing and validation enforce the
+same rule that inspectors see.
 
 Constraints preserve the value type, however. This block still contains a `Schema<string>`, while `_.Email` returns
 `Email`; by itself, the declaration cannot complete the field.

@@ -91,11 +91,12 @@ let check : Check<string> =
 ```
 
 Built-in constraints include text formats and lengths, ordered bounds, collection counts, distinctness, multiples,
-and closed choices. Metadata arguments use the closed `ConstraintArgument` union rather than `obj`.
+and closed choices. Typed metadata retains each rule's operands; `Constraint.tryPortableArguments` projects supported
+operands to `ConstraintArgument` values when serialization is needed.
 
 Constraints are the building blocks used by [Refined]({{< relref "/error-handling/refined/domain-values/" >}}) and [Schema]({{< relref "/schema/refined-values/" >}}).
 
-Custom metadata is author-declared:
+Custom constraints include their executable check:
 
 ```fsharp
 let even : Constraint<int> =

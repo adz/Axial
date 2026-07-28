@@ -87,7 +87,7 @@ module Field =
         field.Definition.Constraints
 
     /// <summary>Returns a schema field with additional portable constraint metadata appended in declaration order.</summary>
-    let withConstraint (constraint': Constraint) (field: Field<'model, 'value>) =
+    let withConstraint (constraint': SchemaConstraint<'value>) (field: Field<'model, 'value>) =
         if isNull constraint' then
             nullArg (nameof constraint')
 
@@ -96,11 +96,11 @@ module Field =
 
         Field(
             { field.Definition with
-                Constraints = field.Definition.Constraints @ [ constraint' ] }
+                Constraints = field.Definition.Constraints @ [ constraint'.Untyped ] }
         )
 
     /// <summary>Returns a schema field with additional portable constraint metadata appended in declaration order.</summary>
-    let withConstraints (constraints: Constraint list) (field: Field<'model, 'value>) =
+    let withConstraints (constraints: SchemaConstraint<'value> list) (field: Field<'model, 'value>) =
         if isNull (box constraints) then
             nullArg (nameof constraints)
 
@@ -114,7 +114,7 @@ module Field =
 
         Field(
             { field.Definition with
-                Constraints = field.Definition.Constraints @ constraints }
+                Constraints = field.Definition.Constraints @ (constraints |> List.map _.Untyped) }
         )
 
 /// <summary>Functions for creating and inspecting model schemas.</summary>
@@ -158,9 +158,14 @@ module internal SchemaCore =
     /// <summary>Describes a payload-less tagged enum.</summary>
     let enum cases = ValueSchema.enumOf cases
     /// <summary>Appends one portable constraint.</summary>
-    let constrain constraint' schema = ValueSchema.withConstraint constraint' schema
+    let constrain (constraint': SchemaConstraint<'value>) (schema: Schema<'value>) =
+        if isNull constraint' then nullArg (nameof constraint')
+        ValueSchema.withConstraint constraint'.Untyped schema
     /// <summary>Appends portable constraints in declaration order.</summary>
-    let constrainAll constraints schema = ValueSchema.withConstraints constraints schema
+    let constrainAll (constraints: SchemaConstraint<'value> list) (schema: Schema<'value>) =
+        if isNull (box constraints) then nullArg (nameof constraints)
+        constraints |> List.iter (fun constraint' -> if isNull constraint' then nullArg (nameof constraints))
+        ValueSchema.withConstraints (constraints |> List.map _.Untyped) schema
     /// <summary>Attaches boundary format metadata.</summary>
     let withFormat format schema = ValueSchema.withFormat format schema
     /// <summary>Attaches descriptive metadata.</summary>

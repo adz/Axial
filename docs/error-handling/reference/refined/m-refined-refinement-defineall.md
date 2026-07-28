@@ -16,7 +16,7 @@ weight: 2702
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `constraints` | <code><span><span><a href="/reference/Axial/axial-check-constraint-1.html">Constraint</a>&lt;'underlying&gt;</span>&#32;list</span></code> |  |
+| `constraints` | <code><span><span><a href="../check/t-check-constraint.md">Constraint</a>&lt;'underlying&gt;</span>&#32;list</span></code> |  |
 | `construct` | <code><span>'underlying&#32;->&#32;'refined</span></code> |  |
 | `project` | <code><span>'refined&#32;->&#32;'underlying</span></code> |  |
 

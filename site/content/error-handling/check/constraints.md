@@ -2,21 +2,18 @@
 weight: 20
 title: Constraints
 type: docs
-description: Couple executable checks to portable metadata for refined values and Schema interpreters.
+description: Give executable checks typed metadata that other code can inspect.
 ---
 
 
-A `Check<'value>` can execute a rule, but execution alone does not explain that rule to another interpreter. A
-`Constraint<'value>` keeps the executable check together with stable, inspectable metadata:
+A `Check<'value>` can execute a rule, but other code cannot inspect an F# function to learn what that rule means. A
+`Constraint<'value>` keeps the check together with typed `ConstraintMetadata`.
 
-```fsharp
-type ConstraintDetails =
-    { Code: string
-      Arguments: Map<string, ConstraintArgument> }
-```
+For example, `Constraint.maxLength 80` carries `ConstraintMetadata.MaxLength 80`. Its code is the canonical external
+name `"maxLength"`. Codes are derived from the metadata rather than authored separately, so a built-in constraint cannot
+pair the `"email"` code with `MaxLength 80` metadata.
 
-Use a constraint when a value restriction should be reusable beyond one direct function call. Use a plain Check when
-only executable behavior matters.
+Use a constraint when both execution and inspection matter. Use a plain Check when only executable behavior matters.
 
 ## Execute and inspect the same rule
 
@@ -35,8 +32,9 @@ let details : ConstraintDetails =
 check "Ada"
 // Ok ()
 
+// Constraint.metadata nameLength = ConstraintMetadata.MaxLength 80
 // details.Code = "maxLength"
-// details.Arguments = Map [ "maximum", ConstraintArgument.Integer 80L ]
+// details.Arguments = Map [ "maximum", box 80 ]
 ```
 
 `Constraint.checkAll` executes several constraints against the same value and accumulates their `CheckFailure`
@@ -60,8 +58,9 @@ The built-in set covers:
 - collection counts, distinctness, and containment
 - numeric multiples
 
-Metadata arguments use the closed `ConstraintArgument` union rather than `obj`, so consumers do not need reflection or
-runtime type guesses.
+The typed metadata retains runtime operands, including application types accepted by generic constraints. When metadata
+must cross a serialization boundary, `Constraint.tryPortableArguments` projects supported operands to the closed
+`ConstraintArgument` union. It returns `None` rather than converting an unsupported value to a lossy string.
 
 ## Define application constraints
 
@@ -77,9 +76,9 @@ let even : Constraint<int> =
             else Error [ CheckFailure.Custom "even" ])
 ```
 
-Custom codes belong to the application. Axial reserves its built-in codes so that their meaning remains stable.
-A custom constraint is portable only to interpreters that understand its code and arguments; every consumer can still
-execute its Check.
+Custom codes belong to the application. Axial reserves its built-in codes so their meaning remains stable. A custom
+constraint is always complete: it includes executable checking behavior as well as its code and arguments. An
+interpreter that does not recognize the custom metadata can still execute its Check.
 
 ## Where constraints are used
 
@@ -90,37 +89,13 @@ Extract the Check with `Constraint.check`, or combine several with `Constraint.c
 
 ### Refined domain values
 
-A [`Refinement<'underlying,'refined>`]({{< relref "/error-handling/refined/domain-values/" >}}) owns one or more
-constraints. `Refinement.create` executes them before constructing the private destination value, while
-`Refinement.constraints` exposes their metadata.
-
-```fsharp
-let contactEmail =
-    Refinement.defineAll
-        [ Constraint.required
-          Constraint.email
-          Constraint.maxLength 254 ]
-        ContactEmail
-        ContactEmail.value
-```
+[Refined values]({{< relref "/error-handling/refined/domain-values/" >}}) use constraints to decide whether an
+underlying value may be constructed as a domain value.
 
 ### Structured Schema boundaries
 
-[Schema field blocks]({{< relref "/schema/refined-values/" >}}) can apply constraints directly to a raw field or apply
-a constraint-backed refinement. Schema adds the field path, accumulates failures across the model, and preserves the
-metadata for inspection and applicable interpreters.
-
-```fsharp
-field "email" _.Email {
-    withSchema Schema.text
-    constraints [ required; maxLength 80 ]
-    refine Email.refinement
-}
-```
-
-The same metadata can inform [JSON Schema generation]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate" >}}), forms, contract
-inspection, and other Schema consumers. Keep boundary-specific restrictions in the field block; put universal domain
-invariants in the refinement.
+[Schema fields]({{< relref "/schema/refined-values/" >}}) use the same constraints while adding paths and accumulated
+diagnostics. Schema interpreters can inspect the metadata without reimplementing the Check.
 
 ## Continue
 

@@ -22,9 +22,8 @@ module SchemaRefinedValueCheckTests =
 
         let schema : Schema<Email> =
             Schema.text
-            |> Schema.constrain Constraint.required
+            |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ]
             |> Schema.convert create value
-            |> Schema.constrain Constraint.email
 
     /// <summary>A bounded-text domain value whose constraints all live on the raw text schema.</summary>
     type private ContactName = private ContactName of string
@@ -48,7 +47,6 @@ module SchemaRefinedValueCheckTests =
         let schema : Schema<NormalizedEmail> =
             Email.schema
             |> Schema.convert create value
-            |> Schema.constrain (Constraint.maxLength 254)
 
     /// <summary>A bounded number refined over the primitive int schema.</summary>
     type private Age = private Age of int
@@ -91,7 +89,7 @@ module SchemaRefinedValueCheckTests =
 
     [<Fact>]
     let ``allConstraints gathers every layer's constraint metadata foundation-first`` () =
-        test <@ Schema.allConstraints Email.schema |> List.map Constraint.code = [ "required"; "email" ] @>
+        test <@ Schema.allConstraints Email.schema |> List.map Constraint.code = [ "required"; "email"; "maxLength" ] @>
         test <@
             Schema.allConstraints NormalizedEmail.schema |> List.map Constraint.code =
                 [ "required"; "email"; "maxLength" ]
