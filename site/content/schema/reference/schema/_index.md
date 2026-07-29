@@ -42,7 +42,7 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
  </example>
 - [`Schema.ConstraintDescriptor`](./t-schema-constraintdescriptor.md):  Describes a constraint after its typed Check constraint has been attached to a heterogeneous schema.
 - [`Schema.SchemaConstraint`](./t-schema-schemaconstraint.md):  A typed Schema constraint annotation. Value constraints retain a complete Axial.Check.Constraint;
- presence declarations remain Schema boundary metadata.
+ supply declarations remain Schema boundary metadata.
 
 ## Record builder
 
@@ -75,7 +75,7 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 - [`Schema.Derive.DeriveSchemaAttribute`](./t-schema-derive-deriveschemaattribute.md): Marks a plain record for schema derivation: <code>schemagen</code> generates its permissive schema.
  The advice is to put this on wire DTOs — records that carry no invariants of their own. The attributes
  in this namespace are inert metadata: they are read from source text at generation time, never by
- runtime reflection, and their vocabulary mirrors the <code>.contract</code> constraint grammar one-to-one.
+ runtime reflection.
 - [`Schema.Derive.SchemaNameAttribute`](./t-schema-derive-schemanameattribute.md): <pre>Overrides the external name of one record field or one nullary union case. Without it, field
  names follow the generation run's naming policy (camelCase by default) and case tags are the camelCased
  case name.</pre>
@@ -87,8 +87,13 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
  fields in declaration order and returns the record type; use it to normalise values on the way
  in.
 - [`Schema.Derive.PatternAttribute`](./t-schema-derive-patternattribute.md): Constrains a text field to the given regular expression.
-- [`Schema.Derive.MinAttribute`](./t-schema-derive-minattribute.md): Bounds the natural size of the field's type from below: text length, list count, or map count.
-- [`Schema.Derive.MaxAttribute`](./t-schema-derive-maxattribute.md): Bounds the natural size of the field's type from above: text length, list count, or map count.
+- [`Schema.Derive.MinAttribute`](./t-schema-derive-minattribute.md): Bounds the natural length of a text, list, or map field from below.
+- [`Schema.Derive.MaxAttribute`](./t-schema-derive-maxattribute.md): Bounds the natural length of a text, list, or map field from above.
+- [`Schema.Derive.LengthAttribute`](./t-schema-derive-lengthattribute.md): Requires the natural length of a text, list, or map field to equal the supplied value.
+- [`Schema.Derive.LengthBetweenAttribute`](./t-schema-derive-lengthbetweenattribute.md): Bounds the natural length of a text, list, or map field inclusively.
+- [`Schema.Derive.PresentAttribute`](./t-schema-derive-presentattribute.md): Requires a string, collection, or optional field value to be present.
+- [`Schema.Derive.SuppliedAttribute`](./t-schema-derive-suppliedattribute.md): Requires the input payload to supply the field key.
+- [`Schema.Derive.FormatAttribute`](./t-schema-derive-formatattribute.md): Adds open format metadata to the field schema.
 - [`Schema.Derive.AtLeastAttribute`](./t-schema-derive-atleastattribute.md): Bounds a numeric field&#39;s value inclusively from below (<code>&gt;=</code> in the contract grammar).
  The literal is read from source text, so decimal precision is preserved exactly.
 - [`Schema.Derive.GreaterThanAttribute`](./t-schema-derive-greaterthanattribute.md): Bounds a numeric field&#39;s value exclusively from below (<code>&gt;</code> in the contract grammar).

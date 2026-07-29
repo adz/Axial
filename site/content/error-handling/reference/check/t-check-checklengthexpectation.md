@@ -5,7 +5,7 @@ weight: 1005
 type: docs
 ---
 
-Describes the length requirement that a value check expected a string-like value to satisfy.
+Describes the length requirement that a value check expected a text or collection value to satisfy.
 
 ## Signature
 

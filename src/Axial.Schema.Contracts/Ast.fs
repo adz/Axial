@@ -56,8 +56,7 @@ type FieldType =
     | ExternalEnum of typeName: string * cases: ExternalEnumCase list
     | ExternalUnion of typeName: string * discriminator: string * cases: ExternalUnionCase list
 
-/// <summary>One constraint from a field's <c>[ ... ]</c> list. Comparisons bound the value; <c>min</c>/<c>max</c>
-/// bound the natural size of the type (text length, list/map count).</summary>
+/// <summary>One portable constraint retained by the shared generation pipeline.</summary>
 type ConstraintDecl =
     | AtLeast of Literal
     | GreaterThan of Literal
@@ -65,6 +64,10 @@ type ConstraintDecl =
     | LessThan of Literal
     | MinSize of int
     | MaxSize of int
+    | ExactLength of int
+    | LengthRange of minimum: int * maximum: int
+    | Present
+    | Supplied
     | Pattern of string
     | MultipleOf of Literal
     | Distinct
@@ -83,6 +86,8 @@ type FieldDecl =
       Optional: bool
       FieldType: FieldType
       Constraints: (ConstraintDecl * int) list
+      /// Open format metadata supplied by the record-attribute frontend.
+      Format: string option
       Default: Literal option
       Doc: string list
       Annotations: Annotation list

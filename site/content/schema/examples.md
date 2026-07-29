@@ -176,7 +176,7 @@ type Email =
 
     static member Schema(_: Email) : Schema<Email> =
         Schema.text
-        |> Schema.constrainAll [ Constraint.required; Constraint.email ]
+        |> Schema.constrainAll [ Constraint.present; Constraint.email ]
         |> Schema.convert Email (fun (Email value) -> value)
         |> Schema.withFormat SchemaFormat.email
 
@@ -335,7 +335,7 @@ type Email =
 
     static member Schema(_: Email) : Schema<Email> =
         Schema.text
-        |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254; Constraint.email ]
+        |> Schema.constrainAll [ Constraint.present; Constraint.maxLength 254; Constraint.email ]
         |> Schema.convert EmailValue _.Value
         |> Schema.withFormat SchemaFormat.email
 
@@ -380,11 +380,11 @@ module Signup =
                 constrain (between 13 120)
             }
             field "address" _.Address {
-                withSchema (addressSchema |> Schema.constrain Constraint.required)
+                withSchema (addressSchema |> Schema.constrain Constraint.supplied)
             }
             field "tags" _.Tags {
                 withSchema (Schema.listWith Schema.text)
-                constrain (maxCount 5)
+                constrain (maxLength 5)
             }
             construct (fun name email age address tags ->
                 { Name = name
@@ -431,7 +431,7 @@ module FormPage =
                gather field.Schema)
 
         let required =
-            if metadata |> List.contains (ConstraintMetadata.Presence Presence.Required) then " required" else ""
+            if metadata |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) then " required" else ""
 
         let maxLength =
             metadata

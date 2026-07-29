@@ -96,8 +96,8 @@ module SchemaFormatTests =
         test <@ Schema.format schema = Some SchemaFormat.email @>
         test <@ Schema.constraints schema |> List.map Constraint.code = [ "email" ] @>
 
-        let formattedLast = Schema.text |> Schema.constrain Constraint.required |> Schema.withFormat SchemaFormat.email
-        test <@ Schema.constraints formattedLast |> List.map Constraint.code = [ "required" ] @>
+        let formattedLast = Schema.text |> Schema.constrain Constraint.present |> Schema.withFormat SchemaFormat.email
+        test <@ Schema.constraints formattedLast |> List.map Constraint.code = [ "present" ] @>
         test <@ Schema.format formattedLast = Some SchemaFormat.email @>
 
     [<Fact>]
@@ -105,7 +105,7 @@ module SchemaFormatTests =
         let schema =
             schema<Contact> {
                 field "email" _.Email {
-                    withSchema ((Email.schema ()) |> Schema.constrainAll [ Constraint.required ])
+                    withSchema ((Email.schema ()) |> Schema.constrainAll [ Constraint.supplied ])
                 }
                 field "name" _.Name
                 construct (fun email name -> { Email = email; Name = name })

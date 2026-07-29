@@ -26,4 +26,4 @@ weight: 2810
 | <code><span><a href="../types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L453-453)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L454-454)

@@ -94,7 +94,7 @@ Input missing `newsletter` and carrying `"age": "not-a-number"`:
 
 ```text
 age: Expected int format.
-newsletter: This value is required.
+newsletter: This value was omitted.
 ```
 
 Paths come from the structure of the declaration. Application code never repeats field names, nested object names, list
@@ -204,17 +204,17 @@ JsonSchema.generate registrationSchema
 
 ```fsharp
 Inspect.model registrationSchema
-// owner   -> [ "required" ]
+// owner   -> [ "present" ]
 // seats   -> [ "greaterThan" ]
-// aliases -> [ "minCount" ]
+// aliases -> [ "minLength" ]
 ```
 
 Failures arrive on the right paths:
 
 ```text
-owner: This value is required.
+owner: This value must be present.
 seats: Must be greater than 0; got 0.
-aliases: Count must be at least 1; got 0.
+aliases: Length must be at least 1; got 0.
 ```
 
 Nothing in the schema declares any of this. `PositiveInt` means "greater than zero" wherever it appears, and the
@@ -237,7 +237,7 @@ type Profile =
 let profileSchema =
     schema<Profile> {
         field _.DisplayName {
-            constraints [ required; maxLength 40 ]
+            constraints [ present; maxLength 40 ]
         }
 
         field _.Age {
@@ -259,7 +259,7 @@ JsonSchema.generate profileSchema
 ```
 
 ```text
-displayName: This value is required.
+displayName: This value must be present.
 age: Must be between 13 and 120; got 9.
 ```
 

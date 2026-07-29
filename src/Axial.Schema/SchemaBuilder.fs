@@ -121,6 +121,87 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
         if isNull (box schema) then nullArg (nameof schema)
         FieldWorking(initial, schema)
 
+    /// <summary>Supplies the field value when the input omits it.</summary>
+    [<CustomOperation("defaultValue")>]
+    member _.DefaultValue
+        (
+            initial: FieldInitial<'model, 'target>,
+            value: 'target
+        ) : FieldConfigured<'model, 'target> =
+        FieldConfigured(initial, SchemaCore.withDefault value)
+
+    /// <summary>Supplies the field value when the input omits it.</summary>
+    [<CustomOperation("defaultValue")>]
+    member _.DefaultValue
+        (
+            field: FieldConfigured<'model, 'target>,
+            value: 'target
+        ) : FieldConfigured<'model, 'target> =
+        FieldConfigured(field.Initial, field.Configure >> SchemaCore.withDefault value)
+
+    /// <summary>Supplies the field value when the input omits it.</summary>
+    [<CustomOperation("defaultValue")>]
+    member _.DefaultValue
+        (
+            field: FieldWorking<'model, 'target, 'current>,
+            value: 'current
+        ) : FieldWorking<'model, 'target, 'current> =
+        FieldWorking(field.Initial, field.Schema |> SchemaCore.withDefault value)
+
+    /// <summary>Adds human-readable description metadata to the field's schema.</summary>
+    [<CustomOperation("describe")>]
+    member _.Describe
+        (
+            initial: FieldInitial<'model, 'target>,
+            text: string
+        ) : FieldConfigured<'model, 'target> =
+        FieldConfigured(initial, SchemaCore.describe text)
+
+    /// <summary>Adds human-readable description metadata to the field's schema.</summary>
+    [<CustomOperation("describe")>]
+    member _.Describe
+        (
+            field: FieldConfigured<'model, 'target>,
+            text: string
+        ) : FieldConfigured<'model, 'target> =
+        FieldConfigured(field.Initial, field.Configure >> SchemaCore.describe text)
+
+    /// <summary>Adds human-readable description metadata to the field's current schema.</summary>
+    [<CustomOperation("describe")>]
+    member _.Describe
+        (
+            field: FieldWorking<'model, 'target, 'current>,
+            text: string
+        ) : FieldWorking<'model, 'target, 'current> =
+        FieldWorking(field.Initial, field.Schema |> SchemaCore.describe text)
+
+    /// <summary>Adds format metadata to the field's schema.</summary>
+    [<CustomOperation("format")>]
+    member _.Format
+        (
+            initial: FieldInitial<'model, 'target>,
+            format: SchemaFormat
+        ) : FieldConfigured<'model, 'target> =
+        FieldConfigured(initial, SchemaCore.withFormat format)
+
+    /// <summary>Adds format metadata to the field's schema.</summary>
+    [<CustomOperation("format")>]
+    member _.Format
+        (
+            field: FieldConfigured<'model, 'target>,
+            format: SchemaFormat
+        ) : FieldConfigured<'model, 'target> =
+        FieldConfigured(field.Initial, field.Configure >> SchemaCore.withFormat format)
+
+    /// <summary>Adds format metadata to the field's current schema.</summary>
+    [<CustomOperation("format")>]
+    member _.Format
+        (
+            field: FieldWorking<'model, 'target, 'current>,
+            format: SchemaFormat
+        ) : FieldWorking<'model, 'target, 'current> =
+        FieldWorking(field.Initial, field.Schema |> SchemaCore.withFormat format)
+
     /// <summary>Adds a portable constraint to the field's current schema value.</summary>
     [<CustomOperation("constrain")>]
     member _.Constrain

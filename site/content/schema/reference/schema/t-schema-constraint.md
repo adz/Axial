@@ -20,4 +20,4 @@ type: docs
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L56-56)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L55-55)

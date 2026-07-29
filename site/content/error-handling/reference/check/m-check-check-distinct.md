@@ -1,7 +1,7 @@
 ---
 title: "Check.distinct"
 linkTitle: "distinct"
-weight: 2223
+weight: 2219
 type: docs
 ---
 
@@ -26,4 +26,4 @@ Runs a sequence-shaped check requiring no duplicate values.
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L604-604)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L602-602)

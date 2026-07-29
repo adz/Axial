@@ -5,7 +5,7 @@ weight: 2205
 type: docs
 ---
 
-Returns a string check requiring at most the supplied length.
+Returns a type-directed text or concrete-collection check requiring at most the supplied length.
 
 ## Signature
 
@@ -23,7 +23,7 @@ Returns a string check requiring at most the supplied length.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+| <code><span><a href="t-check-check.md">Check</a>&lt;^value&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L532-532)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L545-545)

@@ -10,7 +10,7 @@ module CatalogTests =
     let ``named refined constructors return check failures directly`` () =
         test <@ Refine.positiveInt 1 |> Result.map _.Value = Ok 1 @>
         test <@ Refine.positiveInt 0 = Error [ OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ] @>
-        test <@ Refine.nonBlankString " " = Error [ Required ] @>
+        test <@ Refine.nonBlankString " " = Error [ Blank ] @>
 
     [<Fact>]
     let ``collection refinements use canonical concrete representations`` () =

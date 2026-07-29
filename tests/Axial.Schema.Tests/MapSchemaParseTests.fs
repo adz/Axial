@@ -13,7 +13,7 @@ module MapSchemaParseTests =
     let private thresholdsSchema =
         schema<Thresholds> {
             field "values" _.Values {
-                withSchema (Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.required))
+                withSchema (Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.supplied))
             }
             construct (fun values -> { Values = values })
         }

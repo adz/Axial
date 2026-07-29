@@ -42,13 +42,13 @@ module CheckDSL =
     let inline notEmpty value = Check.notEmpty value
 
     /// <summary>Alias for <see cref="M:Axial.Check.Check.minLength" />.</summary>
-    let minLength = Check.minLength
+    let inline minLength minimum value = Check.minLength minimum value
 
     /// <summary>Alias for <see cref="M:Axial.Check.Check.maxLength" />.</summary>
-    let maxLength = Check.maxLength
+    let inline maxLength maximum value = Check.maxLength maximum value
 
     /// <summary>Alias for <see cref="M:Axial.Check.Check.lengthBetween" />.</summary>
-    let lengthBetween = Check.lengthBetween
+    let inline lengthBetween minimum maximum value = Check.lengthBetween minimum maximum value
 
     /// <summary>Alias for <see cref="M:Axial.Check.Check.exactLength" />.</summary>
     let exactLength = Check.String.exactLength
@@ -85,15 +85,6 @@ module CheckDSL =
 
     /// <summary>Alias for <see cref="M:Axial.Check.Check.nonPositive" />.</summary>
     let inline nonPositive value = Check.nonPositive value
-
-    /// <summary>Alias for <see cref="M:Axial.Check.Check.minCount" />.</summary>
-    let minCount = Check.minCount
-
-    /// <summary>Alias for <see cref="M:Axial.Check.Check.maxCount" />.</summary>
-    let maxCount = Check.maxCount
-
-    /// <summary>Alias for <see cref="M:Axial.Check.Check.countBetween" />.</summary>
-    let countBetween = Check.countBetween
 
     /// <summary>Alias for <see cref="M:Axial.Check.Check.equalTo" />.</summary>
     let equalTo = Check.equalTo

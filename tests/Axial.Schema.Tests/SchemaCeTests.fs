@@ -91,6 +91,60 @@ module SchemaCeTests =
         test <@ parsed |> Result.map (fun value -> value.Email.Value, value.Age) = Ok("ada@example.com", 42) @>
 
     [<Fact>]
+    let ``defaultValue composes after an explicit field schema`` () =
+        let schema =
+            schema<CeSignup> {
+                field "email" _.Email {
+                    withSchema Schema.text
+                    refine
+                }
+
+                field "age" _.Age {
+                    withSchema Schema.int
+                    defaultValue 18
+                }
+
+                construct CeSignup.create
+            }
+
+        let input = Data.Object [ "email", Data.Text "ada@example.com" ]
+
+        test <@ Schema.parse schema input |> Result.map _.Age = Ok 18 @>
+
+    [<Fact>]
+    let ``field metadata operations compose with inferred and explicit schemas`` () =
+        let schema =
+            schema<CeSignup> {
+                field "email" _.Email {
+                    withSchema Schema.text
+                    describe "Primary contact email."
+                    format SchemaFormat.email
+                    refine
+                }
+
+                field "age" _.Age {
+                    describe "Age in years."
+                    defaultValue 18
+                }
+
+                construct CeSignup.create
+            }
+
+        let fields = (Inspect.model schema).Fields
+        let email = fields |> List.find (fun field -> field.Name = "email")
+        let age = fields |> List.find (fun field -> field.Name = "age")
+
+        let emailRaw =
+            match email.Schema.Shape with
+            | SchemaShape.Refined raw -> raw
+            | shape -> failwithf "Expected refined email schema; got %A" shape
+
+        test <@ emailRaw.Description = Some "Primary contact email." @>
+        test <@ emailRaw.Format = Some SchemaFormat.email @>
+        test <@ age.Schema.Description = Some "Age in years." @>
+        test <@ age.Schema.Default = Some(box 18) @>
+
+    [<Fact>]
     let ``schema CE retains the typed compiled JSON plan`` () =
         let signup = CeSignup.create (CeEmail "ada@example.com") 42
         let codec = Json.compile signupSchema

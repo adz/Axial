@@ -372,16 +372,16 @@ module PositiveInt =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Text =
     let private slugPattern = "^[a-z0-9]+(-[a-z0-9]+)*$"
-    let nonBlankStringRefinement = Refinement.define Constraint.required NonBlankString _.Value
+    let nonBlankStringRefinement = Refinement.define Constraint.present NonBlankString _.Value
     let trimmedStringRefinement = Refinement.define Constraint.trimmed TrimmedString _.Value
-    let slugRefinement = Refinement.defineAll [ Constraint.required; Constraint.pattern slugPattern ] Slug _.Value
+    let slugRefinement = Refinement.defineAll [ Constraint.present; Constraint.pattern slugPattern ] Slug _.Value
     let nonBlankString value = Refinement.create nonBlankStringRefinement value
     let trimmedString value = Refinement.create trimmedStringRefinement value
     let slug value = Refinement.create slugRefinement value
     let boundedString minLength maxLength value =
         if not (Bounds.valid minLength maxLength) then Error Bounds.failure
         else
-            Refinement.defineAll [ Constraint.required; Constraint.lengthBetween minLength maxLength ]
+            Refinement.defineAll [ Constraint.present; Constraint.lengthBetween minLength maxLength ]
                 (fun value -> BoundedString(value, minLength, maxLength)) _.Value
             |> fun refinement -> Refinement.create refinement value
 
@@ -406,16 +406,17 @@ module Character =
 /// Collection refined value constructors and helpers.
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Collection =
-    let nonEmptyListRefinement<'value> () =
-        let constraint': Constraint<'value list> = Constraint.minCount 1 |> Constraint.forList
+    let nonEmptyListRefinement<'value> () : Refinement<'value list, NonEmptyList<'value>> =
+        let constraint': Constraint<'value list> = Constraint.minLength 1
         Refinement.define
             constraint'
             (function head :: tail -> NonEmptyList(head, tail) | [] -> failwith "unreachable")
             _.ToList()
 
-    let nonEmptyArrayRefinement<'value> () =
+    let nonEmptyArrayRefinement<'value> () : Refinement<'value array, NonEmptyArray<'value>> =
+        let constraint': Constraint<'value array> = Constraint.minLength 1
         Refinement.define
-            (Constraint.minCount 1 |> Constraint.contramap (fun (values: 'value array) -> values :> seq<'value>))
+            constraint'
             NonEmptyArray
             _.ToArray()
 
@@ -428,13 +429,13 @@ module Collection =
     let boundedList minCount maxCount values =
         if not (Bounds.valid minCount maxCount) then Error Bounds.failure
         else
-            let refinement = Refinement.define (Constraint.countBetween minCount maxCount)
+            let refinement = Refinement.define (Constraint.lengthBetween minCount maxCount)
                                 (fun values -> BoundedList(values, minCount, maxCount)) _.ToList()
             values |> Seq.toList |> Refinement.create refinement
     let boundedArray minCount maxCount values =
         if not (Bounds.valid minCount maxCount) then Error Bounds.failure
         else
-            let refinement = Refinement.define (Constraint.countBetween minCount maxCount)
+            let refinement = Refinement.define (Constraint.lengthBetween minCount maxCount)
                                 (fun values -> BoundedArray(values, minCount, maxCount)) _.ToArray()
             values |> Seq.toArray |> Refinement.create refinement
     let exactlyOne values =

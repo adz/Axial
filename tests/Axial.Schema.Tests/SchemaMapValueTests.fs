@@ -15,7 +15,7 @@ type MapVisibility =
 module SchemaMapValueTests =
     [<Fact>]
     let ``map builds a dictionary value schema from a primitive item schema`` () =
-        let thresholds = Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.required)
+        let thresholds = Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.supplied)
 
         match thresholds.ValueDefinition.Shape with
         | MapValueDefinition collection ->
@@ -23,7 +23,7 @@ module SchemaMapValueTests =
             | PrimitiveValueDefinition PrimitiveValueKind.Decimal -> ()
             | _ -> failwith "Expected the map item to keep the supplied primitive value schema."
 
-            test <@ collection.Item.Constraints |> List.map Constraint.code = [ "required" ] @>
+            test <@ collection.Item.Constraints |> List.map Constraint.code = [ "supplied" ] @>
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
         | NestedValueDefinition _

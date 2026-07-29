@@ -4,7 +4,7 @@ linkTitle: "lengthBetween"
 weight: 2206
 ---
 
-Returns a string check requiring a length inside the supplied inclusive bounds.
+Returns a type-directed text or concrete-collection check requiring a length inside inclusive bounds.
 
 ## Signature
 
@@ -23,7 +23,7 @@ Returns a string check requiring a length inside the supplied inclusive bounds.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+| <code><span><a href="t-check-check.md">Check</a>&lt;^value&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L536-536)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L549-549)

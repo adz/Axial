@@ -46,7 +46,7 @@ let orderSchema =
     schema<Order> {
         field "address" _.Address
         field "items" _.Items {
-            constrain (minCount 1)
+            constrain (minLength 1)
         }
         construct (fun address items -> { Address = address; Items = items })
     }
@@ -88,7 +88,7 @@ Data.redisplayPath "items[1].quantity" parsed.Input   // "0"
 
 ## Count Constraints
 
-Collection constraints (`minCount`, `maxCount`, `count`, `distinct`) attach to the collection field itself and report
+Collection constraints (`minLength`, `maxLength`, `count`, `distinct`) attach to the collection field itself and report
 on the collection path (`items`), separately from per-item errors.
 
 Use a field block with `withSchema` when a nested field needs a schema local to its parent, when wrapping a third-party

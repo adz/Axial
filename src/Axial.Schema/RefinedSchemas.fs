@@ -12,7 +12,7 @@ module RefinedSchemas =
     let boundedString minLength maxLength : Schema<BoundedString> =
         let refinement =
             Refinement.defineAll
-                [ Axial.Check.Constraint.required; Axial.Check.Constraint.lengthBetween minLength maxLength ]
+                [ Axial.Check.Constraint.present; Axial.Check.Constraint.lengthBetween minLength maxLength ]
                 (fun value ->
                     match Refine.boundedString minLength maxLength value with
                     | Ok refined -> refined
@@ -38,12 +38,12 @@ module RefinedSchemas =
         SchemaDefaults.DistinctListWith itemSchema
 
     let boundedList minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedList<'value>> =
-        let refinement = Refinement.define (Axial.Check.Constraint.countBetween minCount maxCount)
+        let refinement = Refinement.define (Axial.Check.Constraint.lengthBetween minCount maxCount)
                             (fun values -> match Refine.boundedList minCount maxCount values with Ok value -> value | Error _ -> failwith "unreachable") _.ToList()
         Schema.listWith itemSchema |> Schema.refine refinement
 
     let boundedArray minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedArray<'value>> =
-        let refinement = Refinement.define (Axial.Check.Constraint.countBetween minCount maxCount)
+        let refinement = Refinement.define (Axial.Check.Constraint.lengthBetween minCount maxCount)
                             (fun values -> match Refine.boundedArray minCount maxCount values with Ok value -> value | Error _ -> failwith "unreachable")
                             (fun value -> value.ToArray() |> Array.toList)
         Schema.listWith itemSchema |> Schema.refine refinement

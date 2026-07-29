@@ -14,11 +14,9 @@ This page shows reusable value checks and portable typed constraints. `Check<'va
 - [`Check.ConstraintMetadata`](./t-check-constraintmetadata.md):  The inspectable meaning of an executable value constraint.
 - [`Check.ConstraintArgument`](./t-check-constraintargument.md):  A closed value used when constraint metadata must cross a serialization boundary.
 - [`Check.CheckFailure`](./t-check-checkfailure.md): Describes why an executable value check failed, without attaching source paths or structured data.
-- [`Check.CheckLengthExpectation`](./t-check-checklengthexpectation.md): Describes the length requirement that a value check expected a string-like value to satisfy.
+- [`Check.CheckLengthExpectation`](./t-check-checklengthexpectation.md): Describes the length requirement that a value check expected a text or collection value to satisfy.
 - [`Check.CheckRangeExpectation`](./t-check-checkrangeexpectation.md): <pre>Describes the ordering requirement that a value check expected a comparable value to satisfy against a
  caller-supplied bound.</pre>
-- [`Check.CheckCountExpectation`](./t-check-checkcountexpectation.md): <pre>Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
- caller-supplied count.</pre>
 
 ## Executable composition
 
@@ -32,10 +30,10 @@ This page shows reusable value checks and portable typed constraints. `Check<'va
 - [`Check.present`](./m-check-check-present.md): Runs the type-directed presence check for an already parsed optional, nullable, text, or sequence-shaped value.
 - [`Check.empty`](./m-check-check-empty.md):  Runs the type-directed empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
 - [`Check.notEmpty`](./m-check-check-notempty.md):  Runs the type-directed non-empty check for an already parsed optional, nullable, text, or supported sequence-shaped value.
-- [`Check.length`](./m-check-check-length.md): Returns a string check requiring exactly the supplied length.
-- [`Check.minLength`](./m-check-check-minlength.md): Returns a string check requiring at least the supplied length.
-- [`Check.maxLength`](./m-check-check-maxlength.md): Returns a string check requiring at most the supplied length.
-- [`Check.lengthBetween`](./m-check-check-lengthbetween.md): Returns a string check requiring a length inside the supplied inclusive bounds.
+- [`Check.length`](./m-check-check-length.md): Returns a type-directed text or concrete-collection check requiring exactly the supplied length.
+- [`Check.minLength`](./m-check-check-minlength.md): Returns a type-directed text or concrete-collection check requiring at least the supplied length.
+- [`Check.maxLength`](./m-check-check-maxlength.md): Returns a type-directed text or concrete-collection check requiring at most the supplied length.
+- [`Check.lengthBetween`](./m-check-check-lengthbetween.md): Returns a type-directed text or concrete-collection check requiring a length inside inclusive bounds.
 - [`Check.email`](./m-check-check-email.md): Runs Axial's pragmatic email-format check against an already parsed string value.
 - [`Check.matches`](./m-check-check-matches.md): Returns a string check requiring a match for the supplied regular expression pattern.
 - [`Check.oneOf`](./m-check-check-oneof.md): Returns a string check requiring equality with one of the supplied choices.
@@ -48,10 +46,6 @@ This page shows reusable value checks and portable typed constraints. `Check<'va
 - [`Check.nonNegative`](./m-check-check-nonnegative.md): Runs an ordered-value check requiring a value greater than or equal to zero.
 - [`Check.negative`](./m-check-check-negative.md): Runs an ordered-value check requiring a value less than zero.
 - [`Check.nonPositive`](./m-check-check-nonpositive.md): Runs an ordered-value check requiring a value less than or equal to zero.
-- [`Check.count`](./m-check-check-count.md): Returns a sequence-shaped check requiring exactly the supplied count.
-- [`Check.minCount`](./m-check-check-mincount.md): Returns a sequence-shaped check requiring at least the supplied count.
-- [`Check.maxCount`](./m-check-check-maxcount.md): Returns a sequence-shaped check requiring at most the supplied count.
-- [`Check.countBetween`](./m-check-check-countbetween.md): Returns a sequence-shaped check requiring a count inside the supplied inclusive bounds.
 - [`Check.distinct`](./m-check-check-distinct.md): Runs a sequence-shaped check requiring no duplicate values.
 - [`Check.contains`](./m-check-check-contains.md): Returns a sequence-shaped check requiring the supplied value to be present.
 - [`Check.single`](./m-check-check-single.md): Runs a sequence-shaped check requiring exactly one item.

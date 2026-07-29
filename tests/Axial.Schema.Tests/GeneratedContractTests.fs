@@ -239,7 +239,7 @@ module GeneratedContractTests =
             test <@ shipment.Boxes = 2 @>
         | Error diagnostics -> failwithf "Expected a wire parse, got %A" diagnostics
 
-        // Defaults are schema metadata (for JSON Schema output and editors), same as the .contract path.
+        // Defaults remain inspectable metadata and also supply omitted input during parsing.
         let boxesField =
             (Inspect.model Shipment.schema).Fields |> List.find (fun field -> field.Name = "boxes")
 

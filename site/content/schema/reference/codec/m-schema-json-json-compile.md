@@ -46,4 +46,4 @@ Compiles a completed schema into a reusable JSON codec.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1006-1006)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1018-1018)

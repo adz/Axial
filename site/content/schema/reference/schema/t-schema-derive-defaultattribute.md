@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.DefaultAttribute"
 linkTitle: "DefaultAttribute"
-weight: 1514
+weight: 1519
 type: docs
 ---
 
@@ -15,4 +15,4 @@ Supplies the field&#39;s default when the payload omits it. Not valid on optiona
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L118-118)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L147-147)

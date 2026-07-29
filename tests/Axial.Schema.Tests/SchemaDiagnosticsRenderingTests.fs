@@ -15,7 +15,7 @@ module SchemaDiagnosticsRenderingTests =
     let private signupSchema =
         schema<Signup> {
             field "email" _.Email {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "age" _.Age
             construct (fun email age -> { Email = email; Age = age })
@@ -33,7 +33,7 @@ module SchemaDiagnosticsRenderingTests =
             | Error diagnostics -> SchemaErrors.toString diagnostics
             | Ok _ -> failwith "Expected a failed parse."
 
-        test <@ text = "email: This value is required." @>
+        test <@ text = "email: This value must be present." @>
 
     [<Fact>]
     let ``toString renders sibling field paths for every failing field`` () =
@@ -50,7 +50,7 @@ module SchemaDiagnosticsRenderingTests =
             | Error diagnostics -> SchemaErrors.toString diagnostics
             | Ok _ -> failwith "Expected a failed parse."
 
-        test <@ text.Contains("email: This value is required.") @>
+        test <@ text.Contains("email: This value must be present.") @>
         test <@ text.Contains("age: Expected int format.") @>
 
     [<Fact>]
@@ -82,7 +82,7 @@ module SchemaDiagnosticsRenderingTests =
 
         let expected =
             [ { Path = Path.key "age"; Error = SchemaError.InvalidFormat "int" }
-              { Path = Path.key "email"; Error = SchemaError.Required } ]
+              { Path = Path.key "email"; Error = SchemaError.Blank } ]
 
         test <@ flattened = expected @>
         test <@ parsed.Errors = expected @>

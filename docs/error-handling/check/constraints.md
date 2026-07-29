@@ -44,7 +44,7 @@ values:
 ```fsharp
 let contactEmail =
     Constraint.checkAll
-        [ Constraint.required
+        [ Constraint.present
           Constraint.email
           Constraint.maxLength 254 ]
 ```
@@ -53,7 +53,7 @@ let contactEmail =
 
 The built-in set covers:
 
-- required text
+- present text and collections
 - text length, email format, trimming, patterns, and closed choices
 - equality and ordered bounds
 - collection counts, distinctness, and containment

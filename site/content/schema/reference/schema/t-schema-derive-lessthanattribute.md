@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.LessThanAttribute"
 linkTitle: "LessThanAttribute"
-weight: 1510
+weight: 1515
 type: docs
 ---
 
@@ -14,4 +14,4 @@ Bounds a numeric field&#39;s value exclusively from above (<code>&lt;</code> in 
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L91-91)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L120-120)

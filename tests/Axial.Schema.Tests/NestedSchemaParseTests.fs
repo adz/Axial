@@ -30,10 +30,10 @@ module NestedSchemaParseTests =
     let private addressSchema =
         schema<Address> {
             field "street" (fun (address: Address) -> address.Street) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "city" (fun (address: Address) -> address.City) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             construct (fun street city -> ({ Street = street; City = city }: Address))
         }
@@ -41,10 +41,10 @@ module NestedSchemaParseTests =
     let private customerSchema =
         schema<Customer> {
             field "name" (fun (customer: Customer) -> customer.Name) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "address" (fun (customer: Customer) -> customer.Address) {
-                withSchema (addressSchema |> Schema.constrain Constraint.required)
+                withSchema (addressSchema |> Schema.constrain Constraint.supplied)
             }
             construct (fun name address -> ({ Name = name; Address = address }: Customer))
         }
@@ -52,10 +52,10 @@ module NestedSchemaParseTests =
     let private verifiedAddressSchema =
         schema<VerifiedAddress> {
             field "street" (fun (address: VerifiedAddress) -> address.Street) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "city" (fun (address: VerifiedAddress) -> address.City) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             constructResult VerifiedAddress.Create
         }
@@ -63,10 +63,10 @@ module NestedSchemaParseTests =
     let private verifiedCustomerSchema =
         schema<VerifiedCustomer> {
             field "name" (fun (customer: VerifiedCustomer) -> customer.Name) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "address" (fun (customer: VerifiedCustomer) -> customer.Address) {
-                withSchema (verifiedAddressSchema |> Schema.constrain Constraint.required)
+                withSchema (verifiedAddressSchema |> Schema.constrain Constraint.supplied)
             }
             construct (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
         }
@@ -95,7 +95,7 @@ module NestedSchemaParseTests =
         let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Blank } ] @>
 
     [<Fact>]
     let ``parse attaches nested constructor errors to the nested object root by default`` () =
@@ -142,7 +142,7 @@ module NestedSchemaParseTests =
         let parsed = Schema.parseRetainingInput customerSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address" ]; Error = SchemaError.Required } ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address" ]; Error = SchemaError.Omitted } ] @>
 
     [<Fact>]
     let ``parse accumulates every failing nested field alongside sibling failures`` () =
@@ -161,6 +161,6 @@ module NestedSchemaParseTests =
         test <@ not parsed.IsValid @>
 
         test
-            <@ sortedErrors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Required }
-                                { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "street" ]; Error = SchemaError.Required }
-                                { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Required } ] @>
+            <@ sortedErrors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "city" ]; Error = SchemaError.Blank }
+                                { Path = TestPath.fromLegacy [ PathSegment.Name "address"; PathSegment.Name "street" ]; Error = SchemaError.Blank }
+                                { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Blank } ] @>

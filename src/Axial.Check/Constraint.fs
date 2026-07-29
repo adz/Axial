@@ -22,13 +22,15 @@ type ConstraintArgument =
 /// The inspectable meaning of an executable value constraint.
 [<RequireQualifiedAccess>]
 type ConstraintMetadata =
-    /// Text must contain at least one non-whitespace character.
+    /// A value must be inhabited according to its shape.
     | Present
-    /// Text must contain at least the supplied number of characters.
+    /// Text or a concrete collection must contain exactly the supplied length.
+    | Length of expected: int
+    /// Text or a concrete collection must contain at least the supplied length.
     | MinLength of minimum: int
-    /// Text must contain at most the supplied number of characters.
+    /// Text or a concrete collection must contain at most the supplied length.
     | MaxLength of maximum: int
-    /// Text length must lie inside the supplied inclusive bounds.
+    /// Text or concrete collection length must lie inside the supplied inclusive bounds.
     | LengthBetween of minimum: int * maximum: int
     /// Text must use the supported email format.
     | Email
@@ -52,14 +54,6 @@ type ConstraintMetadata =
     | AtLeast of minimum: obj
     /// A value must be less than or equal to the supplied upper bound.
     | AtMost of maximum: obj
-    /// A collection must contain exactly the supplied number of items.
-    | Count of expected: int
-    /// A collection must contain at least the supplied number of items.
-    | MinCount of minimum: int
-    /// A collection must contain at most the supplied number of items.
-    | MaxCount of maximum: int
-    /// A collection count must lie inside the supplied inclusive bounds.
-    | CountBetween of minimum: int * maximum: int
     /// A collection must contain no duplicate items.
     | Distinct
     /// A collection must contain the supplied item.
@@ -96,7 +90,8 @@ module Constraint =
     let private known metadata check = Constraint(check, metadata)
 
     let private metadataCode = function
-        | ConstraintMetadata.Present -> "required"
+        | ConstraintMetadata.Present -> "present"
+        | ConstraintMetadata.Length _ -> "length"
         | ConstraintMetadata.MinLength _ -> "minLength"
         | ConstraintMetadata.MaxLength _ -> "maxLength"
         | ConstraintMetadata.LengthBetween _ -> "lengthBetween"
@@ -111,16 +106,13 @@ module Constraint =
         | ConstraintMetadata.LessThan _ -> "lessThan"
         | ConstraintMetadata.AtLeast _ -> "atLeast"
         | ConstraintMetadata.AtMost _ -> "atMost"
-        | ConstraintMetadata.Count _ -> "count"
-        | ConstraintMetadata.MinCount _ -> "minCount"
-        | ConstraintMetadata.MaxCount _ -> "maxCount"
-        | ConstraintMetadata.CountBetween _ -> "countBetween"
         | ConstraintMetadata.Distinct -> "distinct"
         | ConstraintMetadata.Contains _ -> "contains"
         | ConstraintMetadata.MultipleOf _ -> "multipleOf"
         | ConstraintMetadata.Custom(code, _) -> code
 
     let private metadataArguments = function
+        | ConstraintMetadata.Length expected -> Map [ "expected", box expected ]
         | ConstraintMetadata.MinLength minimum -> Map [ "minimum", box minimum ]
         | ConstraintMetadata.MaxLength maximum -> Map [ "maximum", box maximum ]
         | ConstraintMetadata.LengthBetween(minimum, maximum) -> Map [ "minimum", box minimum; "maximum", box maximum ]
@@ -133,23 +125,18 @@ module Constraint =
         | ConstraintMetadata.LessThan maximum -> Map [ "maximum", maximum ]
         | ConstraintMetadata.AtLeast minimum -> Map [ "minimum", minimum ]
         | ConstraintMetadata.AtMost maximum -> Map [ "maximum", maximum ]
-        | ConstraintMetadata.Count expected -> Map [ "expected", box expected ]
-        | ConstraintMetadata.MinCount minimum -> Map [ "minimum", box minimum ]
-        | ConstraintMetadata.MaxCount maximum -> Map [ "maximum", box maximum ]
-        | ConstraintMetadata.CountBetween(minimum, maximum) -> Map [ "minimum", box minimum; "maximum", box maximum ]
         | ConstraintMetadata.Contains item -> Map [ "item", item ]
         | ConstraintMetadata.MultipleOf divisor -> Map [ "divisor", divisor ]
         | ConstraintMetadata.Custom(_, arguments) -> arguments
         | _ -> Map.empty
 
     let private builtInCodes =
-        [ ConstraintMetadata.Present; ConstraintMetadata.MinLength 0; ConstraintMetadata.MaxLength 0
+        [ ConstraintMetadata.Present; ConstraintMetadata.Length 0; ConstraintMetadata.MinLength 0; ConstraintMetadata.MaxLength 0
           ConstraintMetadata.LengthBetween(0, 0); ConstraintMetadata.Email; ConstraintMetadata.Trimmed
           ConstraintMetadata.Pattern "x"; ConstraintMetadata.OneOf []; ConstraintMetadata.EqualTo(box 0)
           ConstraintMetadata.NotEqualTo(box 0); ConstraintMetadata.Between(box 0, box 0)
           ConstraintMetadata.GreaterThan(box 0); ConstraintMetadata.LessThan(box 0)
-          ConstraintMetadata.AtLeast(box 0); ConstraintMetadata.AtMost(box 0); ConstraintMetadata.Count 0
-          ConstraintMetadata.MinCount 0; ConstraintMetadata.MaxCount 0; ConstraintMetadata.CountBetween(0, 0)
+          ConstraintMetadata.AtLeast(box 0); ConstraintMetadata.AtMost(box 0)
           ConstraintMetadata.Distinct; ConstraintMetadata.Contains(box 0); ConstraintMetadata.MultipleOf(box 1) ]
         |> List.map metadataCode
         |> Set.ofList
@@ -225,10 +212,62 @@ module Constraint =
         if isNull (box project) then nullArg (nameof project)
         known (metadata constraint') (project >> check constraint')
 
-    let required : Constraint<string> = known ConstraintMetadata.Present Check.String.present
-    let minLength minimum = ensureNonNegative (nameof minimum) minimum; known (ConstraintMetadata.MinLength minimum) (Check.String.minLength minimum)
-    let maxLength maximum = ensureNonNegative (nameof maximum) maximum; known (ConstraintMetadata.MaxLength maximum) (Check.String.maxLength maximum)
-    let lengthBetween minimum maximum = ensureNonNegative (nameof minimum) minimum; ensureNonNegative (nameof maximum) maximum; ensureBounds (nameof minimum) minimum maximum; known (ConstraintMetadata.LengthBetween(minimum, maximum)) (Check.String.lengthBetween minimum maximum)
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    type PresentDispatcher =
+        static member Create(_: string) : Constraint<string> = known ConstraintMetadata.Present Check.String.present
+        static member Create(_: 'value option) : Constraint<'value option> = known ConstraintMetadata.Present Check.Option.some
+        static member Create(_: 'value voption) : Constraint<'value voption> = known ConstraintMetadata.Present Check.ValueOption.some
+        static member Create(_: Nullable<'value>) : Constraint<Nullable<'value>> = known ConstraintMetadata.Present Check.Nullable.hasValue
+        static member Create(_: 'value list) : Constraint<'value list> = known ConstraintMetadata.Present Check.present
+        static member Create(_: 'value array) : Constraint<'value array> = known ConstraintMetadata.Present Check.present
+        static member Create(_: Map<string, 'value>) : Constraint<Map<string, 'value>> = known ConstraintMetadata.Present Check.present
+
+    let inline present< ^value when (^value or PresentDispatcher) : (static member Create: ^value -> Constraint<^value>)> : Constraint<^value> =
+        ((^value or PresentDispatcher) : (static member Create: ^value -> Constraint<^value>) Unchecked.defaultof<^value>)
+
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    type LengthDispatcher =
+        static member private Valid expected = ensureNonNegative (nameof expected) expected
+        static member Create(_: string, expected: int) : Constraint<string> = LengthDispatcher.Valid expected; known (ConstraintMetadata.Length expected) (Check.length expected)
+        static member Create(_: 'value list, expected: int) : Constraint<'value list> = LengthDispatcher.Valid expected; known (ConstraintMetadata.Length expected) (Check.length expected)
+        static member Create(_: 'value array, expected: int) : Constraint<'value array> = LengthDispatcher.Valid expected; known (ConstraintMetadata.Length expected) (Check.length expected)
+        static member Create(_: Map<string, 'value>, expected: int) : Constraint<Map<string, 'value>> = LengthDispatcher.Valid expected; known (ConstraintMetadata.Length expected) (Check.length expected)
+
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    type MinLengthDispatcher =
+        static member private Valid minimum = ensureNonNegative (nameof minimum) minimum
+        static member Create(_: string, minimum: int) : Constraint<string> = MinLengthDispatcher.Valid minimum; known (ConstraintMetadata.MinLength minimum) (Check.minLength minimum)
+        static member Create(_: 'value list, minimum: int) : Constraint<'value list> = MinLengthDispatcher.Valid minimum; known (ConstraintMetadata.MinLength minimum) (Check.minLength minimum)
+        static member Create(_: 'value array, minimum: int) : Constraint<'value array> = MinLengthDispatcher.Valid minimum; known (ConstraintMetadata.MinLength minimum) (Check.minLength minimum)
+        static member Create(_: Map<string, 'value>, minimum: int) : Constraint<Map<string, 'value>> = MinLengthDispatcher.Valid minimum; known (ConstraintMetadata.MinLength minimum) (Check.minLength minimum)
+
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    type MaxLengthDispatcher =
+        static member private Valid maximum = ensureNonNegative (nameof maximum) maximum
+        static member Create(_: string, maximum: int) : Constraint<string> = MaxLengthDispatcher.Valid maximum; known (ConstraintMetadata.MaxLength maximum) (Check.maxLength maximum)
+        static member Create(_: 'value list, maximum: int) : Constraint<'value list> = MaxLengthDispatcher.Valid maximum; known (ConstraintMetadata.MaxLength maximum) (Check.maxLength maximum)
+        static member Create(_: 'value array, maximum: int) : Constraint<'value array> = MaxLengthDispatcher.Valid maximum; known (ConstraintMetadata.MaxLength maximum) (Check.maxLength maximum)
+        static member Create(_: Map<string, 'value>, maximum: int) : Constraint<Map<string, 'value>> = MaxLengthDispatcher.Valid maximum; known (ConstraintMetadata.MaxLength maximum) (Check.maxLength maximum)
+
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    type LengthBetweenDispatcher =
+        static member private Valid minimum maximum = ensureNonNegative (nameof minimum) minimum; ensureNonNegative (nameof maximum) maximum; ensureBounds (nameof minimum) minimum maximum
+        static member Create(_: string, minimum: int, maximum: int) : Constraint<string> = LengthBetweenDispatcher.Valid minimum maximum; known (ConstraintMetadata.LengthBetween(minimum, maximum)) (Check.lengthBetween minimum maximum)
+        static member Create(_: 'value list, minimum: int, maximum: int) : Constraint<'value list> = LengthBetweenDispatcher.Valid minimum maximum; known (ConstraintMetadata.LengthBetween(minimum, maximum)) (Check.lengthBetween minimum maximum)
+        static member Create(_: 'value array, minimum: int, maximum: int) : Constraint<'value array> = LengthBetweenDispatcher.Valid minimum maximum; known (ConstraintMetadata.LengthBetween(minimum, maximum)) (Check.lengthBetween minimum maximum)
+        static member Create(_: Map<string, 'value>, minimum: int, maximum: int) : Constraint<Map<string, 'value>> = LengthBetweenDispatcher.Valid minimum maximum; known (ConstraintMetadata.LengthBetween(minimum, maximum)) (Check.lengthBetween minimum maximum)
+
+    let inline length< ^value when (^value or LengthDispatcher) : (static member Create: ^value * int -> Constraint<^value>)> expected : Constraint<^value> =
+        ((^value or LengthDispatcher) : (static member Create: ^value * int -> Constraint<^value>) (Unchecked.defaultof<^value>, expected))
+
+    let inline minLength< ^value when (^value or MinLengthDispatcher) : (static member Create: ^value * int -> Constraint<^value>)> minimum : Constraint<^value> =
+        ((^value or MinLengthDispatcher) : (static member Create: ^value * int -> Constraint<^value>) (Unchecked.defaultof<^value>, minimum))
+
+    let inline maxLength< ^value when (^value or MaxLengthDispatcher) : (static member Create: ^value * int -> Constraint<^value>)> maximum : Constraint<^value> =
+        ((^value or MaxLengthDispatcher) : (static member Create: ^value * int -> Constraint<^value>) (Unchecked.defaultof<^value>, maximum))
+
+    let inline lengthBetween< ^value when (^value or LengthBetweenDispatcher) : (static member Create: ^value * int * int -> Constraint<^value>)> minimum maximum : Constraint<^value> =
+        ((^value or LengthBetweenDispatcher) : (static member Create: ^value * int * int -> Constraint<^value>) (Unchecked.defaultof<^value>, minimum, maximum))
     let email = known ConstraintMetadata.Email Check.String.email
     let trimmed = known ConstraintMetadata.Trimmed (fun (value: string) -> if not (isNull value) && value.Trim() = value then Ok () else Error [ InvalidFormat "trimmed" ])
     let pattern pattern = ensureName (nameof pattern) pattern; known (ConstraintMetadata.Pattern pattern) (Check.String.matches pattern)
@@ -240,10 +279,6 @@ module Constraint =
     let lessThan maximum = known (ConstraintMetadata.LessThan(box maximum)) (Check.lessThan maximum)
     let atLeast minimum = known (ConstraintMetadata.AtLeast(box minimum)) (Check.atLeast minimum)
     let atMost maximum = known (ConstraintMetadata.AtMost(box maximum)) (Check.atMost maximum)
-    let count expected = ensureNonNegative (nameof expected) expected; known (ConstraintMetadata.Count expected) (Check.Seq.count expected)
-    let minCount minimum = ensureNonNegative (nameof minimum) minimum; known (ConstraintMetadata.MinCount minimum) (Check.Seq.minCount minimum)
-    let maxCount maximum = ensureNonNegative (nameof maximum) maximum; known (ConstraintMetadata.MaxCount maximum) (Check.Seq.maxCount maximum)
-    let countBetween minimum maximum = ensureNonNegative (nameof minimum) minimum; ensureNonNegative (nameof maximum) maximum; ensureBounds (nameof minimum) minimum maximum; known (ConstraintMetadata.CountBetween(minimum, maximum)) (Check.Seq.countBetween minimum maximum)
     let distinct<'value when 'value: equality> : Constraint<seq<'value>> = known ConstraintMetadata.Distinct Check.Seq.noDuplicates
     let contains item : Constraint<seq<'value>> = known (ConstraintMetadata.Contains(box item)) (Check.Seq.contains item)
     [<EditorBrowsable(EditorBrowsableState.Never)>]

@@ -422,8 +422,14 @@ module rec Json =
                 let fieldDecoder = compileValueDecoderObj field.ValueSchema
 
                 let createSlot =
-                    match field.ValueSchema.Shape with
-                    | OptionValueDefinition optional ->
+                    match field.ValueSchema.Default, field.ValueSchema.Shape with
+                    | Some defaultValue, _ ->
+                        fun () ->
+                            let slot = Slot<obj>(fieldDecoder)
+                            slot.Value <- defaultValue
+                            slot.HasValue <- true
+                            slot :> ISlot
+                    | None, OptionValueDefinition optional ->
                         // An absent optional field is a legal None, so its slot starts filled instead of
                         // failing the missing-required-field check.
                         fun () ->
@@ -431,7 +437,7 @@ module rec Json =
                             slot.Value <- optional.NoneValue
                             slot.HasValue <- true
                             slot :> ISlot
-                    | _ -> fun () -> Slot<obj>(fieldDecoder) :> ISlot
+                    | None, _ -> fun () -> Slot<obj>(fieldDecoder) :> ISlot
 
                 { NameText = name
                   NameUtf8 = utf8 name
@@ -878,15 +884,21 @@ module rec Json =
                 let fieldDecoder = compileValueDecoder<'field> field.Definition.ValueSchema
 
                 let createSlot =
-                    match field.Definition.ValueSchema.Shape with
-                    | OptionValueDefinition _ ->
+                    match field.Definition.ValueSchema.Default, field.Definition.ValueSchema.Shape with
+                    | Some defaultValue, _ ->
+                        fun () ->
+                            let slot = Slot<'field>(fieldDecoder)
+                            slot.Value <- unbox<'field> defaultValue
+                            slot.HasValue <- true
+                            slot :> ISlot
+                    | None, OptionValueDefinition _ ->
                         // An absent optional field is a legal None ('field is an option type, whose default
                         // representation is None), so its slot starts filled.
                         fun () ->
                             let slot = Slot<'field>(fieldDecoder)
                             slot.HasValue <- true
                             slot :> ISlot
-                    | _ -> fun () -> Slot<'field>(fieldDecoder) :> ISlot
+                    | None, _ -> fun () -> Slot<'field>(fieldDecoder) :> ISlot
 
                 let matcher =
                     { NameText = name

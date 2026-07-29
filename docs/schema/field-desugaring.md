@@ -45,7 +45,7 @@ Portable constraints can be inspected by JSON Schema, documentation, and UI inte
 
 ```fsharp
 field "name" _.Name {
-    constraints [ required; maxLength 80 ]
+    constraints [ present; maxLength 80 ]
 }
 ```
 

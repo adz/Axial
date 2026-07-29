@@ -509,13 +509,22 @@ module Records =
                             | "Pattern", Some(LString pattern) -> Some(Pattern pattern)
                             | "Min", Some(LInt size) -> Some(MinSize size)
                             | "Max", Some(LInt size) -> Some(MaxSize size)
+                            | "Length", Some(LInt length) -> Some(ExactLength length)
+                            | "LengthBetween", _ ->
+                                match attributeArgs source attribute with
+                                | [ LInt minimum; LInt maximum ], _ -> Some(LengthRange(minimum, maximum))
+                                | _ ->
+                                    report line "could not read the two integer arguments of [<LengthBetween>]"
+                                    None
+                            | "Present", _ -> Some Present
+                            | "Supplied", _ -> Some Supplied
                             | "AtLeast", Some literal -> Some(AtLeast literal)
                             | "GreaterThan", Some literal -> Some(GreaterThan literal)
                             | "AtMost", Some literal -> Some(AtMost literal)
                             | "LessThan", Some literal -> Some(LessThan literal)
                             | "MultipleOf", Some literal -> Some(MultipleOf literal)
                             | "Distinct", _ -> Some Distinct
-                            | ("Pattern" | "Min" | "Max" | "AtLeast" | "GreaterThan" | "AtMost" | "LessThan" | "MultipleOf"), _ ->
+                            | ("Pattern" | "Min" | "Max" | "Length" | "LengthBetween" | "AtLeast" | "GreaterThan" | "AtMost" | "LessThan" | "MultipleOf"), _ ->
                                 report line $"could not read the literal argument of [<{name}>]"
                                 None
                             | _ -> None)
@@ -548,12 +557,25 @@ module Records =
                         attrs
                         |> List.tryPick (fun (name, attribute) -> if name = "Default" then firstLiteral attribute else None)
 
+                    let format =
+                        attrs
+                        |> List.tryPick (fun (name, attribute) ->
+                            if name = "Format" then
+                                match attributeArgs source attribute with
+                                | [ LString value ], _ when not (String.IsNullOrWhiteSpace value) -> Some value
+                                | _ ->
+                                    report line "[<Format>] takes one non-blank string"
+                                    None
+                            else
+                                None)
+
                     Some
                         { FieldName = fieldName
                           WireName = Some(wireOverride |> Option.defaultValue (wireName naming fieldName))
                           Optional = optional
                           FieldType = lowered
                           Constraints = constraints
+                          Format = format
                           Default = defaultValue
                           Doc = docLines xmlDoc
                           Annotations = []

@@ -28,7 +28,7 @@ module SchemaValidation =
 /// codes identify constraints externally; they are not executable dispatch keys.
 /// </para>
 /// <para>
-/// Boundary presence declarations such as <c>optional</c> have no value check. Sequence metadata is adapted to the
+/// Supply declarations such as <c>omittable</c> have no value check. Length metadata is adapted to the
 /// concrete collection shape selected by Schema.
 /// </para>
 /// </remarks>
@@ -59,10 +59,11 @@ module ConstraintCheck =
     let tryText (constraint': ConstraintDescriptor) : Check<string> option =
         ensureConstraint constraint'
         match Constraint.metadata constraint' with
-        | ConstraintMetadata.Presence Presence.Required -> Some Check.String.present
+        | ConstraintMetadata.Supply _ -> None
         | ConstraintMetadata.ValueConstraint metadata ->
             match metadata with
             | Axial.Check.ConstraintMetadata.Present
+            | Axial.Check.ConstraintMetadata.Length _
             | Axial.Check.ConstraintMetadata.MinLength _
             | Axial.Check.ConstraintMetadata.MaxLength _
             | Axial.Check.ConstraintMetadata.LengthBetween _
@@ -74,9 +75,8 @@ module ConstraintCheck =
             | Axial.Check.ConstraintMetadata.NotEqualTo _
             | Axial.Check.ConstraintMetadata.Custom _ -> retained constraint'
             | _ -> None
-        | ConstraintMetadata.Presence Presence.Optional -> None
 
-    /// <summary>Combines the retained checks and required presence declaration that apply to text.</summary>
+    /// <summary>Combines the retained value checks that apply to text.</summary>
     /// <example>
     /// <code>let check = ConstraintCheck.text descriptors</code>
     /// </example>
@@ -101,7 +101,7 @@ module ConstraintCheck =
             | Axial.Check.ConstraintMetadata.AtMost _
             | Axial.Check.ConstraintMetadata.Custom _ -> retained constraint'
             | _ -> None
-        | ConstraintMetadata.Presence _ -> None
+        | ConstraintMetadata.Supply _ -> None
 
     /// <summary>Combines retained ordered-value checks for the supplied value type.</summary>
     /// <example>
@@ -197,14 +197,6 @@ module SchemaCheck =
     let rec private runDefinition (definition: ValueSchemaDefinition) value =
         let own = ConstraintCheck.complete<obj> definition.Constraints value
 
-        let presence =
-            match definition.Shape with
-            | PrimitiveValueDefinition PrimitiveValueKind.Text
-                when definition.Constraints
-                     |> List.exists (Constraint.metadata >> (=) (ConstraintMetadata.Presence Presence.Required)) ->
-                Check.String.present (unbox<string> value)
-            | _ -> Ok ()
-
         let underlying =
             match definition.Shape with
             | RefinedValueDefinition(raw, ops) ->
@@ -217,7 +209,7 @@ module SchemaCheck =
             | LazyValueDefinition deferred -> runDefinition (deferred.Force()) value
             | _ -> Ok ()
 
-        combine underlying (combine presence own)
+        combine underlying own
 
     /// <summary>Runs each complete constraint against the value at the refinement layer where it was attached.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
@@ -327,14 +319,7 @@ module internal ModelFieldCheck =
     let private checkPrimitive kind constraints value =
         match kind with
         | PrimitiveValueKind.Text ->
-            let presence =
-                if constraints |> List.exists (Constraint.metadata >> (=) (ConstraintMetadata.Presence Presence.Required)) then
-                    Check.String.present
-                else
-                    fun _ -> Ok ()
-
-            let check = Check.all [ presence; ConstraintCheck.complete<string> constraints ]
-            value |> unbox<string> |> runCheck constraints check |> Result.map box
+            value |> unbox<string> |> runCheck constraints (ConstraintCheck.complete<string> constraints) |> Result.map box
         | PrimitiveValueKind.Int -> runComplete<int> constraints value
         | PrimitiveValueKind.Decimal -> runComplete<decimal> constraints value
         | PrimitiveValueKind.Bool -> runComplete<bool> constraints value

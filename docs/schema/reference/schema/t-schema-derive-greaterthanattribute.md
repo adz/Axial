@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.GreaterThanAttribute"
 linkTitle: "GreaterThanAttribute"
-weight: 1508
+weight: 1513
 ---
 
 Bounds a numeric field&#39;s value exclusively from below (<code>&gt;</code> in the contract grammar).
@@ -13,4 +13,4 @@ Bounds a numeric field&#39;s value exclusively from below (<code>&gt;</code> in 
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L75-75)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L104-104)

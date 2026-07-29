@@ -31,7 +31,7 @@ let customerSchema =
         }
         field "contacts" _.Contacts {
             withSchema (Schema.listWith contactSchema)
-            constrain (minCount 1)
+            constrain (minLength 1)
         }
         construct (fun name address contacts ->
             { Name = name; Address = address; Contacts = contacts })

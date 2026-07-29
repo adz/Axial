@@ -16,10 +16,11 @@ weight: 1002
 
 | Case | Description |
 | --- | --- |
-| `Present` |  Text must contain at least one non-whitespace character. |
-| `MinLength` |  Text must contain at least the supplied number of characters. |
-| `MaxLength` |  Text must contain at most the supplied number of characters. |
-| `LengthBetween` |  Text length must lie inside the supplied inclusive bounds. |
+| `Present` |  A value must be inhabited according to its shape. |
+| `Length` |  Text or a concrete collection must contain exactly the supplied length. |
+| `MinLength` |  Text or a concrete collection must contain at least the supplied length. |
+| `MaxLength` |  Text or a concrete collection must contain at most the supplied length. |
+| `LengthBetween` |  Text or concrete collection length must lie inside the supplied inclusive bounds. |
 | `Email` |  Text must use the supported email format. |
 | `Trimmed` |  Text must have no leading or trailing whitespace. |
 | `Pattern` |  Text must match the supplied regular expression. |
@@ -31,10 +32,6 @@ weight: 1002
 | `LessThan` |  A value must be less than the supplied exclusive upper bound. |
 | `AtLeast` |  A value must be greater than or equal to the supplied lower bound. |
 | `AtMost` |  A value must be less than or equal to the supplied upper bound. |
-| `Count` |  A collection must contain exactly the supplied number of items. |
-| `MinCount` |  A collection must contain at least the supplied number of items. |
-| `MaxCount` |  A collection must contain at most the supplied number of items. |
-| `CountBetween` |  A collection count must lie inside the supplied inclusive bounds. |
 | `Distinct` |  A collection must contain no duplicate items. |
 | `Contains` |  A collection must contain the supplied item. |
 | `MultipleOf` |  A numeric value must be an exact multiple of the supplied divisor. |

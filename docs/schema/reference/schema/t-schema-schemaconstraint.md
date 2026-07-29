@@ -5,7 +5,7 @@ weight: 1115
 ---
 
  A typed Schema constraint annotation. Value constraints retain a complete Axial.Check.Constraint;
- presence declarations remain Schema boundary metadata.
+ supply declarations remain Schema boundary metadata.
 
 ## Signature
 
@@ -20,4 +20,4 @@ weight: 1115
 | `value` |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L44-44)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L43-43)

@@ -59,7 +59,7 @@ module ContactEmail =
 
     let refinement =
         Refinement.defineAll
-            [ Constraint.required
+            [ Constraint.present
               Constraint.email
               Constraint.maxLength 254 ]
             ContactEmail

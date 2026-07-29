@@ -1,7 +1,7 @@
 ---
 title: "Check.contains"
 linkTitle: "contains"
-weight: 2224
+weight: 2220
 ---
 
 Returns a sequence-shaped check requiring the supplied value to be present.
@@ -26,4 +26,4 @@ Returns a sequence-shaped check requiring the supplied value to be present.
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L608-608)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L606-606)

@@ -122,7 +122,7 @@ module Shipment =
             field "tags" (fun (value: Shipment) -> value.Tags) {
                 withSchema (Schema.listWith Schema.text)
                 constraints [
-                    minCount 1
+                    minLength 1
                     distinct
                 ]
             }

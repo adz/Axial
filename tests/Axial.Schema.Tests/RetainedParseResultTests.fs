@@ -12,7 +12,7 @@ module RetainedParseResultTests =
     let private schema () =
         schema<Signup> {
             field "email" _.Email {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
 
             construct (fun email -> { Email = email })
@@ -40,9 +40,9 @@ module RetainedParseResultTests =
         test <@ not parsed.IsValid @>
         test <@ parsed.TryValue = None @>
         raises<System.InvalidOperationException> <@ parsed.Value |> ignore @>
-        test <@ parsed.Errors = [ { Path = emailPath; Error = SchemaError.Required } ] @>
-        test <@ parsed.ErrorsFor emailPath = [ SchemaError.Required ] @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+        test <@ parsed.Errors = [ { Path = emailPath; Error = SchemaError.Blank } ] @>
+        test <@ parsed.ErrorsFor emailPath = [ SchemaError.Blank ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
         test <@ parsed.ErrorsFor "name" = [] @>
 
     [<Fact>]
@@ -51,4 +51,4 @@ module RetainedParseResultTests =
             Data.objectOfMap (Map.ofList [ "email", Data.Text "" ])
             |> Schema.parseRetainingInput (schema ())
 
-        test <@ RetainedParseResult.renderErrors parsed = [ "email: This value is required." ] @>
+        test <@ RetainedParseResult.renderErrors parsed = [ "email: This value must be present." ] @>

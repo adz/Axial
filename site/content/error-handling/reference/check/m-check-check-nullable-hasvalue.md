@@ -26,4 +26,4 @@ Requires a nullable value to contain a value.
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L482-482)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L452-452)

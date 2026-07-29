@@ -17,13 +17,13 @@ module SchemaErrorTests =
 
     [<Fact>]
     let ``parse errors lower into schema boundary errors`` () =
-        test <@ SchemaError.ofParseError (ParseError.MissingValue "int") = SchemaError.Required @>
+        test <@ SchemaError.ofParseError (ParseError.MissingValue "int") = SchemaError.Blank @>
         test <@ SchemaError.ofParseError (ParseError.InvalidFormat("int", "nope")) = SchemaError.InvalidFormat "int" @>
         test <@ SchemaError.ofParseError (ParseError.OutOfRange("int", "999")) = SchemaError.ParseOutOfRange "int" @>
 
     [<Fact>]
     let ``check failures lower into schema boundary errors`` () =
-        test <@ SchemaError.ofCheckFailure CheckFailure.Required = SchemaError.Required @>
+        test <@ SchemaError.ofCheckFailure CheckFailure.Blank = SchemaError.Blank @>
         test <@ SchemaError.ofCheckFailure (CheckFailure.InvalidFormat "email") = SchemaError.InvalidFormat "email" @>
 
         let lengthError =
@@ -33,7 +33,7 @@ module SchemaErrorTests =
 
     [<Fact>]
     let ``schema boundary errors render default English messages`` () =
-        test <@ SchemaError.render SchemaError.Required = "This value is required." @>
+        test <@ SchemaError.render SchemaError.Blank = "This value must be present." @>
         test <@ SchemaError.render (SchemaError.InvalidFormat "email") = "Expected email format." @>
         test <@ SchemaError.render (SchemaError.Custom("signup.blocked", Some "Signup is closed.")) = "Signup is closed." @>
 
@@ -42,7 +42,7 @@ module SchemaErrorTests =
         let schema =
             schema<Signup> {
                 field "email" _.Email {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "age" _.Age
                 construct (fun email age -> { Email = email; Age = age })
@@ -57,14 +57,14 @@ module SchemaErrorTests =
         let parsed = Schema.parseRetainingInput schema raw
 
         test
-            <@ RetainedParseResult.renderErrors parsed = [ "age: Expected int format."; "email: This value is required." ] @>
+            <@ RetainedParseResult.renderErrors parsed = [ "age: Expected int format."; "email: This value must be present." ] @>
 
     [<Fact>]
     let ``schema issues can be mapped into application errors after parsing`` () =
         let schema =
             schema<Signup> {
                 field "email" _.Email {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "age" _.Age
                 construct (fun email age -> { Email = email; Age = age })
@@ -79,4 +79,4 @@ module SchemaErrorTests =
             | Ok _ -> []
             | Error errors -> errors |> SchemaErrors.toList |> List.map (fun issue -> issue.Error)
 
-        test <@ applicationErrors = [ SchemaError.Required ] @>
+        test <@ applicationErrors = [ SchemaError.Blank ] @>

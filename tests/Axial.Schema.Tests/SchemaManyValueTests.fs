@@ -23,10 +23,10 @@ module SchemaManyValueTests =
     let private buildContactMethodSchema () =
         schema<ContactMethod> {
             field "kind" _.Kind {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "value" _.Value {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             construct (fun kind value -> { Kind = kind; Value = value })
         }
@@ -38,7 +38,7 @@ module SchemaManyValueTests =
         let schema =
             schema<Customer> {
                 field "name" _.Name {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "contacts" _.Contacts {
                     withSchema (Schema.listWith contactMethodSchema)
@@ -59,18 +59,18 @@ module SchemaManyValueTests =
         test <@ contactsField.Getter customer = box customer.Contacts @>
 
     [<Fact>]
-    let ``many field carries the constraints attached at the field, such as minCount`` () =
+    let ``many field carries the constraints attached at the field, such as minLength`` () =
         let contactMethodSchema = buildContactMethodSchema ()
 
         let schema =
             schema<Customer> {
                 field "name" _.Name {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "contacts" _.Contacts {
                     withSchema (
                         Schema.listWith contactMethodSchema
-                        |> Schema.constrainAll [ Constraint.minCount 1 ]
+                        |> Schema.constrainAll [ Constraint.minLength 1 ]
                     )
                 }
                 construct (fun name contacts -> { Name = name; Contacts = contacts })
@@ -82,7 +82,7 @@ module SchemaManyValueTests =
             model.Fields
             |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "contacts")
 
-        test <@ contactsField.ValueSchema.Constraints |> List.map Constraint.code = [ "minCount" ] @>
+        test <@ contactsField.ValueSchema.Constraints |> List.map Constraint.code = [ "minLength" ] @>
 
     [<Fact>]
     let ``a many value schema built from Schema.listWith is not a refined or primitive value schema`` () =
@@ -93,7 +93,7 @@ module SchemaManyValueTests =
 
     [<Fact>]
     let ``manyOf builds a collection value schema from primitive and refined item schemas`` () =
-        let names = Schema.listWith (Schema.text |> Schema.constrain Constraint.required)
+        let names = Schema.listWith (Schema.text |> Schema.constrain Constraint.present)
 
         match names.ValueDefinition.Shape with
         | ManyValueDefinition collection ->
@@ -101,7 +101,7 @@ module SchemaManyValueTests =
             | PrimitiveValueDefinition PrimitiveValueKind.Text -> ()
             | _ -> failwith "Expected the manyOf item to keep the supplied primitive value schema."
 
-            test <@ collection.Item.Constraints |> List.map Constraint.code = [ "required" ] @>
+            test <@ collection.Item.Constraints |> List.map Constraint.code = [ "present" ] @>
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
         | NestedValueDefinition _
@@ -115,7 +115,7 @@ module SchemaManyValueTests =
         let schema =
             schema<Customer> {
                 field "name" _.Name {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "contacts" _.Contacts {
                     withSchema (Schema.listWith contactMethodSchema)

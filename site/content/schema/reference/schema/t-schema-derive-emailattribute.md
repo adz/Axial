@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.EmailAttribute"
 linkTitle: "EmailAttribute"
-weight: 1513
+weight: 1518
 type: docs
 ---
 
@@ -14,4 +14,4 @@ Constrains a text field to the email format.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L112-112)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L141-141)

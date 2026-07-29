@@ -26,4 +26,4 @@ type: docs
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L192-192)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L162-162)

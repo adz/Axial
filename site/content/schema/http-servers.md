@@ -45,8 +45,8 @@ its path as an RFC 6901 JSON pointer, so clients can attach errors to fields mec
   "title": "The request input could not be parsed.",
   "status": 400,
   "errors": [
-    { "pointer": "/address/city", "message": "This value is required." },
-    { "pointer": "/tags", "message": "Count must be at most 5; got 6." }
+    { "pointer": "/address/city", "message": "This value must be present." },
+    { "pointer": "/tags", "message": "Length must be at most 5; got 6." }
   ]
 }
 ```

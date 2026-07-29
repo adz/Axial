@@ -14,10 +14,10 @@ type Signup =
 let addressSchema () =
     schema<Address> {
         field "street" _.Street {
-            withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 120 ])
+            withSchema (Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.maxLength 120 ])
         }
         field "city" _.City {
-            withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
+            withSchema (Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.maxLength 80 ])
         }
         construct (fun street city -> { Street = street; City = city })
     }
@@ -25,16 +25,16 @@ let addressSchema () =
 let signupSchema () =
     schema<Signup> {
         field "name" _.Name {
-            withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 80 ])
+            withSchema (Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.maxLength 80 ])
         }
         field "age" _.Age {
             withSchema (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
         }
         field "address" _.Address {
-            withSchema (addressSchema () |> Schema.constrainAll [ Constraint.required ])
+            withSchema (addressSchema () |> Schema.constrainAll [ Constraint.supplied ])
         }
         field "tags" _.Tags {
-            withSchema (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxCount 5 ])
+            withSchema (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxLength 5 ])
         }
         construct (fun name age address tags ->
             { Name = name

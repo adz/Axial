@@ -280,7 +280,7 @@ module internal ValueSchema =
     /// <remarks>
     /// <para>
     /// <c>manyOf</c> is the general collection constructor. Use it when each item is a primitive, refined/domain value,
-    /// nested model value, or another collection value schema. Collection-level constraints such as <c>minCount</c>
+    /// nested model value, or another collection value schema. Collection-level constraints such as <c>minLength</c>
     /// attach to the returned schema; item-level constraints stay on <paramref name="itemSchema" /> and interpreters
     /// attach their diagnostics to item index paths.
     /// </para>
@@ -548,16 +548,14 @@ module internal ValueSchema =
     /// </para>
     /// <para>
     /// Optionality is a single boundary layer, not a nestable wrapper: <c>optionOf (optionOf ...)</c> is rejected
-    /// because absent input could not distinguish <c>None</c> from <c>Some None</c>. Combining <c>optionOf</c> with
-    /// the <c>required</c> constraint is contradictory and is rejected here when the payload carries it, by
-    /// <c>Schema.withConstraint</c> when attached to the optional schema itself, and when a shape is closed when
-    /// attached at the field level.
+    /// because absent input could not distinguish <c>None</c> from <c>Some None</c>. Supply and content constraints
+    /// remain independent: <c>supplied</c> can require the key while permitting <c>None</c>, and <c>present</c> can
+    /// require <c>Some</c>.
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="payload" /> is null.</exception>
     /// <exception cref="T:System.ArgumentException">
-    /// Thrown when <paramref name="payload" /> is itself an optional value schema or carries the <c>required</c>
-    /// constraint on any layer.
+    /// Thrown when <paramref name="payload" /> is itself an optional value schema.
     /// </exception>
     let optionOf (payload: Schema<'value>) : Schema<'value option> =
         if isNull (box payload) then
@@ -575,27 +573,6 @@ module internal ValueSchema =
         | EnumValueDefinition _
         | MapValueDefinition _ -> ()
         | LazyValueDefinition _ -> ()
-
-        let rec carriesRequired (definition: ValueSchemaDefinition) =
-            let ownRequired =
-                definition.Constraints
-                |> List.exists (fun constraint' -> constraint'.Code = "required")
-
-            ownRequired
-            || match definition.Shape with
-               | RefinedValueDefinition(raw, _) -> carriesRequired raw
-               | PrimitiveValueDefinition _
-               | NestedValueDefinition _
-               | ManyValueDefinition _
-               | UnionValueDefinition _
-               | UnionInlineValueDefinition _
-               | EnumValueDefinition _
-               | OptionValueDefinition _
-               | MapValueDefinition _ -> false
-               | LazyValueDefinition deferred -> carriesRequired (deferred.Force())
-
-        if carriesRequired payload.ValueDefinition then
-            invalidArg (nameof payload) "Optional value schemas cannot carry the required constraint."
 
         Schema(ValueDefinition
             { Shape =
@@ -884,9 +861,9 @@ module internal ValueSchema =
     /// <summary>Returns a value schema carrying the supplied default-value metadata.</summary>
     /// <remarks>
     /// <para>
-    /// The default is annotation metadata for interpreters: JSON Schema generation lowers it to the <c>default</c>
-    /// keyword at the point the value schema is used. It attaches no executable check and does not affect parsing —
-    /// missing input is still a diagnostic unless the value schema is also wrapped with <c>Schema.optionOf</c>.
+    /// The default is used when boundary input omits a field and is also exposed as annotation metadata to
+    /// interpreters. JSON Schema generation lowers it to the <c>default</c> keyword and leaves that field out of the
+    /// containing object's <c>required</c> list. Explicitly supplied input is still parsed and checked normally.
     /// </para>
     /// <para>
     /// A value schema carries at most one default. Applying <c>withDefault</c> again replaces the earlier
@@ -975,16 +952,7 @@ module internal ValueSchema =
 
         gather schema.ValueDefinition
 
-    let private ensureNotRequiredOnOptional parameterName (constraint': ConstraintDescriptor) (schema: Schema<'value>) =
-        match schema.ValueDefinition.Shape with
-        | OptionValueDefinition _ when constraint'.Code = "required" ->
-            invalidArg parameterName "Optional value schemas cannot carry the required constraint."
-        | _ -> ()
-
     /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
-    /// <exception cref="T:System.ArgumentException">
-    /// Thrown when the <c>required</c> constraint is attached to an optional value schema.
-    /// </exception>
     let withConstraint (constraint': ConstraintDescriptor) (schema: Schema<'value>) : Schema<'value> =
         if isNull constraint' then
             nullArg (nameof constraint')
@@ -992,17 +960,12 @@ module internal ValueSchema =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        ensureNotRequiredOnOptional (nameof constraint') constraint' schema
-
         Schema(ValueDefinition
             { schema.ValueDefinition with
                 Constraints = schema.ValueDefinition.Constraints @ [ constraint' ] }
         )
 
     /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
-    /// <exception cref="T:System.ArgumentException">
-    /// Thrown when the <c>required</c> constraint is attached to an optional value schema.
-    /// </exception>
     let withConstraints (constraints: ConstraintDescriptor list) (schema: Schema<'value>) : Schema<'value> =
         if isNull (box constraints) then
             nullArg (nameof constraints)
@@ -1014,9 +977,6 @@ module internal ValueSchema =
 
         if isNull (box schema) then
             nullArg (nameof schema)
-
-        constraints
-        |> List.iter (fun constraint' -> ensureNotRequiredOnOptional (nameof constraints) constraint' schema)
 
         Schema(ValueDefinition
             { schema.ValueDefinition with

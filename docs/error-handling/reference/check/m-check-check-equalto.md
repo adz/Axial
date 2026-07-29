@@ -1,7 +1,7 @@
 ---
 title: "Check.equalTo"
 linkTitle: "equalTo"
-weight: 2229
+weight: 2225
 ---
 
 Returns a value check requiring equality with the supplied expected value.

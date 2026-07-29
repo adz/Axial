@@ -34,13 +34,12 @@ module SchemaGen =
     let private tryValueMetadata constraint' =
         match Constraint.metadata constraint' with
         | Axial.Schema.ConstraintMetadata.ValueConstraint metadata -> Some metadata
-        | Axial.Schema.ConstraintMetadata.Presence _ -> None
+        | Axial.Schema.ConstraintMetadata.Supply _ -> None
 
     let private valueMetadata constraints = constraints |> List.choose tryValueMetadata
 
-    let private isRequired constraint' =
+    let private isPresent constraint' =
         match Constraint.metadata constraint' with
-        | Axial.Schema.ConstraintMetadata.Presence Presence.Required -> true
         | Axial.Schema.ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present -> true
         | _ -> false
 
@@ -51,12 +50,12 @@ module SchemaGen =
         | None ->
             let oneOf = metadata |> List.tryPick (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.OneOf values -> Some values | _ -> None)
             let email = metadata |> List.exists (fun (_, item) -> item = Axial.Check.ConstraintMetadata.Email)
-            let required = constraints |> List.exists isRequired
+            let present = constraints |> List.exists isPresent
             let minimum =
                 metadata
-                |> List.choose (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.MinLength n | Axial.Check.ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None)
-                |> maximumOr (if required then 1 else 0)
-            let maximum = metadata |> List.choose (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.MaxLength n | Axial.Check.ConstraintMetadata.LengthBetween(_, n) -> Some n | _ -> None) |> minimumOr (max minimum 24)
+                |> List.choose (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.Length n | Axial.Check.ConstraintMetadata.MinLength n | Axial.Check.ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None)
+                |> maximumOr (if present then 1 else 0)
+            let maximum = metadata |> List.choose (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.Length n | Axial.Check.ConstraintMetadata.MaxLength n | Axial.Check.ConstraintMetadata.LengthBetween(_, n) -> Some n | _ -> None) |> minimumOr (max minimum 24)
             match oneOf with
             | Some values when not (List.isEmpty values) -> Ok(choose values)
             | _ when email -> Ok(Gen.elements [ "ada@example.com"; "grace@example.org"; "test.user@example.net" ])
@@ -99,8 +98,8 @@ module SchemaGen =
 
     let private countBounds constraints size =
         let metadata = valueMetadata constraints
-        let low = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Count n | Axial.Check.ConstraintMetadata.MinCount n | Axial.Check.ConstraintMetadata.CountBetween(n, _) -> Some n | _ -> None) |> maximumOr 0
-        let high = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Count n | Axial.Check.ConstraintMetadata.MaxCount n | Axial.Check.ConstraintMetadata.CountBetween(_, n) -> Some n | _ -> None) |> minimumOr (min 4 (max low size))
+        let low = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Length n | Axial.Check.ConstraintMetadata.MinLength n | Axial.Check.ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None) |> maximumOr 0
+        let high = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Length n | Axial.Check.ConstraintMetadata.MaxLength n | Axial.Check.ConstraintMetadata.LengthBetween(_, n) -> Some n | _ -> None) |> minimumOr (min 4 (max low size))
         low, max low high
 
     let private buildDefinitions roots =

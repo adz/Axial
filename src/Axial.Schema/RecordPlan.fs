@@ -72,16 +72,6 @@ module internal ModelSchemaDefinition =
 
         ensureContiguousOrders fields
 
-        fields
-        |> List.iter (fun field ->
-            match field.ValueSchema.Shape with
-            | OptionValueDefinition _ when
-                field.Constraints
-                |> List.exists (fun constraint' -> constraint'.Code = "required")
-                ->
-                invalidArg (nameof fields) "Optional fields cannot carry the required constraint."
-            | _ -> ())
-
         { Constructor = constructor
           Fields = fields |> List.sortBy (fun field -> field.Order.Value)
           Description = None }
