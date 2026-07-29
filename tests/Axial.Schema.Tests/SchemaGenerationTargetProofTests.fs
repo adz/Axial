@@ -17,11 +17,11 @@ module SchemaGenerationTargetProofTests =
           Age: int }
 
     // The hand-written equivalent of generated output for:
-    //   [<Schema>] type Signup = { [<Required; MaxLength 254; Email>] Email: string; [<AtLeast 13>] Age: int }
+    //   [<Schema>] type Signup = { [<Blank; MaxLength 254; Email>] Email: string; [<AtLeast 13>] Age: int }
     let private generatedSignupSchema () : Schema<Signup> =
         schema<Signup> {
             field "email" _.Email {
-                withSchema (Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254; Constraint.email ])
+                withSchema (Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.maxLength 254; Constraint.email ])
             }
             field "age" _.Age {
                 withSchema (Schema.int |> Schema.constrainAll [ Constraint.atLeast 13 ])
@@ -40,7 +40,7 @@ module SchemaGenerationTargetProofTests =
         test
             <@
                 email.Schema.Constraints |> List.map _.Metadata =
-                    [ (ConstraintMetadata.Presence Presence.Required)
+                    [ (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present)
                       ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254)
                       (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) ]
             @>

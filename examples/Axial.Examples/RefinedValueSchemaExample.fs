@@ -10,7 +10,7 @@ type Email =
 
     static member Schema(_: Email) : Schema<Email> =
         Schema.text
-        |> Schema.constrainAll [ Constraint.required; Constraint.email ]
+        |> Schema.constrainAll [ Constraint.present; Constraint.email ]
         |> Schema.convert Email (fun (Email value) -> value)
         |> Schema.withFormat SchemaFormat.email
 

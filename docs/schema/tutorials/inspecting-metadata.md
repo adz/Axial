@@ -52,8 +52,9 @@ Schema authoring uses `SchemaConstraint<'value>`, which prevents attaching a str
 typed fields into one model description, inspectors see the non-generic `Axial.Schema.ConstraintDescriptor`. The
 `Constraint` module creates and inspects Schema constraints; it is not another constraint value type.
 
-`required` and `optional` describe boundary presence before a typed value exists. Other constructors retain complete
-Check constraints. All descriptors expose the same stable code and metadata inspection surface.
+`supplied` and `omittable` describe boundary supply before a typed value exists. `present` describes inhabited typed
+content. Other constructors retain complete Check constraints. All descriptors expose the same stable code and
+metadata inspection surface.
 
 ## Lower Constraints To Another Format
 
@@ -67,7 +68,7 @@ let jsonKeyword (constraint': ConstraintDescriptor) =
         Some $"\"maxLength\":{maximum}"
     | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) ->
         Some $"\"pattern\":\"{pattern}\""
-    | ConstraintMetadata.Presence Presence.Required ->
+    | ConstraintMetadata.Supply Supply.Supplied ->
         None // handled at the object level
     | _ -> None
 ```

@@ -39,11 +39,11 @@ module SchemaGenTests =
             field "aliases" _.Aliases {
                 withSchema (
                     Schema.listWith (Schema.text |> Schema.constrain (Constraint.minLength 2))
-                    |> Schema.constrainAll [ Constraint.countBetween 1 3 ]
+                    |> Schema.constrainAll [ Constraint.lengthBetween 1 3 ]
                 )
             }
             field "labels" _.Labels {
-                withSchema ((Schema.mapWith Schema.text) |> Schema.constrainAll [ Constraint.maxCount 2 ])
+                withSchema ((Schema.mapWith Schema.text) |> Schema.constrainAll [ Constraint.maxLength 2 ])
             }
             field "kind" _.Kind {
                 withSchema (Schema.enum kinds)

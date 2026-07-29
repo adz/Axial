@@ -20,7 +20,7 @@ module UnionInlineSchemaParseTests =
     let private cardSchema () =
         schema<CardDetails> {
             field "number" _.Number {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             construct (fun number -> { Number = number })
         }
@@ -83,7 +83,7 @@ module UnionInlineSchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "payment"; PathSegment.Name "number" ]
-                                   Error = SchemaError.Required } ] @>
+                                   Error = SchemaError.Omitted } ] @>
 
     [<Fact>]
     let ``validate checks existing union-inline values through case extractors`` () =

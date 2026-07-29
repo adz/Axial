@@ -98,7 +98,7 @@ module UnionSchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "payment"; PathSegment.Name "value"; PathSegment.Name "number" ]
-                                   Error = SchemaError.Required } ] @>
+                                   Error = SchemaError.Blank } ] @>
 
     [<Fact>]
     let ``parse supports refined scalar case payloads`` () =

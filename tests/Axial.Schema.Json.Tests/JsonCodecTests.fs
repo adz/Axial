@@ -431,6 +431,22 @@ module JsonCodecTests =
                   Ratings = ratings })
         }
 
+    type private DefaultedProfile = { Name: string; Age: int }
+
+    [<Fact>]
+    let ``decodes an omitted non-option field from its schema default`` () =
+        let schema =
+            schema<DefaultedProfile> {
+                field "name" _.Name
+                field "age" (fun (value: DefaultedProfile) -> value.Age) {
+                    withSchema (Schema.int |> Schema.withDefault 18)
+                }
+                construct (fun name age -> { Name = name; Age = age })
+            }
+
+        let decoded = Json.deserialize (Json.compile schema) "{\"name\":\"Ada\"}"
+        test <@ decoded = { Name = "Ada"; Age = 18 } @>
+
     [<Fact>]
     let ``encodes None optional fields as omitted even in first position`` () =
         let codec = Json.compile (optionalProfileSchema ())

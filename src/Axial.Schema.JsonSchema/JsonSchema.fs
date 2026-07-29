@@ -90,17 +90,38 @@ module JsonSchema =
         | SchemaShape.Refined underlying -> underlyingShape underlying
         | shape -> shape
 
-    let private constraintKeywords (constraints: ConstraintMetadata list) =
+    let private constraintKeywords shape (constraints: ConstraintMetadata list) =
+        let minimumKeyword minimum =
+            match shape with
+            | SchemaShape.Primitive PrimitiveValueKind.Text -> [ sprintf "\"minLength\":%d" minimum ]
+            | SchemaShape.Many _ -> [ sprintf "\"minItems\":%d" minimum ]
+            | SchemaShape.MapOf _ -> [ sprintf "\"minProperties\":%d" minimum ]
+            | _ -> []
+
+        let maximumKeyword maximum =
+            match shape with
+            | SchemaShape.Primitive PrimitiveValueKind.Text -> [ sprintf "\"maxLength\":%d" maximum ]
+            | SchemaShape.Many _ -> [ sprintf "\"maxItems\":%d" maximum ]
+            | SchemaShape.MapOf _ -> [ sprintf "\"maxProperties\":%d" maximum ]
+            | _ -> []
+
         constraints
         |> List.collect (function
-            | ConstraintMetadata.Presence _ -> []
+            | ConstraintMetadata.Supply _ -> []
             | ConstraintMetadata.ValueConstraint metadata ->
                 match metadata with
-                | Axial.Check.ConstraintMetadata.Present -> []
-                | Axial.Check.ConstraintMetadata.MinLength minimum -> [ sprintf "\"minLength\":%d" minimum ]
-                | Axial.Check.ConstraintMetadata.MaxLength maximum -> [ sprintf "\"maxLength\":%d" maximum ]
+                | Axial.Check.ConstraintMetadata.Present ->
+                    match shape with
+                    | SchemaShape.Primitive PrimitiveValueKind.Text -> [ "\"minLength\":1"; "\"pattern\":\"\\\\S\"" ]
+                    | SchemaShape.Many _ -> [ "\"minItems\":1" ]
+                    | SchemaShape.MapOf _ -> [ "\"minProperties\":1" ]
+                    | _ -> []
+                | Axial.Check.ConstraintMetadata.Length expected ->
+                    minimumKeyword expected @ maximumKeyword expected
+                | Axial.Check.ConstraintMetadata.MinLength minimum -> minimumKeyword minimum
+                | Axial.Check.ConstraintMetadata.MaxLength maximum -> maximumKeyword maximum
                 | Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum) ->
-                    [ sprintf "\"minLength\":%d" minimum; sprintf "\"maxLength\":%d" maximum ]
+                    minimumKeyword minimum @ maximumKeyword maximum
                 | Axial.Check.ConstraintMetadata.Email -> [ "\"format\":\"email\"" ]
                 | Axial.Check.ConstraintMetadata.Trimmed -> []
                 | Axial.Check.ConstraintMetadata.Pattern pattern -> [ sprintf "\"pattern\":%s" (literal pattern) ]
@@ -114,12 +135,6 @@ module JsonSchema =
                 | Axial.Check.ConstraintMetadata.LessThan maximum -> [ sprintf "\"exclusiveMaximum\":%s" (literal maximum) ]
                 | Axial.Check.ConstraintMetadata.AtLeast minimum -> [ sprintf "\"minimum\":%s" (literal minimum) ]
                 | Axial.Check.ConstraintMetadata.AtMost maximum -> [ sprintf "\"maximum\":%s" (literal maximum) ]
-                | Axial.Check.ConstraintMetadata.Count expected ->
-                    [ sprintf "\"minItems\":%d" expected; sprintf "\"maxItems\":%d" expected ]
-                | Axial.Check.ConstraintMetadata.MinCount minimum -> [ sprintf "\"minItems\":%d" minimum ]
-                | Axial.Check.ConstraintMetadata.MaxCount maximum -> [ sprintf "\"maxItems\":%d" maximum ]
-                | Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum) ->
-                    [ sprintf "\"minItems\":%d" minimum; sprintf "\"maxItems\":%d" maximum ]
                 | Axial.Check.ConstraintMetadata.Distinct -> [ "\"uniqueItems\":true" ]
                 | Axial.Check.ConstraintMetadata.Contains item ->
                     [ sprintf "\"contains\":{\"const\":%s}" (literal item) ]
@@ -183,12 +198,12 @@ module JsonSchema =
         let shapeKeywords =
             match underlyingShape description with
             | SchemaShape.Primitive kind ->
-                primitiveKeywords kind @ formatKeyword @ constraintKeywords constraints |> List.distinct
+                primitiveKeywords kind @ formatKeyword @ constraintKeywords (SchemaShape.Primitive kind) constraints |> List.distinct
             | SchemaShape.Nested model -> modelKeywords model
             | SchemaShape.Many item ->
                 [ "\"type\":\"array\""
                   sprintf "\"items\":{%s}" (valueKeywords [] item |> String.concat ",") ]
-                @ constraintKeywords constraints
+                @ constraintKeywords (SchemaShape.Many item) constraints
             | SchemaShape.Union union ->
                 let cases =
                     union.Cases
@@ -215,20 +230,20 @@ module JsonSchema =
                 [ sprintf "\"oneOf\":[%s]" cases ]
             | SchemaShape.Enum enum ->
                 let tags = enum.Cases |> List.map (fun case -> literal case.Tag) |> String.concat ","
-                [ "\"type\":\"string\""; sprintf "\"enum\":[%s]" tags ] @ constraintKeywords constraints
+                [ "\"type\":\"string\""; sprintf "\"enum\":[%s]" tags ] @ constraintKeywords (SchemaShape.Enum enum) constraints
             | SchemaShape.Optional payload -> valueKeywords constraints payload
             | SchemaShape.MapOf item ->
                 [ "\"type\":\"object\""
                   sprintf "\"additionalProperties\":{%s}" (valueKeywords [] item |> String.concat ",") ]
-                @ constraintKeywords constraints
+                @ constraintKeywords (SchemaShape.MapOf item) constraints
             | SchemaShape.Deferred(reference, _) -> [ sprintf "\"$ref\":\"#/$defs/recursive%d\"" reference ]
             | SchemaShape.Recursive reference -> [ sprintf "\"$ref\":\"#/$defs/recursive%d\"" reference ]
             | SchemaShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
         descriptionKeyword @ defaultKeyword @ shapeKeywords
 
-    /// An optional field stays out of the object's `required` list; every other field is required, matching the
-    /// parser, which requires every non-optional field regardless of the `required` constraint.
+    /// Optional and default-supplied fields stay out of the object's `required` list. Other fields are required unless
+    /// their supply constraints explicitly make them omittable.
     and private isOptionalDescription (description: SchemaDescription) =
         match description.Shape with
         | SchemaShape.Optional _ -> true
@@ -242,6 +257,19 @@ module JsonSchema =
         | SchemaShape.Enum _
         | SchemaShape.MapOf _ -> false
         | SchemaShape.Recursive _ -> false
+
+    and private fieldIsRequired (field: FieldDescription) =
+        let constraints = (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Schema
+        let explicitlySupplied =
+            constraints
+            |> List.exists (function
+                | ConstraintMetadata.Supply Supply.Supplied
+                | ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present -> true
+                | _ -> false)
+
+        match boundaryDefault field.Schema with
+        | Some _ -> false
+        | None -> not (isOptionalDescription field.Schema) || explicitlySupplied
 
     and private inlineCaseKeywords (discriminatorField: string) (tag: string) (model: ModelDescription) =
         let discriminatorProperty = sprintf "\"%s\":{\"const\":%s}" (escape discriminatorField) (literal tag)
@@ -257,7 +285,7 @@ module JsonSchema =
         let required =
             escape discriminatorField
             :: (model.Fields
-                |> List.filter (fun field -> not (isOptionalDescription field.Schema))
+                |> List.filter fieldIsRequired
                 |> List.map (fun field -> escape field.Name))
             |> List.map (sprintf "\"%s\"")
             |> String.concat ","
@@ -275,7 +303,7 @@ module JsonSchema =
 
         let required =
             model.Fields
-            |> List.filter (fun field -> not (isOptionalDescription field.Schema))
+            |> List.filter fieldIsRequired
             |> List.map (fun field -> sprintf "\"%s\"" (escape field.Name))
 
         (match model.Description with

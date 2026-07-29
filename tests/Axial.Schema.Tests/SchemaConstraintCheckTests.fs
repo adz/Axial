@@ -16,7 +16,7 @@ module ConstraintCheckTests =
     let ``text schema constraints lower to executable Check programs`` () =
         let check =
             ConstraintCheck.text
-                [ Constraint.required
+                [ Constraint.present
                   Constraint.minLength 2
                   Constraint.maxLength 20
                   Constraint.email
@@ -28,14 +28,14 @@ module ConstraintCheckTests =
         test <@
             check "" =
                 Error
-                    [ Required
+                    [ Blank
                       InvalidLength(MinimumLength 2, Some 0)
                       InvalidFormat "email"
                       InvalidFormat "^[^@]+@example.com$"
                       NotOneOf "ada@example.com|grace@example.com" ]
         @>
         test <@ check "root@example.com" |> Result.mapError (List.contains (Custom "notEqualTo:root@example.com")) = Error true @>
-        test <@ ConstraintCheck.tryText Constraint.optional |> Option.isNone @>
+        test <@ ConstraintCheck.tryText Constraint.omittable |> Option.isNone @>
 
     [<Fact>]
     let ``ordered schema constraints lower to executable Check programs`` () =
@@ -56,7 +56,7 @@ module ConstraintCheckTests =
                       OutOfRange(CheckRangeExpectation.AtLeast "13", Some "10") ]
         @>
         test <@ check 15 |> Result.mapError (List.contains (Custom "notEqualTo:15")) = Error true @>
-        test <@ ConstraintCheck.tryOrdered<int> (Constraint.minLength 3) |> Option.isNone @>
+        test <@ ConstraintCheck.tryOrdered<int> Constraint.supplied |> Option.isNone @>
 
     [<Fact>]
     let ``zero-relative schema constraints lower to executable Check programs`` () =
@@ -85,15 +85,15 @@ module ConstraintCheckTests =
     let ``sequence schema constraints lower to executable Check programs`` () =
         let check =
             ConstraintCheck.complete<int list>
-                [ Constraint.minCount<int list> 2
-                  Constraint.maxCount<int list> 3
+                [ Constraint.minLength<int list> 2
+                  Constraint.maxLength<int list> 3
                   Constraint.distinct<int> ]
 
         test <@ check [ 1; 2 ] = Ok () @>
         test <@
             check [ 1; 1; 2; 3 ] =
                 Error
-                    [ CheckFailure.InvalidCount(CheckCountExpectation.MaximumCount 3, Some 4)
+                    [ CheckFailure.InvalidLength(CheckLengthExpectation.MaximumLength 3, Some 4)
                       Duplicate ]
         @>
 
@@ -153,7 +153,7 @@ module ConstraintCheckTests =
 
         test <@ (Schema.parseRetainingInput probeSchema invalidInput).Result |> Result.isError @>
 
-        test <@ ConstraintCheck.text [ Constraint.optional ] "anything" = Ok () @>
+        test <@ ConstraintCheck.text [ Constraint.omittable ] "anything" = Ok () @>
         raises<ArgumentNullException> <@ ConstraintCheck.tryText null |> ignore @>
         raises<ArgumentNullException> <@ ConstraintCheck.text null |> ignore @>
         raises<ArgumentNullException> <@ ConstraintCheck.text [ null ] |> ignore @>
@@ -161,7 +161,7 @@ module ConstraintCheckTests =
     [<Fact>]
     let ``every executable metadata case has an explicit Check lowering`` () =
         let textConstraints =
-            [ Constraint.required
+            [ Constraint.present
               Constraint.minLength 1
               Constraint.maxLength 10
               Constraint.lengthBetween 1 10
@@ -180,10 +180,10 @@ module ConstraintCheckTests =
               Constraint.notEqualTo 5 ]
 
         let sequenceConstraints =
-            [ Constraint.count<int list> 1
-              Constraint.minCount<int list> 1
-              Constraint.maxCount<int list> 2
-              Constraint.countBetween<int list> 1 2
+            [ Constraint.length<int list> 1
+              Constraint.minLength<int list> 1
+              Constraint.maxLength<int list> 2
+              Constraint.lengthBetween<int list> 1 2
               Constraint.distinct<int>
               Constraint.contains 1 ]
 
@@ -198,7 +198,7 @@ module ConstraintCheckTests =
         let erasedSequenceConstraints = sequenceConstraints |> List.map (fun constraint' -> constraint' :> ConstraintDescriptor)
         test <@ ConstraintCheck.complete<int list> erasedSequenceConstraints [ 1 ] = Ok () @>
 
-        test <@ ConstraintCheck.tryText Constraint.optional |> Option.isNone @>
+        test <@ ConstraintCheck.tryText Constraint.omittable |> Option.isNone @>
 
         let customText =
             Axial.Check.Constraint.define "custom" [] (fun (_: string) -> Ok ())

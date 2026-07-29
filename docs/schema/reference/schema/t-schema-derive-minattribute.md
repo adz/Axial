@@ -4,7 +4,7 @@ linkTitle: "MinAttribute"
 weight: 1505
 ---
 
-Bounds the natural size of the field's type from below: text length, list count, or map count.
+Bounds the natural length of a text, list, or map field from below.
 
 ## Signature
 

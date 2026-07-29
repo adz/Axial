@@ -77,11 +77,11 @@ module Emitter =
         | LessThan literal -> $"Constraint.lessThan ({renderNumericLiteral (numericKind fieldType) literal})"
         | MultipleOf literal -> $"Constraint.multipleOf ({renderNumericLiteral (numericKind fieldType) literal})"
         | MinSize _
-        | MaxSize _ ->
-            match fieldType with
-            | ListOf _
-            | MapOf _ -> sized "minCount" "maxCount" ""
-            | _ -> sized "minLength" "maxLength" ""
+        | MaxSize _ -> sized "minLength" "maxLength" ""
+        | ExactLength length -> $"Constraint.length ({length})"
+        | LengthRange(minimum, maximum) -> $"Constraint.lengthBetween ({minimum}) ({maximum})"
+        | Present -> "Constraint.present"
+        | Supplied -> "Constraint.supplied"
         | Pattern value -> $"Constraint.pattern (\"{escapeString value}\")"
         | Distinct -> "Constraint.distinct"
         | CheckRef name -> failwith $"check reference '{name}' should have been rejected by the resolver"
@@ -103,10 +103,11 @@ module Emitter =
         | LessThan literal -> $"lessThan {renderNumericLiteral (numericKind fieldType) literal |> argument}"
         | MultipleOf literal -> $"multipleOf {renderNumericLiteral (numericKind fieldType) literal |> argument}"
         | MinSize _
-        | MaxSize _ ->
-            match fieldType with
-            | ListOf _ -> sized "minCount" "maxCount" ""
-            | _ -> sized "minLength" "maxLength" ""
+        | MaxSize _ -> sized "minLength" "maxLength" ""
+        | ExactLength length -> $"length {length}"
+        | LengthRange(minimum, maximum) -> $"lengthBetween {minimum} {maximum}"
+        | Present -> "present"
+        | Supplied -> "supplied"
         | Pattern value -> $"pattern \"{escapeString value}\""
         | Distinct -> "distinct"
         | CheckRef name -> failwith $"check reference '{name}' should have been rejected by the resolver"
@@ -169,14 +170,23 @@ module Emitter =
     let private valueExpr refTypeName (contractName, contractVersion, contractTypeName) (field: FieldDecl) =
         let mutable expression = baseValueExpr refTypeName (contractName, contractVersion) field.FieldName field.FieldType
 
-        if field.Optional && not (List.isEmpty field.Constraints) then
+        let isOuterConstraint constraint' =
+            match constraint' with
+            | Supplied -> true
+            | Present when field.Optional -> true
+            | _ -> false
+
+        let innerConstraints =
+            field.Constraints |> List.filter (fst >> isOuterConstraint >> not)
+
+        if field.Optional && not (List.isEmpty innerConstraints) then
             let emailPrefix =
                 match field.FieldType with
                 | Primitive PEmail -> [ "Constraint.email" ]
                 | _ -> []
 
             let rendered =
-                emailPrefix @ (field.Constraints |> List.map (fun (constraint', _) -> renderConstraint field.FieldType constraint'))
+                emailPrefix @ (innerConstraints |> List.map (fun (constraint', _) -> renderConstraint field.FieldType constraint'))
 
             let joined = String.Join("; ", rendered)
             expression <- $"{expression} |> Schema.constrainAll [ {joined} ]"
@@ -188,6 +198,10 @@ module Emitter =
         match field.Doc with
         | [] -> ()
         | doc -> expression <- $"{expression} |> Schema.describe \"{escapeString (joinedDoc doc)}\""
+
+        match field.Format with
+        | Some format -> expression <- $"{expression} |> Schema.withFormat (SchemaFormat.create \"{escapeString format}\")"
+        | None -> ()
 
         match field.Default with
         | None -> ()
@@ -214,7 +228,12 @@ module Emitter =
 
     let private fieldLevelConstraints (field: FieldDecl) =
         if field.Optional then
-            []
+            field.Constraints
+            |> List.choose (fun (constraint', _) ->
+                match constraint' with
+                | Supplied
+                | Present -> Some(renderFieldConstraint field.FieldType constraint')
+                | _ -> None)
         else
             let emailPrefix =
                 match field.FieldType with
@@ -239,6 +258,7 @@ module Emitter =
     let private canInferField (field: FieldDecl) =
         hasCanonicalSchema field.FieldType
         && List.isEmpty field.Doc
+        && Option.isNone field.Format
         && Option.isNone field.Default
         && (not field.Optional || List.isEmpty field.Constraints && field.FieldType <> Primitive PEmail)
 

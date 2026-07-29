@@ -26,4 +26,4 @@ Deserializes UTF-8 JSON bytes to a trusted model through a compiled codec.
 | <code>'model</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1070-1070)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1082-1082)

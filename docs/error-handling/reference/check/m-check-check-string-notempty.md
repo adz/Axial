@@ -25,4 +25,4 @@ Requires an already parsed string value to contain at least one character. White
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L216-216)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L186-186)

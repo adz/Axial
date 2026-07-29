@@ -92,6 +92,41 @@ type Order =
         test <@ (byName "Contact").FieldType = Primitive PEmail @>
 
     [<Fact>]
+    let ``lifted value and supply attributes lower without extending the contract grammar`` () =
+        let file =
+            parse
+                """
+namespace My.Wire
+
+open Axial.Schema.Derive
+
+[<DeriveSchema>]
+type Profile =
+    { [<Present; Format "email">] Email: string
+      [<Length 8>] Code: string
+      [<LengthBetween(2, 5)>] Tags: string list
+      [<Supplied>] Referral: string option }
+"""
+
+        let fields = file.Contracts.Head.Fields
+        let byName name = fields |> List.find (fun field -> field.FieldName = name)
+
+        test <@ (byName "Email").Constraints |> List.map fst = [ Present ] @>
+        test <@ (byName "Email").Format = Some "email" @>
+        test <@ (byName "Code").Constraints |> List.map fst = [ ExactLength 8 ] @>
+        test <@ (byName "Tags").Constraints |> List.map fst = [ LengthRange(2, 5) ] @>
+        test <@ (byName "Referral").Constraints |> List.map fst = [ Supplied ] @>
+
+        test <@ Resolver.resolve [ file ] = [] @>
+
+        let emitted = Emitter.emit "Fallback" [ file ] file
+        test <@ emitted.Contains "Schema.withFormat (SchemaFormat.create \"email\")" @>
+        test <@ emitted.Contains "constrain present" @>
+        test <@ emitted.Contains "constrain (length 8)" @>
+        test <@ emitted.Contains "constrain (lengthBetween 2 5)" @>
+        test <@ emitted.Contains "constrain supplied" @>
+
+    [<Fact>]
     let ``option fields become optional and doc comments carry through`` () =
         let file =
             parse

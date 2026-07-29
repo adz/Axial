@@ -533,8 +533,10 @@ module ApiShapeTests =
             set
                 [ "constrainItems"
                   "constrainValues"
-                  "required"
-                  "optional"
+                  "supplied"
+                  "omittable"
+                  "present"
+                  "length"
                   "minLength"
                   "maxLength"
                   "lengthBetween"
@@ -549,10 +551,6 @@ module ApiShapeTests =
                   "lessThan"
                   "atLeast"
                   "atMost"
-                  "count"
-                  "minCount"
-                  "maxCount"
-                  "countBetween"
                   "distinct"
                   "contains"
                   "multipleOf"
@@ -573,8 +571,10 @@ module ApiShapeTests =
         let expectedUntypedConstraintMembers =
             set
                 [ "fromCheck"
-                  "required"
-                  "optional"
+                  "supplied"
+                  "omittable"
+                  "present"
+                  "length"
                   "minLength"
                   "maxLength"
                   "lengthBetween"
@@ -589,10 +589,6 @@ module ApiShapeTests =
                   "lessThan"
                   "atLeast"
                   "atMost"
-                  "count"
-                  "minCount"
-                  "maxCount"
-                  "countBetween"
                   "distinct"
                   "contains"
                   "multipleOf"
@@ -723,8 +719,10 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll
             [ "fromCheck"
-              "required"
-              "optional"
+              "supplied"
+              "omittable"
+              "present"
+              "length"
               "minLength"
               "maxLength"
               "lengthBetween"
@@ -743,10 +741,10 @@ module ApiShapeTests =
               "nonNegative"
               "negative"
               "nonPositive"
-              "count"
-              "minCount"
-              "maxCount"
-              "countBetween"
+              "length"
+              "minLength"
+              "maxLength"
+              "lengthBetween"
               "distinct"
               "contains"
               "code"
@@ -758,7 +756,7 @@ module ApiShapeTests =
         |> assertContainsAll [ "Text"; "Int"; "Decimal"; "Bool"; "Date"; "DateTime"; "Guid" ]
         schemaConstraintMetadataType
         |> publicUnionCaseNames
-        |> assertContainsAll [ "ValueConstraint"; "Presence" ]
+        |> assertContainsAll [ "ValueConstraint"; "Supply" ]
 
         let checkConstraintCases = typeof<Axial.Check.ConstraintMetadata> |> publicUnionCaseNames
         checkConstraintCases |> assertContainsAll [ "Present"; "MinLength"; "Custom" ]
@@ -842,37 +840,38 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema constraints are inspectable metadata independent of executable checks`` () =
-        let required = Constraint.required
-        let maxLength = Constraint.maxLength 20
-        let text = Schema.text |> Schema.constrainAll [ required; maxLength ]
+        let supplied: SchemaConstraint<string> = Constraint.supplied
+        let maxLength: SchemaConstraint<string> = Constraint.maxLength 20
+        let text = Schema.text |> Schema.constrainAll [ supplied; maxLength ]
         let field =
             schemaField "name" 0 (fun (model: Customer) -> model.Name)
-            |> Field.withConstraint required
+            |> Field.withConstraint supplied
             |> Field.withConstraint maxLength
         let descriptor = field |> schemaFieldDescriptor
 
-        test <@ Constraint.code required = "required" @>
-        test <@ Constraint.metadata required = (ConstraintMetadata.Presence Presence.Required) @>
+        test <@ Constraint.code supplied = "supplied" @>
+        test <@ Constraint.metadata supplied = (ConstraintMetadata.Supply Supply.Supplied) @>
         test <@ Constraint.metadata maxLength = ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 20) @>
-        test <@ string required = "required" @>
-        test <@ Constraint.arguments required |> Seq.isEmpty @>
+        test <@ string supplied = "supplied" @>
+        test <@ Constraint.arguments supplied |> Seq.isEmpty @>
         test <@ Constraint.tryFindArgument "maximum" maxLength = Some(box 20) @>
-        test <@ Schema.constraints text |> List.map Constraint.code = [ "required"; "maxLength" ] @>
-        test <@ Field.constraints field |> List.map Constraint.code = [ "required"; "maxLength" ] @>
-        test <@ descriptor.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
+        test <@ Schema.constraints text |> List.map Constraint.code = [ "supplied"; "maxLength" ] @>
+        test <@ Field.constraints field |> List.map Constraint.code = [ "supplied"; "maxLength" ] @>
+        test <@ descriptor.Constraints |> List.map Constraint.code = [ "supplied"; "maxLength" ] @>
         test <@ descriptor.ValueSchema.Constraints = [] @>
-        test <@ text.ValueDefinition.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
+        test <@ text.ValueDefinition.Constraints |> List.map Constraint.code = [ "supplied"; "maxLength" ] @>
         raises<ArgumentNullException> <@ Schema.constrain null Schema.text |> ignore @>
         raises<ArgumentNullException> <@ Field.constraints Unchecked.defaultof<Field<Customer, string>> |> ignore @>
 
     [<Fact>]
     let ``named schema constraints expose stable codes and structured arguments`` () =
         let codes =
-            [ Constraint.code (Constraint.required)
-              Constraint.code (Constraint.optional)
-              Constraint.code (Constraint.minLength 2)
-              Constraint.code (Constraint.maxLength 20)
-              Constraint.code (Constraint.lengthBetween 2 20)
+            [ Constraint.code (Constraint.present: SchemaConstraint<string>)
+              Constraint.code Constraint.omittable
+              Constraint.code (Constraint.length 2: SchemaConstraint<string>)
+              Constraint.code (Constraint.minLength 2: SchemaConstraint<string>)
+              Constraint.code (Constraint.maxLength 20: SchemaConstraint<string>)
+              Constraint.code (Constraint.lengthBetween 2 20: SchemaConstraint<string>)
               Constraint.code (Constraint.email)
               Constraint.code (Constraint.trimmed)
               Constraint.code (Constraint.pattern "^[a-z]+$")
@@ -884,22 +883,23 @@ module ApiShapeTests =
               Constraint.code (Constraint.lessThan 100)
               Constraint.code (Constraint.atLeast 1)
               Constraint.code (Constraint.atMost 10)
-              Constraint.code (Constraint.count 2)
-              Constraint.code (Constraint.minCount 1)
-              Constraint.code (Constraint.maxCount 5)
-              Constraint.code (Constraint.countBetween 1 5)
+              Constraint.code (Constraint.length 2: SchemaConstraint<int list>)
+              Constraint.code (Constraint.minLength 1: SchemaConstraint<int list>)
+              Constraint.code (Constraint.maxLength 5: SchemaConstraint<int list>)
+              Constraint.code (Constraint.lengthBetween 1 5: SchemaConstraint<int list>)
               Constraint.code (Constraint.distinct) ]
 
-        let length = Constraint.lengthBetween 2 20
+        let length: SchemaConstraint<string> = Constraint.lengthBetween 2 20
         let pattern = Constraint.pattern "^[a-z]+$"
         let choices = Constraint.oneOf [ "draft"; "published" ]
         let range = Constraint.between 1.5m 3.5m
-        let count = Constraint.countBetween 1 5
+        let count: SchemaConstraint<int list> = Constraint.lengthBetween 1 5
 
         test <@
             codes =
-                [ "required"
-                  "optional"
+                [ "present"
+                  "omittable"
+                  "length"
                   "minLength"
                   "maxLength"
                   "lengthBetween"
@@ -914,10 +914,10 @@ module ApiShapeTests =
                   "lessThan"
                   "atLeast"
                   "atMost"
-                  "count"
-                  "minCount"
-                  "maxCount"
-                  "countBetween"
+                  "length"
+                  "minLength"
+                  "maxLength"
+                  "lengthBetween"
                   "distinct" ]
         @>
         test <@ Constraint.tryFindArgument "minimum" length = Some(box 2) @>
@@ -936,10 +936,10 @@ module ApiShapeTests =
             Constraint.metadata tenantOnly =
                 ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Custom("tenantOnly", Map [ "tenant", box "north" ]))
         @>
-        raises<ArgumentOutOfRangeException> <@ Constraint.minLength -1 |> ignore @>
-        raises<ArgumentOutOfRangeException> <@ Constraint.count -1 |> ignore @>
-        raises<ArgumentException> <@ Constraint.lengthBetween 5 2 |> ignore @>
-        raises<ArgumentException> <@ Constraint.countBetween 5 2 |> ignore @>
+        Assert.Throws<ArgumentOutOfRangeException>(fun () -> let _: SchemaConstraint<string> = Constraint.minLength -1 in ()) |> ignore
+        Assert.Throws<ArgumentOutOfRangeException>(fun () -> let _: SchemaConstraint<int list> = Constraint.length -1 in ()) |> ignore
+        Assert.Throws<ArgumentException>(fun () -> let _: SchemaConstraint<string> = Constraint.lengthBetween 5 2 in ()) |> ignore
+        Assert.Throws<ArgumentException>(fun () -> let _: SchemaConstraint<int list> = Constraint.lengthBetween 5 2 in ()) |> ignore
         raises<ArgumentException> <@ Constraint.between 10 1 |> ignore @>
         raises<ArgumentException> <@ Constraint.pattern "" |> ignore @>
         raises<ArgumentNullException> <@ Constraint.oneOf null |> ignore @>
@@ -949,7 +949,7 @@ module ApiShapeTests =
         let textConstraints =
             Schema.text
             |> Schema.constrainAll
-                [ Constraint.required
+                [ Constraint.present
                   Constraint.maxLength 20
                   Constraint.email
                   Constraint.pattern "^[^@]+@example.com$"
@@ -961,7 +961,7 @@ module ApiShapeTests =
 
         let listConstraints =
             Schema.listWith Schema.int
-            |> Schema.constrainAll [ Constraint.countBetween 1 3; Constraint.distinct ]
+            |> Schema.constrainAll [ Constraint.lengthBetween 1 3; Constraint.distinct ]
             |> Schema.constraints
 
         let constraints = textConstraints @ numberConstraints @ listConstraints
@@ -969,7 +969,7 @@ module ApiShapeTests =
         let diagnostics =
             constraints
             |> List.choose (Constraint.metadata >> function
-                | (ConstraintMetadata.Presence Presence.Required) -> Some "SchemaError.Required"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> Some "SchemaError.Blank"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"SchemaError.InvalidLength maxLength {maximum}"
                 | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "SchemaError.InvalidFormat email"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"SchemaError.InvalidFormat {pattern}"
@@ -977,22 +977,22 @@ module ApiShapeTests =
                     Some(sprintf "SchemaError.NotOneOf %s" (String.concat "|" choices))
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
                     Some $"SchemaError.OutOfRange {minimum}-{maximum}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum)) ->
-                    Some $"SchemaError.InvalidCount {minimum}-{maximum}"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum)) ->
+                    Some $"SchemaError.InvalidLength {minimum}-{maximum}"
                 | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "SchemaError.Duplicate"
                 | _ -> None)
 
         let jsonSchema =
             constraints
             |> List.choose (Constraint.metadata >> function
-                | (ConstraintMetadata.Presence Presence.Required) -> Some "required"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> Some "required"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"maxLength={maximum}"
                 | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "format=email"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"pattern={pattern}"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> Some(sprintf "enum=%s" (String.concat "," choices))
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
                     Some $"minimum={minimum};maximum={maximum}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum)) ->
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum)) ->
                     Some $"minItems={minimum};maxItems={maximum}"
                 | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "uniqueItems=true"
                 | _ -> None)
@@ -1000,14 +1000,14 @@ module ApiShapeTests =
         let ui =
             constraints
             |> List.choose (Constraint.metadata >> function
-                | (ConstraintMetadata.Presence Presence.Required) -> Some "required"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> Some "required"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"maxlength={maximum}"
                 | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "input=email"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"pattern={pattern}"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> Some $"choices={choices.Length}"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
                     Some $"min={minimum};max={maximum}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum)) ->
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum)) ->
                     Some $"min-items={minimum};max-items={maximum}"
                 | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "unique-items"
                 | _ -> None)
@@ -1015,25 +1015,25 @@ module ApiShapeTests =
         let docs =
             constraints
             |> List.map (Constraint.metadata >> function
-                | (ConstraintMetadata.Presence Presence.Required) -> "Required"
+                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> "Required"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> $"Maximum length {maximum}"
                 | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> "Email format"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> $"Matches {pattern}"
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> sprintf "One of %s" (String.concat ", " choices)
                 | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) -> $"Between {minimum} and {maximum}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(minimum, maximum)) -> $"Between {minimum} and {maximum} items"
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum)) -> $"Between {minimum} and {maximum} items"
                 | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> "No duplicates"
                 | other -> string other)
 
         test <@
             diagnostics =
-                [ "SchemaError.Required"
+                [ "SchemaError.Blank"
                   "SchemaError.InvalidLength maxLength 20"
                   "SchemaError.InvalidFormat email"
                   "SchemaError.InvalidFormat ^[^@]+@example.com$"
                   "SchemaError.NotOneOf ada@example.com|grace@example.com"
                   "SchemaError.OutOfRange 1-10"
-                  "SchemaError.InvalidCount 1-3"
+                  "SchemaError.InvalidLength 1-3"
                   "SchemaError.Duplicate" ]
         @>
         test <@
@@ -1116,12 +1116,12 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``schema shape builds explicit ordered model schema with value schema constraints`` () =
-        let requiredText = Schema.text |> Schema.constrain Constraint.required
+        let requiredText = Schema.text |> Schema.constrain Constraint.present
 
         let schema =
             schema<Customer> {
                 field "name" (fun (value: Customer) -> value.Name) {
-                    withSchema (requiredText |> Schema.constrainAll [ Constraint.required ])
+                    withSchema (requiredText |> Schema.constrainAll [ Constraint.present ])
                 }
                 field "age" (fun (value: Customer) -> value.Age)
                 construct (fun name age -> { Name = name; Age = age })
@@ -1137,7 +1137,7 @@ module ApiShapeTests =
                 test <@ model.Constructor.ArgumentCount = 2 @>
                 test <@ model.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age" ] @>
                 test <@ model.Fields |> List.map (fun field -> FieldOrder.value field.Order) = [ 0; 1 ] @>
-                test <@ model.Fields[0].ValueSchema.Constraints |> List.map Constraint.code = [ "required"; "required" ] @>
+                test <@ model.Fields[0].ValueSchema.Constraints |> List.map Constraint.code = [ "present"; "present" ] @>
                 test <@ model.Fields[0].Constraints = [] @>
                 ConstructorApplication.apply model.Constructor (values |> List.toArray)
             | _ -> failwith "Expected public schema API to create a model definition."
@@ -1326,21 +1326,21 @@ module ApiShapeTests =
 
         let checkProgram : Check<string> =
             fun value ->
-                if String.IsNullOrWhiteSpace value then Error [ Required ]
+                if String.IsNullOrWhiteSpace value then Error [ Blank ]
                 else Ok ()
 
         let checkFunction : string -> Result<unit, CheckFailure list> = checkProgram
         test <@ checkFunction "Ada" = Ok () @>
-        test <@ checkFunction "" = Error [ Required ] @>
+        test <@ checkFunction "" = Error [ Blank ] @>
 
         typeof<CheckFailure>
         |> publicUnionCaseNames
         |> assertContainsAll
-            [ "Required"
+            [ "Blank"
               "InvalidFormat"
               "InvalidLength"
               "OutOfRange"
-              "InvalidCount"
+              "InvalidLength"
               "NotOneOf"
               "Duplicate"
               "Custom" ]
@@ -1400,10 +1400,6 @@ module ApiShapeTests =
               "nonNegative"
               "negative"
               "nonPositive"
-              "count"
-              "minCount"
-              "maxCount"
-              "countBetween"
               "distinct"
               "contains"
               "single"
@@ -1542,11 +1538,6 @@ module ApiShapeTests =
               "Count"
               "MinCount"
               "MaxCount"
-              "CountBetween"
-              "Length"
-              "MinLength"
-              "MaxLength"
-              "LengthBetween"
               "Email"
               "Matches"
               "OneOf"

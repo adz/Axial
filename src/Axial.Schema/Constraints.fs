@@ -1,25 +1,24 @@
 namespace Axial.Schema
 
 open System
-open System.Collections
 open System.Collections.Generic
 open Axial.Check
 
-/// Describes boundary presence before a typed value exists.
+/// Describes boundary supply before a typed value exists.
 [<RequireQualifiedAccess>]
-type Presence =
+type Supply =
     /// Boundary input must be supplied.
-    | Required
+    | Supplied
     /// Boundary input may be omitted.
-    | Optional
+    | Omittable
 
-/// Distinguishes executable value-constraint metadata from Schema boundary-presence metadata.
+/// Distinguishes executable value-constraint metadata from Schema boundary-supply metadata.
 [<RequireQualifiedAccess>]
 type ConstraintMetadata =
     /// Metadata for a complete executable value constraint.
     | ValueConstraint of Axial.Check.ConstraintMetadata
     /// Metadata interpreted before a typed value exists.
-    | Presence of Presence
+    | Supply of Supply
 
 /// Describes a constraint after its typed Check constraint has been attached to a heterogeneous schema.
 [<AllowNullLiteral>]
@@ -39,7 +38,7 @@ type ConstraintDescriptor internal (
 
 
 /// A typed Schema constraint annotation. Value constraints retain a complete Axial.Check.Constraint;
-/// presence declarations remain Schema boundary metadata.
+/// supply declarations remain Schema boundary metadata.
 [<Sealed; AllowNullLiteral>]
 type SchemaConstraint<'value> internal (untyped: ConstraintDescriptor) =
     inherit ConstraintDescriptor(untyped.Code, untyped.Metadata, untyped.Arguments, untyped.Check, untyped.Message)
@@ -71,7 +70,7 @@ module Constraint =
         let check value = Axial.Check.Constraint.check constraint' (unbox<'value> value)
         ConstraintDescriptor(code, ConstraintMetadata.ValueConstraint(Axial.Check.Constraint.metadata constraint'), arguments, Some check, None)
 
-    let private presence code metadata =
+    let private supply code metadata =
         ConstraintDescriptor(code, metadata, dictionary [], None, None)
 
     /// Adapts a complete Check constraint for use by Schema.
@@ -81,34 +80,41 @@ module Constraint =
     let fromCheck (constraint': Axial.Check.Constraint<'value>) : SchemaConstraint<'value> =
         SchemaConstraint<'value>(eraseCheck constraint')
 
-    /// Requires boundary input to be present. Presence is handled before a typed value exists.
+    /// Requires boundary input to be present. Supply is handled before a typed value exists.
     /// <example>
-    /// <code>let constraint' : SchemaConstraint&lt;string&gt; = Constraint.required</code>
+    /// <code>let constraint' : SchemaConstraint&lt;string&gt; = Constraint.supplied</code>
     /// </example>
-    let required<'value> : SchemaConstraint<'value> = SchemaConstraint<'value>(presence "required" (ConstraintMetadata.Presence Presence.Required))
+    let supplied<'value> : SchemaConstraint<'value> = SchemaConstraint<'value>(supply "supplied" (ConstraintMetadata.Supply Supply.Supplied))
 
     /// <summary>
-    /// Marks boundary input as optional. Only an option-typed field can be optional: a field of any other type has
+    /// Marks boundary input as omittable. Only an option-typed field can be omittable: a field of any other type has
     /// nowhere to put an absent input, so the constructor could not be applied. Declaring the field
-    /// <c>'value option</c> is what makes it optional; this constraint states that intent for interpreters.
+    /// <c>'value option</c> is what makes it omittable; this constraint states that intent for interpreters.
     /// </summary>
     /// <example>
-    /// <code>let constraint' : SchemaConstraint&lt;int option&gt; = Constraint.optional</code>
+    /// <code>let constraint' : SchemaConstraint&lt;int option&gt; = Constraint.omittable</code>
     /// </example>
-    let optional<'value> : SchemaConstraint<'value option> = SchemaConstraint<'value option>(presence "optional" (ConstraintMetadata.Presence Presence.Optional))
+    let omittable<'value> : SchemaConstraint<'value option> = SchemaConstraint<'value option>(supply "omittable" (ConstraintMetadata.Supply Supply.Omittable))
 
-    /// <summary>Requires text to contain at least the supplied number of characters.</summary>
+    /// <summary>Requires a value to be inhabited according to its shape.</summary>
+    let inline present< ^value when (^value or Axial.Check.Constraint.PresentDispatcher) : (static member Create: ^value -> Axial.Check.Constraint<^value>)> : SchemaConstraint<^value> =
+        fromCheck Axial.Check.Constraint.present
+
+    /// <summary>Requires text or a concrete collection to have exactly the supplied length.</summary>
+    let inline length< ^value when (^value or Axial.Check.Constraint.LengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> expected : SchemaConstraint<^value> = fromCheck (Axial.Check.Constraint.length expected)
+
+    /// <summary>Requires text or a concrete collection to have at least the supplied length.</summary>
     /// <example>
     /// <code>let constraint' = Constraint.minLength 2</code>
     /// </example>
-    let minLength minimum : SchemaConstraint<string> = fromCheck (Axial.Check.Constraint.minLength minimum)
-    /// <summary>Requires text to contain at most the supplied number of characters.</summary>
-    let maxLength maximum : SchemaConstraint<string> = fromCheck (Axial.Check.Constraint.maxLength maximum)
-    /// <summary>Requires text length to lie within the supplied inclusive bounds.</summary>
+    let inline minLength< ^value when (^value or Axial.Check.Constraint.MinLengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> minimum : SchemaConstraint<^value> = fromCheck (Axial.Check.Constraint.minLength minimum)
+    /// <summary>Requires text or a concrete collection to have at most the supplied length.</summary>
+    let inline maxLength< ^value when (^value or Axial.Check.Constraint.MaxLengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> maximum : SchemaConstraint<^value> = fromCheck (Axial.Check.Constraint.maxLength maximum)
+    /// <summary>Requires text or concrete collection length to lie within the supplied inclusive bounds.</summary>
     /// <example>
     /// <code>let constraint' = Constraint.lengthBetween 2 80</code>
     /// </example>
-    let lengthBetween minimum maximum : SchemaConstraint<string> = fromCheck (Axial.Check.Constraint.lengthBetween minimum maximum)
+    let inline lengthBetween< ^value when (^value or Axial.Check.Constraint.LengthBetweenDispatcher) : (static member Create: ^value * int * int -> Axial.Check.Constraint<^value>)> minimum maximum : SchemaConstraint<^value> = fromCheck (Axial.Check.Constraint.lengthBetween minimum maximum)
     /// <summary>Requires text to use the supported email format.</summary>
     let email : SchemaConstraint<string> = fromCheck Axial.Check.Constraint.email
     /// <summary>Requires text to have no leading or trailing whitespace.</summary>
@@ -146,38 +152,6 @@ module Constraint =
     let atLeast minimum : SchemaConstraint<'value> = fromCheck (Axial.Check.Constraint.atLeast minimum)
     /// <summary>Requires a value to be at most the supplied operand.</summary>
     let atMost maximum : SchemaConstraint<'value> = fromCheck (Axial.Check.Constraint.atMost maximum)
-    let private forCollection<'collection when 'collection :> IEnumerable> constraint' : SchemaConstraint<'collection> =
-        constraint'
-        |> Axial.Check.Constraint.contramap (fun (collection: 'collection) -> collection |> Seq.cast<obj>)
-        |> fromCheck
-
-    /// <summary>Requires an enumerable value to contain exactly the supplied number of items.</summary>
-    /// <example>
-    /// <code>let constraint' : SchemaConstraint&lt;int list&gt; = Constraint.count 2</code>
-    /// </example>
-    let count<'collection when 'collection :> IEnumerable> expected : SchemaConstraint<'collection> =
-        forCollection (Axial.Check.Constraint.count expected)
-
-    /// <summary>Requires an enumerable value to contain at least the supplied number of items.</summary>
-    /// <example>
-    /// <code>let constraint' : SchemaConstraint&lt;int list&gt; = Constraint.minCount 1</code>
-    /// </example>
-    let minCount<'collection when 'collection :> IEnumerable> minimum : SchemaConstraint<'collection> =
-        forCollection (Axial.Check.Constraint.minCount minimum)
-
-    /// <summary>Requires an enumerable value to contain at most the supplied number of items.</summary>
-    /// <example>
-    /// <code>let constraint' : SchemaConstraint&lt;int list&gt; = Constraint.maxCount 5</code>
-    /// </example>
-    let maxCount<'collection when 'collection :> IEnumerable> maximum : SchemaConstraint<'collection> =
-        forCollection (Axial.Check.Constraint.maxCount maximum)
-
-    /// <summary>Requires an enumerable count to lie within the supplied inclusive bounds.</summary>
-    /// <example>
-    /// <code>let constraint' : SchemaConstraint&lt;int list&gt; = Constraint.countBetween 1 5</code>
-    /// </example>
-    let countBetween<'collection when 'collection :> IEnumerable> minimum maximum : SchemaConstraint<'collection> =
-        forCollection (Axial.Check.Constraint.countBetween minimum maximum)
     /// <summary>Requires a list to contain no duplicate values.</summary>
     /// <example>
     /// <code>let constraint' : SchemaConstraint&lt;int list&gt; = Constraint.distinct</code>

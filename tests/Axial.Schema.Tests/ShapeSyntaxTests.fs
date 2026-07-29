@@ -127,7 +127,7 @@ module ShapeSyntaxTests =
         schema<Tagged> {
             field "name" _.Name
             field "tags" _.Tags {
-                constrain (Syntax.minCount 1)
+                constrain (Syntax.minLength 1)
             }
             field "note" _.Note
             construct Tagged.Create

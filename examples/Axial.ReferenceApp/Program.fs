@@ -123,7 +123,7 @@ li { margin: .75rem 0; } code { background: #eee; padding: .15rem .3rem; }
             @ (field.Schema.Constraints |> List.map _.Metadata)
 
         let required =
-            if metadata |> List.contains (ConstraintMetadata.Presence Presence.Required) then " required" else ""
+            if metadata |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) then " required" else ""
 
         let maxLength =
             metadata

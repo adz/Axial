@@ -69,7 +69,7 @@ module WorkspaceName =
 
     let refinement =
         Refinement.defineAll
-            [ Axial.Check.Constraint.required
+            [ Axial.Check.Constraint.present
               Axial.Check.Constraint.maxLength 80 ]
             (Refine.nonBlankString >> Result.defaultWith (CheckFailure.describeAll >> failwith) >> WorkspaceName)
             value

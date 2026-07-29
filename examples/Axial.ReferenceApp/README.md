@@ -88,7 +88,7 @@ schemas use the same constructors through `Schema.refine`:
 ```fsharp
 let private requiredText refine inspect maximum =
     Schema.text
-    |> Schema.constrainAll [ Constraint.required; Constraint.maxLength maximum ]
+    |> Schema.constrainAll [ Constraint.present; Constraint.maxLength maximum ]
     |> Schema.refine (Refinement.define refine inspect)
 ```
 

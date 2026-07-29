@@ -1,6 +1,6 @@
 // Inert attributes read by schemagen from source text at generation time — never by runtime
 // reflection, and never touched by the schema library itself at runtime. Their vocabulary mirrors
-// the Schema computation expression and the `.contract` constraint grammar.
+// the Schema computation expression.
 namespace Axial.Schema.Derive
 
 open System
@@ -8,7 +8,7 @@ open System
 /// <summary>Marks a plain record for schema derivation: <c>schemagen</c> generates its permissive schema.
 /// The advice is to put this on wire DTOs — records that carry no invariants of their own. The attributes
 /// in this namespace are inert metadata: they are read from source text at generation time, never by
-/// runtime reflection, and their vocabulary mirrors the <c>.contract</c> constraint grammar one-to-one.</summary>
+/// runtime reflection.</summary>
 [<AttributeUsage(AttributeTargets.Class ||| AttributeTargets.Struct)>]
 type DeriveSchemaAttribute() =
     inherit Attribute()
@@ -49,17 +49,46 @@ type PatternAttribute(pattern: string) =
     inherit Attribute()
     member _.Pattern = pattern
 
-/// <summary>Bounds the natural size of the field's type from below: text length, list count, or map count.</summary>
+/// <summary>Bounds the natural length of a text, list, or map field from below.</summary>
 [<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Field)>]
 type MinAttribute(size: int) =
     inherit Attribute()
     member _.Size = size
 
-/// <summary>Bounds the natural size of the field's type from above: text length, list count, or map count.</summary>
+/// <summary>Bounds the natural length of a text, list, or map field from above.</summary>
 [<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Field)>]
 type MaxAttribute(size: int) =
     inherit Attribute()
     member _.Size = size
+
+/// <summary>Requires the natural length of a text, list, or map field to equal the supplied value.</summary>
+[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Field)>]
+type LengthAttribute(length: int) =
+    inherit Attribute()
+    member _.Length = length
+
+/// <summary>Bounds the natural length of a text, list, or map field inclusively.</summary>
+[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Field)>]
+type LengthBetweenAttribute(minimum: int, maximum: int) =
+    inherit Attribute()
+    member _.Minimum = minimum
+    member _.Maximum = maximum
+
+/// <summary>Requires a string, collection, or optional field value to be present.</summary>
+[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Field)>]
+type PresentAttribute() =
+    inherit Attribute()
+
+/// <summary>Requires the input payload to supply the field key.</summary>
+[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Field)>]
+type SuppliedAttribute() =
+    inherit Attribute()
+
+/// <summary>Adds open format metadata to the field schema.</summary>
+[<AttributeUsage(AttributeTargets.Property ||| AttributeTargets.Field)>]
+type FormatAttribute(format: string) =
+    inherit Attribute()
+    member _.Format = format
 
 /// <summary>Bounds a numeric field's value inclusively from below (<c>&gt;=</c> in the contract grammar).
 /// The literal is read from source text, so decimal precision is preserved exactly.</summary>

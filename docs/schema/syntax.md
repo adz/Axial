@@ -53,7 +53,7 @@ A block groups transformations for one field:
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain required
+    constrain present
     refine
     validate validateCompanyEmail
 }
@@ -63,6 +63,8 @@ Operations run from top to bottom:
 
 1. `withSchema` sets the current raw schema.
 2. `constrain` adds one portable constraint; `constraints` adds a list in declaration order. Both preserve the value type.
+3. `describe`, `format`, and `defaultValue` add type-preserving metadata. They can use the inferred schema or follow
+   `withSchema`; `defaultValue` also supplies the field when input omits it.
 3. `refine` changes the current schema from its raw type to the getter type.
 4. `validate` runs executable value-preserving logic over the current type.
 
@@ -79,19 +81,20 @@ Group adjacent rules with `constraints`:
 
 ```fsharp
 field "email" _.Email {
-    constraints [ required; email; maxLength 254 ]
+    constraints [ present; email; maxLength 254 ]
 }
 ```
 
 The typed vocabulary in `Axial.Schema.Syntax` covers every portable schema constraint. The field type checks every
-entry, so `email` cannot be applied to an `int` field and `minCount` cannot be applied to a string field.
+entry, so `email` cannot be applied to an `int` field. Lifted constraints such as `minLength` apply to strings,
+lists, arrays, and maps with shape-appropriate interpretation.
 
 ## Refinement changes the stage
 
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain required       // operates on string
+    constrain present       // operates on string
     refine                              // string -> ContactEmail
     validate validateCompanyEmail       // operates on ContactEmail
 }

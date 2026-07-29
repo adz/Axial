@@ -3,7 +3,7 @@ namespace Axial.Check
 open System
 open System.Text.RegularExpressions
 
-/// <summary>Describes the length requirement that a value check expected a string-like value to satisfy.</summary>
+/// <summary>Describes the length requirement that a value check expected a text or collection value to satisfy.</summary>
 type CheckLengthExpectation =
     /// <summary>The value was expected to have at least the supplied length.</summary>
     | MinimumLength of minimum: int
@@ -30,30 +30,16 @@ type CheckRangeExpectation =
     /// <summary>The value was expected to be an integer multiple of the supplied divisor.</summary>
     | NotMultipleOf of divisor: string
 
-/// <summary>Describes the count requirement that a value check expected a sequence-shaped value to satisfy against a
-/// caller-supplied count.</summary>
-type CheckCountExpectation =
-    /// <summary>The sequence was expected to contain at least the supplied count.</summary>
-    | MinimumCount of minimum: int
-    /// <summary>The sequence was expected to contain at most the supplied count.</summary>
-    | MaximumCount of maximum: int
-    /// <summary>The sequence was expected to contain exactly the supplied count.</summary>
-    | ExactCount of expected: int
-    /// <summary>The sequence was expected to contain a count inside the inclusive bounds.</summary>
-    | CountBetween of minimum: int * maximum: int
-
 /// <summary>Describes why an executable value check failed, without attaching source paths or structured data.</summary>
 type CheckFailure =
-    /// <summary>A required value was missing.</summary>
-    | Required
+    /// <summary>The value was not inhabited for its shape.</summary>
+    | Blank
     /// <summary>The value did not match the expected format.</summary>
     | InvalidFormat of expected: string
     /// <summary>The value length did not match the expected length constraint.</summary>
     | InvalidLength of expectation: CheckLengthExpectation * actualLength: int option
     /// <summary>The value did not match the expected ordered range constraint.</summary>
     | OutOfRange of expectation: CheckRangeExpectation * actual: string option
-    /// <summary>The sequence count did not match the expected count constraint.</summary>
-    | InvalidCount of expectation: CheckCountExpectation * actualCount: int option
     /// <summary>The value was not one of the expected choices.</summary>
     | NotOneOf of choices: string
     /// <summary>A duplicate value was found.</summary>
@@ -65,7 +51,7 @@ type CheckFailure =
 /// A localizable set of message templates for rendering <see cref="T:Axial.Check.CheckFailure" /> values.
 /// </summary>
 /// <remarks>
-/// Each function receives only the already-formatted operand(s) (a length, a count, a bound, an actual value) and
+/// Each function receives only the already-formatted operand(s) (a length, a bound, an actual value) and
 /// returns the complete phrase for that piece of the message. A translation supplies grammar and word order; it
 /// never needs to reimplement the traversal over every <c>CheckFailure</c>/expectation case, since
 /// <see cref="M:Axial.Check.CheckFailure.describeWith" /> owns that traversal and calls into these functions.
@@ -75,18 +61,14 @@ type CheckFailureResources =
       Length: CheckLengthExpectation -> string
       /// <summary>Renders a range expectation, e.g. "greater than zero".</summary>
       Range: CheckRangeExpectation -> string
-      /// <summary>Renders a count expectation, e.g. "at least one item".</summary>
-      Count: CheckCountExpectation -> string
-      /// <summary>Renders a missing-value failure.</summary>
-      Required: string
+      /// <summary>Renders a blank-value failure.</summary>
+      Blank: string
       /// <summary>Renders an invalid-format failure given the expected format name.</summary>
       InvalidFormat: string -> string
       /// <summary>Renders a length failure given the rendered expectation and the actual length, if known.</summary>
       LengthFailure: string -> int option -> string
       /// <summary>Renders a range failure given the rendered expectation and the actual value, if known.</summary>
       RangeFailure: string -> string option -> string
-      /// <summary>Renders a count failure given the rendered expectation and the actual count, if known.</summary>
-      CountFailure: string -> int option -> string
       /// <summary>Renders a not-one-of failure given the expected choices.</summary>
       NotOneOf: string -> string
       /// <summary>Renders a duplicate-value failure.</summary>
@@ -115,13 +97,7 @@ module CheckFailure =
             | AtMost maximum -> $"at most {maximum}"
             | Between(minimum, maximum) -> $"between {minimum} and {maximum}"
             | NotMultipleOf divisor -> $"a multiple of {divisor}"
-          Count =
-            function
-            | MinimumCount minimum -> $"at least {minimum} item(s)"
-            | MaximumCount maximum -> $"at most {maximum} item(s)"
-            | ExactCount expected -> $"exactly {expected} item(s)"
-            | CountBetween(minimum, maximum) -> $"between {minimum} and {maximum} items"
-          Required = "value is required"
+          Blank = "value must be present"
           InvalidFormat = fun expected -> $"value must match the expected {expected} format"
           LengthFailure =
             fun expectation actual ->
@@ -133,11 +109,6 @@ module CheckFailure =
                 match actual with
                 | Some value -> $"expected a value {expectation}, but was {value}"
                 | None -> $"expected a value {expectation}"
-          CountFailure =
-            fun expectation actual ->
-                match actual with
-                | Some count -> $"expected {expectation}, but found {count}"
-                | None -> $"expected {expectation}"
           NotOneOf = fun choices -> $"expected one of: {choices}"
           Duplicate = "duplicate values are not allowed"
           Custom = fun code -> $"failed custom check '{code}'" }
@@ -146,11 +117,10 @@ module CheckFailure =
     /// with no trailing punctuation, e.g. <c>"expected a value greater than zero, but was 0"</c>.</summary>
     let describeWith (resources: CheckFailureResources) (failure: CheckFailure) : string =
         match failure with
-        | Required -> resources.Required
+        | Blank -> resources.Blank
         | InvalidFormat expected -> resources.InvalidFormat expected
         | InvalidLength(expectation, actual) -> resources.LengthFailure (resources.Length expectation) actual
         | OutOfRange(expectation, actual) -> resources.RangeFailure (resources.Range expectation) actual
-        | InvalidCount(expectation, actual) -> resources.CountFailure (resources.Count expectation) actual
         | NotOneOf choices -> resources.NotOneOf choices
         | Duplicate -> resources.Duplicate
         | Custom code -> resources.Custom code
@@ -201,21 +171,21 @@ module Check =
         /// <summary>Requires an already parsed string value to be non-null and contain at least one non-whitespace character.</summary>
         let present : Check<string> =
             fun value ->
-                if isNull value then fail Required
-                elif value.IsBlank then fail Required
+                if isNull value then fail Blank
+                elif value.IsBlank then fail Blank
                 else Ok ()
 
         /// <summary>Requires an already parsed string value to be exactly empty. Null fails as a missing value.</summary>
         let empty : Check<string> =
             fun value ->
-                if isNull value then fail Required
+                if isNull value then fail Blank
                 elif value.IsEmpty then Ok ()
                 else fail (InvalidLength(ExactLength 0, actualLength value))
 
         /// <summary>Requires an already parsed string value to contain at least one character. Whitespace counts as present text.</summary>
         let notEmpty : Check<string> =
             fun value ->
-                if isNull value then fail Required
+                if isNull value then fail Blank
                 elif value.IsNotEmpty then Ok ()
                 else fail (InvalidLength(MinimumLength 1, Some 0))
 
@@ -349,49 +319,49 @@ module Check =
         let notEmpty : Check<#seq<'value>> =
             fun values ->
                 if values.HasItems then Ok ()
-                else fail (InvalidCount(MinimumCount 1, actualCount values))
+                else fail (InvalidLength(MinimumLength 1, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no items. Null fails with an unknown actual count.</summary>
         let empty : Check<#seq<'value>> =
             fun values ->
                 if values.HasNoItems then Ok ()
-                else fail (InvalidCount(ExactCount 0, actualCount values))
+                else fail (InvalidLength(ExactLength 0, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.</summary>
         let count (expected: int) : Check<#seq<'value>> =
             fun values ->
                 if values.HasCount expected then Ok ()
-                else fail (InvalidCount(ExactCount expected, actualCount values))
+                else fail (InvalidLength(ExactLength expected, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at least the supplied count. Null fails with an unknown actual count.</summary>
         let minCount (minimum: int) : Check<#seq<'value>> =
             fun values ->
                 if values.HasMinCount minimum then Ok ()
-                else fail (InvalidCount(MinimumCount minimum, actualCount values))
+                else fail (InvalidLength(MinimumLength minimum, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain at most the supplied count. Null fails with an unknown actual count.</summary>
         let maxCount (maximum: int) : Check<#seq<'value>> =
             fun values ->
                 if values.HasMaxCount maximum then Ok ()
-                else fail (InvalidCount(MaximumCount maximum, actualCount values))
+                else fail (InvalidLength(MaximumLength maximum, actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value count to lie inside the supplied inclusive bounds. Null fails with an unknown actual count.</summary>
         let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
             fun values ->
                 if values.HasCountBetween(minimum, maximum) then Ok ()
-                else fail (InvalidCount(CountBetween(minimum, maximum), actualCount values))
+                else fail (InvalidLength(LengthBetween(minimum, maximum), actualCount values))
 
         /// <summary>Requires an already parsed sequence-shaped value to contain no duplicate values.</summary>
         let noDuplicates : Check<#seq<'value>> =
             fun values ->
-                if Object.ReferenceEquals(values, null) then fail Required
+                if Object.ReferenceEquals(values, null) then fail Blank
                 elif values.IsDistinct then Ok ()
                 else fail Duplicate
 
         /// <summary>Requires an already parsed sequence-shaped value to contain the supplied value.</summary>
         let contains (expected: 'value) : Check<#seq<'value>> =
             fun values ->
-                if Object.ReferenceEquals(values, null) then fail Required
+                if Object.ReferenceEquals(values, null) then fail Blank
                 elif values.HasItem expected then Ok ()
                 else fail (NotOneOf(string expected))
 
@@ -421,7 +391,7 @@ module Check =
             fun value ->
                 match value with
                 | Some _ -> Ok ()
-                | None -> fail Required
+                | None -> fail Blank
 
         /// <summary>Alias for <c>some</c>; requires an option to contain a value.</summary>
         let present : Check<'value option> =
@@ -452,7 +422,7 @@ module Check =
             fun value ->
                 match value with
                 | ValueSome _ -> Ok ()
-                | ValueNone -> fail Required
+                | ValueNone -> fail Blank
 
         /// <summary>Alias for <c>some</c>; requires a value option to contain a value.</summary>
         let present : Check<'value voption> =
@@ -480,7 +450,7 @@ module Check =
 
         /// <summary>Requires a nullable value to contain a value.</summary>
         let hasValue : Check<System.Nullable<'value>> =
-            fun value -> if value.HasValue then Ok () else fail Required
+            fun value -> if value.HasValue then Ok () else fail Blank
 
         /// <summary>Alias for <c>hasValue</c>; requires a nullable value to contain a value.</summary>
         let present : Check<System.Nullable<'value>> =
@@ -520,21 +490,65 @@ module Check =
     let private fail failure : Result<unit, CheckFailure list> =
         Error [ failure ]
 
-    /// <summary>Returns a string check requiring exactly the supplied length.</summary>
-    let length (expected: int) : Check<string> =
-        String.length expected
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    type Length =
+        static member Create(_: string, expected: int) : Check<string> = String.length expected
+        static member Create(_: 'value list, expected: int) : Check<'value list> = fun values -> Seq.count expected values
+        static member Create(_: 'value array, expected: int) : Check<'value array> = fun values -> Seq.count expected values
+        static member Create(_: Map<string, 'value>, expected: int) : Check<Map<string, 'value>> =
+            fun values ->
+                let actual = if Object.ReferenceEquals(values, null) then None else Some values.Count
+                if actual = Some expected then Ok () else fail (InvalidLength(ExactLength expected, actual))
 
-    /// <summary>Returns a string check requiring at least the supplied length.</summary>
-    let minLength (minimum: int) : Check<string> =
-        String.minLength minimum
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    type MinLength =
+        static member Create(_: string, minimum: int) : Check<string> = String.minLength minimum
+        static member Create(_: 'value list, minimum: int) : Check<'value list> = fun values -> Seq.minCount minimum values
+        static member Create(_: 'value array, minimum: int) : Check<'value array> = fun values -> Seq.minCount minimum values
+        static member Create(_: Map<string, 'value>, minimum: int) : Check<Map<string, 'value>> =
+            fun values ->
+                let actual = if Object.ReferenceEquals(values, null) then None else Some values.Count
+                if actual |> Option.exists (fun count -> count >= minimum) then Ok ()
+                else fail (InvalidLength(MinimumLength minimum, actual))
 
-    /// <summary>Returns a string check requiring at most the supplied length.</summary>
-    let maxLength (maximum: int) : Check<string> =
-        String.maxLength maximum
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    type MaxLength =
+        static member Create(_: string, maximum: int) : Check<string> = String.maxLength maximum
+        static member Create(_: 'value list, maximum: int) : Check<'value list> = fun values -> Seq.maxCount maximum values
+        static member Create(_: 'value array, maximum: int) : Check<'value array> = fun values -> Seq.maxCount maximum values
+        static member Create(_: Map<string, 'value>, maximum: int) : Check<Map<string, 'value>> =
+            fun values ->
+                let actual = if Object.ReferenceEquals(values, null) then None else Some values.Count
+                if actual |> Option.exists (fun count -> count <= maximum) then Ok ()
+                else fail (InvalidLength(MaximumLength maximum, actual))
 
-    /// <summary>Returns a string check requiring a length inside the supplied inclusive bounds.</summary>
-    let lengthBetween (minimum: int) (maximum: int) : Check<string> =
-        String.lengthBetween minimum maximum
+    [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
+    type LengthBetween =
+        static member Create(_: string, minimum: int, maximum: int) : Check<string> = String.lengthBetween minimum maximum
+        static member Create(_: 'value list, minimum: int, maximum: int) : Check<'value list> = fun values -> Seq.countBetween minimum maximum values
+        static member Create(_: 'value array, minimum: int, maximum: int) : Check<'value array> = fun values -> Seq.countBetween minimum maximum values
+        static member Create(_: Map<string, 'value>, minimum: int, maximum: int) : Check<Map<string, 'value>> =
+            fun values ->
+                let actual = if Object.ReferenceEquals(values, null) then None else Some values.Count
+                if actual |> Option.exists (fun count -> count >= minimum && count <= maximum) then Ok ()
+                else fail (InvalidLength(CheckLengthExpectation.LengthBetween(minimum, maximum), actual))
+
+    /// <summary>Returns a type-directed text or concrete-collection check requiring exactly the supplied length.</summary>
+    let inline length< ^value when (^value or Length) : (static member Create: ^value * int -> Check<^value>)> (expected: int) : Check<^value> =
+        ((^value or Length) : (static member Create: ^value * int -> Check<^value>) (Unchecked.defaultof<^value>, expected))
+
+    /// <summary>Returns a type-directed text or concrete-collection check requiring at least the supplied length.</summary>
+    let inline minLength< ^value when (^value or MinLength) : (static member Create: ^value * int -> Check<^value>)> (minimum: int) : Check<^value> =
+        ((^value or MinLength) : (static member Create: ^value * int -> Check<^value>) (Unchecked.defaultof<^value>, minimum))
+
+    /// <summary>Returns a type-directed text or concrete-collection check requiring at most the supplied length.</summary>
+    let inline maxLength< ^value when (^value or MaxLength) : (static member Create: ^value * int -> Check<^value>)> (maximum: int) : Check<^value> =
+        ((^value or MaxLength) : (static member Create: ^value * int -> Check<^value>) (Unchecked.defaultof<^value>, maximum))
+
+    /// <summary>Returns a type-directed text or concrete-collection check requiring a length inside inclusive bounds.</summary>
+    let inline lengthBetween< ^value when (^value or LengthBetween) : (static member Create: ^value * int * int -> Check<^value>)> (minimum: int) (maximum: int) : Check<^value> =
+        ((^value or LengthBetween) : (static member Create: ^value * int * int -> Check<^value>)
+            (Unchecked.defaultof<^value>, minimum, maximum))
 
     /// <summary>Runs Axial's pragmatic email-format check against an already parsed string value.</summary>
     let email (value: string) : Result<unit, CheckFailure list> =
@@ -583,22 +597,6 @@ module Check =
     /// <summary>Runs an ordered-value check requiring a value less than or equal to zero.</summary>
     let inline nonPositive value =
         Number.nonPositive value
-
-    /// <summary>Returns a sequence-shaped check requiring exactly the supplied count.</summary>
-    let count (expected: int) : Check<#seq<'value>> =
-        Seq.count expected
-
-    /// <summary>Returns a sequence-shaped check requiring at least the supplied count.</summary>
-    let minCount (minimum: int) : Check<#seq<'value>> =
-        Seq.minCount minimum
-
-    /// <summary>Returns a sequence-shaped check requiring at most the supplied count.</summary>
-    let maxCount (maximum: int) : Check<#seq<'value>> =
-        Seq.maxCount maximum
-
-    /// <summary>Returns a sequence-shaped check requiring a count inside the supplied inclusive bounds.</summary>
-    let countBetween (minimum: int) (maximum: int) : Check<#seq<'value>> =
-        Seq.countBetween minimum maximum
 
     /// <summary>Runs a sequence-shaped check requiring no duplicate values.</summary>
     let distinct (values: #seq<'value>) : Result<unit, CheckFailure list> =
@@ -673,6 +671,8 @@ module Check =
         static member Apply(value: System.Nullable<'value>, _: Result<unit, CheckFailure list>, _: Present) = Nullable.present value
         static member Apply(value: 'value list, _: Result<unit, CheckFailure list>, _: Present) = Seq.notEmpty value
         static member Apply(value: 'value array, _: Result<unit, CheckFailure list>, _: Present) = Seq.notEmpty value
+        static member Apply(value: Map<string, 'value>, _: Result<unit, CheckFailure list>, _: Present) =
+            if Object.ReferenceEquals(value, null) || Map.isEmpty value then Error [ Blank ] else Ok ()
 
     type Empty with
         static member Apply(value: string, _: Result<unit, CheckFailure list>, _: Empty) = String.empty value

@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.MultipleOfAttribute"
 linkTitle: "MultipleOfAttribute"
-weight: 1511
+weight: 1516
 ---
 
 Constrains a numeric field's value to whole multiples of the given step.
@@ -13,4 +13,4 @@ Constrains a numeric field's value to whole multiples of the given step.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L99-99)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L128-128)

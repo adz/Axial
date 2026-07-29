@@ -13,4 +13,4 @@ weight: 1114
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L26-26)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Constraints.fs#L25-25)

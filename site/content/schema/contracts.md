@@ -160,9 +160,11 @@ recursively resolvable options, lists, and maps use plain fields.
 
 The details:
 
-- **Constraints are opt-in attributes** mirroring the schema constraint vocabulary: `Pattern`, `Min`/`Max` (text
-  length, list/map count), `AtLeast`/`GreaterThan`/`AtMost`/`LessThan`/`MultipleOf`, `Distinct`, `Email`, and
-  `Default` (schema metadata, surfaced in generated JSON Schema). `[<SchemaName "customer_note">]` overrides one
+- **Constraints are opt-in attributes** mirroring the schema constraint vocabulary: `Pattern`, `Min`/`Max`
+  (minimum/maximum natural length), `Length`, `LengthBetween`, `Present`, `Supplied`,
+  `AtLeast`/`GreaterThan`/`AtMost`/`LessThan`/`MultipleOf`, `Distinct`, and `Email`. `Format` adds open format
+  metadata, while `Default` supplies omitted input and is surfaced in generated JSON Schema.
+  `[<SchemaName "customer_note">]` overrides one
   wire name; otherwise fields are camelCased (`--naming snake` switches the policy per run).
 - **The compiler is the drift detector.** The generated module constructs your record by name — rename, add, or
   remove a field without regenerating and the stale `.g.fs` fails to compile, pointing at the exact field.
@@ -238,8 +240,8 @@ Reading a field line left to right: name, optional `as "wire_name"` rename, `?` 
   are always text, as JSON object keys are); a set of string literals (`"auto" | "manual" | "off"`) becomes a
   generated discriminated union; `Tank.v1` references another contract at a pinned version; `union kind { ... }`
   is an internally tagged union whose cases each reference a contract.
-- **Constraints**: comparisons (`>= 1`, `< 100`) bound a numeric value; `min`/`max` bound the natural size of the
-  type (text length, list/map count); `pattern`, `multipleOf`, and `distinct` match their JSON Schema meanings.
+- **Constraints**: comparisons (`>= 1`, `< 100`) bound a numeric value; `min`/`max` bound the natural length of
+  text, list, and map values; `pattern`, `multipleOf`, and `distinct` match their JSON Schema meanings.
 - **Required unless `?`**. There is no `required` keyword and no separate null notion — one absence axis.
 - **`///` doc comments** become XML docs on the generated types and descriptions in generated JSON Schema.
   `@deprecated "message"` and friends attach metadata.

@@ -119,7 +119,7 @@ module SchemaValidationTests =
             field "email" _.Email {
                 withSchema (
                     Schema.text
-                    |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ]
+                    |> Schema.constrainAll [ Constraint.present; Constraint.email; Constraint.maxLength 254 ]
                 )
             }
             field "age" _.Age {
@@ -131,10 +131,10 @@ module SchemaValidationTests =
     let private contactMethodSchema =
         schema<ContactMethod> {
             field "kind" _.Kind {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "value" _.Value {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             construct (fun kind value -> { Kind = kind; Value = value })
         }
@@ -142,12 +142,12 @@ module SchemaValidationTests =
     let private contactBookSchema =
         schema<ContactBook> {
             field "name" _.Name {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "contacts" _.Contacts {
                 withSchema (
                     Schema.listWith contactMethodSchema
-                    |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ]
+                    |> Schema.constrainAll [ Constraint.minLength 1; Constraint.maxLength 2 ]
                 )
             }
             construct (fun name contacts -> { Name = name; Contacts = contacts })
@@ -175,7 +175,7 @@ module SchemaValidationTests =
                     Error
                         [ { Path = Path.key "age"
                             Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "10") }
-                          { Path = Path.key "email"; Error = SchemaError.Required }
+                          { Path = Path.key "email"; Error = SchemaError.Blank }
                           { Path = Path.key "email"; Error = SchemaError.InvalidFormat "email" } ]
             @>
 
@@ -201,7 +201,7 @@ module SchemaValidationTests =
                 field "email" _.Email {
                     withSchema (
                         Schema.text
-                        |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required.")
+                        |> Schema.constrain (Constraint.present |> Constraint.withMessage "Email is required.")
                     )
                 }
                 field "age" _.Age {
@@ -223,7 +223,7 @@ module SchemaValidationTests =
                         [ { Path = Path.key "age"
                             Error = SchemaError.Custom("atLeast", Some "Must be an adult.") }
                           { Path = Path.key "email"
-                            Error = SchemaError.Custom("required", Some "Email is required.") } ]
+                            Error = SchemaError.Custom("present", Some "Email is required.") } ]
             @>
 
     [<Fact>]
@@ -260,10 +260,10 @@ module SchemaValidationTests =
         let addressSchema =
             schema<Address> {
                 field "street" _.Street {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "city" _.City {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 construct (fun street city -> { Street = street; City = city })
             }
@@ -271,7 +271,7 @@ module SchemaValidationTests =
         let customerSchema =
             schema<Customer> {
                 field "name" (fun (value: Customer) -> value.Name) {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "address" _.Address {
                     withSchema addressSchema
@@ -290,7 +290,7 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.append (Path.key "address") (Path.key "city")
-                            Error = SchemaError.Required } ]
+                            Error = SchemaError.Blank } ]
             @>
 
     [<Fact>]
@@ -313,13 +313,13 @@ module SchemaValidationTests =
                                     [ PathSegment.Name "contacts"
                                       PathSegment.Index 0
                                       PathSegment.Name "kind" ]
-                            Error = SchemaError.Required }
+                            Error = SchemaError.Blank }
                           { Path =
                                 TestPath.fromLegacy
                                     [ PathSegment.Name "contacts"
                                       PathSegment.Index 1
                                       PathSegment.Name "value" ]
-                            Error = SchemaError.Required } ]
+                            Error = SchemaError.Blank } ]
             @>
 
     [<Fact>]
@@ -339,7 +339,7 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.key "contacts"
-                            Error = SchemaError.InvalidCount(CheckCountExpectation.MaximumCount 2, Some 3) } ]
+                            Error = SchemaError.InvalidLength(CheckLengthExpectation.MaximumLength 2, Some 3) } ]
             @>
 
     [<Fact>]
@@ -347,7 +347,7 @@ module SchemaValidationTests =
         let tagsSchema =
             schema<Tags> {
                 field "values" _.Values {
-                    withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.required))
+                    withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.present))
                 }
                 construct (fun values -> { Values = values })
             }
@@ -360,7 +360,7 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.append (Path.key "values") (Path.index 1)
-                            Error = SchemaError.Required } ]
+                            Error = SchemaError.Blank } ]
             @>
 
     [<Fact>]
@@ -400,7 +400,7 @@ module SchemaValidationTests =
                     Error
                         [ { Path = Path.key "age"
                             Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "17") }
-                          { Path = Path.key "email"; Error = SchemaError.Required }
+                          { Path = Path.key "email"; Error = SchemaError.Blank }
                           { Path = Path.key "email"; Error = SchemaError.InvalidFormat "email" } ]
             @>
 

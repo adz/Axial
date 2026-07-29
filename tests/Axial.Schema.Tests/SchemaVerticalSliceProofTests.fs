@@ -164,9 +164,9 @@ module SchemaVerticalSliceProofTests =
         // Ordered fields + primitive value schema (`Schema.text`) + required and maxLength constraint metadata,
         // authored through the constructor-last typed shape.
         let emailValue =
-            Schema.text |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254 ]
+            Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.maxLength 254 ]
 
-        let displayNameValue = Schema.text |> Schema.constrain Constraint.required
+        let displayNameValue = Schema.text |> Schema.constrain Constraint.present
 
         // Declare fields in reverse of the record's own field order to prove constructor/getter alignment
         // follows declared argument position, not the record's source order or external field name.
@@ -202,10 +202,11 @@ module SchemaVerticalSliceProofTests =
 
         let emailDescriptor = byName["email"]
 
-        test <@ emailDescriptor.ValueSchema.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
+        test <@ emailDescriptor.ValueSchema.Constraints |> List.map Constraint.code = [ "present"; "maxLength" ] @>
         test <@
             emailDescriptor.ValueSchema.Constraints |> List.map Constraint.metadata =
-                [ (ConstraintMetadata.Presence Presence.Required); ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254) ]
+                [ ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present
+                  ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254) ]
         @>
 
         // Constraint lowering to `Check`: the same required/maxLength metadata read above lowers to an executable,
@@ -213,7 +214,7 @@ module SchemaVerticalSliceProofTests =
         let emailCheck = ConstraintCheck.text emailDescriptor.ValueSchema.Constraints
 
         test <@ emailCheck "ada@example.com" = Ok () @>
-        test <@ emailCheck "" = Error [ Required ] @>
+        test <@ emailCheck "" = Error [ Blank ] @>
         test <@ emailCheck (String.replicate 255 "a") = Error [ InvalidLength(MaximumLength 254, Some 255) ] @>
 
         // Compiled-record-plan proof: the same built `Schema<'model>` value compiles into an ordered, cached-name,

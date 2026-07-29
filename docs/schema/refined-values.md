@@ -71,7 +71,7 @@ open Axial.Schema.Syntax
 
 field "email" _.Email {
     withSchema Schema.text
-    constraints [ required; maxLength 80 ]
+    constraints [ present; maxLength 80 ]
 }
 ```
 
@@ -91,7 +91,7 @@ let contactSchema =
     schema<Contact> {
         field "email" _.Email {
             withSchema Schema.text
-            constraints [ required; maxLength 80 ]
+            constraints [ present; maxLength 80 ]
             refine Email.refinement
         }
 
@@ -114,7 +114,7 @@ Suppose only the billing form imposes an 80-character transport limit:
 ```fsharp
 field "billingEmail" _.BillingEmail {
     withSchema Schema.text
-    constraints [ required; maxLength 80 ]
+    constraints [ present; maxLength 80 ]
     refine Email.refinement
 }
 ```
@@ -155,7 +155,7 @@ module ContactEmail =
 
     let refinement =
         Refinement.defineAll
-            [ Axial.Check.Constraint.required
+            [ Axial.Check.Constraint.present
               Axial.Check.Constraint.email
               Axial.Check.Constraint.maxLength 254 ]
             ContactEmail

@@ -32,10 +32,10 @@ module ManySchemaParseTests =
     let private contactMethodSchema =
         schema<ContactMethod> {
             field "kind" (fun (contact: ContactMethod) -> contact.Kind) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "value" (fun (contact: ContactMethod) -> contact.Value) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             construct (fun kind value -> ({ Kind = kind; Value = value }: ContactMethod))
         }
@@ -43,10 +43,10 @@ module ManySchemaParseTests =
     let private verifiedContactMethodSchema =
         schema<VerifiedContactMethod> {
             field "kind" (fun (contact: VerifiedContactMethod) -> contact.Kind) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "value" (fun (contact: VerifiedContactMethod) -> contact.Value) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             constructResult VerifiedContactMethod.Create
         }
@@ -54,7 +54,7 @@ module ManySchemaParseTests =
     let private customerSchema =
         schema<Customer> {
             field "name" (fun (customer: Customer) -> customer.Name) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "contacts" (fun (customer: Customer) -> customer.Contacts) {
                 withSchema (Schema.listWith contactMethodSchema)
@@ -65,7 +65,7 @@ module ManySchemaParseTests =
     let private verifiedCustomerSchema =
         schema<VerifiedCustomer> {
             field "name" (fun (customer: VerifiedCustomer) -> customer.Name) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "contacts" (fun (customer: VerifiedCustomer) -> customer.Contacts) {
                 withSchema (Schema.listWith verifiedContactMethodSchema)
@@ -76,12 +76,12 @@ module ManySchemaParseTests =
     let private constrainedCustomerSchema =
         schema<Customer> {
             field "name" (fun (customer: Customer) -> customer.Name) {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "contacts" (fun (customer: Customer) -> customer.Contacts) {
                 withSchema (
                     Schema.listWith contactMethodSchema
-                    |> Schema.constrainAll [ Constraint.minCount 1; Constraint.maxCount 2 ]
+                    |> Schema.constrainAll [ Constraint.minLength 1; Constraint.maxLength 2 ]
                 )
             }
             construct (fun name contacts -> ({ Name = name; Contacts = contacts }: Customer))
@@ -145,7 +145,7 @@ module ManySchemaParseTests =
         test
             <@
                 parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts" ]
-                                    Error = SchemaError.InvalidCount(CheckCountExpectation.MinimumCount 1, Some 0) } ]
+                                    Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 1, Some 0) } ]
             @>
 
     [<Fact>]
@@ -166,7 +166,7 @@ module ManySchemaParseTests =
         test
             <@
                 parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts" ]
-                                    Error = SchemaError.InvalidCount(CheckCountExpectation.MaximumCount 2, Some 3) } ]
+                                    Error = SchemaError.InvalidLength(CheckLengthExpectation.MaximumLength 2, Some 3) } ]
             @>
 
     [<Fact>]
@@ -210,7 +210,7 @@ module ManySchemaParseTests =
         let schema =
             schema<Tags> {
                 field "values" _.Values {
-                    withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.required))
+                    withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.present))
                 }
                 construct (fun values -> { Values = values })
             }
@@ -227,7 +227,7 @@ module ManySchemaParseTests =
         let schema =
             schema<Tags> {
                 field "values" _.Values {
-                    withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.required))
+                    withSchema (Schema.listWith (Schema.text |> Schema.constrain Constraint.present))
                 }
                 construct (fun values -> { Values = values })
             }
@@ -239,7 +239,7 @@ module ManySchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "values"; PathSegment.Index 1 ]
-                                   Error = SchemaError.Required } ] @>
+                                   Error = SchemaError.Blank } ] @>
 
     [<Fact>]
     let ``parse accumulates errors from every failing item instead of stopping at the first`` () =
@@ -262,9 +262,9 @@ module ManySchemaParseTests =
                 |> List.sortBy (fun diagnostic -> diagnostic.Path)
                 |> (=)
                     [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 0; PathSegment.Name "kind" ]
-                        Error = SchemaError.Required }
+                        Error = SchemaError.Blank }
                       { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
-                        Error = SchemaError.Required } ]
+                        Error = SchemaError.Blank } ]
             @>
 
     [<Fact>]
@@ -309,7 +309,7 @@ module ManySchemaParseTests =
                 |> List.sortBy (fun diagnostic -> diagnostic.Path)
                 |> (=)
                     [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "kind" ]
-                        Error = SchemaError.Required }
+                        Error = SchemaError.Blank }
                       { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
-                        Error = SchemaError.Required } ]
+                        Error = SchemaError.Blank } ]
             @>

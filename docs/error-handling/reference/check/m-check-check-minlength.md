@@ -4,7 +4,7 @@ linkTitle: "minLength"
 weight: 2204
 ---
 
-Returns a string check requiring at least the supplied length.
+Returns a type-directed text or concrete-collection check requiring at least the supplied length.
 
 ## Signature
 
@@ -22,7 +22,7 @@ Returns a string check requiring at least the supplied length.
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
+| <code><span><a href="t-check-check.md">Check</a>&lt;^value&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L528-528)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L541-541)

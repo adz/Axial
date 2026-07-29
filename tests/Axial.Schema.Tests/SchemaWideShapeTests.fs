@@ -265,7 +265,7 @@ module SchemaWideShapeTests =
             |> List.find (fun field -> field.Name = name)
             |> fun field -> field.Schema.Constraints |> List.map Constraint.code
 
-        test <@ constraintsFor "owner" = [ "required" ] @>
-        test <@ constraintsFor "aliases" = [ "minCount" ] @>
+        test <@ constraintsFor "owner" = [ "present" ] @>
+        test <@ constraintsFor "aliases" = [ "minLength" ] @>
         test <@ constraintsFor "codes" = [ "distinct" ] @>
-        test <@ constraintsFor "rows" = [ "minCount" ] @>
+        test <@ constraintsFor "rows" = [ "minLength" ] @>

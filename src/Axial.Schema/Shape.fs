@@ -26,7 +26,7 @@ module internal ShapeInternals =
 /// </summary>
 [<Sealed; AbstractClass>]
 type SchemaDefaults =
-    /// <summary>Builds an optional schema from an explicitly resolved item schema.</summary>
+    /// <summary>Builds an omittable schema from an explicitly resolved item schema.</summary>
     static member OptionWith(item: Schema<'item>) : Schema<'item option> = SchemaCore.option item
     /// <summary>Builds a list schema from an explicitly resolved item schema.</summary>
     static member ListWith(item: Schema<'item>) : Schema<'item list> = SchemaCore.listWith item
@@ -83,15 +83,16 @@ type SchemaDefaults =
 
     /// <summary>Builds a non-empty array schema from an explicitly resolved item schema.</summary>
     static member NonEmptyArrayWith(item: Schema<'item>) : Schema<Axial.Refined.NonEmptyArray<'item>> =
-        // The wire shape is a list; the refinement bridges list -> NonEmptyArray while retaining minCount 1.
+        // The wire shape is a list; the refinement bridges list -> NonEmptyArray while retaining minLength 1.
+        let constraint': Axial.Check.Constraint<'item list> = Axial.Check.Constraint.minLength 1
         let refinement =
             Axial.Refined.Refinement.define
-                (Axial.Check.Constraint.minCount 1)
+                constraint'
                 (fun (values: 'item list) ->
                     match Axial.Refined.Refine.nonEmptyArray (List.toArray values) with
                     | Ok value -> value
                     | Error _ -> failwith "unreachable")
-                (fun value -> value.ToArray() |> Array.toList)
+                (fun (value: Axial.Refined.NonEmptyArray<'item>) -> value.ToArray() |> Array.toList)
 
         SchemaCore.refine refinement (SchemaCore.listWith item)
 
@@ -197,22 +198,28 @@ module Syntax =
     // ---- typed constraints ----
 
     /// <summary>Requires a field value to be supplied by boundary interpreters.</summary>
-    let required<'value> : SchemaConstraint<'value> = Constraint.required<'value>
+    let supplied<'value> : SchemaConstraint<'value> = Constraint.supplied<'value>
 
     /// <summary>
-    /// Marks an option-typed field as optional for boundary interpreters. A field of any other type cannot be
-    /// optional, so applying this to one is a compile error.
+    /// Marks an option-typed field as omittable for boundary interpreters. A field of any other type cannot be
+    /// omittable, so applying this to one is a compile error.
     /// </summary>
-    let optional<'value> : SchemaConstraint<'value option> = Constraint.optional<'value>
+    let omittable<'value> : SchemaConstraint<'value option> = Constraint.omittable<'value>
 
-    /// <summary>Requires a text field to have at least the supplied length.</summary>
-    let minLength minimum : SchemaConstraint<string> = Constraint.minLength minimum
+    /// <summary>Requires a field value to be inhabited according to its shape.</summary>
+    let inline present< ^value when (^value or Axial.Check.Constraint.PresentDispatcher) : (static member Create: ^value -> Axial.Check.Constraint<^value>)> : SchemaConstraint<^value> = Constraint.present
 
-    /// <summary>Requires a text field to have at most the supplied length.</summary>
-    let maxLength maximum : SchemaConstraint<string> = Constraint.maxLength maximum
+    /// <summary>Requires a text or concrete collection field to have exactly the supplied length.</summary>
+    let inline length< ^value when (^value or Axial.Check.Constraint.LengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> expected : SchemaConstraint<^value> = Constraint.length expected
 
-    /// <summary>Requires a text field's length to fall inside the supplied inclusive bounds.</summary>
-    let lengthBetween minimum maximum : SchemaConstraint<string> =
+    /// <summary>Requires a text or concrete collection field to have at least the supplied length.</summary>
+    let inline minLength< ^value when (^value or Axial.Check.Constraint.MinLengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> minimum : SchemaConstraint<^value> = Constraint.minLength minimum
+
+    /// <summary>Requires a text or concrete collection field to have at most the supplied length.</summary>
+    let inline maxLength< ^value when (^value or Axial.Check.Constraint.MaxLengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> maximum : SchemaConstraint<^value> = Constraint.maxLength maximum
+
+    /// <summary>Requires a text or concrete collection field's length to fall inside the supplied inclusive bounds.</summary>
+    let inline lengthBetween< ^value when (^value or Axial.Check.Constraint.LengthBetweenDispatcher) : (static member Create: ^value * int * int -> Axial.Check.Constraint<^value>)> minimum maximum : SchemaConstraint<^value> =
         Constraint.lengthBetween minimum maximum
 
     /// <summary>Requires a text field to match Axial's pragmatic email format.</summary>
@@ -251,19 +258,6 @@ module Syntax =
 
     /// <summary>Requires a text field to equal one of the supplied choices.</summary>
     let oneOf (choices: string list) : SchemaConstraint<string> = Constraint.oneOf choices
-
-    /// <summary>Requires a list field to have exactly the supplied number of items.</summary>
-    let count expected : SchemaConstraint<'item list> = Constraint.count expected
-
-    /// <summary>Requires a list field to have at least the supplied number of items.</summary>
-    let minCount minimum : SchemaConstraint<'item list> = Constraint.minCount minimum
-
-    /// <summary>Requires a list field to have at most the supplied number of items.</summary>
-    let maxCount maximum : SchemaConstraint<'item list> = Constraint.maxCount maximum
-
-    /// <summary>Requires a list field's item count to fall inside the supplied inclusive bounds.</summary>
-    let countBetween minimum maximum : SchemaConstraint<'item list> =
-        Constraint.countBetween minimum maximum
 
     /// <summary>Requires a list field's items to be distinct.</summary>
     let distinct<'item when 'item: equality> : SchemaConstraint<'item list> = Constraint.distinct<'item>

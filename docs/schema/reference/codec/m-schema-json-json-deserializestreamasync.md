@@ -33,4 +33,4 @@ Reads a stream to end into a pooled buffer, then deserializes it as UTF-8 JSON t
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1129-1129)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1141-1141)

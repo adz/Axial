@@ -50,7 +50,7 @@ module InputParseTests =
     let private signupSchema =
         schema<Signup> {
             field "email" _.Email {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "age" (fun (value: Signup) -> value.Age)
             construct (fun email age -> { Email = email; Age = age })
@@ -99,12 +99,12 @@ module InputParseTests =
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.InvalidFormat "int" ] @>
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" }
-                                 { Path = TestPath.fromLegacy [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "email" ]; Error = SchemaError.Blank } ] @>
 
     [<Fact>]
     let ``parse surfaces a constraint's custom message in place of the default error`` () =
@@ -113,7 +113,7 @@ module InputParseTests =
                 field "email" _.Email {
                     withSchema (
                         Schema.text
-                        |> Schema.constrain (Constraint.required |> Constraint.withMessage "Email is required.")
+                        |> Schema.constrain (Constraint.present |> Constraint.withMessage "Email is required.")
                     )
                 }
                 field "age" (fun (value: Signup) -> value.Age) {
@@ -131,7 +131,7 @@ module InputParseTests =
         let parsed = Schema.parseRetainingInput messageSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Custom("required", Some "Email is required.") ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Custom("present", Some "Email is required.") ] @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.Custom("atLeast", Some "Must be an adult.") ] @>
 
     [<Fact>]
@@ -144,7 +144,7 @@ module InputParseTests =
 
         let parsed = Schema.parseRetainingInput signupSchema raw
 
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
 
     [<Fact>]
     let ``parse reports root diagnostic when model input is not an object`` () =
@@ -156,15 +156,32 @@ module InputParseTests =
         test <@ parsed.Errors = [ { Path = TestPath.fromLegacy []; Error = SchemaError.ExpectedObject } ] @>
 
     [<Fact>]
-    let ``required reports missing raw field as required`` () =
+    let ``missing raw field reports omission`` () =
         let raw = Data.objectOfMap (Map.ofList [ "age", Data.Text "42" ])
 
         let parsed = Schema.parseRetainingInput signupSchema raw
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
-        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "email" ]; Error = SchemaError.Required } ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Omitted ] @>
+        test <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "email" ]; Error = SchemaError.Omitted } ] @>
+
+    [<Fact>]
+    let ``default supplies an omitted non-option field`` () =
+        let defaultedSchema =
+            schema<Signup> {
+                field "email" _.Email
+                field "age" (fun (value: Signup) -> value.Age) {
+                    defaultValue 18
+                }
+                construct (fun email age -> { Email = email; Age = age })
+            }
+
+        let raw = Data.objectOfMap (Map.ofList [ "email", Data.Text "ada@example.com" ])
+
+        test <@ Schema.parse defaultedSchema raw = Ok { Email = "ada@example.com"; Age = 18 } @>
+        let generated = JsonSchema.generate defaultedSchema
+        test <@ generated.Contains "\"required\":[\"email\"]" @>
 
     [<Fact>]
     let ``parse retains structured data on failure`` () =
@@ -190,7 +207,7 @@ module InputParseTests =
         let parsed = Schema.parseRetainingInput signupSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
 
     [<Fact>]
     let ``required reports blank text scalar as required`` () =
@@ -203,7 +220,7 @@ module InputParseTests =
         let parsed = Schema.parseRetainingInput signupSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Required ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
 
     [<Fact>]
     let ``parse does not call the model constructor when a field fails to parse`` () =
@@ -212,7 +229,7 @@ module InputParseTests =
         let countingSchema =
             schema<Signup> {
                 field "email" _.Email {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "age" (fun (value: Signup) -> value.Age)
                 construct (fun email age ->
@@ -238,7 +255,7 @@ module InputParseTests =
         let countingSchema =
             schema<Signup> {
                 field "email" _.Email {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "age" (fun (value: Signup) -> value.Age)
                 construct (fun email age ->
@@ -498,7 +515,7 @@ module InputParseTests =
         let makeSchema fieldName =
             schema<Signup> {
                 field fieldName _.Email {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "age" (fun (value: Signup) -> value.Age)
                 construct (fun email age -> { Email = email; Age = age })
@@ -519,7 +536,7 @@ module InputParseTests =
             schema<Signup> {
                 field "email" _.Email
                 field "age" (fun (value: Signup) -> value.Age) {
-                    withSchema (Schema.int |> Schema.constrain Constraint.required)
+                    withSchema (Schema.int |> Schema.constrain Constraint.supplied)
                 }
                 construct (fun email age -> { Email = email; Age = age })
             }
@@ -533,4 +550,4 @@ module InputParseTests =
         let parsed = Schema.parseRetainingInput requiredAgeSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "age" = [ SchemaError.Required ] @>
+        test <@ parsed.ErrorsFor "age" = [ SchemaError.Blank ] @>

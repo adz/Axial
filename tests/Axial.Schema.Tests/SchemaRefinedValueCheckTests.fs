@@ -22,7 +22,7 @@ module SchemaRefinedValueCheckTests =
 
         let schema : Schema<Email> =
             Schema.text
-            |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ]
+            |> Schema.constrainAll [ Constraint.present; Constraint.email; Constraint.maxLength 254 ]
             |> Schema.convert create value
 
     /// <summary>A bounded-text domain value whose constraints all live on the raw text schema.</summary>
@@ -105,10 +105,10 @@ module SchemaRefinedValueCheckTests =
 
     [<Fact>]
     let ``allConstraints gathers every layer's constraint metadata foundation-first`` () =
-        test <@ Schema.allConstraints Email.schema |> List.map Constraint.code = [ "required"; "email"; "maxLength" ] @>
+        test <@ Schema.allConstraints Email.schema |> List.map Constraint.code = [ "present"; "email"; "maxLength" ] @>
         test <@
             Schema.allConstraints NormalizedEmail.schema |> List.map Constraint.code =
-                [ "required"; "email"; "maxLength" ]
+                [ "present"; "email"; "maxLength" ]
         @>
 
     [<Fact>]
@@ -124,7 +124,7 @@ module SchemaRefinedValueCheckTests =
 
         test <@ check (Email.create "ada@example.com") = Ok () @>
         Assert.Equal<Result<unit, CheckFailure list>>(
-            Error [ Required; InvalidFormat "email" ],
+            Error [ Blank; InvalidFormat "email" ],
             check (Email.create "")
         )
 
@@ -147,7 +147,7 @@ module SchemaRefinedValueCheckTests =
 
         // The raw text layer's checks fire for blank input; the outer refined layer's maxLength passes at length 0.
         Assert.Equal<Result<unit, CheckFailure list>>(
-            Error [ Required; InvalidFormat "email" ],
+            Error [ Blank; InvalidFormat "email" ],
             check (NormalizedEmail.create (Email.create ""))
         )
 

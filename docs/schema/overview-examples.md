@@ -71,7 +71,7 @@ A local raw schema can instead transition to the getter type:
 ```fsharp
 field "email" _.Email {
     withSchema Schema.text
-    constrain required
+    constrain present
     refine
 }
 ```

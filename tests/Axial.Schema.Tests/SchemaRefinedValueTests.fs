@@ -107,21 +107,21 @@ module SchemaRefinedValueTests =
     let ``refined value schemas start with no constraints and accept constraints like any value schema`` () =
         test <@ Schema.constraints Email.schema = [] @>
 
-        let required = Email.schema |> Schema.constrain Constraint.required
-        test <@ Schema.constraints required |> List.map Constraint.code = [ "required" ] @>
+        let required = Email.schema |> Schema.constrain Constraint.supplied
+        test <@ Schema.constraints required |> List.map Constraint.code = [ "supplied" ] @>
 
     [<Fact>]
     let ``refined value schemas compose with an object shape like a primitive value schema`` () =
         let emailField =
             Field.create "email" (fun (contact: Contact) -> contact.Email) Email.schema
-            |> Field.withConstraint Constraint.required
+            |> Field.withConstraint Constraint.supplied
 
         let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Schema.text
 
         let schema =
             schema<Contact> {
                 field "email" _.Email {
-                    withSchema (Email.schema |> Schema.constrainAll [ Constraint.required ])
+                    withSchema (Email.schema |> Schema.constrainAll [ Constraint.supplied ])
                 }
                 field "name" _.Name
                 construct (fun email name -> { Email = email; Name = name })
@@ -135,12 +135,12 @@ module SchemaRefinedValueTests =
         match schema.Definition with
         | ModelDefinition model ->
             let email = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "email")
-            test <@ email.ValueSchema.Constraints |> List.map Constraint.code = [ "required" ] @>
+            test <@ email.ValueSchema.Constraints |> List.map Constraint.code = [ "supplied" ] @>
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     [<Fact>]
     let ``model schemas can attach required to a refined field's value schema, matching field "email" _.Email Email.schema { required }`` () =
-        let requiredEmail = Email.schema |> Schema.constrain Constraint.required
+        let requiredEmail = Email.schema |> Schema.constrain Constraint.supplied
 
         let schema =
             schema<Contact> {
@@ -154,7 +154,7 @@ module SchemaRefinedValueTests =
         match schema.Definition with
         | ModelDefinition model ->
             let email = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "email")
-            test <@ email.ValueSchema.Constraints |> List.map Constraint.code = [ "required" ] @>
+            test <@ email.ValueSchema.Constraints |> List.map Constraint.code = [ "supplied" ] @>
 
             match email.ValueSchema.Shape with
             | RefinedValueDefinition _ -> ()
@@ -229,8 +229,8 @@ module SchemaRefinedValueTests =
         // Constraints attached to the refined schema itself stay separate from the raw schema's constraints.
         test <@ Schema.constraints ContactName.schema = [] @>
 
-        let required = ContactName.schema |> Schema.constrain Constraint.required
-        test <@ Schema.constraints required |> List.map Constraint.code = [ "required" ] @>
+        let required = ContactName.schema |> Schema.constrain Constraint.supplied
+        test <@ Schema.constraints required |> List.map Constraint.code = [ "supplied" ] @>
         test <@ Schema.rawConstraints required |> List.map Constraint.code = [ "minLength"; "maxLength" ] @>
 
     [<Fact>]

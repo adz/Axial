@@ -45,14 +45,19 @@ module SchemaInterpreterPrototypes =
             | SchemaShape.Optional payload -> sprintf "optional %s" (valueSummary payload)
             | SchemaShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
-        let private constraintSummary metadata =
+        let private constraintSummary shape metadata =
+            let lengthNoun =
+                match shape with
+                | SchemaShape.Many _ | SchemaShape.MapOf _ -> "items"
+                | _ -> "characters"
+
             match metadata with
-            | (ConstraintMetadata.Presence Presence.Required) -> Some "required"
-            | (ConstraintMetadata.Presence Presence.Optional) -> Some "optional"
-            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength minimum) -> Some(sprintf "at least %d characters" minimum)
-            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some(sprintf "at most %d characters" maximum)
+            | (ConstraintMetadata.Supply Supply.Supplied) -> Some "required"
+            | (ConstraintMetadata.Supply Supply.Omittable) -> Some "optional"
+            | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> Some "required"
+            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength minimum) -> Some(sprintf "at least %d %s" minimum lengthNoun)
+            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some(sprintf "at most %d %s" maximum lengthNoun)
             | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "email format"
-            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinCount minimum) -> Some(sprintf "at least %d items" minimum)
             | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtLeast minimum) ->
                 Some(sprintf "at least %s" (Convert.ToString(minimum, CultureInfo.InvariantCulture)))
             | _ -> None
@@ -62,7 +67,7 @@ module SchemaInterpreterPrototypes =
             |> List.collect (fun field ->
                 let notes =
                     (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Schema
-                    |> List.choose constraintSummary
+                    |> List.choose (constraintSummary (underlyingShape field.Schema))
 
                 let noteText = if List.isEmpty notes then "" else sprintf " — %s" (String.concat ", " notes)
                 let line = sprintf "%s- %s (%s)%s" indent field.Name (valueSummary field.Schema) noteText
@@ -133,7 +138,12 @@ module SchemaInterpreterPrototypes =
 
                 { Label = field.Name
                   Control = controlFor field.Schema
-                  IsRequired = constraints |> List.contains (ConstraintMetadata.Presence Presence.Required)
+                  IsRequired =
+                    constraints
+                    |> List.exists (function
+                        | ConstraintMetadata.Supply Supply.Supplied
+                        | ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present -> true
+                        | _ -> false)
                   MaxLength =
                     constraints
                     |> List.tryPick (fun metadata ->
@@ -168,7 +178,7 @@ module SchemaInterpreterPrototypeTests =
 
     let private emailSchemaWith (constructions: int ref) (getterReads: int ref) =
         Schema.text
-        |> Schema.constrainAll [ Constraint.required; Constraint.maxLength 254 ]
+        |> Schema.constrainAll [ Constraint.present; Constraint.maxLength 254 ]
         |> Schema.constrain Constraint.email
         |> Schema.convert
             (fun raw ->
@@ -202,12 +212,12 @@ module SchemaInterpreterPrototypeTests =
             }
             field "newsletter" _.Newsletter
             field "address" _.Address {
-                withSchema ((addressSchema ()) |> Schema.constrainAll [ Constraint.required ])
+                withSchema ((addressSchema ()) |> Schema.constrainAll [ Constraint.supplied ])
             }
             field "tags" _.Tags {
                 withSchema (
                     Schema.listWith (tagSchema ())
-                    |> Schema.constrainAll [ Constraint.minCount 1; Constraint.distinct ]
+                    |> Schema.constrainAll [ Constraint.minLength 1; Constraint.distinct ]
                 )
             }
             construct (fun email age newsletter address tags ->
@@ -225,7 +235,7 @@ module SchemaInterpreterPrototypeTests =
         let generated = JsonSchema.generate (signupSchemaWith constructions getterReads)
 
         test <@ generated.Contains "\"type\":\"object\"" @>
-        test <@ generated.Contains "\"email\":{\"type\":\"string\",\"maxLength\":254,\"format\":\"email\"}" @>
+        test <@ generated.Contains "\"email\":{\"type\":\"string\",\"minLength\":1,\"pattern\":\"\\\\S\",\"maxLength\":254,\"format\":\"email\"}" @>
         test <@ generated.Contains "\"age\":{\"type\":\"integer\",\"minimum\":13,\"maximum\":120}" @>
         test <@ generated.Contains "\"newsletter\":{\"type\":\"boolean\"}" @>
         test <@ generated.Contains "\"address\":{\"type\":\"object\",\"properties\":{\"street\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"}},\"required\":[\"street\",\"city\"]}" @>
@@ -310,7 +320,7 @@ module SchemaInterpreterPrototypeTests =
         match email.Schema.Shape with
         | SchemaShape.Refined underlying ->
             test <@ underlying.Shape = SchemaShape.Primitive PrimitiveValueKind.Text @>
-            test <@ underlying.Constraints |> List.map _.Metadata |> List.contains (ConstraintMetadata.Presence Presence.Required) @>
+            test <@ underlying.Constraints |> List.map _.Metadata |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) @>
         | other -> failwithf "Expected the email field to be refined, but got %A." other
 
         test <@ constructions.Value = 0 @>

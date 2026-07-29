@@ -80,19 +80,33 @@ module Resolver =
         | KDecimal, _ -> Some $"'{constraintName}' on a decimal field takes a number, found {literalDescription literal}"
         | _ -> Some $"'{constraintName}' applies to int or decimal fields, not {describeKind kind}"
 
-    let private checkConstraint kind (constraint': ConstraintDecl) =
+    let private checkConstraint optional kind (constraint': ConstraintDecl) =
         match constraint' with
         | AtLeast literal -> checkNumericLiteral kind ">=" literal
         | GreaterThan literal -> checkNumericLiteral kind ">" literal
         | AtMost literal -> checkNumericLiteral kind "<=" literal
         | LessThan literal -> checkNumericLiteral kind "<" literal
         | MultipleOf literal -> checkNumericLiteral kind "multipleOf" literal
+        | MinSize value
+        | MaxSize value
+        | ExactLength value when value < 0 -> Some "length bounds must be non-negative"
+        | LengthRange(minimum, maximum) when minimum < 0 -> Some "length bounds must be non-negative"
+        | LengthRange(minimum, maximum) when maximum < minimum -> Some "lengthBetween maximum must be greater than or equal to minimum"
         | MinSize _
-        | MaxSize _ ->
+        | MaxSize _
+        | ExactLength _
+        | LengthRange _ ->
             match kind with
             | KText
             | KSized _ -> None
-            | _ -> Some $"'min'/'max' bound the size of text, list, or map fields, not {describeKind kind}"
+            | _ -> Some $"length constraints apply to text, list, or map fields, not {describeKind kind}"
+        | Present ->
+            match optional, kind with
+            | true, _ -> None
+            | false, KText
+            | false, KSized _ -> None
+            | _ -> Some $"'present' applies to text, list, map, or optional fields, not {describeKind kind}"
+        | Supplied -> None
         | Pattern _ ->
             match kind with
             | KText -> None
@@ -314,7 +328,15 @@ module Resolver =
                     // Constraint compatibility. Constraints on optional fields judge the payload type.
                     let kind = kindOf field.FieldType
 
-                    match field.FieldType, field.Constraints with
+                    let shapeConstraints =
+                        field.Constraints
+                        |> List.filter (fun (constraint', _) ->
+                            match constraint' with
+                            | Supplied -> false
+                            | Present when field.Optional -> false
+                            | _ -> true)
+
+                    match field.FieldType, shapeConstraints with
                     | (Reference _ | UnionBlock _ | ExternalUnion _), (_ :: _) ->
                         report file.FilePath field.FieldLine
                             $"constraints on {describeKind kind} fields are not supported; declare them on the referenced contract's own fields"
@@ -323,7 +345,7 @@ module Resolver =
                             "constraints on literal union fields are not supported; the case list is already the constraint"
                     | _ ->
                         for constraint', line in field.Constraints do
-                            match checkConstraint kind constraint' with
+                            match checkConstraint field.Optional kind constraint' with
                             | Some message -> report file.FilePath line message
                             | None -> ()
 

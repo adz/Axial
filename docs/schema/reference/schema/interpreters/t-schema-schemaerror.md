@@ -16,7 +16,8 @@ Schema input, checking, and contextual rule failures attached to diagnostics pat
 
 | Case | Description |
 | --- | --- |
-| `Required` |  |
+| `Omitted` |  |
+| `Blank` |  |
 | `ExpectedScalar` |  |
 | `ExpectedObject` |  |
 | `ExpectedMany` |  |
@@ -24,7 +25,6 @@ Schema input, checking, and contextual rule failures attached to diagnostics pat
 | `ParseOutOfRange` |  |
 | `InvalidLength` |  |
 | `OutOfRange` |  |
-| `InvalidCount` |  |
 | `NotOneOf` |  |
 | `Duplicate` |  |
 | `ConstructorFailed` |  |

@@ -1,7 +1,7 @@
 ---
 title: "Schema.Derive.DistinctAttribute"
 linkTitle: "DistinctAttribute"
-weight: 1512
+weight: 1517
 type: docs
 ---
 
@@ -14,4 +14,4 @@ Requires the elements of a list field to be distinct.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L107-107)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Derive.fs#L136-136)

@@ -17,7 +17,7 @@ module SchemaUnionValueTests =
     let private cardSchema () =
         schema<CardDetails> {
             field "number" _.Number {
-                withSchema (Schema.text |> Schema.constrain Constraint.required)
+                withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             construct (fun number -> { Number = number })
         }
@@ -72,5 +72,5 @@ module SchemaUnionValueTests =
         let generated = JsonSchema.generate schema
 
         test <@ generated.Contains "\"payment\":{\"oneOf\":[" @>
-        test <@ generated.Contains "{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"card\"},\"value\":{\"type\":\"object\",\"properties\":{\"number\":{\"type\":\"string\"}},\"required\":[\"number\"]}},\"required\":[\"type\",\"value\"]}" @>
+        test <@ generated.Contains "{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"card\"},\"value\":{\"type\":\"object\",\"properties\":{\"number\":{\"type\":\"string\",\"minLength\":1,\"pattern\":\"\\\\S\"}},\"required\":[\"number\"]}},\"required\":[\"type\",\"value\"]}" @>
         test <@ generated.Contains "{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"invoice\"},\"value\":{\"type\":\"string\"}},\"required\":[\"type\",\"value\"]}" @>

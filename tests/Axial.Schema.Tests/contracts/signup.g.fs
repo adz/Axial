@@ -59,7 +59,7 @@ module Signup =
             field "tags" (fun (value: Signup) -> value.Tags) {
                 withSchema (Schema.listWith Schema.text)
                 constraints [
-                    maxCount 8
+                    maxLength 8
                     distinct
                 ]
             }

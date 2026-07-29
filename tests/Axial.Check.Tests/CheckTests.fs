@@ -20,24 +20,24 @@ module CheckTests =
         [<Fact>]
         let ``CheckFailure exposes structured value constraint cases`` () =
             let failures =
-                [ Required
-                  Required
+                [ Blank
+                  Blank
                   InvalidFormat "email"
                   InvalidLength(MinimumLength 3, Some 2)
                   OutOfRange(Between("1", "10"), Some "12")
-                  InvalidCount(CountBetween(1, 3), Some 0)
+                  InvalidLength(LengthBetween(1, 3), Some 0)
                   NotOneOf "expected"
                   Custom "domain.rule" ]
 
             test
                 <@
                     failures =
-                        [ Required
-                          Required
+                        [ Blank
+                          Blank
                           InvalidFormat "email"
                           InvalidLength(MinimumLength 3, Some 2)
                           OutOfRange(Between("1", "10"), Some "12")
-                          InvalidCount(CountBetween(1, 3), Some 0)
+                          InvalidLength(LengthBetween(1, 3), Some 0)
                           NotOneOf "expected"
                           Custom "domain.rule" ]
                 @>
@@ -45,10 +45,10 @@ module CheckTests =
         [<Fact>]
         let ``Check composition accumulates alternatives and maps failures`` () =
             let missingWhenEmpty : Check<string> =
-                fun value -> if value = "" then Error [ Required ] else Ok ()
+                fun value -> if value = "" then Error [ Blank ] else Ok ()
 
             let blankWhenWhitespace : Check<string> =
-                fun value -> if value.Trim() = "" then Error [ Required ] else Ok ()
+                fun value -> if value.Trim() = "" then Error [ Blank ] else Ok ()
 
             let invalidWhenNotEmail : Check<string> =
                 fun value ->
@@ -60,7 +60,7 @@ module CheckTests =
                     if value.StartsWith("+") then Ok ()
                     else Error [ InvalidFormat "phone" ]
 
-            test <@ Check.all [ missingWhenEmpty; blankWhenWhitespace ] "" = Error [ Required; Required ] @>
+            test <@ Check.all [ missingWhenEmpty; blankWhenWhitespace ] "" = Error [ Blank; Blank ] @>
             test <@ Check.all [ missingWhenEmpty; blankWhenWhitespace ] "Ada" = Ok () @>
             test <@ Check.all [] "Ada" = Ok () @>
             test <@ Check.any [ invalidWhenNotEmail; invalidWhenNotPhone ] "ada@example.com" = Ok () @>
@@ -93,13 +93,13 @@ module CheckTests =
             let check =
                 Check.all
                     [
-                        failWith "first" Required
+                        failWith "first" Blank
                         passWith "second"
-                        failWith "third" Required
+                        failWith "third" Blank
                         failWith "fourth" (InvalidFormat "email")
                     ]
 
-            test <@ check "" = Error [ Required; Required; InvalidFormat "email" ] @>
+            test <@ check "" = Error [ Blank; Blank; InvalidFormat "email" ] @>
             test <@ calls |> Seq.toList = [ "first"; "second"; "third"; "fourth" ] @>
 
         [<Fact>]
@@ -152,9 +152,9 @@ module CheckTests =
                         Check.String.lengthBetween 5 20
                     ]
 
-            test <@ requiredEmail nullString = Error [ Required; InvalidFormat "email"; InvalidLength(LengthBetween(5, 20), None) ] @>
-            test <@ requiredEmail "" = Error [ Required; InvalidFormat "email"; InvalidLength(LengthBetween(5, 20), Some 0) ] @>
-            test <@ requiredEmail "   " = Error [ Required; InvalidFormat "email"; InvalidLength(LengthBetween(5, 20), Some 3) ] @>
+            test <@ requiredEmail nullString = Error [ Blank; InvalidFormat "email"; InvalidLength(LengthBetween(5, 20), None) ] @>
+            test <@ requiredEmail "" = Error [ Blank; InvalidFormat "email"; InvalidLength(LengthBetween(5, 20), Some 0) ] @>
+            test <@ requiredEmail "   " = Error [ Blank; InvalidFormat "email"; InvalidLength(LengthBetween(5, 20), Some 3) ] @>
             test <@ requiredEmail "ada" = Error [ InvalidFormat "email"; InvalidLength(LengthBetween(5, 20), Some 3) ] @>
             test <@ requiredEmail "ada@example.com" = Ok () @>
 
@@ -193,14 +193,14 @@ module CheckTests =
                     ]
 
             test <@ seqCheck [ 1; 2; 3 ] = Ok () @>
-            test <@ seqCheck [] = Error [ InvalidCount(MinimumCount 2, Some 0) ] @>
-            test <@ seqCheck [ 1; 2; 1; 3 ] = Error [ InvalidCount(MaximumCount 3, Some 4); Duplicate ] @>
-            test <@ seqCheck nullValues = Error [ InvalidCount(MinimumCount 2, None); InvalidCount(MaximumCount 3, None); Required ] @>
+            test <@ seqCheck [] = Error [ InvalidLength(MinimumLength 2, Some 0) ] @>
+            test <@ seqCheck [ 1; 2; 1; 3 ] = Error [ InvalidLength(MaximumLength 3, Some 4); Duplicate ] @>
+            test <@ seqCheck nullValues = Error [ InvalidLength(MinimumLength 2, None); InvalidLength(MaximumLength 3, None); Blank ] @>
 
         [<Fact>]
         let ``Check Option and Result behavior composes with all and any`` () =
             test <@ Check.all [ Check.Option.some; Check.not Check.Option.none ] (Some 1) = Ok () @>
-            test <@ Check.all [ Check.Option.some; Check.not Check.Option.none ] None = Error [ Required; Custom "check.not" ] @>
+            test <@ Check.all [ Check.Option.some; Check.not Check.Option.none ] None = Error [ Blank; Custom "check.not" ] @>
             test <@ Check.any [ Check.Option.none; Check.Option.some ] (Some 1) = Ok () @>
             test <@ Check.any [ Check.Option.none; Check.Option.some ] (None: int option) = Ok () @>
 
@@ -218,17 +218,17 @@ module CheckTests =
             let nullString: string = null
 
             test <@ Check.String.present "Ada" = Ok () @>
-            test <@ Check.String.present nullString = Error [ Required ] @>
-            test <@ Check.String.present "" = Error [ Required ] @>
-            test <@ Check.String.present "   " = Error [ Required ] @>
+            test <@ Check.String.present nullString = Error [ Blank ] @>
+            test <@ Check.String.present "" = Error [ Blank ] @>
+            test <@ Check.String.present "   " = Error [ Blank ] @>
 
             test <@ Check.String.empty "" = Ok () @>
             test <@ Check.String.empty " " = Error [ InvalidLength(ExactLength 0, Some 1) ] @>
-            test <@ Check.String.empty nullString = Error [ Required ] @>
+            test <@ Check.String.empty nullString = Error [ Blank ] @>
 
             test <@ Check.String.notEmpty " " = Ok () @>
             test <@ Check.String.notEmpty "" = Error [ InvalidLength(MinimumLength 1, Some 0) ] @>
-            test <@ Check.String.notEmpty nullString = Error [ Required ] @>
+            test <@ Check.String.notEmpty nullString = Error [ Blank ] @>
 
             test <@ Check.String.minLength 3 "Ada" = Ok () @>
             test <@ Check.String.minLength 3 "Al" = Error [ InvalidLength(MinimumLength 3, Some 2) ] @>
@@ -298,54 +298,63 @@ module CheckTests =
             let nullValues: seq<int> = null
 
             test <@ Check.Seq.notEmpty [ 1 ] = Ok () @>
-            test <@ Check.Seq.notEmpty [] = Error [ InvalidCount(MinimumCount 1, Some 0) ] @>
-            test <@ Check.Seq.notEmpty nullValues = Error [ InvalidCount(MinimumCount 1, None) ] @>
+            test <@ Check.Seq.notEmpty [] = Error [ InvalidLength(MinimumLength 1, Some 0) ] @>
+            test <@ Check.Seq.notEmpty nullValues = Error [ InvalidLength(MinimumLength 1, None) ] @>
 
             test <@ Check.Seq.empty ([]: int list) = Ok () @>
-            test <@ Check.Seq.empty [ 1 ] = Error [ InvalidCount(ExactCount 0, Some 1) ] @>
-            test <@ Check.Seq.empty nullValues = Error [ InvalidCount(ExactCount 0, None) ] @>
+            test <@ Check.Seq.empty [ 1 ] = Error [ InvalidLength(ExactLength 0, Some 1) ] @>
+            test <@ Check.Seq.empty nullValues = Error [ InvalidLength(ExactLength 0, None) ] @>
 
             test <@ Check.Seq.count 2 [ 1; 2 ] = Ok () @>
-            test <@ Check.Seq.count 2 [ 1 ] = Error [ InvalidCount(ExactCount 2, Some 1) ] @>
-            test <@ Check.Seq.count 2 nullValues = Error [ InvalidCount(ExactCount 2, None) ] @>
+            test <@ Check.Seq.count 2 [ 1 ] = Error [ InvalidLength(ExactLength 2, Some 1) ] @>
+            test <@ Check.Seq.count 2 nullValues = Error [ InvalidLength(ExactLength 2, None) ] @>
 
             test <@ Check.Seq.minCount 2 [ 1; 2 ] = Ok () @>
-            test <@ Check.Seq.minCount 2 [ 1 ] = Error [ InvalidCount(MinimumCount 2, Some 1) ] @>
-            test <@ Check.Seq.minCount 2 nullValues = Error [ InvalidCount(MinimumCount 2, None) ] @>
+            test <@ Check.Seq.minCount 2 [ 1 ] = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
+            test <@ Check.Seq.minCount 2 nullValues = Error [ InvalidLength(MinimumLength 2, None) ] @>
 
             test <@ Check.Seq.maxCount 2 [ 1; 2 ] = Ok () @>
-            test <@ Check.Seq.maxCount 2 [ 1; 2; 3 ] = Error [ InvalidCount(MaximumCount 2, Some 3) ] @>
-            test <@ Check.Seq.maxCount 2 nullValues = Error [ InvalidCount(MaximumCount 2, None) ] @>
+            test <@ Check.Seq.maxCount 2 [ 1; 2; 3 ] = Error [ InvalidLength(MaximumLength 2, Some 3) ] @>
+            test <@ Check.Seq.maxCount 2 nullValues = Error [ InvalidLength(MaximumLength 2, None) ] @>
 
             test <@ Check.Seq.countBetween 2 4 [ 1; 2; 3 ] = Ok () @>
-            test <@ Check.Seq.countBetween 2 4 [ 1 ] = Error [ InvalidCount(CountBetween(2, 4), Some 1) ] @>
-            test <@ Check.Seq.countBetween 2 4 [ 1; 2; 3; 4; 5 ] = Error [ InvalidCount(CountBetween(2, 4), Some 5) ] @>
-            test <@ Check.Seq.countBetween 2 4 nullValues = Error [ InvalidCount(CountBetween(2, 4), None) ] @>
+            test <@ Check.Seq.countBetween 2 4 [ 1 ] = Error [ InvalidLength(LengthBetween(2, 4), Some 1) ] @>
+            test <@ Check.Seq.countBetween 2 4 [ 1; 2; 3; 4; 5 ] = Error [ InvalidLength(LengthBetween(2, 4), Some 5) ] @>
+            test <@ Check.Seq.countBetween 2 4 nullValues = Error [ InvalidLength(LengthBetween(2, 4), None) ] @>
 
             test <@ Check.Seq.noDuplicates [ 1; 2; 3 ] = Ok () @>
             test <@ Check.Seq.noDuplicates [ 1; 2; 1 ] = Error [ Duplicate ] @>
-            test <@ Check.Seq.noDuplicates nullValues = Error [ Required ] @>
+            test <@ Check.Seq.noDuplicates nullValues = Error [ Blank ] @>
 
             test <@ Check.Seq.contains 2 [ 1; 2 ] = Ok () @>
             test <@ Check.Seq.contains 3 [ 1; 2 ] = Error [ NotOneOf "3" ] @>
-            test <@ Check.Seq.contains 3 nullValues = Error [ Required ] @>
+            test <@ Check.Seq.contains 3 nullValues = Error [ Blank ] @>
             test <@ Check.Seq.single [ 1 ] = Ok () @>
-            test <@ Check.Seq.single [ 1; 2 ] = Error [ InvalidCount(ExactCount 1, Some 2) ] @>
-            test <@ Check.Seq.atMostOne [ 1; 2 ] = Error [ InvalidCount(MaximumCount 1, Some 2) ] @>
-            test <@ Check.Seq.atLeastOne [] = Error [ InvalidCount(MinimumCount 1, Some 0) ] @>
-            test <@ Check.Seq.moreThanOne [ 1 ] = Error [ InvalidCount(MinimumCount 2, Some 1) ] @>
+            test <@ Check.Seq.single [ 1; 2 ] = Error [ InvalidLength(ExactLength 1, Some 2) ] @>
+            test <@ Check.Seq.atMostOne [ 1; 2 ] = Error [ InvalidLength(MaximumLength 1, Some 2) ] @>
+            test <@ Check.Seq.atLeastOne [] = Error [ InvalidLength(MinimumLength 1, Some 0) ] @>
+            test <@ Check.Seq.moreThanOne [ 1 ] = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
 
         [<Fact>]
         let ``Check exposes top-level concrete structured checks`` () =
             let nullString: string = null
-            let nullValues: seq<int> = null
+            let nullValues: int array = null
+            let stringLength3: Check<string> = Check.length 3
+            let stringMinLength3: Check<string> = Check.minLength 3
+            let stringMaxLength3: Check<string> = Check.maxLength 3
+            let stringLengthBetween2And4: Check<string> = Check.lengthBetween 2 4
+            let listLength2: Check<int list> = Check.length 2
+            let listMinLength2: Check<int list> = Check.minLength 2
+            let listMaxLength2: Check<int list> = Check.maxLength 2
+            let listLengthBetween2And4: Check<int list> = Check.lengthBetween 2 4
+            let arrayLength2: Check<int array> = Check.length 2
 
-            test <@ Check.length 3 "Ada" = Ok () @>
-            test <@ Check.length 3 "Axial" = Error [ InvalidLength(ExactLength 3, Some 5) ] @>
-            test <@ Check.length 3 nullString = Error [ InvalidLength(ExactLength 3, None) ] @>
-            test <@ Check.minLength 3 "Ada" = Ok () @>
-            test <@ Check.maxLength 3 "Axial" = Error [ InvalidLength(MaximumLength 3, Some 5) ] @>
-            test <@ Check.lengthBetween 2 4 "Ada" = Ok () @>
+            test <@ stringLength3 "Ada" = Ok () @>
+            test <@ stringLength3 "Axial" = Error [ InvalidLength(ExactLength 3, Some 5) ] @>
+            test <@ stringLength3 nullString = Error [ InvalidLength(ExactLength 3, None) ] @>
+            test <@ stringMinLength3 "Ada" = Ok () @>
+            test <@ stringMaxLength3 "Axial" = Error [ InvalidLength(MaximumLength 3, Some 5) ] @>
+            test <@ stringLengthBetween2And4 "Ada" = Ok () @>
             test <@ Check.email "ada@example.com" = Ok () @>
             test <@ Check.matches "^[a-z]+$" "Ada" = Error [ InvalidFormat "^[a-z]+$" ] @>
             test <@ Check.oneOf [ "draft"; "published" ] "archived" = Error [ NotOneOf "draft|published" ] @>
@@ -364,21 +373,21 @@ module CheckTests =
             test <@ Check.nonPositive 0 = Ok () @>
             test <@ Check.nonPositive 1 = Error [ OutOfRange(AtMost "0", Some "1") ] @>
 
-            test <@ Check.count 2 [ 1; 2 ] = Ok () @>
-            test <@ Check.count 2 [ 1 ] = Error [ InvalidCount(ExactCount 2, Some 1) ] @>
-            test <@ Check.count 2 nullValues = Error [ InvalidCount(ExactCount 2, None) ] @>
-            test <@ Check.minCount 2 [ 1 ] = Error [ InvalidCount(MinimumCount 2, Some 1) ] @>
-            test <@ Check.maxCount 2 [ 1; 2; 3 ] = Error [ InvalidCount(MaximumCount 2, Some 3) ] @>
-            test <@ Check.countBetween 2 4 [ 1; 2; 3 ] = Ok () @>
+            test <@ listLength2 [ 1; 2 ] = Ok () @>
+            test <@ listLength2 [ 1 ] = Error [ InvalidLength(ExactLength 2, Some 1) ] @>
+            test <@ arrayLength2 nullValues = Error [ InvalidLength(ExactLength 2, None) ] @>
+            test <@ listMinLength2 [ 1 ] = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
+            test <@ listMaxLength2 [ 1; 2; 3 ] = Error [ InvalidLength(MaximumLength 2, Some 3) ] @>
+            test <@ listLengthBetween2And4 [ 1; 2; 3 ] = Ok () @>
             test <@ Check.distinct [ 1; 2; 3 ] = Ok () @>
             test <@ Check.contains 2 [ 1; 2 ] = Ok () @>
             test <@ Check.contains 3 [ 1; 2 ] = Error [ NotOneOf "3" ] @>
-            test <@ Check.contains 3 nullValues = Error [ Required ] @>
+            test <@ Check.contains 3 nullValues = Error [ Blank ] @>
             test <@ Check.single [ 1 ] = Ok () @>
-            test <@ Check.single [ 1; 2 ] = Error [ InvalidCount(ExactCount 1, Some 2) ] @>
-            test <@ Check.atMostOne [ 1; 2 ] = Error [ InvalidCount(MaximumCount 1, Some 2) ] @>
-            test <@ Check.atLeastOne [] = Error [ InvalidCount(MinimumCount 1, Some 0) ] @>
-            test <@ Check.moreThanOne [ 1 ] = Error [ InvalidCount(MinimumCount 2, Some 1) ] @>
+            test <@ Check.single [ 1; 2 ] = Error [ InvalidLength(ExactLength 1, Some 2) ] @>
+            test <@ Check.atMostOne [ 1; 2 ] = Error [ InvalidLength(MaximumLength 1, Some 2) ] @>
+            test <@ Check.atLeastOne [] = Error [ InvalidLength(MinimumLength 1, Some 0) ] @>
+            test <@ Check.moreThanOne [ 1 ] = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
 
             test <@ Check.equalTo 3 3 = Ok () @>
             test <@ Check.equalTo 3 4 = Error [ NotOneOf "3" ] @>
@@ -418,17 +427,13 @@ module CheckTests =
             assertSame Check.Number.nonPositive Check.nonPositive [ 0; 1 ]
 
         [<Fact>]
-        let ``Check top-level sequence facades match direct module behavior`` () =
+        let ``Check top-level sequence operations match direct module behavior`` () =
             let nullValues: seq<int> = null
 
             let assertSame (direct: Check<seq<int>>) (facade: Check<seq<int>>) samples =
                 for sample in samples do
                     Assert.Equal<Result<unit, CheckFailure list>>(direct sample, facade sample)
 
-            assertSame (Check.Seq.count 2) (Check.count 2) [ seq [ 1; 2 ]; seq [ 1 ]; nullValues ]
-            assertSame (Check.Seq.minCount 2) (Check.minCount 2) [ seq [ 1; 2 ]; seq [ 1 ]; nullValues ]
-            assertSame (Check.Seq.maxCount 2) (Check.maxCount 2) [ seq [ 1; 2 ]; seq [ 1; 2; 3 ]; nullValues ]
-            assertSame (Check.Seq.countBetween 2 4) (Check.countBetween 2 4) [ seq [ 1; 2; 3 ]; seq [ 1 ]; nullValues ]
             assertSame Check.Seq.noDuplicates Check.distinct [ seq [ 1; 2; 3 ]; seq [ 1; 2; 1 ]; nullValues ]
             assertSame (Check.Seq.contains 2) (Check.contains 2) [ seq [ 1; 2 ]; seq [ 1; 3 ]; nullValues ]
             assertSame Check.Seq.single Check.single [ seq [ 1 ]; seq []; seq [ 1; 2 ]; nullValues ]
@@ -534,11 +539,11 @@ module CheckTests =
                 Check.all [ Check.present; Check.lengthBetween 2 40 ]
 
             test <@ requiredName "Ada" = Ok () @>
-            test <@ requiredName "" = Error [ Required; InvalidLength(LengthBetween(2, 40), Some 0) ] @>
+            test <@ requiredName "" = Error [ Blank; InvalidLength(LengthBetween(2, 40), Some 0) ] @>
 
             let nullString: string = null
 
-            test <@ requiredName nullString = Error [ Required; InvalidLength(LengthBetween(2, 40), None) ] @>
+            test <@ requiredName nullString = Error [ Blank; InvalidLength(LengthBetween(2, 40), None) ] @>
 
             let shortCode =
                 Check.any [ Check.length 2; Check.length 3 ]
@@ -548,11 +553,11 @@ module CheckTests =
             test <@ shortCode "United States" = Error [ InvalidLength(ExactLength 2, Some 13); InvalidLength(ExactLength 3, Some 13) ] @>
 
             let requiredDistinctIds : Check<int list> =
-                Check.all [ Check.notEmpty; Check.distinct; Check.maxCount 3 ]
+                Check.all [ Check.notEmpty; Check.distinct; Check.maxLength 3 ]
 
             test <@ requiredDistinctIds [ 1; 2; 3 ] = Ok () @>
-            test <@ requiredDistinctIds [] = Error [ InvalidCount(MinimumCount 1, Some 0) ] @>
-            test <@ requiredDistinctIds [ 1; 2; 1; 3 ] = Error [ Duplicate; InvalidCount(MaximumCount 3, Some 4) ] @>
+            test <@ requiredDistinctIds [] = Error [ InvalidLength(MinimumLength 1, Some 0) ] @>
+            test <@ requiredDistinctIds [ 1; 2; 1; 3 ] = Error [ Duplicate; InvalidLength(MaximumLength 3, Some 4) ] @>
 
         [<Fact>]
         let ``Check all resolves every type-directed facade when the program type is declared`` () =
@@ -599,53 +604,53 @@ module CheckTests =
         [<Fact>]
         let ``Check Option exposes executable option value checks`` () =
             test <@ Check.Option.some (Some 1) = Ok () @>
-            test <@ Check.Option.some None = Error [ Required ] @>
+            test <@ Check.Option.some None = Error [ Blank ] @>
 
             test <@ Check.Option.none (None: int option) = Ok () @>
             test <@ Check.Option.none (Some 1) = Error [ NotOneOf "None" ] @>
 
             test <@ Check.Option.present (Some 1) = Ok () @>
-            test <@ Check.Option.present None = Error [ Required ] @>
+            test <@ Check.Option.present None = Error [ Blank ] @>
 
             test <@ Check.Option.empty (None: int option) = Ok () @>
             test <@ Check.Option.empty (Some 1) = Error [ NotOneOf "None" ] @>
 
             test <@ Check.Option.notEmpty (Some 1) = Ok () @>
-            test <@ Check.Option.notEmpty None = Error [ Required ] @>
+            test <@ Check.Option.notEmpty None = Error [ Blank ] @>
 
         [<Fact>]
         let ``Check ValueOption exposes executable value option checks`` () =
             test <@ Check.ValueOption.some (ValueSome 1) = Ok () @>
-            test <@ Check.ValueOption.some ValueNone = Error [ Required ] @>
+            test <@ Check.ValueOption.some ValueNone = Error [ Blank ] @>
 
             test <@ Check.ValueOption.none (ValueNone: int voption) = Ok () @>
             test <@ Check.ValueOption.none (ValueSome 1) = Error [ NotOneOf "ValueNone" ] @>
 
             test <@ Check.ValueOption.present (ValueSome 1) = Ok () @>
-            test <@ Check.ValueOption.present ValueNone = Error [ Required ] @>
+            test <@ Check.ValueOption.present ValueNone = Error [ Blank ] @>
 
             test <@ Check.ValueOption.empty (ValueNone: int voption) = Ok () @>
             test <@ Check.ValueOption.empty (ValueSome 1) = Error [ NotOneOf "ValueNone" ] @>
 
             test <@ Check.ValueOption.notEmpty (ValueSome 1) = Ok () @>
-            test <@ Check.ValueOption.notEmpty ValueNone = Error [ Required ] @>
+            test <@ Check.ValueOption.notEmpty ValueNone = Error [ Blank ] @>
 
         [<Fact>]
         let ``Check Nullable exposes executable nullable value checks`` () =
             test <@ Check.Nullable.hasValue (System.Nullable 1) = Ok () @>
-            test <@ Check.Nullable.hasValue (System.Nullable<int>()) = Error [ Required ] @>
+            test <@ Check.Nullable.hasValue (System.Nullable<int>()) = Error [ Blank ] @>
 
             test <@ Check.Nullable.hasNoValue (System.Nullable<int>()) = Ok () @>
             test <@ Check.Nullable.hasNoValue (System.Nullable 1) = Error [ NotOneOf "null" ] @>
 
             test <@ Check.Nullable.present (System.Nullable 1) = Ok () @>
-            test <@ Check.Nullable.present (System.Nullable<int>()) = Error [ Required ] @>
+            test <@ Check.Nullable.present (System.Nullable<int>()) = Error [ Blank ] @>
 
             test <@ Check.Nullable.empty (System.Nullable<int>()) = Ok () @>
             test <@ Check.Nullable.empty (System.Nullable 1) = Error [ NotOneOf "null" ] @>
 
             test <@ Check.Nullable.notEmpty (System.Nullable 1) = Ok () @>
-            test <@ Check.Nullable.notEmpty (System.Nullable<int>()) = Error [ Required ] @>
+            test <@ Check.Nullable.notEmpty (System.Nullable<int>()) = Error [ Blank ] @>
 
         [<Fact>]
         let ``Check Result exposes executable result value checks`` () =
@@ -739,6 +744,8 @@ module CheckTests =
         [<Fact>]
         let ``Check top-level facade exposes structured checks`` () =
             let nullString: string = null
+            let stringLength3: Check<string> = Check.length 3
+            let listLength2: Check<int list> = Check.length 2
 
             let present1 : Result<unit, CheckFailure list> = Check.present "Ada"
             let present2 : Result<unit, CheckFailure list> = Check.present nullString
@@ -746,13 +753,13 @@ module CheckTests =
             let notEmpty1 : Result<unit, CheckFailure list> = Check.notEmpty "  "
 
             Assert.Equal(Ok (), present1)
-            Assert.Equal(Error [ Required ], present2)
+            Assert.Equal(Error [ Blank ], present2)
             Assert.Equal(Ok (), empty1)
             Assert.Equal(Ok (), notEmpty1)
-            test <@ Check.length 3 "abc" = Ok () @>
+            test <@ stringLength3 "abc" = Ok () @>
             test <@ Check.email "ada@example.com" = Ok () @>
             test <@ Check.matches "^[a-z]+$" "abc" = Ok () @>
-            test <@ Check.count 2 [ 1; 2 ] = Ok () @>
+            test <@ listLength2 [ 1; 2 ] = Ok () @>
             test <@ Check.distinct [ 1; 2; 3 ] = Ok () @>
             test <@ Check.single [ 5 ] = Ok () @>
 

@@ -25,4 +25,4 @@ weight: 2911
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="../types/t-refined-distinctlist.md">DistinctList</a>&lt;'a&gt;</span>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L495-495)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L496-496)

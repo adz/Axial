@@ -26,4 +26,4 @@ Deserializes a JSON string to a trusted model through a compiled codec.
 | <code>'model</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1082-1082)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1094-1094)

@@ -11,7 +11,8 @@ open Axial.Check
 /// <summary>Schema input, checking, and contextual rule failures attached to diagnostics paths.</summary>
 [<RequireQualifiedAccess>]
 type SchemaError =
-    | Required
+    | Omitted
+    | Blank
     | ExpectedScalar
     | ExpectedObject
     | ExpectedMany
@@ -19,7 +20,6 @@ type SchemaError =
     | ParseOutOfRange of target: string
     | InvalidLength of expectation: CheckLengthExpectation * actualLength: int option
     | OutOfRange of expectation: CheckRangeExpectation * actual: string option
-    | InvalidCount of expectation: CheckCountExpectation * actualCount: int option
     | NotOneOf of choices: string
     | Duplicate
     | ConstructorFailed of message: string
@@ -45,21 +45,14 @@ module SchemaError =
         | CheckRangeExpectation.Between(minimum, maximum) -> $"between {minimum} and {maximum}"
         | CheckRangeExpectation.NotMultipleOf divisor -> $"a multiple of {divisor}"
 
-    let private countText expectation =
-        match expectation with
-        | CheckCountExpectation.MinimumCount minimum -> $"at least {minimum}"
-        | CheckCountExpectation.MaximumCount maximum -> $"at most {maximum}"
-        | CheckCountExpectation.ExactCount expected -> $"exactly {expected}"
-        | CheckCountExpectation.CountBetween(minimum, maximum) -> $"between {minimum} and {maximum}"
-
     let internal constraintCodeFor failure =
         match failure with
-        | CheckFailure.Required -> Some "required"
+        | CheckFailure.Blank -> Some "present"
         | CheckFailure.InvalidFormat "email" -> Some "email"
         | CheckFailure.InvalidFormat _ -> Some "pattern"
         | CheckFailure.InvalidLength(CheckLengthExpectation.MinimumLength _, _) -> Some "minLength"
         | CheckFailure.InvalidLength(CheckLengthExpectation.MaximumLength _, _) -> Some "maxLength"
-        | CheckFailure.InvalidLength(CheckLengthExpectation.ExactLength _, _)
+        | CheckFailure.InvalidLength(CheckLengthExpectation.ExactLength _, _) -> Some "length"
         | CheckFailure.InvalidLength(CheckLengthExpectation.LengthBetween _, _) -> Some "lengthBetween"
         | CheckFailure.OutOfRange(CheckRangeExpectation.GreaterThan _, _) -> Some "greaterThan"
         | CheckFailure.OutOfRange(CheckRangeExpectation.LessThan _, _) -> Some "lessThan"
@@ -67,34 +60,30 @@ module SchemaError =
         | CheckFailure.OutOfRange(CheckRangeExpectation.AtMost _, _) -> Some "atMost"
         | CheckFailure.OutOfRange(CheckRangeExpectation.Between _, _) -> Some "between"
         | CheckFailure.OutOfRange(CheckRangeExpectation.NotMultipleOf _, _) -> Some "multipleOf"
-        | CheckFailure.InvalidCount(CheckCountExpectation.MinimumCount _, _) -> Some "minCount"
-        | CheckFailure.InvalidCount(CheckCountExpectation.MaximumCount _, _) -> Some "maxCount"
-        | CheckFailure.InvalidCount(CheckCountExpectation.ExactCount _, _) -> Some "count"
-        | CheckFailure.InvalidCount(CheckCountExpectation.CountBetween _, _) -> Some "countBetween"
         | CheckFailure.NotOneOf _ -> Some "oneOf"
         | CheckFailure.Duplicate -> Some "distinct"
         | CheckFailure.Custom code -> Some code
 
     let ofParseError error =
         match error with
-        | ParseError.MissingValue _ -> SchemaError.Required
+        | ParseError.MissingValue _ -> SchemaError.Blank
         | ParseError.InvalidFormat(target, _) -> SchemaError.InvalidFormat target
         | ParseError.OutOfRange(target, _) -> SchemaError.ParseOutOfRange target
 
     let ofCheckFailure failure =
         match failure with
-        | CheckFailure.Required -> SchemaError.Required
+        | CheckFailure.Blank -> SchemaError.Blank
         | CheckFailure.InvalidFormat expected -> SchemaError.InvalidFormat expected
         | CheckFailure.InvalidLength(expectation, actual) -> SchemaError.InvalidLength(expectation, actual)
         | CheckFailure.OutOfRange(expectation, actual) -> SchemaError.OutOfRange(expectation, actual)
-        | CheckFailure.InvalidCount(expectation, actual) -> SchemaError.InvalidCount(expectation, actual)
         | CheckFailure.NotOneOf choices -> SchemaError.NotOneOf choices
         | CheckFailure.Duplicate -> SchemaError.Duplicate
         | CheckFailure.Custom code -> SchemaError.Custom(code, None)
 
     let render error =
         match error with
-        | SchemaError.Required -> "This value is required."
+        | SchemaError.Omitted -> "This value was omitted."
+        | SchemaError.Blank -> "This value must be present."
         | SchemaError.ExpectedScalar -> "Expected a scalar value."
         | SchemaError.ExpectedObject -> "Expected an object."
         | SchemaError.ExpectedMany -> "Expected a collection."
@@ -104,8 +93,6 @@ module SchemaError =
         | SchemaError.InvalidLength(expectation, Some actual) -> $"Length must be {lengthText expectation}; got {actual}."
         | SchemaError.OutOfRange(expectation, None) -> $"Must be {rangeText expectation}."
         | SchemaError.OutOfRange(expectation, Some actual) -> $"Must be {rangeText expectation}; got {actual}."
-        | SchemaError.InvalidCount(expectation, None) -> $"Count must be {countText expectation}."
-        | SchemaError.InvalidCount(expectation, Some actual) -> $"Count must be {countText expectation}; got {actual}."
         | SchemaError.NotOneOf choices -> $"Must be one of: {choices}."
         | SchemaError.Duplicate -> "Duplicate values are not allowed."
         | SchemaError.ConstructorFailed message -> message

@@ -192,7 +192,7 @@ contract Broken.v1 {
 
         let all = messages diagnostics
         test <@ all |> List.exists (fun message -> message.Contains "'pattern' applies to text fields") @>
-        test <@ all |> List.exists (fun message -> message.Contains "'min'/'max' bound the size") @>
+        test <@ all |> List.exists (fun message -> message.Contains "length constraints apply") @>
         test <@ all |> List.exists (fun message -> message.Contains "'>=' applies to int or decimal fields") @>
         test <@ all |> List.exists (fun message -> message.Contains "'distinct' applies to list fields") @>
         test <@ all |> List.exists (fun message -> message.Contains "'check entropyFloor' references are not supported yet") @>

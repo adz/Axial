@@ -18,8 +18,8 @@ module RefinedCatalogSchemaTests =
         let description = Inspect.schema schema
         let document = JsonSchema.generateValue schema
 
-        test <@ description.Constraints |> List.map Constraint.code = [ "minCount" ] @>
-        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "minCount" ] @>
+        test <@ description.Constraints |> List.map Constraint.code = [ "minLength" ] @>
+        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "minLength" ] @>
         test <@ document.Contains "\"minItems\":1" @>
 
     [<Fact>]
@@ -27,7 +27,7 @@ module RefinedCatalogSchemaTests =
         let mutable executions = 0
         let check value =
             executions <- executions + 1
-            if String.IsNullOrWhiteSpace value then Error [ CheckFailure.Required ] else Ok ()
+            if String.IsNullOrWhiteSpace value then Error [ CheckFailure.Blank ] else Ok ()
 
         let refinement =
             Refinement.define
@@ -103,12 +103,12 @@ module RefinedCatalogSchemaTests =
 
         let parsed = Schema.parseRetainingInput (productSchema ()) raw
 
-        test <@ Refine.nonBlankString "   " |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.Required ] @>
+        test <@ Refine.nonBlankString "   " |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.Blank ] @>
         test <@ Refine.slug "Ada" |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" ] @>
         test <@ Refine.positiveInt 0 |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ] @>
 
         test
-            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Required }
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Blank }
                                  { Path = TestPath.fromLegacy [ PathSegment.Name "quantity" ]; Error = SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") }
                                  { Path = TestPath.fromLegacy [ PathSegment.Name "slug" ]; Error = SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" } ] @>
 
@@ -126,7 +126,7 @@ module RefinedCatalogSchemaTests =
     let ``bounded string schema carries caller supplied bounds`` () =
         let schema = RefinedSchemas.boundedString 2 4
 
-        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "required"; "lengthBetween" ] @>
+        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "present"; "lengthBetween" ] @>
 
         let check = SchemaCheck.text schema
         let value = Refine.boundedString 2 4 "Ada" |> Result.defaultWith (fun error -> failwithf "%A" error)
@@ -214,7 +214,7 @@ module RefinedCatalogSchemaTests =
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "codes" ]
                                    Error = SchemaError.Duplicate }
                                  { Path = TestPath.fromLegacy [ PathSegment.Name "tags" ]
-                                   Error = SchemaError.InvalidCount(CheckCountExpectation.MinimumCount 1, Some 0) } ] @>
+                                   Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 1, Some 0) } ] @>
 
     [<Fact>]
     let ``date time range schema parses trusted ranges`` () =

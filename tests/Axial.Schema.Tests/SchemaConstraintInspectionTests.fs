@@ -34,7 +34,7 @@ module ConstraintInspectionTests =
             schema<Signup> {
                 field "email" _.Email {
                     withSchema Schema.text
-                    constraints [ required; email; minLength 3; maxLength 254 ]
+                    constraints [ supplied; present; email; minLength 3; maxLength 254 ]
                     constrain trimmed
                 }
                 field "age" _.Age {
@@ -50,7 +50,8 @@ module ConstraintInspectionTests =
 
         test <@
             emailField.ValueSchema.Constraints |> List.map Constraint.metadata =
-                [ (ConstraintMetadata.Presence Presence.Required)
+                [ (ConstraintMetadata.Supply Supply.Supplied)
+                  (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present)
                   (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email)
                   ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength 3)
                   ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254)
@@ -67,11 +68,13 @@ module ConstraintInspectionTests =
     [<Fact>]
     let ``constraint constructors preserve the complete built-in metadata catalog`` () =
         let catalog : (ConstraintDescriptor * string * ConstraintMetadata) list =
-            [ Constraint.required, "required", (ConstraintMetadata.Presence Presence.Required)
-              Constraint.optional, "optional", (ConstraintMetadata.Presence Presence.Optional)
-              Constraint.minLength 2, "minLength", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength 2)
-              Constraint.maxLength 20, "maxLength", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 20)
-              Constraint.lengthBetween 2 20, "lengthBetween", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(2, 20))
+            [ Constraint.supplied, "supplied", (ConstraintMetadata.Supply Supply.Supplied)
+              ((Constraint.present: SchemaConstraint<string>) :> ConstraintDescriptor), "present", (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present)
+              Constraint.omittable, "omittable", (ConstraintMetadata.Supply Supply.Omittable)
+              ((Constraint.length 2: SchemaConstraint<string>) :> ConstraintDescriptor), "length", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Length 2)
+              ((Constraint.minLength 2: SchemaConstraint<string>) :> ConstraintDescriptor), "minLength", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength 2)
+              ((Constraint.maxLength 20: SchemaConstraint<string>) :> ConstraintDescriptor), "maxLength", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 20)
+              ((Constraint.lengthBetween 2 20: SchemaConstraint<string>) :> ConstraintDescriptor), "lengthBetween", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(2, 20))
               Constraint.email, "email", (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email)
               Constraint.trimmed, "trimmed", (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Trimmed)
               Constraint.pattern "^[a-z]+$", "pattern", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern "^[a-z]+$")
@@ -83,10 +86,8 @@ module ConstraintInspectionTests =
               Constraint.lessThan 3, "lessThan", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LessThan(box 3))
               Constraint.atLeast 1, "atLeast", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtLeast(box 1))
               Constraint.atMost 3, "atMost", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtMost(box 3))
-              Constraint.count 2, "count", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Count 2)
-              Constraint.minCount 1, "minCount", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinCount 1)
-              Constraint.maxCount 3, "maxCount", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxCount 3)
-              Constraint.countBetween 1 3, "countBetween", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.CountBetween(1, 3))
+              ((Constraint.minLength 1: SchemaConstraint<string>) :> ConstraintDescriptor), "minLength", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength 1)
+              ((Constraint.maxLength 3: SchemaConstraint<string>) :> ConstraintDescriptor), "maxLength", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 3)
               Constraint.distinct, "distinct", (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct)
               Constraint.contains 2, "contains", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Contains(box 2))
               Constraint.multipleOf 2, "multipleOf", ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MultipleOf(box 2))
@@ -100,7 +101,7 @@ module ConstraintInspectionTests =
             test <@ Constraint.code constraint' = code @>
             test <@ Constraint.metadata constraint' = metadata @>)
 
-        let arguments = Constraint.arguments (Constraint.minLength 2) :?> IDictionary<string, obj>
+        let arguments = Constraint.arguments (Constraint.minLength 2: SchemaConstraint<string>) :?> IDictionary<string, obj>
         raises<NotSupportedException> <@ arguments.["minimum"] <- box 3 @>
 
         let representedCases =
@@ -122,14 +123,14 @@ module ConstraintInspectionTests =
     let ``shape schema constraints are inspectable straight from the schema definition`` () =
         let emailValue =
             Schema.text
-            |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ]
+            |> Schema.constrainAll [ Constraint.present; Constraint.email; Constraint.maxLength 254 ]
 
         let ageValue = Schema.int |> Schema.constrain (Constraint.between 13 120)
 
         let schema =
             schema<Signup> {
                 field "email" _.Email {
-                    withSchema (emailValue |> Schema.constrainAll [ Constraint.required ])
+                    withSchema (emailValue |> Schema.constrainAll [ Constraint.present ])
                 }
                 field "age" _.Age {
                     withSchema ageValue
@@ -155,14 +156,14 @@ module ConstraintInspectionTests =
         test <@ email.Constraints = [] @>
         test <@
             email.ValueSchema.Constraints |> List.map Constraint.code =
-                [ "required"; "email"; "maxLength"; "required" ]
+                [ "present"; "email"; "maxLength"; "present" ]
         @>
         test <@
             email.ValueSchema.Constraints |> List.map Constraint.metadata =
-                [ (ConstraintMetadata.Presence Presence.Required)
+                [ (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present)
                   (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email)
                   ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254)
-                  (ConstraintMetadata.Presence Presence.Required) ]
+                  (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) ]
         @>
 
         test <@ age.Constraints |> List.isEmpty @>
@@ -177,7 +178,7 @@ module ConstraintInspectionTests =
         let schema =
             schema<Address> {
                 field "street" _.Street {
-                    withSchema (Schema.text |> Schema.constrain Constraint.required)
+                    withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "city" _.City {
                     withSchema (Schema.text |> Schema.constrain (Constraint.lengthBetween 1 100))
@@ -185,7 +186,7 @@ module ConstraintInspectionTests =
                 field "postalCode" _.PostalCode {
                     withSchema (
                         Schema.text
-                        |> Schema.constrainAll [ Constraint.required; Constraint.pattern "^[0-9]{5}$" ]
+                        |> Schema.constrainAll [ Constraint.present; Constraint.pattern "^[0-9]{5}$" ]
                     )
                 }
                 construct (fun street city postalCode ->
@@ -203,9 +204,9 @@ module ConstraintInspectionTests =
 
         test <@
             constraintsByField =
-                [ "street", [ "required" ]
+                [ "street", [ "present" ]
                   "city", [ "lengthBetween" ]
-                  "postalCode", [ "required"; "pattern" ] ]
+                  "postalCode", [ "present"; "pattern" ] ]
         @>
 
         let postal = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "postalCode")
@@ -216,15 +217,15 @@ module ConstraintInspectionTests =
 
     [<Fact>]
     let ``withMessage attaches a custom message without changing code, metadata, or arguments`` () =
-        let required = Constraint.required
-        let customized = required |> Constraint.withMessage "Email is required."
+        let supplied = Constraint.supplied
+        let customized = supplied |> Constraint.withMessage "Email must be supplied."
 
-        test <@ Constraint.message required = None @>
-        test <@ Constraint.message customized = Some "Email is required." @>
-        test <@ Constraint.code customized = "required" @>
-        test <@ Constraint.metadata customized = (ConstraintMetadata.Presence Presence.Required) @>
+        test <@ Constraint.message supplied = None @>
+        test <@ Constraint.message customized = Some "Email must be supplied." @>
+        test <@ Constraint.code customized = "supplied" @>
+        test <@ Constraint.metadata customized = (ConstraintMetadata.Supply Supply.Supplied) @>
 
-        let maxLength = Constraint.maxLength 80 |> Constraint.withMessage "Too long."
+        let maxLength: SchemaConstraint<string> = Constraint.maxLength 80 |> Constraint.withMessage "Too long."
 
         test <@ Constraint.message maxLength = Some "Too long." @>
         test <@ Constraint.tryFindArgument "maximum" maxLength = Some(box 80) @>

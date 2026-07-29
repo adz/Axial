@@ -7,8 +7,8 @@ open Axial.Schema.Syntax
 
 /// <summary>
 /// Proves that optional value schemas built with <c>Schema.option</c> are portable metadata: the payload stays
-/// inspectable, JSON Schema generation leaves optional fields out of <c>required</c>, and the contradictory
-/// combinations (nested options, the <c>required</c> constraint) are rejected when the schema is built.
+/// inspectable, JSON Schema generation leaves optional fields out of <c>required</c>, and supply and value
+/// presence remain independently expressible.
 /// </summary>
 module SchemaOptionalValueTests =
     type private Profile =
@@ -57,26 +57,49 @@ module SchemaOptionalValueTests =
         raises<System.ArgumentException> <@ Schema.option (Schema.option Schema.text) @>
 
     [<Fact>]
-    let ``optionOf rejects a payload carrying the required constraint`` () =
-        raises<System.ArgumentException>
-            <@ Schema.option (Schema.text |> Schema.constrain Constraint.required) @>
+    let ``option payload may require present text without requiring Some`` () =
+        let schema = Schema.option (Schema.text |> Schema.constrain Constraint.present)
+        let description = Inspect.schema schema
+
+        match description.Shape with
+        | SchemaShape.Optional payload -> test <@ payload.Constraints |> List.map Constraint.code = [ "present" ] @>
+        | _ -> failwith "Expected an optional value shape."
 
     [<Fact>]
-    let ``withConstraint rejects required on an optional value schema`` () =
-        raises<System.ArgumentException>
-            <@ Schema.option Schema.text |> Schema.constrain Constraint.required @>
+    let ``present may constrain the option itself`` () =
+        let presentOption: SchemaConstraint<string option> = Constraint.present
+        let constrained = Schema.option Schema.text |> Schema.constrain presentOption
+        test <@ Schema.constraints constrained |> List.map Constraint.code = [ "present" ] @>
 
     [<Fact>]
-    let ``build rejects an optional field carrying the required field constraint`` () =
-        // A plain thunk rather than an Unquote quotation: the quotation interpreter cannot build the
-        // private record's constructor lambda, while the compiled pipeline exercises the real path.
-        Assert.Throws<System.ArgumentException>(fun () ->
+    let ``present option makes the field required in JSON Schema`` () =
+        let presentOption: SchemaConstraint<string option> = Constraint.present
+        let constrained =
             schema<Profile> {
                 field "name" _.Name
                 field "nickname" _.Nickname {
-                    withSchema ((Schema.option Schema.text) |> Schema.constrainAll [ Constraint.required ])
+                    withSchema (Schema.option Schema.text |> Schema.constrain presentOption)
                 }
                 construct (fun name nickname -> { Name = name; Nickname = nickname })
             }
-            |> ignore)
-        |> ignore
+
+        let generated = JsonSchema.generate constrained
+        test <@ generated.Contains "\"required\":[\"name\",\"nickname\"]" @>
+
+    [<Fact>]
+    let ``supplied option rejects omission independently of its content`` () =
+        let suppliedOption: SchemaConstraint<string option> = Constraint.supplied
+        let constrained =
+            schema<Profile> {
+                field "name" _.Name
+                field "nickname" _.Nickname {
+                    withSchema (Schema.option Schema.text |> Schema.constrain suppliedOption)
+                }
+                construct (fun name nickname -> { Name = name; Nickname = nickname })
+            }
+
+        let omitted = Axial.Data.Object [ "name", Axial.Data.Text "Ada" ]
+        let explicitNull = Axial.Data.Object [ "name", Axial.Data.Text "Ada"; "nickname", Axial.Data.Null ]
+
+        test <@ Schema.parse constrained omitted |> Result.isError @>
+        test <@ Schema.parse constrained explicitNull = Ok { Name = "Ada"; Nickname = None } @>

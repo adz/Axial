@@ -27,4 +27,4 @@ Declares a field with an explicit wire name.
 | <code><span>FieldBuilder&lt;<span>'model,&#32;'value</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L520-520)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaBuilder.fs#L601-601)

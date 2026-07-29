@@ -27,4 +27,4 @@ Serializes a trusted model to a JSON string through a compiled codec.
 | <code>string</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1030-1030)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1042-1042)
