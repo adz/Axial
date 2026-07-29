@@ -375,6 +375,7 @@ The four stages are a ladder, not a target. Take the lowest rung that prevents a
 
 - [Construction Guarantees](../trusted-construction/) — what each rung does and does not promise.
 - [Schema Syntax](../syntax/) — the full declaration vocabulary.
+- [Derived Schemas](../derivation/) — generate that declaration from an attributed F# wire record.
 - [Field Blocks and Plain Functions](../field-desugaring/) — a field block read as ordinary functions over one `Schema`.
 - [Refined Schemas](../refined-values/) — your own domain types as fields.
 - [Tutorials](../tutorials/) — a signup form, nested models and collections, and metadata inspection.

@@ -91,7 +91,7 @@ The Schema documentation covers the core package and its focused input, codec, c
 | `Axial.Schema` | Model schemas, parsing, checking, accumulated errors, and inspection | [Axial.Schema](./overview/) |
 | `Axial.Schema.Json` | Compiled JSON codecs | [JSON Codec](./json-codec/) |
 | `Axial.Schema.JsonSchema` | JSON Schema generation | [JSON Schema reference]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate" >}}) |
-| `Axial.Schema.Contracts.Build` | Build-time checks for versioned contracts | [Versioned Contracts](./contracts/) |
+| `Axial.Schema.Contracts.Build` | Build-time schema derivation from F# records | [Derived Schemas](./derivation/) |
 | `Axial.Schema.Http` | HTTP-neutral request and response contracts | [HTTP Servers](./http-servers/) |
 | `Axial.Schema.Http.AspNetCore` | ASP.NET Core integration | [ASP.NET Core reference]({{< relref "/schema/reference/schema/http/aspnetcore" >}}) |
 | `Axial.Schema.Http.GenHttp` | GenHTTP integration | [GenHTTP reference]({{< relref "/schema/reference/schema/http/genhttp" >}}) |
