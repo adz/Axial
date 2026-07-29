@@ -31,19 +31,32 @@ module SchemaGen =
 
     let private choose items = Gen.elements items
 
+    let private tryValueMetadata constraint' =
+        match Constraint.metadata constraint' with
+        | Axial.Schema.ConstraintMetadata.ValueConstraint metadata -> Some metadata
+        | Axial.Schema.ConstraintMetadata.Presence _ -> None
+
+    let private valueMetadata constraints = constraints |> List.choose tryValueMetadata
+
+    let private isRequired constraint' =
+        match Constraint.metadata constraint' with
+        | Axial.Schema.ConstraintMetadata.Presence Presence.Required -> true
+        | Axial.Schema.ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present -> true
+        | _ -> false
+
     let private textGenerator path constraints =
-        let metadata = constraints |> List.map (fun value -> value, Constraint.metadata value)
-        match metadata |> List.tryFind (fun (_, item) -> match item with ConstraintMetadata.Pattern _ | ConstraintMetadata.Custom _ -> true | _ -> false) with
+        let metadata = constraints |> List.choose (fun value -> tryValueMetadata value |> Option.map (fun metadata -> value, metadata))
+        match metadata |> List.tryFind (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.Pattern _ | Axial.Check.ConstraintMetadata.Custom _ -> true | _ -> false) with
         | Some(constraint', _) -> unsupported path constraint'
         | None ->
-            let oneOf = metadata |> List.tryPick (fun (_, item) -> match item with ConstraintMetadata.OneOf values -> Some values | _ -> None)
-            let email = metadata |> List.exists (fun (_, item) -> item = ConstraintMetadata.Email)
-            let required = metadata |> List.exists (fun (_, item) -> item = ConstraintMetadata.Required)
+            let oneOf = metadata |> List.tryPick (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.OneOf values -> Some values | _ -> None)
+            let email = metadata |> List.exists (fun (_, item) -> item = Axial.Check.ConstraintMetadata.Email)
+            let required = constraints |> List.exists isRequired
             let minimum =
                 metadata
-                |> List.choose (fun (_, item) -> match item with ConstraintMetadata.MinLength n | ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None)
+                |> List.choose (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.MinLength n | Axial.Check.ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None)
                 |> maximumOr (if required then 1 else 0)
-            let maximum = metadata |> List.choose (fun (_, item) -> match item with ConstraintMetadata.MaxLength n | ConstraintMetadata.LengthBetween(_, n) -> Some n | _ -> None) |> minimumOr (max minimum 24)
+            let maximum = metadata |> List.choose (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.MaxLength n | Axial.Check.ConstraintMetadata.LengthBetween(_, n) -> Some n | _ -> None) |> minimumOr (max minimum 24)
             match oneOf with
             | Some values when not (List.isEmpty values) -> Ok(choose values)
             | _ when email -> Ok(Gen.elements [ "ada@example.com"; "grace@example.org"; "test.user@example.net" ])
@@ -57,12 +70,12 @@ module SchemaGen =
                     })
 
     let private intGenerator constraints =
-        let metadata = constraints |> List.map Constraint.metadata
-        let lows = metadata |> List.choose (function ConstraintMetadata.Between(a, _) | ConstraintMetadata.AtLeast a -> Some(unbox<int> a) | ConstraintMetadata.GreaterThan a -> Some(unbox<int> a + 1) | _ -> None)
-        let highs = metadata |> List.choose (function ConstraintMetadata.Between(_, b) | ConstraintMetadata.AtMost b -> Some(unbox<int> b) | ConstraintMetadata.LessThan b -> Some(unbox<int> b - 1) | _ -> None)
+        let metadata = valueMetadata constraints
+        let lows = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Between(a, _) | Axial.Check.ConstraintMetadata.AtLeast a -> Some(unbox<int> a) | Axial.Check.ConstraintMetadata.GreaterThan a -> Some(unbox<int> a + 1) | _ -> None)
+        let highs = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Between(_, b) | Axial.Check.ConstraintMetadata.AtMost b -> Some(unbox<int> b) | Axial.Check.ConstraintMetadata.LessThan b -> Some(unbox<int> b - 1) | _ -> None)
         let low = lows |> maximumOr -1000
         let high = highs |> minimumOr 1000 |> max low
-        let multiple = metadata |> List.tryPick (function ConstraintMetadata.MultipleOf value -> Some(unbox<int> value) | _ -> None)
+        let multiple = metadata |> List.tryPick (function Axial.Check.ConstraintMetadata.MultipleOf value -> Some(unbox<int> value) | _ -> None)
         match multiple with
         | Some divisor when divisor <> 0 ->
             let first = int (Math.Ceiling(decimal low / decimal divisor))
@@ -71,12 +84,12 @@ module SchemaGen =
         | _ -> Gen.choose(low, high)
 
     let private decimalGenerator constraints =
-        let metadata = constraints |> List.map Constraint.metadata
-        let lows = metadata |> List.choose (function ConstraintMetadata.Between(a, _) | ConstraintMetadata.AtLeast a -> Some(unbox<decimal> a) | ConstraintMetadata.GreaterThan a -> Some(unbox<decimal> a + 0.01m) | _ -> None)
-        let highs = metadata |> List.choose (function ConstraintMetadata.Between(_, b) | ConstraintMetadata.AtMost b -> Some(unbox<decimal> b) | ConstraintMetadata.LessThan b -> Some(unbox<decimal> b - 0.01m) | _ -> None)
+        let metadata = valueMetadata constraints
+        let lows = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Between(a, _) | Axial.Check.ConstraintMetadata.AtLeast a -> Some(unbox<decimal> a) | Axial.Check.ConstraintMetadata.GreaterThan a -> Some(unbox<decimal> a + 0.01m) | _ -> None)
+        let highs = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Between(_, b) | Axial.Check.ConstraintMetadata.AtMost b -> Some(unbox<decimal> b) | Axial.Check.ConstraintMetadata.LessThan b -> Some(unbox<decimal> b - 0.01m) | _ -> None)
         let low = lows |> maximumOr -1000m
         let high = highs |> minimumOr 1000m |> max low
-        let multiple = metadata |> List.tryPick (function ConstraintMetadata.MultipleOf value -> Some(unbox<decimal> value) | _ -> None)
+        let multiple = metadata |> List.tryPick (function Axial.Check.ConstraintMetadata.MultipleOf value -> Some(unbox<decimal> value) | _ -> None)
         match multiple with
         | Some divisor when divisor <> 0m ->
             let first = int (Math.Ceiling(low / divisor))
@@ -85,9 +98,9 @@ module SchemaGen =
         | _ -> Gen.choose(0, 10000) |> Gen.map (fun part -> low + (high - low) * decimal part / 10000m)
 
     let private countBounds constraints size =
-        let metadata = constraints |> List.map Constraint.metadata
-        let low = metadata |> List.choose (function ConstraintMetadata.Count n | ConstraintMetadata.MinCount n | ConstraintMetadata.CountBetween(n, _) -> Some n | _ -> None) |> maximumOr 0
-        let high = metadata |> List.choose (function ConstraintMetadata.Count n | ConstraintMetadata.MaxCount n | ConstraintMetadata.CountBetween(_, n) -> Some n | _ -> None) |> minimumOr (min 4 (max low size))
+        let metadata = valueMetadata constraints
+        let low = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Count n | Axial.Check.ConstraintMetadata.MinCount n | Axial.Check.ConstraintMetadata.CountBetween(n, _) -> Some n | _ -> None) |> maximumOr 0
+        let high = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Count n | Axial.Check.ConstraintMetadata.MaxCount n | Axial.Check.ConstraintMetadata.CountBetween(_, n) -> Some n | _ -> None) |> minimumOr (min 4 (max low size))
         low, max low high
 
     let private buildDefinitions roots =
@@ -112,11 +125,11 @@ module SchemaGen =
             let unsupportedConstraint =
                 constraints
                 |> List.tryFind (fun constraint' ->
-                    match Constraint.metadata constraint' with
-                    | ConstraintMetadata.Custom _
-                    | ConstraintMetadata.NotEqualTo _
-                    | ConstraintMetadata.Contains _
-                    | ConstraintMetadata.Distinct -> true
+                    match tryValueMetadata constraint' with
+                    | Some(Axial.Check.ConstraintMetadata.Custom _)
+                    | Some(Axial.Check.ConstraintMetadata.NotEqualTo _)
+                    | Some(Axial.Check.ConstraintMetadata.Contains _)
+                    | Some Axial.Check.ConstraintMetadata.Distinct -> true
                     | _ -> false)
 
             match customGenerator, unsupportedConstraint with

@@ -11,6 +11,9 @@ This page shows reusable value checks and portable typed constraints. `Check<'va
 - [`Check`](./t-check-check.md):
  Typed value-check programs for local structural facts.
 
+- [`Check.Constraint`](./t-check-constraint.md):  An executable value restriction coupled to inspectable metadata.
+- [`Check.ConstraintMetadata`](./t-check-constraintmetadata.md):  The inspectable meaning of an executable value constraint.
+- [`Check.ConstraintArgument`](./t-check-constraintargument.md):  A closed value used when constraint metadata must cross a serialization boundary.
 - [`Check.CheckFailure`](./t-check-checkfailure.md): Describes why an executable value check failed, without attaching source paths or structured data.
 - [`Check.CheckLengthExpectation`](./t-check-checklengthexpectation.md): Describes the length requirement that a value check expected a string-like value to satisfy.
 - [`Check.CheckRangeExpectation`](./t-check-checkrangeexpectation.md): <pre>Describes the ordering requirement that a value check expected a comparable value to satisfy against a

@@ -40,13 +40,13 @@ module SchemaGenerationTargetProofTests =
         test
             <@
                 email.Schema.Constraints |> List.map _.Metadata =
-                    [ ConstraintMetadata.Required
-                      ConstraintMetadata.MaxLength 254
-                      ConstraintMetadata.Email ]
+                    [ (ConstraintMetadata.Presence Presence.Required)
+                      ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254)
+                      (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) ]
             @>
 
         let age = description.Fields |> List.find (fun field -> field.Name = "age")
-        test <@ age.Schema.Constraints |> List.map _.Metadata = [ ConstraintMetadata.AtLeast(box 13) ] @>
+        test <@ age.Schema.Constraints |> List.map _.Metadata = [ ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtLeast(box 13)) ] @>
 
     [<Fact>]
     let ``generation target aligns constructor arguments with getters by declaration order`` () =

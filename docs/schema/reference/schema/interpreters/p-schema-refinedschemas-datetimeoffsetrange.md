@@ -19,4 +19,4 @@ weight: 2314
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-datetimeoffsetrange.md">DateTimeOffsetRange</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L61-61)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L53-53)

@@ -171,7 +171,11 @@ module SchemaFormat =
 /// cannot support structural equality, and reference equality is enough for the internal schema-shape union.
 /// </para>
 /// </remarks>
-type internal RefinedValueOps(construct: obj -> Result<obj, SchemaError list>, inspect: obj -> obj) =
+type internal RefinedValueOps(
+    construct: obj -> Result<obj, SchemaError list>,
+    inspect: obj -> obj,
+    constraints: ConstraintDescriptor list
+) =
     do
         if isNull (box construct) then
             nullArg (nameof construct)
@@ -179,13 +183,21 @@ type internal RefinedValueOps(construct: obj -> Result<obj, SchemaError list>, i
         if isNull (box inspect) then
             nullArg (nameof inspect)
 
+        if isNull (box constraints) then
+            nullArg (nameof constraints)
+
+    new(construct, inspect) = RefinedValueOps(construct, inspect, [])
+
     member _.Construct = construct
     member _.Inspect = inspect
+    /// Portable constraints owned and executed by the refinement. Metadata interpreters expose these,
+    /// but schema validation must not execute them a second time.
+    member _.Constraints = constraints
 
 type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
       Format: SchemaFormat option
-      Constraints: Constraint list
+      Constraints: ConstraintDescriptor list
       Description: string option
       Default: obj option }
 
@@ -315,7 +327,7 @@ and [<ReferenceEquality>] internal FieldDescriptor<'model> =
       Order: FieldOrder
       Getter: 'model -> obj
       ValueSchema: ValueSchemaDefinition
-      Constraints: Constraint list }
+      Constraints: ConstraintDescriptor list }
 
 and [<ReferenceEquality>] internal ModelSchemaDefinition<'model> =
     { Constructor: ConstructorApplication<'model>
@@ -362,7 +374,7 @@ type internal FieldDefinition<'model, 'value> =
       Order: FieldOrder
       Getter: 'model -> 'value
       ValueSchema: ValueSchemaDefinition
-      Constraints: Constraint list }
+      Constraints: ConstraintDescriptor list }
 
 /// <summary>
 /// Describes one typed field of a trusted model for schema interpreters.

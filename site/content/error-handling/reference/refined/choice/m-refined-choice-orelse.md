@@ -31,4 +31,4 @@ type: docs
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'b,&#32;'g</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L461-461)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L472-472)

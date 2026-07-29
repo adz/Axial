@@ -778,11 +778,34 @@ module CheckTests =
                 <@
                     Constraint.details constraint' =
                         { Code = "lengthBetween"
-                          Arguments =
-                            Map
-                                [ "maximum", ConstraintArgument.Integer 4L
-                                  "minimum", ConstraintArgument.Integer 2L ] }
+                          Arguments = Map [ "maximum", box 4; "minimum", box 2 ] }
                 @>
+            test
+                <@
+                    Constraint.tryPortableArguments constraint' =
+                        Some(Map [ "maximum", ConstraintArgument.Integer 4L; "minimum", ConstraintArgument.Integer 2L ])
+                @>
+
+            test
+                <@
+                    Constraint.oneOf [ "red"; "blue" ]
+                    |> Constraint.tryPortableArguments =
+                        Some(
+                            Map
+                                [ "choices",
+                                  ConstraintArgument.List
+                                      [ ConstraintArgument.Text "red"
+                                        ConstraintArgument.Text "blue" ] ]
+                        )
+                @>
+
+        [<Fact>]
+        let ``runtime operands remain executable when they have no portable projection`` () =
+            let constraint' = Constraint.atLeast 'm'
+
+            test <@ Constraint.check constraint' 'z' = Ok () @>
+            test <@ Constraint.arguments constraint' = Map [ "minimum", box 'm' ] @>
+            test <@ Constraint.tryPortableArguments constraint' = None @>
 
         [<Fact>]
         let ``custom constraints reject reserved codes and duplicate arguments`` () =
@@ -791,8 +814,8 @@ module CheckTests =
                 <@
                     Constraint.define
                         "custom"
-                        [ "value", ConstraintArgument.Text "a"
-                          "value", ConstraintArgument.Text "b" ]
+                        [ "value", box "a"
+                          "value", box "b" ]
                         (fun (_: string) -> Ok ())
                     |> ignore
                 @>

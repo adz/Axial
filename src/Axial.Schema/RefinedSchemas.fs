@@ -7,7 +7,7 @@ open Axial.Schema.Syntax
 /// Ready-made schemas for the built-in refined values.
 [<RequireQualifiedAccess>]
 module RefinedSchemas =
-    let nonBlankString : Schema<NonBlankString> = Schema.text |> Schema.refine NonBlankString.refinement
+    let nonBlankString : Schema<NonBlankString> = SchemaDefaults.Resolve<NonBlankString>()
 
     let boundedString minLength maxLength : Schema<BoundedString> =
         let refinement =
@@ -18,32 +18,24 @@ module RefinedSchemas =
                     | Ok refined -> refined
                     | Error _ -> failwith "unreachable")
                 _.Value
-        Schema.text
-        |> Schema.constrainAll [ Axial.Schema.Constraint.required; Axial.Schema.Constraint.lengthBetween minLength maxLength ]
-        |> Schema.refine refinement
+        Schema.text |> Schema.refine refinement
 
-    let trimmedString : Schema<TrimmedString> = Schema.text |> Schema.refine Text.trimmedStringRefinement
-    let slug : Schema<Slug> = Schema.text |> Schema.refine Text.slugRefinement
-    let positiveInt : Schema<PositiveInt> = Schema.int |> Schema.refine PositiveInt.refinement
-    let nonNegativeInt : Schema<NonNegativeInt> = Schema.int |> Schema.refine Numeric.nonNegativeIntRefinement
-    let nonZeroInt : Schema<NonZeroInt> = Schema.int |> Schema.refine Numeric.nonZeroIntRefinement
-    let negativeInt : Schema<NegativeInt> = Schema.int |> Schema.refine Numeric.negativeIntRefinement
-    let nonPositiveInt : Schema<NonPositiveInt> = Schema.int |> Schema.refine Numeric.nonPositiveIntRefinement
+    let trimmedString : Schema<TrimmedString> = SchemaDefaults.Resolve<TrimmedString>()
+    let slug : Schema<Slug> = SchemaDefaults.Resolve<Slug>()
+    let positiveInt : Schema<PositiveInt> = SchemaDefaults.Resolve<PositiveInt>()
+    let nonNegativeInt : Schema<NonNegativeInt> = SchemaDefaults.Resolve<NonNegativeInt>()
+    let nonZeroInt : Schema<NonZeroInt> = SchemaDefaults.Resolve<NonZeroInt>()
+    let negativeInt : Schema<NegativeInt> = SchemaDefaults.Resolve<NegativeInt>()
+    let nonPositiveInt : Schema<NonPositiveInt> = SchemaDefaults.Resolve<NonPositiveInt>()
 
     let nonEmptyList (itemSchema: Schema<'value>) : Schema<NonEmptyList<'value>> =
-        let refinement: Refinement<'value list, NonEmptyList<'value>> = Collection.nonEmptyListRefinement<'value> ()
-        Schema.listWith itemSchema |> Schema.refine refinement
+        SchemaDefaults.NonEmptyListWith itemSchema
 
     let nonEmptyArray (itemSchema: Schema<'value>) : Schema<NonEmptyArray<'value>> =
-        let refinement =
-            Refinement.define (Axial.Check.Constraint.minCount 1)
-                (List.toArray >> fun values -> match Refine.nonEmptyArray values with Ok value -> value | Error _ -> failwith "unreachable")
-                (fun value -> value.ToArray() |> Array.toList)
-        Schema.listWith itemSchema |> Schema.refine refinement
+        SchemaDefaults.NonEmptyArrayWith itemSchema
 
     let distinctList<'value when 'value: equality> (itemSchema: Schema<'value>) : Schema<DistinctList<'value>> =
-        let refinement: Refinement<'value list, DistinctList<'value>> = Collection.distinctListRefinement<'value> ()
-        Schema.listWith itemSchema |> Schema.refine refinement
+        SchemaDefaults.DistinctListWith itemSchema
 
     let boundedList minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedList<'value>> =
         let refinement = Refinement.define (Axial.Check.Constraint.countBetween minCount maxCount)

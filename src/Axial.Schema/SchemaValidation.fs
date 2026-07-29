@@ -1,6 +1,5 @@
-// Constraint interpretation: gives each portable Constraint (Constraints.fs) its runtime meaning at
-// parse/check time, plus the failure vocabulary those checks report. Parsing.fs drives this per
-// field; it has no knowledge of input sources or of whole-model construction.
+// Constraint execution: selects complete Check constraints by value shape and runs them at parse/check time.
+// Parsing.fs drives this per field; it has no knowledge of input sources or whole-model construction.
 namespace Axial.Schema
 
 open System
@@ -21,192 +20,104 @@ module SchemaValidation =
     /// <summary>Identifies the schema validation integration package.</summary>
     let packageName = "Axial.Schema"
 
-/// <summary>Functions for lowering portable schema constraint metadata to executable value checks.</summary>
+/// <summary>Functions for selecting and combining the executable checks retained by Schema constraints.</summary>
 /// <remarks>
 /// <para>
-/// Schema constraints stay inspectable in <c>Axial.Schema</c>. This integration module turns the subset that has
-/// value-level meaning into path-free <see cref="T:Axial.Check.Check`1" /> programs. Built-in lowering matches
-/// <see cref="T:Axial.Schema.ConstraintMetadata" /> directly; stable string codes remain external identities rather
-/// than executable dispatch keys.
+/// Value constraints enter Schema as complete <c>Axial.Check.Constraint&lt;'value&gt;</c> values. This module selects
+/// constraints that apply to text, ordered, numeric, or sequence values and combines their retained checks. Stable
+/// codes identify constraints externally; they are not executable dispatch keys.
 /// </para>
 /// <para>
-/// Constraints such as <c>optional</c> remain metadata-only. Constraints that belong to another value shape return
-/// <c>None</c> from the per-constraint lowerers and are ignored by the list lowerers.
+/// Boundary presence declarations such as <c>optional</c> have no value check. Sequence metadata is adapted to the
+/// concrete collection shape selected by Schema.
 /// </para>
 /// </remarks>
 [<RequireQualifiedAccess>]
 module ConstraintCheck =
-    let internal ensureConstraint (constraint': Constraint) =
-        if isNull constraint' then
-            nullArg (nameof constraint')
+    let internal ensureConstraint (constraint': ConstraintDescriptor) =
+        if isNull constraint' then nullArg (nameof constraint')
 
     let internal ensureConstraints constraints =
-        if isNull (box constraints) then
-            nullArg (nameof constraints)
-
+        if isNull (box constraints) then nullArg (nameof constraints)
         let constraints = constraints |> Seq.toList
-
-        constraints
-        |> List.iter (fun constraint' ->
-            if isNull constraint' then
-                nullArg (nameof constraints))
-
+        constraints |> List.iter ensureConstraint
         constraints
 
-    let internal tryValue<'value> (value: obj) =
-        match value with
-        | :? 'value as typed -> Some typed
-        | _ -> None
+    let private retained<'value> constraint' = Constraint.tryCheck<'value> constraint'
 
-    let private tryBounds<'value> minimum maximum =
-        match tryValue<'value> minimum, tryValue<'value> maximum with
-        | Some minimum, Some maximum -> Some(minimum, maximum)
-        | _ -> None
+    /// <summary>Combines every complete constraint retained for the supplied value type.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.complete&lt;int&gt; descriptors</code>
+    /// </example>
+    let complete<'value> constraints : Check<'value> =
+        ensureConstraints constraints |> List.choose retained<'value> |> Check.all
 
-    /// <summary>Lowers one schema constraint to a string check when the constraint has text-level meaning.</summary>
-    let tryText (constraint': Constraint) : Check<string> option =
+    /// <summary>Returns the retained text check when the descriptor applies to text.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.tryText descriptor</code>
+    /// </example>
+    let tryText (constraint': ConstraintDescriptor) : Check<string> option =
         ensureConstraint constraint'
-
         match Constraint.metadata constraint' with
-        | ConstraintMetadata.Required -> Some Check.String.present
-        | ConstraintMetadata.MinLength minimum -> Some(Check.String.minLength minimum)
-        | ConstraintMetadata.MaxLength maximum -> Some(Check.String.maxLength maximum)
-        | ConstraintMetadata.LengthBetween(minimum, maximum) ->
-            Some(Check.String.lengthBetween minimum maximum)
-        | ConstraintMetadata.Email -> Some Check.String.email
-        | ConstraintMetadata.Trimmed ->
-            Some(fun value ->
-                if isNull value then
-                    Error [ CheckFailure.Required ]
-                elif value.Trim() = value then
-                    Ok ()
-                else
-                    Error [ CheckFailure.InvalidFormat "trimmed" ])
-        | ConstraintMetadata.Pattern pattern -> Some(Check.String.matches pattern)
-        | ConstraintMetadata.OneOf choices -> Some(Check.String.oneOf choices)
-        | ConstraintMetadata.NotEqualTo unexpected ->
-            tryValue<string> unexpected |> Option.map Check.notEqualTo
-        | _ -> None
+        | ConstraintMetadata.Presence Presence.Required -> Some Check.String.present
+        | ConstraintMetadata.ValueConstraint metadata ->
+            match metadata with
+            | Axial.Check.ConstraintMetadata.Present
+            | Axial.Check.ConstraintMetadata.MinLength _
+            | Axial.Check.ConstraintMetadata.MaxLength _
+            | Axial.Check.ConstraintMetadata.LengthBetween _
+            | Axial.Check.ConstraintMetadata.Email
+            | Axial.Check.ConstraintMetadata.Trimmed
+            | Axial.Check.ConstraintMetadata.Pattern _
+            | Axial.Check.ConstraintMetadata.OneOf _
+            | Axial.Check.ConstraintMetadata.EqualTo _
+            | Axial.Check.ConstraintMetadata.NotEqualTo _
+            | Axial.Check.ConstraintMetadata.Custom _ -> retained constraint'
+            | _ -> None
+        | ConstraintMetadata.Presence Presence.Optional -> None
 
-    /// <summary>Lowers schema constraints with text-level meaning into one string check.</summary>
-    let text (constraints: Constraint seq) : Check<string> =
-        ensureConstraints constraints
-        |> Seq.choose tryText
-        |> Seq.toList
-        |> Check.all
+    /// <summary>Combines the retained checks and required presence declaration that apply to text.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.text descriptors</code>
+    /// </example>
+    let text constraints =
+        ensureConstraints constraints |> List.choose tryText |> Check.all
 
-    let private betweenCheck minimum maximum : Check<'value> =
-        fun value ->
-            if value >= minimum && value <= maximum then
-                Ok ()
-            else
-                Error [ CheckFailure.OutOfRange(CheckRangeExpectation.Between(string minimum, string maximum), Some(string value)) ]
-
-    let private greaterThanCheck minimum : Check<'value> =
-        fun value ->
-            if value > minimum then
-                Ok ()
-            else
-                Error [ CheckFailure.OutOfRange(CheckRangeExpectation.GreaterThan(string minimum), Some(string value)) ]
-
-    let private lessThanCheck maximum : Check<'value> =
-        fun value ->
-            if value < maximum then
-                Ok ()
-            else
-                Error [ CheckFailure.OutOfRange(CheckRangeExpectation.LessThan(string maximum), Some(string value)) ]
-
-    let private atLeastCheck minimum : Check<'value> =
-        fun value ->
-            if value >= minimum then
-                Ok ()
-            else
-                Error [ CheckFailure.OutOfRange(CheckRangeExpectation.AtLeast(string minimum), Some(string value)) ]
-
-    let private atMostCheck maximum : Check<'value> =
-        fun value ->
-            if value <= maximum then
-                Ok ()
-            else
-                Error [ CheckFailure.OutOfRange(CheckRangeExpectation.AtMost(string maximum), Some(string value)) ]
-
-    /// <summary>Lowers one schema constraint to an ordered-value check when the constraint has range-level meaning.</summary>
-    let tryOrdered<'value when 'value: comparison> (constraint': Constraint) : Check<'value> option =
+    /// <summary>Returns the retained ordered-value check when the descriptor applies to the supplied value type.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.tryOrdered&lt;int&gt; descriptor</code>
+    /// </example>
+    let tryOrdered<'value when 'value: comparison> (constraint': ConstraintDescriptor) : Check<'value> option =
         ensureConstraint constraint'
-
         match Constraint.metadata constraint' with
-        | ConstraintMetadata.Between(minimum, maximum) ->
-            tryBounds<'value> minimum maximum
-            |> Option.map (fun (minimum, maximum) -> betweenCheck minimum maximum)
-        | ConstraintMetadata.GreaterThan minimum ->
-            tryValue<'value> minimum |> Option.map greaterThanCheck
-        | ConstraintMetadata.LessThan maximum ->
-            tryValue<'value> maximum |> Option.map lessThanCheck
-        | ConstraintMetadata.AtLeast minimum ->
-            tryValue<'value> minimum |> Option.map atLeastCheck
-        | ConstraintMetadata.AtMost maximum ->
-            tryValue<'value> maximum |> Option.map atMostCheck
-        | ConstraintMetadata.NotEqualTo unexpected ->
-            tryValue<'value> unexpected |> Option.map Check.notEqualTo
-        | _ -> None
+        | ConstraintMetadata.ValueConstraint metadata ->
+            match metadata with
+            | Axial.Check.ConstraintMetadata.EqualTo _
+            | Axial.Check.ConstraintMetadata.NotEqualTo _
+            | Axial.Check.ConstraintMetadata.Between _
+            | Axial.Check.ConstraintMetadata.GreaterThan _
+            | Axial.Check.ConstraintMetadata.LessThan _
+            | Axial.Check.ConstraintMetadata.AtLeast _
+            | Axial.Check.ConstraintMetadata.AtMost _
+            | Axial.Check.ConstraintMetadata.Custom _ -> retained constraint'
+            | _ -> None
+        | ConstraintMetadata.Presence _ -> None
 
-    /// <summary>Lowers schema constraints with range-level meaning into one ordered-value check.</summary>
-    let ordered<'value when 'value: comparison> (constraints: Constraint seq) : Check<'value> =
-        ensureConstraints constraints
-        |> Seq.choose tryOrdered<'value>
-        |> Seq.toList
-        |> Check.all
+    /// <summary>Combines retained ordered-value checks for the supplied value type.</summary>
+    /// <example>
+    /// <code>let check = ConstraintCheck.ordered&lt;int&gt; descriptors</code>
+    /// </example>
+    let ordered<'value when 'value: comparison> constraints =
+        ensureConstraints constraints |> List.choose tryOrdered<'value> |> Check.all
 
-    let inline internal multipleOfCheck<'value when 'value: (static member Zero: 'value) and 'value: equality and 'value: (static member (%) : 'value * 'value -> 'value)>
-        (divisor: 'value)
-        : Check<'value> =
-        fun value ->
-            if value % divisor = LanguagePrimitives.GenericZero<'value> then
-                Ok ()
-            else
-                Error [ CheckFailure.OutOfRange(CheckRangeExpectation.NotMultipleOf(string divisor), Some(string value)) ]
-
-    /// <summary>Lowers one schema constraint to a multiple-of check when the constraint has that meaning.</summary>
-    let inline internal tryMultipleOf<'value when 'value: (static member Zero: 'value) and 'value: equality and 'value: (static member (%) : 'value * 'value -> 'value)>
-        (constraint': Constraint)
-        : Check<'value> option =
+    let inline internal tryMultipleOf constraint' =
         ensureConstraint constraint'
-
         match Constraint.metadata constraint' with
-        | ConstraintMetadata.MultipleOf divisor ->
-            tryValue<'value> divisor |> Option.map multipleOfCheck<'value>
+        | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MultipleOf _) -> retained constraint'
         | _ -> None
 
-    /// <summary>Lowers schema constraints with multiple-of meaning into one numeric check.</summary>
-    let inline internal multipleOf<'value when 'value: (static member Zero: 'value) and 'value: equality and 'value: (static member (%) : 'value * 'value -> 'value)>
-        (constraints: Constraint seq)
-        : Check<'value> =
-        ensureConstraints constraints
-        |> Seq.choose tryMultipleOf<'value>
-        |> Seq.toList
-        |> Check.all
-
-    /// <summary>Lowers one schema constraint to a sequence check when the constraint has sequence-level meaning.</summary>
-    let trySequence<'value when 'value: equality> (constraint': Constraint) : Check<seq<'value>> option =
-        ensureConstraint constraint'
-
-        match Constraint.metadata constraint' with
-        | ConstraintMetadata.Count expected -> Some(Check.Seq.count expected)
-        | ConstraintMetadata.MinCount minimum -> Some(Check.Seq.minCount minimum)
-        | ConstraintMetadata.MaxCount maximum -> Some(Check.Seq.maxCount maximum)
-        | ConstraintMetadata.CountBetween(minimum, maximum) ->
-            Some(Check.Seq.countBetween minimum maximum)
-        | ConstraintMetadata.Distinct -> Some Check.Seq.noDuplicates
-        | ConstraintMetadata.Contains item ->
-            tryValue<'value> item |> Option.map Check.Seq.contains
-        | _ -> None
-
-    /// <summary>Lowers schema constraints with sequence-level meaning into one sequence check.</summary>
-    let sequence<'value when 'value: equality> (constraints: Constraint seq) : Check<seq<'value>> =
-        ensureConstraints constraints
-        |> Seq.choose trySequence<'value>
-        |> Seq.toList
-        |> Check.all
+    let inline internal multipleOf constraints =
+        ensureConstraints constraints |> List.choose tryMultipleOf |> Check.all
 
 module internal SchemaCheckFailure =
     let private tryCustomMessage constraints code =
@@ -242,10 +153,8 @@ module internal SchemaCheckFailure =
 /// the primitive-level check on the result. Primitive value schemas work the same way with an identity projection.
 /// </para>
 /// <para>
-/// The metadata lowerers gather constraint metadata from every refinement layer with
-/// <see cref="M:Axial.Schema.Schema.allConstraints``1" /> and lower it through
-/// <see cref="T:Axial.Schema.ConstraintCheck" />, so raw-layer and refined-layer constraints run as
-/// one check program.
+/// Each refinement layer executes the complete checks attached at that layer. Raw constraints run against the raw
+/// value; constraints attached after refinement run against the refined value.
 /// </para>
 /// </remarks>
 [<RequireQualifiedAccess>]
@@ -265,6 +174,9 @@ module SchemaCheck =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when the check's value type does not match the schema's underlying primitive kind.
     /// </exception>
+    /// <example>
+    /// <code>let checkEmail = SchemaCheck.fromUnderlying Check.String.email emailSchema</code>
+    /// </example>
     let fromUnderlying (check: Check<'primitive>) (schema: Schema<'value>) : Check<'value> =
         if isNull (box check) then
             nullArg (nameof check)
@@ -275,33 +187,71 @@ module SchemaCheck =
         let inspect = SchemaCore.inspectUnderlying<'value, 'primitive> schema
         fun value -> check (inspect value)
 
-    /// <summary>
-    /// Lowers the text-meaning constraint metadata carried by every layer of a value schema into one executable check
-    /// over the schema's values.
-    /// </summary>
+    let private combine first second =
+        match first, second with
+        | Ok (), Ok () -> Ok ()
+        | Error failures, Ok ()
+        | Ok (), Error failures -> Error failures
+        | Error firstFailures, Error secondFailures -> Error(firstFailures @ secondFailures)
+
+    let rec private runDefinition (definition: ValueSchemaDefinition) value =
+        let own = ConstraintCheck.complete<obj> definition.Constraints value
+
+        let presence =
+            match definition.Shape with
+            | PrimitiveValueDefinition PrimitiveValueKind.Text
+                when definition.Constraints
+                     |> List.exists (Constraint.metadata >> (=) (ConstraintMetadata.Presence Presence.Required)) ->
+                Check.String.present (unbox<string> value)
+            | _ -> Ok ()
+
+        let underlying =
+            match definition.Shape with
+            | RefinedValueDefinition(raw, ops) ->
+                // A refined value already exists here, so Refinement.create does not run and cannot re-establish the
+                // refinement's own invariant. Its retained constraints are typed over the underlying representation,
+                // so run them against the projection alongside the raw layer's own constraints. Parsing takes a
+                // different path (ConstraintCheck over definition.Constraints), so this does not double-execute.
+                let projected = ops.Inspect value
+                combine (runDefinition raw projected) (ConstraintCheck.complete<obj> ops.Constraints projected)
+            | LazyValueDefinition deferred -> runDefinition (deferred.Force()) value
+            | _ -> Ok ()
+
+        combine underlying (combine presence own)
+
+    /// <summary>Runs each complete constraint against the value at the refinement layer where it was attached.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">
-    /// Thrown when the schema's underlying primitive kind is not text.
-    /// </exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="schema" /> is not a value schema.</exception>
+    /// <example>
+    /// <code>let checkName = SchemaCheck.complete constrainedNameSchema</code>
+    /// </example>
+    let complete (schema: Schema<'value>) : Check<'value> =
+        if isNull (box schema) then nullArg (nameof schema)
+
+        match schema.Definition with
+        | ValueDefinition definition -> fun value -> runDefinition definition (box value)
+        | PendingDefinition
+        | ModelDefinition _ -> invalidArg (nameof schema) "Expected a value schema."
+
+    /// <summary>Runs complete constraints for a schema whose underlying primitive value is text.</summary>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when the schema's underlying primitive kind is not text.</exception>
+    /// <example>
+    /// <code>let checkEmail = SchemaCheck.text emailSchema</code>
+    /// </example>
     let text (schema: Schema<'value>) : Check<'value> =
-        if isNull (box schema) then
-            nullArg (nameof schema)
+        SchemaCore.inspectUnderlying<'value, string> schema |> ignore
+        complete schema
 
-        fromUnderlying (ConstraintCheck.text (SchemaCore.allConstraints schema)) schema
-
-    /// <summary>
-    /// Lowers the range-meaning constraint metadata carried by every layer of a value schema into one executable check
-    /// over the schema's values.
-    /// </summary>
+    /// <summary>Runs complete constraints for a schema whose underlying primitive has the supplied ordered type.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="schema" /> is null.</exception>
-    /// <exception cref="T:System.ArgumentException">
-    /// Thrown when the ordered primitive type does not match the schema's underlying primitive kind.
-    /// </exception>
+    /// <exception cref="T:System.ArgumentException">Thrown when the ordered type does not match the underlying primitive.</exception>
+    /// <example>
+    /// <code>let checkAge = SchemaCheck.ordered&lt;int, int&gt; ageSchema</code>
+    /// </example>
     let ordered<'primitive, 'value when 'primitive: comparison> (schema: Schema<'value>) : Check<'value> =
-        if isNull (box schema) then
-            nullArg (nameof schema)
-
-        fromUnderlying (ConstraintCheck.ordered<'primitive> (SchemaCore.allConstraints schema)) schema
+        SchemaCore.inspectUnderlying<'value, 'primitive> schema |> ignore
+        complete schema
 
 /// <summary>
 /// Field-constraint checking for an existing trusted model value, shared by <c>Schema.check</c>. Checks every
@@ -368,39 +318,33 @@ module internal ModelFieldCheck =
         | Ok _ -> Ok ()
         | Error failures -> failures |> SchemaCheckFailure.toSchemaErrors constraints |> Error
 
+    let private runComplete<'value> constraints value =
+        value
+        |> unbox<'value>
+        |> runCheck constraints (ConstraintCheck.complete<'value> constraints)
+        |> Result.map box
+
     let private checkPrimitive kind constraints value =
         match kind with
         | PrimitiveValueKind.Text ->
-            value
-            |> unbox<string>
-            |> runCheck constraints (ConstraintCheck.text constraints)
-            |> Result.map box
-        | PrimitiveValueKind.Int ->
-            value
-            |> unbox<int>
-            |> runCheck constraints (fun v -> Check.all [ ConstraintCheck.ordered<int> constraints; ConstraintCheck.multipleOf<int> constraints ] v)
-            |> Result.map box
-        | PrimitiveValueKind.Decimal ->
-            value
-            |> unbox<decimal>
-            |> runCheck constraints (fun v -> Check.all [ ConstraintCheck.ordered<decimal> constraints; ConstraintCheck.multipleOf<decimal> constraints ] v)
-            |> Result.map box
-        | PrimitiveValueKind.Bool -> Ok ()
+            let presence =
+                if constraints |> List.exists (Constraint.metadata >> (=) (ConstraintMetadata.Presence Presence.Required)) then
+                    Check.String.present
+                else
+                    fun _ -> Ok ()
+
+            let check = Check.all [ presence; ConstraintCheck.complete<string> constraints ]
+            value |> unbox<string> |> runCheck constraints check |> Result.map box
+        | PrimitiveValueKind.Int -> runComplete<int> constraints value
+        | PrimitiveValueKind.Decimal -> runComplete<decimal> constraints value
+        | PrimitiveValueKind.Bool -> runComplete<bool> constraints value
 #if NET8_0_OR_GREATER
-        | PrimitiveValueKind.Date ->
-            value
-            |> unbox<DateOnly>
-            |> runCheck constraints (ConstraintCheck.ordered<DateOnly> constraints)
-            |> Result.map box
+        | PrimitiveValueKind.Date -> runComplete<DateOnly> constraints value
 #else
         | PrimitiveValueKind.Date -> Ok ()
 #endif
-        | PrimitiveValueKind.DateTime ->
-            value
-            |> unbox<DateTimeOffset>
-            |> runCheck constraints (ConstraintCheck.ordered<DateTimeOffset> constraints)
-            |> Result.map box
-        | PrimitiveValueKind.Guid -> Ok ()
+        | PrimitiveValueKind.DateTime -> runComplete<DateTimeOffset> constraints value
+        | PrimitiveValueKind.Guid -> runComplete<Guid> constraints value
 
     let rec private validateValue valueSchema fieldConstraints path (value: obj) =
         let constraints = allConstraints valueSchema @ fieldConstraints
@@ -409,44 +353,26 @@ module internal ModelFieldCheck =
         | LazyValueDefinition deferred ->
             validateValue (deferred.Force()) (valueSchema.Constraints @ fieldConstraints) path value
         | RefinedValueDefinition(raw, ops) ->
-            let rawValidation =
-                match raw.Shape with
-                | NestedValueDefinition _
-                | ManyValueDefinition _
-                | UnionValueDefinition _
-                | UnionInlineValueDefinition _
-                | EnumValueDefinition _
-                | OptionValueDefinition _
-                | MapValueDefinition _
-                | LazyValueDefinition _ ->
-                    validateValue raw (valueSchema.Constraints @ fieldConstraints) path (ops.Inspect value)
-                    |> SchemaResult.map (fun _ -> value)
-                | PrimitiveValueDefinition _
-                | RefinedValueDefinition _ ->
-                    let kind = underlyingPrimitiveKind valueSchema
-                    let primitive = inspectUnderlying valueSchema value
-
-                    match checkPrimitive kind constraints primitive with
-                    | Ok _ -> SchemaResult.ok value
-                    | Error errors ->
-                        errors
-                        |> List.map (diagnosticsAt path)
-                        |> mergeErrors
-                        |> SchemaResult.error
+            let rawValue = ops.Inspect value
+            let outerConstraints = valueSchema.Constraints @ fieldConstraints
+            let rawValidation = validateValue raw [] path rawValue |> SchemaResult.map (fun _ -> value)
 
             let refinementValidation =
-                match ops.Construct(ops.Inspect value) with
+                match ops.Construct rawValue with
                 | Ok _ -> SchemaResult.ok value
                 | Error errors ->
-                    errors
-                    |> List.map (diagnosticsAt path)
-                    |> mergeErrors
-                    |> SchemaResult.error
+                    errors |> List.map (diagnosticsAt path) |> mergeErrors |> SchemaResult.error
+
+            let constraintValidation =
+                match value |> runCheck outerConstraints (ConstraintCheck.complete<obj> outerConstraints) with
+                | Ok _ -> SchemaResult.ok value
+                | Error errors ->
+                    errors |> List.map (diagnosticsAt path) |> mergeErrors |> SchemaResult.error
 
             SchemaResult.map2
                 (fun _ _ -> value)
-                rawValidation
-                refinementValidation
+                (SchemaResult.map2 (fun _ _ -> value) rawValidation refinementValidation)
+                constraintValidation
         | PrimitiveValueDefinition _ ->
             let kind = underlyingPrimitiveKind valueSchema
             let primitive = inspectUnderlying valueSchema value
@@ -462,7 +388,7 @@ module internal ModelFieldCheck =
             validateObject path nestedModel value
             |> SchemaResult.map (fun _ -> value)
         | ManyValueDefinition collection ->
-            validateMany path collection constraints (value :?> System.Collections.IEnumerable)
+            validateMany path collection constraints value (value :?> System.Collections.IEnumerable)
             |> SchemaResult.map (fun _ -> value)
         | MapValueDefinition collection ->
             validateMap path collection constraints value
@@ -502,16 +428,16 @@ module internal ModelFieldCheck =
         | [] -> SchemaResult.ok model
         | diagnostics -> diagnostics |> mergeErrors |> SchemaResult.error
 
-    and private checkMany constraints path items =
-        match items |> runCheck constraints (ConstraintCheck.sequence<obj> constraints) with
-        | Ok checkedItems -> SchemaResult.ok checkedItems
+    and private checkMany constraints path value =
+        match value |> runCheck constraints (ConstraintCheck.complete<obj> constraints) with
+        | Ok checkedValue -> SchemaResult.ok checkedValue
         | Error errors ->
             errors
             |> List.map (diagnosticsAt path)
             |> mergeErrors
             |> SchemaResult.error
 
-    and private validateMany path (collection: CollectionValueDefinition) constraints (items: System.Collections.IEnumerable) =
+    and private validateMany path (collection: CollectionValueDefinition) constraints value (items: System.Collections.IEnumerable) =
         let items = items |> Seq.cast<obj> |> Seq.toList
 
         let validatedItems =
@@ -526,7 +452,7 @@ module internal ModelFieldCheck =
                 | Error diagnostics -> Some diagnostics)
 
         match errors with
-        | [] -> checkMany constraints path items
+        | [] -> checkMany constraints path value
         | diagnostics -> diagnostics |> mergeErrors |> SchemaResult.error
 
     and private validateMap path (collection: MapValueDefinition) constraints (value: obj) =
@@ -544,7 +470,7 @@ module internal ModelFieldCheck =
                 | Error diagnostics -> Some diagnostics)
 
         match errors with
-        | [] -> checkMany constraints path (entries |> List.map snd)
+        | [] -> checkMany constraints path value
         | diagnostics -> diagnostics |> mergeErrors |> SchemaResult.error
 
     and private validateUnion path (union: TaggedUnionValueDefinition) value =

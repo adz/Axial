@@ -22,9 +22,8 @@ module SchemaRefinedValueCheckTests =
 
         let schema : Schema<Email> =
             Schema.text
-            |> Schema.constrain Constraint.required
+            |> Schema.constrainAll [ Constraint.required; Constraint.email; Constraint.maxLength 254 ]
             |> Schema.convert create value
-            |> Schema.constrain Constraint.email
 
     /// <summary>A bounded-text domain value whose constraints all live on the raw text schema.</summary>
     type private ContactName = private ContactName of string
@@ -48,7 +47,6 @@ module SchemaRefinedValueCheckTests =
         let schema : Schema<NormalizedEmail> =
             Email.schema
             |> Schema.convert create value
-            |> Schema.constrain (Constraint.maxLength 254)
 
     /// <summary>A bounded number refined over the primitive int schema.</summary>
     type private Age = private Age of int
@@ -61,6 +59,22 @@ module SchemaRefinedValueCheckTests =
             Schema.int
             |> Schema.constrainAll [ Constraint.atLeast 0; Constraint.atMost 130 ]
             |> Schema.convert create value
+
+    [<Fact>]
+    let ``constraints attached after refinement execute against the refined value`` () =
+        let allowed = Email.create "ada@example.com"
+        let constraint' =
+            Axial.Check.Constraint.define "allowedEmail" [] (fun value ->
+                if value = allowed then Ok () else Error [ CheckFailure.Custom "allowedEmail" ])
+            |> Constraint.fromCheck
+        let schema = Email.schema |> Schema.constrain constraint'
+
+        test <@ Schema.check schema allowed = Ok allowed @>
+        test <@ Schema.check schema (Email.create "grace@example.com") |> Result.isError @>
+        test <@ SchemaCheck.text schema allowed = Ok () @>
+        test <@ SchemaCheck.text schema (Email.create "grace@example.com") = Error [ CheckFailure.Custom "allowedEmail" ] @>
+        test <@ Schema.parse schema (Axial.Data.Text "ada@example.com") = Ok allowed @>
+        test <@ Schema.parse schema (Axial.Data.Text "grace@example.com") |> Result.isError @>
 
     [<Fact>]
     let ``inspectUnderlying projects a refined value to its primitive representation`` () =
@@ -91,7 +105,7 @@ module SchemaRefinedValueCheckTests =
 
     [<Fact>]
     let ``allConstraints gathers every layer's constraint metadata foundation-first`` () =
-        test <@ Schema.allConstraints Email.schema |> List.map Constraint.code = [ "required"; "email" ] @>
+        test <@ Schema.allConstraints Email.schema |> List.map Constraint.code = [ "required"; "email"; "maxLength" ] @>
         test <@
             Schema.allConstraints NormalizedEmail.schema |> List.map Constraint.code =
                 [ "required"; "email"; "maxLength" ]
@@ -109,7 +123,10 @@ module SchemaRefinedValueCheckTests =
         let check = Email.schema |> SchemaCheck.text
 
         test <@ check (Email.create "ada@example.com") = Ok () @>
-        test <@ check (Email.create "") = Error [ Required; InvalidFormat "email" ] @>
+        Assert.Equal<Result<unit, CheckFailure list>>(
+            Error [ Required; InvalidFormat "email" ],
+            check (Email.create "")
+        )
 
     [<Fact>]
     let ``raw text constraint metadata checks the refined value's underlying text`` () =
@@ -129,7 +146,10 @@ module SchemaRefinedValueCheckTests =
         test <@ check (NormalizedEmail.create (Email.create "ada@example.com")) = Ok () @>
 
         // The raw text layer's checks fire for blank input; the outer refined layer's maxLength passes at length 0.
-        test <@ check (NormalizedEmail.create (Email.create "")) = Error [ Required; InvalidFormat "email" ] @>
+        Assert.Equal<Result<unit, CheckFailure list>>(
+            Error [ Required; InvalidFormat "email" ],
+            check (NormalizedEmail.create (Email.create ""))
+        )
 
         // The outer refined layer's own constraint fires once the raw layers pass.
         let overlong = String.replicate 250 "a" + "@example.com"

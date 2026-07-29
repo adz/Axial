@@ -1,7 +1,7 @@
 ---
 title: "Check.CheckRangeExpectation"
 linkTitle: "CheckRangeExpectation"
-weight: 1003
+weight: 1006
 ---
 
 <pre>Describes the ordering requirement that a value check expected a comparable value to satisfy against a

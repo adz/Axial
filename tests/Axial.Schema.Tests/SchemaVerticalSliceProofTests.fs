@@ -205,7 +205,7 @@ module SchemaVerticalSliceProofTests =
         test <@ emailDescriptor.ValueSchema.Constraints |> List.map Constraint.code = [ "required"; "maxLength" ] @>
         test <@
             emailDescriptor.ValueSchema.Constraints |> List.map Constraint.metadata =
-                [ ConstraintMetadata.Required; ConstraintMetadata.MaxLength 254 ]
+                [ (ConstraintMetadata.Presence Presence.Required); ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254) ]
         @>
 
         // Constraint lowering to `Check`: the same required/maxLength metadata read above lowers to an executable,

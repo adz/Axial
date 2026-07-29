@@ -16,8 +16,27 @@ let contactSchema =
     }
 ```
 
-This is the form to prefer at use sites. The rest of this page expands what `Email` contributes and shows where
-schema-local constraints fit.
+This is the form to prefer at use sites. The built-in refined types from
+[Axial.Refined]({{< relref "/error-handling/refined/" >}}) already work this way — `NonBlankString`, `PositiveInt`,
+`Slug`, `NonEmptyList<_>`, and the rest resolve without a `withSchema`, as
+[Getting Started](../getting-started/) shows. Refinements that take parameters, such as `boundedString` and
+`boundedList`, have no single canonical schema and need one selected explicitly:
+
+```fsharp
+field "name" _.Name {
+    withSchema (RefinedSchemas.boundedString 2 80)
+}
+```
+
+`BoundedString` is one type whose values each record the bounds they were refined under, rather than a distinct type
+per bound. So the type alone does not say what the bounds are — `2` and `80` belong to this field, and a
+`BoundedString` built elsewhere under different bounds is the same type. `Schema.check` re-runs the schema's bounds
+against such a value rather than trusting the ones it carries. `BoundedList` and `BoundedArray` work the same way.
+
+Where you want the bounds to be part of the type, wrap them in your own refined type, as
+[Lift universal constraints into the refinement](#lift-universal-constraints-into-the-refinement) shows.
+
+The rest of this page expands what a domain type like `Email` contributes and shows where schema-local constraints fit.
 
 ## Define the domain type
 
@@ -56,7 +75,8 @@ field "email" _.Email {
 ```
 
 Schema constraints remain available directly inside a field block. Here both constraints apply to the incoming
-`string`, so interpreters can retain their metadata for diagnostics, forms, and generated schemas.
+`string`, so interpreters can retain their metadata for diagnostics, forms, and generated schemas. The named Schema
+constraints use the same executable metadata defined by [Check constraints]({{< relref "/error-handling/check/constraints/" >}}).
 
 Constraints preserve the value type, however. This block still contains a `Schema<string>`, while `_.Email` returns
 `Email`; by itself, the declaration cannot complete the field.
@@ -103,6 +123,24 @@ email-format invariant for every construction path.
 
 Use this inline form for boundary-specific restrictions. If a constraint must hold for every instance of the domain
 type, lift it into the refinement instead.
+
+## Attach an application constraint
+
+Define an application constraint as a complete Check constraint, then adapt it with `fromCheck`:
+
+```fsharp
+let even =
+    Axial.Check.Constraint.define "even" [] (fun value ->
+        if value % 2 = 0 then Ok ()
+        else Error [ Axial.Check.CheckFailure.Custom "even" ])
+
+field "quantity" _.Quantity {
+    constrain (fromCheck even)
+}
+```
+
+Schema does not accept metadata without a Check. Parsing and validation therefore enforce the same rule that inspectors
+see. See [Check constraints]({{< relref "/error-handling/check/constraints/" >}}) for custom codes and arguments.
 
 ## Lift universal constraints into the refinement
 

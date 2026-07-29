@@ -26,4 +26,4 @@ Describes a value schema as inspectable shape, format, and constraint metadata.
 | <code><a href="t-schema-schemadescription.md">SchemaDescription</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L243-243)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L248-248)

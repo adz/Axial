@@ -176,9 +176,8 @@ type Email =
 
     static member Schema(_: Email) : Schema<Email> =
         Schema.text
-        |> Schema.constrain Constraint.required
+        |> Schema.constrainAll [ Constraint.required; Constraint.email ]
         |> Schema.convert Email (fun (Email value) -> value)
-        |> Schema.constrain Constraint.email
         |> Schema.withFormat SchemaFormat.email
 
 module Email =
@@ -432,12 +431,12 @@ module FormPage =
                gather field.Schema)
 
         let required =
-            if metadata |> List.contains ConstraintMetadata.Required then " required" else ""
+            if metadata |> List.contains (ConstraintMetadata.Presence Presence.Required) then " required" else ""
 
         let maxLength =
             metadata
             |> List.tryPick (function
-                | ConstraintMetadata.MaxLength maximum -> Some $" maxlength=\"{maximum}\""
+                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $" maxlength=\"{maximum}\""
                 | _ -> None)
             |> Option.defaultValue ""
 

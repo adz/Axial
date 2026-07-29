@@ -12,6 +12,34 @@ open Xunit
 open Axial.Schema.Syntax
 
 module RefinedCatalogSchemaTests =
+    [<Fact>]
+    let ``refinement constraints are exposed to metadata interpreters`` () =
+        let schema = RefinedSchemas.nonEmptyList Schema.text
+        let description = Inspect.schema schema
+        let document = JsonSchema.generateValue schema
+
+        test <@ description.Constraints |> List.map Constraint.code = [ "minCount" ] @>
+        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "minCount" ] @>
+        test <@ document.Contains "\"minItems\":1" @>
+
+    [<Fact>]
+    let ``refinement constraints execute once`` () =
+        let mutable executions = 0
+        let check value =
+            executions <- executions + 1
+            if String.IsNullOrWhiteSpace value then Error [ CheckFailure.Required ] else Ok ()
+
+        let refinement =
+            Refinement.define
+                (Axial.Check.Constraint.define "countedNonBlank" [] check)
+                id
+                id
+
+        let parsed = Schema.parse (Schema.text |> Schema.refine refinement) (Data.Text "value")
+
+        test <@ parsed = Ok "value" @>
+        test <@ executions = 1 @>
+
     type private Product =
         {
             Name: NonBlankString
@@ -83,6 +111,16 @@ module RefinedCatalogSchemaTests =
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Required }
                                  { Path = TestPath.fromLegacy [ PathSegment.Name "quantity" ]; Error = SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") }
                                  { Path = TestPath.fromLegacy [ PathSegment.Name "slug" ]; Error = SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" } ] @>
+
+    [<Fact>]
+    let ``bounded string schema rejects a value refined under different bounds`` () =
+        // BoundedString records its bounds per value, so a BoundedString built at 1..99 is still a BoundedString
+        // when checked against a 2..80 schema. Refinement.create does not run for an already-refined value, so the
+        // schema's retained constraints must run at the refined layer or the bounds go unenforced.
+        let schema = RefinedSchemas.boundedString 2 80
+        let tooShort = Refine.boundedString 1 99 "A" |> Result.defaultWith (fun error -> failwithf "%A" error)
+
+        test <@ SchemaCheck.text schema tooShort = Error [ CheckFailure.InvalidLength(CheckLengthExpectation.LengthBetween(2, 80), Some 1) ] @>
 
     [<Fact>]
     let ``bounded string schema carries caller supplied bounds`` () =

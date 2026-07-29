@@ -45,16 +45,30 @@ match email.Schema.Shape with
 Refined values expose their raw representation through `SchemaShape.Refined`, so a boundary interpreter can render an
 `Email` field as a constrained string without knowing the domain type.
 
+## Understand The Constraint Types
+
+Schema authoring uses `SchemaConstraint<'value>`, which prevents attaching a string constraint to an integer schema.
+`Constraint.fromCheck` creates one from a complete `Axial.Check.Constraint<'value>`. After Schema combines differently
+typed fields into one model description, inspectors see the non-generic `Axial.Schema.ConstraintDescriptor`. The
+`Constraint` module creates and inspects Schema constraints; it is not another constraint value type.
+
+`required` and `optional` describe boundary presence before a typed value exists. Other constructors retain complete
+Check constraints. All descriptors expose the same stable code and metadata inspection surface.
+
 ## Lower Constraints To Another Format
 
-Constraint metadata is a closed, typed vocabulary (`SchemaConstraintMetadata`), so lowering is one `match`:
+Constraint metadata is the discriminated-union `ConstraintMetadata` vocabulary owned by
+[Axial.Check]({{< relref "/error-handling/check/constraints/" >}}), so lowering is one `match`:
 
 ```fsharp
-let jsonKeyword (constraint': Constraint) =
+let jsonKeyword (constraint': ConstraintDescriptor) =
     match constraint'.Metadata with
-    | SchemaConstraintMetadata.MaxLength maximum -> Some $"\"maxLength\":{maximum}"
-    | SchemaConstraintMetadata.Pattern pattern -> Some $"\"pattern\":\"{pattern}\""
-    | SchemaConstraintMetadata.Required -> None   // handled at the object level
+    | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) ->
+        Some $"\"maxLength\":{maximum}"
+    | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) ->
+        Some $"\"pattern\":\"{pattern}\""
+    | ConstraintMetadata.Presence Presence.Required ->
+        None // handled at the object level
     | _ -> None
 ```
 

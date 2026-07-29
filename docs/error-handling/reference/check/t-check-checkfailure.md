@@ -1,7 +1,7 @@
 ---
 title: "Check.CheckFailure"
 linkTitle: "CheckFailure"
-weight: 1001
+weight: 1004
 ---
 
 Describes why an executable value check failed, without attaching source paths or structured data.

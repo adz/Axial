@@ -34,4 +34,4 @@ Generates a compact JSON Schema document from any completed schema declaration.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.JsonSchema/JsonSchema.fs#L314-314)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.JsonSchema/JsonSchema.fs#L338-338)

@@ -32,9 +32,16 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 - [`Schema.UnionCase.create`](./m-schema-unioncase-create.md):
  Describes one tagged union case from a tag, a payload constructor, a payload extractor, and a payload schema.
 
-- [`Schema.Constraint`](./t-schema-constraint.md):
- Describes a portable schema constraint as inspectable metadata.
-
+- [`Schema.Constraint`](./t-schema-constraint.md):  Creates typed Schema constraints and inspects their erased descriptors.
+ <example>
+ <code>
+ let schema = Schema.text |> Schema.constrain (Constraint.maxLength 80)
+ let custom = Axial.Check.Constraint.define "named" [] check |> Constraint.fromCheck
+ </code>
+ </example>
+- [`Schema.ConstraintDescriptor`](./t-schema-constraintdescriptor.md):  Describes a constraint after its typed Check constraint has been attached to a heterogeneous schema.
+- [`Schema.SchemaConstraint`](./t-schema-schemaconstraint.md):  A typed Schema constraint annotation. Value constraints retain a complete Axial.Check.Constraint;
+ presence declarations remain Schema boundary metadata.
 
 ## Record builder
 

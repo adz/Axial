@@ -407,10 +407,21 @@ module Character =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Collection =
     let nonEmptyListRefinement<'value> () =
-        Refinement.defineWithCheck (fun (values: 'value list) -> Check.Seq.minCount 1 values)
-            (function head :: tail -> NonEmptyList(head, tail) | [] -> failwith "unreachable") _.ToList()
-    let nonEmptyArrayRefinement<'value> () = Refinement.defineWithCheck (fun (values: 'value array) -> Check.Seq.minCount 1 values) NonEmptyArray _.ToArray()
-    let distinctListRefinement<'value when 'value: equality> () = Refinement.defineWithCheck (fun (values: 'value list) -> Check.Seq.noDuplicates values) DistinctList _.ToList()
+        let constraint': Constraint<'value list> = Constraint.minCount 1 |> Constraint.forList
+        Refinement.define
+            constraint'
+            (function head :: tail -> NonEmptyList(head, tail) | [] -> failwith "unreachable")
+            _.ToList()
+
+    let nonEmptyArrayRefinement<'value> () =
+        Refinement.define
+            (Constraint.minCount 1 |> Constraint.contramap (fun (values: 'value array) -> values :> seq<'value>))
+            NonEmptyArray
+            _.ToArray()
+
+    let distinctListRefinement<'value when 'value: equality> () =
+        let constraint': Constraint<'value list> = Constraint.distinct<'value> |> Constraint.forList
+        Refinement.define constraint' DistinctList _.ToList()
     let nonEmptyList values = values |> Seq.toList |> Refinement.create (nonEmptyListRefinement ())
     let nonEmptyArray values = values |> Seq.toArray |> Refinement.create (nonEmptyArrayRefinement ())
     let distinctList values = values |> Seq.toList |> Refinement.create (distinctListRefinement ())

@@ -39,7 +39,8 @@ current domain model.
 
 ## Guides
 
-- [Getting Started](../getting-started/) — declare a schema once and parse structured data into a trusted model.
+- [Getting Started](../getting-started/) — one model built up in four stages: plain fields, refined fields, field
+  constraints, and a private model behind a checked constructor. **Start here.**
 - [Schema Overview Examples](../overview-examples/) — short examples of inference, checked construction, refinement,
   recursion, and core interpreters.
 - [Tutorials](../tutorials/) — parse a signup form, nest models, apply rules, and inspect metadata.
