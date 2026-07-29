@@ -199,8 +199,11 @@ module Syntax =
     /// <summary>Requires a field value to be supplied by boundary interpreters.</summary>
     let required<'value> : SchemaConstraint<'value> = Constraint.required<'value>
 
-    /// <summary>Marks a field value as optional for boundary interpreters.</summary>
-    let optional<'value> : SchemaConstraint<'value> = Constraint.optional<'value>
+    /// <summary>
+    /// Marks an option-typed field as optional for boundary interpreters. A field of any other type cannot be
+    /// optional, so applying this to one is a compile error.
+    /// </summary>
+    let optional<'value> : SchemaConstraint<'value option> = Constraint.optional<'value>
 
     /// <summary>Requires a text field to have at least the supplied length.</summary>
     let minLength minimum : SchemaConstraint<string> = Constraint.minLength minimum

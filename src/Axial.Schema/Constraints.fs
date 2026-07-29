@@ -87,11 +87,15 @@ module Constraint =
     /// </example>
     let required<'value> : SchemaConstraint<'value> = SchemaConstraint<'value>(presence "required" (ConstraintMetadata.Presence Presence.Required))
 
-    /// Marks boundary input as optional. Presence is handled before a typed value exists.
+    /// <summary>
+    /// Marks boundary input as optional. Only an option-typed field can be optional: a field of any other type has
+    /// nowhere to put an absent input, so the constructor could not be applied. Declaring the field
+    /// <c>'value option</c> is what makes it optional; this constraint states that intent for interpreters.
+    /// </summary>
     /// <example>
-    /// <code>let constraint' : SchemaConstraint&lt;int&gt; = Constraint.optional</code>
+    /// <code>let constraint' : SchemaConstraint&lt;int option&gt; = Constraint.optional</code>
     /// </example>
-    let optional<'value> : SchemaConstraint<'value> = SchemaConstraint<'value>(presence "optional" (ConstraintMetadata.Presence Presence.Optional))
+    let optional<'value> : SchemaConstraint<'value option> = SchemaConstraint<'value option>(presence "optional" (ConstraintMetadata.Presence Presence.Optional))
 
     /// <summary>Requires text to contain at least the supplied number of characters.</summary>
     /// <example>
