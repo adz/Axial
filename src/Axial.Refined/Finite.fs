@@ -110,6 +110,10 @@ module FiniteFloat =
     /// <summary>Reported when an exact result leaves the finite range.</summary>
     let private notFinite = [ CheckFailure.InvalidFormat "finite" ]
 
+    /// <remarks>Spelled out rather than <c>Double.IsFinite</c>, which Fable does not support.</remarks>
+    let private isFinite (value: float) =
+        not (Double.IsNaN value || Double.IsInfinity value)
+
     /// <summary>The portable constraint admitting only finite doubles.</summary>
     let constraint' : Constraint<float> = Constraint.finite
 
@@ -123,7 +127,7 @@ module FiniteFloat =
 
     /// <summary>Returns the finite value, or <c>None</c> when it is infinite or <c>NaN</c>.</summary>
     let ofFloat value =
-        if Double.IsFinite value then Some(FiniteFloat value) else None
+        if isFinite value then Some(FiniteFloat value) else None
 
     /// <summary>The additive identity.</summary>
     let zero = FiniteFloat 0.0
@@ -133,7 +137,7 @@ module FiniteFloat =
 
     /// <summary>Rewraps a raw result, failing when the operation left the finite range.</summary>
     let private ofComputed value =
-        if Double.IsFinite value then Ok(FiniteFloat value) else Error notFinite
+        if isFinite value then Ok(FiniteFloat value) else Error notFinite
 
     // Closed operations ----------------------------------------------------------------
 
@@ -181,6 +185,10 @@ module FiniteFloat =
 [<RequireQualifiedAccess>]
 module FiniteFloat32 =
 
+    /// <remarks>Spelled out rather than <c>Single.IsFinite</c>, which Fable does not support.</remarks>
+    let private isFinite (value: float32) =
+        not (Single.IsNaN value || Single.IsInfinity value)
+
     /// <summary>The portable constraint admitting only finite single-precision floats.</summary>
     let constraint' : Constraint<float32> = Constraint.finite32
 
@@ -194,7 +202,7 @@ module FiniteFloat32 =
 
     /// <summary>Returns the finite value, or <c>None</c> when it is infinite or <c>NaN</c>.</summary>
     let ofFloat32 value =
-        if Single.IsFinite value then Some(FiniteFloat32 value) else None
+        if isFinite value then Some(FiniteFloat32 value) else None
 
     /// <summary>Negates the value. Total.</summary>
     let negate (input: FiniteFloat32) = FiniteFloat32(-input.Value)
@@ -222,7 +230,7 @@ module FiniteFloat32 =
     let compare (left: FiniteFloat32) (right: FiniteFloat32) = Operators.compare left.Value right.Value
 
     let private ofComputed value =
-        if Single.IsFinite value then
+        if isFinite value then
             Ok(FiniteFloat32 value)
         else
             Error [ CheckFailure.InvalidFormat "finite" ]

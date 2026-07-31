@@ -205,7 +205,9 @@ module internal Buffers =
                 else
                     (x :> IByteWriter).WriteString(value.ToString("R", CultureInfo.InvariantCulture))
 #else
-                (x :> IByteWriter).WriteString(value.ToString("R", CultureInfo.InvariantCulture))
+                // Fable has no "R" specifier; JavaScript's own number formatting is already
+                // shortest-round-trippable and culture-invariant.
+                (x :> IByteWriter).WriteString(string value)
 #endif
 
             member x.WriteDecimal(value: decimal) =
