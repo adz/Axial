@@ -168,9 +168,9 @@ jobs:
 
       - name: Run examples
         run: |
-          dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --configuration Release --no-build --no-restore --nologo
-          AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --configuration Release --no-build --no-restore --nologo
-          dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --configuration Release --no-build --no-restore --nologo
+          dotnet artifacts/bin/Axial.Examples/release/Axial.Examples.dll
+          AXIAL_EXAMPLE=smoke dotnet artifacts/bin/Axial.Api/release/Axial.Api.dll
+          dotnet artifacts/bin/Axial.MaintenanceExamples/release/Axial.MaintenanceExamples.dll
 
   verify:
     needs: [compile, discover_tests, tests, schema-compiler, fable, examples]

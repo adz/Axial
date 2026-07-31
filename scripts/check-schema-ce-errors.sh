@@ -5,6 +5,7 @@ set -euo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fixture_dir="$root_dir/tests/compile-fail/schema-ce"
 
+dotnet build "$root_dir/src/Axial.Result/Axial.Result.fsproj" --nologo -v quiet
 dotnet build "$root_dir/src/Axial.Schema/Axial.Schema.fsproj" --nologo -v quiet
 
 check_failure() {
@@ -31,7 +32,7 @@ check_failure constraint-after-refine.fsx "No overloads match for method 'Constr
 check_failure validation-at-wrong-stage.fsx "No overloads match for method 'Validate'"
 check_failure constructor-mismatch.fsx "The type 'int' does not match the type 'string'"
 check_failure ambiguous-refinement.fsx 'Duplicate method'
-check_failure optional-on-non-option-field.fsx "No overloads match for method 'Constrain'"
+check_failure optional-on-non-option-field.fsx "The value or constructor 'optional' is not defined"
 
 
 echo "Schema CE invalid transitions and ambiguous refinements produce compile-time errors."
