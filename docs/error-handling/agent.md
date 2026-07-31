@@ -30,7 +30,7 @@ type InputError =
 let count raw =
     result {
         let! parsed = Parse.int raw |> Result.mapError InvalidCount
-        let! count = Refine.positiveInt parsed |> Result.mapError NonPositiveCount
+        let! count = Check.greaterThan 0 parsed |> Result.map (fun () -> parsed) |> Result.mapError NonPositiveCount
         return count
     }
 ```

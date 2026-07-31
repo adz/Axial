@@ -25,4 +25,4 @@ Returns a type-directed text or concrete-collection check requiring at least the
 | <code><span><a href="t-check-check.md">Check</a>&lt;^value&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L541-541)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L560-560)

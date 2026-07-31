@@ -1,7 +1,7 @@
 ---
 title: "Schema.RefinedSchemas.distinctList"
 linkTitle: "distinctList"
-weight: 2311
+weight: 2305
 ---
 
 
@@ -25,4 +25,4 @@ weight: 2311
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-distinctlist.md">DistinctList</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L37-37)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L26-26)

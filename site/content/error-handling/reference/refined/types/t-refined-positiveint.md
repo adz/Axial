@@ -1,7 +1,7 @@
 ---
 title: "Refined.PositiveInt"
 linkTitle: "PositiveInt"
-weight: 1004
+weight: 1001
 type: docs
 ---
 
@@ -14,4 +14,4 @@ An integer greater than zero.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L73-73)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Numeric.fs#L7-7)

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.defineWithCheck"
 linkTitle: "defineWithCheck"
-weight: 2703
+weight: 2603
 ---
 
  Defines a metadata-free refinement from an executable check.
@@ -27,4 +27,4 @@ weight: 2703
 | <code><span><a href="t-refined-refinement.md">Refinement</a>&lt;<span>'underlying,&#32;'refined</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L324-324)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L35-35)

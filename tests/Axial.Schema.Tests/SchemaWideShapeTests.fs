@@ -211,21 +211,23 @@ module SchemaWideShapeTests =
 
     type private Registration =
         { Owner: NonBlankString
-          Slug: Slug
-          Seats: PositiveInt
-          Refunds: NonPositiveInt
+          Price: decimal
+          Ratio: UnitInterval
+          Seats: int
+          Refunds: int
           Aliases: NonEmptyList<NonBlankString>
           Codes: DistinctList<string>
           Rows: NonEmptyArray<int> }
 
-        static member Create owner slug seats refunds aliases codes rows =
-            { Owner = owner; Slug = slug; Seats = seats; Refunds = refunds
+        static member Create owner price ratio seats refunds aliases codes rows =
+            { Owner = owner; Price = price; Ratio = ratio; Seats = seats; Refunds = refunds
               Aliases = aliases; Codes = codes; Rows = rows }
 
     let private registrationSchema =
         schema<Registration> {
             field _.Owner
-            field _.Slug
+            field _.Price
+            field _.Ratio
             field _.Seats
             field _.Refunds
             field _.Aliases
@@ -240,7 +242,8 @@ module SchemaWideShapeTests =
             Data.objectOfMap (
                 Map.ofList
                     [ "owner", Data.Text "Ada"
-                      "slug", Data.Text "ada-lovelace"
+                      "price", Data.Text "19.99"
+                      "ratio", Data.Text "0.25"
                       "seats", Data.Text "3"
                       "refunds", Data.Text "0"
                       "aliases", Data.List [ Data.Text "Lovelace" ]
@@ -251,7 +254,8 @@ module SchemaWideShapeTests =
         match Schema.parse registrationSchema input with
         | Ok registration ->
             test <@ registration.Owner.Value = "Ada" @>
-            test <@ registration.Seats.Value = 3 @>
+            test <@ registration.Seats = 3 @>
+            test <@ registration.Ratio.Value = 0.25 @>
             test <@ registration.Aliases.ToList() |> List.map _.Value = [ "Lovelace" ] @>
             test <@ registration.Codes.ToList() = [ "a"; "b" ] @>
             test <@ registration.Rows.ToArray() = [| 7 |] @>

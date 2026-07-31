@@ -1666,7 +1666,7 @@ module ApiShapeTests =
             |> publicStaticMemberNames
 
         test <@ typeof<ParseError>.Assembly.GetName().Name = "Axial.Parse" @>
-        test <@ typeof<Refinement<int, PositiveInt>>.Assembly.GetName().Name = "Axial.Refined" @>
+        test <@ typeof<Refinement<string, NonBlankString>>.Assembly.GetName().Name = "Axial.Refined" @>
         assertModuleAbsentFromAssembly "Axial.Result" "Axial.Result.Parse"
         assertModuleAbsentFromAssembly "Axial.Refined" "Axial.Refined.Parse"
         test <@ not (referencedAssemblyNames (Assembly.Load "Axial.Refined") |> Set.contains "Axial.Parse") @>
@@ -1699,8 +1699,17 @@ module ApiShapeTests =
             |> publicStaticMemberNames
 
         refineMembers
-        |> assertContainsAll [ "nonBlankString"; "positiveInt"; "nonEmptyList"; "exactlyOne"; "atMostOne" ]
+        |> assertContainsAll [ "nonBlankString"; "nonEmptyList"; "unitInterval"; "finiteFloat"; "interval" ]
         refineMembers |> assertContainsNone [ "from"; "withCheck"; "withChecks" ]
+
+        // Concepts that carry no invariant past the boundary are constraints, not types.
+        refineMembers
+        |> assertContainsNone
+            [ "trimmedString"; "slug"; "boundedString"; "boundedList"; "boundedArray"
+              "negativeInt"; "nonPositiveInt"; "dateTimeOffsetRange"; "dateOnlyRange"
+              "exactlyOne"; "atMostOne"
+              // Numeric ranges are constraints, not types.
+              "positiveInt"; "nonNegativeInt"; "nonZeroInt"; "positiveDecimal" ]
 
         moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Refinement"
         |> publicStaticMemberNames

@@ -40,15 +40,45 @@ open Axial.Check
 open Axial.Check.CheckDSL
 open Axial.Refined
 
-type ProductId = ProductId of NonZeroInt
+// Slug is no longer a catalogue entry: it carries no invariant past the boundary, so it
+// is defined here from the same constraints the built-in type used, exactly like Sku below.
+type Slug = private Slug of string
+
+type ProductId =
+    private
+    | ProductId of int
+
+    member this.Value =
+        let (ProductId value) = this
+        value
+
+module ProductId =
+    let refinement = Refinement.define (Constraint.notEqualTo 0) ProductId _.Value
+    let create value = Refinement.create refinement value
 type ProductSlug = ProductSlug of Slug
 type DisplayName = DisplayName of NonBlankString
 type ProductTags = ProductTags of DistinctList<Slug>
-type Quantity = Quantity of PositiveInt
+type Quantity =
+    private
+    | Quantity of int
+
+    member this.Value =
+        let (Quantity value) = this
+        value
+
+module Quantity =
+    let refinement = Refinement.define (Constraint.greaterThan 0) Quantity _.Value
+    let create value = Refinement.create refinement value
 type ContactEmail = private ContactEmail of string
 type Sku = private Sku of string
 type Rating = private Rating of int
 type UnitPrice = private UnitPrice of decimal
+
+module Slug =
+    let value (Slug value) = value
+
+    let create value : Result<Slug, CheckFailure list> =
+        Check.all [ present; matches "^[a-z0-9]+(-[a-z0-9]+)*$" ] value |> Result.map (fun () -> Slug value)
 
 module ContactEmail =
     let value (ContactEmail value) = value
@@ -75,11 +105,11 @@ module UnitPrice =
         greaterThan 0m value |> Result.map (fun () -> UnitPrice value)
 
 type Discount =
-    | Percent of PositiveInt
+    | Percent of Quantity
     | Code of Slug
 
 type PublishWindow =
-    { Range: DateTimeOffsetRange }
+    { Range: Interval<DateTimeOffset> }
 
 type ProductRequest =
     { Id: ProductId
@@ -112,23 +142,23 @@ let parseDiscount (raw: string) : Result<Discount, string> =
     let parsePercent value =
         result {
             let! parsed = Parse.int value |> Result.mapError (sprintf "%A")
-            let! positive = Refine.positiveInt parsed |> Result.mapError CheckFailure.describeAll
-            return Percent positive
+            let! percent = Quantity.create parsed |> Result.mapError CheckFailure.describeAll
+            return Percent percent
         }
     match parsePercent raw with
     | Ok value -> Ok value
-    | Error _ -> Refine.slug raw |> Result.map Code |> Result.mapError CheckFailure.describeAll
+    | Error _ -> Slug.create raw |> Result.map Code |> Result.mapError CheckFailure.describeAll
 
 let createProductRequest rawId rawSlug rawDisplayName rawTags rawQuantity rawContactEmail rawSku rawRating rawUnitPrice rawDiscount publishStart publishEnd : Result<ProductRequest, string> =
     result {
         let! parsedId = Parse.int rawId |> Result.mapError (sprintf "%A")
-        let! id = Refine.nonZeroInt parsedId |> Result.mapError CheckFailure.describeAll
-        let! slug = Refine.slug rawSlug |> Result.mapError CheckFailure.describeAll
+        let! id = ProductId.create parsedId |> Result.mapError CheckFailure.describeAll
+        let! slug = Slug.create rawSlug |> Result.mapError CheckFailure.describeAll
         let! displayName = Refine.nonBlankString rawDisplayName |> Result.mapError CheckFailure.describeAll
-        let! tags = rawTags |> List.map Refine.slug |> sequenceResults |> Result.mapError CheckFailure.describeAll
+        let! tags = rawTags |> List.map Slug.create |> sequenceResults |> Result.mapError CheckFailure.describeAll
         let! distinctTags = Refine.distinctList tags |> Result.mapError CheckFailure.describeAll
         let! parsedQuantity = Parse.int rawQuantity |> Result.mapError (sprintf "%A")
-        let! quantity = Refine.positiveInt parsedQuantity |> Result.mapError CheckFailure.describeAll
+        let! quantity = Quantity.create parsedQuantity |> Result.mapError CheckFailure.describeAll
         let! contactEmail = ContactEmail.create rawContactEmail |> Result.mapError CheckFailure.describeAll
         let! sku = Sku.create rawSku |> Result.mapError CheckFailure.describeAll
         let! parsedRating = Parse.int rawRating |> Result.mapError (sprintf "%A")
@@ -136,8 +166,8 @@ let createProductRequest rawId rawSlug rawDisplayName rawTags rawQuantity rawCon
         let! parsedUnitPrice = Parse.decimal rawUnitPrice |> Result.mapError (sprintf "%A")
         let! unitPrice = UnitPrice.create parsedUnitPrice |> Result.mapError CheckFailure.describeAll
         let! discount = parseDiscount rawDiscount
-        let! range = Refine.dateTimeOffsetRange publishStart publishEnd |> Result.mapError CheckFailure.describeAll
-        return { Id = ProductId id; Slug = ProductSlug slug; DisplayName = DisplayName displayName; Tags = ProductTags distinctTags; Quantity = Quantity quantity; ContactEmail = contactEmail; Sku = sku; Rating = rating; UnitPrice = unitPrice; Discount = discount; PublishWindow = { Range = range } }
+        let! range = Interval.create publishStart publishEnd |> Result.mapError CheckFailure.describeAll
+        return { Id = id; Slug = ProductSlug slug; DisplayName = DisplayName displayName; Tags = ProductTags distinctTags; Quantity = quantity; ContactEmail = contactEmail; Sku = sku; Rating = rating; UnitPrice = unitPrice; Discount = discount; PublishWindow = { Range = range } }
     }
 
 
@@ -689,8 +719,8 @@ let parseQuantityText : Policy<OrderEnv, OrderError, string, int> =
     Policy.withError Parse.int QuantityNotANumber
 
 // 2. Refined construction: adapt a refinement smart constructor.
-let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
-    Policy.withError Refine.positiveInt QuantityNotPositive
+let refineQuantity : Policy<OrderEnv, OrderError, int list, NonEmptyList<int>> =
+    Policy.withError Refine.nonEmptyList QuantityNotPositive
 
 // 3. Schema input result: adapt Schema.parse over structured boundary data.
 let parseOrderLine : Policy<OrderEnv, OrderError, Data, OrderLine> =
@@ -736,7 +766,7 @@ let run () =
 
     printfn "Policy examples"
     printfn "  parse text quantity: %A" (parseQuantityText env "3")
-    printfn "  refine positive:     %A" (refinePositive env 3)
+    printfn "  refine non-empty:    %A" (refineQuantity env [ 3 ])
     printfn "  accepted line:       %A" (acceptLine (raw "3") |> fun f -> f.RunSynchronously(env))
     printfn "  rejected (not int):  %A" (acceptLine (raw "many") |> fun f -> f.RunSynchronously(env))
     printfn "  rejected (over cap): %A" (acceptLine (raw "50") |> fun f -> f.RunSynchronously(env))

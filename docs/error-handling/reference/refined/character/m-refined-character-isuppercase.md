@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isUppercase"
 linkTitle: "isUppercase"
-weight: 2503
+weight: 2403
 ---
 
 
@@ -25,4 +25,4 @@ weight: 2503
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L401-401)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L102-102)

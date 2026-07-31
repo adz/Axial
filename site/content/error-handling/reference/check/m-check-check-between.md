@@ -27,4 +27,4 @@ Returns an ordered-value check requiring a value inside the supplied inclusive b
 | <code><span><a href="t-check-check.md">Check</a>&lt;'value&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L566-566)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L585-585)

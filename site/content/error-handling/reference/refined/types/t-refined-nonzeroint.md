@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonZeroInt"
 linkTitle: "NonZeroInt"
-weight: 1006
+weight: 1003
 type: docs
 ---
 
@@ -14,4 +14,4 @@ An integer that is not zero.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L99-99)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Numeric.fs#L33-33)

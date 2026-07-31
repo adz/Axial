@@ -27,4 +27,4 @@ Checks an existing typed value, such as a freely constructed draft, through the 
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<a href="t-schema-schemaerrors.md">SchemaErrors</a></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L100-100)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L104-104)

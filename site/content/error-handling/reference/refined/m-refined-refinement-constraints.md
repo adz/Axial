@@ -26,4 +26,4 @@ type: docs
 | <code><span><span><a href="../check/t-check-constraint.md">Constraint</a>&lt;'underlying&gt;</span>&#32;list</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L341-341)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L52-52)

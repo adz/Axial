@@ -258,7 +258,9 @@ module rec Json =
         match kind with
         | PrimitiveValueKind.Text -> box stringDecoder
         | PrimitiveValueKind.Int -> box intDecoder
+        | PrimitiveValueKind.Int64 -> box int64Decoder
         | PrimitiveValueKind.Decimal -> box decimalDecoder
+        | PrimitiveValueKind.Float -> box floatDecoder
         | PrimitiveValueKind.Bool -> box boolDecoder
 #if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> box dateDecoder
@@ -279,9 +281,17 @@ module rec Json =
             fun src ->
                 let struct (value, next) = intDecoder src
                 struct (box value, next)
+        | PrimitiveValueKind.Int64 ->
+            fun src ->
+                let struct (value, next) = int64Decoder src
+                struct (box value, next)
         | PrimitiveValueKind.Decimal ->
             fun src ->
                 let struct (value, next) = decimalDecoder src
+                struct (box value, next)
+        | PrimitiveValueKind.Float ->
+            fun src ->
+                let struct (value, next) = floatDecoder src
                 struct (box value, next)
         | PrimitiveValueKind.Bool ->
             fun src ->
@@ -329,7 +339,9 @@ module rec Json =
         match kind with
         | PrimitiveValueKind.Text -> box (fun (writer: IByteWriter) (value: string) -> writeEscapedString writer value)
         | PrimitiveValueKind.Int -> box (fun (writer: IByteWriter) (value: int) -> writer.WriteInt value)
+        | PrimitiveValueKind.Int64 -> box (fun (writer: IByteWriter) (value: int64) -> writer.WriteInt64 value)
         | PrimitiveValueKind.Decimal -> box (fun (writer: IByteWriter) (value: decimal) -> writer.WriteDecimal value)
+        | PrimitiveValueKind.Float -> box (fun (writer: IByteWriter) (value: float) -> writer.WriteFloat value)
         | PrimitiveValueKind.Bool -> box encodeBool
 #if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> box encodeDate
@@ -344,7 +356,9 @@ module rec Json =
         match kind with
         | PrimitiveValueKind.Text -> fun writer value -> writeEscapedString writer (unbox<string> value)
         | PrimitiveValueKind.Int -> fun writer value -> writer.WriteInt(unbox<int> value)
+        | PrimitiveValueKind.Int64 -> fun writer value -> writer.WriteInt64(unbox<int64> value)
         | PrimitiveValueKind.Decimal -> fun writer value -> writer.WriteDecimal(unbox<decimal> value)
+        | PrimitiveValueKind.Float -> fun writer value -> writer.WriteFloat(unbox<float> value)
         | PrimitiveValueKind.Bool -> fun writer value -> encodeBool writer (unbox<bool> value)
 #if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> fun writer value -> encodeDate writer (unbox<DateOnly> value)

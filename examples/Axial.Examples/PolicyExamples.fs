@@ -54,8 +54,8 @@ let parseQuantityText : Policy<OrderEnv, OrderError, string, int> =
     Policy.withError Parse.int QuantityNotANumber
 
 // 2. Refined construction: adapt a refinement smart constructor.
-let refinePositive : Policy<OrderEnv, OrderError, int, PositiveInt> =
-    Policy.withError Refine.positiveInt QuantityNotPositive
+let refineQuantity : Policy<OrderEnv, OrderError, int list, NonEmptyList<int>> =
+    Policy.withError Refine.nonEmptyList QuantityNotPositive
 
 // 3. Schema input result: adapt Schema.parse over structured boundary data.
 let parseOrderLine : Policy<OrderEnv, OrderError, Data, OrderLine> =
@@ -101,7 +101,7 @@ let run () =
 
     printfn "Policy examples"
     printfn "  parse text quantity: %A" (parseQuantityText env "3")
-    printfn "  refine positive:     %A" (refinePositive env 3)
+    printfn "  refine non-empty:    %A" (refineQuantity env [ 3 ])
     printfn "  accepted line:       %A" (acceptLine (raw "3") |> fun f -> f.RunSynchronously(env))
     printfn "  rejected (not int):  %A" (acceptLine (raw "many") |> fun f -> f.RunSynchronously(env))
     printfn "  rejected (over cap): %A" (acceptLine (raw "50") |> fun f -> f.RunSynchronously(env))

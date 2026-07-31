@@ -1,7 +1,7 @@
 ---
 title: "Refined.Choice.tryAny"
 linkTitle: "tryAny"
-weight: 2601
+weight: 2501
 ---
 
 
@@ -27,4 +27,4 @@ weight: 2601
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'c,&#32;'a</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L475-475)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L228-228)

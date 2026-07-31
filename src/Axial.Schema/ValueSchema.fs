@@ -26,8 +26,14 @@ module internal ValueSchema =
     /// <summary>Describes a 32-bit signed integer represented as <see cref="T:System.Int32" />.</summary>
     let ``int`` : Schema<int> = primitive PrimitiveValueKind.Int
 
+    /// <summary>Describes a 64-bit signed integer represented as <see cref="T:System.Int64" />.</summary>
+    let ``int64`` : Schema<int64> = primitive PrimitiveValueKind.Int64
+
     /// <summary>Describes a decimal number represented as <see cref="T:System.Decimal" />.</summary>
     let ``decimal`` : Schema<decimal> = primitive PrimitiveValueKind.Decimal
+
+    /// <summary>Describes a double-precision number represented as <see cref="T:System.Double" />.</summary>
+    let ``float`` : Schema<float> = primitive PrimitiveValueKind.Float
 
     /// <summary>Describes a Boolean value represented as <see cref="T:System.Boolean" />.</summary>
     let ``bool`` : Schema<bool> = primitive PrimitiveValueKind.Bool
@@ -681,7 +687,9 @@ module internal ValueSchema =
         match kind with
         | PrimitiveValueKind.Text -> typeof<string>
         | PrimitiveValueKind.Int -> typeof<int>
+        | PrimitiveValueKind.Int64 -> typeof<int64>
         | PrimitiveValueKind.Decimal -> typeof<decimal>
+        | PrimitiveValueKind.Float -> typeof<float>
         | PrimitiveValueKind.Bool -> typeof<bool>
 #if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> typeof<DateOnly>

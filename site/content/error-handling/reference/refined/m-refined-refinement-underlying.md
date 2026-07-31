@@ -27,4 +27,4 @@ type: docs
 | <code>'underlying</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L336-336)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L47-47)

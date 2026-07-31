@@ -3,6 +3,98 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-07-31: Numeric ranges are constraints, because F# cannot carry them through arithmetic
+
+- `PositiveInt`, `NonNegativeInt`, `NonZeroInt` and their `Int64` and `Decimal` variants are
+  removed. A refinement-typed language infers that `a + b` is positive when both operands are;
+  F# cannot, so every arithmetic step has to re-establish the fact by hand. Since integer
+  arithmetic is unchecked, an addition returning `PositiveInt` would be unsound, which leaves
+  returning `Result` — and `((a + b) * c) + d` then costs two binds and a map. Callers will
+  unwrap instead, so the types add bulk at every use site while catching nothing, which is
+  more likely to hide an arithmetic mistake than to surface one.
+- Express the ranges as constraints on the primitive:
+  `Schema.int |> Schema.constrain (Constraint.greaterThan 0)`. Where a nominal type is still
+  wanted for a numeric *identifier* — identity rather than arithmetic — define it over the same
+  constraint with `Refinement.define`, as `AttendeeId` and `ProductId` now do in the examples.
+  The machinery stays public; only the catalogue entries go, exactly as with `Slug`.
+- The same reasoning removes pairwise arithmetic from `FiniteFloat` and `FiniteFloat32`. Those
+  types are kept, because their guarantee is that **aggregation means something**: one `NaN`
+  or infinity silently destroys a whole sum or average. That needs no arithmetic on the type
+  itself, so they keep `sum` and `average`, which fail once at the end rather than per step.
+  They are not needed for sorting or map keys, which already work on plain `float`.
+- `UnitInterval` is unaffected: it is genuinely closed under multiplication, `complement` and
+  `lerp`, so its arithmetic needs no `Result` and no unwrapping.
+- Consequences: `NonEmptyList.count` and the `NonNegative*` interval widths lose their refined
+  return types and go back to plain integers, and `chunkBySize` takes a plain `int`, treating a
+  size below one as one rather than raising.
+
+## 2026-07-30: Refined types earn their place by removing branches, not by wrapping validation
+
+- `Axial.Refined` is now a modelling library rather than a catalogue of smart constructors. A type ships only if it
+  makes a partial operation total, guarantees an algebraic property later operations rely on, encodes a relationship
+  between values, preserves an invariant across a useful family of operations, or removes branches from *consumers*
+  rather than only from construction.
+- Concepts failing that test were removed, not reimplemented: `TrimmedString`, `Slug`, `BoundedString`,
+  `BoundedList`, `BoundedArray`, `NegativeInt`, `NonPositiveInt`, `DateTimeOffsetRange`, `DateOnlyRange`,
+  `Collection.exactlyOne`, and `Collection.atMostOne`. Every one maps onto constraints that already shipped
+  (`Constraint.trimmed`, `pattern`, `present`, `lengthBetween`, `lessThan`, `atMost`, `between`), composed with
+  `Schema.constrain`/`Schema.constrainAll`. **No new machinery was added for the removals** — an earlier design that
+  introduced a `ConstraintGroup` type was dropped once it became clear the constraints and their composition already
+  existed. Boundary behaviour is unchanged; `RefinedCatalogSchemaTests` asserts the emitted metadata still matches.
+- `NonEmptyList` is now structurally non-empty with a **public** case (`NonEmpty of head * tail`), so `head`, `last`,
+  `reduce`, `min`, and `max` are total and callers can pattern match. `NonEmptyArray` deliberately stays
+  smart-constructed: a structural head/tail would forfeit contiguous storage and indexed access, which are the reasons
+  to pick an array. This asymmetry is intentional.
+- One generic `Interval<'value>` — always inhabited, inclusive — replaces both hand-rolled range types. Emptiness is
+  `Interval option`, which is what `intersect` returns; a second "possibly empty" type would double every operation
+  and make none of them total. `Bounded<'value>` carries its bounds at run time as an `Interval`, not as phantom type
+  parameters: F# has no type-level naturals, and Peano encoding has no Fable story.
+- `failwith "unreachable"` went from six occurrences to one clearly-labelled internal helper
+  (`NonEmptyList.ofCheckedList`). `RefinedSchemas.fs` and `Shape.fs` now have none.
+- **Refined numeric types are not closed under arithmetic, and the API says so.** F# integer arithmetic is unchecked:
+  `Int32.MaxValue + 1` is negative and `65536 * 65536` is zero, so a `PositiveInt -> PositiveInt -> PositiveInt`
+  addition would return a value violating its own invariant. Every numeric module therefore ships both forms —
+  `add`/`multiply`/`sum` use checked arithmetic and return `Result`, while `saturatingAdd`/`saturatingMultiply` are
+  total and clamp at the type's maximum. `min`, `max`, and comparison are unconditionally total.
+- `FiniteFloat` is sold on aggregation, not arithmetic and not ordering. **Corrected 2026-07-31:** this entry
+  originally claimed `NaN` corrupts sorting and makes `float` unusable as a `Map` key. That is wrong — F# generic
+  comparison orders `NaN` consistently (`compare nan nan` is `0`, `NaN` sorts first), so `List.sort`, `Map`, `Set`
+  and `Dictionary` all work on plain `float`. What `NaN` and infinity actually do is silently destroy an aggregate
+  (`List.average [ 12.5; 3.0; nan; 8.25 ]` is `NaN`), and `NaN` additionally breaks `List.contains` and
+  `List.distinct`, which use IEEE equality. A comparison hand-written with `<` and `>` is also intransitive under
+  `NaN` and makes `sortWith` return unsorted output without raising.
+- `NonZero` is justified by branch removal rather than a total `divide`: `DivideByZeroException` becomes unreachable,
+  but `Int32.MinValue / -1` still overflows, so `divide` returns `Result` and `saturatingDivide` is total.
+- `UnitInterval` is the only type in the package closed under multiplication. It is not closed under addition, so it
+  offers `saturatingAdd` and `complement` instead — and `complement` is an involution only up to floating-point
+  rounding, which is documented rather than claimed.
+- Numeric genericity uses `inline internal` SRTP with a fully monomorphic public surface. `INumber<'T>` is not an
+  option: netstandard2.1 predates it and Fable does not support static abstract interface members. Any future shared
+  generic-math engine belongs outside `Axial.Refined` and should reuse the `SchemaDefaults` witness convention.
+- `PrimitiveValueKind` gained `Int64` and `Float`, so every refined numeric type has a wire schema and resolves as a
+  bare field. Mapping 64-bit integers onto `decimal` was rejected: it changes the type's meaning, and a test parses
+  `9007199254740993` (beyond 2^53) to prove the value never round-trips through a float. `Schema.int64` and
+  `Schema.float` are public, and the JSON codecs gained matching decoders and writers. JSON has no literal for `NaN`
+  or the infinities, so schemas needing them must refine to `FiniteFloat`.
+- `ConstraintMetadata` gained a `Finite` case rather than reusing `Custom "finite"`. The ripple through the emitter,
+  parser, validator, and generator is the point: a built-in constraint should be inspectable by every interpreter,
+  and the reserved-code guard now correctly rejects an application redefining `finite` — which is exactly how the
+  first version of this was caught.
+- An audit driven by writing real code against the API found four defects the source review
+  had missed, all of the same shape: a doc comment claiming a guarantee the code did not
+  deliver. `NonEmptyList.zip` documented truncation but called `List.zip`, which raises.
+  `DistinctList.toMap` documented losslessness but called `Map.ofList`, silently dropping
+  an entry when two distinct pairs share a key — the operation used to justify the type.
+  `PositiveDecimal.average` returned `Result` but let the `OverflowException` escape,
+  because only the final construction was wrapped. `Interval.between` assumes a total
+  order, which `float` is not, so a `NaN` argument produces inverted bounds. Each is now
+  fixed or documented and covered by a test naming the defect.
+- `mise.toml` pins `dotnet = "10.0.300"` exactly rather than floating on `"10.0"`. The docs toolchain needs an SDK
+  whose FSharp.Core is at least 10.1.203, because FSharp.Formatting 22.0.1 depends on FSharp.Compiler.Service
+  43.12.203, which requires that version exactly. An older SDK downgrades it (NU1605) and docgen then fails at run
+  time with "Could not load file or assembly 'FSharp.Core, Version=10.1.0.0'". This was previously masked on `main`
+  by stale docgen artifacts that happened to be self-consistent, so only fresh worktrees hit it.
+
 ## 2026-07-24: Error Handling splits into Result, Check, and Refined (supersedes the 2026-07-22 and prior 2026-07-24 package details)
 
 - Pre-repository-split reorganization completed in the combined repository. `Axial.Result` (`src/Axial.Result/`,

@@ -101,8 +101,12 @@ type PrimitiveValueKind =
     | Text
     /// <summary>A 32-bit signed integer represented as <see cref="T:System.Int32" />.</summary>
     | Int
+    /// <summary>A 64-bit signed integer represented as <see cref="T:System.Int64" />.</summary>
+    | Int64
     /// <summary>A decimal number represented as <see cref="T:System.Decimal" />.</summary>
     | Decimal
+    /// <summary>A double-precision binary number represented as <see cref="T:System.Double" />.</summary>
+    | Float
     /// <summary>A Boolean value represented as <see cref="T:System.Boolean" />.</summary>
     | Bool
     /// <summary>A calendar date represented as <see cref="T:System.DateOnly" />.</summary>

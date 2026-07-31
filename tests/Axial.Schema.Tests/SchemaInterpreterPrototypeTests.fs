@@ -120,7 +120,9 @@ module SchemaInterpreterPrototypes =
             | SchemaShape.Primitive PrimitiveValueKind.Text ->
                 if constraints |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) then EmailBox else TextBox
             | SchemaShape.Primitive PrimitiveValueKind.Int
-            | SchemaShape.Primitive PrimitiveValueKind.Decimal -> NumberBox
+            | SchemaShape.Primitive PrimitiveValueKind.Int64
+            | SchemaShape.Primitive PrimitiveValueKind.Decimal
+            | SchemaShape.Primitive PrimitiveValueKind.Float -> NumberBox
             | SchemaShape.Primitive PrimitiveValueKind.Bool -> CheckBox
             | SchemaShape.Primitive PrimitiveValueKind.Date -> DatePicker
             | SchemaShape.Primitive PrimitiveValueKind.DateTime -> DateTimePicker

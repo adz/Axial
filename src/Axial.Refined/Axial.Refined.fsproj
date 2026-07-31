@@ -24,6 +24,12 @@
     <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Refinement.fs" />
+    <Compile Include="NonEmpty.fs" />
+    <Compile Include="Interval.fs" />
+    <Compile Include="Bounded.fs" />
+    <Compile Include="Finite.fs" />
+    <Compile Include="UnitInterval.fs" />
     <Compile Include="Refine.fs" />
   </ItemGroup>
 </Project>

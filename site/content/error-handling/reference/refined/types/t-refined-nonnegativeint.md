@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonNegativeInt"
 linkTitle: "NonNegativeInt"
-weight: 1005
+weight: 1002
 type: docs
 ---
 
@@ -14,4 +14,4 @@ An integer greater than or equal to zero.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L86-86)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Numeric.fs#L20-20)

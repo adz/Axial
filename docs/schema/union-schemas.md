@@ -33,7 +33,7 @@ type CardDetails =
 
 type Payment =
     | Card of CardDetails
-    | Invoice of Slug
+    | Invoice of NonBlankString
 
 let cardSchema =
     schema<CardDetails> {
@@ -46,7 +46,7 @@ let paymentValue =
         "type"
         "value"
         [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) cardSchema
-          UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchemas.slug ]
+          UnionCase.create "invoice" Invoice (function Invoice reference -> Some reference | _ -> None) RefinedSchemas.nonBlankString ]
 ```
 
 The extractor is what lets validation and metadata/codecs inspect an existing trusted union without reflection.

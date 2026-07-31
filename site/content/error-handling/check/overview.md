@@ -126,6 +126,5 @@ Checks preserve shape by returning `unit`. Extraction changes shape and belongs 
 | `Check.Nullable.hasValue` | `Result.nullableOr` |
 | `Check.Result.ok` | `Result.okOr` |
 | `Check.Seq.notEmpty` | `Result.headOr` |
-| `Check.Seq.count 1` | `Refine.exactlyOne` |
 
 Use [Predicates](../predicates/) when a local branch needs `bool` rather than structured failures.

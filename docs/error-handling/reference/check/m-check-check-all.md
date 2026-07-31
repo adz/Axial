@@ -34,4 +34,4 @@ Combines checks conjunctively by running every check against the value and accum
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L711-711)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L730-730)

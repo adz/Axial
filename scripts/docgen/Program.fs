@@ -346,7 +346,7 @@ let pageSpecs = [
             "Structured data", ["T:Axial.Data"; "T:Axial.DataPathSegment"; "T:Axial.DataPath"; "M:Axial.DataModule.ofMap"; "M:Axial.DataModule.ofNameValues"; "M:Axial.DataModule.ofCliArgs"; "M:Axial.DataModule.ofJsonElement"; "M:Axial.DataModule.ofJsonDocument"; "M:Axial.DataModule.ofConfiguration"; "M:Axial.DataModule.redisplay"; "M:Axial.DataModule.redisplayPath"]
             "Input parsing", ["M:Axial.Schema.Schema.parse"; "M:Axial.Schema.Schema.parseRetainingInput"; "M:Axial.Schema.Schema.parseWith"; "T:Axial.Schema.SchemaParseOptions"; "T:Axial.Schema.RetainedParseResult`1"; "M:Axial.Schema.RetainedParseResultModule.create"; "M:Axial.Schema.RetainedParseResultModule.renderErrors"]
             "Errors", ["T:Axial.Schema.SchemaError"; "T:Axial.Schema.Path"; "M:Axial.Schema.Path.root"; "M:Axial.Schema.Path.key"; "M:Axial.Schema.Path.index"; "M:Axial.Schema.Path.append"; "M:Axial.Schema.Path.format"; "M:Axial.Schema.Path.fold"; "T:Axial.Schema.SchemaIssue"; "T:Axial.Schema.SchemaErrors"; "M:Axial.Schema.SchemaErrors.toList"; "M:Axial.Schema.SchemaErrors.count"; "M:Axial.Schema.SchemaErrors.isEmpty"; "M:Axial.Schema.SchemaErrors.toString"]
-            "Refined catalog schemas", ["P:Axial.Schema.RefinedSchemas.nonBlankString"; "P:Axial.Schema.RefinedSchemas.trimmedString"; "M:Axial.Schema.RefinedSchemas.boundedString"; "P:Axial.Schema.RefinedSchemas.slug"; "P:Axial.Schema.RefinedSchemas.positiveInt"; "P:Axial.Schema.RefinedSchemas.nonNegativeInt"; "P:Axial.Schema.RefinedSchemas.nonZeroInt"; "P:Axial.Schema.RefinedSchemas.negativeInt"; "P:Axial.Schema.RefinedSchemas.nonPositiveInt"; "M:Axial.Schema.RefinedSchemas.nonEmptyList"; "M:Axial.Schema.RefinedSchemas.nonEmptyArray"; "M:Axial.Schema.RefinedSchemas.distinctList"; "M:Axial.Schema.RefinedSchemas.boundedList"; "M:Axial.Schema.RefinedSchemas.boundedArray"; "P:Axial.Schema.RefinedSchemas.dateTimeOffsetRange"]
+            "Refined catalog schemas", ["P:Axial.Schema.RefinedSchemas.nonBlankString"; "P:Axial.Schema.RefinedSchemas.finiteFloat"; "P:Axial.Schema.RefinedSchemas.unitInterval"; "M:Axial.Schema.RefinedSchemas.nonEmptyList"; "M:Axial.Schema.RefinedSchemas.nonEmptyArray"; "M:Axial.Schema.RefinedSchemas.distinctList"; "M:Axial.Schema.RefinedSchemas.interval"; "P:Axial.Schema.RefinedSchemas.dateRange"; "M:Axial.Schema.RefinedSchemas.bounded"]
             "Existing values", ["M:Axial.Schema.Schema.check"]
         ]
         Alias = None
@@ -641,7 +641,7 @@ let pageSpecs = [
         OutPath = ["result"; "_index.md"]
         Title = "Result"
         Description = "Source-documented fail-fast Result helpers for Axial."
-        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Check.*` is available when a reusable constraint and its structured failure are useful. Sequence cardinality extraction (`exactlyOne`, `atMostOne`) lives on [Refine]({{< relref \"/error-handling/reference/refined/\" >}}), since it is a structural refinement rather than a generic Result concern. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
+        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Check.*` is available when a reusable constraint and its structured failure are useful. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
         SymbolIds = [
             "Structured errors", ["T:Axial.Check.CheckFailure"]
             "Core helpers", ["M:Axial.Result.Result.ok"; "M:Axial.Result.Result.error"; "M:Axial.Result.Result.map"; "M:Axial.Result.Result.mapError"; "M:Axial.Result.Result.bind"; "M:Axial.Result.Result.orElse"; "M:Axial.Result.Result.orElseWith"]
@@ -667,23 +667,24 @@ let pageSpecs = [
         OutPath = ["refined"; "_index.md"]
         Title = "Refined"
         Description = "Source-documented invariant-carrying values and refinements for Axial."
-        Intro = "`Axial.Refined` constructs invariant-carrying values from already-typed underlying values. `Refinement` couples checking, total construction, and a total reverse projection."
+        Intro = "`Axial.Refined` supplies invariant-carrying values and the operations that justify them. A type earns its place by making a partial operation total, guaranteeing a property later operations rely on, or removing a branch from consumers — validation that carries no invariant past the boundary belongs in `Constraint` instead. `Refinement` couples checking, total construction, and a total reverse projection."
         SymbolIds = [
             "Refined types", [
-                "T:Axial.Refined.NonBlankString"; "T:Axial.Refined.TrimmedString"; "T:Axial.Refined.BoundedString"; "T:Axial.Refined.Slug"
-                "T:Axial.Refined.PositiveInt"; "T:Axial.Refined.NonNegativeInt"; "T:Axial.Refined.NonZeroInt"; "T:Axial.Refined.NegativeInt"; "T:Axial.Refined.NonPositiveInt"
-                "T:Axial.Refined.NonEmptyList`1"; "T:Axial.Refined.NonEmptyArray`1"; "T:Axial.Refined.DistinctList`1"; "T:Axial.Refined.BoundedList`1"; "T:Axial.Refined.BoundedArray`1"
-                "T:Axial.Refined.DateTimeOffsetRange"; "T:Axial.Refined.DateOnlyRange"
+                "T:Axial.Refined.NonBlankString"
+                
+                
+                "T:Axial.Refined.FiniteFloat"; "T:Axial.Refined.FiniteFloat32"; "T:Axial.Refined.UnitInterval"
+                "T:Axial.Refined.NonEmptyList`1"; "T:Axial.Refined.NonEmptyArray`1"; "T:Axial.Refined.DistinctList`1"
+                "T:Axial.Refined.Interval`1"; "T:Axial.Refined.Bounded`1"
             ]
-            "Text", ["M:Axial.Refined.Text.nonBlankString"; "M:Axial.Refined.Text.trimmedString"; "M:Axial.Refined.Text.boundedString"; "M:Axial.Refined.Text.slug"]
-            "Numeric", ["M:Axial.Refined.Numeric.positiveInt"; "M:Axial.Refined.Numeric.nonNegativeInt"; "M:Axial.Refined.Numeric.nonZeroInt"; "M:Axial.Refined.Numeric.negativeInt"; "M:Axial.Refined.Numeric.nonPositiveInt"]
-            "Collection", ["M:Axial.Refined.Collection.nonEmptyList"; "M:Axial.Refined.Collection.nonEmptyArray"; "M:Axial.Refined.Collection.distinctList"; "M:Axial.Refined.Collection.boundedList"; "M:Axial.Refined.Collection.boundedArray"; "M:Axial.Refined.Collection.exactlyOne"; "M:Axial.Refined.Collection.atMostOne"]
-            "Temporal", ["M:Axial.Refined.Temporal.dateTimeOffsetRange"; "M:Axial.Refined.Temporal.dateOnlyRange"]
+            "Text", ["M:Axial.Refined.Text.nonBlankString"]
+            "Collection", ["M:Axial.Refined.Collection.nonEmptyList"; "M:Axial.Refined.Collection.nonEmptyArray"; "M:Axial.Refined.Collection.distinctList"]
+            "Interval", ["M:Axial.Refined.Interval.between"; "M:Axial.Refined.Interval.create"; "M:Axial.Refined.Interval.lower"; "M:Axial.Refined.Interval.upper"; "M:Axial.Refined.Interval.duration"; "M:Axial.Refined.Interval.widthInt"; "M:Axial.Refined.Interval.widthDecimal"; "M:Axial.Refined.Interval.singleton"; "M:Axial.Refined.Interval.contains"; "M:Axial.Refined.Interval.intersect"; "M:Axial.Refined.Interval.overlaps"; "M:Axial.Refined.Interval.clamp"; "M:Axial.Refined.Interval.span"]
             "Character", ["M:Axial.Refined.Character.isAsciiDigit"; "M:Axial.Refined.Character.isAsciiHexDigit"; "M:Axial.Refined.Character.isLowercase"; "M:Axial.Refined.Character.isUppercase"; "M:Axial.Refined.Character.isWhitespace"; "M:Axial.Refined.Character.isControl"; "M:Axial.Refined.Character.isNumeric"]
             "Choice", ["M:Axial.Refined.Choice.orElse"; "M:Axial.Refined.Choice.tryAny"]
             "Refinement", ["T:Axial.Refined.Refinement`2"; "M:Axial.Refined.Refinement.define"; "M:Axial.Refined.Refinement.defineAll"; "M:Axial.Refined.Refinement.defineWithCheck"; "M:Axial.Refined.Refinement.create"; "M:Axial.Refined.Refinement.underlying"; "M:Axial.Refined.Refinement.constraints"]
-            "Re-certifying helpers", ["M:Axial.Refined.NonBlankString.value"; "M:Axial.Refined.NonBlankString.create"; "M:Axial.Refined.NonBlankString.map"; "M:Axial.Refined.PositiveInt.value"; "M:Axial.Refined.PositiveInt.create"; "M:Axial.Refined.PositiveInt.map"; "M:Axial.Refined.PositiveInt.replace"; "M:Axial.Refined.NonEmptyList.toList"; "M:Axial.Refined.NonEmptyList.create"; "M:Axial.Refined.NonEmptyList.cons"; "M:Axial.Refined.NonEmptyList.map"; "M:Axial.Refined.NonEmptyList.filter"; "M:Axial.Refined.NonEmptyList.tryFilter"]
-            "Refine facade", ["M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.trimmedString"; "M:Axial.Refined.Refine.boundedString"; "M:Axial.Refined.Refine.slug"; "M:Axial.Refined.Refine.positiveInt"; "M:Axial.Refined.Refine.nonNegativeInt"; "M:Axial.Refined.Refine.nonZeroInt"; "M:Axial.Refined.Refine.negativeInt"; "M:Axial.Refined.Refine.nonPositiveInt"; "M:Axial.Refined.Refine.nonEmptyList"; "M:Axial.Refined.Refine.nonEmptyArray"; "M:Axial.Refined.Refine.distinctList"; "M:Axial.Refined.Refine.boundedList"; "M:Axial.Refined.Refine.boundedArray"; "M:Axial.Refined.Refine.dateTimeOffsetRange"; "M:Axial.Refined.Refine.dateOnlyRange"; "M:Axial.Refined.Refine.exactlyOne"; "M:Axial.Refined.Refine.atMostOne"]
+            "Invariant-preserving operations", ["M:Axial.Refined.NonBlankString.value"; "M:Axial.Refined.NonBlankString.create"; "M:Axial.Refined.NonBlankString.append"; "M:Axial.Refined.NonBlankString.trim"; "M:Axial.Refined.NonBlankString.split"; "M:Axial.Refined.NonEmptyList.toList"; "M:Axial.Refined.NonEmptyList.create"; "M:Axial.Refined.NonEmptyList.cons"; "M:Axial.Refined.NonEmptyList.map"; "M:Axial.Refined.NonEmptyList.head"; "M:Axial.Refined.NonEmptyList.last"; "M:Axial.Refined.NonEmptyList.reduce"; "M:Axial.Refined.NonEmptyList.traverseResult"; "M:Axial.Refined.NonEmptyList.count"; "M:Axial.Refined.NonEmptyList.groupBy"; "M:Axial.Refined.NonEmptyList.chunkBySize"; "M:Axial.Refined.NonEmptyList.zip"; "M:Axial.Refined.NonEmptyList.filter"; "M:Axial.Refined.NonEmptyList.tryFilter"; "M:Axial.Refined.DistinctList.toMap"; "M:Axial.Refined.DistinctList.toSet"; "M:Axial.Refined.UnitInterval.multiply"; "M:Axial.Refined.UnitInterval.complement"; "M:Axial.Refined.UnitInterval.lerp"; "M:Axial.Refined.UnitInterval.inverseLerp"; "M:Axial.Refined.FiniteFloat.create"; "M:Axial.Refined.FiniteFloat.negate"; "M:Axial.Refined.FiniteFloat.average"; "M:Axial.Refined.Bounded.clamp"]
+            "Refine facade", ["M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.finiteFloat"; "M:Axial.Refined.Refine.unitInterval"; "M:Axial.Refined.Refine.interval"; "M:Axial.Refined.Refine.nonEmptyList"; "M:Axial.Refined.Refine.nonEmptyArray"; "M:Axial.Refined.Refine.distinctList"]
 
         ]
         Alias = None
@@ -976,13 +977,11 @@ let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
     | ["parse"; "_index.md"], _ -> None
     | ["refined"; "_index.md"], "Refined types" -> Some "types"
     | ["refined"; "_index.md"], "Text" -> Some "text"
-    | ["refined"; "_index.md"], "Numeric" -> Some "numeric"
     | ["refined"; "_index.md"], "Collection" -> Some "collection"
     | ["refined"; "_index.md"], "Temporal" -> Some "temporal"
     | ["refined"; "_index.md"], "Character" -> Some "character"
     | ["refined"; "_index.md"], "Choice" -> Some "choice"
     | ["refined"; "_index.md"], "Re-certifying helpers" when id.Contains(".NonBlankString.") -> Some "non-blank-string"
-    | ["refined"; "_index.md"], "Re-certifying helpers" when id.Contains(".PositiveInt.") -> Some "positive-int"
     | ["refined"; "_index.md"], "Re-certifying helpers" when id.Contains(".NonEmptyList.") -> Some "non-empty-list"
     | ["refined"; "_index.md"], "Refine facade" -> Some "refine"
     | ["refined"; "_index.md"], "Builder" -> Some "refine-ce"
@@ -1007,13 +1006,11 @@ let sectionTitleForDirectory = function
     | "types" -> "Types"
     | "parse" -> "Parse"
     | "text" -> "Text"
-    | "numeric" -> "Numeric"
     | "collection" -> "Collection"
     | "temporal" -> "Temporal"
     | "character" -> "Character"
     | "choice" -> "Choice"
     | "non-blank-string" -> "NonBlankString"
-    | "positive-int" -> "PositiveInt"
     | "non-empty-list" -> "NonEmptyList"
     | "refine" -> "Refine"
     | "refine-ce" -> "Refine CE"
@@ -1046,13 +1043,11 @@ let sectionIntroForDirectory = function
     | "types" -> "Errors and refined value types defined by `Axial.Refined`."
     | "parse" -> "`Parse` functions convert serialized strings into primitive values."
     | "text" -> "`Text` functions construct refined string values."
-    | "numeric" -> "`Numeric` functions construct refined numeric values."
     | "collection" -> "Functions in this section operate on collections."
     | "temporal" -> "`Temporal` functions construct refined date and time values."
     | "character" -> "`Character` functions test individual characters."
     | "choice" -> "`Choice` functions try alternative refinement functions."
     | "non-blank-string" -> "`NonBlankString` functions construct, inspect, and transform non-blank strings."
-    | "positive-int" -> "`PositiveInt` functions construct, inspect, and transform positive integers."
     | "non-empty-list" -> "`NonEmptyList` functions construct, inspect, and transform non-empty lists."
     | "refine" -> "`Refine` contains type-directed construction and the common built-in refinement functions."
     | "refine-ce" -> ""

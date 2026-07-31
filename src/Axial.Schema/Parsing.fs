@@ -144,7 +144,9 @@ module internal SchemaParsing =
         match kind with
         | PrimitiveValueKind.Text -> value |> runCheck constraints complete
         | PrimitiveValueKind.Int
+        | PrimitiveValueKind.Int64
         | PrimitiveValueKind.Decimal
+        | PrimitiveValueKind.Float
         | PrimitiveValueKind.Bool
         | PrimitiveValueKind.Date
         | PrimitiveValueKind.DateTime
@@ -154,7 +156,9 @@ module internal SchemaParsing =
         match kind with
         | PrimitiveValueKind.Text -> Ok(box text)
         | PrimitiveValueKind.Int -> Parse.int text |> Result.map box |> Result.mapError SchemaError.ofParseError
+        | PrimitiveValueKind.Int64 -> Parse.long text |> Result.map box |> Result.mapError SchemaError.ofParseError
         | PrimitiveValueKind.Decimal -> Parse.decimal text |> Result.map box |> Result.mapError SchemaError.ofParseError
+        | PrimitiveValueKind.Float -> Parse.float text |> Result.map box |> Result.mapError SchemaError.ofParseError
         | PrimitiveValueKind.Bool -> Parse.bool text |> Result.map box |> Result.mapError SchemaError.ofParseError
 #if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date ->

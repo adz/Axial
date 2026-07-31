@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList"
 linkTitle: "NonEmptyList<value>"
-weight: 1009
+weight: 1013
 type: docs
 ---
 
@@ -19,5 +19,19 @@ A list that contains at least one item.
 | --- |
 | `value` |
 
+## Union Cases
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L138-138)
+| Case | Description |
+| --- | --- |
+| `NonEmpty` |  |
+
+## Remarks
+
+
+ The case is public: non-emptiness is carried by the representation rather than by a
+ checked constructor, so <code>head</code>, <code>last</code>, <code>reduce</code>, <code>min</code>, and
+ <code>max</code> are total and pattern matching is available to callers.
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L11-11)

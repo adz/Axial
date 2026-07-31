@@ -12,8 +12,12 @@ module Schema =
     let text = SchemaCore.text
     /// <summary>Describes a 32-bit integer.</summary>
     let ``int`` = SchemaCore.``int``
+    /// <summary>Describes a 64-bit integer.</summary>
+    let ``int64`` = SchemaCore.``int64``
     /// <summary>Describes a decimal number.</summary>
     let ``decimal`` = SchemaCore.``decimal``
+    /// <summary>Describes a double-precision number.</summary>
+    let ``float`` = SchemaCore.``float``
     /// <summary>Describes a Boolean value.</summary>
     let ``bool`` = SchemaCore.``bool``
 #if NET8_0_OR_GREATER

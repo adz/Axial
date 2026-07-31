@@ -56,20 +56,31 @@ This page shows structured boundary data, universal schema parsing into `Result`
 ## Refined catalog schemas
 
 - [`Schema.RefinedSchemas.nonBlankString`](./p-schema-refinedschemas-nonblankstring.md):
-- [`Schema.RefinedSchemas.trimmedString`](./p-schema-refinedschemas-trimmedstring.md):
-- [`Schema.RefinedSchemas.boundedString`](./m-schema-refinedschemas-boundedstring.md):
-- [`Schema.RefinedSchemas.slug`](./p-schema-refinedschemas-slug.md):
 - [`Schema.RefinedSchemas.positiveInt`](./p-schema-refinedschemas-positiveint.md):
 - [`Schema.RefinedSchemas.nonNegativeInt`](./p-schema-refinedschemas-nonnegativeint.md):
 - [`Schema.RefinedSchemas.nonZeroInt`](./p-schema-refinedschemas-nonzeroint.md):
-- [`Schema.RefinedSchemas.negativeInt`](./p-schema-refinedschemas-negativeint.md):
-- [`Schema.RefinedSchemas.nonPositiveInt`](./p-schema-refinedschemas-nonpositiveint.md):
+- [`Schema.RefinedSchemas.positiveInt64`](./p-schema-refinedschemas-positiveint64.md):
+- [`Schema.RefinedSchemas.nonNegativeInt64`](./p-schema-refinedschemas-nonnegativeint64.md):
+- [`Schema.RefinedSchemas.nonZeroInt64`](./p-schema-refinedschemas-nonzeroint64.md):
+- [`Schema.RefinedSchemas.positiveDecimal`](./p-schema-refinedschemas-positivedecimal.md):
+- [`Schema.RefinedSchemas.nonNegativeDecimal`](./p-schema-refinedschemas-nonnegativedecimal.md):
+- [`Schema.RefinedSchemas.nonZeroDecimal`](./p-schema-refinedschemas-nonzerodecimal.md):
+- [`Schema.RefinedSchemas.finiteFloat`](./p-schema-refinedschemas-finitefloat.md):
+- [`Schema.RefinedSchemas.unitInterval`](./p-schema-refinedschemas-unitinterval.md):
 - [`Schema.RefinedSchemas.nonEmptyList`](./m-schema-refinedschemas-nonemptylist.md):
 - [`Schema.RefinedSchemas.nonEmptyArray`](./m-schema-refinedschemas-nonemptyarray.md):
 - [`Schema.RefinedSchemas.distinctList`](./m-schema-refinedschemas-distinctlist.md):
-- [`Schema.RefinedSchemas.boundedList`](./m-schema-refinedschemas-boundedlist.md):
-- [`Schema.RefinedSchemas.boundedArray`](./m-schema-refinedschemas-boundedarray.md):
-- [`Schema.RefinedSchemas.dateTimeOffsetRange`](./p-schema-refinedschemas-datetimeoffsetrange.md):
+- [`Schema.RefinedSchemas.interval`](./m-schema-refinedschemas-interval.md):
+ Builds a schema for an inclusive range, replacing the former per-type range
+ schemas. Generic over any ordered value, so one definition covers what
+ <code>dateTimeOffsetRange</code> and <code>dateOnlyRange</code> each needed separately.
+
+- [`Schema.RefinedSchemas.dateRange`](./p-schema-refinedschemas-daterange.md):
+ Builds a schema for a range of instants using <code>start</code> and <code>end</code> field
+ names. The same <code>Interval</code> type as <code>interval</code> above — only the wire
+ vocabulary differs, which is why no second type is needed. An inverted pair is
+ reported rather than silently reordered, since at a boundary that is a caller error.
+
 
 ## Existing values
 

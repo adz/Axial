@@ -278,6 +278,16 @@ module internal JsonRuntime =
             let struct (start, length, next) = numberToken false src
             struct (parseInt32Bytes src.Data start length, next)
 
+    let int64Decoder: Decoder<int64> =
+        fun src ->
+            let struct (start, length, next) = numberToken false src
+            struct (parseInt64Bytes src.Data start length, next)
+
+    let floatDecoder: Decoder<float> =
+        fun src ->
+            let struct (start, length, next) = numberToken true src
+            struct (parseFloatBytes src.Data start length, next)
+
     let decimalDecoder: Decoder<decimal> =
         fun src ->
             let struct (start, length, next) = numberToken true src

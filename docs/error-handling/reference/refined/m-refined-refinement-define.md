@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.define"
 linkTitle: "define"
-weight: 2701
+weight: 2601
 ---
 
  Defines a refinement from one portable constraint.
@@ -27,4 +27,4 @@ weight: 2701
 | <code><span><a href="t-refined-refinement.md">Refinement</a>&lt;<span>'underlying,&#32;'refined</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L309-309)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L20-20)

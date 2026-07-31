@@ -107,7 +107,7 @@ type QuantityError =
 let quantity raw =
     result {
         let! parsed = Parse.int raw |> Result.mapError InvalidInteger
-        let! quantity = Refine.positiveInt parsed |> Result.mapError InvalidQuantity
+        let! quantity = Check.greaterThan 0 parsed |> Result.map (fun () -> parsed) |> Result.mapError InvalidQuantity
         return quantity
     }
 ```

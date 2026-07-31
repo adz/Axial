@@ -138,7 +138,10 @@ module SchemaGen =
                 match description.Shape with
                 | SchemaShape.Primitive PrimitiveValueKind.Text -> textGenerator path constraints |> Result.map (Gen.map Data.Text)
                 | SchemaShape.Primitive PrimitiveValueKind.Int -> Ok(intGenerator constraints |> Gen.map (string >> Data.Text))
+                | SchemaShape.Primitive PrimitiveValueKind.Int64 -> Ok(intGenerator constraints |> Gen.map (int64 >> string >> Data.Text))
                 | SchemaShape.Primitive PrimitiveValueKind.Decimal -> Ok(decimalGenerator constraints |> Gen.map (fun value -> Data.Text(value.ToString(Globalization.CultureInfo.InvariantCulture))))
+                // Generated floats stay finite: JSON has no NaN or infinity literal.
+                | SchemaShape.Primitive PrimitiveValueKind.Float -> Ok(decimalGenerator constraints |> Gen.map (fun value -> Data.Text((float value).ToString("R", Globalization.CultureInfo.InvariantCulture))))
                 | SchemaShape.Primitive PrimitiveValueKind.Bool -> Ok(ArbMap.defaults.ArbFor<bool>().Generator |> Gen.map (string >> Data.Text))
                 | SchemaShape.Primitive PrimitiveValueKind.Date -> Ok(Gen.choose(0, 3650) |> Gen.map (fun days -> DateOnly(2020, 1, 1).AddDays days |> string |> Data.Text))
                 | SchemaShape.Primitive PrimitiveValueKind.DateTime -> Ok(Gen.choose(0, 100000) |> Gen.map (fun minutes -> DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero).AddMinutes minutes |> string |> Data.Text))

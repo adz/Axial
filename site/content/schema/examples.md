@@ -40,6 +40,10 @@ open Axial.Check
 open Axial.Check.CheckDSL
 open Axial.Refined
 
+// Slug is no longer a catalogue entry: it carries no invariant past the boundary, so it
+// is defined here from the same constraints the built-in type used, exactly like Sku below.
+type Slug = private Slug of string
+
 type ProductId = ProductId of NonZeroInt
 type ProductSlug = ProductSlug of Slug
 type DisplayName = DisplayName of NonBlankString
@@ -49,6 +53,12 @@ type ContactEmail = private ContactEmail of string
 type Sku = private Sku of string
 type Rating = private Rating of int
 type UnitPrice = private UnitPrice of decimal
+
+module Slug =
+    let value (Slug value) = value
+
+    let create value : Result<Slug, CheckFailure list> =
+        Check.all [ present; matches "^[a-z0-9]+(-[a-z0-9]+)*$" ] value |> Result.map (fun () -> Slug value)
 
 module ContactEmail =
     let value (ContactEmail value) = value
@@ -79,7 +89,7 @@ type Discount =
     | Code of Slug
 
 type PublishWindow =
-    { Range: DateTimeOffsetRange }
+    { Range: Interval<DateTimeOffset> }
 
 type ProductRequest =
     { Id: ProductId
@@ -117,15 +127,15 @@ let parseDiscount (raw: string) : Result<Discount, string> =
         }
     match parsePercent raw with
     | Ok value -> Ok value
-    | Error _ -> Refine.slug raw |> Result.map Code |> Result.mapError CheckFailure.describeAll
+    | Error _ -> Slug.create raw |> Result.map Code |> Result.mapError CheckFailure.describeAll
 
 let createProductRequest rawId rawSlug rawDisplayName rawTags rawQuantity rawContactEmail rawSku rawRating rawUnitPrice rawDiscount publishStart publishEnd : Result<ProductRequest, string> =
     result {
         let! parsedId = Parse.int rawId |> Result.mapError (sprintf "%A")
         let! id = Refine.nonZeroInt parsedId |> Result.mapError CheckFailure.describeAll
-        let! slug = Refine.slug rawSlug |> Result.mapError CheckFailure.describeAll
+        let! slug = Slug.create rawSlug |> Result.mapError CheckFailure.describeAll
         let! displayName = Refine.nonBlankString rawDisplayName |> Result.mapError CheckFailure.describeAll
-        let! tags = rawTags |> List.map Refine.slug |> sequenceResults |> Result.mapError CheckFailure.describeAll
+        let! tags = rawTags |> List.map Slug.create |> sequenceResults |> Result.mapError CheckFailure.describeAll
         let! distinctTags = Refine.distinctList tags |> Result.mapError CheckFailure.describeAll
         let! parsedQuantity = Parse.int rawQuantity |> Result.mapError (sprintf "%A")
         let! quantity = Refine.positiveInt parsedQuantity |> Result.mapError CheckFailure.describeAll
@@ -136,7 +146,7 @@ let createProductRequest rawId rawSlug rawDisplayName rawTags rawQuantity rawCon
         let! parsedUnitPrice = Parse.decimal rawUnitPrice |> Result.mapError (sprintf "%A")
         let! unitPrice = UnitPrice.create parsedUnitPrice |> Result.mapError CheckFailure.describeAll
         let! discount = parseDiscount rawDiscount
-        let! range = Refine.dateTimeOffsetRange publishStart publishEnd |> Result.mapError CheckFailure.describeAll
+        let! range = Interval.create publishStart publishEnd |> Result.mapError CheckFailure.describeAll
         return { Id = ProductId id; Slug = ProductSlug slug; DisplayName = DisplayName displayName; Tags = ProductTags distinctTags; Quantity = Quantity quantity; ContactEmail = contactEmail; Sku = sku; Rating = rating; UnitPrice = unitPrice; Discount = discount; PublishWindow = { Range = range } }
     }
 

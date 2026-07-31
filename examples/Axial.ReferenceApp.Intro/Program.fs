@@ -62,7 +62,21 @@ let parseTicketRequest (rawTier: string) (rawQuantity: string) : Result<Tier * i
 // 3. Parse and refinement stay explicit and map into the application's error.
 // ---------------------------------------------------------------------------
 
-type AttendeeId = AttendeeId of PositiveInt
+// A numeric invariant is a constraint, not a built-in type: F# cannot propagate "> 0"
+// through arithmetic, so a shipped PositiveInt would cost more at every use site than it
+// saves. Where a nominal type is still wanted, define it over the constraint directly.
+type AttendeeId =
+    private
+    | AttendeeId of int
+
+    member this.Value =
+        let (AttendeeId value) = this
+        value
+
+module AttendeeId =
+    let refinement = Refinement.define (Constraint.greaterThan 0) AttendeeId _.Value
+    let create value = Refinement.create refinement value
+
 type ContactEmail = ContactEmail of NonBlankString
 type ContactError = InvalidId | InvalidEmail
 
@@ -71,9 +85,9 @@ type Contact = { Id: AttendeeId; Email: ContactEmail }
 let createContact (rawId: string) (rawEmail: string) : Result<Contact, ContactError> =
     result {
         let! parsedId = Parse.int rawId |> Result.mapError (fun _ -> InvalidId)
-        let! positiveId = Refine.positiveInt parsedId |> Result.mapError (fun _ -> InvalidId)
+        let! id = AttendeeId.create parsedId |> Result.mapError (fun _ -> InvalidId)
         let! email = Refine.nonBlankString rawEmail |> Result.mapError (fun _ -> InvalidEmail)
-        return { Id = AttendeeId positiveId; Email = ContactEmail email }
+        return { Id = id; Email = ContactEmail email }
     }
 
 // ---------------------------------------------------------------------------

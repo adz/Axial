@@ -25,13 +25,22 @@ schema-local restrictions. This page is the shorter API-oriented view of that in
 open Axial.Refined
 open Axial.Schema
 
-let quantitySchema : Schema<PositiveInt> =
-    Schema.int
-    |> Schema.refine PositiveInt.refinement
+let nameSchema : Schema<NonBlankString> =
+    Schema.text
+    |> Schema.refine NonBlankString.refinement
 ```
 
-Parsing checks the underlying `int`, constructs `PositiveInt`, and reports failures at the schema path. Encoding and
-checking project through `PositiveInt.Value`.
+Parsing checks the underlying `string`, constructs `NonBlankString`, and reports failures at the schema path. Encoding
+and checking project through `NonBlankString.Value`.
+
+A numeric range is a constraint rather than a refined type, so it goes on the primitive:
+
+```fsharp
+field "quantity" _.Quantity { constrain (Constraint.greaterThan 0) }
+```
+
+`Schema.constrain` is available for a standalone value schema too, but inside a field block
+the schema is inferred from the field's type and each constraint sits on its own line.
 
 For an application type:
 

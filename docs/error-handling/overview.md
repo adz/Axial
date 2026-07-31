@@ -48,8 +48,8 @@ let parsed : Result<int, ParseError> = Parse.int "42"
 ```fsharp
 open Axial.Refined
 
-let quantity : Result<PositiveInt, CheckFailure list> =
-    Refine.positiveInt 42
+let name : Result<NonBlankString, CheckFailure list> =
+    Refine.nonBlankString "Ada"
 ```
 
 ## Compose through an application error
@@ -64,7 +64,7 @@ type QuantityError =
 let quantity raw =
     result {
         let! parsed = Parse.int raw |> Result.mapError InvalidInteger
-        let! quantity = Refine.positiveInt parsed |> Result.mapError InvalidQuantity
+        let! quantity = Check.greaterThan 0 parsed |> Result.map (fun () -> parsed) |> Result.mapError InvalidQuantity
         return quantity
     }
 ```

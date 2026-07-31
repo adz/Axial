@@ -1,7 +1,7 @@
 ---
 title: "Schema.RefinedSchemas.nonZeroInt"
 linkTitle: "nonZeroInt"
-weight: 2306
+weight: 2303
 type: docs
 ---
 
@@ -20,4 +20,4 @@ type: docs
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-nonzeroint.md">NonZeroInt</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L27-27)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L19-19)
