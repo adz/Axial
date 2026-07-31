@@ -19,4 +19,4 @@ Describes a Boolean value.
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;bool&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L18-18)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L22-22)

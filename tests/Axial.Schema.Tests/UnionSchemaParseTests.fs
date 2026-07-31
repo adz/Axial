@@ -18,7 +18,7 @@ module UnionSchemaParseTests =
 
     type private Payment =
         | Card of CardDetails
-        | Invoice of Slug
+        | Invoice of NonBlankString
 
     type private Checkout =
         {
@@ -38,7 +38,7 @@ module UnionSchemaParseTests =
             "type"
             "value"
             [ UnionCase.create "card" Card (function Card details -> Some details | _ -> None) ((cardSchema ()))
-              UnionCase.create "invoice" Invoice (function Invoice slug -> Some slug | _ -> None) RefinedSchemas.slug ]
+              UnionCase.create "invoice" Invoice (function Invoice reference -> Some reference | _ -> None) RefinedSchemas.nonBlankString ]
 
     let private checkoutSchema () =
         schema<Checkout> {
@@ -66,7 +66,7 @@ module UnionSchemaParseTests =
                |> Result.map (fun checkout ->
                    match checkout.Payment with
                    | Card details -> details.Number.Value
-                   | Invoice slug -> slug.Value) =
+                   | Invoice reference -> reference.Value) =
                 Ok "4242" @>
 
     [<Fact>]
@@ -113,7 +113,7 @@ module UnionSchemaParseTests =
             <@ parsed.Result
                |> Result.map (fun checkout ->
                    match checkout.Payment with
-                   | Invoice slug -> slug.Value
+                   | Invoice reference -> reference.Value
                    | Card details -> details.Number.Value) =
                 Ok "inv-42" @>
 
@@ -121,9 +121,9 @@ module UnionSchemaParseTests =
     let ``validate checks existing union values through case extractors`` () =
         let model =
             { Payment =
-                match Refine.slug "inv-42" with
-                | Ok slug -> Invoice slug
-                | Error error -> failwithf "Unexpected slug failure: %A" error }
+                match Refine.nonBlankString "inv-42" with
+                | Ok reference -> Invoice reference
+                | Error error -> failwithf "Unexpected reference failure: %A" error }
 
         let result = Schema.check (checkoutSchema ()) model
 

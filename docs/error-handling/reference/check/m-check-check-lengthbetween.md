@@ -26,4 +26,4 @@ Returns a type-directed text or concrete-collection check requiring a length ins
 | <code><span><a href="t-check-check.md">Check</a>&lt;^value&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L549-549)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L568-568)

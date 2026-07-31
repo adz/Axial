@@ -35,4 +35,4 @@ Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1118-1118)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1132-1132)

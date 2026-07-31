@@ -35,6 +35,7 @@ weight: 1002
 | `Distinct` |  A collection must contain no duplicate items. |
 | `Contains` |  A collection must contain the supplied item. |
 | `MultipleOf` |  A numeric value must be an exact multiple of the supplied divisor. |
+| `Finite` |  A floating-point value must be neither infinite nor NaN. |
 | `Custom` |  An application-defined constraint with a stable external code and inspectable operands. |
 
 

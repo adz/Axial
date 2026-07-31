@@ -25,4 +25,4 @@ Runs a sequence-shaped check requiring more than one item.
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L622-622)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L641-641)

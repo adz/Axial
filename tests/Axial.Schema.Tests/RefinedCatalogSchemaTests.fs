@@ -40,22 +40,37 @@ module RefinedCatalogSchemaTests =
         test <@ parsed = Ok "value" @>
         test <@ executions = 1 @>
 
+    // Concepts removed from the catalogue are expressed as constraints over a primitive.
+    let private slugPattern = "^[a-z0-9]+(-[a-z0-9]+)*$"
+
+    let private slugSchema () =
+        Schema.text
+        |> Schema.constrainAll [ Axial.Schema.Constraint.present; Axial.Schema.Constraint.pattern slugPattern ]
+
+    let private trimmedSchema () =
+        Schema.text |> Schema.constrain Axial.Schema.Constraint.trimmed
+
+    let private boundedSchema minLength maxLength =
+        Schema.text
+        |> Schema.constrainAll
+            [ Axial.Schema.Constraint.present; Axial.Schema.Constraint.lengthBetween minLength maxLength ]
+
     type private Product =
         {
             Name: NonBlankString
-            Slug: Slug
-            Quantity: PositiveInt
+            Slug: string
+            Quantity: int
         }
 
     type private Scalars =
         {
-            Command: TrimmedString
-            Offset: NonZeroInt
+            Command: string
+            Offset: int
         }
 
     type private Tagged =
         {
-            Tags: NonEmptyList<Slug>
+            Tags: NonEmptyList<NonBlankString>
             Codes: DistinctList<string>
         }
 
@@ -65,16 +80,31 @@ module RefinedCatalogSchemaTests =
                 withSchema RefinedSchemas.nonBlankString
             }
             field "slug" _.Slug {
-                withSchema RefinedSchemas.slug
+                withSchema (slugSchema ())
             }
             field "quantity" _.Quantity {
-                withSchema RefinedSchemas.positiveInt
+                withSchema (Schema.int |> Schema.constrain (Axial.Schema.Constraint.greaterThan 0))
             }
             construct (fun name slug quantity ->
                 { Name = name
                   Slug = slug
                   Quantity = quantity })
         }
+
+    [<Fact>]
+    let ``removing a refined type leaves the emitted metadata unchanged`` () =
+        // The proof that dropping Slug, TrimmedString, and BoundedString costs nothing at
+        // the boundary: the constraints they were built from still reach interpreters.
+        let slug = slugSchema ()
+        test <@ Schema.allConstraints slug |> List.map Constraint.code = [ "present"; "pattern" ] @>
+        test <@ JsonSchema.generateValue slug |> _.Contains(slugPattern) @>
+
+        let trimmed = trimmedSchema ()
+        test <@ Schema.allConstraints trimmed |> List.map Constraint.code = [ "trimmed" ] @>
+
+        let bounded = boundedSchema 2 4
+        test <@ Schema.allConstraints bounded |> List.map Constraint.code = [ "present"; "lengthBetween" ] @>
+        test <@ JsonSchema.generateValue bounded |> _.Contains("\"maxLength\":4") @>
 
     [<Fact>]
     let ``refined catalog schemas parse trusted scalar values`` () =
@@ -89,7 +119,7 @@ module RefinedCatalogSchemaTests =
 
         test
             <@ parsed.Result
-               |> Result.map (fun product -> product.Name.Value, product.Slug.Value, product.Quantity.Value) =
+               |> Result.map (fun product -> product.Name.Value, product.Slug, product.Quantity) =
                 Ok("Ada", "ada-2026", 3) @>
 
     [<Fact>]
@@ -104,44 +134,31 @@ module RefinedCatalogSchemaTests =
         let parsed = Schema.parseRetainingInput (productSchema ()) raw
 
         test <@ Refine.nonBlankString "   " |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.Blank ] @>
-        test <@ Refine.slug "Ada" |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" ] @>
-        test <@ Refine.positiveInt 0 |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") ] @>
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Blank }
                                  { Path = TestPath.fromLegacy [ PathSegment.Name "quantity" ]; Error = SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") }
-                                 { Path = TestPath.fromLegacy [ PathSegment.Name "slug" ]; Error = SchemaError.InvalidFormat "^[a-z0-9]+(-[a-z0-9]+)*$" } ] @>
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "slug" ]; Error = SchemaError.InvalidFormat slugPattern } ] @>
 
     [<Fact>]
-    let ``bounded string schema rejects a value refined under different bounds`` () =
-        // BoundedString records its bounds per value, so a BoundedString built at 1..99 is still a BoundedString
-        // when checked against a 2..80 schema. Refinement.create does not run for an already-refined value, so the
-        // schema's retained constraints must run at the refined layer or the bounds go unenforced.
-        let schema = RefinedSchemas.boundedString 2 80
-        let tooShort = Refine.boundedString 1 99 "A" |> Result.defaultWith (fun error -> failwithf "%A" error)
+    let ``length bounds are enforced by the schema rather than recorded per value`` () =
+        // BoundedString carried its own bounds, so a value refined at 1..99 satisfied a
+        // 2..80 schema. Expressing the bounds as a constraint removes that whole class of
+        // mismatch: there is only ever one set of bounds, the schema's.
+        let check = SchemaCheck.text (boundedSchema 2 80)
 
-        test <@ SchemaCheck.text schema tooShort = Error [ CheckFailure.InvalidLength(CheckLengthExpectation.LengthBetween(2, 80), Some 1) ] @>
-
-    [<Fact>]
-    let ``bounded string schema carries caller supplied bounds`` () =
-        let schema = RefinedSchemas.boundedString 2 4
-
-        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "present"; "lengthBetween" ] @>
-
-        let check = SchemaCheck.text schema
-        let value = Refine.boundedString 2 4 "Ada" |> Result.defaultWith (fun error -> failwithf "%A" error)
-
-        test <@ check value = Ok () @>
+        test <@ check "A" = Error [ CheckFailure.InvalidLength(CheckLengthExpectation.LengthBetween(2, 80), Some 1) ] @>
+        test <@ check "Ada" = Ok() @>
 
     [<Fact>]
     let ``remaining scalar catalog schemas report the same failures as standalone refinement`` () =
         let schema =
             schema<Scalars> {
                 field "command" _.Command {
-                    withSchema RefinedSchemas.trimmedString
+                    withSchema (trimmedSchema ())
                 }
                 field "offset" _.Offset {
-                    withSchema RefinedSchemas.nonZeroInt
+                    withSchema (Schema.int |> Schema.constrain (Axial.Schema.Constraint.notEqualTo 0))
                 }
                 construct (fun command offset -> { Command = command; Offset = offset })
             }
@@ -152,14 +169,6 @@ module RefinedCatalogSchemaTests =
         let parsed = Schema.parseRetainingInput schema raw
 
         test
-            <@ Refine.trimmedString " deploy " |> Result.mapError (List.map SchemaError.ofCheckFailure) =
-                Error [ SchemaError.InvalidFormat "trimmed" ] @>
-
-        test
-            <@ Refine.nonZeroInt 0 |> Result.mapError (List.map SchemaError.ofCheckFailure) =
-                Error [ SchemaError.Custom("notEqualTo:0", None) ] @>
-
-        test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "command" ]; Error = SchemaError.InvalidFormat "trimmed" }
                                  { Path = TestPath.fromLegacy [ PathSegment.Name "offset" ]; Error = SchemaError.Custom("notEqualTo:0", None) } ] @>
 
@@ -168,7 +177,7 @@ module RefinedCatalogSchemaTests =
         let schema =
             schema<Tagged> {
                 field "tags" _.Tags {
-                    withSchema (RefinedSchemas.nonEmptyList RefinedSchemas.slug)
+                    withSchema (RefinedSchemas.nonEmptyList RefinedSchemas.nonBlankString)
                 }
                 field "codes" _.Codes {
                     withSchema (RefinedSchemas.distinctList Schema.text)
@@ -194,7 +203,7 @@ module RefinedCatalogSchemaTests =
         let schema =
             schema<Tagged> {
                 field "tags" _.Tags {
-                    withSchema (RefinedSchemas.nonEmptyList RefinedSchemas.slug)
+                    withSchema (RefinedSchemas.nonEmptyList RefinedSchemas.nonBlankString)
                 }
                 field "codes" _.Codes {
                     withSchema (RefinedSchemas.distinctList Schema.text)
@@ -217,46 +226,92 @@ module RefinedCatalogSchemaTests =
                                    Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 1, Some 0) } ] @>
 
     [<Fact>]
-    let ``date time range schema parses trusted ranges`` () =
+    let ``the generic interval schema parses trusted ranges`` () =
         let raw =
             Data.objectOfMap (Map.ofList
-                    [ "start", Data.Text "2026-01-01T00:00:00+00:00"
-                      "end", Data.Text "2026-01-02T00:00:00+00:00" ]
+                    [ "lower", Data.Text "2026-01-01T00:00:00+00:00"
+                      "upper", Data.Text "2026-01-02T00:00:00+00:00" ]
             )
 
-        let parsed = Schema.parseRetainingInput RefinedSchemas.dateTimeOffsetRange raw
+        let parsed = Schema.parseRetainingInput (RefinedSchemas.interval Schema.dateTime) raw
 
         test
-            <@ parsed.Result
-               |> Result.map (fun range -> range.Start, range.End) =
+            <@ parsed.Result |> Result.map (fun range -> range.Lower, range.Upper) =
                 Ok(
                     DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero)
                 ) @>
 
     [<Fact>]
-    let ``date time range schema reports constructor failures after fields parse`` () =
+    let ``the interval schema reports constructor failures after fields parse`` () =
+        let raw =
+            Data.objectOfMap (Map.ofList
+                    [ "lower", Data.Text "2026-01-02T00:00:00+00:00"
+                      "upper", Data.Text "2026-01-01T00:00:00+00:00" ]
+            )
+
+        let parsed = Schema.parseRetainingInput (RefinedSchemas.interval Schema.dateTime) raw
+
+        test
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy []
+                                   Error = SchemaError.ConstructorFailed "failed custom check 'interval'" } ] @>
+
+    [<Fact>]
+    let ``one generic interval schema replaces the per-type range schemas`` () =
+        // dateTimeOffsetRange and dateOnlyRange were two hand-rolled types with duplicate
+        // operations. One generic schema now covers both, and integers besides.
+        let raw = Data.objectOfMap (Map.ofList [ "lower", Data.Text "1"; "upper", Data.Text "5" ])
+        let parsed = Schema.parseRetainingInput (RefinedSchemas.interval Schema.int) raw
+
+        test <@ parsed.Result |> Result.map Interval.toPair = Ok(1, 5) @>
+        test <@ parsed.Result |> Result.map (Interval.contains 3) = Ok true @>
+
+
+    [<Fact>]
+    let ``int64 and float schemas describe themselves as numbers`` () =
+        test <@ JsonSchema.generateValue Schema.int64 |> _.Contains("\"type\":\"integer\"") @>
+        test <@ JsonSchema.generateValue Schema.float |> _.Contains("\"type\":\"number\"") @>
+
+    [<Fact>]
+    let ``the finite constraint is inspectable metadata rather than a custom code`` () =
+        let schema = RefinedSchemas.finiteFloat
+
+        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "finite" ] @>
+        test
+            <@ Schema.allConstraints schema
+               |> List.map Constraint.metadata
+                = [ ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Finite ] @>
+
+    [<Fact>]
+    let ``a finite schema admits real numbers and rejects NaN at the boundary`` () =
+        test <@ Schema.parse RefinedSchemas.finiteFloat (Data.Text "1.5") |> Result.map FiniteFloat.value = Ok 1.5 @>
+        test <@ Schema.parse RefinedSchemas.finiteFloat (Data.Text "NaN") |> Result.isError @>
+
+    [<Fact>]
+    let ``dateRange keeps the start and end wire vocabulary without a second type`` () =
+        let raw =
+            Data.objectOfMap (Map.ofList
+                    [ "start", Data.Text "2026-01-01T00:00:00+00:00"
+                      "end", Data.Text "2026-01-02T00:00:00+00:00" ]
+            )
+
+        match Schema.parse RefinedSchemas.dateRange raw with
+        | Ok range ->
+            test <@ range.Lower = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) @>
+            test <@ range.Upper = DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero) @>
+            // The same type as Interval, so every Interval operation applies unchanged.
+            test <@ Interval.contains (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero)) range @>
+        | Error errors -> failwithf "Expected a parse, got %A" errors
+
+    [<Fact>]
+    let ``dateRange reports an inverted pair rather than reordering it`` () =
         let raw =
             Data.objectOfMap (Map.ofList
                     [ "start", Data.Text "2026-01-02T00:00:00+00:00"
                       "end", Data.Text "2026-01-01T00:00:00+00:00" ]
             )
 
-        let parsed = Schema.parseRetainingInput RefinedSchemas.dateTimeOffsetRange raw
-
-        test
-            <@ parsed.Errors = [ { Path = TestPath.fromLegacy []
-                                   Error =
-                                     SchemaError.ConstructorFailed "failed custom check 'dateTimeOffsetRange'" } ] @>
-
-    [<Fact>]
-    let ``date only range schema parses trusted ranges`` () =
-        let raw =
-            Data.objectOfMap (Map.ofList [ "start", Data.Text "2026-01-01"; "end", Data.Text "2026-01-02" ])
-
-        let parsed = Schema.parseRetainingInput RefinedSchemas.dateOnlyRange raw
-
-        test
-            <@ parsed.Result
-               |> Result.map (fun range -> range.Start, range.End) =
-                Ok(DateOnly(2026, 1, 1), DateOnly(2026, 1, 2)) @>
+        // between would repair this; at a boundary an inverted pair is a caller error.
+        test <@ Schema.parse RefinedSchemas.dateRange raw |> Result.isError @>
+        test <@ Interval.between (DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero)) (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) |> Interval.lower
+                    = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) @>

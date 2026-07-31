@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refine.positiveInt"
 linkTitle: "positiveInt"
-weight: 2904
+weight: 2901
 type: docs
 ---
 
@@ -20,4 +20,4 @@ type: docs
 | <code><span>int&#32;->&#32;<span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><a href="../types/t-refined-positiveint.md">PositiveInt</a>,&#32;<span><a href="../../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L489-489)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L212-212)

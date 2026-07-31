@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isWhitespace"
 linkTitle: "isWhitespace"
-weight: 2504
+weight: 2404
 ---
 
 
@@ -25,4 +25,4 @@ weight: 2504
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L402-402)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L103-103)

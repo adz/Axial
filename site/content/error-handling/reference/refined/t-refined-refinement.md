@@ -21,4 +21,4 @@ type: docs
 | `refined` |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L296-296)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L7-7)

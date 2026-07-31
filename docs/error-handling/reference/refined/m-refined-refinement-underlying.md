@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.underlying"
 linkTitle: "underlying"
-weight: 2705
+weight: 2605
 ---
 
  Returns the canonical underlying representation.
@@ -26,4 +26,4 @@ weight: 2705
 | <code>'underlying</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L336-336)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L47-47)

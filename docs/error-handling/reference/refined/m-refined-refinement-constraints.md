@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.constraints"
 linkTitle: "constraints"
-weight: 2706
+weight: 2606
 ---
 
  Returns portable constraints retained by the refinement.
@@ -25,4 +25,4 @@ weight: 2706
 | <code><span><span><a href="../check/t-check-constraint.md">Constraint</a>&lt;'underlying&gt;</span>&#32;list</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L341-341)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L52-52)

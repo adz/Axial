@@ -63,12 +63,12 @@ type QuantityError =
 let quantity raw =
     result {
         let! parsed = Parse.int raw |> Result.mapError InvalidInteger
-        let! quantity = Refine.positiveInt parsed |> Result.mapError InvalidQuantity
+        let! quantity = parsed |> Result.guard (Check.greaterThan 0) |> Result.mapError InvalidQuantity
         return quantity
     }
 ```
 
-`Parse.int` changes representation. `Refine.positiveInt` admits only positive integers into `PositiveInt`. Mapping both
+`Parse.int` changes representation. `Check.greaterThan` admits only positive integers. Mapping both
 errors at the bind sites gives the application one deliberate error type.
 
 ## Continue

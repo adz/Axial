@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement"
 linkTitle: "Refinement<underlying, refined>"
-weight: 1700
+weight: 1600
 ---
 
  Defines admission into an invariant-carrying value and its total reverse projection.
@@ -20,4 +20,4 @@ weight: 1700
 | `refined` |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L296-296)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L7-7)

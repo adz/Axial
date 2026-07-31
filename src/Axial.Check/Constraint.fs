@@ -60,6 +60,8 @@ type ConstraintMetadata =
     | Contains of item: obj
     /// A numeric value must be an exact multiple of the supplied divisor.
     | MultipleOf of divisor: obj
+    /// A floating-point value must be neither infinite nor NaN.
+    | Finite
     /// An application-defined constraint with a stable external code and inspectable operands.
     | Custom of code: string * arguments: Map<string, obj>
 
@@ -109,6 +111,7 @@ module Constraint =
         | ConstraintMetadata.Distinct -> "distinct"
         | ConstraintMetadata.Contains _ -> "contains"
         | ConstraintMetadata.MultipleOf _ -> "multipleOf"
+        | ConstraintMetadata.Finite -> "finite"
         | ConstraintMetadata.Custom(code, _) -> code
 
     let private metadataArguments = function
@@ -137,7 +140,8 @@ module Constraint =
           ConstraintMetadata.NotEqualTo(box 0); ConstraintMetadata.Between(box 0, box 0)
           ConstraintMetadata.GreaterThan(box 0); ConstraintMetadata.LessThan(box 0)
           ConstraintMetadata.AtLeast(box 0); ConstraintMetadata.AtMost(box 0)
-          ConstraintMetadata.Distinct; ConstraintMetadata.Contains(box 0); ConstraintMetadata.MultipleOf(box 1) ]
+          ConstraintMetadata.Distinct; ConstraintMetadata.Contains(box 0); ConstraintMetadata.MultipleOf(box 1)
+          ConstraintMetadata.Finite ]
         |> List.map metadataCode
         |> Set.ofList
 
@@ -281,6 +285,13 @@ module Constraint =
     let atMost maximum = known (ConstraintMetadata.AtMost(box maximum)) (Check.atMost maximum)
     let distinct<'value when 'value: equality> : Constraint<seq<'value>> = known ConstraintMetadata.Distinct Check.Seq.noDuplicates
     let contains item : Constraint<seq<'value>> = known (ConstraintMetadata.Contains(box item)) (Check.Seq.contains item)
+
+    /// <summary>Requires a double to be neither infinite nor NaN.</summary>
+    let finite : Constraint<float> = known ConstraintMetadata.Finite Check.Number.finite
+
+    /// <summary>Requires a single-precision float to be neither infinite nor NaN.</summary>
+    let finite32 : Constraint<float32> = known ConstraintMetadata.Finite Check.Number.finite32
+
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     type MultipleOfDispatcher =
         static member Create(divisor: int) =

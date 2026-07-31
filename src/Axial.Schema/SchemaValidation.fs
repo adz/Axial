@@ -321,7 +321,9 @@ module internal ModelFieldCheck =
         | PrimitiveValueKind.Text ->
             value |> unbox<string> |> runCheck constraints (ConstraintCheck.complete<string> constraints) |> Result.map box
         | PrimitiveValueKind.Int -> runComplete<int> constraints value
+        | PrimitiveValueKind.Int64 -> runComplete<int64> constraints value
         | PrimitiveValueKind.Decimal -> runComplete<decimal> constraints value
+        | PrimitiveValueKind.Float -> runComplete<float> constraints value
         | PrimitiveValueKind.Bool -> runComplete<bool> constraints value
 #if NET8_0_OR_GREATER
         | PrimitiveValueKind.Date -> runComplete<DateOnly> constraints value

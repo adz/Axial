@@ -302,6 +302,25 @@ module Check =
             if Predicate.Number.nonPositive value then Ok ()
             else Error [ OutOfRange(AtMost "0", Some(string value)) ]
 
+        /// <summary>Requires a double to be neither infinite nor <c>NaN</c>.</summary>
+        /// <remarks>
+        /// <c>NaN</c> compares false against every value including itself, which silently
+        /// corrupts sorting and makes it unusable as a dictionary key. Excluding it is
+        /// what makes ordering lawful.
+        /// </remarks>
+        let finite (value: float) : Result<unit, CheckFailure list> =
+            if Double.IsNaN value || Double.IsInfinity value then
+                Error [ InvalidFormat "finite" ]
+            else
+                Ok()
+
+        /// <summary>Requires a single-precision float to be neither infinite nor <c>NaN</c>.</summary>
+        let finite32 (value: float32) : Result<unit, CheckFailure list> =
+            if Single.IsNaN value || Single.IsInfinity value then
+                Error [ InvalidFormat "finite" ]
+            else
+                Ok()
+
     /// <summary>Executable value checks for already parsed sequence-shaped values.</summary>
     /// <remarks>
     /// Use <c>Check.Seq</c> for sequence-shaped checks. The earlier <c>Check.Collection</c> surface is intentionally not

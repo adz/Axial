@@ -33,4 +33,4 @@ Combines checks disjunctively by running checks until one succeeds, or returns a
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L727-727)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L746-746)

@@ -34,29 +34,22 @@ type SchemaDefaults =
     static member MapWith(item: Schema<'item>) : Schema<Map<string, 'item>> = SchemaCore.mapWith item
     static member Schema(_: string) : Schema<string> = SchemaCore.text
     static member Schema(_: int) : Schema<int> = SchemaCore.``int``
+    static member Schema(_: int64) : Schema<int64> = SchemaCore.``int64``
     static member Schema(_: decimal) : Schema<decimal> = SchemaCore.``decimal``
+    static member Schema(_: float) : Schema<float> = SchemaCore.``float``
     static member Schema(_: bool) : Schema<bool> = SchemaCore.``bool``
     static member Schema(_: System.DateTimeOffset) : Schema<System.DateTimeOffset> = SchemaCore.dateTime
     static member Schema(_: System.Guid) : Schema<System.Guid> = SchemaCore.guid
-    // Refined types whose refinement takes no parameters have exactly one canonical schema, so a bare
-    // field can resolve it. Parameterised refinements (boundedString, boundedList) have no canonical
-    // bounds and must still be supplied with `withSchema`.
+    // Every built-in refined type has exactly one canonical schema, so a bare field resolves it.
+    // Numeric ranges are constraints rather than types: F# cannot propagate `> 0` through
+    // arithmetic, so a refined number costs more at every use site than it saves. Express
+    // them with `Schema.constrain (Constraint.greaterThan 0)` on the primitive.
     static member Schema(_: Axial.Refined.NonBlankString) : Schema<Axial.Refined.NonBlankString> =
         SchemaCore.refine Axial.Refined.NonBlankString.refinement SchemaCore.text
-    static member Schema(_: Axial.Refined.TrimmedString) : Schema<Axial.Refined.TrimmedString> =
-        SchemaCore.refine Axial.Refined.Text.trimmedStringRefinement SchemaCore.text
-    static member Schema(_: Axial.Refined.Slug) : Schema<Axial.Refined.Slug> =
-        SchemaCore.refine Axial.Refined.Text.slugRefinement SchemaCore.text
-    static member Schema(_: Axial.Refined.PositiveInt) : Schema<Axial.Refined.PositiveInt> =
-        SchemaCore.refine Axial.Refined.PositiveInt.refinement SchemaCore.``int``
-    static member Schema(_: Axial.Refined.NonNegativeInt) : Schema<Axial.Refined.NonNegativeInt> =
-        SchemaCore.refine Axial.Refined.Numeric.nonNegativeIntRefinement SchemaCore.``int``
-    static member Schema(_: Axial.Refined.NonZeroInt) : Schema<Axial.Refined.NonZeroInt> =
-        SchemaCore.refine Axial.Refined.Numeric.nonZeroIntRefinement SchemaCore.``int``
-    static member Schema(_: Axial.Refined.NegativeInt) : Schema<Axial.Refined.NegativeInt> =
-        SchemaCore.refine Axial.Refined.Numeric.negativeIntRefinement SchemaCore.``int``
-    static member Schema(_: Axial.Refined.NonPositiveInt) : Schema<Axial.Refined.NonPositiveInt> =
-        SchemaCore.refine Axial.Refined.Numeric.nonPositiveIntRefinement SchemaCore.``int``
+    static member Schema(_: Axial.Refined.FiniteFloat) : Schema<Axial.Refined.FiniteFloat> =
+        SchemaCore.refine Axial.Refined.FiniteFloat.refinement SchemaCore.``float``
+    static member Schema(_: Axial.Refined.UnitInterval) : Schema<Axial.Refined.UnitInterval> =
+        SchemaCore.refine Axial.Refined.UnitInterval.refinement SchemaCore.``float``
 #if NET8_0_OR_GREATER
     static member Schema(_: System.DateOnly) : Schema<System.DateOnly> = SchemaCore.date
 #endif
@@ -84,17 +77,7 @@ type SchemaDefaults =
     /// <summary>Builds a non-empty array schema from an explicitly resolved item schema.</summary>
     static member NonEmptyArrayWith(item: Schema<'item>) : Schema<Axial.Refined.NonEmptyArray<'item>> =
         // The wire shape is a list; the refinement bridges list -> NonEmptyArray while retaining minLength 1.
-        let constraint': Axial.Check.Constraint<'item list> = Axial.Check.Constraint.minLength 1
-        let refinement =
-            Axial.Refined.Refinement.define
-                constraint'
-                (fun (values: 'item list) ->
-                    match Axial.Refined.Refine.nonEmptyArray (List.toArray values) with
-                    | Ok value -> value
-                    | Error _ -> failwith "unreachable")
-                (fun (value: Axial.Refined.NonEmptyArray<'item>) -> value.ToArray() |> Array.toList)
-
-        SchemaCore.refine refinement (SchemaCore.listWith item)
+        SchemaCore.refine (Axial.Refined.NonEmptyArray.listRefinement<'item> ()) (SchemaCore.listWith item)
 
     static member inline Schema(_: Axial.Refined.NonEmptyArray< ^item>) : Schema<Axial.Refined.NonEmptyArray< ^item>> =
         let inline resolve (witness: ^w, marker: ^value) : Schema< ^value> =

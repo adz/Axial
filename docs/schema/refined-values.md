@@ -17,25 +17,29 @@ let contactSchema =
     }
 ```
 
-This is the form to prefer at use sites. The built-in refined types from
-[Axial.Refined]({{< relref "/error-handling/refined/" >}}) already work this way — `NonBlankString`, `PositiveInt`,
-`Slug`, `NonEmptyList<_>`, and the rest resolve without a `withSchema`, as
-[Getting Started](../getting-started/) shows. Refinements that take parameters, such as `boundedString` and
-`boundedList`, have no single canonical schema and need one selected explicitly:
+This is the form to prefer at use sites. Every built-in refined type from
+[Axial.Refined]({{< relref "/error-handling/refined/" >}}) works this way — `NonBlankString`,
+`FiniteFloat`, `UnitInterval`, `NonEmptyList<_>`, and the rest resolve without a `withSchema`, as
+[Getting Started](../getting-started/) shows.
+
+Rules that need a parameter, such as a length range or a pattern, are constraints rather than types. They belong on
+the field, because the bounds are a property of *this* field rather than of the value:
 
 ```fsharp
 field "name" _.Name {
-    withSchema (RefinedSchemas.boundedString 2 80)
+    constrain Constraint.present
+    constrain (Constraint.lengthBetween 2 80)
 }
 ```
 
-`BoundedString` is one type whose values each record the bounds they were refined under, rather than a distinct type
-per bound. So the type alone does not say what the bounds are — `2` and `80` belong to this field, and a
-`BoundedString` built elsewhere under different bounds is the same type. `Schema.check` re-runs the schema's bounds
-against such a value rather than trusting the ones it carries. `BoundedList` and `BoundedArray` work the same way.
+Expressing them this way means there is only ever one set of bounds — the schema's. An earlier `BoundedString` type
+recorded the bounds it happened to be constructed under, so a value refined at `1..99` was still a `BoundedString`
+when checked against a `2..80` schema, and the schema had to re-run its own bounds anyway.
 
-Where you want the bounds to be part of the type, wrap them in your own refined type, as
-[Lift universal constraints into the refinement](#lift-universal-constraints-into-the-refinement) shows.
+Where a length or format rule *should* be part of a type, define your own refined type for it, as
+[Lift universal constraints into the refinement](#lift-universal-constraints-into-the-refinement) shows. The test is
+whether any later operation relies on the rule; see
+[When not to make a type]({{< relref "/error-handling/refined/catalog/#when-not-to-make-a-type" >}}).
 
 The rest of this page expands what a domain type like `Email` contributes and shows where schema-local constraints fit.
 

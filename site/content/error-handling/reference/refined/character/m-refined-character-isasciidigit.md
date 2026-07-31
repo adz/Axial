@@ -26,4 +26,4 @@ type: docs
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L398-398)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L98-98)

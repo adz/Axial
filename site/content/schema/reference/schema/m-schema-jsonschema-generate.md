@@ -35,4 +35,4 @@ Generates a compact JSON Schema document from any completed schema declaration.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.JsonSchema/JsonSchema.fs#L366-366)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.JsonSchema/JsonSchema.fs#L371-371)

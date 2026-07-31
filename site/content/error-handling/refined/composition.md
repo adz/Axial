@@ -39,7 +39,7 @@ let orderLine rawQuantity rawSku =
     result {
         let! parsed = Parse.int rawQuantity |> Result.mapError InvalidQuantityText
         let! quantity = Refine.positiveInt parsed |> Result.mapError InvalidQuantity
-        let! sku = Refine.slug rawSku |> Result.mapError InvalidSku
+        let! sku = Refine.nonBlankString rawSku |> Result.mapError InvalidSku
         return quantity, sku
     }
 ```

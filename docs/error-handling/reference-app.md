@@ -39,7 +39,7 @@ result {
 ```fsharp
 result {
     let! parsedId = Parse.int rawId |> Result.mapError (fun _ -> InvalidId)
-    let! positiveId = Refine.positiveInt parsedId |> Result.mapError (fun _ -> InvalidId)
+    let! id = AttendeeId.create parsedId |> Result.mapError (fun _ -> InvalidId)
     let! email = Refine.nonBlankString rawEmail |> Result.mapError (fun _ -> InvalidEmail)
     return AttendeeId positiveId, ContactEmail email
 }

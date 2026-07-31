@@ -1,7 +1,7 @@
 ---
 title: "Schema.RefinedSchemas.nonEmptyArray"
 linkTitle: "nonEmptyArray"
-weight: 2310
+weight: 2313
 type: docs
 ---
 
@@ -26,4 +26,4 @@ type: docs
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-nonemptyarray.md">NonEmptyArray</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L34-34)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L32-32)

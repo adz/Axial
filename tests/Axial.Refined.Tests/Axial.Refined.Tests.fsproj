@@ -11,6 +11,11 @@
   <ItemGroup>
     <Compile Include="ParseAndBuilderTests.fs" />
     <Compile Include="CatalogTests.fs" />
+    <Compile Include="NonEmptyTests.fs" />
+    <Compile Include="IntervalTests.fs" />
+    <Compile Include="BoundedTests.fs" />
+    <Compile Include="FiniteAndUnitTests.fs" />
+    <Compile Include="DistinctAndTextTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -124,8 +124,12 @@ module internal SchemaCore =
     let text = ValueSchema.text
     /// <summary>Describes a 32-bit signed integer.</summary>
     let ``int`` = ValueSchema.``int``
+    /// <summary>Describes a 64-bit signed integer.</summary>
+    let ``int64`` = ValueSchema.``int64``
     /// <summary>Describes a decimal number.</summary>
     let ``decimal`` = ValueSchema.``decimal``
+    /// <summary>Describes a double-precision number.</summary>
+    let ``float`` = ValueSchema.``float``
     /// <summary>Describes a Boolean value.</summary>
     let ``bool`` = ValueSchema.``bool``
 #if NET8_0_OR_GREATER

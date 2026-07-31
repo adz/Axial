@@ -26,4 +26,4 @@ Returns a string check requiring equality with one of the supplied choices.
 | <code><span><a href="t-check-check.md">Check</a>&lt;string&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L562-562)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Check/Check.fs#L581-581)

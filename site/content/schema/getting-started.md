@@ -185,9 +185,9 @@ let registrationSchema =
     }
 ```
 
-The fields stay bare. A refinement that takes no parameters has exactly one schema, so the field resolves it from the
-type the same way `string` resolved `Schema.text`. Parameterised refinements such as `boundedString` have no single
-answer and need an explicit `withSchema (RefinedSchemas.boundedString 2 80)`.
+The fields stay bare. Every refined type has exactly one schema, so the field resolves it from the type the same way
+`string` resolved `Schema.text`. Rules that need a parameter — a length range, a pattern — are constraints rather
+than types, and go on the field: `withSchema (Schema.text |> Schema.constrain (Constraint.lengthBetween 2 80))`.
 
 `NonEmptyList<NonBlankString>` composes: the outer refinement resolves, and so does the item.
 

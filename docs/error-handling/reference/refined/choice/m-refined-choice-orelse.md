@@ -1,7 +1,7 @@
 ---
 title: "Refined.Choice.orElse"
 linkTitle: "orElse"
-weight: 2600
+weight: 2500
 ---
 
 
@@ -30,4 +30,4 @@ weight: 2600
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'b,&#32;'g</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L473-473)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L226-226)

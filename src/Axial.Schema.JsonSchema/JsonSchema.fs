@@ -139,13 +139,18 @@ module JsonSchema =
                 | Axial.Check.ConstraintMetadata.Contains item ->
                     [ sprintf "\"contains\":{\"const\":%s}" (literal item) ]
                 | Axial.Check.ConstraintMetadata.MultipleOf divisor -> [ sprintf "\"multipleOf\":%s" (literal divisor) ]
+                // JSON has no literal for NaN or the infinities, so a finite constraint is
+                // already implied by "type":"number". Nothing to emit.
+                | Axial.Check.ConstraintMetadata.Finite -> []
                 | Axial.Check.ConstraintMetadata.Custom _ -> [])
 
     let private primitiveKeywords kind =
         match kind with
         | PrimitiveValueKind.Text -> [ "\"type\":\"string\"" ]
         | PrimitiveValueKind.Int -> [ "\"type\":\"integer\"" ]
+        | PrimitiveValueKind.Int64 -> [ "\"type\":\"integer\"" ]
         | PrimitiveValueKind.Decimal -> [ "\"type\":\"number\"" ]
+        | PrimitiveValueKind.Float -> [ "\"type\":\"number\"" ]
         | PrimitiveValueKind.Bool -> [ "\"type\":\"boolean\"" ]
         | PrimitiveValueKind.Date -> [ "\"type\":\"string\""; "\"format\":\"date\"" ]
         | PrimitiveValueKind.DateTime -> [ "\"type\":\"string\""; "\"format\":\"date-time\"" ]

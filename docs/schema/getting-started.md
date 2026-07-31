@@ -172,7 +172,7 @@ open Axial.Refined
 
 type Registration =
     { Owner: NonBlankString
-      Seats: PositiveInt
+      Seats: int
       Aliases: NonEmptyList<NonBlankString> }
 
 let registrationSchema =
@@ -185,9 +185,9 @@ let registrationSchema =
     }
 ```
 
-The fields stay bare. A refinement that takes no parameters has exactly one schema, so the field resolves it from the
-type the same way `string` resolved `Schema.text`. Parameterised refinements such as `boundedString` have no single
-answer and need an explicit `withSchema (RefinedSchemas.boundedString 2 80)`.
+The fields stay bare. Every refined type has exactly one schema, so the field resolves it from the type the same way
+`string` resolved `Schema.text`. Rules that need a parameter — a length range, a pattern — are constraints rather
+than types, and go on the field as their own line: `field "name" _.Name { constrain (Constraint.lengthBetween 2 80) }`.
 
 `NonEmptyList<NonBlankString>` composes: the outer refinement resolves, and so does the item.
 
@@ -217,7 +217,7 @@ seats: Must be greater than 0; got 0.
 aliases: Length must be at least 1; got 0.
 ```
 
-Nothing in the schema declares any of this. `PositiveInt` means "greater than zero" wherever it appears, and the
+Nothing in the schema declares any of this. A refined type means the same thing wherever it appears, and the
 generated JSON Schema, the inspection metadata, and the parse diagnostics all read that one definition. Each check runs
 once, at the layer that owns it.
 

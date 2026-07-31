@@ -4,29 +4,18 @@ open Axial.Check
 open Axial.Refined
 open Axial.Schema.Syntax
 
-/// Ready-made schemas for the built-in refined values.
+/// <summary>Ready-made schemas for the built-in refined values.</summary>
+/// <remarks>
+/// Concepts that carry no invariant past the boundary — trimmed text, slugs, length
+/// bounds, numeric ranges — are expressed as constraints on a primitive schema rather
+/// than as refined types. Compose them with <c>Schema.constrain</c> and <c>Schema.constrainAll</c>; the
+/// metadata reaching an interpreter is identical to what the removed types produced.
+/// </remarks>
 [<RequireQualifiedAccess>]
 module RefinedSchemas =
     let nonBlankString : Schema<NonBlankString> = SchemaDefaults.Resolve<NonBlankString>()
-
-    let boundedString minLength maxLength : Schema<BoundedString> =
-        let refinement =
-            Refinement.defineAll
-                [ Axial.Check.Constraint.present; Axial.Check.Constraint.lengthBetween minLength maxLength ]
-                (fun value ->
-                    match Refine.boundedString minLength maxLength value with
-                    | Ok refined -> refined
-                    | Error _ -> failwith "unreachable")
-                _.Value
-        Schema.text |> Schema.refine refinement
-
-    let trimmedString : Schema<TrimmedString> = SchemaDefaults.Resolve<TrimmedString>()
-    let slug : Schema<Slug> = SchemaDefaults.Resolve<Slug>()
-    let positiveInt : Schema<PositiveInt> = SchemaDefaults.Resolve<PositiveInt>()
-    let nonNegativeInt : Schema<NonNegativeInt> = SchemaDefaults.Resolve<NonNegativeInt>()
-    let nonZeroInt : Schema<NonZeroInt> = SchemaDefaults.Resolve<NonZeroInt>()
-    let negativeInt : Schema<NegativeInt> = SchemaDefaults.Resolve<NegativeInt>()
-    let nonPositiveInt : Schema<NonPositiveInt> = SchemaDefaults.Resolve<NonPositiveInt>()
+    let finiteFloat : Schema<FiniteFloat> = SchemaDefaults.Resolve<FiniteFloat>()
+    let unitInterval : Schema<UnitInterval> = SchemaDefaults.Resolve<UnitInterval>()
 
     let nonEmptyList (itemSchema: Schema<'value>) : Schema<NonEmptyList<'value>> =
         SchemaDefaults.NonEmptyListWith itemSchema
@@ -37,31 +26,36 @@ module RefinedSchemas =
     let distinctList<'value when 'value: equality> (itemSchema: Schema<'value>) : Schema<DistinctList<'value>> =
         SchemaDefaults.DistinctListWith itemSchema
 
-    let boundedList minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedList<'value>> =
-        let refinement = Refinement.define (Axial.Check.Constraint.lengthBetween minCount maxCount)
-                            (fun values -> match Refine.boundedList minCount maxCount values with Ok value -> value | Error _ -> failwith "unreachable") _.ToList()
-        Schema.listWith itemSchema |> Schema.refine refinement
-
-    let boundedArray minCount maxCount (itemSchema: Schema<'value>) : Schema<BoundedArray<'value>> =
-        let refinement = Refinement.define (Axial.Check.Constraint.lengthBetween minCount maxCount)
-                            (fun values -> match Refine.boundedArray minCount maxCount values with Ok value -> value | Error _ -> failwith "unreachable")
-                            (fun value -> value.ToArray() |> Array.toList)
-        Schema.listWith itemSchema |> Schema.refine refinement
-
     let private describe failures = CheckFailure.describeAll failures
 
-    let dateTimeOffsetRange : Schema<DateTimeOffsetRange> =
-        schema<DateTimeOffsetRange> {
-            field "start" (fun (value: DateTimeOffsetRange) -> value.Start)
-            field "end" (fun (value: DateTimeOffsetRange) -> value.End)
-            constructResult (fun start finish -> Refine.dateTimeOffsetRange start finish |> Result.mapError describe)
+    /// <summary>
+    /// Builds a schema for an inclusive range, replacing the former per-type range
+    /// schemas. Generic over any ordered value, so one definition covers what
+    /// <c>dateTimeOffsetRange</c> and <c>dateOnlyRange</c> each needed separately.
+    /// </summary>
+    let interval (itemSchema: Schema<'value>) : Schema<Interval<'value>> =
+        schema<Interval<'value>> {
+            field "lower" (fun (value: Interval<'value>) -> value.Lower) { withSchema itemSchema }
+            field "upper" (fun (value: Interval<'value>) -> value.Upper) { withSchema itemSchema }
+            constructResult (fun lower upper -> Interval.create lower upper |> Result.mapError describe)
         }
 
-#if NET8_0_OR_GREATER
-    let dateOnlyRange : Schema<DateOnlyRange> =
-        schema<DateOnlyRange> {
-            field "start" (fun (value: DateOnlyRange) -> value.Start)
-            field "end" (fun (value: DateOnlyRange) -> value.End)
-            constructResult (fun start finish -> Refine.dateOnlyRange start finish |> Result.mapError describe)
+    /// <summary>
+    /// Builds a schema for a value confined to the supplied bounds. The bounds belong to
+    /// the schema rather than to each value, so they are supplied once here.
+    /// </summary>
+    let bounded (bounds: Interval<'value>) (itemSchema: Schema<'value>) : Schema<Bounded<'value>> =
+        itemSchema |> Schema.refine (Bounded.refinement bounds)
+
+    /// <summary>
+    /// Builds a schema for a range of instants using <c>start</c> and <c>end</c> field
+    /// names. The same <c>Interval</c> type as <c>interval</c> above — only the wire
+    /// vocabulary differs, which is why no second type is needed. An inverted pair is
+    /// reported rather than silently reordered, since at a boundary that is a caller error.
+    /// </summary>
+    let dateRange : Schema<DateRange> =
+        schema<DateRange> {
+            field "start" (fun (value: DateRange) -> value.Lower) { withSchema Schema.dateTime }
+            field "end" (fun (value: DateRange) -> value.Upper) { withSchema Schema.dateTime }
+            constructResult (fun start finish -> Interval.create start finish |> Result.mapError describe)
         }
-#endif

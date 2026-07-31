@@ -6,9 +6,15 @@ description: Couple a portable constraint to total construction and projection.
 
 # Define Refined Types
 
-A refined type is a private wrapper with a smart constructor and one canonical way to recover its underlying value.
-The smart constructor prevents invalid values from entering domain code; the projection lets adapters and persistence
-code recover the ordinary representation without rechecking.
+A refined type is a private wrapper, a checked constructor, and one canonical way to recover the underlying value.
+This page is the reference for that machinery.
+
+Before reaching for it, decide whether the concept deserves a type at all. Checked construction is how a value is
+admitted, not a reason on its own: if nothing downstream becomes total or loses a branch, the rule belongs in a
+[constraint]({{< relref "/error-handling/check/" >}}) on the primitive instead. Numeric ranges are the clearest
+example — F# cannot carry "greater than zero" through arithmetic, so a refined number costs more at every use site
+than it saves. [When not to make a type](../catalog/#when-not-to-make-a-type) draws the line, and
+[Customer Id](../tutorials/customer-id/) works a full example through.
 
 ## Define the wrapper and Value projection
 
@@ -42,7 +48,7 @@ module ContactEmail =
         Refinement.create refinement raw
 ```
 
-`ContactEmail.create` is now the smart constructor. Construction returns check failures directly:
+`ContactEmail.create` is now the only way in. Construction returns check failures directly:
 
 ```fsharp
 let email : Result<ContactEmail, CheckFailure list> =
@@ -102,5 +108,20 @@ let result =
 
 Choose one concrete underlying representation. For collection refinements, prefer `'a list` or `'a array` rather than
 an arbitrary `seq<'a>`.
+
+## Give the type its operations
+
+A wrapper that only checks on the way in leaves callers unwrapping it at first use. What makes the type worth having
+is the family of operations that preserve its invariant, so the fact stays true without being rechecked:
+
+```fsharp
+module ContactEmail =
+    // ... as above
+
+    /// Total: lower-casing inhabited, well-formed text leaves it inhabited and well-formed.
+    let normalise (input: ContactEmail) = ContactEmail(value input |> fun text -> text.ToLowerInvariant())
+```
+
+If you cannot write an operation like that, the concept is probably a constraint rather than a type.
 
 Continue with [Schema Integration](../schema/).

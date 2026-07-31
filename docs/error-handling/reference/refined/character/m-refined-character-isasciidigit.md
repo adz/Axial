@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isAsciiDigit"
 linkTitle: "isAsciiDigit"
-weight: 2500
+weight: 2400
 ---
 
 
@@ -25,4 +25,4 @@ weight: 2500
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L398-398)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L99-99)

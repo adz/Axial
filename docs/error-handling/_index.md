@@ -49,7 +49,7 @@ reusable refinements. Each package can be installed independently.
     <g fill="currentColor" text-anchor="middle" opacity="0.62" font-size="11">
       <text x="113" y="84">test an existing value</text>
       <text x="320" y="84">decode serialized input</text>
-      <text x="527" y="84">guard construction · read Value</text>
+      <text x="527" y="84">carry an invariant · operate on it</text>
     </g>
     <g fill="none" stroke="#0a7d62" stroke-width="1.25">
       <rect x="40" y="100" width="146" height="30" rx="4"/>

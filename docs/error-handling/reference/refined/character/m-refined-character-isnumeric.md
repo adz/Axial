@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isNumeric"
 linkTitle: "isNumeric"
-weight: 2506
+weight: 2406
 ---
 
 
@@ -25,4 +25,4 @@ weight: 2506
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L404-404)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L105-105)

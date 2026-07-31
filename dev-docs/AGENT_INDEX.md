@@ -23,7 +23,9 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 - `Axial.Check` (`src/Axial.Check/`): `Check`, `Constraint`, `Predicate`, and `CheckDSL` in the `Axial.Check` namespace.
   Returns the standard F# `Result` type; does not depend on `Axial.Result`. Independent leaf.
 - `Axial.Parse` (`src/Axial.Parse/`): `ParseError` and primitive `Parse.*` functions. Independent leaf.
-- `Axial.Refined` (`src/Axial.Refined/`): refined types and reusable refinements. Depends only on `Axial.Check`.
+- `Axial.Refined` (`src/Axial.Refined/`): invariant-carrying types and the operations that justify them. Depends
+  only on `Axial.Check`. A type ships only if it makes a partial operation total or removes a branch from consumers;
+  validation-shaped concepts are constraints in `Axial.Check` instead.
 - `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): dependency-only meta-package installing Result, Check, Parse, and
   Refined. No source files, no public API, `IncludeBuildOutput=false` so its `.nupkg` carries no assembly.
 - `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
@@ -59,8 +61,12 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 - Check/Result: `src/Axial.Check/Check.fs`, `src/Axial.Result/Result.fs`,
   `tests/Axial.Check.Tests/CheckTests.fs`, `tests/Axial.Result.Tests/ResultTests.fs`,
   `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
-- Parsing and refined values: `src/Axial.Parse/{Errors,Parse}.fs`, `src/Axial.Refined/Refine.fs`,
-  `tests/Axial.Refined.Tests/{ParseAndBuilderTests,CatalogTests}.fs`, and the Check/Result files only as needed.
+- Parsing and refined values: `src/Axial.Parse/{Errors,Parse}.fs`, and in `src/Axial.Refined/` (compile order)
+  `Refinement.fs` -> `NonEmpty.fs` -> `Interval.fs` -> `Bounded.fs` -> `Finite.fs` -> `UnitInterval.fs` ->
+  `Refine.fs`. Tests are one file per area under `tests/Axial.Refined.Tests/`. Adding or removing a refined type
+  also means editing the `SchemaDefaults` witnesses in `src/Axial.Schema/Shape.fs` and
+  `src/Axial.Schema/RefinedSchemas.fs`. There are no refined numeric types: a numeric range is a constraint, because
+  F# cannot carry it through arithmetic.
 - Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
   `dev-docs/PLAN.md`.
 - Schema input/rules/interpreters: `src/Axial.Schema/{Model,Data,SchemaValidation,RetainedParseResult,Rules}.fs` and

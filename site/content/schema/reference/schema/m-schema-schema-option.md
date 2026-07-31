@@ -26,4 +26,4 @@ Describes an optional value.
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;<span>'a&#32;option</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L33-33)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L37-37)

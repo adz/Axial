@@ -49,8 +49,12 @@ module internal Buffers =
         abstract member WriteBytes: byte[] -> unit
         /// Writes an integer value.
         abstract member WriteInt: int -> unit
+        /// Writes a 64-bit integer value.
+        abstract member WriteInt64: int64 -> unit
         /// Writes a `decimal` value.
         abstract member WriteDecimal: decimal -> unit
+        /// Writes a double-precision value.
+        abstract member WriteFloat: float -> unit
         /// Exposes the current backing storage.
         abstract member Data: byte[]
         /// Exposes the number of written bytes.
@@ -170,6 +174,42 @@ module internal Buffers =
 
                     x.InternalCount <- x.InternalCount + pos
 
+            member x.WriteInt64(value: int64) =
+#if !FABLE_COMPILER
+                let mutable written = 0
+                (x :> IByteWriter).Ensure(24)
+
+                let destination =
+                    System.Span<byte>(x.InternalData, x.InternalCount, x.InternalData.Length - x.InternalCount)
+
+                if Utf8Formatter.TryFormat(value, destination, &written) then
+                    x.InternalCount <- x.InternalCount + written
+                else
+                    (x :> IByteWriter).WriteString(value.ToString(CultureInfo.InvariantCulture))
+#else
+                (x :> IByteWriter).WriteString(value.ToString(CultureInfo.InvariantCulture))
+#endif
+
+            member x.WriteFloat(value: float) =
+                // JSON has no literal for NaN or the infinities. Schemas that permit them
+                // must refine to FiniteFloat; here the round-trippable "R" form is used.
+#if !FABLE_COMPILER
+                let mutable written = 0
+                (x :> IByteWriter).Ensure(40)
+
+                let destination =
+                    System.Span<byte>(x.InternalData, x.InternalCount, x.InternalData.Length - x.InternalCount)
+
+                if Utf8Formatter.TryFormat(value, destination, &written) then
+                    x.InternalCount <- x.InternalCount + written
+                else
+                    (x :> IByteWriter).WriteString(value.ToString("R", CultureInfo.InvariantCulture))
+#else
+                // Fable has no "R" specifier; JavaScript's own number formatting is already
+                // shortest-round-trippable and culture-invariant.
+                (x :> IByteWriter).WriteString(string value)
+#endif
+
             member x.WriteDecimal(value: decimal) =
 #if !FABLE_COMPILER
                 let mutable written = 0
@@ -230,6 +270,42 @@ module internal Buffers =
             int magnitude
 
     /// Parses a decimal directly from UTF-8 bytes with invariant semantics.
+    let parseInt64Bytes (data: byte[]) (offset: int) (length: int) : int64 =
+#if !FABLE_COMPILER
+        let token = System.ReadOnlySpan<byte>(data, offset, length)
+        let mutable value = 0L
+        let mutable consumed = 0
+
+        if Utf8Parser.TryParse(token, &value, &consumed) && consumed = length then
+            value
+        else
+            failwithf "Invalid int64 value: %s" (Encoding.UTF8.GetString(data, offset, length))
+#else
+        let token = Encoding.UTF8.GetString(data.[offset .. offset + length - 1])
+
+        match System.Int64.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture) with
+        | true, value -> value
+        | false, _ -> failwithf "Invalid int64 value: %s" token
+#endif
+
+    let parseFloatBytes (data: byte[]) (offset: int) (length: int) : float =
+#if !FABLE_COMPILER
+        let token = System.ReadOnlySpan<byte>(data, offset, length)
+        let mutable value = 0.0
+        let mutable consumed = 0
+
+        if Utf8Parser.TryParse(token, &value, &consumed, 'G') && consumed = length then
+            value
+        else
+            failwithf "Invalid float value: %s" (Encoding.UTF8.GetString(data, offset, length))
+#else
+        let token = Encoding.UTF8.GetString(data.[offset .. offset + length - 1])
+
+        match System.Double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture) with
+        | true, value -> value
+        | false, _ -> failwithf "Invalid float value: %s" token
+#endif
+
     let parseDecimalBytes (data: byte[]) (offset: int) (length: int) : decimal =
 #if !FABLE_COMPILER
         let token = System.ReadOnlySpan<byte>(data, offset, length)
