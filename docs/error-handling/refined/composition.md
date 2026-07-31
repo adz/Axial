@@ -22,7 +22,7 @@ type QuantityError =
 let quantity raw =
     result {
         let! parsed = Parse.int raw |> Result.mapError InvalidInteger
-        let! quantity = Check.greaterThan 0 parsed |> Result.map (fun () -> parsed) |> Result.mapError InvalidQuantity
+        let! quantity = parsed |> Result.guard (Check.greaterThan 0) |> Result.mapError InvalidQuantity
         return quantity
     }
 ```
@@ -38,7 +38,7 @@ type OrderInputError =
 let orderLine rawQuantity rawSku =
     result {
         let! parsed = Parse.int rawQuantity |> Result.mapError InvalidQuantityText
-        let! quantity = Check.greaterThan 0 parsed |> Result.map (fun () -> parsed) |> Result.mapError InvalidQuantity
+        let! quantity = parsed |> Result.guard (Check.greaterThan 0) |> Result.mapError InvalidQuantity
         let! sku = Refine.nonBlankString rawSku |> Result.mapError InvalidSku
         return quantity, sku
     }
