@@ -14,7 +14,117 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
 jobs:
-  verify:
+  compile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Check source inventory
+        run: bash scripts/check-source-inventory.sh
+
+      - name: Build
+        run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
+
+      - name: Upload compiled solution
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-solution
+          path: |
+            artifacts/bin/
+            artifacts/obj/
+          compression-level: 1
+          retention-days: 1
+          if-no-files-found: error
+
+  discover_tests:
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.matrix.outputs.shards }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build test matrix
+        id: matrix
+        run: |
+          shards="$(
+            rg -l --glob '*.fsproj' 'PackageReference Include="Microsoft.NET.Test.Sdk"' tests \
+              | sort \
+              | jq -Rsc '
+                  split("\n") | map(select(length > 0)) as $projects
+                  | [range(0; ([3, ($projects | length)] | min)) as $shard
+                    | {
+                        shard: ($shard + 1),
+                        projects: [
+                          $projects
+                          | to_entries[]
+                          | select(.key % 3 == $shard)
+                          | .value
+                        ]
+                      }]
+                '
+          )"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+
+  tests:
+    needs: [compile, discover_tests]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.discover_tests.outputs.shards) }}
+
+    name: tests (${{ matrix.shard }})
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download compiled solution
+        uses: actions/download-artifact@v4
+        with:
+          name: compiled-solution
+          path: artifacts
+
+      - name: Test shard
+        env:
+          TEST_PROJECTS: ${{ toJSON(matrix.projects) }}
+        run: |
+          while IFS= read -r project; do
+            dotnet test "$project" --configuration Release --no-build --no-restore --nologo -v minimal
+          done < <(jq -r '.[]' <<< "$TEST_PROJECTS")
+
+  schema-compiler:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check Schema CE compiler errors
+        run: bash scripts/check-schema-ce-errors.sh
+
+  fable:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,41 +140,87 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: npm
-          cache-dependency-path: site/package-lock.json
 
       - name: Restore local tools
         run: dotnet tool restore
 
-      - name: Restore
-        run: dotnet restore
-
-      - name: Check source inventory
-        run: bash scripts/check-source-inventory.sh
-
-      - name: Build
-        run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
-
-      - name: Test
-        run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
-
-      - name: Check Schema CE compiler errors
-        run: bash scripts/check-schema-ce-errors.sh
-
       - name: Compile Fable JavaScript surface
         run: bash scripts/check-fable-js-surface.sh
 
-      - name: Run main example
-        run: dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --configuration Release --no-build --nologo
+  examples:
+    needs: compile
+    runs-on: ubuntu-latest
 
-      - name: Run API sample smoke pass
-        run: AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --configuration Release --no-build --nologo
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: Run maintenance example
-        run: dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --configuration Release --no-build --nologo
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download compiled solution
+        uses: actions/download-artifact@v4
+        with:
+          name: compiled-solution
+          path: artifacts
+
+      - name: Run examples
+        run: |
+          dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --configuration Release --no-build --no-restore --nologo
+          AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --configuration Release --no-build --no-restore --nologo
+          dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --configuration Release --no-build --no-restore --nologo
+
+  verify:
+    needs: [compile, discover_tests, tests, schema-compiler, fable, examples]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm verification passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for result in $RESULTS; do
+            if [[ "$result" != "success" ]]; then
+              echo "A verification dependency finished with: $result" >&2
+              exit 1
+            fi
+          done
+          echo "All verification shards passed."
+
+  native-aot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
 
       - name: Publish and run NativeAOT probe
         run: bash scripts/run-aot-probe.sh
+
+  packages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
 
       - name: Pack libraries
         run: bash scripts/pack.sh
