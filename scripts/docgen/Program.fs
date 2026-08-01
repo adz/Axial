@@ -355,10 +355,16 @@ let pageSpecs = [
         OutPath = ["data"; "_index.md"]
         Title = "Data"
         Description = "Source-documented portable structured values."
-        Intro = "This page shows `Axial.Data`: one source-neutral tree for nulls, primitives, lists, and objects, with constructors for maps, name/value pairs, CLI arguments, JSON, and configuration. Use it to shape data in tests and fixtures, to carry boundary input before a type is assigned, and to redisplay raw values by path. It has no dependencies on other Axial packages."
+        Intro = "This page shows `Axial.Data`: one owned tree for literals, source adapters, immutable edits, named cases, exact differences, and produced-data proofs. It has no dependencies on other Axial packages."
         SymbolIds = [
             "The tree", ["T:Axial.Data"; "T:Axial.DataPathSegment"; "T:Axial.DataPath"]
             "Constructors", ["M:Axial.DataModule.ofMap"; "M:Axial.DataModule.ofNameValues"; "M:Axial.DataModule.ofCliArgs"; "M:Axial.DataModule.ofJsonElement"; "M:Axial.DataModule.ofJsonDocument"; "M:Axial.DataModule.ofConfiguration"]
+            "Literal syntax", ["T:Axial.DataField"; "M:Axial.DataModule.Syntax.data"; "M:Axial.DataModule.Syntax.op_EqualsGreater"; "M:Axial.DataModule.Syntax.op_QmarkEqualsGreater"; "P:Axial.DataModule.Syntax.nil"; "M:Axial.DataModule.Syntax.num"; "M:Axial.DataModule.Syntax.fields"]
+            "Edits", ["T:Axial.DataEdit"; "T:Axial.DataPatchFailure"; "T:Axial.DataPatchException"; "M:Axial.DataModule.Syntax.set"; "M:Axial.DataModule.Syntax.put"; "M:Axial.DataModule.Syntax.remove"; "M:Axial.DataModule.Syntax.append"; "M:Axial.DataModule.Syntax.prepend"; "M:Axial.DataModule.Syntax.insert"; "M:Axial.DataModule.Syntax.rename"; "M:Axial.DataModule.Syntax.update"; "M:Axial.DataModule.Syntax.patch"; "M:Axial.DataModule.tryPatch"]
+            "Cases", ["T:Axial.DataVariation"; "T:Axial.DataCase"; "T:Axial.DataDimension"; "M:Axial.DataModule.Syntax.variant"; "M:Axial.DataModule.Syntax.variants"; "M:Axial.DataModule.Syntax.dimension"; "M:Axial.DataModule.Syntax.matrix"]
+            "Comparison and matching", ["T:Axial.DataDifference"; "T:Axial.DataDifferenceCause"; "T:Axial.DataPattern"; "T:Axial.DataExpectation"; "T:Axial.DataMismatch"; "T:Axial.DataMatchException"; "M:Axial.DataModule.diff"; "M:Axial.DataModule.compare"; "M:Axial.DataModule.tryMatch"; "M:Axial.DataModule.Syntax.at"; "M:Axial.DataModule.Syntax.absent"; "M:Axial.DataModule.Syntax.matching"; "M:Axial.DataModule.Syntax.exactly"; "M:Axial.DataModule.Syntax.containing"; "M:Axial.DataModule.Syntax.containingItems"; "M:Axial.DataModule.Syntax.inOrder"; "M:Axial.DataModule.Syntax.allItems"; "M:Axial.DataModule.Syntax.someItem"; "P:Axial.DataModule.Syntax.any"; "P:Axial.DataModule.Syntax.anyText"; "P:Axial.DataModule.Syntax.anyNumber"; "M:Axial.DataModule.Syntax.oneOf"; "M:Axial.DataModule.Syntax.satisfying"]
+            "JSON", ["M:Axial.DataModule.Json.parse"; "P:Axial.DataModule.Json.render"; "P:Axial.DataModule.Json.renderIndented"]
+            "Rendering and extraction", ["M:Axial.DataModule.render"; "M:Axial.DataModule.renderIndented"; "M:Axial.DataModule.tryText"; "M:Axial.DataModule.tryBool"; "M:Axial.DataModule.tryNumberToken"; "M:Axial.DataModule.tryList"; "M:Axial.DataModule.tryObject"]
             "Redisplay", ["M:Axial.DataModule.redisplay"; "M:Axial.DataModule.redisplayPath"]
         ]
         Alias = None

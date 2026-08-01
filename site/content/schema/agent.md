@@ -8,6 +8,10 @@ type: docs
 
 Use this section for `Axial.Schema` and `Axial.Data`. These packages do not require Flow.
 
+For source-neutral fixtures and produced output, prefer `Axial.Data.Syntax`: construct with `data`, derive values with
+`patch`, `variants`, or `matrix`, and prove output with `matching`. Use `Data.compare` when the complete tree is the
+contract and partial patterns when only selected evidence matters.
+
 - Start domain models with `Schema<'model>` and constructor-last declarations.
 - Use plain F# `Result` with an application error type for smaller fail-fast operations.
 - Declare records with `schema<Model> { field ...; construct ... }`.

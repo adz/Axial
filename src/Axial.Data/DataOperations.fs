@@ -213,27 +213,11 @@ module DataPath =
 /// <summary>Helpers for inspecting source-agnostic structured data.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module Data =
+module internal DataCore =
     /// <summary>Builds an object from an F# map, ordered by key.</summary>
     let objectOfMap (fields: Map<string, Data>) : Data =
         if isNull (box fields) then nullArg (nameof fields)
         fields |> Map.toList |> Data.Object
-
-    /// <summary>Concise, opt-in syntax for constructing structured objects.</summary>
-    module Syntax =
-        /// <summary>Associates a field name with a supported primitive, structured value, or recursive list.</summary>
-        let inline (=>) (name: string) (value: ^value) : string * Data =
-            if isNull name then nullArg (nameof name)
-
-            let inline convert (witness: ^w) (value: ^v) =
-                ((^w or ^v): (static member From: ^v -> Data) value)
-
-            name, convert Unchecked.defaultof<Data> value
-
-        /// <summary>Builds an object from ordered name/value pairs produced with <c>=&gt;</c>.</summary>
-        let data (fields: (string * Data) list) : Data =
-            if isNull (box fields) then nullArg (nameof fields)
-            Data.Object fields
 
     type private ConfigurationNode =
         | Value of Data

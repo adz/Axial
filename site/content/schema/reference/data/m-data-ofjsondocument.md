@@ -5,29 +5,19 @@ weight: 2104
 type: docs
 ---
 
-Builds structured data from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
+Builds owned structured data from a JSON document.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.ofJsonDocument&#32;<span>document</span></span></code>
+<code><span>Data.ofJsonDocument&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `document` | <code><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-data.md">Data</a></code> |  |
-
-## Remarks
-
-netstandard2.1: not available.
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>&#32;->&#32;<a href="t-data.md">Data</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L504-504)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L219-219)

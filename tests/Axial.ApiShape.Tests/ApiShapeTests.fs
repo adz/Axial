@@ -390,9 +390,25 @@ module ApiShapeTests =
               "ofJsonElement"
               "ofJsonDocument"
               "ofConfiguration"
+              "tryPatch"
+              "diff"
+              "compare"
+              "tryMatch"
+              "render"
+              "renderIndented"
+              "tryText"
+              "tryBool"
+              "tryNumberToken"
+              "tryList"
+              "tryObject"
               "redisplay"
               "redisplayAt"
               "redisplayPath" ]
+
+        test <@ typeof<DataEdit>.Assembly.GetName().Name = "Axial.Data" @>
+        test <@ typeof<DataPattern>.Assembly.GetName().Name = "Axial.Data" @>
+        test <@ typeof<DataDifference>.Assembly.GetName().Name = "Axial.Data" @>
+        test <@ typeof<DataMismatch>.Assembly.GetName().Name = "Axial.Data" @>
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RetainedParseResult"
         |> publicStaticMemberNames

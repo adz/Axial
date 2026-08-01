@@ -1,5 +1,7 @@
 # Axial Schema
 
+- `Axial.Data` is also a standalone fixture and produced-data package: use `data`, `patch`, `variants` or `matrix`, and
+  `matching` with `at`, `absent`, `containing`, and explicit list patterns.
 - `Axial.Schema` depends on `Axial.Data`, `Axial.Check`, and `Axial.Refined`. It does not depend on `Axial.Result` or
   Flow.
 - Schema owns path-aware accumulated boundary errors through `Path`, `SchemaIssue`, and `SchemaErrors`. `Axial.Check`

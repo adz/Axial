@@ -4,34 +4,19 @@ linkTitle: "ofCliArgs"
 weight: 2005
 ---
 
-
- Builds structured data from command-line arguments.
-
+Builds structured data from command-line arguments.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.ofCliArgs&#32;<span>args</span></span></code>
+<code><span>Data.ofCliArgs&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `args` | <code><span>string&#32;seq</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
-
-## Remarks
-
-<p class='fsdocs-para'>
- Supports <code>--name value</code>, <code>--name=value</code>, <code>-n value</code>, boolean flags, <code>--no-name</code>, and repeated
- options. Positional arguments are stored under the <code>_</code> field as a collection.
- </p>
+| <code><span><span>string&#32;seq</span>&#32;->&#32;<a href="../../data/t-data.md">Data</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L421-421)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L212-212)

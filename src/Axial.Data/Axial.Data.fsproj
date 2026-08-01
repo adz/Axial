@@ -39,6 +39,8 @@
   <ItemGroup>
     <Compile Include="Data.fs" />
     <Compile Include="DataOperations.fs" />
+    <Compile Include="DataErgonomicsTypes.fs" />
+    <Compile Include="DataErgonomics.fs" />
   </ItemGroup>
 
 </Project>
