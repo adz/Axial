@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonBlankString.create"
 linkTitle: "create"
-weight: 2801
+weight: 2701
 type: docs
 ---
 

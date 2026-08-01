@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.create"
 linkTitle: "create"
-weight: 2812
+weight: 2706
 type: docs
 ---
 

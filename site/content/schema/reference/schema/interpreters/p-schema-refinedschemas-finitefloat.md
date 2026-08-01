@@ -1,7 +1,7 @@
 ---
 title: "Schema.RefinedSchemas.finiteFloat"
 linkTitle: "finiteFloat"
-weight: 2310
+weight: 2301
 type: docs
 ---
 
@@ -20,4 +20,4 @@ type: docs
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-finitefloat.md">FiniteFloat</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L26-26)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L17-17)

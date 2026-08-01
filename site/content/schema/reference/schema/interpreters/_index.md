@@ -56,15 +56,6 @@ This page shows structured boundary data, universal schema parsing into `Result`
 ## Refined catalog schemas
 
 - [`Schema.RefinedSchemas.nonBlankString`](./p-schema-refinedschemas-nonblankstring.md):
-- [`Schema.RefinedSchemas.positiveInt`](./p-schema-refinedschemas-positiveint.md):
-- [`Schema.RefinedSchemas.nonNegativeInt`](./p-schema-refinedschemas-nonnegativeint.md):
-- [`Schema.RefinedSchemas.nonZeroInt`](./p-schema-refinedschemas-nonzeroint.md):
-- [`Schema.RefinedSchemas.positiveInt64`](./p-schema-refinedschemas-positiveint64.md):
-- [`Schema.RefinedSchemas.nonNegativeInt64`](./p-schema-refinedschemas-nonnegativeint64.md):
-- [`Schema.RefinedSchemas.nonZeroInt64`](./p-schema-refinedschemas-nonzeroint64.md):
-- [`Schema.RefinedSchemas.positiveDecimal`](./p-schema-refinedschemas-positivedecimal.md):
-- [`Schema.RefinedSchemas.nonNegativeDecimal`](./p-schema-refinedschemas-nonnegativedecimal.md):
-- [`Schema.RefinedSchemas.nonZeroDecimal`](./p-schema-refinedschemas-nonzerodecimal.md):
 - [`Schema.RefinedSchemas.finiteFloat`](./p-schema-refinedschemas-finitefloat.md):
 - [`Schema.RefinedSchemas.unitInterval`](./p-schema-refinedschemas-unitinterval.md):
 - [`Schema.RefinedSchemas.nonEmptyList`](./m-schema-refinedschemas-nonemptylist.md):
@@ -81,6 +72,8 @@ This page shows structured boundary data, universal schema parsing into `Result`
  vocabulary differs, which is why no second type is needed. An inverted pair is
  reported rather than silently reordered, since at a boundary that is a caller error.
 
+- [`Schema.RefinedSchemas.bounded`](./m-schema-refinedschemas-bounded.md):  Builds a schema for a value confined to the supplied bounds. The bounds belong to
+ the schema rather than to each value, so they are supplied once here.
 
 ## Existing values
 

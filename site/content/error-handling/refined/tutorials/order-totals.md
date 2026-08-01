@@ -21,8 +21,8 @@ open Axial.Refined
 ```fsharp
 type OrderLine =
     { Sku: NonBlankString
-      Quantity: PositiveInt
-      UnitPrice: PositiveDecimal }
+      Quantity: int
+      UnitPrice: decimal }
 
 type Order =
     { Reference: NonBlankString
@@ -31,10 +31,13 @@ type Order =
       Delivery: Interval<DateTimeOffset> }
 ```
 
-Read the field types as a specification. An order has at least one line. A line's quantity
-is at least one and its price is above zero. The discount is a proportion, so it cannot be
-140% or `NaN`. The delivery window's start is not after its end. None of those facts needs
-restating later, because none of them can be false.
+Read the field types as a specification. An order has at least one line. The discount is a
+proportion, so it cannot be 140% or `NaN`. The delivery window's start is not after its
+end. None of those facts needs restating later, because none of them can be false.
+
+Quantity and price are ordinary numbers, checked on the way in. They are not refined types
+because F# cannot carry "greater than zero" through arithmetic — see
+[why there are no refined numbers](../../catalog/#why-there-are-no-refined-numbers).
 
 ## Admit the input
 
@@ -42,9 +45,9 @@ restating later, because none of them can be false.
 let orderLine rawSku rawQuantity rawPrice =
     result {
         let! sku = Refine.nonBlankString rawSku
-        let! quantity = Refine.positiveInt rawQuantity
-        let! price = Refine.positiveDecimal rawPrice
-        return { Sku = sku; Quantity = quantity; UnitPrice = price }
+        let! _ = Check.greaterThan 0 rawQuantity
+        let! _ = Check.greaterThan 0m rawPrice
+        return { Sku = sku; Quantity = rawQuantity; UnitPrice = rawPrice }
     }
 ```
 
@@ -72,40 +75,26 @@ when an inverted pair means the caller made a mistake you would rather report th
 
 ## Calculate, without re-checking anything
 
-### Line totals
+### Line and order totals
 
-Quantity and price are both positive, so widening is total and needs no revalidation:
-
-```fsharp
-let lineTotal (line: OrderLine) =
-    PositiveDecimal.multiply (PositiveInt.toDecimal line.Quantity) line.UnitPrice
-```
-
-`toDecimal` cannot fail — a positive `int` is a positive `decimal`. `multiply` returns a
-`Result` because `decimal` can still overflow, which is the one thing the type genuinely
-cannot promise.
-
-### Subtotal
+The numbers are plain, so the arithmetic is plain:
 
 ```fsharp
+let lineTotal (line: OrderLine) = decimal line.Quantity * line.UnitPrice
+
 let subtotal (order: Order) =
-    order.Lines
-    |> NonEmptyList.traverseResult lineTotal
-    |> Result.bind PositiveDecimal.sum
+    order.Lines |> NonEmptyList.map lineTotal |> NonEmptyList.reduce (+)
 ```
 
-`traverseResult` maps a fallible function across the lines and accumulates *every* failure
-rather than stopping at the first. It returns `NonEmptyList<PositiveDecimal>`, so `sum`
-needs no seed and no empty case — and the subtotal of positive amounts is itself positive.
+`reduce` needs no seed and no empty case — that is the invariant paying, and it pays
+without putting a `Result` between every operation.
 
 ### Discount
 
 ```fsharp
 let payable (order: Order) =
-    subtotal order
-    |> Result.map (fun total ->
-        let multiplier = UnitInterval.complement order.Discount
-        total.Value * decimal (UnitInterval.value multiplier))
+    let multiplier = UnitInterval.complement order.Discount
+    subtotal order * decimal (UnitInterval.value multiplier)
 ```
 
 `complement` is total and closed, so `multiplier` is guaranteed to be in `[0, 1]`. That is
@@ -113,23 +102,19 @@ what makes the result safe without a check: the payable amount cannot exceed the
 and cannot go negative, because there is no discount value that would allow it.
 
 The conversion to `decimal` is deliberate rather than hidden. `UnitInterval` is a double,
-money is a `decimal`, and mixing the two is a rounding decision that belongs in your code
-rather than behind an implicit widening.
-
-This is also where the invariant stops. Money leaves as a `decimal` because that is what
-the next system wants; re-admit it with `NonNegativeDecimal.create` if it must stay refined.
+money is a `decimal`, and mixing the two is a rounding decision that belongs in your code.
 
 ### Statistics
 
 ```fsharp
 let largestLine (order: Order) =
-    order.Lines |> NonEmptyList.maxBy (fun line -> line.Quantity.Value)
+    order.Lines |> NonEmptyList.maxBy (fun line -> line.Quantity)
 
 let lineCount (order: Order) =
     NonEmptyList.length order.Lines
 
 let averageUnitPrice (order: Order) =
-    let prices = order.Lines |> NonEmptyList.map (fun line -> line.UnitPrice.Value)
+    let prices = order.Lines |> NonEmptyList.map (fun line -> line.UnitPrice)
     NonEmptyList.reduce (+) prices / decimal (NonEmptyList.length prices)
 ```
 
@@ -176,12 +161,13 @@ let lineBySku (order: Order) =
     |> NonEmptyList.toList
     |> List.map (fun line -> NonBlankString.value line.Sku, line)
     |> DistinctList.create
-    |> Result.map DistinctList.toMap
+    |> Result.bind DistinctList.toMap
 ```
 
 `Map.ofList` on an ordinary list keeps only the last of each duplicate key and reports
-nothing. `DistinctList.toMap` cannot lose an entry, because the type it consumes cannot
-contain one to lose.
+nothing. `DistinctList.toMap` returns a `Result` instead: distinctness holds over whole
+pairs rather than over keys, so it checks the keys and tells you about a collision rather
+than losing an entry.
 
 ## What the invariants removed
 
@@ -189,10 +175,9 @@ contain one to lose.
 |---|---|
 | `NonEmptyList` has a first item | no `tryHead`, no option from `max`/`reduce` |
 | `NonEmptyList` has a positive length | no divide-by-zero on an average |
-| `PositiveInt`, `PositiveDecimal` | no "is this above zero" guard before widening |
 | `UnitInterval` is in `[0, 1]` | no clamping the multiplier before applying it |
 | `Interval` has `Lower <= Upper` | no "did they send these backwards" check |
-| `DistinctList` has no duplicates | no silent key collision building a map |
+| `DistinctList` has no duplicates | no silent collapse building a set; a reported failure building a map |
 
 None of these is a claim about construction. Each is a claim about every line of code
 downstream.

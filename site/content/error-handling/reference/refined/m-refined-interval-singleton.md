@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.singleton"
 linkTitle: "singleton"
-weight: 2404
+weight: 2307
 type: docs
 ---
 
@@ -26,4 +26,4 @@ Builds the interval containing exactly one value. Total.
 | <code><span><a href="types/t-refined-interval.md">Interval</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L41-41)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L48-48)

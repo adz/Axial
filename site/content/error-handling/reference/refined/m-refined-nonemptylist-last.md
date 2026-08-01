@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.last"
 linkTitle: "last"
-weight: 2816
+weight: 2710
 type: docs
 ---
 

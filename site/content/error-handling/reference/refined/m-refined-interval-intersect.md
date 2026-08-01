@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.intersect"
 linkTitle: "intersect"
-weight: 2406
+weight: 2309
 type: docs
 ---
 
@@ -30,4 +30,4 @@ type: docs
 | <code><span><span><a href="types/t-refined-interval.md">Interval</a>&lt;'value&gt;</span>&#32;option</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L97-97)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L109-109)

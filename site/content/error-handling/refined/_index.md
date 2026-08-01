@@ -47,10 +47,10 @@ open Axial.Refined
 Every built-in type has a constructor returning `Result<'refined, CheckFailure list>`:
 
 ```fsharp
-let quantity : Result<PositiveInt, CheckFailure list> = Refine.positiveInt 3
+let name : Result<NonBlankString, CheckFailure list> = Refine.nonBlankString "Ada"
 let lines : Result<NonEmptyList<string>, CheckFailure list> = Refine.nonEmptyList [ "a"; "b" ]
 
-Refine.positiveInt 0        // Error [ OutOfRange (GreaterThan "0", Some "0") ]
+Refine.nonBlankString "  "  // Error [ Blank ]
 Refine.nonEmptyList []      // Error [ InvalidLength (MinimumLength 1, Some 0) ]
 ```
 
@@ -82,21 +82,24 @@ let averageLine (lines: NonEmptyList<OrderLine>) =
 
 [Order Totals](./tutorials/order-totals/) works this through on a realistic domain.
 
-## Arithmetic is honest about overflow
+## There are no refined numbers
 
-Refined numbers are **not** closed under arithmetic, and the API says so. F# integer
-arithmetic is unchecked, so `Int32.MaxValue + 1` is negative — an addition returning
-`PositiveInt` would hand back a value breaking its own invariant. Each numeric module
-offers both forms:
+F# cannot propagate an invariant through arithmetic the way a refinement-typed language
+can, so a `PositiveInt` would have to re-establish "greater than zero" at every step. With
+unchecked integer arithmetic — `Int32.MaxValue + 1` is negative — that means returning
+`Result` from addition, and a `Result` per arithmetic step is bulk that hides mistakes
+rather than catching them.
+
+Numeric ranges are constraints instead:
 
 ```fsharp
-PositiveInt.add a b            // Result — reports overflow
-PositiveInt.saturatingAdd a b  // total — clamps at maxValue
-PositiveInt.min a b            // total, always
+field "quantity" _.Quantity { constrain (Constraint.greaterThan 0) }
 ```
 
-The same honesty applies to `FiniteFloat`, which is worth using for lawful ordering
-(`NaN` breaks sorting and `Map` keys) rather than for safe arithmetic.
+`FiniteFloat` is the exception that proves the rule: it is worth having because `NaN` and
+infinity silently destroy an **aggregate** — `List.average [ 12.5; 3.0; nan; 8.25 ]` is
+`NaN` — not because of arithmetic or ordering. See
+[the catalogue](./catalog/#floating-point).
 
 ## Define your own
 

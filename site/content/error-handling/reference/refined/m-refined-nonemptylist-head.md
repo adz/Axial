@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.head"
 linkTitle: "head"
-weight: 2815
+weight: 2709
 type: docs
 ---
 

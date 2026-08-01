@@ -24,15 +24,17 @@ receives it. Ask what becomes total, or what branch disappears:
 |---|---|
 | `CustomerId` — a positive account number | **Type.** Lookup, ordering, and equality all rely on it, and an id of `0` is a bug you want to catch once. |
 | `EmailAddress` — matches an email pattern | **Constraint.** Nothing downstream is total because of it; you unwrap it to send mail. |
-| `ShippingWeight` — positive, with arithmetic | **Type.** Addition and comparison are meaningful and the sign matters. |
+| `ShippingWeight` — positive, and summed across a parcel | **Constraint.** The moment you add two of them, F# cannot carry "positive" through, so the type turns every sum into a `Result`. |
 | `NormalisedName` — trimmed and lower-cased | **Neither.** That is a transformation, so it belongs in [Parse]({{< relref "/error-handling/parse/" >}}). |
 
-Only the first and third change what later code can assume. The second is real validation
-with no downstream consequence, so it stays a constraint on a `string`:
+Only the first changes what later code can assume. The second is real validation with no
+downstream consequence; the third is validation that arithmetic immediately undoes. Both
+stay constraints on the underlying value:
 
 ```fsharp
 field "email" _.Email {
-    withSchema (Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.email ])
+    constrain Constraint.present
+    constrain Constraint.email
 }
 ```
 
@@ -94,8 +96,9 @@ module CustomerId =
 ```
 
 Both work because the invariant is a fact about the value, not about the moment of
-construction. If you cannot write an operation like these, that is good evidence the
-concept should be a constraint instead.
+construction — and neither involves arithmetic, which is where F# stops being able to
+carry the invariant for you. If you cannot write an operation like these, that is good
+evidence the concept should be a constraint instead.
 
 ## Use it in domain code
 

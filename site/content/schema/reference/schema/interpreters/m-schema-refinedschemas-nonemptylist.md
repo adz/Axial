@@ -1,7 +1,7 @@
 ---
 title: "Schema.RefinedSchemas.nonEmptyList"
 linkTitle: "nonEmptyList"
-weight: 2312
+weight: 2303
 type: docs
 ---
 
@@ -26,4 +26,4 @@ type: docs
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L29-29)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L20-20)

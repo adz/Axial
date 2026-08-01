@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.clamp"
 linkTitle: "clamp"
-weight: 2408
+weight: 2311
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Restricts a value to the interval's bounds. Total.
 | <code>'value</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L130-130)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L142-142)

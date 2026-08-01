@@ -1,7 +1,7 @@
 ---
 title: "Refined.UnitInterval"
 linkTitle: "UnitInterval"
-weight: 1012
+weight: 1003
 type: docs
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Schema.RefinedSchemas.interval"
 linkTitle: "interval"
-weight: 2315
+weight: 2306
 type: docs
 ---
 
@@ -30,4 +30,4 @@ type: docs
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-interval.md">Interval</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L45-45)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L36-36)

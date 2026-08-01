@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.map"
 linkTitle: "map"
-weight: 2814
+weight: 2708
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Applies a mapping to every item. Non-emptiness is preserved.
 | <code><span><a href="types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L149-149)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L150-150)

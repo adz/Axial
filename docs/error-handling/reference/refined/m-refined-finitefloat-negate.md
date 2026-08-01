@@ -25,4 +25,4 @@ Negates the value. Total — negation cannot leave the finite range.
 | <code><a href="types/t-refined-finitefloat.md">FiniteFloat</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Finite.fs#L141-141)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Finite.fs#L145-145)

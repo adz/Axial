@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.overlaps"
 linkTitle: "overlaps"
-weight: 2407
+weight: 2310
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Returns whether the two intervals share at least one value.
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L88-88)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L100-100)

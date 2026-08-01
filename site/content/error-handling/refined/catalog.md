@@ -23,12 +23,10 @@ open Axial.Refined
 | `NonEmptyList<'T>`, `NonEmptyArray<'T>` | `map`, `append`, `rev`, `sort`, `distinct` | `head`, `last`, `reduce`, `min`, `max` |
 | `Interval<'T>` | `between`, `span`, `clamp`, `mapMonotonic` | `contains`, `clamp` |
 | `Bounded<'T>` | `clamp`, `map` (re-clamps) | `clamp` |
-| `PositiveInt`, `NonNegativeInt`, … | `min`, `max`, saturating `+`/`*` | — |
-| `NonZeroInt`, … | `negate` | removes divide-by-zero |
-| `UnitInterval` | `*`, `complement`, `lerp`, `min`, `max` | `clamp` |
-| `FiniteFloat` | `negate`, `abs` | `compare`, sorting, `Map` keys |
-| `DistinctList<'T>` | `add`, `remove`, `union`, `intersect` | `toMap`, `toSet` |
 | `NonBlankString` | `append`, `trim`, `toUpper`, `toLower` | `split` |
+| `UnitInterval` | `*`, `complement`, `lerp`, `min`, `max` | `clamp` |
+| `FiniteFloat`, `FiniteFloat32` | `negate`, `abs` | aggregates that cannot be silently poisoned |
+| `DistinctList<'T>` | `add`, `remove`, `union`, `intersect` | `toSet` |
 
 ## Collections
 
@@ -54,9 +52,13 @@ accumulates every failure rather than stopping at the first.
 representation would forfeit contiguous storage and indexed access, which are the reasons
 to choose an array; the total `head`/`last`/`reduce`/`max` still apply.
 
-`DistinctList` exists for one operation: converting to a map or set without silently
-losing entries. `Map.ofList` on a plain list quietly keeps only the last of each duplicate
-key — `DistinctList.toMap` cannot.
+`DistinctList` exists for `toSet`: distinct items always produce a set of the same size,
+where `Set.ofList` on an ordinary list silently collapses duplicates.
+
+`toMap` and `toMapBy` return a `Result`, because distinctness holds over whole items
+rather than over keys — `[ 1, "a"; 1, "b" ]` is a legitimate `DistinctList` whose entries
+would collide. They report the collision instead of dropping an entry the way `Map.ofList`
+does.
 
 ## Intervals and bounds
 
@@ -88,39 +90,69 @@ choice, not a second type — every `Interval` operation applies unchanged.
 run time, so `Bounded.clamp` is total and `Bounded.map` re-clamps — a mapping cannot break
 the invariant.
 
-## Numeric
+## Why there are no refined numbers
 
-**These types are not closed under arithmetic, and the API reflects that.** F# integer
-arithmetic is unchecked: `Int32.MaxValue + 1` is negative. An addition returning
-`PositiveInt` would hand back a value violating its own invariant, so each module offers
-two forms:
+There is no `PositiveInt`, `NonNegativeDecimal`, or `NonZeroInt` here, and that is
+deliberate.
+
+F# cannot propagate an invariant through arithmetic. A language with refinement types
+infers that `a + b` is positive when `a` and `b` are; F# cannot, so every step has to
+re-establish the fact by hand. Since integer arithmetic is unchecked —
+`Int32.MaxValue + 1` is negative — an addition returning `PositiveInt` would be unsound,
+which leaves returning `Result`:
 
 ```fsharp
-PositiveInt.add a b            // Result — reports overflow
-PositiveInt.saturatingAdd a b  // total — clamps at maxValue
-PositiveInt.min a b            // total, always
+// what a refined numeric type costs for ((2 + 3) * 4) + 1
+PositiveInt.add a b
+|> Result.bind (fun s -> PositiveInt.multiply s c)
+|> Result.bind (fun m -> PositiveInt.add m d)
 ```
 
-Available: `PositiveInt`, `NonNegativeInt`, `NonZeroInt`, and their `Int64` and `Decimal`
-counterparts. Widening is total and needs no revalidation —
-`PositiveInt.toNonNegative`, `PositiveInt.toNonZero`.
+Nobody writes that. They unwrap, compute, and re-admit — so the type adds bulk at every
+use site and buys nothing in return, which is more likely to hide an arithmetic mistake
+than to catch one.
 
-`NonZero` is justified by branch removal: `DivideByZeroException` becomes unreachable, so
-consumers stop guarding for it. Overflow is still possible (`Int32.MinValue / -1`), so
-`divide` returns a `Result` and `saturatingDivide` is total.
+Numeric ranges are therefore constraints:
+
+```fsharp
+field "quantity" _.Quantity { constrain (Constraint.greaterThan 0) }
+```
+
+If you want a nominal type for a numeric identifier — where the point is identity rather
+than arithmetic — define one over the same constraint. `Refinement` is public, and
+[Customer Id](../tutorials/customer-id/) works it through.
 
 ## Floating point
 
-`FiniteFloat` excludes `NaN` and the infinities. Its value is **lawful ordering**, not safe
-arithmetic: `NaN` compares false against every value including itself, which silently
-corrupts sorting and makes `float` unusable as a `Map` key.
+`FiniteFloat` excludes `NaN` and the infinities. Its value is that **aggregation means
+something**: one bad reading destroys a whole aggregate, silently.
 
 ```fsharp
-List.sort finiteValues        // total and order-independent
-Map [ finiteKey, value ]      // no silent collisions
-FiniteFloat.negate value      // closed
-FiniteFloat.add a b           // Result — two finite doubles can reach infinity
+List.sum     [ 12.5; 3.0; nan; 8.25 ]   // NaN
+List.average [ 12.5; 3.0; nan; 8.25 ]   // NaN
 ```
+
+No exception, no obviously wrong number — just a dashboard that reads `NaN` some time
+later. Admitting through `FiniteFloat` localises that to the one bad reading at the
+boundary. Infinity poisons `sum` and `average` identically, which is why the type excludes
+both rather than only `NaN`.
+
+`NaN` also makes `List.contains` and `List.distinct` wrong, since both use IEEE equality
+under which `NaN` is not equal to itself.
+
+```fsharp
+FiniteFloat.negate value      // closed
+FiniteFloat.average values    // one Result at the end, not one per step
+```
+
+**It is not needed for sorting or for `Map`, `Set` and `Dictionary` keys.** F# generic
+comparison already orders `NaN` consistently — `compare nan nan` is `0`, and `NaN` sorts
+first — so those work on plain `float`. What stays broken is a comparison hand-written
+with `<` and `>`: it reports `NaN` equal to every value, which is intransitive and makes
+`sortWith` return unsorted output without raising.
+
+For the same reason there are no refined numbers, it offers no pairwise arithmetic:
+unwrap with `value`, compute in plain `float`, and re-admit once.
 
 `UnitInterval` holds a proportion in `[0, 1]`. It is the only type here closed under
 multiplication, which is the reason to reach for it:
@@ -129,11 +161,19 @@ multiplication, which is the reason to reach for it:
 UnitInterval.multiply a b         // total and closed
 UnitInterval.complement a         // total
 UnitInterval.lerp low high a      // total, always lands between the endpoints
+UnitInterval.inverseLerp low high v // the inverse: where v sits, clamped
 UnitInterval.saturatingAdd a b    // not closed under +, so this clamps
 ```
 
 `complement` is an involution only up to floating-point rounding — exact for dyadic values,
 approximate otherwise.
+
+`FiniteFloat32` carries the same guarantee for single precision. It has no canonical wire
+schema, because JSON has no single-precision number — widen with `toFiniteFloat` at a
+boundary.
+
+`Bounded<'T>` gets its schema from `RefinedSchemas.bounded bounds itemSchema`: the bounds
+belong to the field rather than to each value, so they are supplied once.
 
 ## Text
 
@@ -153,14 +193,16 @@ Express them as constraints on a primitive instead — the metadata reaching int
 identical:
 
 ```fsharp
-field "displayName" _.DisplayName {
-    withSchema (Schema.text |> Schema.constrain Constraint.trimmed)
-}
+field "displayName" _.DisplayName { constrain Constraint.trimmed }
 
 field "slug" _.Slug {
-    withSchema (Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.pattern slugPattern ])
+    constrain Constraint.present
+    constrain (Constraint.pattern slugPattern)
 }
 ```
+
+The field's schema is inferred from its type, so a constraint needs no `withSchema`, and
+each constraint can sit on its own line.
 
 If you do want a nominal type in your own domain, the machinery is still here — see
 [Define Refined Types](../domain-values/).

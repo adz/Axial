@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.reduce"
 linkTitle: "reduce"
-weight: 2817
+weight: 2711
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Combines every item with an associative operation. Total — no seed required.
 | <code>'value</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L227-227)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L237-237)

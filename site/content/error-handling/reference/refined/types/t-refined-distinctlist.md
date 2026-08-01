@@ -1,7 +1,7 @@
 ---
 title: "Refined.DistinctList"
 linkTitle: "DistinctList<value>"
-weight: 1015
+weight: 1006
 type: docs
 ---
 

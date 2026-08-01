@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.create"
 linkTitle: "create"
-weight: 2401
+weight: 2301
 type: docs
 ---
 
@@ -32,4 +32,4 @@ type: docs
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="types/t-refined-interval.md">Interval</a>&lt;'value&gt;</span>,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L59-59)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L71-71)

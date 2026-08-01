@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.constraints"
 linkTitle: "constraints"
-weight: 2706
+weight: 2606
 type: docs
 ---
 

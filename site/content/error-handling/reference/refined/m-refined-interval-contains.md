@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.contains"
 linkTitle: "contains"
-weight: 2405
+weight: 2308
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Returns whether the value lies within the inclusive bounds.
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L80-80)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L92-92)

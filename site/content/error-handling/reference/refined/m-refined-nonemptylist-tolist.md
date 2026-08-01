@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.toList"
 linkTitle: "toList"
-weight: 2811
+weight: 2705
 type: docs
 ---
 

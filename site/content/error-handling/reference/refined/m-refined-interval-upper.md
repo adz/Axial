@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.upper"
 linkTitle: "upper"
-weight: 2403
+weight: 2303
 type: docs
 ---
 
@@ -26,4 +26,4 @@ Returns the inclusive upper bound.
 | <code>'value</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L69-69)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L81-81)

@@ -1,7 +1,7 @@
 ---
 title: "Schema.RefinedSchemas.dateRange"
 linkTitle: "dateRange"
-weight: 2316
+weight: 2307
 type: docs
 ---
 
@@ -25,4 +25,4 @@ type: docs
 | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="/reference/Axial/axial-refined-daterange.html">DateRange</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L58-58)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L56-56)

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.define"
 linkTitle: "define"
-weight: 2701
+weight: 2601
 type: docs
 ---
 

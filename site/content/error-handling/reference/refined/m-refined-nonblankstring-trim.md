@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonBlankString.trim"
 linkTitle: "trim"
-weight: 2803
+weight: 2703
 type: docs
 ---
 

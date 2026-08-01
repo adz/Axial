@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval"
 linkTitle: "Interval<value>"
-weight: 1016
+weight: 1007
 type: docs
 ---
 
@@ -38,6 +38,13 @@ An inclusive range of ordered values where <code>Lower &lt;= Upper</code>.
  better as <code>start</code>/<code>end</code> choose those field names at the schema, which is
  independent of these members — see <code>RefinedSchemas.dateRange</code>.
 
+ The invariant assumes the value type is <em>totally</em> ordered. <code>float</code> and
+ <code>float32</code> are not: <code>NaN</code> compares false against everything, so
+ <code>between nan x</code> cannot order its arguments and yields an interval whose bounds are
+ inverted. Use <code>Interval&lt;FiniteFloat&gt;</code>, which excludes <code>NaN</code> by
+ construction, or <code>create</code>, which rejects the pair. This is the same defect
+ <a href="t-refined-finitefloat.md">FiniteFloat</a> exists to remove.
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L16-16)
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L23-23)

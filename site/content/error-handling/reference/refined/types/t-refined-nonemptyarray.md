@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyArray"
 linkTitle: "NonEmptyArray<value>"
-weight: 1014
+weight: 1005
 type: docs
 ---
 

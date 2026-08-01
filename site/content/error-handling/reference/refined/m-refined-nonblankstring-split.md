@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonBlankString.split"
 linkTitle: "split"
-weight: 2804
+weight: 2704
 type: docs
 ---
 
@@ -28,4 +28,4 @@ type: docs
 | <code><span><a href="types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;<a href="types/t-refined-nonblankstring.md">NonBlankString</a>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L86-86)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L87-87)

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isLowercase"
 linkTitle: "isLowercase"
-weight: 2502
+weight: 2402
 type: docs
 ---
 
@@ -26,4 +26,4 @@ type: docs
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L100-100)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L101-101)

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement"
 linkTitle: "Refinement<underlying, refined>"
-weight: 1700
+weight: 1600
 type: docs
 ---
 

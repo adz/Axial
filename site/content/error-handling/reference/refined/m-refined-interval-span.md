@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.span"
 linkTitle: "span"
-weight: 2409
+weight: 2312
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Returns the smallest interval containing both inputs, gap included. Total.
 | <code><span><a href="types/t-refined-interval.md">Interval</a>&lt;'value&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L115-115)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L127-127)

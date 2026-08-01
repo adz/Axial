@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.cons"
 linkTitle: "cons"
-weight: 2813
+weight: 2707
 type: docs
 ---
 

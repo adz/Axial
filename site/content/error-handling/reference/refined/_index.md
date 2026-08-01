@@ -9,15 +9,6 @@ type: docs
 ## Refined types
 
 - [`Refined.NonBlankString`](./types/t-refined-nonblankstring.md): A string that is not null, empty, or whitespace.
-- [`Refined.PositiveInt`](./types/t-refined-positiveint.md): An integer greater than zero.
-- [`Refined.NonNegativeInt`](./types/t-refined-nonnegativeint.md): An integer greater than or equal to zero.
-- [`Refined.NonZeroInt`](./types/t-refined-nonzeroint.md): An integer that is not zero.
-- [`Refined.PositiveInt64`](./types/t-refined-positiveint64.md): A 64-bit integer greater than zero.
-- [`Refined.NonNegativeInt64`](./types/t-refined-nonnegativeint64.md): A 64-bit integer greater than or equal to zero.
-- [`Refined.NonZeroInt64`](./types/t-refined-nonzeroint64.md): A 64-bit integer that is not zero.
-- [`Refined.PositiveDecimal`](./types/t-refined-positivedecimal.md): A decimal greater than zero.
-- [`Refined.NonNegativeDecimal`](./types/t-refined-nonnegativedecimal.md): A decimal greater than or equal to zero.
-- [`Refined.NonZeroDecimal`](./types/t-refined-nonzerodecimal.md): A decimal that is not zero.
 - [`Refined.FiniteFloat`](./types/t-refined-finitefloat.md): A double-precision float that is neither infinite nor <code>NaN</code>.
 - [`Refined.FiniteFloat32`](./types/t-refined-finitefloat32.md): A single-precision float that is neither infinite nor <code>NaN</code>.
 - [`Refined.UnitInterval`](./types/t-refined-unitinterval.md): A finite double between zero and one inclusive.
@@ -31,18 +22,6 @@ type: docs
 
 - [`Refined.Text.nonBlankString`](./text/m-refined-text-nonblankstring.md):
 
-## Numeric
-
-- [`Refined.Numeric.positiveInt`](./numeric/m-refined-numeric-positiveint.md):
-- [`Refined.Numeric.nonNegativeInt`](./numeric/m-refined-numeric-nonnegativeint.md):
-- [`Refined.Numeric.nonZeroInt`](./numeric/m-refined-numeric-nonzeroint.md):
-- [`Refined.Numeric.positiveInt64`](./numeric/m-refined-numeric-positiveint64.md):
-- [`Refined.Numeric.nonNegativeInt64`](./numeric/m-refined-numeric-nonnegativeint64.md):
-- [`Refined.Numeric.nonZeroInt64`](./numeric/m-refined-numeric-nonzeroint64.md):
-- [`Refined.Numeric.positiveDecimal`](./numeric/m-refined-numeric-positivedecimal.md):
-- [`Refined.Numeric.nonNegativeDecimal`](./numeric/m-refined-numeric-nonnegativedecimal.md):
-- [`Refined.Numeric.nonZeroDecimal`](./numeric/m-refined-numeric-nonzerodecimal.md):
-
 ## Collection
 
 - [`Refined.Collection.nonEmptyList`](./collection/m-refined-collection-nonemptylist.md):
@@ -51,8 +30,10 @@ type: docs
 
 ## Interval
 
-- [`Refined.Interval.between`](./m-refined-interval-between.md):  Builds the smallest interval containing both values, ordering them as needed.
+- [`Refined.Interval.between`](./m-refined-interval-between.md):
+ Builds the smallest interval containing both values, ordering them as needed.
  Total — this is the constructor to reach for first.
+
 - [`Refined.Interval.create`](./m-refined-interval-create.md):
  Builds an interval from a pair the caller asserts is already ordered, failing when
  it is not. Use this at a boundary, where an inverted pair is a caller error worth
@@ -61,6 +42,12 @@ type: docs
 
 - [`Refined.Interval.lower`](./m-refined-interval-lower.md): Returns the inclusive lower bound.
 - [`Refined.Interval.upper`](./m-refined-interval-upper.md): Returns the inclusive upper bound.
+- [`Refined.Interval.duration`](./m-refined-interval-duration.md): Returns how long an interval of instants lasts. Total and non-negative.
+- [`Refined.Interval.widthInt`](./m-refined-interval-widthint.md):
+ Returns the distance between the bounds. Total, and widened to 64 bits because the
+ width of <code>Int32.MinValue .. Int32.MaxValue</code> does not fit an <code>int</code>.
+
+- [`Refined.Interval.widthDecimal`](./m-refined-interval-widthdecimal.md): Returns the distance between the bounds. Never negative.
 - [`Refined.Interval.singleton`](./m-refined-interval-singleton.md): Builds the interval containing exactly one value. Total.
 - [`Refined.Interval.contains`](./m-refined-interval-contains.md): Returns whether the value lies within the inclusive bounds.
 - [`Refined.Interval.intersect`](./m-refined-interval-intersect.md):
@@ -104,15 +91,6 @@ type: docs
 - [`Refined.NonBlankString.trim`](./m-refined-nonblankstring-trim.md): Trims surrounding whitespace. Total — trimming inhabited text leaves it inhabited.
 - [`Refined.NonBlankString.split`](./m-refined-nonblankstring-split.md):  Splits on a separator, discarding blank segments. Returns a non-empty list because
  inhabited text always yields at least one inhabited segment.
-- [`Refined.PositiveInt.value`](./m-refined-positiveint-value.md): Returns the underlying integer value.
-- [`Refined.PositiveInt.create`](./m-refined-positiveint-create.md): Admits a positive integer.
-- [`Refined.PositiveInt.add`](./m-refined-positiveint-add.md): Adds exactly, reporting overflow rather than wrapping to a negative value.
-- [`Refined.PositiveInt.saturatingAdd`](./m-refined-positiveint-saturatingadd.md): Adds, clamping at the largest representable value. Total.
-- [`Refined.PositiveInt.toNonNegative`](./m-refined-positiveint-tononnegative.md): Widens to a value that also admits zero. Total.
-- [`Refined.NonZeroInt.divide`](./m-refined-nonzeroint-divide.md):
- Divides by a divisor that cannot be zero, so division by zero is unreachable.
- Still reports overflow, which occurs only for <code>Int32.MinValue / -1</code>.
-
 - [`Refined.NonEmptyList.toList`](./m-refined-nonemptylist-tolist.md): Returns the refined value as a standard list.
 - [`Refined.NonEmptyList.create`](./m-refined-nonemptylist-create.md): Admits a non-empty list, reporting the same failure the refinement does.
 - [`Refined.NonEmptyList.cons`](./m-refined-nonemptylist-cons.md): Prepends an item to a standard list.
@@ -122,15 +100,40 @@ type: docs
 - [`Refined.NonEmptyList.reduce`](./m-refined-nonemptylist-reduce.md): Combines every item with an associative operation. Total — no seed required.
 - [`Refined.NonEmptyList.traverseResult`](./m-refined-nonemptylist-traverseresult.md):  Applies a fallible mapping to every item, accumulating every failure rather than
  stopping at the first.
+- [`Check.Seq.count`](./m-refined-nonemptylist-count.md): Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.
+- [`Refined.NonEmptyList.groupBy`](./m-refined-nonemptylist-groupby.md):  Groups items by a key. Every group is non-empty by construction — a group only
+ exists because something fell into it — so the values keep their type rather than
+ degrading to a list the caller has to re-check.
+- [`Refined.NonEmptyList.chunkBySize`](./m-refined-nonemptylist-chunkbysize.md):
+ Splits into consecutive runs of the given size. Total: a size below one is treated
+ as one, where <code>List.chunkBySize</code> raises, and both the outer list and every
+ chunk stay non-empty.
+
+- [`Refined.NonEmptyList.zip`](./m-refined-nonemptylist-zip.md):
+ Pairs items positionally, truncating to the shorter input. Total — unlike
+ <code>List.zip</code>, which raises when the lengths differ.
+
 - [`Refined.NonEmptyList.filter`](./m-refined-nonemptylist-filter.md): Filters the items, returning a standard list because emptiness is possible.
 - [`Refined.NonEmptyList.tryFilter`](./m-refined-nonemptylist-tryfilter.md): Filters the items, returning <code>None</code> when nothing survives.
-- [`Refined.DistinctList.toMap`](./m-refined-distinctlist-tomap.md): Builds a map from a distinct list of pairs. Total and lossless.
+- [`Refined.DistinctList.toMap`](./m-refined-distinctlist-tomap.md):
+ Builds a map from a distinct list of pairs, failing when two pairs share a key.
+
+- [`Refined.DistinctList.toSet`](./m-refined-distinctlist-toset.md):
+ Builds a set. Total and lossless — this is the operation that justifies the type,
+ because distinct items always produce a set of the same size, while
+ <code>Set.ofList</code> on an ordinary list silently collapses duplicates.
+
 - [`Refined.UnitInterval.multiply`](./m-refined-unitinterval-multiply.md):  Multiplies two proportions. Total and closed — this is the operation the type
  exists for, and the only closed multiplication in the package.
 - [`Refined.UnitInterval.complement`](./m-refined-unitinterval-complement.md): Returns the distance to one. Total and closed.
 - [`Refined.UnitInterval.lerp`](./m-refined-unitinterval-lerp.md):
  Interpolates between two values by this proportion. Total, and guaranteed to stay
  within the two endpoints because the proportion cannot leave <code>[0, 1]</code>.
+
+- [`Refined.UnitInterval.inverseLerp`](./m-refined-unitinterval-inverselerp.md):
+ Returns the proportion a value sits at between two bounds — the inverse of
+ <code>lerp</code>. Clamped into range, so it is total. Degenerate bounds, where the two
+ are equal, give zero rather than dividing by it.
 
 - [`Refined.FiniteFloat.create`](./m-refined-finitefloat-create.md): Admits a finite double, rejecting infinities and <code>NaN</code>.
 - [`Refined.FiniteFloat.negate`](./m-refined-finitefloat-negate.md): Negates the value. Total — negation cannot leave the finite range.
@@ -142,15 +145,6 @@ type: docs
 ## Refine facade
 
 - [`Refined.Refine.nonBlankString`](./refine/m-refined-refine-nonblankstring.md):
-- [`Refined.Refine.positiveInt`](./refine/m-refined-refine-positiveint.md):
-- [`Refined.Refine.nonNegativeInt`](./refine/m-refined-refine-nonnegativeint.md):
-- [`Refined.Refine.nonZeroInt`](./refine/m-refined-refine-nonzeroint.md):
-- [`Refined.Refine.positiveInt64`](./refine/m-refined-refine-positiveint64.md):
-- [`Refined.Refine.nonNegativeInt64`](./refine/m-refined-refine-nonnegativeint64.md):
-- [`Refined.Refine.nonZeroInt64`](./refine/m-refined-refine-nonzeroint64.md):
-- [`Refined.Refine.positiveDecimal`](./refine/m-refined-refine-positivedecimal.md):
-- [`Refined.Refine.nonNegativeDecimal`](./refine/m-refined-refine-nonnegativedecimal.md):
-- [`Refined.Refine.nonZeroDecimal`](./refine/m-refined-refine-nonzerodecimal.md):
 - [`Refined.Refine.finiteFloat`](./refine/m-refined-refine-finitefloat.md):
 - [`Refined.Refine.unitInterval`](./refine/m-refined-refine-unitinterval.md):
 - [`Refined.Refine.interval`](./refine/m-refined-refine-interval.md):

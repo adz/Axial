@@ -89,6 +89,25 @@ The typed vocabulary in `Axial.Schema.Syntax` covers every portable schema const
 entry, so `email` cannot be applied to an `int` field. Lifted constraints such as `minLength` apply to strings,
 lists, arrays, and maps with shape-appropriate interpretation.
 
+## Constraint equivalents
+
+These are the handwritten operations emitted for derivation attributes. Use them inside a field block with
+`constrain`, except for the metadata operations shown directly:
+
+| Purpose | Schema DSL |
+| --- | --- |
+| Pattern | `constrain (pattern expression)` |
+| Minimum, maximum, exact, or bounded natural length | `constrain (minLength n)`, `maxLength`, `length`, `lengthBetween` |
+| Present value or supplied input key | `constrain present`, `constrain supplied` |
+| Inclusive/exclusive numeric bounds | `constrain (atLeast n)`, `greaterThan`, `atMost`, `lessThan` |
+| Numeric multiple | `constrain (multipleOf n)` |
+| Distinct list elements | `constrain distinct` |
+| Email text | `constrain email` |
+| Open format metadata | `format (SchemaFormat.create name)` |
+| Omitted-input default | `defaultValue value` |
+
+See [Derivation Attributes](../derivation/attributes/) for the complete attribute mapping.
+
 ## Refinement changes the stage
 
 ```fsharp

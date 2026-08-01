@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.tryFilter"
 linkTitle: "tryFilter"
-weight: 2820
+weight: 2718
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Filters the items, returning <code>None</code> when nothing survives.
 | <code><span><span><a href="types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'a&gt;</span>&#32;option</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L264-264)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L274-274)

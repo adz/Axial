@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonBlankString.append"
 linkTitle: "append"
-weight: 2802
+weight: 2702
 type: docs
 ---
 

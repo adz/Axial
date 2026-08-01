@@ -17,7 +17,7 @@ let contactSchema =
 ```
 
 This is the form to prefer at use sites. Every built-in refined type from
-[Axial.Refined]({{< relref "/error-handling/refined/" >}}) works this way — `NonBlankString`, `PositiveInt`,
+[Axial.Refined]({{< relref "/error-handling/refined/" >}}) works this way — `NonBlankString`,
 `FiniteFloat`, `UnitInterval`, `NonEmptyList<_>`, and the rest resolve without a `withSchema`, as
 [Getting Started](../getting-started/) shows.
 
@@ -26,7 +26,8 @@ the field, because the bounds are a property of *this* field rather than of the 
 
 ```fsharp
 field "name" _.Name {
-    withSchema (Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.lengthBetween 2 80 ])
+    constrain Constraint.present
+    constrain (Constraint.lengthBetween 2 80)
 }
 ```
 

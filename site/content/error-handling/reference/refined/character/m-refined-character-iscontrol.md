@@ -1,7 +1,7 @@
 ---
 title: "Refined.Character.isControl"
 linkTitle: "isControl"
-weight: 2505
+weight: 2405
 type: docs
 ---
 
@@ -26,4 +26,4 @@ type: docs
 | <code>bool</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L103-103)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refine.fs#L104-104)

@@ -1,7 +1,7 @@
 ---
 title: "Refined.Interval.lower"
 linkTitle: "lower"
-weight: 2402
+weight: 2302
 type: docs
 ---
 
@@ -26,4 +26,4 @@ Returns the inclusive lower bound.
 | <code>'value</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L66-66)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Interval.fs#L78-78)

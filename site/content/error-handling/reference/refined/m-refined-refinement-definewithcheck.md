@@ -1,7 +1,7 @@
 ---
 title: "Refined.Refinement.defineWithCheck"
 linkTitle: "defineWithCheck"
-weight: 2703
+weight: 2603
 type: docs
 ---
 

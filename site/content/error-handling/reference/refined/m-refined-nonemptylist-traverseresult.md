@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.traverseResult"
 linkTitle: "traverseResult"
-weight: 2818
+weight: 2712
 type: docs
 ---
 
@@ -28,4 +28,4 @@ type: docs
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="types/t-refined-nonemptylist.md">NonEmptyList</a>&lt;'result&gt;</span>,&#32;<span>'failure&#32;list</span></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L290-290)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L322-322)

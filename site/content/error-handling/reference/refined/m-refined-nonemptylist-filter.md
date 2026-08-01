@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.filter"
 linkTitle: "filter"
-weight: 2819
+weight: 2717
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Filters the items, returning a standard list because emptiness is possible.
 | <code><span>'value&#32;list</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L261-261)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/NonEmpty.fs#L271-271)
