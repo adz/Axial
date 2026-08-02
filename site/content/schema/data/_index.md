@@ -45,7 +45,7 @@ let baseline =
 let request =
     baseline
     |> Data.patch [
-        set "plan" "pro"
+        replace "plan" "pro"
         append "roles" "admin"
     ]
 ```
@@ -54,7 +54,7 @@ let request =
 
 ```fsharp
 Data.render request
-// => "{\"name\":\"Ada\",\"plan\":\"pro\",\"address\":{\"city\":\"Adelaide\",\"postcode\":5000},\"roles\":[\"author\",\"admin\"]}"
+// => "{ name: \"Ada\", plan: \"pro\", address: { city: \"Adelaide\", postcode: 5000 }, roles: [\"author\", \"admin\"] }"
 ```
 
 Now check only the parts of the result that matter:
@@ -94,7 +94,7 @@ let nickname : string option = None
 let person = data [ "nickname" ?=> nickname; "deletedAt" => nil ]
 
 Data.render person
-// => "{\"deletedAt\":null}"
+// => "{ deletedAt: null }"
 ```
 
 ## Learn and solve tasks

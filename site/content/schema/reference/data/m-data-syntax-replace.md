@@ -1,16 +1,16 @@
 ---
-title: "Data.Syntax.put"
-linkTitle: "put"
+title: "Data.Syntax.replace"
+linkTitle: "replace"
 weight: 2322
 type: docs
 ---
 
-Replaces a final value or appends a missing final object field.
+Replaces an existing value.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.Syntax.put&#32;<span>path&#32;value</span></span></code>
+<code><span>Data.Syntax.replace&#32;<span>path&#32;value</span></span></code>
 </div>
 
 ## Parameters
@@ -27,4 +27,4 @@ Replaces a final value or appends a missing final object field.
 | <code><a href="t-dataedit.md">DataEdit</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L698-698)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L271-271)

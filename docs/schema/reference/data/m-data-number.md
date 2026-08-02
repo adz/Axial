@@ -26,9 +26,9 @@ Constructs a number from one JSON number token, validated identically on .NET an
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Data</span><span class="pn">.</span><span class="id">number</span> <span class="s">&quot;1.2300e+4&quot;</span> <span class="c">// Data.Number &quot;1.2300e+4&quot;</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">Data</span><span class="pn">.</span><span class="id">number</span> <span class="s">&quot;1.2300e+4&quot;</span> <span class="c">// Data.Number &quot;1.2300e+4&quot;</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">namespace Microsoft.FSharp.Data</div>
+
 
 
 

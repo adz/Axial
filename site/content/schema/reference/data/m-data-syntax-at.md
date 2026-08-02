@@ -27,4 +27,4 @@ Requires a path to contain an exact value or recursive pattern.
 | <code><a href="t-dataexpectation.md">DataExpectation</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L810-810)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L383-383)

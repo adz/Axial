@@ -26,9 +26,9 @@ Attempts to extract the preserved token from one number value.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Data</span><span class="pn">.</span><span class="id">tryNumberToken</span> <span class="pn">(</span><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="2" class="id">Data</span><span class="pn">.</span><span class="id">Number</span> <span class="s">&quot;1e3&quot;</span><span class="pn">)</span> <span class="c">// Some &quot;1e3&quot;</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">Data</span><span class="pn">.</span><span class="id">tryNumberToken</span> <span class="pn">(</span><span class="id">Data</span><span class="pn">.</span><span class="id">Number</span> <span class="s">&quot;1e3&quot;</span><span class="pn">)</span> <span class="c">// Some &quot;1e3&quot;</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">namespace Microsoft.FSharp.Data</div>
+
 
 
 

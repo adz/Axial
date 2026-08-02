@@ -5,7 +5,7 @@ weight: 2303
 type: docs
 ---
 
-Describes replacing an existing value.
+Describes replacing a value, or adding a missing final object field.
 
 ## Signature
 
@@ -28,7 +28,7 @@ Describes replacing an existing value.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">DataEdit</span><span class="pn">.</span><span class="id">set</span> <span class="s">&quot;name&quot;</span> <span class="s">&quot;Grace&quot;</span> <span class="c">// one DataEdit</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">DataEdit</span><span class="pn">.</span><span class="id">set</span> <span class="s">&quot;plan&quot;</span> <span class="s">&quot;pro&quot;</span> <span class="c">// one DataEdit</span>
 </code></pre>
 
 

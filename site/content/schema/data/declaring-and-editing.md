@@ -31,7 +31,7 @@ let customer =
     ]
 
 Data.render customer
-// => "{\"name\":\"Ada\",\"active\":true,\"address\":{\"city\":\"Adelaide\",\"postcode\":5000},\"roles\":[\"author\",\"admin\"]}"
+// => "{ name: \"Ada\", active: true, address: { city: \"Adelaide\", postcode: 5000 }, roles: [\"author\", \"admin\"] }"
 ```
 
 Literal fields accept `Data`, `string`, `bool`, `int`, `int64`, `decimal`, finite `float`, `Guid`, `DateTimeOffset`,
@@ -49,7 +49,7 @@ let value =
     ]
 
 Data.render value
-// => "{\"deletedAt\":null}"
+// => "{ deletedAt: null }"
 ```
 
 ## Reuse object fields
@@ -61,17 +61,18 @@ let address = data [ "city" => "Adelaide"; "postcode" => 5000 ]
 let customer = data [ yield! fields address; "name" => "Ada" ]
 
 Data.render customer
-// => "{\"city\":\"Adelaide\",\"postcode\":5000,\"name\":\"Ada\"}"
+// => "{ city: \"Adelaide\", postcode: 5000, name: \"Ada\" }"
 ```
 
-## Render JSON
+## Render for people
 
-`Data.render` returns compact JSON. `Data.renderIndented` returns the same value with line breaks and indentation.
-Both preserve object field order, duplicate fields, and number tokens.
+`Data.render` returns a compact display with unquoted ordinary field names and quoted text. `Data.renderIndented`
+returns the same notation with line breaks and indentation. Both preserve object field order, duplicate fields, and
+number tokens. Use `Data.Json.render` when the result must be JSON.
 
 ```fsharp
 Data.renderIndented (data [ "name" => "Ada" ])
-// => "{\n  \"name\": \"Ada\"\n}"
+// => "{\n  name: \"Ada\"\n}"
 ```
 
 ## Edit without changing the original
@@ -79,7 +80,7 @@ Data.renderIndented (data [ "name" => "Ada" ])
 Use a direct `Data` operation for one change. It returns the changed tree and leaves the original unchanged.
 
 ```fsharp
-let renamed = customer |> Data.set "name" "Grace"
+let renamed = customer |> Data.replace "name" "Grace"
 
 Data.lookupPath "name" renamed
 // => Data.Text "Grace"
@@ -92,8 +93,8 @@ Every edit is available directly:
 
 | Direct operation | Result |
 | --- | --- |
-| `Data.set path value input` | Replace an existing value. |
-| `Data.put path value input` | Replace a value, or add a missing final object field. |
+| `Data.set path value input` | Replace a value, or add a missing final object field. |
+| `Data.replace path value input` | Replace an existing value; fail if it is missing. |
 | `Data.remove path input` | Remove an existing field or list item. |
 | `Data.append path value input` | Add an item to the end of a list. |
 | `Data.prepend path value input` | Add an item to the start of a list. |
@@ -103,13 +104,15 @@ Every edit is available directly:
 
 ```fsharp
 customer
-|> Data.put "plan" "pro"
+|> Data.set "plan" "pro"
 |> Data.append "roles" "admin"
 |> Data.rename "address.city" "suburb"
 |> Data.remove "active"
 ```
 
-Direct operations raise `DataPatchException` if the target does not exist or has the wrong shape.
+`Data.replace`, `remove`, `append`, `prepend`, `insert`, `rename`, and `update` require their target to exist.
+`Data.set` may add its final object field, but its parent must exist. Shape and path failures raise
+`DataPatchException`.
 
 ## Apply several edits atomically
 
@@ -119,8 +122,8 @@ Direct operations raise `DataPatchException` if the target does not exist or has
 let changed =
     customer
     |> Data.patch [
-        set "name" "Grace"
-        put "plan" "pro"
+        replace "name" "Grace"
+        set "plan" "pro"
         append "roles" "admin"
     ]
 ```
@@ -129,8 +132,8 @@ Inside `Data.patch`, use the unqualified edit constructors from `Data.Syntax`:
 
 | Operation | Result |
 | --- | --- |
-| `set path value` | Replace an existing value. |
-| `put path value` | Replace a value, or add a missing final object field. |
+| `set path value` | Replace a value, or add a missing final object field. |
+| `replace path value` | Replace an existing value; fail if it is missing. |
 | `remove path` | Remove an existing field or list item. |
 | `append path value` | Add an item to the end of a list. |
 | `prepend path value` | Add an item to the start of a list. |
@@ -138,8 +141,8 @@ Inside `Data.patch`, use the unqualified edit constructors from `Data.Syntax`:
 | `rename path newName` | Rename an object field without moving it. |
 | `update path function` | Replace a value with the function result. |
 
-Every operation except a missing final field handled by `put` requires its target to exist. If an edit fails, none of
-the edits are returned as a partial result.
+Every operation except a missing final object field handled by `set` requires its target to exist. If an edit fails,
+none of the edits are returned as a partial result.
 
 `Data.patch` raises `DataPatchException`. `Data.tryPatch` returns the failure instead:
 

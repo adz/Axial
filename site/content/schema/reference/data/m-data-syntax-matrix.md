@@ -28,12 +28,11 @@ Materializes a deterministic Cartesian matrix, limited to 256 cases.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">matrix</span> <span class="pn">[</span> <span class="id">dimension</span> <span class="s">&quot;status&quot;</span> <span class="pn">[</span> <span class="id">variant</span> <span class="s">&quot;active&quot;</span> <span class="pn">[</span><span class="pn">]</span><span class="pn">;</span> <span class="id">variant</span> <span class="s">&quot;inactive&quot;</span> <span class="pn">[</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">set</span> <span class="s">&quot;active&quot;</span> <span class="k">false</span> <span class="pn">]</span> <span class="pn">]</span> <span class="pn">]</span> <span class="id">baseline</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">matrix</span> <span class="pn">[</span> <span class="id">dimension</span> <span class="s">&quot;status&quot;</span> <span class="pn">[</span> <span class="id">variant</span> <span class="s">&quot;active&quot;</span> <span class="pn">[</span><span class="pn">]</span><span class="pn">;</span> <span class="id">variant</span> <span class="s">&quot;inactive&quot;</span> <span class="pn">[</span> <span class="id">replace</span> <span class="s">&quot;active&quot;</span> <span class="k">false</span> <span class="pn">]</span> <span class="pn">]</span> <span class="pn">]</span> <span class="id">baseline</span>
  <span class="c">// cases named &quot;status: active&quot; and &quot;status: inactive&quot;</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">val set: elements: &#39;T seq -&gt; Set&lt;&#39;T&gt; (requires comparison)</div>
 
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L749-749)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L322-322)

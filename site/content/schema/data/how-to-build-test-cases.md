@@ -31,8 +31,8 @@ let cases =
     |> variants [
         variant "valid" []
         variant "missing name" [ remove "name" ]
-        variant "blank name" [ set "name" "" ]
-        variant "wrong name shape" [ set "name" [ "Ada" ] ]
+        variant "blank name" [ replace "name" "" ]
+        variant "wrong name shape" [ replace "name" [ "Ada" ] ]
     ]
 ```
 
@@ -55,17 +55,17 @@ let cases =
     |> matrix [
         dimension "plan" [
             variant "free" []
-            variant "pro" [ set "plan" "pro" ]
+            variant "pro" [ replace "plan" "pro" ]
         ]
 
         dimension "region" [
             variant "AU" []
-            variant "US" [ set "region" "us" ]
+            variant "US" [ replace "region" "us" ]
         ]
 
         dimension "roles" [
-            variant "none" [ set "roles" [] ]
-            variant "admin" [ set "roles" [ "admin" ] ]
+            variant "none" [ replace "roles" [] ]
+            variant "admin" [ replace "roles" [ "admin" ] ]
         ]
     ]
 ```

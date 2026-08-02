@@ -27,11 +27,11 @@ Attempts to extract text from one structured value.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Data</span><span class="pn">.</span><span class="id">tryText</span> <span class="pn">(</span><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="2" class="id">Data</span><span class="pn">.</span><span class="id">Text</span> <span class="s">&quot;Ada&quot;</span><span class="pn">)</span> <span class="c">// Some &quot;Ada&quot;</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">Data</span><span class="pn">.</span><span class="id">tryText</span> <span class="pn">(</span><span class="id">Data</span><span class="pn">.</span><span class="id">Text</span> <span class="s">&quot;Ada&quot;</span><span class="pn">)</span> <span class="c">// Some &quot;Ada&quot;</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">namespace Microsoft.FSharp.Data</div>
 
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L652-652)
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L225-225)

@@ -20,4 +20,4 @@ Renders one scalar value for redisplay.
 | <code><span><a href="t-data.md">Data</a>&#32;->&#32;string</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L291-291)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L105-105)

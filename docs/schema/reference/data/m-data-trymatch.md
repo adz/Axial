@@ -27,10 +27,10 @@ Checks path-based expectations and accumulates structured mismatches.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Data</span><span class="pn">.</span><span class="id">tryMatch</span> <span class="pn">[</span> <span class="id">at</span> <span class="s">&quot;name&quot;</span> <span class="s">&quot;Ada&quot;</span> <span class="pn">]</span> <span class="pn">(</span><span class="id">data</span> <span class="pn">[</span> <span class="s">&quot;name&quot;</span> <span class="o">=&gt;</span> <span class="s">&quot;Grace&quot;</span> <span class="pn">]</span><span class="pn">)</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">Data</span><span class="pn">.</span><span class="id">tryMatch</span> <span class="pn">[</span> <span class="id">at</span> <span class="s">&quot;name&quot;</span> <span class="s">&quot;Ada&quot;</span> <span class="pn">]</span> <span class="pn">(</span><span class="id">data</span> <span class="pn">[</span> <span class="s">&quot;name&quot;</span> <span class="o">=&gt;</span> <span class="s">&quot;Grace&quot;</span> <span class="pn">]</span><span class="pn">)</span>
  <span class="c">// Error [ mismatch at path &quot;name&quot;: expected &quot;Ada&quot;, found &quot;Grace&quot; ]</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">namespace Microsoft.FSharp.Data</div>
+
 
 
 

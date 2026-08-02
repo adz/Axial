@@ -28,10 +28,10 @@ Applies one function to an existing value and returns the changed tree.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">data</span> <span class="pn">[</span> <span class="s">&quot;active&quot;</span> <span class="o">=&gt;</span> <span class="k">true</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Data</span><span class="pn">.</span><span class="id">update</span> <span class="s">&quot;active&quot;</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">_</span> <span class="k">-&gt;</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="2" class="id">Data</span><span class="pn">.</span><span class="id">Bool</span> <span class="k">false</span><span class="pn">)</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">data</span> <span class="pn">[</span> <span class="s">&quot;active&quot;</span> <span class="o">=&gt;</span> <span class="k">true</span> <span class="pn">]</span> <span class="o">|&gt;</span> <span class="id">Data</span><span class="pn">.</span><span class="id">update</span> <span class="s">&quot;active&quot;</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">_</span> <span class="k">-&gt;</span> <span class="id">Data</span><span class="pn">.</span><span class="id">Bool</span> <span class="k">false</span><span class="pn">)</span>
  <span class="c">// data [ &quot;active&quot; =&gt; false ]</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">namespace Microsoft.FSharp.Data</div>
+
 
 
 

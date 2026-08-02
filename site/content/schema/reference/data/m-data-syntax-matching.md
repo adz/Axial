@@ -35,4 +35,4 @@ Checks expectations or raises <code>DataMatchException</code>.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L822-822)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L395-395)

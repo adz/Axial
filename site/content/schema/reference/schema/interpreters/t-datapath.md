@@ -14,4 +14,4 @@ Helpers for constructing, parsing, and rendering structured data paths.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L27-27)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataPath.fs#L26-26)

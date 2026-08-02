@@ -27,11 +27,11 @@ Attempts to extract items from one list value.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Data</span><span class="pn">.</span><span class="id">tryList</span> <span class="pn">(</span><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="2" class="id">Data</span><span class="pn">.</span><span class="id">List</span> <span class="pn">[</span><span class="pn">]</span><span class="pn">)</span> <span class="c">// Some []</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">Data</span><span class="pn">.</span><span class="id">tryList</span> <span class="pn">(</span><span class="id">Data</span><span class="pn">.</span><span class="id">List</span> <span class="pn">[</span><span class="pn">]</span><span class="pn">)</span> <span class="c">// Some []</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">namespace Microsoft.FSharp.Data</div>
 
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L664-664)
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L237-237)

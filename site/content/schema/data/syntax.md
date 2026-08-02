@@ -35,19 +35,19 @@ let customer =
 let request =
     customer
     |> Data.patch [
-        DataEdit.set "address.postcode" 5001
+        DataEdit.replace "address.postcode" 5001
         DataEdit.append "roles" "admin"
         DataEdit.remove "deletedAt"
     ]
 
 Data.render request
-// => "{\"name\":\"Ada\",\"address\":{\"city\":\"Adelaide\",\"postcode\":5001},\"roles\":[\"author\",\"admin\"]}"
+// => "{ name: \"Ada\", address: { city: \"Adelaide\", postcode: 5001 }, roles: [\"author\", \"admin\"] }"
 ```
 
 For a single edit, apply the direct `Data` operation instead:
 
 ```fsharp
-customer |> Data.set "name" "Grace"
+customer |> Data.replace "name" "Grace"
 ```
 
 ## The same example with Data.Syntax
@@ -68,7 +68,7 @@ let customer =
 let request =
     customer
     |> Data.patch [
-        set "address.postcode" 5001
+        replace "address.postcode" 5001
         append "roles" "admin"
         remove "deletedAt"
     ]
@@ -85,7 +85,7 @@ let request =
 | `data fields` | `Data.data fields` | `Data` |
 | `fields value` | `Data.fields value` | `DataField list` |
 | `set path value` | `DataEdit.set path value` | `DataEdit` |
-| `put path value` | `DataEdit.put path value` | `DataEdit` |
+| `replace path value` | `DataEdit.replace path value` | `DataEdit` |
 | `remove path` | `DataEdit.remove path` | `DataEdit` |
 | `append path value` | `DataEdit.append path value` | `DataEdit` |
 | `prepend path value` | `DataEdit.prepend path value` | `DataEdit` |
@@ -93,6 +93,9 @@ let request =
 | `rename path name` | `DataEdit.rename path name` | `DataEdit` |
 | `update path function` | `DataEdit.update path function` | `DataEdit` |
 | — | `Data.patch edits input` | changed `Data` |
+
+`set` makes the final path contain the value, adding a missing final object field when necessary. `replace` requires
+the target to exist, so a misspelled or unexpectedly absent path fails.
 
 The matching and case-generation names also live in `Data.Syntax`. Without opening it, qualify them as
 `Data.Syntax.at`, `Data.Syntax.containing`, `Data.Syntax.variant`, and so on.

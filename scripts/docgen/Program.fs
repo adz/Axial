@@ -1181,7 +1181,7 @@ let noLinkGeneratedReferenceSlugs =
 let rewriteApiDocHtml (slugMap: IDictionary<string, string>) (filePath: string) (content: string) =
     let unresolved = ResizeArray<string>()
 
-    let rewritten =
+    let linksRewritten =
         Regex.Replace(
             content,
             "<a href=\"(?:https://adz\\.github\\.io/Axial)?/reference/Axial/([a-z0-9\\-]+)\\.html(#[^\"]*)?\">((?:(?!</a>).)*)</a>",
@@ -1203,7 +1203,27 @@ let rewriteApiDocHtml (slugMap: IDictionary<string, string>) (filePath: string) 
         let unique = unresolved |> Seq.distinct |> String.concat ", "
         printfn "Warning: unresolved generated reference links in %s -> %s" filePath unique
 
-    rewritten
+    // FSharp.Formatting checks isolated XML examples without the source file's namespace context. In Axial.Data
+    // examples it can therefore bind the short name `Data` to Microsoft.FSharp.Data and emit a false hover tooltip.
+    // Keep the copyable source unchanged, but remove tooltip bindings whose generated definition is known to be wrong.
+    let incorrectTooltipIds =
+        Regex.Matches(
+            linksRewritten,
+            "<div popover class=\"fsdocs-tip\" id=\"([^\"]+)\">namespace Microsoft\\.FSharp\\.Data</div>")
+        |> Seq.cast<Match>
+        |> Seq.map (fun m -> m.Groups[1].Value)
+        |> Seq.distinct
+        |> Seq.toList
+
+    (linksRewritten, incorrectTooltipIds)
+    ||> List.fold (fun html tooltipId ->
+        html
+        |> fun value ->
+            Regex.Replace(
+                value,
+                $" data-fsdocs-tip=\"{Regex.Escape tooltipId}\" data-fsdocs-tip-unique=\"[^\"]+\"",
+                "")
+        |> fun value -> value.Replace($"<div popover class=\"fsdocs-tip\" id=\"{tooltipId}\">namespace Microsoft.FSharp.Data</div>", ""))
 
 let rec collectAllEntities (e: ApiDocEntity) =
     seq {

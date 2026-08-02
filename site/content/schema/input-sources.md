@@ -81,15 +81,20 @@ let raw = Data.ofJsonDocument document
 JSON null, numbers, Booleans, arrays, and objects retain their corresponding `Data` cases. Number tokens keep their
 exact lexical representation. The adapter uses the in-box `System.Text.Json`, so the package stays dependency-free.
 
-## Other JSON libraries
+## Parse JSON portably
 
-On other targets (including Fable), deserialize with any JSON library directly into `Data`:
+For the same lossless behavior on .NET and Fable, install `Axial.Schema.Json` and parse JSON text with
+`Json.parseData`:
 
 ```fsharp
-let data = jsonValue // already a Data value
+open Axial.Schema.Json
+
+let raw = Json.parseData """{"name":"Ada","score":1.20e+3}"""
 ```
 
-Nested `Data.List` and `Data.Object` values parse with no extra shaping.
+Under Fable, `JSON.parse |> Data.ofJsonValue` is also available when native JavaScript semantics are acceptable.
+That route has already discarded duplicate fields and the original spelling of number tokens; use `Json.parseData`
+when either distinction matters.
 
 ## Configuration
 

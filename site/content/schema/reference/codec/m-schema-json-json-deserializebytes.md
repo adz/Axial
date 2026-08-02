@@ -1,7 +1,7 @@
 ---
 title: "Schema.Json.deserializeBytes"
 linkTitle: "deserializeBytes"
-weight: 2105
+weight: 2106
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Deserializes UTF-8 JSON bytes to a trusted model through a compiled codec.
 | <code>'model</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1096-1096)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1173-1173)

@@ -2,6 +2,7 @@
 title: "Data.replace"
 linkTitle: "replace"
 weight: 2314
+type: docs
 ---
 
 Replaces one existing value and returns the changed tree.

@@ -28,9 +28,9 @@ Describes applying a function to an existing value.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">DataEdit</span><span class="pn">.</span><span class="id">update</span> <span class="s">&quot;active&quot;</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">_</span> <span class="k">-&gt;</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Data</span><span class="pn">.</span><span class="id">Bool</span> <span class="k">false</span><span class="pn">)</span> <span class="c">// one DataEdit</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">DataEdit</span><span class="pn">.</span><span class="id">update</span> <span class="s">&quot;active&quot;</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">_</span> <span class="k">-&gt;</span> <span class="id">Data</span><span class="pn">.</span><span class="id">Bool</span> <span class="k">false</span><span class="pn">)</span> <span class="c">// one DataEdit</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">namespace Microsoft.FSharp.Data</div>
+
 
 
 

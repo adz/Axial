@@ -5,7 +5,7 @@ weight: 2321
 type: docs
 ---
 
-Replaces an existing value.
+Replaces a value or adds a missing final object field.
 
 ## Signature
 
@@ -27,4 +27,4 @@ Replaces an existing value.
 | <code><a href="t-dataedit.md">DataEdit</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L695-695)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L268-268)

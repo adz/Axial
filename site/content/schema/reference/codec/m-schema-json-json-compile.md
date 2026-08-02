@@ -1,7 +1,7 @@
 ---
 title: "Schema.Json.compile"
 linkTitle: "compile"
-weight: 2100
+weight: 2101
 type: docs
 ---
 
@@ -46,4 +46,4 @@ Compiles a completed schema into a reusable JSON codec.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1032-1032)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1090-1090)

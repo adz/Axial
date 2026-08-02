@@ -71,7 +71,7 @@ Data.render (Data.Bool true)
 
 ```fsharp
 Data.render (Data.List [ Data.Text "author"; Data.Text "admin" ])
-// => "[\"author\",\"admin\"]"
+// => "[\"author\", \"admin\"]"
 ```
 
 Exact comparison checks every item and its position. Matching can instead check an ordered subsequence, an unordered
@@ -89,7 +89,7 @@ let value =
     ]
 
 Data.render value
-// => "{\"name\":\"Ada\",\"name\":\"Grace\"}"
+// => "{ name: \"Ada\", name: \"Grace\" }"
 ```
 
 Path lookup and edits select the last field when a name is repeated. Exact comparison observes every field, including
