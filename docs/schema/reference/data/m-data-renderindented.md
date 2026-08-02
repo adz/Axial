@@ -4,7 +4,7 @@ linkTitle: "renderIndented"
 weight: 2701
 ---
 
-Renders structured data as deterministic indented JSON.
+Renders structured data in an indented, human-readable form.
 
 ## Signature
 
@@ -28,7 +28,7 @@ Renders structured data as deterministic indented JSON.
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Data</span><span class="pn">.</span><span class="id">renderIndented</span> <span class="pn">(</span><span class="id">data</span> <span class="pn">[</span> <span class="s">&quot;name&quot;</span> <span class="o">=&gt;</span> <span class="s">&quot;Ada&quot;</span> <span class="pn">]</span><span class="pn">)</span>
  <span class="c">// {</span>
- <span class="c">//   &quot;name&quot;: &quot;Ada&quot;</span>
+ <span class="c">//   name: &quot;Ada&quot;</span>
  <span class="c">// }</span>
 </code></pre>
 <div popover class="fsdocs-tip" id="fs1">namespace Microsoft.FSharp.Data</div>
@@ -36,4 +36,4 @@ Renders structured data as deterministic indented JSON.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L648-648)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L736-736)

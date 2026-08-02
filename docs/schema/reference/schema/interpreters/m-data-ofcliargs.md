@@ -19,4 +19,4 @@ Builds structured data from command-line arguments.
 | <code><span><span>string&#32;seq</span>&#32;->&#32;<a href="../../data/t-data.md">Data</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L259-259)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L348-348)

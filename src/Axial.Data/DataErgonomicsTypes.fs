@@ -43,8 +43,8 @@ and [<Sealed>] DataField internal (name: string, pattern: DataPattern, omitted: 
     static member Create(name, pattern, omitted) = DataField(name, pattern, omitted)
 
 type internal DataEditNode =
+    | Replace of DataPath * Data
     | Set of DataPath * Data
-    | Put of DataPath * Data
     | Remove of DataPath
     | Append of DataPath * Data
     | Prepend of DataPath * Data
@@ -59,9 +59,9 @@ type DataEdit internal (node: DataEditNode, renderedPath: string) =
     /// <summary>The path targeted by the edit.</summary>
     member _.Path = renderedPath
 
-    static member CreateSet(path, value) = DataEdit(Set(DataPath.parse path, value), path)
+    static member CreateReplace(path, value) = DataEdit(Replace(DataPath.parse path, value), path)
 
-    static member CreatePut(path, value) = DataEdit(Put(DataPath.parse path, value), path)
+    static member CreateSet(path, value) = DataEdit(Set(DataPath.parse path, value), path)
 
     static member CreateAppend(path, value) = DataEdit(Append(DataPath.parse path, value), path)
 
@@ -77,13 +77,13 @@ module DataEdit =
 
         invoke Unchecked.defaultof<Data> value
 
-    /// <summary>Describes replacing an existing value.</summary>
-    /// <example><code>DataEdit.set "name" "Grace" // one DataEdit</code></example>
+    /// <summary>Describes replacing a value, or adding a missing final object field.</summary>
+    /// <example><code>DataEdit.set "plan" "pro" // one DataEdit</code></example>
     let inline set path value = DataEdit.CreateSet(path, convert value)
 
-    /// <summary>Describes replacing a value or adding a missing final object field.</summary>
-    /// <example><code>DataEdit.put "plan" "pro" // one DataEdit</code></example>
-    let inline put path value = DataEdit.CreatePut(path, convert value)
+    /// <summary>Describes replacing an existing value.</summary>
+    /// <example><code>DataEdit.replace "name" "Grace" // one DataEdit</code></example>
+    let inline replace path value = DataEdit.CreateReplace(path, convert value)
 
     /// <summary>Describes removing an existing field or list item.</summary>
     /// <example><code>DataEdit.remove "obsolete" // one DataEdit</code></example>

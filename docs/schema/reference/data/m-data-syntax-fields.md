@@ -19,4 +19,4 @@ Returns exact field instructions for spreading an existing object literal.
 | <code><span><a href="t-data.md">Data</a>&#32;->&#32;<span><a href="t-datafield.md">DataField</a>&#32;list</span></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L692-692)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L780-780)

@@ -4,7 +4,7 @@ linkTitle: "number"
 weight: 2204
 ---
 
-Constructs a number from one validated JSON number token.
+Constructs a number from one JSON number token, validated identically on .NET and Fable.
 
 ## Signature
 
@@ -33,4 +33,4 @@ Constructs a number from one validated JSON number token.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L224-224)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L323-323)

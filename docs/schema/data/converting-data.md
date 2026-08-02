@@ -33,8 +33,8 @@ value
 Invalid JSON raises `JsonException`. `parse` does not decode the fields into application-specific record types; it
 only converts JSON syntax into the corresponding `Data` cases.
 
-`Data.Json.render` and `Data.Json.renderIndented` are JSON-specific names for `Data.render` and
-`Data.renderIndented`.
+`Data.Json.render` and `Data.Json.renderIndented` produce JSON text. `Data.render` and `Data.renderIndented` instead
+produce a concise human-readable display.
 
 ```fsharp
 Data.Json.render value
@@ -49,7 +49,7 @@ Use `Data.ofJsonElement` or `Data.ofJsonDocument` when JSON has already been par
 use document = System.Text.Json.JsonDocument.Parse("""{"name":"Ada"}""")
 let value = Data.ofJsonDocument document
 
-Data.render value
+Data.Json.render value
 // => "{\"name\":\"Ada\"}"
 ```
 

@@ -380,8 +380,11 @@ module ApiShapeTests =
 
         assertTypeAbsentFromAssembly "Axial.Schema" "Axial.Schema.ValueSchema`1"
 
-        moduleTypeFromAssembly "Axial.Data" "Axial.DataModule"
-        |> publicStaticMemberNames
+        let dataMembers =
+            moduleTypeFromAssembly "Axial.Data" "Axial.DataModule"
+            |> publicStaticMemberNames
+
+        dataMembers
         |> assertContainsAll
             [ "ofMap"
               "ofNameValues"
@@ -398,7 +401,7 @@ module ApiShapeTests =
               "applyEdit"
               "patch"
               "set"
-              "put"
+              "replace"
               "remove"
               "append"
               "prepend"
@@ -419,9 +422,15 @@ module ApiShapeTests =
               "redisplayAt"
               "redisplayPath" ]
 
-        moduleTypeFromAssembly "Axial.Data" "Axial.DataEditModule"
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "set"; "put"; "remove"; "append"; "prepend"; "insert"; "rename"; "update" ]
+        let dataEditMembers =
+            moduleTypeFromAssembly "Axial.Data" "Axial.DataEditModule"
+            |> publicStaticMemberNames
+
+        dataEditMembers
+        |> assertContainsAll [ "set"; "replace"; "remove"; "append"; "prepend"; "insert"; "rename"; "update" ]
+
+        test <@ not (dataMembers.Contains "put") @>
+        test <@ not (dataEditMembers.Contains "put") @>
 
         test <@ typeof<DataEdit>.Assembly.GetName().Name = "Axial.Data" @>
         test <@ typeof<DataPattern>.Assembly.GetName().Name = "Axial.Data" @>

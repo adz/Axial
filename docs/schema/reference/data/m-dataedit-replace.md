@@ -1,15 +1,15 @@
 ---
-title: "DataEdit.put"
-linkTitle: "put"
+title: "DataEdit.replace"
+linkTitle: "replace"
 weight: 2304
 ---
 
-Describes replacing a value or adding a missing final object field.
+Describes replacing an existing value.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>DataEdit.put&#32;<span>path&#32;value</span></span></code>
+<code><span>DataEdit.replace&#32;<span>path&#32;value</span></span></code>
 </div>
 
 ## Parameters
@@ -27,7 +27,7 @@ Describes replacing a value or adding a missing final object field.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">DataEdit</span><span class="pn">.</span><span class="id">put</span> <span class="s">&quot;plan&quot;</span> <span class="s">&quot;pro&quot;</span> <span class="c">// one DataEdit</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">DataEdit</span><span class="pn">.</span><span class="id">replace</span> <span class="s">&quot;name&quot;</span> <span class="s">&quot;Grace&quot;</span> <span class="c">// one DataEdit</span>
 </code></pre>
 
 

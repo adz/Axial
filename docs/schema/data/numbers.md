@@ -7,8 +7,8 @@ description: How numeric values become Data.Number tokens and when their exact s
 
 # Numbers
 
-`Data.Number` stores a number as text so conversion does not discard precision or exponent notation. Rendering writes
-that token as a JSON number, without quotes.
+`Data.Number` stores a number as text so conversion does not discard precision or exponent notation. Human-readable and
+JSON rendering both write that token without quotes.
 
 ```fsharp
 open Axial
@@ -23,7 +23,7 @@ open Data.Syntax
 let value = data [ "count" => 5000; "change" => -12L ]
 
 Data.render value
-// => "{\"count\":5000,\"change\":-12}"
+// => "{ count: 5000, change: -12 }"
 ```
 
 ## Decimals
@@ -35,7 +35,7 @@ the decimal value carries, including trailing zeros.
 let value = data [ "price" => 19.9500m ]
 
 Data.render value
-// => "{\"price\":19.9500}"
+// => "{ price: 19.9500 }"
 ```
 
 ## Floating-point values
@@ -47,7 +47,7 @@ value. `NaN`, positive infinity, and negative infinity are rejected because JSON
 let value = data [ "ratio" => 0.1 ]
 
 Data.render value
-// => "{\"ratio\":0.1}"
+// => "{ ratio: 0.1 }"
 ```
 
 ## Exact tokens with `num`
@@ -59,10 +59,11 @@ token unchanged.
 let value = data [ "measurement" => num "1.2300e+4" ]
 
 Data.render value
-// => "{\"measurement\":1.2300e+4}"
+// => "{ measurement: 1.2300e+4 }"
 ```
 
-Invalid JSON numbers such as `"01"`, `"NaN"`, and `"Infinity"` raise `ArgumentException`.
+The same JSON-number grammar is checked on .NET and Fable. Invalid tokens such as `"01"`, `"NaN"`, `"Infinity"`,
+leading `+` signs, surrounding whitespace, and incomplete fractions or exponents raise `ArgumentException`.
 
 ## Exact comparison
 

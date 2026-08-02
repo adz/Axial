@@ -66,7 +66,7 @@ Axial's data-boundary direction splits concerns like this:
 
 - `Data` is the owned source-neutral structured-value model and fixture language. Its Phase 1 surface covers recursive
   literals, strict immutable edits, named variations, bounded matrices, paths and extraction, exact structural diffs,
-  recursive partial patterns, selective produced-data proofs, and deterministic JSON rendering. `Data` preserves number
+  recursive partial patterns, selective produced-data proofs, concise human rendering, and deterministic JSON rendering. `Data` preserves number
   tokens, object order, and duplicate fields; operations state their equality and selection semantics explicitly.
 - `Check<'value>` describes reusable, path-free, raw-input-free value constraints
 - `Schema<'value>` describes typed shape, construction, inspection, and portable constraint metadata; `Schema.parse`

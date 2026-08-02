@@ -89,6 +89,44 @@ module DataErgonomicsHelpers =
         if value = "" then invalidArg argumentName "The value cannot be empty."
         value
 
+    let isJsonNumberToken (token: string) =
+        let length = token.Length
+        let isDigitAt index = index < length && token[index] >= '0' && token[index] <= '9'
+        let rec consumeDigits index = if isDigitAt index then consumeDigits (index + 1) else index
+
+        let afterSign = if length > 0 && token[0] = '-' then 1 else 0
+
+        let afterInteger =
+            if afterSign < length && token[afterSign] = '0' then
+                Some(afterSign + 1)
+            elif afterSign < length && token[afterSign] >= '1' && token[afterSign] <= '9' then
+                Some(consumeDigits (afterSign + 1))
+            else
+                None
+
+        match afterInteger with
+        | None -> false
+        | Some integerEnd ->
+            let afterFraction =
+                if integerEnd < length && token[integerEnd] = '.' then
+                    let fractionStart = integerEnd + 1
+                    if isDigitAt fractionStart then Some(consumeDigits fractionStart) else None
+                else
+                    Some integerEnd
+
+            match afterFraction with
+            | None -> false
+            | Some fractionEnd when fractionEnd < length && (token[fractionEnd] = 'e' || token[fractionEnd] = 'E') ->
+                let exponentStart = fractionEnd + 1
+                let digitsStart =
+                    if exponentStart < length && (token[exponentStart] = '+' || token[exponentStart] = '-') then
+                        exponentStart + 1
+                    else
+                        exponentStart
+
+                isDigitAt digitsStart && consumeDigits digitsStart = length
+            | Some fractionEnd -> fractionEnd = length
+
     let appendPath segment path = path @ [ segment ]
 
     let shapeName value =
@@ -120,38 +158,100 @@ module DataErgonomicsHelpers =
 
         loop [] path input
 
-    let renderCompact input =
-        let escape (value: string) =
-            let builder = StringBuilder()
+    let renderText (value: string) =
+        let builder = StringBuilder()
 
-            value
-            |> Seq.iter (function
-                | '"' -> builder.Append("\\\"") |> ignore
-                | '\\' -> builder.Append("\\\\") |> ignore
-                | '\b' -> builder.Append("\\b") |> ignore
-                | '\f' -> builder.Append("\\f") |> ignore
-                | '\n' -> builder.Append("\\n") |> ignore
-                | '\r' -> builder.Append("\\r") |> ignore
-                | '\t' -> builder.Append("\\t") |> ignore
-                | character when int character < 0x20 ->
-                    builder.Append("\\u").Append((int character).ToString("x4", CultureInfo.InvariantCulture)) |> ignore
-                | character -> builder.Append(character) |> ignore)
+        value
+        |> Seq.iter (function
+            | '"' -> builder.Append("\\\"") |> ignore
+            | '\\' -> builder.Append("\\\\") |> ignore
+            | '\b' -> builder.Append("\\b") |> ignore
+            | '\f' -> builder.Append("\\f") |> ignore
+            | '\n' -> builder.Append("\\n") |> ignore
+            | '\r' -> builder.Append("\\r") |> ignore
+            | '\t' -> builder.Append("\\t") |> ignore
+            | character when int character < 0x20 ->
+                builder.Append("\\u").Append((int character).ToString("x4", CultureInfo.InvariantCulture)) |> ignore
+            | character -> builder.Append(character) |> ignore)
 
-            builder.ToString()
+        $"\"{builder}\""
+
+    let renderName (name: string) =
+        let isPlainStart character = Char.IsLetter character || character = '_'
+        let isPlain character = Char.IsLetterOrDigit character || character = '_' || character = '-'
+
+        if name.Length > 0 && isPlainStart name[0] && (name |> Seq.skip 1 |> Seq.forall isPlain) then
+            name
+        else
+            renderText name
+
+    let jsonRenderCompact input =
 
         let rec render value =
             match value with
             | Data.Null -> "null"
-            | Data.Text text -> $"\"{escape text}\""
+            | Data.Text text -> renderText text
             | Data.Number token -> token
             | Data.Bool true -> "true"
             | Data.Bool false -> "false"
             | Data.List items -> items |> List.map render |> String.concat "," |> fun body -> $"[{body}]"
             | Data.Object fields ->
                 fields
-                |> List.map (fun (name, field) -> $"\"{escape name}\":{render field}")
+                |> List.map (fun (name, field) -> $"{renderText name}:{render field}")
                 |> String.concat ","
                 |> fun body -> $"{{{body}}}"
+
+        render input
+
+    let jsonRenderIndented input =
+        let compactScalar value =
+            match value with
+            | Data.List _
+            | Data.Object _ -> None
+            | scalar -> Some(jsonRenderCompact scalar)
+
+        let rec render level value =
+            let indent count = String(' ', count * 2)
+
+            match compactScalar value with
+            | Some scalar -> scalar
+            | None ->
+                match value with
+                | Data.List [] -> "[]"
+                | Data.List items ->
+                    items
+                    |> List.map (fun item -> $"{indent (level + 1)}{render (level + 1) item}")
+                    |> String.concat ",\n"
+                    |> fun body -> $"[\n{body}\n{indent level}]"
+                | Data.Object [] -> "{}"
+                | Data.Object fields ->
+                    fields
+                    |> List.map (fun (name, field) ->
+                        let encodedName = renderText name
+                        $"{indent (level + 1)}{encodedName}: {render (level + 1) field}")
+                    |> String.concat ",\n"
+                    |> fun body -> $"{{\n{body}\n{indent level}}}"
+                | _ -> failwith "Unreachable scalar rendering branch."
+
+        render 0 input
+
+    let renderCompact input =
+        let rec render value =
+            match value with
+            | Data.Null -> "null"
+            | Data.Text text -> renderText text
+            | Data.Number token -> token
+            | Data.Bool true -> "true"
+            | Data.Bool false -> "false"
+            | Data.List items -> items |> List.map render |> String.concat ", " |> fun body -> $"[{body}]"
+            | Data.Object fields ->
+                match fields with
+                | [] -> "{}"
+                | _ ->
+                    fields
+                    |> List.map (fun (name, field) -> $"{renderName name}: {render field}")
+                    |> String.concat ", "
+                    |> fun body -> $"{{ {body} }}"
 
         render input
 
@@ -179,8 +279,7 @@ module DataErgonomicsHelpers =
                 | Data.Object fields ->
                     fields
                     |> List.map (fun (name, field) ->
-                        let encodedName = renderCompact (Data.Text name)
-                        $"{indent (level + 1)}{encodedName}: {render (level + 1) field}")
+                        $"{indent (level + 1)}{renderName name}: {render (level + 1) field}")
                     |> String.concat ",\n"
                     |> fun body -> $"{{\n{body}\n{indent level}}}"
                 | _ -> failwith "Unreachable scalar rendering branch."
@@ -219,22 +318,12 @@ module Data =
         | Data.Object values -> values |> List.map (fun (name, item) -> DataField.Create(name, DataPattern.CreateExact item, false))
         | actual -> invalidArg (nameof value) $"Expected an object but found {shapeName actual}."
 
-    /// <summary>Constructs a number from one validated JSON number token.</summary>
+    /// <summary>Constructs a number from one JSON number token, validated identically on .NET and Fable.</summary>
     /// <example><code>Data.number "1.2300e+4" // Data.Number "1.2300e+4"</code></example>
     let number (token: string) =
         ensureText (nameof token) token |> ignore
-#if NET8_0_OR_GREATER && !FABLE_COMPILER
-        try
-            use document = System.Text.Json.JsonDocument.Parse(token)
-            if document.RootElement.ValueKind <> System.Text.Json.JsonValueKind.Number then
-                invalidArg (nameof token) "The token must contain exactly one JSON number."
-        with :? System.Text.Json.JsonException ->
+        if not (isJsonNumberToken token) then
             invalidArg (nameof token) "The token is not a valid JSON number."
-#else
-        let mutable parsed = 0.0
-        if not (Double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, &parsed)) then
-            invalidArg (nameof token) "The token is not a valid portable number."
-#endif
         Data.Number token
 
     /// <summary>Builds an object from an F# map, ordered by key.</summary>
@@ -337,8 +426,8 @@ module Data =
 
     let private tryApplyEdit (edit: DataEdit) input =
         match edit.Node with
-        | Set(path, value) -> updateAtPath path (fun _ -> Ok value) input
-        | Put(path, value) ->
+        | Replace(path, value) -> updateAtPath path (fun _ -> Ok value) input
+        | Set(path, value) ->
             match List.rev path with
             | [] -> Ok value
             | DataPathSegment.Name name :: reversedParent ->
@@ -353,8 +442,7 @@ module Data =
                 updateAtPath (List.rev reversedParent) (fun parent ->
                     match parent with
                     | Data.List items when index < items.Length -> Ok(Data.List(replaceAt index value items))
-                    | Data.List items when index = items.Length -> Ok(Data.List(items @ [ value ]))
-                    | Data.List items -> Error $"List index {index} is outside the insertion range of {items.Length} items."
+                    | Data.List items -> Error $"List index {index} is outside the list of {items.Length} items."
                     | actual -> Error $"Expected a list parent but found {shapeName actual}.") input
         | Remove path ->
             updateParent path (fun final parent ->
@@ -394,7 +482,7 @@ module Data =
         | Update(path, change) -> updateAtPath path (change >> Ok) input
 
     /// <summary>Applies immutable edits atomically in declaration order.</summary>
-    /// <example><code>Data.tryPatch [ set "name" "Grace" ] (data [ "name" =&gt; "Ada" ])
+    /// <example><code>Data.tryPatch [ replace "name" "Grace" ] (data [ "name" =&gt; "Ada" ])
     /// // Ok (data [ "name" =&gt; "Grace" ])</code></example>
     let tryPatch (edits: DataEdit list) (input: Data) : Result<Data, DataPatchFailure list> =
         if isNull (box edits) then nullArg (nameof edits)
@@ -411,7 +499,7 @@ module Data =
 
     /// <summary>Applies edits atomically or raises <c>DataPatchException</c>.</summary>
     /// <example><code>Data.data [ Data.assoc "name" "Ada" ]
-    /// |&gt; Data.patch [ DataEdit.set "name" "Grace" ]
+    /// |&gt; Data.patch [ DataEdit.replace "name" "Grace" ]
     /// // Data.data [ Data.assoc "name" "Grace" ]</code></example>
     let patch edits input =
         match tryPatch edits input with
@@ -419,25 +507,25 @@ module Data =
         | Error failures -> raise (DataPatchException failures)
 
     /// <summary>Applies one prepared edit or raises <c>DataPatchException</c>.</summary>
-    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.applyEdit (set "name" "Grace")
+    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.applyEdit (replace "name" "Grace")
     /// // data [ "name" =&gt; "Grace" ]</code></example>
     let applyEdit edit input =
         match tryPatch [ edit ] input with
         | Ok value -> value
         | Error failures -> raise (DataPatchException failures)
 
-    /// <summary>Replaces one existing value and returns the changed tree.</summary>
-    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.set "name" "Grace"
-    /// // data [ "name" =&gt; "Grace" ]</code></example>
+    /// <summary>Replaces one value, or adds a missing final object field, and returns the changed tree.</summary>
+    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.set "active" true
+    /// // data [ "name" =&gt; "Ada"; "active" =&gt; true ]</code></example>
     let inline set path value input =
         DataEdit.set path value
         |> fun edit -> applyEdit edit input
 
-    /// <summary>Replaces one value, or adds a missing final object field, and returns the changed tree.</summary>
-    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.put "active" true
-    /// // data [ "name" =&gt; "Ada"; "active" =&gt; true ]</code></example>
-    let inline put path value input =
-        DataEdit.put path value
+    /// <summary>Replaces one existing value and returns the changed tree.</summary>
+    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.replace "name" "Grace"
+    /// // data [ "name" =&gt; "Grace" ]</code></example>
+    let inline replace path value input =
+        DataEdit.replace path value
         |> fun edit -> applyEdit edit input
 
     /// <summary>Removes one existing field or list item and returns the changed tree.</summary>
@@ -635,15 +723,15 @@ module Data =
 
         if List.isEmpty mismatches then Ok() else Error mismatches
 
-    /// <summary>Renders structured data as deterministic compact JSON.</summary>
+    /// <summary>Renders structured data in a compact, human-readable form.</summary>
     /// <example><code>Data.render (data [ "name" =&gt; "Ada"; "active" =&gt; true ])
-    /// // {"name":"Ada","active":true}</code></example>
+    /// // { name: "Ada", active: true }</code></example>
     let render input = renderCompact input
 
-    /// <summary>Renders structured data as deterministic indented JSON.</summary>
+    /// <summary>Renders structured data in an indented, human-readable form.</summary>
     /// <example><code>Data.renderIndented (data [ "name" =&gt; "Ada" ])
     /// // {
-    /// //   "name": "Ada"
+    /// //   name: "Ada"
     /// // }</code></example>
     let renderIndented input = DataErgonomicsHelpers.renderIndented input
 
@@ -691,11 +779,11 @@ module Data =
         /// <summary>Returns exact field instructions for spreading an existing object literal.</summary>
         let fields = fields
 
-        /// <summary>Replaces an existing value.</summary>
+        /// <summary>Replaces a value or adds a missing final object field.</summary>
         let inline set path value = DataEdit.set path value
 
-        /// <summary>Replaces a final value or appends a missing final object field.</summary>
-        let inline put path value = DataEdit.put path value
+        /// <summary>Replaces an existing value.</summary>
+        let inline replace path value = DataEdit.replace path value
 
         /// <summary>Removes an existing field or list item.</summary>
         let remove = DataEdit.remove
@@ -723,7 +811,7 @@ module Data =
             { Name = name; Edits = edits }
 
         /// <summary>Materializes named variations from one baseline.</summary>
-        /// <example><code>variants [ variant "inactive" [ set "active" false ] ] (data [ "active" =&gt; true ])
+        /// <example><code>variants [ variant "inactive" [ replace "active" false ] ] (data [ "active" =&gt; true ])
         /// // [ { Name = "inactive"; Value = data [ "active" =&gt; false ] } ]</code></example>
         let variants (variations: DataVariation list) baseline : DataCase list =
             if isNull (box variations) then nullArg (nameof variations)
@@ -744,7 +832,7 @@ module Data =
             { Name = name; Variations = variations }
 
         /// <summary>Materializes a deterministic Cartesian matrix, limited to 256 cases.</summary>
-        /// <example><code>matrix [ dimension "status" [ variant "active" []; variant "inactive" [ set "active" false ] ] ] baseline
+        /// <example><code>matrix [ dimension "status" [ variant "active" []; variant "inactive" [ replace "active" false ] ] ] baseline
         /// // cases named "status: active" and "status: inactive"</code></example>
         let matrix dimensions baseline =
             if isNull (box dimensions) then nullArg (nameof dimensions)
@@ -838,12 +926,12 @@ module Data =
         /// <summary>Renders compact deterministic JSON.</summary>
         /// <example><code>Data.Json.render (Data.Object [ "name", Data.Text "Ada" ])
         /// // {"name":"Ada"}</code></example>
-        let render = render
+        let render = jsonRenderCompact
 
         /// <summary>Renders indented deterministic JSON.</summary>
         /// <example><code>Data.Json.renderIndented (Data.Object [ "name", Data.Text "Ada" ])
         /// // {
         /// //   "name": "Ada"
         /// // }</code></example>
-        let renderIndented = renderIndented
+        let renderIndented = jsonRenderIndented
 #endif

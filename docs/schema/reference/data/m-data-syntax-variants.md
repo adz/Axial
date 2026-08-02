@@ -27,12 +27,11 @@ Materializes named variations from one baseline.
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">variants</span> <span class="pn">[</span> <span class="id">variant</span> <span class="s">&quot;inactive&quot;</span> <span class="pn">[</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">set</span> <span class="s">&quot;active&quot;</span> <span class="k">false</span> <span class="pn">]</span> <span class="pn">]</span> <span class="pn">(</span><span class="id">data</span> <span class="pn">[</span> <span class="s">&quot;active&quot;</span> <span class="o">=&gt;</span> <span class="k">true</span> <span class="pn">]</span><span class="pn">)</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">variants</span> <span class="pn">[</span> <span class="id">variant</span> <span class="s">&quot;inactive&quot;</span> <span class="pn">[</span> <span class="id">replace</span> <span class="s">&quot;active&quot;</span> <span class="k">false</span> <span class="pn">]</span> <span class="pn">]</span> <span class="pn">(</span><span class="id">data</span> <span class="pn">[</span> <span class="s">&quot;active&quot;</span> <span class="o">=&gt;</span> <span class="k">true</span> <span class="pn">]</span><span class="pn">)</span>
  <span class="c">// [ { Name = &quot;inactive&quot;; Value = data [ &quot;active&quot; =&gt; false ] } ]</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">val set: elements: &#39;T seq -&gt; Set&lt;&#39;T&gt; (requires comparison)</div>
 
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L728-728)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L816-816)

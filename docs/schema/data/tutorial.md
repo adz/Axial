@@ -40,7 +40,7 @@ Render it with `Data.render`:
 
 ```fsharp
 Data.render customer
-// => "{\"name\":\"Ada\",\"plan\":\"free\",\"deletedAt\":null,\"address\":{\"city\":\"Adelaide\",\"postcode\":5000},\"roles\":[\"author\"]}"
+// => "{ name: \"Ada\", plan: \"free\", deletedAt: null, address: { city: \"Adelaide\", postcode: 5000 }, roles: [\"author\"] }"
 ```
 
 Numbers follow these rules:
@@ -80,13 +80,14 @@ Apply strict edits instead of reconstructing the fixture:
 let upgradeRequest =
     customer
     |> Data.patch [
-        set "plan" "pro"
+        replace "plan" "pro"
         append "roles" "admin"
         remove "deletedAt"
     ]
 ```
 
-Every target except the final field of `put` must exist. Edits run in order and the complete patch is atomic.
+`replace` requires its target to exist. `set` can instead add a missing final object field. Edits run in order and the
+complete patch is atomic.
 
 Use `Data.tryPatch` when edits came from dynamic input and should return structured failures.
 
@@ -94,7 +95,7 @@ Render the changed request with `Data.render`:
 
 ```fsharp
 Data.render upgradeRequest
-// => "{\"name\":\"Ada\",\"plan\":\"pro\",\"address\":{\"city\":\"Adelaide\",\"postcode\":5000},\"roles\":[\"author\",\"admin\"]}"
+// => "{ name: \"Ada\", plan: \"pro\", address: { city: \"Adelaide\", postcode: 5000 }, roles: [\"author\", \"admin\"] }"
 ```
 
 The original `customer` still contains `plan: "free"`, one role, and the `deletedAt` field.
@@ -107,8 +108,8 @@ let nameCases =
     |> variants [
         variant "present" []
         variant "missing" [ remove "name" ]
-        variant "blank" [ set "name" "" ]
-        variant "wrong shape" [ set "name" [ "Ada" ] ]
+        variant "blank" [ replace "name" "" ]
+        variant "wrong shape" [ replace "name" [ "Ada" ] ]
     ]
 ```
 

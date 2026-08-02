@@ -93,6 +93,16 @@ module DataTests =
         test <@ value = Data.Object [ "name", Data.Text "Grace"; "name", Data.Text "Ada" ] @>
 
     [<Fact>]
+    let ``number accepts exactly the portable JSON number grammar`` () =
+        let valid = [ "0"; "-0"; "12"; "-12.30"; "1e9"; "1.20E+3" ]
+        let invalid = [ ""; "+1"; "01"; "1."; ".1"; "1e"; "NaN"; "Infinity"; " 1"; "1 " ]
+
+        valid |> List.iter (fun token -> test <@ Data.number token = Data.Number token @>)
+
+        invalid
+        |> List.iter (fun token -> Assert.Throws<ArgumentException>(fun () -> Data.number token |> ignore) |> ignore)
+
+    [<Fact>]
     let ``data syntax formats dates as ISO text`` () =
         let value = data [ "date" => DateOnly(2026, 7, 19) ]
 
@@ -196,8 +206,8 @@ module DataTests =
         let changed =
             baseline
             |> Data.patch [
-                set "address.postcode" 5001
-                put "plan" "pro"
+                replace "address.postcode" 5001
+                set "plan" "pro"
                 append "roles" "billing"
                 prepend "roles" "admin"
                 insert "roles" 1 "owner"
@@ -217,8 +227,9 @@ module DataTests =
     [<Fact>]
     let ``direct edits apply one immutable change`` () =
         let baseline = data [ "name" => "Ada"; "roles" => [ "author" ]; "obsolete" => true ]
-        let setResult = baseline |> Data.set "name" "Grace"
-        let putResult = baseline |> Data.put "plan" "pro"
+        let setExistingResult = baseline |> Data.set "name" "Grace"
+        let setMissingResult = baseline |> Data.set "plan" "pro"
+        let replaceResult = baseline |> Data.replace "name" "Margaret"
         let removeResult = baseline |> Data.remove "obsolete"
         let appendResult = baseline |> Data.append "roles" "admin"
         let prependResult = baseline |> Data.prepend "roles" "admin"
@@ -226,8 +237,9 @@ module DataTests =
         let renameResult = baseline |> Data.rename "name" "displayName"
         let updateResult = baseline |> Data.update "name" (fun _ -> Data.Text "Grace")
 
-        test <@ Data.lookupPath "name" setResult = Data.Text "Grace" @>
-        test <@ Data.lookupPath "plan" putResult = Data.Text "pro" @>
+        test <@ Data.lookupPath "name" setExistingResult = Data.Text "Grace" @>
+        test <@ Data.lookupPath "plan" setMissingResult = Data.Text "pro" @>
+        test <@ Data.lookupPath "name" replaceResult = Data.Text "Margaret" @>
         test <@ Data.tryFindPath "obsolete" removeResult = None @>
         test <@ Data.lookupPath "roles" appendResult = Data.List [ Data.Text "author"; Data.Text "admin" ] @>
         test <@ Data.lookupPath "roles" prependResult = Data.List [ Data.Text "admin"; Data.Text "author" ] @>
@@ -237,6 +249,12 @@ module DataTests =
         test <@ Data.lookupPath "name" baseline = Data.Text "Ada" @>
 
         Assert.Throws<DataPatchException>(fun () -> baseline |> Data.append "name" "Grace" |> ignore)
+        |> ignore
+
+        Assert.Throws<DataPatchException>(fun () -> baseline |> Data.replace "plan" "pro" |> ignore)
+        |> ignore
+
+        Assert.Throws<DataPatchException>(fun () -> baseline |> Data.set "roles[1]" "admin" |> ignore)
         |> ignore
 
     [<Fact>]
@@ -252,16 +270,24 @@ module DataTests =
         let changed =
             baseline
             |> Data.patch [
-                DataEdit.set "name" "Grace"
+                DataEdit.replace "name" "Grace"
                 DataEdit.append "roles" "admin"
             ]
 
-        test <@ Data.render changed = "{\"name\":\"Grace\",\"roles\":[\"author\",\"admin\"]}" @>
+        test <@ Data.render changed = "{ name: \"Grace\", roles: [\"author\", \"admin\"] }" @>
+
+    [<Fact>]
+    let ``human rendering quotes unusual names while JSON rendering quotes every name`` () =
+        let value = Data.Object [ "display name", Data.Text "Ada\nLovelace"; "active", Data.Bool true ]
+
+        test <@ Data.render value = "{ \"display name\": \"Ada\\nLovelace\", active: true }" @>
+        test <@ Data.render (Data.Object []) = "{}" @>
+        test <@ Data.Json.render value = "{\"display name\":\"Ada\\nLovelace\",\"active\":true}" @>
 
     [<Fact>]
     let ``failed multi edit patches are atomic and structured`` () =
         let baseline = data [ "name" => "Ada"; "roles" => [ "author" ] ]
-        let edits = [ set "name" "Grace"; append "name" "invalid"; set "roles[0]" "admin" ]
+        let edits = [ replace "name" "Grace"; append "name" "invalid"; replace "roles[0]" "admin" ]
 
         match Data.tryPatch edits baseline with
         | Ok _ -> failwith "Expected patch failure."
@@ -274,16 +300,16 @@ module DataTests =
         test <@ Data.tryFindPath "name" baseline = Some(Data.Text "Ada") @>
 
     [<Fact>]
-    let ``remove set and rename select the last duplicate field`` () =
+    let ``remove replace and rename select the last duplicate field`` () =
         let baseline = data [ "name" => "Grace"; "name" => "Ada" ]
-        let setResult = baseline |> Data.patch [ set "name" "Margaret" ]
+        let replaceResult = baseline |> Data.patch [ replace "name" "Margaret" ]
         let renameResult = baseline |> Data.patch [ rename "name" "preferredName" ]
         let removeResult = baseline |> Data.patch [ remove "name" ]
         let expectedSet = data [ "name" => "Grace"; "name" => "Margaret" ]
         let expectedRename = data [ "name" => "Grace"; "preferredName" => "Ada" ]
         let expectedRemove = data [ "name" => "Grace" ]
 
-        test <@ setResult = expectedSet @>
+        test <@ replaceResult = expectedSet @>
         test <@ renameResult = expectedRename @>
         test <@ removeResult = expectedRemove @>
 
@@ -295,7 +321,7 @@ module DataTests =
             baseline
             |> variants [
                 variant "unchanged" []
-                variant "pro" [ set "plan" "pro" ]
+                variant "pro" [ replace "plan" "pro" ]
             ]
 
         test <@ independent |> List.map _.Name = [ "unchanged"; "pro" ] @>
@@ -303,8 +329,8 @@ module DataTests =
         let cases =
             baseline
             |> matrix [
-                dimension "plan" [ variant "free" []; variant "pro" [ set "plan" "pro" ] ]
-                dimension "region" [ variant "AU" []; variant "US" [ set "region" "us" ] ]
+                dimension "plan" [ variant "free" []; variant "pro" [ replace "plan" "pro" ] ]
+                dimension "region" [ variant "AU" []; variant "US" [ replace "region" "us" ] ]
             ]
 
         test
@@ -411,6 +437,7 @@ module DataTests =
 
         test <@ Data.tryNumberToken (Data.lookupPath "n" value) = Some "2" @>
         test <@ Data.tryText (Data.lookupPath "text" value) = Some "Ada" @>
-        test <@ Data.render value = "{\"n\":1.20e+3,\"n\":2,\"text\":\"Ada\",\"items\":[true,null]}" @>
-        test <@ Data.Json.parse (Data.render value) = value @>
+        test <@ Data.render value = "{ n: 1.20e+3, n: 2, text: \"Ada\", items: [true, null] }" @>
+        test <@ Data.Json.render value = "{\"n\":1.20e+3,\"n\":2,\"text\":\"Ada\",\"items\":[true,null]}" @>
+        test <@ Data.Json.parse (Data.Json.render value) = value @>
         test <@ Data.renderIndented value |> fun rendered -> rendered.Contains(Environment.NewLine) || rendered.Contains("\n") @>

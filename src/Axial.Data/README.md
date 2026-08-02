@@ -20,7 +20,7 @@ let customer =
 let promoted =
     customer
     |> Data.patch [
-        set "address.postcode" 5001
+        replace "address.postcode" 5001
         append "roles" "admin"
     ]
 

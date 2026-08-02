@@ -19,4 +19,4 @@ Copies a JSON element into structured data.
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement">JsonElement</a>&#32;->&#32;<a href="../../data/t-data.md">Data</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L263-263)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L352-352)

@@ -26,7 +26,7 @@ This page shows `Axial.Data`: one owned tree for literals, source adapters, immu
 - [`Data.assoc`](./m-data-assoc.md): Associates an object field name with one exact value.
 - [`Data.optionalAssoc`](./m-data-optionalassoc.md): Associates an object field name with <code>Some</code> value, or omits <code>None</code>.
 - [`Data.data`](./m-data-data.md): Builds an object from ordered field instructions.
-- [`Data.number`](./m-data-number.md): Constructs a number from one validated JSON number token.
+- [`Data.number`](./m-data-number.md): Constructs a number from one JSON number token, validated identically on .NET and Fable.
 - [`Data.fields`](./m-data-fields.md): Returns exact field instructions from an existing object.
 - [`Data.Syntax.data`](./m-data-syntax-data.md): Builds an object from ordered field instructions.
 - [`Data.Syntax.(=>)`](./m-data-syntax-op_equalsgreater.md): Associates a field name with an exact value or recursive data pattern.
@@ -40,8 +40,8 @@ This page shows `Axial.Data`: one owned tree for literals, source adapters, immu
 - [`DataEdit`](./t-dataedit.md): An opaque immutable edit applied by <code>Data.tryPatch</code> or <code>Data.patch</code>.
 - [`DataPatchFailure`](./t-datapatchfailure.md): Describes why one immutable data edit could not be applied.
 - [`DataPatchException`](./t-datapatchexception.md): Raised by <code>Data.patch</code> when an edit cannot be applied.
-- [`DataEdit.set`](./m-dataedit-set.md): Describes replacing an existing value.
-- [`DataEdit.put`](./m-dataedit-put.md): Describes replacing a value or adding a missing final object field.
+- [`DataEdit.set`](./m-dataedit-set.md): Describes replacing a value, or adding a missing final object field.
+- [`DataEdit.replace`](./m-dataedit-replace.md): Describes replacing an existing value.
 - [`DataEdit.remove`](./m-dataedit-remove.md): Describes removing an existing field or list item.
 - [`DataEdit.append`](./m-dataedit-append.md): Describes appending an item to an existing list.
 - [`DataEdit.prepend`](./m-dataedit-prepend.md): Describes prepending an item to an existing list.
@@ -50,16 +50,16 @@ This page shows `Axial.Data`: one owned tree for literals, source adapters, immu
 - [`DataEdit.update`](./m-dataedit-update.md): Describes applying a function to an existing value.
 - [`Data.applyEdit`](./m-data-applyedit.md): Applies one prepared edit or raises <code>DataPatchException</code>.
 - [`Data.patch`](./m-data-patch.md): Applies edits atomically or raises <code>DataPatchException</code>.
-- [`Data.set`](./m-data-set.md): Replaces one existing value and returns the changed tree.
-- [`Data.put`](./m-data-put.md): Replaces one value, or adds a missing final object field, and returns the changed tree.
+- [`Data.set`](./m-data-set.md): Replaces one value, or adds a missing final object field, and returns the changed tree.
+- [`Data.replace`](./m-data-replace.md): Replaces one existing value and returns the changed tree.
 - [`Data.remove`](./m-data-remove.md): Removes one existing field or list item and returns the changed tree.
 - [`Data.append`](./m-data-append.md): Appends one item to an existing list and returns the changed tree.
 - [`Data.prepend`](./m-data-prepend.md): Prepends one item to an existing list and returns the changed tree.
 - [`Data.insert`](./m-data-insert.md): Inserts one item at a valid list index and returns the changed tree.
 - [`Data.rename`](./m-data-rename.md): Renames one existing object field without moving it and returns the changed tree.
 - [`Data.update`](./m-data-update.md): Applies one function to an existing value and returns the changed tree.
-- [`Data.Syntax.set`](./m-data-syntax-set.md): Replaces an existing value.
-- [`Data.Syntax.put`](./m-data-syntax-put.md): Replaces a final value or appends a missing final object field.
+- [`Data.Syntax.set`](./m-data-syntax-set.md): Replaces a value or adds a missing final object field.
+- [`Data.Syntax.replace`](./m-data-syntax-replace.md): Replaces an existing value.
 - [`Data.Syntax.remove`](./m-data-syntax-remove.md): Removes an existing field or list item.
 - [`Data.Syntax.append`](./m-data-syntax-append.md): Appends an item to an existing list.
 - [`Data.Syntax.prepend`](./m-data-syntax-prepend.md): Prepends an item to an existing list.
@@ -112,8 +112,8 @@ This page shows `Axial.Data`: one owned tree for literals, source adapters, immu
 
 ## Rendering and extraction
 
-- [`Data.render`](./m-data-render.md): Renders structured data as deterministic compact JSON.
-- [`Data.renderIndented`](./m-data-renderindented.md): Renders structured data as deterministic indented JSON.
+- [`Data.render`](./m-data-render.md): Renders structured data in a compact, human-readable form.
+- [`Data.renderIndented`](./m-data-renderindented.md): Renders structured data in an indented, human-readable form.
 - [`Data.tryText`](./m-data-trytext.md): Attempts to extract text from one structured value.
 - [`Data.tryBool`](./m-data-trybool.md): Attempts to extract a Boolean from one structured value.
 - [`Data.tryNumberToken`](./m-data-trynumbertoken.md): Attempts to extract the preserved token from one number value.
