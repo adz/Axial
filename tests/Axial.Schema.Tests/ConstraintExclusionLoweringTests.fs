@@ -71,6 +71,38 @@ module ConstraintExclusionLoweringTests =
         test <@ generated.Contains "\"not\":{\"enum\":[\"admin\"]}" @>
 
     [<Fact>]
+    let ``present and trimmed lower to patterns that never reject what the runtime accepts`` () =
+        // The soundness direction, checked against the emitted expressions rather than asserted in prose: every
+        // string the runtime rule admits must also match the pattern the document publishes.
+        let admits (rule: Constraint<string>) (expression: string) =
+            let regex = System.Text.RegularExpressions.Regex expression
+
+            [ "Ada"; ""; " "; "  "; "\u0085"; "\uFEFF"; " Ada"; "Ada "; "\uFEFFAda"; "Ada\uFEFF"; "a b" ]
+            |> List.filter (Constraint.test rule)
+            |> List.forall regex.IsMatch
+
+        // Resolved outside the quotation: `present` is an inline SRTP value.
+        let presentAdmits = admits Constraint.present Constraint.nonBlankPattern
+        let trimmedAdmits = admits Constraint.trimmed Constraint.trimmedPattern
+
+        test <@ presentAdmits @>
+        test <@ trimmedAdmits @>
+
+    [<Fact>]
+    let ``two pattern-shaped rules on one value merge rather than emit a duplicate key`` () =
+        let schema =
+            Schema.text
+            |> Schema.constrain Constraint.present
+            |> Schema.constrain (Constraint.pattern "^[a-z]+$")
+
+        let generated = document schema
+
+        // `pattern` is one key per node. An authored pattern is the .NET dialect and stays runtime-only, so only
+        // the presence pattern is published -- but the merge is what keeps the two from colliding.
+        test <@ generated.Contains "\"pattern\":\"\\\\S\"" @>
+        test <@ generated.Contains "constraint.format.pattern" @>
+
+    [<Fact>]
     let ``an exclusion whose operand has no injective wire encoding stays runtime-only`` () =
         // Same rule the including cases follow: two spellings of one instant are distinct on the wire and equal
         // after parsing, so wire refusal is not typed refusal.

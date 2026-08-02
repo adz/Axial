@@ -329,9 +329,16 @@ module Constraint =
 
     /// <summary>Requires a value to be inhabited according to its shape.</summary>
     /// <remarks>
+    /// <para>
     /// Whitespace-only text is blank, as are null text, a null or empty collection or map, <c>None</c>,
-    /// <c>ValueNone</c>, and an empty <c>Nullable</c>. Annotate the binding so the compiler can select the shape:
-    /// <c>let requiredName : Constraint&lt;string&gt; = Constraint.present</c>.
+    /// <c>ValueNone</c>, and an empty <c>Nullable</c>. Blankness means .NET's whitespace set plus U+FEFF, which
+    /// is what lets the rule be exported; see <c>nonBlankPattern</c>.
+    /// </para>
+    /// <para>
+    /// The shape is selected from the return type, so a reusable binding needs its annotation:
+    /// <c>let requiredName : Constraint&lt;string&gt; = Constraint.present</c>. Applied where the type is already
+    /// known — inside an annotated rule, or to a schema — no annotation is needed.
+    /// </para>
     /// </remarks>
     /// <example><code>let requiredName : Constraint&lt;string&gt; = Constraint.present</code></example>
     let inline present< ^value when (^value or PresentDispatcher): (static member Create: ^value -> Constraint< ^value >)>
@@ -515,6 +522,18 @@ module Constraint =
     /// matches any Unicode decimal digit while ECMA-262 matches <c>[0-9]</c>.
     /// </remarks>
     let numericPattern = Predicates.numericPattern
+
+    /// <summary>The regular expression an exporter may publish for <c>Constraint.present</c> on text.</summary>
+    /// <remarks>
+    /// A sound weakening rather than the exact rule. Blankness covers every character ECMA-262 calls whitespace,
+    /// so this never rejects a value the runtime accepts; a few characters are blank here and not to a validator,
+    /// which lets a value through the wire check for the runtime to reject properly.
+    /// </remarks>
+    let nonBlankPattern = Predicates.nonBlankPattern
+
+    /// <summary>The regular expression an exporter may publish for <c>Constraint.trimmed</c>.</summary>
+    /// <remarks>Sound in the same direction, and for the same reason, as <c>nonBlankPattern</c>.</remarks>
+    let trimmedPattern = Predicates.trimmedPattern
 
     let private format expectation (predicate: string -> bool) =
         atomic (FormatAtom expectation) predicate (fun (value: string) ->

@@ -102,6 +102,41 @@ module ConstraintTests =
             test <@ Constraint.test minLength " " @>
 
         [<Fact>]
+        let ``blankness covers every character a JSON Schema validator calls whitespace`` () =
+            // The soundness condition for exporting `\S`: ECMA-262 whitespace must be a subset of blankness. If
+            // any character here stopped being blank, the emitted pattern would start rejecting values the
+            // library accepts, which is the one direction of divergence that actually costs a user data.
+            let present: Constraint<string> = Constraint.present
+
+            // The ECMA-262 `\s` set: WhiteSpace, LineTerminator, and U+FEFF.
+            let ecmaWhitespace =
+                [ '\u0009'; '\u000A'; '\u000B'; '\u000C'; '\u000D'; '\u0020'; '\u00A0'; '\u1680'
+                  '\u2000'; '\u2001'; '\u2002'; '\u2003'; '\u2004'; '\u2005'; '\u2006'; '\u2007'
+                  '\u2008'; '\u2009'; '\u200A'; '\u2028'; '\u2029'; '\u202F'; '\u205F'; '\u3000'
+                  '\uFEFF' ]
+
+            test <@ ecmaWhitespace |> List.forall (fun character -> not (Constraint.test present (string character))) @>
+
+        [<Fact>]
+        let ``U+FEFF is blank here although .NET Core does not call it whitespace`` () =
+            // The one character added to the .NET set, and the whole reason the export became sound.
+            let present: Constraint<string> = Constraint.present
+
+            test <@ not (Char.IsWhiteSpace '\uFEFF') @>
+            test <@ not (Constraint.test present "\uFEFF") @>
+            test <@ not (Constraint.test Constraint.trimmed "\uFEFFAda") @>
+            test <@ not (Constraint.test Constraint.trimmed "Ada\uFEFF") @>
+
+        [<Fact>]
+        let ``the residual divergence only ever lets a value reach the runtime`` () =
+            // U+0085 is blank here and ordinary to a validator, so the exported pattern accepts a value this
+            // rejects. That direction is harmless: the wire check passes it through and the runtime says why.
+            let present: Constraint<string> = Constraint.present
+
+            test <@ Char.IsWhiteSpace '\u0085' @>
+            test <@ not (Constraint.test present "\u0085") @>
+
+        [<Fact>]
         let ``text cardinality counts code points rather than UTF-16 units`` () =
             let single: Constraint<string> = Constraint.length 1
 

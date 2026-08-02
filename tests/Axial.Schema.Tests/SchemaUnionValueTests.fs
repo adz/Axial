@@ -74,5 +74,5 @@ module SchemaUnionValueTests =
         let generated = JsonSchema.generate schema
 
         test <@ generated.Contains "\"payment\":{\"oneOf\":[" @>
-        test <@ generated.Contains "{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"card\"},\"value\":{\"type\":\"object\",\"properties\":{\"number\":{\"type\":\"string\",\"minLength\":1,\"x-axial-runtime-constraints\":[{\"rule\":\"constraint.presence.present\",\"description\":\"value must be present\"}]}},\"required\":[\"number\"]}},\"required\":[\"type\",\"value\"]}" @>
+        test <@ generated.Contains "{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"card\"},\"value\":{\"type\":\"object\",\"properties\":{\"number\":{\"type\":\"string\",\"pattern\":\"\\\\S\",\"x-axial-runtime-constraints\":[{\"rule\":\"constraint.presence.present\",\"description\":\"value must be present\"}]}},\"required\":[\"number\"]}},\"required\":[\"type\",\"value\"]}" @>
         test <@ generated.Contains "{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"invoice\"},\"value\":{\"type\":\"string\"}},\"required\":[\"type\",\"value\"]}" @>

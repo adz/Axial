@@ -188,6 +188,8 @@ module Shared =
         let nickname: Constraint<string option> = Constraint.optional (Constraint.minLength 2)
         let ttl: Constraint<int> = Constraint.any (Constraint.equalTo -1) [ Constraint.atLeast 1 ]
         let emoji: Constraint<string> = Constraint.length 1
+        let reserved: Constraint<string> = Constraint.noneOf [ "admin"; "root" ]
+        let excluded: Constraint<string list> = Constraint.notContains "internal"
 
         [ Constraint.test name "Ada"
           not (Constraint.test name " ")
@@ -205,6 +207,16 @@ module Shared =
           Constraint.test emoji "\U0001F600"
           Constraint.test Constraint.numeric "345"
           not (Constraint.test Constraint.numeric "\u0663\u0664\u0665")
+          // Blankness must mean the same thing on both runtimes, or the exported pattern is sound on one and
+          // not the other. U+FEFF is the character JavaScript calls whitespace and .NET Core does not.
+          not (Constraint.test (Constraint.present: Constraint<string>) "\ufeff")
+          not (Constraint.test (Constraint.present: Constraint<string>) "\u0085")
+          not (Constraint.test Constraint.trimmed "\ufeffAda")
+          Constraint.test Constraint.trimmed "Ada"
+          Constraint.test reserved "ada"
+          not (Constraint.test reserved "admin")
+          Constraint.test excluded [ "public" ]
+          not (Constraint.test excluded [ "internal" ])
           (match Constraint.check name "" with
            | Error violation -> Violation.render violation <> ""
            | Ok() -> false) ]

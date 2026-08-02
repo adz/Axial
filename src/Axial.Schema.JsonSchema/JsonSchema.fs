@@ -100,6 +100,14 @@ module JsonSchema =
     type private Fidelity =
         /// The keywords mean exactly what the runtime rule means.
         | Enforced of string list
+        /// <summary>The rule is exactly the supplied regular expression.</summary>
+        /// <remarks>
+        /// Carried apart from ordinary keywords for the same reason as <c>Excluded</c>: <c>pattern</c> is one key
+        /// per node, and a value can carry several pattern-shaped rules at once.
+        /// </remarks>
+        | Matched of string
+        /// The regular expression is a sound weakening; the complete rule is also retained as runtime metadata.
+        | WeaklyMatched of string
         /// <summary>
         /// The rule is exactly the refusal of the supplied subschema body. Carried apart from ordinary keywords
         /// because <c>not</c> is one key per node: several excluding rules on one value must combine into a single
@@ -167,10 +175,10 @@ module JsonSchema =
         match atom with
         | PresenceAtom Present ->
             match shape with
-            // Runtime presence rejects whitespace-only text, which no JSON Schema keyword expresses: .NET
-            // whitespace and ECMA-262 `\s` differ in both directions (U+0085 and U+FEFF each fall on the wrong
-            // side). `minLength:1` is the sound weakening; the nonblank rule stays runtime-only.
-            | SchemaShape.Primitive PrimitiveValueKind.Text -> Weakened [ "\"minLength\":1" ]
+            // Blankness covers every character ECMA-262 calls whitespace, so `\S` never rejects a value the
+            // runtime accepts. It is still a weakening rather than the exact rule: a few characters are blank
+            // here and ordinary to a validator, so such a value passes the wire check and the runtime rejects it.
+            | SchemaShape.Primitive PrimitiveValueKind.Text -> WeaklyMatched Constraint.nonBlankPattern
             | SchemaShape.Many _ -> Enforced [ "\"minItems\":1" ]
             | SchemaShape.MapOf _ -> Enforced [ "\"minProperties\":1" ]
             | _ -> NotEnforceable
@@ -238,10 +246,13 @@ module JsonSchema =
         // The complete runtime rule, not an approximation: the compiled IgnoreCase is inert because the pattern
         // contains no letters. The annotation-oriented `format: email` comes from SchemaFormat.email instead, and
         // declaring both emits both.
-        | FormatAtom Email when isText -> Enforced [ sprintf "\"pattern\":\"%s\"" (escape Constraint.emailPattern) ]
-        | FormatAtom Numeric when isText -> Enforced [ sprintf "\"pattern\":\"%s\"" (escape Constraint.numericPattern) ]
-        // Trimmed needs lookaround; Alphanumeric is Char.IsLetterOrDigit, whose Unicode semantics no ECMA-262
-        // class reproduces; an authored pattern is the .NET dialect, which is not ECMA-262.
+        | FormatAtom Email when isText -> Matched Constraint.emailPattern
+        | FormatAtom Numeric when isText -> Matched Constraint.numericPattern
+        // Sound in the same direction as Present, and for the same reason: the rule trims a superset of what a
+        // validator calls whitespace, so this never rejects a value the runtime accepts.
+        | FormatAtom Trimmed when isText -> WeaklyMatched Constraint.trimmedPattern
+        // Alphanumeric is Char.IsLetterOrDigit, whose Unicode semantics no ECMA-262 class reproduces; an authored
+        // pattern is the .NET dialect, which is not ECMA-262.
         | FormatAtom Trimmed
         | FormatAtom Alphanumeric
         | FormatAtom(Pattern _)
@@ -284,6 +295,8 @@ module JsonSchema =
     type private Lowering =
         { /// Keywords that may be published as enforcement.
           Keywords: string list
+          /// Regular expressions the value must match. Merged when the node is written, since `pattern` is one key.
+          Patterns: string list
           /// Subschema bodies the value must refuse. Merged into one `not` keyword when the node is written.
           Exclusions: string list
           /// Rules the target does not enforce, retained so the document never implies more than it checks.
@@ -291,17 +304,31 @@ module JsonSchema =
 
     let private nothing =
         { Keywords = []
+          Patterns = []
           Exclusions = []
           Runtime = [] }
 
     let private combine first second =
         { Keywords = first.Keywords @ second.Keywords
+          Patterns = first.Patterns @ second.Patterns
           Exclusions = first.Exclusions @ second.Exclusions
           Runtime = first.Runtime @ second.Runtime }
 
-    /// Every keyword a node publishes, with its exclusions folded into the single `not` that JSON Schema allows.
-    /// Refusing a disjunction is refusing each branch, so `not: {anyOf: [a, b]}` is exactly `not a and not b`.
+    /// Every keyword a node publishes, with the one-per-node keywords folded together. Refusing a disjunction is
+    /// refusing each branch, so `not: {anyOf: [a, b]}` is exactly `not a and not b`; matching a conjunction of
+    /// patterns is matching each, so `allOf: [{pattern: a}, {pattern: b}]` is exactly both rules.
     let private enforcementKeywords lowering =
+        let matched =
+            match lowering.Patterns |> List.distinct with
+            | [] -> []
+            | [ single ] -> [ sprintf "\"pattern\":\"%s\"" (escape single) ]
+            | several ->
+                several
+                |> List.map (escape >> sprintf "{\"pattern\":\"%s\"}")
+                |> String.concat ","
+                |> sprintf "\"allOf\":[%s]"
+                |> List.singleton
+
         let excluded =
             match lowering.Exclusions |> List.distinct with
             | [] -> []
@@ -313,7 +340,7 @@ module JsonSchema =
                 |> sprintf "\"not\":{\"anyOf\":[%s]}"
                 |> List.singleton
 
-        lowering.Keywords @ excluded
+        lowering.Keywords @ matched @ excluded
 
     let rec private lower shape (description: ConstraintDescription) : Lowering =
         match description.Expression with
@@ -323,10 +350,15 @@ module JsonSchema =
 
             match atomKeywords shape atom with
             | Enforced keywords -> { nothing with Keywords = keywords }
+            | Matched expression -> { nothing with Patterns = [ expression ] }
             | Excluded body -> { nothing with Exclusions = [ body ] }
             | Weakened keywords ->
                 { nothing with
                     Keywords = keywords
+                    Runtime = retained }
+            | WeaklyMatched expression ->
+                { nothing with
+                    Patterns = [ expression ]
                     Runtime = retained }
             | NotEnforceable -> { nothing with Runtime = retained }
         | ConstraintExpression.All children ->

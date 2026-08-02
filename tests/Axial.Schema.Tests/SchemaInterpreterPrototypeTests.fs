@@ -244,7 +244,8 @@ module SchemaInterpreterPrototypeTests =
         let generated = JsonSchema.generate (signupSchemaWith constructions getterReads)
 
         test <@ generated.Contains "\"type\":\"object\"" @>
-        test <@ generated.Contains "\"email\":{\"type\":\"string\",\"format\":\"email\",\"minLength\":1,\"maxLength\":254,\"pattern\":\"^[^@]+@[^@]+$\"" @>
+        // `present` and `email` are both pattern-shaped, and `pattern` is one key per node, so they merge.
+        test <@ generated.Contains "\"email\":{\"type\":\"string\",\"format\":\"email\",\"maxLength\":254,\"allOf\":[{\"pattern\":\"\\\\S\"},{\"pattern\":\"^[^@]+@[^@]+$\"}]" @>
         test <@ generated.Contains "\"age\":{\"type\":\"integer\",\"minimum\":13,\"maximum\":120}" @>
         test <@ generated.Contains "\"newsletter\":{\"type\":\"boolean\"}" @>
         test <@ generated.Contains "\"address\":{\"type\":\"object\",\"properties\":{\"street\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"}},\"required\":[\"street\",\"city\"]}" @>

@@ -21,6 +21,15 @@ module internal Predicates =
     /// execution. Fixing the runtime rule instead keeps the two agreeing by construction.
     let numericPattern = @"^[0-9]+$"
 
+    /// At least one character ECMA-262 does not call whitespace. A sound export of `present` on text: every
+    /// character a validator treats as whitespace is blank here too, so a string this rejects is one Axial
+    /// rejects as well. See `isBlankChar` for why that subset relation holds.
+    let nonBlankPattern = @"\S"
+
+    /// No leading or trailing ECMA-262 whitespace, written without lookaround so it means the same thing in every
+    /// dialect. Sound in the same direction and for the same reason as `nonBlankPattern`.
+    let trimmedPattern = @"^(\S|\S[\s\S]*\S)?$"
+
     let private emailRegex = Regex(emailPattern, RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
     let private numericRegex = Regex(numericPattern, RegexOptions.Compiled)
 
@@ -68,7 +77,26 @@ module internal Predicates =
 
             count
 
-    let isBlankText (value: string) = String.IsNullOrWhiteSpace value
+    /// <summary>
+    /// Whether one character counts as blank: .NET's whitespace set, plus U+FEFF.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The extra character is what makes the export sound. ECMA-262's <c>\s</c> is .NET's whitespace set plus
+    /// U+FEFF and minus a few others, and that overlap-in-both-directions is why <c>\S</c> was previously
+    /// unusable: U+FEFF is whitespace to a JSON Schema validator but not to <c>Char.IsWhiteSpace</c> on .NET
+    /// Core, so an emitted <c>\S</c> would have rejected a string the library accepts.
+    /// </para>
+    /// <para>
+    /// Adding U+FEFF makes ECMA-262 whitespace a strict subset of blankness, which removes that direction
+    /// entirely. What remains — U+0085 and friends, blank here but not to a validator — only ever lets a value
+    /// through the wire check for Axial to reject with a proper diagnostic.
+    /// </para>
+    /// </remarks>
+    let isBlankChar (value: char) = Char.IsWhiteSpace value || value = '\uFEFF'
+
+    let isBlankText (value: string) =
+        isNull value || value |> Seq.forall isBlankChar
 
     let isEmail (value: string) = not (isNull value) && emailRegex.IsMatch value
 
@@ -77,7 +105,11 @@ module internal Predicates =
     let isAlphanumeric (value: string) =
         not (isNull value) && value.Length > 0 && value |> Seq.forall Char.IsLetterOrDigit
 
-    let isTrimmed (value: string) = not (isNull value) && value.Trim() = value
+    /// Trims the blank set above rather than calling String.Trim, which would leave U+FEFF in place and put the
+    /// rule back out of step with its exported pattern.
+    let isTrimmed (value: string) =
+        not (isNull value)
+        && (value.Length = 0 || (not (isBlankChar value.[0]) && not (isBlankChar value.[value.Length - 1])))
 
     let matchesPattern (pattern: string) (value: string) =
         not (isNull value) && Regex.IsMatch(value, pattern)
