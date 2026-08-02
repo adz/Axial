@@ -72,7 +72,7 @@ module Interval =
         if lower <= upper then
             Ok { LowerValue = lower; UpperValue = upper }
         else
-            Error(Atomic(Described "the lower bound must not exceed the upper bound"))
+            Error(Atomic(Described("the lower bound must not exceed the upper bound", None)))
 
     /// <summary>Returns the inclusive lower bound.</summary>
     let lower (interval: Interval<'value>) = interval.Lower

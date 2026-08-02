@@ -88,7 +88,7 @@ module SchemaRefinedValueTests =
         | Error diagnostics ->
             let errors = diagnostics |> SchemaErrors.toList
             test <@ errors |> List.map _.Path = [ Path.root ] @>
-            test <@ errors |> List.map _.Error = [ SchemaError.Violation(Atomic(Described "must not be a blocked address")) ] @>
+            test <@ errors |> List.map _.Error = [ SchemaError.Violation(Atomic(Described("must not be a blocked address", None))) ] @>
 
     [<Fact>]
     let ``refined retains the raw value schema as inspectable metadata`` () =

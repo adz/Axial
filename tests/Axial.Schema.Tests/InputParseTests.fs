@@ -131,8 +131,8 @@ module InputParseTests =
         let parsed = Schema.parseRetainingInput messageSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Violation(Atomic(Described "Email is required.")) ] @>
-        test <@ parsed.ErrorsFor "age" = [ SchemaError.Violation(Atomic(Described "Must be an adult.")) ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Violation(Atomic(Described("Email is required.", None))) ] @>
+        test <@ parsed.ErrorsFor "age" = [ SchemaError.Violation(Atomic(Described("Must be an adult.", None))) ] @>
 
     [<Fact>]
     let ``parse falls back to the default error when a constraint has no custom message`` () =

@@ -69,7 +69,7 @@ module SchemaRefinedValueCheckTests =
         test <@ Schema.check schema allowed = Ok allowed @>
         test <@ Schema.check schema (Email.create "grace@example.com") |> Result.isError @>
         test <@ SchemaCheck.text schema allowed = Ok () @>
-        test <@ SchemaCheck.text schema (Email.create "grace@example.com") = Error(Atomic(Described "must be the allowed address")) @>
+        test <@ SchemaCheck.text schema (Email.create "grace@example.com") = Error(Atomic(Described("must be the allowed address", None))) @>
         test <@ Schema.parse schema (Axial.Data.Text "ada@example.com") = Ok allowed @>
         test <@ Schema.parse schema (Axial.Data.Text "grace@example.com") |> Result.isError @>
 

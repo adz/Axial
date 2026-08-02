@@ -154,6 +154,9 @@ module ConstraintDSL =
     /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.custom" />.</summary>
     let custom = Constraint.custom
 
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.customLocalized" />.</summary>
+    let customLocalized = Constraint.customLocalized
+
     /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.customWith" />.</summary>
     let customWith = Constraint.customWith
 

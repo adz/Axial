@@ -234,9 +234,9 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.key "age"
-                            Error = SchemaError.Violation(Atomic(Described "Must be an adult.")) }
+                            Error = SchemaError.Violation(Atomic(Described("Must be an adult.", None))) }
                           { Path = Path.key "email"
-                            Error = SchemaError.Violation(Atomic(Described "Email is required.")) } ]
+                            Error = SchemaError.Violation(Atomic(Described("Email is required.", None))) } ]
             @>
 
     [<Fact>]

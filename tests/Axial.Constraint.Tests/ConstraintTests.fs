@@ -62,7 +62,7 @@ module ConstraintTests =
             let constraint' =
                 Constraint.customWith "must be positive" (fun value ->
                     calls <- calls + 1
-                    if value > 0 then Ok() else Error(Atomic(Described "must be positive")))
+                    if value > 0 then Ok() else Error(Atomic(Described("must be positive", None))))
 
             Constraint.check constraint' 1 |> ignore
             let afterSuccess = calls
@@ -352,7 +352,7 @@ module ConstraintTests =
             let failure = violation constraint' 0
 
             test <@ List.rev order = [ "first"; "second" ] @>
-            test <@ failure = All(Atomic(Described "first"), [ Atomic(Described "second") ]) @>
+            test <@ failure = All(Atomic(Described("first", None)), [ Atomic(Described("second", None)) ]) @>
 
         [<Fact>]
         let ``any short-circuits on the first success and groups every rejected branch`` () =
@@ -374,7 +374,7 @@ module ConstraintTests =
                 failure =
                     Any(
                         Atomic(Expected(RelationAtom(Compared(Equal, ConstraintValue.Integer -1L)), Some(ConstraintValue.Integer 0L))),
-                        [ Atomic(Described "counted") ]
+                        [ Atomic(Described("counted", None)) ]
                     )
             @>
 
@@ -390,7 +390,7 @@ module ConstraintTests =
             let constraint' = Constraint.notWith "must not be a reserved name" reserved
 
             test <@ Constraint.test constraint' "ada" @>
-            test <@ violation constraint' "admin" = Atomic(Described "must not be a reserved name") @>
+            test <@ violation constraint' "admin" = Atomic(Described("must not be a reserved name", None)) @>
 
             match expression constraint' with
             | ConstraintExpression.Opaque(OpaqueConstraint.RuntimeNegation(description, inner)) ->
@@ -431,7 +431,7 @@ module ConstraintTests =
         let ``custom failures retain their authored prose and customWith may report a typed reason`` () =
             let isbn = Constraint.custom "must be a valid ISBN" (fun (value: string) -> value.Length = 13)
 
-            test <@ violation isbn "short" = Atomic(Described "must be a valid ISBN") @>
+            test <@ violation isbn "short" = Atomic(Described("must be a valid ISBN", None)) @>
 
             let currency =
                 Constraint.customWith "must be a supported currency" (fun code ->
@@ -570,12 +570,12 @@ module ConstraintTests =
 
         [<Fact>]
         let ``projections and traversals work over nested groups`` () =
-            let inner = All(Atomic(Described "a"), [ Atomic(Described "b") ])
-            let tree = Any(inner, [ Atomic(Described "c") ])
+            let inner = All(Atomic(Described("a", None)), [ Atomic(Described("b", None)) ])
+            let tree = Any(inner, [ Atomic(Described("c", None)) ])
 
-            test <@ Violation.children tree = [ inner; Atomic(Described "c") ] @>
-            test <@ Violation.flatten tree = [ Described "a"; Described "b"; Described "c" ] @>
-            test <@ Violation.tryDescription (Atomic(Described "a")) = Some "a" @>
+            test <@ Violation.children tree = [ inner; Atomic(Described("c", None)) ] @>
+            test <@ Violation.flatten tree = [ Described("a", None); Described("b", None); Described("c", None) ] @>
+            test <@ Violation.tryDescription (Atomic(Described("a", None))) = Some "a" @>
             test <@ Violation.tryDescription tree = None @>
 
         [<Fact>]
@@ -587,8 +587,8 @@ module ConstraintTests =
 
         [<Fact>]
         let ``rendering keeps conjunction and alternative groups distinct`` () =
-            let conjunction = All(Atomic(Described "a"), [ Atomic(Described "b") ])
-            let alternatives = Any(Atomic(Described "a"), [ Atomic(Described "b") ])
+            let conjunction = All(Atomic(Described("a", None)), [ Atomic(Described("b", None)) ])
+            let alternatives = Any(Atomic(Described("a", None)), [ Atomic(Described("b", None)) ])
 
             test <@ Violation.render conjunction = "a; b" @>
             test <@ Violation.render alternatives = "a, or b" @>
@@ -636,7 +636,7 @@ module ConstraintTests =
         [<Fact>]
         let ``toMessageTree preserves grouping and separates localizable keys from authored prose`` () =
             let tree =
-                Violation.toMessageTree (All(Atomic(Expected(PresenceAtom Present, None)), [ Atomic(Described "authored") ]))
+                Violation.toMessageTree (All(Atomic(Expected(PresenceAtom Present, None)), [ Atomic(Described("authored", None)) ]))
 
             match tree with
             | MessageTree.All(MessageTree.Leaf(MessageLeaf.Localized descriptor), [ MessageTree.Leaf(MessageLeaf.Verbatim prose) ]) ->
@@ -657,8 +657,69 @@ module ConstraintTests =
             | other -> failwithf "Expected one localized leaf, but was %A." other
 
         [<Fact>]
+        let ``renderWith translates every library failure through one lookup`` () =
+            // The whole localization path in one call: no consumer should have to match the tree by hand to do
+            // the ordinary thing, which is a resource lookup per message.
+            let rule: Constraint<string> = Constraint.all [ Constraint.present; Constraint.lengthBetween 2 40 ]
+
+            let lookup descriptor =
+                match descriptor.Key with
+                | "constraint.presence.present" -> "doit être renseigné"
+                | "constraint.cardinality.between" ->
+                    let minimum = descriptor.Arguments["minimum"]
+                    let maximum = descriptor.Arguments["maximum"]
+                    $"longueur entre {ConstraintValue.render minimum} et {ConstraintValue.render maximum}"
+                | other -> other
+
+            test <@ Violation.renderWith lookup (violation rule "") = "doit être renseigné; longueur entre 2 et 40" @>
+
+        [<Fact>]
+        let ``renderWith keeps the grouping and separators render uses`` () =
+            let lookup (_: MessageDescriptor) = "x"
+            let conjunction = All(Atomic(Described("a", None)), [ Atomic(Described("b", None)) ])
+            let alternatives = Any(Atomic(Described("a", None)), [ Atomic(Described("b", None)) ])
+
+            // Verbatim prose has nothing to look up, so it passes through and the separators still apply.
+            test <@ Violation.renderWith lookup conjunction = "a; b" @>
+            test <@ Violation.renderWith lookup alternatives = "a, or b" @>
+
+        [<Fact>]
+        let ``an author-supplied key makes a custom rule's message translatable`` () =
+            // Without this, an application with localization and one custom rule has one message it can never
+            // translate, because verbatim prose is all Axial was given.
+            let descriptor =
+                { Key = "signup.isbn"
+                  Arguments = Map [ "format", ConstraintValue.Text "ISBN-13" ] }
+
+            let isbn =
+                Constraint.customLocalized "must be a valid ISBN" descriptor (fun (value: string) -> value.Length = 13)
+
+            test <@ violation isbn "short" = Atomic(Described("must be a valid ISBN", Some descriptor)) @>
+            test <@ Violation.tryDescriptionKey (violation isbn "short") = Some descriptor @>
+
+            // Prose stays the default rendering; the key only changes what a translator sees.
+            test <@ Violation.render (violation isbn "short") = "must be a valid ISBN" @>
+            test <@ Violation.renderWith (fun key -> key.Key) (violation isbn "short") = "signup.isbn" @>
+
+            test <@
+                Violation.toMessageTree (violation isbn "short") = MessageTree.Leaf(MessageLeaf.Localized descriptor)
+            @>
+
+        [<Fact>]
+        let ``a custom rule without a key still projects as untranslatable prose`` () =
+            // Axial never invents a key: one it made up would promise a catalogue entry that does not exist.
+            let isbn = Constraint.custom "must be a valid ISBN" (fun (value: string) -> value.Length = 13)
+
+            test <@ Violation.tryDescriptionKey (violation isbn "short") = None @>
+
+            test <@
+                Violation.toMessageTree (violation isbn "short")
+                    = MessageTree.Leaf(MessageLeaf.Verbatim "must be a valid ISBN")
+            @>
+
+        [<Fact>]
         let ``conjoin and alternatives normalize empty and unary groups away`` () =
-            let single = Atomic(Described "a")
+            let single = Atomic(Described("a", None))
 
             test <@ Violation.conjoin [] = None @>
             test <@ Violation.conjoin [ single ] = Some single @>

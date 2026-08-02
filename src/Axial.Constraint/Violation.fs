@@ -1,5 +1,12 @@
 namespace Axial.Constraint
 
+/// <summary>A localizable message, addressed by key rather than rendered as English.</summary>
+type MessageDescriptor =
+    { /// <summary>The stable catalogue key, for example <c>constraint.cardinality.minimum</c>.</summary>
+      Key: string
+      /// <summary>The operands the message interpolates, named for the key's template.</summary>
+      Arguments: Map<string, ConstraintValue> }
+
 /// <summary>Why one indivisible constraint failed.</summary>
 /// <remarks>
 /// <para>
@@ -17,7 +24,13 @@ type AtomicViolation =
     /// <summary>An interpreted expectation was not met.</summary>
     | Expected of expectation: ConstraintAtom * actual: ConstraintValue option
     /// <summary>An opaque constraint failed, reported with its author-supplied prose.</summary>
-    | Described of description: string
+    /// <remarks>
+    /// The descriptor is the author's own catalogue key, supplied alongside the prose and used in preference to
+    /// it when a message tree is projected. Axial never invents one — a key it made up would promise a lookup
+    /// that cannot exist — but an author who has a resource catalogue can name the entry, which is the only way
+    /// a custom rule's message can be translated at all. Absent a descriptor the prose passes through verbatim.
+    /// </remarks>
+    | Described of description: string * key: MessageDescriptor option
     /// <summary>A built-in rule failed whose operand has no portable representation.</summary>
     | UnsupportedOperand of operation: UnsupportedOperation
 
@@ -45,17 +58,10 @@ type Violation =
     /// <summary>No alternative succeeded; each listed failure is one rejected branch.</summary>
     | Any of first: Violation * rest: Violation list
 
-/// <summary>A localizable message, addressed by key rather than rendered as English.</summary>
-type MessageDescriptor =
-    { /// <summary>The stable catalogue key, for example <c>constraint.cardinality.minimum</c>.</summary>
-      Key: string
-      /// <summary>The operands the message interpolates, named for the key's template.</summary>
-      Arguments: Map<string, ConstraintValue> }
-
 /// <summary>One leaf of a projected message tree.</summary>
 /// <remarks>
-/// Author-supplied prose on an opaque constraint passes through verbatim and is never localizable; inventing a
-/// resource key for user text would promise a lookup that cannot exist.
+/// Author-supplied prose on an opaque constraint passes through verbatim unless the author also supplied their
+/// own catalogue key. Axial never invents one: a key it made up would promise a lookup that cannot exist.
 /// </remarks>
 [<RequireQualifiedAccess>]
 type MessageLeaf =
@@ -138,7 +144,13 @@ module Violation =
     /// <summary>The author-supplied prose, when the violation is a single opaque leaf.</summary>
     let tryDescription (violation: Violation) : string option =
         match violation with
-        | Atomic(Described description) -> Some description
+        | Atomic(Described(description, _)) -> Some description
+        | _ -> None
+
+    /// <summary>The author-supplied catalogue key, when the violation is a single opaque leaf carrying one.</summary>
+    let tryDescriptionKey (violation: Violation) : MessageDescriptor option =
+        match violation with
+        | Atomic(Described(_, key)) -> key
         | _ -> None
 
     let private renderAtomic (atomic: AtomicViolation) =
@@ -149,7 +161,7 @@ module Violation =
             match actual with
             | Some actual -> $"{expected}, but was {ConstraintValue.render actual}"
             | None -> expected
-        | Described description -> description
+        | Described(description, _) -> description
         | UnsupportedOperand operation -> UnsupportedOperation.render operation
 
     /// <summary>
@@ -180,8 +192,32 @@ module Violation =
                 | None -> ConstraintAtom.arguments expectation
 
             MessageTree.Leaf(MessageLeaf.Localized { Key = ConstraintAtom.key expectation; Arguments = arguments })
-        | Atomic(Described description) -> MessageTree.Leaf(MessageLeaf.Verbatim description)
+        | Atomic(Described(description, key)) ->
+            match key with
+            | Some descriptor -> MessageTree.Leaf(MessageLeaf.Localized descriptor)
+            | None -> MessageTree.Leaf(MessageLeaf.Verbatim description)
         | Atomic(UnsupportedOperand operation) ->
             MessageTree.Leaf(MessageLeaf.Localized { Key = UnsupportedOperation.key operation; Arguments = Map.empty })
         | All(first, rest) -> MessageTree.All(toMessageTree first, rest |> List.map toMessageTree)
         | Any(first, rest) -> MessageTree.Any(toMessageTree first, rest |> List.map toMessageTree)
+
+    /// <summary>
+    /// Renders a violation through a caller-supplied lookup, keeping the same grouping and separators
+    /// <c>render</c> uses.
+    /// </summary>
+    /// <remarks>
+    /// The whole localization path in one call. <c>toMessageTree</c> remains available for a translator that
+    /// needs to control word order across a group; this is for the common case, where a resource lookup per
+    /// message is the entire job and matching the tree by hand is pure ceremony. Verbatim leaves — author prose
+    /// with no catalogue key — are passed through untranslated, because there is nothing to look up.
+    /// </remarks>
+    /// <example><code>violation |> Violation.renderWith (fun descriptor -> resources.Format(descriptor.Key, descriptor.Arguments))</code></example>
+    let renderWith (lookup: MessageDescriptor -> string) (violation: Violation) : string =
+        let rec go tree =
+            match tree with
+            | MessageTree.Leaf(MessageLeaf.Localized descriptor) -> lookup descriptor
+            | MessageTree.Leaf(MessageLeaf.Verbatim prose) -> prose
+            | MessageTree.All(first, rest) -> first :: rest |> List.map go |> String.concat "; "
+            | MessageTree.Any(first, rest) -> first :: rest |> List.map go |> String.concat ", or "
+
+        violation |> toMessageTree |> go

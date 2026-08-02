@@ -207,7 +207,7 @@ module Constraint =
 
         Constraint<'value>(
             negated,
-            (fun value -> if negated value then Ok() else Error(Atomic(Described description))),
+            (fun value -> if negated value then Ok() else Error(Atomic(Described(description, None)))),
             ConstraintDescription.ofExpression (
                 ConstraintExpression.Opaque(OpaqueConstraint.RuntimeNegation(description, constraint'.DescriptionValue))
             )
@@ -227,7 +227,41 @@ module Constraint =
 
         Constraint<'value>(
             predicate,
-            (fun value -> if predicate value then Ok() else Error(Atomic(Described description))),
+            (fun value -> if predicate value then Ok() else Error(Atomic(Described(description, None)))),
+            ConstraintDescription.ofExpression (ConstraintExpression.Opaque(OpaqueConstraint.CustomPredicate description))
+        )
+
+    /// <summary>
+    /// Runs an arbitrary predicate, reporting the supplied prose and the author's own catalogue key when it fails.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Opaque exactly as <c>custom</c> is — the key names a message, not a rule, and claims nothing inspectable.
+    /// What it buys is translation: a failure from plain <c>custom</c> projects as verbatim prose, which no
+    /// resource system can look up, so an application with localization and one custom rule would otherwise have
+    /// one permanently untranslatable message.
+    /// </para>
+    /// <para>
+    /// The prose is still required, and remains the default English rendering. Axial supplies no key of its own
+    /// here; only an author who has a catalogue can name an entry in it.
+    /// </para>
+    /// </remarks>
+    /// <example><code>Constraint.customLocalized
+    ///     "must be a valid ISBN"
+    ///     { Key = "signup.isbn"; Arguments = Map.empty }
+    ///     isValidIsbn</code></example>
+    let customLocalized (description: string) (key: MessageDescriptor) (predicate: 'value -> bool) : Constraint<'value> =
+        ensureProse (nameof description) description
+        ensureProse "key" key.Key
+        ensureFunction (nameof predicate) predicate
+
+        Constraint<'value>(
+            predicate,
+            (fun value ->
+                if predicate value then
+                    Ok()
+                else
+                    Error(Atomic(Described(description, Some key)))),
             ConstraintDescription.ofExpression (ConstraintExpression.Opaque(OpaqueConstraint.CustomPredicate description))
         )
 
@@ -238,9 +272,11 @@ module Constraint =
     /// costs whatever the callback allocates. Returning an <c>Expected</c> leaf makes no false portable claim: the
     /// enclosing description is still opaque.
     /// </remarks>
-    /// <example><code>Constraint.customWith "must be a supported currency" (fun code ->
-    ///     if supported.Contains code then Ok ()
-    ///     else Error (Atomic (Expected (MembershipAtom (OneOf choices), ConstraintValue.tryCreate code))))</code></example>
+    /// <remarks>
+    /// The callback's shape is exactly <c>Constraint.check</c> applied to a constraint, so the usual way to
+    /// supply a structured reason is to reuse a built-in rather than build a violation by hand.
+    /// </remarks>
+    /// <example><code>Constraint.customWith "must be a supported currency" (Constraint.check (Constraint.oneOf supported))</code></example>
     let customWith (description: string) (check: 'value -> Result<unit, Violation>) : Constraint<'value> =
         ensureProse (nameof description) description
         ensureFunction (nameof check) check
