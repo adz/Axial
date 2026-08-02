@@ -45,6 +45,7 @@
     <Compile Include="SchemaDiagnosticsRenderingTests.fs" />
     <Compile Include="SchemaRefinedValueCheckTests.fs" />
     <Compile Include="RefinedCatalogSchemaTests.fs" />
+    <Compile Include="ConstraintExclusionLoweringTests.fs" />
     <Compile Include="SchemaVerticalSliceProofTests.fs" />
     <Compile Include="contracts/geo.g.fs" />
     <Compile Include="contracts/category.g.fs" />

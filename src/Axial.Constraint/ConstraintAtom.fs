@@ -50,11 +50,21 @@ type Relation =
     | Within of minimum: ConstraintValue * maximum: ConstraintValue
 
 /// <summary>What a membership rule expects.</summary>
+/// <remarks>
+/// The excluding cases are primitives in their own right, not a general complement operator. There is no honest
+/// general <c>not</c> — see <c>Constraint.notWith</c> — but a closed membership family can state exclusion
+/// directly, and does, for the same reason <c>RelationOperator.NotEqual</c> states inequality directly rather
+/// than negating <c>Equal</c>.
+/// </remarks>
 type Membership =
     /// <summary>The value equals one of the supplied choices.</summary>
     | OneOf of choices: ConstraintValue list
+    /// <summary>The value equals none of the supplied choices.</summary>
+    | NoneOf of choices: ConstraintValue list
     /// <summary>The collection contains the supplied item.</summary>
     | Contains of item: ConstraintValue
+    /// <summary>The collection does not contain the supplied item.</summary>
+    | NotContains of item: ConstraintValue
 
 /// <summary>The built-in text formats. Every case names one Axial-owned executable predicate.</summary>
 /// <remarks>
@@ -157,7 +167,9 @@ module ConstraintAtom =
         | RelationAtom(Compared(operator, _)) -> "constraint.relation." + relationOperatorKey operator
         | RelationAtom(Within _) -> "constraint.relation.within"
         | MembershipAtom(OneOf _) -> "constraint.membership.oneOf"
+        | MembershipAtom(NoneOf _) -> "constraint.membership.noneOf"
         | MembershipAtom(Contains _) -> "constraint.membership.contains"
+        | MembershipAtom(NotContains _) -> "constraint.membership.notContains"
         | UniquenessAtom -> "constraint.uniqueness"
         | FormatAtom Email -> "constraint.format.email"
         | FormatAtom Trimmed -> "constraint.format.trimmed"
@@ -178,8 +190,10 @@ module ConstraintAtom =
             Map [ "minimum", ConstraintValue.Integer(int64 minimum); "maximum", ConstraintValue.Integer(int64 maximum) ]
         | RelationAtom(Compared(_, expected)) -> Map [ "expected", expected ]
         | RelationAtom(Within(minimum, maximum)) -> Map [ "minimum", minimum; "maximum", maximum ]
-        | MembershipAtom(OneOf choices) -> Map [ "choices", ConstraintValue.List choices ]
-        | MembershipAtom(Contains item) -> Map [ "item", item ]
+        | MembershipAtom(OneOf choices)
+        | MembershipAtom(NoneOf choices) -> Map [ "choices", ConstraintValue.List choices ]
+        | MembershipAtom(Contains item)
+        | MembershipAtom(NotContains item) -> Map [ "item", item ]
         | UniquenessAtom -> Map.empty
         | FormatAtom(Pattern pattern) -> Map [ "pattern", ConstraintValue.Text pattern ]
         | FormatAtom _ -> Map.empty
@@ -207,7 +221,11 @@ module ConstraintAtom =
         | MembershipAtom(OneOf choices) ->
             let choices = choices |> List.map value |> String.concat ", "
             $"expected one of: {choices}"
+        | MembershipAtom(NoneOf choices) ->
+            let choices = choices |> List.map value |> String.concat ", "
+            $"expected none of: {choices}"
         | MembershipAtom(Contains item) -> $"expected the collection to contain {value item}"
+        | MembershipAtom(NotContains item) -> $"expected the collection not to contain {value item}"
         | UniquenessAtom -> "duplicate values are not allowed"
         | FormatAtom Email -> "expected an email address"
         | FormatAtom Trimmed -> "expected no leading or trailing whitespace"

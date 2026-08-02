@@ -100,6 +100,12 @@ module JsonSchema =
     type private Fidelity =
         /// The keywords mean exactly what the runtime rule means.
         | Enforced of string list
+        /// <summary>
+        /// The rule is exactly the refusal of the supplied subschema body. Carried apart from ordinary keywords
+        /// because <c>not</c> is one key per node: several excluding rules on one value must combine into a single
+        /// <c>"not":{"anyOf":[…]}</c> rather than emit a duplicate key.
+        /// </summary>
+        | Excluded of string
         /// The keywords are a sound weakening; the complete rule is also retained as runtime metadata.
         | Weakened of string list
         /// No keyword is sound. The rule is retained as runtime metadata only.
@@ -183,8 +189,10 @@ module JsonSchema =
             match comparableLiteral expected with
             | Some literal -> Enforced [ sprintf "\"const\":%s" literal ]
             | None -> NotEnforceable
-        // JSON Schema has no direct inequality keyword, and `not: {const: x}` would need the whole node.
-        | RelationAtom(Compared(NotEqual, _)) -> NotEnforceable
+        | RelationAtom(Compared(NotEqual, unexpected)) ->
+            match comparableLiteral unexpected with
+            | Some literal -> Excluded(sprintf "\"const\":%s" literal)
+            | None -> NotEnforceable
         | RelationAtom(Compared(GreaterThan, minimum)) -> comparison "exclusiveMinimum" minimum
         | RelationAtom(Compared(LessThan, maximum)) -> comparison "exclusiveMaximum" maximum
         | RelationAtom(Compared(AtLeast, minimum)) -> comparison "minimum" minimum
@@ -199,9 +207,18 @@ module JsonSchema =
             | literals when not literals.IsEmpty && literals |> List.forall Option.isSome ->
                 Enforced [ literals |> List.map Option.get |> String.concat "," |> sprintf "\"enum\":[%s]" ]
             | _ -> NotEnforceable
+        | MembershipAtom(NoneOf choices) ->
+            match choices |> List.map comparableLiteral with
+            | literals when not literals.IsEmpty && literals |> List.forall Option.isSome ->
+                Excluded(literals |> List.map Option.get |> String.concat "," |> sprintf "\"enum\":[%s]")
+            | _ -> NotEnforceable
         | MembershipAtom(Membership.Contains item) ->
             match comparableLiteral item with
             | Some literal -> Enforced [ sprintf "\"contains\":{\"const\":%s}" literal ]
+            | None -> NotEnforceable
+        | MembershipAtom(Membership.NotContains item) ->
+            match comparableLiteral item with
+            | Some literal -> Excluded(sprintf "\"contains\":{\"const\":%s}" literal)
             | None -> NotEnforceable
         // `uniqueItems` compares decoded wire values. That substitutes for typed equality only where decoding is
         // injective, which the item shape decides — two spellings of one GUID or instant are distinct on the wire
@@ -267,29 +284,55 @@ module JsonSchema =
     type private Lowering =
         { /// Keywords that may be published as enforcement.
           Keywords: string list
+          /// Subschema bodies the value must refuse. Merged into one `not` keyword when the node is written.
+          Exclusions: string list
           /// Rules the target does not enforce, retained so the document never implies more than it checks.
           Runtime: string list }
 
-    let private nothing = { Keywords = []; Runtime = [] }
+    let private nothing =
+        { Keywords = []
+          Exclusions = []
+          Runtime = [] }
+
+    let private combine first second =
+        { Keywords = first.Keywords @ second.Keywords
+          Exclusions = first.Exclusions @ second.Exclusions
+          Runtime = first.Runtime @ second.Runtime }
+
+    /// Every keyword a node publishes, with its exclusions folded into the single `not` that JSON Schema allows.
+    /// Refusing a disjunction is refusing each branch, so `not: {anyOf: [a, b]}` is exactly `not a and not b`.
+    let private enforcementKeywords lowering =
+        let excluded =
+            match lowering.Exclusions |> List.distinct with
+            | [] -> []
+            | [ single ] -> [ sprintf "\"not\":{%s}" single ]
+            | several ->
+                several
+                |> List.map (sprintf "{%s}")
+                |> String.concat ","
+                |> sprintf "\"not\":{\"anyOf\":[%s]}"
+                |> List.singleton
+
+        lowering.Keywords @ excluded
 
     let rec private lower shape (description: ConstraintDescription) : Lowering =
         match description.Expression with
         | ConstraintExpression.Atom atom ->
+            let retained =
+                [ runtimeEntry (ConstraintAtom.key atom) (Some(ConstraintAtom.render atom)) ]
+
             match atomKeywords shape atom with
-            | Enforced keywords -> { Keywords = keywords; Runtime = [] }
+            | Enforced keywords -> { nothing with Keywords = keywords }
+            | Excluded body -> { nothing with Exclusions = [ body ] }
             | Weakened keywords ->
-                { Keywords = keywords
-                  Runtime = [ runtimeEntry (ConstraintAtom.key atom) (Some(ConstraintAtom.render atom)) ] }
-            | NotEnforceable ->
-                { Keywords = []
-                  Runtime = [ runtimeEntry (ConstraintAtom.key atom) (Some(ConstraintAtom.render atom)) ] }
+                { nothing with
+                    Keywords = keywords
+                    Runtime = retained }
+            | NotEnforceable -> { nothing with Runtime = retained }
         | ConstraintExpression.All children ->
             // A conjunction may publish whichever children it can enforce: keeping a subset is stricter than
             // nothing and never stricter than the whole rule. The remainder is still retained.
-            let lowerings = children |> List.map (lower shape)
-
-            { Keywords = lowerings |> List.collect _.Keywords
-              Runtime = lowerings |> List.collect _.Runtime }
+            (nothing, children |> List.map (lower shape)) ||> List.fold combine
         | ConstraintExpression.Any(first, rest) ->
             // A disjunction may not publish a subset: dropping a branch makes the document reject values the
             // library accepts. Either every branch is enforceable, or the whole node is runtime-only.
@@ -299,30 +342,27 @@ module JsonSchema =
             if lowerings |> List.forall (fun lowering -> List.isEmpty lowering.Runtime) then
                 let cases =
                     lowerings
-                    |> List.map (fun lowering -> lowering.Keywords |> String.concat "," |> sprintf "{%s}")
+                    |> List.map (fun lowering -> lowering |> enforcementKeywords |> String.concat "," |> sprintf "{%s}")
                     |> String.concat ","
 
-                { Keywords = [ sprintf "\"anyOf\":[%s]" cases ]; Runtime = [] }
+                { nothing with Keywords = [ sprintf "\"anyOf\":[%s]" cases ] }
             else
-                { Keywords = []; Runtime = branches |> List.collect runtimeEntries }
+                { nothing with Runtime = branches |> List.collect runtimeEntries }
         | ConstraintExpression.Optional inner ->
             // Absence is decided by the surrounding shape and required-ness, so only the present branch lowers.
             lower shape inner
-        | ConstraintExpression.Opaque opaque -> { Keywords = []; Runtime = [ opaqueEntry opaque ] }
+        | ConstraintExpression.Opaque opaque -> { nothing with Runtime = [ opaqueEntry opaque ] }
 
     let private constraintKeywords shape (constraints: ConstraintDescription list) =
         let lowering =
-            (nothing, constraints |> List.map (lower shape))
-            ||> List.fold (fun state next ->
-                { Keywords = state.Keywords @ next.Keywords
-                  Runtime = state.Runtime @ next.Runtime })
+            (nothing, constraints |> List.map (lower shape)) ||> List.fold combine
 
         let runtimeKeyword =
             match lowering.Runtime |> List.distinct with
             | [] -> []
             | entries -> [ entries |> String.concat "," |> sprintf "\"x-axial-runtime-constraints\":[%s]" ]
 
-        lowering.Keywords @ runtimeKeyword
+        enforcementKeywords lowering @ runtimeKeyword
 
     let private primitiveKeywords kind =
         match kind with

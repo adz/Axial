@@ -75,6 +75,9 @@ module ConstraintDSL =
     /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.oneOf" />.</summary>
     let oneOf = Constraint.oneOf
 
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.noneOf" />.</summary>
+    let noneOf = Constraint.noneOf
+
     /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.equalTo" />.</summary>
     let equalTo = Constraint.equalTo
 
@@ -124,6 +127,17 @@ module ConstraintDSL =
     /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.moreThanOne" />.</summary>
     let inline moreThanOne< ^value when (^value or Constraint.CardinalityDispatcher): (static member Create:
         ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > = Constraint.moreThanOne
+
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.notContains" />.</summary>
+    /// <remarks>
+    /// Exported although <c>contains</c> is not: the omissions are driven by collision, and no core F# operation
+    /// is named <c>notContains</c>.
+    /// </remarks>
+    let inline notContains< ^container, 'value when (^container or Constraint.NotContainsDispatcher): (static member Create:
+        ^container * 'value -> Constraint< ^container >)>
+        (expected: 'value)
+        : Constraint< ^container > =
+        Constraint.notContains expected
 
     /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.multipleOf" />.</summary>
     let inline multipleOf divisor = Constraint.multipleOf divisor

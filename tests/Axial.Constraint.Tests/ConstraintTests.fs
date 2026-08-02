@@ -186,6 +186,58 @@ module ConstraintTests =
             test <@ violation tags [ "a"; "b"; "a" ] = Atomic(Expected(UniquenessAtom, Some(ConstraintValue.Text "a"))) @>
 
         [<Fact>]
+        let ``the excluding membership rules stay interpreted rather than going opaque`` () =
+            // The point of the pair: `notWith "..." (oneOf ...)` runs identically but describes as opaque, so
+            // nothing downstream can read it. These build their own atoms and stay inspectable.
+            let handle: Constraint<string> = Constraint.noneOf [ "admin"; "root" ]
+            let tags: Constraint<string list> = Constraint.notContains "internal"
+
+            test <@
+                expression handle =
+                    ConstraintExpression.Atom(
+                        MembershipAtom(NoneOf [ ConstraintValue.Text "admin"; ConstraintValue.Text "root" ])
+                    )
+            @>
+
+            test <@
+                expression tags =
+                    ConstraintExpression.Atom(MembershipAtom(Membership.NotContains(ConstraintValue.Text "internal")))
+            @>
+
+            test <@ Constraint.check handle "ada" = Ok() @>
+            test <@ Constraint.check tags [ "public" ] = Ok() @>
+
+            test <@
+                violation handle "admin" =
+                    Atomic(
+                        Expected(
+                            MembershipAtom(NoneOf [ ConstraintValue.Text "admin"; ConstraintValue.Text "root" ]),
+                            Some(ConstraintValue.Text "admin")
+                        )
+                    )
+            @>
+
+            test <@ Violation.render (violation tags [ "internal" ]) = "expected the collection not to contain internal" @>
+
+        [<Fact>]
+        let ``a null collection fails notContains rather than vacuously satisfying it`` () =
+            // Rule 3 of the null contract: a content rule never reads a missing reference as satisfied. Absence is
+            // what `present` and `optional` speak about.
+            let tags: Constraint<string array> = Constraint.notContains "internal"
+            let missing: string array = null
+
+            test <@ not (Constraint.test tags missing) @>
+            test <@ violation tags missing = Atomic(Expected(MembershipAtom(Membership.NotContains(ConstraintValue.Text "internal")), None)) @>
+
+        [<Fact>]
+        let ``an excluding rule with a nonportable operand stays executable and reports honestly`` () =
+            let reference: Constraint<Version> = Constraint.noneOf [ Version(1, 0) ]
+
+            test <@ Constraint.test reference (Version(2, 0)) @>
+            test <@ not (Constraint.test reference (Version(1, 0))) @>
+            test <@ expression reference = ConstraintExpression.Opaque(OpaqueConstraint.UnsupportedOperand(UnsupportedOperation.Relation Equal)) @>
+
+        [<Fact>]
         let ``the sign and count names build the same atoms their general forms build`` () =
             // These are spellings, not new primitives. If one ever built its own atom, inspection, lowering, and
             // generation would each need a second case for a rule the catalogue already covers.
@@ -523,7 +575,9 @@ module ConstraintTests =
                   RelationAtom(Compared(AtMost, ConstraintValue.Integer 1L))
                   RelationAtom(Within(ConstraintValue.Integer 1L, ConstraintValue.Integer 2L))
                   MembershipAtom(OneOf [])
+                  MembershipAtom(NoneOf [])
                   MembershipAtom(Membership.Contains(ConstraintValue.Integer 1L))
+                  MembershipAtom(Membership.NotContains(ConstraintValue.Integer 1L))
                   UniquenessAtom
                   FormatAtom Email
                   FormatAtom Trimmed

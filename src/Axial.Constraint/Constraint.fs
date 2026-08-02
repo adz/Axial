@@ -595,6 +595,18 @@ module Constraint =
         else
             unsupported (UnsupportedOperation.Relation Equal) predicate
 
+    /// <summary>Builds an exclusion rule from already-projected choices. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let noneOfWith
+        (choices: ConstraintValue option list)
+        (actual: 'value -> ConstraintValue option)
+        (predicate: 'value -> bool)
+        =
+        if choices |> List.forall Option.isSome then
+            atomic (MembershipAtom(NoneOf(choices |> List.map Option.get))) predicate actual
+        else
+            unsupported (UnsupportedOperation.Relation Equal) predicate
+
     /// <summary>Validates inclusive bounds. Not part of the supported surface.</summary>
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let checkBounds name minimum maximum = ensureBounds name minimum maximum
@@ -703,11 +715,34 @@ module Constraint =
             ConstraintValue.ofOperand
             (fun actual -> choices |> List.contains actual)
 
+    /// <summary>Requires the value to equal none of the supplied choices.</summary>
+    /// <remarks>
+    /// A primitive, not a negation: it builds its own atom, so it stays inspectable, exportable, and generatable
+    /// where <c>Constraint.notWith (Constraint.oneOf …)</c> would be opaque. Use <c>notWith</c> only for rules the
+    /// catalogue cannot state.
+    /// </remarks>
+    /// <example><code>let handle : Constraint&lt;string&gt; = Constraint.noneOf [ "admin"; "root" ]</code></example>
+    let inline noneOf (choices: 'value seq) : Constraint<'value> =
+        if isNull (box choices) then nullArg (nameof choices)
+        let choices = choices |> Seq.toList
+
+        noneOfWith
+            (choices |> List.map ConstraintValue.ofOperand)
+            ConstraintValue.ofOperand
+            (fun actual -> not (choices |> List.contains actual))
+
     /// <summary>Builds a containment rule from an already-projected item. Not part of the supported surface.</summary>
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let containsWith (expected: ConstraintValue option) (values: #seq<'value> -> bool) =
         match expected with
         | Some expected -> atomic (MembershipAtom(Membership.Contains expected)) values (fun _ -> None)
+        | None -> unsupported UnsupportedOperation.Contains values
+
+    /// <summary>Builds an exclusion rule from an already-projected item. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let notContainsWith (expected: ConstraintValue option) (values: #seq<'value> -> bool) =
+        match expected with
+        | Some expected -> atomic (MembershipAtom(Membership.NotContains expected)) values (fun _ -> None)
         | None -> unsupported UnsupportedOperation.Contains values
 
     /// <summary>Builds a uniqueness rule with a caller-supplied item projection. Not part of the supported surface.</summary>
@@ -732,6 +767,15 @@ module Constraint =
     let containsIn (expected: 'value) (values: #seq<'value>) =
         not (Predicates.isNullSeq values) && Predicates.seqContains expected values
 
+    /// <summary>The exclusion predicate. Not part of the supported surface.</summary>
+    /// <remarks>
+    /// A null collection fails rather than vacuously satisfying the rule. Absence is what <c>present</c> and
+    /// <c>optional</c> speak about; a content rule never treats a missing reference as satisfying it.
+    /// </remarks>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let excludesIn (expected: 'value) (values: #seq<'value>) =
+        not (Predicates.isNullSeq values) && not (Predicates.seqContains expected values)
+
     /// <summary>The first-duplicate projection. Not part of the supported surface.</summary>
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let firstDuplicate (values: #seq<'value>) = Predicates.tryFirstDuplicate values
@@ -746,6 +790,17 @@ module Constraint =
 
         static member inline Create(_: 'value seq, expected: 'value) : Constraint<'value seq> =
             containsWith (ConstraintValue.ofOperand expected) (containsIn expected)
+
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    type NotContainsDispatcher =
+        static member inline Create(_: 'value list, expected: 'value) : Constraint<'value list> =
+            notContainsWith (ConstraintValue.ofOperand expected) (excludesIn expected)
+
+        static member inline Create(_: 'value array, expected: 'value) : Constraint<'value array> =
+            notContainsWith (ConstraintValue.ofOperand expected) (excludesIn expected)
+
+        static member inline Create(_: 'value seq, expected: 'value) : Constraint<'value seq> =
+            notContainsWith (ConstraintValue.ofOperand expected) (excludesIn expected)
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     type DistinctDispatcher =
@@ -766,6 +821,16 @@ module Constraint =
         : Constraint< ^container > =
         ((^container or ContainsDispatcher): (static member Create: ^container * 'value -> Constraint< ^container >) (Unchecked.defaultof< ^container >,
                                                                                                                      expected))
+
+    /// <summary>Requires a collection not to contain the supplied item.</summary>
+    /// <remarks>A null collection fails, as it does for every other content rule.</remarks>
+    /// <example><code>let tags : Constraint&lt;string list&gt; = Constraint.notContains "internal"</code></example>
+    let inline notContains< ^container, 'value when (^container or NotContainsDispatcher): (static member Create:
+        ^container * 'value -> Constraint< ^container >)>
+        (expected: 'value)
+        : Constraint< ^container > =
+        ((^container or NotContainsDispatcher): (static member Create: ^container * 'value -> Constraint< ^container >) (Unchecked.defaultof< ^container >,
+                                                                                                                        expected))
 
     /// <summary>Requires a collection to hold no duplicates. The first repeat is reported as the actual value.</summary>
     /// <example><code>let tags : Constraint&lt;string list&gt; = Constraint.distinct</code></example>

@@ -105,6 +105,11 @@ module SchemaGen =
         | (SchemaShape.Many _ | SchemaShape.MapOf _), CardinalityAtom _
         | (SchemaShape.Many _ | SchemaShape.MapOf _), PresenceAtom Present -> true
         | SchemaShape.Optional _, PresenceAtom _ -> true
+        // The excluding membership rules reject rather than generate. An exclusion can be unsatisfiable in
+        // combination with the bounds beside it -- `noneOf` over every one-character value, say -- and a generator
+        // that filtered and retried would hang instead of saying so. Rejecting names the rule and its path.
+        | _, MembershipAtom(NoneOf _)
+        | _, MembershipAtom(Membership.NotContains _) -> false
         | _ -> false
 
     let private tryGeneratable shape atom =
