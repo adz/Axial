@@ -34,4 +34,4 @@ Materializes a deterministic Cartesian matrix, limited to 256 cases.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L848-848)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L322-322)

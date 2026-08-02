@@ -33,4 +33,4 @@ Constructs a number from one JSON number token, validated identically on .NET an
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L323-323)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L37-37)

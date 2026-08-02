@@ -26,4 +26,4 @@ Associates a field name with an exact value or recursive data pattern.
 | <code><a href="t-datafield.md">DataField</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L772-772)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L246-246)

@@ -1,291 +1,5 @@
 namespace Axial
 
-open System
-open System.Globalization
-open System.Text
-
-type PatternConversion =
-    static member ToPattern(value: Data) = DataPattern(Exact value)
-    static member ToPattern(value: DataPattern) = value
-    static member ToPattern(value: string) = DataPattern(Exact(Data.From value))
-    static member ToPattern(value: bool) = DataPattern(Exact(Data.From value))
-    static member ToPattern(value: int) = DataPattern(Exact(Data.From value))
-    static member ToPattern(value: int64) = DataPattern(Exact(Data.From value))
-    static member ToPattern(value: decimal) = DataPattern(Exact(Data.From value))
-    static member ToPattern(value: float) = DataPattern(Exact(Data.From value))
-    static member ToPattern(value: Guid) = DataPattern(Exact(Data.From value))
-    static member ToPattern(value: DateTimeOffset) = DataPattern(Exact(Data.From value))
-#if NET8_0_OR_GREATER
-    static member ToPattern(value: DateOnly) = DataPattern(Exact(Data.From value))
-#endif
-
-    static member private ExactList(values: Data list) =
-        if isNull (box values) then DataPattern.CreateExact Data.Null
-        else DataPattern.CreateExact(Data.List values)
-
-    static member private ExactListOf(values: 'value list, convert: 'value -> Data) =
-        if isNull (box values) then DataPattern.CreateExact Data.Null
-        else values |> List.map convert |> PatternConversion.ExactList
-
-    static member ToPattern(values: Data list) = PatternConversion.ExactList values
-    static member ToPattern(values: string list) = PatternConversion.ExactListOf(values, Data.From)
-    static member ToPattern(values: bool list) = PatternConversion.ExactListOf(values, Data.From)
-    static member ToPattern(values: int list) = PatternConversion.ExactListOf(values, Data.From)
-    static member ToPattern(values: int64 list) = PatternConversion.ExactListOf(values, Data.From)
-    static member ToPattern(values: decimal list) = PatternConversion.ExactListOf(values, Data.From)
-    static member ToPattern(values: float list) = PatternConversion.ExactListOf(values, Data.From)
-    static member ToPattern(values: Guid list) = PatternConversion.ExactListOf(values, Data.From)
-    static member ToPattern(values: DateTimeOffset list) = PatternConversion.ExactListOf(values, Data.From)
-#if NET8_0_OR_GREATER
-    static member ToPattern(values: DateOnly list) = PatternConversion.ExactListOf(values, Data.From)
-#endif
-
-    static member ToPattern(fields: DataField list) =
-        let values =
-            fields
-            |> List.choose (fun field ->
-                if field.Omitted then
-                    None
-                else
-                    match field.Pattern.Node with
-                    | Exact value -> Some(field.Name, value)
-                    | _ ->
-                        invalidArg
-                            (nameof fields)
-                            "A data literal can contain only exact values. Use containing for partial object patterns.")
-
-        DataPattern(Exact(Data.Object values))
-
-    static member inline ToPattern(values: ^value list) =
-        if isNull (box values) then
-            DataPattern.CreateExact Data.Null
-        else
-            let inline convert (witness: ^w) (value: ^v) =
-                ((^w or ^v): (static member ToPattern: ^v -> DataPattern) value)
-
-            let items =
-                values
-                |> List.map (convert Unchecked.defaultof<PatternConversion>)
-                |> List.map (fun pattern -> pattern.RequireExact(nameof values))
-
-            DataPattern.CreateExact(Data.List items)
-
-[<AutoOpen>]
-module DataErgonomicsHelpers =
-    let inline toPatternWith (witness: ^witness) (value: ^value) : DataPattern =
-        ((^witness or ^value): (static member ToPattern: ^value -> DataPattern) value)
-
-    let inline toPattern (value: ^value) : DataPattern =
-        toPatternWith Unchecked.defaultof<PatternConversion> value
-
-    let exactValue argumentName (pattern: DataPattern) = pattern.RequireExact argumentName
-
-    let ensureText argumentName (value: string) =
-        if isNull value then nullArg argumentName
-        value
-
-    let ensureNonEmptyText argumentName (value: string) =
-        ensureText argumentName value |> ignore
-        if value = "" then invalidArg argumentName "The value cannot be empty."
-        value
-
-    let isJsonNumberToken (token: string) =
-        let length = token.Length
-        let isDigitAt index = index < length && token[index] >= '0' && token[index] <= '9'
-        let rec consumeDigits index = if isDigitAt index then consumeDigits (index + 1) else index
-
-        let afterSign = if length > 0 && token[0] = '-' then 1 else 0
-
-        let afterInteger =
-            if afterSign < length && token[afterSign] = '0' then
-                Some(afterSign + 1)
-            elif afterSign < length && token[afterSign] >= '1' && token[afterSign] <= '9' then
-                Some(consumeDigits (afterSign + 1))
-            else
-                None
-
-        match afterInteger with
-        | None -> false
-        | Some integerEnd ->
-            let afterFraction =
-                if integerEnd < length && token[integerEnd] = '.' then
-                    let fractionStart = integerEnd + 1
-                    if isDigitAt fractionStart then Some(consumeDigits fractionStart) else None
-                else
-                    Some integerEnd
-
-            match afterFraction with
-            | None -> false
-            | Some fractionEnd when fractionEnd < length && (token[fractionEnd] = 'e' || token[fractionEnd] = 'E') ->
-                let exponentStart = fractionEnd + 1
-                let digitsStart =
-                    if exponentStart < length && (token[exponentStart] = '+' || token[exponentStart] = '-') then
-                        exponentStart + 1
-                    else
-                        exponentStart
-
-                isDigitAt digitsStart && consumeDigits digitsStart = length
-            | Some fractionEnd -> fractionEnd = length
-
-    let appendPath segment path = path @ [ segment ]
-
-    let shapeName value =
-        match value with
-        | Data.Null -> "null"
-        | Data.Text _ -> "text"
-        | Data.Number _ -> "number"
-        | Data.Bool _ -> "Boolean"
-        | Data.List _ -> "list"
-        | Data.Object _ -> "object"
-
-    let tryResolveDetailed (path: DataPath) (input: Data) =
-        let rec loop traversed remaining current =
-            match remaining with
-            | [] -> Ok current
-            | DataPathSegment.Name name :: rest ->
-                match current with
-                | Data.Object fields ->
-                    match fields |> List.tryFindIndexBack (fun (fieldName, _) -> fieldName = name) with
-                    | Some index -> loop (appendPath (DataPathSegment.Name name) traversed) rest (snd fields[index])
-                    | None -> Error(traversed, $"Object field '{name}' does not exist.")
-                | actual -> Error(traversed, $"Expected an object but found {shapeName actual}.")
-            | DataPathSegment.Index index :: rest ->
-                match current with
-                | Data.List items when index < items.Length ->
-                    loop (appendPath (DataPathSegment.Index index) traversed) rest items[index]
-                | Data.List items -> Error(traversed, $"List index {index} is outside the list of {items.Length} items.")
-                | actual -> Error(traversed, $"Expected a list but found {shapeName actual}.")
-
-        loop [] path input
-
-    let renderText (value: string) =
-        let builder = StringBuilder()
-
-        value
-        |> Seq.iter (function
-            | '"' -> builder.Append("\\\"") |> ignore
-            | '\\' -> builder.Append("\\\\") |> ignore
-            | '\b' -> builder.Append("\\b") |> ignore
-            | '\f' -> builder.Append("\\f") |> ignore
-            | '\n' -> builder.Append("\\n") |> ignore
-            | '\r' -> builder.Append("\\r") |> ignore
-            | '\t' -> builder.Append("\\t") |> ignore
-            | character when int character < 0x20 ->
-                builder.Append("\\u").Append((int character).ToString("x4", CultureInfo.InvariantCulture)) |> ignore
-            | character -> builder.Append(character) |> ignore)
-
-        $"\"{builder}\""
-
-    let renderName (name: string) =
-        let isPlainStart character = Char.IsLetter character || character = '_'
-        let isPlain character = Char.IsLetterOrDigit character || character = '_' || character = '-'
-
-        if name.Length > 0 && isPlainStart name[0] && (name |> Seq.skip 1 |> Seq.forall isPlain) then
-            name
-        else
-            renderText name
-
-    let jsonRenderCompact input =
-
-        let rec render value =
-            match value with
-            | Data.Null -> "null"
-            | Data.Text text -> renderText text
-            | Data.Number token -> token
-            | Data.Bool true -> "true"
-            | Data.Bool false -> "false"
-            | Data.List items -> items |> List.map render |> String.concat "," |> fun body -> $"[{body}]"
-            | Data.Object fields ->
-                fields
-                |> List.map (fun (name, field) -> $"{renderText name}:{render field}")
-                |> String.concat ","
-                |> fun body -> $"{{{body}}}"
-
-        render input
-
-    let jsonRenderIndented input =
-        let compactScalar value =
-            match value with
-            | Data.List _
-            | Data.Object _ -> None
-            | scalar -> Some(jsonRenderCompact scalar)
-
-        let rec render level value =
-            let indent count = String(' ', count * 2)
-
-            match compactScalar value with
-            | Some scalar -> scalar
-            | None ->
-                match value with
-                | Data.List [] -> "[]"
-                | Data.List items ->
-                    items
-                    |> List.map (fun item -> $"{indent (level + 1)}{render (level + 1) item}")
-                    |> String.concat ",\n"
-                    |> fun body -> $"[\n{body}\n{indent level}]"
-                | Data.Object [] -> "{}"
-                | Data.Object fields ->
-                    fields
-                    |> List.map (fun (name, field) ->
-                        let encodedName = renderText name
-                        $"{indent (level + 1)}{encodedName}: {render (level + 1) field}")
-                    |> String.concat ",\n"
-                    |> fun body -> $"{{\n{body}\n{indent level}}}"
-                | _ -> failwith "Unreachable scalar rendering branch."
-
-        render 0 input
-
-    let renderCompact input =
-        let rec render value =
-            match value with
-            | Data.Null -> "null"
-            | Data.Text text -> renderText text
-            | Data.Number token -> token
-            | Data.Bool true -> "true"
-            | Data.Bool false -> "false"
-            | Data.List items -> items |> List.map render |> String.concat ", " |> fun body -> $"[{body}]"
-            | Data.Object fields ->
-                match fields with
-                | [] -> "{}"
-                | _ ->
-                    fields
-                    |> List.map (fun (name, field) -> $"{renderName name}: {render field}")
-                    |> String.concat ", "
-                    |> fun body -> $"{{ {body} }}"
-
-        render input
-
-    let renderIndented input =
-        let compactScalar value =
-            match value with
-            | Data.List _
-            | Data.Object _ -> None
-            | scalar -> Some(renderCompact scalar)
-
-        let rec render level value =
-            let indent count = String(' ', count * 2)
-
-            match compactScalar value with
-            | Some scalar -> scalar
-            | None ->
-                match value with
-                | Data.List [] -> "[]"
-                | Data.List items ->
-                    items
-                    |> List.map (fun item -> $"{indent (level + 1)}{render (level + 1) item}")
-                    |> String.concat ",\n"
-                    |> fun body -> $"[\n{body}\n{indent level}]"
-                | Data.Object [] -> "{}"
-                | Data.Object fields ->
-                    fields
-                    |> List.map (fun (name, field) ->
-                        $"{indent (level + 1)}{renderName name}: {render (level + 1) field}")
-                    |> String.concat ",\n"
-                    |> fun body -> $"{{\n{body}\n{indent level}}}"
-                | _ -> failwith "Unreachable scalar rendering branch."
-
-        render 0 input
-
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Data =
@@ -327,34 +41,34 @@ module Data =
         Data.Number token
 
     /// <summary>Builds an object from an F# map, ordered by key.</summary>
-    let objectOfMap = DataCore.objectOfMap
+    let objectOfMap = DataConversions.objectOfMap
 
     /// <summary>Builds an object from ordered name and value pairs.</summary>
-    let objectOfList = DataCore.objectOfList
+    let objectOfList = DataConversions.objectOfList
 
     /// <summary>Builds object-shaped data from a map of scalar values.</summary>
-    let ofMap = DataCore.ofMap
+    let ofMap = DataConversions.ofMap
 
     /// <summary>Builds object-shaped data from a .NET dictionary of scalar values.</summary>
-    let ofDictionary = DataCore.ofDictionary
+    let ofDictionary = DataConversions.ofDictionary
 
     /// <summary>Builds object-shaped data from name and value pairs.</summary>
-    let ofNameValues = DataCore.ofNameValues
+    let ofNameValues = DataConversions.ofNameValues
 
     /// <summary>Builds object-shaped data from a .NET name-value collection.</summary>
-    let ofNameValueCollection = DataCore.ofNameValueCollection
+    let ofNameValueCollection = DataConversions.ofNameValueCollection
 
     /// <summary>Builds structured data from command-line arguments.</summary>
-    let ofCliArgs = DataCore.ofCliArgs
+    let ofCliArgs = DataConversions.ofCliArgs
 
 #if NET8_0_OR_GREATER && !FABLE_COMPILER
     /// <summary>Copies a .NET 8+ <c>System.Text.Json.JsonElement</c> into structured data.</summary>
     /// <remarks>This platform-specific convenience conversion is not available under Fable.</remarks>
-    let ofJsonElement = DataCore.ofJsonElement
+    let ofJsonElement = DataConversions.ofJsonElement
 
     /// <summary>Copies a .NET 8+ <c>System.Text.Json.JsonDocument</c> into structured data.</summary>
     /// <remarks>This platform-specific convenience conversion is not available under Fable.</remarks>
-    let ofJsonDocument = DataCore.ofJsonDocument
+    let ofJsonDocument = DataConversions.ofJsonDocument
 #endif
 
 #if FABLE_COMPILER
@@ -363,150 +77,50 @@ module Data =
     /// This Fable-specific convenience conversion is not available on .NET. JavaScript parsing has already discarded
     /// duplicate object fields and the original spelling of number tokens.
     /// </remarks>
-    let ofJsonValue = DataCore.ofJsonValue
+    let ofJsonValue = DataConversions.ofJsonValue
 #endif
 
     /// <summary>Builds structured data from flattened configuration keys.</summary>
-    let ofConfiguration = DataCore.ofConfiguration
+    let ofConfiguration = DataConversions.ofConfiguration
 
     /// <summary>Builds structured data from .NET configuration key and value pairs.</summary>
-    let ofConfigurationPairs = DataCore.ofConfigurationPairs
+    let ofConfigurationPairs = DataConversions.ofConfigurationPairs
 
     /// <summary>Attempts to find a value at a parsed path.</summary>
-    let tryFind = DataCore.tryFind
+    let tryFind = DataLookup.tryFind
 
     /// <summary>Finds a value at a parsed path or returns <c>Null</c>.</summary>
-    let lookup = DataCore.lookup
+    let lookup = DataLookup.lookup
 
     /// <summary>Attempts to parse a path and find its value.</summary>
-    let tryFindPath = DataCore.tryFindPath
+    let tryFindPath = DataLookup.tryFindPath
 
     /// <summary>Parses a path and finds its value or returns <c>Null</c>.</summary>
-    let lookupPath = DataCore.lookupPath
+    let lookupPath = DataLookup.lookupPath
 
     /// <summary>Attempts to render one scalar value for redisplay.</summary>
-    let tryRedisplay = DataCore.tryRedisplay
+    let tryRedisplay = DataLookup.tryRedisplay
 
     /// <summary>Renders one scalar value for redisplay.</summary>
-    let redisplay = DataCore.redisplay
+    let redisplay = DataLookup.redisplay
 
     /// <summary>Attempts to redisplay a scalar at a parsed path.</summary>
-    let tryRedisplayAt = DataCore.tryRedisplayAt
+    let tryRedisplayAt = DataLookup.tryRedisplayAt
 
     /// <summary>Redisplays a scalar at a parsed path.</summary>
-    let redisplayAt = DataCore.redisplayAt
+    let redisplayAt = DataLookup.redisplayAt
 
     /// <summary>Attempts to parse a path and redisplay its scalar.</summary>
-    let tryRedisplayPath = DataCore.tryRedisplayPath
+    let tryRedisplayPath = DataLookup.tryRedisplayPath
 
     /// <summary>Parses a path and redisplays its scalar.</summary>
-    let redisplayPath = DataCore.redisplayPath
-
-    let private replaceAt index replacement values =
-        values |> List.mapi (fun position value -> if position = index then replacement else value)
-
-    let private removeAt index values =
-        values |> List.mapi (fun position value -> position, value) |> List.choose (fun (position, value) -> if position = index then None else Some value)
-
-    let private updateAtPath path change input =
-        let rec loop remaining current =
-            match remaining with
-            | [] -> change current
-            | DataPathSegment.Name name :: rest ->
-                match current with
-                | Data.Object fields ->
-                    match fields |> List.tryFindIndexBack (fun (fieldName, _) -> fieldName = name) with
-                    | None -> Error $"Object field '{name}' does not exist."
-                    | Some index ->
-                        loop rest (snd fields[index])
-                        |> Result.map (fun updated -> Data.Object(replaceAt index (name, updated) fields))
-                | actual -> Error $"Expected an object but found {shapeName actual}."
-            | DataPathSegment.Index index :: rest ->
-                match current with
-                | Data.List items when index < items.Length ->
-                    loop rest items[index] |> Result.map (fun updated -> Data.List(replaceAt index updated items))
-                | Data.List items -> Error $"List index {index} is outside the list of {items.Length} items."
-                | actual -> Error $"Expected a list but found {shapeName actual}."
-
-        loop path input
-
-    let private updateParent path change input =
-        match List.rev path with
-        | [] -> Error "The root has no parent."
-        | final :: reversedParent -> updateAtPath (List.rev reversedParent) (change final) input
-
-    let private tryApplyEdit (edit: DataEdit) input =
-        match edit.Node with
-        | Replace(path, value) -> updateAtPath path (fun _ -> Ok value) input
-        | Set(path, value) ->
-            match List.rev path with
-            | [] -> Ok value
-            | DataPathSegment.Name name :: reversedParent ->
-                updateAtPath (List.rev reversedParent) (fun parent ->
-                    match parent with
-                    | Data.Object fields ->
-                        match fields |> List.tryFindIndexBack (fun (fieldName, _) -> fieldName = name) with
-                        | Some index -> Ok(Data.Object(replaceAt index (name, value) fields))
-                        | None -> Ok(Data.Object(fields @ [ name, value ]))
-                    | actual -> Error $"Expected an object parent but found {shapeName actual}.") input
-            | DataPathSegment.Index index :: reversedParent ->
-                updateAtPath (List.rev reversedParent) (fun parent ->
-                    match parent with
-                    | Data.List items when index < items.Length -> Ok(Data.List(replaceAt index value items))
-                    | Data.List items -> Error $"List index {index} is outside the list of {items.Length} items."
-                    | actual -> Error $"Expected a list parent but found {shapeName actual}.") input
-        | Remove path ->
-            updateParent path (fun final parent ->
-                match final, parent with
-                | DataPathSegment.Name name, Data.Object fields ->
-                    match fields |> List.tryFindIndexBack (fun (fieldName, _) -> fieldName = name) with
-                    | Some index -> Ok(Data.Object(removeAt index fields))
-                    | None -> Error $"Object field '{name}' does not exist."
-                | DataPathSegment.Index index, Data.List items when index < items.Length -> Ok(Data.List(removeAt index items))
-                | DataPathSegment.Index index, Data.List items -> Error $"List index {index} is outside the list of {items.Length} items."
-                | DataPathSegment.Name _, actual -> Error $"Expected an object parent but found {shapeName actual}."
-                | DataPathSegment.Index _, actual -> Error $"Expected a list parent but found {shapeName actual}.") input
-        | Append(path, value) ->
-            updateAtPath path (function
-                | Data.List items -> Ok(Data.List(items @ [ value ]))
-                | actual -> Error $"Expected a list but found {shapeName actual}.") input
-        | Prepend(path, value) ->
-            updateAtPath path (function
-                | Data.List items -> Ok(Data.List(value :: items))
-                | actual -> Error $"Expected a list but found {shapeName actual}.") input
-        | Insert(path, index, value) ->
-            updateAtPath path (function
-                | Data.List items when index <= items.Length ->
-                    let before, after = List.splitAt index items
-                    Ok(Data.List(before @ [ value ] @ after))
-                | Data.List items -> Error $"List index {index} is outside the insertion range of {items.Length} items."
-                | actual -> Error $"Expected a list but found {shapeName actual}.") input
-        | Rename(path, newName) ->
-            updateParent path (fun final parent ->
-                match final, parent with
-                | DataPathSegment.Name name, Data.Object fields ->
-                    match fields |> List.tryFindIndexBack (fun (fieldName, _) -> fieldName = name) with
-                    | Some index -> Ok(Data.Object(replaceAt index (newName, snd fields[index]) fields))
-                    | None -> Error $"Object field '{name}' does not exist."
-                | DataPathSegment.Index _, _ -> Error "Only object fields can be renamed."
-                | DataPathSegment.Name _, actual -> Error $"Expected an object parent but found {shapeName actual}.") input
-        | Update(path, change) -> updateAtPath path (change >> Ok) input
+    let redisplayPath = DataLookup.redisplayPath
 
     /// <summary>Applies immutable edits atomically in declaration order.</summary>
     /// <example><code>Data.tryPatch [ replace "name" "Grace" ] (data [ "name" =&gt; "Ada" ])
     /// // Ok (data [ "name" =&gt; "Grace" ])</code></example>
     let tryPatch (edits: DataEdit list) (input: Data) : Result<Data, DataPatchFailure list> =
-        if isNull (box edits) then nullArg (nameof edits)
-
-        let rec loop index current (remaining: DataEdit list) : Result<Data, DataPatchFailure list> =
-            match remaining with
-            | [] -> Ok current
-            | edit :: rest ->
-                match tryApplyEdit edit current with
-                | Ok updated -> loop (index + 1) updated rest
-                | Error message -> Error [ { EditIndex = index; Path = edit.Path; Message = message } ]
-
-        loop 0 input edits
+        DataPatching.tryPatch edits input
 
     /// <summary>Applies edits atomically or raises <c>DataPatchException</c>.</summary>
     /// <example><code>Data.data [ Data.assoc "name" "Ada" ]
@@ -581,170 +195,30 @@ module Data =
     /// <example><code>Data.diff (data [ "name" =&gt; "Ada" ]) (data [ "name" =&gt; "Grace" ])
     /// // one DifferentValue difference at path "name"</code></example>
     let diff (expected: Data) (actual: Data) : DataDifference list =
-        let difference path expected actual cause =
-            { Path = path; Expected = expected; Actual = actual; Cause = cause }
-
-        let rec compare path expected actual =
-            match expected, actual with
-            | _ when expected = actual -> []
-            | Data.List expectedItems, Data.List actualItems ->
-                let common = min expectedItems.Length actualItems.Length
-                let shared = [ 0 .. common - 1 ] |> List.collect (fun index -> compare (appendPath (DataPathSegment.Index index) path) expectedItems[index] actualItems[index])
-                let missing = [ common .. expectedItems.Length - 1 ] |> List.map (fun index -> difference (appendPath (DataPathSegment.Index index) path) (Some expectedItems[index]) None DataDifferenceCause.Missing)
-                let unexpected = [ common .. actualItems.Length - 1 ] |> List.map (fun index -> difference (appendPath (DataPathSegment.Index index) path) None (Some actualItems[index]) DataDifferenceCause.Unexpected)
-                shared @ missing @ unexpected
-            | Data.Object expectedFields, Data.Object actualFields ->
-                let common = min expectedFields.Length actualFields.Length
-                let shared =
-                    [ 0 .. common - 1 ]
-                    |> List.collect (fun index ->
-                        let expectedName, expectedValue = expectedFields[index]
-                        let actualName, actualValue = actualFields[index]
-                        let fieldPath = appendPath (DataPathSegment.Name expectedName) path
-                        if expectedName <> actualName then
-                            [ difference fieldPath (Some expectedValue) (Some actualValue) DataDifferenceCause.DifferentFieldName ]
-                        else compare fieldPath expectedValue actualValue)
-                let missing = [ common .. expectedFields.Length - 1 ] |> List.map (fun index -> let name, value = expectedFields[index] in difference (appendPath (DataPathSegment.Name name) path) (Some value) None DataDifferenceCause.Missing)
-                let unexpected = [ common .. actualFields.Length - 1 ] |> List.map (fun index -> let name, value = actualFields[index] in difference (appendPath (DataPathSegment.Name name) path) None (Some value) DataDifferenceCause.Unexpected)
-                shared @ missing @ unexpected
-            | Data.List _, _
-            | Data.Object _, _
-            | _, Data.List _
-            | _, Data.Object _ -> [ difference path (Some expected) (Some actual) DataDifferenceCause.DifferentShape ]
-            | _ -> [ difference path (Some expected) (Some actual) DataDifferenceCause.DifferentValue ]
-
-        compare DataPath.empty expected actual
+        DataComparison.diff expected actual
 
     /// <summary>Compares complete values and returns every structural difference.</summary>
     /// <example><code>Data.compare (data [ "name" =&gt; "Ada" ]) (data [ "name" =&gt; "Ada" ])
     /// // Ok ()</code></example>
-    let compare expected actual =
-        match diff expected actual with
-        | [] -> Ok()
-        | differences -> Error differences
-
-    let rec private matchPattern path (pattern: DataPattern) actual =
-        let mismatch expected actual = [ path, expected, actual ]
-
-        match pattern.Node with
-        | Exact expected ->
-            match compare expected actual with
-            | Ok() -> []
-            | Error differences ->
-                differences
-                |> List.map (fun difference ->
-                    path @ difference.Path,
-                    (difference.Expected |> Option.map renderCompact |> Option.defaultValue "an absent value"),
-                    difference.Actual)
-        | Any -> []
-        | AnyText -> match actual with Data.Text _ -> [] | _ -> mismatch "text" (Some actual)
-        | AnyNumber -> match actual with Data.Number _ -> [] | _ -> mismatch "number" (Some actual)
-        | ObjectContaining fields ->
-            match actual with
-            | Data.Object actualFields ->
-                let rec assign (remainingActual: (string * Data) list) (remainingExpected: DataField list) =
-                    match remainingExpected with
-                    | [] -> []
-                    | field :: rest ->
-                        let fieldPath = appendPath (DataPathSegment.Name field.Name) path
-
-                        let candidates =
-                            remainingActual
-                            |> List.mapi (fun index (name, value) -> index, name, value)
-                            |> List.filter (fun (_, name, value) ->
-                                name = field.Name && (matchPattern fieldPath field.Pattern value |> List.isEmpty))
-
-                        candidates
-                        |> List.tryPick (fun (index, _, _) ->
-                            let later = assign (removeAt index remainingActual) rest
-                            if List.isEmpty later then Some [] else None)
-                        |> Option.defaultWith (fun () ->
-                            match remainingActual |> List.tryFindBack (fun (name, _) -> name = field.Name) with
-                            | Some(_, value) -> matchPattern fieldPath field.Pattern value
-                            | None -> [ fieldPath, "a present matching field", None ])
-
-                fields |> List.filter (fun field -> not field.Omitted) |> assign actualFields
-            | _ -> mismatch "object" (Some actual)
-        | ListInOrder patterns ->
-            match actual with
-            | Data.List items ->
-                let rec consume patternIndex itemIndex remainingPatterns =
-                    match remainingPatterns with
-                    | [] -> []
-                    | expected :: rest when itemIndex >= items.Length ->
-                        [ appendPath (DataPathSegment.Index patternIndex) path, "an item in order", None ]
-                    | expected :: rest ->
-                        if matchPattern (appendPath (DataPathSegment.Index itemIndex) path) expected items[itemIndex] |> List.isEmpty then
-                            consume (patternIndex + 1) (itemIndex + 1) rest
-                        else consume patternIndex (itemIndex + 1) remainingPatterns
-                consume 0 0 patterns
-            | _ -> mismatch "list" (Some actual)
-        | ListContaining patterns ->
-            match actual with
-            | Data.List items ->
-                let rec assign remainingItems patternIndex remainingPatterns =
-                    match remainingPatterns with
-                    | [] -> []
-                    | expected :: rest ->
-                        let candidates =
-                            remainingItems
-                            |> List.mapi (fun index item -> index, item)
-                            |> List.filter (fun (_, item) -> matchPattern path expected item |> List.isEmpty)
-
-                        candidates
-                        |> List.tryPick (fun (index, _) ->
-                            let later = assign (removeAt index remainingItems) (patternIndex + 1) rest
-                            if List.isEmpty later then Some [] else None)
-                        |> Option.defaultValue [ appendPath (DataPathSegment.Index patternIndex) path, "a matching list item", None ]
-                assign items 0 patterns
-            | _ -> mismatch "list" (Some actual)
-        | EveryItem pattern ->
-            match actual with
-            | Data.List items -> items |> List.mapi (fun index item -> matchPattern (appendPath (DataPathSegment.Index index) path) pattern item) |> List.concat
-            | _ -> mismatch "list" (Some actual)
-        | SomeItem pattern ->
-            match actual with
-            | Data.List items when items |> List.exists (fun item -> matchPattern path pattern item |> List.isEmpty) -> []
-            | Data.List _ -> mismatch "at least one matching list item" (Some actual)
-            | _ -> mismatch "list" (Some actual)
-        | OneOf patterns ->
-            if patterns |> List.exists (fun candidate -> matchPattern path candidate actual |> List.isEmpty) then []
-            else mismatch "one of the supplied patterns" (Some actual)
-        | Predicate(description, predicate) ->
-            try if predicate actual then [] else mismatch description (Some actual)
-            with error -> mismatch $"{description} (predicate threw: {error.Message})" (Some actual)
+    let compare expected actual = DataComparison.compare expected actual
 
     /// <summary>Checks path-based expectations and accumulates structured mismatches.</summary>
     /// <example><code>Data.tryMatch [ at "name" "Ada" ] (data [ "name" =&gt; "Grace" ])
     /// // Error [ mismatch at path "name": expected "Ada", found "Grace" ]</code></example>
     let tryMatch (expectations: DataExpectation list) (actual: Data) : Result<unit, DataMismatch list> =
-        if isNull (box expectations) then nullArg (nameof expectations)
-
-        let mismatches =
-            expectations
-            |> List.mapi (fun index expectation ->
-                match expectation.Pattern, tryResolveDetailed expectation.ParsedPath actual with
-                | None, Error _ -> []
-                | None, Ok value -> [ { ExpectationIndex = index; Path = expectation.ParsedPath; Expected = "an absent value"; Actual = Some value } ]
-                | Some pattern, Error _ -> [ { ExpectationIndex = index; Path = expectation.ParsedPath; Expected = "a present value"; Actual = None } ]
-                | Some pattern, Ok value ->
-                    matchPattern expectation.ParsedPath pattern value
-                    |> List.map (fun (path, expected, found) -> { ExpectationIndex = index; Path = path; Expected = expected; Actual = found }))
-            |> List.concat
-
-        if List.isEmpty mismatches then Ok() else Error mismatches
+        DataMatching.tryMatch expectations actual
 
     /// <summary>Renders structured data in a compact, human-readable form.</summary>
     /// <example><code>Data.render (data [ "name" =&gt; "Ada"; "active" =&gt; true ])
     /// // { name: "Ada", active: true }</code></example>
-    let render input = renderCompact input
+    let render input = DataRendering.renderCompact input
 
     /// <summary>Renders structured data in an indented, human-readable form.</summary>
     /// <example><code>Data.renderIndented (data [ "name" =&gt; "Ada" ])
     /// // {
     /// //   name: "Ada"
     /// // }</code></example>
-    let renderIndented input = DataErgonomicsHelpers.renderIndented input
+    let renderIndented input = DataRendering.renderIndented input
 
     /// <summary>Attempts to extract text from one structured value.</summary>
     /// <example><code>Data.tryText (Data.Text "Ada") // Some "Ada"</code></example>
@@ -928,11 +402,11 @@ module Data =
         /// <summary>Renders compact deterministic JSON.</summary>
         /// <example><code>Data.Json.render (Data.Object [ "name", Data.Text "Ada" ])
         /// // {"name":"Ada"}</code></example>
-        let render = jsonRenderCompact
+        let render = DataRendering.jsonRenderCompact
 
         /// <summary>Renders indented deterministic JSON.</summary>
         /// <example><code>Data.Json.renderIndented (Data.Object [ "name", Data.Text "Ada" ])
         /// // {
         /// //   "name": "Ada"
         /// // }</code></example>
-        let renderIndented = jsonRenderIndented
+        let renderIndented = DataRendering.jsonRenderIndented

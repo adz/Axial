@@ -25,4 +25,4 @@ Creates an exact recursive pattern.
 | <code><a href="t-datapattern.md">DataPattern</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L865-865)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L339-339)

@@ -26,4 +26,4 @@ Declares one named dimension in a Cartesian matrix.
 | <code><a href="t-datadimension.md">DataDimension</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L840-840)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L314-314)

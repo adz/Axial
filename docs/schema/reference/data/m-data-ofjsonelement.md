@@ -23,4 +23,4 @@ Copies a .NET 8+ <code>System.Text.Json.JsonElement</code> into structured data.
 This platform-specific convenience conversion is not available under Fable.
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L353-353)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L67-67)

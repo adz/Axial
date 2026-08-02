@@ -26,4 +26,4 @@ Matches an ordinary predicate and uses its description in diagnostics.
 | <code><a href="t-datapattern.md">DataPattern</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L903-903)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L377-377)

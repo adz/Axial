@@ -25,4 +25,4 @@ Requires a path to be absent.
 | <code><a href="t-dataexpectation.md">DataExpectation</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L914-914)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L388-388)
