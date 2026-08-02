@@ -1,7 +1,7 @@
 ---
 title: "Schema.Json.deserializeStreamAsync"
 linkTitle: "deserializeStreamAsync"
-weight: 2106
+weight: 2107
 type: docs
 ---
 
@@ -34,4 +34,4 @@ Reads a stream to end into a pooled buffer, then deserializes it as UTF-8 JSON t
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1155-1155)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1232-1232)

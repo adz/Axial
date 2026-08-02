@@ -5,25 +5,19 @@ weight: 2004
 type: docs
 ---
 
-Builds object-shaped structured data from name/value pairs, grouping repeated names into <code>Many</code>.
+Builds object-shaped data from name and value pairs.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.ofNameValues&#32;<span>values</span></span></code>
+<code><span>Data.ofNameValues&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `values` | <code><span><span>(<span>string&#32;*&#32;string</span>)</span>&#32;seq</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
+| <code><span><span><span>(<span>string&#32;*&#32;string</span>)</span>&#32;seq</span>&#32;->&#32;<a href="../../data/t-data.md">Data</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L384-384)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L56-56)

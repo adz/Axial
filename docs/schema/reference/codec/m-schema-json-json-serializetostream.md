@@ -1,7 +1,7 @@
 ---
 title: "Schema.Json.serializeToStream"
 linkTitle: "serializeToStream"
-weight: 2103
+weight: 2104
 ---
 
 Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled codec, flushing once when complete.
@@ -34,4 +34,4 @@ Serializes a trusted model as UTF-8 JSON directly to a stream through a compiled
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1132-1132)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1209-1209)

@@ -1,7 +1,7 @@
 ---
 title: "Schema.Json.serialize"
 linkTitle: "serialize"
-weight: 2101
+weight: 2102
 ---
 
 Serializes a trusted model to a JSON string through a compiled codec.
@@ -26,4 +26,4 @@ Serializes a trusted model to a JSON string through a compiled codec.
 | <code>string</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1056-1056)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema.Json/Json.fs#L1114-1114)

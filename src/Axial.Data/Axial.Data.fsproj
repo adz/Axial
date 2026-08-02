@@ -38,7 +38,16 @@
 
   <ItemGroup>
     <Compile Include="Data.fs" />
-    <Compile Include="DataOperations.fs" />
+    <Compile Include="DataPath.fs" />
+    <Compile Include="DataConversions.fs" />
+    <Compile Include="DataLookup.fs" />
+    <Compile Include="DataErgonomicsTypes.fs" />
+    <Compile Include="DataInternals.fs" />
+    <Compile Include="DataRendering.fs" />
+    <Compile Include="DataPatching.fs" />
+    <Compile Include="DataComparison.fs" />
+    <Compile Include="DataMatching.fs" />
+    <Compile Include="DataErgonomics.fs" />
   </ItemGroup>
 
 </Project>

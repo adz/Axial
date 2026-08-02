@@ -16,6 +16,7 @@ Write for pragmatic F# devs solving dependency, async, and typed-failure problem
 ## Hugo workflow
 
 - The short Axial index lives at `/docs/index.md`.
+- Data guides and generated reference live under `/docs/data`.
 - Schema guides and generated reference live under `/docs/schema`.
 - Flow guides and generated reference live under `/docs/flow`.
 - The Hugo site source lives in `/site`.
@@ -26,6 +27,7 @@ Write for pragmatic F# devs solving dependency, async, and typed-failure problem
 
 The docs system has two different kinds of pages:
 
+- hand-written Data guides and its API member pages live in `docs/data/`
 - hand-written Schema guides and its API member pages live in `docs/schema/`
 - hand-written Flow guides and its API member pages live in `docs/flow/`
 
@@ -34,7 +36,8 @@ The API member pages are generated from the XML doc comments in `src/`. When you
 The pipeline is:
 
 1. Edit the public XML doc comments in `src/`.
-2. Run `bash scripts/validate-schema-docs.sh` or `bash scripts/validate-flow-docs.sh` for the affected product.
+2. Run `bash scripts/validate-data-docs.sh`, `bash scripts/validate-schema-docs.sh`, or
+   `bash scripts/validate-flow-docs.sh` for the affected product.
 3. Review regenerated reference pages with `bash scripts/preview-docs.sh` when browser inspection or screenshots are needed.
 4. Update the hand-written guides in `docs/` as needed.
 
@@ -45,16 +48,16 @@ Do not hand-edit the generated API member pages unless you are fixing a generate
 - The "Runnable Examples" page is generated from real code in `/examples/`.
 - Use `scripts/generate-example-docs.sh` to refresh it.
 - Do not edit `site/content/docs/examples/_index.md` directly; it is managed by the population script.
-- The API reference member pages under `docs/schema/reference/` and `docs/flow/reference/` are generated from the XML docs in `src/`.
+- The API reference member pages under `docs/data/reference/`, `docs/schema/reference/`, and `docs/flow/reference/` are generated from the XML docs in `src/`.
 - Update the generator in `scripts/generate-api-docs.mjs` when the reference structure changes, then rerun the script.
 - The reference index pages and guide pages are hand-written markdown in `docs/`.
 
 ### Validate, preview, and deploy
 
-Run `bash scripts/validate-schema-docs.sh` or `bash scripts/validate-flow-docs.sh` for routine product documentation
-validation. Each command builds only that product's reference inputs and examples, regenerates its API pages, syncs
-Hugo content, and performs a static render. Run `bash scripts/validate-docs.sh` at a cross-product phase or release
-boundary.
+Run `bash scripts/validate-data-docs.sh`, `bash scripts/validate-schema-docs.sh`, or
+`bash scripts/validate-flow-docs.sh` for routine product documentation validation. Each command builds only that
+product's reference inputs and any examples, regenerates its API pages, syncs Hugo content, and performs a static
+render. Run `bash scripts/validate-docs.sh` at a cross-product phase or release boundary.
 
 Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000` when you need browser review or screenshots. The preview hashes the source, project, and generator inputs and reuses generated docs when those inputs are unchanged. On a cache miss, it builds the shared docs project graph once, then generates runnable examples and API reference pages concurrently. Use `--force-generate` to ignore the cache or `--no-generate` to start from the existing generated docs without checking generator inputs. Stop the preview with `SIGHUP`, `TERM`, `INT`, or by creating `$AXIAL_DOCS_PREVIEW_STOP_FILE` (default `/tmp/axial-docs-preview.stop`).
 
@@ -81,7 +84,7 @@ Use `bash scripts/build-docs-site.sh` only when preparing or checking deployment
 We maintain specific files to optimize the experience for AI agents (Claude, Gemini, Codex) used by our library users.
 
 - `llms.txt`: A short product index served at the site root.
-- `docs/schema/llms.txt` and `docs/flow/llms.txt`: product-local machine-readable context.
-- `docs/schema/agent.md` and `docs/flow/agent.md`: product-local user-facing guidance for AI agents.
+- `docs/data/llms.txt`, `docs/schema/llms.txt`, and `docs/flow/llms.txt`: product-local machine-readable context.
+- `docs/data/agent.md`, `docs/schema/agent.md`, and `docs/flow/agent.md`: product-local user-facing guidance for AI agents.
 
 When the public API changes, ensure both of these files are updated to reflect the current idiomatic "Golden Path."

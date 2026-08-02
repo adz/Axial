@@ -5,6 +5,8 @@ open Axial.Flow
 open Axial.Flow.Hosting.Browser
 open Axial.Flow.Hosting.Node
 open Axial.Flow.Telemetry.JavaScript
+open Axial
+open Axial.Schema.Json
 
 /// An in-memory `@opentelemetry/api` fake proving the OTel JS surface works end to end under Fable.
 module private OtelCheck =
@@ -186,6 +188,11 @@ module private Runner =
 module Program =
     let private targetName = "Fable"
 
+#if FABLE_COMPILER
+    [<Fable.Core.Emit("JSON.parse($0)")>]
+    let private parseNativeJson (json: string) : obj = null
+#endif
+
     [<EntryPoint>]
     let main argv =
         let iterations = 10000
@@ -207,6 +214,16 @@ module Program =
         printfn "Codec round-trip: ok"
 
 #if FABLE_COMPILER
+        let parsed = Json.parseData "{\"n\":1.20e+3,\"n\":2}"
+        let native = Data.ofJsonValue (parseNativeJson "{\"name\":\"Ada\",\"active\":true}")
+
+        if parsed <> Data.Object [ "n", Data.Number "1.20e+3"; "n", Data.Number "2" ] then
+            failwith $"Unexpected portable Data parse: %A{parsed}"
+
+        if native <> Data.Object [ "name", Data.Text "Ada"; "active", Data.Bool true ] then
+            failwith $"Unexpected native JavaScript JSON conversion: %A{native}"
+
+        printfn "Data JSON boundaries: ok"
         OtelCheck.run ()
 #endif
 

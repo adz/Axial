@@ -355,10 +355,16 @@ let pageSpecs = [
         OutPath = ["data"; "_index.md"]
         Title = "Data"
         Description = "Source-documented portable structured values."
-        Intro = "This page shows `Axial.Data`: one source-neutral tree for nulls, primitives, lists, and objects, with constructors for maps, name/value pairs, CLI arguments, JSON, and configuration. Use it to shape data in tests and fixtures, to carry boundary input before a type is assigned, and to redisplay raw values by path. It has no dependencies on other Axial packages."
+        Intro = "This page shows `Axial.Data`: one owned tree for literals, source adapters, immutable edits, named cases, exact differences, and produced-data proofs. It has no dependencies on other Axial packages."
         SymbolIds = [
             "The tree", ["T:Axial.Data"; "T:Axial.DataPathSegment"; "T:Axial.DataPath"]
             "Constructors", ["M:Axial.DataModule.ofMap"; "M:Axial.DataModule.ofNameValues"; "M:Axial.DataModule.ofCliArgs"; "M:Axial.DataModule.ofJsonElement"; "M:Axial.DataModule.ofJsonDocument"; "M:Axial.DataModule.ofConfiguration"]
+            "Literal syntax", ["T:Axial.DataField"; "M:Axial.DataModule.assoc"; "M:Axial.DataModule.optionalAssoc"; "M:Axial.DataModule.data"; "M:Axial.DataModule.number"; "M:Axial.DataModule.fields"; "M:Axial.DataModule.Syntax.data"; "M:Axial.DataModule.Syntax.op_EqualsGreater"; "M:Axial.DataModule.Syntax.op_QmarkEqualsGreater"; "P:Axial.DataModule.Syntax.nil"; "M:Axial.DataModule.Syntax.num"; "M:Axial.DataModule.Syntax.fields"]
+            "Edits", ["T:Axial.DataEdit"; "T:Axial.DataPatchFailure"; "T:Axial.DataPatchException"; "M:Axial.DataEditModule.set"; "M:Axial.DataEditModule.replace"; "M:Axial.DataEditModule.remove"; "M:Axial.DataEditModule.append"; "M:Axial.DataEditModule.prepend"; "M:Axial.DataEditModule.insert"; "M:Axial.DataEditModule.rename"; "M:Axial.DataEditModule.update"; "M:Axial.DataModule.applyEdit"; "M:Axial.DataModule.patch"; "M:Axial.DataModule.set"; "M:Axial.DataModule.replace"; "M:Axial.DataModule.remove"; "M:Axial.DataModule.append"; "M:Axial.DataModule.prepend"; "M:Axial.DataModule.insert"; "M:Axial.DataModule.rename"; "M:Axial.DataModule.update"; "M:Axial.DataModule.Syntax.set"; "M:Axial.DataModule.Syntax.replace"; "M:Axial.DataModule.Syntax.remove"; "M:Axial.DataModule.Syntax.append"; "M:Axial.DataModule.Syntax.prepend"; "M:Axial.DataModule.Syntax.insert"; "M:Axial.DataModule.Syntax.rename"; "M:Axial.DataModule.Syntax.update"; "M:Axial.DataModule.tryPatch"]
+            "Cases", ["T:Axial.DataVariation"; "T:Axial.DataCase"; "T:Axial.DataDimension"; "M:Axial.DataModule.Syntax.variant"; "M:Axial.DataModule.Syntax.variants"; "M:Axial.DataModule.Syntax.dimension"; "M:Axial.DataModule.Syntax.matrix"]
+            "Comparison and matching", ["T:Axial.DataDifference"; "T:Axial.DataDifferenceCause"; "T:Axial.DataPattern"; "T:Axial.DataExpectation"; "T:Axial.DataMismatch"; "T:Axial.DataMatchException"; "M:Axial.DataModule.diff"; "M:Axial.DataModule.compare"; "M:Axial.DataModule.tryMatch"; "M:Axial.DataModule.Syntax.at"; "M:Axial.DataModule.Syntax.absent"; "M:Axial.DataModule.Syntax.matching"; "M:Axial.DataModule.Syntax.exactly"; "M:Axial.DataModule.Syntax.containing"; "M:Axial.DataModule.Syntax.containingItems"; "M:Axial.DataModule.Syntax.inOrder"; "M:Axial.DataModule.Syntax.allItems"; "M:Axial.DataModule.Syntax.someItem"; "P:Axial.DataModule.Syntax.any"; "P:Axial.DataModule.Syntax.anyText"; "P:Axial.DataModule.Syntax.anyNumber"; "M:Axial.DataModule.Syntax.oneOf"; "M:Axial.DataModule.Syntax.satisfying"]
+            "JSON rendering", ["P:Axial.DataModule.Json.render"; "P:Axial.DataModule.Json.renderIndented"]
+            "Rendering and extraction", ["M:Axial.DataModule.render"; "M:Axial.DataModule.renderIndented"; "M:Axial.DataModule.tryText"; "M:Axial.DataModule.tryBool"; "M:Axial.DataModule.tryNumberToken"; "M:Axial.DataModule.tryList"; "M:Axial.DataModule.tryObject"]
             "Redisplay", ["M:Axial.DataModule.redisplay"; "M:Axial.DataModule.redisplayPath"]
         ]
         Alias = None
@@ -367,10 +373,10 @@ let pageSpecs = [
         OutPath = ["codec"; "_index.md"]
         Title = "Codec"
         Description = "Source-documented compiled JSON codecs over built model schemas."
-        Intro = "This page shows the `Axial.Schema.Json` surface: `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with compiler-directed, runtime-reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for serialization; parse untrusted boundary input with [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter."
+        Intro = "This page shows the `Axial.Schema.Json` surface: `Json.parseData` parses JSON into the source-neutral `Data` tree on .NET and Fable, while `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with compiler-directed, runtime-reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for typed serialization; parse untrusted boundary input through `Data` and [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter."
         SymbolIds = [
             "Core types", ["T:Axial.Schema.Json.JsonCodec`1"; "T:Axial.Schema.Json.JsonCodecException"]
-            "Module functions", ["M:Axial.Schema.Json.Json.compile"; "M:Axial.Schema.Json.Json.serialize"; "M:Axial.Schema.Json.Json.serializeBytes"; "M:Axial.Schema.Json.Json.serializeToStream"; "M:Axial.Schema.Json.Json.deserialize"; "M:Axial.Schema.Json.Json.deserializeBytes"; "M:Axial.Schema.Json.Json.deserializeStreamAsync"; "M:Axial.Schema.Json.Json.tryDeserialize"]
+            "Module functions", ["M:Axial.Schema.Json.Json.parseData"; "M:Axial.Schema.Json.Json.compile"; "M:Axial.Schema.Json.Json.serialize"; "M:Axial.Schema.Json.Json.serializeBytes"; "M:Axial.Schema.Json.Json.serializeToStream"; "M:Axial.Schema.Json.Json.deserialize"; "M:Axial.Schema.Json.Json.deserializeBytes"; "M:Axial.Schema.Json.Json.deserializeStreamAsync"; "M:Axial.Schema.Json.Json.tryDeserialize"]
         ]
         Alias = None
     }
@@ -1175,7 +1181,7 @@ let noLinkGeneratedReferenceSlugs =
 let rewriteApiDocHtml (slugMap: IDictionary<string, string>) (filePath: string) (content: string) =
     let unresolved = ResizeArray<string>()
 
-    let rewritten =
+    let linksRewritten =
         Regex.Replace(
             content,
             "<a href=\"(?:https://adz\\.github\\.io/Axial)?/reference/Axial/([a-z0-9\\-]+)\\.html(#[^\"]*)?\">((?:(?!</a>).)*)</a>",
@@ -1197,7 +1203,27 @@ let rewriteApiDocHtml (slugMap: IDictionary<string, string>) (filePath: string) 
         let unique = unresolved |> Seq.distinct |> String.concat ", "
         printfn "Warning: unresolved generated reference links in %s -> %s" filePath unique
 
-    rewritten
+    // FSharp.Formatting checks isolated XML examples without the source file's namespace context. In Axial.Data
+    // examples it can therefore bind the short name `Data` to Microsoft.FSharp.Data and emit a false hover tooltip.
+    // Keep the copyable source unchanged, but remove tooltip bindings whose generated definition is known to be wrong.
+    let incorrectTooltipIds =
+        Regex.Matches(
+            linksRewritten,
+            "<div popover class=\"fsdocs-tip\" id=\"([^\"]+)\">namespace Microsoft\\.FSharp\\.Data</div>")
+        |> Seq.cast<Match>
+        |> Seq.map (fun m -> m.Groups[1].Value)
+        |> Seq.distinct
+        |> Seq.toList
+
+    (linksRewritten, incorrectTooltipIds)
+    ||> List.fold (fun html tooltipId ->
+        html
+        |> fun value ->
+            Regex.Replace(
+                value,
+                $" data-fsdocs-tip=\"{Regex.Escape tooltipId}\" data-fsdocs-tip-unique=\"[^\"]+\"",
+                "")
+        |> fun value -> value.Replace($"<div popover class=\"fsdocs-tip\" id=\"{tooltipId}\">namespace Microsoft.FSharp.Data</div>", ""))
 
 let rec collectAllEntities (e: ApiDocEntity) =
     seq {
@@ -1260,13 +1286,14 @@ let main argv =
         | null | "" -> "all"
         | value -> value.Trim().ToLowerInvariant()
 
-    if product <> "all" && product <> "validation" && product <> "schema" && product <> "flow" then
-        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'validation', 'schema', or 'flow'."
+    if product <> "all" && product <> "data" && product <> "validation" && product <> "schema" && product <> "flow" then
+        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'data', 'validation', 'schema', or 'flow'."
     
     let outRoot =
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_OUT_ROOT" with
         | null | "" ->
             match product with
+            | "data" -> Path.Combine(root, "docs/data/reference")
             | "validation" -> Path.Combine(root, "docs/error-handling/reference")
             | "schema" -> Path.Combine(root, "docs/schema/reference")
             | "flow" -> Path.Combine(root, "docs/flow/reference")
@@ -1304,6 +1331,10 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Schema.Http.GenHttp/debug/Axial.Schema.Http.GenHttp.dll")
     ]
 
+    let dataDllPaths = [
+        Path.Combine(artifactsDir, "Axial.Data/debug_net8.0/Axial.Data.dll")
+    ]
+
     let flowDllPaths = [
         Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
@@ -1318,6 +1349,7 @@ let main argv =
 
     let dllPaths =
         match product with
+        | "data" -> dataDllPaths
         | "validation" -> validationDllPaths
         | "schema" -> schemaDllPaths
         | "flow" -> flowDllPaths
@@ -1363,15 +1395,19 @@ let main argv =
     let validationReferenceGroups =
         set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "parse"; "refined" ]
 
+    let dataReferenceGroups =
+        set [ "data" ]
+
     let schemaReferenceGroups =
-        set [ "schema"; "codec"; "data" ]
+        set [ "schema"; "codec" ]
 
     let selectedPageSpecs =
         let forProduct =
             match product with
+            | "data" -> pageSpecs |> List.filter (fun spec -> dataReferenceGroups.Contains spec.OutPath.Head)
             | "validation" -> pageSpecs |> List.filter (fun spec -> validationReferenceGroups.Contains spec.OutPath.Head)
             | "schema" -> pageSpecs |> List.filter (fun spec -> schemaReferenceGroups.Contains spec.OutPath.Head)
-            | "flow" -> pageSpecs |> List.filter (fun spec -> not (schemaReferenceGroups.Contains spec.OutPath.Head || validationReferenceGroups.Contains spec.OutPath.Head))
+            | "flow" -> pageSpecs |> List.filter (fun spec -> not (dataReferenceGroups.Contains spec.OutPath.Head || schemaReferenceGroups.Contains spec.OutPath.Head || validationReferenceGroups.Contains spec.OutPath.Head))
             | _ -> pageSpecs
 
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_PAGE_PREFIX" with
@@ -1381,7 +1417,9 @@ let main argv =
     let productOutPath (spec: PageSpec) = spec.OutPath
 
     let referenceRootForSpec (spec: PageSpec) =
-        if validationReferenceGroups.Contains spec.OutPath.Head then
+        if dataReferenceGroups.Contains spec.OutPath.Head then
+            Path.Combine(root, "docs/data/reference")
+        elif validationReferenceGroups.Contains spec.OutPath.Head then
             Path.Combine(root, "docs/error-handling/reference")
         elif schemaReferenceGroups.Contains spec.OutPath.Head then
             Path.Combine(root, "docs/schema/reference")

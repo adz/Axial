@@ -83,11 +83,10 @@ and test-data generation interpret the same field names, value shapes, and const
 
 ## Packages
 
-The Schema documentation covers the core package and its focused input, codec, contract, HTTP, and testing packages.
+The Schema documentation covers the core package and its focused codec, contract, HTTP, and testing packages.
 
 | Package | Use it for | Documentation |
 | --- | --- | --- |
-| `Axial.Data` | Source-neutral structured input values | [Data](./data/) |
 | `Axial.Schema` | Model schemas, parsing, checking, accumulated errors, and inspection | [Axial.Schema](./overview/) |
 | `Axial.Schema.Json` | Compiled JSON codecs | [JSON Codec](./json-codec/) |
 | `Axial.Schema.JsonSchema` | JSON Schema generation | [JSON Schema reference]({{< relref "/schema/reference/schema/m-schema-jsonschema-generate" >}}) |

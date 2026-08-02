@@ -7,23 +7,17 @@ This page shows structured boundary data, universal schema parsing into `Result`
 
 ## Structured data
 
-- [`Data`](./t-data.md): A portable tree representing the meaning and shape of unowned structured data.
+- [`Data`](./t-data.md): A portable tree for structured data.
 - [`DataPathSegment`](./t-datapathsegment.md): A segment in a structured data path.
 - [`DataPath`](./t-datapath.md): Helpers for constructing, parsing, and rendering structured data paths.
-- [`Data.ofMap`](./m-data-ofmap.md): Builds object-shaped structured data from a map of scalar field values.
-- [`Data.ofNameValues`](./m-data-ofnamevalues.md): Builds object-shaped structured data from name/value pairs, grouping repeated names into <code>Many</code>.
-- [`Data.ofCliArgs`](./m-data-ofcliargs.md):
- Builds structured data from command-line arguments.
-
-- [`Data.ofJsonElement`](./m-data-ofjsonelement.md): Builds structured data from a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement">JsonElement</a>.
-- [`Data.ofJsonDocument`](./m-data-ofjsondocument.md): Builds structured data from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
-- [`Data.ofConfiguration`](./m-data-ofconfiguration.md):
- Builds structured data from flattened configuration keys using <code>:</code> as the path separator.
-
-- [`Data.redisplay`](./m-data-redisplay.md):
- Redisplays a scalar structured data value, returning blank text for missing, object-shaped, or collection-shaped input.
-
-- [`Data.redisplayPath`](./m-data-redisplaypath.md): Parses an input path and redisplays the addressed scalar structured data value.
+- [`Data.ofMap`](./m-data-ofmap.md): Builds object-shaped data from a map of scalar values.
+- [`Data.ofNameValues`](./m-data-ofnamevalues.md): Builds object-shaped data from name and value pairs.
+- [`Data.ofCliArgs`](./m-data-ofcliargs.md): Builds structured data from command-line arguments.
+- [`Data.ofJsonElement`](./m-data-ofjsonelement.md): Copies a .NET 8+ <code>System.Text.Json.JsonElement</code> into structured data.
+- [`Data.ofJsonDocument`](./m-data-ofjsondocument.md): Copies a .NET 8+ <code>System.Text.Json.JsonDocument</code> into structured data.
+- [`Data.ofConfiguration`](./m-data-ofconfiguration.md): Builds structured data from flattened configuration keys.
+- [`Data.redisplay`](./m-data-redisplay.md): Renders one scalar value for redisplay.
+- [`Data.redisplayPath`](./m-data-redisplaypath.md): Parses a path and redisplays its scalar.
 
 ## Input parsing
 

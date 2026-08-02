@@ -1,6 +1,6 @@
 ---
 title: "Error Handling: Result, Check, Parse, and Refined"
-linkTitle: Error Handling
+linkTitle: ErrorHandling
 type: docs
 notoc: true
 description: Compose typed failures, reusable checks, primitive parsing, and invariant-carrying values.

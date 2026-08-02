@@ -380,8 +380,11 @@ module ApiShapeTests =
 
         assertTypeAbsentFromAssembly "Axial.Schema" "Axial.Schema.ValueSchema`1"
 
-        moduleTypeFromAssembly "Axial.Data" "Axial.DataModule"
-        |> publicStaticMemberNames
+        let dataMembers =
+            moduleTypeFromAssembly "Axial.Data" "Axial.DataModule"
+            |> publicStaticMemberNames
+
+        dataMembers
         |> assertContainsAll
             [ "ofMap"
               "ofNameValues"
@@ -390,9 +393,49 @@ module ApiShapeTests =
               "ofJsonElement"
               "ofJsonDocument"
               "ofConfiguration"
+              "assoc"
+              "optionalAssoc"
+              "data"
+              "number"
+              "tryPatch"
+              "applyEdit"
+              "patch"
+              "set"
+              "replace"
+              "remove"
+              "append"
+              "prepend"
+              "insert"
+              "rename"
+              "update"
+              "diff"
+              "compare"
+              "tryMatch"
+              "render"
+              "renderIndented"
+              "tryText"
+              "tryBool"
+              "tryNumberToken"
+              "tryList"
+              "tryObject"
               "redisplay"
               "redisplayAt"
               "redisplayPath" ]
+
+        let dataEditMembers =
+            moduleTypeFromAssembly "Axial.Data" "Axial.DataEditModule"
+            |> publicStaticMemberNames
+
+        dataEditMembers
+        |> assertContainsAll [ "set"; "replace"; "remove"; "append"; "prepend"; "insert"; "rename"; "update" ]
+
+        test <@ not (dataMembers.Contains "put") @>
+        test <@ not (dataEditMembers.Contains "put") @>
+
+        test <@ typeof<DataEdit>.Assembly.GetName().Name = "Axial.Data" @>
+        test <@ typeof<DataPattern>.Assembly.GetName().Name = "Axial.Data" @>
+        test <@ typeof<DataDifference>.Assembly.GetName().Name = "Axial.Data" @>
+        test <@ typeof<DataMismatch>.Assembly.GetName().Name = "Axial.Data" @>
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.RetainedParseResult"
         |> publicStaticMemberNames
@@ -434,7 +477,7 @@ module ApiShapeTests =
         moduleTypeFromAssembly "Axial.Schema.Json" "Axial.Schema.Json.Json"
         |> publicStaticMemberNames
         |> assertContainsAll
-            [ "compile"; "serialize"; "serializeBytes"; "deserialize"; "deserializeBytes"; "tryDeserialize" ]
+            [ "compile"; "serialize"; "serializeBytes"; "parseData"; "deserialize"; "deserializeBytes"; "tryDeserialize" ]
 
         // JSON Schema generation lives in its own package; the namespace stays Axial.Schema so
         // callers only add a package reference, not a new open.

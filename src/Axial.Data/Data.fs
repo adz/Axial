@@ -3,12 +3,11 @@ namespace Axial
 open System
 open System.Globalization
 
-/// <summary>A portable tree representing the meaning and shape of unowned structured data.</summary>
+/// <summary>A portable tree for structured data.</summary>
 /// <remarks>
 /// <para>
-/// Use <c>Data</c> between a source adapter and the code that assigns an application-owned type. It preserves null,
-/// text, number, Boolean, list, and object distinctions without depending on a serializer, schema system, or boundary
-/// source.
+/// <c>Data</c> preserves null, text, number, Boolean, list, and object distinctions without depending on a serializer
+/// or input format.
 /// </para>
 /// <para>
 /// <c>Data</c> is a structured-value model, not a source syntax tree. It does not model whitespace, comments, source
@@ -44,6 +43,8 @@ type Data =
     static member From(value: decimal) : Data = Data.Number(value.ToString(CultureInfo.InvariantCulture))
     /// <summary>Converts a double using invariant round-trip formatting.</summary>
     static member From(value: float) : Data =
+        if Double.IsNaN value || Double.IsInfinity value then
+            invalidArg (nameof value) "A structured number must be finite."
 #if FABLE_COMPILER
         Data.Number(string value)
 #else

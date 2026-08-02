@@ -5,18 +5,9 @@ groups:
     caption: Parse untrusted input through field constraints and domain constructors, or return path-aware diagnostics.
     descendants: false
 
-  - title: Axial.Data
-    home: /schema/data
-    caption: Portable structured values for documents, fixtures, boundaries, and adapters.
-    children_of:
-      - /schema/data
-    reference:
-      children_of:
-        - /schema/reference/data
-
   - title: Axial.Schema
     home: /schema/overview
-    caption: The core package. Data, JSON, HTTP, and testing packages extend it.
+    caption: The core package. JSON, HTTP, and testing packages extend it.
     descendants: false
     entries:
       - /schema/getting-started

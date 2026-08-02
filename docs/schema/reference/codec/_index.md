@@ -3,7 +3,7 @@ title: "Codec"
 weight: 500
 ---
 
-This page shows the `Axial.Schema.Json` surface: `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with compiler-directed, runtime-reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for serialization; parse untrusted boundary input with [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter.
+This page shows the `Axial.Schema.Json` surface: `Json.parseData` parses JSON into the source-neutral `Data` tree on .NET and Fable, while `Json.compile` turns a built `Schema<'model>` into a reusable `JsonCodec<'model>` with compiler-directed, runtime-reflection-free, constructor-specialized encode and decode plans. The codec is the trusted hot path for typed serialization; parse untrusted boundary input through `Data` and [schema input parsing](../schema/interpreters/) when path-aware diagnostics matter.
 
 ## Core types
 
@@ -12,6 +12,7 @@ This page shows the `Axial.Schema.Json` surface: `Json.compile` turns a built `S
 
 ## Module functions
 
+- [`Schema.Json.parseData`](./m-schema-json-json-parsedata.md): Parses one JSON value into source-neutral structured data.
 - [`Schema.Json.compile`](./m-schema-json-json-compile.md): Compiles a completed schema into a reusable JSON codec.
 - [`Schema.Json.serialize`](./m-schema-json-json-serialize.md): Serializes a trusted model to a JSON string through a compiled codec.
 - [`Schema.Json.serializeBytes`](./m-schema-json-json-serializebytes.md): Serializes a trusted model to UTF-8 JSON bytes through a compiled codec.

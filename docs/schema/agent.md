@@ -1,12 +1,13 @@
 ---
 title: For AI agents
-description: High-signal Schema and Data guidance for coding agents.
+description: High-signal Schema guidance for coding agents.
 weight: 100
 ---
 
 # For AI agents
 
-Use this section for `Axial.Schema` and `Axial.Data`. These packages do not require Flow.
+Use this section for `Axial.Schema`. It does not require Flow. Load the separate [Data agent guidance]({{< relref "/data/agent.md" >}})
+when working with source-neutral fixtures or produced output.
 
 - Start domain models with `Schema<'model>` and constructor-last declarations.
 - Use plain F# `Result` with an application error type for smaller fail-fast operations.

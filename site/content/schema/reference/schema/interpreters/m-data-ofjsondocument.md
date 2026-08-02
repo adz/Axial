@@ -5,29 +5,23 @@ weight: 2007
 type: docs
 ---
 
-Builds structured data from the root element of a <a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>.
+Copies a .NET 8+ <code>System.Text.Json.JsonDocument</code> into structured data.
 
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.ofJsonDocument&#32;<span>document</span></span></code>
+<code><span>Data.ofJsonDocument&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `document` | <code><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>&#32;->&#32;<a href="../../data/t-data.md">Data</a></span></code> |  |
 
 ## Remarks
 
-netstandard2.1: not available.
+This platform-specific convenience conversion is not available under Fable.
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L504-504)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L71-71)

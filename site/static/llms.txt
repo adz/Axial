@@ -1,8 +1,10 @@
 # Axial documentation
 
-Axial contains two independent F# products. Load only the context for the product being used:
+Axial contains four independent documentation entry points. Load only the context for the product being used:
 
-- Schema, Data, ErrorHandling, parsing, validation, refined values, codecs, and contracts: `/schema/llms.txt`
+- Data, structured fixtures, immutable edits, comparisons, and produced-data matching: `/data/llms.txt`
+- Result, Check, Parse, and Refined: `/error-handling/llms.txt`
+- Schema, parsing, codecs, contracts, and path-aware diagnostics: `/schema/llms.txt`
 - Flow, effects, services, resources, concurrency, and hosting: `/flow/llms.txt`
 
-Product documentation starts at `/schema/` and `/flow/`.
+Product documentation starts at `/data/`, `/error-handling/`, `/schema/`, and `/flow/`.
