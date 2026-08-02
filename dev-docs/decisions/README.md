@@ -138,7 +138,13 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   generator/content-mirror pipeline already produced from the new source tree is deferred; see
   `dev-docs/current-ideas/project-split.md`.
 
-## 2026-07-22: Error Handling, Schema, and Flow are separate public identities (package details superseded 2026-07-24)
+## 2026-08-02: Data is an independent documentation entry point
+
+- `/data/`, `/error-handling/`, `/schema/`, and `/flow/` are peer product homes in that navigation order.
+- Data guides, generated API reference, `llms.txt`, and agent context live under `docs/data/`; Schema links to Data where
+  it consumes the package but does not own Data's documentation.
+
+## 2026-07-22: Error Handling, Schema, and Flow are separate public identities (superseded 2026-08-02; package details superseded 2026-07-24)
 
 - `/error-handling/`, `/schema/`, and `/flow/` each have their own homepage, guides, generated reference, `llms.txt`, and
   agent context. Validation and Schema can remain in one repository initially; Flow can move independently.

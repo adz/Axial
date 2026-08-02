@@ -1,6 +1,6 @@
 ---
 title: Axial
-description: Independent Error Handling, Schema, and Flow libraries for F# on .NET and Fable JavaScript.
+description: Independent Data, Error Handling, Schema, and Flow libraries for F# on .NET and Fable JavaScript.
 body_class: axial-home
 ---
 
@@ -47,7 +47,14 @@ body_class: axial-home
 
 <div class="axial-doors">
 
-<a class="axial-door axial-door--validation" href="{{< relref "/error-handling/" >}}">
+<a class="axial-door axial-door--data" href="{{< relref "/data/" >}}">
+<span class="axial-door-kicker">Structured values and fixtures</span>
+<h2>Axial.Data</h2>
+<p>Build, edit, compare, and match portable structured values without repetitive constructors or copied fixtures.</p>
+<span class="axial-door-cta">Data documentation &rarr;</span>
+</a>
+
+<a class="axial-door axial-door--result" href="{{< relref "/error-handling/" >}}">
 <span class="axial-door-kicker">Checks and typed failures</span>
 <h2>Axial.ErrorHandling</h2>
 <p>Compose ordinary Results and reuse value checks with preset CheckError types.

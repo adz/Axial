@@ -1,0 +1,12 @@
+# Axial Data
+
+- `Axial.Data` is a standalone fixture and produced-data package with no dependencies on other Axial packages.
+- Open `Axial.Data.Syntax`; construct with `data`, derive values with `patch`, `variants`, or `matrix`, and match with
+  `at`, `absent`, `containing`, and explicit list patterns.
+- Use `Data.compare` when the complete tree is the contract and partial patterns when only selected evidence matters.
+- `Data.render` and `Data.renderIndented` are human-readable displays; `Data.Json.render` and
+  `Data.Json.renderIndented` produce portable JSON text.
+- On .NET 8+, copy native `JsonElement` and `JsonDocument` values with `Data.ofJsonElement` and
+  `Data.ofJsonDocument`. Under Fable, pass a native `JSON.parse` result to `Data.ofJsonValue` when duplicate fields and
+  original number-token spelling do not matter.
+- `Axial.Schema.Json.Json.parseData` provides portable, lossless JSON-to-`Data` parsing when Schema.Json is installed.

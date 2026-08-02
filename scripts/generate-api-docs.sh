@@ -8,9 +8,9 @@ skip_build=false
 
 for arg in "$@"; do
   case "$arg" in
-    validation|schema|flow|all) product="$arg" ;;
+    data|validation|schema|flow|all) product="$arg" ;;
     --no-build) skip_build=true ;;
-    *) echo "Usage: $0 [validation|schema|flow|all] [--no-build]" >&2; exit 2 ;;
+    *) echo "Usage: $0 [data|validation|schema|flow|all] [--no-build]" >&2; exit 2 ;;
   esac
 done
 
@@ -29,6 +29,9 @@ run_docgen() {
 }
 
 case "$product" in
+  data)
+    run_docgen "$product"
+    ;;
   validation)
     run_docgen "$product"
     ;;
@@ -39,6 +42,8 @@ case "$product" in
     run_docgen "$product"
     ;;
   all)
+    run_docgen data &
+    data_pid=$!
     run_docgen validation &
     validation_pid=$!
     run_docgen schema &
@@ -47,13 +52,14 @@ case "$product" in
     flow_pid=$!
 
     generation_status=0
+    wait "$data_pid" || generation_status=$?
     wait "$validation_pid" || generation_status=$?
     wait "$schema_pid" || generation_status=$?
     wait "$flow_pid" || generation_status=$?
     exit "$generation_status"
     ;;
   *)
-    echo "Usage: $0 [validation|schema|flow|all] [--no-build]" >&2
+    echo "Usage: $0 [data|validation|schema|flow|all] [--no-build]" >&2
     exit 2
     ;;
 esac

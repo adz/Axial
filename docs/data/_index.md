@@ -1,9 +1,13 @@
 ---
 weight: 5
 title: Data
+linkTitle: Data
 type: docs
 notoc: true
 description: Build, change, compare, and test structured data without repetitive constructors.
+menu:
+  main:
+    weight: 3
 ---
 
 # Data
@@ -109,4 +113,4 @@ Data.render person
 - [Match selected parts of data](how-to-test-produced-json/)
 - [Build variations and matrices](how-to-build-test-cases/)
 - [Compare complete data](compare-data/)
-- [API reference]({{< relref "/schema/reference/data/" >}})
+- [API reference]({{< relref "/data/reference/" >}})

@@ -1286,13 +1286,14 @@ let main argv =
         | null | "" -> "all"
         | value -> value.Trim().ToLowerInvariant()
 
-    if product <> "all" && product <> "validation" && product <> "schema" && product <> "flow" then
-        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'validation', 'schema', or 'flow'."
+    if product <> "all" && product <> "data" && product <> "validation" && product <> "schema" && product <> "flow" then
+        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'data', 'validation', 'schema', or 'flow'."
     
     let outRoot =
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_OUT_ROOT" with
         | null | "" ->
             match product with
+            | "data" -> Path.Combine(root, "docs/data/reference")
             | "validation" -> Path.Combine(root, "docs/error-handling/reference")
             | "schema" -> Path.Combine(root, "docs/schema/reference")
             | "flow" -> Path.Combine(root, "docs/flow/reference")
@@ -1330,6 +1331,10 @@ let main argv =
         Path.Combine(artifactsDir, "Axial.Schema.Http.GenHttp/debug/Axial.Schema.Http.GenHttp.dll")
     ]
 
+    let dataDllPaths = [
+        Path.Combine(artifactsDir, "Axial.Data/debug_net8.0/Axial.Data.dll")
+    ]
+
     let flowDllPaths = [
         Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")
         Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
@@ -1344,6 +1349,7 @@ let main argv =
 
     let dllPaths =
         match product with
+        | "data" -> dataDllPaths
         | "validation" -> validationDllPaths
         | "schema" -> schemaDllPaths
         | "flow" -> flowDllPaths
@@ -1389,15 +1395,19 @@ let main argv =
     let validationReferenceGroups =
         set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "parse"; "refined" ]
 
+    let dataReferenceGroups =
+        set [ "data" ]
+
     let schemaReferenceGroups =
-        set [ "schema"; "codec"; "data" ]
+        set [ "schema"; "codec" ]
 
     let selectedPageSpecs =
         let forProduct =
             match product with
+            | "data" -> pageSpecs |> List.filter (fun spec -> dataReferenceGroups.Contains spec.OutPath.Head)
             | "validation" -> pageSpecs |> List.filter (fun spec -> validationReferenceGroups.Contains spec.OutPath.Head)
             | "schema" -> pageSpecs |> List.filter (fun spec -> schemaReferenceGroups.Contains spec.OutPath.Head)
-            | "flow" -> pageSpecs |> List.filter (fun spec -> not (schemaReferenceGroups.Contains spec.OutPath.Head || validationReferenceGroups.Contains spec.OutPath.Head))
+            | "flow" -> pageSpecs |> List.filter (fun spec -> not (dataReferenceGroups.Contains spec.OutPath.Head || schemaReferenceGroups.Contains spec.OutPath.Head || validationReferenceGroups.Contains spec.OutPath.Head))
             | _ -> pageSpecs
 
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_PAGE_PREFIX" with
@@ -1407,7 +1417,9 @@ let main argv =
     let productOutPath (spec: PageSpec) = spec.OutPath
 
     let referenceRootForSpec (spec: PageSpec) =
-        if validationReferenceGroups.Contains spec.OutPath.Head then
+        if dataReferenceGroups.Contains spec.OutPath.Head then
+            Path.Combine(root, "docs/data/reference")
+        elif validationReferenceGroups.Contains spec.OutPath.Head then
             Path.Combine(root, "docs/error-handling/reference")
         elif schemaReferenceGroups.Contains spec.OutPath.Head then
             Path.Combine(root, "docs/schema/reference")

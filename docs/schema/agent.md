@@ -1,20 +1,13 @@
 ---
 title: For AI agents
-description: High-signal Schema and Data guidance for coding agents.
+description: High-signal Schema guidance for coding agents.
 weight: 100
 ---
 
 # For AI agents
 
-Use this section for `Axial.Schema` and `Axial.Data`. These packages do not require Flow.
-
-For source-neutral fixtures and produced output, prefer `Axial.Data.Syntax`: construct with `data`, derive values with
-`patch`, `variants`, or `matrix`, and prove output with `matching`. Use `Data.compare` when the complete tree is the
-contract and partial patterns when only selected evidence matters.
-
-Use `Data.render` for human-readable diagnostics and `Data.Json.render` for JSON text. Parse JSON portably with
-`Axial.Schema.Json.Json.parseData`; use `Data.ofJsonElement`/`ofJsonDocument` for existing .NET 8+ JSON DOM values or
-`Data.ofJsonValue` for a native Fable `JSON.parse` result.
+Use this section for `Axial.Schema`. It does not require Flow. Load the separate [Data agent guidance]({{< relref "/data/agent.md" >}})
+when working with source-neutral fixtures or produced output.
 
 - Start domain models with `Schema<'model>` and constructor-last declarations.
 - Use plain F# `Result` with an application error type for smaller fail-fast operations.

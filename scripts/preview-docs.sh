@@ -61,6 +61,7 @@ if $generate; then
      [ "$fingerprint" = "$cached_fingerprint" ] &&
      [ -f "$root_dir/docs/schema/examples.md" ] &&
      [ -f "$root_dir/docs/flow/examples.md" ] &&
+     [ -d "$root_dir/docs/data/reference" ] &&
      [ -d "$root_dir/docs/error-handling/reference" ] &&
      [ -d "$root_dir/docs/schema/reference" ] &&
      [ -d "$root_dir/docs/flow/reference" ]; then
