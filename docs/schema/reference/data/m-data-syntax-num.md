@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.num"
 linkTitle: "num"
-weight: 2205
+weight: 2210
 ---
 
 Constructs an exact number from a validated portable JSON number token.
@@ -9,20 +9,14 @@ Constructs an exact number from a validated portable JSON number token.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.Syntax.num&#32;<span>token</span></span></code>
+<code><span>Data.Syntax.num&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `token` | <code>string</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-data.md">Data</a></code> |  |
+| <code><span>string&#32;->&#32;<a href="t-data.md">Data</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L572-572)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L684-684)

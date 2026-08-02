@@ -22,4 +22,4 @@ One focused difference between expected and actual structured data.
 | `Cause` | The difference category. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L131-131)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L179-179)

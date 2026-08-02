@@ -9,9 +9,11 @@ description: Derive named test cases from one structured baseline.
 
 Keep one representative baseline and describe each test case as a strict immutable edit.
 
+The four functions on this page are `variant`, `variants`, `dimension`, and `matrix`.
+
 ```fsharp
 open Axial
-open Axial.Data.Syntax
+open Data.Syntax
 
 let baseline =
     data [
@@ -103,7 +105,7 @@ match Data.tryPatch edits baseline with
         printfn "Edit %d at %s: %s" failure.EditIndex failure.Path failure.Message)
 ```
 
-The authored `patch` function raises `DataPatchException` with the same failures.
+`Data.patch` raises `DataPatchException` with the same failures.
 
 For `append "name" "Grace"`, the result is one failure at edit index `0`, path `name`, with a message stating that a
 list was expected but text was found. The baseline remains unchanged.

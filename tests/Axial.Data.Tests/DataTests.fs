@@ -161,6 +161,12 @@ module DataTests =
         raises<ArgumentException> <@ num "NaN" @>
 
     [<Fact>]
+    let ``float conversion rejects values JSON cannot represent`` () =
+        Assert.Throws<ArgumentException>(fun () -> data [ "value" => Double.NaN ] |> ignore) |> ignore
+        Assert.Throws<ArgumentException>(fun () -> data [ "value" => Double.PositiveInfinity ] |> ignore) |> ignore
+        Assert.Throws<ArgumentException>(fun () -> data [ "value" => Double.NegativeInfinity ] |> ignore) |> ignore
+
+    [<Fact>]
     let ``path lookup supports roots indexes quoted names and last duplicate`` () =
         let value =
             Data.Object [
@@ -189,7 +195,7 @@ module DataTests =
 
         let changed =
             baseline
-            |> patch [
+            |> Data.patch [
                 set "address.postcode" 5001
                 put "plan" "pro"
                 append "roles" "billing"
@@ -209,6 +215,50 @@ module DataTests =
         test <@ Data.tryFindPath "address.postcode" baseline = Some(Data.Number "5000") @>
 
     [<Fact>]
+    let ``direct edits apply one immutable change`` () =
+        let baseline = data [ "name" => "Ada"; "roles" => [ "author" ]; "obsolete" => true ]
+        let setResult = baseline |> Data.set "name" "Grace"
+        let putResult = baseline |> Data.put "plan" "pro"
+        let removeResult = baseline |> Data.remove "obsolete"
+        let appendResult = baseline |> Data.append "roles" "admin"
+        let prependResult = baseline |> Data.prepend "roles" "admin"
+        let insertResult = baseline |> Data.insert "roles" 1 "admin"
+        let renameResult = baseline |> Data.rename "name" "displayName"
+        let updateResult = baseline |> Data.update "name" (fun _ -> Data.Text "Grace")
+
+        test <@ Data.lookupPath "name" setResult = Data.Text "Grace" @>
+        test <@ Data.lookupPath "plan" putResult = Data.Text "pro" @>
+        test <@ Data.tryFindPath "obsolete" removeResult = None @>
+        test <@ Data.lookupPath "roles" appendResult = Data.List [ Data.Text "author"; Data.Text "admin" ] @>
+        test <@ Data.lookupPath "roles" prependResult = Data.List [ Data.Text "admin"; Data.Text "author" ] @>
+        test <@ Data.lookupPath "roles" insertResult = Data.List [ Data.Text "author"; Data.Text "admin" ] @>
+        test <@ Data.lookupPath "displayName" renameResult = Data.Text "Ada" @>
+        test <@ Data.lookupPath "name" updateResult = Data.Text "Grace" @>
+        test <@ Data.lookupPath "name" baseline = Data.Text "Ada" @>
+
+        Assert.Throws<DataPatchException>(fun () -> baseline |> Data.append "name" "Grace" |> ignore)
+        |> ignore
+
+    [<Fact>]
+    let ``explicit construction and edit APIs work without concise syntax`` () =
+        let nickname : string option = None
+        let baseline =
+            Data.data [
+                Data.assoc "name" "Ada"
+                Data.optionalAssoc "nickname" nickname
+                Data.assoc "roles" [ "author" ]
+            ]
+
+        let changed =
+            baseline
+            |> Data.patch [
+                DataEdit.set "name" "Grace"
+                DataEdit.append "roles" "admin"
+            ]
+
+        test <@ Data.render changed = "{\"name\":\"Grace\",\"roles\":[\"author\",\"admin\"]}" @>
+
+    [<Fact>]
     let ``failed multi edit patches are atomic and structured`` () =
         let baseline = data [ "name" => "Ada"; "roles" => [ "author" ] ]
         let edits = [ set "name" "Grace"; append "name" "invalid"; set "roles[0]" "admin" ]
@@ -226,9 +276,9 @@ module DataTests =
     [<Fact>]
     let ``remove set and rename select the last duplicate field`` () =
         let baseline = data [ "name" => "Grace"; "name" => "Ada" ]
-        let setResult = baseline |> patch [ set "name" "Margaret" ]
-        let renameResult = baseline |> patch [ rename "name" "preferredName" ]
-        let removeResult = baseline |> patch [ remove "name" ]
+        let setResult = baseline |> Data.patch [ set "name" "Margaret" ]
+        let renameResult = baseline |> Data.patch [ rename "name" "preferredName" ]
+        let removeResult = baseline |> Data.patch [ remove "name" ]
         let expectedSet = data [ "name" => "Grace"; "name" => "Margaret" ]
         let expectedRename = data [ "name" => "Grace"; "preferredName" => "Ada" ]
         let expectedRemove = data [ "name" => "Grace" ]

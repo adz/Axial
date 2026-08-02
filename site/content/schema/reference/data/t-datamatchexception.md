@@ -5,7 +5,7 @@ weight: 1505
 type: docs
 ---
 
-Raised by authored matching syntax when one or more expectations fail.
+Raised by <code>matching</code> when one or more expectations fail.
 
 ## Signature
 
@@ -14,4 +14,4 @@ Raised by authored matching syntax when one or more expectations fail.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L167-167)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L215-215)

@@ -34,4 +34,4 @@ Attempts to extract items from one list value.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L548-548)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L664-664)

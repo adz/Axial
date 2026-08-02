@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.prepend"
 linkTitle: "prepend"
-weight: 2307
+weight: 2325
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Prepends an item to an existing list.
 | <code><a href="t-dataedit.md">DataEdit</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L619-619)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L707-707)

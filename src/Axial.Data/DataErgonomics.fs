@@ -190,6 +190,53 @@ module DataErgonomicsHelpers =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Data =
+    /// <summary>Associates an object field name with one exact value.</summary>
+    /// <example><code>Data.assoc "name" "Ada" // one DataField</code></example>
+    let inline assoc (name: string) value : DataField =
+        ensureNonEmptyText (nameof name) name |> ignore
+        DataField.Create(name, toPattern value, false)
+
+    /// <summary>Associates an object field name with <c>Some</c> value, or omits <c>None</c>.</summary>
+    /// <example><code>Data.optionalAssoc "nickname" None // an omitted DataField</code></example>
+    let inline optionalAssoc (name: string) (value: ^value option) : DataField =
+        ensureNonEmptyText (nameof name) name |> ignore
+        match value with
+        | Some supplied -> DataField.Create(name, toPattern supplied, false)
+        | None -> DataField.Create(name, DataPattern.CreateExact Data.Null, true)
+
+    /// <summary>Builds an object from ordered field instructions.</summary>
+    /// <example><code>Data.data [ Data.assoc "name" "Ada" ]
+    /// // Data.Object [ "name", Data.Text "Ada" ]</code></example>
+    let data (fields: DataField list) : Data =
+        if isNull (box fields) then nullArg (nameof fields)
+        PatternConversion.ToPattern fields |> exactValue (nameof fields)
+
+    /// <summary>Returns exact field instructions from an existing object.</summary>
+    /// <example><code>Data.fields (Data.data [ Data.assoc "name" "Ada" ])
+    /// // one field instruction for name</code></example>
+    let fields value =
+        match value with
+        | Data.Object values -> values |> List.map (fun (name, item) -> DataField.Create(name, DataPattern.CreateExact item, false))
+        | actual -> invalidArg (nameof value) $"Expected an object but found {shapeName actual}."
+
+    /// <summary>Constructs a number from one validated JSON number token.</summary>
+    /// <example><code>Data.number "1.2300e+4" // Data.Number "1.2300e+4"</code></example>
+    let number (token: string) =
+        ensureText (nameof token) token |> ignore
+#if NET8_0_OR_GREATER && !FABLE_COMPILER
+        try
+            use document = System.Text.Json.JsonDocument.Parse(token)
+            if document.RootElement.ValueKind <> System.Text.Json.JsonValueKind.Number then
+                invalidArg (nameof token) "The token must contain exactly one JSON number."
+        with :? System.Text.Json.JsonException ->
+            invalidArg (nameof token) "The token is not a valid JSON number."
+#else
+        let mutable parsed = 0.0
+        if not (Double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, &parsed)) then
+            invalidArg (nameof token) "The token is not a valid portable number."
+#endif
+        Data.Number token
+
     /// <summary>Builds an object from an F# map, ordered by key.</summary>
     let objectOfMap = DataCore.objectOfMap
 
@@ -212,10 +259,10 @@ module Data =
     let ofCliArgs = DataCore.ofCliArgs
 
 #if NET8_0_OR_GREATER && !FABLE_COMPILER
-    /// <summary>Builds owned structured data from a JSON element.</summary>
+    /// <summary>Copies a JSON element into structured data.</summary>
     let ofJsonElement = DataCore.ofJsonElement
 
-    /// <summary>Builds owned structured data from a JSON document.</summary>
+    /// <summary>Copies a JSON document into structured data.</summary>
     let ofJsonDocument = DataCore.ofJsonDocument
 #endif
 
@@ -288,7 +335,7 @@ module Data =
         | [] -> Error "The root has no parent."
         | final :: reversedParent -> updateAtPath (List.rev reversedParent) (change final) input
 
-    let private applyEdit (edit: DataEdit) input =
+    let private tryApplyEdit (edit: DataEdit) input =
         match edit.Node with
         | Set(path, value) -> updateAtPath path (fun _ -> Ok value) input
         | Put(path, value) ->
@@ -356,11 +403,80 @@ module Data =
             match remaining with
             | [] -> Ok current
             | edit :: rest ->
-                match applyEdit edit current with
+                match tryApplyEdit edit current with
                 | Ok updated -> loop (index + 1) updated rest
                 | Error message -> Error [ { EditIndex = index; Path = edit.Path; Message = message } ]
 
         loop 0 input edits
+
+    /// <summary>Applies edits atomically or raises <c>DataPatchException</c>.</summary>
+    /// <example><code>Data.data [ Data.assoc "name" "Ada" ]
+    /// |&gt; Data.patch [ DataEdit.set "name" "Grace" ]
+    /// // Data.data [ Data.assoc "name" "Grace" ]</code></example>
+    let patch edits input =
+        match tryPatch edits input with
+        | Ok value -> value
+        | Error failures -> raise (DataPatchException failures)
+
+    /// <summary>Applies one prepared edit or raises <c>DataPatchException</c>.</summary>
+    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.applyEdit (set "name" "Grace")
+    /// // data [ "name" =&gt; "Grace" ]</code></example>
+    let applyEdit edit input =
+        match tryPatch [ edit ] input with
+        | Ok value -> value
+        | Error failures -> raise (DataPatchException failures)
+
+    /// <summary>Replaces one existing value and returns the changed tree.</summary>
+    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.set "name" "Grace"
+    /// // data [ "name" =&gt; "Grace" ]</code></example>
+    let inline set path value input =
+        DataEdit.set path value
+        |> fun edit -> applyEdit edit input
+
+    /// <summary>Replaces one value, or adds a missing final object field, and returns the changed tree.</summary>
+    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.put "active" true
+    /// // data [ "name" =&gt; "Ada"; "active" =&gt; true ]</code></example>
+    let inline put path value input =
+        DataEdit.put path value
+        |> fun edit -> applyEdit edit input
+
+    /// <summary>Removes one existing field or list item and returns the changed tree.</summary>
+    /// <example><code>data [ "name" =&gt; "Ada"; "active" =&gt; true ] |&gt; Data.remove "active"
+    /// // data [ "name" =&gt; "Ada" ]</code></example>
+    let remove path input = applyEdit (DataEdit.remove path) input
+
+    /// <summary>Appends one item to an existing list and returns the changed tree.</summary>
+    /// <example><code>data [ "roles" =&gt; [ "author" ] ] |&gt; Data.append "roles" "admin"
+    /// // data [ "roles" =&gt; [ "author"; "admin" ] ]</code></example>
+    let inline append path value input =
+        DataEdit.append path value
+        |> fun edit -> applyEdit edit input
+
+    /// <summary>Prepends one item to an existing list and returns the changed tree.</summary>
+    /// <example><code>data [ "roles" =&gt; [ "admin" ] ] |&gt; Data.prepend "roles" "author"
+    /// // data [ "roles" =&gt; [ "author"; "admin" ] ]</code></example>
+    let inline prepend path value input =
+        DataEdit.prepend path value
+        |> fun edit -> applyEdit edit input
+
+    /// <summary>Inserts one item at a valid list index and returns the changed tree.</summary>
+    /// <example><code>data [ "roles" =&gt; [ "author" ] ] |&gt; Data.insert "roles" 1 "admin"
+    /// // data [ "roles" =&gt; [ "author"; "admin" ] ]</code></example>
+    let inline insert path index value input =
+        DataEdit.insert path index value
+        |> fun edit -> applyEdit edit input
+
+    /// <summary>Renames one existing object field without moving it and returns the changed tree.</summary>
+    /// <example><code>data [ "name" =&gt; "Ada" ] |&gt; Data.rename "name" "displayName"
+    /// // data [ "displayName" =&gt; "Ada" ]</code></example>
+    let rename path name input =
+        applyEdit (DataEdit.rename path name) input
+
+    /// <summary>Applies one function to an existing value and returns the changed tree.</summary>
+    /// <example><code>data [ "active" =&gt; true ] |&gt; Data.update "active" (fun _ -&gt; Data.Bool false)
+    /// // data [ "active" =&gt; false ]</code></example>
+    let update path change input =
+        applyEdit (DataEdit.update path change) input
 
     /// <summary>Returns all exact structural differences between two values.</summary>
     /// <example><code>Data.diff (data [ "name" =&gt; "Ada" ]) (data [ "name" =&gt; "Grace" ])
@@ -551,95 +667,54 @@ module Data =
     /// <example><code>Data.tryObject (Data.Object []) // Some []</code></example>
     let tryObject = function Data.Object fields -> Some fields | _ -> None
 
-    /// <summary>Concise opt-in syntax for literals, immutable edits, cases, and produced-data proofs.</summary>
+    /// <summary>Concise opt-in syntax for literals, immutable edits, cases, and matching.</summary>
     module Syntax =
         /// <summary>Associates a field name with an exact value or recursive data pattern.</summary>
         let inline (=>) (name: string) (value: ^value) : DataField =
-            ensureNonEmptyText (nameof name) name |> ignore
-            DataField.Create(name, toPattern value, false)
+            assoc name value
 
         /// <summary>Associates a field name with an optional exact value, omitting <c>None</c>.</summary>
         let inline (?=>) (name: string) (value: ^value option) : DataField =
-            ensureNonEmptyText (nameof name) name |> ignore
-            match value with
-            | Some supplied -> DataField.Create(name, toPattern supplied, false)
-            | None -> DataField.Create(name, DataPattern.CreateExact Data.Null, true)
+            optionalAssoc name value
 
         /// <summary>An explicit structured null used by literals and edits.</summary>
         let nil = Data.Null
 
         /// <summary>Constructs an exact number from a validated portable JSON number token.</summary>
-        let num (token: string) =
-            ensureText (nameof token) token |> ignore
-#if NET8_0_OR_GREATER && !FABLE_COMPILER
-            try
-                use document = System.Text.Json.JsonDocument.Parse(token)
-                if document.RootElement.ValueKind <> System.Text.Json.JsonValueKind.Number then
-                    invalidArg (nameof token) "The token must contain exactly one JSON number."
-            with :? System.Text.Json.JsonException ->
-                invalidArg (nameof token) "The token is not a valid JSON number."
-#else
-            let mutable parsed = 0.0
-            if not (Double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, &parsed)) then
-                invalidArg (nameof token) "The token is not a valid portable number."
-#endif
-            Data.Number token
+        let num = number
 
         /// <summary>Builds an object from ordered field instructions.</summary>
         /// <example><code>data [ "name" =&gt; "Ada"; "active" =&gt; true ]
         /// // Data.Object [ "name", Data.Text "Ada"; "active", Data.Bool true ]</code></example>
-        let data (fields: DataField list) : Data =
-            if isNull (box fields) then nullArg (nameof fields)
-            PatternConversion.ToPattern fields |> exactValue (nameof fields)
+        let data = data
 
         /// <summary>Returns exact field instructions for spreading an existing object literal.</summary>
-        let fields value =
-            match value with
-            | Data.Object values -> values |> List.map (fun (name, item) -> DataField.Create(name, DataPattern.CreateExact item, false))
-            | actual -> invalidArg (nameof value) $"Expected an object but found {shapeName actual}."
-
-        let private parsedEdit path make =
-            ensureText (nameof path) path |> ignore
-            let parsed = DataPath.parse path
-            DataEdit(make parsed, path)
+        let fields = fields
 
         /// <summary>Replaces an existing value.</summary>
-        let inline set path value = DataEdit.CreateSet(path, (toPattern value).RequireExact(nameof value))
+        let inline set path value = DataEdit.set path value
 
         /// <summary>Replaces a final value or appends a missing final object field.</summary>
-        let inline put path value = DataEdit.CreatePut(path, (toPattern value).RequireExact(nameof value))
+        let inline put path value = DataEdit.put path value
 
         /// <summary>Removes an existing field or list item.</summary>
-        let remove path = parsedEdit path Remove
+        let remove = DataEdit.remove
 
         /// <summary>Appends an item to an existing list.</summary>
-        let inline append path value = DataEdit.CreateAppend(path, (toPattern value).RequireExact(nameof value))
+        let inline append path value = DataEdit.append path value
 
         /// <summary>Prepends an item to an existing list.</summary>
-        let inline prepend path value = DataEdit.CreatePrepend(path, (toPattern value).RequireExact(nameof value))
+        let inline prepend path value = DataEdit.prepend path value
 
         /// <summary>Inserts an item at a valid list insertion index.</summary>
         let inline insert path index value =
-            if index < 0 then invalidArg (nameof index) "The insertion index cannot be negative."
-            DataEdit.CreateInsert(path, index, (toPattern value).RequireExact(nameof value))
+            DataEdit.insert path index value
 
         /// <summary>Renames an existing object field without moving it.</summary>
-        let rename path name =
-            ensureNonEmptyText (nameof name) name |> ignore
-            parsedEdit path (fun parsed -> Rename(parsed, name))
+        let rename = DataEdit.rename
 
         /// <summary>Applies an ordinary function to an existing value.</summary>
-        let update path change =
-            if isNull (box change) then nullArg (nameof change)
-            parsedEdit path (fun parsed -> Update(parsed, change))
-
-        /// <summary>Applies authored edits or raises <c>DataPatchException</c>.</summary>
-        /// <example><code>patch [ set "name" "Grace" ] (data [ "name" =&gt; "Ada" ])
-        /// // data [ "name" =&gt; "Grace" ]</code></example>
-        let patch edits input =
-            match tryPatch edits input with
-            | Ok value -> value
-            | Error failures -> raise (DataPatchException failures)
+        let update = DataEdit.update
 
         /// <summary>Declares one named variation from a baseline.</summary>
         let variant name edits =
@@ -741,7 +816,7 @@ module Data =
             ensureText (nameof path) path |> ignore
             DataExpectation(DataPath.parse path, None, path)
 
-        /// <summary>Checks authored expectations or raises <c>DataMatchException</c>.</summary>
+        /// <summary>Checks expectations or raises <c>DataMatchException</c>.</summary>
         /// <example><code>matching [ at "user.name" "Ada"; absent "error" ] actual
         /// // returns unit when both expectations hold; otherwise raises DataMatchException</code></example>
         let matching expectations actual =
@@ -750,9 +825,9 @@ module Data =
             | Error mismatches -> raise (DataMatchException mismatches)
 
 #if NET8_0_OR_GREATER && !FABLE_COMPILER
-    /// <summary>Deterministic JSON parsing and rendering for owned structured values.</summary>
+    /// <summary>Deterministic JSON parsing and rendering for structured values.</summary>
     module Json =
-        /// <summary>Parses one JSON value into owned structured data.</summary>
+        /// <summary>Parses one JSON value into structured data.</summary>
         /// <example><code>Data.Json.parse "{\"name\":\"Ada\"}"
         /// // Data.Object [ "name", Data.Text "Ada" ]</code></example>
         let parse (text: string) =

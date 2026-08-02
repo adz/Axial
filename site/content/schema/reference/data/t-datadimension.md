@@ -21,4 +21,4 @@ One independent axis in a bounded Cartesian data matrix.
 | `Variations` | The ordered variations in the dimension. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L113-113)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L161-161)

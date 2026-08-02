@@ -24,4 +24,4 @@ The reason an exact structural comparison differed.
 | `DifferentFieldName` |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L123-123)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L171-171)

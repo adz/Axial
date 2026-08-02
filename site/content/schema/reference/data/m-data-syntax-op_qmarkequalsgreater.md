@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.(?=>)"
 linkTitle: "(?=>)"
-weight: 2203
+weight: 2208
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Associates a field name with an optional exact value, omitting <code>None</code>
 | <code><a href="t-datafield.md">DataField</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L562-562)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L677-677)

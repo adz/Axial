@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.nil"
 linkTitle: "nil"
-weight: 2204
+weight: 2209
 type: docs
 ---
 
@@ -20,4 +20,4 @@ An explicit structured null used by literals and edits.
 | <code><a href="t-data.md">Data</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L569-569)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L681-681)

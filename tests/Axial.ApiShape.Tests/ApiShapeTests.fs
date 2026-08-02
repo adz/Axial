@@ -390,7 +390,21 @@ module ApiShapeTests =
               "ofJsonElement"
               "ofJsonDocument"
               "ofConfiguration"
+              "assoc"
+              "optionalAssoc"
+              "data"
+              "number"
               "tryPatch"
+              "applyEdit"
+              "patch"
+              "set"
+              "put"
+              "remove"
+              "append"
+              "prepend"
+              "insert"
+              "rename"
+              "update"
               "diff"
               "compare"
               "tryMatch"
@@ -404,6 +418,10 @@ module ApiShapeTests =
               "redisplay"
               "redisplayAt"
               "redisplayPath" ]
+
+        moduleTypeFromAssembly "Axial.Data" "Axial.DataEditModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "set"; "put"; "remove"; "append"; "prepend"; "insert"; "rename"; "update" ]
 
         test <@ typeof<DataEdit>.Assembly.GetName().Name = "Axial.Data" @>
         test <@ typeof<DataPattern>.Assembly.GetName().Name = "Axial.Data" @>

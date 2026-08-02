@@ -27,4 +27,4 @@ Declares one named variation from a baseline.
 | <code><a href="t-datavariation.md">DataVariation</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L645-645)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L720-720)

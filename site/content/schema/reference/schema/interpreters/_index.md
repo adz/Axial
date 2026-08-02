@@ -8,14 +8,14 @@ This page shows structured boundary data, universal schema parsing into `Result`
 
 ## Structured data
 
-- [`Data`](./t-data.md): A portable tree representing the meaning and shape of unowned structured data.
+- [`Data`](./t-data.md): A portable tree for structured data.
 - [`DataPathSegment`](./t-datapathsegment.md): A segment in a structured data path.
 - [`DataPath`](./t-datapath.md): Helpers for constructing, parsing, and rendering structured data paths.
 - [`Data.ofMap`](./m-data-ofmap.md): Builds object-shaped data from a map of scalar values.
 - [`Data.ofNameValues`](./m-data-ofnamevalues.md): Builds object-shaped data from name and value pairs.
 - [`Data.ofCliArgs`](./m-data-ofcliargs.md): Builds structured data from command-line arguments.
-- [`Data.ofJsonElement`](./m-data-ofjsonelement.md): Builds owned structured data from a JSON element.
-- [`Data.ofJsonDocument`](./m-data-ofjsondocument.md): Builds owned structured data from a JSON document.
+- [`Data.ofJsonElement`](./m-data-ofjsonelement.md): Copies a JSON element into structured data.
+- [`Data.ofJsonDocument`](./m-data-ofjsondocument.md): Copies a JSON document into structured data.
 - [`Data.ofConfiguration`](./m-data-ofconfiguration.md): Builds structured data from flattened configuration keys.
 - [`Data.redisplay`](./m-data-redisplay.md): Renders one scalar value for redisplay.
 - [`Data.redisplayPath`](./m-data-redisplaypath.md): Parses a path and redisplays its scalar.

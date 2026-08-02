@@ -36,4 +36,4 @@ Returns all exact structural differences between two values.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L368-368)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L484-484)

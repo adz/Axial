@@ -1,21 +1,33 @@
 ---
 weight: 20
-title: Test produced JSON
+title: Match selected parts of data
 type: docs
-description: Choose exact comparison, sparse proofs, or recursive patterns for JSON output.
+description: Check paths, partial objects, lists, alternatives, types, and predicates.
 ---
 
 
-Parse the response once, then choose the narrowest proof that describes the behavior under test.
+Matching checks only the values relevant to a test. Unmentioned fields and items can vary without breaking it.
 
 ```fsharp
 open Axial
-open Axial.Data.Syntax
+open Data.Syntax
 
-let actual = Data.Json.parse responseText
+let actual =
+    data [
+        "customer" => [
+            "id" => "c-123"
+            "name" => "Ada"
+            "address" => [ "city" => "Adelaide"; "postcode" => 5000 ]
+        ]
+        "roles" => [ "author"; "billing"; "admin" ]
+        "timeline" => [ "created"; "checked"; "activated" ]
+        "events" => [ [ "id" => "e-1" ]; [ "id" => "e-2" ] ]
+        "values" => [ 1; 2; 3 ]
+        "total" => 19.95m
+    ]
 ```
 
-## Prove selected paths
+## Check selected paths
 
 Use `at` and `absent` when only a few observations matter:
 
@@ -53,7 +65,7 @@ result
 //    ]
 ```
 
-## Prove a partial object
+## Match a partial object
 
 Use `containing` when related evidence should read as one shape:
 
@@ -129,8 +141,7 @@ actual
 ]
 ```
 
-The description appears in mismatch output. Keep larger reusable value constraints in `Axial.Check` or typed parsing in
-`Axial.Schema`.
+The description appears in mismatch output, so use wording that explains the failed requirement.
 
 `Data.Number "19.95"` satisfies this predicate. `Data.Number "0"` produces a mismatch whose expected description is
 `a positive number token`; `Data.Text "19.95"` also fails because the predicate requires a number shape.
@@ -143,26 +154,33 @@ Data.tryMatch [ at "total" positiveNumber ] (data [ "total" => 0 ])
 // => Error [ { Path = DataPath.parse "total"; Expected = "a positive number token"; ... } ]
 ```
 
-## Compare the complete tree
+## Complete matching vocabulary
+
+| Form | What it accepts |
+| --- | --- |
+| `at path pattern` | A present value at the path that satisfies the pattern. |
+| `absent path` | No value at the path. |
+| a literal such as `"Ada"` | That exact value. |
+| `exactly value` | An explicit exact recursive pattern. |
+| `containing fields` | An object with at least the listed matching fields. |
+| `containingItems patterns` | A list containing each pattern in any order; occurrences are consumed once. |
+| `inOrder patterns` | A list containing the patterns as an ordered subsequence. |
+| `allItems pattern` | A list where every item matches. |
+| `someItem pattern` | A list where at least one item matches. |
+| `any` | Any present value. |
+| `anyText` | Any text value. |
+| `anyNumber` | Any number token. |
+| `oneOf patterns` | A value matching at least one alternative. |
+| `satisfying description predicate` | A value accepted by a custom predicate. |
 
 ```fsharp
-match Data.compare expected actual with
-| Ok () -> ()
-| Error differences -> failwithf "%A" differences
+Data.tryMatch [
+    at "customer.name" (oneOf [ exactly "Ada"; exactly "Grace" ])
+    at "customer.id" anyText
+    at "values" (allItems anyNumber)
+] actual
+// => Ok ()
 ```
 
-Exact comparison is suitable when every field and item belongs to the contract. `Data.diff expected actual` returns
-focused differences without wrapping them in `Result`.
-
-For `expected = data [ "plan" => "pro" ]` and `actual = data [ "plan" => "free" ]`, the result is:
-
-```fsharp
-Error [
-    {
-        Path = DataPath.parse "plan"
-        Expected = Some(Data.Text "pro")
-        Actual = Some(Data.Text "free")
-        Cause = DataDifferenceCause.DifferentValue
-    }
-]
-```
+`matching expectations actual` returns `unit` or raises `DataMatchException`. `Data.tryMatch expectations actual`
+returns `Result<unit, DataMismatch list>` and accumulates mismatches from every expectation.

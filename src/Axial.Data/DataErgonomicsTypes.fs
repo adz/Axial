@@ -52,11 +52,11 @@ type internal DataEditNode =
     | Rename of DataPath * string
     | Update of DataPath * (Data -> Data)
 
-/// <summary>An opaque immutable edit applied by <c>Data.tryPatch</c> or <c>patch</c>.</summary>
+/// <summary>An opaque immutable edit applied by <c>Data.tryPatch</c> or <c>Data.patch</c>.</summary>
 [<Sealed>]
 type DataEdit internal (node: DataEditNode, renderedPath: string) =
     member internal _.Node = node
-    /// <summary>The authored path targeted by the edit.</summary>
+    /// <summary>The path targeted by the edit.</summary>
     member _.Path = renderedPath
 
     static member CreateSet(path, value) = DataEdit(Set(DataPath.parse path, value), path)
@@ -69,6 +69,54 @@ type DataEdit internal (node: DataEditNode, renderedPath: string) =
 
     static member CreateInsert(path, index, value) = DataEdit(Insert(DataPath.parse path, index, value), path)
 
+[<RequireQualifiedAccess>]
+module DataEdit =
+    let inline private convert value : Data =
+        let inline invoke (witness: ^witness) (supplied: ^value) : Data =
+            ((^witness or ^value): (static member From: ^value -> Data) supplied)
+
+        invoke Unchecked.defaultof<Data> value
+
+    /// <summary>Describes replacing an existing value.</summary>
+    /// <example><code>DataEdit.set "name" "Grace" // one DataEdit</code></example>
+    let inline set path value = DataEdit.CreateSet(path, convert value)
+
+    /// <summary>Describes replacing a value or adding a missing final object field.</summary>
+    /// <example><code>DataEdit.put "plan" "pro" // one DataEdit</code></example>
+    let inline put path value = DataEdit.CreatePut(path, convert value)
+
+    /// <summary>Describes removing an existing field or list item.</summary>
+    /// <example><code>DataEdit.remove "obsolete" // one DataEdit</code></example>
+    let remove path = DataEdit(Remove(DataPath.parse path), path)
+
+    /// <summary>Describes appending an item to an existing list.</summary>
+    /// <example><code>DataEdit.append "roles" "admin" // one DataEdit</code></example>
+    let inline append path value = DataEdit.CreateAppend(path, convert value)
+
+    /// <summary>Describes prepending an item to an existing list.</summary>
+    /// <example><code>DataEdit.prepend "roles" "admin" // one DataEdit</code></example>
+    let inline prepend path value = DataEdit.CreatePrepend(path, convert value)
+
+    /// <summary>Describes inserting an item at a valid list index.</summary>
+    /// <example><code>DataEdit.insert "roles" 1 "admin" // one DataEdit</code></example>
+    let inline insert path index value =
+        if index < 0 then invalidArg (nameof index) "The insertion index cannot be negative."
+        DataEdit.CreateInsert(path, index, convert value)
+
+    /// <summary>Describes renaming an existing object field without moving it.</summary>
+    /// <example><code>DataEdit.rename "name" "displayName" // one DataEdit</code></example>
+    let rename path name =
+        if isNull path then nullArg (nameof path)
+        if String.IsNullOrEmpty name then invalidArg (nameof name) "The value cannot be empty."
+        DataEdit(Rename(DataPath.parse path, name), path)
+
+    /// <summary>Describes applying a function to an existing value.</summary>
+    /// <example><code>DataEdit.update "active" (fun _ -&gt; Data.Bool false) // one DataEdit</code></example>
+    let update path change =
+        if isNull path then nullArg (nameof path)
+        if isNull (box change) then nullArg (nameof change)
+        DataEdit(Update(DataPath.parse path, change), path)
+
 /// <summary>Describes why one immutable data edit could not be applied.</summary>
 type DataPatchFailure =
     {
@@ -80,7 +128,7 @@ type DataPatchFailure =
         Message: string
     }
 
-/// <summary>Raised by authored patch syntax when an edit cannot be applied.</summary>
+/// <summary>Raised by <c>Data.patch</c> when an edit cannot be applied.</summary>
 type DataPatchException(failures: DataPatchFailure list) =
     inherit Exception(
         failures
@@ -145,7 +193,7 @@ type DataDifference =
 type DataExpectation internal (path: DataPath, pattern: DataPattern option, renderedPath: string) =
     member internal _.ParsedPath = path
     member internal _.Pattern = pattern
-    /// <summary>The authored path.</summary>
+    /// <summary>The checked path.</summary>
     member _.Path = renderedPath
 
     static member Create(path, pattern) = DataExpectation(DataPath.parse path, Some pattern, path)
@@ -163,7 +211,7 @@ type DataMismatch =
         Actual: Data option
     }
 
-/// <summary>Raised by authored matching syntax when one or more expectations fail.</summary>
+/// <summary>Raised by <c>matching</c> when one or more expectations fail.</summary>
 type DataMatchException(mismatches: DataMismatch list) =
     inherit Exception(
         mismatches

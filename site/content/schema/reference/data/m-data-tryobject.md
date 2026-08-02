@@ -34,4 +34,4 @@ Attempts to extract ordered fields from one object value.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L552-552)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L668-668)

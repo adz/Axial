@@ -455,10 +455,9 @@ module internal DataCore =
     /// <summary>Builds structured data from a <see cref="T:System.Text.Json.JsonElement" />.</summary>
     /// <remarks>
     /// <para>
-    /// This is the boundary adapter for JSON bodies parsed with <c>System.Text.Json</c>, such as ASP.NET Core request
-    /// payloads: convert the element once, then parse it with <c>Schema.parse</c> to get path-aware diagnostics or a
-    /// trusted model. JSON value kinds remain distinct, and number tokens are carried without narrowing them to one
-    /// CLR numeric type. Other JSON syntax, such as whitespace and source locations, is not represented.
+    /// This converts JSON parsed with <c>System.Text.Json</c> into a reusable structured value. JSON value kinds remain
+    /// distinct, and number tokens are carried without narrowing them to one CLR numeric type. Other JSON syntax,
+    /// such as whitespace and source locations, is not represented.
     /// </para>
     /// <para>
     /// The adapter is available on .NET 8+ targets where <c>System.Text.Json</c> ships in-box, keeping the package

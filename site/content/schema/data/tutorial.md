@@ -1,21 +1,21 @@
 ---
 weight: 10
-title: Build, vary, and prove structured data
+title: Build, vary, and test structured data
 type: docs
-description: A complete Axial.Data workflow from one fixture to produced-data proofs.
+description: Build one structured value, derive test cases, and check generated JSON.
 ---
 
 
-This tutorial builds one customer fixture, derives requests from it, parses a produced JSON response, and proves the
-parts that establish the behavior under test.
+This tutorial builds one customer value, derives requests from it, parses a JSON response, and checks the parts that
+matter to the test.
 
 ## Create the baseline
 
-Open the structured value type and opt into its authoring syntax:
+Open `Axial` for the `Data` type and module. Open `Data.Syntax` for the concise literal, edit, and matching syntax:
 
 ```fsharp
 open Axial
-open Axial.Data.Syntax
+open Data.Syntax
 
 let customer =
     data [
@@ -35,14 +35,22 @@ let customer =
 
 Nested object fields use the same list syntax. `?=> None` omits `nickname`; `nil` keeps `deletedAt` as a present null.
 
-`customer` therefore renders as:
+Render it with `Data.render`:
 
 ```fsharp
 Data.render customer
 // => "{\"name\":\"Ada\",\"plan\":\"free\",\"deletedAt\":null,\"address\":{\"city\":\"Adelaide\",\"postcode\":5000},\"roles\":[\"author\"]}"
 ```
 
-Ordinary numbers use invariant conversion. Preserve a deliberate token with `num`:
+Numbers follow these rules:
+
+- `int` and `int64` become base-10 digits, such as `5000` and `-12`.
+- `decimal` always uses `.` as its decimal separator, regardless of the machine's locale.
+- `float` uses enough digits to read back as the same finite value. `NaN` and infinity are rejected because JSON
+  cannot represent them.
+- `num` validates and keeps the token exactly as written. Use it when spelling matters, such as `1.2300e+4`.
+
+For example:
 
 ```fsharp
 let invoice =
@@ -70,7 +78,7 @@ Apply strict edits instead of reconstructing the fixture:
 ```fsharp
 let upgradeRequest =
     customer
-    |> patch [
+    |> Data.patch [
         set "plan" "pro"
         append "roles" "admin"
         remove "deletedAt"
@@ -81,7 +89,7 @@ Every target except the final field of `put` must exist. Edits run in order and 
 
 Use `Data.tryPatch` when edits came from dynamic input and should return structured failures.
 
-`upgradeRequest` renders as:
+Render the changed request with `Data.render`:
 
 ```fsharp
 Data.render upgradeRequest
@@ -117,7 +125,7 @@ nameCases |> List.map (fun case -> case.Name, Data.tryFindPath "name" case.Value
 //   ("wrong shape", Some (Data.List [ Data.Text "Ada" ])) ]
 ```
 
-## Parse produced JSON
+## Parse JSON output
 
 ```fsharp
 let response =
@@ -132,7 +140,7 @@ let response =
         }"""
 ```
 
-The result owns its complete tree. It does not borrow the lifetime of a `JsonDocument`.
+The parsed value is independent of the `JsonDocument` used internally, so it remains valid after `parse` returns.
 
 `Data.lookupPath "customer.id" response` returns `Data.Text "c-123"`. Rendering the response produces a stable JSON
 value with the same field order and number tokens as the parsed tree.
@@ -142,9 +150,9 @@ Data.lookupPath "customer.id" response
 // => Data.Text "c-123"
 ```
 
-## Prove the behavior
+## Check the behavior
 
-Use paths for sparse evidence and `containing` when the evidence forms a coherent nested shape:
+Use paths for individual checks and `containing` when several checks belong to the same object:
 
 ```fsharp
 response
@@ -164,8 +172,8 @@ response
 
 Unmentioned object fields are allowed by `containing`. Literal values inside the pattern remain exact.
 
-`matching` raises `DataMatchException` for an authored test. Use `Data.tryMatch` to receive every `DataMismatch` as a
-value.
+`matching` raises `DataMatchException` when a test fails. Use `Data.tryMatch` when the mismatches should be returned as
+a value.
 
 The example returns `unit`: all three expectations succeed even though the response contains the unmentioned `id`
 field and the additional `author` role.

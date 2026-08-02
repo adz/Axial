@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.data"
 linkTitle: "data"
-weight: 2201
+weight: 2206
 ---
 
 Builds an object from ordered field instructions.
@@ -9,20 +9,14 @@ Builds an object from ordered field instructions.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.Syntax.data&#32;<span>fields</span></span></code>
+<code><span>Data.Syntax.data&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `fields` | <code><span><a href="t-datafield.md">DataField</a>&#32;list</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-data.md">Data</a></code> |  |
+| <code><span><span><a href="t-datafield.md">DataField</a>&#32;list</span>&#32;->&#32;<a href="t-data.md">Data</a></span></code> |  |
 
 ## Examples
 
@@ -33,4 +27,4 @@ Builds an object from ordered field instructions.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L591-591)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L689-689)

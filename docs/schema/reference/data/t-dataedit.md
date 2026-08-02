@@ -4,7 +4,7 @@ linkTitle: "DataEdit"
 weight: 1300
 ---
 
-An opaque immutable edit applied by <code>Data.tryPatch</code> or <code>patch</code>.
+An opaque immutable edit applied by <code>Data.tryPatch</code> or <code>Data.patch</code>.
 
 ## Signature
 

@@ -4,7 +4,7 @@ linkTitle: "DataPatchException"
 weight: 1302
 ---
 
-Raised by authored patch syntax when an edit cannot be applied.
+Raised by <code>Data.patch</code> when an edit cannot be applied.
 
 ## Signature
 
@@ -13,4 +13,4 @@ Raised by authored patch syntax when an edit cannot be applied.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L84-84)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L132-132)

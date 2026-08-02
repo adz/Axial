@@ -5,7 +5,7 @@ weight: 2600
 type: docs
 ---
 
-Parses one JSON value into owned structured data.
+Parses one JSON value into structured data.
 
 ## Signature
 
@@ -35,4 +35,4 @@ Parses one JSON value into owned structured data.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L758-758)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L833-833)

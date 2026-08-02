@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.set"
 linkTitle: "set"
-weight: 2303
+weight: 2321
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Replaces an existing value.
 | <code><a href="t-dataedit.md">DataEdit</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L607-607)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L695-695)

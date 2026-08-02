@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.remove"
 linkTitle: "remove"
-weight: 2305
+weight: 2323
 type: docs
 ---
 
@@ -10,20 +10,14 @@ Removes an existing field or list item.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.Syntax.remove&#32;<span>path</span></span></code>
+<code><span>Data.Syntax.remove&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `path` | <code>string</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-dataedit.md">DataEdit</a></code> |  |
+| <code><span>string&#32;->&#32;<a href="t-dataedit.md">DataEdit</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L613-613)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L701-701)

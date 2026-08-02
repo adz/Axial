@@ -36,4 +36,4 @@ Checks path-based expectations and accumulates structured mismatches.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L505-505)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L621-621)

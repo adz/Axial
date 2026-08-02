@@ -19,4 +19,4 @@ Parses a path and redisplays its scalar.
 | <code><span>string&#32;->&#32;<a href="t-data.md">Data</a>&#32;->&#32;string</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L256-256)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L303-303)

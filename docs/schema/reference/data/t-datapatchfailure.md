@@ -21,4 +21,4 @@ Describes why one immutable data edit could not be applied.
 | `Message` | A concise explanation of the incompatible path or shape. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L73-73)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L121-121)

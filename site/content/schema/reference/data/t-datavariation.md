@@ -21,4 +21,4 @@ A named immutable variation from one baseline value.
 | `Edits` | The edits applied to the baseline. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L95-95)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L143-143)

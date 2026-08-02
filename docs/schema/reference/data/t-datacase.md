@@ -20,4 +20,4 @@ A named materialized structured-data case.
 | `Value` | The materialized value. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L104-104)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomicsTypes.fs#L152-152)

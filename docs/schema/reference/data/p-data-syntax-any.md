@@ -19,4 +19,4 @@ Matches any present value.
 | <code><a href="t-datapattern.md">DataPattern</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L717-717)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L792-792)

@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.append"
 linkTitle: "append"
-weight: 2306
+weight: 2324
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Appends an item to an existing list.
 | <code><a href="t-dataedit.md">DataEdit</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L616-616)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L704-704)

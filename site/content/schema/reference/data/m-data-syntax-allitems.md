@@ -26,4 +26,4 @@ Requires every actual list item to satisfy a pattern.
 | <code><a href="t-datapattern.md">DataPattern</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L711-711)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L786-786)

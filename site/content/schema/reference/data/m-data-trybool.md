@@ -34,4 +34,4 @@ Attempts to extract a Boolean from one structured value.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L540-540)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L656-656)

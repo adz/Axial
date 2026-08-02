@@ -1,11 +1,11 @@
 # Axial.Data
 
-`Axial.Data` is an independent F# package for immutable structured values. Use one owned tree to author fixtures,
-derive test cases, consume JSON, and prove selected parts of produced data.
+`Axial.Data` makes structured data concise to build, change, compare, and test. Its data model maps directly to JSON
+and also works well for fixtures, configuration, command-line input, form values, events, and other tree-shaped data.
 
 ```fsharp
 open Axial
-open Axial.Data.Syntax
+open Data.Syntax
 
 let customer =
     data [
@@ -19,7 +19,7 @@ let customer =
 
 let promoted =
     customer
-    |> patch [
+    |> Data.patch [
         set "address.postcode" 5001
         append "roles" "admin"
     ]
@@ -38,7 +38,7 @@ promoted
 `Data.Number` preserves its lexical token. `Data.Object` preserves field order and duplicate names. Exact comparison,
 patching, paths, and matching state their behavior rather than silently normalizing those distinctions.
 
-Install it directly with `dotnet add package Axial.Data`, or receive it through `Axial.Schema` or `Axial`.
+Install it with `dotnet add package Axial.Data`.
 
-See the repository documentation for tutorials, produced-data testing, case matrices, JSON conversion, and the complete
+See the repository documentation for tutorials, partial matching, case matrices, JSON conversion, and the complete
 API reference.

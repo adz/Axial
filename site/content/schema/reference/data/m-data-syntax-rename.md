@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.rename"
 linkTitle: "rename"
-weight: 2309
+weight: 2327
 type: docs
 ---
 
@@ -10,21 +10,14 @@ Renames an existing object field without moving it.
 ## Signature
 
 <div class="fsdocs-usage">
-<code><span>Data.Syntax.rename&#32;<span>path&#32;name</span></span></code>
+<code><span>Data.Syntax.rename&#32;<span></span></span></code>
 </div>
-
-## Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `path` | <code>string</code> |  |
-| `name` | <code>string</code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><a href="t-dataedit.md">DataEdit</a></code> |  |
+| <code><span>string&#32;->&#32;string&#32;->&#32;<a href="t-dataedit.md">DataEdit</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L627-627)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L714-714)

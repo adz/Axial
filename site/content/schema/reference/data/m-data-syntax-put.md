@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.put"
 linkTitle: "put"
-weight: 2304
+weight: 2322
 type: docs
 ---
 
@@ -27,4 +27,4 @@ Replaces a final value or appends a missing final object field.
 | <code><a href="t-dataedit.md">DataEdit</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L610-610)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L698-698)

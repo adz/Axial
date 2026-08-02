@@ -1,7 +1,7 @@
 ---
 title: "Data.tryPatch"
 linkTitle: "tryPatch"
-weight: 2312
+weight: 2329
 type: docs
 ---
 
@@ -37,4 +37,4 @@ Applies immutable edits atomically in declaration order.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L352-352)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L399-399)

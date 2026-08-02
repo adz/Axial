@@ -3,35 +3,34 @@ weight: 5
 title: Data
 type: docs
 notoc: true
-description: Immutable structured values for fixtures, boundaries, variations, and produced-data proofs.
+description: Build, change, compare, and test structured data without repetitive constructors.
 ---
 
 # Data
 
-`Axial.Data` gives F# code one owned representation for objects, lists, text, number tokens, Booleans, and nulls.
-It stands alone from Schema and Flow.
+`Axial.Data` makes structured data concise to build and change. Its objects, lists, text, numbers, Booleans, and null
+map directly to JSON, but the same model works well for test fixtures, configuration, command-line input, form values,
+events, and other tree-shaped data.
 
-Use it when data has a shape but should not yet be assigned an application type:
+Start with one readable value, derive related cases without copying it, and test either the complete result or only the
+fields that matter.
 
-- author request, response, configuration, and event fixtures
-- preserve malformed or partially supplied boundary input
-- derive named variations and bounded Cartesian test matrices
-- parse and render JSON without narrowing numeric tokens
-- compare complete values or prove selected parts of produced output
+This is useful when tests otherwise accumulate large JSON strings, nested constructors, or near-identical fixtures.
+The data stays structured, edits identify exactly what changes, and failures point to the path that differs.
 
 ## Install
 
-`Axial.Data` installs with `Axial.Schema` and `Axial`, or independently:
+Install the package with:
 
 ```sh
 dotnet add package Axial.Data
 ```
 
-## One language from fixture to proof
+## Build, change, and check one value
 
 ```fsharp
 open Axial
-open Axial.Data.Syntax
+open Data.Syntax
 
 let baseline =
     data [
@@ -46,11 +45,22 @@ let baseline =
 
 let request =
     baseline
-    |> patch [
+    |> Data.patch [
         set "plan" "pro"
         append "roles" "admin"
     ]
+```
 
+`request` contains the changed plan and the additional role. `baseline` is unchanged.
+
+```fsharp
+Data.render request
+// => "{\"name\":\"Ada\",\"plan\":\"pro\",\"address\":{\"city\":\"Adelaide\",\"postcode\":5000},\"roles\":[\"author\",\"admin\"]}"
+```
+
+Now check only the parts of the result that matter:
+
+```fsharp
 request
 |> matching [
     at "name" "Ada"
@@ -58,31 +68,45 @@ request
     at "roles" (containingItems [ "admin" ])
     absent "error"
 ]
+// succeeds
 ```
 
-The same conversions and paths serve literals, edits, generated cases, lookup, comparison, and matching.
+If an expectation fails, `matching` raises `DataMatchException` with the mismatched path and values. Extra fields and
+the additional `author` role are allowed because these patterns check only the values named here.
 
-In this example, `request` renders as
-`{"name":"Ada","plan":"pro","address":{"city":"Adelaide","postcode":5000},"roles":["author","admin"]}`.
-The three proofs return `unit`; extra fields and the extra `author` role do not fail partial patterns.
+## Basic syntax
 
-## Semantics worth knowing
+Use `data` to build a `Data` value. Lists represent both objects and lists. A list containing `name => value` fields
+is an object; a list containing ordinary values is a list.
 
-`Data.Number "1"`, `Data.Number "1.0"`, and `Data.Number "1e0"` differ under exact comparison. Use `num` when a fixture
-must state an exact number token.
+```fsharp
+open Axial
+open Data.Syntax
 
-Objects preserve field order and duplicate names. Strict path lookup and edits select the last duplicate occurrence.
-Exact comparison observes every occurrence and its position.
+let person = data [ "name" => "Ada"; "active" => true ]
+let roles = [ "author"; "admin" ]
+```
 
-`None` supplied with `?=>` omits a field. `nil` creates a present null field.
+Use `?=>` for an optional field. `Some value` includes the field; `None` leaves the field out altogether. Use
+`name => nil` when the field must be present with a null value.
 
-List patterns name their semantics: `containingItems` is unordered consumed containment, while `inOrder` is an ordered
-subsequence. `allItems` and `someItem` quantify over the actual list.
+```fsharp
+let nickname : string option = None
+let person = data [ "nickname" ?=> nickname; "deletedAt" => nil ]
+
+Data.render person
+// => "{\"deletedAt\":null}"
+```
 
 ## Learn and solve tasks
 
-- [Tutorial: build, vary, and prove structured data](tutorial/)
-- [How to test produced JSON](how-to-test-produced-json/)
-- [How to build variations and matrices](how-to-build-test-cases/)
-- [Using Data with Schema](with-axial/)
+- [Tutorial: build, vary, and test structured data](tutorial/)
+- [What Data represents](what-it-does/)
+- [Explicit API and concise syntax](syntax/)
+- [Numbers](numbers/)
+- [Declare, render, and edit data](declaring-and-editing/)
+- [Convert data and parse JSON](converting-data/)
+- [Match selected parts of data](how-to-test-produced-json/)
+- [Build variations and matrices](how-to-build-test-cases/)
+- [Compare complete data](compare-data/)
 - [API reference]({{< relref "/schema/reference/data/" >}})

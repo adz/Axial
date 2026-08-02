@@ -4,7 +4,7 @@ linkTitle: "ofJsonDocument"
 weight: 2104
 ---
 
-Builds owned structured data from a JSON document.
+Copies a JSON document into structured data.
 
 ## Signature
 
@@ -19,4 +19,4 @@ Builds owned structured data from a JSON document.
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>&#32;->&#32;<a href="t-data.md">Data</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L219-219)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L266-266)

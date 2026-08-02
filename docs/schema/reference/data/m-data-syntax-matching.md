@@ -4,7 +4,7 @@ linkTitle: "matching"
 weight: 2511
 ---
 
-Checks authored expectations or raises <code>DataMatchException</code>.
+Checks expectations or raises <code>DataMatchException</code>.
 
 ## Signature
 
@@ -34,4 +34,4 @@ Checks authored expectations or raises <code>DataMatchException</code>.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L747-747)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L822-822)

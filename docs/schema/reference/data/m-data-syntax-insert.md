@@ -1,7 +1,7 @@
 ---
 title: "Data.Syntax.insert"
 linkTitle: "insert"
-weight: 2308
+weight: 2326
 ---
 
 Inserts an item at a valid list insertion index.
@@ -27,4 +27,4 @@ Inserts an item at a valid list insertion index.
 | <code><a href="t-dataedit.md">DataEdit</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L622-622)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L710-710)
