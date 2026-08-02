@@ -566,7 +566,11 @@ or in `AGENTS.md`, then delete the detailed sketch.
 - `ConstraintValue` conversion happens at construction and never throws — the old projection sent every `float`
   through `decimal`, so `Constraint.lessThan infinity` raised `OverflowException`. Floats keep their own case with
   equality that treats NaN as self-equal and separates signed zero, using only arithmetic proven on Fable and
-  NativeAOT rather than `BitConverter`. `Guid` and `TimeSpan` are deliberately excluded: Fable cannot type-test
-  either, so admitting them would make the same constraint interpreted on .NET and opaque on Fable.
+  NativeAOT rather than `BitConverter`. `Guid` and `TimeSpan` keep their own cases, reached through
+  `ConstraintValue.ofOperand`, which resolves on the operand's static type at the call site. A boxed type test
+  cannot do this: Fable erases a `Guid` to a plain string and a `TimeSpan` to a number, so `:? Guid` there labels
+  the operand `Text` while .NET labels it `Guid` — one constraint meaning two different things per platform.
+  Constructors that take an operand are therefore `inline`, and the Fable JS surface check asserts both platforms
+  describe the same constraint identically.
 - The term language, `FieldReference`, `Origin`, and `Schema.require` are **out of scope** and not present as
   placeholder cases. They are additive when a real consumer establishes field identity, nesting, and proof semantics.

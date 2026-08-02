@@ -165,6 +165,23 @@ module Shared =
     /// Exercises the type-directed constraint catalogue under Fable. The SRTP dispatchers behind `present`,
     /// `blank`, the cardinality family, and `optional` are the part of the design most at risk on this target,
     /// and code-point text sizing must agree with .NET on supplementary characters.
+    /// Fable erases a Guid to a plain string and a TimeSpan to a number, so a boxed type test labels them
+    /// `Text` and `Integer` here while .NET labels them correctly. Operand projection resolves on the static
+    /// type instead; this asserts the two platforms describe the same constraint the same way.
+    let runOperandAgreement () =
+        let guid = Guid.Parse "4f489f3b-cd3c-4f53-b99b-fca552f8994d"
+        let span = TimeSpan.FromMinutes 1.0
+
+        let describes (expected: ConstraintAtom) (constraint': Constraint<'value>) =
+            (Constraint.inspect constraint').Expression = ConstraintExpression.Atom expected
+
+        [ describes (RelationAtom(Compared(Equal, ConstraintValue.Guid guid))) (Constraint.equalTo guid)
+          describes (RelationAtom(Compared(AtLeast, ConstraintValue.TimeSpan span))) (Constraint.atLeast span)
+          describes (MembershipAtom(OneOf [ ConstraintValue.Guid guid ])) (Constraint.oneOf [ guid ])
+          describes (RelationAtom(Compared(Equal, ConstraintValue.Text "ada"))) (Constraint.equalTo "ada")
+          describes (RelationAtom(Compared(AtLeast, ConstraintValue.Integer 3L))) (Constraint.atLeast 3) ]
+        |> List.forall id
+
     let runConstraintSurface () =
         let name: Constraint<string> = Constraint.all [ Constraint.present; Constraint.lengthBetween 2 40 ]
         let tags: Constraint<string list> = Constraint.all [ Constraint.minLength 1; Constraint.distinct ]

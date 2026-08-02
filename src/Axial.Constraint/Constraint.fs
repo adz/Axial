@@ -530,76 +530,139 @@ module Constraint =
 
     // -- Relations ------------------------------------------------------------------------------------------
 
-    let private relation operator (expected: 'value) (predicate: 'value -> bool) =
-        match portable expected with
-        | Some expected -> atomic (RelationAtom(Compared(operator, expected))) predicate portable
+    /// <summary>Builds a relation from an already-projected operand. Not part of the supported surface.</summary>
+    /// <remarks>
+    /// Split out so the public constructor's inline body touches only public members. The operand's portable form
+    /// is resolved by the caller, where its static type is still known — a boxed type test cannot recover a
+    /// <c>Guid</c> or <c>TimeSpan</c> on Fable.
+    /// </remarks>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let relationWith
+        (operator: RelationOperator)
+        (expected: ConstraintValue option)
+        (actual: 'value -> ConstraintValue option)
+        (predicate: 'value -> bool)
+        =
+        match expected with
+        | Some expected -> atomic (RelationAtom(Compared(operator, expected))) predicate actual
         | None -> unsupported (UnsupportedOperation.Relation operator) predicate
+
+    /// <summary>Builds an inclusive range from already-projected bounds. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let withinWith
+        (minimum: ConstraintValue option)
+        (maximum: ConstraintValue option)
+        (actual: 'value -> ConstraintValue option)
+        (predicate: 'value -> bool)
+        =
+        match minimum, maximum with
+        | Some minimum, Some maximum -> atomic (RelationAtom(Within(minimum, maximum))) predicate actual
+        | _ -> unsupported UnsupportedOperation.Within predicate
+
+    /// <summary>Builds a membership rule from already-projected choices. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let oneOfWith
+        (choices: ConstraintValue option list)
+        (actual: 'value -> ConstraintValue option)
+        (predicate: 'value -> bool)
+        =
+        if choices |> List.forall Option.isSome then
+            atomic (MembershipAtom(OneOf(choices |> List.map Option.get))) predicate actual
+        else
+            unsupported (UnsupportedOperation.Relation Equal) predicate
+
+    /// <summary>Validates inclusive bounds. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let checkBounds name minimum maximum = ensureBounds name minimum maximum
 
     /// <summary>Requires equality with the supplied value, under F# structural equality.</summary>
     /// <example><code>let mustBeDraft : Constraint&lt;Status&gt; = Constraint.equalTo Status.Draft</code></example>
-    let equalTo (expected: 'value) : Constraint<'value> =
-        relation Equal expected (fun actual -> actual = expected)
+    let inline equalTo (expected: 'value) : Constraint<'value> =
+        relationWith
+            Equal
+            (ConstraintValue.ofOperand expected)
+            ConstraintValue.ofOperand
+            (fun actual -> actual = expected)
 
     /// <summary>Requires inequality with the supplied value, under F# structural equality.</summary>
     /// <example><code>let notReserved : Constraint&lt;string&gt; = Constraint.notEqualTo "admin"</code></example>
-    let notEqualTo (unexpected: 'value) : Constraint<'value> =
-        relation NotEqual unexpected (fun actual -> actual <> unexpected)
+    let inline notEqualTo (unexpected: 'value) : Constraint<'value> =
+        relationWith
+            NotEqual
+            (ConstraintValue.ofOperand unexpected)
+            ConstraintValue.ofOperand
+            (fun actual -> actual <> unexpected)
 
     /// <summary>Requires a value strictly greater than the supplied bound.</summary>
     /// <example><code>let quantity : Constraint&lt;int&gt; = Constraint.greaterThan 0</code></example>
-    let greaterThan (minimum: 'value) : Constraint<'value> =
-        relation GreaterThan minimum (fun actual -> actual > minimum)
+    let inline greaterThan (minimum: 'value) : Constraint<'value> =
+        relationWith
+            GreaterThan
+            (ConstraintValue.ofOperand minimum)
+            ConstraintValue.ofOperand
+            (fun actual -> actual > minimum)
 
     /// <summary>Requires a value strictly less than the supplied bound.</summary>
     /// <example><code>let discount : Constraint&lt;decimal&gt; = Constraint.lessThan 1.0M</code></example>
-    let lessThan (maximum: 'value) : Constraint<'value> =
-        relation LessThan maximum (fun actual -> actual < maximum)
+    let inline lessThan (maximum: 'value) : Constraint<'value> =
+        relationWith
+            LessThan
+            (ConstraintValue.ofOperand maximum)
+            ConstraintValue.ofOperand
+            (fun actual -> actual < maximum)
 
     /// <summary>Requires a value greater than or equal to the supplied bound.</summary>
     /// <example><code>let age : Constraint&lt;int&gt; = Constraint.atLeast 13</code></example>
-    let atLeast (minimum: 'value) : Constraint<'value> =
-        relation AtLeast minimum (fun actual -> actual >= minimum)
+    let inline atLeast (minimum: 'value) : Constraint<'value> =
+        relationWith
+            AtLeast
+            (ConstraintValue.ofOperand minimum)
+            ConstraintValue.ofOperand
+            (fun actual -> actual >= minimum)
 
     /// <summary>Requires a value less than or equal to the supplied bound.</summary>
     /// <example><code>let weight : Constraint&lt;int&gt; = Constraint.atMost 100</code></example>
-    let atMost (maximum: 'value) : Constraint<'value> =
-        relation AtMost maximum (fun actual -> actual <= maximum)
+    let inline atMost (maximum: 'value) : Constraint<'value> =
+        relationWith
+            AtMost
+            (ConstraintValue.ofOperand maximum)
+            ConstraintValue.ofOperand
+            (fun actual -> actual <= maximum)
 
     /// <summary>Requires a value inside the supplied inclusive bounds.</summary>
     /// <example><code>let retryCount : Constraint&lt;int&gt; = Constraint.between 0 10</code></example>
-    let between (minimum: 'value) (maximum: 'value) : Constraint<'value> =
-        ensureBounds (nameof minimum) minimum maximum
-        let predicate actual = actual >= minimum && actual <= maximum
+    let inline between (minimum: 'value) (maximum: 'value) : Constraint<'value> =
+        checkBounds (nameof minimum) minimum maximum
 
-        match portable minimum, portable maximum with
-        | Some minimum, Some maximum -> atomic (RelationAtom(Within(minimum, maximum))) predicate portable
-        | _ -> unsupported UnsupportedOperation.Within predicate
+        withinWith
+            (ConstraintValue.ofOperand minimum)
+            (ConstraintValue.ofOperand maximum)
+            ConstraintValue.ofOperand
+            (fun actual -> actual >= minimum && actual <= maximum)
 
     // -- Membership -----------------------------------------------------------------------------------------
 
     /// <summary>Requires the value to equal one of the supplied choices.</summary>
     /// <example><code>let currency : Constraint&lt;string&gt; = Constraint.oneOf [ "AUD"; "NZD" ]</code></example>
-    let oneOf (choices: 'value seq) : Constraint<'value> =
+    let inline oneOf (choices: 'value seq) : Constraint<'value> =
         if isNull (box choices) then nullArg (nameof choices)
         let choices = choices |> Seq.toList
-        let predicate actual = choices |> List.contains actual
 
-        let portableChoices =
-            (Some [], choices)
-            ||> List.fold (fun state choice ->
-                state |> Option.bind (fun collected -> portable choice |> Option.map (fun choice -> choice :: collected)))
-            |> Option.map List.rev
+        oneOfWith
+            (choices |> List.map ConstraintValue.ofOperand)
+            ConstraintValue.ofOperand
+            (fun actual -> choices |> List.contains actual)
 
-        match portableChoices with
-        | Some portableChoices -> atomic (MembershipAtom(OneOf portableChoices)) predicate portable
-        | None -> unsupported (UnsupportedOperation.Relation Equal) predicate
-
-    let private containsOf (expected: 'value) (values: #seq<'value> -> bool) =
-        match portable expected with
+    /// <summary>Builds a containment rule from an already-projected item. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let containsWith (expected: ConstraintValue option) (values: #seq<'value> -> bool) =
+        match expected with
         | Some expected -> atomic (MembershipAtom(Membership.Contains expected)) values (fun _ -> None)
         | None -> unsupported UnsupportedOperation.Contains values
 
-    let private uniquenessOf (duplicate: #seq<'value> -> 'value option) =
+    /// <summary>Builds a uniqueness rule with a caller-supplied item projection. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let uniquenessWith (item: 'value -> ConstraintValue option) (duplicate: #seq<'value> -> 'value option) =
         let atom = UniquenessAtom
 
         Constraint<#seq<'value>>(
@@ -610,24 +673,40 @@ module Constraint =
                 else
                     match duplicate values with
                     | None -> Ok()
-                    | Some duplicate -> Error(Atomic(Expected(atom, portable duplicate)))),
+                    | Some duplicate -> Error(Atomic(Expected(atom, item duplicate)))),
             ConstraintDescription.ofAtom atom
         )
 
-    let private containsIn (expected: 'value) (values: #seq<'value>) =
+    /// <summary>The containment predicate. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let containsIn (expected: 'value) (values: #seq<'value>) =
         not (Predicates.isNullSeq values) && Predicates.seqContains expected values
+
+    /// <summary>The first-duplicate projection. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let firstDuplicate (values: #seq<'value>) = Predicates.tryFirstDuplicate values
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     type ContainsDispatcher =
-        static member Create(_: 'value list, expected: 'value) : Constraint<'value list> = containsOf expected (containsIn expected)
-        static member Create(_: 'value array, expected: 'value) : Constraint<'value array> = containsOf expected (containsIn expected)
-        static member Create(_: 'value seq, expected: 'value) : Constraint<'value seq> = containsOf expected (containsIn expected)
+        static member inline Create(_: 'value list, expected: 'value) : Constraint<'value list> =
+            containsWith (ConstraintValue.ofOperand expected) (containsIn expected)
+
+        static member inline Create(_: 'value array, expected: 'value) : Constraint<'value array> =
+            containsWith (ConstraintValue.ofOperand expected) (containsIn expected)
+
+        static member inline Create(_: 'value seq, expected: 'value) : Constraint<'value seq> =
+            containsWith (ConstraintValue.ofOperand expected) (containsIn expected)
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     type DistinctDispatcher =
-        static member Create(_: 'value list) : Constraint<'value list> = uniquenessOf Predicates.tryFirstDuplicate
-        static member Create(_: 'value array) : Constraint<'value array> = uniquenessOf Predicates.tryFirstDuplicate
-        static member Create(_: 'value seq) : Constraint<'value seq> = uniquenessOf Predicates.tryFirstDuplicate
+        static member inline Create(_: 'value list) : Constraint<'value list> =
+            uniquenessWith ConstraintValue.ofOperand firstDuplicate
+
+        static member inline Create(_: 'value array) : Constraint<'value array> =
+            uniquenessWith ConstraintValue.ofOperand firstDuplicate
+
+        static member inline Create(_: 'value seq) : Constraint<'value seq> =
+            uniquenessWith ConstraintValue.ofOperand firstDuplicate
 
     /// <summary>Requires a collection to contain the supplied item.</summary>
     /// <example><code>let mustIncludeAdmin : Constraint&lt;string list&gt; = Constraint.contains "admin"</code></example>
@@ -647,19 +726,27 @@ module Constraint =
 
     // -- Numeric properties ---------------------------------------------------------------------------------
 
-    let private multipleOfWith (divisor: 'divisor) (predicate: 'value -> bool) =
-        match portable divisor with
-        | Some divisor -> atomic (NumberAtom(MultipleOf divisor)) predicate portable
+    /// <summary>Builds a divisibility rule from an already-projected divisor. Not part of the supported surface.</summary>
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let multipleOfWith (divisor: ConstraintValue option) (actual: 'value -> ConstraintValue option) (predicate: 'value -> bool) =
+        match divisor with
+        | Some divisor -> atomic (NumberAtom(MultipleOf divisor)) predicate actual
         | None -> unsupported UnsupportedOperation.MultipleOf predicate
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     type MultipleOfDispatcher =
-        static member Create(divisor: int) = multipleOfWith divisor (fun value -> value % divisor = 0)
-        static member Create(divisor: int64) = multipleOfWith divisor (fun value -> value % divisor = 0L)
-        static member Create(divisor: decimal) = multipleOfWith divisor (fun value -> value % divisor = 0M)
-        static member Create(divisor: float) = multipleOfWith divisor (fun value -> value % divisor = 0.0)
-        static member Create(divisor: float32) = multipleOfWith divisor (fun value -> value % divisor = 0.0f)
-        static member Create(divisor: bigint) = multipleOfWith divisor (fun value -> value % divisor = 0I)
+        static member inline Create(divisor: int) =
+            multipleOfWith (ConstraintValue.ofOperand divisor) ConstraintValue.ofOperand (fun value -> value % divisor = 0)
+        static member inline Create(divisor: int64) =
+            multipleOfWith (ConstraintValue.ofOperand divisor) ConstraintValue.ofOperand (fun value -> value % divisor = 0L)
+        static member inline Create(divisor: decimal) =
+            multipleOfWith (ConstraintValue.ofOperand divisor) ConstraintValue.ofOperand (fun value -> value % divisor = 0M)
+        static member inline Create(divisor: float) =
+            multipleOfWith (ConstraintValue.ofOperand divisor) ConstraintValue.ofOperand (fun value -> value % divisor = 0.0)
+        static member inline Create(divisor: float32) =
+            multipleOfWith (ConstraintValue.ofOperand divisor) ConstraintValue.ofOperand (fun value -> value % divisor = 0.0f)
+        static member inline Create(divisor: bigint) =
+            multipleOfWith (ConstraintValue.ofOperand divisor) ConstraintValue.ofOperand (fun value -> value % divisor = 0I)
 
     /// <summary>Requires an exact multiple of the supplied divisor, under the value type's own arithmetic.</summary>
     /// <remarks>

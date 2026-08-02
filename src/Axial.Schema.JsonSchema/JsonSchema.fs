@@ -116,6 +116,8 @@ module JsonSchema =
         | ConstraintValue.Integer number -> Some(string number)
         | ConstraintValue.Decimal number -> Some(number.ToString CultureInfo.InvariantCulture)
         | ConstraintValue.BigInteger _
+        | ConstraintValue.Guid _
+        | ConstraintValue.TimeSpan _
         | ConstraintValue.Float _
         | ConstraintValue.Float32 _
         | ConstraintValue.DateTime _

@@ -350,17 +350,29 @@ module ConstraintTests =
         let ``semantic sorts keep their own case rather than becoming text`` () =
             let instant = DateTimeOffset(2026, 8, 2, 0, 0, 0, TimeSpan.Zero)
             let local = instant.DateTime
+            let identifier = Guid.NewGuid()
+            let span = TimeSpan.FromMinutes 1.0
 
-            test <@ ConstraintValue.tryCreate instant = Some(ConstraintValue.DateTimeOffset instant) @>
-            test <@ ConstraintValue.tryCreate local = Some(ConstraintValue.DateTime local) @>
+            test <@ ConstraintValue.ofOperand instant = Some(ConstraintValue.DateTimeOffset instant) @>
+            test <@ ConstraintValue.ofOperand local = Some(ConstraintValue.DateTime local) @>
+            test <@ ConstraintValue.ofOperand identifier = Some(ConstraintValue.Guid identifier) @>
+            test <@ ConstraintValue.ofOperand span = Some(ConstraintValue.TimeSpan span) @>
 
         [<Fact>]
-        let ``a value no platform can identify consistently stays outside the portable set`` () =
-            // Fable represents a Guid as a plain string and a TimeSpan as a number, so admitting them would make
-            // the same constraint interpreted on .NET and opaque on Fable.
-            test <@ ConstraintValue.tryCreate (Guid.NewGuid()) = None @>
-            test <@ ConstraintValue.tryCreate (TimeSpan.FromMinutes 1.0) = None @>
-            test <@ expression (Constraint.equalTo (Guid.NewGuid())) = ConstraintExpression.Opaque(OpaqueConstraint.UnsupportedOperand(UnsupportedOperation.Relation Equal)) @>
+        let ``an operand keeps its semantic sort on every platform`` () =
+            // Fable erases a Guid to a plain string and a TimeSpan to a number, so a boxed type test labels them
+            // `Text` and `Integer` there while .NET labels them correctly. Projection resolves on the static type
+            // at the call site instead, so one constraint cannot mean two things. The Fable JS surface check
+            // asserts the same expectations against the compiled JavaScript.
+            let identifier = Guid.NewGuid()
+            let span = TimeSpan.FromMinutes 1.0
+
+            test <@ expression (Constraint.equalTo identifier) = ConstraintExpression.Atom(RelationAtom(Compared(Equal, ConstraintValue.Guid identifier))) @>
+            test <@ expression (Constraint.atLeast span) = ConstraintExpression.Atom(RelationAtom(Compared(AtLeast, ConstraintValue.TimeSpan span))) @>
+            test <@ expression (Constraint.oneOf [ identifier ]) = ConstraintExpression.Atom(MembershipAtom(OneOf [ ConstraintValue.Guid identifier ])) @>
+
+            // The projection still reports honestly for a type no representation covers.
+            test <@ expression (Constraint.equalTo (Version(1, 0))) = ConstraintExpression.Opaque(OpaqueConstraint.UnsupportedOperand(UnsupportedOperation.Relation Equal)) @>
 
         [<Fact>]
         let ``integer boundaries, null, and nested lists round-trip through the portable set`` () =

@@ -218,6 +218,11 @@ module Program =
 
         printfn "Constraints: ok"
 
+        if not (Shared.runOperandAgreement ()) then
+            failwith "Operand projection described a constraint differently under Fable than under .NET."
+
+        printfn "Operand agreement: ok"
+
 #if FABLE_COMPILER
         let parsed = Json.parseData "{\"n\":1.20e+3,\"n\":2}"
         let native = Data.ofJsonValue (parseNativeJson "{\"name\":\"Ada\",\"active\":true}")

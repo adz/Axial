@@ -1,6 +1,7 @@
 namespace Axial.Constraint
 
 open System
+open System.ComponentModel
 
 /// <summary>
 /// Internal helpers for comparing floating-point payloads without breaking structural self-equality.
@@ -73,10 +74,11 @@ type PortableFloat32 =
 /// interpreter that cannot tell them apart cannot decide whether wire equality substitutes for typed equality.
 /// </para>
 /// <para>
-/// <c>Guid</c> and <c>TimeSpan</c> are deliberately absent. Fable cannot type-test either — it represents them
-/// as a plain string and a number — so admitting them would make the same constraint interpreted on .NET and
-/// opaque on Fable, which is exactly the execution/description divergence this design exists to prevent. Nothing
-/// is lost at the boundary: GUID decoding is not injective, so no exporter could enforce GUID equality anyway.
+/// <c>Guid</c> and <c>TimeSpan</c> are reached through typed dispatch rather than a runtime type test. Fable
+/// erases a <c>Guid</c> to a plain string and a <c>TimeSpan</c> to a number, so a boxed type test silently
+/// labels them <c>Text</c> and <c>Integer</c> there while .NET labels them correctly — the same constraint
+/// meaning two different things per platform. <c>ConstraintValue.ofOperand</c> resolves the overload at the
+/// call site, where the type is still known, so both platforms agree.
 /// </para>
 /// <para>
 /// Values outside this set are never boxed through the public surface. The constraint still executes against its
@@ -105,26 +107,24 @@ type ConstraintValue =
     | Float32 of PortableFloat32
     /// <summary>A Boolean.</summary>
     | Boolean of bool
+    /// <summary>A globally unique identifier, kept distinct from its textual spelling.</summary>
+    | Guid of Guid
     /// <summary>A date and time without an offset.</summary>
     | DateTime of DateTime
     /// <summary>A date and time with an offset from UTC.</summary>
     | DateTimeOffset of DateTimeOffset
+    /// <summary>A duration.</summary>
+    | TimeSpan of TimeSpan
     /// <summary>An absent reference. Distinct from "no portable representation available".</summary>
     | Null
     /// <summary>An ordered collection of portable values.</summary>
     | List of ConstraintValue list
 
-/// <summary>Builds and renders portable constraint values.</summary>
-[<RequireQualifiedAccess>]
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module ConstraintValue =
-    /// <summary>Wraps an IEEE double.</summary>
-    let ofFloat (value: float) = ConstraintValue.Float { Value = value }
-
-    /// <summary>Wraps an IEEE single.</summary>
-    let ofFloat32 (value: float32) = ConstraintValue.Float32 { Value = value }
-
-    let rec private tryOfObj (value: obj) : ConstraintValue option =
+/// <summary>The boxed-value projection behind <c>tryCreate</c>. Not part of the supported surface.</summary>
+/// <remarks>Public only so the inline operand projection can reach it; prefer <c>ConstraintValue.ofOperand</c>.</remarks>
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+module ConstraintValueInternals =
+    let rec tryOfObj (value: obj) : ConstraintValue option =
         match value with
         | null -> Some ConstraintValue.Null
         | :? ConstraintValue as value -> Some value
@@ -140,8 +140,10 @@ module ConstraintValue =
         | :? int64 as value -> Some(ConstraintValue.Integer value)
         | :? bigint as value -> Some(ConstraintValue.BigInteger value)
         | :? decimal as value -> Some(ConstraintValue.Decimal value)
-        | :? float as value -> Some(ofFloat value)
-        | :? float32 as value -> Some(ofFloat32 value)
+        | :? float as value -> Some(ConstraintValue.Float { Value = value })
+        | :? float32 as value -> Some(ConstraintValue.Float32 { Value = value })
+        | :? Guid as value -> Some(ConstraintValue.Guid value)
+        | :? TimeSpan as value -> Some(ConstraintValue.TimeSpan value)
         | :? DateTime as value -> Some(ConstraintValue.DateTime value)
         | :? DateTimeOffset as value -> Some(ConstraintValue.DateTimeOffset value)
         | :? System.Collections.IEnumerable as values ->
@@ -151,12 +153,42 @@ module ConstraintValue =
             |> Option.map (List.rev >> ConstraintValue.List)
         | _ -> None
 
+/// <summary>Builds and renders portable constraint values.</summary>
+[<RequireQualifiedAccess>]
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ConstraintValue =
+    /// <summary>Wraps an IEEE double.</summary>
+    let ofFloat (value: float) = ConstraintValue.Float { Value = value }
+
+    /// <summary>Wraps an IEEE single.</summary>
+    let ofFloat32 (value: float32) = ConstraintValue.Float32 { Value = value }
+
     /// <summary>
     /// Projects a runtime value to its portable representation, or <c>None</c> when the type is outside the closed
     /// set. This never throws, including for <c>NaN</c>, infinities, and values no numeric case can hold.
     /// </summary>
     /// <example><code>ConstraintValue.tryCreate 3 = Some (ConstraintValue.Integer 3L)</code></example>
-    let tryCreate (value: 'value) : ConstraintValue option = tryOfObj (box value)
+    let tryCreate (value: 'value) : ConstraintValue option = ConstraintValueInternals.tryOfObj (box value)
+
+    /// <summary>
+    /// Projects an operand to its portable representation, resolving ambiguous types at the call site.
+    /// </summary>
+    /// <remarks>
+    /// Prefer this over <c>tryCreate</c> for constructor operands. <c>tryCreate</c> inspects a boxed value, which
+    /// cannot recover a <c>Guid</c> or <c>TimeSpan</c> on Fable; this resolves the overload while the type is
+    /// still known, so the same constraint describes itself identically on every platform.
+    /// </remarks>
+    /// <example><code>ConstraintValue.ofOperand instant // Some (ConstraintValue.DateTimeOffset instant)</code></example>
+    let inline ofOperand (value: 'value) : ConstraintValue option =
+        // `typeof<'value>` is baked in at the call site, where the type is still concrete. A boxed type test
+        // cannot do this: Fable erases a Guid to a plain string and a TimeSpan to a number, so `:? Guid` there
+        // silently labels the operand `Text` while .NET labels it `Guid` — one constraint, two meanings.
+        if typeof<'value> = typeof<Guid> then
+            Some(ConstraintValue.Guid(unbox<Guid> (box value)))
+        elif typeof<'value> = typeof<TimeSpan> then
+            Some(ConstraintValue.TimeSpan(unbox<TimeSpan> (box value)))
+        else
+            ConstraintValueInternals.tryOfObj (box value)
 
     /// <summary>Renders a portable value for a default English message. Not a wire format.</summary>
     let rec render (value: ConstraintValue) : string =
@@ -169,6 +201,8 @@ module ConstraintValue =
         | ConstraintValue.Float value -> string value.Value
         | ConstraintValue.Float32 value -> string value.Value
         | ConstraintValue.Boolean value -> if value then "true" else "false"
+        | ConstraintValue.Guid value -> value.ToString "D"
+        | ConstraintValue.TimeSpan value -> string value
         | ConstraintValue.DateTime value -> value.ToString("O", Globalization.CultureInfo.InvariantCulture)
         | ConstraintValue.DateTimeOffset value -> value.ToString("O", Globalization.CultureInfo.InvariantCulture)
         | ConstraintValue.Null -> "null"

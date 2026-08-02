@@ -98,9 +98,11 @@ module SchemaMapValueTests =
         let expected = System.Guid.Parse "4f489f3b-cd3c-4f53-b99b-fca552f8994d"
         let document = JsonSchema.generateValue (Schema.guid |> Schema.constrain (Constraint.equalTo expected))
 
-        // A GUID operand has no portable representation that every target can identify, so the rule executes
-        // against its typed closure and describes itself honestly instead.
-        test <@ document.Contains "\"rule\":\"constraint.unsupportedOperand.relation.equal\"" @>
+        // The operand is portable and the atom names it, but GUID decoding is not injective — case variants and
+        // alternate forms parse to one value — so wire equality does not substitute for typed equality and no
+        // `const` is published.
+        test <@ document.Contains "\"rule\":\"constraint.relation.equal\"" @>
+        test <@ not (document.Contains "\"const\"") @>
 
         let nonFinite =
             Schema.``int``

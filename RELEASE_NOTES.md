@@ -47,6 +47,11 @@ public `Predicate` catalogue, `Axial.Check.Constraint`'s code/metadata surface, 
   diagnostics.
 - **`Constraint.lessThan infinity` no longer throws.** Operand conversion happens at construction and never throws;
   floats keep their own representation instead of being forced through `decimal`.
+- **Constructors that take an operand are now `inline`** (`equalTo`, `notEqualTo`, the four ordered comparisons,
+  `between`, `oneOf`, `contains`, `distinct`, `multipleOf`). This is source-compatible for F# callers. It exists so
+  the operand's portable form resolves on its static type: Fable erases a `Guid` to a plain string and a
+  `TimeSpan` to a number, so a boxed type test described those operands as `Text` and `Integer` there while .NET
+  described them correctly.
 
 ## 0.7.0 - 2026-07-28
 
