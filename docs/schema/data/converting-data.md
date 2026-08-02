@@ -15,13 +15,16 @@ open Axial
 open Data.Syntax
 ```
 
-## Parse JSON text
+## Parse JSON text portably
 
-`Data.Json.parse` reads one complete JSON value from a string and returns its `Data` tree. It preserves object field
-order, duplicate field names, and the spelling of number tokens.
+Install `Axial.Schema.Json` when JSON text must be parsed the same way on .NET and Fable. `Json.parseData` reads one
+complete JSON value into a `Data` tree while preserving object field order, duplicate field names, and number-token
+spelling.
 
 ```fsharp
-let value = Data.Json.parse """{"amount":1.20e+3,"active":true}"""
+open Axial.Schema.Json
+
+let value = Json.parseData """{"amount":1.20e+3,"active":true}"""
 
 value
 // => Data.Object [
@@ -30,8 +33,8 @@ value
 //    ]
 ```
 
-Invalid JSON raises `JsonException`. `parse` does not decode the fields into application-specific record types; it
-only converts JSON syntax into the corresponding `Data` cases.
+Invalid JSON raises `JsonCodecException`. `parseData` does not decode fields into application-specific record types;
+it only converts JSON syntax into the corresponding `Data` cases.
 
 `Data.Json.render` and `Data.Json.renderIndented` produce JSON text. `Data.render` and `Data.renderIndented` instead
 produce a concise human-readable display.
@@ -41,9 +44,10 @@ Data.Json.render value
 // => "{\"amount\":1.20e+3,\"active\":true}"
 ```
 
-## Copy from System.Text.Json
+## Use the native .NET parser
 
-Use `Data.ofJsonElement` or `Data.ofJsonDocument` when JSON has already been parsed.
+On .NET 8+, use `Data.ofJsonElement` or `Data.ofJsonDocument` when JSON has already been parsed with
+`System.Text.Json`. These conversion functions are intentionally .NET-only.
 
 ```fsharp
 use document = System.Text.Json.JsonDocument.Parse("""{"name":"Ada"}""")
@@ -54,6 +58,20 @@ Data.Json.render value
 ```
 
 The returned `Data` is a copy and remains usable after the document is disposed.
+
+## Use the native JavaScript parser under Fable
+
+Under Fable, pass the result of the host's `JSON.parse` to `Data.ofJsonValue`:
+
+```fsharp
+open Fable.Core
+
+let value = JS.JSON.parse """{"name":"Ada","active":true}""" |> Data.ofJsonValue
+```
+
+Native JSON parsing is convenient when its normal JavaScript semantics are acceptable. It discards duplicate object
+fields and converts numbers to JavaScript numbers, so it cannot preserve the original number-token spelling. Use
+`Json.parseData` from `Axial.Schema.Json` when those distinctions matter.
 
 ## Convert F# and .NET values
 

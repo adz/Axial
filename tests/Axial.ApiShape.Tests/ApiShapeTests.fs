@@ -477,7 +477,7 @@ module ApiShapeTests =
         moduleTypeFromAssembly "Axial.Schema.Json" "Axial.Schema.Json.Json"
         |> publicStaticMemberNames
         |> assertContainsAll
-            [ "compile"; "serialize"; "serializeBytes"; "deserialize"; "deserializeBytes"; "tryDeserialize" ]
+            [ "compile"; "serialize"; "serializeBytes"; "parseData"; "deserialize"; "deserializeBytes"; "tryDeserialize" ]
 
         // JSON Schema generation lives in its own package; the namespace stays Axial.Schema so
         // callers only add a package reference, not a new open.

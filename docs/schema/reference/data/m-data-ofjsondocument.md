@@ -4,7 +4,7 @@ linkTitle: "ofJsonDocument"
 weight: 2104
 ---
 
-Copies a JSON document into structured data.
+Copies a .NET 8+ <code>System.Text.Json.JsonDocument</code> into structured data.
 
 ## Signature
 
@@ -18,5 +18,9 @@ Copies a JSON document into structured data.
 | --- | --- |
 | <code><span><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>&#32;->&#32;<a href="t-data.md">Data</a></span></code> |  |
 
+## Remarks
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L355-355)
+This platform-specific convenience conversion is not available under Fable.
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L357-357)

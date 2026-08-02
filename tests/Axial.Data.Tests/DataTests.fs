@@ -432,12 +432,16 @@ module DataTests =
         ]
 
     [<Fact>]
-    let ``JSON parse render and extraction preserve owned structure`` () =
-        let value = Data.Json.parse "{\"n\":1.20e+3,\"n\":2,\"text\":\"Ada\",\"items\":[true,null]}"
+    let ``JSON rendering and extraction preserve owned structure`` () =
+        let value =
+            Data.Object
+                [ "n", Data.Number "1.20e+3"
+                  "n", Data.Number "2"
+                  "text", Data.Text "Ada"
+                  "items", Data.List [ Data.Bool true; Data.Null ] ]
 
         test <@ Data.tryNumberToken (Data.lookupPath "n" value) = Some "2" @>
         test <@ Data.tryText (Data.lookupPath "text" value) = Some "Ada" @>
         test <@ Data.render value = "{ n: 1.20e+3, n: 2, text: \"Ada\", items: [true, null] }" @>
         test <@ Data.Json.render value = "{\"n\":1.20e+3,\"n\":2,\"text\":\"Ada\",\"items\":[true,null]}" @>
-        test <@ Data.Json.parse (Data.Json.render value) = value @>
         test <@ Data.renderIndented value |> fun rendered -> rendered.Contains(Environment.NewLine) || rendered.Contains("\n") @>

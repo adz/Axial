@@ -27,4 +27,4 @@ A segment in a structured data path.
  </p>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L15-15)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataOperations.fs#L18-18)

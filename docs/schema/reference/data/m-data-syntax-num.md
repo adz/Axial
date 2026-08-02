@@ -19,4 +19,4 @@ Constructs an exact number from a validated portable JSON number token.
 | <code><span>string&#32;->&#32;<a href="t-data.md">Data</a></span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L772-772)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L783-783)

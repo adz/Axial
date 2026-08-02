@@ -348,11 +348,22 @@ module Data =
     let ofCliArgs = DataCore.ofCliArgs
 
 #if NET8_0_OR_GREATER && !FABLE_COMPILER
-    /// <summary>Copies a JSON element into structured data.</summary>
+    /// <summary>Copies a .NET 8+ <c>System.Text.Json.JsonElement</c> into structured data.</summary>
+    /// <remarks>This platform-specific convenience conversion is not available under Fable.</remarks>
     let ofJsonElement = DataCore.ofJsonElement
 
-    /// <summary>Copies a JSON document into structured data.</summary>
+    /// <summary>Copies a .NET 8+ <c>System.Text.Json.JsonDocument</c> into structured data.</summary>
+    /// <remarks>This platform-specific convenience conversion is not available under Fable.</remarks>
     let ofJsonDocument = DataCore.ofJsonDocument
+#endif
+
+#if FABLE_COMPILER
+    /// <summary>Copies a value returned by JavaScript <c>JSON.parse</c> into structured data.</summary>
+    /// <remarks>
+    /// This Fable-specific convenience conversion is not available on .NET. JavaScript parsing has already discarded
+    /// duplicate object fields and the original spelling of number tokens.
+    /// </remarks>
+    let ofJsonValue = DataCore.ofJsonValue
 #endif
 
     /// <summary>Builds structured data from flattened configuration keys.</summary>
@@ -912,17 +923,8 @@ module Data =
             | Ok() -> ()
             | Error mismatches -> raise (DataMatchException mismatches)
 
-#if NET8_0_OR_GREATER && !FABLE_COMPILER
-    /// <summary>Deterministic JSON parsing and rendering for structured values.</summary>
+    /// <summary>Deterministic JSON rendering for structured values.</summary>
     module Json =
-        /// <summary>Parses one JSON value into structured data.</summary>
-        /// <example><code>Data.Json.parse "{\"name\":\"Ada\"}"
-        /// // Data.Object [ "name", Data.Text "Ada" ]</code></example>
-        let parse (text: string) =
-            if isNull text then nullArg (nameof text)
-            use document = System.Text.Json.JsonDocument.Parse(text)
-            DataCore.ofJsonDocument document
-
         /// <summary>Renders compact deterministic JSON.</summary>
         /// <example><code>Data.Json.render (Data.Object [ "name", Data.Text "Ada" ])
         /// // {"name":"Ada"}</code></example>
@@ -934,4 +936,3 @@ module Data =
         /// //   "name": "Ada"
         /// // }</code></example>
         let renderIndented = jsonRenderIndented
-#endif

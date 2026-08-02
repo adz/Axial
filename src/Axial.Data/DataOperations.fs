@@ -3,6 +3,9 @@ namespace Axial
 open System
 open System.Collections.Specialized
 open System.Text
+#if FABLE_COMPILER
+open Fable.Core.JsInterop
+#endif
 
 /// <summary>A segment in a structured data path.</summary>
 /// <remarks>
@@ -391,6 +394,45 @@ module internal DataCore =
 
             name, fieldValues)
         |> objectFromGroupedValues
+#endif
+
+#if FABLE_COMPILER
+    [<Fable.Core.Emit("typeof $0")>]
+    let private jsTypeOf (value: obj) : string = Unchecked.defaultof<string>
+
+    [<Fable.Core.Emit("Array.isArray($0)")>]
+    let private jsIsArray (value: obj) : bool = false
+
+    [<Fable.Core.Emit("Object.keys($0)")>]
+    let private jsObjectKeys (value: obj) : string[] = Unchecked.defaultof<string[]>
+
+    [<Fable.Core.Emit("$0[$1]")>]
+    let private jsProperty (value: obj) (name: string) : obj = null
+
+    [<Fable.Core.Emit("String($0)")>]
+    let private jsString (value: obj) : string = Unchecked.defaultof<string>
+
+    /// <summary>Copies a value returned by JavaScript <c>JSON.parse</c> into structured data.</summary>
+    /// <remarks>
+    /// JavaScript parsing has already discarded duplicate object fields and the original spelling of number tokens.
+    /// Use <c>Axial.Schema.Json.Json.parseData</c> when those distinctions must be retained.
+    /// </remarks>
+    let rec ofJsonValue (value: obj) : Data =
+        if isNull value then
+            Data.Null
+        elif jsIsArray value then
+            value |> unbox<obj[]> |> Array.map ofJsonValue |> Array.toList |> Data.List
+        else
+            match jsTypeOf value with
+            | "string" -> Data.Text(unbox<string> value)
+            | "boolean" -> Data.Bool(unbox<bool> value)
+            | "number" -> Data.Number(jsString value)
+            | "object" ->
+                jsObjectKeys value
+                |> Array.map (fun name -> name, ofJsonValue (jsProperty value name))
+                |> Array.toList
+                |> Data.Object
+            | actual -> invalidArg (nameof value) $"Expected a value returned by JSON.parse but found JavaScript {actual}."
 #endif
 
     /// <summary>

@@ -208,6 +208,64 @@ module rec Json =
 
             struct (List.rev entries, current)
 
+    let rec private dataDecoder (src: ByteSource) : struct (Data * ByteSource) =
+        let src = skipWhitespace src
+        let data = src.Data
+
+        if src.Offset >= data.Length then
+            decodeFailure "unexpected end of input"
+
+        match data[src.Offset] with
+        | token when token = byte '"' ->
+            let struct (value, next) = stringDecoder src
+            struct (Data.Text value, next)
+        | token when token = byte '{' ->
+            let mutable current = skipWhitespace (src.Advance 1)
+            let mutable fields = []
+            let mutable continueLoop = true
+
+            if current.Offset < data.Length && data[current.Offset] = byte '}' then
+                current <- current.Advance 1
+                continueLoop <- false
+
+            while continueLoop do
+                let struct (keyStart, keyLength, keyHadEscapes, afterKey) = stringRaw current
+                let name = materializeString data keyStart keyLength keyHadEscapes
+                let struct (value, afterValue) = dataDecoder (advancePastColon afterKey)
+                fields <- (name, value) :: fields
+                let struct (next, hasMore) = readSeparatorOrClose (byte '}') "}" afterValue
+                current <- next
+                continueLoop <- hasMore
+
+            struct (Data.Object(List.rev fields), current)
+        | token when token = byte '[' ->
+            let mutable current = skipWhitespace (src.Advance 1)
+            let mutable items = []
+            let mutable continueLoop = true
+
+            if current.Offset < data.Length && data[current.Offset] = byte ']' then
+                current <- current.Advance 1
+                continueLoop <- false
+
+            while continueLoop do
+                let struct (value, afterValue) = dataDecoder current
+                items <- value :: items
+                let struct (next, hasMore) = readSeparatorOrClose (byte ']') "]" afterValue
+                current <- next
+                continueLoop <- hasMore
+
+            struct (Data.List(List.rev items), current)
+        | token when token = byte 't' || token = byte 'f' ->
+            let struct (value, next) = boolDecoder src
+            struct (Data.Bool value, next)
+        | token when token = byte 'n' ->
+            let next = skipValue src
+            struct (Data.Null, next)
+        | token when token = byte '-' || (token >= byte '0' && token <= byte '9') ->
+            let struct (start, length, next) = numberToken true src
+            struct (Data.Number(Encoding.UTF8.GetString(data, start, length)), next)
+        | _ -> decodeFailure "unexpected token"
+
     let private mapEncoder (encodeItem: Encoder<'item>) : Encoder<(string * 'item) list> =
         fun writer entries ->
             writer.WriteByte(byte '{')
@@ -1081,14 +1139,33 @@ module rec Json =
         finally
             buffer.Release()
 
-    let private decodeRoot (codec: JsonCodec<'model>) (data: byte[]) : 'model =
-        let struct (value, next) = codec.Decoder (ByteSource(data, 0))
+    let private decodeRootWith (decoder: Decoder<'value>) (data: byte[]) : 'value =
+        let struct (value, next) = decoder (ByteSource(data, 0))
         let next = skipWhitespace next
 
         if next.Offset <> data.Length then
             decodeFailure "unexpected trailing content"
 
         value
+
+    let private decodeRoot (codec: JsonCodec<'model>) (data: byte[]) : 'model =
+        decodeRootWith codec.Decoder data
+
+    /// <summary>Parses one JSON value into source-neutral structured data.</summary>
+    /// <remarks>
+    /// Preserves object field order, duplicate field names, and the original spelling of number tokens. This parser is
+    /// available on .NET and Fable. It does not apply a model schema; use <c>deserialize</c> with a compiled codec when
+    /// decoding directly to a schema-described model.
+    /// </remarks>
+    /// <example><code>Json.parseData "{\"name\":\"Ada\"}"
+    /// // Data.Object [ "name", Data.Text "Ada" ]</code></example>
+    /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="json" /> is null.</exception>
+    /// <exception cref="T:Axial.Schema.Json.JsonCodecException">Thrown when the input is not one complete JSON value.</exception>
+    let parseData (json: string) : Data =
+        if isNull json then
+            nullArg (nameof json)
+
+        decodeRootWith dataDecoder (Encoding.UTF8.GetBytes json)
 
     /// <summary>Deserializes UTF-8 JSON bytes to a trusted model through a compiled codec.</summary>
     /// <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="codec" /> or <paramref name="bytes" /> is null.</exception>

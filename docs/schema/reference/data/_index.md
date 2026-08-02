@@ -16,8 +16,8 @@ This page shows `Axial.Data`: one owned tree for literals, source adapters, immu
 - [`Data.ofMap`](./m-data-ofmap.md): Builds object-shaped data from a map of scalar values.
 - [`Data.ofNameValues`](./m-data-ofnamevalues.md): Builds object-shaped data from name and value pairs.
 - [`Data.ofCliArgs`](./m-data-ofcliargs.md): Builds structured data from command-line arguments.
-- [`Data.ofJsonElement`](./m-data-ofjsonelement.md): Copies a JSON element into structured data.
-- [`Data.ofJsonDocument`](./m-data-ofjsondocument.md): Copies a JSON document into structured data.
+- [`Data.ofJsonElement`](./m-data-ofjsonelement.md): Copies a .NET 8+ <code>System.Text.Json.JsonElement</code> into structured data.
+- [`Data.ofJsonDocument`](./m-data-ofjsondocument.md): Copies a .NET 8+ <code>System.Text.Json.JsonDocument</code> into structured data.
 - [`Data.ofConfiguration`](./m-data-ofconfiguration.md): Builds structured data from flattened configuration keys.
 
 ## Literal syntax
@@ -104,9 +104,8 @@ This page shows `Axial.Data`: one owned tree for literals, source adapters, immu
 - [`Data.Syntax.oneOf`](./m-data-syntax-oneof.md): Matches when one supplied alternative matches.
 - [`Data.Syntax.satisfying`](./m-data-syntax-satisfying.md): Matches an ordinary predicate and uses its description in diagnostics.
 
-## JSON
+## JSON rendering
 
-- [`Data.Json.parse`](./m-data-json-parse.md): Parses one JSON value into structured data.
 - [`Data.Json.render`](./p-data-json-render.md): Renders compact deterministic JSON.
 - [`Data.Json.renderIndented`](./p-data-json-renderindented.md): Renders indented deterministic JSON.
 

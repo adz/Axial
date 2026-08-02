@@ -131,7 +131,7 @@ nameCases |> List.map (fun case -> case.Name, Data.tryFindPath "name" case.Value
 
 ```fsharp
 let response =
-    Data.Json.parse
+    Axial.Schema.Json.Json.parseData
         """{
           "customer": {
             "id": "c-123",
@@ -142,7 +142,7 @@ let response =
         }"""
 ```
 
-The parsed value is independent of the `JsonDocument` used internally, so it remains valid after `parse` returns.
+The parser is portable across .NET and Fable and returns a fully owned `Data` tree.
 
 `Data.lookupPath "customer.id" response` returns `Data.Text "c-123"`. Rendering the response produces a stable JSON
 value with the same field order and number tokens as the parsed tree.

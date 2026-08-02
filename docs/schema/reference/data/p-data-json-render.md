@@ -1,7 +1,7 @@
 ---
 title: "Data.Json.render"
 linkTitle: "render"
-weight: 2601
+weight: 2600
 ---
 
 Renders compact deterministic JSON.
@@ -28,4 +28,4 @@ Renders compact deterministic JSON.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L929-929)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L931-931)

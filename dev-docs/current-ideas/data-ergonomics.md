@@ -463,8 +463,9 @@ Captures, wildcard paths, regex helpers, numeric tolerance, and negation are not
 The JSON adapter materializes owned `Data`; it must not copy `JsonDocument`'s borrowed lifetime into the canonical model.
 
 ```fsharp
-Data.Json.parse
-Data.Json.ofJsonElement
+Axial.Schema.Json.Json.parseData
+Data.ofJsonElement // .NET 8+
+Data.ofJsonValue // Fable
 Data.Json.render
 Data.Json.renderIndented
 ```

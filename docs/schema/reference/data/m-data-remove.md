@@ -35,4 +35,4 @@ Removes one existing field or list item and returns the changed tree.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L534-534)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L545-545)

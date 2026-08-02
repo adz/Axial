@@ -2,6 +2,11 @@
 
 - `Axial.Data` is also a standalone fixture and produced-data package: use `data`, `patch`, `variants` or `matrix`, and
   `matching` with `at`, `absent`, `containing`, and explicit list patterns.
+- `Data.render` and `Data.renderIndented` are human-readable displays; `Data.Json.render` and
+  `Data.Json.renderIndented` produce portable JSON text.
+- Use `Axial.Schema.Json.Json.parseData` for portable, lossless JSON-to-`Data` parsing. On .NET 8+, native
+  `JsonElement`/`JsonDocument` values can be copied with `Data.ofJsonElement`/`Data.ofJsonDocument`; under Fable, pass a
+  native `JSON.parse` result to `Data.ofJsonValue` when duplicate fields and original number-token spelling do not matter.
 - `Axial.Schema` depends on `Axial.Data`, `Axial.Check`, and `Axial.Refined`. It does not depend on `Axial.Result` or
   Flow.
 - Schema owns path-aware accumulated boundary errors through `Path`, `SchemaIssue`, and `SchemaErrors`. `Axial.Check`

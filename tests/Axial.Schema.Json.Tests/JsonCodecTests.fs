@@ -14,6 +14,25 @@ open Axial.Schema.Syntax
 module JsonCodecTests =
 
     [<Fact>]
+    let ``parseData preserves field order duplicates and number tokens`` () =
+        let value = Json.parseData "{\"n\":1.20e+3,\"n\":2,\"text\":\"Ada\",\"items\":[true,null]}"
+
+        test
+            <@
+                value =
+                    Axial.Data.Object
+                        [ "n", Axial.Data.Number "1.20e+3"
+                          "n", Axial.Data.Number "2"
+                          "text", Axial.Data.Text "Ada"
+                          "items", Axial.Data.List [ Axial.Data.Bool true; Axial.Data.Null ] ]
+            @>
+
+    [<Fact>]
+    let ``parseData rejects trailing content`` () =
+        let ex = Assert.Throws<JsonCodecException>(fun () -> Json.parseData "{} []" |> ignore)
+        test <@ ex.Message.Contains "trailing content" @>
+
+    [<Fact>]
     let ``compiles and round trips a non-record root schema`` () =
         let schema = Schema.listWith (Schema.int |> Schema.constrain (Constraint.atLeast 0))
         let codec = Json.compile schema

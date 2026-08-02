@@ -40,5 +40,9 @@ patching, paths, and matching state their behavior rather than silently normaliz
 
 Install it with `dotnet add package Axial.Data`.
 
+`Data.Json.render` writes JSON on .NET and Fable. For portable JSON text parsing, add `Axial.Schema.Json` and use
+`Json.parseData`. On .NET 8+, existing `JsonElement` and `JsonDocument` values can be copied with
+`Data.ofJsonElement` and `Data.ofJsonDocument`; under Fable, pass a native `JSON.parse` result to `Data.ofJsonValue`.
+
 See the repository documentation for tutorials, partial matching, case matrices, JSON conversion, and the complete
 API reference.

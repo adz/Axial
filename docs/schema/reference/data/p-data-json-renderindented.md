@@ -1,7 +1,7 @@
 ---
 title: "Data.Json.renderIndented"
 linkTitle: "renderIndented"
-weight: 2602
+weight: 2601
 ---
 
 Renders indented deterministic JSON.
@@ -30,4 +30,4 @@ Renders indented deterministic JSON.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L936-936)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L938-938)
