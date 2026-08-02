@@ -93,6 +93,38 @@ module ConstraintDSL =
     /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.atMost" />.</summary>
     let atMost = Constraint.atMost
 
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.positive" />.</summary>
+    let inline positive< ^value when ^value: comparison and ^value: (static member Zero: ^value)> : Constraint< ^value > =
+        Constraint.positive
+
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.nonNegative" />.</summary>
+    let inline nonNegative< ^value when ^value: comparison and ^value: (static member Zero: ^value)> : Constraint< ^value > =
+        Constraint.nonNegative
+
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.negative" />.</summary>
+    let inline negative< ^value when ^value: comparison and ^value: (static member Zero: ^value)> : Constraint< ^value > =
+        Constraint.negative
+
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.nonPositive" />.</summary>
+    let inline nonPositive< ^value when ^value: comparison and ^value: (static member Zero: ^value)> : Constraint< ^value > =
+        Constraint.nonPositive
+
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.single" />.</summary>
+    let inline single< ^value when (^value or Constraint.CardinalityDispatcher): (static member Create:
+        ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > = Constraint.single
+
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.atLeastOne" />.</summary>
+    let inline atLeastOne< ^value when (^value or Constraint.CardinalityDispatcher): (static member Create:
+        ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > = Constraint.atLeastOne
+
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.atMostOne" />.</summary>
+    let inline atMostOne< ^value when (^value or Constraint.CardinalityDispatcher): (static member Create:
+        ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > = Constraint.atMostOne
+
+    /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.moreThanOne" />.</summary>
+    let inline moreThanOne< ^value when (^value or Constraint.CardinalityDispatcher): (static member Create:
+        ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > = Constraint.moreThanOne
+
     /// <summary>Alias for <see cref="M:Axial.Constraint.Constraint.multipleOf" />.</summary>
     let inline multipleOf divisor = Constraint.multipleOf divisor
 

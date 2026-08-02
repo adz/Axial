@@ -186,6 +186,45 @@ module ConstraintTests =
             test <@ violation tags [ "a"; "b"; "a" ] = Atomic(Expected(UniquenessAtom, Some(ConstraintValue.Text "a"))) @>
 
         [<Fact>]
+        let ``the sign and count names build the same atoms their general forms build`` () =
+            // These are spellings, not new primitives. If one ever built its own atom, inspection, lowering, and
+            // generation would each need a second case for a rule the catalogue already covers.
+            let named =
+                [ expression (Constraint.positive: Constraint<int>)
+                  expression (Constraint.nonNegative: Constraint<int>)
+                  expression (Constraint.negative: Constraint<int>)
+                  expression (Constraint.nonPositive: Constraint<int>)
+                  expression (Constraint.single: Constraint<string list>)
+                  expression (Constraint.atLeastOne: Constraint<string list>)
+                  expression (Constraint.atMostOne: Constraint<string list>)
+                  expression (Constraint.moreThanOne: Constraint<string list>) ]
+
+            let general =
+                [ expression (Constraint.greaterThan 0)
+                  expression (Constraint.atLeast 0)
+                  expression (Constraint.lessThan 0)
+                  expression (Constraint.atMost 0)
+                  expression (Constraint.length 1: Constraint<string list>)
+                  expression (Constraint.minLength 1: Constraint<string list>)
+                  expression (Constraint.maxLength 1: Constraint<string list>)
+                  expression (Constraint.minLength 2: Constraint<string list>) ]
+
+            test <@ named = general @>
+
+        [<Fact>]
+        let ``the sign names carry the zero of the value's own numeric type`` () =
+            // GenericZero, not a boxed int: a decimal rule must describe its bound as a decimal so the operand
+            // survives lowering with the precision the runtime comparison used.
+            test <@
+                expression (Constraint.positive: Constraint<decimal>) =
+                    ConstraintExpression.Atom(RelationAtom(Compared(GreaterThan, ConstraintValue.Decimal 0M)))
+            @>
+
+            test <@ Constraint.check (Constraint.positive: Constraint<decimal>) 0.5M = Ok() @>
+            test <@ Constraint.test (Constraint.nonNegative: Constraint<int64>) 0L @>
+            test <@ not (Constraint.test (Constraint.negative: Constraint<float>) 0.0) @>
+
+        [<Fact>]
         let ``bounds and prose are validated at construction`` () =
             // Assert.Throws rather than Unquote's `raises`: these constructors are inline SRTP values, and a
             // quotation would have to invoke the dispatcher dynamically.
@@ -556,6 +595,32 @@ module ConstraintTests =
 
             assertThat <@ Constraint.inspect dslName = Constraint.inspect qualifiedName @>
             assertThat <@ Constraint.test dslName "Ada" = Constraint.test qualifiedName "Ada" @>
+
+        [<Fact>]
+        let ``the sign and count names are reachable unqualified`` () =
+            // Both sides are resolved outside the quotation: these are inline SRTP values, so a quotation would
+            // have to invoke the dispatcher dynamically.
+            let viaDsl =
+                [ Constraint.inspect (positive: Constraint<int>)
+                  Constraint.inspect (nonNegative: Constraint<decimal>)
+                  Constraint.inspect (negative: Constraint<int>)
+                  Constraint.inspect (nonPositive: Constraint<int>)
+                  Constraint.inspect (single: Constraint<string list>)
+                  Constraint.inspect (atLeastOne: Constraint<string list>)
+                  Constraint.inspect (atMostOne: Constraint<string list>)
+                  Constraint.inspect (moreThanOne: Constraint<string list>) ]
+
+            let viaQualified =
+                [ Constraint.inspect (Constraint.positive: Constraint<int>)
+                  Constraint.inspect (Constraint.nonNegative: Constraint<decimal>)
+                  Constraint.inspect (Constraint.negative: Constraint<int>)
+                  Constraint.inspect (Constraint.nonPositive: Constraint<int>)
+                  Constraint.inspect (Constraint.single: Constraint<string list>)
+                  Constraint.inspect (Constraint.atLeastOne: Constraint<string list>)
+                  Constraint.inspect (Constraint.atMostOne: Constraint<string list>)
+                  Constraint.inspect (Constraint.moreThanOne: Constraint<string list>) ]
+
+            assertThat <@ viaDsl = viaQualified @>
 
         [<Fact>]
         let ``guard, orError, and mapError finish a constraint pipeline with the application's error`` () =

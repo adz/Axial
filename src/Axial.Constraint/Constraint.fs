@@ -476,6 +476,30 @@ module Constraint =
     let inline lengthBetween< ^value when (^value or CardinalityDispatcher): (static member Create: ^value * Cardinality -> Constraint< ^value >)> minimum maximum : Constraint< ^value > =
         cardinality (Cardinality.Between(minimum, maximum))
 
+    // Named spellings of the four counts a domain reaches for most often. Like the sign family, each builds the
+    // same CardinalityAtom the general size rule builds.
+
+    /// <summary>Requires a collection to hold exactly one item.</summary>
+    /// <example><code>let primaryAddress : Constraint&lt;Address list&gt; = Constraint.single</code></example>
+    let inline single< ^value when (^value or CardinalityDispatcher): (static member Create: ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > =
+        cardinality (Exact 1)
+
+    /// <summary>Requires a collection to hold at least one item.</summary>
+    /// <remarks>A literal count: for text, a single space satisfies it. Use <c>present</c> to reject blank text.</remarks>
+    /// <example><code>let tags : Constraint&lt;string list&gt; = Constraint.atLeastOne</code></example>
+    let inline atLeastOne< ^value when (^value or CardinalityDispatcher): (static member Create: ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > =
+        cardinality (Cardinality.Minimum 1)
+
+    /// <summary>Requires a collection to hold no more than one item.</summary>
+    /// <example><code>let overrides : Constraint&lt;Rule list&gt; = Constraint.atMostOne</code></example>
+    let inline atMostOne< ^value when (^value or CardinalityDispatcher): (static member Create: ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > =
+        cardinality (Cardinality.Maximum 1)
+
+    /// <summary>Requires a collection to hold two or more items.</summary>
+    /// <example><code>let participants : Constraint&lt;Party list&gt; = Constraint.moreThanOne</code></example>
+    let inline moreThanOne< ^value when (^value or CardinalityDispatcher): (static member Create: ^value * Cardinality -> Constraint< ^value >)> : Constraint< ^value > =
+        cardinality (Cardinality.Minimum 2)
+
     // -- Formats --------------------------------------------------------------------------------------------
 
     /// <summary>The exact regular expression <c>Constraint.email</c> runs.</summary>
@@ -639,6 +663,32 @@ module Constraint =
             (ConstraintValue.ofOperand maximum)
             ConstraintValue.ofOperand
             (fun actual -> actual >= minimum && actual <= maximum)
+
+    // -- Signs ----------------------------------------------------------------------------------------------
+    //
+    // Named spellings of the four comparisons against zero. Each builds the same RelationAtom the general
+    // comparison builds, so nothing about inspection, lowering, or generation is special-cased for them; the
+    // only thing added is the name the domain already uses.
+
+    /// <summary>Requires a value strictly greater than zero.</summary>
+    /// <example><code>let quantity : Constraint&lt;int&gt; = Constraint.positive</code></example>
+    let inline positive< ^value when ^value: comparison and ^value: (static member Zero: ^value)> : Constraint< ^value > =
+        greaterThan LanguagePrimitives.GenericZero< ^value >
+
+    /// <summary>Requires a value of zero or greater.</summary>
+    /// <example><code>let balance : Constraint&lt;decimal&gt; = Constraint.nonNegative</code></example>
+    let inline nonNegative< ^value when ^value: comparison and ^value: (static member Zero: ^value)> : Constraint< ^value > =
+        atLeast LanguagePrimitives.GenericZero< ^value >
+
+    /// <summary>Requires a value strictly less than zero.</summary>
+    /// <example><code>let adjustment : Constraint&lt;int&gt; = Constraint.negative</code></example>
+    let inline negative< ^value when ^value: comparison and ^value: (static member Zero: ^value)> : Constraint< ^value > =
+        lessThan LanguagePrimitives.GenericZero< ^value >
+
+    /// <summary>Requires a value of zero or less.</summary>
+    /// <example><code>let drawdown : Constraint&lt;int&gt; = Constraint.nonPositive</code></example>
+    let inline nonPositive< ^value when ^value: comparison and ^value: (static member Zero: ^value)> : Constraint< ^value > =
+        atMost LanguagePrimitives.GenericZero< ^value >
 
     // -- Membership -----------------------------------------------------------------------------------------
 
