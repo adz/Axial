@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="ConstraintTests.fs" />
+    <Compile Include="KeyCatalogueDocTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

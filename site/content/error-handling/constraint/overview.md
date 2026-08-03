@@ -1,5 +1,5 @@
 ---
-weight: 10
+weight: 20
 title: Using constraints
 description: Naming rules, composing them, reading violations, and keeping the value.
 type: docs
@@ -22,8 +22,10 @@ Constraint.check name "Ada"
 // Ok ()
 ```
 
-The type annotation is not decoration. `Constraint.present` and the size family resolve across text, lists, arrays,
-and maps by the type they return, so the binding is what tells the compiler which shape you meant.
+`Constraint.present` and the size family resolve across text, lists, arrays, and maps by the type they are used at.
+Applied where that type is already known — inside a rule like the one above, or to a schema — they need nothing
+extra. On a standalone binding the annotation is the only type information available, so it is what tells the
+compiler which shape you meant.
 
 ## Compose
 
@@ -40,7 +42,7 @@ case is a sentinel beside a real value:
 ```fsharp
 /// A TTL is either the sentinel -1, meaning "never expire", or a positive number of seconds.
 let ttl : Constraint<int> =
-    Constraint.any (Constraint.equalTo -1) [ Constraint.atLeast 1 ]
+    Constraint.any (Constraint.equalTo -1) [ Constraint.positive ]
 ```
 
 That is a *wire-tier* rule. Domain code should still model the union honestly as `Never | After of Duration`; `any`
@@ -68,9 +70,25 @@ let nickname : Constraint<string option> =
 Whether a property may be *omitted from the input* is a different question again, and belongs to Schema's
 [`mustSupply`/`mayOmit`]({{< relref "/schema/" >}}).
 
-`present` means inhabited according to the shape: whitespace-only text is blank, as are null text, a null or empty
-collection or map, `None`, `ValueNone`, and an empty `Nullable`. `minLength 1` is a literal size, so a single space
-satisfies it.
+### What "blank" means
+
+`present` means inhabited according to the shape: `None`, `ValueNone`, an empty `Nullable`, a null or empty
+collection or map, and null or whitespace-only text are all blank. `minLength 1` is a literal size, so a single
+space satisfies it while `present` does not.
+
+For text specifically, blank means **whitespace as .NET defines it, plus U+FEFF** (the byte-order mark). That last
+character is deliberate, and it is what lets the rule be published at all.
+
+A JSON Schema validator decides whitespace by ECMA-262's `\s`, which is not quite .NET's set. The two used to
+disagree in both directions, and one of those directions is genuinely harmful: where a validator treats a character
+as whitespace and Axial does not, an exported schema rejects a payload the library would have accepted — and the
+library never sees it to explain why. U+FEFF was the whole of that direction, since .NET Core dropped it from
+`Char.IsWhiteSpace` while ECMA-262 keeps it. Treating it as blank removes the problem.
+
+What remains is the harmless direction: a few characters, U+0085 among them, are blank here but ordinary to a
+validator. Such a value passes the wire check and then fails at Axial with a proper diagnostic, which is what you
+want anyway. Because of that, `present` on text exports as `pattern: "\\S"` and `trimmed` exports too, where both
+were previously runtime-only.
 
 ## Keep the value
 
@@ -122,30 +140,21 @@ let failure = Constraint.check (Constraint.minLength 3: Constraint<string>) "ab"
 
 Axial never produces an empty or single-child group — one failing child is reported directly rather than wrapped.
 
-## Localize
-
-`Violation.render` is the zero-dependency English default. Real localization projects to structured data and lets an
-existing i18n system render it:
-
-```fsharp
-match Violation.toMessageTree violation with
-| MessageTree.Leaf (MessageLeaf.Localized descriptor) ->
-    descriptor.Key        // "constraint.cardinality.minimum"
-    descriptor.Arguments  // map [ "minimum", Integer 3L; "actual", Integer 2L ]
-| MessageTree.Leaf (MessageLeaf.Verbatim prose) ->
-    prose                 // author-supplied text, never localizable
-| grouped ->
-    // All/Any structure is preserved so a translator controls word order.
-    ()
-```
-
-Keys are derived mechanically from the atom, so the whole catalogue is enumerable and can be generated as an ICU or
-resource template. Prose you supplied to `Constraint.custom` passes through verbatim: inventing a resource key for
-your own text would promise a lookup that cannot exist.
+To render in another language see [Localization](../localization/). Every built-in failure carries a catalogue key
+and named arguments, and `Violation.renderWith` runs the whole path through one lookup.
 
 ## Check or extract
 
-Constraints preserve shape by returning `unit` on success. Extraction changes shape and belongs to Result:
+Constraints preserve shape. `check` answers whether a value satisfies a rule, `guard` hands the same value back so a
+pipeline can continue, and `test` gives a `bool` when a local branch wants nothing structured:
+
+```fsharp
+"Ada" |> Constraint.check name   // Result<unit, Violation>
+"Ada" |> Constraint.guard name   // Result<string, Violation>  -- the value, unchanged
+"Ada" |> Constraint.test name    // bool
+```
+
+None of them changes the *type* of the value. Extraction does, and lives on Result instead:
 
 | Prove a fact | Extract a value |
 | --- | --- |
@@ -154,4 +163,7 @@ Constraints preserve shape by returning `unit` on success. Extraction changes sh
 | `Constraint.present : Constraint<'a Nullable>` | `Result.nullableOr` |
 | `Constraint.present : Constraint<'a list>` | `Result.headOr` |
 
-Use `Constraint.test` when a local branch needs a `bool` rather than a structured violation.
+The split is what makes one constraint usable by many interpreters. A schema lowers a rule, a generator satisfies it,
+a document publishes it — and all three need the rule to be a claim *about* a value rather than a transformation of
+one. `someOr` says in its own type that it produces an `'a` from an `'a option`; folding that into `present` would
+give a rule whose meaning depended on what the caller wanted back, and nothing downstream could read it.

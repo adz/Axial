@@ -35,8 +35,15 @@ That matters because everything downstream reads the same declaration. A constra
 JSON Schema, generates test data, and renders localizable messages; the equivalent hand-written lambda does none of
 those things, and says so honestly rather than pretending.
 
-Annotate the binding. The catalogue resolves across text, collections, options, and maps by return type, so the
-compiler needs to know which shape you meant:
+The catalogue resolves across text, collections, options, and maps by the type it is used at, so most uses need
+nothing extra:
+
+```fsharp
+Schema.text |> Schema.constrain Constraint.present
+```
+
+A standalone binding is the exception: the annotation is the only type information there, so it is what selects the
+shape.
 
 ```fsharp
 let requiredName : Constraint<string> = Constraint.present
@@ -48,6 +55,7 @@ The same value facts appear at three further levels:
 - [Schema]({{< relref "/schema/refined-values/" >}}) adds structured input, paths, accumulation, and wire interpreters.
 - JSON Schema publishes what the target can enforce, and documents the rest.
 
-Continue to [Using constraints](./overview/) for composition and violations, [Interpreted and opaque](./constraints/)
-for what makes a rule inspectable, or the [Constraint DSL](./constraint-dsl/) for concise definitions and Result
-adapters.
+Start with the [Constraint DSL](./constraint-dsl/) for the vocabulary and how to write a rule module, then
+[Using constraints](./overview/) for composition and violations, [Interpreted and opaque](./constraints/) for what
+makes a rule inspectable and what an escape hatch costs, and [Localization](./localization/) for translating
+failures.
