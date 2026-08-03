@@ -89,11 +89,60 @@ let login username password =
     }
 ```
 
+## Collecting every error with `and!`
+
+`result {}` stops at the first `Error`. When the steps do not depend on each other and the caller should see every
+failure, use one of the accumulating builders and join the independent bindings with `and!`.
+
+```fsharp
+result.list {
+    let! name = parseName input.Name
+    and! age = parseAge input.Age
+    return name, age
+}
+// Result<string * int, string list>
+```
+
+Both bindings run. If both fail, both errors appear in the list.
+
+The builder name chooses the container the errors collect into, and that container shows up in the error type:
+
+| Builder | Result type |
+| --- | --- |
+| `result.list { }` | `Result<'value, 'error list>` |
+| `result.array { }` | `Result<'value, 'error[]>` |
+
+Each accepts ordinary `Result<'value, 'error>` bindings and lifts each error into the container for you. A binding
+that already carries the collected type passes through without being wrapped again, so results from two accumulating
+blocks compose.
+
+### `and!` accumulates; `let!` still fails fast
+
+The two keywords mean different things in the same block. Bindings joined by `and!` are independent, so all of them
+run and their errors combine. A following `let!` depends on what came before it, so it cannot run until the earlier
+bindings succeed.
+
+```fsharp
+result.list {
+    let! name = parseName input.Name
+    and! age = parseAge input.Age    // runs even when parseName fails; both errors collect
+
+    let! account = loadAccount name  // only runs once name and age both succeeded
+    return account, age
+}
+```
+
+If `parseName` and `parseAge` both fail, the block returns both errors. If `parseName` fails, `loadAccount` never
+runs and its error cannot appear. Group everything you want reported together into one `and!` chain.
+
 ## When to use `result {}`
 
 - **Sequential Dependencies**: When Step B requires the output of Step A.
 - **Fail-Fast**: When continuing after an error makes no sense (e.g., you can't save a user if the email is invalid).
 - **Simple Logic**: When you only need to return a single error value to the caller.
+
+Use `result.list {}` and its siblings when independent steps should all report. They collect a flat container of
+errors with no path information. Map to another container with `Result.mapError` when you need one.
 
 For complete failures across independent fields, declare those fields in
 [Schema]({{< relref "/schema/" >}}). Schema supplies field and collection paths automatically.

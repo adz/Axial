@@ -644,7 +644,8 @@ let pageSpecs = [
             "Core helpers", ["M:Axial.Result.Result.ok"; "M:Axial.Result.Result.error"; "M:Axial.Result.Result.map"; "M:Axial.Result.Result.mapError"; "M:Axial.Result.Result.bind"; "M:Axial.Result.Result.orElse"; "M:Axial.Result.Result.orElseWith"]
             "Lifts and conversions", ["M:Axial.Result.Result.requireTrue"; "M:Axial.Result.Result.okIf"; "M:Axial.Result.Result.failIf"; "M:Axial.Result.Result.orError"; "M:Axial.Result.Result.fromTry"; "M:Axial.Result.Result.fromChoice"; "M:Axial.Result.Result.toOption"; "M:Axial.Result.Result.toValueOption"; "M:Axial.Result.Result.defaultValue"]
             "Extraction helpers", ["M:Axial.Result.Result.someOr"; "M:Axial.Result.Result.noneOr"; "M:Axial.Result.Result.valueSomeOr"; "M:Axial.Result.Result.valueNoneOr"; "M:Axial.Result.Result.nullableOr"; "M:Axial.Result.Result.notNullOr"; "M:Axial.Result.Result.okOr"; "M:Axial.Result.Result.errorOr"; "M:Axial.Result.Result.headOr"]
-            "Traversal", ["M:Axial.Result.Collection.traverseResult"; "M:Axial.Result.Collection.sequenceResult"]
+            "Traversal", ["M:Axial.Result.Result.traverse"; "M:Axial.Result.Result.sequence"]
+            "Side effects", ["M:Axial.Result.Result.tap"; "M:Axial.Result.Result.tapError"]
             "Builder", ["P:Axial.Result.Builders.result"]
         ]
         Alias = None
@@ -968,7 +969,6 @@ let serviceFileSystemSectionDirectories =
 let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
     match spec.OutPath, sectionTitle with
     | ["result"; "_index.md"], "Structured errors" -> Some "errors"
-    | ["result"; "_index.md"], "Traversal" -> Some "collection"
     | ["result"; "_index.md"], "Builder" -> Some "result-ce"
     | ["result"; "_index.md"], _ -> Some "result"
     | ["parse"; "_index.md"], _ -> None

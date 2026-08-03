@@ -46,8 +46,13 @@ This page shows Axial's fail-fast helpers over the standard F# `Result<'value, '
 
 ## Traversal
 
-- [`Result.Collection.traverseResult`](./collection/m-result-collection-traverseresult.md): Maps each value with a result-returning function, stopping at the first error.
-- [`Result.Collection.sequenceResult`](./collection/m-result-collection-sequenceresult.md): Turns a sequence of results into one fail-fast result containing all successes.
+- [`Result.traverse`](./result/m-result-result-traverse.md): Maps each value with a result-returning function, stopping at the first error.
+- [`Result.sequence`](./result/m-result-result-sequence.md): Turns a sequence of results into one fail-fast result containing all successes.
+
+## Side effects
+
+- [`Result.tap`](./result/m-result-result-tap.md): Runs a side effect on the successful value and returns the result unchanged.
+- [`Result.tapError`](./result/m-result-result-taperror.md): Runs a side effect on the error value and returns the result unchanged.
 
 ## Builder
 

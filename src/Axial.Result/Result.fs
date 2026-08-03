@@ -166,3 +166,59 @@ module Result =
     let headOr (failure: 'error) (values: seq<'value>) : Result<'value, 'error> =
         use enumerator = values.GetEnumerator()
         if enumerator.MoveNext() then Ok enumerator.Current else Error failure
+
+    /// <summary>Runs a side effect on the successful value and returns the result unchanged.</summary>
+    /// <remarks>For logging and diagnostics at a boundary. The effect cannot change the result.</remarks>
+    /// <example>
+    /// <code>
+    /// Ok 10 |> Result.tap (printfn "loaded %d") // prints, then returns Ok 10
+    /// </code>
+    /// </example>
+    let tap (effect: 'value -> unit) (result: Result<'value, 'error>) : Result<'value, 'error> =
+        match result with
+        | Ok value -> effect value
+        | Error _ -> ()
+
+        result
+
+    /// <summary>Runs a side effect on the error value and returns the result unchanged.</summary>
+    /// <example>
+    /// <code>
+    /// Error "boom" |> Result.tapError (printfn "failed: %s") // prints, then returns Error "boom"
+    /// </code>
+    /// </example>
+    let tapError (effect: 'error -> unit) (result: Result<'value, 'error>) : Result<'value, 'error> =
+        match result with
+        | Ok _ -> ()
+        | Error failure -> effect failure
+
+        result
+
+    /// <summary>Maps each value with a result-returning function, stopping at the first error.</summary>
+    /// <remarks>Takes any sequence and always produces a list. Traversal stops at the first error, so later
+    /// mappings do not run. Use one of the accumulating builders when every error should be reported.</remarks>
+    /// <example>
+    /// <code>
+    /// [ "1"; "2" ] |> Result.traverse parseInt // Ok [ 1; 2 ]
+    /// </code>
+    /// </example>
+    let traverse (mapping: 'input -> Result<'output, 'error>) (values: seq<'input>) : Result<'output list, 'error> =
+        let rec loop accumulated remaining =
+            match remaining with
+            | [] -> Ok(List.rev accumulated)
+            | head :: tail ->
+                match mapping head with
+                | Ok value -> loop (value :: accumulated) tail
+                | Error failure -> Error failure
+
+        loop [] (Seq.toList values)
+
+    /// <summary>Turns a sequence of results into one fail-fast result containing all successes.</summary>
+    /// <remarks>Takes any sequence and always produces a list. Stops at the first error.</remarks>
+    /// <example>
+    /// <code>
+    /// [ Ok 1; Error "missing"; Ok 3 ] |> Result.sequence // Error "missing"
+    /// </code>
+    /// </example>
+    let sequence (values: seq<Result<'value, 'error>>) : Result<'value list, 'error> =
+        traverse id values

@@ -34,7 +34,7 @@
 
   <ItemGroup>
     <Compile Include="Result.fs" />
-    <Compile Include="Collection.fs" />
+    <Compile Include="Accumulate.fs" />
     <Compile Include="ResultBuilder.fs" />
     <Compile Include="Builders.fs" />
   </ItemGroup>

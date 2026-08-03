@@ -86,7 +86,7 @@ module Workspace =
 
         items
         |> List.choose _.Assignee
-        |> Collection.traverseResult (fun assignee ->
+        |> Result.traverse (fun assignee ->
             memberIds
             |> Set.toList
             |> Constraint.check (Constraint.contains assignee)

@@ -30,3 +30,7 @@ This page shows the helpers on the `Result` module.
 - [`Result.okOr`](./m-result-result-okor.md): Takes the successful value from a result, or returns the supplied error.
 - [`Result.errorOr`](./m-result-result-erroror.md): Takes the error value from a result, or returns the supplied error when the result is successful.
 - [`Result.headOr`](./m-result-result-heador.md): Takes the first item from a sequence, or returns the supplied error.
+- [`Result.traverse`](./m-result-result-traverse.md): Maps each value with a result-returning function, stopping at the first error.
+- [`Result.sequence`](./m-result-result-sequence.md): Turns a sequence of results into one fail-fast result containing all successes.
+- [`Result.tap`](./m-result-result-tap.md): Runs a side effect on the successful value and returns the result unchanged.
+- [`Result.tapError`](./m-result-result-taperror.md): Runs a side effect on the error value and returns the result unchanged.

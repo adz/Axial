@@ -23,6 +23,9 @@ type ResultBuilder() =
         ) : Result<'next, 'error> =
         Result.bind binder result
 
+    member _.BindReturn(result: Result<'value, 'error>, mapper: 'value -> 'next) : Result<'next, 'error> =
+        Result.map mapper result
+
     member _.Delay(factory: unit -> Result<'value, 'error>) : Result<'value, 'error> =
         factory ()
 
@@ -84,3 +87,9 @@ type ResultBuilder() =
             sequence.GetEnumerator(),
             fun enumerator -> this.While(enumerator.MoveNext, this.Delay(fun () -> binder enumerator.Current))
         )
+
+    /// <summary>The applicative builder collecting errors into a list: <c>result.list { }</c>.</summary>
+    member _.list = ListResultBuilder()
+
+    /// <summary>The applicative builder collecting errors into an array: <c>result.array { }</c>.</summary>
+    member _.array = ArrayResultBuilder()
