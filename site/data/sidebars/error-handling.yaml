@@ -11,11 +11,11 @@ groups:
 
   - title: Axial.Result
     home: /error-handling/result
-    caption: Fail-fast Result helpers and the result computation expression.
-    descendants: false
-    entries:
-      - /error-handling/tutorials
-      - /error-handling/result-builder
+    caption: Compose operations that can fail, using the standard F# Result type.
+    children_of:
+      - /error-handling/result
+    exclude:
+      - /error-handling/reference
     reference:
       children_of:
         - /error-handling/reference/result
@@ -25,6 +25,8 @@ groups:
     caption: One reusable description of valid values, shared by every interpreter.
     children_of:
       - /error-handling/constraint
+    entries:
+      - /error-handling/tutorials
     reference:
       children_of:
         - /error-handling/reference/constraint

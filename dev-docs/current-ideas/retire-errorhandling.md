@@ -169,8 +169,9 @@ this rename in Phase 1 — before the docs move — avoids relocating pages that
 
 Follow the precedent set by `ce58acad` ("Promote Data to an independent docs entry point").
 
-- `docs/error-handling/result/**` → `docs/result/**`; `docs/error-handling/result-builder.md` →
-  `docs/result/result-builder.md`; `docs/error-handling/tutorials/**` → `docs/result/tutorials/**`.
+- `docs/error-handling/result/**` → `docs/result/**`. The section is already standalone and self-contained
+  (landing page plus eight task pages), so this is a move with no rewriting. `docs/error-handling/tutorials/**`
+  stays with Constraint — it is a Constraint tutorial that happens to use Result.
 - `docs/error-handling/reference/result/**` → `docs/result/reference/**`.
 - Add `docs/result/_index.md` (product landing, `menu.main` weight), `docs/result/agent.md`, and
   `docs/result/llms.txt`.
