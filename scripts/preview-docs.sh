@@ -62,7 +62,8 @@ if $generate; then
      [ -f "$root_dir/docs/schema/examples.md" ] &&
      [ -f "$root_dir/docs/flow/examples.md" ] &&
      [ -d "$root_dir/docs/data/reference" ] &&
-     [ -d "$root_dir/docs/error-handling/reference" ] &&
+     [ -d "$root_dir/docs/result/reference" ] &&
+     [ -d "$root_dir/docs/values/reference" ] &&
      [ -d "$root_dir/docs/schema/reference" ] &&
      [ -d "$root_dir/docs/flow/reference" ]; then
     echo "Docs generator inputs unchanged; reusing cached generated docs."

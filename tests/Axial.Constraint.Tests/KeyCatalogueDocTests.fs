@@ -17,7 +17,7 @@ open Xunit
 /// </remarks>
 module KeyCatalogueDocTests =
     let private page () =
-        Path.Combine(__SOURCE_DIRECTORY__, "..", "..", "docs", "error-handling", "constraint", "localization.md")
+        Path.Combine(__SOURCE_DIRECTORY__, "..", "..", "docs", "values", "constraint", "localization.md")
         |> Path.GetFullPath
 
     /// Every key the atom catalogue can produce. Operands are irrelevant to the key, so one representative value

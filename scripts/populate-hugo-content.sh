@@ -42,28 +42,35 @@ upsert_frontmatter() {
   mv "$tmp" "$file"
 }
 
-# Axial has four product documentation areas: /data/, /error-handling/, /schema/,
-# and /flow/. Generated API reference is distributed under the product that owns
-# each package.
+# Axial has five product documentation areas: /result/, /values/, /data/,
+# /schema/, and /flow/. Generated API reference is distributed under the product
+# that owns each package. Values is a navigation grouping over Constraint,
+# Refined, and Parse — there is no Axial.Values package behind it.
+products=(result values data schema flow)
+
+result_dir="$root_dir/site/content/result"
+values_dir="$root_dir/site/content/values"
 data_dir="$root_dir/site/content/data"
-validation_dir="$root_dir/site/content/error-handling"
 schema_dir="$root_dir/site/content/schema"
 flow_dir="$root_dir/site/content/flow"
-rm -rf "$root_dir/site/content/error-handling" "$root_dir/site/content/validation" \
-  "$data_dir" "$validation_dir" "$schema_dir" "$flow_dir" \
-  "$root_dir/site/content/docs" "$root_dir/site/content/reference" "$root_dir/site/content/parse"
-mkdir -p "$data_dir" "$validation_dir" "$schema_dir" "$flow_dir"
 
-cp -r "$root_dir/docs/data/." "$data_dir/"
-cp -r "$root_dir/docs/error-handling/." "$validation_dir/"
-cp -r "$root_dir/docs/schema/." "$schema_dir/"
-cp -r "$root_dir/docs/flow/." "$flow_dir/"
-rm -f "$data_dir/llms.txt" "$validation_dir/llms.txt" "$schema_dir/llms.txt" "$flow_dir/llms.txt"
+# error-handling and validation are the retired area names; remove any leftovers
+# so a stale tree cannot keep serving pages after the split.
+rm -rf "$root_dir/site/content/error-handling" "$root_dir/site/content/validation" \
+  "$result_dir" "$values_dir" "$data_dir" "$schema_dir" "$flow_dir" \
+  "$root_dir/site/content/docs" "$root_dir/site/content/reference" "$root_dir/site/content/parse"
+
+for product in "${products[@]}"; do
+  mkdir -p "$root_dir/site/content/$product"
+  cp -r "$root_dir/docs/$product/." "$root_dir/site/content/$product/"
+  rm -f "$root_dir/site/content/$product/llms.txt"
+done
 
 # Product-local generated API reference is copied with the guides. Apply the
 # navigation weights needed by the rendered site.
+result_ref="$result_dir/reference"
+values_ref="$values_dir/reference"
 data_ref="$data_dir/reference"
-validation_ref="$validation_dir/reference"
 schema_ref="$schema_dir/reference"
 flow_ref="$flow_dir/reference"
 
@@ -86,18 +93,16 @@ upsert_frontmatter "$flow_ref/service/console/_index.md" "weight" "20"
 upsert_frontmatter "$flow_ref/service/filesystem/_index.md" "weight" "30"
 upsert_frontmatter "$flow_ref/service/http/_index.md" "weight" "40"
 upsert_frontmatter "$flow_ref/service/process/_index.md" "weight" "50"
-upsert_frontmatter "$validation_ref/check/_index.md" "weight" "10"
-upsert_frontmatter "$validation_ref/predicate/_index.md" "weight" "15"
-upsert_frontmatter "$validation_ref/result/_index.md" "weight" "20"
-upsert_frontmatter "$validation_ref/error-handling/_index.md" "weight" "30"
-upsert_frontmatter "$validation_ref/diagnostics/_index.md" "weight" "40"
-upsert_frontmatter "$validation_ref/refined/_index.md" "weight" "50"
+upsert_frontmatter "$result_ref/result/_index.md" "weight" "10"
+upsert_frontmatter "$values_ref/constraint/_index.md" "weight" "10"
+upsert_frontmatter "$values_ref/refined/_index.md" "weight" "20"
+upsert_frontmatter "$values_ref/parse/_index.md" "weight" "30"
 upsert_frontmatter "$schema_ref/schema/_index.md" "weight" "10"
 upsert_frontmatter "$schema_ref/codec/_index.md" "weight" "20"
 
 # Hugo's docs layout supplies the page title. Keep generated content uniform
 # with pages whose source already omits a body-level H1.
-find "$data_dir" "$validation_dir" "$schema_dir" "$flow_dir" -type f -name "*.md" -print0 |
+find "$result_dir" "$values_dir" "$data_dir" "$schema_dir" "$flow_dir" -type f -name "*.md" -print0 |
   node -e '
     const fs = require("node:fs");
     for (const path of fs.readFileSync(0, "utf8").split("\0")) {
@@ -120,11 +125,11 @@ find "$data_dir" "$validation_dir" "$schema_dir" "$flow_dir" -type f -name "*.md
 
 # Copy root assets
 cp "$root_dir/llms.txt" "$root_dir/site/static/" 2>/dev/null || true
-mkdir -p "$root_dir/site/static/data" "$root_dir/site/static/error-handling" "$root_dir/site/static/schema" "$root_dir/site/static/flow"
-cp "$root_dir/docs/data/llms.txt" "$root_dir/site/static/data/llms.txt"
-cp "$root_dir/docs/error-handling/llms.txt" "$root_dir/site/static/error-handling/llms.txt"
-cp "$root_dir/docs/schema/llms.txt" "$root_dir/site/static/schema/llms.txt"
-cp "$root_dir/docs/flow/llms.txt" "$root_dir/site/static/flow/llms.txt"
+rm -rf "$root_dir/site/static/error-handling"
+for product in "${products[@]}"; do
+  mkdir -p "$root_dir/site/static/$product"
+  cp "$root_dir/docs/$product/llms.txt" "$root_dir/site/static/$product/llms.txt"
+done
 mkdir -p "$root_dir/site/static/content"
 cp -r "$root_dir/docs/content/"* "$root_dir/site/static/content/" 2>/dev/null || true
 

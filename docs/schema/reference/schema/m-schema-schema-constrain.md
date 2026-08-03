@@ -16,7 +16,7 @@ Requires a schema&#39;s values to satisfy a constraint.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `constraint'` | <code><span><a href="../../../error-handling/reference/constraint/t-constraint-constraint.md">Constraint</a>&lt;'a&gt;</span></code> |  |
+| `constraint'` | <code><span><a href="../../../values/reference/constraint/t-constraint-constraint.md">Constraint</a>&lt;'a&gt;</span></code> |  |
 | `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
 
 ## Returns

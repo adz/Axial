@@ -1,0 +1,12 @@
+groups:
+  - title: Axial.Result
+    home: /result
+    kind: primary
+    caption: Compose operations that can fail, using the standard F# Result type. Installs on its own.
+    children_of:
+      - /result
+    exclude:
+      - /result/reference
+    reference:
+      children_of:
+        - /result/reference/result

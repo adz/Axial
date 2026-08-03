@@ -115,8 +115,8 @@ for field in formFields do
 
 Schema's own parse and structural failures have a `schema.*` catalogue (`SchemaMessages.keys`); constraint failures
 use Axial's `constraint.*` catalogue. Both render through the same mechanics. See
-[Localization]({{< relref "/error-handling/constraint/localization/" >}}) for the key catalogue and
-[Adding a language]({{< relref "/error-handling/constraint/adding-a-language/" >}}) for generating a translation.
+[Localization]({{< relref "/values/constraint/localization/" >}}) for the key catalogue and
+[Adding a language]({{< relref "/values/constraint/adding-a-language/" >}}) for generating a translation.
 
 ## Mapping To Domain Errors
 

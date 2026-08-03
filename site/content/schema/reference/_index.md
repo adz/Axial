@@ -26,7 +26,7 @@ Schemas are consumed by interpreters that stay independent of workflow execution
   - [`SchemaError`, `Path`, and `SchemaErrors`](./schema/interpreters/#errors) — schema input, checking, and executable
     validation failures with complete structural locations.
   - [`RefinedSchemas`](./schema/interpreters/#refined-catalog-schemas) — bridges `Axial.Refined` types (see the
-    [Refined reference]({{< relref "/error-handling/reference/refined/" >}})) into schema field declarations.
+    [Refined reference]({{< relref "/values/reference/refined/" >}})) into schema field declarations.
 
 ## Axial.Schema.JsonSchema
 

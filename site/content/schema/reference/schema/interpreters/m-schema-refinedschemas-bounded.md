@@ -18,14 +18,14 @@ type: docs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `bounds` | <code><span><a href="../../../../error-handling/reference/refined/types/t-refined-interval.md">Interval</a>&lt;'value&gt;</span></code> |  |
+| `bounds` | <code><span><a href="../../../../values/reference/refined/types/t-refined-interval.md">Interval</a>&lt;'value&gt;</span></code> |  |
 | `itemSchema` | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;'value&gt;</span></code> |  |
 
 ## Returns
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../error-handling/reference/refined/types/t-refined-bounded.md">Bounded</a>&lt;'value&gt;</span>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<span><a href="../../../../values/reference/refined/types/t-refined-bounded.md">Bounded</a>&lt;'value&gt;</span>&gt;</span></code> |  |
 
 
 [Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L47-47)

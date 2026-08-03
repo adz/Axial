@@ -1,14 +1,15 @@
 # Retire Axial.ErrorHandling; promote Result to a top-level product
 
-**Status:** Phase 1 (expand Result) is **implemented**. The *package* half of Phase 4 is **implemented** as
-project-split Phase 1B(a): `Axial.ErrorHandling` is deleted, and — going beyond what this document originally
-proposed — so is the `Axial` umbrella, since `project-split.md` requires both gone before Flow is extracted. Phases
-2-3 (the `docs/error-handling/` tree move) and the docs half of Phase 4 are **not started**; the docs tree still
-lives at `docs/error-handling/`. The *presentation* half of Phases 2-3 landed early, because deleting the
-meta-package while the landing page still advertised it would have been incoherent: the landing page now has two
-peer doors (Result, Values), the sidebar has two `kind: primary` groups instead of one, and `_index.md`, `agent.md`,
-and `llms.txt` state that Result is a product and Values is navigation only. What remains is the move itself — the
-URL prefixes, the file relocation, splitting the shared prose pages, and the hardcoded product-area lists.
+**Status: all four phases implemented.** Phase 1 expanded Result. Phases 2-3 moved `docs/error-handling/` to
+`docs/result/` + `docs/values/`. Phase 4 deleted the package, the old docs tree, the old sidebar, and
+`validate-error-handling-docs.sh`.
+
+Two things went further than this document originally proposed:
+
+- The `Axial` umbrella was deleted too, not repointed at the four leaves — `project-split.md` requires both
+  meta-packages gone before Flow is extracted, so there is no meta-package left at any tier.
+- Result is a **top-level navigation area with its own sidebar**, not a group inside a shared error-handling
+  sidebar. The top nav is Result | Values | Data | Schema | Flow.
 
 **Compatibility:** pre-1.0; no compatibility shim is required for the removed meta-package.
 
@@ -173,32 +174,37 @@ into the `result` reference group, changes the sidebar `children_of` shape, and 
 `dev-docs/API_BASELINE.md` and any call sites in `src/`, `tests/`, `examples/`, and `benchmarks/`. Doing
 this rename in Phase 1 — before the docs move — avoids relocating pages that are about to be deleted.
 
-### Phase 2 — Move Result docs to `/result`
+### Phase 2 — Move Result docs to `/result` — **done**
 
-Follow the precedent set by `ce58acad` ("Promote Data to an independent docs entry point").
+Followed the precedent set by `ce58acad` ("Promote Data to an independent docs entry point").
 
-- `docs/error-handling/result/**` → `docs/result/**`. The section is already standalone and self-contained
-  (landing page plus eight task pages), so this is a move with no rewriting. `docs/error-handling/tutorials/**`
-  stays with Constraint — it is a Constraint tutorial that happens to use Result.
-- `docs/error-handling/reference/result/**` → `docs/result/reference/**`.
-- Add `docs/result/_index.md` (product landing, `menu.main` weight), `docs/result/agent.md`, and
-  `docs/result/llms.txt`.
+- `docs/error-handling/result/**` → `docs/result/**`, plus `fstoolkit-comparison.md`.
+  `docs/error-handling/tutorials/**` went to Values — it is a Constraint tutorial that happens to use Result.
+- `docs/error-handling/reference/result/**` → `docs/result/reference/result/**`. The extra `result` segment keeps
+  docgen's model intact: the page group name *is* the directory, exactly as `/data/reference/data/`.
+- Added `docs/result/_index.md` (product landing, `menu.main` weight 1), `docs/result/agent.md`,
+  `docs/result/llms.txt`, `docs/result/getting-started.md`, `docs/result/reference/_index.md`, and
+  `site/data/sidebars/result.yaml`.
+- Dropped `Axial.Constraint.Violation` from the Result reference page. Result is a standalone leaf; carrying another
+  product's type there was wrong and duplicated the page Values owns.
 
-### Phase 3 — Collapse the rest under "Values"
+### Phase 3 — Collapse the rest under "Values" — **done**
 
-- `docs/error-handling/{check,refined,parse}/**` → `docs/values/{check,refined,parse}/**`, and
-  `docs/error-handling/reference/{check,predicate,refined,parse}/**` → `docs/values/reference/…`.
-- One `site/data/sidebars/values.yaml` with a `kind: primary` **Values** group and per-package subgroups
-  for Constraint, Refined, and Parse. Each subgroup caption states that the package installs
-  independently.
-- Keep `fstoolkit-comparison.md` with Result. `getting-started.md`, `overview.md`, and `reference-app.md`
-  cover the whole former bundle — split them: Result-composition material to `/result`, value-admission
-  material to `/values`.
+- `docs/error-handling/{constraint,refined,parse,tutorials}/**` → `docs/values/…`, and
+  `docs/error-handling/reference/{constraint,refined,parse}/**` → `docs/values/reference/…`.
+- One `site/data/sidebars/values.yaml` with a `kind: primary` **Values** group and per-package subgroups for
+  Constraint, Refined, and Parse. Each caption states that the package installs independently.
+- `fstoolkit-comparison.md` went to Result. `reference-app.md` went to Values — the introductory app is about
+  admitting values. `getting-started.md` was split into two pages, and `overview.md` was folded into the two
+  landing pages and deleted rather than split twice.
+- `validate-values-docs.sh` fails if any rendered page tells a reader to `dotnet add package Axial.Values`.
 
-### Phase 4 — Delete the package and the old tree
+### Phase 4 — Delete the package and the old tree — **done**
 
-Delete `src/Axial.ErrorHandling/`, `docs/error-handling/`, `site/data/sidebars/error-handling.yaml`, and
-`scripts/validate-error-handling-docs.sh`.
+Deleted `src/Axial.ErrorHandling/`, `src/Axial/`, `docs/error-handling/`,
+`site/data/sidebars/error-handling.yaml`, and `scripts/validate-error-handling-docs.sh`.
+`populate-hugo-content.sh` also removes any leftover `site/content/error-handling` and
+`site/static/error-handling`, so a stale build cannot keep serving the retired area.
 
 ## Impacts
 
@@ -224,21 +230,20 @@ Delete `src/Axial.ErrorHandling/`, `docs/error-handling/`, `site/data/sidebars/e
 
 ### Docs pipeline
 
-- `scripts/populate-hugo-content.sh` hardcodes four product areas (`data`, `error-handling`, `schema`,
-  `flow`) in the copy, `llms.txt`, and `static/` steps, and does a `weight` upsert on
-  `.../reference/error-handling/_index.md`. It becomes five areas: `data`, `result`, `values`, `schema`,
-  `flow`.
-- `scripts/validate-product-docs.sh` accepts `data|validation|schema|flow` and has a `validation` branch
-  asserting `error-handling/getting-started`, `error-handling/diagnostics`,
-  `error-handling/reference/check/t-errorhandling-check`, and sidebar-id uniqueness under
-  `error-handling/reference/result`. Split into `result` and `values` branches with equivalent assertions.
-- `scripts/validate-error-handling-docs.sh` → replaced by `validate-result-docs.sh` and
-  `validate-values-docs.sh`.
-- `scripts/generate-api-docs.mjs` / `scripts/docgen` — output paths for the moved reference trees.
-- `site/assets/scss/_styles_project.scss` — `.axial-door--result` already exists; add or rename a
-  `--values` door variant.
-- `site/layouts/_partials/{sidebar,pager,page-meta-links}.html` — check for `error-handling` path
-  assumptions.
+- **Done.** `scripts/populate-hugo-content.sh` now iterates a `products=(result values data schema flow)` list for
+  the copy, `llms.txt`, and `static/` steps instead of four hardcoded pairs, so a sixth area is one array entry.
+- **Done.** `scripts/validate-product-docs.sh` accepts `data|result|values|schema|flow`, with separate `result` and
+  `values` branches. Its `data` branch asserted a path that has not existed since the Data promotion
+  (`data/reference/t-data/` rather than `data/reference/data/t-data/`) and could never have passed; corrected while
+  splitting the neighbouring branches.
+- **Done.** `scripts/validate-error-handling-docs.sh` → `validate-result-docs.sh` and `validate-values-docs.sh`.
+- **Done.** `scripts/generate-api-docs.sh` and `scripts/docgen/Program.fs` — `AXIAL_DOCS_PRODUCT` takes `result`
+  and `values` in place of `validation`, each with its own DLL set, page-group filter, and output root.
+  (There is no `scripts/generate-api-docs.mjs`; that name was stale.)
+- **Done.** `site/assets/scss/_styles_project.scss` — added `$axial-values`, `.axial-door--values`,
+  `.td-section-nav--result`, and `.td-section-nav--values`.
+- **Done.** `site/layouts/_partials/{sidebar,pager,page-meta-links}.html` — all three selected on
+  `.Section == "error-handling"`; they now select `result` and `values`.
 
 ### Prose to update
 

@@ -16,7 +16,7 @@ Requires a schema&#39;s values to satisfy every constraint, in declaration order
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `constraints` | <code><span><span><a href="../../../error-handling/reference/constraint/t-constraint-constraint.md">Constraint</a>&lt;'a&gt;</span>&#32;list</span></code> |  |
+| `constraints` | <code><span><span><a href="../../../values/reference/constraint/t-constraint-constraint.md">Constraint</a>&lt;'a&gt;</span>&#32;list</span></code> |  |
 | `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
 
 ## Returns

@@ -18,7 +18,7 @@ let contactSchema =
 ```
 
 This is the form to prefer at use sites. Every built-in refined type from
-[Axial.Refined]({{< relref "/error-handling/refined/" >}}) works this way — `NonBlankString`,
+[Axial.Refined]({{< relref "/values/refined/" >}}) works this way — `NonBlankString`,
 `FiniteFloat`, `UnitInterval`, `NonEmptyList<_>`, and the rest resolve without a `withSchema`, as
 [Getting Started](../getting-started/) shows.
 
@@ -39,7 +39,7 @@ when checked against a `2..80` schema, and the schema had to re-run its own boun
 Where a length or format rule *should* be part of a type, define your own refined type for it, as
 [Lift universal constraints into the refinement](#lift-universal-constraints-into-the-refinement) shows. The test is
 whether any later operation relies on the rule; see
-[When not to make a type]({{< relref "/error-handling/refined/catalog/#when-not-to-make-a-type" >}}).
+[When not to make a type]({{< relref "/values/refined/catalog/#when-not-to-make-a-type" >}}).
 
 The rest of this page expands what a domain type like `Email` contributes and shows where schema-local constraints fit.
 
@@ -81,7 +81,7 @@ field "email" _.Email {
 
 Schema constraints remain available directly inside a field block. Here both constraints apply to the incoming
 `string`, so interpreters can retain their metadata for diagnostics, forms, and generated schemas. The named Schema
-constraints use the same executable metadata defined by [Constraints]({{< relref "/error-handling/constraint/constraints/" >}}).
+constraints use the same executable metadata defined by [Constraints]({{< relref "/values/constraint/constraints/" >}}).
 
 Constraints preserve the value type, however. This block still contains a `Schema<string>`, while `_.Email` returns
 `Email`; by itself, the declaration cannot complete the field.
@@ -145,7 +145,7 @@ field "quantity" _.Quantity {
 An arbitrary predicate is opaque, so it runs during parsing and checking but is documented rather than enforced by
 generated schemas. Composing built-ins instead — `Constraint.multipleOf 2` here — keeps the rule inspectable, which is
 what lets JSON Schema lower it and SchemaGen generate values that satisfy it. See
-[Interpreted and opaque]({{< relref "/error-handling/constraint/constraints/" >}}) for the trade.
+[Interpreted and opaque]({{< relref "/values/constraint/constraints/" >}}) for the trade.
 
 ## Lift universal constraints into the refinement
 
@@ -225,4 +225,4 @@ local variant must be selected explicitly. Parsing and ordinary refinement const
 - `Schema.admit` constructs a domain model from a structured draft while preserving its fields.
 - `validate` adds executable Schema behavior that has no portable metadata.
 
-See [Define Refined Types]({{< relref "/error-handling/refined/domain-values/" >}}) for domain-side definitions.
+See [Define Refined Types]({{< relref "/values/refined/domain-values/" >}}) for domain-side definitions.

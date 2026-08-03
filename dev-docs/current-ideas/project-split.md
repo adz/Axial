@@ -83,9 +83,6 @@ Ahead of any repository extraction:
 
 ### Not Done Yet (open follow-up, still pre-extraction)
 
-- **The docs tree is still `docs/error-handling/`**, covering Result, Constraint, Refined, and Parse together. It
-  must become `docs/result/` plus `docs/values/` before extraction, or the Schema repository inherits a navigation
-  shape naming a package it no longer ships.
 - No full symmetric pass presenting every product the same way across every package README.
 - No minimal package-consumer fixture projects (Result alone, Constraint alone, Parse alone, Refined+Constraint,
   Schema with its own deps, FsToolkit + Constraint/Refined/Schema with no builder ambiguity). Coverage today is
@@ -357,14 +354,12 @@ mixes unrelated changes.
 
 ## Focused Documentation Libraries
 
-The target top-tier menu is **Result | Values | Data | Schema | Flow**. Values is a navigation group over
+The top-tier menu is **Result | Values | Data | Schema | Flow**, and is live. Values is a navigation group over
 Constraint, Refined, and Parse, each with its own subgroup and API reference index; the other four are products
-backed by packages. See "Completed So Far" for what is live; the navigation below is the target shape, and the
-`docs/error-handling/` → `docs/result/` + `docs/values/` move that produces it is specified in
-`retire-errorhandling.md` Phases 2–3.
+backed by packages. The page lists below are the target contents of each area — the areas themselves exist.
 
-They may initially deploy from the current site infrastructure. A reader entering one library should encounter only
-the dependencies and related concepts needed for that path.
+They deploy from the current site infrastructure today, as five peer areas. A reader entering one library should
+encounter only the dependencies and related concepts needed for that path.
 
 ### Result Documentation
 
@@ -637,11 +632,8 @@ references; `Axial.Benchmarks.Fable` never used a meta-package and straddles on 
 `Axial` or `Axial.ErrorHandling`, or if either DLL reappears in the test output. It replaces the old assertion that
 the meta-package existed and exported nothing.
 
-Presentation, not URLs: because deleting the meta-package while the landing page still advertised it would be
-incoherent, the *identities* were separated in this phase — `docs/index.md` has two peer doors (Result, Values),
-`site/data/sidebars/error-handling.yaml` has two `kind: primary` groups, and a `--values` door variant was added to
-the stylesheet. Result is presented as a product; Values as navigation over Constraint, Refined, and Parse. The URL
-tree is still `/error-handling/*`; moving it stays Phase 3.
+The documentation split came with it rather than waiting for Phase 3, because deleting the meta-package while the
+navigation still advertised it would have been incoherent. See "Phase 3" below.
 
 Still open — step 3: where the reference application and the Fable benchmark live. Both are genuinely
 cross-product, and neither blocks the HTTP adapter move in 1B(b). `examples/Axial.ReferenceApp` has a stated
@@ -667,11 +659,19 @@ upper bound while both sides are still in one tree.
 
 ### Phase 3: Reshape Documentation
 
-Not started, and now happening in a repository without Flow in it.
+Step 1 is **done**, pulled forward to land with 1B(a). Step 2 is not started.
 
-1. Docs half of `retire-errorhandling.md`: `docs/error-handling/` → `docs/result/` + `docs/values/`, split the
-   shared prose pages, update the hardcoded product-area lists in `populate-hugo-content.sh` and the validate
-   scripts.
+1. **Done.** Docs half of `retire-errorhandling.md`. The top navigation is now **Result | Values | Data | Schema |
+   Flow**, five peer areas, each with its own landing page, sidebar file, generated reference tree, `agent.md`, and
+   `llms.txt`. `docs/error-handling/` is gone: Result took its guides, the FsToolkit comparison, and
+   `reference/result/`; Values took Constraint, Refined, Parse, the tutorials, the introductory reference app, and
+   their reference trees. The shared prose pages were split, not duplicated. `populate-hugo-content.sh` now
+   iterates a product list instead of four hardcoded pairs, `AXIAL_DOCS_PRODUCT` takes `result`/`values` in place
+   of `validation`, and `validate-error-handling-docs.sh` became `validate-result-docs.sh` +
+   `validate-values-docs.sh`.
+
+   Result is a **peer of Values, not a member of it** — they answer different questions, and nesting Result under
+   Values reproduces exactly the meta-package framing this split removes.
 2. Migrate reference generation to FsLiveDocs in place, while content and pipeline are still co-located.
 
 ### Phase 4: Extract Schema, Leaving Axial As The Documentation Repository
@@ -697,8 +697,8 @@ The split is complete when:
 - `Axial.Refined` depends only on Constraint (done);
 - `Axial.Schema` depends on Data, Constraint, Refined, and Parse directly, while Flow depends on none of them (done);
 - neither `Axial.ErrorHandling` nor the `Axial` umbrella remains (done);
-- Result, Values, Data, Schema, and Flow have distinct documentation identities (done at the reference-doc level;
-  the `/result` and `/values` trees not done);
+- Result, Values, Data, Schema, and Flow have distinct documentation identities, each a top-nav entry with its own
+  area, sidebar, reference tree, and `llms.txt` (done);
 - NuGet, GitHub, and web searches for Result, F# error handling, validation, and diagnostics lead to the relevant
   packages or documentation;
 - a clean consumer can install and run each product from published packages;

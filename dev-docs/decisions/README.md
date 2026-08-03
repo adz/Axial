@@ -3,6 +3,34 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-08-03: Result and Values are separate top-level documentation areas
+
+- The top navigation is **Result | Values | Data | Schema | Flow**. Each is its own documentation area with its own
+  landing page, sidebar file, generated reference tree, `agent.md`, and `llms.txt`. `/error-handling/` no longer
+  exists at any level — not as a URL, a directory, a sidebar, or a validate script.
+- `docs/error-handling/` split into `docs/result/` and `docs/values/`. Result took its guide pages,
+  `fstoolkit-comparison.md`, and `reference/result/`. Values took Constraint, Refined, Parse, the tutorials, the
+  introductory reference app, and `reference/{constraint,refined,parse}/`.
+- **Result is a peer product, not a member of Values.** They answer different questions: Result composes failures,
+  the Values packages admit values. Result's sidebar is a single primary group; Values' sidebar is a primary group
+  with Constraint, Refined, and Parse subgroups. Presenting Result inside Values was tried and rejected — it
+  reproduced the meta-package framing the split removes.
+- **Values is navigation only.** No `Axial.Values` package, namespace, or meta-package will be created. Every nav
+  caption and both landing pages say the packages install independently, and `validate-values-docs.sh` fails if any
+  rendered page tells a reader to install `Axial.Values`.
+- The shared prose pages were split rather than duplicated: `getting-started.md` became a Result-composition page
+  and a value-admission page; `overview.md` was folded into the two landing pages and deleted.
+- The docs pipeline is now five areas, not four. `AXIAL_DOCS_PRODUCT` accepts `result` and `values` in place of
+  `validation`; `scripts/docgen/Program.fs` routes the `result` page group to `docs/result/reference/` and
+  `constraint`/`refined`/`parse` to `docs/values/reference/`; `populate-hugo-content.sh` iterates a product list
+  instead of four hardcoded pairs, and deletes any leftover `error-handling` tree so a stale area cannot keep
+  serving pages.
+- `Axial.Constraint.Violation` was dropped from the Result reference page. Result is a standalone leaf with no
+  Constraint dependency, so advertising a type from another product there was wrong, and it duplicated the page
+  Values owns.
+- Search vocabulary is unaffected: package tags and descriptions keep "error-handling" and "validation" where they
+  name a user problem. Only the navigation category is retired.
+
 ## 2026-08-03: Both meta-packages are retired
 
 - `Axial.ErrorHandling` and the `Axial` umbrella are deleted: projects, package ids, solution and pack entries,
@@ -17,7 +45,8 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - The graph is pinned by `Axial.ApiShape.Tests`' `no meta-package remains in the graph`: no package assembly may
   reference `Axial` or `Axial.ErrorHandling`, and neither DLL may appear in the test output directory.
 - **Values** — Constraint, Refined, Parse — is navigation and search vocabulary only. No `Axial.Values` package
-  will be created. The `docs/error-handling/` → `docs/result/` + `docs/values/` move is a later, separate phase.
+  will be created. The `docs/error-handling/` → `docs/result/` + `docs/values/` move followed immediately; see the
+  entry above.
 - This supersedes the entries below that describe `Axial.ErrorHandling` as a current dependency-only meta-package
   and the `Axial` umbrella as kept: the "required role" that kept the umbrella was example convenience, and
   focused references cost nothing.
@@ -188,9 +217,11 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   generator/content-mirror pipeline already produced from the new source tree is deferred; see
   `dev-docs/current-ideas/project-split.md`.
 
-## 2026-08-02: Data is an independent documentation entry point
+## 2026-08-02: Data is an independent documentation entry point (navigation superseded 2026-08-03)
 
 - `/data/`, `/error-handling/`, `/schema/`, and `/flow/` are peer product homes in that navigation order.
+  (`/error-handling/` split into `/result/` and `/values/` on 2026-08-03; the order is now Result, Values, Data,
+  Schema, Flow.)
 - Data guides, generated API reference, `llms.txt`, and agent context live under `docs/data/`; Schema links to Data where
   it consumes the package but does not own Data's documentation.
 
@@ -563,9 +594,10 @@ or in `AGENTS.md`, then delete the detailed sketch.
   tested in CheckResultTests.fs). Do not
   extend type-directed dispatch beyond the presence/emptiness trio — other shared names (`some`, `ok`, numeric
   comparisons) are either container-specific or already generic without SRTP dispatch.
-- **Refined guide docs area.** `Axial.Refined`'s API reference now lives under `/error-handling/reference/refined/`
-  (it moved with the package), but the hand-written guide pages (`docs/schema/refined/*.md`) still live under the
-  `/schema/` docs area for now. Whether to move the guides too is an open site-IA question, not decided either way.
+- **Refined guide docs area.** `Axial.Refined`'s API reference lives under `/values/reference/refined/` (moved from
+  `/error-handling/reference/refined/` on 2026-08-03), and its guide pages under `/values/refined/`. Some
+  Schema-side refined prose (`docs/schema/refined-values.md`) still lives under `/schema/`, which is correct: it is
+  about refined *fields in a schema*, not about the Refined package.
 
 - Construction has two deliberate strengths. Public wire/draft records may be assembled with named fields and admitted
   through `Schema.check`; this is a successful-flow guarantee, not a new type-level proof. Domain types that require a

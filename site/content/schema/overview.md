@@ -6,7 +6,7 @@ type: docs
 ---
 
 
-[Result and the Values packages]({{< relref "/error-handling/" >}}) supply operations over individual values and ordinary
+[Result]({{< relref "/result/" >}}) and the [Values]({{< relref "/values/" >}}) packages supply operations over individual values and ordinary
 `Result` composition. Axial.Schema assembles checks, constraints, parsing steps, and refinements into declarations for
 whole structured models. It adds field identity, path-aware accumulated errors, checked reconstruction, and multiple
 interpreters; it does not replace the underlying value-level APIs.

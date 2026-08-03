@@ -16,7 +16,7 @@ Renders each failure as a complete fragment with its attribute noun, paired with
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `renderer` | <code><a href="../../../../error-handling/reference/constraint/t-constraint-renderer.md">Renderer</a></code> |  |
+| `renderer` | <code><a href="../../../../values/reference/constraint/t-constraint-renderer.md">Renderer</a></code> |  |
 | `errors` | <code><a href="t-schema-schemaerrors.md">SchemaErrors</a></code> |  |
 
 ## Returns

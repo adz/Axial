@@ -16,7 +16,7 @@ Maps a raw schema through a reusable bidirectional refinement.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `refinement` | <code><span><a href="../../../error-handling/reference/refined/t-refined-refinement.md">Refinement</a>&lt;<span>'raw,&#32;'value</span>&gt;</span></code> |  |
+| `refinement` | <code><span><a href="../../../values/reference/refined/t-refined-refinement.md">Refinement</a>&lt;<span>'raw,&#32;'value</span>&gt;</span></code> |  |
 | `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'raw&gt;</span></code> |  |
 
 ## Returns

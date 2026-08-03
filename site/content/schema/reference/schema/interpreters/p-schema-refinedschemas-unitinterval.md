@@ -17,7 +17,7 @@ type: docs
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../error-handling/reference/refined/types/t-refined-unitinterval.md">UnitInterval</a>&gt;</span></code> |  |
+| <code><span><a href="../t-schema-schema.md">Schema</a>&lt;<a href="../../../../values/reference/refined/types/t-refined-unitinterval.md">UnitInterval</a>&gt;</span></code> |  |
 
 
 [Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/RefinedSchemas.fs#L18-18)

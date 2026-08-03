@@ -638,9 +638,8 @@ let pageSpecs = [
         OutPath = ["result"; "_index.md"]
         Title = "Result"
         Description = "Source-documented fail-fast Result helpers for Axial."
-        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Constraint.*` is available when a reusable value rule and its structured violation are useful. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
+        Intro = "This page shows `Axial.Result`: helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. The `result { }` builder sequences fail-fast steps; `result.list { }` and `result.array { }` accumulate independent failures through `and!`. The package is a standalone leaf: for reusable value rules and the structured `Violation` they produce, see the Values reference."
         SymbolIds = [
-            "Structured errors", ["T:Axial.Constraint.Violation"]
             "Core helpers", ["M:Axial.Result.Result.ok"; "M:Axial.Result.Result.error"; "M:Axial.Result.Result.map"; "M:Axial.Result.Result.mapError"; "M:Axial.Result.Result.bind"; "M:Axial.Result.Result.orElse"; "M:Axial.Result.Result.orElseWith"]
             "Lifts and conversions", ["M:Axial.Result.Result.requireTrue"; "M:Axial.Result.Result.okIf"; "M:Axial.Result.Result.failIf"; "M:Axial.Result.Result.orError"; "M:Axial.Result.Result.fromTry"; "M:Axial.Result.Result.fromChoice"; "M:Axial.Result.Result.toOption"; "M:Axial.Result.Result.toValueOption"; "M:Axial.Result.Result.defaultValue"]
             "Extraction helpers", ["M:Axial.Result.Result.someOr"; "M:Axial.Result.Result.noneOr"; "M:Axial.Result.Result.valueSomeOr"; "M:Axial.Result.Result.valueNoneOr"; "M:Axial.Result.Result.nullableOr"; "M:Axial.Result.Result.notNullOr"; "M:Axial.Result.Result.okOr"; "M:Axial.Result.Result.errorOr"; "M:Axial.Result.Result.headOr"]
@@ -968,7 +967,6 @@ let serviceFileSystemSectionDirectories =
 
 let sectionDirectory (spec: PageSpec) (sectionTitle: string) (id: string) =
     match spec.OutPath, sectionTitle with
-    | ["result"; "_index.md"], "Structured errors" -> Some "errors"
     | ["result"; "_index.md"], "Builder" -> Some "result-ce"
     | ["result"; "_index.md"], _ -> Some "result"
     | ["parse"; "_index.md"], _ -> None
@@ -1276,15 +1274,16 @@ let main argv =
         | null | "" -> "all"
         | value -> value.Trim().ToLowerInvariant()
 
-    if product <> "all" && product <> "data" && product <> "validation" && product <> "schema" && product <> "flow" then
-        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'data', 'validation', 'schema', or 'flow'."
+    if product <> "all" && product <> "data" && product <> "result" && product <> "values" && product <> "schema" && product <> "flow" then
+        invalidArg "AXIAL_DOCS_PRODUCT" "Expected 'data', 'result', 'values', 'schema', or 'flow'."
     
     let outRoot =
         match Environment.GetEnvironmentVariable "AXIAL_DOCS_OUT_ROOT" with
         | null | "" ->
             match product with
             | "data" -> Path.Combine(root, "docs/data/reference")
-            | "validation" -> Path.Combine(root, "docs/error-handling/reference")
+            | "result" -> Path.Combine(root, "docs/result/reference")
+            | "values" -> Path.Combine(root, "docs/values/reference")
             | "schema" -> Path.Combine(root, "docs/schema/reference")
             | "flow" -> Path.Combine(root, "docs/flow/reference")
             | _ -> Path.Combine(root, "docs/reference")
@@ -1303,12 +1302,17 @@ let main argv =
     // All inputs load their net8.0 build so the reference always reflects the widest TFM-gated
     // surface (e.g. ValueSchema.date and ofJsonElement); netstandard2.1-only builds would
     // silently drop those members from the docs instead of describing them as unavailable there.
-    let validationDllPaths = [
+    let resultDllPaths = [
         Path.Combine(artifactsDir, "Axial.Result/debug_net8.0/Axial.Result.dll")
+    ]
+
+    let valuesDllPaths = [
         Path.Combine(artifactsDir, "Axial.Constraint/debug_net8.0/Axial.Constraint.dll")
         Path.Combine(artifactsDir, "Axial.Parse/debug_net8.0/Axial.Parse.dll")
         Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
     ]
+
+    let validationDllPaths = resultDllPaths @ valuesDllPaths |> List.distinct
 
     let schemaDllPaths = [
         yield! validationDllPaths
@@ -1340,7 +1344,8 @@ let main argv =
     let dllPaths =
         match product with
         | "data" -> dataDllPaths
-        | "validation" -> validationDllPaths
+        | "result" -> resultDllPaths
+        | "values" -> valuesDllPaths
         | "schema" -> schemaDllPaths
         | "flow" -> flowDllPaths
         | _ -> schemaDllPaths @ flowDllPaths
@@ -1382,8 +1387,16 @@ let main argv =
         |> Seq.collect collectAllEntities
         |> Seq.toList
 
+    // Result is its own product; Values groups Constraint, Refined, and Parse. "validation" and "diagnostics" are
+    // retired group names kept here so a stale page can still be routed and cleaned up rather than orphaned.
+    let resultReferenceGroups =
+        set [ "result" ]
+
+    let valuesReferenceGroups =
+        set [ "constraint"; "predicate"; "validation"; "diagnostics"; "parse"; "refined" ]
+
     let validationReferenceGroups =
-        set [ "constraint"; "result"; "validation"; "diagnostics"; "parse"; "refined" ]
+        Set.union resultReferenceGroups valuesReferenceGroups
 
     let dataReferenceGroups =
         set [ "data" ]
@@ -1395,7 +1408,8 @@ let main argv =
         let forProduct =
             match product with
             | "data" -> pageSpecs |> List.filter (fun spec -> dataReferenceGroups.Contains spec.OutPath.Head)
-            | "validation" -> pageSpecs |> List.filter (fun spec -> validationReferenceGroups.Contains spec.OutPath.Head)
+            | "result" -> pageSpecs |> List.filter (fun spec -> resultReferenceGroups.Contains spec.OutPath.Head)
+            | "values" -> pageSpecs |> List.filter (fun spec -> valuesReferenceGroups.Contains spec.OutPath.Head)
             | "schema" -> pageSpecs |> List.filter (fun spec -> schemaReferenceGroups.Contains spec.OutPath.Head)
             | "flow" -> pageSpecs |> List.filter (fun spec -> not (dataReferenceGroups.Contains spec.OutPath.Head || schemaReferenceGroups.Contains spec.OutPath.Head || validationReferenceGroups.Contains spec.OutPath.Head))
             | _ -> pageSpecs
@@ -1409,8 +1423,10 @@ let main argv =
     let referenceRootForSpec (spec: PageSpec) =
         if dataReferenceGroups.Contains spec.OutPath.Head then
             Path.Combine(root, "docs/data/reference")
-        elif validationReferenceGroups.Contains spec.OutPath.Head then
-            Path.Combine(root, "docs/error-handling/reference")
+        elif resultReferenceGroups.Contains spec.OutPath.Head then
+            Path.Combine(root, "docs/result/reference")
+        elif valuesReferenceGroups.Contains spec.OutPath.Head then
+            Path.Combine(root, "docs/values/reference")
         elif schemaReferenceGroups.Contains spec.OutPath.Head then
             Path.Combine(root, "docs/schema/reference")
         else

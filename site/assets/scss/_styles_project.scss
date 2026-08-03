@@ -691,7 +691,7 @@ samp,
 }
 
 // ---------------------------------------------------------------------------
-// Product landing pages (/, /error-handling/, /schema/, /flow/)
+// Product landing pages (/, /result/, /values/, /data/, /schema/, /flow/)
 // ---------------------------------------------------------------------------
 
 $axial-parse: #0b55d9;
@@ -1242,10 +1242,16 @@ body.axial-home .axial-doors {
   }
 }
 
-.td-section-nav--error-handling {
+.td-section-nav--result {
   --pkg-accent: #{$axial-result};
   --pkg-accent-bg: rgba(10, 125, 98, 0.06);
   --pkg-accent-border: rgba(10, 125, 98, 0.25);
+}
+
+.td-section-nav--values {
+  --pkg-accent: #{$axial-values};
+  --pkg-accent-bg: rgba(31, 122, 140, 0.06);
+  --pkg-accent-border: rgba(31, 122, 140, 0.25);
 }
 
 .td-section-nav--schema {

@@ -6,8 +6,8 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 product="${1:-}"
 
 case "$product" in
-  data|validation|schema|flow) ;;
-  *) echo "Usage: $0 <data|validation|schema|flow>" >&2; exit 2 ;;
+  data|result|values|schema|flow) ;;
+  *) echo "Usage: $0 <data|result|values|schema|flow>" >&2; exit 2 ;;
 esac
 
 HUGO_BASEURL="${HUGO_BASEURL:-http://localhost:3000/}"
@@ -24,17 +24,26 @@ hugo --source "$root_dir/site" --destination "$validate_dir" --baseURL "$HUGO_BA
 case "$product" in
   data)
     test -f "$validate_dir/data/tutorial/index.html"
-    test -f "$validate_dir/data/reference/t-data/index.html"
-    grep -q 'id="package-data-reference-check" checked' "$validate_dir/data/reference/index.html"
+    test -f "$validate_dir/data/reference/data/t-data/index.html"
     ;;
-  validation)
-    test -f "$validate_dir/error-handling/getting-started/index.html"
-    test -f "$validate_dir/error-handling/constraint/localization/index.html"
-    test -f "$validate_dir/error-handling/constraint/adding-a-language/index.html"
-    test -f "$validate_dir/error-handling/constraint/fable/index.html"
-    test -f "$validate_dir/error-handling/reference/constraint/t-constraint-renderer/index.html"
-    duplicate_sidebar_ids="$(grep -o 'id="[^"]*"' "$validate_dir/error-handling/reference/result/index.html" | sort | uniq -d)"
+  result)
+    test -f "$validate_dir/result/getting-started/index.html"
+    test -f "$validate_dir/result/collecting-errors/index.html"
+    test -f "$validate_dir/result/fstoolkit-comparison/index.html"
+    test -f "$validate_dir/result/reference/result/result/m-result-result-traverse/index.html"
+    duplicate_sidebar_ids="$(grep -o 'id="[^"]*"' "$validate_dir/result/reference/result/index.html" | sort | uniq -d)"
     test -z "$duplicate_sidebar_ids"
+    ;;
+  values)
+    test -f "$validate_dir/values/getting-started/index.html"
+    test -f "$validate_dir/values/constraint/localization/index.html"
+    test -f "$validate_dir/values/constraint/adding-a-language/index.html"
+    test -f "$validate_dir/values/constraint/fable/index.html"
+    test -f "$validate_dir/values/refined/domain-values/index.html"
+    test -f "$validate_dir/values/parse/index.html"
+    test -f "$validate_dir/values/reference/constraint/t-constraint-renderer/index.html"
+    # Values is navigation only: no page may advertise an Axial.Values package.
+    ! grep -rqF 'dotnet add package Axial.Values' "$validate_dir/values"
     ;;
   schema)
     test -f "$validate_dir/schema/getting-started/index.html"

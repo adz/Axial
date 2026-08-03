@@ -1,0 +1,29 @@
+---
+title: "Result.defaultValue"
+linkTitle: "defaultValue"
+weight: 2108
+---
+
+Returns the success value or the supplied fallback value.
+
+## Signature
+
+<div class="fsdocs-usage">
+<code><span>Result.Result.defaultValue&#32;<span>fallback&#32;result</span></span></code>
+</div>
+
+## Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `fallback` | <code>'value</code> |  |
+| `result` | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> |  |
+
+## Returns
+
+| Type | Description |
+| --- | --- |
+| <code>'value</code> |  |
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L114-114)

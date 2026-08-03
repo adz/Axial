@@ -165,7 +165,7 @@ Everything after this point is added to the declaration once and shows up in all
 `Signup.Email` is a `string`, so nothing stops `{ Email = ""; Age = 36; Newsletter = true }`. A refined type moves that
 guarantee into the model, where it holds no matter how the value was built.
 
-[Axial.Refined]({{< relref "/error-handling/refined/" >}}) ships the common ones. Use them as field types directly:
+[Axial.Refined]({{< relref "/values/refined/" >}}) ships the common ones. Use them as field types directly:
 
 ```fsharp
 open Axial.Refined
@@ -273,7 +273,7 @@ Which to reach for:
 
 Schema will not take metadata without an executable check behind it, so what an inspector reports is always what
 parsing enforces. Constraint names come from
-[Constraints]({{< relref "/error-handling/constraint/constraints/" >}}); see
+[Constraints]({{< relref "/values/constraint/constraints/" >}}); see
 [Refined Schemas](../refined-values/) for application-defined constraints.
 
 ## 4. A private model behind a checked constructor

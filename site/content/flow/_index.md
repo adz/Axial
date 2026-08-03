@@ -100,7 +100,7 @@ integration at a time.
 | `Axial.Flow.Telemetry.JavaScript` | JavaScript telemetry integration | [JavaScript telemetry](./telemetry/javascript/) |
 
 Flow is one of Axial's three entry points. If the code is still pure, start in
-[Error Handling]({{< relref "/error-handling/" >}}) or [Schema]({{< relref "/schema/" >}})
+[Result]({{< relref "/result/" >}}), [Values]({{< relref "/values/" >}}), or [Schema]({{< relref "/schema/" >}})
 instead; both work without Flow.
 
 See [Axial.Flow](./overview/) for the Flow type, getting started, dependencies, concurrency, and the full guide list.

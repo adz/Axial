@@ -54,7 +54,7 @@ body_class: axial-home
 <span class="axial-door-cta">Data documentation &rarr;</span>
 </a>
 
-<a class="axial-door axial-door--result" href="{{< relref "/error-handling/result/" >}}">
+<a class="axial-door axial-door--result" href="{{< relref "/result/" >}}">
 <span class="axial-door-kicker">Typed failures</span>
 <h2>Axial.Result</h2>
 <p>Compose operations that can fail over the standard F# Result type, with <code>result { }</code> for
@@ -62,7 +62,7 @@ fail-fast sequencing and accumulating builders for collecting every error at onc
 <span class="axial-door-cta">Result documentation &rarr;</span>
 </a>
 
-<a class="axial-door axial-door--values" href="{{< relref "/error-handling/" >}}">
+<a class="axial-door axial-door--values" href="{{< relref "/values/" >}}">
 <span class="axial-door-kicker">Admitting values</span>
 <h2>Values</h2>
 <p>Three independently installable packages — Constraint, Refined, and Parse. Reuse value checks, parse

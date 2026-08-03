@@ -70,14 +70,17 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `dev-docs/PLAN.md`.
 - Schema input/rules/interpreters: `src/Axial.Schema/{Model,Data,SchemaValidation,RetainedParseResult,Rules}.fs` and
   `tests/Axial.Schema.Tests/*ParseTests.fs`.
-- User-facing docs: Data lives under `docs/data/`; Schema lives under `docs/schema/`. Read `dev-docs/DOCS.md` before editing `docs/**`, source comments, generated reference pages,
-  `llms.txt`, or site content.
+- User-facing docs: one area per top-nav product — `docs/result/`, `docs/values/`, `docs/data/`, `docs/schema/`,
+  `docs/flow/`. Values covers Constraint, Refined, and Parse and is navigation only. Read `dev-docs/DOCS.md`
+  before editing `docs/**`, source comments, generated reference pages, `llms.txt`, or site content.
 - Agent process/docs: `AGENTS.md`, this file, `dev-docs/TASKS.md`, and `dev-docs/PLAN.md`.
 
 ## Generated Or Noisy Paths
 
 Default `rg` ignores generated/vendor-heavy paths through `.rgignore`:
 
+- `docs/result/reference/**`
+- `docs/values/reference/**`
 - `docs/data/reference/**`
 - `docs/schema/reference/**`
 - `docs/flow/reference/**`

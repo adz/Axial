@@ -42,9 +42,10 @@ let requireName value =
     |> Result.mapError (fun _ -> NameMissing)
 ```
 
-- [Error Handling overview](docs/error-handling/_index.md)
-- [Checks and Result](docs/error-handling/getting-started.md)
-- [Refined domain values](docs/error-handling/refined/domain-values.md)
+- [Result](docs/result/_index.md)
+- [Values overview](docs/values/_index.md)
+- [Checks and constraints](docs/values/getting-started.md)
+- [Refined domain values](docs/values/refined/domain-values.md)
 
 ```bash
 dotnet add package Axial.Result    # Result composition and result { }

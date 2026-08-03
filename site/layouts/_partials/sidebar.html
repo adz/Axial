@@ -4,8 +4,10 @@
   {{- $sidebar = hugo.Data.sidebars.data -}}
 {{- else if eq .Section "schema" -}}
   {{- $sidebar = hugo.Data.sidebars.schema -}}
-{{- else if eq .Section "error-handling" -}}
-  {{- $sidebar = index hugo.Data.sidebars "error-handling" -}}
+{{- else if eq .Section "result" -}}
+  {{- $sidebar = hugo.Data.sidebars.result -}}
+{{- else if eq .Section "values" -}}
+  {{- $sidebar = hugo.Data.sidebars.values -}}
 {{- else if eq .Section "flow" -}}
   {{- $sidebar = hugo.Data.sidebars.flow -}}
 {{- end -}}

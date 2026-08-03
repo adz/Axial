@@ -102,7 +102,7 @@ without checking it again — see [Trusted Construction](./trusted-construction/
 
 ## Related Products
 
-[Error Handling]({{< relref "/error-handling/" >}}) provides the reusable checks and refined values that Schema
+[Values]({{< relref "/values/" >}}) provides the reusable checks and refined values that Schema
 uses. It can also be installed and used on its own. [Flow]({{< relref "/flow/" >}}) models effects and dependencies;
 Schema does not require it.
 
