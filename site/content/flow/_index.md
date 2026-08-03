@@ -23,7 +23,7 @@ menu:
 <div class="axial-coord-col axial-coord-col--left">
 <span class="axial-coord-label">Your tools</span>
 <div class="coord-row"><span class="coord-pill">Axial.Schema</span><span class="coord-line"></span></div>
-<div class="coord-row"><span class="coord-pill">Axial.ErrorHandling</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Axial.Result</span><span class="coord-line"></span></div>
 <div class="coord-row"><span class="coord-pill">Your types</span><span class="coord-line"></span></div>
 <div class="coord-row"><span class="coord-pill">Other libraries</span><span class="coord-line"></span></div>
 </div>

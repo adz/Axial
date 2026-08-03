@@ -5,7 +5,8 @@ description: Direct guidance for Result, Constraint, Parse, and Refined APIs.
 
 # Agent Guide
 
-`Axial.ErrorHandling` installs `Axial.Result`, `Axial.Constraint`, `Axial.Parse`, and `Axial.Refined`. It exposes no API.
+`Axial.Result` is a top-level product; Constraint, Refined, and Parse are grouped as **Values** for navigation only.
+All four install independently, and there is no meta-package and no `Axial.Values` package.
 
 - Return ordinary `Result<'value,'error>` from application and domain functions.
 - Use `result { }` when later work depends on earlier success.

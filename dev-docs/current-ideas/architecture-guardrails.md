@@ -217,7 +217,7 @@ Example defaults:
 
 ```text
 Contracts -> Schema
-Domain -> ErrorHandling, optionally Schema
+Domain -> Result, Constraint, Refined, Parse, optionally Schema
 Application -> Domain, optionally Flow
 Infrastructure -> Application
 Host -> all application projects
@@ -384,7 +384,7 @@ A build task can generate a compact description from compiled truth and explicit
 {
   "assembly": "MyApp.Domain",
   "role": "Domain",
-  "references": ["Axial.ErrorHandling"],
+  "references": ["Axial.Result", "Axial.Constraint", "Axial.Refined"],
   "opaqueTypes": ["Booking"],
   "forbiddenCalls": [],
   "publicBoundaryTypes": []

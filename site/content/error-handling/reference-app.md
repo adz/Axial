@@ -5,7 +5,8 @@ type: docs
 ---
 
 
-The introductory app uses `Axial.ErrorHandling` without Schema or Flow.
+The introductory app uses `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, and `Axial.Parse` without Schema or
+Flow.
 
 ```bash
 dotnet run --project examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.fsproj --nologo

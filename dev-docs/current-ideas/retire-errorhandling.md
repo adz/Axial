@@ -1,6 +1,14 @@
 # Retire Axial.ErrorHandling; promote Result to a top-level product
 
-**Status:** proposed. Phase 1 (expand Result) is **implemented** on `feature/expand-result`; Phases 2-4 are not started.
+**Status:** Phase 1 (expand Result) is **implemented**. The *package* half of Phase 4 is **implemented** as
+project-split Phase 1B(a): `Axial.ErrorHandling` is deleted, and — going beyond what this document originally
+proposed — so is the `Axial` umbrella, since `project-split.md` requires both gone before Flow is extracted. Phases
+2-3 (the `docs/error-handling/` tree move) and the docs half of Phase 4 are **not started**; the docs tree still
+lives at `docs/error-handling/`. The *presentation* half of Phases 2-3 landed early, because deleting the
+meta-package while the landing page still advertised it would have been incoherent: the landing page now has two
+peer doors (Result, Values), the sidebar has two `kind: primary` groups instead of one, and `_index.md`, `agent.md`,
+and `llms.txt` state that Result is a product and Values is navigation only. What remains is the move itself — the
+URL prefixes, the file relocation, splitting the shared prose pages, and the hardcoded product-area lists.
 
 **Compatibility:** pre-1.0; no compatibility shim is required for the removed meta-package.
 
@@ -30,10 +38,10 @@ Unchanged code-wise. Only the meta-package edge disappears:
 - `Axial.Constraint` — independent leaf.
 - `Axial.Parse` — independent leaf.
 - `Axial.Refined` — depends on `Axial.Constraint`.
-- `Axial` umbrella — references Result, Constraint, Parse, Refined directly instead of the meta-package, plus
-  Schema and the Schema add-ons. Flow remains a separate install.
 
-Adopters who used `Axial.ErrorHandling` install the leaves they actually use, or `Axial`.
+The `Axial` umbrella was removed in the same change rather than repointed at the four leaves, so there is no
+meta-package left at any tier. Adopters who used `Axial.ErrorHandling` or `Axial` install the leaves they
+actually use.
 
 ## Phases
 
@@ -198,18 +206,20 @@ Delete `src/Axial.ErrorHandling/`, `docs/error-handling/`, `site/data/sidebars/e
 
 | File | Change |
 | --- | --- |
-| `src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj` | delete |
+| `src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj` | deleted |
+| `src/Axial/` (umbrella project and `Builders.fs`) | deleted |
 | `Axial.slnx:53` | remove project entry |
 | `scripts/pack.sh:28` | remove from the pack list |
 | `scripts/docs-build.proj:7` | remove `DocsProject` entry |
-| `src/Axial/Axial.fsproj:11,31` | replace the meta reference with the four leaf references; update `Description` |
+| `scripts/build-docs-site.sh`, `scripts/docs-build.proj` | the umbrella and meta entries built the leaves transitively; the four leaves are now listed explicitly |
 | `src/Axial.{Result,Constraint,Parse}/*.fsproj` | drop `Axial.ErrorHandling` from `PackageTags`/description text where present |
 
 ### Tests
 
-- `tests/Axial.ApiShape.Tests/ApiShapeTests.fs:536-548` asserts the meta-package exists, loads its
-  assembly, and asserts it exports no public type. Remove those assertions; replace with an assertion
-  that the umbrella references the four leaves directly, so the graph stays pinned.
+- **Done.** The assertions that the meta-package exists and exports no public type are replaced by
+  `no meta-package remains in the graph`: no package assembly may reference `Axial` or `Axial.ErrorHandling`, and
+  neither DLL may appear in the test output directory. Since the umbrella went too, there is no "umbrella
+  references the four leaves" assertion to write.
 - No behavioural test changes. Phase 1 adds tests to `tests/Axial.Result.Tests`.
 
 ### Docs pipeline

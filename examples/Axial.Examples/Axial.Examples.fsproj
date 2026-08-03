@@ -20,7 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Result\Axial.Result.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Constraint\Axial.Constraint.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Refined\Axial.Refined.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Parse\Axial.Parse.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow\Axial.Flow.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>

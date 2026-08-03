@@ -14,11 +14,11 @@ Axial is a set of F# libraries with three entry points:
 - Schema for turning structured input into domain values, with path-aware accumulated diagnostics;
 - Flow for async work with explicit dependencies and expected failures.
 
-Install each focused package on its own, install `Axial.ErrorHandling` for Result, Constraint, Parse, and Refined together, or
-install `Axial` for Error Handling and Schema together.
+Every install is a focused package: there is no meta-package and no umbrella. Install exactly the packages you
+use.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
-[![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
+[![NuGet](https://img.shields.io/nuget/v/Axial.Schema.svg)](https://www.nuget.org/packages/Axial.Schema)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 > [!WARNING]
@@ -51,7 +51,6 @@ dotnet add package Axial.Result    # Result composition and result { }
 dotnet add package Axial.Constraint     # reusable checks and portable constraints
 dotnet add package Axial.Parse     # serialized primitive parsing
 dotnet add package Axial.Refined   # invariant-carrying domain values
-dotnet add package Axial.ErrorHandling   # installs all four
 ```
 
 ## Parse input into domain values

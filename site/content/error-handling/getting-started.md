@@ -6,13 +6,7 @@ type: docs
 ---
 
 
-Install the complete error-handling toolkit:
-
-```bash
-dotnet add package Axial.ErrorHandling   # Result, Constraint, Parse, and Refined
-```
-
-Or install only the focused packages an application needs:
+Install only the focused packages an application needs — there is no meta-package:
 
 ```bash
 dotnet add package Axial.Result    # Result combinators and result { }

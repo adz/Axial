@@ -41,7 +41,7 @@ introduced reflection the trimmer could not prove safe, CI fails.
 
 ## Fable
 
-The same explicitness is what makes Fable compilation work: `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Refined`, and
+The same explicitness is what makes Fable compilation work: `Axial.Flow`, `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, and
 `Axial.Schema` all compile to JavaScript, so a browser front end can parse
 and redisplay through the same schema declaration the server uses. CI compiles the Fable JavaScript surface
 (`bash scripts/check-fable-js-surface.sh`), and the [benchmarks]({{< relref "/schema/benchmarks.md" >}}) include

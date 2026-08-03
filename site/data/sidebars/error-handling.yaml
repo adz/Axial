@@ -1,24 +1,26 @@
 groups:
-  - title: Axial.ErrorHandling
-    home: /error-handling
-    kind: primary
-    caption: Installs Result, Constraint, Parse, and Refined together.
-    descendants: false
-    entries:
-      - /error-handling/getting-started
-      - /error-handling/reference-app
-      - /error-handling/fstoolkit-comparison
-
   - title: Axial.Result
     home: /error-handling/result
-    caption: Compose operations that can fail, using the standard F# Result type.
+    kind: primary
+    caption: Compose operations that can fail, using the standard F# Result type. Installs on its own.
     children_of:
       - /error-handling/result
+    entries:
+      - /error-handling/fstoolkit-comparison
     exclude:
       - /error-handling/reference
     reference:
       children_of:
         - /error-handling/reference/result
+
+  - title: Values
+    home: /error-handling
+    kind: primary
+    caption: Constraint, Refined, and Parse. A grouping, not a package — each installs independently.
+    descendants: false
+    entries:
+      - /error-handling/getting-started
+      - /error-handling/reference-app
 
   - title: Axial.Constraint
     home: /error-handling/constraint

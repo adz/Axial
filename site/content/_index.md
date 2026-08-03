@@ -54,13 +54,21 @@ body_class: axial-home
 <span class="axial-door-cta">Data documentation &rarr;</span>
 </a>
 
-<a class="axial-door axial-door--result" href="{{< relref "/error-handling/" >}}">
-<span class="axial-door-kicker">Checks and typed failures</span>
-<h2>Axial.ErrorHandling</h2>
-<p>Compose ordinary Results and reuse value checks with preset CheckError types.
-Parse and construct refined values, so an invalid value can't reach your
-domain types in the first place.</p>
-<span class="axial-door-cta">Error Handling documentation &rarr;</span>
+<a class="axial-door axial-door--result" href="{{< relref "/error-handling/result/" >}}">
+<span class="axial-door-kicker">Typed failures</span>
+<h2>Axial.Result</h2>
+<p>Compose operations that can fail over the standard F# Result type, with <code>result { }</code> for
+fail-fast sequencing and accumulating builders for collecting every error at once.</p>
+<span class="axial-door-cta">Result documentation &rarr;</span>
+</a>
+
+<a class="axial-door axial-door--values" href="{{< relref "/error-handling/" >}}">
+<span class="axial-door-kicker">Admitting values</span>
+<h2>Values</h2>
+<p>Three independently installable packages — Constraint, Refined, and Parse. Reuse value checks, parse
+serialized primitives, and construct refined values, so an invalid value can't reach your domain types in
+the first place.</p>
+<span class="axial-door-cta">Values documentation &rarr;</span>
 </a>
 
 <a class="axial-door axial-door--parse" href="{{< relref "/schema/" >}}">

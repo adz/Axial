@@ -3,6 +3,25 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-08-03: Both meta-packages are retired
+
+- `Axial.ErrorHandling` and the `Axial` umbrella are deleted: projects, package ids, solution and pack entries,
+  docs-build entries, and the API-shape assertions asserting they exist. This is project-split Phase 1B(a), the
+  package half of `dev-docs/current-ideas/retire-errorhandling.md`, and a hard precondition for extracting Flow —
+  every project that straddled the Schema/Flow seam did so through a meta-package.
+- The umbrella's only source was `Builders.fs`, one re-export of `Axial.Result.Builders.result`. Consumers open
+  `Axial.Result` instead. `open Axial` remains valid where it means `Axial.Data`'s namespace.
+- Seven projects were rewritten onto focused package references: `examples/Axial.{Hosting.DotNet,
+  MaintenanceExamples,ReadmeExample,Playground,Examples,ReferenceApp,ReferenceApp.Intro}` and
+  `tests/Axial.ApiShape.Tests`.
+- The graph is pinned by `Axial.ApiShape.Tests`' `no meta-package remains in the graph`: no package assembly may
+  reference `Axial` or `Axial.ErrorHandling`, and neither DLL may appear in the test output directory.
+- **Values** — Constraint, Refined, Parse — is navigation and search vocabulary only. No `Axial.Values` package
+  will be created. The `docs/error-handling/` → `docs/result/` + `docs/values/` move is a later, separate phase.
+- This supersedes the entries below that describe `Axial.ErrorHandling` as a current dependency-only meta-package
+  and the `Axial` umbrella as kept: the "required role" that kept the umbrella was example convenience, and
+  focused references cost nothing.
+
 ## 2026-08-03: Localization lives at the rendering edge, in a Renderer
 
 - `Violation` stays path-free, context-free, closure-free comparable data. A violation never carries a Schema

@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Meta-packages retired (breaking)
+
+`Axial.ErrorHandling` and the `Axial` umbrella are removed. Neither carried API: `Axial.ErrorHandling` was
+dependency-only, and `Axial` added a single re-export of the `result { }` builder on top of its three references.
+Both package ids are retired with no replacement and no deprecation shim — this lands pre-1.0 and nothing released
+depends on them.
+
+**Migration:** install the focused packages you actually use.
+
+| Before | Now |
+| --- | --- |
+| `dotnet add package Axial.ErrorHandling` | `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, `Axial.Parse` — whichever you use |
+| `dotnet add package Axial` | the focused packages above, plus `Axial.Schema` and/or `Axial.Flow` |
+| `open Axial` for `result { }` | `open Axial.Result` |
+
+`open Axial` remains valid where it means `Axial.Data`'s namespace; only the umbrella package's re-export is gone.
+
+The former error-handling family survives as search vocabulary, not as a package: Result is presented as its own
+product, and Constraint, Refined, and Parse under a **Values** navigation grouping with no package behind it.
+
 ### Constraint unification (breaking)
 
 Value rules now have one vocabulary. `Axial.Check` is renamed **`Axial.Constraint`**, and `Constraint<'value>` — a

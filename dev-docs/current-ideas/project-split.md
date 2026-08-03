@@ -1,94 +1,106 @@
 # Repository, Package, And Documentation Split
 
-Status: proposed repository direction. The package/namespace/documentation reorganization that must happen before
-extraction is mostly complete in the combined repository (see "Completed So Far"). The source/release repository
-split itself (Phase 2 onward below) remains proposed and has not been started.
+Status: proposed repository direction. The package reorganization that must happen before extraction is largely done
+in the combined repository (see "Completed So Far"), and Phase 1B(a) — the meta-package retirement — has now landed.
+The HTTP adapter move and the docs reshape have not. No extraction has been performed.
 
-This proposal separates Axial into products that can be understood, released, and used independently. It also defines
-how .NET and Fable implementations should share an API without sharing the wrong runtime assumptions.
+This proposal separates Axial into products that can be understood, released, and used independently. Format
+packaging and the .NET/Fable JSON runtime moved to `format-and-json-runtime.md`; neither blocks the split.
 
 ## Decision Summary
 
-Axial presents five focused libraries:
+**Two product repositories, split on the one seam that is real — description-and-admission versus effectful
+execution — plus the current repository retained as the documentation site.**
 
-1. **Result** provides ordinary `Result` composition and `result { }`.
-2. **Check** provides reusable path-free value constraints returning the standard F# `Result`.
-3. **Refined** parses and constructs domain values whose invariants are represented by their types.
-4. **Schema** describes structured boundaries, accumulated path-aware errors, codecs, and contracts.
-5. **Flow** describes and runs effectful work with explicit dependencies, expected failures, cancellation, and
-   resources.
+1. **Axial.Schema** (new) — Schema plus the values it admits and the data it reads. Carries `Axial.Data`, the Values
+   packages (`Axial.Constraint`, `Axial.Refined`, `Axial.Parse`), `Axial.Result`, and every Schema satellite
+   package.
+2. **Axial.Flow** (new) — Flow and its satellite packages: platform services, hosts, telemetry, transports, and the
+   relocated HTTP adapters.
+3. **Axial** (the current repository) — the documentation site, the landing page, cross-product decisions, and the
+   roadmap. No packages. Reference content is generated in the product repositories and assembled here.
 
-These are package and documentation identities, not five equally weighted answers to "where do I start?" The primary
-onboarding choice remains ordinary `Result` for simple operations or Schema for admitting structured data into domain
-models. Introduce Check when reusable value constraints emerge, Refined when a value should carry proof of an
-invariant, and Flow when the operation becomes effectful.
+Keeping `Axial` as the docs repository rather than renaming it to a product avoids privileging either one, and
+keeps the umbrella name on the thing that is genuinely umbrella-shaped.
 
-Result, Check, and Refined should eventually live in a repository separate from Flow. Their core packages already have
-no dependency in either direction from Flow.
+The products presented to users are **Result | Values | Data | Schema | Flow**. Values is a navigation grouping over
+`Axial.Constraint`, `Axial.Refined`, and `Axial.Parse` — no package, no namespace. `Axial.Result` is a peer product,
+not part of a bundle: since the accumulation work it carries `result.list`/`result.array`,
+`Result.traverse`/`sequence`, and `tap`/`tapError`. `Axial.ErrorHandling` is deleted per
+[retire-errorhandling.md](retire-errorhandling.md); this proposal assumes that outcome rather than re-arguing it.
 
-`Axial.Result` and `Axial.Check` are independent leaf packages — neither depends on the other. `Axial.Refined` depends
-on Check, not on Axial.Result. `Axial.ErrorHandling` is a dependency-only meta-package installing Result, Check, and
-Refined directly; it is the searchable category and convenient complete installation, not a namespace users open and
-not a dependency of Schema.
+### Why two, and why now
 
-Removing a package or navigation category must not remove its search vocabulary. NuGet descriptions and tags,
-repository topics, page titles, descriptions, comparison pages, and `llms.txt` should continue to use the phrases
-"error handling" and "validation" where they describe a user problem. Result should retain `result` and
-`error-handling` tags; Check should retain `validation`, `check`, `predicate`, `result`, and `error-handling`; Schema
-should retain `validation`, `diagnostics`, and `schema`. This preserves discovery without collapsing the focused
-package boundaries.
+The shapes in group 1 are still moving — Constraint gained contextual localization, Parse and Refined are still
+being separated (`refined-parse-cleanup.md`, `refined-schema-proof.md`), Result just grew accumulation. Splitting
+them further now would freeze boundaries still being discovered, and buy nothing: they release together, are edited
+together, and share reviewers.
 
-Future formats should receive separate packages rather than being collected behind one generic codec package.
+Flow shares none of that. It has no dependency in either direction on Data, Schema, Result, Constraint, Refined, or
+Parse, and its vocabulary does not overlap with theirs. That is the seam worth cutting.
+
+A later third repository for Result alone stays possible once its shape settles. Do not attempt it in the same
+operation as the Flow extraction.
+
+### Package boundaries the split must not blur
+
+Repository placement is not package placement. Within the Schema repository:
+
+- `Axial.Result`, `Axial.Constraint`, `Axial.Parse`, and `Axial.Data` are independent leaves.
+- `Axial.Refined` depends only on `Axial.Constraint`.
+- `Axial.Schema` depends on Data, Constraint, Refined, and Parse — never on `Axial.Result`.
+
+Install any leaf on its own; none installs Schema. Path-aware accumulation belongs to Schema; the flat accumulating
+builders in `Axial.Result` are not a substitute for it.
+
+### Search vocabulary
+
+Retiring a package or navigation category must not retire its search vocabulary. NuGet tags and descriptions,
+repository topics, page titles, comparison pages, and `llms.txt` keep using "error handling" and "validation" where
+they name a user problem. Result keeps `result` and `error-handling`; Constraint keeps `validation`, `constraint`,
+`predicate`, `result`, and `error-handling`; Schema keeps `validation`, `diagnostics`, and `schema`.
 
 ## Completed So Far (in the combined repository)
 
-Landed 2026-07-21 through 2026-07-24, ahead of any repository extraction:
+Ahead of any repository extraction:
 
-- Documentation split into independent Schema and Flow experiences, later superseded by the current focused
-  Error Handling (Result/Check/Refined) / Schema / Flow presentation, with the top-tier menu staying
-  `Error Handling | Schema | Flow`.
-- `Axial.Result` holds only general Result composition and `result { }`, under the `Axial.Result` namespace.
-- `Axial.Check` (new package) holds `Check<'value>`, `CheckFailure`, `Predicate`, and `CheckDSL`, under `Axial.Check`
-  / `Axial.Check.CheckDSL`. It has no dependency on `Axial.Result`.
-- `Axial.Refined` depends only on `Axial.Check`; its own source uses `Check.*` and plain FSharp.Core
-  `Result.bind`/`map`/`mapError`, so no genuine Axial.Result dependency remained.
-- `Axial.Schema` depends on `Axial.Check` and `Axial.Refined` directly, never on `Axial.Result` or
-  `Axial.ErrorHandling`.
-- `Axial.ErrorHandling` is a true dependency-only package (`IncludeBuildOutput=false`, no `.fs` files) that installs
-  Result, Check, and Refined directly; the packed `.nupkg` was verified to carry no `lib/` assembly.
-- Tests, AOT probes, examples, source inventory checks, and doc generator inputs were updated: `tests/Axial.Result.Tests`,
-  `tests/Axial.Check.Tests`, `tests/Axial.Refined.Tests` replaced the combined `Axial.ErrorHandling.Tests`;
-  `examples/Axial.Check.AotProbe` was split out; `scripts/docgen/Program.fs`, `scripts/generate-api-docs.sh`,
-  `scripts/check-source-inventory.sh`, and `scripts/check-fable-js-surface.sh` all pass against the new source tree.
-- Reference docs for Result/Check/Refined were regenerated from XML comments and validated with
-  `scripts/validate-docs.sh` and `site`'s `npm run build`.
-- Package tags were updated to the target search vocabulary (see below) for Result, Check, Refined, Schema, and
-  ErrorHandling.
+- Documentation split into independent Schema and Flow experiences, then into focused per-package presentations;
+  `Axial.Data` was promoted to its own product entry point (`ce58acad`), the precedent Result follows.
+- `Axial.Result` holds only general Result composition and `result { }`, under the `Axial.Result` namespace, and
+  has since been expanded with `Accumulate.fs` (accumulating `result.list` / `result.array` builders),
+  `Result.traverse`/`sequence` (replacing the retired `Collection` module), `tap`/`tapError`, and `BindReturn`.
+- `Axial.Constraint` holds the reusable path-free constraint surface and returns the standard F# `Result`. It has
+  no dependency on `Axial.Result`.
+- `Axial.Refined` depends only on `Axial.Constraint`; its own source uses plain FSharp.Core `Result.bind`/`map`/
+  `mapError`, so no genuine Axial.Result dependency remains.
+- `Axial.Parse` is a separate leaf with no dependency on Constraint, Refined, or Result.
+- `Axial.Schema` depends on Data, Constraint, Refined, and Parse directly, never on `Axial.Result`.
+- Per-package test projects, AOT probes, source inventory checks, and doc generator inputs track the focused package
+  set; `scripts/docgen/Program.fs`, `scripts/generate-api-docs.sh`, `scripts/check-source-inventory.sh`, and
+  `scripts/check-fable-js-surface.sh` all pass against the current source tree.
+- Reference docs regenerate from XML comments and validate with `scripts/validate-docs.sh` and `site`'s
+  `npm run build`.
 
 ### Not Done Yet (open follow-up, still pre-extraction)
 
-- The broad `Axial` umbrella package was **kept**, not removed. Several examples and `Axial.ApiShape.Tests` still use
-  it for single-package convenience across Error Handling + Schema. Removing it requires rewriting those onto the
-  narrowest focused package set.
-- No distinct Check/Refined site-navigation sub-pages or new redirects were added beyond what the existing
-  generator/content-mirror pipeline produces from the updated source tree.
-- Root README and package READMEs name Result/Check/Refined with focused install commands, but a full symmetric pass
-  presenting all five libraries the same way across every package README was not done.
-- Six dedicated, minimal package-consumer fixture projects (Result alone, Check alone, Refined+Check without Result,
-  ErrorHandling installs all three, Schema installs its own deps, FsToolkit + Check/Refined/Schema with no builder
-  ambiguity) were not created. Coverage today is indirect, via each focused test project's own project references and
-  `Axial.ApiShape.Tests`' package-layout assertions.
-- Comparison pages (especially FsToolkit.ErrorHandling), repository topics, and release-notes vocabulary were not
-  audited against the new package names.
+- **The docs tree is still `docs/error-handling/`**, covering Result, Constraint, Refined, and Parse together. It
+  must become `docs/result/` plus `docs/values/` before extraction, or the Schema repository inherits a navigation
+  shape naming a package it no longer ships.
+- No full symmetric pass presenting every product the same way across every package README.
+- No minimal package-consumer fixture projects (Result alone, Constraint alone, Parse alone, Refined+Constraint,
+  Schema with its own deps, FsToolkit + Constraint/Refined/Schema with no builder ambiguity). Coverage today is
+  indirect, via project references and `Axial.ApiShape.Tests`' package-layout assertions.
+- Comparison pages (especially FsToolkit.ErrorHandling — now sharper given Result's accumulation surface),
+  repository topics, and release-notes vocabulary not audited against the current package names.
 
-These open items, plus Phases 2–4 below, are the remaining pre-extraction (and extraction) work.
+These open items, plus the phases below, are the remaining pre-extraction and extraction work.
 
 ## Why Split The Repositories
 
 The current repository asks maintainers and coding agents to keep two unrelated vocabularies in working memory.
 
-Schema work uses terms such as structured data, schema, constraint, diagnostic, refined value, wire contract, codec, and
-migration. Flow work uses environment, effect, scope, layer, fiber, cancellation, service, and host.
+Schema work uses terms such as structured data, schema, constraint, diagnostic, refined value, parse, wire contract,
+codec, and migration. Flow work uses environment, effect, scope, layer, fiber, cancellation, service, and host.
 
 Combining these products makes searches noisier and lengthens contributor instructions. It also makes a single release
 version imply coordination that the package dependency graph does not require.
@@ -113,26 +125,25 @@ A **repository** is a source-control and release-workflow boundary. Several NuGe
 
 A **package** is a separately referenced NuGet unit with its own public dependency graph.
 
-A **library** is a top-level package and documentation identity presented to users.
+A **product** is a top-level package and documentation identity presented to users.
 
 A **format package** implements one external representation, such as JSON or MessagePack, over Schema declarations.
-
-A **runtime backend** is the internal implementation chosen for a compilation platform. It does not imply a separate
-public package.
+See `format-and-json-runtime.md`.
 
 ## Target Repository: Axial Schema
 
-The Schema repository owns the complete input-to-domain and domain-to-representation path.
+The Schema repository owns the complete input-to-domain and domain-to-representation path, plus the value and
+result vocabulary that path is expressed in.
 
 Suggested repository name: `Axial.Schema`.
 
 It should contain:
 
 ```text
-Axial.ErrorHandling
 Axial.Result
-Axial.Check
+Axial.Constraint
 Axial.Refined
+Axial.Parse
 Axial.Data
 Axial.Schema
 Axial.Schema.JsonSchema
@@ -141,61 +152,57 @@ Axial.Schema.Testing
 Axial.Schema.Contracts
 Axial.Schema.Contracts.Build
 Axial.Schema.Http
-Axial.Schema.Http.AspNetCore
-Axial.Schema.Http.GenHttp
 future Axial.Schema.<Format> packages
-Schema examples
-Schema benchmarks
-Schema documentation and site
+Schema, Values, and Result examples
+benchmarks
+documentation and site for Result, Values, Data, and Schema
 contract generator and MSBuild integration
 ```
 
-### Why Result, Check, And Refined Stay Here
+Both meta-packages are already absent: `Axial.ErrorHandling` and the `Axial` umbrella were deleted in Phase 1B(a).
 
-`Axial.Result` and `Axial.Check` are independent leaf packages. Neither depends on Refined, Schema, or Flow.
-`Axial.Refined` depends only on Check. `Axial.ErrorHandling` is a dependency-only meta-package over all three.
+### Why The Values Packages Stay Here
 
-They belong in the Schema repository because Schema consumes Check and Refined, while Result serves the adjacent
-ordinary-error-handling path. All three participate in turning untrusted inputs and fallible operations into
-application values while retaining separate package identities.
+Schema depends on Constraint, Refined, and Parse, and their shapes are still being worked out against Schema's
+needs (`refined-parse-cleanup.md`, `refined-schema-proof.md`). A repository boundary across that seam would freeze
+it. They keep separate NuGet identities regardless.
 
-Putting Result, Check, or Refined in additional repositories would add release and contribution boundaries without
-improving the Schema/Flow separation.
+### Why Result Stays Here
 
-The repository placement must not blur the NuGet boundary. Install `Axial.Result`, `Axial.Check`, or `Axial.Refined`
-for focused use, or install `Axial.ErrorHandling` for all three. None installs Schema. Path-aware validation belongs
-to Schema.
+Nothing in this repository depends on `Axial.Result` — on dependency grounds it could be extracted today. It stays
+because its surface only just changed, and because the story explaining flat accumulation in `result { }` versus
+Schema's path-aware accumulation spans both products. Splitting first means writing that boundary twice, from two
+sides. Revisit once the accumulating builders have been exercised by the reference app and `/result` has settled.
 
 ### Why Data Stays Here
 
-`Axial.Data` provides source-neutral structured input values. `Schema.parse` consumes `Data` directly, and it has no
-independent user journey outside of describing input to a schema, so it belongs in the Schema repository rather than
-as a third leaf package alongside ErrorHandling.
+Not because it is subordinate — `Axial.Data` is a product with its own docs entry point and its own journey. It
+stays because it is the most heavily depended-on package in the repository: `Schema.parse` consumes `Data`
+directly, and `Axial.Schema.Contracts`, `.Testing`, `.Http`, and `.Json` all reference it — as will the relocated
+Flow HTTP adapters, through NuGet. Extracting it would put a package boundary across five edges to buy nothing.
 
 ### Schema Repository Dependency Graph
 
 ```text
-Axial.Result ─────────────────────────┐
-Axial.Check ───────────────────────────┼── Axial.ErrorHandling
-Axial.Check ──── Axial.Refined ────────┘
+Axial.Result                    (independent leaf, nothing here depends on it)
+Axial.Parse                     (independent leaf)
+Axial.Constraint ──▶ Axial.Refined
 
-Axial.Check ───▶ Axial.Schema
-Axial.Refined ─▶ Axial.Schema
-   ├── Axial.Schema.Json
-   ├── Axial.Schema.JsonSchema
-   ├── Axial.Schema.Testing
-   ├── Axial.Schema.Http
-   └── generated contract output
+Axial.Data ────────┐
+Axial.Constraint ──┤
+Axial.Refined ─────┼──▶ Axial.Schema
+Axial.Parse ───────┘        ├── Axial.Schema.Json          (+ Axial.Data)
+                            ├── Axial.Schema.JsonSchema
+                            ├── Axial.Schema.Testing       (+ Axial.Data)
+                            ├── Axial.Schema.Http          (+ Axial.Data, JsonSchema)
+                            └── generated contract output
 
-Axial.Schema.Contracts
+Axial.Schema.Contracts ──▶ Axial.Data
         ↓ tool output targets Axial.Schema
 
 Axial.Schema.Contracts.Build
         ↓ invokes the contract generator during MSBuild
 ```
-
-`Axial.ErrorHandling` depends directly on Result, Check, and Refined — not only transitively through Refined → Check —
-because it promises to install all three capabilities.
 
 The contracts generator remains a tool-tier component. FSharp.Compiler.Service must not become a dependency of a
 runtime package.
@@ -219,13 +226,19 @@ Axial.Flow.Hosting
 Axial.Flow.Hosting.Node
 Axial.Flow.Hosting.Browser
 Axial.Flow.Telemetry
-other Flow service packages
+Axial.Flow.Telemetry.Shared
+Axial.Flow.Telemetry.JavaScript
+Axial.Flow.AspNetCore          (was Axial.Schema.Http.AspNetCore)
+Axial.Flow.GenHttp             (was Axial.Schema.Http.GenHttp)
+other Flow service and transport packages
 Flow examples
 Flow benchmarks
 Flow documentation and site
 ```
 
-`Axial.Flow` must remain independent of `Axial.Result`, `Axial.Check`, `Axial.Refined`, and `Axial.Schema`.
+The **core** `Axial.Flow` package must remain independent of `Axial.Result`, `Axial.Constraint`, `Axial.Refined`,
+`Axial.Parse`, `Axial.Data`, and `Axial.Schema`. This constraint binds the core, not every package in the
+repository: the HTTP adapters below are satellites that consume released Schema packages.
 
 Flow binds the standard F# `Result<'value, 'error>` and `Option<'value>` types directly. It does not need the
 Result package to support typed failures.
@@ -233,48 +246,91 @@ Result package to support typed failures.
 Flow policies may accept ordinary functions returning standard `Result`. They must not create a package dependency on
 Schema merely to provide convenience adapters.
 
-## Cross-Product HTTP Adapters
+## The HTTP Adapters Move To Flow And Are Renamed
 
-`Axial.Schema.Http.AspNetCore` and `Axial.Schema.Http.GenHttp` currently depend on both Schema and Flow. They are
-integration packages rather than evidence that the cores belong together.
+`Axial.Schema.Http.AspNetCore` → **`Axial.Flow.AspNetCore`**, `Axial.Schema.Http.GenHttp` → **`Axial.Flow.GenHttp`**,
+both in the Flow repository.
 
-Keep them in the Schema repository because their main responsibility is adapting schema-described HTTP boundaries.
-They should consume released Flow packages through NuGet instead of project references.
+These are the only two packages in the codebase that depend on both products, so they determine how expensive the
+split is. The earlier plan kept them with Schema on the grounds that they adapt schema-described HTTP boundaries.
+The code says otherwise:
 
-The dependency becomes:
+- `Axial.Schema.Http` — the boundary abstraction itself, 406 lines across `BoundaryInput.fs`, `Endpoint.fs`, and
+  `ProblemDetails.fs` — has **no Flow dependency at all**.
+- The Flow coupling lives entirely in the two host adapters, and there it is structural, not incidental:
+  `Flow.read`, `Flow.localEnv`, `Flow.fromTask`, a request-scoped `HttpEndpointEnv`, and `EndpointFlow.run`. An
+  endpoint *is* a Flow with a request environment. The public names already say so.
+
+So they are Flow integrations that speak Schema, not Schema packages that happen to host. They belong with the code
+they change alongside: they consume Flow's environment APIs, and the environment/provide story is the part of Flow
+still expected to move — exercising it is exactly what a satellite package is for.
+
+The dependency direction inverts:
 
 ```text
-released Axial.Flow packages
+released Axial.Schema.Http / Axial.Schema.Json / Axial.Data
             ↓
-Axial.Schema.Http.AspNetCore / GenHttp
+Axial.Flow.AspNetCore / Axial.Flow.GenHttp        (in the Flow repository)
 ```
 
-These adapters should release only when their own code or dependency requirements change. A Flow release must not
-automatically force a Schema repository release.
+This is strictly better than the previous arrangement. The cross-repository version range now points at the
+**stable** side — Schema.Http, Schema.Json, and Data — instead of at Flow's moving environment surface. And the
+Schema repository ends up with **zero** cross-product edges: it builds, tests, packs, and releases with no Flow
+package present at all.
 
-If cross-repository coordination becomes frequent, first reduce the adapter seam. Do not merge the repositories merely
-to make atomic commits possible.
+`Axial.Schema.Http` itself stays with Schema. It is already Flow-free and describes boundaries for any host.
 
-## The Umbrella Package
+These adapters should release only when their own code or dependency requirements change. A Schema release must not
+automatically force a Flow repository release.
 
-The current `Axial` umbrella ties Schema and the value/error-handling packages to one installation and apparent
-release train. Remove it before 1.0 (still outstanding — see "Not Done Yet" above).
+### Naming
 
-Keep the narrower `Axial.ErrorHandling` meta-package because it supplies a searchable category and a deliberate
-complete installation for three related focused packages:
+`Axial.Flow.AspNetCore` and `Axial.Flow.GenHttp` sit at the top level, as siblings of `Axial.Flow.HttpClient` — the
+client-side counterpart — rather than under `Axial.Flow.Hosting.*` alongside `Hosting.Node` and `Hosting.Browser`.
+`Hosting.*` is about application lifecycle and platform host; these serve HTTP endpoints. Worth a second look during
+implementation, since both readings are defensible.
+
+### What The Move Touches
+
+- `src/Axial.Schema.Http.{AspNetCore,GenHttp}/` — project rename, `PackageId`, `RootNamespace`, `AssemblyName`, and
+  the module namespaces in `AspNetCore.fs` / `GenHttp.fs`.
+- `tests/Axial.Schema.Http.Tests/` — currently holds `AspNetCoreAdapterTests.fs` and `GenHttpAdapterTests.fs`
+  alongside the Schema.Http tests. Split: adapter tests go to the Flow repository.
+- `docs/schema/http-servers.md` and the two generated reference trees under
+  `docs/schema/reference/schema/http/{aspnetcore,genhttp}/` (~35 pages) move to the Flow documentation, with
+  redirects. `site/data/sidebars/schema.yaml` loses those groups; the Flow sidebar gains them.
+- `examples/Axial.Api` and `examples/Axial.Api.GenHttp` are adapter examples and move with the packages.
+  `examples/Axial.ReferenceApp` stays cross-product and consumes released packages either way.
+- `scripts/pack.sh`, `scripts/docs-build.proj`, `scripts/docgen/Program.fs` symbol ids, and `Axial.slnx`.
+
+Do the rename **before** extraction, while it is a single-repository refactor with a compiler checking every call
+site.
+
+## No Meta-Packages
+
+The `Axial` umbrella tied Schema and the leaves to one installation and apparent release train. It is gone, deleted
+alongside `Axial.ErrorHandling` in Phase 1B(a).
+
+`Axial.ErrorHandling` goes too, per `retire-errorhandling.md`. It bought a searchable category at the cost of a
+documentation area, a sidebar group, a URL prefix over four unrelated packages, and a validation script — and the
+bundle it named is not a concept adopters reason about: Result is about failure composition, Constraint/Refined/Parse
+about admitting values. The category survives as **Values** in navigation and as package tags, with no package
+behind it.
+
+Every install is therefore a focused package:
 
 ```bash
 dotnet add package Axial.Result
-dotnet add package Axial.Check
+dotnet add package Axial.Constraint
 dotnet add package Axial.Refined
-dotnet add package Axial.ErrorHandling
+dotnet add package Axial.Parse
+dotnet add package Axial.Data
 dotnet add package Axial.Schema
 dotnet add package Axial.Flow
 ```
 
-The meta-package contains no source API and should never be a dependency of Schema. Its README must name the three
-packages it installs and show the namespace corresponding to each one. The focused packages remain the default in
-examples that use only one capability.
+Nav captions and landing pages must state that the Values packages install independently, or adopters will search
+NuGet for a nonexistent `Axial.Values`.
 
 ## Package Versioning After The Split
 
@@ -285,238 +341,27 @@ same applies within the Flow repository.
 
 Do not require the Schema and Flow repository versions to match.
 
-Cross-product adapters should declare an explicit supported Flow version range. Test the lowest supported version and
-the current version when practical.
+The Flow HTTP adapters should float within the current pre-1.0 minor — `0.7.*` on `Axial.Schema.Http`,
+`Axial.Schema.Json`, and `Axial.Data` — rather than pinning a closed range. While those shapes are still moving, a
+float surfaces breaks in the adapter's own CI instead of at release time.
+
+Two mechanical consequences to handle rather than inherit:
+
+- NuGet resolves a float at **pack** time and writes the resolved version into the nuspec as an open-ended minimum,
+  so consumers would see `>= 0.7.3` with no upper bound. Set an explicit upper bound in the packed metadata; the
+  float is for the adapter's build, not for downstream constraints.
+- Floating restores are not reproducible. Enable `RestorePackagesWithLockFile` so CI pins what it actually built.
 
 Release notes should describe only the product and packages in that repository. Avoid a global Axial release note that
 mixes unrelated changes.
 
-## One Package Per Format
-
-Future representation formats should use separate packages:
-
-```text
-Axial.Schema.Json
-Axial.Schema.Xml
-Axial.Schema.Yaml
-Axial.Schema.Toml
-Axial.Schema.MessagePack
-Axial.Schema.Protobuf
-```
-
-This keeps transitive dependencies small and allows each format to have its own wire rules, limitations, runtime
-support, release timing, and performance work.
-
-Do not add empty packages in anticipation of demand. Create a package only when its format has an implemented consumer
-and tests.
-
-Do not create a public format-neutral package merely to hold interfaces. First prove that two or more formats share
-substantial code with the same semantics.
-
-If shared compiler machinery emerges, keep it internal to the repository or in an internal package until its boundary
-is stable. Sharing the word "codec" is not enough reason for a public abstraction.
-
-### Format Packages Are Not Interchangeable
-
-JSON, XML, YAML, TOML, MessagePack, and Protobuf do not share the same data model.
-
-Examples of format-specific differences include:
-
-- object key and field-name rules;
-- attributes versus elements in XML;
-- aliases, anchors, and scalar resolution in YAML;
-- table structure in TOML;
-- integer widths and binary values in MessagePack;
-- field numbers, unknown fields, and compatibility rules in Protobuf;
-- streaming and framing behavior;
-- canonical encoding and ordering;
-- null, missing, optional, and default semantics.
-
-Each package should state which Schema shapes and constraints it supports. Unsupported shapes should fail during codec
-compilation with a typed error, not later while encoding a value.
-
-## Shared Compiler, Platform-Specific JSON Runtime
-
-`Axial.Schema.Json` should keep one public API and one schema-to-codec compiler.
-
-The compiler walks Schema's retained typed shape and builds a reusable encoding and decoding plan. This logic should be
-shared across .NET and Fable.
-
-The runtime that executes the plan should be optimized for its platform.
-
-```text
-Schema<'value>
-      ↓
-shared JSON plan compiler
-      ↓
-platform runtime primitives
-   ├── .NET UTF-8/span implementation
-   └── Fable JavaScript implementation
-```
-
-Do not publish separate `.NET` and `JavaScript` NuGet packages at this stage. Platform selection is a compilation
-detail, and users should write against the same `Json.compile`, serialize, and deserialize API.
-
-## Fable Build Constraint
-
-This repository cannot reliably select different F# source files for .NET and Fable compilation. Fable project
-cracking has not made conditional file inclusion dependable.
-
-Platform differences therefore must use inline compiler directives. Keep those directives concentrated in platform
-modules rather than spreading them throughout codec compilation and parsing logic.
-
-A file may define the same module twice, with only one implementation active:
-
-```fsharp
-#if FABLE_COMPILER
-module internal JsonPlatform =
-    // JavaScript implementation
-#else
-module internal JsonPlatform =
-    // .NET implementation
-#endif
-```
-
-Other files call `JsonPlatform` without their own compiler directives.
-
-This follows the existing `Axial.Schema.Platform` pattern. The pattern is a response to the build constraint, not a
-claim that .NET and JavaScript should use the same low-level representation.
-
-## What Belongs In `Platform.fs`
-
-Use a platform module for small operations that have the same meaning but different implementations:
-
-- invariant integer and decimal parsing;
-- UTF-8 string conversion;
-- byte comparison and scanning;
-- buffer rental and return;
-- bounded byte slices;
-- encoding string slices;
-- exception construction where platform support differs;
-- checks that depend on erased or retained runtime generic information.
-
-Keep the call signatures platform-neutral when that does not damage the fast path.
-
-Do not wrap every BCL call. A wrapper is useful when it removes a compiler directive from business or codec logic, or
-when the operation requires different platform behavior.
-
-## When To Use A Larger Conditional Runtime Module
-
-Some differences are too large for a collection of tiny wrappers. In that case, place two implementations of a
-coherent internal module behind one `#if` boundary in the same file.
-
-Examples include:
-
-- the input cursor;
-- the output writer;
-- JSON string escaping and unescaping;
-- number parsing and formatting;
-- property-name matching;
-- stream integration;
-- JavaScript-native string or typed-array integration.
-
-The rest of the codec should depend on a small internal runtime surface. It should not know which implementation was
-compiled.
-
-Do not create one very large `Platform.fs` containing unrelated subsystems. Prefer focused modules such as
-`JsonBufferPlatform`, `JsonNumberPlatform`, and `JsonTextPlatform` when the runtime grows.
-
-## .NET JSON Runtime
-
-The .NET implementation should operate directly on UTF-8 wherever the public input permits it.
-
-Use appropriate .NET primitives such as:
-
-- `ReadOnlySpan<byte>` for bounded parsing;
-- `Span<byte>` for formatting into owned buffers;
-- `Utf8Parser` and `Utf8Formatter` for supported primitives;
-- `IBufferWriter<byte>` for caller-owned output;
-- `ArrayPool<byte>` for temporary buffers;
-- cached UTF-8 field names;
-- direct stream or pipe adapters where they avoid intermediate strings.
-
-Avoid converting a complete UTF-8 payload to `string` before parsing. Avoid allocating a new `byte[]` merely to pass a
-slice when a span can represent it.
-
-The current byte-array cursor is a useful portable baseline. The refactor should allow the .NET runtime to use spans
-more directly without forcing span types into the shared public API or the Fable implementation.
-
-Public .NET overloads may expose `ReadOnlySpan<byte>`, `ReadOnlyMemory<byte>`, `IBufferWriter<byte>`, `Stream`, or
-`PipeReader` when each has a demonstrated use. Keep them behind `!FABLE_COMPILER` when Fable cannot represent them.
-
-Do not make a ref-struct type part of a shared internal interface that Fable must compile.
-
-## Fable JSON Runtime
-
-The Fable implementation should use JavaScript's actual performance model rather than emulating .NET spans.
-
-Candidate representations include JavaScript strings, `Uint8Array`, `TextEncoder`, and `TextDecoder`. Choose through
-benchmarks and required interoperability, not by matching the .NET implementation mechanically.
-
-If most Fable callers begin with a JavaScript string, a string-native decoder may be better than converting the entire
-value to UTF-8 bytes first. If callers handle network or binary buffers, a typed-array path may be worthwhile.
-
-The public behavior must match .NET for supported Schema shapes:
-
-- field names and escaping;
-- missing and unknown fields;
-- duplicate-field policy;
-- number ranges and failures;
-- null and option semantics;
-- discriminated union representation;
-- map keys;
-- date, time, GUID, and decimal formatting where supported;
-- error paths and useful diagnostic text.
-
-Identical implementation is not required. Equivalent documented behavior is required.
-
-## Current Fable Status And Remaining Work
-
-`Axial.Schema.Json` is a supported Fable surface. The benchmark uses the current Schema API,
-`scripts/check-fable-js-surface.sh` passes, CI runs it, and generated JavaScript executes a Node encode/decode round
-trip. Stream APIs remain .NET-only.
-
-Further platform-runtime work should strengthen the shared semantic suite rather than re-prove basic support:
-
-1. expand cross-platform golden cases for strings, numbers, nulls, options, lists, maps, records, and unions;
-2. add decimal edge cases and reject syntax that differs unintentionally;
-3. keep .NET-only APIs, such as streams, explicit in the documentation;
-4. keep the Fable check in CI for every codec change.
-
-## Performance Validation
-
-Do not choose the platform abstraction from intuition alone. Benchmark the operations that dominate real payloads.
-
-The .NET suite should measure:
-
-- decode from UTF-8 bytes;
-- decode from `ReadOnlySpan<byte>` where exposed;
-- encode to caller-owned `IBufferWriter<byte>`;
-- encode to string;
-- stream encode and decode;
-- allocation counts;
-- field matching for small and large records;
-- nested records, lists, maps, and unions;
-- comparison with `System.Text.Json` source generation.
-
-The Fable suite should measure:
-
-- decode from string;
-- decode from `Uint8Array` if supported;
-- encode to string;
-- encode to `Uint8Array` if supported;
-- conversion cost between strings and UTF-8;
-- comparison with native `JSON.parse` and `JSON.stringify` for equivalent behavior.
-
-Keep platform-specific fast paths behind the same semantic tests. A faster implementation that accepts or emits a
-different contract is a compatibility change, not an optimization.
-
 ## Focused Documentation Libraries
 
-Result, Check, Refined, Schema, and Flow are focused documentation libraries, each with its own overview and API
-reference index. Error Handling is the category and combined-installation page for the first three, not a
-replacement for their identities. See "Completed So Far" for what is already live; the navigation below is the
-target shape once repository extraction happens.
+The target top-tier menu is **Result | Values | Data | Schema | Flow**. Values is a navigation group over
+Constraint, Refined, and Parse, each with its own subgroup and API reference index; the other four are products
+backed by packages. See "Completed So Far" for what is live; the navigation below is the target shape, and the
+`docs/error-handling/` → `docs/result/` + `docs/values/` move that produces it is specified in
+`retire-errorhandling.md` Phases 2–3.
 
 They may initially deploy from the current site infrastructure. A reader entering one library should encounter only
 the dependencies and related concepts needed for that path.
@@ -529,41 +374,45 @@ Axial Result
   Getting started
   Result composition
   Computation expression
+  Accumulating errors (result.list / result.array)
+  traverse and sequence
+  Comparison with FsToolkit.ErrorHandling
   API reference
 ```
 
 Titles and descriptions should naturally include "F# error handling" for discovery.
 
-### Check Documentation
+The accumulation page must show the exact `and!`-accumulates / `let!`-fails-fast boundary — "why didn't it collect
+both errors" is the question adopters will ask — and state that this accumulation is flat, pointing to Schema for
+path-aware diagnostics.
+
+### Values Documentation
 
 ```text
-Axial Check
-  Overview
-  Getting started
-  Reusable checks
-  Check composition
-  Predicates
-  Check DSL
-  API reference
+Axial Values
+  Overview (three independently installable packages)
+  Constraint
+    Getting started
+    Reusable constraints
+    Constraint composition
+    Predicates
+    Contextual localization
+    API reference
+  Refined
+    Getting started
+    Define refinements
+    Built-in refined values
+    Use constraints in refinements
+    API reference
+  Parse
+    Getting started
+    Parse representations
+    API reference
 ```
 
-The overview should say that checks return the standard F# `Result` and work with Axial.Result, FsToolkit.ErrorHandling,
-or application-owned Result helpers.
-
-### Refined Documentation
-
-```text
-Axial Refined
-  Overview
-  Getting started
-  Parse representations
-  Define refinements
-  Built-in refined values
-  Use checks in refinements
-  API reference
-```
-
-Refined depends on Check but remains usable without Result or Schema.
+The Constraint overview should say that constraints return the standard F# `Result` and work with Axial.Result,
+FsToolkit.ErrorHandling, or application-owned helpers. Refined depends on Constraint but remains usable without
+Result or Schema; Parse depends on neither. Every Values caption must state that the packages install individually.
 
 ### Schema Documentation
 
@@ -573,7 +422,7 @@ Axial Schema
   Getting started
   Parse structured input
   Construct domain models
-  Checks and field constraints
+  Field constraints
   Refined fields
   Path-aware errors
   JSON
@@ -616,13 +465,14 @@ not imply that typed Flow failures require Axial.Result.
 
 Keep cross-links small and specific:
 
-- Schema field pages may link to Check for standalone reusable constraints and Refined for invariant-carrying values.
+- Schema field pages may link to Constraint for standalone reusable constraints and Refined for invariant-carrying
+  values.
 - Schema HTTP pages may say that handlers can return ordinary tasks or Axial Flow workflows.
 - Flow pages may show a later example receiving a value admitted by Axial Schema.
 - Each library home may link to the others under "Related Axial libraries."
 
-The Error Handling category page may show the combined installation and route readers to Result, Check, or Refined.
-Do not duplicate their guides there. The root landing page may show all five focused libraries while guiding newcomers
+The Values landing page routes readers to Constraint, Refined, or Parse without duplicating their guides, and links
+to Result for composing what they return. The root landing page shows all five products while guiding newcomers
 toward Result for simple code and Schema for structured boundaries.
 
 ## Documentation Deployment Options
@@ -633,10 +483,9 @@ subdomains or stable path prefixes.
 Stable path prefixes fit the focused presentation without requiring separate deployments:
 
 ```text
-axial.dev/error-handling
 axial.dev/result
-axial.dev/check
-axial.dev/refined
+axial.dev/values/{constraint,refined,parse}
+axial.dev/data
 axial.dev/schema
 axial.dev/flow
 ```
@@ -670,18 +519,19 @@ both repositories for routine builds.
 
 Each repository owns complete tests for its own public behavior.
 
-The Flow repository must test without Schema or ErrorHandling references.
+The Schema repository must test Result, the Values packages, Data, Schema, formats, and contract tooling — with no
+Flow package present anywhere in the tree.
 
-The Schema repository must test ErrorHandling, Schema, formats, contract tooling, and HTTP adapters. Flow-based HTTP
-adapter tests should reference released Flow packages.
+The Flow repository must test Flow, its services and hosts, and the HTTP adapters. Only the adapter tests may
+reference Schema, and only as released packages.
 
 Add package-consumer tests that pack local artifacts and restore them into small fixture projects. This catches missing
 package files, incorrect dependency ranges, build-target failures, and source-order problems.
 
-Cross-product CI should include:
+Cross-product CI lives in the Flow repository and should include:
 
-- the lowest supported Flow version for Schema HTTP adapters;
-- the current stable Flow version;
+- the current released Schema packages against the adapters;
+- the lowest Schema version the adapters claim to support;
 - a scheduled check against the latest prerelease only if early warning is worth the maintenance cost;
 - the integration reference application against released packages.
 
@@ -752,70 +602,103 @@ does not require solving every package-versioning question at once.
 
 ## Implementation Sequence
 
-### Phase 1 And 1B: Documentation And Package Surface
+### Phase 1: Package Surface
 
-Completed 2026-07-21 through 2026-07-24 in the combined repository. See "Completed So Far" and "Not Done Yet" above
-for what landed and what remains open before extraction.
+Landed in the combined repository: focused leaves, per-package tests and reference docs, Data promoted to its own
+entry point, Result expanded with accumulation. See "Completed So Far".
 
-### Phase 2: Concentrate Platform Differences
+Flow leaves early, because the noisiest remaining work — the documentation reshape — is much cheaper in a repository
+that no longer contains it. What must precede the Flow extraction is only what actually blocks it.
 
-Not started.
+### Phase 1B(a): Untangle The Meta-Packages
 
-1. Inventory every `#if` in the current codec.
-2. Classify each branch as a small platform primitive, a coherent runtime subsystem, or a public .NET-only API.
-3. Move small primitives into focused platform modules.
-4. Place larger alternative implementations behind one conditional module boundary per subsystem.
-5. Keep the shared schema compiler free of platform directives.
-6. Preserve the passing Fable benchmark and Node round trip.
-7. Expand cross-platform semantic golden tests.
-8. Benchmark .NET span paths and JavaScript-native paths.
-9. Optimize each backend without changing the shared behavior.
+**Done**, except for the placement decision in step 3. Package half of `retire-errorhandling.md`, and a hard
+precondition for extracting Flow.
 
-Do not block the repository split on every possible runtime optimization. Require a passing baseline and a design that
-does not scatter new conditionals.
+Both meta-packages are deleted: `src/Axial.ErrorHandling/` and `src/Axial/` (whose only source was a one-line
+re-export of `Axial.Result.Builders.result`), along with their solution, pack, and docs-build entries. The four
+Values leaves are now listed explicitly in `scripts/build-docs-site.sh` and `scripts/docs-build.proj`, which
+previously reached them through the umbrella.
 
-### Phase 3: Prepare Independent Builds
+Seven projects straddled the split, every one of them because of a meta-package. Six are now resolved by focused
+references; `Axial.Benchmarks.Fable` never used a meta-package and straddles on genuine content:
 
-Not started.
+| Project | Was | Now |
+| --- | --- | --- |
+| `examples/Axial.Hosting.DotNet` | `Axial.ErrorHandling` + `Axial.Flow.Hosting` | Refined + Parse + Flow.Hosting |
+| `examples/Axial.{MaintenanceExamples,ReadmeExample,Playground}` | umbrella + Flow | Result + Constraint + Flow |
+| `examples/Axial.Examples` | umbrella + Flow + Data | the four leaves + Schema + Flow + Data |
+| `examples/Axial.ReferenceApp` | umbrella + Flow + Schema.* + Data | Result + Constraint + Refined + Schema + the rest unchanged |
+| `examples/Axial.ReferenceApp.Intro` | `Axial.ErrorHandling` | the four leaves |
+| `tests/Axial.ApiShape.Tests` | umbrella + Schema.* + five Flow packages | the four leaves + Schema + the rest unchanged |
+| `benchmarks/Axial.Benchmarks.Fable` | Flow + Result + Constraint + Schema.Json | unchanged — genuinely cross-product |
 
-1. Remove assumptions about one solution, one version property, one release note, and one docs site.
-2. Change cross-product project references to package references in a migration branch.
-3. Define adapter dependency ranges.
-4. Create package-consumer fixtures (including the six scenarios listed under "Not Done Yet").
-5. Decide where the combined reference application will live.
-6. Verify that Flow builds with no Schema files and Schema builds against released Flow packages.
+`Axial.ApiShape.Tests` gained `no meta-package remains in the graph`, which fails if any package assembly references
+`Axial` or `Axial.ErrorHandling`, or if either DLL reappears in the test output. It replaces the old assertion that
+the meta-package existed and exported nothing.
 
-### Phase 4: Extract The Repositories
+Presentation, not URLs: because deleting the meta-package while the landing page still advertised it would be
+incoherent, the *identities* were separated in this phase — `docs/index.md` has two peer doors (Result, Values),
+`site/data/sidebars/error-handling.yaml` has two `kind: primary` groups, and a `--values` door variant was added to
+the stylesheet. Result is presented as a product; Values as navigation over Constraint, Refined, and Parse. The URL
+tree is still `/error-handling/*`; moving it stays Phase 3.
 
-Not started. This is the actual repository split — proposed only, not performed.
+Still open — step 3: where the reference application and the Fable benchmark live. Both are genuinely
+cross-product, and neither blocks the HTTP adapter move in 1B(b). `examples/Axial.ReferenceApp` has a stated
+direction already (see "Examples And Reference Applications" and the implementation-choices list);
+`benchmarks/Axial.Benchmarks.Fable` does not, and is the one real decision left in this phase — it benchmarks Flow,
+Result, Constraint, and Schema.Json under Fable in a single project, so it either splits along the product seam or
+becomes a consumer of released packages.
 
-1. freeze broad cross-product moves for the extraction window;
-2. filter history into Schema and Flow repositories;
-3. install repository-specific maintainer files and CI;
-4. verify source inventories and generated paths;
-5. publish prerelease packages;
-6. deploy separate documentation entry points;
-7. run the external reference application;
-8. publish stable packages when consumer tests pass;
-9. redirect the old repository and issue tracker.
+### Phase 1B(b): Move And Rename The HTTP Adapters
+
+Not started. See "The HTTP Adapters Move To Flow And Are Renamed" for the full change list. Do it here, as a
+single-repository refactor with the compiler checking every call site, and set the `0.7.*` floats plus the packed
+upper bound while both sides are still in one tree.
+
+### Phase 2: Extract Flow
+
+1. Split one version property into two; remove one-solution and one-release-note assumptions on the Flow side.
+2. Create package-consumer fixtures for Flow and its satellites.
+3. Verify Flow builds and tests with no Schema, Data, Result, or Values files present.
+4. Filter history into the Flow repository; install its maintainer files and CI.
+5. Publish prerelease Flow packages; run the adapters against released Schema packages.
+6. Deploy the Flow documentation entry point.
+
+### Phase 3: Reshape Documentation
+
+Not started, and now happening in a repository without Flow in it.
+
+1. Docs half of `retire-errorhandling.md`: `docs/error-handling/` → `docs/result/` + `docs/values/`, split the
+   shared prose pages, update the hardcoded product-area lists in `populate-hugo-content.sh` and the validate
+   scripts.
+2. Migrate reference generation to FsLiveDocs in place, while content and pipeline are still co-located.
+
+### Phase 4: Extract Schema, Leaving Axial As The Documentation Repository
+
+1. filter history into the Schema repository;
+2. `site/` and the cross-product landing content stay behind in `Axial`;
+3. transfer product-specific issues out of `Axial`; keep cross-product roadmap and decisions there;
+4. install repository-specific maintainer files and CI;
+5. verify source inventories and generated paths;
+6. publish prerelease packages, then stable when consumer tests pass;
+7. run the external reference application.
 
 ## Acceptance Criteria
 
 The split is complete when:
 
-- Flow builds, tests, packs, documents, and releases without checking out Schema;
-- Schema builds, tests, packs, documents, and releases without checking out Flow source;
-- Schema's Flow-based HTTP adapters consume supported released Flow packages;
-- `Axial.Result`, `Axial.Check`, and `Axial.Refined` are independently installable (done);
-- `Axial.Refined` depends only on Check (done);
-- `Axial.ErrorHandling` installs Result, Check, and Refined but contains no public API (done);
-- `Axial.Schema` depends on Check and Refined directly, while Flow depends on none of them (done);
-- the broad `Axial` umbrella no longer remains (not done);
-- the Fable JSON executable check passes (done);
-- .NET JSON fast paths use UTF-8 spans or caller-owned buffers where appropriate;
-- platform directives are concentrated in internal platform/runtime modules;
-- Result, Check, Refined, Schema, and Flow have distinct documentation identities (done at the reference-doc level;
-  distinct nav sub-pages not done);
+- Schema builds, tests, packs, and releases with no Flow package anywhere in the tree;
+- Flow's core builds, tests, packs, and releases without checking out Schema;
+- `Axial.Flow.AspNetCore` and `Axial.Flow.GenHttp` consume released Schema packages, and are the only packages in
+  either repository that depend on both products;
+- `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, `Axial.Parse`, and `Axial.Data` are independently
+  installable (done);
+- `Axial.Refined` depends only on Constraint (done);
+- `Axial.Schema` depends on Data, Constraint, Refined, and Parse directly, while Flow depends on none of them (done);
+- neither `Axial.ErrorHandling` nor the `Axial` umbrella remains (done);
+- Result, Values, Data, Schema, and Flow have distinct documentation identities (done at the reference-doc level;
+  the `/result` and `/values` trees not done);
 - NuGet, GitHub, and web searches for Result, F# error handling, validation, and diagnostics lead to the relevant
   packages or documentation;
 - a clean consumer can install and run each product from published packages;
@@ -829,23 +712,14 @@ The split is complete when:
 
 Mitigation: keep the core seam small, use package dependency ranges, and test adapters against released versions.
 
-### Integration Packages Lag Behind Flow
+### The Adapters Lag Behind Schema
 
-Mitigation: test the current stable Flow version in Schema CI and update only when an actual compatibility change occurs.
+Mitigation: float `0.7.*` so the Flow repository's CI builds them against current Schema on every run, and treat an
+adapter break as a signal about the Schema surface rather than only as adapter maintenance.
 
 ### Documentation Drifts
 
 Mitigation: each repository owns its docs and references. Keep cross-links sparse and check them during deployment.
-
-### Platform Abstraction Reduces .NET Performance
-
-Mitigation: keep span-heavy work inside the .NET runtime module, benchmark allocations and throughput, and avoid
-platform-neutral interfaces that require copying.
-
-### Fable Behavior Silently Differs
-
-Mitigation: run shared golden cases in .NET and generated JavaScript, especially for decimal, escaping, missing values,
-and numeric ranges.
 
 ### History Extraction Obscures Changes
 
@@ -853,18 +727,17 @@ Mitigation: extract history first and make semantic changes in later ordinary co
 
 ## Decisions This Proposal Makes
 
-- Two product repositories: Schema and Flow.
-- Result, Check, and Refined remain focused package boundaries inside the Schema repository.
-- `Axial.ErrorHandling` remains a dependency-only searchable meta-package; the `Axial` umbrella is removed.
-- Flow remains independent of Result, Check, Refined, and Schema.
-- Flow-based Schema HTTP adapters remain with Schema.
-- The broad `Axial` umbrella package is removed; the focused ErrorHandling meta-package remains.
-- Each future format gets its own package.
-- One JSON package serves .NET and Fable.
-- The schema-to-codec compiler is shared.
-- Runtime implementations are platform-specific internally.
-- Compiler directives are concentrated in platform modules because conditional source inclusion is not dependable.
-- Documentation presents Result, Check, Refined, Schema, and Flow before source repositories are extracted.
+- Two product repositories: Schema and Flow. Result stays with Schema for now; a third repository is a later,
+  separate decision.
+- Result, Constraint, Refined, Parse, and Data remain focused package boundaries inside the Schema repository.
+- No meta-packages: both `Axial.ErrorHandling` and the `Axial` umbrella are removed. Values is navigation only.
+- The `Axial.Flow` core remains independent of Result, Constraint, Refined, Parse, Data, and Schema; the
+  constraint binds the core, not every package in the Flow repository.
+- The HTTP adapters move to the Flow repository as `Axial.Flow.AspNetCore` and `Axial.Flow.GenHttp`, consuming
+  released Schema packages. `Axial.Schema.Http` stays with Schema.
+- Flow is extracted first; the documentation reshape happens afterwards, in the smaller repository.
+- The current repository ends as `Axial`, the documentation site and cross-product tracker.
+- Documentation presents Result, Values, Data, Schema, and Flow before source repositories are extracted.
 
 ## Choices To Resolve During Implementation
 
@@ -872,11 +745,10 @@ These choices do not change the main direction:
 
 - final GitHub repository names and documentation URLs;
 - whether the combined reference application receives its own repository;
-- which .NET byte, memory, writer, stream, and pipe overloads belong in the first release;
-- whether Fable's primary representation is string, `Uint8Array`, or both;
 - whether Schema repository packages continue sharing a version after 1.0;
 - whether Flow repository packages continue sharing a version after 1.0;
-- the minimum Flow version supported by the Schema HTTP adapters.
+- the minimum Schema version supported by the Flow HTTP adapters;
+- whether the adapters sit at `Axial.Flow.*` or under `Axial.Flow.Hosting.*`;
+- whether `Axial.Result` eventually gets its own repository.
 
-Resolve these with consumer examples, package tests, and benchmarks. None requires returning to one combined repository
-or one generic codec package.
+Resolve these with consumer examples and package tests. None requires returning to one combined repository.

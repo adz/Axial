@@ -6,7 +6,10 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HUGO_BASEURL="${HUGO_BASEURL:-"/"}"
 
 for project in \
-  "src/Axial/Axial.fsproj" \
+  "src/Axial.Result/Axial.Result.fsproj" \
+  "src/Axial.Constraint/Axial.Constraint.fsproj" \
+  "src/Axial.Refined/Axial.Refined.fsproj" \
+  "src/Axial.Parse/Axial.Parse.fsproj" \
   "src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj" \
   "src/Axial.Flow.Console/Axial.Flow.Console.fsproj" \
   "src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj" \

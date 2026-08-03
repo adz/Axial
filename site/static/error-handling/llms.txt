@@ -1,7 +1,9 @@
 # Axial Error Handling
 
-- Four focused packages: `Axial.Result`, `Axial.Constraint`, `Axial.Parse`, and `Axial.Refined`.
-- `Axial.ErrorHandling` installs all four and exposes no API of its own.
+- `Axial.Result` is a top-level product about composing failures, a peer of Data, Schema, and Flow.
+- Values is a navigation grouping over `Axial.Constraint`, `Axial.Refined`, and `Axial.Parse` — packages about
+  admitting values. There is no `Axial.Values` package or namespace.
+- All four packages install independently; there is no meta-package.
 - `Axial.Result` owns generic Result combinators, extraction helpers, and `result { }`.
 - `Axial.Constraint` owns `Constraint<'value>`, `Violation`, and the `ConstraintDescription` read model.
 - A constraint is a reusable description of valid values; `check` runs it. There is no separate `Check` type.

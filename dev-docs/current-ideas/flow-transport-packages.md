@@ -60,7 +60,8 @@ dependency weight makes the boundary valuable.
 `Axial.Flow` must not depend on any satellite. Process may later depend on the shared framing package, but framing must
 not depend on Process, Network, Serial, or HttpClient.
 
-No public package should depend on `Axial.ErrorHandling`. Each package owns its operational error types or accepts
+No public package should depend on `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, or `Axial.Parse`. Each
+package owns its operational error types or accepts
 caller-provided codec errors.
 
 ## Cross-package API grammar

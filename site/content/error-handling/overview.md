@@ -18,7 +18,6 @@ dotnet add package Axial.Result
 dotnet add package Axial.Constraint
 dotnet add package Axial.Parse
 dotnet add package Axial.Refined
-dotnet add package Axial.ErrorHandling
 ```
 
 ## Constrain a typed value

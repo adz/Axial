@@ -6,8 +6,8 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 
 ## Release Strategy
 
-Per `prd.md`: the boundary stack — `Axial.Result`, `Axial.Constraint`, and `Axial.Refined` under the
-`Axial.ErrorHandling` meta-package, plus `Axial.Schema` and `Axial.Schema.Json` — is the 1.0 gate, driven by
+Per `prd.md`: the boundary stack — `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, and `Axial.Parse` as focused
+packages, plus `Axial.Schema` and `Axial.Schema.Json` — is the 1.0 gate, driven by
 a real adoption target (a ~100-variant versioned config system). The Flow group's remaining pre-1.0 scope in
 `LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
 thread originally sequenced versioning/migration machinery before the grammar; in practice the grammar and generator
@@ -24,13 +24,13 @@ full input and value toolkit. The public surface has three identities:
 - **Error Handling**: four focused packages — ordinary `Result` and `result { }` in `Axial.Result`; reusable,
   reusable, inspectable value constraints in `Axial.Constraint` (returns the standard F# `Result` type, no dependency
   on `Axial.Result`); primitive parsing in the independent `Axial.Parse`; and refined domain values in `Axial.Refined`
-  (depends only on `Axial.Constraint`). `Axial.ErrorHandling` installs all four as a dependency-only meta-package with no API
-  of its own.
+  (depends only on `Axial.Constraint`). All four install independently; there is no meta-package.
 - **Schema**: structured input, accumulated path-aware errors, model construction, codecs, contracts, and boundary
   interpreters.
 - **Flow**: effectful workflows. Useful with or without Schema, and always installed separately.
 
-The `Axial` umbrella installs ErrorHandling and Schema together. It does not install or re-export Flow.
+There is no umbrella package. `Axial.ErrorHandling` and `Axial` were both removed pre-1.0; consumers install the
+focused packages they use.
 
 Within the effects group, Axial has one fully expanded workflow shape:
 

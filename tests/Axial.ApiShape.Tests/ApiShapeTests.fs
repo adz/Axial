@@ -534,7 +534,8 @@ module ApiShapeTests =
               Assembly.Load "Axial.Constraint"
               Assembly.Load "Axial.Refined"
               Assembly.Load "Axial.Schema"
-              Assembly.Load "Axial" ]
+              Assembly.Load "Axial.Parse"
+              Assembly.Load "Axial.Data" ]
 
         let removedTypes =
             [ "Axial.Validation.Validation`2"
@@ -614,12 +615,31 @@ module ApiShapeTests =
         |> assertContainsAll [ "lift"; "withError"; "context"; "pass"; "compose"; "optional" ]
 
     [<Fact>]
-    let ``error handling meta-package installs three focused packages and exposes no API`` () =
-        let metaAssembly = Assembly.Load "Axial.ErrorHandling"
+    let ``no meta-package remains in the graph`` () =
+        // Both meta-packages are retired: Axial.ErrorHandling and the Axial umbrella. Every install is a
+        // focused package, so nothing in the tree may reference either assembly, and neither may be
+        // loadable from the test's output directory.
+        let metaPackages = [ "Axial"; "Axial.ErrorHandling" ]
 
-        test <@ metaAssembly.GetName().Name = "Axial.ErrorHandling" @>
-        test <@ metaAssembly.GetExportedTypes() |> Array.isEmpty @>
-        test <@ isNull (metaAssembly.GetType("Axial.ErrorHandling", false)) @>
+        let packages =
+            [ "Axial.Result"
+              "Axial.Constraint"
+              "Axial.Refined"
+              "Axial.Parse"
+              "Axial.Data"
+              "Axial.Schema"
+              "Axial.Schema.Json"
+              "Axial.Schema.JsonSchema"
+              "Axial.Flow"
+              "Axial.Flow.Hosting"
+              "Axial.Flow.Telemetry" ]
+
+        for package in packages do
+            referencedAssemblyNames (Assembly.Load package) |> assertContainsNone metaPackages
+
+        for meta in metaPackages do
+            let probe = Path.Combine(AppContext.BaseDirectory, meta + ".dll")
+            test <@ not (File.Exists probe) @>
 
     [<Fact>]
     let ``schema validation interpreters live alongside schema in the consolidated schema package`` () =

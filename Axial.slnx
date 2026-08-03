@@ -38,7 +38,6 @@
     <Project Path="scripts/schemagen/schemagen.fsproj" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/Axial/Axial.fsproj" />
     <Project Path="src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj" />
     <Project Path="src/Axial.Flow.Console/Axial.Flow.Console.fsproj" />
     <Project Path="src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj" />
@@ -50,7 +49,6 @@
     <Project Path="src/Axial.Constraint/Axial.Constraint.fsproj" />
     <Project Path="src/Axial.Parse/Axial.Parse.fsproj" />
     <Project Path="src/Axial.Refined/Axial.Refined.fsproj" />
-    <Project Path="src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
     <Project Path="src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />
     <Project Path="src/Axial.Schema/Axial.Schema.fsproj" />
     <Project Path="src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" />

@@ -8,8 +8,8 @@ direction is `dev-docs/PLAN.md`; the active queue is `dev-docs/TASKS.md`; durabl
 
 Axial is an F#/.NET library with three public identities:
 
-- **Error Handling.** Checks and ordinary Results, accumulated diagnostics, and refined values, available as focused
-  packages or through the `Axial.ErrorHandling` meta-package.
+- **Error Handling.** Checks and ordinary Results, accumulated diagnostics, and refined values, available as four
+  independently installable packages: `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, and `Axial.Parse`.
 - **Schema.** `Schema<'model>` describes how structured input becomes a domain model and drives parsing, redisplay,
   JSON codecs, JSON Schema output, and metadata interpreters.
 - **Flow.** `Flow<'env, 'error, 'value>`, a ZIO-inspired Reader-Async-Result workflow model with typed
@@ -20,8 +20,8 @@ Axial is an F#/.NET library with three public identities:
 
 The boundary stack ships 1.0 first; the Flow group follows demand.
 
-- **The 1.0 gate is the boundary stack**: `Axial.Result`, `Axial.Constraint`, and `Axial.Refined` under the
-  `Axial.ErrorHandling` meta-package, plus `Axial.Schema` (declaration + interpreters in one package,
+- **The 1.0 gate is the boundary stack**: `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, and `Axial.Parse`
+  as focused packages, plus `Axial.Schema` (declaration + interpreters in one package,
   including `Schema.check` boundary admission), and `Axial.Schema.Json`. Scope: the current queue in
   `dev-docs/TASKS.md` (schema-depth candidates, now that the contract versioning engine has shipped) plus its
   acceptance checks.

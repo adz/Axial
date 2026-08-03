@@ -1,6 +1,6 @@
 ---
 title: "Error Handling: Result, Constraint, Parse, and Refined"
-linkTitle: ErrorHandling
+linkTitle: Result and Values
 type: docs
 notoc: true
 description: Compose typed failures, reusable checks, primitive parsing, and invariant-carrying values.
@@ -83,14 +83,24 @@ reusable refinements. Each package can be installed independently.
 
 ## Packages
 
+**Axial.Result** is its own product, a peer of Data, Schema, and Flow — not part of a bundle. It is about composing
+failures.
+
 | Package | Use it for | Documentation |
 | --- | --- | --- |
 | `Axial.Result` | Result combinators, extraction helpers, and `result { }` | [Result](./result/) |
-| `Axial.Constraint` | One reusable, inspectable description of valid values | [Constraint](./constraint/) |
-| `Axial.Parse` | Serialized primitive decoding | [Parse](/error-handling/parse/) |
-| `Axial.Refined` | Invariant-carrying domain values | [Refined](./refined/) |
 
-`Axial.ErrorHandling` installs all four packages and exposes no API of its own.
+**Values** is a grouping over three packages about admitting values. It is navigation only: there is no
+`Axial.Values` package and no `Axial.Values` namespace.
+
+| Package | Use it for | Documentation |
+| --- | --- | --- |
+| `Axial.Constraint` | One reusable, inspectable description of valid values | [Constraint](./constraint/) |
+| `Axial.Refined` | Invariant-carrying domain values | [Refined](./refined/) |
+| `Axial.Parse` | Serialized primitive decoding | [Parse](/error-handling/parse/) |
+
+Every package installs independently — there is no `Axial.ErrorHandling` meta-package. Constraint returns the
+standard F# `Result`, so Axial.Result's helpers compose with it, but neither requires the other.
 
 [Axial.Schema]({{< relref "/schema/" >}}) adds structured input, paths, accumulated diagnostics, reconstruction, and
 wire metadata.

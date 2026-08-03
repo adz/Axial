@@ -26,8 +26,6 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 - `Axial.Refined` (`src/Axial.Refined/`): invariant-carrying types and the operations that justify them. Depends
   only on `Axial.Constraint`. A type ships only if it makes a partial operation total or removes a branch from consumers;
   validation-shaped concepts are constraints in `Axial.Constraint` instead.
-- `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): dependency-only meta-package installing Result, Check, Parse, and
-  Refined. No source files, no public API, `IncludeBuildOutput=false` so its `.nupkg` carries no assembly.
 - `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
   `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
   and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Constraint`, and
@@ -51,8 +49,9 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 - `Axial.Schema.Contracts.Build` (`src/Axial.Schema.Contracts.Build/`): packable targets-only MSBuild package
   running `scripts/schemagen` before compile over `<AxialDeriveSchema>`/`<AxialContract>` items.
 - `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
-- `Axial` umbrella package references ErrorHandling, Schema, and the Schema add-ons for convenience. Flow remains a
-  separate install.
+- There are no meta-packages. `Axial.ErrorHandling` and the `Axial` umbrella were both deleted; every install is a
+  focused package. **Values** — Constraint, Refined, and Parse — is a documentation grouping only: no package, no
+  namespace. `Axial.ApiShape.Tests` pins this with `no meta-package remains in the graph`.
 
 ## Open These First
 

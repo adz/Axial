@@ -4,8 +4,10 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DocsBuildScope)' == 'All' Or '$(DocsBuildScope)' == 'Api'">
-    <DocsProject Include="../src/Axial.ErrorHandling/Axial.ErrorHandling.fsproj" />
+    <DocsProject Include="../src/Axial.Result/Axial.Result.fsproj" />
     <DocsProject Include="../src/Axial.Constraint/Axial.Constraint.fsproj" />
+    <DocsProject Include="../src/Axial.Refined/Axial.Refined.fsproj" />
+    <DocsProject Include="../src/Axial.Parse/Axial.Parse.fsproj" />
     <DocsProject Include="../src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />
     <DocsProject Include="../src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" />
     <DocsProject Include="../src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj" />

@@ -11,15 +11,18 @@ Active sketches:
 - `refined-schema-proof.md` — unresolved exploration of refined schema proof and safe record updates, with a prototype
   under `prototypes/refined-private-record/`.
 - `flow-gate-rename.md` — extracted proposal for Axial.Flow application gate naming, independent of the
-  Parse/Check/Refinement/Schema work.
+  Parse/Constraint/Refinement/Schema work.
 - `architecture-guardrails.md` — proposed adopter-facing architecture guidance and a staged tooling direction for
   schema laws, compile-negative proofs, project roles, and compiled-code/public-surface audits.
-- `project-split.md` — proposal to separate Schema/ErrorHandling and Flow repositories, keep formats in separate Schema
-  packages, split the documentation experience, and isolate .NET/Fable codec runtimes behind
-  concentrated compiler directives.
-- `retire-errorhandling.md` — proposal to delete the `Axial.ErrorHandling` meta-package, promote `Axial.Result` to a
-  top-level docs entry point next to Data, and collapse Constraint/Check, Refined, and Parse under a docs-only
-  "Values" nav group. Phase 1 (expanding Result) is in progress.
+- `project-split.md` — proposal to separate two repositories: Schema (carrying Data, Result, and the Values packages
+  plus all Schema satellites) and Flow (plus its satellites), with an independent release train and documentation
+  entry point each.
+- `format-and-json-runtime.md` — extracted from `project-split.md`: one package per representation format, and a
+  shared schema-to-codec compiler over platform-specific .NET and Fable JSON runtimes.
+- `retire-errorhandling.md` — delete the `Axial.ErrorHandling` meta-package, promote `Axial.Result` to a
+  top-level docs entry point next to Data, and collapse Constraint, Refined, and Parse under a docs-only "Values"
+  nav group. Phase 1 (expanding Result) and the package half of Phase 4 are implemented — both meta-packages are
+  gone. The docs-tree move (Phases 2-3) is outstanding.
 - `database.md` — direction sketch for a typed relational layer (generated immutable query AST interpreted through
   Flow, building on `Schema`; its older `FieldRef` references need redesign if the idea is promoted).
 - `flow-stream-proving.md` — pre-1.0 plan to prove and freeze resource-safe, portable FlowStream semantics through

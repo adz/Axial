@@ -1,7 +1,8 @@
 open Axial.Parse
 // The introductory reference app: a conference registration desk built with only
-// Axial.ErrorHandling. No schemas, no Flow — plain Result with your own error union,
-// terse checks, fail-fast refined construction, and accumulated form validation.
+// Axial.Result, Axial.Constraint, Axial.Refined, and Axial.Parse. No schemas, no Flow —
+// plain Result with your own error union, terse checks, fail-fast refined construction,
+// and accumulated form validation.
 //
 // Read it top to bottom:
 //   1. single-field checks that stay ordinary Result values
@@ -9,7 +10,6 @@ open Axial.Parse
 //   3. explicit parsing and refinement constructing domain values
 // Schema owns accumulated, path-aware input failures; the next reference app adds it.
 
-open Axial
 open Axial.Result
 open Axial.Constraint
 open Axial.Constraint.ConstraintDSL

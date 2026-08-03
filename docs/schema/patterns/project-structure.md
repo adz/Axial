@@ -30,7 +30,7 @@ MyApp.Host
 
 ```text
 Contracts  -> Axial.Schema
-Domain     -> Axial.ErrorHandling, optionally Axial.Schema
+Domain     -> Axial.Result, Axial.Constraint, Axial.Refined, Axial.Parse, optionally Axial.Schema
 Application -> Domain, optionally Axial.Flow
 Infrastructure -> Application
 Host -> Contracts, Domain, Application, Infrastructure

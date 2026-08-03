@@ -22,7 +22,7 @@ Axial has two main groups, and everything in this queue serves that split:
 
 Phases 19–28-prelude are complete and recorded in `dev-docs/decisions/README.md` and git history; the most recent
 completions (2026-07-09..13): the Schema value/model catalog consolidation, `Axial.Refined` moved into
-`Axial.ErrorHandling`, `Schema.check` for already assembled typed values,
+the error-handling family, `Schema.check` for already assembled typed values,
 the `.contract` grammar/generator as wire-tier tooling
 (`src/Axial.Schema.Contracts`, `scripts/schemagen`, golden corpus in `tests/Axial.Schema.Tests/contracts/`),
 the `Contract<'model>` versioning engine (`Contract.parse`/`Contract.parseVersion`, typed contiguous n-1 → n
