@@ -17,6 +17,9 @@ Active sketches:
 - `project-split.md` — proposal to separate Schema/ErrorHandling and Flow repositories, keep formats in separate Schema
   packages, split the documentation experience, and isolate .NET/Fable codec runtimes behind
   concentrated compiler directives.
+- `retire-errorhandling.md` — proposal to delete the `Axial.ErrorHandling` meta-package, promote `Axial.Result` to a
+  top-level docs entry point next to Data, and collapse Constraint/Check, Refined, and Parse under a docs-only
+  "Values" nav group. Phase 1 (expanding Result) is in progress.
 - `database.md` — direction sketch for a typed relational layer (generated immutable query AST interpreted through
   Flow, building on `Schema`; its older `FieldRef` references need redesign if the idea is promoted).
 - `flow-stream-proving.md` — pre-1.0 plan to prove and freeze resource-safe, portable FlowStream semantics through

@@ -1386,7 +1386,14 @@ module ApiShapeTests =
               "notNullOr"
               "okOr"
               "errorOr"
-              "headOr" ]
+              "headOr"
+              "tap"
+              "tapError"
+              "traverse"
+              "sequence" ]
+
+        // Traversal lives on the Result module itself; the former Collection module is retired.
+        assertModuleAbsentFromAssembly "Axial.Result" "Axial.Result.Collection"
 
         let parseMembers =
             moduleTypeFromAssembly "Axial.Parse" "Axial.Parse.Parse"

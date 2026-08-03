@@ -48,6 +48,99 @@ module ResultTests =
         test <@ ("Ada" |> Result.okIf (fun value -> not (obj.ReferenceEquals(value, null)))) = Ok "Ada" @>
         test <@ ([ 1; 2 ] |> Result.okIf (Seq.isEmpty >> not)) = Ok [ 1; 2 ] @>
         test <@ ([ 1; 2 ] |> Result.okIf (Seq.contains 2)) = Ok [ 1; 2 ] @>
-        test <@ Collection.traverseResult (fun value -> if value < 3 then Ok(value * 2) else Error value) [ 1; 2 ] = Ok [ 2; 4 ] @>
-        test <@ Collection.sequenceResult [ Ok 1; Error "missing"; Ok 3 ] = Error "missing" @>
+        test <@ Result.traverse (fun value -> if value < 3 then Ok(value * 2) else Error value) [ 1; 2 ] = Ok [ 2; 4 ] @>
+        test <@ Result.sequence [ Ok 1; Error "missing"; Ok 3 ] = Error "missing" @>
         test <@ workflow = Ok 10 @>
+
+    [<Fact>]
+    let ``tap and tapError observe without changing the result`` () =
+        let observed = ResizeArray<string>()
+
+        let success =
+            Ok 10
+            |> Result.tap (fun value -> observed.Add(sprintf "ok %d" value))
+            |> Result.tapError (fun failure -> observed.Add(sprintf "error %s" failure))
+
+        let failure =
+            Error "boom"
+            |> Result.tap (fun value -> observed.Add(sprintf "ok %d" value))
+            |> Result.tapError (fun failure -> observed.Add(sprintf "error %s" failure))
+
+        test <@ success = Ok 10 @>
+        test <@ failure = Error "boom" @>
+        test <@ List.ofSeq observed = [ "ok 10"; "error boom" ] @>
+
+    [<Fact>]
+    let ``result.list collects every error across and! bindings`` () =
+        let parseName value =
+            if String.IsNullOrWhiteSpace value then Error "name is required" else Ok value
+
+        let parseAge value =
+            if value >= 0 then Ok value else Error "age must not be negative"
+
+        let bothOk =
+            result.list {
+                let! name = parseName "Ada"
+                and! age = parseAge 36
+                return name, age
+            }
+
+        let bothFail =
+            result.list {
+                let! name = parseName ""
+                and! age = parseAge -1
+                return name, age
+            }
+
+        let oneFails =
+            result.list {
+                let! name = parseName ""
+                and! age = parseAge 36
+                return name, age
+            }
+
+        test <@ bothOk = Ok("Ada", 36) @>
+        test <@ bothFail = Error [ "name is required"; "age must not be negative" ] @>
+        test <@ oneFails = Error [ "name is required" ] @>
+
+    [<Fact>]
+    let ``accumulating builders fail fast between dependent let! groups`` () =
+        let mutable secondRan = false
+
+        let workflow =
+            result.list {
+                let! first = Error "first failed"
+
+                let! second =
+                    secondRan <- true
+                    Ok 2
+
+                return first + second
+            }
+
+        test <@ workflow = Error [ "first failed" ] @>
+        test <@ not secondRan @>
+
+    [<Fact>]
+    let ``result.array collects into an array`` () =
+        let asArray =
+            result.array {
+                let! first = Error "first"
+                and! second = Error "second"
+                return first + second
+            }
+
+        test <@ asArray = Error [| "first"; "second" |] @>
+
+    [<Fact>]
+    let ``accumulating builders accept an already-collected result without re-wrapping`` () =
+        let alreadyCollected: Result<int, string list> = Error [ "earlier"; "failures" ]
+
+        let workflow =
+            result.list {
+                let! first = alreadyCollected
+                and! second = Error "later"
+                return first + second
+            }
+
+        test <@ workflow = Error [ "earlier"; "failures"; "later" ] @>

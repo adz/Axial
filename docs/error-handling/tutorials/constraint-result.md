@@ -110,5 +110,5 @@ let describe (renderer: Renderer) error =
     | InvalidAge violation -> field "age" violation
 ```
 
-See [Using constraints](../constraint/overview/), [Working with violations](../constraint/violations/),
-[Localization](../constraint/localization/), and [Result Builder](../result-builder/).
+See [Using constraints](../../constraint/overview/), [Working with violations](../../constraint/violations/),
+[Localization](../../constraint/localization/), and [Result CE](../../result/result-ce/).
