@@ -1,7 +1,7 @@
 ---
 title: "Constraint.Violation.tryExpectation"
 linkTitle: "tryExpectation"
-weight: 2904
+weight: 3107
 type: docs
 ---
 
@@ -26,4 +26,4 @@ The failing constraint's identity, when the violation is a single interpreted le
 | <code><span><a href="t-constraint-constraintatom.md">ConstraintAtom</a>&#32;option</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L133-133)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L126-126)

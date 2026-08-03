@@ -26,4 +26,4 @@ Returns the number of accumulated failures.
 | <code>int</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L108-108)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L109-109)

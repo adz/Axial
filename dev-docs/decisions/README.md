@@ -3,6 +3,37 @@
 This folder keeps only high-level durable decisions. Detailed historical specs are deleted once their useful rules have
 been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
+## 2026-08-03: Localization lives at the rendering edge, in a Renderer
+
+- `Violation` stays path-free, context-free, closure-free comparable data. A violation never carries a Schema
+  `Path`, a culture, a resource manager, or an application context; a `Renderer` supplies all of that at the
+  moment a message is produced. This is what keeps a violation retainable, comparable, and portable across a
+  package or a wire boundary.
+- Interpreted identity still comes from `ConstraintAtom`. A message key is a rendering projection computed from
+  the atom at the edge, never a string code attached to a violation.
+- The public surface is `Renderer.ofLookup` (portable), `Renderer.ofResourceManager` /
+  `ofResourceManagerWithCultures` / `ofCurrentCulture` (.NET only, conditionally absent under Fable rather than
+  compiled as a silent no-op), `Renderer.context` (appends), `Renderer.attribute` (replaces), and
+  `Violation.message` / `Violation.fullMessage`.
+- `attribute` replaces rather than appends so a form-scoped renderer is reusable across sibling fields. A demonstrated
+  nested-attribute use case gets an explicitly named API — `Renderer.Advanced.attributePath` — not implicit append.
+- Catalogue entries are bare predicates. The attribute noun, the actual-value clause, and group/list joining are
+  separate composition entries (`constraint.fullMessage`, `constraint.actual`, `constraint.group.*`,
+  `constraint.list.*`). That keeps `{actual}` optional without an optional-placeholder rule and lets a locale
+  reorder the sentence without touching the twenty-five predicates.
+- `MessageDescriptor` is validated runtime identity plus arguments; `MessageFormatSpec` adds the owning
+  catalogue's neutral fallback and optional plural operand. The split is what lets `Axial.Schema` push its own
+  `schema.*` entries through every renderer mechanic without `Axial.Constraint` learning a Schema identity or
+  acquiring a reverse dependency.
+- Ordinary plural support is `.one`/`.other` on entries that declare exactly one operand, tried before the bare key
+  *at the same contextual level*. Full CLDR selection, and any language whose group joining cannot be expressed as
+  pair/start/middle/end, belong to `Renderer.Advanced.ofResolver` and `Violation.toMessageTree` respectively — a
+  stated limit, not a gap.
+- Custom constraints declare no plural operand and Axial never invents a message key for `Constraint.custom` prose.
+  An invented key names a catalogue entry that does not exist and fails in the language nobody tested.
+- `Violation.render` remains the resource-free, culture-free compatibility path with its existing English exactly.
+  Localized English is allowed to read better because it composes.
+
 ## 2026-07-31: Numeric ranges are constraints, because F# cannot carry them through arithmetic
 
 - `PositiveInt`, `NonNegativeInt`, `NonZeroInt` and their `Int64` and `Decimal` variants are

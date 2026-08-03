@@ -1,7 +1,7 @@
 ---
 title: "Constraint.Violation.children"
 linkTitle: "children"
-weight: 2902
+weight: 3105
 type: docs
 ---
 
@@ -26,4 +26,4 @@ The immediate children of a group, or an empty list for an atomic violation.
 | <code><span><a href="../result/errors/t-constraint-violation.md">Violation</a>&#32;list</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L115-115)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L108-108)

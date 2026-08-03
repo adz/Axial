@@ -28,4 +28,4 @@ Requires text to have no leading or trailing whitespace.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L584-584)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L629-629)

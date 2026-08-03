@@ -1,7 +1,7 @@
 ---
 title: "Constraint.Violation.toMessageTree"
 linkTitle: "toMessageTree"
-weight: 2901
+weight: 3104
 ---
 
 
@@ -30,11 +30,11 @@ weight: 2901
 ## Examples
 
 <pre class="fssnip highlighted"><code lang="fsharp"><span class="k">match</span> <span class="id">Violation</span><span class="pn">.</span><span class="id">toMessageTree</span> <span class="id">violation</span> <span class="k">with</span>
- <span class="pn">|</span> <span class="id">MessageTree</span><span class="pn">.</span><span class="id">Leaf</span> <span class="pn">(</span><span class="id">MessageLeaf</span><span class="pn">.</span><span class="id">Localized</span> <span class="id">descriptor</span><span class="pn">)</span> <span class="k">-&gt;</span> <span class="id">descriptor</span><span class="pn">.</span><span class="id">Key</span>
+ <span class="pn">|</span> <span class="id">MessageTree</span><span class="pn">.</span><span class="id">Leaf</span> <span class="pn">(</span><span class="id">MessageLeaf</span><span class="pn">.</span><span class="id">Localized</span> <span class="id">descriptor</span><span class="pn">)</span> <span class="k">-&gt;</span> <span class="id">MessageDescriptor</span><span class="pn">.</span><span class="id">key</span> <span class="id">descriptor</span>
  <span class="pn">|</span> <span class="id">_</span> <span class="k">-&gt;</span> <span class="s">&quot;constraint.group&quot;</span>
 </code></pre>
 
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L186-186)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L179-179)

@@ -35,4 +35,4 @@ Requires a double to be neither infinite nor <code>NaN</code>.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L936-936)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L981-981)

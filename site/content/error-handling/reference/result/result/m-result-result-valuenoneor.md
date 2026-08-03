@@ -27,4 +27,4 @@ Returns success when the value option is <code>ValueNone</code>, or returns the 
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>unit,&#32;'error</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L136-136)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L138-138)

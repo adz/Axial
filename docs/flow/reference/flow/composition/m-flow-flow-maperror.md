@@ -41,4 +41,4 @@ Maps the error value of a synchronous flow.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1135-1135)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1143-1143)

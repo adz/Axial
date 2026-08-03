@@ -11,6 +11,13 @@
   <ItemGroup>
     <Compile Include="ConstraintTests.fs" />
     <Compile Include="KeyCatalogueDocTests.fs" />
+    <Compile Include="LocalizationTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Messages.resx">
+      <LogicalName>Axial.Tests.Messages.resources</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

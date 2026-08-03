@@ -16,9 +16,14 @@ open Axial.Constraint
 let retryCount : Constraint<int> =
     Constraint.between 0 10
 
-3  |> Constraint.test retryCount   // true
-42 |> Constraint.check retryCount  // Error (why 42 failed)
-3  |> Constraint.guard retryCount  // Ok 3
+3 |> Constraint.test retryCount   // true
+
+42
+|> Constraint.check retryCount
+|> Result.mapError Violation.render
+// Error "expected a value between 0 and 10, but was 42"
+
+3 |> Constraint.guard retryCount  // Ok 3
 ```
 
 There is one such vocabulary, not several. The same value works unchanged in a refinement and in a schema:
@@ -56,6 +61,8 @@ The same value facts appear at three further levels:
 - JSON Schema publishes what the target can enforce, and documents the rest.
 
 Start with the [Constraint DSL](./constraint-dsl/) for the vocabulary and how to write a rule module, then
-[Using constraints](./overview/) for composition and violations, [Interpreted and opaque](./constraints/) for what
-makes a rule inspectable and what an escape hatch costs, and [Localization](./localization/) for translating
-failures.
+[Using constraints](./overview/) for composition and keeping the input, [Working with violations](./violations/) for
+rendering and inspecting failures, [Interpreted and opaque](./constraints/) for what makes a rule inspectable and what
+an escape hatch costs, and [Localization](./localization/) for translating failures — with
+[Adding a language](./adding-a-language/) for the working order of a new translation and
+[Fable support](./fable/) for the JavaScript target.

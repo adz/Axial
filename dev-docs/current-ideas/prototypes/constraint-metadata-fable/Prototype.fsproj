@@ -1,1 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fable.Core" Version="4.3.0" /></ItemGroup><ItemGroup><Compile Include="Program.fs" /></ItemGroup></Project>

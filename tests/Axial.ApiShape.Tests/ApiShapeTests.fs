@@ -264,6 +264,75 @@ module ApiShapeTests =
         test <@ Array.isEmpty boolMethodNames @>
 
     [<Fact>]
+    let ``the localization surface keeps its documented public shape`` () =
+        moduleType typeof<Renderer> "Axial.Constraint.RendererModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll
+            [ "english"
+              "ofLookup"
+              "ofResourceManager"
+              "ofResourceManagerWithCultures"
+              "ofCurrentCulture"
+              "context"
+              "attribute"
+              "unscoped"
+              "withValues"
+              "attributeName"
+              "fullMessage" ]
+
+        moduleType typeof<Renderer> "Axial.Constraint.MessageDescriptorModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "key"; "arguments"; "segments" ]
+
+        moduleType typeof<Renderer> "Axial.Constraint.MessageFormatSpecModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "descriptor"; "fallback"; "pluralArgument" ]
+
+    [<Fact>]
+    let ``the documented localization pipelines compile in their end-user form`` () =
+        // These are the call sites the guides teach. The assertion is that they compile and type-check as
+        // written; the behaviour they produce is covered by the Constraint and Schema localization tests.
+        let renderer = Renderer.ofLookup (fun _ -> None)
+        let signup = renderer |> Renderer.context "signup"
+
+        let violation: Violation = Atomic(Expected(PresenceAtom Present, None))
+
+        let standalone =
+            violation |> Violation.fullMessage (signup |> Renderer.attribute "name")
+
+        let predicate = violation |> Violation.message signup
+
+        let isbn =
+            Constraint.customLocalized "books.isbn.invalid" "must be a valid ISBN" (fun (value: string) ->
+                value.Length = 13)
+
+        let isbnWith =
+            Constraint.customLocalizedWith
+                "books.isbn.invalid"
+                "must be a valid ISBN"
+                (Map.ofList [ "expectedLength", ConstraintValue.Integer 13L ])
+                (fun (value: string) -> value.Length = 13)
+
+        let spec =
+            MessageDescriptor.Advanced.ofSegments [ "billing"; "cardExpired" ] Map.empty
+            |> MessageFormatSpec.Advanced.create "card has expired" None
+
+        let advanced =
+            Renderer.Advanced.ofResolver (fun request -> Some(MessageResolution.Rendered request.BaseKey))
+            |> Renderer.Advanced.withValueFormatting (fun request -> ConstraintValue.render request.Value)
+            |> Renderer.Advanced.attributePath [ "address"; "postcode" ]
+
+        test <@ standalone = "Name must be present" @>
+        test <@ predicate = "must be present" @>
+        test <@ Constraint.test isbn "1234567890123" @>
+        test <@ Constraint.test isbnWith "1234567890123" @>
+        test <@ Renderer.english |> Renderer.Advanced.format spec = "card has expired" @>
+        test <@ advanced |> Renderer.Advanced.format spec = "address.postcode.billing.cardExpired" @>
+        test <@ Renderer.Advanced.attributeCandidates advanced |> List.isEmpty |> not @>
+        test <@ Renderer.Advanced.messageRequests advanced spec |> List.length = 3 @>
+        test <@ Renderer.Advanced.lookupCandidates advanced spec |> List.length = 3 @>
+
+    [<Fact>]
     let ``core Flow module keeps expected public shape`` () =
         moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Flow"
         |> publicStaticMemberNames

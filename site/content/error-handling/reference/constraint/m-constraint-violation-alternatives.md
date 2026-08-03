@@ -1,7 +1,7 @@
 ---
 title: "Constraint.Violation.alternatives"
 linkTitle: "alternatives"
-weight: 2908
+weight: 3111
 type: docs
 ---
 
@@ -36,4 +36,4 @@ type: docs
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L108-108)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L101-101)

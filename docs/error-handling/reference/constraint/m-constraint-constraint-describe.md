@@ -1,7 +1,7 @@
 ---
 title: "Constraint.describe"
 linkTitle: "describe"
-weight: 2307
+weight: 2309
 ---
 
 Attaches documentary prose to a constraint.
@@ -40,4 +40,4 @@ Attaches documentary prose to a constraint.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L317-317)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L362-362)

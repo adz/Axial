@@ -247,13 +247,16 @@ module Constraint =
     /// </para>
     /// </remarks>
     /// <example><code>Constraint.customLocalized
+    ///     "books.isbn.invalid"
     ///     "must be a valid ISBN"
-    ///     { Key = "signup.isbn"; Arguments = Map.empty }
     ///     isValidIsbn</code></example>
-    let customLocalized (description: string) (key: MessageDescriptor) (predicate: 'value -> bool) : Constraint<'value> =
+    let customLocalized (key: string) (description: string) (predicate: 'value -> bool) : Constraint<'value> =
         ensureProse (nameof description) description
-        ensureProse "key" key.Key
         ensureFunction (nameof predicate) predicate
+
+        // A malformed key written in source is a defect, so it fails here rather than at a rendering edge in
+        // whichever language nobody tested.
+        let descriptor = MessageDescriptor.Advanced.create key Map.empty
 
         Constraint<'value>(
             predicate,
@@ -261,7 +264,49 @@ module Constraint =
                 if predicate value then
                     Ok()
                 else
-                    Error(Atomic(Described(description, Some key)))),
+                    Error(Atomic(Described(description, Some descriptor)))),
+            ConstraintDescription.ofExpression (ConstraintExpression.Opaque(OpaqueConstraint.CustomPredicate description))
+        )
+
+    /// <summary>
+    /// Runs an arbitrary predicate, reporting the supplied prose plus a catalogue key and named arguments a
+    /// translation can interpolate.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The arguments are fixed at construction, which is what a rule's own operands are: an ISBN rule's expected
+    /// length does not vary per value. A failure that must report something computed from the value takes
+    /// <c>customWith</c> and builds its own violation.
+    /// </para>
+    /// <para>
+    /// No plural operand is inferred. Ordinary <c>.one</c>/<c>.other</c> lookup applies only where a catalogue
+    /// declares an operand, and guessing one from an argument's name or value would silently change which key a
+    /// translator has to supply.
+    /// </para>
+    /// </remarks>
+    /// <example><code>Constraint.customLocalizedWith
+    ///     "books.isbn.invalid"
+    ///     "must be a valid ISBN"
+    ///     (Map.ofList [ "expectedLength", ConstraintValue.Integer 13L ])
+    ///     isValidIsbn</code></example>
+    let customLocalizedWith
+        (key: string)
+        (description: string)
+        (arguments: Map<string, ConstraintValue>)
+        (predicate: 'value -> bool)
+        : Constraint<'value> =
+        ensureProse (nameof description) description
+        ensureFunction (nameof predicate) predicate
+
+        let descriptor = MessageDescriptor.Advanced.create key arguments
+
+        Constraint<'value>(
+            predicate,
+            (fun value ->
+                if predicate value then
+                    Ok()
+                else
+                    Error(Atomic(Described(description, Some descriptor)))),
             ConstraintDescription.ofExpression (ConstraintExpression.Opaque(OpaqueConstraint.CustomPredicate description))
         )
 

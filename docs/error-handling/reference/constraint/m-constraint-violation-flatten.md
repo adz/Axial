@@ -1,7 +1,7 @@
 ---
 title: "Constraint.Violation.flatten"
 linkTitle: "flatten"
-weight: 2903
+weight: 3106
 ---
 
 Every leaf of a violation tree, in report order.
@@ -49,4 +49,4 @@ from Microsoft.FSharp.Collections<br /><br />--------------------<br />type List
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L123-123)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L116-116)

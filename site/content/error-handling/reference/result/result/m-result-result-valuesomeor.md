@@ -27,4 +27,4 @@ Takes the value from a value option when it is <code>ValueSome</code>, or return
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;'error</span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L130-130)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L132-132)

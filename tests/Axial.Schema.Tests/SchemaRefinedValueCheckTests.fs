@@ -7,7 +7,7 @@ open Swensen.Unquote
 open Xunit
 
 /// <summary>
-/// Proves that refined value schemas can run executable <c>Check</c> programs: a trusted refined value projects
+/// Proves that refined value schemas can run executable <c>Constraint</c> values: a trusted refined value projects
 /// through every refinement layer to its underlying primitive representation, the constraint metadata carried by
 /// every layer lowers into one executable check over the refined value, and arbitrary primitive-level check programs
 /// adapt to run against refined values the same way.
@@ -157,7 +157,7 @@ module SchemaRefinedValueCheckTests =
         @>
 
     [<Fact>]
-    let ``refined value schemas over ordered primitives run range Check programs`` () =
+    let ``refined value schemas over ordered primitives run range constraints`` () =
         let check = Age.schema |> SchemaCheck.ordered<int, _>
 
         test <@ check (Age.create 30) = Ok () @>

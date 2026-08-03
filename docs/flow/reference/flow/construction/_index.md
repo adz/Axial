@@ -18,5 +18,5 @@ This page shows the helpers that create or adapt flows before you start composin
 - [`Flow.attemptTask`](./m-flow-flow-attempttask.md): Creates a flow from a task operation and treats thrown exceptions as recoverable typed errors.
 - [`Flow.fromValueTask`](./m-flow-flow-fromvaluetask.md): Creates a flow from a raw value task operation.
 - [`Flow.attemptValueTask`](./m-flow-flow-attemptvaluetask.md): Creates a flow from a value task operation and treats thrown exceptions as recoverable typed errors.
-- [`Flow.orElseFlow`](./m-flow-flow-orelseflow.md): Turns a pure validation result into a synchronous flow with environment-provided failure.
+- [`Flow.orElseFlow`](./m-flow-flow-orelseflow.md): Attaches an environment-derived error to a result that failed without one.
 - [`Flow.delay`](./m-flow-flow-delay.md): Defers flow construction until execution time.

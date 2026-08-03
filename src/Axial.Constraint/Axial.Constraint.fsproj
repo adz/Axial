@@ -35,6 +35,9 @@
   <ItemGroup>
     <Compile Include="Platform.fs" />
     <Compile Include="ConstraintValue.fs" />
+    <Compile Include="MessageKey.fs" />
+    <Compile Include="Renderer.fs" />
+    <Compile Include="Catalogue.fs" />
     <Compile Include="ConstraintAtom.fs" />
     <Compile Include="Violation.fs" />
     <Compile Include="ConstraintDescription.fs" />

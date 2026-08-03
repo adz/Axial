@@ -26,4 +26,4 @@ A zero-based collection-item location.
 | <code><a href="t-schema-path.md">Path</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L39-39)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L40-40)

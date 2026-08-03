@@ -60,6 +60,13 @@ This page shows `Constraint<'value>`: one reusable description of valid values, 
  the supplied prose.
 
 - [`Constraint.custom`](./m-constraint-constraint-custom.md): Runs an arbitrary predicate, reporting the supplied prose when it fails.
+- [`Constraint.customLocalized`](./m-constraint-constraint-customlocalized.md):
+ Runs an arbitrary predicate, reporting the supplied prose and the author&#39;s own catalogue key when it fails.
+
+- [`Constraint.customLocalizedWith`](./m-constraint-constraint-customlocalizedwith.md):
+ Runs an arbitrary predicate, reporting the supplied prose plus a catalogue key and named arguments a
+ translation can interpolate.
+
 - [`Constraint.customWith`](./m-constraint-constraint-customwith.md): Runs an arbitrary callback that reports its own violation.
 - [`Constraint.contramap`](./m-constraint-constraint-contramap.md): Applies a constraint to a projection of a larger value.
 - [`Constraint.describe`](./m-constraint-constraint-describe.md): Attaches documentary prose to a constraint.
@@ -104,13 +111,73 @@ This page shows `Constraint<'value>`: one reusable description of valid values, 
 
 - [`Constraint.MessageTree`](./t-constraint-messagetree.md): A violation projected for an external localization system, retaining its grouping.
 - [`Constraint.MessageLeaf`](./t-constraint-messageleaf.md): One leaf of a projected message tree.
-- [`Constraint.MessageDescriptor`](./t-constraint-messagedescriptor.md): A localizable message, addressed by key rather than rendered as English.
+- [`Constraint.MessageDescriptor`](./t-constraint-messagedescriptor.md): A message identity and the operands its template may interpolate.
+- [`Constraint.MessageFormatSpec`](./t-constraint-messageformatspec.md):
+ A descriptor plus the rendering metadata its owning catalogue holds: the neutral fallback template and the
+ optional plural operand.
+
+- [`Constraint.MessageKeyError`](./t-constraint-messagekeyerror.md): Why a relative message key could not be parsed.
+- [`Constraint.MessageFormatSpecError`](./t-constraint-messageformatspecerror.md): Why a message format specification was rejected.
+- [`Constraint.MessageDescriptor.key`](./m-constraint-messagedescriptor-key.md): The canonical unencoded key, exactly as authored.
+- [`Constraint.MessageDescriptor.arguments`](./m-constraint-messagedescriptor-arguments.md): The operands the message interpolates, named for the template.
+- [`Constraint.MessageDescriptor.segments`](./m-constraint-messagedescriptor-segments.md): The parsed, unencoded key segments.
+- [`Constraint.MessageDescriptor.Advanced.create`](./m-constraint-messagedescriptor-advanced-create.md): Parses a relative key, raising for a malformed programmer-authored key.
+- [`Constraint.MessageDescriptor.Advanced.tryCreate`](./m-constraint-messagedescriptor-advanced-trycreate.md): Parses a relative key, returning the parse failure rather than raising.
+- [`Constraint.MessageDescriptor.Advanced.ofSegments`](./m-constraint-messagedescriptor-advanced-ofsegments.md): Builds a descriptor from already-parsed segments, skipping the parse.
+- [`Constraint.MessageFormatSpec.descriptor`](./m-constraint-messageformatspec-descriptor.md): The message identity and its arguments.
+- [`Constraint.MessageFormatSpec.fallback`](./m-constraint-messageformatspec-fallback.md): The owning catalogue's neutral template, used when no resource resolves.
+- [`Constraint.MessageFormatSpec.pluralArgument`](./m-constraint-messageformatspec-pluralargument.md): The argument a translator may pluralize on, when the catalogue declares one.
+- [`Constraint.MessageFormatSpec.Advanced.create`](./m-constraint-messageformatspec-advanced-create.md): Builds a specification, raising when the plural operand names no argument.
+- [`Constraint.MessageFormatSpec.Advanced.tryCreate`](./m-constraint-messageformatspec-advanced-trycreate.md): Builds a specification, returning the validation failure rather than raising.
+
+## Rendering
+
+- [`Constraint.Renderer`](./t-constraint-renderer.md):
+ Renders localized messages for one document context and attribute. Immutable: build one at the composition
+ root and derive scoped copies with <code>context</code> and <code>attribute</code>.
+
+- [`MessageLookup`](./t-constraint-messagelookup.md): The ordinary resource lookup: an encoded resource key in, a translated template out.
+- [`Constraint.MessageRequest`](./t-constraint-messagerequest.md): One contextual level&#39;s request to an advanced resolver.
+- [`Constraint.MessageResolution`](./t-constraint-messageresolution.md): What an advanced resolver found for one contextual level.
+- [`MessageResolver`](./t-constraint-messageresolver.md): Resolves one contextual level, or declines so Axial continues to a less specific one.
+- [`Constraint.ValueFormatRequest`](./t-constraint-valueformatrequest.md): A value to format, with the placeholder's format suffix when it carried one.
+- [`Constraint.Renderer.english`](./p-constraint-renderer-english.md): A renderer that uses each catalogue&#39;s neutral English, with no resources at all.
+- [`Constraint.Renderer.ofLookup`](./m-constraint-renderer-oflookup.md): A renderer backed by any key-to-template lookup.
+- [`Constraint.Renderer.ofResourceManager`](./m-constraint-renderer-ofresourcemanager.md): A renderer backed by a .NET resource manager, using one culture for everything.
+- [`Constraint.Renderer.ofResourceManagerWithCultures`](./m-constraint-renderer-ofresourcemanagerwithcultures.md): A renderer that looks messages up in one culture and formats operands in another.
+- [`Constraint.Renderer.ofCurrentCulture`](./m-constraint-renderer-ofcurrentculture.md): A renderer that reads the ambient cultures at each render rather than capturing them.
+- [`Constraint.Renderer.context`](./m-constraint-renderer-context.md): Appends a document, model, form, or component segment.
+- [`Constraint.Renderer.attribute`](./m-constraint-renderer-attribute.md): Replaces the attribute with one segment.
+- [`Constraint.Renderer.unscoped`](./m-constraint-renderer-unscoped.md): Clears both the context and the attribute.
+- [`Constraint.Renderer.withValues`](./m-constraint-renderer-withvalues.md): Replaces all operand rendering with one callback, ignoring placeholder format suffixes.
+- [`Constraint.Renderer.attributeName`](./m-constraint-renderer-attributename.md): The attribute noun this renderer composes into a full message.
+- [`Constraint.Renderer.fullMessage`](./m-constraint-renderer-fullmessage.md): Composes the attribute noun once around an already-rendered message.
+- [`Constraint.Renderer.Advanced.ofResolver`](./m-constraint-renderer-advanced-ofresolver.md): A renderer backed by a resolver that answers one contextual level at a time.
+- [`Constraint.Renderer.Advanced.withValueFormatting`](./m-constraint-renderer-advanced-withvalueformatting.md): Replaces operand formatting with a callback that receives the placeholder&#39;s format suffix.
+- [`Constraint.Renderer.Advanced.attributePath`](./m-constraint-renderer-advanced-attributepath.md): Sets the attribute to a complete path, replacing any previous one.
+- [`Constraint.Renderer.Advanced.lookupCandidates`](./m-constraint-renderer-advanced-lookupcandidates.md): Every encoded resource key ordinary lookup will try, in order.
+- [`Constraint.Renderer.Advanced.messageRequests`](./m-constraint-renderer-advanced-messagerequests.md): One request per contextual level, as an advanced resolver receives them.
+- [`Constraint.Renderer.Advanced.attributeCandidates`](./m-constraint-renderer-advanced-attributecandidates.md): Every encoded attribute-noun key, most specific first.
+- [`Constraint.Renderer.Advanced.format`](./m-constraint-renderer-advanced-format.md): Renders any catalogue&#39;s entry through the full contextual, plural, and formatting path.
+
+## Catalogue
+
+- [`Constraint.Catalogue.keys`](./p-constraint-catalogue-keys.md): Every message key Axial can produce, including the composition and joining entries.
+- [`Constraint.Catalogue.arguments`](./p-constraint-catalogue-arguments.md): The argument names each entry&#39;s template may interpolate.
+- [`Constraint.Catalogue.english`](./p-constraint-catalogue-english.md): The neutral English template for each entry, used when no resource resolves.
+- [`Constraint.Catalogue.pluralArgument`](./p-constraint-catalogue-pluralargument.md): The argument each entry may be pluralized on, when it declares one.
 
 ## Violations
 
 - [`Constraint.Violation.render`](./m-constraint-violation-render.md):
  Renders a violation as an English sentence fragment with no trailing punctuation, keeping conjunction and
  alternative groups distinct.
+
+- [`Constraint.Violation.message`](./m-constraint-violation-message.md): Renders a violation as a localized predicate, with no attribute noun.
+- [`Constraint.Violation.fullMessage`](./m-constraint-violation-fullmessage.md): Renders a violation as a complete sentence fragment, with the attribute noun composed once.
+- [`Constraint.Violation.renderWith`](./m-constraint-violation-renderwith.md):
+ Renders a violation through a caller-supplied lookup, keeping the same grouping and separators
+ <code>render</code> uses.
 
 - [`Constraint.Violation.toMessageTree`](./m-constraint-violation-tomessagetree.md):
  Projects a violation for an external localization system, preserving its grouping so a translator renders

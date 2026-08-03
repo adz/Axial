@@ -182,6 +182,50 @@ module Shared =
           describes (RelationAtom(Compared(AtLeast, ConstraintValue.Integer 3L))) (Constraint.atLeast 3) ]
         |> List.forall id
 
+    /// The rendering edge under Fable: `Renderer.ofLookup` is the portable constructor, and contextual
+    /// fallback, interpolation, nouns, and group joining must all behave as they do on .NET. The
+    /// resource-manager constructors are deliberately absent here rather than compiling to a silent no-op.
+    let runLocalizationSurface () =
+        let failure rule value =
+            match Constraint.check rule value with
+            | Error violation -> violation
+            | Ok() -> failwith "Expected the constraint to reject the value."
+
+        let translations =
+            Map
+                [ "signup.name.constraint.presence.present", "doit être renseigné"
+                  "attribute.signup.name", "Le nom"
+                  "constraint.cardinality.minimum.other", "doit contenir au moins {minimum} éléments" ]
+
+        let renderer =
+            Renderer.ofLookup translations.TryFind
+            |> Renderer.context "signup"
+            |> Renderer.attribute "name"
+
+        let present = failure (Constraint.present: Constraint<string>) ""
+        let tags = failure (Constraint.minLength 3: Constraint<string list>) []
+        let group = All(present, [ failure (Constraint.lengthBetween 2 40: Constraint<string>) "" ])
+
+        let isbn =
+            Constraint.customLocalized "books.isbn.invalid" "must be a valid ISBN" (fun (value: string) ->
+                value.Length = 13)
+
+        [ Violation.message renderer present = "doit être renseigné"
+          Violation.fullMessage renderer present = "Le nom doit être renseigné"
+          // Plural selection, named interpolation, and value rendering, all without a .NET culture.
+          Violation.message (Renderer.ofLookup translations.TryFind) tags
+              = "doit contenir au moins 3 éléments, but was 0"
+          // The noun composes once around a whole group, not once per leaf.
+          Violation.fullMessage (Renderer.english |> Renderer.attribute "firstName") group
+              = "First name must be present and must have a size between 2 and 40, but was 0"
+          Violation.message Renderer.english (failure isbn "short") = "must be a valid ISBN"
+          Renderer.Advanced.attributeCandidates renderer = [ "attribute.signup.name"; "attribute.name" ]
+          // Opaque descriptors keep structural equality on this runtime too.
+          MessageDescriptor.Advanced.create "books.isbn.invalid" Map.empty
+              = MessageDescriptor.Advanced.ofSegments [ "books"; "isbn"; "invalid" ] Map.empty
+          Catalogue.keys |> List.forall (fun key -> Catalogue.english.ContainsKey key) ]
+        |> List.forall id
+
     let runConstraintSurface () =
         let name: Constraint<string> = Constraint.all [ Constraint.present; Constraint.lengthBetween 2 40 ]
         let tags: Constraint<string list> = Constraint.all [ Constraint.minLength 1; Constraint.distinct ]

@@ -280,7 +280,7 @@ module WorkflowErrorTests =
         test <@ retryAttempts.Value = 1 @>
 
     [<Fact>]
-    let ``Check bridges into flow shapes`` () =
+    let ``a unit-error result takes its error from the environment`` () =
         let flowBridge =
             Error ()
             |> Flow.orElseFlow (Flow.read (fun env -> $"flow:{env}"))

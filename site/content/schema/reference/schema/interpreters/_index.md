@@ -46,6 +46,13 @@ This page shows structured boundary data, universal schema parsing into `Result`
 - [`Schema.SchemaErrors.count`](./m-schema-schemaerrors-count.md): Returns the number of accumulated failures.
 - [`Schema.SchemaErrors.isEmpty`](./m-schema-schemaerrors-isempty.md): Reports whether the collection contains no failures.
 - [`Schema.SchemaErrors.toString`](./m-schema-schemaerrors-tostring.md): Renders one line per failure.
+- [`Schema.SchemaErrors.messages`](./m-schema-schemaerrors-messages.md): Renders each failure as a localized predicate, paired with the path it occurred at.
+- [`Schema.SchemaErrors.fullMessages`](./m-schema-schemaerrors-fullmessages.md): Renders each failure as a complete fragment with its attribute noun, paired with its path.
+- [`Schema.SchemaErrors.toStringWith`](./m-schema-schemaerrors-tostringwith.md): Renders one localized line per failure.
+- [`Schema.SchemaMessages`](./t-schema-schemamessages.md): The message keys Schema&#39;s own failures render through.
+- [`Schema.SchemaMessages.keys`](./p-schema-schemamessages-keys.md): Every Schema message key, with the arguments its template may interpolate.
+- [`Schema.SchemaMessages.arguments`](./p-schema-schemamessages-arguments.md): The argument names each Schema entry interpolates.
+- [`Schema.SchemaMessages.english`](./p-schema-schemamessages-english.md): The neutral English template for each Schema entry.
 
 ## Refined catalog schemas
 

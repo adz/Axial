@@ -1,7 +1,7 @@
 ---
 title: "Constraint.Violation.conjoin"
 linkTitle: "conjoin"
-weight: 2907
+weight: 3110
 type: docs
 ---
 
@@ -44,4 +44,4 @@ type: docs
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L97-97)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L90-90)

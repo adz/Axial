@@ -944,11 +944,19 @@ module Flow =
         |> OptionFlow.toResultValueOption error
         |> fromResult
 
-    /// <summary>Turns a pure validation result into a synchronous flow with environment-provided failure.</summary>
+    /// <summary>Attaches an environment-derived error to a result that failed without one.</summary>
     /// <remarks>
-    /// This helper bridges the gap between pure validation (which often uses <see cref="T:System.Result`2" /> or <see cref="T:Axial.Check`1" />)
-    /// and the <see cref="T:Axial.Flow`3" /> environment model. If the result is an error, the provided <paramref name="errorFlow" />
-    /// is executed to produce the final application error.
+    /// <para>
+    /// The <c>unit</c> error is not an empty error type — it is the absence of a reason. <c>Result.okIf</c> and
+    /// <c>Result.failIf</c> report that a value failed a predicate and deliberately nothing else, leaving the reason
+    /// to a separate step. <c>Result.orError</c> is that step for a constant; this is that step when producing the
+    /// error needs the environment, as a localized message, a correlation id, or a configured code does.
+    /// </para>
+    /// <para>
+    /// Pinning the source to <c>unit</c> is what makes <paramref name="errorFlow" /> the only possible source of the
+    /// error. A result that already carries one keeps it: map it with <c>Result.mapError</c> and use
+    /// <c>Flow.fromResult</c>.
+    /// </para>
     /// </remarks>
     /// <param name="errorFlow">A flow that reads the environment to produce an error value.</param>
     /// <param name="result">The pure result to bridge.</param>

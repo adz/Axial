@@ -5,7 +5,7 @@ weight: 1802
 type: docs
 ---
 
-A localizable message, addressed by key rather than rendered as English.
+A message identity and the operands its template may interpolate.
 
 ## Signature
 
@@ -17,8 +17,20 @@ A localizable message, addressed by key rather than rendered as English.
 
 | Field | Description |
 | --- | --- |
-| `Key` | The stable catalogue key, for example <code>constraint.cardinality.minimum</code>. |
-| `Arguments` | The operands the message interpolates, named for the key's template. |
+| `Segments` |  |
+| `Values` |  |
+
+## Remarks
+
+<p class='fsdocs-para'>
+ The identity is a parsed relative key such as <code>constraint.cardinality.between</code> or an application&#39;s own
+ <code>books.isbn.invalid</code>. A descriptor never carries a document context, an attribute, an encoded resource key,
+ or a plural category: those are rendering-edge facts, and a violation that captured them would stop being
+ path-free comparable data.
+ </p><p class='fsdocs-para'>
+ The representation is private and validated, so rendering has no malformed-descriptor branch. Independently
+ constructed descriptors with the same key and arguments compare equal, as do violations containing them.
+ </p>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L4-4)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/MessageKey.fs#L71-71)

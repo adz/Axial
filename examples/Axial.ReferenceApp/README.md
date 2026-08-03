@@ -151,7 +151,7 @@ Core adapter parse route, JSON, and form input before embedding application Flow
 catalog generates `/openapi.json`; `Inspect` renders the new-workspace form; `RetainedParseResult` redisplays invalid
 form values beside their path-specific diagnostics.
 
-`Check` and `Result` express path-free admission and domain transitions. `Flow` then orchestrates those fallible values
+`Constraint` and `Result` express path-free admission and domain transitions. `Flow` then orchestrates those fallible values
 with the workspace store. The file adapter performs its operational work through `Axial.Flow.FileSystem`, so filesystem
 failures enter the typed application error channel instead of escaping from ambient `System.IO`. `BaseRuntime.liveValue`
 supplies the standard live clock, logging, randomness, GUID, and environment-variable services as one bundle; tests

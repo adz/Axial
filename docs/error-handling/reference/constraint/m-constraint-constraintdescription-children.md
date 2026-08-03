@@ -1,7 +1,7 @@
 ---
 title: "Constraint.ConstraintDescription.children"
 linkTitle: "children"
-weight: 3000
+weight: 3200
 ---
 
 The immediate child descriptions of a node, in authored order.

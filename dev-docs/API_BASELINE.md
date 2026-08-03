@@ -54,7 +54,7 @@ bash scripts/validate-docs.sh
 ```
 
 Known validation gaps observed during this refresh: none. The previous Fable gaps are fixed:
-`benchmarks/Axial.Benchmarks.Fable` now compiles `Predicate.fs` before `Check.fs`, and
+`benchmarks/Axial.Benchmarks.Fable` now compiles `Predicates.fs` before `Constraint.fs`, and
 `ValueSchema.inspectUnderlying` guards its .NET-only generic projection-type validation with `#if !FABLE_COMPILER`, so
 `dotnet build Axial.slnx` and `bash scripts/check-fable-js-surface.sh` both pass.
 
@@ -127,8 +127,8 @@ the named modules, types, and members users and examples are expected to depend 
 
 - `Flow`, `Flow.Runtime`, `Execution`, `Cause`, `Exit`, `Fiber`, `Scope`
 - computation builders
-- `Check`, `Bind`, `BindError`, `Validation`, `Diagnostics`
-- `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types, `JsonSchema`
+- `Constraint`, `Violation`, `Renderer`, `Catalogue`, `Bind`, `BindError`
+- `Schema`, `Value`, `Field`, `Inspect` and its description types, `JsonSchema`
 - `Axial.Schema.Json` `Json` module and `JsonCodec`
 - `Data`, `Schema.parse`/`Schema.check`, `RetainedParseResult`, `SchemaError`, `Contract`
 - `Policy` and `Flow.verify`

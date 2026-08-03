@@ -1,7 +1,7 @@
 ---
 title: "Constraint.contramap"
 linkTitle: "contramap"
-weight: 2306
+weight: 2308
 type: docs
 ---
 
@@ -41,4 +41,4 @@ Applies a constraint to a projection of a larger value.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L299-299)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L344-344)

@@ -35,6 +35,15 @@ let checkedName : Result<string, Violation> =
 
 A check returns `unit`. `Result.guard` returns the unchanged input after success.
 
+Render a failure when it becomes user-facing text:
+
+```fsharp
+""
+|> Constraint.check nameCheck
+|> Result.mapError Violation.render
+// Error "value must be present"
+```
+
 ## Decode serialized input
 
 ```fsharp
@@ -73,6 +82,7 @@ let quantity raw =
 
 - [Getting Started](/error-handling/getting-started/)
 - [Constraint](../constraint/)
+- [Working with violations](./constraint/violations/)
 - [Result](../result/)
 - [Parse](../parse/)
 - [Refined](../refined/)

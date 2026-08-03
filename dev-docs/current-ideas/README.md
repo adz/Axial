@@ -8,9 +8,6 @@ rather than keeping a historical spec that no longer matches the codebase.
 
 Active sketches:
 
-- `constraint-unification.md` — accepted design for one `Constraint` value shared by direct checking, Refinement, and
-  Schema, a structured `Violation` model with no string-coded failures, a minimal term language for cross-field rules,
-  and the interpreted/opaque tiering that a later proof interpreter depends on.
 - `refined-schema-proof.md` — unresolved exploration of refined schema proof and safe record updates, with a prototype
   under `prototypes/refined-private-record/`.
 - `flow-gate-rename.md` — extracted proposal for Axial.Flow application gate naming, independent of the
@@ -27,6 +24,10 @@ Active sketches:
 - `flow-transport-packages.md` — package and API direction layered on the FlowStream proving plan for Transport,
   framing, Network, Serial, WebSocket, streaming HTTP/SSE, Compression, and later Process integration.
 
-Implemented work and settled decisions do not remain in this folder. Contract generation, versioning, and record-first
+Implemented work and settled decisions do not remain in this folder. Constraint unification and contextual
+constraint localization shipped and are recorded in `dev-docs/decisions/README.md` and `AGENTS.md`; the term
+language, `FieldReference`, `Origin`, and `ConstraintExpression.Relational` were removed from that milestone
+rather than deferred as placeholders, so they return only when a real consumer establishes field identity,
+nesting, and proof semantics. Contract generation, versioning, and record-first
 derivation outcomes are recorded in `dev-docs/decisions/README.md`; remaining consumer-gated schema work is in
 `dev-docs/TASKS.md`. The implemented Flow comparison examples live in `examples/Axial.Flow.Comparisons`.

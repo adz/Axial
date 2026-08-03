@@ -310,7 +310,7 @@ model from Process and the next real streaming consumer, test it against `IAsync
 
 ### More validation layers
 
-Axial already has `Check`, `Result`, `Refined`, `Validation`, `Diagnostics`, `Schema`, policies, and
+Axial already has `Constraint`, `Result`, `Refined`, `Schema`, policies, and
 `Model`. Each can be explained individually, but the total cognitive load is high. Adding advisory validation, another
 rules container, dynamic values, or more wrapper types would make the product worse.
 

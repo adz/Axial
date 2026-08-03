@@ -50,7 +50,7 @@ This page shows the Flow surface for cold workflow descriptions that only start 
 - [`Flow.fromValueTask`](./construction/m-flow-flow-fromvaluetask.md): Creates a flow from a raw value task operation.
 - [`Flow.attemptValueTask`](./construction/m-flow-flow-attemptvaluetask.md): Creates a flow from a value task operation and treats thrown exceptions as recoverable typed errors.
 - [`Flow.verify`](./composition/m-flow-flow-verify.md): Runs an environment-aware policy against an input value inside a workflow.
-- [`Flow.orElseFlow`](./construction/m-flow-flow-orelseflow.md): Turns a pure validation result into a synchronous flow with environment-provided failure.
+- [`Flow.orElseFlow`](./construction/m-flow-flow-orelseflow.md): Attaches an environment-derived error to a result that failed without one.
 - [`Flow.env`](./environment/m-flow-flow-env.md): Reads the current environment as the successful flow value.
 - [`Flow.read`](./environment/m-flow-flow-read.md): Projects one value from the current environment.
 - [`Flow.map`](./composition/m-flow-flow-map.md): Transforms the successful value of a flow.

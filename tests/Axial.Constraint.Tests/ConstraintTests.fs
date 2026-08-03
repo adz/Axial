@@ -640,7 +640,7 @@ module ConstraintTests =
 
             match tree with
             | MessageTree.All(MessageTree.Leaf(MessageLeaf.Localized descriptor), [ MessageTree.Leaf(MessageLeaf.Verbatim prose) ]) ->
-                test <@ descriptor.Key = "constraint.presence.present" @>
+                test <@ MessageDescriptor.key descriptor = "constraint.presence.present" @>
                 test <@ prose = "authored" @>
             | other -> failwithf "Expected a conjunction of one localized and one verbatim leaf, but was %A." other
 
@@ -650,10 +650,11 @@ module ConstraintTests =
 
             match Violation.toMessageTree failure with
             | MessageTree.Leaf(MessageLeaf.Localized descriptor) ->
-                test <@ descriptor.Key = "constraint.relation.within" @>
-                test <@ descriptor.Arguments["minimum"] = ConstraintValue.Integer 0L @>
-                test <@ descriptor.Arguments["maximum"] = ConstraintValue.Integer 10L @>
-                test <@ descriptor.Arguments["actual"] = ConstraintValue.Integer 42L @>
+                let arguments = MessageDescriptor.arguments descriptor
+                test <@ MessageDescriptor.key descriptor = "constraint.relation.within" @>
+                test <@ arguments["minimum"] = ConstraintValue.Integer 0L @>
+                test <@ arguments["maximum"] = ConstraintValue.Integer 10L @>
+                test <@ arguments["actual"] = ConstraintValue.Integer 42L @>
             | other -> failwithf "Expected one localized leaf, but was %A." other
 
         [<Fact>]
@@ -663,11 +664,12 @@ module ConstraintTests =
             let rule: Constraint<string> = Constraint.all [ Constraint.present; Constraint.lengthBetween 2 40 ]
 
             let lookup descriptor =
-                match descriptor.Key with
+                match MessageDescriptor.key descriptor with
                 | "constraint.presence.present" -> "doit être renseigné"
                 | "constraint.cardinality.between" ->
-                    let minimum = descriptor.Arguments["minimum"]
-                    let maximum = descriptor.Arguments["maximum"]
+                    let arguments = MessageDescriptor.arguments descriptor
+                    let minimum = arguments["minimum"]
+                    let maximum = arguments["maximum"]
                     $"longueur entre {ConstraintValue.render minimum} et {ConstraintValue.render maximum}"
                 | other -> other
 
@@ -687,19 +689,22 @@ module ConstraintTests =
         let ``an author-supplied key makes a custom rule's message translatable`` () =
             // Without this, an application with localization and one custom rule has one message it can never
             // translate, because verbatim prose is all Axial was given.
-            let descriptor =
-                { Key = "signup.isbn"
-                  Arguments = Map [ "format", ConstraintValue.Text "ISBN-13" ] }
+            let arguments = Map [ "format", ConstraintValue.Text "ISBN-13" ]
+            let descriptor = MessageDescriptor.Advanced.create "signup.isbn.invalid" arguments
 
             let isbn =
-                Constraint.customLocalized "must be a valid ISBN" descriptor (fun (value: string) -> value.Length = 13)
+                Constraint.customLocalizedWith
+                    "signup.isbn.invalid"
+                    "must be a valid ISBN"
+                    arguments
+                    (fun (value: string) -> value.Length = 13)
 
             test <@ violation isbn "short" = Atomic(Described("must be a valid ISBN", Some descriptor)) @>
             test <@ Violation.tryDescriptionKey (violation isbn "short") = Some descriptor @>
 
             // Prose stays the default rendering; the key only changes what a translator sees.
             test <@ Violation.render (violation isbn "short") = "must be a valid ISBN" @>
-            test <@ Violation.renderWith (fun key -> key.Key) (violation isbn "short") = "signup.isbn" @>
+            test <@ Violation.renderWith MessageDescriptor.key (violation isbn "short") = "signup.isbn.invalid" @>
 
             test <@
                 Violation.toMessageTree (violation isbn "short") = MessageTree.Leaf(MessageLeaf.Localized descriptor)

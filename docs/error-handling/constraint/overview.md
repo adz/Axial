@@ -1,7 +1,7 @@
 ---
 weight: 20
 title: Using constraints
-description: Naming rules, composing them, reading violations, and keeping the value.
+description: Naming rules, composing them, and keeping the value.
 ---
 
 # Using constraints
@@ -111,37 +111,19 @@ let validateName value =
     |> Result.mapError InvalidName
 ```
 
-## Read a violation
+## Report a failure
 
-A `Violation` answers "why did this value fail its constraint?" It is a diagnostic contract, not an application error
-union, and it is plain comparable data — no closure and no constraint description is reachable from one, so it can be
-retained, compared, and asserted on long after the constraint that produced it went out of scope.
+`Constraint.check` and `Constraint.guard` return a structured `Violation`. Render it when you need an English message:
 
 ```fsharp
-match Constraint.check name "" with
-| Ok () -> ()
-| Error violation ->
-    Violation.render violation
-    // "value must be present; expected a size between 2 and 40, but was 0"
+""
+|> Constraint.check name
+|> Result.mapError Violation.render
+// Error "value must be present; expected a size between 2 and 40, but was 0"
 ```
 
-Most code stops there. When more is needed, a failure carries the failing constraint's own identity rather than a
-string to parse:
-
-```fsharp
-let failure = Constraint.check (Constraint.minLength 3: Constraint<string>) "ab"
-
-// Violation.tryExpectation failure = Some (CardinalityAtom (Cardinality.Minimum 3))
-// Violation.tryActual failure      = Some (ConstraintValue.Integer 2L)
-```
-
-`Violation.children` and `Violation.flatten` traverse groups. Rendering keeps conjunctions and alternatives distinct:
-`all` failures join with `; `, `any` failures with `, or `.
-
-Axial never produces an empty or single-child group — one failing child is reported directly rather than wrapped.
-
-To render in another language see [Localization](../localization/). Every built-in failure carries a catalogue key
-and named arguments, and `Violation.renderWith` runs the whole path through one lookup.
+Keep the structured value when the application needs to retain, classify, or localize the failure. See
+[Working with violations](./violations/) for rendering, domain error mapping, groups, and programmatic inspection.
 
 ## Check or extract
 

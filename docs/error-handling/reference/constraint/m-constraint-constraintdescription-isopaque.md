@@ -1,7 +1,7 @@
 ---
 title: "Constraint.ConstraintDescription.isOpaque"
 linkTitle: "isOpaque"
-weight: 3002
+weight: 3202
 ---
 
 True when the node itself declines export and proof. Its children may still be inspectable.

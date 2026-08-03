@@ -72,6 +72,52 @@ let messages = RetainedParseResult.renderErrors parsed
 // [ "email: Expected email format."; "age: Must satisfy atLeast 13; got 12." ]
 ```
 
+## Localized Messages
+
+`SchemaError.render` is the zero-dependency English default. To render in a language, pass a `Renderer` and let
+Schema fold its typed path in as the attribute:
+
+```fsharp
+open Axial.Constraint
+
+let signup = renderer |> Renderer.context "signup"
+
+errors |> SchemaErrors.messages signup
+// [ Path "email",              "must be a valid email"
+//   Path "contacts[1].value",  "must be present" ]
+
+errors |> SchemaErrors.fullMessages signup
+// [ Path "email",              "Email must be a valid email"
+//   Path "contacts[1].value",  "Value must be present" ]
+
+errors |> SchemaErrors.toStringWith signup   // one full message per line
+```
+
+`messages` returns bare predicates, which is what a form wants: the returned `Path` already identifies the field, so
+a template that renders its own label does not print the name twice. `fullMessages` composes the attribute noun once
+for payloads, logs, and summaries.
+
+You supply only the document context. Index components stay out of resource keys — `contacts[0].value` and
+`contacts[1].value` are one field for a translator — and stay in every returned path, so field lookup and redisplay
+still work:
+
+```fsharp
+for field in formFields do
+    let value = Data.redisplayPath field.Path parsed.Input
+    let messages =
+        errors
+        |> SchemaErrors.messages signup
+        |> List.filter (fun (path, _) -> Path.format path = field.Path)
+        |> List.map snd
+
+    render field value messages
+```
+
+Schema's own parse and structural failures have a `schema.*` catalogue (`SchemaMessages.keys`); constraint failures
+use Axial's `constraint.*` catalogue. Both render through the same mechanics. See
+[Localization]({{< relref "/error-handling/constraint/localization/" >}}) for the key catalogue and
+[Adding a language]({{< relref "/error-handling/constraint/adding-a-language/" >}}) for generating a translation.
+
 ## Mapping To Domain Errors
 
 `RetainedParseResult.mapErrors` translates interpreter errors into a domain or application error type at the boundary while

@@ -1,7 +1,7 @@
 ---
 title: "Constraint.Violation.tryDescription"
 linkTitle: "tryDescription"
-weight: 2906
+weight: 3109
 type: docs
 ---
 
@@ -26,4 +26,4 @@ The author-supplied prose, when the violation is a single opaque leaf.
 | <code><span>string&#32;option</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L145-145)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L138-138)

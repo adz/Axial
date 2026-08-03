@@ -28,8 +28,10 @@ Replaces whatever error a result carries with the supplied typed error. <code>Ok
 
 ## Remarks
 
-The natural follow-up to <code>okIf</code>/<code>failIf</code>, and to any <code>Check</code> call whose
- <code>CheckFailure list</code> should become a domain error: <code>value |&gt; Result.guard Check.String.present |&gt; Result.orError MyError</code>.
+The natural follow-up to <code>okIf</code>/<code>failIf</code>, which fail with <code>unit</code> precisely so the
+ reason is chosen here: <code>value |&gt; Result.okIf isValid |&gt; Result.orError MyError</code>. Use
+ <code>Result.mapError</code> instead when the existing error carries something worth keeping, as a
+ <code>Violation</code> does.
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L76-76)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Result/Result.fs#L78-78)

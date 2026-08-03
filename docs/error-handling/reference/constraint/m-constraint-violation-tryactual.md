@@ -1,7 +1,7 @@
 ---
 title: "Constraint.Violation.tryActual"
 linkTitle: "tryActual"
-weight: 2905
+weight: 3108
 ---
 
 The value that failed, when the violation is a single leaf carrying a portable one.
@@ -25,4 +25,4 @@ The value that failed, when the violation is a single leaf carrying a portable o
 | <code><span><a href="t-constraint-constraintvalue.md">ConstraintValue</a>&#32;option</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L139-139)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L132-132)

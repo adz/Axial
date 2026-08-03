@@ -4,7 +4,7 @@ linkTitle: "orElseFlow"
 weight: 2315
 ---
 
-Turns a pure validation result into a synchronous flow with environment-provided failure.
+Attaches an environment-derived error to a result that failed without one.
 
 ## Signature
 
@@ -27,11 +27,16 @@ Turns a pure validation result into a synchronous flow with environment-provided
 
 ## Remarks
 
-
- This helper bridges the gap between pure validation (which often uses <a href="https://learn.microsoft.com/dotnet/api/system.result-2">Result</a> or <a href="https://learn.microsoft.com/dotnet/api/axial.check-1">Check</a>)
- and the <a href="https://learn.microsoft.com/dotnet/api/axial.flow-3">Flow</a> environment model. If the result is an error, the provided <span class="fsdocs-param-name">errorFlow</span>
- is executed to produce the final application error.
-
+<p class='fsdocs-para'>
+ The <code>unit</code> error is not an empty error type — it is the absence of a reason. <code>Result.okIf</code> and
+ <code>Result.failIf</code> report that a value failed a predicate and deliberately nothing else, leaving the reason
+ to a separate step. <code>Result.orError</code> is that step for a constant; this is that step when producing the
+ error needs the environment, as a localized message, a correlation id, or a configured code does.
+ </p><p class='fsdocs-para'>
+ Pinning the source to <code>unit</code> is what makes <span class="fsdocs-param-name">errorFlow</span> the only possible source of the
+ error. A result that already carries one keeps it: map it with <code>Result.mapError</code> and use
+ <code>Flow.fromResult</code>.
+ </p>
 
 ## Examples
 
@@ -51,4 +56,4 @@ type Result&lt;&#39;T,&#39;TError&gt; =
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L962-962)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L970-970)

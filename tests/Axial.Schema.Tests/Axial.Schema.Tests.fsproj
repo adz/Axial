@@ -43,6 +43,7 @@
     <Compile Include="ContractTests.fs" />
     <Compile Include="RecursiveSchemaTests.fs" />
     <Compile Include="SchemaDiagnosticsRenderingTests.fs" />
+    <Compile Include="SchemaLocalizationTests.fs" />
     <Compile Include="SchemaRefinedValueCheckTests.fs" />
     <Compile Include="RefinedCatalogSchemaTests.fs" />
     <Compile Include="ConstraintExclusionLoweringTests.fs" />

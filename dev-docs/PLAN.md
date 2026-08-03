@@ -68,7 +68,7 @@ Axial's data-boundary direction splits concerns like this:
   literals, strict immutable edits, named variations, bounded matrices, paths and extraction, exact structural diffs,
   recursive partial patterns, selective produced-data proofs, concise human rendering, and deterministic JSON rendering. `Data` preserves number
   tokens, object order, and duplicate fields; operations state their equality and selection semantics explicitly.
-- `Check<'value>` describes reusable, path-free, raw-input-free value constraints
+- `Constraint<'value>` describes reusable, path-free, raw-input-free value rules; `Constraint.check` runs one
 - `Schema<'value>` describes typed shape, construction, inspection, and portable constraint metadata; `Schema.parse`
   admits structured data and `Schema.check` rechecks an already assembled typed value through its field schemas and record
   constructor. Successful operations return the ordinary value rather than a universal trust wrapper.
@@ -86,7 +86,7 @@ constructor errors attach to the current object path, and input parsing may expo
 field path when that gives better boundary feedback.
 
 Schema work should prove the portable metadata model before growing broad interpreters. The metadata slice — field
-ordering, primitive value schemas, schema constraints as inspectable metadata, lowering those constraints to `Check`,
+ordering, primitive value schemas, schema constraints as inspectable metadata, erasing those constraints for execution,
 and constructor/getter alignment — is proven. Constructor-last computation expressions are the sole public record
 authoring surface:
 

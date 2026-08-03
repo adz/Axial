@@ -37,6 +37,12 @@ if ! grep -q "Constraints: ok" <<<"$program_output"; then
   exit 1
 fi
 
+if ! grep -q "Localization: ok" <<<"$program_output"; then
+  echo "Localized constraint rendering did not run correctly in the Fable JavaScript output." >&2
+  echo "$program_output" >&2
+  exit 1
+fi
+
 if ! grep -q "Operand agreement: ok" <<<"$program_output"; then
   echo "Constraint operands were described differently under Fable than under .NET." >&2
   echo "$program_output" >&2

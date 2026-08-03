@@ -223,6 +223,11 @@ module Program =
 
         printfn "Operand agreement: ok"
 
+        if not (Shared.runLocalizationSurface ()) then
+            failwith "Localized constraint rendering did not behave correctly under Fable."
+
+        printfn "Localization: ok"
+
 #if FABLE_COMPILER
         let parsed = Json.parseData "{\"n\":1.20e+3,\"n\":2}"
         let native = Data.ofJsonValue (parseNativeJson "{\"name\":\"Ada\",\"active\":true}")

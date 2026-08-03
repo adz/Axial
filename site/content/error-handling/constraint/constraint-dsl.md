@@ -68,12 +68,32 @@ This selects a constraint; it does not parse, convert, or refine anything.
 | Membership | `oneOf`, `noneOf`, `notContains` |
 | Format | `email`, `trimmed`, `numeric`, `alphanumeric`, `pattern` |
 | Number | `multipleOf`, `finite`, `finite32` |
-| Opaque | `notWith`, `custom`, `customLocalized`, `customWith`, `contramap` |
+| Opaque | `notWith`, `custom`, `customLocalized`, `customLocalizedWith`, `customWith`, `contramap` |
 | Other | `describe`, `test`, `guard`, `orError`, `mapError` |
 
 The sign and size names are spellings, not new primitives: `positive` is `greaterThan 0` at the value's own numeric
 type, and `atLeastOne` is `minLength 1`. Each builds the same atom its general form builds, so inspection, export,
 and generation treat them identically.
+
+### Text sizes count code points
+
+The size family measures text in Unicode **code points**, not UTF-16 code units. An emoji outside the Basic
+Multilingual Plane is one character, so `Constraint.length 1` accepts `"\U0001F600"` — where `String.Length`
+would report 2.
+
+```fsharp
+let emoji : Constraint<string> = Constraint.length 1
+Constraint.test emoji "\U0001F600"   // true
+```
+
+That is the definition users mean by "length", and it is the one JavaScript and .NET can be made to agree on, so
+the same constraint reports the same size in a browser and on a server. Collections count elements, and maps count
+entries; the atom is shape-neutral and an interpreter combines it with the surrounding shape to reach `maxLength`,
+`maxItems`, or `maxProperties`.
+
+Blankness is defined the same way on both runtimes: .NET's whitespace set plus U+FEFF. Adding U+FEFF makes a JSON
+Schema validator's whitespace a strict subset of Axial's, which is what lets `present` and `trimmed` export a
+sound `\S` pattern instead of staying runtime-only.
 
 ## Names left off, and why
 

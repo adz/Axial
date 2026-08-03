@@ -1,12 +1,5 @@
 namespace Axial.Constraint
 
-/// <summary>A localizable message, addressed by key rather than rendered as English.</summary>
-type MessageDescriptor =
-    { /// <summary>The stable catalogue key, for example <c>constraint.cardinality.minimum</c>.</summary>
-      Key: string
-      /// <summary>The operands the message interpolates, named for the key's template.</summary>
-      Arguments: Map<string, ConstraintValue> }
-
 /// <summary>Why one indivisible constraint failed.</summary>
 /// <remarks>
 /// <para>
@@ -181,7 +174,7 @@ module Violation =
     /// conjunctions and alternatives in their own word order.
     /// </summary>
     /// <example><code>match Violation.toMessageTree violation with
-    /// | MessageTree.Leaf (MessageLeaf.Localized descriptor) -> descriptor.Key
+    /// | MessageTree.Leaf (MessageLeaf.Localized descriptor) -> MessageDescriptor.key descriptor
     /// | _ -> "constraint.group"</code></example>
     let rec toMessageTree (violation: Violation) : MessageTree =
         match violation with
@@ -191,13 +184,19 @@ module Violation =
                 | Some actual -> ConstraintAtom.arguments expectation |> Map.add "actual" actual
                 | None -> ConstraintAtom.arguments expectation
 
-            MessageTree.Leaf(MessageLeaf.Localized { Key = ConstraintAtom.key expectation; Arguments = arguments })
+            MessageTree.Leaf(
+                MessageLeaf.Localized(
+                    MessageDescriptor.Advanced.create (ConstraintAtom.key expectation) arguments
+                )
+            )
         | Atomic(Described(description, key)) ->
             match key with
             | Some descriptor -> MessageTree.Leaf(MessageLeaf.Localized descriptor)
             | None -> MessageTree.Leaf(MessageLeaf.Verbatim description)
         | Atomic(UnsupportedOperand operation) ->
-            MessageTree.Leaf(MessageLeaf.Localized { Key = UnsupportedOperation.key operation; Arguments = Map.empty })
+            MessageTree.Leaf(
+                MessageLeaf.Localized(MessageDescriptor.Advanced.create (UnsupportedOperation.key operation) Map.empty)
+            )
         | All(first, rest) -> MessageTree.All(toMessageTree first, rest |> List.map toMessageTree)
         | Any(first, rest) -> MessageTree.Any(toMessageTree first, rest |> List.map toMessageTree)
 
@@ -221,3 +220,52 @@ module Violation =
             | MessageTree.Any(first, rest) -> first :: rest |> List.map go |> String.concat ", or "
 
         violation |> toMessageTree |> go
+
+    let private renderLeaf (renderer: Renderer) (atomic: AtomicViolation) =
+        match atomic with
+        | Expected(expectation, actual) ->
+            let spec = Catalogue.specOf (ConstraintAtom.key expectation) (ConstraintAtom.arguments expectation)
+            let predicate = Renderer.formatSpec renderer spec
+
+            match actual with
+            | Some actual -> Renderer.composeActual renderer predicate actual
+            | None -> predicate
+        // Authored prose is the fallback for the author's own key, so a translated entry wins and an untranslated
+        // language still says something true.
+        | Described(description, Some descriptor) ->
+            Renderer.formatSpec renderer (MessageFormatSpec.ofParts description None descriptor)
+        | Described(description, None) -> description
+        | UnsupportedOperand operation ->
+            Renderer.formatSpec renderer (Catalogue.specOf (UnsupportedOperation.key operation) Map.empty)
+
+    /// <summary>Renders a violation as a localized predicate, with no attribute noun.</summary>
+    /// <remarks>
+    /// Use this where a label already names the field — a form row, or a Schema result whose returned path
+    /// identifies it. Conjunctions and alternatives join through the contextual <c>constraint.group.*</c>
+    /// patterns; an actual value, when the violation carries one, is composed in through
+    /// <c>constraint.actual</c>.
+    /// </remarks>
+    /// <example><code>violation |> Violation.message (renderer |> Renderer.context "signup" |> Renderer.attribute "name")
+    /// // "must be at least 13, but was 11"</code></example>
+    let message (renderer: Renderer) (violation: Violation) : string =
+        if isNull renderer then nullArg (nameof renderer)
+
+        let rec go violation =
+            match violation with
+            | Atomic atomic -> renderLeaf renderer atomic
+            | All(first, rest) -> first :: rest |> List.map go |> Renderer.joinAll renderer
+            | Any(first, rest) -> first :: rest |> List.map go |> Renderer.joinAny renderer
+
+        go violation
+
+    /// <summary>Renders a violation as a complete sentence fragment, with the attribute noun composed once.</summary>
+    /// <remarks>
+    /// The noun wraps the finished message, never each leaf: a group of three failures still names the field
+    /// once. With no attribute the contextual <c>constraint.attribute.default</c> supplies the noun, so an
+    /// unattributed violation reads "Value must be present" rather than borrowing the document context.
+    /// </remarks>
+    /// <example><code>violation |> Violation.fullMessage (signup |> Renderer.attribute "name")
+    /// // "Name must be present"</code></example>
+    let fullMessage (renderer: Renderer) (violation: Violation) : string =
+        if isNull renderer then nullArg (nameof renderer)
+        message renderer violation |> Renderer.composeFull renderer

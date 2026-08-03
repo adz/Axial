@@ -71,9 +71,22 @@ let quantity raw =
 `Parse.int` changes representation. `Constraint.greaterThan` admits only positive integers. Mapping both
 errors at the bind sites gives the application one deliberate error type.
 
+Render a constraint failure when it crosses into text:
+
+```fsharp
+match quantity "0" with
+| Ok quantity -> printfn "Quantity: %d" quantity
+| Error (InvalidInteger error) -> printfn "Invalid integer: %A" error
+| Error (InvalidQuantity violation) -> printfn "Invalid quantity: %s" (Violation.render violation)
+```
+
+Keep the `Violation` structured inside `QuantityError`; the UI, log, or HTTP boundary decides when and how to render
+it. See [Working with violations](./constraint/violations/) for grouped failures, inspection, and localization.
+
 ## Continue
 
 - [Result](./result/)
 - [Constraint](./constraint/)
+- [Working with violations](./constraint/violations/)
 - [Parse and Refined](./refined/)
 - [Define Refined Types](./refined/domain-values/)

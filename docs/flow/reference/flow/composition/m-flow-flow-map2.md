@@ -35,4 +35,4 @@ Combines two flows with a mapping function.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1300-1300)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1308-1308)

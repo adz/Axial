@@ -1,7 +1,7 @@
 ---
 title: "Constraint.ConstraintDescription.atoms"
 linkTitle: "atoms"
-weight: 3001
+weight: 3201
 ---
 
 Every interpreted primitive reachable without crossing an opacity boundary, in authored order.

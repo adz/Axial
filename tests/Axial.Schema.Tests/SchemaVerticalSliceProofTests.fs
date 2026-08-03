@@ -15,7 +15,7 @@ open Swensen.Unquote
 /// Proves the vertical schema metadata slice required by task line 163 of <c>dev-docs/TASKS.md</c> before Data,
 /// schema validation, rules, or syntax work may start: one authored <c>Schema&lt;'model&gt;</c> instance must
 /// simultaneously carry ordered fields, a primitive value schema, required and maxLength constraint metadata,
-/// constraint lowering to <c>Check</c>, metadata inspection without running validation, constructor/getter alignment,
+/// constraint erasure for execution, metadata inspection without running validation, constructor/getter alignment,
 /// and enough typed information to compile a CodecMapper-style record plan. Earlier tests
 /// (<c>ConstraintCheckTests</c>, <c>ConstraintInspectionTests</c>, <c>SchemaConstructorGetterAlignmentTests</c>,
 /// <c>SchemaCompiledRecordPlanProofTests</c>) prove each capability in isolation; this test proves they compose on the
@@ -161,7 +161,7 @@ module SchemaVerticalSliceProofTests =
         Schema.compilePlan (CompiledRecordPlanFactory<'model>()) schema
 
     [<Fact>]
-    let ``one authored schema proves ordering, primitive value schema, required/maxLength metadata, Check lowering, inspection, alignment, and a compiled plan together`` () =
+    let ``one authored schema proves ordering, primitive value schema, required/maxLength metadata, constraint execution, inspection, alignment, and a compiled plan together`` () =
         // Ordered fields + primitive value schema (`Schema.text`) + required and maxLength constraint metadata,
         // authored through the constructor-last typed shape.
         let emailValue =
