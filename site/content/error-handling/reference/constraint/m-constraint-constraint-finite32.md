@@ -30,4 +30,4 @@ Requires a single-precision float to be neither infinite nor <code>NaN</code>.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L684-684)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L941-941)

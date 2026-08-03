@@ -20,11 +20,15 @@ Requires a value to be inhabited according to its shape.
 
 ## Remarks
 
-
+<p class='fsdocs-para'>
  Whitespace-only text is blank, as are null text, a null or empty collection or map, <code>None</code>,
- <code>ValueNone</code>, and an empty <code>Nullable</code>. Annotate the binding so the compiler can select the shape:
- <code>let requiredName : Constraint&lt;string&gt; = Constraint.present</code>.
-
+ <code>ValueNone</code>, and an empty <code>Nullable</code>. Blankness means .NET&#39;s whitespace set plus U+FEFF, which
+ is what lets the rule be exported; see <code>nonBlankPattern</code>.
+ </p><p class='fsdocs-para'>
+ The shape is selected from the return type, so a reusable binding needs its annotation:
+ <code>let requiredName : Constraint&lt;string&gt; = Constraint.present</code>. Applied where the type is already
+ known — inside an annotated rule, or to a schema — no annotation is needed.
+ </p>
 
 ## Examples
 
@@ -36,4 +40,4 @@ Requires a value to be inhabited according to its shape.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L337-337)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L380-380)

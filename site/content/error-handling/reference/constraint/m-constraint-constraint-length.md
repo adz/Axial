@@ -39,4 +39,4 @@ Text sizes count Unicode code points, so one emoji counts once even though it is
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L460-460)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L503-503)

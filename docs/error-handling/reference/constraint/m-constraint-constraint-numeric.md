@@ -36,4 +36,4 @@ Requires text to be one or more ASCII digits.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L514-514)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L593-593)

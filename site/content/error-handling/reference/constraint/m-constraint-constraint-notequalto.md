@@ -35,4 +35,4 @@ Requires inequality with the supplied value, under F# structural equality.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L545-545)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L680-680)

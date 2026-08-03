@@ -27,8 +27,10 @@ weight: 1007
 | `Float` | An IEEE double, retained without passing through <code>decimal</code>. |
 | `Float32` | An IEEE single, retained without passing through <code>decimal</code>. |
 | `Boolean` | A Boolean. |
+| `Guid` | A globally unique identifier, kept distinct from its textual spelling. |
 | `DateTime` | A date and time without an offset. |
 | `DateTimeOffset` | A date and time with an offset from UTC. |
+| `TimeSpan` | A duration. |
 | `Null` | An absent reference. Distinct from "no portable representation available". |
 | `List` | An ordered collection of portable values. |
 
@@ -39,10 +41,11 @@ weight: 1007
  exporters use. Semantic sorts keep their own case rather than being flattened into <code>Text</code> because their
  wire rendering happens to be textual: an instant and the string spelling it are different facts, and an
  interpreter that cannot tell them apart cannot decide whether wire equality substitutes for typed equality.
- </p><p class='fsdocs-para'><code>Guid</code> and <code>TimeSpan</code> are deliberately absent. Fable cannot type-test either — it represents them
- as a plain string and a number — so admitting them would make the same constraint interpreted on .NET and
- opaque on Fable, which is exactly the execution/description divergence this design exists to prevent. Nothing
- is lost at the boundary: GUID decoding is not injective, so no exporter could enforce GUID equality anyway.
+ </p><p class='fsdocs-para'><code>Guid</code> and <code>TimeSpan</code> are reached through typed dispatch rather than a runtime type test. Fable
+ erases a <code>Guid</code> to a plain string and a <code>TimeSpan</code> to a number, so a boxed type test silently
+ labels them <code>Text</code> and <code>Integer</code> there while .NET labels them correctly — the same constraint
+ meaning two different things per platform. <code>ConstraintValue.ofOperand</code> resolves the overload at the
+ call site, where the type is still known, so both platforms agree.
  </p><p class='fsdocs-para'>
  Values outside this set are never boxed through the public surface. The constraint still executes against its
  private typed closure; the atom describes and fails as <code>UnsupportedOperand</code> instead.
@@ -52,4 +55,4 @@ weight: 1007
  </p>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintValue.fs#L91-91)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintValue.fs#L93-93)

@@ -34,4 +34,4 @@ The stable message key for an atom, derived mechanically from its case.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintAtom.fs#L149-149)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintAtom.fs#L159-159)

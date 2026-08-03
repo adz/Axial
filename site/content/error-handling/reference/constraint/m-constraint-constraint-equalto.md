@@ -34,4 +34,4 @@ Requires equality with the supplied value, under F# structural equality.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L540-540)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L671-671)

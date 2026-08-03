@@ -36,4 +36,4 @@ Requires a text or collection size inside the supplied inclusive bounds.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L476-476)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L519-519)

@@ -20,4 +20,4 @@ A localizable message, addressed by key rather than rendered as English.
 | `Arguments` | The operands the message interpolates, named for the key's template. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L49-49)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L4-4)

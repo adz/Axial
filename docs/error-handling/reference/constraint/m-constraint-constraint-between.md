@@ -36,4 +36,4 @@ Requires a value inside the supplied inclusive bounds.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L570-570)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L725-725)

@@ -25,4 +25,4 @@ The default English phrase describing what an atom expected.
 | <code>string</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintAtom.fs#L190-190)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintAtom.fs#L204-204)

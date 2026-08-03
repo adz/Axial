@@ -16,7 +16,7 @@ Copies a .NET 8+ <code>System.Text.Json.JsonDocument</code> into structured data
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>&#32;->&#32;<a href="../../data/t-data.md">Data</a></span></code> |  |
+| <code><span><a href="https://learn.microsoft.com/dotnet/api/system.text.json.jsondocument">JsonDocument</a>&#32;->&#32;<a href="../../../../data/reference/data/t-data.md">Data</a></span></code> |  |
 
 ## Remarks
 

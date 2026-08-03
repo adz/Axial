@@ -43,4 +43,4 @@ Requires text to match the supplied .NET regular expression.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L527-527)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L606-606)

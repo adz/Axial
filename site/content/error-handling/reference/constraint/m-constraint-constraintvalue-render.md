@@ -26,4 +26,4 @@ Renders a portable value for a default English message. Not a wire format.
 | <code>string</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintValue.fs#L162-162)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintValue.fs#L194-194)

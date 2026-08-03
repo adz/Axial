@@ -28,4 +28,4 @@ Requires text to match Axial&#39;s pragmatic email shape, <code>^[^@]+@[^@]+$</c
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L501-501)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L580-580)

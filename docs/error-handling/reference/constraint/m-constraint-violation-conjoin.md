@@ -43,4 +43,4 @@ weight: 2907
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L91-91)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L97-97)

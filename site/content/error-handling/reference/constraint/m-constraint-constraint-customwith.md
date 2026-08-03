@@ -34,17 +34,16 @@ Runs an arbitrary callback that reports its own violation.
  costs whatever the callback allocates. Returning an <code>Expected</code> leaf makes no false portable claim: the
  enclosing description is still opaque.
 
+ The callback&#39;s shape is exactly <code>Constraint.check</code> applied to a constraint, so the usual way to
+ supply a structured reason is to reuse a built-in rather than build a violation by hand.
+
 
 ## Examples
 
-<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">Constraint</span><span class="pn">.</span><span class="id">customWith</span> <span class="s">&quot;must be a supported currency&quot;</span> <span class="pn">(</span><span class="k">fun</span> <span class="id">code</span> <span class="k">-&gt;</span>
-     <span class="k">if</span> <span class="id">supported</span><span class="pn">.</span><span class="id">Contains</span> <span class="id">code</span> <span class="k">then</span> <span data-fsdocs-tip="fs1" data-fsdocs-tip-unique="1" class="id">Ok</span> <span class="pn">(</span><span class="pn">)</span>
-     <span class="k">else</span> <span data-fsdocs-tip="fs2" data-fsdocs-tip-unique="2" class="id">Error</span> <span class="pn">(</span><span class="id">Atomic</span> <span class="pn">(</span><span class="id">Expected</span> <span class="pn">(</span><span class="id">MembershipAtom</span> <span class="pn">(</span><span class="id">OneOf</span> <span class="id">choices</span><span class="pn">)</span><span class="pn">,</span> <span class="id">ConstraintValue</span><span class="pn">.</span><span class="id">tryCreate</span> <span class="id">code</span><span class="pn">)</span><span class="pn">)</span><span class="pn">)</span><span class="pn">)</span>
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">Constraint</span><span class="pn">.</span><span class="id">customWith</span> <span class="s">&quot;must be a supported currency&quot;</span> <span class="pn">(</span><span class="id">Constraint</span><span class="pn">.</span><span class="id">check</span> <span class="pn">(</span><span class="id">Constraint</span><span class="pn">.</span><span class="id">oneOf</span> <span class="id">supported</span><span class="pn">)</span><span class="pn">)</span>
 </code></pre>
-<div popover class="fsdocs-tip" id="fs1">union case Result.Ok: ResultValue: &#39;T -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
-<div popover class="fsdocs-tip" id="fs2">union case Result.Error: ErrorValue: &#39;TError -&gt; Result&lt;&#39;T,&#39;TError&gt;</div>
 
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L244-244)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Constraint.fs#L280-280)

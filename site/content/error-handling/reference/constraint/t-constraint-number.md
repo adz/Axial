@@ -21,4 +21,4 @@ What a numeric-property rule expects.
 | `Finite` | The value is neither infinite nor <code>NaN</code>. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintAtom.fs#L78-78)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintAtom.fs#L88-88)

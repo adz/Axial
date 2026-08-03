@@ -22,9 +22,9 @@ One leaf of a projected message tree.
 ## Remarks
 
 
- Author-supplied prose on an opaque constraint passes through verbatim and is never localizable; inventing a
- resource key for user text would promise a lookup that cannot exist.
+ Author-supplied prose on an opaque constraint passes through verbatim unless the author also supplied their
+ own catalogue key. Axial never invents one: a key it made up would promise a lookup that cannot exist.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L61-61)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/Violation.fs#L67-67)

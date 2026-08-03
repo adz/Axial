@@ -37,4 +37,4 @@ type: docs
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintValue.fs#L159-159)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Constraint/ConstraintValue.fs#L171-171)
