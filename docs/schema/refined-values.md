@@ -46,7 +46,7 @@ The rest of this page expands what a domain type like `Email` contributes and sh
 ## Define the domain type
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 
 type Email = private Email of string
@@ -81,7 +81,7 @@ field "email" _.Email {
 
 Schema constraints remain available directly inside a field block. Here both constraints apply to the incoming
 `string`, so interpreters can retain their metadata for diagnostics, forms, and generated schemas. The named Schema
-constraints use the same executable metadata defined by [Check constraints]({{< relref "/error-handling/check/constraints/" >}}).
+constraints use the same executable metadata defined by [Constraints]({{< relref "/error-handling/constraint/constraints/" >}}).
 
 Constraints preserve the value type, however. This block still contains a `Schema<string>`, while `_.Email` returns
 `Email`; by itself, the declaration cannot complete the field.
@@ -131,21 +131,21 @@ type, lift it into the refinement instead.
 
 ## Attach an application constraint
 
-Define an application constraint as a complete Check constraint, then adapt it with `fromCheck`:
+There is no adapter step: Schema takes the same `Constraint` value you would check directly.
 
 ```fsharp
-let even =
-    Axial.Check.Constraint.define "even" [] (fun value ->
-        if value % 2 = 0 then Ok ()
-        else Error [ Axial.Check.CheckFailure.Custom "even" ])
+let even : Constraint<int> =
+    Constraint.custom "must be an even quantity" (fun value -> value % 2 = 0)
 
 field "quantity" _.Quantity {
-    constrain (fromCheck even)
+    constrain even
 }
 ```
 
-Schema does not accept metadata without a Check. Parsing and validation therefore enforce the same rule that inspectors
-see. See [Check constraints]({{< relref "/error-handling/check/constraints/" >}}) for custom codes and arguments.
+An arbitrary predicate is opaque, so it runs during parsing and checking but is documented rather than enforced by
+generated schemas. Composing built-ins instead — `Constraint.multipleOf 2` here — keeps the rule inspectable, which is
+what lets JSON Schema lower it and SchemaGen generate values that satisfy it. See
+[Interpreted and opaque]({{< relref "/error-handling/constraint/constraints/" >}}) for the trade.
 
 ## Lift universal constraints into the refinement
 
@@ -159,9 +159,9 @@ module ContactEmail =
 
     let refinement =
         Refinement.defineAll
-            [ Axial.Check.Constraint.present
-              Axial.Check.Constraint.email
-              Axial.Check.Constraint.maxLength 254 ]
+            [ Axial.Constraint.Constraint.present
+              Axial.Constraint.Constraint.email
+              Axial.Constraint.Constraint.maxLength 254 ]
             ContactEmail
             value
 

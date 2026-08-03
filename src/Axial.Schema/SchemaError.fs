@@ -6,80 +6,59 @@ namespace Axial.Schema
 
 open Axial.Parse
 
-open Axial.Check
+open Axial.Constraint
 
 /// <summary>Schema input, checking, and contextual rule failures attached to diagnostics paths.</summary>
+/// <remarks>
+/// The parse/check axis is the organising split. Parsing cases mean the input could not be read as the declared
+/// type at all; <c>Violation</c> means it was read and then failed its constraint. Constraint failures are never
+/// lowered into a parse-shaped case, because a lowering that discards the atom forces consumers back to
+/// reconstructing constraint identity from strings.
+/// </remarks>
 [<RequireQualifiedAccess>]
 type SchemaError =
+    /// <summary>Required boundary input was not supplied.</summary>
     | Omitted
+    /// <summary>Boundary input was present but carried no value. The parse-side lowering of a missing value.</summary>
     | Blank
+    /// <summary>A scalar was expected at this path.</summary>
     | ExpectedScalar
+    /// <summary>An object was expected at this path.</summary>
     | ExpectedObject
+    /// <summary>A collection was expected at this path.</summary>
     | ExpectedMany
+    /// <summary>The input could not be read as the named target type.</summary>
     | InvalidFormat of expected: string
+    /// <summary>The input was well-formed but outside the target type's representable range.</summary>
     | ParseOutOfRange of target: string
-    | InvalidLength of expectation: CheckLengthExpectation * actualLength: int option
-    | OutOfRange of expectation: CheckRangeExpectation * actual: string option
-    | NotOneOf of choices: string
-    | Duplicate
+    /// <summary>A union or enum discriminator did not name one of the declared cases.</summary>
+    /// <remarks>
+    /// A parsing failure, not a constraint violation: the input could not be read as any declared case, so no
+    /// typed value exists for a constraint to reject.
+    /// </remarks>
+    | UnknownTag of choices: string
+    /// <summary>The value was read successfully and then failed its constraint.</summary>
+    | Violation of violation: Violation
+    /// <summary>The model constructor rejected an otherwise admissible set of field values.</summary>
     | ConstructorFailed of message: string
+    /// <summary>A Schema-owned intrinsic check failed.</summary>
     | Custom of code: string * message: string option
 
 #if !AXIAL_SCHEMA_CORE_ONLY
 /// <summary>Functions for lowering and rendering boundary schema failures.</summary>
 [<RequireQualifiedAccess>]
 module SchemaError =
-    let private lengthText expectation =
-        match expectation with
-        | CheckLengthExpectation.MinimumLength minimum -> $"at least {minimum}"
-        | CheckLengthExpectation.MaximumLength maximum -> $"at most {maximum}"
-        | CheckLengthExpectation.ExactLength expected -> $"exactly {expected}"
-        | CheckLengthExpectation.LengthBetween(minimum, maximum) -> $"between {minimum} and {maximum}"
-
-    let private rangeText expectation =
-        match expectation with
-        | CheckRangeExpectation.GreaterThan minimum -> $"greater than {minimum}"
-        | CheckRangeExpectation.LessThan maximum -> $"less than {maximum}"
-        | CheckRangeExpectation.AtLeast minimum -> $"at least {minimum}"
-        | CheckRangeExpectation.AtMost maximum -> $"at most {maximum}"
-        | CheckRangeExpectation.Between(minimum, maximum) -> $"between {minimum} and {maximum}"
-        | CheckRangeExpectation.NotMultipleOf divisor -> $"a multiple of {divisor}"
-
-    let internal constraintCodeFor failure =
-        match failure with
-        | CheckFailure.Blank -> Some "present"
-        | CheckFailure.InvalidFormat "email" -> Some "email"
-        | CheckFailure.InvalidFormat _ -> Some "pattern"
-        | CheckFailure.InvalidLength(CheckLengthExpectation.MinimumLength _, _) -> Some "minLength"
-        | CheckFailure.InvalidLength(CheckLengthExpectation.MaximumLength _, _) -> Some "maxLength"
-        | CheckFailure.InvalidLength(CheckLengthExpectation.ExactLength _, _) -> Some "length"
-        | CheckFailure.InvalidLength(CheckLengthExpectation.LengthBetween _, _) -> Some "lengthBetween"
-        | CheckFailure.OutOfRange(CheckRangeExpectation.GreaterThan _, _) -> Some "greaterThan"
-        | CheckFailure.OutOfRange(CheckRangeExpectation.LessThan _, _) -> Some "lessThan"
-        | CheckFailure.OutOfRange(CheckRangeExpectation.AtLeast _, _) -> Some "atLeast"
-        | CheckFailure.OutOfRange(CheckRangeExpectation.AtMost _, _) -> Some "atMost"
-        | CheckFailure.OutOfRange(CheckRangeExpectation.Between _, _) -> Some "between"
-        | CheckFailure.OutOfRange(CheckRangeExpectation.NotMultipleOf _, _) -> Some "multipleOf"
-        | CheckFailure.NotOneOf _ -> Some "oneOf"
-        | CheckFailure.Duplicate -> Some "distinct"
-        | CheckFailure.Custom code -> Some code
-
+    /// <summary>Lowers a parse failure. Parsing failures never become constraint violations.</summary>
+    /// <example><code>ParseError.MissingValue "int" |> SchemaError.ofParseError</code></example>
     let ofParseError error =
         match error with
         | ParseError.MissingValue _ -> SchemaError.Blank
         | ParseError.InvalidFormat(target, _) -> SchemaError.InvalidFormat target
         | ParseError.OutOfRange(target, _) -> SchemaError.ParseOutOfRange target
 
-    let ofCheckFailure failure =
-        match failure with
-        | CheckFailure.Blank -> SchemaError.Blank
-        | CheckFailure.InvalidFormat expected -> SchemaError.InvalidFormat expected
-        | CheckFailure.InvalidLength(expectation, actual) -> SchemaError.InvalidLength(expectation, actual)
-        | CheckFailure.OutOfRange(expectation, actual) -> SchemaError.OutOfRange(expectation, actual)
-        | CheckFailure.NotOneOf choices -> SchemaError.NotOneOf choices
-        | CheckFailure.Duplicate -> SchemaError.Duplicate
-        | CheckFailure.Custom code -> SchemaError.Custom(code, None)
-
+    /// <summary>Renders a schema error as an English sentence.</summary>
+    /// <remarks>Constraint violations delegate to <c>Violation.render</c>, so there is one rendering catalogue.</remarks>
+    /// <example><code>SchemaError.render (SchemaError.InvalidFormat "int") // "Expected int format."</code></example>
     let render error =
         match error with
         | SchemaError.Omitted -> "This value was omitted."
@@ -89,12 +68,10 @@ module SchemaError =
         | SchemaError.ExpectedMany -> "Expected a collection."
         | SchemaError.InvalidFormat expected -> $"Expected {expected} format."
         | SchemaError.ParseOutOfRange target -> $"{target} value is out of range."
-        | SchemaError.InvalidLength(expectation, None) -> $"Length must be {lengthText expectation}."
-        | SchemaError.InvalidLength(expectation, Some actual) -> $"Length must be {lengthText expectation}; got {actual}."
-        | SchemaError.OutOfRange(expectation, None) -> $"Must be {rangeText expectation}."
-        | SchemaError.OutOfRange(expectation, Some actual) -> $"Must be {rangeText expectation}; got {actual}."
-        | SchemaError.NotOneOf choices -> $"Must be one of: {choices}."
-        | SchemaError.Duplicate -> "Duplicate values are not allowed."
+        | SchemaError.UnknownTag choices -> $"Must be one of: {choices}."
+        | SchemaError.Violation violation ->
+            let rendered = Violation.render violation
+            $"{System.Char.ToUpperInvariant rendered.[0]}{rendered.Substring 1}."
         | SchemaError.ConstructorFailed message -> message
         | SchemaError.Custom(_, Some message) -> message
         | SchemaError.Custom(code, None) -> code

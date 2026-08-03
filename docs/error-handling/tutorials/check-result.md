@@ -9,7 +9,7 @@ description: Apply reusable checks and compose checked values through Result.gua
 This tutorial checks a signup request and maps check failures into an application error.
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Result
 
 type SignupRequest =
@@ -20,9 +20,9 @@ type SignupRequest =
 
 type SignupError =
     | TermsNotAccepted
-    | InvalidName of CheckFailure list
-    | InvalidEmail of CheckFailure list
-    | InvalidAge of CheckFailure list
+    | InvalidName of Violation
+    | InvalidEmail of Violation
+    | InvalidAge of Violation
 
 type Signup =
     { Name: string
@@ -33,14 +33,14 @@ type Signup =
 ## Define checks
 
 ```fsharp
-let nameCheck : Check<string> =
-    Check.all [ Check.String.present; Check.String.lengthBetween 2 40 ]
+let nameCheck : Constraint<string> =
+    Constraint.all [ Constraint.present; Constraint.lengthBetween 2 40 ]
 
-let emailCheck : Check<string> =
-    Check.all [ Check.String.present; Check.String.email ]
+let emailCheck : Constraint<string> =
+    Constraint.all [ Constraint.present; Constraint.email ]
 
-let ageCheck : Check<int> =
-    Check.atLeast 13
+let ageCheck : Constraint<int> =
+    Constraint.atLeast 13
 ```
 
 Each successful check returns `Ok ()`.
@@ -80,4 +80,4 @@ let validateSignup request =
 `result { }` stops at the first application error. Use Schema when independent fields should accumulate path-aware
 sibling diagnostics.
 
-See [Using Check](../check/overview/) and [Result Builder](../result-builder/).
+See [Using Check](../constraint/overview/) and [Result Builder](../result-builder/).

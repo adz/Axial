@@ -1,18 +1,24 @@
 # Axial Error Handling
 
-- Four focused packages: `Axial.Result`, `Axial.Check`, `Axial.Parse`, and `Axial.Refined`.
+- Four focused packages: `Axial.Result`, `Axial.Constraint`, `Axial.Parse`, and `Axial.Refined`.
 - `Axial.ErrorHandling` installs all four and exposes no API of its own.
 - `Axial.Result` owns generic Result combinators, extraction helpers, and `result { }`.
-- `Axial.Check` owns `Check<'value>`, `CheckFailure`, and `Constraint<'value>`.
-- `Check<'value> = 'value -> Result<unit, CheckFailure list>`; checks never replace or normalize values.
-- `Constraint<'value>` couples a check with portable `ConstraintDetails` metadata.
-- `Result.guard check value` returns the original value after a successful structural check.
+- `Axial.Constraint` owns `Constraint<'value>`, `Violation`, and the `ConstraintDescription` read model.
+- A constraint is a reusable description of valid values; `check` runs it. There is no separate `Check` type.
+- `Constraint.test` answers `bool`; `Constraint.check` returns `Result<unit, Violation>`; `Constraint.guard` keeps the input.
+- Constraints never replace or normalize values.
+- One constraint value serves direct checking, `Refinement.define`, and `Schema.constrain` unchanged.
+- Interpreted constructors carry a `ConstraintAtom` that drives execution, description, and any violation together.
+- `Constraint.custom`/`customWith`/`notWith`/`contramap` are opaque: they run normally, are documented, never enforced by export.
+- Annotate reusable bindings (`let requiredName : Constraint<string> = Constraint.present`); the catalogue dispatches on the return type.
+- `Violation` is plain comparable data: no closure or description is reachable from one, and it carries the failing atom rather than a code string.
+- `Violation.render` is the English default; `Violation.toMessageTree` is the localization path.
 - `Axial.Parse` owns `ParseError` and named primitive parsers such as `Parse.int` and `Parse.guid`.
-- `Axial.Refined` depends only on Check. It owns `Refinement<'underlying,'refined>` and named refined types.
+- `Axial.Refined` depends only on Constraint. It owns `Refinement<'underlying,'refined>` and named refined types.
 - Parsing and refinement are explicit operations. Map their errors into an application error before binding them together.
 - `Refinement.define` accepts one constraint, a total constructor, and a total reverse projection.
-- `Refinement.defineAll` accepts a non-empty constraint list. `defineWithCheck` is the metadata-free escape hatch.
-- `Refinement.create` returns `Result<'refined, CheckFailure list>`.
+- Compose several rules with `Constraint.all` before defining; there is no plural or check-taking constructor.
+- `Refinement.create` returns `Result<'refined, Violation>`.
 - `Refinement.underlying` returns the canonical underlying representation.
 - `Schema.refine refinement schema` applies a genuine refinement to a schema.
 - `Schema.convert` is total conversion; `Schema.tryConvert` is fallible conversion; `Schema.admit` constructs a domain model from a structured draft.
@@ -20,14 +26,14 @@
 Golden path:
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Parse
 open Axial.Refined
 open Axial.Result
 
 type QuantityError =
     | InvalidInteger of ParseError
-    | InvalidQuantity of CheckFailure list
+    | InvalidQuantity of Violation
 
 let quantity (raw: string) =
     result {

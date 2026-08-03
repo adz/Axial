@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.chunkBySize"
 linkTitle: "chunkBySize"
-weight: 2715
+weight: 2714
 ---
 
 

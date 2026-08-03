@@ -3,7 +3,7 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
     let result = workflow.RunSynchronously(env)

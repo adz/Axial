@@ -1,6 +1,6 @@
 namespace Axial.Refined
 
-open Axial.Check
+open Axial.Constraint
 
 /// <summary>A list that contains at least one item.</summary>
 /// <remarks>
@@ -114,7 +114,7 @@ module NonEmptyList =
         Refinement.define constraint' ofCheckedList _.ToList()
 
     /// <summary>Admits a non-empty list, reporting the same failure the refinement does.</summary>
-    let create (values: 'value seq) : Result<NonEmptyList<'value>, CheckFailure list> =
+    let create (values: 'value seq) : Result<NonEmptyList<'value>, Violation> =
         values |> List.ofSeq |> Refinement.create (refinement ())
 
     /// <summary>Converts to a non-empty array, preserving order.</summary>
@@ -407,7 +407,7 @@ module NonEmptyArray =
         Refinement.define constraint' ofCheckedList (fun value -> value.ToArray() |> Array.toList)
 
     /// <summary>Admits a non-empty array, reporting the same failure the refinement does.</summary>
-    let create (values: 'value seq) : Result<NonEmptyArray<'value>, CheckFailure list> =
+    let create (values: 'value seq) : Result<NonEmptyArray<'value>, Violation> =
         values |> Array.ofSeq |> Refinement.create (refinement ())
 
     /// <summary>Returns a copy of the refined value as a standard array.</summary>

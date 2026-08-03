@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.groupBy"
 linkTitle: "groupBy"
-weight: 2714
+weight: 2713
 ---
 
  Groups items by a key. Every group is non-empty by construction — a group only

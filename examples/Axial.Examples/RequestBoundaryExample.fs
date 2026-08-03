@@ -5,7 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 
 type User =
     { Id: int
@@ -22,7 +22,7 @@ type RequestEnv =
 
 let validateName (name: string) : Result<string, string> =
     name
-    |> Result.guard Check.present
+    |> Constraint.guard Constraint.present
     |> Result.mapError (fun _ -> "name is required")
 
 let loadUser : Flow<RequestEnv, string, User> =

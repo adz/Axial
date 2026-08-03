@@ -34,4 +34,4 @@ type: docs
  </p>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaType.fs#L28-28)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaType.fs#L30-30)

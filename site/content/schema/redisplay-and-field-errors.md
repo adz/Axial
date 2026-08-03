@@ -25,7 +25,7 @@ parsed.Errors         // flattened path-aware errors ([] when valid)
 ```
 
 Schema parsing, schema validation, primitive `Parse` failures, `Refine`
-failures, and value-level `CheckFailure` values all lower to the same boundary taxonomy: `SchemaError`.
+failures, and value-level `Violation` values all lower to the same boundary taxonomy: `SchemaError`.
 
 ## Field Error Lookup
 

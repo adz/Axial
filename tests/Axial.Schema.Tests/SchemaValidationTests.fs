@@ -2,13 +2,14 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 
 open System
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module SchemaValidationTests =
     type private Signup = { Email: string; Age: int }
@@ -174,9 +175,17 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.key "age"
-                            Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "10") }
-                          { Path = Path.key "email"; Error = SchemaError.Blank }
-                          { Path = Path.key "email"; Error = SchemaError.InvalidFormat "email" } ]
+                            Error = SchemaError.Violation(Atomic(Expected(RelationAtom(Compared(AtLeast, ConstraintValue.Integer 18L)), Some(ConstraintValue.Integer 10L)))) }
+                          // Two constraints on one field accumulate into one violation tree at that path, not two
+                          // diagnostics: grouping is the constraint layer's job and the path is Schema's.
+                          { Path = Path.key "email"
+                            Error =
+                              SchemaError.Violation(
+                                  All(
+                                      Atomic(Expected(PresenceAtom Present, None)),
+                                      [ Atomic(Expected(FormatAtom Format.Email, Some(ConstraintValue.Text ""))) ]
+                                  )
+                              ) } ]
             @>
 
     [<Fact>]
@@ -190,24 +199,28 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.key "age"
-                            Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "16") }
-                          { Path = Path.key "email"; Error = SchemaError.InvalidFormat "email" } ]
+                            Error = SchemaError.Violation(Atomic(Expected(RelationAtom(Compared(AtLeast, ConstraintValue.Integer 18L)), Some(ConstraintValue.Integer 16L)))) }
+                          { Path = Path.key "email"
+                            Error =
+                              SchemaError.Violation(
+                                  Atomic(Expected(FormatAtom Format.Email, Some(ConstraintValue.Text "not-an-email")))
+                              ) } ]
             @>
 
     [<Fact>]
-    let ``validate surfaces schema constraint custom messages through Check lowering`` () =
+    let ``check surfaces an opaque constraint's authored prose`` () =
         let messageSchema =
             schema<Signup> {
                 field "email" _.Email {
                     withSchema (
                         Schema.text
-                        |> Schema.constrain (Constraint.present |> Constraint.withMessage "Email is required.")
+                        |> Schema.constrain (Constraint.custom "Email is required." (Constraint.test Constraint.present))
                     )
                 }
                 field "age" _.Age {
                     withSchema (
                         Schema.int
-                        |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult.")
+                        |> Schema.constrain (Constraint.custom "Must be an adult." (fun value -> value >= 18))
                     )
                 }
                 construct (fun email age -> { Email = email; Age = age })
@@ -221,9 +234,9 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.key "age"
-                            Error = SchemaError.Custom("atLeast", Some "Must be an adult.") }
+                            Error = SchemaError.Violation(Atomic(Described "Must be an adult.")) }
                           { Path = Path.key "email"
-                            Error = SchemaError.Custom("present", Some "Email is required.") } ]
+                            Error = SchemaError.Violation(Atomic(Described "Email is required.")) } ]
             @>
 
     [<Fact>]
@@ -252,7 +265,7 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.key "primary-on-wire"
-                            Error = SchemaError.NotOneOf "secondary-value" } ]
+                            Error = SchemaError.Violation(Atomic(Expected(MembershipAtom(OneOf [ ConstraintValue.Text "secondary-value" ]), Some(ConstraintValue.Text "wrong-secondary")))) } ]
             @>
 
     [<Fact>]
@@ -290,7 +303,7 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.append (Path.key "address") (Path.key "city")
-                            Error = SchemaError.Blank } ]
+                            Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ]
             @>
 
     [<Fact>]
@@ -313,13 +326,13 @@ module SchemaValidationTests =
                                     [ PathSegment.Name "contacts"
                                       PathSegment.Index 0
                                       PathSegment.Name "kind" ]
-                            Error = SchemaError.Blank }
+                            Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) }
                           { Path =
                                 TestPath.fromLegacy
                                     [ PathSegment.Name "contacts"
                                       PathSegment.Index 1
                                       PathSegment.Name "value" ]
-                            Error = SchemaError.Blank } ]
+                            Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ]
             @>
 
     [<Fact>]
@@ -339,7 +352,7 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.key "contacts"
-                            Error = SchemaError.InvalidLength(CheckLengthExpectation.MaximumLength 2, Some 3) } ]
+                            Error = SchemaError.Violation(Atomic(Expected(CardinalityAtom(Cardinality.Maximum 2), Some(ConstraintValue.Integer 3L)))) } ]
             @>
 
     [<Fact>]
@@ -360,7 +373,7 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.append (Path.key "values") (Path.index 1)
-                            Error = SchemaError.Blank } ]
+                            Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ]
             @>
 
     [<Fact>]
@@ -399,9 +412,17 @@ module SchemaValidationTests =
                 issues validation =
                     Error
                         [ { Path = Path.key "age"
-                            Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "18", Some "17") }
-                          { Path = Path.key "email"; Error = SchemaError.Blank }
-                          { Path = Path.key "email"; Error = SchemaError.InvalidFormat "email" } ]
+                            Error = SchemaError.Violation(Atomic(Expected(RelationAtom(Compared(AtLeast, ConstraintValue.Integer 18L)), Some(ConstraintValue.Integer 17L)))) }
+                          // Two constraints on one field accumulate into one violation tree at that path, not two
+                          // diagnostics: grouping is the constraint layer's job and the path is Schema's.
+                          { Path = Path.key "email"
+                            Error =
+                              SchemaError.Violation(
+                                  All(
+                                      Atomic(Expected(PresenceAtom Present, None)),
+                                      [ Atomic(Expected(FormatAtom Format.Email, Some(ConstraintValue.Text ""))) ]
+                                  )
+                              ) } ]
             @>
 
     [<Fact>]

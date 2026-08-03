@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial
 open Axial.Refined
 open Axial.Schema
@@ -17,7 +18,7 @@ type CeEmail =
 
 [<RequireQualifiedAccess>]
 module private CeEmail =
-    let refinement = Refinement.define (Axial.Check.Constraint.pattern ".+@.+") CeEmail _.Value
+    let refinement = Refinement.define (Constraint.pattern ".+@.+") CeEmail _.Value
 
 type CeEmail with
     static member Refinement(_: string, _: CeEmail) = CeEmail.refinement
@@ -50,7 +51,7 @@ module SchemaCeTests =
         schema<CeSignup> {
             field "email" _.Email {
                 withSchema Schema.text
-                constrain (Syntax.minLength 3)
+                constrain (Constraint.minLength 3)
                 refine CeEmail.refinement
                 validate validateCompanyEmail
             }
@@ -68,7 +69,7 @@ module SchemaCeTests =
 
             field "age" _.Age {
                 withSchema Schema.int
-                constrain (Syntax.atLeast 0)
+                constrain (Constraint.atLeast 0)
             }
 
             constructResult CeSignup.createChecked

@@ -25,23 +25,17 @@ This page shows `Schema<'value>`, the universal catalog for primitive, collectio
 - [`Schema.guid`](./p-schema-schema-guid.md): Describes a GUID.
 - [`Schema.list`](./m-schema-schema-list.md): Describes a list by resolving its item schema from <typeparamref name="'item" />.
 - [`Schema.option`](./m-schema-schema-option.md): Describes an optional value.
-- [`Schema.constrain`](./m-schema-schema-constrain.md): Adds one portable constraint to a schema.
+- [`Schema.constrain`](./m-schema-schema-constrain.md): Requires a schema&#39;s values to satisfy a constraint.
+- [`Schema.constrainAll`](./m-schema-schema-constrainall.md): Requires a schema&#39;s values to satisfy every constraint, in declaration order.
+- [`Schema.mustSupply`](./m-schema-schema-mustsupply.md): Requires boundary input for this schema to be supplied.
+- [`Schema.mayOmit`](./m-schema-schema-mayomit.md): Allows boundary input for an option-typed schema to be omitted.
 - [`Schema.refine`](./m-schema-schema-refine.md): Maps a raw schema through a reusable bidirectional refinement.
 - [`Schema.validate`](./m-schema-schema-validate.md): Adds executable value validation to a schema.
 - [`Schema.union`](./m-schema-schema-union.md): Describes an externally tagged union.
 - [`Schema.UnionCase.create`](./m-schema-unioncase-create.md):
  Describes one tagged union case from a tag, a payload constructor, a payload extractor, and a payload schema.
 
-- [`Schema.Constraint`](./t-schema-constraint.md):  Creates typed Schema constraints and inspects their erased descriptors.
- <example>
- <code>
- let schema = Schema.text |> Schema.constrain (Constraint.maxLength 80)
- let custom = Axial.Check.Constraint.define "named" [] check |> Constraint.fromCheck
- </code>
- </example>
-- [`Schema.ConstraintDescriptor`](./t-schema-constraintdescriptor.md):  Describes a constraint after its typed Check constraint has been attached to a heterogeneous schema.
-- [`Schema.SchemaConstraint`](./t-schema-schemaconstraint.md):  A typed Schema constraint annotation. Value constraints retain a complete Axial.Check.Constraint;
- supply declarations remain Schema boundary metadata.
+- [`Schema.Supply`](./t-schema-supply.md): Whether boundary input for a field must be supplied.
 
 ## Record builder
 

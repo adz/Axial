@@ -1,7 +1,7 @@
 namespace Axial.Tests
 
 open System
-open Axial.Check
+open Axial.Constraint
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
@@ -63,16 +63,13 @@ module SchemaRefinedValueCheckTests =
     [<Fact>]
     let ``constraints attached after refinement execute against the refined value`` () =
         let allowed = Email.create "ada@example.com"
-        let constraint' =
-            Axial.Check.Constraint.define "allowedEmail" [] (fun value ->
-                if value = allowed then Ok () else Error [ CheckFailure.Custom "allowedEmail" ])
-            |> Constraint.fromCheck
+        let constraint' = Constraint.custom "must be the allowed address" (fun value -> value = allowed)
         let schema = Email.schema |> Schema.constrain constraint'
 
         test <@ Schema.check schema allowed = Ok allowed @>
         test <@ Schema.check schema (Email.create "grace@example.com") |> Result.isError @>
         test <@ SchemaCheck.text schema allowed = Ok () @>
-        test <@ SchemaCheck.text schema (Email.create "grace@example.com") = Error [ CheckFailure.Custom "allowedEmail" ] @>
+        test <@ SchemaCheck.text schema (Email.create "grace@example.com") = Error(Atomic(Described "must be the allowed address")) @>
         test <@ Schema.parse schema (Axial.Data.Text "ada@example.com") = Ok allowed @>
         test <@ Schema.parse schema (Axial.Data.Text "grace@example.com") |> Result.isError @>
 
@@ -105,10 +102,10 @@ module SchemaRefinedValueCheckTests =
 
     [<Fact>]
     let ``allConstraints gathers every layer's constraint metadata foundation-first`` () =
-        test <@ Schema.allConstraints Email.schema |> List.map Constraint.code = [ "present"; "email"; "maxLength" ] @>
+        test <@ Schema.allConstraints Email.schema |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.presence.present"; "constraint.format.email"; "constraint.cardinality.maximum" ] @>
         test <@
-            Schema.allConstraints NormalizedEmail.schema |> List.map Constraint.code =
-                [ "present"; "email"; "maxLength" ]
+            Schema.allConstraints NormalizedEmail.schema |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key =
+                [ "constraint.presence.present"; "constraint.format.email"; "constraint.cardinality.maximum" ]
         @>
 
     [<Fact>]
@@ -119,12 +116,12 @@ module SchemaRefinedValueCheckTests =
         raises<ArgumentNullException> <@ Schema.allConstraints Unchecked.defaultof<Schema<string>> |> ignore @>
 
     [<Fact>]
-    let ``a refined value schema's raw and refined constraint metadata runs as one Check program`` () =
+    let ``a refined value schema's raw and refined constraints run as one program`` () =
         let check = Email.schema |> SchemaCheck.text
 
         test <@ check (Email.create "ada@example.com") = Ok () @>
-        Assert.Equal<Result<unit, CheckFailure list>>(
-            Error [ Blank; InvalidFormat "email" ],
+        Assert.Equal<Result<unit, Violation>>(
+            Error(All(Atomic(Expected(PresenceAtom Present, None)), [ Atomic(Expected(FormatAtom Format.Email, Some(ConstraintValue.Text ""))) ])),
             check (Email.create "")
         )
 
@@ -133,10 +130,10 @@ module SchemaRefinedValueCheckTests =
         let check = ContactName.schema |> SchemaCheck.text
 
         test <@ check (ContactName.create "Ada") = Ok () @>
-        test <@ check (ContactName.create "A") = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
+        test <@ check (ContactName.create "A") = Error(Atomic(Expected(CardinalityAtom(Cardinality.Minimum 2), Some(ConstraintValue.Integer 1L)))) @>
         test <@
             check (ContactName.create (String.replicate 41 "a")) =
-                Error [ InvalidLength(MaximumLength 40, Some 41) ]
+                Error(Atomic(Expected(CardinalityAtom(Cardinality.Maximum 40), Some(ConstraintValue.Integer 41L))))
         @>
 
     [<Fact>]
@@ -146,8 +143,8 @@ module SchemaRefinedValueCheckTests =
         test <@ check (NormalizedEmail.create (Email.create "ada@example.com")) = Ok () @>
 
         // The raw text layer's checks fire for blank input; the outer refined layer's maxLength passes at length 0.
-        Assert.Equal<Result<unit, CheckFailure list>>(
-            Error [ Blank; InvalidFormat "email" ],
+        Assert.Equal<Result<unit, Violation>>(
+            Error(All(Atomic(Expected(PresenceAtom Present, None)), [ Atomic(Expected(FormatAtom Format.Email, Some(ConstraintValue.Text ""))) ])),
             check (NormalizedEmail.create (Email.create ""))
         )
 
@@ -156,7 +153,7 @@ module SchemaRefinedValueCheckTests =
 
         test <@
             check (NormalizedEmail.create (Email.create overlong)) =
-                Error [ InvalidLength(MaximumLength 254, Some 262) ]
+                Error(Atomic(Expected(CardinalityAtom(Cardinality.Maximum 254), Some(ConstraintValue.Integer 262L))))
         @>
 
     [<Fact>]
@@ -164,27 +161,27 @@ module SchemaRefinedValueCheckTests =
         let check = Age.schema |> SchemaCheck.ordered<int, _>
 
         test <@ check (Age.create 30) = Ok () @>
-        test <@ check (Age.create -1) = Error [ OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") ] @>
-        test <@ check (Age.create 200) = Error [ OutOfRange(CheckRangeExpectation.AtMost "130", Some "200") ] @>
+        test <@ check (Age.create -1) = Error(Atomic(Expected(RelationAtom(Compared(AtLeast, ConstraintValue.Integer 0L)), Some(ConstraintValue.Integer -1L)))) @>
+        test <@ check (Age.create 200) = Error(Atomic(Expected(RelationAtom(Compared(AtMost, ConstraintValue.Integer 130L)), Some(ConstraintValue.Integer 200L)))) @>
 
     [<Fact>]
-    let ``arbitrary Check programs adapt to refined values through fromUnderlying`` () =
+    let ``an arbitrary constraint adapts to refined values through fromUnderlying`` () =
         let check =
             Email.schema
-            |> SchemaCheck.fromUnderlying (Check.all [ Check.String.present; Check.String.matches "@example\\.com$" ])
+            |> SchemaCheck.fromUnderlying (Constraint.all [ Constraint.present; Constraint.pattern "@example\\.com$" ])
 
         test <@ check (Email.create "ada@example.com") = Ok () @>
-        test <@ check (Email.create "ada@example.org") = Error [ InvalidFormat "@example\\.com$" ] @>
+        test <@ check (Email.create "ada@example.org") = Error(Atomic(Expected(FormatAtom(Pattern "@example\\.com$"), Some(ConstraintValue.Text "ada@example.org")))) @>
 
     [<Fact>]
-    let ``primitive value schemas run Check programs the same way as refined value schemas`` () =
+    let ``primitive value schemas run constraints the same way as refined value schemas`` () =
         let check =
             Schema.text
             |> Schema.constrain (Constraint.minLength 2)
             |> SchemaCheck.text
 
         test <@ check "Ada" = Ok () @>
-        test <@ check "A" = Error [ InvalidLength(MinimumLength 2, Some 1) ] @>
+        test <@ check "A" = Error(Atomic(Expected(CardinalityAtom(Cardinality.Minimum 2), Some(ConstraintValue.Integer 1L)))) @>
 
     [<Fact>]
     let ``value schema check interpreters reject mismatched primitives and null inputs`` () =
@@ -192,5 +189,8 @@ module SchemaRefinedValueCheckTests =
         raises<ArgumentException> <@ Email.schema |> SchemaCheck.ordered<int, _> |> ignore @>
         raises<ArgumentNullException> <@ SchemaCheck.text Unchecked.defaultof<Schema<Email>> |> ignore @>
         raises<ArgumentNullException> <@ SchemaCheck.ordered<int, Age> Unchecked.defaultof<Schema<Age>> |> ignore @>
-        raises<ArgumentNullException> <@ SchemaCheck.fromUnderlying Unchecked.defaultof<Check<string>> Email.schema |> ignore @>
-        raises<ArgumentNullException> <@ SchemaCheck.fromUnderlying Check.String.present Unchecked.defaultof<Schema<Email>> |> ignore @>
+        raises<ArgumentNullException> <@ SchemaCheck.fromUnderlying Unchecked.defaultof<Constraint<string>> Email.schema |> ignore @>
+        Assert.Throws<ArgumentNullException>(fun () ->
+            SchemaCheck.fromUnderlying (Constraint.present: Constraint<string>) Unchecked.defaultof<Schema<Email>>
+            |> ignore)
+        |> ignore

@@ -20,7 +20,8 @@ Describes one field of a model schema for inspection interpreters.
 | `Name` | The boundary-facing external field name. |
 | `Order` | The zero-based field order used for trusted construction and ordered interpreter output. |
 | `Schema` | The description of the field's value schema. |
-| `Constraints` | The portable constraint metadata attached at the field level, in declaration order. |
+| `Constraints` | The constraint descriptions attached at the field level, in declaration order. |
+| `Supply` | The boundary supply declaration attached at the field level, when one was made. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L57-57)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L61-61)

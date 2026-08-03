@@ -6,7 +6,7 @@ open System
 open System.IO
 open System.Text.Json
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 open Axial.Flow
 open Axial.Flow.FileSystem
 open Axial.Flow.PlatformService
@@ -17,7 +17,7 @@ open Axial.Refined
 [<RequireQualifiedAccess>]
 type AppError =
     | InvalidInput of SchemaErrors
-    | InvalidValue of CheckFailure list
+    | InvalidValue of Violation
     | InvalidContract of ContractError
     | ProductionRejected of ProductionAdmissionError
     | Domain of DomainError

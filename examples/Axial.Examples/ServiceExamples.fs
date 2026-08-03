@@ -4,7 +4,7 @@ open System
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 open Microsoft.Extensions.DependencyInjection
 
 // --- DOMAIN TYPES ---

@@ -2,13 +2,14 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 
 open System
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module InputParseTests =
     type private Signup = { Email: string; Age: int }
@@ -99,40 +100,39 @@ module InputParseTests =
 
         test <@ parsed.Input = raw @>
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) ] @>
         test <@ parsed.ErrorsFor "age" = [ SchemaError.InvalidFormat "int" ] @>
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "age" ]; Error = SchemaError.InvalidFormat "int" }
-                                 { Path = TestPath.fromLegacy [ PathSegment.Name "email" ]; Error = SchemaError.Blank } ] @>
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "email" ]; Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ] @>
 
     [<Fact>]
-    let ``parse surfaces a constraint's custom message in place of the default error`` () =
+    let ``an opaque constraint reports its authored prose at the field path`` () =
+        // There is no per-constraint message override: presentation is customised by rendering the typed
+        // violation, and a rule that needs its own wording is authored as an opaque constraint.
         let messageSchema =
             schema<Signup> {
                 field "email" _.Email {
                     withSchema (
                         Schema.text
-                        |> Schema.constrain (Constraint.present |> Constraint.withMessage "Email is required.")
+                        |> Schema.constrain (Constraint.custom "Email is required." (fun value -> Constraint.test Constraint.present value))
                     )
                 }
                 field "age" (fun (value: Signup) -> value.Age) {
-                    withSchema (
-                        Schema.int
-                        |> Schema.constrain (Constraint.atLeast 18 |> Constraint.withMessage "Must be an adult.")
-                    )
+                    withSchema (Schema.int |> Schema.constrain (Constraint.custom "Must be an adult." (fun value -> value >= 18)))
                 }
                 construct (fun email age -> { Email = email; Age = age })
             }
 
         let raw =
-            Data.objectOfMap (Map.ofList [ "email", Data.Null; "age", Data.Text "10" ])
+            Data.objectOfMap (Map.ofList [ "email", Data.Text "   "; "age", Data.Text "10" ])
 
         let parsed = Schema.parseRetainingInput messageSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Custom("present", Some "Email is required.") ] @>
-        test <@ parsed.ErrorsFor "age" = [ SchemaError.Custom("atLeast", Some "Must be an adult.") ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Violation(Atomic(Described "Email is required.")) ] @>
+        test <@ parsed.ErrorsFor "age" = [ SchemaError.Violation(Atomic(Described "Must be an adult.")) ] @>
 
     [<Fact>]
     let ``parse falls back to the default error when a constraint has no custom message`` () =
@@ -144,7 +144,7 @@ module InputParseTests =
 
         let parsed = Schema.parseRetainingInput signupSchema raw
 
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) ] @>
 
     [<Fact>]
     let ``parse reports root diagnostic when model input is not an object`` () =
@@ -220,7 +220,7 @@ module InputParseTests =
         let parsed = Schema.parseRetainingInput signupSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) ] @>
 
     [<Fact>]
     let ``parse does not call the model constructor when a field fails to parse`` () =
@@ -360,7 +360,7 @@ module InputParseTests =
         test
             <@
                 parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "age" ]
-                                    Error = SchemaError.OutOfRange(CheckRangeExpectation.AtLeast "0", Some "-1") } ]
+                                    Error = SchemaError.Violation(Atomic(Expected(RelationAtom(Compared(AtLeast, ConstraintValue.Integer 0L)), Some(ConstraintValue.Integer -1L)))) } ]
             @>
 
     [<Fact>]
@@ -508,7 +508,7 @@ module InputParseTests =
         let parsed = Schema.parseRetainingInput minLengthSchema raw
 
         test <@ not parsed.IsValid @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 5, Some 2) ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Violation(Atomic(Expected(CardinalityAtom(Cardinality.Minimum 5), Some(ConstraintValue.Integer 2L)))) ] @>
 
     [<Fact>]
     let ``schema errors are identical across differently named fields, only the diagnostics path differs`` () =
@@ -536,7 +536,7 @@ module InputParseTests =
             schema<Signup> {
                 field "email" _.Email
                 field "age" (fun (value: Signup) -> value.Age) {
-                    withSchema (Schema.int |> Schema.constrain Constraint.supplied)
+                    withSchema (Schema.int |> Schema.mustSupply)
                 }
                 construct (fun email age -> { Email = email; Age = age })
             }

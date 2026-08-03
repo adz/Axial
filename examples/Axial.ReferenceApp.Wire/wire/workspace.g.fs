@@ -5,6 +5,7 @@
 namespace Axial.ReferenceApp.Wire
 
 open Axial
+open Axial.Constraint
 open Axial.Schema
 
 /// Schema and boundary functions for WorkspaceCardV1 (workspace.fs, WorkspaceCard.v1).
@@ -13,6 +14,7 @@ open Axial.Schema
 module WorkspaceCardV1 =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by workspace.fs (WorkspaceCard.v1).
     let schema : Schema<WorkspaceCardV1> =
@@ -45,6 +47,7 @@ module WorkspaceCardV1 =
 module WorkspaceCard =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     let private visibilityCases =
         [ EnumCase.create "private" Visibility.Private
@@ -69,7 +72,7 @@ module WorkspaceCard =
             }
             field "members" (fun (value: WorkspaceCard) -> value.Members) {
                 withSchema (Schema.listWith Schema.text)
-                constrain distinct
+                constrain Constraint.distinct
             }
             construct (fun name ownerEmail visibility members -> WorkspaceCard.create name ownerEmail visibility members)
         }

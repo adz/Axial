@@ -6,8 +6,8 @@ description: Fail-fast Result helpers, reusable checks, predicates, and the resu
 ---
 
 
-`Axial.Result` adds helpers around the standard F# `Result<'value, 'error>` type. It also contains reusable `Check`
-constraints, `Predicate` functions, and the `result {}` computation expression.
+`Axial.Result` adds helpers around the standard F# `Result<'value, 'error>` type. It also contains reusable value
+guards and the `result {}` computation expression.
 
 Use Result when later work depends on earlier success and the first error should stop the operation.
 
@@ -25,5 +25,5 @@ dotnet add package Axial.Result
 
 - [Result](../reference/result/): helpers for creating, transforming, extracting, and traversing Results.
 - [Result CE](../result-builder/): sequence dependent Result-returning operations with `result {}`.
-- [Check](../check/): reusable constraints that preserve their input on success.
-- [Predicate](../check/predicates/): boolean facts for local branching and checks.
+- [Constraint](../constraint/): reusable constraints that preserve their input on success.
+- [Predicate](../constraint/overview/): boolean facts for local branching and checks.

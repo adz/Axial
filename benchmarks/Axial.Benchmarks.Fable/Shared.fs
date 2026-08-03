@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Axial.Flow
 open Axial.Result
+open Axial.Constraint
 open Axial.Schema
 open Axial.Schema.Syntax
 open Axial.Schema.Json
@@ -160,6 +161,37 @@ module Shared =
 
     let buildSchemaPlanSummary () =
         Schema.compilePlan (SummaryFactory<SchemaContact>()) contactSchema
+
+    /// Exercises the type-directed constraint catalogue under Fable. The SRTP dispatchers behind `present`,
+    /// `blank`, the cardinality family, and `optional` are the part of the design most at risk on this target,
+    /// and code-point text sizing must agree with .NET on supplementary characters.
+    let runConstraintSurface () =
+        let name: Constraint<string> = Constraint.all [ Constraint.present; Constraint.lengthBetween 2 40 ]
+        let tags: Constraint<string list> = Constraint.all [ Constraint.minLength 1; Constraint.distinct ]
+        let nickname: Constraint<string option> = Constraint.optional (Constraint.minLength 2)
+        let ttl: Constraint<int> = Constraint.any (Constraint.equalTo -1) [ Constraint.atLeast 1 ]
+        let emoji: Constraint<string> = Constraint.length 1
+
+        [ Constraint.test name "Ada"
+          not (Constraint.test name " ")
+          Constraint.test tags [ "a"; "b" ]
+          not (Constraint.test tags [ "a"; "a" ])
+          Constraint.test nickname None
+          Constraint.test nickname (Some "Ada")
+          not (Constraint.test nickname (Some "A"))
+          Constraint.test (Constraint.blank: Constraint<int voption>) ValueNone
+          Constraint.test (Constraint.present: Constraint<int voption>) (ValueSome 1)
+          Constraint.test ttl -1
+          Constraint.test ttl 5
+          not (Constraint.test ttl 0)
+          // One code point, two UTF-16 units: JavaScript and .NET must agree.
+          Constraint.test emoji "\U0001F600"
+          Constraint.test Constraint.numeric "345"
+          not (Constraint.test Constraint.numeric "\u0663\u0664\u0665")
+          (match Constraint.check name "" with
+           | Error violation -> Violation.render violation <> ""
+           | Ok() -> false) ]
+        |> List.forall id
 
     let runCodecRoundTrip () =
         let codec = Json.compile contactSchema

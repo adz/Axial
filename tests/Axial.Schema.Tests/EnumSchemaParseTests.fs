@@ -42,7 +42,7 @@ module EnumSchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "color" ]
-                                   Error = SchemaError.NotOneOf "red|green|blue" } ] @>
+                                   Error = SchemaError.UnknownTag "red|green|blue" } ] @>
 
     [<Fact>]
     let ``validate checks existing enum values through case equality`` () =

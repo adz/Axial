@@ -1,54 +1,67 @@
 namespace Axial.Refined
 
-open Axial.Check
+open Axial.Constraint
 
-/// Defines admission into an invariant-carrying value and its total reverse projection.
+/// <summary>Admission into an invariant-carrying value, and its total reverse projection.</summary>
+/// <remarks>
+/// A refinement stores exactly one <see cref="T:Axial.Constraint.Constraint`1" /> over the raw representation,
+/// the constructor that stamps the invariant into the type, and the projection back to the raw value. The stored
+/// constraint is the same value a caller can check, inspect, or attach to a schema directly: the raw-to-refined
+/// projection is a known representation boundary, not an opaque one, so Schema lowers the constraint unchanged
+/// in raw-schema context.
+/// </remarks>
 [<Sealed>]
-type Refinement<'underlying, 'refined> internal
-    (check: Check<'underlying>, constraints: Constraint<'underlying> list, construct: 'underlying -> 'refined, project: 'refined -> 'underlying) =
-    member internal _.Check = check
-    member internal _.Constraints = constraints
+type Refinement<'underlying, 'refined>
+    internal
+    (
+        constraint': Constraint<'underlying>,
+        construct: 'underlying -> 'refined,
+        project: 'refined -> 'underlying
+    ) =
+    member internal _.Constraint = constraint'
     member internal _.Construct = construct
     member internal _.Project = project
 
-/// Creates and applies reusable refinement definitions.
+/// <summary>Creates and applies reusable refinement definitions.</summary>
 [<RequireQualifiedAccess>]
 module Refinement =
-    let private ensureFunction name value = if isNull (box value) then nullArg name
+    let private ensureFunction name value =
+        if isNull (box value) then nullArg name
 
-    /// Defines a refinement from one portable constraint.
-    let define (constraint': Constraint<'underlying>) (construct: 'underlying -> 'refined) (project: 'refined -> 'underlying) =
+    /// <summary>Defines a refinement from one constraint, a constructor, and the reverse projection.</summary>
+    /// <remarks>
+    /// Compose several rules with <c>Constraint.all</c> before defining, and reach for <c>Constraint.custom</c>
+    /// when the rule is an arbitrary predicate. Both produce an ordinary constraint, so there is no separate
+    /// plural or check-taking constructor.
+    /// </remarks>
+    /// <example><code>let retryCount =
+    ///     Refinement.define (Constraint.between 0 10) RetryCount _.Value</code></example>
+    let define
+        (constraint': Constraint<'underlying>)
+        (construct: 'underlying -> 'refined)
+        (project: 'refined -> 'underlying)
+        =
         if isNull constraint' then nullArg (nameof constraint')
         ensureFunction (nameof construct) construct
         ensureFunction (nameof project) project
-        Refinement(Constraint.check constraint', [ constraint' ], construct, project)
+        Refinement(constraint', construct, project)
 
-    /// Defines a refinement from one or more portable constraints.
-    let defineAll (constraints: Constraint<'underlying> list) (construct: 'underlying -> 'refined) (project: 'refined -> 'underlying) =
-        if isNull (box constraints) then nullArg (nameof constraints)
-        if List.isEmpty constraints then invalidArg (nameof constraints) "A refinement must contain at least one constraint."
-        ensureFunction (nameof construct) construct
-        ensureFunction (nameof project) project
-        Refinement(Constraint.checkAll constraints, constraints, construct, project)
-
-    /// Defines a metadata-free refinement from an executable check.
-    let defineWithCheck (check: Check<'underlying>) (construct: 'underlying -> 'refined) (project: 'refined -> 'underlying) =
-        ensureFunction (nameof check) check
-        ensureFunction (nameof construct) construct
-        ensureFunction (nameof project) project
-        Refinement(check, [], construct, project)
-
-    /// Constructs a refined value after its check succeeds.
-    let create (refinement: Refinement<'underlying, 'refined>) (underlying: 'underlying) : Result<'refined, CheckFailure list> =
+    /// <summary>Constructs a refined value, reporting why the raw value was not admitted.</summary>
+    /// <example><code>value |> Refinement.create retryCount |> Result.mapError InvalidRetryCount</code></example>
+    let create (refinement: Refinement<'underlying, 'refined>) (underlying: 'underlying) : Result<'refined, Violation> =
         if isNull (box refinement) then nullArg (nameof refinement)
-        refinement.Check underlying |> Result.map (fun () -> refinement.Construct underlying)
 
-    /// Returns the canonical underlying representation.
+        Constraint.check refinement.Constraint underlying
+        |> Result.map (fun () -> refinement.Construct underlying)
+
+    /// <summary>Returns the canonical underlying representation of a refined value.</summary>
+    /// <example><code>RetryCount 3 |> Refinement.underlying retryCount // 3</code></example>
     let underlying (refinement: Refinement<'underlying, 'refined>) (value: 'refined) =
         if isNull (box refinement) then nullArg (nameof refinement)
         refinement.Project value
 
-    /// Returns portable constraints retained by the refinement.
-    let constraints (refinement: Refinement<'underlying, 'refined>) =
+    /// <summary>Returns the constraint the refinement admits by.</summary>
+    /// <example><code>retryCount |> Refinement.constraint' |> Constraint.inspect</code></example>
+    let constraint' (refinement: Refinement<'underlying, 'refined>) =
         if isNull (box refinement) then nullArg (nameof refinement)
-        refinement.Constraints
+        refinement.Constraint

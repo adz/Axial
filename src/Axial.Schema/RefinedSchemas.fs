@@ -1,6 +1,6 @@
 namespace Axial.Schema
 
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 open Axial.Schema.Syntax
 
@@ -26,7 +26,7 @@ module RefinedSchemas =
     let distinctList<'value when 'value: equality> (itemSchema: Schema<'value>) : Schema<DistinctList<'value>> =
         SchemaDefaults.DistinctListWith itemSchema
 
-    let private describe failures = CheckFailure.describeAll failures
+    let private describe violation = Violation.render violation
 
     /// <summary>
     /// Builds a schema for an inclusive range, replacing the former per-type range

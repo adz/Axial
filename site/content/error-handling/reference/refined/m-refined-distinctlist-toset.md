@@ -1,7 +1,7 @@
 ---
 title: "Refined.DistinctList.toSet"
 linkTitle: "toSet"
-weight: 2720
+weight: 2719
 type: docs
 ---
 

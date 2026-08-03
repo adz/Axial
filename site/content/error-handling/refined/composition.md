@@ -10,19 +10,19 @@ Parsing and refinement have different failure types because they answer differen
 error that preserves that distinction, then compose with `result { }`.
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Parse
 open Axial.Refined
 open Axial.Result
 
 type QuantityError =
     | InvalidInteger of ParseError
-    | InvalidQuantity of CheckFailure list
+    | InvalidQuantity of Violation
 
 let quantity raw =
     result {
         let! parsed = Parse.int raw |> Result.mapError InvalidInteger
-        let! quantity = parsed |> Result.guard (Check.greaterThan 0) |> Result.mapError InvalidQuantity
+        let! quantity = parsed |> Constraint.guard (Constraint.greaterThan 0) |> Result.mapError InvalidQuantity
         return quantity
     }
 ```
@@ -32,13 +32,13 @@ let quantity raw =
 ```fsharp
 type OrderInputError =
     | InvalidQuantityText of ParseError
-    | InvalidQuantity of CheckFailure list
-    | InvalidSku of CheckFailure list
+    | InvalidQuantity of Violation
+    | InvalidSku of Violation
 
 let orderLine rawQuantity rawSku =
     result {
         let! parsed = Parse.int rawQuantity |> Result.mapError InvalidQuantityText
-        let! quantity = parsed |> Result.guard (Check.greaterThan 0) |> Result.mapError InvalidQuantity
+        let! quantity = parsed |> Constraint.guard (Constraint.greaterThan 0) |> Result.mapError InvalidQuantity
         let! sku = Refine.nonBlankString rawSku |> Result.mapError InvalidSku
         return quantity, sku
     }

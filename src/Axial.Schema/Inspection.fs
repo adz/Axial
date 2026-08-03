@@ -4,6 +4,8 @@
 // instead of the erased definitions directly.
 namespace Axial.Schema
 
+open Axial.Constraint
+
 /// <summary>
 /// Describes the shape of a value schema as inspectable metadata for non-validation interpreters.
 /// </summary>
@@ -45,8 +47,10 @@ and SchemaDescription =
         Shape: SchemaShape
         /// <summary>The declared boundary format, when one was attached with <c>Schema.withFormat</c>.</summary>
         Format: SchemaFormat option
-        /// <summary>The portable constraint metadata attached to this value schema layer, in declaration order.</summary>
-        Constraints: ConstraintDescriptor list
+        /// <summary>The constraint descriptions attached to this value schema layer, in declaration order.</summary>
+        Constraints: ConstraintDescription list
+        /// <summary>The boundary supply declaration attached to this layer, when one was made.</summary>
+        Supply: Supply option
         /// <summary>The description metadata, when one was attached with <c>Schema.describe</c>.</summary>
         Description: string option
         /// <summary>The default-value metadata, when one was attached with <c>Schema.withDefault</c>.</summary>
@@ -62,8 +66,10 @@ and FieldDescription =
         Order: int
         /// <summary>The description of the field's value schema.</summary>
         Schema: SchemaDescription
-        /// <summary>The portable constraint metadata attached at the field level, in declaration order.</summary>
-        Constraints: ConstraintDescriptor list
+        /// <summary>The constraint descriptions attached at the field level, in declaration order.</summary>
+        Constraints: ConstraintDescription list
+        /// <summary>The boundary supply declaration attached at the field level, when one was made.</summary>
+        Supply: Supply option
     }
 
 /// <summary>Describes a built model schema as an ordered list of field descriptions.</summary>
@@ -142,10 +148,13 @@ module Inspect =
         let expanding = System.Collections.Generic.HashSet<DeferredValueDefinition>(HashIdentity.Reference)
 
         let rec describeValueDefinition (definition: ValueSchemaDefinition) : SchemaDescription =
-            let metadata constraints shape =
+            let metadata rules shape =
+                let rules = rules @ definition.Rules
+
                 { Shape = shape
                   Format = definition.Format
-                  Constraints = constraints @ definition.Constraints
+                  Constraints = SchemaRule.descriptions rules
+                  Supply = SchemaRule.trySupply rules
                   Description = definition.Description
                   Default = definition.Default }
 
@@ -195,18 +204,19 @@ module Inspect =
                     | OptionValueDefinition optional -> SchemaShape.Optional(describeValueDefinition optional.Payload)
                     | MapValueDefinition collection -> SchemaShape.MapOf(describeValueDefinition collection.Item)
                     | LazyValueDefinition _ -> invalidOp "Deferred definitions are handled before ordinary shapes."
-                let refinementConstraints =
+                let refinementRules =
                     match definition.Shape with
-                    | RefinedValueDefinition(_, ops) -> ops.Constraints
+                    | RefinedValueDefinition(_, ops) -> ops.Rules
                     | _ -> []
 
-                metadata refinementConstraints shape
+                metadata refinementRules shape
 
         and describeFieldDescriptor (field: FieldDescriptor<obj>) : FieldDescription =
             { Name = ExternalFieldName.value field.ExternalName
               Order = FieldOrder.value field.Order
               Schema = describeValueDefinition field.ValueSchema
-              Constraints = field.Constraints }
+              Constraints = SchemaRule.descriptions field.Rules
+              Supply = SchemaRule.trySupply field.Rules }
 
         describeValueDefinition definition
 
@@ -220,7 +230,8 @@ module Inspect =
                 { Name = ExternalFieldName.value field.ExternalName
                   Order = FieldOrder.value field.Order
                   Schema = describeValueDefinitionRoot field.ValueSchema
-                  Constraints = field.Constraints })
+                  Constraints = SchemaRule.descriptions field.Rules
+                  Supply = SchemaRule.trySupply field.Rules })
           Description = definition.Description }
 
     /// <summary>Describes a built model schema as inspectable field metadata.</summary>
@@ -261,4 +272,5 @@ module Inspect =
         { Name = ExternalFieldName.value field.Definition.ExternalName
           Order = FieldOrder.value field.Definition.Order
           Schema = describeValueDefinition field.Definition.ValueSchema
-          Constraints = field.Definition.Constraints }
+          Constraints = SchemaRule.descriptions field.Definition.Rules
+          Supply = SchemaRule.trySupply field.Definition.Rules }

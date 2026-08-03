@@ -1,7 +1,9 @@
 module Axial.Schema.Http.Tests.Fixtures
 
+open Axial.Constraint
 open Axial.Schema
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
 
 type Address = { Street: string; City: string }
 
@@ -31,7 +33,7 @@ let signupSchema () =
             withSchema (Schema.int |> Schema.constrainAll [ Constraint.between 13 120 ])
         }
         field "address" _.Address {
-            withSchema (addressSchema () |> Schema.constrainAll [ Constraint.supplied ])
+            withSchema (addressSchema () |> Schema.mustSupply)
         }
         field "tags" _.Tags {
             withSchema (Schema.listWith Schema.text |> Schema.constrainAll [ Constraint.maxLength 5 ])

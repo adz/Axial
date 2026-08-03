@@ -1,9 +1,11 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Compiles the exact code shape a future <c>[&lt;Schema&gt;]</c> source generator would emit (see
@@ -39,14 +41,16 @@ module SchemaGenerationTargetProofTests =
 
         test
             <@
-                email.Schema.Constraints |> List.map _.Metadata =
-                    [ (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present)
-                      ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254)
-                      (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) ]
+                email.Schema.Constraints |> List.collect ConstraintDescription.atoms =
+                    [ PresenceAtom Present; CardinalityAtom(Cardinality.Maximum 254); FormatAtom Email ]
             @>
 
         let age = description.Fields |> List.find (fun field -> field.Name = "age")
-        test <@ age.Schema.Constraints |> List.map _.Metadata = [ ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtLeast(box 13)) ] @>
+
+        test <@
+            age.Schema.Constraints |> List.collect ConstraintDescription.atoms =
+                [ RelationAtom(Compared(AtLeast, ConstraintValue.Integer 13L)) ]
+        @>
 
     [<Fact>]
     let ``generation target aligns constructor arguments with getters by declaration order`` () =

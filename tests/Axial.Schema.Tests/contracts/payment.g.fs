@@ -5,6 +5,7 @@
 namespace Axial.Tests.Generated
 
 open Axial
+open Axial.Constraint
 open Axial.Schema
 
 /// A card payment source.
@@ -19,6 +20,7 @@ type Card =
 module Card =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by payment.contract (Card.v1).
     let schema : Schema<Card> =
@@ -54,6 +56,7 @@ type Invoice =
 module Invoice =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by payment.contract (Invoice.v1).
     let schema : Schema<Invoice> =
@@ -92,6 +95,7 @@ type Payment =
 module Payment =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     let private sourceCases =
         [ UnionCase.create "card" PaymentSource.Card (function PaymentSource.Card payload -> Some payload | _ -> None) Card.schema

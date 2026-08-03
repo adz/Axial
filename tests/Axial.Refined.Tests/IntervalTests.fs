@@ -1,5 +1,6 @@
 namespace Axial.Refined.Tests
 
+open Axial.Constraint
 open Axial.Refined
 open Swensen.Unquote
 open Xunit
@@ -110,7 +111,7 @@ module IntervalTests =
     [<Fact>]
     let ``the derived constraint admits exactly the interval's values`` () =
         let interval = oneToFive ()
-        let check = interval |> Interval.toConstraint |> Axial.Check.Constraint.check
+        let check = interval |> Interval.toConstraint |> Constraint.check
         test <@ check 3 = Ok() @>
         test <@ check 9 |> Result.isError @>
 

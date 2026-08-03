@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial.Schema
 open Swensen.Unquote
 open Xunit
@@ -15,7 +16,7 @@ type MapVisibility =
 module SchemaMapValueTests =
     [<Fact>]
     let ``map builds a dictionary value schema from a primitive item schema`` () =
-        let thresholds = Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.supplied)
+        let thresholds = Schema.mapWith (Schema.decimal |> Schema.mustSupply)
 
         match thresholds.ValueDefinition.Shape with
         | MapValueDefinition collection ->
@@ -23,7 +24,7 @@ module SchemaMapValueTests =
             | PrimitiveValueDefinition PrimitiveValueKind.Decimal -> ()
             | _ -> failwith "Expected the map item to keep the supplied primitive value schema."
 
-            test <@ collection.Item.Constraints |> List.map Constraint.code = [ "supplied" ] @>
+            test <@ SchemaRule.trySupply collection.Item.Rules = Some Supply.Supplied @>
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
         | NestedValueDefinition _
@@ -97,7 +98,9 @@ module SchemaMapValueTests =
         let expected = System.Guid.Parse "4f489f3b-cd3c-4f53-b99b-fca552f8994d"
         let document = JsonSchema.generateValue (Schema.guid |> Schema.constrain (Constraint.equalTo expected))
 
-        test <@ document.Contains "\"const\":\"4f489f3b-cd3c-4f53-b99b-fca552f8994d\"" @>
+        // A GUID operand has no portable representation that every target can identify, so the rule executes
+        // against its typed closure and describes itself honestly instead.
+        test <@ document.Contains "\"rule\":\"constraint.unsupportedOperand.relation.equal\"" @>
 
         let nonFinite =
             Schema.``int``
@@ -105,4 +108,7 @@ module SchemaMapValueTests =
             |> Schema.constrain (Constraint.equalTo (box System.Double.NaN))
             |> JsonSchema.generateValue
 
-        test <@ nonFinite.Contains "\"const\":\"NaN\"" @>
+        // JSON has no NaN literal and IEEE equality is not wire equality, so the rule is retained as runtime
+        // metadata rather than emitted as a keyword that would mean something else.
+        test <@ nonFinite.Contains "\"rule\":\"constraint.relation.equal\"" @>
+        test <@ not (nonFinite.Contains "\"const\"") @>

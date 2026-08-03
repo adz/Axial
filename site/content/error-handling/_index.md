@@ -1,6 +1,6 @@
 ---
-title: "Error Handling: Result, Check, Parse, and Refined"
-linkTitle: ErrorHandling
+title: "Error Handling: Result, Constraint, Parse, and Refined"
+linkTitle: Error Handling
 type: docs
 notoc: true
 description: Compose typed failures, reusable checks, primitive parsing, and invariant-carrying values.
@@ -15,7 +15,7 @@ menu:
 <div class="docs-home-hero">
 
 <div class="docs-home-copy">
-<span class="eyebrow" style="color:#0a7d62">Axial &middot; Result, Check, Parse, Refined</span>
+<span class="eyebrow" style="color:#0a7d62">Axial &middot; Result, Constraint, Parse, Refined</span>
 
 <h1>Keep each failure at the operation that owns it.</h1>
 
@@ -32,8 +32,8 @@ reusable refinements. Each package can be installed independently.
 
 <div class="docs-home-hero-visual">
 <svg viewBox="0 0 680 285" role="img" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">
-  <title>Result composes Check, Parse, and Refined operations</title>
-  <desc>Check tests an existing value, Parse decodes a serialized primitive, and Refined guards construction and exposes the underlying Value. Check and refined construction return CheckFailure values, while Parse returns ParseError. Result maps each failure into the application's error type.</desc>
+  <title>Result composes Constraint, Parse, and Refined operations</title>
+  <desc>A constraint tests an existing value, Parse decodes a serialized primitive, and Refined guards construction and exposes the underlying Value. Constraint checking and refined construction return Violation values, while Parse returns ParseError. Result maps each failure into the application's error type.</desc>
   <g font-size="13">
     <text x="20" y="22" fill="currentColor" opacity="0.55">Explicit value operations, composed with Result</text>
     <g stroke="currentColor" stroke-opacity="0.35" fill="none">
@@ -42,7 +42,7 @@ reusable refinements. Each package can be installed independently.
       <rect x="434" y="42" width="186" height="136" rx="8"/>
     </g>
     <g fill="currentColor" text-anchor="middle">
-      <text x="113" y="66">Check</text>
+      <text x="113" y="66">Constraint</text>
       <text x="320" y="66">Parse</text>
       <text x="527" y="66">Refined</text>
     </g>
@@ -57,9 +57,9 @@ reusable refinements. Each package can be installed independently.
       <rect x="454" y="100" width="146" height="30" rx="4"/>
     </g>
     <g fill="#0a7d62" text-anchor="middle" font-family="var(--font-mono, monospace)" font-size="12">
-      <text x="113" y="119">CheckFailure list</text>
+      <text x="113" y="119">Violation</text>
       <text x="320" y="119">ParseError</text>
-      <text x="527" y="119">CheckFailure list</text>
+      <text x="527" y="119">Violation</text>
     </g>
     <g fill="currentColor" text-anchor="middle" opacity="0.55" font-size="10.5">
       <text x="113" y="151">Constraint adds portable metadata</text>
@@ -86,7 +86,7 @@ reusable refinements. Each package can be installed independently.
 | Package | Use it for | Documentation |
 | --- | --- | --- |
 | `Axial.Result` | Result combinators, extraction helpers, and `result { }` | [Result](./result/) |
-| `Axial.Check` | Reusable value checks and portable typed constraints | [Check](./check/) |
+| `Axial.Constraint` | One reusable, inspectable description of valid values | [Constraint](./constraint/) |
 | `Axial.Parse` | Serialized primitive decoding | [Parse](/error-handling/parse/) |
 | `Axial.Refined` | Invariant-carrying domain values | [Refined](./refined/) |
 

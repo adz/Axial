@@ -1,16 +1,19 @@
 namespace Axial.Schema.Testing.Tests
 
+open Axial.Constraint
 open Axial
 
 open Axial.Schema
 open Axial.Schema.Testing
 open FsCheck.FSharp
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module SchemaGenTests =
     type Contact = { Email: string }
+    type Bounded = { Age: int }
     type Kind = Personal | Work
     type Profile = { Age: int; Score: decimal; Active: bool; Contact: Contact; Aliases: string list; Labels: Map<string, string>; Kind: Kind; Note: string option }
     type Category = { Name: string; Children: Category list }
@@ -81,6 +84,33 @@ module SchemaGenTests =
         test <@ models |> Array.forall (fun (model: Profile) -> model.Contact.Email.Contains "@") @>
 
     [<Fact>]
+    let ``a rule the generator would ignore is reported rather than silently violated`` () =
+        // Generatability is decided per shape-and-atom pairing, not per atom. The text generator honours
+        // choices, sizes, and the email format but ignores ordering and equality, so claiming support for
+        // `equalTo` here would produce random strings that violate the very constraint being generated for.
+        let textEquality =
+            schema<Contact> {
+                field "email" _.Email { withSchema (Schema.text |> Schema.constrain (Constraint.equalTo "exact")) }
+                construct (fun email -> { Email = email })
+            }
+
+        match SchemaGen.raw textEquality with
+        | Error error -> test <@ error = SchemaGenerationError.UnsupportedConstraint([ "email" ], "constraint.relation.equal") @>
+        | Ok _ -> failwith "Expected text equality to be reported as unsupported."
+
+        // The numeric generators do honour bounds, so the same family stays supported where it is real.
+        let numericBound =
+            schema<Bounded> {
+                // Annotated because `Profile` also has an `Age: int` label.
+                field "age" (fun (value: Bounded) -> value.Age) {
+                    withSchema (Schema.``int`` |> Schema.constrain (Constraint.atLeast 18))
+                }
+                construct (fun age -> { Bounded.Age = age })
+            }
+
+        test <@ SchemaGen.raw numericBound |> Result.isOk @>
+
+    [<Fact>]
     let ``pattern constraints require a caller-owned generator`` () =
         let schema =
             schema<Contact> {
@@ -91,7 +121,7 @@ module SchemaGenTests =
             }
 
         match SchemaGen.raw schema with
-        | Error error -> test <@ error = SchemaGenerationError.UnsupportedConstraint([ "email" ], "pattern") @>
+        | Error error -> test <@ error = SchemaGenerationError.UnsupportedConstraint([ "email" ], "constraint.format.pattern") @>
         | Ok _ -> failwith "Expected pattern generation to require a custom generator."
 
         let custom = Map.ofList [ "email", Gen.constant (Data.Text "AXIAL") ]

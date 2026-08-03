@@ -5,6 +5,7 @@
 namespace Axial.Tests.Generated
 
 open Axial
+open Axial.Constraint
 open Axial.Schema
 
 /// Schema and boundary functions for PickupPoint (shipment.fs, PickupPoint.v1).
@@ -13,6 +14,7 @@ open Axial.Schema
 module PickupPoint =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by shipment.fs (PickupPoint.v1).
     let schema : Schema<PickupPoint> =
@@ -37,6 +39,7 @@ module PickupPoint =
 module CourierDelivery =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by shipment.fs (CourierDelivery.v1).
     let schema : Schema<CourierDelivery> =
@@ -61,6 +64,7 @@ module CourierDelivery =
 module ShipmentV1 =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by shipment.fs (Shipment.v1).
     let schema : Schema<ShipmentV1> =
@@ -96,6 +100,7 @@ module ShipmentV1 =
 module Shipment =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     let private priorityCases =
         [ EnumCase.create "standard" ShipmentPriority.Standard
@@ -123,7 +128,7 @@ module Shipment =
                 withSchema (Schema.listWith Schema.text)
                 constraints [
                     minLength 1
-                    distinct
+                    Constraint.distinct
                 ]
             }
             field "weightKg" (fun (value: Shipment) -> value.WeightKg) {

@@ -11,6 +11,7 @@
 module Axial.Api.Program
 
 open Axial
+open Axial.Constraint
 open System
 open System.Net
 open System.Net.Http
@@ -59,6 +60,7 @@ type Signup =
 
 module Signup =
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     let addressSchema =
         schema<Address> {
@@ -81,10 +83,10 @@ module Signup =
             }
             field "email" _.Email
             field "age" _.Age {
-                constrain (between 13 120)
+                constrain (Constraint.between 13 120)
             }
             field "address" _.Address {
-                withSchema (addressSchema |> Schema.constrain Constraint.supplied)
+                withSchema (addressSchema |> Schema.mustSupply)
             }
             field "tags" _.Tags {
                 withSchema (Schema.listWith Schema.text)
@@ -124,23 +126,30 @@ module FormPage =
     let private encode (text: string) = WebUtility.HtmlEncode text
 
     let private constraintAttributes (field: FieldDescription) =
-        let metadata =
-            (field.Constraints |> List.map _.Metadata)
+        // One inspection tree serves the form renderer, JSON Schema, and the docs: the atoms below are the same
+        // values the runtime rules were built from.
+        let atoms =
+            field.Constraints
             @ (let rec gather (value: SchemaDescription) =
-                (value.Constraints |> List.map _.Metadata)
+                value.Constraints
                 @ (match value.Shape with
                    | SchemaShape.Refined underlying -> gather underlying
                    | _ -> [])
 
                gather field.Schema)
+            |> List.collect ConstraintDescription.atoms
 
         let required =
-            if metadata |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) then " required" else ""
+            if field.Supply = Some Supply.Supplied || atoms |> List.contains (PresenceAtom Present) then
+                " required"
+            else
+                ""
 
         let maxLength =
-            metadata
+            atoms
             |> List.tryPick (function
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $" maxlength=\"{maximum}\""
+                | CardinalityAtom(Cardinality.Maximum maximum)
+                | CardinalityAtom(Cardinality.Between(_, maximum)) -> Some $" maxlength=\"{maximum}\""
                 | _ -> None)
             |> Option.defaultValue ""
 

@@ -21,7 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
+    <ProjectReference Include="..\Axial.Constraint\Axial.Constraint.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Refinement.fs" />

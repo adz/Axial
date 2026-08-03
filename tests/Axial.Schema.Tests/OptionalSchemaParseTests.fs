@@ -2,11 +2,12 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Covers parsing and validating optional fields declared with <c>Schema.option</c>: absent (or JSON null) input is
@@ -80,7 +81,7 @@ module OptionalSchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "nickname" ]
-                                   Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 2, Some 1) } ] @>
+                                   Error = SchemaError.Violation(Atomic(Expected(CardinalityAtom(Cardinality.Minimum 2), Some(ConstraintValue.Integer 1L)))) } ] @>
 
     [<Fact>]
     let ``validate accepts None optional values`` () =
@@ -105,5 +106,5 @@ module OptionalSchemaParseTests =
                 issues =
                     Error
                         [ { Path = Path.key "nickname"
-                            Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 2, Some 1) } ]
+                            Error = SchemaError.Violation(Atomic(Expected(CardinalityAtom(Cardinality.Minimum 2), Some(ConstraintValue.Integer 1L)))) } ]
             @>

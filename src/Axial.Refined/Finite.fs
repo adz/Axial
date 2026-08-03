@@ -1,7 +1,7 @@
 namespace Axial.Refined
 
 open System
-open Axial.Check
+open Axial.Constraint
 
 /// <summary>A double-precision float that is neither infinite nor <c>NaN</c>.</summary>
 /// <remarks>
@@ -108,7 +108,8 @@ type FiniteFloat32 =
 module FiniteFloat =
 
     /// <summary>Reported when an exact result leaves the finite range.</summary>
-    let private notFinite = [ CheckFailure.InvalidFormat "finite" ]
+    let private notFinite value =
+        Atomic(Expected(NumberAtom Finite, ConstraintValue.tryCreate value))
 
     /// <remarks>Spelled out rather than <c>Double.IsFinite</c>, which Fable does not support.</remarks>
     let private isFinite (value: float) =
@@ -137,7 +138,7 @@ module FiniteFloat =
 
     /// <summary>Rewraps a raw result, failing when the operation left the finite range.</summary>
     let private ofComputed value =
-        if isFinite value then Ok(FiniteFloat value) else Error notFinite
+        if isFinite value then Ok(FiniteFloat value) else Error(notFinite value)
 
     // Closed operations ----------------------------------------------------------------
 
@@ -233,7 +234,7 @@ module FiniteFloat32 =
         if isFinite value then
             Ok(FiniteFloat32 value)
         else
-            Error [ CheckFailure.InvalidFormat "finite" ]
+            Error(Atomic(Expected(NumberAtom Finite, ConstraintValue.tryCreate value)))
 
     /// <summary>Totals a non-empty list, failing when the total leaves the finite range.</summary>
     let sum (values: NonEmptyList<FiniteFloat32>) =

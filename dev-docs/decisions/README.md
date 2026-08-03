@@ -526,3 +526,47 @@ or in `AGENTS.md`, then delete the detailed sketch.
   Domain models are hand-written F#; a domain-tier declaration kind was designed and rejected (generated types
   can't carry methods; DUs don't fit a JSON-shaped grammar). Golden corpus: `tests/Axial.Schema.Tests/contracts/`
   (compiled + behavior-tested) with byte-for-byte emission tests in `tests/Axial.Schema.Contracts.Tests`.
+
+## 2026-08-02 — Constraint unification
+
+- `Axial.Check` is renamed to `Axial.Constraint` (project, assembly, package, namespace, tests, AOT probe). There is
+  one public value-rule concept, `Constraint<'value>`: a reusable description of valid values that `check` executes.
+  The `Check<'value>` alias, `CheckFailure`, `CheckDSL`, the public `Predicate` catalogue, `Axial.Check.Constraint`'s
+  code/metadata surface, `Axial.Schema.SchemaConstraint`, `ConstraintDescriptor`, and the `Axial.Schema.Constraint`
+  facade are all removed outright, with no aliases. Pre-1.0, no released users.
+- A constraint carries `Test`, `Check`, and a `ConstraintDescription`. Both closures are retained deliberately:
+  `test` over a conjunction may fail fast, while `check` must run every child to accumulate. Interpreted atoms and
+  `custom` predicates keep a Boolean path that does no violation work; `customWith` derives `test` from its callback
+  and carries that cost, which is inherent in the information the author chose to supply.
+- Two tiers. **Interpreted** constructors build one `ConstraintAtom` and place that same value in both the
+  description and any violation, so identity and failure cannot drift. The algebra is closed and grows only by Axial
+  release. **Opaque** constraints (`custom`, `customWith`, `notWith`, `contramap`, unsupported operands) run normally
+  and are honestly invisible to export and proof. There is no interpreted `not`: several families have no complement,
+  float comparisons are not complementable under NaN, and an operation that is sometimes interpreted is worse than
+  one that is honestly opaque.
+- `Violation` replaces `CheckFailure`. It is plain comparable data with no closure or description reachable from it,
+  so a failure survives its constraint going out of scope. A leaf carries the failing atom itself, which removes the
+  string round-trip `SchemaError.constraintCodeFor` + `SchemaValidation` used to reconstruct constraint identity —
+  a lookup that returned the wrong message when two constraints on one field shared a code. There is no
+  `Violation.code`; keys exist only through `Violation.toMessageTree`, computed at the edge.
+- Removed with reasons: per-constraint message overrides (`withMessage`) and arbitrary diagnostic rewriting
+  (`mapViolation`/`withViolation`), because they let the reported failure diverge from the published description;
+  `Refinement.defineAll`/`defineWithCheck`, because `Constraint.all` and `Constraint.custom` already compose;
+  `Constraint.supplied`/`omittable`, because supply is decided before a typed value exists and is Schema's concern
+  (`Schema.mustSupply`/`mayOmit`).
+- Interpreters divide by what they *claim*, not by whether they produce a value — the earlier "value producers fail
+  closed" rule contradicted the trusted JSON codec's documented contract. Admission and constraint-satisfying
+  generation fail closed; trusted structural codecs make no constraint claim; documentation and export degrade
+  honestly via `x-axial-runtime-constraints`.
+- Semantics corrected where runtime and export disagreed: text cardinality counts code points, not UTF-16 units;
+  `Constraint.numeric` is ASCII `^[0-9]+$` rather than `\d`, so the runtime rule and its lowering agree by
+  construction; text `present` emits only `minLength: 1` and keeps the non-blank rule as runtime metadata, because
+  .NET whitespace and ECMA-262 `\s` differ in both directions (U+0085, U+FEFF); `format` annotation and the `Email`
+  atom lower separately, and declaring both emits both.
+- `ConstraintValue` conversion happens at construction and never throws — the old projection sent every `float`
+  through `decimal`, so `Constraint.lessThan infinity` raised `OverflowException`. Floats keep their own case with
+  equality that treats NaN as self-equal and separates signed zero, using only arithmetic proven on Fable and
+  NativeAOT rather than `BitConverter`. `Guid` and `TimeSpan` are deliberately excluded: Fable cannot type-test
+  either, so admitting them would make the same constraint interpreted on .NET and opaque on Fable.
+- The term language, `FieldReference`, `Origin`, and `Schema.require` are **out of scope** and not present as
+  placeholder cases. They are additive when a real consumer establishes field identity, nesting, and proof semantics.

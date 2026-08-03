@@ -17,7 +17,7 @@ A check proves a fact without replacing the value. `Result.guard` keeps the orig
 
 ```fsharp
 let validateBadgeName =
-    Check.String.minLength 3
+    Constraint.minLength 3
     |> Result.guard
 ```
 

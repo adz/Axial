@@ -14,7 +14,7 @@ Axial has two main groups, and everything in this queue serves that split:
 
 - **Parse-don't-validate results**: `Schema` is the front door for domain models — parsing, validation, redisplay,
   and metadata fall out of one declaration. Plain `Result` with the user's own error DU is the
-  blessed lane for simple code. `Check`, `Validation`, `Refined`, and the interpreter error types are machinery
+  blessed lane for simple code. `Constraint`, `Validation`, `Refined`, and the interpreter error types are machinery
   behind those two doors, not peer entry points.
 - **Effects in Flow**: the ZIO-style Reader-Async-Result workflow model. Useful with or without schemas, and never
   part of the entry price for the results group. Flow-group gaps are tracked in `LATER_TODO.md` (demand-driven, not

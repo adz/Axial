@@ -329,7 +329,7 @@ let pageSpecs = [
         Intro = "This page shows `Schema<'value>`, the universal catalog for primitive, collection, optional, union, refined, and record declarations. The same declaration can be parsed, checked, inspected, encoded, documented, and used for generation."
         SymbolIds = [
             "Core types", ["T:Axial.Schema.Schema`1"; "T:Axial.Schema.Field`2"; "T:Axial.Schema.UnionCase`1"]
-            "Catalog", ["P:Axial.Schema.Schema.text"; "P:Axial.Schema.Schema.int"; "P:Axial.Schema.Schema.decimal"; "P:Axial.Schema.Schema.bool"; "P:Axial.Schema.Schema.dateTime"; "P:Axial.Schema.Schema.guid"; "M:Axial.Schema.Schema.list"; "M:Axial.Schema.Schema.option"; "M:Axial.Schema.Schema.constrain"; "M:Axial.Schema.Schema.refine"; "M:Axial.Schema.Schema.validate"; "M:Axial.Schema.Schema.union"; "M:Axial.Schema.UnionCase.create"; "T:Axial.Schema.Constraint"; "T:Axial.Schema.ConstraintDescriptor"; "T:Axial.Schema.SchemaConstraint`1"]
+            "Catalog", ["P:Axial.Schema.Schema.text"; "P:Axial.Schema.Schema.int"; "P:Axial.Schema.Schema.decimal"; "P:Axial.Schema.Schema.bool"; "P:Axial.Schema.Schema.dateTime"; "P:Axial.Schema.Schema.guid"; "M:Axial.Schema.Schema.list"; "M:Axial.Schema.Schema.option"; "M:Axial.Schema.Schema.constrain"; "M:Axial.Schema.Schema.constrainAll"; "M:Axial.Schema.Schema.mustSupply"; "M:Axial.Schema.Schema.mayOmit"; "M:Axial.Schema.Schema.refine"; "M:Axial.Schema.Schema.validate"; "M:Axial.Schema.Schema.union"; "M:Axial.Schema.UnionCase.create"; "T:Axial.Schema.Supply"]
             "Record builder", ["P:Axial.Schema.SchemaCE.schema"; "M:Axial.Schema.SchemaCE.field"; "M:Axial.Schema.SchemaCE.construct"; "M:Axial.Schema.SchemaCE.constructResult"]
             "Inspection", ["T:Axial.Schema.SchemaShape"; "T:Axial.Schema.SchemaDescription"; "T:Axial.Schema.FieldDescription"; "T:Axial.Schema.ModelDescription"; "T:Axial.Schema.UnionDescription"; "T:Axial.Schema.UnionCaseDescription"; "M:Axial.Schema.Inspect.model"; "M:Axial.Schema.Inspect.schema"; "M:Axial.Schema.Inspect.field"]
             "JSON Schema generation", ["M:Axial.Schema.JsonSchema.generate"; "M:Axial.Schema.JsonSchema.generateValue"]
@@ -602,33 +602,22 @@ let pageSpecs = [
         Alias = None
     }
     {
-        OutPath = ["check"; "_index.md"]
-        Title = "Check"
-        Description = "Source-documented pure validation helpers for Axial."
-        Intro = "This page shows reusable value checks and portable typed constraints. `Check<'value>` returns `Result<unit, CheckFailure list>` and never replaces its input. Use `Result.guard` when a Result pipeline should continue with the original value. Checks compose with `Check.all`, `Check.any`, `Check.not`, and `Check.mapFailure`; `Constraint<'value>` adds inspectable metadata to executable checking."
+        OutPath = ["constraint"; "_index.md"]
+        Title = "Constraint"
+        Description = "Source-documented reusable value rules for Axial."
+        Intro = "This page shows `Constraint<'value>`: one reusable description of valid values, shared by direct checking, refined-value admission, Schema, and export. `check` runs it, `test` answers the same question as a `bool`, and `guard` keeps the input after success. There is no separate Check type and no second constructor catalogue. Interpreted constructors build one `ConstraintAtom` that drives both execution and description; `custom`, `customWith`, `notWith`, and `contramap` are the opaque escape hatch, which runs normally and is honestly invisible to export and proof."
         SymbolIds = [
-            "Core types", ["T:Axial.Check.Check`1"; "T:Axial.Check.Constraint`1"; "T:Axial.Check.ConstraintMetadata"; "T:Axial.Check.ConstraintArgument"; "T:Axial.Check.CheckFailure"; "T:Axial.Check.CheckLengthExpectation"; "T:Axial.Check.CheckRangeExpectation"]
-            "Executable composition", ["M:Axial.Check.CheckModule.all"; "M:Axial.Check.CheckModule.any"; "M:Axial.Check.CheckModule.not"; "M:Axial.Check.CheckModule.mapFailure"]
-            "Top-level executable checks", ["M:Axial.Check.CheckModule.present"; "M:Axial.Check.CheckModule.empty"; "M:Axial.Check.CheckModule.notEmpty"; "M:Axial.Check.CheckModule.length"; "M:Axial.Check.CheckModule.minLength"; "M:Axial.Check.CheckModule.maxLength"; "M:Axial.Check.CheckModule.lengthBetween"; "M:Axial.Check.CheckModule.email"; "M:Axial.Check.CheckModule.matches"; "M:Axial.Check.CheckModule.oneOf"; "M:Axial.Check.CheckModule.between"; "M:Axial.Check.CheckModule.greaterThan"; "M:Axial.Check.CheckModule.lessThan"; "M:Axial.Check.CheckModule.atLeast"; "M:Axial.Check.CheckModule.atMost"; "M:Axial.Check.CheckModule.positive"; "M:Axial.Check.CheckModule.nonNegative"; "M:Axial.Check.CheckModule.negative"; "M:Axial.Check.CheckModule.nonPositive"; "M:Axial.Check.CheckModule.distinct"; "M:Axial.Check.CheckModule.contains"; "M:Axial.Check.CheckModule.single"; "M:Axial.Check.CheckModule.atMostOne"; "M:Axial.Check.CheckModule.atLeastOne"; "M:Axial.Check.CheckModule.moreThanOne"; "M:Axial.Check.CheckModule.equalTo"; "M:Axial.Check.CheckModule.notEqualTo"]
-            "Executable string checks", ["M:Axial.Check.CheckModule.String.present"; "M:Axial.Check.CheckModule.String.empty"; "M:Axial.Check.CheckModule.String.notEmpty"; "M:Axial.Check.CheckModule.String.minLength"; "M:Axial.Check.CheckModule.String.maxLength"; "M:Axial.Check.CheckModule.String.lengthBetween"; "M:Axial.Check.CheckModule.String.exactLength"; "M:Axial.Check.CheckModule.String.email"; "M:Axial.Check.CheckModule.String.matches"; "M:Axial.Check.CheckModule.String.numeric"; "M:Axial.Check.CheckModule.String.alphaNumeric"; "M:Axial.Check.CheckModule.String.oneOf"]
-            "Executable number checks", ["M:Axial.Check.CheckModule.Number.between"; "M:Axial.Check.CheckModule.Number.greaterThan"; "M:Axial.Check.CheckModule.Number.lessThan"; "M:Axial.Check.CheckModule.Number.atLeast"; "M:Axial.Check.CheckModule.Number.atMost"; "M:Axial.Check.CheckModule.Number.positive"; "M:Axial.Check.CheckModule.Number.nonNegative"; "M:Axial.Check.CheckModule.Number.negative"; "M:Axial.Check.CheckModule.Number.nonPositive"]
-            "Executable sequence checks", ["M:Axial.Check.CheckModule.Seq.empty"; "M:Axial.Check.CheckModule.Seq.notEmpty"; "M:Axial.Check.CheckModule.Seq.count"; "M:Axial.Check.CheckModule.Seq.minCount"; "M:Axial.Check.CheckModule.Seq.maxCount"; "M:Axial.Check.CheckModule.Seq.countBetween"; "M:Axial.Check.CheckModule.Seq.noDuplicates"; "M:Axial.Check.CheckModule.Seq.contains"; "M:Axial.Check.CheckModule.Seq.single"; "M:Axial.Check.CheckModule.Seq.atMostOne"; "M:Axial.Check.CheckModule.Seq.atLeastOne"; "M:Axial.Check.CheckModule.Seq.moreThanOne"]
-            "Executable optional checks", ["M:Axial.Check.CheckModule.Option.some"; "M:Axial.Check.CheckModule.Option.none"; "M:Axial.Check.CheckModule.ValueOption.some"; "M:Axial.Check.CheckModule.ValueOption.none"; "M:Axial.Check.CheckModule.Nullable.hasValue"; "M:Axial.Check.CheckModule.Nullable.hasNoValue"; "M:Axial.Check.CheckModule.Result.ok"; "M:Axial.Check.CheckModule.Result.error"]
-        ]
-        Alias = None
-    }
-    {
-        OutPath = ["predicate"; "_index.md"]
-        Title = "Predicate"
-        Description = "Source-documented boolean predicates for Axial."
-        Intro = "This page shows the `Predicate` and `PredicateExtensions` surface: plain `bool` facts for local branching (`if`, `match`, guard clauses), as opposed to [`Check`](../check/), which returns a structured `Result`. `PredicateExtensions` is `AutoOpen`, adding members such as `IsBlank`, `IsPresent`, and `HasItems` directly onto the types they describe. `Predicate.present`, `Predicate.empty`, and `Predicate.notEmpty` are the `bool`-returning counterparts to `Check.present`/`Check.empty`/`Check.notEmpty`, using the same type-directed SRTP dispatch."
-        SymbolIds = [
-            "Type-directed presence facade", ["M:Axial.Check.PredicateModule.present"; "M:Axial.Check.PredicateModule.empty"; "M:Axial.Check.PredicateModule.notEmpty"]
-            "Option and result predicates", ["M:Axial.Check.PredicateExtensions.Option`1.get_IsPresent``1(Microsoft.FSharp.Core.FSharpOption{``0})"; "M:Axial.Check.PredicateExtensions.Option`1.get_IsAbsent``1(Microsoft.FSharp.Core.FSharpOption{``0})"; "M:Axial.Check.PredicateExtensions.ValueOption`1.get_IsPresent``1(Microsoft.FSharp.Core.FSharpValueOption{``0})"; "M:Axial.Check.PredicateExtensions.ValueOption`1.get_IsAbsent``1(Microsoft.FSharp.Core.FSharpValueOption{``0})"; "M:Axial.Check.PredicateExtensions.Result.IsOk"; "M:Axial.Check.PredicateExtensions.Result.IsError"]
-            "Presence predicates", ["M:Axial.Check.PredicateExtensions.Nullable`1.get_IsPresent``1(System.Nullable{``0})"; "M:Axial.Check.PredicateExtensions.Nullable`1.get_IsAbsent``1(System.Nullable{``0})"; "M:Axial.Check.PredicateModule.Reference.notNull"; "M:Axial.Check.PredicateModule.Reference.isNull"]
-            "String predicates", ["M:Axial.Check.PredicateExtensions.String.IsEmpty"; "M:Axial.Check.PredicateExtensions.String.IsNotEmpty"; "M:Axial.Check.PredicateExtensions.String.IsBlank"; "M:Axial.Check.PredicateExtensions.String.IsNotBlank"; "M:Axial.Check.PredicateExtensions.String.HasMinLength"; "M:Axial.Check.PredicateExtensions.String.HasMaxLength"; "M:Axial.Check.PredicateExtensions.String.HasLength"; "M:Axial.Check.PredicateExtensions.String.HasLengthBetween"; "M:Axial.Check.PredicateExtensions.String.MatchesPattern"; "M:Axial.Check.PredicateExtensions.String.IsEmail"; "M:Axial.Check.PredicateExtensions.String.IsNumeric"; "M:Axial.Check.PredicateExtensions.String.IsAlphaNumeric"]
-            "Sequence predicates", ["M:Axial.Check.PredicateExtensions.IEnumerable.HasNoItems"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasItems"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasItem"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasCount"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasMinCount"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasMaxCount"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasCountBetween"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasSingleItem"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasAtMostOneItem"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasMoreThanOneItem"; "M:Axial.Check.PredicateExtensions.IEnumerable.HasDuplicates"; "M:Axial.Check.PredicateExtensions.IEnumerable.IsDistinct"]
-            "Comparison predicates", ["M:Axial.Check.PredicateModule.Number.greaterThan"; "M:Axial.Check.PredicateModule.Number.lessThan"; "M:Axial.Check.PredicateModule.Number.atLeast"; "M:Axial.Check.PredicateModule.Number.atMost"; "M:Axial.Check.PredicateModule.Number.between"; "M:Axial.Check.PredicateModule.Number.positive"; "M:Axial.Check.PredicateModule.Number.nonNegative"; "M:Axial.Check.PredicateModule.Number.negative"; "M:Axial.Check.PredicateModule.Number.nonPositive"]
+            "Core types", ["T:Axial.Constraint.Constraint`1"; "T:Axial.Constraint.Violation"; "T:Axial.Constraint.AtomicViolation"; "T:Axial.Constraint.ConstraintDescription"; "T:Axial.Constraint.ConstraintExpression"; "T:Axial.Constraint.ConstraintAtom"; "T:Axial.Constraint.OpaqueConstraint"; "T:Axial.Constraint.ConstraintValue"]
+            "Expectations", ["T:Axial.Constraint.Presence"; "T:Axial.Constraint.Cardinality"; "T:Axial.Constraint.RelationOperator"; "T:Axial.Constraint.Relation"; "T:Axial.Constraint.Membership"; "T:Axial.Constraint.Format"; "T:Axial.Constraint.Number"; "T:Axial.Constraint.UnsupportedOperation"]
+            "Execution", ["M:Axial.Constraint.ConstraintModule.test"; "M:Axial.Constraint.ConstraintModule.check"; "M:Axial.Constraint.ConstraintModule.guard"; "M:Axial.Constraint.ConstraintModule.inspect"]
+            "Composition", ["M:Axial.Constraint.ConstraintModule.all"; "M:Axial.Constraint.ConstraintModule.any"; "M:Axial.Constraint.ConstraintModule.optional"; "M:Axial.Constraint.ConstraintModule.notWith"; "M:Axial.Constraint.ConstraintModule.custom"; "M:Axial.Constraint.ConstraintModule.customWith"; "M:Axial.Constraint.ConstraintModule.contramap"; "M:Axial.Constraint.ConstraintModule.describe"]
+            "Presence and size", ["M:Axial.Constraint.ConstraintModule.present"; "M:Axial.Constraint.ConstraintModule.blank"; "M:Axial.Constraint.ConstraintModule.length"; "M:Axial.Constraint.ConstraintModule.minLength"; "M:Axial.Constraint.ConstraintModule.maxLength"; "M:Axial.Constraint.ConstraintModule.lengthBetween"]
+            "Text formats", ["M:Axial.Constraint.ConstraintModule.email"; "M:Axial.Constraint.ConstraintModule.trimmed"; "M:Axial.Constraint.ConstraintModule.numeric"; "M:Axial.Constraint.ConstraintModule.alphanumeric"; "M:Axial.Constraint.ConstraintModule.pattern"]
+            "Relations and membership", ["M:Axial.Constraint.ConstraintModule.equalTo"; "M:Axial.Constraint.ConstraintModule.notEqualTo"; "M:Axial.Constraint.ConstraintModule.greaterThan"; "M:Axial.Constraint.ConstraintModule.lessThan"; "M:Axial.Constraint.ConstraintModule.atLeast"; "M:Axial.Constraint.ConstraintModule.atMost"; "M:Axial.Constraint.ConstraintModule.between"; "M:Axial.Constraint.ConstraintModule.oneOf"; "M:Axial.Constraint.ConstraintModule.contains"; "M:Axial.Constraint.ConstraintModule.distinct"]
+            "Numeric properties", ["M:Axial.Constraint.ConstraintModule.multipleOf"; "M:Axial.Constraint.ConstraintModule.finite"; "M:Axial.Constraint.ConstraintModule.finite32"]
+            "Messages", ["T:Axial.Constraint.MessageTree"; "T:Axial.Constraint.MessageLeaf"; "T:Axial.Constraint.MessageDescriptor"]
+            "Violations", ["M:Axial.Constraint.ViolationModule.render"; "M:Axial.Constraint.ViolationModule.toMessageTree"; "M:Axial.Constraint.ViolationModule.children"; "M:Axial.Constraint.ViolationModule.flatten"; "M:Axial.Constraint.ViolationModule.tryExpectation"; "M:Axial.Constraint.ViolationModule.tryActual"; "M:Axial.Constraint.ViolationModule.tryDescription"; "M:Axial.Constraint.ViolationModule.conjoin"; "M:Axial.Constraint.ViolationModule.alternatives"]
+            "Descriptions and values", ["M:Axial.Constraint.ConstraintDescriptionModule.children"; "M:Axial.Constraint.ConstraintDescriptionModule.atoms"; "M:Axial.Constraint.ConstraintDescriptionModule.isOpaque"; "M:Axial.Constraint.ConstraintAtomModule.key"; "M:Axial.Constraint.ConstraintAtomModule.render"; "M:Axial.Constraint.ConstraintAtomModule.arguments"; "M:Axial.Constraint.ConstraintValueModule.tryCreate"; "M:Axial.Constraint.ConstraintValueModule.render"]
         ]
         Alias = None
     }
@@ -647,9 +636,9 @@ let pageSpecs = [
         OutPath = ["result"; "_index.md"]
         Title = "Result"
         Description = "Source-documented fail-fast Result helpers for Axial."
-        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Check.*` is available when a reusable constraint and its structured failure are useful. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
+        Intro = "This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Constraint.*` is available when a reusable value rule and its structured violation are useful. The `result { }` builder sequences ordinary fail-fast `Result` workflows."
         SymbolIds = [
-            "Structured errors", ["T:Axial.Check.CheckFailure"]
+            "Structured errors", ["T:Axial.Constraint.Violation"]
             "Core helpers", ["M:Axial.Result.Result.ok"; "M:Axial.Result.Result.error"; "M:Axial.Result.Result.map"; "M:Axial.Result.Result.mapError"; "M:Axial.Result.Result.bind"; "M:Axial.Result.Result.orElse"; "M:Axial.Result.Result.orElseWith"]
             "Lifts and conversions", ["M:Axial.Result.Result.requireTrue"; "M:Axial.Result.Result.okIf"; "M:Axial.Result.Result.failIf"; "M:Axial.Result.Result.orError"; "M:Axial.Result.Result.fromTry"; "M:Axial.Result.Result.fromChoice"; "M:Axial.Result.Result.toOption"; "M:Axial.Result.Result.toValueOption"; "M:Axial.Result.Result.defaultValue"]
             "Extraction helpers", ["M:Axial.Result.Result.someOr"; "M:Axial.Result.Result.noneOr"; "M:Axial.Result.Result.valueSomeOr"; "M:Axial.Result.Result.valueNoneOr"; "M:Axial.Result.Result.nullableOr"; "M:Axial.Result.Result.notNullOr"; "M:Axial.Result.Result.okOr"; "M:Axial.Result.Result.errorOr"; "M:Axial.Result.Result.headOr"]
@@ -688,8 +677,8 @@ let pageSpecs = [
             "Interval", ["M:Axial.Refined.Interval.between"; "M:Axial.Refined.Interval.create"; "M:Axial.Refined.Interval.lower"; "M:Axial.Refined.Interval.upper"; "M:Axial.Refined.Interval.duration"; "M:Axial.Refined.Interval.widthInt"; "M:Axial.Refined.Interval.widthDecimal"; "M:Axial.Refined.Interval.singleton"; "M:Axial.Refined.Interval.contains"; "M:Axial.Refined.Interval.intersect"; "M:Axial.Refined.Interval.overlaps"; "M:Axial.Refined.Interval.clamp"; "M:Axial.Refined.Interval.span"]
             "Character", ["M:Axial.Refined.Character.isAsciiDigit"; "M:Axial.Refined.Character.isAsciiHexDigit"; "M:Axial.Refined.Character.isLowercase"; "M:Axial.Refined.Character.isUppercase"; "M:Axial.Refined.Character.isWhitespace"; "M:Axial.Refined.Character.isControl"; "M:Axial.Refined.Character.isNumeric"]
             "Choice", ["M:Axial.Refined.Choice.orElse"; "M:Axial.Refined.Choice.tryAny"]
-            "Refinement", ["T:Axial.Refined.Refinement`2"; "M:Axial.Refined.Refinement.define"; "M:Axial.Refined.Refinement.defineAll"; "M:Axial.Refined.Refinement.defineWithCheck"; "M:Axial.Refined.Refinement.create"; "M:Axial.Refined.Refinement.underlying"; "M:Axial.Refined.Refinement.constraints"]
-            "Invariant-preserving operations", ["M:Axial.Refined.NonBlankString.value"; "M:Axial.Refined.NonBlankString.create"; "M:Axial.Refined.NonBlankString.append"; "M:Axial.Refined.NonBlankString.trim"; "M:Axial.Refined.NonBlankString.split"; "M:Axial.Refined.NonEmptyList.toList"; "M:Axial.Refined.NonEmptyList.create"; "M:Axial.Refined.NonEmptyList.cons"; "M:Axial.Refined.NonEmptyList.map"; "M:Axial.Refined.NonEmptyList.head"; "M:Axial.Refined.NonEmptyList.last"; "M:Axial.Refined.NonEmptyList.reduce"; "M:Axial.Refined.NonEmptyList.traverseResult"; "M:Axial.Refined.NonEmptyList.count"; "M:Axial.Refined.NonEmptyList.groupBy"; "M:Axial.Refined.NonEmptyList.chunkBySize"; "M:Axial.Refined.NonEmptyList.zip"; "M:Axial.Refined.NonEmptyList.filter"; "M:Axial.Refined.NonEmptyList.tryFilter"; "M:Axial.Refined.DistinctList.toMap"; "M:Axial.Refined.DistinctList.toSet"; "M:Axial.Refined.UnitInterval.multiply"; "M:Axial.Refined.UnitInterval.complement"; "M:Axial.Refined.UnitInterval.lerp"; "M:Axial.Refined.UnitInterval.inverseLerp"; "M:Axial.Refined.FiniteFloat.create"; "M:Axial.Refined.FiniteFloat.negate"; "M:Axial.Refined.FiniteFloat.average"; "M:Axial.Refined.Bounded.clamp"]
+            "Refinement", ["T:Axial.Refined.Refinement`2"; "M:Axial.Refined.Refinement.define"; "M:Axial.Refined.Refinement.create"; "M:Axial.Refined.Refinement.underlying"; "M:Axial.Refined.Refinement.constraint'"]
+            "Invariant-preserving operations", ["M:Axial.Refined.NonBlankString.value"; "M:Axial.Refined.NonBlankString.create"; "M:Axial.Refined.NonBlankString.append"; "M:Axial.Refined.NonBlankString.trim"; "M:Axial.Refined.NonBlankString.split"; "M:Axial.Refined.NonEmptyList.toList"; "M:Axial.Refined.NonEmptyList.create"; "M:Axial.Refined.NonEmptyList.cons"; "M:Axial.Refined.NonEmptyList.map"; "M:Axial.Refined.NonEmptyList.head"; "M:Axial.Refined.NonEmptyList.last"; "M:Axial.Refined.NonEmptyList.reduce"; "M:Axial.Refined.NonEmptyList.traverseResult"; "M:Axial.Refined.NonEmptyList.groupBy"; "M:Axial.Refined.NonEmptyList.chunkBySize"; "M:Axial.Refined.NonEmptyList.zip"; "M:Axial.Refined.NonEmptyList.filter"; "M:Axial.Refined.NonEmptyList.tryFilter"; "M:Axial.Refined.DistinctList.toMap"; "M:Axial.Refined.DistinctList.toSet"; "M:Axial.Refined.UnitInterval.multiply"; "M:Axial.Refined.UnitInterval.complement"; "M:Axial.Refined.UnitInterval.lerp"; "M:Axial.Refined.UnitInterval.inverseLerp"; "M:Axial.Refined.FiniteFloat.create"; "M:Axial.Refined.FiniteFloat.negate"; "M:Axial.Refined.FiniteFloat.average"; "M:Axial.Refined.Bounded.clamp"]
             "Refine facade", ["M:Axial.Refined.Refine.nonBlankString"; "M:Axial.Refined.Refine.finiteFloat"; "M:Axial.Refined.Refine.unitInterval"; "M:Axial.Refined.Refine.interval"; "M:Axial.Refined.Refine.nonEmptyList"; "M:Axial.Refined.Refine.nonEmptyArray"; "M:Axial.Refined.Refine.distinctList"]
 
         ]
@@ -1242,8 +1231,7 @@ let pageWeight (spec: PageSpec) =
     | ["cause"; "_index.md"] -> 40
     | ["effect"; "_index.md"] -> 50
     | ["result"; "_index.md"] -> 60
-    | ["check"; "_index.md"] -> 70
-    | ["predicate"; "_index.md"] -> 72
+    | ["constraint"; "_index.md"] -> 70
     | ["take"; "_index.md"] -> 75
     | ["bind"; "_index.md"] -> 76
     | ["validation"; "_index.md"] -> 80
@@ -1315,7 +1303,7 @@ let main argv =
     // silently drop those members from the docs instead of describing them as unavailable there.
     let validationDllPaths = [
         Path.Combine(artifactsDir, "Axial.Result/debug_net8.0/Axial.Result.dll")
-        Path.Combine(artifactsDir, "Axial.Check/debug_net8.0/Axial.Check.dll")
+        Path.Combine(artifactsDir, "Axial.Constraint/debug_net8.0/Axial.Constraint.dll")
         Path.Combine(artifactsDir, "Axial.Parse/debug_net8.0/Axial.Parse.dll")
         Path.Combine(artifactsDir, "Axial.Refined/debug_net8.0/Axial.Refined.dll")
     ]
@@ -1393,7 +1381,7 @@ let main argv =
         |> Seq.toList
 
     let validationReferenceGroups =
-        set [ "check"; "predicate"; "result"; "validation"; "diagnostics"; "parse"; "refined" ]
+        set [ "constraint"; "result"; "validation"; "diagnostics"; "parse"; "refined" ]
 
     let dataReferenceGroups =
         set [ "data" ]
@@ -1460,7 +1448,7 @@ let main argv =
 
     let canonicalAliases =
         dict [
-            formatterApiSlug "Axial.CheckModule", Path.Combine(outRoot, "check", "_index.md")
+            formatterApiSlug "Axial.ConstraintModule", Path.Combine(outRoot, "constraint", "_index.md")
             formatterApiSlug "Axial.BindModule", Path.Combine(outRoot, "bind", "_index.md")
             formatterApiSlug "Axial.BindErrorModule", Path.Combine(outRoot, "bind", "_index.md")
             formatterApiSlug "Axial.FlowModule", Path.Combine(outRoot, "flow", "_index.md")

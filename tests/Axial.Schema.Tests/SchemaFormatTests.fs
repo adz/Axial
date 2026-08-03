@@ -1,10 +1,12 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open System
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Proves that value schemas carry portable <c>format</c> metadata such as <c>email</c>: the format is declarative
@@ -93,11 +95,13 @@ module SchemaFormatTests =
             |> Schema.withFormat SchemaFormat.email
             |> Schema.constrain Constraint.email
 
+        // Annotation and enforcement are separate concepts that live side by side: the format makes no
+        // validation claim, and the constraint is what actually runs.
         test <@ Schema.format schema = Some SchemaFormat.email @>
-        test <@ Schema.constraints schema |> List.map Constraint.code = [ "email" ] @>
+        test <@ Schema.constraints schema |> List.collect ConstraintDescription.atoms = [ FormatAtom Format.Email ] @>
 
         let formattedLast = Schema.text |> Schema.constrain Constraint.present |> Schema.withFormat SchemaFormat.email
-        test <@ Schema.constraints formattedLast |> List.map Constraint.code = [ "present" ] @>
+        test <@ Schema.constraints formattedLast |> List.collect ConstraintDescription.atoms = [ PresenceAtom Present ] @>
         test <@ Schema.format formattedLast = Some SchemaFormat.email @>
 
     [<Fact>]
@@ -105,7 +109,7 @@ module SchemaFormatTests =
         let schema =
             schema<Contact> {
                 field "email" _.Email {
-                    withSchema ((Email.schema ()) |> Schema.constrainAll [ Constraint.supplied ])
+                    withSchema ((Email.schema ()) |> Schema.mustSupply)
                 }
                 field "name" _.Name
                 construct (fun email name -> { Email = email; Name = name })

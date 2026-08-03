@@ -4,7 +4,7 @@ linkTitle: "constrain"
 weight: 2108
 ---
 
-Adds one portable constraint to a schema.
+Requires a schema&#39;s values to satisfy a constraint.
 
 ## Signature
 
@@ -16,7 +16,7 @@ Adds one portable constraint to a schema.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `constraint'` | <code><span><a href="t-schema-schemaconstraint.md">SchemaConstraint</a>&lt;'a&gt;</span></code> |  |
+| `constraint'` | <code><span><a href="../../../error-handling/reference/constraint/t-constraint-constraint.md">Constraint</a>&lt;'a&gt;</span></code> |  |
 | `schema` | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
 
 ## Returns
@@ -25,5 +25,20 @@ Adds one portable constraint to a schema.
 | --- | --- |
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
 
+## Remarks
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L67-67)
+
+ The same <code>Constraint</code> value serves direct checking, refinement, and Schema. For a value schema the
+ constraint runs at that layer; for a model schema it runs after successful field admission and
+ construction.
+
+
+## Examples
+
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">Schema</span><span class="pn">.</span><span class="id">text</span> <span class="o">|&gt;</span> <span class="id">Schema</span><span class="pn">.</span><span class="id">constrain</span> <span class="pn">(</span><span class="id">Constraint</span><span class="pn">.</span><span class="id">lengthBetween</span> <span class="n">2</span> <span class="n">40</span><span class="pn">)</span>
+</code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L75-75)

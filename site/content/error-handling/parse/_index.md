@@ -95,18 +95,18 @@ Parsing changes representation; refinement checks an already-typed value and con
 [Refined values]({{< relref "/error-handling/refined/" >}}) for the refinement model and its built-in types.
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 open Axial.Result
 
 type QuantityError =
     | InvalidInteger of ParseError
-    | InvalidQuantity of CheckFailure list
+    | InvalidQuantity of Violation
 
 let quantity raw =
     result {
         let! parsed = Parse.int raw |> Result.mapError InvalidInteger
-        let! quantity = parsed |> Result.guard (Check.greaterThan 0) |> Result.mapError InvalidQuantity
+        let! quantity = parsed |> Constraint.guard (Constraint.greaterThan 0) |> Result.mapError InvalidQuantity
         return quantity
     }
 ```

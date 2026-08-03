@@ -2,12 +2,13 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module NestedSchemaParseTests =
     type private Address = { Street: string; City: string }
@@ -44,7 +45,7 @@ module NestedSchemaParseTests =
                 withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "address" (fun (customer: Customer) -> customer.Address) {
-                withSchema (addressSchema |> Schema.constrain Constraint.supplied)
+                withSchema (addressSchema |> Schema.mustSupply)
             }
             construct (fun name address -> ({ Name = name; Address = address }: Customer))
         }
@@ -66,7 +67,7 @@ module NestedSchemaParseTests =
                 withSchema (Schema.text |> Schema.constrain Constraint.present)
             }
             field "address" (fun (customer: VerifiedCustomer) -> customer.Address) {
-                withSchema (verifiedAddressSchema |> Schema.constrain Constraint.supplied)
+                withSchema (verifiedAddressSchema |> Schema.mustSupply)
             }
             construct (fun name address -> ({ Name = name; Address = address }: VerifiedCustomer))
         }

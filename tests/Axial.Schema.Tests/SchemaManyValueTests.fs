@@ -1,9 +1,11 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Proves that a collection of nested model values can be inspected as portable field metadata from an outer model
@@ -82,7 +84,7 @@ module SchemaManyValueTests =
             model.Fields
             |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "contacts")
 
-        test <@ contactsField.ValueSchema.Constraints |> List.map Constraint.code = [ "minLength" ] @>
+        test <@ contactsField.ValueSchema.Rules |> SchemaRule.descriptions |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.cardinality.minimum" ] @>
 
     [<Fact>]
     let ``a many value schema built from Schema.listWith is not a refined or primitive value schema`` () =
@@ -101,7 +103,7 @@ module SchemaManyValueTests =
             | PrimitiveValueDefinition PrimitiveValueKind.Text -> ()
             | _ -> failwith "Expected the manyOf item to keep the supplied primitive value schema."
 
-            test <@ collection.Item.Constraints |> List.map Constraint.code = [ "present" ] @>
+            test <@ collection.Item.Rules |> SchemaRule.descriptions |> List.collect ConstraintDescription.atoms = [ PresenceAtom Present ] @>
         | PrimitiveValueDefinition _
         | RefinedValueDefinition _
         | NestedValueDefinition _

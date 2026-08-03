@@ -1,6 +1,6 @@
 namespace Axial.Refined
 
-open Axial.Check
+open Axial.Constraint
 
 /// <summary>A value paired with the inclusive interval it is known to lie within.</summary>
 /// <remarks>
@@ -41,10 +41,9 @@ module Bounded =
           BoundsValue = bounds }
 
     /// <summary>Admits a value only when it already lies within the bounds.</summary>
-    let create bounds value : Result<Bounded<'value>, CheckFailure list> =
-        Interval.toConstraint bounds
-        |> Constraint.check
-        |> fun check -> check value
+    let create bounds value : Result<Bounded<'value>, Violation> =
+        value
+        |> Constraint.check (Interval.toConstraint bounds)
         |> Result.map (fun () -> { BoundedValue = value; BoundsValue = bounds })
 
     /// <summary>Returns a refinement admitting values within the supplied bounds.</summary>

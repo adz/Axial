@@ -1,11 +1,13 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open System
 open System.Globalization
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Prototype non-validation interpreters over the public <c>Inspect</c> API: a documentation describer and a UI
@@ -16,8 +18,8 @@ open Axial.Schema.Syntax
 module SchemaInterpreterPrototypes =
     /// Collects the constraint metadata visible at a boundary: field-level constraints plus every value-schema layer
     /// down to (and including) the primitive foundation of refined values.
-    let rec boundaryConstraints (description: SchemaDescription) : ConstraintMetadata list =
-        let own = description.Constraints |> List.map _.Metadata
+    let rec boundaryConstraints (description: SchemaDescription) : ConstraintAtom list =
+        let own = description.Constraints |> List.collect ConstraintDescription.atoms
 
         match description.Shape with
         | SchemaShape.Refined underlying -> own @ boundaryConstraints underlying
@@ -45,29 +47,36 @@ module SchemaInterpreterPrototypes =
             | SchemaShape.Optional payload -> sprintf "optional %s" (valueSummary payload)
             | SchemaShape.Refined _ -> failwith "underlyingShape never returns a refined shape."
 
-        let private constraintSummary shape metadata =
+        // Atoms are shape-neutral, so the documentation interpreter supplies the noun from the surrounding shape.
+        let private constraintSummary shape atom =
             let lengthNoun =
                 match shape with
                 | SchemaShape.Many _ | SchemaShape.MapOf _ -> "items"
                 | _ -> "characters"
 
-            match metadata with
-            | (ConstraintMetadata.Supply Supply.Supplied) -> Some "required"
-            | (ConstraintMetadata.Supply Supply.Omittable) -> Some "optional"
-            | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> Some "required"
-            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MinLength minimum) -> Some(sprintf "at least %d %s" minimum lengthNoun)
-            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some(sprintf "at most %d %s" maximum lengthNoun)
-            | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "email format"
-            | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.AtLeast minimum) ->
-                Some(sprintf "at least %s" (Convert.ToString(minimum, CultureInfo.InvariantCulture)))
+            match atom with
+            | PresenceAtom Present -> Some "required"
+            | CardinalityAtom(Cardinality.Minimum minimum) -> Some(sprintf "at least %d %s" minimum lengthNoun)
+            | CardinalityAtom(Cardinality.Maximum maximum) -> Some(sprintf "at most %d %s" maximum lengthNoun)
+            | FormatAtom Email -> Some "email format"
+            | RelationAtom(Compared(AtLeast, minimum)) -> Some(sprintf "at least %s" (ConstraintValue.render minimum))
             | _ -> None
 
         let rec private fieldLines indent (model: ModelDescription) =
             model.Fields
             |> List.collect (fun field ->
+                let supplyNote =
+                    match field.Supply, field.Schema.Supply with
+                    | Some Supply.Supplied, _
+                    | _, Some Supply.Supplied -> [ "required" ]
+                    | Some Supply.Omittable, _
+                    | _, Some Supply.Omittable -> [ "optional" ]
+                    | None, None -> []
+
                 let notes =
-                    (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Schema
-                    |> List.choose (constraintSummary (underlyingShape field.Schema))
+                    supplyNote
+                    @ ((field.Constraints |> List.collect ConstraintDescription.atoms) @ boundaryConstraints field.Schema
+                       |> List.choose (constraintSummary (underlyingShape field.Schema)))
 
                 let noteText = if List.isEmpty notes then "" else sprintf " — %s" (String.concat ", " notes)
                 let line = sprintf "%s- %s (%s)%s" indent field.Name (valueSummary field.Schema) noteText
@@ -118,7 +127,7 @@ module SchemaInterpreterPrototypes =
 
             match underlyingShape description with
             | SchemaShape.Primitive PrimitiveValueKind.Text ->
-                if constraints |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) then EmailBox else TextBox
+                if constraints |> List.contains (FormatAtom Email) then EmailBox else TextBox
             | SchemaShape.Primitive PrimitiveValueKind.Int
             | SchemaShape.Primitive PrimitiveValueKind.Int64
             | SchemaShape.Primitive PrimitiveValueKind.Decimal
@@ -136,22 +145,20 @@ module SchemaInterpreterPrototypes =
         and private fieldsFor (model: ModelDescription) =
             model.Fields
             |> List.map (fun field ->
-                let constraints = (field.Constraints |> List.map _.Metadata) @ boundaryConstraints field.Schema
+                let constraints =
+                    (field.Constraints |> List.collect ConstraintDescription.atoms) @ boundaryConstraints field.Schema
 
                 { Label = field.Name
                   Control = controlFor field.Schema
                   IsRequired =
-                    constraints
-                    |> List.exists (function
-                        | ConstraintMetadata.Supply Supply.Supplied
-                        | ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present -> true
-                        | _ -> false)
+                    field.Supply = Some Supply.Supplied
+                    || field.Schema.Supply = Some Supply.Supplied
+                    || constraints |> List.contains (PresenceAtom Present)
                   MaxLength =
                     constraints
-                    |> List.tryPick (fun metadata ->
-                        match metadata with
-                        | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some maximum
-                        | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(_, maximum)) -> Some maximum
+                    |> List.tryPick (function
+                        | CardinalityAtom(Cardinality.Maximum maximum)
+                        | CardinalityAtom(Cardinality.Between(_, maximum)) -> Some maximum
                         | _ -> None) })
 
         /// <summary>Describes a built model schema as UI field metadata without creating a UI framework.</summary>
@@ -214,7 +221,7 @@ module SchemaInterpreterPrototypeTests =
             }
             field "newsletter" _.Newsletter
             field "address" _.Address {
-                withSchema ((addressSchema ()) |> Schema.constrainAll [ Constraint.supplied ])
+                withSchema ((addressSchema ()) |> Schema.mustSupply)
             }
             field "tags" _.Tags {
                 withSchema (
@@ -237,11 +244,11 @@ module SchemaInterpreterPrototypeTests =
         let generated = JsonSchema.generate (signupSchemaWith constructions getterReads)
 
         test <@ generated.Contains "\"type\":\"object\"" @>
-        test <@ generated.Contains "\"email\":{\"type\":\"string\",\"minLength\":1,\"pattern\":\"\\\\S\",\"maxLength\":254,\"format\":\"email\"}" @>
+        test <@ generated.Contains "\"email\":{\"type\":\"string\",\"format\":\"email\",\"minLength\":1,\"maxLength\":254,\"pattern\":\"^[^@]+@[^@]+$\"" @>
         test <@ generated.Contains "\"age\":{\"type\":\"integer\",\"minimum\":13,\"maximum\":120}" @>
         test <@ generated.Contains "\"newsletter\":{\"type\":\"boolean\"}" @>
         test <@ generated.Contains "\"address\":{\"type\":\"object\",\"properties\":{\"street\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"}},\"required\":[\"street\",\"city\"]}" @>
-        test <@ generated.Contains "\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"label\":{\"type\":\"string\"}},\"required\":[\"label\"]},\"minItems\":1,\"uniqueItems\":true" @>
+        test <@ generated.Contains "\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"label\":{\"type\":\"string\"}},\"required\":[\"label\"]},\"minItems\":1,\"x-axial-runtime-constraints\":[{\"rule\":\"constraint.uniqueness\"" @>
         // Every non-optional field is required, matching the parser; only Schema.option fields drop out.
         test <@ generated.Contains "\"required\":[\"email\",\"age\",\"newsletter\",\"address\",\"tags\"]" @>
         test <@ constructions.Value = 0 @>
@@ -266,7 +273,9 @@ module SchemaInterpreterPrototypeTests =
 
         test <@ generated.Contains "\"minLength\":2" @>
         test <@ generated.Contains "\"maxLength\":10" @>
-        test <@ generated.Contains "\"pattern\":\"^[a-z]+$\"" @>
+        // An authored pattern is the .NET dialect, which is not ECMA-262, so it is retained as runtime metadata
+        // rather than published as an enforced keyword.
+        test <@ generated.Contains "\"rule\":\"constraint.format.pattern\"" @>
         test <@ generated.Contains "\"enum\":[\"alpha\",\"beta\"]" @>
 
     [<Fact>]
@@ -322,7 +331,7 @@ module SchemaInterpreterPrototypeTests =
         match email.Schema.Shape with
         | SchemaShape.Refined underlying ->
             test <@ underlying.Shape = SchemaShape.Primitive PrimitiveValueKind.Text @>
-            test <@ underlying.Constraints |> List.map _.Metadata |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) @>
+            test <@ underlying.Constraints |> List.collect ConstraintDescription.atoms |> List.contains (PresenceAtom Present) @>
         | other -> failwithf "Expected the email field to be refined, but got %A." other
 
         test <@ constructions.Value = 0 @>
@@ -335,6 +344,6 @@ module SchemaInterpreterPrototypeTests =
 
         let description = Inspect.schema emailSchema
 
-        test <@ boundaryConstraints description |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) @>
+        test <@ boundaryConstraints description |> List.contains (FormatAtom Email) @>
         test <@ (Inspect.field (Field.create "email" _.Email emailSchema)).Name = "email" @>
         test <@ constructions.Value = 0 && getterReads.Value = 0 @>

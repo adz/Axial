@@ -98,7 +98,7 @@ These are the handwritten operations emitted for derivation attributes. Use them
 | --- | --- |
 | Pattern | `constrain (pattern expression)` |
 | Minimum, maximum, exact, or bounded natural length | `constrain (minLength n)`, `maxLength`, `length`, `lengthBetween` |
-| Present value or supplied input key | `constrain present`, `constrain supplied` |
+| Present value or supplied input key | `constrain present`, `mustSupply` |
 | Inclusive/exclusive numeric bounds | `constrain (atLeast n)`, `greaterThan`, `atMost`, `lessThan` |
 | Numeric multiple | `constrain (multipleOf n)` |
 | Distinct list elements | `constrain distinct` |

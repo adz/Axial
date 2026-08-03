@@ -1,7 +1,7 @@
 ---
 title: "Refined.FiniteFloat.negate"
 linkTitle: "negate"
-weight: 2726
+weight: 2725
 ---
 
 Negates the value. Total — negation cannot leave the finite range.
@@ -25,4 +25,4 @@ Negates the value. Total — negation cannot leave the finite range.
 | <code><a href="types/t-refined-finitefloat.md">FiniteFloat</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Finite.fs#L145-145)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Finite.fs#L146-146)

@@ -2,12 +2,13 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module SchemaDiagnosticsRenderingTests =
     type private Signup = { Email: string; Age: int }

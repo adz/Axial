@@ -1,5 +1,6 @@
 module RefinedValueSchemaExample
 
+open Axial.Constraint
 open Axial.Schema
 open Axial.Schema.Syntax
 

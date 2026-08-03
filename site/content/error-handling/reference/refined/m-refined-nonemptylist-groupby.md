@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.groupBy"
 linkTitle: "groupBy"
-weight: 2714
+weight: 2713
 type: docs
 ---
 

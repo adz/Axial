@@ -18,9 +18,10 @@ Describes one value schema: its shape, declared format, and portable constraint 
 | --- | --- |
 | `Shape` | The structural shape of the value. |
 | `Format` | The declared boundary format, when one was attached with <code>Schema.withFormat</code>. |
-| `Constraints` | The portable constraint metadata attached to this value schema layer, in declaration order. |
+| `Constraints` | The constraint descriptions attached to this value schema layer, in declaration order. |
+| `Supply` | The boundary supply declaration attached to this layer, when one was made. |
 | `Description` | The description metadata, when one was attached with <code>Schema.describe</code>. |
 | `Default` | The default-value metadata, when one was attached with <code>Schema.withDefault</code>. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L42-42)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L44-44)

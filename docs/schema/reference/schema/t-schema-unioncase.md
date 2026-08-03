@@ -19,4 +19,4 @@ Describes one tagged union case for <code>Schema.union</code>.
 | `union` |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Definitions.fs#L343-343)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Definitions.fs#L345-345)

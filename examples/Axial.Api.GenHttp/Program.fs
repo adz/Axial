@@ -16,6 +16,7 @@ open System.Threading.Tasks
 open GenHTTP.Api.Protocol
 open GenHTTP.Engine.Internal
 open GenHTTP.Modules.Functional
+open Axial.Constraint
 open Axial.Schema.Json
 open Axial.Flow
 open Axial.Schema
@@ -30,6 +31,7 @@ type Signup = { Name: string; Email: string; Age: int }
 
 module Signup =
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     let schema =
         schema<Signup> {
@@ -41,7 +43,7 @@ module Signup =
                 constrain email
             }
             field "age" _.Age {
-                constrain (between 13 120)
+                constrain (Constraint.between 13 120)
             }
             construct (fun name email age -> { Name = name; Email = email; Age = age })
         }

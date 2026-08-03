@@ -11,7 +11,7 @@ This page is the reference for that machinery.
 
 Before reaching for it, decide whether the concept deserves a type at all. Checked construction is how a value is
 admitted, not a reason on its own: if nothing downstream becomes total or loses a branch, the rule belongs in a
-[constraint]({{< relref "/error-handling/check/" >}}) on the primitive instead. Numeric ranges are the clearest
+[constraint]({{< relref "/error-handling/constraint/" >}}) on the primitive instead. Numeric ranges are the clearest
 example — F# cannot carry "greater than zero" through arithmetic, so a refined number costs more at every use site
 than it saves. [When not to make a type](../catalog/#when-not-to-make-a-type) draws the line, and
 [Customer Id](../tutorials/customer-id/) works a full example through.
@@ -19,7 +19,7 @@ than it saves. [When not to make a type](../catalog/#when-not-to-make-a-type) dr
 ## Define the wrapper and Value projection
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 
 type ContactEmail =
@@ -51,7 +51,7 @@ module ContactEmail =
 `ContactEmail.create` is now the only way in. Construction returns check failures directly:
 
 ```fsharp
-let email : Result<ContactEmail, CheckFailure list> =
+let email : Result<ContactEmail, Violation> =
     ContactEmail.create rawEmail
 ```
 
@@ -88,7 +88,7 @@ module EvenInt =
 
     let private even value =
         if value % 2 = 0 then Ok ()
-        else Error [ CheckFailure.Custom "even" ]
+        else Error [ Violation.Custom "even" ]
 
     let refinement =
         Refinement.defineWithCheck even EvenInt value

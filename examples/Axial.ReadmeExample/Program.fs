@@ -3,7 +3,7 @@ open System.IO
 open System.Threading
 open Axial.Flow
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 
 type ReadmeEnv =
     { Root: string }

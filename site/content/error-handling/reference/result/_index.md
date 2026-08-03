@@ -4,11 +4,11 @@ weight: 20
 type: docs
 ---
 
-This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Check.*` is available when a reusable constraint and its structured failure are useful. The `result { }` builder sequences ordinary fail-fast `Result` workflows.
+This page shows Axial's fail-fast helpers over the standard F# `Result<'value, 'error>` type. Use `Result.requireTrue` when a bare `bool` condition should become a `Result` (nothing to preserve). Use `Result.okIf`/`Result.failIf` (mirroring `Option.filter`) when a predicate over the value itself should keep that value on success, then attach the real error afterward with `Result.orError`. Extraction helpers such as `Result.someOr` change the success shape. `Constraint.*` is available when a reusable value rule and its structured violation are useful. The `result { }` builder sequences ordinary fail-fast `Result` workflows.
 
 ## Structured errors
 
-- [`Check.CheckFailure`](./errors/t-check-checkfailure.md): Describes why an executable value check failed, without attaching source paths or structured data.
+- [`Constraint.Violation`](./errors/t-constraint-violation.md): Why a value failed its constraint.
 
 ## Core helpers
 

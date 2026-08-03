@@ -5,6 +5,7 @@ namespace Axial.Schema
 
 open System
 open System.Collections.Generic
+open Axial.Constraint
 open Axial.Refined
 
 /// <summary>Functions for creating and inspecting value schemas.</summary>
@@ -14,7 +15,7 @@ module internal ValueSchema =
         Schema(ValueDefinition
             { Shape = PrimitiveValueDefinition kind
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
 
               Default = None }
@@ -83,14 +84,14 @@ module internal ValueSchema =
                  | ModelDefinition model ->
                      { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box modelSchema)
                        Format = None
-                       Constraints = []
+                       Rules = []
                        Description = None
                        Default = None })
 
         Schema(ValueDefinition
             { Shape = LazyValueDefinition { Force = fun () -> definition.Value }
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
               Default = None }
         )
@@ -171,7 +172,7 @@ module internal ValueSchema =
         Schema(ValueDefinition
             { Shape = RefinedValueDefinition(raw.ValueDefinition, ops)
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
               Default = None })
 
@@ -195,7 +196,7 @@ module internal ValueSchema =
         Schema(ValueDefinition
             { Shape = RefinedValueDefinition(raw.ValueDefinition, ops)
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
 
               Default = None }
@@ -208,24 +209,25 @@ module internal ValueSchema =
         if isNull (box refinement) then nullArg (nameof refinement)
         if isNull (box raw) then nullArg (nameof raw)
 
-        let retainedConstraints =
-            Refinement.constraints refinement
-            |> List.map (fun constraint' -> (Constraint.fromCheck constraint').Untyped)
+        // The refinement's constraint is retained unchanged, in raw-schema context: the raw-to-refined
+        // projection is a known representation boundary, so exporters lower it exactly as they would if it had
+        // been attached to the raw schema directly.
+        let retainedRules = [ SchemaRule.ofConstraint (Refinement.constraint' refinement) ]
 
         let ops =
             RefinedValueOps(
                 (fun value ->
                     match Refinement.create refinement (unbox<'raw> value) with
                     | Ok refined -> Ok(box refined)
-                    | Error failures -> Error(failures |> List.map SchemaError.ofCheckFailure)),
+                    | Error violation -> Error [ SchemaError.Violation violation ]),
                 (fun value -> value |> unbox<'value> |> Refinement.underlying refinement |> box),
-                retainedConstraints
+                retainedRules
             )
 
         Schema(ValueDefinition
             { Shape = RefinedValueDefinition(raw.ValueDefinition, ops)
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
               Default = None })
 
@@ -251,7 +253,7 @@ module internal ValueSchema =
         Schema(ValueDefinition
             { Shape = RefinedValueDefinition(schema.ValueDefinition, ops)
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
               Default = None })
 
@@ -276,7 +278,7 @@ module internal ValueSchema =
             Schema(ValueDefinition
                 { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box schema)
                   Format = None
-                  Constraints = []
+                  Rules = []
                   Description = None
 
                   Default = None }
@@ -308,7 +310,7 @@ module internal ValueSchema =
                       BoxItems = boxItems
                       AcceptItem = acceptItem }
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
 
               Default = None }
@@ -356,36 +358,36 @@ module internal ValueSchema =
                       Entries = entries
                       AcceptItem = acceptItem }
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
               Default = None }
         )
 
     /// <summary>Adds a constraint to every item described by a list schema.</summary>
-    let constrainItems (constraint': ConstraintDescriptor) (schema: Schema<'item list>) : Schema<'item list> =
-        if isNull (box constraint') then nullArg (nameof constraint')
+    let constrainItems (constraint': Constraint<'item>) (schema: Schema<'item list>) : Schema<'item list> =
+        if isNull constraint' then nullArg (nameof constraint')
         if isNull (box schema) then nullArg (nameof schema)
 
         match schema.Definition with
         | ValueDefinition definition ->
             match definition.Shape with
             | ManyValueDefinition collection ->
-                let item = { collection.Item with Constraints = collection.Item.Constraints @ [ constraint' ] }
+                let item = { collection.Item with Rules = collection.Item.Rules @ [ SchemaRule.ofConstraint constraint' ] }
                 let acceptItem (interpreter: ICollectionItemInterpreter) = interpreter.Item<'item> item
                 Schema(ValueDefinition { definition with Shape = ManyValueDefinition { collection with Item = item; AcceptItem = acceptItem } })
             | _ -> invalidArg (nameof schema) "Expected a list schema."
         | _ -> invalidArg (nameof schema) "Expected a list schema."
 
     /// <summary>Adds a constraint to every value described by a string-keyed map schema.</summary>
-    let constrainValues (constraint': ConstraintDescriptor) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
-        if isNull (box constraint') then nullArg (nameof constraint')
+    let constrainValues (constraint': Constraint<'item>) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
+        if isNull constraint' then nullArg (nameof constraint')
         if isNull (box schema) then nullArg (nameof schema)
 
         match schema.Definition with
         | ValueDefinition definition ->
             match definition.Shape with
             | MapValueDefinition collection ->
-                let item = { collection.Item with Constraints = collection.Item.Constraints @ [ constraint' ] }
+                let item = { collection.Item with Rules = collection.Item.Rules @ [ SchemaRule.ofConstraint constraint' ] }
                 let acceptItem (interpreter: ICollectionItemInterpreter) = interpreter.Item<'item> item
                 Schema(ValueDefinition { definition with Shape = MapValueDefinition { collection with Item = item; AcceptItem = acceptItem } })
             | _ -> invalidArg (nameof schema) "Expected a map schema."
@@ -432,7 +434,7 @@ module internal ValueSchema =
                       PayloadField = ExternalFieldName.create payloadField
                       Cases = cases |> List.map _.Definition }
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
 
               Default = None }
@@ -505,7 +507,7 @@ module internal ValueSchema =
                     { DiscriminatorField = discriminatorName
                       Cases = cases |> List.map _.Definition }
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
 
               Default = None }
@@ -537,7 +539,7 @@ module internal ValueSchema =
         Schema(ValueDefinition
             { Shape = EnumValueDefinition { Cases = cases |> List.map _.Definition }
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
 
               Default = None }
@@ -588,7 +590,7 @@ module internal ValueSchema =
                       NoneValue = box (None: 'value option)
                       TryUnwrap = fun value -> value |> unbox<'value option> |> Option.map box }
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
 
               Default = None }
@@ -663,7 +665,7 @@ module internal ValueSchema =
             nullArg (nameof schema)
 
         match schema.ValueDefinition.Shape with
-        | RefinedValueDefinition(raw, _) -> raw.Constraints
+        | RefinedValueDefinition(raw, _) -> SchemaRule.descriptions raw.Rules
         | PrimitiveValueDefinition _ ->
             invalidArg (nameof schema) "Expected a refined value schema, but the schema is a primitive value schema."
         | NestedValueDefinition _ ->
@@ -917,12 +919,19 @@ module internal ValueSchema =
 
         defaultOf schema.ValueDefinition |> Option.map unbox<'value>
 
-    /// <summary>Returns the portable constraint metadata attached to a value schema.</summary>
+    /// <summary>Returns the constraint descriptions attached to a value schema, in declaration order.</summary>
     let constraints (schema: Schema<'value>) =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        schema.ValueDefinition.Constraints
+        SchemaRule.descriptions schema.ValueDefinition.Rules
+
+    /// <summary>Returns the boundary supply declaration attached to a value schema, when one was made.</summary>
+    let supply (schema: Schema<'value>) =
+        if isNull (box schema) then
+            nullArg (nameof schema)
+
+        SchemaRule.trySupply schema.ValueDefinition.Rules
 
     /// <summary>Returns the portable constraint metadata carried by every layer of a value schema.</summary>
     /// <remarks>
@@ -947,34 +956,34 @@ module internal ValueSchema =
 
         let rec gather (definition: ValueSchemaDefinition) =
             match definition.Shape with
-            | PrimitiveValueDefinition _ -> definition.Constraints
-            | RefinedValueDefinition(raw, ops) -> gather raw @ ops.Constraints @ definition.Constraints
-            | NestedValueDefinition _ -> definition.Constraints
-            | ManyValueDefinition _ -> definition.Constraints
-            | UnionValueDefinition _ -> definition.Constraints
-            | UnionInlineValueDefinition _ -> definition.Constraints
-            | EnumValueDefinition _ -> definition.Constraints
-            | OptionValueDefinition _ -> definition.Constraints
-            | MapValueDefinition _ -> definition.Constraints
-            | LazyValueDefinition deferred -> gather (deferred.Force()) @ definition.Constraints
+            | RefinedValueDefinition(raw, ops) -> gather raw @ ops.Rules @ definition.Rules
+            | LazyValueDefinition deferred -> gather (deferred.Force()) @ definition.Rules
+            | PrimitiveValueDefinition _
+            | NestedValueDefinition _
+            | ManyValueDefinition _
+            | UnionValueDefinition _
+            | UnionInlineValueDefinition _
+            | EnumValueDefinition _
+            | OptionValueDefinition _
+            | MapValueDefinition _ -> definition.Rules
 
-        gather schema.ValueDefinition
+        gather schema.ValueDefinition |> SchemaRule.descriptions
 
-    /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
-    let withConstraint (constraint': ConstraintDescriptor) (schema: Schema<'value>) : Schema<'value> =
-        if isNull constraint' then
-            nullArg (nameof constraint')
-
+    let internal withRules (rules: SchemaRule list) (schema: Schema<'value>) : Schema<'value> =
         if isNull (box schema) then
             nullArg (nameof schema)
 
-        Schema(ValueDefinition
-            { schema.ValueDefinition with
-                Constraints = schema.ValueDefinition.Constraints @ [ constraint' ] }
-        )
+        Schema(ValueDefinition { schema.ValueDefinition with Rules = schema.ValueDefinition.Rules @ rules })
 
-    /// <summary>Returns a value schema with additional portable constraint metadata appended in declaration order.</summary>
-    let withConstraints (constraints: ConstraintDescriptor list) (schema: Schema<'value>) : Schema<'value> =
+    /// <summary>Returns a value schema that also requires the supplied constraint.</summary>
+    let constrain (constraint': Constraint<'value>) (schema: Schema<'value>) : Schema<'value> =
+        if isNull constraint' then
+            nullArg (nameof constraint')
+
+        withRules [ SchemaRule.ofConstraint constraint' ] schema
+
+    /// <summary>Returns a value schema that also requires every supplied constraint.</summary>
+    let constrainAll (constraints: Constraint<'value> list) (schema: Schema<'value>) : Schema<'value> =
         if isNull (box constraints) then
             nullArg (nameof constraints)
 
@@ -983,10 +992,12 @@ module internal ValueSchema =
             if isNull constraint' then
                 nullArg (nameof constraints))
 
-        if isNull (box schema) then
-            nullArg (nameof schema)
+        constrain (Constraint.all constraints) schema
 
-        Schema(ValueDefinition
-            { schema.ValueDefinition with
-                Constraints = schema.ValueDefinition.Constraints @ constraints }
-        )
+    /// <summary>Returns a value schema whose boundary input must be supplied.</summary>
+    let mustSupply (schema: Schema<'value>) : Schema<'value> =
+        withRules [ SupplyRule Supply.Supplied ] schema
+
+    /// <summary>Returns an option-typed value schema whose boundary input may be omitted.</summary>
+    let mayOmit (schema: Schema<'value option>) : Schema<'value option> =
+        withRules [ SupplyRule Supply.Omittable ] schema

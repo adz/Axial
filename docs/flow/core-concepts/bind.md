@@ -30,7 +30,7 @@ let login username password =
 
         do!
             password
-            |> Check.present
+            |> Constraint.present
             |> Result.orError InvalidPassword
             |> Result.map ignore
 
@@ -121,12 +121,12 @@ one workflow, needs the environment, or reads better with a name, promote it to 
 
 ## When Not To Use It
 
-Do not use `Bind` as a general Result helper. In pure code, use a `Check<'value>` call directly, `Result.mapError`/`Result.orError`, or `Validation.mapError`.
+Do not use `Bind` as a general Result helper. In pure code, use a `Constraint<'value>` call directly, `Result.mapError`/`Result.orError`, or `Validation.mapError`.
 
 ```fsharp
 let validateName name =
     name
-    |> Check.present
+    |> Constraint.present
     |> Result.orError "Name required"
 ```
 

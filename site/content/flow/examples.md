@@ -37,7 +37,7 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 
 type User =
     { Id: int
@@ -54,7 +54,7 @@ type RequestEnv =
 
 let validateName (name: string) : Result<string, string> =
     name
-    |> Result.guard Check.present
+    |> Constraint.guard Constraint.present
     |> Result.mapError (fun _ -> "name is required")
 
 let loadUser : Flow<RequestEnv, string, User> =
@@ -134,7 +134,7 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 
 type AppEnv =
     { Prefix: string
@@ -149,7 +149,7 @@ let greetingAsync : Flow<AppEnv, string, string> =
         let! greeting = greetingFlow
         let! (checkedGreeting: string) =
             greeting
-            |> Result.guard Check.present
+            |> Constraint.guard Constraint.present
             |> Result.mapError (fun _ -> "Blanko")
 
         return checkedGreeting.ToUpperInvariant()
@@ -214,7 +214,7 @@ open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
     let result = workflow.RunSynchronously(env)

@@ -1,12 +1,13 @@
 # Axial Schema
-- `Axial.Schema` depends on `Axial.Data`, `Axial.Check`, and `Axial.Refined`. It does not depend on `Axial.Result` or
+- `Axial.Schema` depends on `Axial.Data`, `Axial.Constraint`, and `Axial.Refined`. It does not depend on `Axial.Result` or
   Flow.
-- Schema owns path-aware accumulated boundary errors through `Path`, `SchemaIssue`, and `SchemaErrors`. `Axial.Check`
+- Schema owns path-aware accumulated boundary errors through `Path`, `SchemaIssue`, and `SchemaErrors`. `Axial.Constraint`
   and `Axial.Refined` never claim path-aware accumulation; that is Schema's role.
 - Declare records with `schema<Model> { field ...; construct ... }`.
 - `field "wire-name" _.Member` resolves the member type's canonical schema.
 - `field _.Member` derives the wire name from a quotation and is .NET-only. Use explicit names for Fable.
-- Open `Axial.Schema.Syntax` for the complete unqualified, typed constraint vocabulary.
+- Constraints are `Axial.Constraint.Constraint<'value>`; `Schema.constrain` takes the same value you check directly.
+- Open `Axial.Constraint.ConstraintDSL` for the unqualified constraint vocabulary; `Axial.Schema.Syntax` holds only collection adapters.
 - A field block may contain `withSchema`, `constrain`, `constraints`, `refine`, and `validate`.
 - `withSchema` sets the current field schema.
 - `constrain` adds one portable constraint. `constraints [ ... ]` adds several in declaration order.

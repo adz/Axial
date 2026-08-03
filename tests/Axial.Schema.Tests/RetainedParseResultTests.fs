@@ -1,8 +1,10 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial
 open Axial.Schema
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
 open Swensen.Unquote
 open Xunit
 
@@ -40,9 +42,9 @@ module RetainedParseResultTests =
         test <@ not parsed.IsValid @>
         test <@ parsed.TryValue = None @>
         raises<System.InvalidOperationException> <@ parsed.Value |> ignore @>
-        test <@ parsed.Errors = [ { Path = emailPath; Error = SchemaError.Blank } ] @>
-        test <@ parsed.ErrorsFor emailPath = [ SchemaError.Blank ] @>
-        test <@ parsed.ErrorsFor "email" = [ SchemaError.Blank ] @>
+        test <@ parsed.Errors = [ { Path = emailPath; Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ] @>
+        test <@ parsed.ErrorsFor emailPath = [ SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) ] @>
+        test <@ parsed.ErrorsFor "email" = [ SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) ] @>
         test <@ parsed.ErrorsFor "name" = [] @>
 
     [<Fact>]
@@ -51,4 +53,4 @@ module RetainedParseResultTests =
             Data.objectOfMap (Map.ofList [ "email", Data.Text "" ])
             |> Schema.parseRetainingInput (schema ())
 
-        test <@ RetainedParseResult.renderErrors parsed = [ "email: This value must be present." ] @>
+        test <@ RetainedParseResult.renderErrors parsed = [ "email: Value must be present." ] @>

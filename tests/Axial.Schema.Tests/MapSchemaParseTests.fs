@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial
 
 open Axial.Schema
@@ -13,7 +14,7 @@ module MapSchemaParseTests =
     let private thresholdsSchema =
         schema<Thresholds> {
             field "values" _.Values {
-                withSchema (Schema.mapWith (Schema.decimal |> Schema.constrain Constraint.supplied))
+                withSchema (Schema.mapWith (Schema.decimal |> Schema.mustSupply))
             }
             construct (fun values -> { Values = values })
         }

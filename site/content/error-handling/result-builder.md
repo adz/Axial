@@ -50,7 +50,7 @@ result {
 type UserError = | MissingName | MissingEmail
 type User = { Name: string; Email: string }
 
-open Axial.Check.CheckDSL
+open Axial.Constraint.ConstraintDSL
 
 let validateUser name email : Result<User, UserError> =
     result {
@@ -68,7 +68,7 @@ let validateUser name email : Result<User, UserError> =
 
 `result {}` binds `Result` directly. Use `Result.someOr` when success should take a value out of an option.
 
-A `Check` already returns the checked value on success, so it can appear directly on the right of `let!`.
+`Constraint.guard` already returns the checked value on success, so it can appear directly on the right of `let!`.
 
 ```fsharp
 type User = { Name: string }

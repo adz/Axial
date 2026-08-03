@@ -1,6 +1,6 @@
 namespace Axial.Refined.Tests
 
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 open Swensen.Unquote
 open Xunit
@@ -37,7 +37,7 @@ module DistinctAndTextTests =
         // yet would collide. The conversion says so instead of losing one.
         let colliding = distinct [ 1, "a"; 1, "b" ]
         test <@ DistinctList.length colliding = 2 @>
-        test <@ DistinctList.toMap colliding = Error [ Duplicate ] @>
+        test <@ DistinctList.toMap colliding = Error(Atomic(Expected(UniquenessAtom, None))) @>
 
         let pairs = distinct [ 1, "a"; 2, "b" ]
         test <@ DistinctList.toMap pairs |> Result.map Map.count = Ok 2 @>
@@ -47,7 +47,7 @@ module DistinctAndTextTests =
     let ``toMapBy rejects a non-injective projection`` () =
         let values = distinct [ 1; 2; 3 ]
         test <@ DistinctList.toMapBy string values |> Result.map Map.count = Ok 3 @>
-        test <@ DistinctList.toMapBy (fun value -> value % 2) values = Error [ Duplicate ] @>
+        test <@ DistinctList.toMapBy (fun value -> value % 2) values = Error(Atomic(Expected(UniquenessAtom, None))) @>
 
     [<Fact>]
     let ``add, remove, and filter keep the list distinct`` () =

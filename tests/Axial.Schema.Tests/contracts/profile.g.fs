@@ -5,6 +5,7 @@
 namespace Axial.Tests.Generated
 
 open Axial
+open Axial.Constraint
 open Axial.Schema
 
 /// A user profile as first stored.
@@ -20,6 +21,7 @@ type ProfileV1 =
 module ProfileV1 =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by profile.contract (Profile.v1).
     let schema : Schema<ProfileV1> =
@@ -61,6 +63,7 @@ type Profile =
 module Profile =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by profile.contract (Profile.v2).
     let schema : Schema<Profile> =

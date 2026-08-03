@@ -4,7 +4,7 @@
     <PackageId>Axial.ErrorHandling</PackageId>
     <AssemblyName>Axial.ErrorHandling</AssemblyName>
     <Authors>Adam Davies</Authors>
-    <Description>Dependency-only meta-package installing Axial.Result, Axial.Check, and Axial.Refined together.</Description>
+    <Description>Dependency-only meta-package installing Axial.Result, Axial.Constraint, and Axial.Refined together.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
@@ -19,7 +19,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Axial.Result\Axial.Result.fsproj" />
-    <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
+    <ProjectReference Include="..\Axial.Constraint\Axial.Constraint.fsproj" />
     <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
     <ProjectReference Include="..\Axial.Parse\Axial.Parse.fsproj" />
   </ItemGroup>
