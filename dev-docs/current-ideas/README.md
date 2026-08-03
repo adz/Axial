@@ -8,9 +8,13 @@ rather than keeping a historical spec that no longer matches the codebase.
 
 Active sketches:
 
-- `schema-refinement-unification.md` — proposal to make bidirectional refinements first-class, make Schema the only
-  public path-aware accumulating validation system, replace `fieldWith` with field pipelines, and remove the public
-  Diagnostics and Validation packages and APIs.
+- `constraint-unification.md` — accepted design for one `Constraint` value shared by direct checking, Refinement, and
+  Schema, a structured `Violation` model with no string-coded failures, a minimal term language for cross-field rules,
+  and the interpreted/opaque tiering that a later proof interpreter depends on.
+- `refined-schema-proof.md` — unresolved exploration of refined schema proof and safe record updates, with a prototype
+  under `prototypes/refined-private-record/`.
+- `flow-gate-rename.md` — extracted proposal for Axial.Flow application gate naming, independent of the
+  Parse/Check/Refinement/Schema work.
 - `architecture-guardrails.md` — proposed adopter-facing architecture guidance and a staged tooling direction for
   schema laws, compile-negative proofs, project roles, and compiled-code/public-surface audits.
 - `project-split.md` — proposal to separate Schema/ErrorHandling and Flow repositories, keep formats in separate Schema
