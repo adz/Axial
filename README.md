@@ -9,12 +9,12 @@
 Axial is a set of F# libraries with three entry points:
 
 - Error Handling — four focused packages: `Axial.Result` (Result composition and `result { }`),
-  `Axial.Check` (reusable value checks), `Axial.Parse` (serialized primitive decoding), and `Axial.Refined`
+  `Axial.Constraint` (reusable value checks), `Axial.Parse` (serialized primitive decoding), and `Axial.Refined`
   (invariant-carrying domain values);
 - Schema for turning structured input into domain values, with path-aware accumulated diagnostics;
 - Flow for async work with explicit dependencies and expected failures.
 
-Install each focused package on its own, install `Axial.ErrorHandling` for Result, Check, Parse, and Refined together, or
+Install each focused package on its own, install `Axial.ErrorHandling` for Result, Constraint, Parse, and Refined together, or
 install `Axial` for Error Handling and Schema together.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
@@ -28,13 +28,13 @@ install `Axial` for Error Handling and Schema together.
 ## Handle expected errors and refine values
 
 Error Handling is four focused packages that keep ordinary `Result<'value, 'error>` in your interfaces: `Axial.Result`
-for Result composition, `Axial.Check` for reusable value checks, `Axial.Parse` for serialized primitive decoding, and
+for Result composition, `Axial.Constraint` for reusable value checks, `Axial.Parse` for serialized primitive decoding, and
 `Axial.Refined` for invariant-carrying domain values. Install any focused package independently; none requires
 `Axial.Result`.
 
 ```fsharp
-open Axial.Check
-open Axial.Check.CheckDSL
+open Axial.Constraint
+open Axial.Constraint.ConstraintDSL
 
 let requireName value =
     value
@@ -48,7 +48,7 @@ let requireName value =
 
 ```bash
 dotnet add package Axial.Result    # Result composition and result { }
-dotnet add package Axial.Check     # reusable checks and portable constraints
+dotnet add package Axial.Constraint     # reusable checks and portable constraints
 dotnet add package Axial.Parse     # serialized primitive parsing
 dotnet add package Axial.Refined   # invariant-carrying domain values
 dotnet add package Axial.ErrorHandling   # installs all four

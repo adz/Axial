@@ -1,7 +1,7 @@
 ---
 title: "Schema.validate"
 linkTitle: "validate { }"
-weight: 2110
+weight: 2113
 ---
 
 Adds executable value validation to a schema.
@@ -30,4 +30,4 @@ Adds executable value validation to a schema.
 The validation runs during parsing and when checking an existing value. It remains executable behavior and is not emitted as portable constraint metadata.
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L54-54)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L56-56)

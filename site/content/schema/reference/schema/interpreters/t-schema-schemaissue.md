@@ -21,4 +21,4 @@ One schema failure and its complete structural location.
 | `Error` | The schema failure. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L73-73)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L74-74)

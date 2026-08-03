@@ -11,6 +11,7 @@ open Axial
 
 open System.Text.Json
 open Axial.Schema
+open Axial.Constraint.ConstraintDSL
 open Axial.Schema.Json
 open Axial.ReferenceApp.Wire
 

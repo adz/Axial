@@ -3,23 +3,30 @@ namespace Axial.Schema.Testing
 open Axial
 
 open System
+open Axial.Constraint
 open Axial.Schema
 open FsCheck
 open FsCheck.FSharp
 open FsCheck.FSharp.GenBuilder
 
-/// Why a schema cannot be lowered to an automatic test-data generator.
+/// <summary>Why a schema cannot be lowered to an automatic test-data generator.</summary>
+/// <remarks>
+/// Generation fails closed. A generator that produced values without honouring a rule would be worse than no
+/// generator, because every property built on it would silently test the wrong population.
+/// </remarks>
 [<RequireQualifiedAccess>]
 type SchemaGenerationError =
-    | UnsupportedConstraint of path: string list * code: string
+    /// <summary>The rule at this path has no sound generation, named by its stable message key.</summary>
+    | UnsupportedConstraint of path: string list * rule: string
 
 /// FsCheck generators derived from Schema metadata.
 [<RequireQualifiedAccess>]
 module SchemaGen =
     let private maximumOr fallback values = match values with [] -> fallback | values -> List.max values
     let private minimumOr fallback values = match values with [] -> fallback | values -> List.min values
-    let private unsupported path constraint' =
-        Error(SchemaGenerationError.UnsupportedConstraint(List.rev path, Constraint.code constraint'))
+
+    let private unsupported path rule =
+        Error(SchemaGenerationError.UnsupportedConstraint(List.rev path, rule))
 
     let private traverse results =
         let folder state next =
@@ -31,50 +38,198 @@ module SchemaGen =
 
     let private choose items = Gen.elements items
 
-    let private tryValueMetadata constraint' =
-        match Constraint.metadata constraint' with
-        | Axial.Schema.ConstraintMetadata.ValueConstraint metadata -> Some metadata
-        | Axial.Schema.ConstraintMetadata.Supply _ -> None
+    /// Whether a generator for this shape actually honours this atom.
+    ///
+    /// Generatability is shape-dependent, not atom-dependent: the text generator honours choices, sizes, and the
+    /// email format but ignores ordering; the numeric generators honour bounds and multiples but ignore equality;
+    /// the Boolean, date, and identifier generators honour nothing. Deciding on the atom alone let a rule the
+    /// generator silently ignored still count as supported, so `equalTo "exact"` produced random strings — the
+    /// generator claiming satisfaction it never checked. This answers for the pairing instead.
+    /// The wire rendering of a scalar operand, matching how the generators below emit the same shapes. `None`
+    /// means the operand has no single wire form this generator can commit to, so the rule stays unsupported.
+    let private scalarLiteral (operand: ConstraintValue) =
+        match operand with
+        | ConstraintValue.Text value -> Some value
+        | ConstraintValue.Char value -> Some(string value)
+        | ConstraintValue.Boolean value -> Some(string value)
+        | ConstraintValue.Integer value -> Some(string value)
+        | ConstraintValue.BigInteger value -> Some(string value)
+        | ConstraintValue.Decimal value -> Some(value.ToString Globalization.CultureInfo.InvariantCulture)
+        | ConstraintValue.Guid value -> Some(string value)
+        | ConstraintValue.DateTime value -> Some(string value)
+        | ConstraintValue.DateTimeOffset value -> Some(string value)
+        // A float literal cannot be committed to a wire form the parser is guaranteed to read back
+        // identically, and NaN and the infinities have no JSON spelling at all.
+        | ConstraintValue.Float _
+        | ConstraintValue.Float32 _
+        | ConstraintValue.TimeSpan _
+        | ConstraintValue.Null
+        | ConstraintValue.List _ -> None
 
-    let private valueMetadata constraints = constraints |> List.choose tryValueMetadata
+    let rec private underlyingShape (shape: SchemaShape) =
+        // A constraint attached above a refinement is written against the raw representation, and the generator
+        // recurses to that raw shape, so the pairing must be judged there too.
+        match shape with
+        | SchemaShape.Refined raw -> underlyingShape raw.Shape
+        | SchemaShape.Deferred(_, expanded) -> underlyingShape expanded.Shape
+        | shape -> shape
 
-    let private isPresent constraint' =
-        match Constraint.metadata constraint' with
-        | Axial.Schema.ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present -> true
+    let private honours (rawShape: SchemaShape) (atom: ConstraintAtom) =
+        let shape = underlyingShape rawShape
+
+        let numeric =
+            match shape with
+            | SchemaShape.Primitive PrimitiveValueKind.Int
+            | SchemaShape.Primitive PrimitiveValueKind.Int64
+            | SchemaShape.Primitive PrimitiveValueKind.Decimal
+            | SchemaShape.Primitive PrimitiveValueKind.Float -> true
+            | _ -> false
+
+        let scalar =
+            match shape with
+            | SchemaShape.Primitive _ -> true
+            | _ -> false
+
+        match shape, atom with
+        // The satisfying population is exactly one value, so the generator emits the operand itself.
+        | _, RelationAtom(Compared(Equal, operand)) -> scalar && (scalarLiteral operand).IsSome
+        | SchemaShape.Primitive PrimitiveValueKind.Text, PresenceAtom Present
+        | SchemaShape.Primitive PrimitiveValueKind.Text, CardinalityAtom _
+        | SchemaShape.Primitive PrimitiveValueKind.Text, MembershipAtom(OneOf _)
+        | SchemaShape.Primitive PrimitiveValueKind.Text, FormatAtom Email -> true
+        | _, RelationAtom(Compared((GreaterThan | LessThan | AtLeast | AtMost), _))
+        | _, RelationAtom(Within _)
+        | _, NumberAtom(MultipleOf _) -> numeric
+        // Every generator already produces finite numbers, so the rule is satisfied by construction.
+        | _, NumberAtom Finite -> numeric
+        | (SchemaShape.Many _ | SchemaShape.MapOf _), CardinalityAtom _
+        | (SchemaShape.Many _ | SchemaShape.MapOf _), PresenceAtom Present -> true
+        | SchemaShape.Optional _, PresenceAtom _ -> true
+        // The excluding membership rules reject rather than generate. An exclusion can be unsatisfiable in
+        // combination with the bounds beside it -- `noneOf` over every one-character value, say -- and a generator
+        // that filtered and retried would hang instead of saying so. Rejecting names the rule and its path.
+        | _, MembershipAtom(NoneOf _)
+        | _, MembershipAtom(Membership.NotContains _) -> false
         | _ -> false
 
-    let private textGenerator path constraints =
-        let metadata = constraints |> List.choose (fun value -> tryValueMetadata value |> Option.map (fun metadata -> value, metadata))
-        match metadata |> List.tryFind (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.Pattern _ | Axial.Check.ConstraintMetadata.Custom _ -> true | _ -> false) with
-        | Some(constraint', _) -> unsupported path constraint'
-        | None ->
-            let oneOf = metadata |> List.tryPick (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.OneOf values -> Some values | _ -> None)
-            let email = metadata |> List.exists (fun (_, item) -> item = Axial.Check.ConstraintMetadata.Email)
-            let present = constraints |> List.exists isPresent
-            let minimum =
-                metadata
-                |> List.choose (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.Length n | Axial.Check.ConstraintMetadata.MinLength n | Axial.Check.ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None)
-                |> maximumOr (if present then 1 else 0)
-            let maximum = metadata |> List.choose (fun (_, item) -> match item with Axial.Check.ConstraintMetadata.Length n | Axial.Check.ConstraintMetadata.MaxLength n | Axial.Check.ConstraintMetadata.LengthBetween(_, n) -> Some n | _ -> None) |> minimumOr (max minimum 24)
-            match oneOf with
-            | Some values when not (List.isEmpty values) -> Ok(choose values)
-            | _ when email -> Ok(Gen.elements [ "ada@example.com"; "grace@example.org"; "test.user@example.net" ])
-            | _ ->
-                let maximum = max minimum maximum
-                Ok(
-                    gen {
-                        let! length = Gen.choose (minimum, maximum)
-                        let! chars = Gen.listOfLength length (Gen.elements [ 'a'..'z' ])
-                        return String(Array.ofList chars)
-                    })
+    let private tryGeneratable shape atom =
+        if honours shape atom then Ok atom else Error(ConstraintAtom.key atom)
 
-    let private intGenerator constraints =
-        let metadata = valueMetadata constraints
-        let lows = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Between(a, _) | Axial.Check.ConstraintMetadata.AtLeast a -> Some(unbox<int> a) | Axial.Check.ConstraintMetadata.GreaterThan a -> Some(unbox<int> a + 1) | _ -> None)
-        let highs = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Between(_, b) | Axial.Check.ConstraintMetadata.AtMost b -> Some(unbox<int> b) | Axial.Check.ConstraintMetadata.LessThan b -> Some(unbox<int> b - 1) | _ -> None)
+    /// Flattens an expression into the atoms a generator must satisfy, or names the first node it cannot honour.
+    /// A disjunction may generate from any soundly supported branch, so the first usable branch is taken.
+    let rec private generatableAtoms shape (description: ConstraintDescription) : Result<ConstraintAtom list, string> =
+        match description.Expression with
+        | ConstraintExpression.Atom atom -> tryGeneratable shape atom |> Result.map List.singleton
+        | ConstraintExpression.All children ->
+            (Ok [], children)
+            ||> List.fold (fun state child ->
+                match state, generatableAtoms shape child with
+                | Ok atoms, Ok childAtoms -> Ok(atoms @ childAtoms)
+                | Error rule, _ -> Error rule
+                | _, Error rule -> Error rule)
+        | ConstraintExpression.Any(first, rest) ->
+            let branches = first :: rest
+
+            match branches |> List.tryPick (fun branch -> generatableAtoms shape branch |> Result.toOption) with
+            | Some atoms -> Ok atoms
+            | None ->
+                branches
+                |> List.tryPick (fun branch ->
+                    match generatableAtoms shape branch with
+                    | Error rule -> Some rule
+                    | Ok _ -> None)
+                |> Option.defaultValue "constraint.any"
+                |> Error
+        | ConstraintExpression.Optional inner -> generatableAtoms shape inner
+        | ConstraintExpression.Opaque(OpaqueConstraint.CustomPredicate _) -> Error "constraint.opaque.customPredicate"
+        | ConstraintExpression.Opaque(OpaqueConstraint.RuntimeNegation _) -> Error "constraint.opaque.negation"
+        | ConstraintExpression.Opaque(OpaqueConstraint.RuntimeProjection _) -> Error "constraint.opaque.projection"
+        | ConstraintExpression.Opaque(OpaqueConstraint.UnsupportedOperand operation) -> Error(UnsupportedOperation.key operation)
+
+    let private atomsOf path shape (constraints: ConstraintDescription list) =
+        (Ok [], constraints)
+        ||> List.fold (fun state description ->
+            match state, generatableAtoms shape description with
+            | Ok atoms, Ok next -> Ok(atoms @ next)
+            | Error error, _ -> Error error
+            | _, Error rule -> unsupported path rule)
+
+    let private tryInt value =
+        match value with
+        | ConstraintValue.Integer number -> Some(int number)
+        | _ -> None
+
+    let private tryDecimal value =
+        match value with
+        | ConstraintValue.Integer number -> Some(decimal number)
+        | ConstraintValue.Decimal number -> Some number
+        | _ -> None
+
+    let private tryText value =
+        match value with
+        | ConstraintValue.Text text -> Some text
+        | _ -> None
+
+    let private sizeBounds atoms =
+        let low =
+            atoms
+            |> List.choose (function
+                | CardinalityAtom(Exact n)
+                | CardinalityAtom(Cardinality.Minimum n)
+                | CardinalityAtom(Cardinality.Between(n, _)) -> Some n
+                | _ -> None)
+
+        let high =
+            atoms
+            |> List.choose (function
+                | CardinalityAtom(Exact n)
+                | CardinalityAtom(Cardinality.Maximum n)
+                | CardinalityAtom(Cardinality.Between(_, n)) -> Some n
+                | _ -> None)
+
+        low, high
+
+    let private textGenerator atoms =
+        let oneOf = atoms |> List.tryPick (function MembershipAtom(OneOf choices) -> Some(choices |> List.choose tryText) | _ -> None)
+        let email = atoms |> List.contains (FormatAtom Email)
+        let present = atoms |> List.contains (PresenceAtom Present)
+        let lows, highs = sizeBounds atoms
+        let minimum = lows |> maximumOr (if present then 1 else 0)
+        let maximum = highs |> minimumOr (max minimum 24)
+
+        match oneOf with
+        | Some values when not (List.isEmpty values) -> choose values
+        | _ when email -> Gen.elements [ "ada@example.com"; "grace@example.org"; "test.user@example.net" ]
+        | _ ->
+            let maximum = max minimum maximum
+
+            gen {
+                let! length = Gen.choose (minimum, maximum)
+                let! chars = Gen.listOfLength length (Gen.elements [ 'a' .. 'z' ])
+                return String(Array.ofList chars)
+            }
+
+    let private intGenerator atoms =
+        let lows =
+            atoms
+            |> List.choose (function
+                | RelationAtom(Within(a, _))
+                | RelationAtom(Compared(AtLeast, a)) -> tryInt a
+                | RelationAtom(Compared(GreaterThan, a)) -> tryInt a |> Option.map ((+) 1)
+                | _ -> None)
+
+        let highs =
+            atoms
+            |> List.choose (function
+                | RelationAtom(Within(_, b))
+                | RelationAtom(Compared(AtMost, b)) -> tryInt b
+                | RelationAtom(Compared(LessThan, b)) -> tryInt b |> Option.map (fun value -> value - 1)
+                | _ -> None)
+
         let low = lows |> maximumOr -1000
         let high = highs |> minimumOr 1000 |> max low
-        let multiple = metadata |> List.tryPick (function Axial.Check.ConstraintMetadata.MultipleOf value -> Some(unbox<int> value) | _ -> None)
+        let multiple = atoms |> List.tryPick (function NumberAtom(MultipleOf value) -> tryInt value | _ -> None)
+
         match multiple with
         | Some divisor when divisor <> 0 ->
             let first = int (Math.Ceiling(decimal low / decimal divisor))
@@ -82,13 +237,27 @@ module SchemaGen =
             Gen.choose(first, max first last) |> Gen.map (fun factor -> factor * divisor)
         | _ -> Gen.choose(low, high)
 
-    let private decimalGenerator constraints =
-        let metadata = valueMetadata constraints
-        let lows = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Between(a, _) | Axial.Check.ConstraintMetadata.AtLeast a -> Some(unbox<decimal> a) | Axial.Check.ConstraintMetadata.GreaterThan a -> Some(unbox<decimal> a + 0.01m) | _ -> None)
-        let highs = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Between(_, b) | Axial.Check.ConstraintMetadata.AtMost b -> Some(unbox<decimal> b) | Axial.Check.ConstraintMetadata.LessThan b -> Some(unbox<decimal> b - 0.01m) | _ -> None)
+    let private decimalGenerator atoms =
+        let lows =
+            atoms
+            |> List.choose (function
+                | RelationAtom(Within(a, _))
+                | RelationAtom(Compared(AtLeast, a)) -> tryDecimal a
+                | RelationAtom(Compared(GreaterThan, a)) -> tryDecimal a |> Option.map (fun value -> value + 0.01m)
+                | _ -> None)
+
+        let highs =
+            atoms
+            |> List.choose (function
+                | RelationAtom(Within(_, b))
+                | RelationAtom(Compared(AtMost, b)) -> tryDecimal b
+                | RelationAtom(Compared(LessThan, b)) -> tryDecimal b |> Option.map (fun value -> value - 0.01m)
+                | _ -> None)
+
         let low = lows |> maximumOr -1000m
         let high = highs |> minimumOr 1000m |> max low
-        let multiple = metadata |> List.tryPick (function Axial.Check.ConstraintMetadata.MultipleOf value -> Some(unbox<decimal> value) | _ -> None)
+        let multiple = atoms |> List.tryPick (function NumberAtom(MultipleOf value) -> tryDecimal value | _ -> None)
+
         match multiple with
         | Some divisor when divisor <> 0m ->
             let first = int (Math.Ceiling(low / divisor))
@@ -96,10 +265,11 @@ module SchemaGen =
             Gen.choose(first, max first last) |> Gen.map (fun factor -> decimal factor * divisor)
         | _ -> Gen.choose(0, 10000) |> Gen.map (fun part -> low + (high - low) * decimal part / 10000m)
 
-    let private countBounds constraints size =
-        let metadata = valueMetadata constraints
-        let low = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Length n | Axial.Check.ConstraintMetadata.MinLength n | Axial.Check.ConstraintMetadata.LengthBetween(n, _) -> Some n | _ -> None) |> maximumOr 0
-        let high = metadata |> List.choose (function Axial.Check.ConstraintMetadata.Length n | Axial.Check.ConstraintMetadata.MaxLength n | Axial.Check.ConstraintMetadata.LengthBetween(_, n) -> Some n | _ -> None) |> minimumOr (min 4 (max low size))
+    let private countBounds atoms size =
+        let lows, highs = sizeBounds atoms
+        let present = if atoms |> List.contains (PresenceAtom Present) then 1 else 0
+        let low = lows |> maximumOr present
+        let high = highs |> minimumOr (min 4 (max low size))
         low, max low high
 
     let private buildDefinitions roots =
@@ -121,27 +291,26 @@ module SchemaGen =
         let rec value path size fieldConstraints (description: SchemaDescription) : Result<Gen<Data>, SchemaGenerationError> =
             let constraints = fieldConstraints @ description.Constraints
             let customGenerator = custom |> Map.tryFind (path |> List.rev |> String.concat ".")
-            let unsupportedConstraint =
-                constraints
-                |> List.tryFind (fun constraint' ->
-                    match tryValueMetadata constraint' with
-                    | Some(Axial.Check.ConstraintMetadata.Custom _)
-                    | Some(Axial.Check.ConstraintMetadata.NotEqualTo _)
-                    | Some(Axial.Check.ConstraintMetadata.Contains _)
-                    | Some Axial.Check.ConstraintMetadata.Distinct -> true
-                    | _ -> false)
 
-            match customGenerator, unsupportedConstraint with
+            match customGenerator, atomsOf path description.Shape constraints with
             | Some generator, _ -> Ok generator
-            | None, Some constraint' -> unsupported path constraint'
-            | None, None ->
+            | None, Error error -> Error error
+            | None, Ok atoms ->
+
+            // An equality rule pins the value, so it outranks every other generator for this node.
+            match atoms |> List.tryPick (function
+                      | RelationAtom(Compared(Equal, operand)) -> scalarLiteral operand
+                      | _ -> None) with
+            | Some literal -> Ok(Gen.constant (Data.Text literal))
+            | None ->
+
                 match description.Shape with
-                | SchemaShape.Primitive PrimitiveValueKind.Text -> textGenerator path constraints |> Result.map (Gen.map Data.Text)
-                | SchemaShape.Primitive PrimitiveValueKind.Int -> Ok(intGenerator constraints |> Gen.map (string >> Data.Text))
-                | SchemaShape.Primitive PrimitiveValueKind.Int64 -> Ok(intGenerator constraints |> Gen.map (int64 >> string >> Data.Text))
-                | SchemaShape.Primitive PrimitiveValueKind.Decimal -> Ok(decimalGenerator constraints |> Gen.map (fun value -> Data.Text(value.ToString(Globalization.CultureInfo.InvariantCulture))))
+                | SchemaShape.Primitive PrimitiveValueKind.Text -> Ok(textGenerator atoms |> Gen.map Data.Text)
+                | SchemaShape.Primitive PrimitiveValueKind.Int -> Ok(intGenerator atoms |> Gen.map (string >> Data.Text))
+                | SchemaShape.Primitive PrimitiveValueKind.Int64 -> Ok(intGenerator atoms |> Gen.map (int64 >> string >> Data.Text))
+                | SchemaShape.Primitive PrimitiveValueKind.Decimal -> Ok(decimalGenerator atoms |> Gen.map (fun value -> Data.Text(value.ToString(Globalization.CultureInfo.InvariantCulture))))
                 // Generated floats stay finite: JSON has no NaN or infinity literal.
-                | SchemaShape.Primitive PrimitiveValueKind.Float -> Ok(decimalGenerator constraints |> Gen.map (fun value -> Data.Text((float value).ToString("R", Globalization.CultureInfo.InvariantCulture))))
+                | SchemaShape.Primitive PrimitiveValueKind.Float -> Ok(decimalGenerator atoms |> Gen.map (fun value -> Data.Text((float value).ToString("R", Globalization.CultureInfo.InvariantCulture))))
                 | SchemaShape.Primitive PrimitiveValueKind.Bool -> Ok(ArbMap.defaults.ArbFor<bool>().Generator |> Gen.map (string >> Data.Text))
                 | SchemaShape.Primitive PrimitiveValueKind.Date -> Ok(Gen.choose(0, 3650) |> Gen.map (fun days -> DateOnly(2020, 1, 1).AddDays days |> string |> Data.Text))
                 | SchemaShape.Primitive PrimitiveValueKind.DateTime -> Ok(Gen.choose(0, 100000) |> Gen.map (fun minutes -> DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero).AddMinutes minutes |> string |> Data.Text))
@@ -149,7 +318,7 @@ module SchemaGen =
                 | SchemaShape.Refined raw -> value path size constraints raw
                 | SchemaShape.Nested model -> modelValue path size model
                 | SchemaShape.Many item ->
-                    let low, high = countBounds constraints size
+                    let low, high = countBounds atoms size
                     if size <= 0 && low = 0 then
                         Ok(Gen.constant (Data.List []))
                     else
@@ -161,7 +330,7 @@ module SchemaGen =
                             return Data.List items
                         })
                 | SchemaShape.MapOf item ->
-                    let low, high = countBounds constraints size
+                    let low, high = countBounds atoms size
                     if size <= 0 && low = 0 then
                         Ok(Gen.constant (Data.Object []))
                     else
@@ -205,7 +374,13 @@ module SchemaGen =
         let model = Inspect.model schema
         let roots = model.Fields |> List.map _.Schema
         let generate = rawGenerator custom roots
-        let root = { Shape = SchemaShape.Nested model; Format = None; Constraints = []; Description = None; Default = None }
+        let root =
+            { Shape = SchemaShape.Nested model
+              Format = None
+              Constraints = []
+              Supply = None
+              Description = None
+              Default = None }
         generate [] 10 [] root
         |> Result.map (fun _ ->
             Gen.sized (fun size ->

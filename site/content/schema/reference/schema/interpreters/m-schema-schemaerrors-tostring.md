@@ -26,4 +26,4 @@ Renders one line per failure.
 | <code>string</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L114-114)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L115-115)

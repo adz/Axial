@@ -22,7 +22,7 @@ Parses one JSON value into source-neutral structured data.
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../data/t-data.md">Data</a></code> |  |
+| <code><a href="../../../data/reference/data/t-data.md">Data</a></code> |  |
 
 ## Remarks
 

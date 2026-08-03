@@ -3,7 +3,7 @@
 Axial contains four independent documentation entry points. Load only the context for the product being used:
 
 - Data, structured fixtures, immutable edits, comparisons, and produced-data matching: `/data/llms.txt`
-- Result, Check, Parse, and Refined: `/error-handling/llms.txt`
+- Result, Constraint, Parse, and Refined: `/error-handling/llms.txt`
 - Schema, parsing, codecs, contracts, and path-aware diagnostics: `/schema/llms.txt`
 - Flow, effects, services, resources, concurrency, and hosting: `/flow/llms.txt`
 

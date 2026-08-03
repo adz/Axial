@@ -5,7 +5,7 @@ namespace Axial.Refined
 open System
 open System.Collections.Generic
 open System.Globalization
-open Axial.Check
+open Axial.Constraint
 
 /// <summary>A string that is not null, empty, or whitespace.</summary>
 type NonBlankString =
@@ -114,7 +114,7 @@ module Collection =
     let nonEmptyArrayFromListRefinement<'value> () = NonEmptyArray.listRefinement<'value> ()
 
     let distinctListRefinement<'value when 'value: equality> () =
-        let constraint': Constraint<'value list> = Constraint.distinct<'value> |> Constraint.forList
+        let constraint': Constraint<'value list> = Constraint.distinct<'value list>
         Refinement.define constraint' DistinctList _.ToList()
     let nonEmptyList values = values |> Seq.toList |> Refinement.create (nonEmptyListRefinement ())
     let nonEmptyArray values = values |> Seq.toArray |> Refinement.create (nonEmptyArrayRefinement ())
@@ -156,7 +156,7 @@ module DistinctList =
         if List.length (List.distinct keys) = List.length keys then
             Ok(items |> List.map (fun item -> projection item, item) |> Map.ofList)
         else
-            Error [ CheckFailure.Duplicate ]
+            Error(Atomic(Expected(UniquenessAtom, None)))
 
     /// <summary>
     /// Builds a map from a distinct list of pairs, failing when two pairs share a key.
@@ -175,7 +175,7 @@ module DistinctList =
         if List.length (List.distinct keys) = List.length keys then
             Ok(Map.ofList pairs)
         else
-            Error [ CheckFailure.Duplicate ]
+            Error(Atomic(Expected(UniquenessAtom, None)))
 
     /// <summary>
     /// Builds a set. Total and lossless — this is the operation that justifies the type,

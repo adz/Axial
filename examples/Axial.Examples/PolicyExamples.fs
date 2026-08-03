@@ -6,10 +6,12 @@ module PolicyExamples
 open Axial.Parse
 
 open Axial
+open Axial.Constraint
 open Axial.Flow
 open Axial.Refined
 open Axial.Schema
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
 
 type Quantity =
     private

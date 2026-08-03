@@ -1,6 +1,7 @@
 namespace Axial.Tests
 
 open Axial
+open Axial.Constraint
 
 open System
 open Axial.Schema
@@ -23,10 +24,10 @@ module ShapeSyntaxTests =
     let private personSchema =
         schema<Person> {
             field "firstName" _.FirstName {
-                constrain (Syntax.minLength 1)
+                constrain (Constraint.minLength 1)
             }
             field "lastName" _.LastName {
-                constrain (Syntax.minLength 1)
+                constrain (Constraint.minLength 1)
             }
             field "birthDate" _.BirthDate
             construct Person.Create
@@ -127,7 +128,7 @@ module ShapeSyntaxTests =
         schema<Tagged> {
             field "name" _.Name
             field "tags" _.Tags {
-                constrain (Syntax.minLength 1)
+                constrain (Constraint.minLength 1)
             }
             field "note" _.Note
             construct Tagged.Create
@@ -202,8 +203,8 @@ module ShapeSyntaxTests =
 
     [<Fact>]
     let ``nested constraints apply to list items and map values`` () =
-        let names = Schema.list<string>() |> Syntax.constrainItems (Syntax.minLength 2)
-        let labels = Schema.map<string>() |> Syntax.constrainValues (Syntax.minLength 2)
+        let names = Schema.list<string>() |> Syntax.constrainItems (Constraint.minLength 2)
+        let labels = Schema.map<string>() |> Syntax.constrainValues (Constraint.minLength 2)
         let nameInput = (Data.List [ Data.Text "x" ])
         let labelInput = (Data.objectOfMap (Map.ofList [ "short", Data.Text "x" ]))
 

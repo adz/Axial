@@ -35,7 +35,7 @@ the table has the same meaning as its linked handwritten [Schema DSL](../syntax/
 | `[<Length n>]` | Require an exact natural length. | [`constrain (length n)`](../syntax/#constraint-equivalents) |
 | `[<LengthBetween(min, max)>]` | Bound natural length inclusively. | [`constrain (lengthBetween min max)`](../syntax/#constraint-equivalents) |
 | `[<Present>]` | Require a string, collection, or optional value to be present/non-empty. | [`constrain present`](../syntax/#constraint-equivalents) |
-| `[<Supplied>]` | Require the input object to contain this field key. | [`constrain supplied`](../syntax/#constraint-equivalents) |
+| `[<Supplied>]` | Require the input object to contain this field key. | [`mustSupply`](../syntax/#constraint-equivalents) |
 | `[<Format "name">]` | Attach open format metadata without adding a check. | [`format (SchemaFormat.create "name")`](../syntax/#constraint-equivalents) |
 | `[<AtLeast n>]` | Inclusive numeric lower bound (`>=`). | [`constrain (atLeast n)`](../syntax/#constraint-equivalents) |
 | `[<GreaterThan n>]` | Exclusive numeric lower bound (`>`). | [`constrain (greaterThan n)`](../syntax/#constraint-equivalents) |

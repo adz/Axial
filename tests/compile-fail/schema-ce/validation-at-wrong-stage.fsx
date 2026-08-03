@@ -11,7 +11,7 @@ type Email =
 
 module Email =
     let value (Email value) = value
-    let refinement = Refinement.define (Axial.Check.Constraint.pattern ".+@.+") Email value
+    let refinement = Refinement.define (Axial.Constraint.Constraint.pattern ".+@.+") Email value
 
 type Email with
     static member Refinement(_: string, _: Email) = Email.refinement

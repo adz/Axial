@@ -18,7 +18,7 @@ Parses source-neutral structured data while retaining it for redisplay and error
 | Name | Type | Description |
 | --- | --- | --- |
 | `schema` | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
-| `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
+| `input` | <code><a href="../../../../data/reference/data/t-data.md">Data</a></code> |  |
 
 ## Returns
 
@@ -27,4 +27,4 @@ Parses source-neutral structured data while retaining it for redisplay and error
 | <code><span><a href="t-schema-retainedparseresult.md">RetainedParseResult</a>&lt;'a&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L100-100)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L127-127)

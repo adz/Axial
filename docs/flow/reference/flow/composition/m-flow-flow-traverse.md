@@ -34,4 +34,4 @@ Transforms a sequence of values into a flow and stops at the first failure.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1428-1428)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1436-1436)

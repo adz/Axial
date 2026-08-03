@@ -3,6 +3,8 @@
 // surface can be read top to bottom as a catalog.
 namespace Axial.Schema
 
+open Axial.Constraint
+
 open Axial.Refined
 
 /// <summary>Construction, composition, parsing, and checking for universal schemas.</summary>
@@ -63,10 +65,33 @@ module Schema =
     /// <summary>Describes a scalar enum.</summary>
     let enum cases = SchemaCore.enum cases
 
-    /// <summary>Adds one portable constraint to a schema.</summary>
+    /// <summary>Requires a schema's values to satisfy a constraint.</summary>
+    /// <remarks>
+    /// The same <c>Constraint</c> value serves direct checking, refinement, and Schema. For a value schema the
+    /// constraint runs at that layer; for a model schema it runs after successful field admission and
+    /// construction.
+    /// </remarks>
+    /// <example><code>Schema.text |> Schema.constrain (Constraint.lengthBetween 2 40)</code></example>
     let constrain constraint' schema = SchemaCore.constrain constraint' schema
-    /// <summary>Adds portable constraints to a schema in declaration order.</summary>
+
+    /// <summary>Requires a schema's values to satisfy every constraint, in declaration order.</summary>
+    /// <example><code>Schema.text |> Schema.constrainAll [ Constraint.present; Constraint.trimmed ]</code></example>
     let constrainAll constraints schema = SchemaCore.constrainAll constraints schema
+
+    /// <summary>Requires boundary input for this schema to be supplied.</summary>
+    /// <remarks>
+    /// Supply is decided before a typed value exists, so it is Schema's concern rather than a value constraint.
+    /// </remarks>
+    /// <example><code>Schema.text |> Schema.mustSupply</code></example>
+    let mustSupply schema = ValueSchema.mustSupply schema
+
+    /// <summary>Allows boundary input for an option-typed schema to be omitted.</summary>
+    /// <remarks>
+    /// Only an option-typed schema can be omittable: any other type has nowhere to put an absent input, so the
+    /// constructor could not be applied.
+    /// </remarks>
+    /// <example><code>Schema.option Schema.text |> Schema.mayOmit</code></example>
+    let mayOmit schema = ValueSchema.mayOmit schema
     /// <summary>Adds format metadata.</summary>
     let withFormat format schema = SchemaCore.withFormat format schema
     /// <summary>Adds human-readable description metadata.</summary>
@@ -78,6 +103,8 @@ module Schema =
     let description schema = SchemaCore.description schema
     let defaultValue schema = SchemaCore.defaultValue schema
     let constraints schema = SchemaCore.constraints schema
+    /// <summary>Returns the boundary supply declaration attached to a schema, when one was made.</summary>
+    let supply schema = ValueSchema.supply schema
     let isRefined schema = SchemaCore.isRefined schema
     let primitiveKind schema = SchemaCore.primitiveKind schema
     let underlyingPrimitiveKind schema = SchemaCore.underlyingPrimitiveKind schema

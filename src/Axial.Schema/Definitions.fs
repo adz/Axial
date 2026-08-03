@@ -5,6 +5,8 @@
 // interpreters work from these; nothing here executes.
 namespace Axial.Schema
 
+open Axial.Constraint
+
 open System
 open System.Collections.Generic
 
@@ -178,7 +180,7 @@ module SchemaFormat =
 type internal RefinedValueOps(
     construct: obj -> Result<obj, SchemaError list>,
     inspect: obj -> obj,
-    constraints: ConstraintDescriptor list
+    rules: SchemaRule list
 ) =
     do
         if isNull (box construct) then
@@ -187,21 +189,21 @@ type internal RefinedValueOps(
         if isNull (box inspect) then
             nullArg (nameof inspect)
 
-        if isNull (box constraints) then
-            nullArg (nameof constraints)
+        if isNull (box rules) then
+            nullArg (nameof rules)
 
     new(construct, inspect) = RefinedValueOps(construct, inspect, [])
 
     member _.Construct = construct
     member _.Inspect = inspect
-    /// Portable constraints owned and executed by the refinement. Metadata interpreters expose these,
+    /// The rules owned and executed by the refinement. Metadata interpreters expose these,
     /// but schema validation must not execute them a second time.
-    member _.Constraints = constraints
+    member _.Rules = rules
 
 type internal ValueSchemaDefinition =
     { Shape: ValueSchemaShape
       Format: SchemaFormat option
-      Constraints: ConstraintDescriptor list
+      Rules: SchemaRule list
       Description: string option
       Default: obj option }
 
@@ -331,7 +333,7 @@ and [<ReferenceEquality>] internal FieldDescriptor<'model> =
       Order: FieldOrder
       Getter: 'model -> obj
       ValueSchema: ValueSchemaDefinition
-      Constraints: ConstraintDescriptor list }
+      Rules: SchemaRule list }
 
 and [<ReferenceEquality>] internal ModelSchemaDefinition<'model> =
     { Constructor: ConstructorApplication<'model>
@@ -370,7 +372,7 @@ module internal ModelSchemaErasure =
                   Order = field.Order
                   Getter = fun (model: obj) -> field.Getter (unbox<'model> model)
                   ValueSchema = field.ValueSchema
-                  Constraints = field.Constraints })
+                  Rules = field.Rules })
           Description = definition.Description }
 
 type internal FieldDefinition<'model, 'value> =
@@ -378,7 +380,7 @@ type internal FieldDefinition<'model, 'value> =
       Order: FieldOrder
       Getter: 'model -> 'value
       ValueSchema: ValueSchemaDefinition
-      Constraints: ConstraintDescriptor list }
+      Rules: SchemaRule list }
 
 /// <summary>
 /// Describes one typed field of a trusted model for schema interpreters.

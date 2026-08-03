@@ -74,13 +74,11 @@ weight: 500
 
 ## Refinement
 
-- [`Refined.Refinement`](./t-refined-refinement.md):  Defines admission into an invariant-carrying value and its total reverse projection.
-- [`Refined.Refinement.define`](./m-refined-refinement-define.md):  Defines a refinement from one portable constraint.
-- [`Refined.Refinement.defineAll`](./m-refined-refinement-defineall.md):  Defines a refinement from one or more portable constraints.
-- [`Refined.Refinement.defineWithCheck`](./m-refined-refinement-definewithcheck.md):  Defines a metadata-free refinement from an executable check.
-- [`Refined.Refinement.create`](./m-refined-refinement-create.md):  Constructs a refined value after its check succeeds.
-- [`Refined.Refinement.underlying`](./m-refined-refinement-underlying.md):  Returns the canonical underlying representation.
-- [`Refined.Refinement.constraints`](./m-refined-refinement-constraints.md):  Returns portable constraints retained by the refinement.
+- [`Refined.Refinement`](./t-refined-refinement.md): Admission into an invariant-carrying value, and its total reverse projection.
+- [`Refined.Refinement.define`](./m-refined-refinement-define.md): Defines a refinement from one constraint, a constructor, and the reverse projection.
+- [`Refined.Refinement.create`](./m-refined-refinement-create.md): Constructs a refined value, reporting why the raw value was not admitted.
+- [`Refined.Refinement.underlying`](./m-refined-refinement-underlying.md): Returns the canonical underlying representation of a refined value.
+- [`Refined.Refinement.constraint'`](./m-refined-refinement-constraint.md): Returns the constraint the refinement admits by.
 
 ## Invariant-preserving operations
 
@@ -99,7 +97,6 @@ weight: 500
 - [`Refined.NonEmptyList.reduce`](./m-refined-nonemptylist-reduce.md): Combines every item with an associative operation. Total — no seed required.
 - [`Refined.NonEmptyList.traverseResult`](./m-refined-nonemptylist-traverseresult.md):  Applies a fallible mapping to every item, accumulating every failure rather than
  stopping at the first.
-- [`Check.Seq.count`](./m-refined-nonemptylist-count.md): Requires an already parsed sequence-shaped value to contain exactly the supplied count. Null fails with an unknown actual count.
 - [`Refined.NonEmptyList.groupBy`](./m-refined-nonemptylist-groupby.md):  Groups items by a key. Every group is non-empty by construction — a group only
  exists because something fell into it — so the values keep their type rather than
  degrading to a list the caller has to re-check.

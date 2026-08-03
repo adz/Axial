@@ -1,12 +1,13 @@
 # Axial Schema
-- `Axial.Schema` depends on `Axial.Data`, `Axial.Check`, and `Axial.Refined`. It does not depend on `Axial.Result` or
+- `Axial.Schema` depends on `Axial.Data`, `Axial.Constraint`, and `Axial.Refined`. It does not depend on `Axial.Result` or
   Flow.
-- Schema owns path-aware accumulated boundary errors through `Path`, `SchemaIssue`, and `SchemaErrors`. `Axial.Check`
+- Schema owns path-aware accumulated boundary errors through `Path`, `SchemaIssue`, and `SchemaErrors`. `Axial.Constraint`
   and `Axial.Refined` never claim path-aware accumulation; that is Schema's role.
 - Declare records with `schema<Model> { field ...; construct ... }`.
 - `field "wire-name" _.Member` resolves the member type's canonical schema.
 - `field _.Member` derives the wire name from a quotation and is .NET-only. Use explicit names for Fable.
-- Open `Axial.Schema.Syntax` for the complete unqualified, typed constraint vocabulary.
+- Constraints are `Axial.Constraint.Constraint<'value>`; `Schema.constrain` takes the same value you check directly.
+- Open `Axial.Constraint.ConstraintDSL` for the unqualified constraint vocabulary; `Axial.Schema.Syntax` holds only collection adapters.
 - A field block may contain `withSchema`, `constrain`, `constraints`, `refine`, and `validate`.
 - `withSchema` sets the current field schema.
 - `constrain` adds one portable constraint. `constraints [ ... ]` adds several in declaration order.
@@ -16,6 +17,9 @@
 - `construct` is total. `constructResult` runs only after all fields succeed.
 - `Schema.parse schema data` and `Schema.check schema value` return `Result<_,SchemaErrors>`.
 - Use `SchemaErrors.toList` for `SchemaIssue` values and `Path.format` for their complete locations.
+- `SchemaErrors.messages renderer errors` returns `(Path * string)` predicates; `fullMessages` composes the attribute noun; `toStringWith` is the localized `toString`.
+- Schema folds its typed `Path` in as the renderer attribute; supply only `Renderer.context`. Indexes stay out of resource keys and stay in returned paths.
+- Schema's own parse and structural keys are `SchemaMessages.keys`; constraint failures use `Catalogue.keys`.
 - `Schema.refine refinement`, `Schema.constrain constraint`, and `Schema.validate function` remain plain functions for
   standalone reusable schemas.
 - A contributed refined type can expose a static canonical `Schema` member, making a plain field declaration enough.

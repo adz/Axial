@@ -69,9 +69,9 @@ module WorkspaceName =
 
     let refinement =
         Refinement.defineAll
-            [ Axial.Check.Constraint.present
-              Axial.Check.Constraint.maxLength 80 ]
-            (Refine.nonBlankString >> Result.defaultWith (CheckFailure.describeAll >> failwith) >> WorkspaceName)
+            [ Axial.Constraint.Constraint.present
+              Axial.Constraint.Constraint.maxLength 80 ]
+            (Refine.nonBlankString >> Result.defaultWith (Violation.describeAll >> failwith) >> WorkspaceName)
             value
 
     let create raw = Refinement.create refinement raw

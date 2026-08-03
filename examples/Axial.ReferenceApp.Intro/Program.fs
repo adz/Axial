@@ -11,8 +11,8 @@ open Axial.Parse
 
 open Axial
 open Axial.Result
-open Axial.Check
-open Axial.Check.CheckDSL
+open Axial.Constraint
+open Axial.Constraint.ConstraintDSL
 open Axial.Refined
 
 // ---------------------------------------------------------------------------
@@ -26,9 +26,9 @@ type BadgeError =
 /// A badge name must print on one line: 3 to 40 characters.
 let validateBadgeName (name: string) : Result<string, BadgeError> =
     name
-    |> Result.guard (minLength 3)
+    |> guard (minLength 3)
     |> orError NameTooShort
-    |> Result.bind (Result.guard (maxLength 40) >> orError NameTooLong)
+    |> Result.bind (guard (maxLength 40) >> orError NameTooLong)
 
 // ---------------------------------------------------------------------------
 // 2. result {}: fail-fast sequencing of dependent steps.

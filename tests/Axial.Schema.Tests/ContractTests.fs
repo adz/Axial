@@ -2,11 +2,12 @@ namespace Axial.Schema.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module ContractTests =
     type ConfigV1 = { Version: int; Name: string }

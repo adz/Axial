@@ -36,8 +36,8 @@ open Axial.Parse
 
 open System
 open Axial.Result
-open Axial.Check
-open Axial.Check.CheckDSL
+open Axial.Constraint
+open Axial.Constraint.ConstraintDSL
 open Axial.Refined
 
 // Slug is no longer a catalogue entry: it carries no invariant past the boundary, so it
@@ -77,32 +77,38 @@ type UnitPrice = private UnitPrice of decimal
 module Slug =
     let value (Slug value) = value
 
-    let create value : Result<Slug, CheckFailure list> =
-        Check.all [ present; matches "^[a-z0-9]+(-[a-z0-9]+)*$" ] value |> Result.map (fun () -> Slug value)
+    let create value : Result<Slug, Violation> =
+        value
+        |> Constraint.check (Constraint.all [ present; pattern "^[a-z0-9]+(-[a-z0-9]+)*$" ])
+        |> Result.map (fun () -> Slug value)
 
 module ContactEmail =
     let value (ContactEmail value) = value
 
-    let create value : Result<ContactEmail, CheckFailure list> =
-        Check.all [ present; email; maxLength 254 ] value |> Result.map (fun () -> ContactEmail value)
+    let create value : Result<ContactEmail, Violation> =
+        value
+        |> Constraint.check (Constraint.all [ present; email; maxLength 254 ])
+        |> Result.map (fun () -> ContactEmail value)
 
 module Sku =
     let value (Sku value) = value
 
-    let create value : Result<Sku, CheckFailure list> =
-        Check.all [ present; lengthBetween 3 12; matches "^[A-Z0-9-]+$" ] value |> Result.map (fun () -> Sku value)
+    let create value : Result<Sku, Violation> =
+        value
+        |> Constraint.check (Constraint.all [ present; lengthBetween 3 12; pattern "^[A-Z0-9-]+$" ])
+        |> Result.map (fun () -> Sku value)
 
 module Rating =
     let value (Rating value) = value
 
-    let create value : Result<Rating, CheckFailure list> =
-        Check.between 1 5 value |> Result.map (fun () -> Rating value)
+    let create value : Result<Rating, Violation> =
+        value |> Constraint.check (Constraint.between 1 5) |> Result.map (fun () -> Rating value)
 
 module UnitPrice =
     let value (UnitPrice value) = value
 
-    let create value : Result<UnitPrice, CheckFailure list> =
-        greaterThan 0m value |> Result.map (fun () -> UnitPrice value)
+    let create value : Result<UnitPrice, Violation> =
+        value |> Constraint.check (greaterThan 0m) |> Result.map (fun () -> UnitPrice value)
 
 type Discount =
     | Percent of Quantity
@@ -136,37 +142,37 @@ let sequenceResults values =
     <| Ok []
 
 let private parseError error = Error(sprintf "%A" error)
-let private checkError failures = Error(CheckFailure.describeAll failures)
+let private checkError failures = Error(Violation.render failures)
 
 let parseDiscount (raw: string) : Result<Discount, string> =
     let parsePercent value =
         result {
             let! parsed = Parse.int value |> Result.mapError (sprintf "%A")
-            let! percent = Quantity.create parsed |> Result.mapError CheckFailure.describeAll
+            let! percent = Quantity.create parsed |> Result.mapError Violation.render
             return Percent percent
         }
     match parsePercent raw with
     | Ok value -> Ok value
-    | Error _ -> Slug.create raw |> Result.map Code |> Result.mapError CheckFailure.describeAll
+    | Error _ -> Slug.create raw |> Result.map Code |> Result.mapError Violation.render
 
 let createProductRequest rawId rawSlug rawDisplayName rawTags rawQuantity rawContactEmail rawSku rawRating rawUnitPrice rawDiscount publishStart publishEnd : Result<ProductRequest, string> =
     result {
         let! parsedId = Parse.int rawId |> Result.mapError (sprintf "%A")
-        let! id = ProductId.create parsedId |> Result.mapError CheckFailure.describeAll
-        let! slug = Slug.create rawSlug |> Result.mapError CheckFailure.describeAll
-        let! displayName = Refine.nonBlankString rawDisplayName |> Result.mapError CheckFailure.describeAll
-        let! tags = rawTags |> List.map Slug.create |> sequenceResults |> Result.mapError CheckFailure.describeAll
-        let! distinctTags = Refine.distinctList tags |> Result.mapError CheckFailure.describeAll
+        let! id = ProductId.create parsedId |> Result.mapError Violation.render
+        let! slug = Slug.create rawSlug |> Result.mapError Violation.render
+        let! displayName = Refine.nonBlankString rawDisplayName |> Result.mapError Violation.render
+        let! tags = rawTags |> List.map Slug.create |> sequenceResults |> Result.mapError Violation.render
+        let! distinctTags = Refine.distinctList tags |> Result.mapError Violation.render
         let! parsedQuantity = Parse.int rawQuantity |> Result.mapError (sprintf "%A")
-        let! quantity = Quantity.create parsedQuantity |> Result.mapError CheckFailure.describeAll
-        let! contactEmail = ContactEmail.create rawContactEmail |> Result.mapError CheckFailure.describeAll
-        let! sku = Sku.create rawSku |> Result.mapError CheckFailure.describeAll
+        let! quantity = Quantity.create parsedQuantity |> Result.mapError Violation.render
+        let! contactEmail = ContactEmail.create rawContactEmail |> Result.mapError Violation.render
+        let! sku = Sku.create rawSku |> Result.mapError Violation.render
         let! parsedRating = Parse.int rawRating |> Result.mapError (sprintf "%A")
-        let! rating = Rating.create parsedRating |> Result.mapError CheckFailure.describeAll
+        let! rating = Rating.create parsedRating |> Result.mapError Violation.render
         let! parsedUnitPrice = Parse.decimal rawUnitPrice |> Result.mapError (sprintf "%A")
-        let! unitPrice = UnitPrice.create parsedUnitPrice |> Result.mapError CheckFailure.describeAll
+        let! unitPrice = UnitPrice.create parsedUnitPrice |> Result.mapError Violation.render
         let! discount = parseDiscount rawDiscount
-        let! range = Interval.create publishStart publishEnd |> Result.mapError CheckFailure.describeAll
+        let! range = Interval.create publishStart publishEnd |> Result.mapError Violation.render
         return { Id = id; Slug = ProductSlug slug; DisplayName = DisplayName displayName; Tags = ProductTags distinctTags; Quantity = quantity; ContactEmail = contactEmail; Sku = sku; Rating = rating; UnitPrice = unitPrice; Discount = discount; PublishWindow = { Range = range } }
     }
 
@@ -196,6 +202,7 @@ Source code:
 ```fsharp
 module RefinedValueSchemaExample
 
+open Axial.Constraint
 open Axial.Schema
 open Axial.Schema.Syntax
 
@@ -337,6 +344,7 @@ Source code:
 module Axial.Api.Program
 
 open Axial
+open Axial.Constraint
 open System
 open System.Net
 open System.Net.Http
@@ -385,6 +393,7 @@ type Signup =
 
 module Signup =
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     let addressSchema =
         schema<Address> {
@@ -407,10 +416,10 @@ module Signup =
             }
             field "email" _.Email
             field "age" _.Age {
-                constrain (between 13 120)
+                constrain (Constraint.between 13 120)
             }
             field "address" _.Address {
-                withSchema (addressSchema |> Schema.constrain Constraint.supplied)
+                withSchema (addressSchema |> Schema.mustSupply)
             }
             field "tags" _.Tags {
                 withSchema (Schema.listWith Schema.text)
@@ -450,23 +459,30 @@ module FormPage =
     let private encode (text: string) = WebUtility.HtmlEncode text
 
     let private constraintAttributes (field: FieldDescription) =
-        let metadata =
-            (field.Constraints |> List.map _.Metadata)
+        // One inspection tree serves the form renderer, JSON Schema, and the docs: the atoms below are the same
+        // values the runtime rules were built from.
+        let atoms =
+            field.Constraints
             @ (let rec gather (value: SchemaDescription) =
-                (value.Constraints |> List.map _.Metadata)
+                value.Constraints
                 @ (match value.Shape with
                    | SchemaShape.Refined underlying -> gather underlying
                    | _ -> [])
 
                gather field.Schema)
+            |> List.collect ConstraintDescription.atoms
 
         let required =
-            if metadata |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) then " required" else ""
+            if field.Supply = Some Supply.Supplied || atoms |> List.contains (PresenceAtom Present) then
+                " required"
+            else
+                ""
 
         let maxLength =
-            metadata
+            atoms
             |> List.tryPick (function
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $" maxlength=\"{maximum}\""
+                | CardinalityAtom(Cardinality.Maximum maximum)
+                | CardinalityAtom(Cardinality.Between(_, maximum)) -> Some $" maxlength=\"{maximum}\""
                 | _ -> None)
             |> Option.defaultValue ""
 
@@ -671,10 +687,12 @@ module PolicyExamples
 open Axial.Parse
 
 open Axial
+open Axial.Constraint
 open Axial.Flow
 open Axial.Refined
 open Axial.Schema
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
 
 type Quantity =
     private

@@ -1,11 +1,13 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial
 
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module UnionInlineSchemaParseTests =
     type private CardDetails = { Number: string }
@@ -72,7 +74,7 @@ module UnionInlineSchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "payment"; PathSegment.Name "type" ]
-                                   Error = SchemaError.NotOneOf "card|invoice" } ] @>
+                                   Error = SchemaError.UnknownTag "card|invoice" } ] @>
 
     [<Fact>]
     let ``parse reports missing spliced payload fields at their own path`` () =

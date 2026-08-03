@@ -213,6 +213,21 @@ module Program =
 
         printfn "Codec round-trip: ok"
 
+        if not (Shared.runConstraintSurface ()) then
+            failwith "The type-directed constraint catalogue did not behave correctly under Fable."
+
+        printfn "Constraints: ok"
+
+        if not (Shared.runOperandAgreement ()) then
+            failwith "Operand projection described a constraint differently under Fable than under .NET."
+
+        printfn "Operand agreement: ok"
+
+        if not (Shared.runLocalizationSurface ()) then
+            failwith "Localized constraint rendering did not behave correctly under Fable."
+
+        printfn "Localization: ok"
+
 #if FABLE_COMPILER
         let parsed = Json.parseData "{\"n\":1.20e+3,\"n\":2}"
         let native = Data.ofJsonValue (parseNativeJson "{\"name\":\"Ada\",\"active\":true}")

@@ -2,6 +2,57 @@
 
 ## Unreleased
 
+### Constraint unification (breaking)
+
+Value rules now have one vocabulary. `Axial.Check` is renamed **`Axial.Constraint`**, and `Constraint<'value>` — a
+reusable description of valid values that `check` executes — replaces every parallel surface. Pre-1.0, so superseded
+APIs are removed outright rather than deprecated.
+
+**Removed, with no aliases:** the `Check<'value>` type, `CheckFailure` and its expectation types, `CheckDSL`, the
+public `Predicate` catalogue, `Axial.Check.Constraint`'s code/metadata surface, `Axial.Schema.SchemaConstraint`,
+`ConstraintDescriptor`, the `Axial.Schema.Constraint` facade and its duplicate catalogue in `Schema.Syntax`,
+`Refinement.defineAll`/`defineWithCheck`, and per-constraint message overrides (`Constraint.withMessage`).
+
+**Migration at a glance:**
+
+| Before | Now |
+| --- | --- |
+| `open Axial.Check` | `open Axial.Constraint` |
+| `Check.all [ ... ]` returning a function | `Constraint.all [ ... ]`, run with `Constraint.check` |
+| `Check.String.present`, `Check.present` | `Constraint.present` (annotate the binding) |
+| `Check.empty` / `Check.notEmpty` | `Constraint.blank` / `Constraint.minLength 1` |
+| `Check.not` | `Constraint.notWith "<why>"` |
+| `Constraint.define code args check` | `Constraint.custom "<why>" predicate` or `Constraint.customWith` |
+| `Refinement.defineAll [ a; b ]` | `Refinement.define (Constraint.all [ a; b ])` |
+| `Constraint.supplied` / `omittable` | `Schema.mustSupply` / `Schema.mayOmit`, or `mustSupply` in a field block |
+| `constrain (fromCheck c)` | `constrain c` |
+| `CheckFailure` in your error type | `Violation` |
+| `CheckFailure.describeAll` | `Violation.render` |
+
+**Behaviour changes worth reading before upgrading:**
+
+- **Text sizes count Unicode code points**, not UTF-16 code units, so one emoji counts once. This departs from
+  `String.Length`, and it is what lets `minLength`/`maxLength` lower to JSON Schema without over- or under-enforcing.
+- **`Constraint.numeric` is ASCII** (`^[0-9]+$`). The old `\d` rule matched any Unicode decimal digit, which no
+  ECMA-262 lowering could reproduce.
+- **JSON Schema lowering is honest about what it enforces.** Text `present` now emits only `minLength: 1` and keeps
+  the non-blank rule in `x-axial-runtime-constraints`, because .NET whitespace and ECMA-262 `\s` disagree in both
+  directions. The email constraint lowers to its exact runtime `pattern`; the separate `SchemaFormat.email`
+  annotation still lowers to `format: "email"`, and declaring both now emits both instead of one suppressing the
+  other. Authored `Constraint.pattern`, IEEE-float relations, and GUID/instant equality are retained as runtime-only
+  metadata rather than emitted as keywords that would mean something different at the other end.
+- **Constraint failures are no longer lowered into parse-shaped `SchemaError` cases.** A read-then-rejected value is
+  `SchemaError.Violation`, carrying the whole violation tree at its path. `SchemaError.Blank` keeps only its
+  parse-side meaning. Several constraints on one field now produce one grouped violation rather than several
+  diagnostics.
+- **`Constraint.lessThan infinity` no longer throws.** Operand conversion happens at construction and never throws;
+  floats keep their own representation instead of being forced through `decimal`.
+- **Constructors that take an operand are now `inline`** (`equalTo`, `notEqualTo`, the four ordered comparisons,
+  `between`, `oneOf`, `contains`, `distinct`, `multipleOf`). This is source-compatible for F# callers. It exists so
+  the operand's portable form resolves on its static type: Fable erases a `Guid` to a plain string and a
+  `TimeSpan` to a number, so a boxed type test described those operands as `Text` and `Integer` there while .NET
+  described them correctly.
+
 ## 0.7.0 - 2026-07-28
 
 First public release under the `Axial` name and repository identity (previously published as `FsFlow`). This
@@ -16,7 +67,7 @@ package level.
   telemetry (`Axial.Flow.Telemetry` for .NET, `Axial.Flow.Telemetry.JavaScript` for Fable) round out the runtime
   story with fiber diagnostics, a `FiberRegistry`, and OpenTelemetry integration on both platforms.
 - **`Axial.ErrorHandling`** (the error-handling family) — fail-fast `Result` composition and `result {}`
-  (`Axial.Result`), reusable value checks and predicates (`Axial.Check`), constraint-backed refined/domain types
+  (`Axial.Result`), reusable value checks and predicates (`Axial.Constraint`), constraint-backed refined/domain types
   and `refine {}` (`Axial.Refined`), and primitive parsers for untrusted input (`Axial.Parse`), with
   `Axial.ErrorHandling` itself a dependency-only meta-package installing the core pieces together.
 - **`Axial.Schema`** — portable `Schema<'model>` metadata for validation, codecs, documentation, and UI

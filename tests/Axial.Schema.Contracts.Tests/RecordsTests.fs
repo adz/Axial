@@ -122,9 +122,10 @@ type Profile =
         let emitted = Emitter.emit "Fallback" [ file ] file
         test <@ emitted.Contains "Schema.withFormat (SchemaFormat.create \"email\")" @>
         test <@ emitted.Contains "constrain present" @>
-        test <@ emitted.Contains "constrain (length 8)" @>
+        test <@ emitted.Contains "constrain (Constraint.length 8)" @>
         test <@ emitted.Contains "constrain (lengthBetween 2 5)" @>
-        test <@ emitted.Contains "constrain supplied" @>
+        // Supply is decided before a typed value exists, so it emits a Schema operation, not a constraint.
+        test <@ emitted.Contains "mustSupply" @>
 
     [<Fact>]
     let ``option fields become optional and doc comments carry through`` () =

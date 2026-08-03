@@ -23,7 +23,7 @@ bash scripts/check-source-inventory.sh
 
 dotnet build tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Result.Tests/Axial.Result.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Check.Tests/Axial.Check.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Constraint.Tests/Axial.Constraint.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj --no-restore --nologo -v minimal
@@ -34,7 +34,7 @@ dotnet build tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj --no-restore -
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Result.Tests/Axial.Result.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Check.Tests/Axial.Check.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Constraint.Tests/Axial.Constraint.Tests.fsproj --no-restore --nologo -v minimal
 => Build succeeded for each package-boundary test project.
 
 bash scripts/run-aot-probe.sh
@@ -54,7 +54,7 @@ bash scripts/validate-docs.sh
 ```
 
 Known validation gaps observed during this refresh: none. The previous Fable gaps are fixed:
-`benchmarks/Axial.Benchmarks.Fable` now compiles `Predicate.fs` before `Check.fs`, and
+`benchmarks/Axial.Benchmarks.Fable` now compiles `Predicates.fs` before `Constraint.fs`, and
 `ValueSchema.inspectUnderlying` guards its .NET-only generic projection-type validation with `#if !FABLE_COMPILER`, so
 `dotnet build Axial.slnx` and `bash scripts/check-fable-js-surface.sh` both pass.
 
@@ -69,7 +69,7 @@ The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been repla
 - `tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj`
 - `tests/Axial.Schema.Json.Tests/Axial.Schema.Json.Tests.fsproj`
 - `tests/Axial.Result.Tests/Axial.Result.Tests.fsproj`
-- `tests/Axial.Check.Tests/Axial.Check.Tests.fsproj`
+- `tests/Axial.Constraint.Tests/Axial.Constraint.Tests.fsproj`
 - `tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj`
 - `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
 - `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
@@ -127,8 +127,8 @@ the named modules, types, and members users and examples are expected to depend 
 
 - `Flow`, `Flow.Runtime`, `Execution`, `Cause`, `Exit`, `Fiber`, `Scope`
 - computation builders
-- `Check`, `Bind`, `BindError`, `Validation`, `Diagnostics`
-- `Schema`, `Value`, `Field`, `SchemaConstraint`, `Inspect` and its description types, `JsonSchema`
+- `Constraint`, `Violation`, `Renderer`, `Catalogue`, `Bind`, `BindError`
+- `Schema`, `Value`, `Field`, `Inspect` and its description types, `JsonSchema`
 - `Axial.Schema.Json` `Json` module and `JsonCodec`
 - `Data`, `Schema.parse`/`Schema.check`, `RetainedParseResult`, `SchemaError`, `Contract`
 - `Policy` and `Flow.verify`

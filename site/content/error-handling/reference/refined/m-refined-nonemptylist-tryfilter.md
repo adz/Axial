@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.tryFilter"
 linkTitle: "tryFilter"
-weight: 2718
+weight: 2717
 type: docs
 ---
 

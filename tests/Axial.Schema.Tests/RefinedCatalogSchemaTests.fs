@@ -2,14 +2,15 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 
 open System
 open Axial.Refined
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module RefinedCatalogSchemaTests =
     [<Fact>]
@@ -18,22 +19,20 @@ module RefinedCatalogSchemaTests =
         let description = Inspect.schema schema
         let document = JsonSchema.generateValue schema
 
-        test <@ description.Constraints |> List.map Constraint.code = [ "minLength" ] @>
-        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "minLength" ] @>
+        test <@ description.Constraints |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.cardinality.minimum" ] @>
+        test <@ Schema.allConstraints schema |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.cardinality.minimum" ] @>
         test <@ document.Contains "\"minItems\":1" @>
 
     [<Fact>]
     let ``refinement constraints execute once`` () =
         let mutable executions = 0
-        let check value =
-            executions <- executions + 1
-            if String.IsNullOrWhiteSpace value then Error [ CheckFailure.Blank ] else Ok ()
 
-        let refinement =
-            Refinement.define
-                (Axial.Check.Constraint.define "countedNonBlank" [] check)
-                id
-                id
+        let counted =
+            Constraint.custom "must be non-blank" (fun value ->
+                executions <- executions + 1
+                not (String.IsNullOrWhiteSpace value))
+
+        let refinement = Refinement.define counted id id
 
         let parsed = Schema.parse (Schema.text |> Schema.refine refinement) (Data.Text "value")
 
@@ -45,15 +44,15 @@ module RefinedCatalogSchemaTests =
 
     let private slugSchema () =
         Schema.text
-        |> Schema.constrainAll [ Axial.Schema.Constraint.present; Axial.Schema.Constraint.pattern slugPattern ]
+        |> Schema.constrainAll [ Constraint.present; Constraint.pattern slugPattern ]
 
     let private trimmedSchema () =
-        Schema.text |> Schema.constrain Axial.Schema.Constraint.trimmed
+        Schema.text |> Schema.constrain Constraint.trimmed
 
     let private boundedSchema minLength maxLength =
         Schema.text
         |> Schema.constrainAll
-            [ Axial.Schema.Constraint.present; Axial.Schema.Constraint.lengthBetween minLength maxLength ]
+            [ Constraint.present; Constraint.lengthBetween minLength maxLength ]
 
     type private Product =
         {
@@ -83,7 +82,7 @@ module RefinedCatalogSchemaTests =
                 withSchema (slugSchema ())
             }
             field "quantity" _.Quantity {
-                withSchema (Schema.int |> Schema.constrain (Axial.Schema.Constraint.greaterThan 0))
+                withSchema (Schema.int |> Schema.constrain (Constraint.greaterThan 0))
             }
             construct (fun name slug quantity ->
                 { Name = name
@@ -96,14 +95,14 @@ module RefinedCatalogSchemaTests =
         // The proof that dropping Slug, TrimmedString, and BoundedString costs nothing at
         // the boundary: the constraints they were built from still reach interpreters.
         let slug = slugSchema ()
-        test <@ Schema.allConstraints slug |> List.map Constraint.code = [ "present"; "pattern" ] @>
+        test <@ Schema.allConstraints slug |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.presence.present"; "constraint.format.pattern" ] @>
         test <@ JsonSchema.generateValue slug |> _.Contains(slugPattern) @>
 
         let trimmed = trimmedSchema ()
-        test <@ Schema.allConstraints trimmed |> List.map Constraint.code = [ "trimmed" ] @>
+        test <@ Schema.allConstraints trimmed |> List.collect ConstraintDescription.atoms = [ FormatAtom Trimmed ] @>
 
         let bounded = boundedSchema 2 4
-        test <@ Schema.allConstraints bounded |> List.map Constraint.code = [ "present"; "lengthBetween" ] @>
+        test <@ Schema.allConstraints bounded |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.presence.present"; "constraint.cardinality.between" ] @>
         test <@ JsonSchema.generateValue bounded |> _.Contains("\"maxLength\":4") @>
 
     [<Fact>]
@@ -133,12 +132,13 @@ module RefinedCatalogSchemaTests =
 
         let parsed = Schema.parseRetainingInput (productSchema ()) raw
 
-        test <@ Refine.nonBlankString "   " |> Result.mapError (List.map SchemaError.ofCheckFailure) = Error [ SchemaError.Blank ] @>
+        // The refinement and the schema report the same violation; only the path differs.
+        test <@ Refine.nonBlankString "   " = Error(Atomic(Expected(PresenceAtom Present, None))) @>
 
         test
-            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Blank }
-                                 { Path = TestPath.fromLegacy [ PathSegment.Name "quantity" ]; Error = SchemaError.OutOfRange(CheckRangeExpectation.GreaterThan "0", Some "0") }
-                                 { Path = TestPath.fromLegacy [ PathSegment.Name "slug" ]; Error = SchemaError.InvalidFormat slugPattern } ] @>
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "name" ]; Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) }
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "quantity" ]; Error = SchemaError.Violation(Atomic(Expected(RelationAtom(Compared(GreaterThan, ConstraintValue.Integer 0L)), Some(ConstraintValue.Integer 0L)))) }
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "slug" ]; Error = SchemaError.Violation(Atomic(Expected(FormatAtom(Pattern slugPattern), Some(ConstraintValue.Text "Ada")))) } ] @>
 
     [<Fact>]
     let ``length bounds are enforced by the schema rather than recorded per value`` () =
@@ -147,7 +147,7 @@ module RefinedCatalogSchemaTests =
         // mismatch: there is only ever one set of bounds, the schema's.
         let check = SchemaCheck.text (boundedSchema 2 80)
 
-        test <@ check "A" = Error [ CheckFailure.InvalidLength(CheckLengthExpectation.LengthBetween(2, 80), Some 1) ] @>
+        test <@ check "A" = Error(Atomic(Expected(CardinalityAtom(Cardinality.Between(2, 80)), Some(ConstraintValue.Integer 1L)))) @>
         test <@ check "Ada" = Ok() @>
 
     [<Fact>]
@@ -158,7 +158,7 @@ module RefinedCatalogSchemaTests =
                     withSchema (trimmedSchema ())
                 }
                 field "offset" _.Offset {
-                    withSchema (Schema.int |> Schema.constrain (Axial.Schema.Constraint.notEqualTo 0))
+                    withSchema (Schema.int |> Schema.constrain (Constraint.notEqualTo 0))
                 }
                 construct (fun command offset -> { Command = command; Offset = offset })
             }
@@ -169,8 +169,8 @@ module RefinedCatalogSchemaTests =
         let parsed = Schema.parseRetainingInput schema raw
 
         test
-            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "command" ]; Error = SchemaError.InvalidFormat "trimmed" }
-                                 { Path = TestPath.fromLegacy [ PathSegment.Name "offset" ]; Error = SchemaError.Custom("notEqualTo:0", None) } ] @>
+            <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "command" ]; Error = SchemaError.Violation(Atomic(Expected(FormatAtom Trimmed, Some(ConstraintValue.Text " deploy ")))) }
+                                 { Path = TestPath.fromLegacy [ PathSegment.Name "offset" ]; Error = SchemaError.Violation(Atomic(Expected(RelationAtom(Compared(NotEqual, ConstraintValue.Integer 0L)), Some(ConstraintValue.Integer 0L)))) } ] @>
 
     [<Fact>]
     let ``refined collection catalog schemas parse trusted values`` () =
@@ -221,9 +221,9 @@ module RefinedCatalogSchemaTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "codes" ]
-                                   Error = SchemaError.Duplicate }
+                                   Error = SchemaError.Violation(Atomic(Expected(UniquenessAtom, Some(ConstraintValue.Text "A")))) }
                                  { Path = TestPath.fromLegacy [ PathSegment.Name "tags" ]
-                                   Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 1, Some 0) } ] @>
+                                   Error = SchemaError.Violation(Atomic(Expected(CardinalityAtom(Cardinality.Minimum 1), Some(ConstraintValue.Integer 0L)))) } ] @>
 
     [<Fact>]
     let ``the generic interval schema parses trusted ranges`` () =
@@ -254,7 +254,7 @@ module RefinedCatalogSchemaTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy []
-                                   Error = SchemaError.ConstructorFailed "failed custom check 'interval'" } ] @>
+                                   Error = SchemaError.ConstructorFailed "the lower bound must not exceed the upper bound" } ] @>
 
     [<Fact>]
     let ``one generic interval schema replaces the per-type range schemas`` () =
@@ -276,11 +276,8 @@ module RefinedCatalogSchemaTests =
     let ``the finite constraint is inspectable metadata rather than a custom code`` () =
         let schema = RefinedSchemas.finiteFloat
 
-        test <@ Schema.allConstraints schema |> List.map Constraint.code = [ "finite" ] @>
-        test
-            <@ Schema.allConstraints schema
-               |> List.map Constraint.metadata
-                = [ ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Finite ] @>
+        test <@ Schema.allConstraints schema |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.number.finite" ] @>
+        test <@ Schema.allConstraints schema |> List.collect ConstraintDescription.atoms = [ NumberAtom Finite ] @>
 
     [<Fact>]
     let ``a finite schema admits real numbers and rejects NaN at the boundary`` () =

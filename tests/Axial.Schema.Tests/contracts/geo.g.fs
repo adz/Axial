@@ -5,6 +5,7 @@
 namespace Axial.Tests.Generated
 
 open Axial
+open Axial.Constraint
 open Axial.Schema
 
 /// A geographic coordinate.
@@ -20,6 +21,7 @@ type Geo =
 module Geo =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by geo.contract (Geo.v1).
     let schema : Schema<Geo> =

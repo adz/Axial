@@ -1,7 +1,7 @@
 ---
 title: "Schema.refine"
 linkTitle: "refine"
-weight: 2109
+weight: 2112
 ---
 
 Maps a raw schema through a reusable bidirectional refinement.
@@ -30,4 +30,4 @@ Maps a raw schema through a reusable bidirectional refinement.
 The smart constructor runs during parsing. Inspection supplies the raw representation during checking and encoding.
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L50-50)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L52-52)

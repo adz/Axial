@@ -1,10 +1,10 @@
 ---
 title: "Refined.Refinement.underlying"
 linkTitle: "underlying"
-weight: 2605
+weight: 2603
 ---
 
- Returns the canonical underlying representation.
+Returns the canonical underlying representation of a refined value.
 
 ## Signature
 
@@ -25,5 +25,12 @@ weight: 2605
 | --- | --- |
 | <code>'underlying</code> |  |
 
+## Examples
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L47-47)
+<pre class="fssnip highlighted"><code lang="fsharp"><span class="id">RetryCount</span> <span class="n">3</span> <span class="o">|&gt;</span> <span class="id">Refinement</span><span class="pn">.</span><span class="id">underlying</span> <span class="id">retryCount</span> <span class="c">// 3</span>
+</code></pre>
+
+
+
+
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Refined/Refinement.fs#L59-59)

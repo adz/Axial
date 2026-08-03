@@ -20,4 +20,4 @@ Describes one case in a tagged union value schema.
 | `Payload` | The schema description of this case's payload. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L79-79)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L85-85)

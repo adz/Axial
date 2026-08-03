@@ -2,7 +2,7 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 
 open Axial.Refined
 open Axial.Schema
@@ -81,7 +81,7 @@ module UnionSchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "payment"; PathSegment.Name "type" ]
-                                   Error = SchemaError.NotOneOf "card|invoice" } ] @>
+                                   Error = SchemaError.UnknownTag "card|invoice" } ] @>
 
     [<Fact>]
     let ``parse prefixes case payload diagnostics under the payload field`` () =
@@ -98,7 +98,7 @@ module UnionSchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "payment"; PathSegment.Name "value"; PathSegment.Name "number" ]
-                                   Error = SchemaError.Blank } ] @>
+                                   Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ] @>
 
     [<Fact>]
     let ``parse supports refined scalar case payloads`` () =

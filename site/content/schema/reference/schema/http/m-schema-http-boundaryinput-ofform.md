@@ -23,7 +23,7 @@ Builds structured data from form pairs, where dotted names such as <code>address
 
 | Type | Description |
 | --- | --- |
-| <code><a href="../../data/t-data.md">Data</a></code> |  |
+| <code><a href="../../../../data/reference/data/t-data.md">Data</a></code> |  |
 
 ## Remarks
 

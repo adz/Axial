@@ -12,7 +12,7 @@ branch, an option, or a guard from the code downstream.
 
 ```fsharp
 open System
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 ```
 
@@ -45,8 +45,8 @@ because F# cannot carry "greater than zero" through arithmetic — see
 let orderLine rawSku rawQuantity rawPrice =
     result {
         let! sku = Refine.nonBlankString rawSku
-        let! _ = Check.greaterThan 0 rawQuantity
-        let! _ = Check.greaterThan 0m rawPrice
+        let! _ = Constraint.greaterThan 0 rawQuantity
+        let! _ = Constraint.greaterThan 0m rawPrice
         return { Sku = sku; Quantity = rawQuantity; UnitPrice = rawPrice }
     }
 ```

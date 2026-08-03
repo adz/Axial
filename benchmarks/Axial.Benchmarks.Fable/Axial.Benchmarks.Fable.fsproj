@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\src\Axial.Flow.Hosting.Node\Axial.Flow.Hosting.Node.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Hosting.Browser\Axial.Flow.Hosting.Browser.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Telemetry.JavaScript\Axial.Flow.Telemetry.JavaScript.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Constraint\Axial.Constraint.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Schema.Json\Axial.Schema.Json.fsproj" />
   </ItemGroup>
   <ItemGroup>

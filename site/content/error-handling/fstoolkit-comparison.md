@@ -11,7 +11,7 @@ results, validation, and related standard F# types.
 
 Axial separates four roles:
 
-- `Axial.Result` contains a smaller `Result` surface, `Check`, predicates, and `result { }`.
+- `Axial.Result` contains a smaller `Result` surface, `Constraint`, and `result { }`.
 - `Axial.Refined` constructs values whose types record successful checks.
 - `Axial.Schema` declares structured boundaries and accumulates path-aware failures.
 - `Axial.Flow` runs effectful workflows with explicit dependencies.

@@ -37,4 +37,4 @@ Combines three flows with a mapping function.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1334-1334)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1342-1342)

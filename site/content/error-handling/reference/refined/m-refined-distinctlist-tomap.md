@@ -1,7 +1,7 @@
 ---
 title: "Refined.DistinctList.toMap"
 linkTitle: "toMap"
-weight: 2719
+weight: 2718
 type: docs
 ---
 
@@ -25,7 +25,7 @@ type: docs
 
 | Type | Description |
 | --- | --- |
-| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-collections-fsharpmap-2">Map</a>&lt;<span>'key,&#32;'value</span>&gt;</span>,&#32;<span><a href="../result/errors/t-check-checkfailure.md">CheckFailure</a>&#32;list</span></span>&gt;</span></code> |  |
+| <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-collections-fsharpmap-2">Map</a>&lt;<span>'key,&#32;'value</span>&gt;</span>,&#32;<a href="../result/errors/t-constraint-violation.md">Violation</a></span>&gt;</span></code> |  |
 
 ## Remarks
 

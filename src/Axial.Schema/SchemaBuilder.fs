@@ -2,6 +2,8 @@
 // constructor chain; the optional inner field builder transforms one Schema<_> value.
 namespace Axial.Schema
 
+open Axial.Constraint
+
 #nowarn "64"
 
 open System.ComponentModel
@@ -98,7 +100,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
 
     static member private ConstrainAll
         (
-            constraints: SchemaConstraint<'value> list,
+            constraints: Constraint<'value> list,
             schema: Schema<'value>
         ) : Schema<'value> =
         if isNull (box constraints) then nullArg (nameof constraints)
@@ -207,7 +209,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constrain
         (
             initial: FieldInitial<'model, 'target>,
-            constraint': SchemaConstraint<'target>
+            constraint': Constraint<'target>
         ) : FieldConfigured<'model, 'target> =
         if isNull (box constraint') then nullArg (nameof constraint')
         FieldConfigured(initial, SchemaCore.constrain constraint')
@@ -217,7 +219,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constrain
         (
             field: FieldConfigured<'model, 'target>,
-            constraint': SchemaConstraint<'target>
+            constraint': Constraint<'target>
         ) : FieldConfigured<'model, 'target> =
         if isNull (box constraint') then nullArg (nameof constraint')
         FieldConfigured(
@@ -230,17 +232,39 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constrain
         (
             field: FieldWorking<'model, 'target, 'current>,
-            constraint': SchemaConstraint<'current>
+            constraint': Constraint<'current>
         ) : FieldWorking<'model, 'target, 'current> =
         if isNull (box constraint') then nullArg (nameof constraint')
         FieldWorking(field.Initial, field.Schema |> SchemaCore.constrain constraint')
+
+    /// <summary>Requires this field's boundary input to be supplied.</summary>
+    /// <example><code>field "name" _.Name { mustSupply }</code></example>
+    [<CustomOperation("mustSupply")>]
+    member _.MustSupply(initial: FieldInitial<'model, 'target>) : FieldConfigured<'model, 'target> =
+        FieldConfigured(initial, ValueSchema.mustSupply)
+
+    /// <summary>Requires this field's boundary input to be supplied.</summary>
+    [<CustomOperation("mustSupply")>]
+    member _.MustSupply(field: FieldConfigured<'model, 'target>) : FieldConfigured<'model, 'target> =
+        FieldConfigured(field.Initial, field.Configure >> ValueSchema.mustSupply)
+
+    /// <summary>Requires this field's boundary input to be supplied.</summary>
+    [<CustomOperation("mustSupply")>]
+    member _.MustSupply(field: FieldWorking<'model, 'target, 'current>) : FieldWorking<'model, 'target, 'current> =
+        FieldWorking(field.Initial, field.Schema |> ValueSchema.mustSupply)
+
+    /// <summary>Allows this option-typed field's boundary input to be omitted.</summary>
+    /// <example><code>field "nickname" _.Nickname { mayOmit }</code></example>
+    [<CustomOperation("mayOmit")>]
+    member _.MayOmit(field: FieldWorking<'model, 'target, 'current option>) : FieldWorking<'model, 'target, 'current option> =
+        FieldWorking(field.Initial, field.Schema |> ValueSchema.mayOmit)
 
     /// <summary>Adds portable constraints to the field's inferred schema in declaration order.</summary>
     [<CustomOperation("constraints")>]
     member _.Constraints
         (
             initial: FieldInitial<'model, 'target>,
-            constraints: SchemaConstraint<'target> list
+            constraints: Constraint<'target> list
         ) : FieldConfigured<'model, 'target> =
         FieldConfigured(initial, fun schema -> FieldBuilder<'model, 'target>.ConstrainAll(constraints, schema))
 
@@ -249,7 +273,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constraints
         (
             field: FieldConfigured<'model, 'target>,
-            constraints: SchemaConstraint<'target> list
+            constraints: Constraint<'target> list
         ) : FieldConfigured<'model, 'target> =
         FieldConfigured(
             field.Initial,
@@ -262,7 +286,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
     member _.Constraints
         (
             field: FieldWorking<'model, 'target, 'current>,
-            constraints: SchemaConstraint<'current> list
+            constraints: Constraint<'current> list
         ) : FieldWorking<'model, 'target, 'current> =
         FieldWorking(
             field.Initial,
@@ -329,7 +353,7 @@ type FieldBuilder<'model, 'target> internal (name: string, getter: 'model -> 'ta
               Order = FieldOrder.create 0
               Getter = field.Initial.Getter
               ValueSchema = field.Schema.ValueDefinition
-              Constraints = [] }
+              Rules = [] }
         )
 
     member _.Run
@@ -407,7 +431,7 @@ type internal CeFieldsCons<'model, 'field, 'tail, 'constructed>
                   Order = FieldOrder.create index
                   Getter = fun model -> field.Getter model |> box
                   ValueSchema = field.ValueSchema
-                  Constraints = field.Constraints }
+                  Rules = field.Rules }
 
             let rest, next = tail.GetFields(index + 1)
             box descriptor :: rest, next
@@ -494,7 +518,7 @@ type SchemaBuilder<'model>() =
               Order = FieldOrder.create 0
               Getter = field.Getter
               ValueSchema = schema.ValueDefinition
-              Constraints = [] }
+              Rules = [] }
         )
 
     static member RefinedField
@@ -513,7 +537,7 @@ type SchemaBuilder<'model>() =
               Order = FieldOrder.create 0
               Getter = field.Initial.Getter
               ValueSchema = schema.ValueDefinition
-              Constraints = [] }
+              Rules = [] }
         )
 
     static member ConfiguredField

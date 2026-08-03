@@ -10,7 +10,7 @@ open Axial
 
 open System
 open System.Globalization
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 open Axial.Schema
 
@@ -69,19 +69,19 @@ module internal SchemaParsing =
     let private mergeErrors errors =
         SchemaErrors.collect errors
 
-    let private allConstraints definition =
+    let private allRules definition =
         let rec gather valueDefinition =
             match valueDefinition.Shape with
-            | PrimitiveValueDefinition _ -> valueDefinition.Constraints
-            | RefinedValueDefinition(raw, _) -> gather raw @ valueDefinition.Constraints
-            | NestedValueDefinition _ -> valueDefinition.Constraints
-            | ManyValueDefinition _ -> valueDefinition.Constraints
-            | UnionValueDefinition _ -> valueDefinition.Constraints
-            | UnionInlineValueDefinition _ -> valueDefinition.Constraints
-            | EnumValueDefinition _ -> valueDefinition.Constraints
-            | OptionValueDefinition _ -> valueDefinition.Constraints
-            | MapValueDefinition _ -> valueDefinition.Constraints
-            | LazyValueDefinition deferred -> gather (deferred.Force()) @ valueDefinition.Constraints
+            | RefinedValueDefinition(raw, _) -> gather raw @ valueDefinition.Rules
+            | LazyValueDefinition deferred -> gather (deferred.Force()) @ valueDefinition.Rules
+            | PrimitiveValueDefinition _
+            | NestedValueDefinition _
+            | ManyValueDefinition _
+            | UnionValueDefinition _
+            | UnionInlineValueDefinition _
+            | EnumValueDefinition _
+            | OptionValueDefinition _
+            | MapValueDefinition _ -> valueDefinition.Rules
 
         gather definition
 
@@ -133,24 +133,12 @@ module internal SchemaParsing =
         |> Result.mapError (fun errors ->
             errors |> List.map (diagnosticsAt path) |> mergeErrors)
 
-    let private runCheck constraints check value =
-        match check value with
-        | Ok _ -> Ok value
-        | Error failures -> failures |> SchemaCheckFailure.toSchemaErrors constraints |> Error
-
-    let private checkPrimitive kind constraints value =
-        let complete = ConstraintCheck.complete<obj> constraints
-
-        match kind with
-        | PrimitiveValueKind.Text -> value |> runCheck constraints complete
-        | PrimitiveValueKind.Int
-        | PrimitiveValueKind.Int64
-        | PrimitiveValueKind.Decimal
-        | PrimitiveValueKind.Float
-        | PrimitiveValueKind.Bool
-        | PrimitiveValueKind.Date
-        | PrimitiveValueKind.DateTime
-        | PrimitiveValueKind.Guid -> value |> runCheck constraints complete
+    /// Every stored constraint carries the typed closure it was built from, so the value's primitive kind no
+    /// longer selects which rules apply.
+    let private runRules rules value =
+        match ErasedCheck.run rules value with
+        | Ok() -> Ok value
+        | Error violation -> Error [ SchemaError.Violation violation ]
 
     let private parsePrimitive kind text =
         match kind with
@@ -172,18 +160,19 @@ module internal SchemaParsing =
         | PrimitiveValueKind.DateTime -> Parse.dateTimeOffset text |> Result.map box |> Result.mapError SchemaError.ofParseError
         | PrimitiveValueKind.Guid -> Parse.guid text |> Result.map box |> Result.mapError SchemaError.ofParseError
 
-    let rec private parseValue options valueSchema fieldConstraints path raw =
+    let rec private parseValue options valueSchema fieldRules path raw =
         match valueSchema.Shape with
         | LazyValueDefinition deferred ->
-            parseValue options (deferred.Force()) (valueSchema.Constraints @ fieldConstraints) path raw
+            parseValue options (deferred.Force()) (valueSchema.Rules @ fieldRules) path raw
         | OptionValueDefinition optional ->
             // Absence is a legal parse result for optional values: missing (and JSON null, which structured data adapters
             // lower to Missing) becomes None, while present input parses through the payload schema into Some. The
             // constraints attached to the optional layer and the field run against the payload.
             match raw with
             | Data.Null ->
-                let constraints = valueSchema.Constraints @ fieldConstraints
-                match optional.NoneValue |> runCheck constraints (ConstraintCheck.complete<obj> constraints) with
+                let rules = valueSchema.Rules @ fieldRules
+
+                match runRules rules optional.NoneValue with
                 | Ok checkedValue -> Ok checkedValue
                 | Error errors -> errors |> List.map (diagnosticsAt path) |> mergeErrors |> Error
             | Data.Text _
@@ -191,17 +180,17 @@ module internal SchemaParsing =
             | Data.Bool _
             | Data.Object _
             | Data.List _ ->
-                parseValue options optional.Payload (valueSchema.Constraints @ fieldConstraints) path raw
+                parseValue options optional.Payload (valueSchema.Rules @ fieldRules) path raw
                 |> Result.map optional.WrapSome
         | RefinedValueDefinition(rawSchema, ops) ->
-            let constraints = valueSchema.Constraints @ fieldConstraints
+            let rules = valueSchema.Rules @ fieldRules
 
             parseValue options rawSchema [] path raw
             |> Result.bind (fun rawValue ->
                 ops.Construct rawValue
                 |> Result.mapError (fun errors -> errors |> List.map (diagnosticsAt path) |> mergeErrors))
             |> Result.bind (fun value ->
-                match value |> runCheck constraints (ConstraintCheck.complete<obj> constraints) with
+                match runRules rules value with
                 | Ok checkedValue -> Ok checkedValue
                 | Error errors -> errors |> List.map (diagnosticsAt path) |> mergeErrors |> Error)
         | PrimitiveValueDefinition _
@@ -210,14 +199,13 @@ module internal SchemaParsing =
         | UnionValueDefinition _
         | UnionInlineValueDefinition _
         | EnumValueDefinition _
-        | MapValueDefinition _ -> parsePresentValue options valueSchema fieldConstraints path raw
+        | MapValueDefinition _ -> parsePresentValue options valueSchema fieldRules path raw
 
-    and private parsePresentValue options valueSchema fieldConstraints path raw =
-        let constraints = allConstraints valueSchema @ fieldConstraints
+    and private parsePresentValue options valueSchema fieldRules path raw =
+        let rules = allRules valueSchema @ fieldRules
 
         match raw with
-        | Data.Null ->
-            errorAt path (SchemaCheckFailure.withCustomMessageForCode constraints "present" SchemaError.Blank)
+        | Data.Null -> errorAt path SchemaError.Blank
         | Data.Object fields ->
             let fields = Map.ofList fields
 
@@ -225,8 +213,8 @@ module internal SchemaParsing =
             | NestedValueDefinition(nestedModel, _) -> parseObject options path nestedModel fields
             | UnionValueDefinition union -> parseUnion options path union fields
             | UnionInlineValueDefinition union -> parseUnionInline options path union fields
-            | MapValueDefinition collection -> parseMap options path collection constraints fields
-            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (Data.Object(Map.toList fields))
+            | MapValueDefinition collection -> parseMap options path collection rules fields
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldRules path (Data.Object(Map.toList fields))
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | NestedValueDefinition(nestedModel, _) ->
@@ -239,7 +227,7 @@ module internal SchemaParsing =
                     parseUnionInline options path union fields
                     |> Result.bind (constructValue path valueSchema)
                 | MapValueDefinition collection ->
-                    parseMap options path collection constraints fields
+                    parseMap options path collection rules fields
                     |> Result.bind (constructValue path valueSchema)
                 | LazyValueDefinition _ ->
                     parseValue options raw [] path (Data.Object(Map.toList fields))
@@ -261,12 +249,12 @@ module internal SchemaParsing =
             | UnionValueDefinition _
             | UnionInlineValueDefinition _
             | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
-            | ManyValueDefinition collection -> parseMany options path collection constraints rawItems
-            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (Data.List rawItems)
+            | ManyValueDefinition collection -> parseMany options path collection rules rawItems
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldRules path (Data.List rawItems)
             | RefinedValueDefinition(raw, _) ->
                 match raw.Shape with
                 | ManyValueDefinition collection ->
-                    parseMany options path collection constraints rawItems
+                    parseMany options path collection rules rawItems
                     |> Result.bind (constructValue path valueSchema)
                 | LazyValueDefinition _ ->
                     parseValue options raw [] path (Data.List rawItems)
@@ -284,9 +272,9 @@ module internal SchemaParsing =
             | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before structured data dispatch."
             | PrimitiveValueDefinition _
             | EnumValueDefinition _ -> errorAt path SchemaError.ExpectedScalar
-        | Data.Number token -> parsePresentValue options valueSchema fieldConstraints path (Data.Text token)
+        | Data.Number token -> parsePresentValue options valueSchema fieldRules path (Data.Text token)
         | Data.Bool value ->
-            parsePresentValue options valueSchema fieldConstraints path (Data.Text(if value then "true" else "false"))
+            parsePresentValue options valueSchema fieldRules path (Data.Text(if value then "true" else "false"))
         | Data.Text text ->
             match valueSchema.Shape with
             | NestedValueDefinition _
@@ -294,7 +282,7 @@ module internal SchemaParsing =
             | UnionInlineValueDefinition _
             | MapValueDefinition _ -> errorAt path SchemaError.ExpectedObject
             | ManyValueDefinition _ -> errorAt path SchemaError.ExpectedMany
-            | LazyValueDefinition _ -> parseValue options valueSchema fieldConstraints path (Data.Text text)
+            | LazyValueDefinition _ -> parseValue options valueSchema fieldRules path (Data.Text text)
             | OptionValueDefinition _ -> invalidOp "Optional value schemas are parsed before structured data dispatch."
             | EnumValueDefinition enum -> parseEnum path enum text
             | RefinedValueDefinition(raw, _) ->
@@ -319,7 +307,7 @@ module internal SchemaParsing =
                     match parsePrimitive kind text with
                     | Error error -> errorAt path error
                     | Ok primitive ->
-                        match checkPrimitive kind constraints primitive with
+                        match runRules rules primitive with
                         | Error errors ->
                             errors
                             |> List.map (diagnosticsAt path)
@@ -332,7 +320,7 @@ module internal SchemaParsing =
                 match parsePrimitive kind text with
                 | Error error -> errorAt path error
                 | Ok primitive ->
-                    match checkPrimitive kind constraints primitive with
+                    match runRules rules primitive with
                     | Error errors ->
                         errors
                         |> List.map (diagnosticsAt path)
@@ -355,7 +343,7 @@ module internal SchemaParsing =
                 union.Cases
                 |> List.map _.Tag
                 |> String.concat "|"
-                |> SchemaError.NotOneOf
+                |> SchemaError.UnknownTag
                 |> errorAt discriminatorPath
             | Some case ->
                 let parsedPayload =
@@ -387,7 +375,7 @@ module internal SchemaParsing =
                 union.Cases
                 |> List.map _.Tag
                 |> String.concat "|"
-                |> SchemaError.NotOneOf
+                |> SchemaError.UnknownTag
                 |> errorAt discriminatorPath
             | Some case ->
                 match case.Payload.Shape with
@@ -407,35 +395,26 @@ module internal SchemaParsing =
             enum.Cases
             |> List.map _.Tag
             |> String.concat "|"
-            |> SchemaError.NotOneOf
+            |> SchemaError.UnknownTag
             |> errorAt path
 
-    and private parseMissingValue options path valueSchema constraints =
-        let effectiveConstraints = allConstraints valueSchema @ constraints
+    and private parseMissingValue options path valueSchema rules =
+        let effectiveRules = allRules valueSchema @ rules
 
-        let requiresSupply =
-            effectiveConstraints
-            |> List.exists (fun constraint' ->
-                match constraint'.Metadata with
-                | ConstraintMetadata.Supply Supply.Supplied -> true
-                | _ -> false)
-
-        if requiresSupply then
-            errorAt path (SchemaCheckFailure.withCustomMessageForCode effectiveConstraints "supplied" SchemaError.Omitted)
+        if SchemaRule.trySupply effectiveRules = Some Supply.Supplied then
+            errorAt path SchemaError.Omitted
         else
             match tryDefaultValue valueSchema with
             | Some value -> Ok value
-            | None when isOmittableValue valueSchema ->
-                parseValue options valueSchema constraints path Data.Null
-            | None ->
-                errorAt path (SchemaCheckFailure.withCustomMessageForCode effectiveConstraints "supplied" SchemaError.Omitted)
+            | None when isOmittableValue valueSchema -> parseValue options valueSchema rules path Data.Null
+            | None -> errorAt path SchemaError.Omitted
 
     and private parseNestedField options basePath (fields: Map<string, Data>) (field: FieldDescriptor<obj>) =
         let name = ExternalFieldName.value field.ExternalName
         let path = basePath @ [ KeyComponent name ]
         match fields |> Map.tryFind name with
-        | Some raw -> parseValue options field.ValueSchema field.Constraints path raw
-        | None -> parseMissingValue options path field.ValueSchema field.Constraints
+        | Some raw -> parseValue options field.ValueSchema field.Rules path raw
+        | None -> parseMissingValue options path field.ValueSchema field.Rules
 
     and private parseObject options path (model: ModelSchemaDefinition<obj>) (fields: Map<string, Data>) =
         let parsedFields = model.Fields |> List.map (parseNestedField options path fields)
@@ -452,8 +431,8 @@ module internal SchemaParsing =
                 | Error message -> errorAtConstructor options path message
         | diagnostics -> Error(mergeErrors diagnostics)
 
-    and private checkMany constraints path value =
-        match value |> runCheck constraints (ConstraintCheck.complete<obj> constraints) with
+    and private checkMany rules path value =
+        match runRules rules value with
         | Ok checkedValue -> Ok checkedValue
         | Error errors ->
             errors
@@ -461,7 +440,7 @@ module internal SchemaParsing =
             |> mergeErrors
             |> Error
 
-    and private parseMany options path (collection: CollectionValueDefinition) constraints rawItems =
+    and private parseMany options path (collection: CollectionValueDefinition) rules rawItems =
         let parsedItems =
             rawItems
             |> List.mapi (fun index rawItem -> parseValue options collection.Item [] (path @ [ IndexComponent index ]) rawItem)
@@ -475,12 +454,12 @@ module internal SchemaParsing =
 
             let collectionValue = collection.BoxItems items
 
-            match checkMany constraints path collectionValue with
+            match checkMany rules path collectionValue with
             | Ok checkedValue -> Ok checkedValue
             | Error diagnostics -> Error diagnostics
         | diagnostics -> Error(mergeErrors diagnostics)
 
-    and private parseMap options path (collection: MapValueDefinition) constraints (fields: Map<string, Data>) =
+    and private parseMap options path (collection: MapValueDefinition) rules (fields: Map<string, Data>) =
         let entries = fields |> Map.toList
 
         let parsedEntries =
@@ -496,7 +475,7 @@ module internal SchemaParsing =
             let items = parsedEntries |> List.map (fun (_, result) -> match result with Ok value -> value | Error _ -> invalidOp "Unexpected parse error.")
             let collectionValue = List.zip (entries |> List.map fst) items |> collection.BoxEntries
 
-            match checkMany constraints path collectionValue with
+            match checkMany rules path collectionValue with
             | Ok checkedValue -> Ok checkedValue
             | Error diagnostics -> Error diagnostics
         | diagnostics -> Error(mergeErrors diagnostics)
@@ -505,8 +484,8 @@ module internal SchemaParsing =
         let name = ExternalFieldName.value field.ExternalName
         let path = basePath @ [ KeyComponent name ]
         match fields |> Map.tryFind name with
-        | Some raw -> parseValue options field.ValueSchema field.Constraints path raw
-        | None -> parseMissingValue options path field.ValueSchema field.Constraints
+        | Some raw -> parseValue options field.ValueSchema field.Rules path raw
+        | None -> parseMissingValue options path field.ValueSchema field.Rules
 
     /// <summary>Parses structured boundary data through a trusted model schema using custom input parser options.</summary>
     let private parseWithErrors

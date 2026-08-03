@@ -47,31 +47,39 @@ Refined values expose their raw representation through `SchemaShape.Refined`, so
 
 ## Understand The Constraint Types
 
-Schema authoring uses `SchemaConstraint<'value>`, which prevents attaching a string constraint to an integer schema.
-`Constraint.fromCheck` creates one from a complete `Axial.Check.Constraint<'value>`. After Schema combines differently
-typed fields into one model description, inspectors see the non-generic `Axial.Schema.ConstraintDescriptor`. The
-`Constraint` module creates and inspects Schema constraints; it is not another constraint value type.
+There is one constraint type. `Schema.constrain` takes the same `Axial.Constraint.Constraint<'value>` you would check
+directly, and inspection hands back the same `ConstraintDescription` that `Constraint.inspect` returns. Schema erases
+the value type when it stores a constraint in its heterogeneous field plan, but that erasure is internal: nothing in
+the public inspection surface is Schema-specific.
 
-`supplied` and `omittable` describe boundary supply before a typed value exists. `present` describes inhabited typed
-content. Other constructors retain complete Check constraints. All descriptors expose the same stable code and
-metadata inspection surface.
+Boundary supply is separate, because it is decided before a typed value exists. `Schema.mustSupply` and
+`Schema.mayOmit` record it, and inspection exposes it as `Supply` beside the constraints rather than mixed in among
+them.
 
 ## Lower Constraints To Another Format
 
-Constraint metadata is the discriminated-union `ConstraintMetadata` vocabulary owned by
-[Axial.Check]({{< relref "/error-handling/check/constraints/" >}}), so lowering is one `match`:
+A description is a small recursive tree — atoms, `All`, `Any`, `Optional`, and `Opaque` — and every interpreted atom
+reuses the same expectation types the violations use, so lowering is one traversal:
 
 ```fsharp
-let jsonKeyword (constraint': ConstraintDescriptor) =
-    match constraint'.Metadata with
-    | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) ->
-        Some $"\"maxLength\":{maximum}"
-    | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) ->
-        Some $"\"pattern\":\"{pattern}\""
-    | ConstraintMetadata.Supply Supply.Supplied ->
-        None // handled at the object level
+let jsonKeyword (atom: ConstraintAtom) =
+    match atom with
+    | CardinalityAtom (Cardinality.Maximum maximum) -> Some $"\"maxLength\":{maximum}"
+    | FormatAtom (Pattern pattern) -> Some $"\"pattern\":\"{pattern}\""
     | _ -> None
+
+let keywords (description: SchemaDescription) =
+    description.Constraints
+    |> List.collect ConstraintDescription.atoms
+    |> List.choose jsonKeyword
 ```
+
+`ConstraintDescription.atoms` deliberately stops at an opacity boundary, and it is only safe where dropping a rule is
+sound. An interpreter that *claims enforcement* must consult the whole expression instead: dropping a conjunct weakens
+an `All`, and dropping a disjunct strengthens an `Any` — which would reject values the library accepts.
+
+Atoms are shape-neutral. `Cardinality.Maximum 5` becomes `maxLength`, `maxItems`, or `maxProperties` depending on the
+`SchemaShape` it is attached to, so combine the two rather than reading the description alone.
 
 The repository keeps three worked prototypes — a JSON Schema emitter, a docs describer, and a UI metadata producer —
 in `tests/Axial.Schema.Tests/SchemaInterpreterPrototypeTests.fs`, all built only on `Inspect`.

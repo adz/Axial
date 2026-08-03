@@ -26,4 +26,4 @@ Returns failures in deterministic path order.
 | <code><span><a href="t-schema-schemaissue.md">SchemaIssue</a>&#32;list</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L103-103)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L104-104)

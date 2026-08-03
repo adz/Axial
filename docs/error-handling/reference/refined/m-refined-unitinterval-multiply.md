@@ -1,7 +1,7 @@
 ---
 title: "Refined.UnitInterval.multiply"
 linkTitle: "multiply"
-weight: 2721
+weight: 2720
 ---
 
  Multiplies two proportions. Total and closed — this is the operation the type

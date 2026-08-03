@@ -1,6 +1,7 @@
 namespace Axial.Schema
 
 open System
+open Axial.Constraint
 
 type internal PathComponent =
     | KeyComponent of string
@@ -116,6 +117,69 @@ module SchemaErrors =
         |> List.map (fun issue ->
             let message = SchemaError.render issue.Error
             let path = Path.format issue.Path
+            if String.IsNullOrEmpty path then message else $"{path}: {message}")
+        |> String.concat Environment.NewLine
+
+    /// Schema owns the diagnostic path and supplies it as the renderer's attribute path. Index components are
+    /// omitted from resource candidates — `addresses[0].postcode` and `addresses[7].postcode` are the same field
+    /// and must not need two catalogue entries — but every returned path keeps its indexes unchanged.
+    let private scope (renderer: Renderer) (path: Path) =
+        let keys = path |> Path.fold (fun keys key -> key :: keys) (fun keys _ -> keys) [] |> List.rev
+        renderer |> Renderer.Advanced.attributePath keys
+
+    let private renderIssue full (renderer: Renderer) (issue: SchemaIssue) =
+        let scoped = scope renderer issue.Path
+
+        match issue.Error with
+        | SchemaError.Violation violation ->
+            if full then
+                Violation.fullMessage scoped violation
+            else
+                Violation.message scoped violation
+        | error ->
+            let message =
+                match SchemaMessages.trySpec error with
+                | Some(Choice1Of2 spec) -> scoped |> Renderer.Advanced.format spec
+                // Authored prose has no catalogue entry to look up, so it passes through as written.
+                | Some(Choice2Of2 prose) -> prose
+                | None -> SchemaError.render error
+
+            if full then scoped |> Renderer.fullMessage message else message
+
+    /// <summary>Renders each failure as a localized predicate, paired with the path it occurred at.</summary>
+    /// <remarks>
+    /// Predicates, not sentences: the returned <c>Path</c> already identifies the field, so a form that renders
+    /// its own label would otherwise print the field name twice. Supply only the document context — Schema folds
+    /// its typed path in as the attribute itself.
+    /// </remarks>
+    /// <example><code>errors |> SchemaErrors.messages (renderer |> Renderer.context "signup")
+    /// // [ Path "name", "must be present" ]</code></example>
+    let messages (renderer: Renderer) (errors: SchemaErrors) : (Path * string) list =
+        if isNull renderer then nullArg (nameof renderer)
+
+        toList errors
+        |> List.map (fun issue -> issue.Path, renderIssue false renderer issue)
+
+    /// <summary>Renders each failure as a complete fragment with its attribute noun, paired with its path.</summary>
+    /// <remarks>
+    /// For API payloads and anywhere else without an adjacent label. At <c>Path.root</c> the noun comes from
+    /// <c>constraint.attribute.default</c>; the document context is never used as a noun.
+    /// </remarks>
+    /// <example><code>errors |> SchemaErrors.fullMessages (renderer |> Renderer.context "signup")
+    /// // [ Path "name", "Name must be present" ]</code></example>
+    let fullMessages (renderer: Renderer) (errors: SchemaErrors) : (Path * string) list =
+        if isNull renderer then nullArg (nameof renderer)
+
+        toList errors
+        |> List.map (fun issue -> issue.Path, renderIssue true renderer issue)
+
+    /// <summary>Renders one localized line per failure.</summary>
+    /// <remarks>The localized counterpart of <c>toString</c>, using full messages so each line stands alone.</remarks>
+    /// <example><code>errors |> SchemaErrors.toStringWith (renderer |> Renderer.context "signup")</code></example>
+    let toStringWith (renderer: Renderer) (errors: SchemaErrors) : string =
+        fullMessages renderer errors
+        |> List.map (fun (path, message) ->
+            let path = Path.format path
             if String.IsNullOrEmpty path then message else $"{path}: {message}")
         |> String.concat Environment.NewLine
 

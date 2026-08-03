@@ -6,7 +6,7 @@ Speculative sketches live in `dev-docs/current-ideas/`, but this file is the liv
 
 ## Release Strategy
 
-Per `prd.md`: the boundary stack — `Axial.Result`, `Axial.Check`, and `Axial.Refined` under the
+Per `prd.md`: the boundary stack — `Axial.Result`, `Axial.Constraint`, and `Axial.Refined` under the
 `Axial.ErrorHandling` meta-package, plus `Axial.Schema` and `Axial.Schema.Json` — is the 1.0 gate, driven by
 a real adoption target (a ~100-variant versioned config system). The Flow group's remaining pre-1.0 scope in
 `LATER_TODO.md` is demand-driven — pulled forward when a concrete application needs it. The contract-declaration
@@ -22,9 +22,9 @@ Axial began as a Reader-Async-Result workflow monad in the ZIO tradition; the re
 full input and value toolkit. The public surface has three identities:
 
 - **Error Handling**: four focused packages — ordinary `Result` and `result { }` in `Axial.Result`; reusable,
-  path-free value checks and portable constraints in `Axial.Check` (returns the standard F# `Result` type, no dependency
+  reusable, inspectable value constraints in `Axial.Constraint` (returns the standard F# `Result` type, no dependency
   on `Axial.Result`); primitive parsing in the independent `Axial.Parse`; and refined domain values in `Axial.Refined`
-  (depends only on `Axial.Check`). `Axial.ErrorHandling` installs all four as a dependency-only meta-package with no API
+  (depends only on `Axial.Constraint`). `Axial.ErrorHandling` installs all four as a dependency-only meta-package with no API
   of its own.
 - **Schema**: structured input, accumulated path-aware errors, model construction, codecs, contracts, and boundary
   interpreters.
@@ -68,7 +68,7 @@ Axial's data-boundary direction splits concerns like this:
   literals, strict immutable edits, named variations, bounded matrices, paths and extraction, exact structural diffs,
   recursive partial patterns, selective produced-data proofs, concise human rendering, and deterministic JSON rendering. `Data` preserves number
   tokens, object order, and duplicate fields; operations state their equality and selection semantics explicitly.
-- `Check<'value>` describes reusable, path-free, raw-input-free value constraints
+- `Constraint<'value>` describes reusable, path-free, raw-input-free value rules; `Constraint.check` runs one
 - `Schema<'value>` describes typed shape, construction, inspection, and portable constraint metadata; `Schema.parse`
   admits structured data and `Schema.check` rechecks an already assembled typed value through its field schemas and record
   constructor. Successful operations return the ordinary value rather than a universal trust wrapper.
@@ -86,7 +86,7 @@ constructor errors attach to the current object path, and input parsing may expo
 field path when that gives better boundary feedback.
 
 Schema work should prove the portable metadata model before growing broad interpreters. The metadata slice — field
-ordering, primitive value schemas, schema constraints as inspectable metadata, lowering those constraints to `Check`,
+ordering, primitive value schemas, schema constraints as inspectable metadata, erasing those constraints for execution,
 and constructor/getter alignment — is proven. Constructor-last computation expressions are the sole public record
 authoring surface:
 

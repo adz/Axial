@@ -17,7 +17,7 @@ Retains structured data alongside an existing schema parse result.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
+| `input` | <code><a href="../../../../data/reference/data/t-data.md">Data</a></code> |  |
 | `result` | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'value,&#32;<a href="t-schema-schemaerrors.md">SchemaErrors</a></span>&gt;</span></code> |  |
 
 ## Returns

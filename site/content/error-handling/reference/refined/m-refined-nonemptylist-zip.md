@@ -1,7 +1,7 @@
 ---
 title: "Refined.NonEmptyList.zip"
 linkTitle: "zip"
-weight: 2716
+weight: 2715
 type: docs
 ---
 

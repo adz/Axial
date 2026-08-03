@@ -35,4 +35,4 @@ Applies a flow-wrapped function to a flow-wrapped value.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1317-1317)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1325-1325)

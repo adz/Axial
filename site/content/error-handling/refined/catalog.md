@@ -12,7 +12,7 @@ branch from every consumer. A wrapper that only validates at construction is a c
 not a type — see [When not to make a type](#when-not-to-make-a-type).
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 ```
 
@@ -42,7 +42,7 @@ let largest = NonEmptyList.max lines              // total, no option
 ```
 
 `NonEmptyList.create` admits an ordinary sequence and returns
-`Result<NonEmptyList<'T>, CheckFailure list>`; `NonEmptyList.ofList` returns an option.
+`Result<NonEmptyList<'T>, Violation>`; `NonEmptyList.ofList` returns an option.
 
 Filtering can remove every item, so `filter` returns an ordinary list and `tryFilter`
 returns an option. `traverseResult` applies a fallible mapping across the list and

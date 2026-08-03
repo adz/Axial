@@ -14,7 +14,7 @@ that provide the JavaScript primitives they use.
 | Package | .NET | Fable JavaScript | JavaScript host | Purpose |
 | --- | --- | --- | --- | --- |
 | `Axial.Data` | Yes | Yes | Node and browser | Source-neutral data, human rendering, JSON rendering, and native-platform JSON conversions. |
-| `Axial.ErrorHandling` | Yes | Yes | Node and browser | `Result`, `Check`, parsing, and refined values. |
+| `Axial.ErrorHandling` | Yes | Yes | Node and browser | `Result`, `Constraint`, parsing, and refined values. |
 | `Axial.Schema` | Yes | Yes | Node and browser | Schema declaration, parsing, checking, accumulated errors, and inspection. |
 | `Axial.Schema.Json` | Yes | Yes | Node and browser | Portable JSON-to-`Data` parsing and compiled typed JSON codecs. |
 | `Axial.Schema.JsonSchema` | Yes | No | — | JSON Schema document generation. |

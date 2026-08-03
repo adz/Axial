@@ -13,4 +13,4 @@ An immutable location within structured schema input.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L11-11)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L12-12)

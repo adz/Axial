@@ -31,7 +31,7 @@ carry nothing forward — concatenating two trimmed strings is not trimmed — s
 `Constraint.trimmed` and `Constraint.pattern` on an ordinary `string`, not types. See
 [When not to make a type](./catalog/#when-not-to-make-a-type).
 
-`Axial.Refined` depends only on `Axial.Check`. It does not
+`Axial.Refined` depends only on `Axial.Constraint`. It does not
 [parse text]({{< relref "/error-handling/parse/" >}}) and does not normalize input.
 
 ```sh
@@ -39,17 +39,17 @@ dotnet add package Axial.Refined
 ```
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 ```
 
 ## Admission
 
-Every built-in type has a constructor returning `Result<'refined, CheckFailure list>`:
+Every built-in type has a constructor returning `Result<'refined, Violation>`:
 
 ```fsharp
-let name : Result<NonBlankString, CheckFailure list> = Refine.nonBlankString "Ada"
-let lines : Result<NonEmptyList<string>, CheckFailure list> = Refine.nonEmptyList [ "a"; "b" ]
+let name : Result<NonBlankString, Violation> = Refine.nonBlankString "Ada"
+let lines : Result<NonEmptyList<string>, Violation> = Refine.nonEmptyList [ "a"; "b" ]
 
 Refine.nonBlankString "  "  // Error [ Blank ]
 Refine.nonEmptyList []      // Error [ InvalidLength (MinimumLength 1, Some 0) ]

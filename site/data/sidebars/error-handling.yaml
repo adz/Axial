@@ -2,7 +2,7 @@ groups:
   - title: Axial.ErrorHandling
     home: /error-handling
     kind: primary
-    caption: Installs Result, Check, Parse, and Refined together.
+    caption: Installs Result, Constraint, Parse, and Refined together.
     descendants: false
     entries:
       - /error-handling/getting-started
@@ -20,16 +20,14 @@ groups:
       children_of:
         - /error-handling/reference/result
 
-  - title: Axial.Check
-    home: /error-handling/check
-    caption: Reusable, named structural checks that attach to Result.
+  - title: Axial.Constraint
+    home: /error-handling/constraint
+    caption: One reusable description of valid values, shared by every interpreter.
     children_of:
-      - /error-handling/check
+      - /error-handling/constraint
     reference:
       children_of:
-        - /error-handling/reference/check
-      entries:
-        - /error-handling/reference/predicate
+        - /error-handling/reference/constraint
 
   - title: Axial.Parse
     home: /error-handling/parse

@@ -34,7 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Axial.Data\Axial.Data.fsproj" />
-    <ProjectReference Include="..\Axial.Check\Axial.Check.fsproj" />
+    <ProjectReference Include="..\Axial.Constraint\Axial.Constraint.fsproj" />
     <ProjectReference Include="..\Axial.Refined\Axial.Refined.fsproj" />
     <ProjectReference Include="..\Axial.Parse\Axial.Parse.fsproj" />
   </ItemGroup>
@@ -44,6 +44,7 @@
     <Compile Include="Platform.fs" />
     <Compile Include="Derive.fs" />
     <Compile Include="SchemaError.fs" />
+    <Compile Include="Messages.fs" />
     <Compile Include="Names.fs" />
     <Compile Include="Constraints.fs" />
     <Compile Include="Definitions.fs" />

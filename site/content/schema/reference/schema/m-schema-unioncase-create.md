@@ -1,7 +1,7 @@
 ---
 title: "Schema.UnionCase.create"
 linkTitle: "create"
-weight: 2112
+weight: 2115
 type: docs
 ---
 
@@ -39,4 +39,4 @@ type: docs
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaType.fs#L61-61)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaType.fs#L63-63)

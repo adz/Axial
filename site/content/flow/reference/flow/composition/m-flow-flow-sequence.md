@@ -34,4 +34,4 @@ Transforms a sequence of flows into a flow of a sequence and stops at the first 
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1451-1451)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1459-1459)

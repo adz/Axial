@@ -34,4 +34,4 @@ Runs two flows sequentially and combines their successful values into a tuple.
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1280-1280)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Flow/Flow.fs#L1288-1288)

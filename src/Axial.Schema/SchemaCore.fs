@@ -2,6 +2,8 @@
 // descriptor helpers and the public Field module.
 namespace Axial.Schema
 
+open Axial.Constraint
+
 open System
 open System.Collections.Generic
 
@@ -14,7 +16,7 @@ module internal FieldDescriptorOps =
           Order = field.Definition.Order
           Getter = fun model -> field.Definition.Getter model |> box
           ValueSchema = field.Definition.ValueSchema
-          Constraints = field.Definition.Constraints }
+          Rules = field.Definition.Rules }
 
     let fromOrderedField order (field: Field<'model, 'value>) : FieldDescriptor<'model> =
         if isNull (box field) then
@@ -24,7 +26,7 @@ module internal FieldDescriptorOps =
           Order = FieldOrder.create order
           Getter = fun model -> field.Definition.Getter model |> box
           ValueSchema = field.Definition.ValueSchema
-          Constraints = field.Definition.Constraints }
+          Rules = field.Definition.Rules }
 
 /// <summary>Functions for inspecting schema field metadata.</summary>
 [<RequireQualifiedAccess>]
@@ -55,7 +57,7 @@ module Field =
               Order = FieldOrder.create 0
               Getter = getter
               ValueSchema = value.ValueDefinition
-              Constraints = [] }
+              Rules = [] }
         )
 
     /// <summary>Returns the boundary-facing name for a schema field.</summary>
@@ -79,15 +81,22 @@ module Field =
 
         field.Definition.Getter model
 
-    /// <summary>Returns the portable constraint metadata attached to a schema field.</summary>
+    /// <summary>Returns the constraint descriptions attached to a schema field, in declaration order.</summary>
     let constraints (field: Field<'model, 'value>) =
         if isNull (box field) then
             nullArg (nameof field)
 
-        field.Definition.Constraints
+        SchemaRule.descriptions field.Definition.Rules
+
+    /// <summary>Returns the boundary supply declaration attached to a schema field, when one was made.</summary>
+    let supply (field: Field<'model, 'value>) =
+        if isNull (box field) then
+            nullArg (nameof field)
+
+        SchemaRule.trySupply field.Definition.Rules
 
     /// <summary>Returns a schema field with additional portable constraint metadata appended in declaration order.</summary>
-    let withConstraint (constraint': SchemaConstraint<'value>) (field: Field<'model, 'value>) =
+    let withConstraint (constraint': Constraint<'value>) (field: Field<'model, 'value>) =
         if isNull constraint' then
             nullArg (nameof constraint')
 
@@ -96,11 +105,11 @@ module Field =
 
         Field(
             { field.Definition with
-                Constraints = field.Definition.Constraints @ [ constraint'.Untyped ] }
+                Rules = field.Definition.Rules @ [ SchemaRule.ofConstraint constraint' ] }
         )
 
-    /// <summary>Returns a schema field with additional portable constraint metadata appended in declaration order.</summary>
-    let withConstraints (constraints: SchemaConstraint<'value> list) (field: Field<'model, 'value>) =
+    /// <summary>Returns a schema field that also requires every supplied constraint, in declaration order.</summary>
+    let withConstraints (constraints: Constraint<'value> list) (field: Field<'model, 'value>) =
         if isNull (box constraints) then
             nullArg (nameof constraints)
 
@@ -114,7 +123,7 @@ module Field =
 
         Field(
             { field.Definition with
-                Constraints = field.Definition.Constraints @ (constraints |> List.map _.Untyped) }
+                Rules = field.Definition.Rules @ (constraints |> List.map SchemaRule.ofConstraint) }
         )
 
 /// <summary>Functions for creating and inspecting model schemas.</summary>
@@ -162,14 +171,14 @@ module internal SchemaCore =
     /// <summary>Describes a payload-less tagged enum.</summary>
     let enum cases = ValueSchema.enumOf cases
     /// <summary>Appends one portable constraint.</summary>
-    let constrain (constraint': SchemaConstraint<'value>) (schema: Schema<'value>) =
+    let constrain (constraint': Constraint<'value>) (schema: Schema<'value>) =
         if isNull constraint' then nullArg (nameof constraint')
-        ValueSchema.withConstraint constraint'.Untyped schema
+        ValueSchema.constrain constraint' schema
     /// <summary>Appends portable constraints in declaration order.</summary>
-    let constrainAll (constraints: SchemaConstraint<'value> list) (schema: Schema<'value>) =
+    let constrainAll (constraints: Constraint<'value> list) (schema: Schema<'value>) =
         if isNull (box constraints) then nullArg (nameof constraints)
         constraints |> List.iter (fun constraint' -> if isNull constraint' then nullArg (nameof constraints))
-        ValueSchema.withConstraints (constraints |> List.map _.Untyped) schema
+        ValueSchema.constrainAll constraints schema
     /// <summary>Attaches boundary format metadata.</summary>
     let withFormat format schema = ValueSchema.withFormat format schema
     /// <summary>Attaches descriptive metadata.</summary>

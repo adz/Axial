@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial
 open Axial.Schema
 open Axial.Refined
@@ -144,7 +145,7 @@ module SchemaWideShapeTests =
     let private contactSchema =
         schema<Contact> {
             field _.Name {
-                constrain (Syntax.minLength 1)
+                constrain (Constraint.minLength 1)
             }
             field _.Age
             field _.Tags {
@@ -267,9 +268,12 @@ module SchemaWideShapeTests =
         let constraintsFor name =
             description.Fields
             |> List.find (fun field -> field.Name = name)
-            |> fun field -> field.Schema.Constraints |> List.map Constraint.code
+            |> fun field ->
+                field.Schema.Constraints
+                |> List.collect ConstraintDescription.atoms
+                |> List.map ConstraintAtom.key
 
-        test <@ constraintsFor "owner" = [ "present" ] @>
-        test <@ constraintsFor "aliases" = [ "minLength" ] @>
-        test <@ constraintsFor "codes" = [ "distinct" ] @>
-        test <@ constraintsFor "rows" = [ "minLength" ] @>
+        test <@ constraintsFor "owner" = [ "constraint.presence.present" ] @>
+        test <@ constraintsFor "aliases" = [ "constraint.cardinality.minimum" ] @>
+        test <@ constraintsFor "codes" = [ "constraint.uniqueness" ] @>
+        test <@ constraintsFor "rows" = [ "constraint.cardinality.minimum" ] @>

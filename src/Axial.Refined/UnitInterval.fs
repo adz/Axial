@@ -1,7 +1,7 @@
 namespace Axial.Refined
 
 open System
-open Axial.Check
+open Axial.Constraint
 
 /// <summary>A finite double between zero and one inclusive.</summary>
 /// <remarks>

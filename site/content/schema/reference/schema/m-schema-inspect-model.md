@@ -53,4 +53,4 @@ from Microsoft.FSharp.Collections<br /><br />--------------------<br />type List
 
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L236-236)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L247-247)

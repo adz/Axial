@@ -5,6 +5,7 @@
 namespace Axial.Tests.Generated
 
 open Axial
+open Axial.Constraint
 open Axial.Schema
 
 /// A recursive category tree used to prove self-references in generated schemas.
@@ -22,6 +23,7 @@ type Category =
 module Category =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     /// The schema declared by category.contract (Category.v1).
     let rec schema : Schema<Category> =

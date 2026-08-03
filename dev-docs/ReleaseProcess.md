@@ -4,7 +4,7 @@ This project uses a coordinated pre-1.0 release train.
 
 ## Versioning policy
 
-- `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Result`, `Axial.Check`, `Axial.Refined`, `Axial.Schema`, the umbrella
+- `Axial.Flow`, `Axial.ErrorHandling`, `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, `Axial.Schema`, the umbrella
   `Axial` package, and the add-on packages share one package version before 1.0.
 - The shared version is declared once in `Directory.Build.props`.
 - Packable project files must not declare their own `<Version>`.
@@ -19,7 +19,7 @@ The coordinated release currently packs:
 - `Axial.Flow`
 - `Axial.ErrorHandling`
 - `Axial.Result`
-- `Axial.Check`
+- `Axial.Constraint`
 - `Axial.Refined`
 - `Axial.Schema`
 - `Axial`

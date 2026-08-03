@@ -20,7 +20,7 @@ Axial is an F#/.NET library with three public identities:
 
 The boundary stack ships 1.0 first; the Flow group follows demand.
 
-- **The 1.0 gate is the boundary stack**: `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined` under the
+- **The 1.0 gate is the boundary stack**: `Axial.Result`, `Axial.Constraint`, and `Axial.Refined` under the
   `Axial.ErrorHandling` meta-package, plus `Axial.Schema` (declaration + interpreters in one package,
   including `Schema.check` boundary admission), and `Axial.Schema.Json`. Scope: the current queue in
   `dev-docs/TASKS.md` (schema-depth candidates, now that the contract versioning engine has shipped) plus its

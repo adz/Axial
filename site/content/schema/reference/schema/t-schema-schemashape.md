@@ -39,4 +39,4 @@ type: docs
  </p>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L17-17)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L19-19)

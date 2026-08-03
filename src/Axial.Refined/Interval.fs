@@ -1,6 +1,6 @@
 namespace Axial.Refined
 
-open Axial.Check
+open Axial.Constraint
 
 /// <summary>An inclusive range of ordered values where <c>Lower &lt;= Upper</c>.</summary>
 /// <remarks>
@@ -68,11 +68,11 @@ module Interval =
     /// reporting rather than silently repairing; use <c>between</c> when either order is
     /// acceptable input.
     /// </summary>
-    let create lower upper : Result<Interval<'value>, CheckFailure list> =
+    let create lower upper : Result<Interval<'value>, Violation> =
         if lower <= upper then
             Ok { LowerValue = lower; UpperValue = upper }
         else
-            Error [ CheckFailure.Custom "interval" ]
+            Error(Atomic(Described("the lower bound must not exceed the upper bound", None)))
 
     /// <summary>Returns the inclusive lower bound.</summary>
     let lower (interval: Interval<'value>) = interval.Lower

@@ -31,7 +31,7 @@ check_failure constraint-after-refine.fsx "No overloads match for method 'Constr
 check_failure validation-at-wrong-stage.fsx "No overloads match for method 'Validate'"
 check_failure constructor-mismatch.fsx "The type 'int' does not match the type 'string'"
 check_failure ambiguous-refinement.fsx 'Duplicate method'
-check_failure optional-on-non-option-field.fsx "No overloads match for method 'Constrain'"
+check_failure optional-on-non-option-field.fsx "The type ''a option' does not match the type 'string'"
 
 
 echo "Schema CE invalid transitions and ambiguous refinements produce compile-time errors."

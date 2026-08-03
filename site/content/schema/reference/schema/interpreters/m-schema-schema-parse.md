@@ -18,7 +18,7 @@ Parses source-neutral structured data, runs constraints and refinements, and inv
 | Name | Type | Description |
 | --- | --- | --- |
 | `schema` | <code><span><a href="../t-schema-schema.md">Schema</a>&lt;'a&gt;</span></code> |  |
-| `input` | <code><a href="../../data/t-data.md">Data</a></code> |  |
+| `input` | <code><a href="../../../../data/reference/data/t-data.md">Data</a></code> |  |
 
 ## Returns
 
@@ -27,4 +27,4 @@ Parses source-neutral structured data, runs constraints and refinements, and inv
 | <code><span><a href="https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpresult-2">Result</a>&lt;<span>'a,&#32;<a href="t-schema-schemaerrors.md">SchemaErrors</a></span>&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L98-98)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L125-125)

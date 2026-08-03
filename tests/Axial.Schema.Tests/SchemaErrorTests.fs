@@ -4,12 +4,13 @@ open Axial.Parse
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module SchemaErrorTests =
     type private Signup = { Email: string; Age: int }
@@ -22,14 +23,14 @@ module SchemaErrorTests =
         test <@ SchemaError.ofParseError (ParseError.OutOfRange("int", "999")) = SchemaError.ParseOutOfRange "int" @>
 
     [<Fact>]
-    let ``check failures lower into schema boundary errors`` () =
-        test <@ SchemaError.ofCheckFailure CheckFailure.Blank = SchemaError.Blank @>
-        test <@ SchemaError.ofCheckFailure (CheckFailure.InvalidFormat "email") = SchemaError.InvalidFormat "email" @>
+    let ``a constraint failure is carried whole rather than lowered into a parse-shaped case`` () =
+        // Lowering would discard the atom and force consumers to reconstruct constraint identity from strings,
+        // which is what the unified violation exists to remove.
+        let violation = Atomic(Expected(CardinalityAtom(Cardinality.Minimum 3), Some(ConstraintValue.Integer 1L)))
+        let error = SchemaError.Violation violation
 
-        let lengthError =
-            SchemaError.ofCheckFailure (CheckFailure.InvalidLength(CheckLengthExpectation.MinimumLength 3, Some 1))
-
-        test <@ lengthError = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 3, Some 1) @>
+        test <@ error = SchemaError.Violation violation @>
+        test <@ SchemaError.render error = "Expected a size of at least 3, but was 1." @>
 
     [<Fact>]
     let ``schema boundary errors render default English messages`` () =

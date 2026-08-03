@@ -29,4 +29,4 @@ Folds over string keys and integer indexes without exposing a path-segment type.
 | <code>'a</code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L61-61)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L62-62)

@@ -16,7 +16,7 @@ Parses a path and redisplays its scalar.
 
 | Type | Description |
 | --- | --- |
-| <code><span>string&#32;->&#32;<a href="../../data/t-data.md">Data</a>&#32;->&#32;string</span></code> |  |
+| <code><span>string&#32;->&#32;<a href="../../../../data/reference/data/t-data.md">Data</a>&#32;->&#32;string</span></code> |  |
 
 
 [Source](https://github.com/adz/Axial/blob/main/src/Axial.Data/DataErgonomics.fs#L117-117)

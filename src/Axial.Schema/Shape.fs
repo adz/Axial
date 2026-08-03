@@ -4,6 +4,8 @@
 // intentionally constrains the witness type variable; the warning is noise here.
 namespace Axial.Schema
 
+open Axial.Constraint
+
 #nowarn "64"
 
 #if !FABLE_COMPILER
@@ -139,7 +141,7 @@ module internal ShapeOps =
                       Order = field.Order
                       Getter = fun (domain: 'domain) -> field.Getter(project domain)
                       ValueSchema = field.ValueSchema
-                      Constraints = field.Constraints })
+                      Rules = field.Rules })
 
             let tryApply arguments =
                 definition.Constructor.TryApplyTrusted arguments |> Result.bind create
@@ -165,112 +167,25 @@ module internal ShapeOps =
         | PendingDefinition -> invalidArg (nameof draft) "Expected a completed schema definition."
 
 /// <summary>
-/// Typed constraints and collection-schema operations used by schema definitions.
+/// Collection-schema operations used inside schema definitions.
 /// </summary>
+/// <remarks>
+/// There is no constraint catalogue here. One <c>Constraint</c> vocabulary serves direct checking, refinement,
+/// and Schema, so a field block reaches for <c>Constraint.email</c> or an opened <c>ConstraintDSL</c> exactly as
+/// standalone code does. Boundary supply is Schema-owned and stays here as <c>mustSupply</c> and <c>mayOmit</c>.
+/// </remarks>
 module Syntax =
-    /// <summary>Adds a typed constraint to every item described by a list schema.</summary>
-    let constrainItems (constraint': SchemaConstraint<'item>) (schema: Schema<'item list>) : Schema<'item list> =
-        if isNull (box constraint') then nullArg (nameof constraint')
-        SchemaCore.constrainItems constraint'.Untyped schema
+    /// <summary>Adds a constraint to every item described by a list schema.</summary>
+    /// <example><code>Schema.list () |> Syntax.constrainItems Constraint.present</code></example>
+    let constrainItems (constraint': Constraint<'item>) (schema: Schema<'item list>) : Schema<'item list> =
+        if isNull constraint' then nullArg (nameof constraint')
+        SchemaCore.constrainItems constraint' schema
 
-    /// <summary>Adds a typed constraint to every value described by a string-keyed map schema.</summary>
-    let constrainValues (constraint': SchemaConstraint<'item>) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
-        if isNull (box constraint') then nullArg (nameof constraint')
-        SchemaCore.constrainValues constraint'.Untyped schema
-
-    // ---- typed constraints ----
-
-    /// <summary>Requires a field value to be supplied by boundary interpreters.</summary>
-    let supplied<'value> : SchemaConstraint<'value> = Constraint.supplied<'value>
-
-    /// <summary>
-    /// Marks an option-typed field as omittable for boundary interpreters. A field of any other type cannot be
-    /// omittable, so applying this to one is a compile error.
-    /// </summary>
-    let omittable<'value> : SchemaConstraint<'value option> = Constraint.omittable<'value>
-
-    /// <summary>Requires a field value to be inhabited according to its shape.</summary>
-    let inline present< ^value when (^value or Axial.Check.Constraint.PresentDispatcher) : (static member Create: ^value -> Axial.Check.Constraint<^value>)> : SchemaConstraint<^value> = Constraint.present
-
-    /// <summary>Requires a text or concrete collection field to have exactly the supplied length.</summary>
-    let inline length< ^value when (^value or Axial.Check.Constraint.LengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> expected : SchemaConstraint<^value> = Constraint.length expected
-
-    /// <summary>Requires a text or concrete collection field to have at least the supplied length.</summary>
-    let inline minLength< ^value when (^value or Axial.Check.Constraint.MinLengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> minimum : SchemaConstraint<^value> = Constraint.minLength minimum
-
-    /// <summary>Requires a text or concrete collection field to have at most the supplied length.</summary>
-    let inline maxLength< ^value when (^value or Axial.Check.Constraint.MaxLengthDispatcher) : (static member Create: ^value * int -> Axial.Check.Constraint<^value>)> maximum : SchemaConstraint<^value> = Constraint.maxLength maximum
-
-    /// <summary>Requires a text or concrete collection field's length to fall inside the supplied inclusive bounds.</summary>
-    let inline lengthBetween< ^value when (^value or Axial.Check.Constraint.LengthBetweenDispatcher) : (static member Create: ^value * int * int -> Axial.Check.Constraint<^value>)> minimum maximum : SchemaConstraint<^value> =
-        Constraint.lengthBetween minimum maximum
-
-    /// <summary>Requires a text field to match Axial's pragmatic email format.</summary>
-    let email: SchemaConstraint<string> = Constraint.email
-
-    /// <summary>Requires a text field to have no leading or trailing whitespace.</summary>
-    let trimmed: SchemaConstraint<string> = Constraint.trimmed
-
-    /// <summary>Requires a text field to match the supplied regular expression pattern.</summary>
-    let pattern expression : SchemaConstraint<string> = Constraint.pattern expression
-
-    /// <summary>Requires a field to be at least the supplied value (inclusive).</summary>
-    let atLeast (minimum: 'value) : SchemaConstraint<'value> = Constraint.atLeast minimum
-
-    /// <summary>Requires a field to be at most the supplied value (inclusive).</summary>
-    let atMost (maximum: 'value) : SchemaConstraint<'value> = Constraint.atMost maximum
-
-    /// <summary>Requires a field to be greater than the supplied value (exclusive).</summary>
-    let greaterThan (minimum: 'value) : SchemaConstraint<'value> = Constraint.greaterThan minimum
-
-    /// <summary>Requires a field to be less than the supplied value (exclusive).</summary>
-    let lessThan (maximum: 'value) : SchemaConstraint<'value> = Constraint.lessThan maximum
-
-    /// <summary>Requires a numeric field to be an exact multiple of the supplied value.</summary>
-    let inline multipleOf (factor: ^value) : SchemaConstraint<^value> = Constraint.multipleOf factor
-
-    /// <summary>Requires a field to fall inside the supplied inclusive bounds.</summary>
-    let between (minimum: 'value) (maximum: 'value) : SchemaConstraint<'value> =
-        Constraint.between minimum maximum
-
-    /// <summary>Requires a field to equal the supplied value.</summary>
-    let equalTo (expected: 'value) : SchemaConstraint<'value> = Constraint.equalTo expected
-
-    /// <summary>Requires a field to differ from the supplied value.</summary>
-    let notEqualTo (unexpected: 'value) : SchemaConstraint<'value> = Constraint.notEqualTo unexpected
-
-    /// <summary>Requires a text field to equal one of the supplied choices.</summary>
-    let oneOf (choices: string list) : SchemaConstraint<string> = Constraint.oneOf choices
-
-    /// <summary>Requires a list field's items to be distinct.</summary>
-    let distinct<'item when 'item: equality> : SchemaConstraint<'item list> = Constraint.distinct<'item>
-
-    /// <summary>Requires a list field to contain the supplied item.</summary>
-    let contains (item: 'item) : SchemaConstraint<'item list> = Constraint.contains item
-
-    /// <summary>Requires a field to be greater than zero.</summary>
-    let inline positive<'value when 'value: comparison and 'value: (static member Zero: 'value)> : SchemaConstraint<'value> =
-        greaterThan LanguagePrimitives.GenericZero<'value>
-
-    /// <summary>Requires a field to be greater than or equal to zero.</summary>
-    let inline nonNegative<'value when 'value: comparison and 'value: (static member Zero: 'value)> : SchemaConstraint<'value> =
-        atLeast LanguagePrimitives.GenericZero<'value>
-
-    /// <summary>Requires a field to be less than zero.</summary>
-    let inline negative<'value when 'value: comparison and 'value: (static member Zero: 'value)> : SchemaConstraint<'value> =
-        lessThan LanguagePrimitives.GenericZero<'value>
-
-    /// <summary>Requires a field to be less than or equal to zero.</summary>
-    let inline nonPositive<'value when 'value: comparison and 'value: (static member Zero: 'value)> : SchemaConstraint<'value> =
-        atMost LanguagePrimitives.GenericZero<'value>
-
-    /// <summary>Adapts a complete Check constraint for use in a Schema field block.</summary>
-    let fromCheck (constraint': Axial.Check.Constraint<'value>) : SchemaConstraint<'value> =
-        Constraint.fromCheck constraint'
-
-    /// <summary>Replaces a typed constraint's user-facing message.</summary>
-    let withMessage (message: string) (constraint': SchemaConstraint<'value>) : SchemaConstraint<'value> =
-        Constraint.withMessage message constraint'
+    /// <summary>Adds a constraint to every value described by a string-keyed map schema.</summary>
+    /// <example><code>Schema.map () |> Syntax.constrainValues Constraint.present</code></example>
+    let constrainValues (constraint': Constraint<'item>) (schema: Schema<Map<string, 'item>>) : Schema<Map<string, 'item>> =
+        if isNull constraint' then nullArg (nameof constraint')
+        SchemaCore.constrainValues constraint' schema
 
 #if !FABLE_COMPILER
 /// <summary>

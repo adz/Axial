@@ -1,11 +1,13 @@
 namespace Axial.Schema.Json.Tests
 
+open Axial.Constraint
 open System
 open Axial.Schema.Json
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Covers the compiled JSON codec: schema-driven round trips for every value shape, wire tolerance (unknown fields,

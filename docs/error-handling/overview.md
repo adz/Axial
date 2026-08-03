@@ -1,10 +1,10 @@
 ---
 weight: 1
-title: "Result, Check, Parse, and Refined"
+title: "Result, Constraint, Parse, and Refined"
 description: Install commands and a first look at each focused package.
 ---
 
-# Result, Check, Parse, and Refined
+# Result, Constraint, Parse, and Refined
 
 These packages perform explicit operations over individual values: compose `Result`, check a typed value, decode a
 serialized primitive, or construct a refined domain value. For structured input with named fields, accumulated
@@ -15,25 +15,34 @@ Install packages independently or install the dependency-only meta-package:
 
 ```bash
 dotnet add package Axial.Result
-dotnet add package Axial.Check
+dotnet add package Axial.Constraint
 dotnet add package Axial.Parse
 dotnet add package Axial.Refined
 dotnet add package Axial.ErrorHandling
 ```
 
-## Check a typed value
+## Constrain a typed value
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 
-let nameCheck : Check<string> =
-    Check.all [ Check.String.present; Check.String.maxLength 80 ]
+let nameCheck : Constraint<string> =
+    Constraint.all [ Constraint.present; Constraint.maxLength 80 ]
 
-let checkedName : Result<string, CheckFailure list> =
+let checkedName : Result<string, Violation> =
     "Ada" |> Result.guard nameCheck
 ```
 
 A check returns `unit`. `Result.guard` returns the unchanged input after success.
+
+Render a failure when it becomes user-facing text:
+
+```fsharp
+""
+|> Constraint.check nameCheck
+|> Result.mapError Violation.render
+// Error "value must be present"
+```
 
 ## Decode serialized input
 
@@ -48,7 +57,7 @@ let parsed : Result<int, ParseError> = Parse.int "42"
 ```fsharp
 open Axial.Refined
 
-let name : Result<NonBlankString, CheckFailure list> =
+let name : Result<NonBlankString, Violation> =
     Refine.nonBlankString "Ada"
 ```
 
@@ -59,12 +68,12 @@ open Axial.Result
 
 type QuantityError =
     | InvalidInteger of ParseError
-    | InvalidQuantity of CheckFailure list
+    | InvalidQuantity of Violation
 
 let quantity raw =
     result {
         let! parsed = Parse.int raw |> Result.mapError InvalidInteger
-        let! quantity = parsed |> Result.guard (Check.greaterThan 0) |> Result.mapError InvalidQuantity
+        let! quantity = parsed |> Constraint.guard (Constraint.greaterThan 0) |> Result.mapError InvalidQuantity
         return quantity
     }
 ```
@@ -72,7 +81,8 @@ let quantity raw =
 ## Guides
 
 - [Getting Started](/error-handling/getting-started/)
-- [Check](../check/)
+- [Constraint](../constraint/)
+- [Working with violations](./constraint/violations/)
 - [Result](../result/)
 - [Parse](../parse/)
 - [Refined](../refined/)

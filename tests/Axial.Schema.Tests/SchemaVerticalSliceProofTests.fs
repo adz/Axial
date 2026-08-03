@@ -4,17 +4,18 @@ open Axial
 
 open System
 open System.Text
-open Axial.Check
+open Axial.Constraint
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Proves the vertical schema metadata slice required by task line 163 of <c>dev-docs/TASKS.md</c> before Data,
 /// schema validation, rules, or syntax work may start: one authored <c>Schema&lt;'model&gt;</c> instance must
 /// simultaneously carry ordered fields, a primitive value schema, required and maxLength constraint metadata,
-/// constraint lowering to <c>Check</c>, metadata inspection without running validation, constructor/getter alignment,
+/// constraint erasure for execution, metadata inspection without running validation, constructor/getter alignment,
 /// and enough typed information to compile a CodecMapper-style record plan. Earlier tests
 /// (<c>ConstraintCheckTests</c>, <c>ConstraintInspectionTests</c>, <c>SchemaConstructorGetterAlignmentTests</c>,
 /// <c>SchemaCompiledRecordPlanProofTests</c>) prove each capability in isolation; this test proves they compose on the
@@ -160,7 +161,7 @@ module SchemaVerticalSliceProofTests =
         Schema.compilePlan (CompiledRecordPlanFactory<'model>()) schema
 
     [<Fact>]
-    let ``one authored schema proves ordering, primitive value schema, required/maxLength metadata, Check lowering, inspection, alignment, and a compiled plan together`` () =
+    let ``one authored schema proves ordering, primitive value schema, required/maxLength metadata, constraint execution, inspection, alignment, and a compiled plan together`` () =
         // Ordered fields + primitive value schema (`Schema.text`) + required and maxLength constraint metadata,
         // authored through the constructor-last typed shape.
         let emailValue =
@@ -202,20 +203,26 @@ module SchemaVerticalSliceProofTests =
 
         let emailDescriptor = byName["email"]
 
-        test <@ emailDescriptor.ValueSchema.Constraints |> List.map Constraint.code = [ "present"; "maxLength" ] @>
+        test <@ emailDescriptor.ValueSchema.Rules |> SchemaRule.descriptions |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.presence.present"; "constraint.cardinality.maximum" ] @>
         test <@
-            emailDescriptor.ValueSchema.Constraints |> List.map Constraint.metadata =
-                [ ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present
-                  ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 254) ]
+            emailDescriptor.ValueSchema.Rules |> SchemaRule.descriptions |> List.collect ConstraintDescription.atoms =
+                [ PresenceAtom Present; CardinalityAtom(Cardinality.Maximum 254) ]
         @>
 
-        // Constraint lowering to `Check`: the same required/maxLength metadata read above lowers to an executable,
-        // path-free value program.
-        let emailCheck = ConstraintCheck.text emailDescriptor.ValueSchema.Constraints
+        // The same rules read above are the ones that execute: there is no separate lowering step, because the
+        // stored constraints already carry the closures they were built from.
+        let emailCheck (value: string) = ErasedCheck.run emailDescriptor.ValueSchema.Rules (box value)
+        let accepted = emailCheck "ada@example.com"
+        let blank = emailCheck ""
+        let overlong = emailCheck (String.replicate 255 "a")
 
-        test <@ emailCheck "ada@example.com" = Ok () @>
-        test <@ emailCheck "" = Error [ Blank ] @>
-        test <@ emailCheck (String.replicate 255 "a") = Error [ InvalidLength(MaximumLength 254, Some 255) ] @>
+        test <@ accepted = Ok() @>
+        test <@ blank = Error(Atomic(Expected(PresenceAtom Present, None))) @>
+
+        test <@
+            overlong =
+                Error(Atomic(Expected(CardinalityAtom(Cardinality.Maximum 254), Some(ConstraintValue.Integer 255L))))
+        @>
 
         // Compiled-record-plan proof: the same built `Schema<'model>` value compiles into an ordered, cached-name,
         // typed-hook plan with direct constructor application -- no `obj array`, no per-value reflection, and no

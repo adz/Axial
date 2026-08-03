@@ -8,9 +8,10 @@ rather than keeping a historical spec that no longer matches the codebase.
 
 Active sketches:
 
-- `schema-refinement-unification.md` — proposal to make bidirectional refinements first-class, make Schema the only
-  public path-aware accumulating validation system, replace `fieldWith` with field pipelines, and remove the public
-  Diagnostics and Validation packages and APIs.
+- `refined-schema-proof.md` — unresolved exploration of refined schema proof and safe record updates, with a prototype
+  under `prototypes/refined-private-record/`.
+- `flow-gate-rename.md` — extracted proposal for Axial.Flow application gate naming, independent of the
+  Parse/Check/Refinement/Schema work.
 - `architecture-guardrails.md` — proposed adopter-facing architecture guidance and a staged tooling direction for
   schema laws, compile-negative proofs, project roles, and compiled-code/public-surface audits.
 - `project-split.md` — proposal to separate Schema/ErrorHandling and Flow repositories, keep formats in separate Schema
@@ -23,6 +24,10 @@ Active sketches:
 - `flow-transport-packages.md` — package and API direction layered on the FlowStream proving plan for Transport,
   framing, Network, Serial, WebSocket, streaming HTTP/SSE, Compression, and later Process integration.
 
-Implemented work and settled decisions do not remain in this folder. Contract generation, versioning, and record-first
+Implemented work and settled decisions do not remain in this folder. Constraint unification and contextual
+constraint localization shipped and are recorded in `dev-docs/decisions/README.md` and `AGENTS.md`; the term
+language, `FieldReference`, `Origin`, and `ConstraintExpression.Relational` were removed from that milestone
+rather than deferred as placeholders, so they return only when a real consumer establishes field identity,
+nesting, and proof semantics. Contract generation, versioning, and record-first
 derivation outcomes are recorded in `dev-docs/decisions/README.md`; remaining consumer-gated schema work is in
 `dev-docs/TASKS.md`. The implemented Flow comparison examples live in `examples/Axial.Flow.Comparisons`.

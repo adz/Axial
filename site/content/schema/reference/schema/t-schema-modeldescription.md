@@ -21,4 +21,4 @@ Describes a built model schema as an ordered list of field descriptions.
 | `Description` | The description metadata, when one was attached with <code>Schema.describe</code>. |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L70-70)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L76-76)

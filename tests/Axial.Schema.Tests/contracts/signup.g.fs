@@ -5,6 +5,7 @@
 namespace Axial.Tests.Generated
 
 open Axial
+open Axial.Constraint
 open Axial.Schema
 
 /// The "plan" cases of Signup (signup.contract, Signup.v1).
@@ -32,6 +33,7 @@ type Signup =
 module Signup =
 
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     let private planCases =
         [ EnumCase.create "free" SignupPlan.Free
@@ -60,7 +62,7 @@ module Signup =
                 withSchema (Schema.listWith Schema.text)
                 constraints [
                     maxLength 8
-                    distinct
+                    Constraint.distinct
                 ]
             }
             field "limits" (fun (value: Signup) -> value.Limits) {

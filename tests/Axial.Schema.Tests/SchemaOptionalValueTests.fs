@@ -1,9 +1,11 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Proves that optional value schemas built with <c>Schema.option</c> are portable metadata: the payload stays
@@ -33,7 +35,7 @@ module SchemaOptionalValueTests =
         match description.Shape with
         | SchemaShape.Optional payload ->
             test <@ payload.Shape = SchemaShape.Primitive PrimitiveValueKind.Text @>
-            test <@ payload.Constraints |> List.map Constraint.code = [ "maxLength" ] @>
+            test <@ payload.Constraints |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.cardinality.maximum" ] @>
         | _ -> failwith "Expected an optional value shape."
 
     [<Fact>]
@@ -62,18 +64,18 @@ module SchemaOptionalValueTests =
         let description = Inspect.schema schema
 
         match description.Shape with
-        | SchemaShape.Optional payload -> test <@ payload.Constraints |> List.map Constraint.code = [ "present" ] @>
+        | SchemaShape.Optional payload -> test <@ payload.Constraints |> List.collect ConstraintDescription.atoms = [ PresenceAtom Present ] @>
         | _ -> failwith "Expected an optional value shape."
 
     [<Fact>]
     let ``present may constrain the option itself`` () =
-        let presentOption: SchemaConstraint<string option> = Constraint.present
+        let presentOption: Constraint<string option> = Constraint.present
         let constrained = Schema.option Schema.text |> Schema.constrain presentOption
-        test <@ Schema.constraints constrained |> List.map Constraint.code = [ "present" ] @>
+        test <@ Schema.constraints constrained |> List.collect ConstraintDescription.atoms = [ PresenceAtom Present ] @>
 
     [<Fact>]
     let ``present option makes the field required in JSON Schema`` () =
-        let presentOption: SchemaConstraint<string option> = Constraint.present
+        let presentOption: Constraint<string option> = Constraint.present
         let constrained =
             schema<Profile> {
                 field "name" _.Name
@@ -88,12 +90,11 @@ module SchemaOptionalValueTests =
 
     [<Fact>]
     let ``supplied option rejects omission independently of its content`` () =
-        let suppliedOption: SchemaConstraint<string option> = Constraint.supplied
         let constrained =
             schema<Profile> {
                 field "name" _.Name
                 field "nickname" _.Nickname {
-                    withSchema (Schema.option Schema.text |> Schema.constrain suppliedOption)
+                    withSchema (Schema.option Schema.text |> Schema.mustSupply)
                 }
                 construct (fun name nickname -> { Name = name; Nickname = nickname })
             }

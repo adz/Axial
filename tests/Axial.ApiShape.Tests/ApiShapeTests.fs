@@ -11,14 +11,15 @@ open System.Reflection
 open System.Threading.Tasks
 open Axial.Flow
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 open Axial.Schema
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 open Axial.Flow.Hosting
 open Axial.Flow.Telemetry
 open Microsoft.FSharp.Reflection
-open Swensen.Unquote
 open Xunit
 
 module ApiShapeTests =
@@ -157,7 +158,7 @@ module ApiShapeTests =
               Order = FieldOrder.create order
               Getter = getter
               ValueSchema = Schema.text.ValueDefinition
-              Constraints = [] }
+              Rules = [] }
 
         Field definition
 
@@ -176,7 +177,7 @@ module ApiShapeTests =
         let rec loop (returnType: Type) =
             if returnType.IsGenericType && returnType.GetGenericTypeDefinition() = checkResultType then
                 let arguments = returnType.GetGenericArguments()
-                arguments[1] = typeof<CheckFailure list>
+                arguments[1] = typeof<Violation>
             elif returnType.IsGenericType && returnType.GetGenericTypeDefinition() = checkFunctionType then
                 returnType.GetGenericArguments()[1] |> loop
             else
@@ -197,15 +198,19 @@ module ApiShapeTests =
 
         loop returnType
 
-    let private assertCheckAliasShape<'value> () =
-        let checkType = typeof<Check<'value>>
+    /// There is no public Check type: a constraint is a sealed value, not a function alias, so a rule can carry
+    /// its description alongside the closures that execute it.
+    let private assertConstraintValueShape<'value> () =
+        let constraintType = typeof<Constraint<'value>>
 
-        test <@ checkType.IsGenericType @>
-        test <@ checkType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>> @>
+        test <@ constraintType.IsGenericType @>
+        test <@ constraintType.GetGenericTypeDefinition() = typedefof<Constraint<_>> @>
+        test <@ constraintType.IsSealed @>
+        test <@ constraintType.GetGenericTypeDefinition() <> typedefof<FSharpFunc<_, _>> @>
+        let publicConstructorCount =
+            constraintType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance).Length
 
-        let arguments = checkType.GetGenericArguments()
-        test <@ arguments[0] = typeof<'value> @>
-        test <@ arguments[1] = typeof<Result<unit, CheckFailure list>> @>
+        test <@ publicConstructorCount = 0 @>
 
     let private assertMethodsReturnCheckResult methodNames (targetType: Type) =
         let methods = targetType |> publicStaticMethods
@@ -257,6 +262,75 @@ module ApiShapeTests =
                 if returnsBoolShape methodInfo.ReturnType then Some methodInfo.Name else None)
 
         test <@ Array.isEmpty boolMethodNames @>
+
+    [<Fact>]
+    let ``the localization surface keeps its documented public shape`` () =
+        moduleType typeof<Renderer> "Axial.Constraint.RendererModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll
+            [ "english"
+              "ofLookup"
+              "ofResourceManager"
+              "ofResourceManagerWithCultures"
+              "ofCurrentCulture"
+              "context"
+              "attribute"
+              "unscoped"
+              "withValues"
+              "attributeName"
+              "fullMessage" ]
+
+        moduleType typeof<Renderer> "Axial.Constraint.MessageDescriptorModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "key"; "arguments"; "segments" ]
+
+        moduleType typeof<Renderer> "Axial.Constraint.MessageFormatSpecModule"
+        |> publicStaticMemberNames
+        |> assertContainsAll [ "descriptor"; "fallback"; "pluralArgument" ]
+
+    [<Fact>]
+    let ``the documented localization pipelines compile in their end-user form`` () =
+        // These are the call sites the guides teach. The assertion is that they compile and type-check as
+        // written; the behaviour they produce is covered by the Constraint and Schema localization tests.
+        let renderer = Renderer.ofLookup (fun _ -> None)
+        let signup = renderer |> Renderer.context "signup"
+
+        let violation: Violation = Atomic(Expected(PresenceAtom Present, None))
+
+        let standalone =
+            violation |> Violation.fullMessage (signup |> Renderer.attribute "name")
+
+        let predicate = violation |> Violation.message signup
+
+        let isbn =
+            Constraint.customLocalized "books.isbn.invalid" "must be a valid ISBN" (fun (value: string) ->
+                value.Length = 13)
+
+        let isbnWith =
+            Constraint.customLocalizedWith
+                "books.isbn.invalid"
+                "must be a valid ISBN"
+                (Map.ofList [ "expectedLength", ConstraintValue.Integer 13L ])
+                (fun (value: string) -> value.Length = 13)
+
+        let spec =
+            MessageDescriptor.Advanced.ofSegments [ "billing"; "cardExpired" ] Map.empty
+            |> MessageFormatSpec.Advanced.create "card has expired" None
+
+        let advanced =
+            Renderer.Advanced.ofResolver (fun request -> Some(MessageResolution.Rendered request.BaseKey))
+            |> Renderer.Advanced.withValueFormatting (fun request -> ConstraintValue.render request.Value)
+            |> Renderer.Advanced.attributePath [ "address"; "postcode" ]
+
+        test <@ standalone = "Name must be present" @>
+        test <@ predicate = "must be present" @>
+        test <@ Constraint.test isbn "1234567890123" @>
+        test <@ Constraint.test isbnWith "1234567890123" @>
+        test <@ Renderer.english |> Renderer.Advanced.format spec = "card has expired" @>
+        test <@ advanced |> Renderer.Advanced.format spec = "address.postcode.billing.cardExpired" @>
+        test <@ Renderer.Advanced.attributeCandidates advanced |> List.isEmpty |> not @>
+        test <@ Renderer.Advanced.messageRequests advanced spec |> List.length = 3 @>
+        test <@ Renderer.Advanced.lookupCandidates advanced spec |> List.length = 3 @>
 
     [<Fact>]
     let ``core Flow module keeps expected public shape`` () =
@@ -457,7 +531,7 @@ module ApiShapeTests =
     let ``removed validation surface is absent`` () =
         let assemblies =
             [ Assembly.Load "Axial.Result"
-              Assembly.Load "Axial.Check"
+              Assembly.Load "Axial.Constraint"
               Assembly.Load "Axial.Refined"
               Assembly.Load "Axial.Schema"
               Assembly.Load "Axial" ]
@@ -490,12 +564,12 @@ module ApiShapeTests =
 
     [<Fact>]
     let ``leaf packages stay independent of each other`` () =
-        // Flow, Result, and Check are independent leaves. Refined depends only on Check; Schema
-        // depends directly on Check and Refined, never on Result.
-        let leafPackages = [ "Axial.Flow"; "Axial.Result"; "Axial.Check"; "Axial.Schema" ]
+        // Flow, Result, and Constraint are independent leaves. Refined depends only on Constraint; Schema
+        // depends directly on Constraint and Refined, never on Result.
+        let leafPackages = [ "Axial.Flow"; "Axial.Result"; "Axial.Constraint"; "Axial.Schema" ]
 
         let allowedReferences =
-            [ "Axial.Schema", "Axial.Check"
+            [ "Axial.Schema", "Axial.Constraint"
               "Axial.Schema", "Axial.Refined" ]
 
         for package in leafPackages do
@@ -509,13 +583,13 @@ module ApiShapeTests =
             references |> assertContainsNone forbidden
             references |> assertContainsNone [ "Axial" ]
 
-        // Schema owns no Result dependency: it consumes Check and Refined directly.
+        // Schema owns no Result dependency: it consumes Constraint and Refined directly.
         referencedAssemblyNames (Assembly.Load "Axial.Schema")
         |> assertContainsNone [ "Axial.Result" ]
 
-        // Refined depends on Check, never on Result.
+        // Refined depends on Constraint, never on Result.
         referencedAssemblyNames (Assembly.Load "Axial.Refined")
-        |> assertContainsAll [ "Axial.Check" ]
+        |> assertContainsAll [ "Axial.Constraint" ]
 
         referencedAssemblyNames (Assembly.Load "Axial.Refined")
         |> assertContainsNone [ "Axial.Result" ]
@@ -530,7 +604,7 @@ module ApiShapeTests =
         |> assertContainsNone
             [ "Axial.Schema"
               "Axial.Result"
-              "Axial.Check"
+              "Axial.Constraint"
               "Axial.Diagnostics"
               "Axial.Refined"
               "Axial.ErrorHandling" ]
@@ -555,7 +629,7 @@ module ApiShapeTests =
         test <@ schemaAssembly.GetName().Name = "Axial.Schema" @>
 
         schemaReferences
-        |> assertContainsAll [ "Axial.Check"; "Axial.Refined" ]
+        |> assertContainsAll [ "Axial.Constraint"; "Axial.Refined" ]
 
         schemaReferences |> assertContainsNone [ "Axial.Diagnostics"; "Axial.Result" ]
 
@@ -563,90 +637,26 @@ module ApiShapeTests =
         |> publicStaticMemberNames
         |> assertContainsAll [ "packageName" ]
 
-        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.ConstraintCheck"
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "complete"; "tryText"; "text"; "tryOrdered"; "ordered" ]
-
-        let typedConstraintMembers =
+        // There is exactly one value-rule vocabulary. Schema publishes no constraint catalogue of its own:
+        // the field-block syntax carries only collection adapters, and supply, which is Schema's concern.
+        let syntaxMembers =
             moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SyntaxModule"
             |> publicStaticMemberNames
             |> Set.filter (fun name -> not (name.Contains "$"))
 
-        let expectedTypedConstraintMembers =
-            set
-                [ "constrainItems"
-                  "constrainValues"
-                  "supplied"
-                  "omittable"
-                  "present"
-                  "length"
-                  "minLength"
-                  "maxLength"
-                  "lengthBetween"
-                  "email"
-                  "trimmed"
-                  "pattern"
-                  "oneOf"
-                  "equalTo"
-                  "notEqualTo"
-                  "between"
-                  "greaterThan"
-                  "lessThan"
-                  "atLeast"
-                  "atMost"
-                  "distinct"
-                  "contains"
-                  "multipleOf"
-                  "positive"
-                  "nonNegative"
-                  "negative"
-                  "nonPositive"
-                  "fromCheck"
-                  "withMessage" ]
+        test <@ syntaxMembers = set [ "constrainItems"; "constrainValues" ] @>
 
-        test <@ typedConstraintMembers = expectedTypedConstraintMembers @>
+        let schemaAssemblyTypeNames =
+            schemaAssembly.GetTypes()
+            |> Array.filter _.IsPublic
+            |> Array.map _.FullName
+            |> Set.ofArray
 
-        let untypedConstraintMembers =
-            moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.Constraint"
-            |> publicStaticMemberNames
-            |> Set.filter (fun name -> not (name.Contains "$"))
-
-        let expectedUntypedConstraintMembers =
-            set
-                [ "fromCheck"
-                  "supplied"
-                  "omittable"
-                  "present"
-                  "length"
-                  "minLength"
-                  "maxLength"
-                  "lengthBetween"
-                  "email"
-                  "trimmed"
-                  "pattern"
-                  "oneOf"
-                  "equalTo"
-                  "notEqualTo"
-                  "between"
-                  "greaterThan"
-                  "lessThan"
-                  "atLeast"
-                  "atMost"
-                  "distinct"
-                  "contains"
-                  "multipleOf"
-                  "positive"
-                  "nonNegative"
-                  "negative"
-                  "nonPositive"
-                  "code"
-                  "metadata"
-                  "arguments"
-                  "tryFindArgument"
-                  "message"
-                  "withMessage" ]
-
-        test <@ untypedConstraintMembers = expectedUntypedConstraintMembers @>
+        // The duplicate facades this design removed must not come back under any name.
+        test <@ not (schemaAssemblyTypeNames |> Set.contains "Axial.Schema.Constraint") @>
+        test <@ not (schemaAssemblyTypeNames |> Set.contains "Axial.Schema.SchemaConstraint`1") @>
+        test <@ not (schemaAssemblyTypeNames |> Set.contains "Axial.Schema.ConstraintDescriptor") @>
+        test <@ not (schemaAssemblyTypeNames |> Set.contains "Axial.Schema.ConstraintCheck") @>
 
         moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.SchemaCheck"
         |> publicStaticMemberNames
@@ -658,13 +668,10 @@ module ApiShapeTests =
         let valueSchemaType = typedefof<Schema<_>>
         let fieldType = typedefof<Field<_, _>>
         let primitiveValueKindType = typeof<PrimitiveValueKind>
-        let schemaConstraintMetadataType = typeof<ConstraintMetadata>
-        let schemaConstraintType = typeof<ConstraintDescriptor>
         let externalFieldNameType = typeof<ExternalFieldName>
         let fieldOrderType = typeof<FieldOrder>
         let schemaModule = moduleType schemaType "Axial.Schema.Schema"
         let fieldModule = moduleType fieldType "Axial.Schema.Field"
-        let schemaConstraintModule = moduleType schemaConstraintType "Axial.Schema.Constraint"
         let schemaAssembly = schemaType.Assembly
         let references = referencedAssemblyNames schemaAssembly
         let publicConstructors =
@@ -673,8 +680,6 @@ module ApiShapeTests =
             valueSchemaType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let publicFieldConstructors =
             fieldType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
-        let publicConstraintConstructors =
-            schemaConstraintType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let publicExternalFieldNameConstructors =
             externalFieldNameType.GetConstructors(BindingFlags.Public ||| BindingFlags.Instance)
         let fieldDefinitionType =
@@ -717,7 +722,6 @@ module ApiShapeTests =
         test <@ fieldType.IsGenericTypeDefinition @>
         test <@ fieldType.GetGenericArguments().Length = 2 @>
         test <@ publicFieldConstructors.Length = 0 @>
-        test <@ publicConstraintConstructors.Length = 0 @>
         test <@ publicExternalFieldNameConstructors.Length = 0 @>
         let schemaMembers = schemaModule |> publicStaticMemberNames
         schemaMembers
@@ -733,7 +737,8 @@ module ApiShapeTests =
                  |> List.forall (fun removed -> not (schemaMembers |> Set.contains removed)) @>
         fieldModule
         |> publicStaticMemberNames
-        |> assertContainsAll [ "create"; "externalName"; "order"; "getValue"; "constraints"; "withConstraint"; "withConstraints" ]
+        |> assertContainsAll
+            [ "create"; "externalName"; "order"; "getValue"; "constraints"; "supply"; "withConstraint"; "withConstraints" ]
         test <@ fieldCreateMethods.Length = 1 @>
         test <@ fieldCreateParameterCount = 3 @>
         test <@ fieldCreateReturnType = fieldTypeDefinition @>
@@ -757,60 +762,29 @@ module ApiShapeTests =
               "constraints"
               "allConstraints"
               "constrain"
-              "constrainAll" ]
-        schemaConstraintModule
-        |> publicStaticMemberNames
-        |> assertContainsAll
-            [ "fromCheck"
-              "supplied"
-              "omittable"
-              "present"
-              "length"
-              "minLength"
-              "maxLength"
-              "lengthBetween"
-              "email"
-              "trimmed"
-              "pattern"
-              "oneOf"
-              "equalTo"
-              "notEqualTo"
-              "between"
-              "greaterThan"
-              "lessThan"
-              "atLeast"
-              "atMost"
-              "positive"
-              "nonNegative"
-              "negative"
-              "nonPositive"
-              "length"
-              "minLength"
-              "maxLength"
-              "lengthBetween"
-              "distinct"
-              "contains"
-              "code"
-              "metadata"
-              "arguments"
-              "tryFindArgument" ]
+              "constrainAll"
+              "mustSupply"
+              "mayOmit"
+              "supply" ]
         primitiveValueKindType
         |> publicUnionCaseNames
         |> assertContainsAll [ "Text"; "Int"; "Decimal"; "Bool"; "Date"; "DateTime"; "Guid" ]
-        schemaConstraintMetadataType
-        |> publicUnionCaseNames
-        |> assertContainsAll [ "ValueConstraint"; "Supply" ]
 
-        let checkConstraintCases = typeof<Axial.Check.ConstraintMetadata> |> publicUnionCaseNames
-        checkConstraintCases |> assertContainsAll [ "Present"; "MinLength"; "Custom" ]
-        checkConstraintCases |> assertContainsNone [ "Required"; "Optional" ]
+        typeof<Supply> |> publicUnionCaseNames |> assertContainsAll [ "Supplied"; "Omittable" ]
+
+        // The constraint read model belongs to Axial.Constraint, not to Schema: one declaration, one vocabulary.
+        let atomCases = typeof<ConstraintAtom> |> publicUnionCaseNames
+
+        atomCases
+        |> assertContainsAll
+            [ "PresenceAtom"; "CardinalityAtom"; "RelationAtom"; "MembershipAtom"; "UniquenessAtom"; "FormatAtom"; "NumberAtom" ]
+
+        test <@ typeof<ConstraintAtom>.Assembly = typeof<Violation>.Assembly @>
+        test <@ typeof<ConstraintDescription>.Assembly = typeof<Violation>.Assembly @>
 
         test <@ valueSchemaType.Assembly = schemaAssembly @>
         test <@ fieldType.Assembly = schemaAssembly @>
         test <@ primitiveValueKindType.Assembly = schemaAssembly @>
-        test <@ schemaConstraintMetadataType.Assembly = schemaAssembly @>
-        test <@ typeof<Axial.Check.ConstraintMetadata>.Assembly = typeof<CheckFailure>.Assembly @>
-        test <@ schemaConstraintType.Assembly = schemaAssembly @>
         test <@ externalFieldNameType.Assembly = schemaAssembly @>
         test <@ fieldOrderType.Assembly = schemaAssembly @>
         test <@ externalNameProperty.PropertyType = externalFieldNameType @>
@@ -882,235 +856,124 @@ module ApiShapeTests =
         test <@ rawMatchesDescriptor @>
 
     [<Fact>]
-    let ``schema constraints are inspectable metadata independent of executable checks`` () =
-        let supplied: SchemaConstraint<string> = Constraint.supplied
-        let maxLength: SchemaConstraint<string> = Constraint.maxLength 20
-        let text = Schema.text |> Schema.constrainAll [ supplied; maxLength ]
+    let ``schema attaches the universal constraint and keeps supply separate`` () =
+        let maxLength: Constraint<string> = Constraint.maxLength 20
+        let text = Schema.text |> Schema.constrain maxLength |> Schema.mustSupply
+
         let field =
             schemaField "name" 0 (fun (model: Customer) -> model.Name)
-            |> Field.withConstraint supplied
             |> Field.withConstraint maxLength
+
         let descriptor = field |> schemaFieldDescriptor
 
-        test <@ Constraint.code supplied = "supplied" @>
-        test <@ Constraint.metadata supplied = (ConstraintMetadata.Supply Supply.Supplied) @>
-        test <@ Constraint.metadata maxLength = ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength 20) @>
-        test <@ string supplied = "supplied" @>
-        test <@ Constraint.arguments supplied |> Seq.isEmpty @>
-        test <@ Constraint.tryFindArgument "maximum" maxLength = Some(box 20) @>
-        test <@ Schema.constraints text |> List.map Constraint.code = [ "supplied"; "maxLength" ] @>
-        test <@ Field.constraints field |> List.map Constraint.code = [ "supplied"; "maxLength" ] @>
-        test <@ descriptor.Constraints |> List.map Constraint.code = [ "supplied"; "maxLength" ] @>
-        test <@ descriptor.ValueSchema.Constraints = [] @>
-        test <@ text.ValueDefinition.Constraints |> List.map Constraint.code = [ "supplied"; "maxLength" ] @>
+        // The very same value the caller checked directly is what Schema retains and inspection returns.
+        test <@ Schema.constraints text = [ Constraint.inspect maxLength ] @>
+        test <@ Schema.supply text = Some Supply.Supplied @>
+        test <@ Field.constraints field = [ Constraint.inspect maxLength ] @>
+        test <@ Field.supply field = None @>
+        test <@ SchemaRule.descriptions descriptor.Rules = [ Constraint.inspect maxLength ] @>
+        test <@ Schema.constraints Schema.text = [] @>
+
         raises<ArgumentNullException> <@ Schema.constrain null Schema.text |> ignore @>
         raises<ArgumentNullException> <@ Field.constraints Unchecked.defaultof<Field<Customer, string>> |> ignore @>
 
     [<Fact>]
-    let ``named schema constraints expose stable codes and structured arguments`` () =
-        let codes =
-            [ Constraint.code (Constraint.present: SchemaConstraint<string>)
-              Constraint.code Constraint.omittable
-              Constraint.code (Constraint.length 2: SchemaConstraint<string>)
-              Constraint.code (Constraint.minLength 2: SchemaConstraint<string>)
-              Constraint.code (Constraint.maxLength 20: SchemaConstraint<string>)
-              Constraint.code (Constraint.lengthBetween 2 20: SchemaConstraint<string>)
-              Constraint.code (Constraint.email)
-              Constraint.code (Constraint.trimmed)
-              Constraint.code (Constraint.pattern "^[a-z]+$")
-              Constraint.code (Constraint.oneOf [ "draft"; "published" ])
-              Constraint.code (Constraint.equalTo "active")
-              Constraint.code (Constraint.notEqualTo "archived")
-              Constraint.code (Constraint.between 1 10)
-              Constraint.code (Constraint.greaterThan 0)
-              Constraint.code (Constraint.lessThan 100)
-              Constraint.code (Constraint.atLeast 1)
-              Constraint.code (Constraint.atMost 10)
-              Constraint.code (Constraint.length 2: SchemaConstraint<int list>)
-              Constraint.code (Constraint.minLength 1: SchemaConstraint<int list>)
-              Constraint.code (Constraint.maxLength 5: SchemaConstraint<int list>)
-              Constraint.code (Constraint.lengthBetween 1 5: SchemaConstraint<int list>)
-              Constraint.code (Constraint.distinct) ]
+    let ``the constraint catalogue exposes one vocabulary with atom-level identity`` () =
+        let text: Constraint<string> = Constraint.present
+        let size: Constraint<string> = Constraint.lengthBetween 2 20
+        let counts: Constraint<int list> = Constraint.lengthBetween 1 5
 
-        let length: SchemaConstraint<string> = Constraint.lengthBetween 2 20
-        let pattern = Constraint.pattern "^[a-z]+$"
-        let choices = Constraint.oneOf [ "draft"; "published" ]
-        let range = Constraint.between 1.5m 3.5m
-        let count: SchemaConstraint<int list> = Constraint.lengthBetween 1 5
+        let keys =
+            [ text; size; Constraint.email; Constraint.trimmed; Constraint.pattern "^[a-z]+$" ]
+            |> List.map (Constraint.inspect >> ConstraintDescription.atoms >> List.map ConstraintAtom.key)
+            |> List.concat
 
         test <@
-            codes =
-                [ "present"
-                  "omittable"
-                  "length"
-                  "minLength"
-                  "maxLength"
-                  "lengthBetween"
-                  "email"
-                  "trimmed"
-                  "pattern"
-                  "oneOf"
-                  "equalTo"
-                  "notEqualTo"
-                  "between"
-                  "greaterThan"
-                  "lessThan"
-                  "atLeast"
-                  "atMost"
-                  "length"
-                  "minLength"
-                  "maxLength"
-                  "lengthBetween"
-                  "distinct" ]
+            keys =
+                [ "constraint.presence.present"
+                  "constraint.cardinality.between"
+                  "constraint.format.email"
+                  "constraint.format.trimmed"
+                  "constraint.format.pattern" ]
         @>
-        test <@ Constraint.tryFindArgument "minimum" length = Some(box 2) @>
-        test <@ Constraint.tryFindArgument "maximum" length = Some(box 20) @>
-        test <@ Constraint.tryFindArgument "pattern" pattern = Some(box "^[a-z]+$") @>
-        test <@ Constraint.tryFindArgument "choices" choices |> Option.map unbox<string list> = Some [ "draft"; "published" ] @>
-        test <@ Constraint.tryFindArgument "minimum" range = Some(box 1.5m) @>
-        test <@ Constraint.tryFindArgument "maximum" range = Some(box 3.5m) @>
-        test <@ Constraint.tryFindArgument "minimum" count = Some(box 1) @>
-        test <@ Constraint.tryFindArgument "maximum" count = Some(box 5) @>
-        let tenantOnly =
-            Axial.Check.Constraint.define "tenantOnly" [ "tenant", box "north" ] (fun (_: string) -> Ok ())
-            |> Constraint.fromCheck
 
-        test <@
-            Constraint.metadata tenantOnly =
-                ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Custom("tenantOnly", Map [ "tenant", box "north" ]))
-        @>
-        Assert.Throws<ArgumentOutOfRangeException>(fun () -> let _: SchemaConstraint<string> = Constraint.minLength -1 in ()) |> ignore
-        Assert.Throws<ArgumentOutOfRangeException>(fun () -> let _: SchemaConstraint<int list> = Constraint.length -1 in ()) |> ignore
-        Assert.Throws<ArgumentException>(fun () -> let _: SchemaConstraint<string> = Constraint.lengthBetween 5 2 in ()) |> ignore
-        Assert.Throws<ArgumentException>(fun () -> let _: SchemaConstraint<int list> = Constraint.lengthBetween 5 2 in ()) |> ignore
+        // Shape-neutral atoms: text and collection sizes are the same expectation, resolved by the schema shape.
+        let textSize = Constraint.inspect size
+        let listSize = Constraint.inspect (Constraint.lengthBetween 2 20: Constraint<int list>)
+        let countSize = Constraint.inspect counts
+        let countAsText = Constraint.inspect (Constraint.lengthBetween 1 5: Constraint<string>)
+
+        test <@ textSize = listSize @>
+        test <@ countSize = countAsText @>
+
+        Assert.Throws<ArgumentOutOfRangeException>(fun () -> (Constraint.minLength -1: Constraint<string>) |> ignore) |> ignore
+        Assert.Throws<ArgumentOutOfRangeException>(fun () -> (Constraint.length -1: Constraint<int list>) |> ignore) |> ignore
+        Assert.Throws<ArgumentException>(fun () -> (Constraint.lengthBetween 5 2: Constraint<string>) |> ignore) |> ignore
         raises<ArgumentException> <@ Constraint.between 10 1 |> ignore @>
         raises<ArgumentException> <@ Constraint.pattern "" |> ignore @>
         raises<ArgumentNullException> <@ Constraint.oneOf null |> ignore @>
 
     [<Fact>]
-    let ``schema constraints retain typed metadata for non validation interpreters`` () =
-        let textConstraints =
-            Schema.text
-            |> Schema.constrainAll
-                [ Constraint.present
-                  Constraint.maxLength 20
-                  Constraint.email
-                  Constraint.pattern "^[^@]+@example.com$"
-                  Constraint.oneOf [ "ada@example.com"; "grace@example.com" ] ]
-            |> Schema.constraints
+    let ``one inspection tree drives diagnostics, export, UI, and documentation`` () =
+        // PRD 3: one declaration, many interpreters. Each projection below reads the same atoms, so a rule can
+        // never mean one thing at runtime and another in a generated document.
+        let constraints =
+            (Schema.text
+             |> Schema.constrainAll
+                 [ Constraint.present
+                   Constraint.maxLength 20
+                   Constraint.email
+                   Constraint.pattern "^[^@]+@example.com$"
+                   Constraint.oneOf [ "ada@example.com"; "grace@example.com" ] ]
+             |> Schema.constraints)
+            @ (Schema.``int`` |> Schema.constrain (Constraint.between 1 10) |> Schema.constraints)
+            @ (Schema.listWith Schema.``int``
+               |> Schema.constrainAll [ Constraint.lengthBetween 1 3; Constraint.distinct ]
+               |> Schema.constraints)
 
-        let numberConstraints =
-            Schema.``int`` |> Schema.constrain (Constraint.between 1 10) |> Schema.constraints
+        let atoms = constraints |> List.collect ConstraintDescription.atoms
 
-        let listConstraints =
-            Schema.listWith Schema.int
-            |> Schema.constrainAll [ Constraint.lengthBetween 1 3; Constraint.distinct ]
-            |> Schema.constraints
-
-        let constraints = textConstraints @ numberConstraints @ listConstraints
+        let render project = atoms |> List.choose project
 
         let diagnostics =
-            constraints
-            |> List.choose (Constraint.metadata >> function
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> Some "SchemaError.Blank"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"SchemaError.InvalidLength maxLength {maximum}"
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "SchemaError.InvalidFormat email"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"SchemaError.InvalidFormat {pattern}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) ->
-                    Some(sprintf "SchemaError.NotOneOf %s" (String.concat "|" choices))
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
-                    Some $"SchemaError.OutOfRange {minimum}-{maximum}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum)) ->
-                    Some $"SchemaError.InvalidLength {minimum}-{maximum}"
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "SchemaError.Duplicate"
+            render (function
+                | PresenceAtom Present -> Some "presence"
+                | CardinalityAtom(Cardinality.Maximum maximum) -> Some $"maxLength {maximum}"
+                | FormatAtom Email -> Some "email"
+                | FormatAtom(Pattern pattern) -> Some $"pattern {pattern}"
+                | MembershipAtom(OneOf choices) -> Some $"oneOf {choices.Length}"
+                | RelationAtom(Within(minimum, maximum)) ->
+                    Some $"within {ConstraintValue.render minimum}-{ConstraintValue.render maximum}"
+                | CardinalityAtom(Cardinality.Between(minimum, maximum)) -> Some $"between {minimum}-{maximum}"
+                | UniquenessAtom -> Some "uniqueness"
                 | _ -> None)
-
-        let jsonSchema =
-            constraints
-            |> List.choose (Constraint.metadata >> function
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> Some "required"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"maxLength={maximum}"
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "format=email"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"pattern={pattern}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> Some(sprintf "enum=%s" (String.concat "," choices))
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
-                    Some $"minimum={minimum};maximum={maximum}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum)) ->
-                    Some $"minItems={minimum};maxItems={maximum}"
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "uniqueItems=true"
-                | _ -> None)
-
-        let ui =
-            constraints
-            |> List.choose (Constraint.metadata >> function
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> Some "required"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $"maxlength={maximum}"
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> Some "input=email"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> Some $"pattern={pattern}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> Some $"choices={choices.Length}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) ->
-                    Some $"min={minimum};max={maximum}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum)) ->
-                    Some $"min-items={minimum};max-items={maximum}"
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> Some "unique-items"
-                | _ -> None)
-
-        let docs =
-            constraints
-            |> List.map (Constraint.metadata >> function
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) -> "Required"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> $"Maximum length {maximum}"
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Email) -> "Email format"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Pattern pattern) -> $"Matches {pattern}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.OneOf choices) -> sprintf "One of %s" (String.concat ", " choices)
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.Between(minimum, maximum)) -> $"Between {minimum} and {maximum}"
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.LengthBetween(minimum, maximum)) -> $"Between {minimum} and {maximum} items"
-                | (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Distinct) -> "No duplicates"
-                | other -> string other)
 
         test <@
             diagnostics =
-                [ "SchemaError.Blank"
-                  "SchemaError.InvalidLength maxLength 20"
-                  "SchemaError.InvalidFormat email"
-                  "SchemaError.InvalidFormat ^[^@]+@example.com$"
-                  "SchemaError.NotOneOf ada@example.com|grace@example.com"
-                  "SchemaError.OutOfRange 1-10"
-                  "SchemaError.InvalidLength 1-3"
-                  "SchemaError.Duplicate" ]
+                [ "presence"
+                  "maxLength 20"
+                  "email"
+                  "pattern ^[^@]+@example.com$"
+                  "oneOf 2"
+                  "within 1-10"
+                  "between 1-3"
+                  "uniqueness" ]
         @>
+
+        // Every atom has a stable message key and a default English phrase, derived from one catalogue.
+        test <@ atoms |> List.map ConstraintAtom.key |> List.forall (fun key -> key.StartsWith "constraint.") @>
+        test <@ atoms |> List.forall (ConstraintAtom.render >> String.IsNullOrWhiteSpace >> not) @>
+
+        // The failure a constraint reports carries the same atom its description carries, so identity never has
+        // to be reconstructed from a string.
+        let failure = "" |> Constraint.check (Constraint.maxLength 20: Constraint<string>) 
+        test <@ failure = Ok() @>
+
+        let rejected = String.replicate 21 "a" |> Constraint.check (Constraint.maxLength 20: Constraint<string>)
+
         test <@
-            jsonSchema =
-                [ "required"
-                  "maxLength=20"
-                  "format=email"
-                  "pattern=^[^@]+@example.com$"
-                  "enum=ada@example.com,grace@example.com"
-                  "minimum=1;maximum=10"
-                  "minItems=1;maxItems=3"
-                  "uniqueItems=true" ]
-        @>
-        test <@
-            ui =
-                [ "required"
-                  "maxlength=20"
-                  "input=email"
-                  "pattern=^[^@]+@example.com$"
-                  "choices=2"
-                  "min=1;max=10"
-                  "min-items=1;max-items=3"
-                  "unique-items" ]
-        @>
-        test <@
-            docs =
-                [ "Required"
-                  "Maximum length 20"
-                  "Email format"
-                  "Matches ^[^@]+@example.com$"
-                  "One of ada@example.com, grace@example.com"
-                  "Between 1 and 10"
-                  "Between 1 and 3 items"
-                  "No duplicates" ]
+            rejected =
+                Error(Atomic(Expected(CardinalityAtom(Cardinality.Maximum 20), Some(ConstraintValue.Integer 21L))))
         @>
 
     [<Fact>]
@@ -1180,8 +1043,8 @@ module ApiShapeTests =
                 test <@ model.Constructor.ArgumentCount = 2 @>
                 test <@ model.Fields |> List.map (fun field -> ExternalFieldName.value field.ExternalName) = [ "name"; "age" ] @>
                 test <@ model.Fields |> List.map (fun field -> FieldOrder.value field.Order) = [ 0; 1 ] @>
-                test <@ model.Fields[0].ValueSchema.Constraints |> List.map Constraint.code = [ "present"; "present" ] @>
-                test <@ model.Fields[0].Constraints = [] @>
+                test <@ model.Fields[0].ValueSchema.Rules |> SchemaRule.descriptions |> List.collect ConstraintDescription.atoms = [ PresenceAtom Present; PresenceAtom Present ] @>
+                test <@ model.Fields[0].Rules = [] @>
                 ConstructorApplication.apply model.Constructor (values |> List.toArray)
             | _ -> failwith "Expected public schema API to create a model definition."
 
@@ -1363,311 +1226,132 @@ module ApiShapeTests =
         raises<ArgumentException> <@ FieldOrder.create -1 |> ignore @>
 
     [<Fact>]
-    let ``check take binderror diagnostics and ref helpers keep expected public shape`` () =
-        assertCheckAliasShape<string> ()
-        assertCheckAliasShape<int> ()
+    let ``the constraint package publishes one value-rule vocabulary and no Check surface`` () =
+        assertConstraintValueShape<string> ()
+        assertConstraintValueShape<int> ()
 
-        let checkProgram : Check<string> =
-            fun value ->
-                if String.IsNullOrWhiteSpace value then Error [ Blank ]
-                else Ok ()
+        let constraintAssembly = typeof<Violation>.Assembly
+        test <@ constraintAssembly.GetName().Name = "Axial.Constraint" @>
 
-        let checkFunction : string -> Result<unit, CheckFailure list> = checkProgram
-        test <@ checkFunction "Ada" = Ok () @>
-        test <@ checkFunction "" = Error [ Blank ] @>
+        let publicTypeNames =
+            constraintAssembly.GetTypes()
+            |> Array.filter _.IsPublic
+            |> Array.map _.FullName
+            |> Set.ofArray
 
-        typeof<CheckFailure>
-        |> publicUnionCaseNames
-        |> assertContainsAll
-            [ "Blank"
-              "InvalidFormat"
-              "InvalidLength"
-              "OutOfRange"
-              "InvalidLength"
-              "NotOneOf"
-              "Duplicate"
-              "Custom" ]
+        // Removed outright, with no compatibility alias: a second nearly identical catalogue is the problem this
+        // design exists to remove.
+        [ "Axial.Constraint.Check"
+          "Axial.Constraint.CheckModule"
+          "Axial.Constraint.CheckFailure"
+          "Axial.Constraint.CheckFailureResources"
+          "Axial.Constraint.CheckLengthExpectation"
+          "Axial.Constraint.CheckRangeExpectation"
+          "Axial.Constraint.CheckDSL"
+          "Axial.Constraint.Predicate"
+          "Axial.Constraint.PredicateModule"
+          "Axial.Constraint.PredicateExtensions"
+          "Axial.Constraint.ConstraintMetadata"
+          "Axial.Constraint.ConstraintArgument"
+          "Axial.Constraint.ConstraintDetails" ]
+        |> List.iter (fun removed -> test <@ not (publicTypeNames |> Set.contains removed) @>)
 
-        let forbiddenCheckFailureFieldNames =
-            set [ "Path"; "Raw"; "Data"; "Input"; "Schema"; "Diagnostic"; "Diagnostics" ]
+        test <@ not (AppDomain.CurrentDomain.GetAssemblies() |> Array.exists (fun assembly -> assembly.GetName().Name = "Axial.Check")) @>
 
-        let forbiddenCheckFailureTypeNamespaces =
-            [ "Axial.Schema"; "Axial.Refined" ]
-
-        let publicCheckFailureFields =
-            FSharpType.GetUnionCases(typeof<CheckFailure>, BindingFlags.Public)
-            |> Array.collect (fun caseInfo ->
-                caseInfo.GetFields()
-                |> Array.map (fun propertyInfo -> caseInfo.Name, propertyInfo.Name, propertyInfo.PropertyType))
-
-        let forbiddenFields =
-            publicCheckFailureFields
-            |> Array.filter (fun (_, fieldName, fieldType) ->
-                Set.contains fieldName forbiddenCheckFailureFieldNames
-                || forbiddenCheckFailureTypeNamespaces
-                   |> List.exists (fun namespaceName ->
-                       let fullName = fieldType.FullName
-
-                       not (isNull fullName) && fullName.StartsWith(namespaceName, StringComparison.Ordinal)))
-
-        test <@ Array.isEmpty forbiddenFields @>
-
-        let checkModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.Check"
-
-        let checkMembers =
-            checkModule
+        let constraintMembers =
+            moduleTypeFromAssembly "Axial.Constraint" "Axial.Constraint.Constraint"
             |> publicStaticMemberNames
 
-        let topLevelStructuredCheckNames =
-            [ "all"
+        constraintMembers
+        |> assertContainsAll
+            [ // execution
+              "test"
+              "check"
+              "guard"
+              "inspect"
+              // composition
+              "all"
               "any"
-              "not"
-              "mapFailure"
+              "optional"
+              "notWith"
+              "custom"
+              "customWith"
+              "contramap"
+              "describe"
+              // catalogue
               "present"
-              "empty"
-              "notEmpty"
+              "blank"
               "length"
               "minLength"
               "maxLength"
               "lengthBetween"
               "email"
-              "matches"
+              "trimmed"
+              "numeric"
+              "alphanumeric"
+              "pattern"
               "oneOf"
-              "between"
+              "contains"
+              "distinct"
+              "equalTo"
+              "notEqualTo"
               "greaterThan"
               "lessThan"
               "atLeast"
               "atMost"
-              "positive"
-              "nonNegative"
-              "negative"
-              "nonPositive"
-              "distinct"
-              "contains"
-              "single"
-              "atMostOne"
-              "atLeastOne"
-              "moreThanOne"
-              "equalTo"
-              "notEqualTo" ]
-
-        checkMembers
-        |> assertContainsAll topLevelStructuredCheckNames
-
-        checkModule
-        |> assertMethodsReturnCheckResult topLevelStructuredCheckNames
-
-        checkModule
-        |> assertNoMethodsReturnBool
-
-        let checkStringModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckModule+String"
-
-        checkStringModule
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "present"; "minLength"; "maxLength"; "lengthBetween"; "length"; "exactLength"; "email"; "matches"; "oneOf" ]
-
-        checkStringModule
-        |> assertMethodsReturnCheckResult [ "present"; "minLength"; "maxLength"; "lengthBetween"; "length"; "exactLength"; "email"; "matches"; "oneOf" ]
-
-        let checkNumberModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckModule+Number"
-
-        checkNumberModule
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost"; "positive"; "nonNegative"; "negative"; "nonPositive" ]
-
-        checkNumberModule
-        |> assertMethodsReturnCheckResult [ "between"; "greaterThan"; "lessThan"; "atLeast"; "atMost"; "positive"; "nonNegative"; "negative"; "nonPositive" ]
-
-        let checkSeqModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckModule+Seq"
-
-        checkSeqModule
-        |> publicStaticMemberNames
-        |> assertContainsAll
-            [ "empty"
-              "notEmpty"
-              "count"
-              "minCount"
-              "maxCount"
-              "countBetween"
-              "noDuplicates"
-              "contains"
-              "single"
-              "atMostOne"
-              "atLeastOne"
-              "moreThanOne" ]
-
-        checkSeqModule
-        |> publicStaticMemberNames
-        |> assertContainsNone [ "distinct" ]
-
-        checkSeqModule
-        |> assertMethodsReturnCheckResult
-            [ "empty"
-              "notEmpty"
-              "count"
-              "minCount"
-              "maxCount"
-              "countBetween"
-              "noDuplicates"
-              "contains"
-              "single"
-              "atMostOne"
-              "atLeastOne"
-              "moreThanOne" ]
-
-        assertModuleAbsentFromAssembly "Axial.Check" "Axial.Check.CheckModule+Collection"
-
-        let checkOptionModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckModule+Option"
-
-        checkOptionModule
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "some"; "none" ]
-
-        checkOptionModule
-        |> assertMethodsReturnCheckResult [ "some"; "none" ]
-
-        let checkValueOptionModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckModule+ValueOption"
-
-        checkValueOptionModule
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "some"; "none"; "present"; "empty"; "notEmpty" ]
-
-        checkValueOptionModule
-        |> assertMethodsReturnCheckResult [ "some"; "none"; "present"; "empty"; "notEmpty" ]
-
-        let checkNullableModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckModule+Nullable"
-
-        checkNullableModule
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "hasValue"; "hasNoValue"; "present"; "empty"; "notEmpty" ]
-
-        checkNullableModule
-        |> assertMethodsReturnCheckResult [ "hasValue"; "hasNoValue"; "present"; "empty"; "notEmpty" ]
-
-        let checkResultModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckModule+Result"
-
-        checkResultModule
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "ok"; "error" ]
-
-        checkResultModule
-        |> assertMethodsReturnCheckResult [ "ok"; "error" ]
-
-        let checkNestedTypeNames =
-            Assembly.Load "Axial.Check"
-            |> _.GetTypes()
-            |> Array.choose (fun targetType ->
-                match targetType.FullName with
-                | null -> None
-                | fullName when fullName.StartsWith("Axial.Check.CheckModule+", StringComparison.Ordinal) ->
-                    Some targetType.Name
-                | _ -> None)
-            |> Set.ofArray
-
-        checkNestedTypeNames
-        |> assertContainsAll [ "Present"; "Empty"; "NotEmpty" ]
-
-        checkNestedTypeNames
-        |> assertContainsNone
-            [ "Distinct"
-              "Count"
-              "MinCount"
-              "MaxCount"
-              "Email"
-              "Matches"
-              "OneOf"
-              "Between"
-              "GreaterThan"
-              "LessThan"
-              "AtLeast"
-              "AtMost"
-              "Ok"
-              "Error"
-              "EqualTo"
-              "NotEqualTo" ]
-
-        checkMembers
-        |> assertContainsNone
-            [ "isTrue"
-              "ok"
-              "error"
-              "isFalse"
-              "isSome"
-              "isNone"
-              "isValueSome"
-              "isValueNone"
-              "hasValue"
-              "hasNoValue"
-              "notNull"
-              "isNull"
-              "isOk"
-              "isError"
-              "isEmpty"
-              "notNullOrEmpty"
-              "nullOrEmpty"
-              "notEmptyString"
-              "emptyString"
-              "notBlank"
-              "blank"
-              "hasMinLength"
-              "hasMaxLength"
-              "hasExactLength"
-              "matchesRegex"
-              "isEmail"
-              "isNumeric"
-              "isAlphaNumeric"
-              "hasCount"
-              "isSingle"
-              "hasDuplicates"
-              "hasNoDuplicates"
-              "negate"
-              "fromPredicate"
-              "fromTry"
-              "fromChoice"
-              "both"
-              "either"
-              "whenTrue"
-              "whenFalse"
-              "whenNotBlank"
-              "takeSome"
-              "orError" ]
-
-        moduleTypeFromAssembly "Axial.Check" "Axial.Check.CheckDSL"
-        |> publicStaticMemberNames
-        |> assertContainsAll [ "guard"; "orError"; "mapError" ]
-
-        let predicateModule =
-            moduleTypeFromAssembly "Axial.Check" "Axial.Check.Predicate"
-
-        predicateModule
-        |> publicStaticMemberNames
-        |> assertContainsNone [ "distinct" ]
-
-        predicateModule
-        |> assertMethodsReturnBool [ "present"; "empty"; "notEmpty" ]
-
-        moduleTypeFromAssembly "Axial.Check" "Axial.Check.PredicateModule+Reference"
-        |> assertMethodsReturnBool [ "isNull"; "notNull" ]
-
-        moduleTypeFromAssembly "Axial.Check" "Axial.Check.PredicateModule+Number"
-        |> assertMethodsReturnBool
-            [ "greaterThan"
-              "lessThan"
-              "atLeast"
-              "atMost"
               "between"
-              "positive"
-              "nonNegative"
-              "negative"
-              "nonPositive" ]
+              "multipleOf"
+              "finite"
+              "finite32" ]
+
+        // `not` is opaque-only and `validate` belongs to the larger process, not to a constraint.
+        constraintMembers |> assertContainsNone [ "not"; "validate"; "define"; "code"; "metadata"; "arguments"; "fromCheck" ]
+
+        // `Violation` names the union; the module carries the compiled suffix.
+        let violationMembers =
+            moduleTypeFromAssembly "Axial.Constraint" "Axial.Constraint.ViolationModule"
+            |> publicStaticMemberNames
+
+        violationMembers
+        |> assertContainsAll
+            [ "tryExpectation"; "tryActual"; "tryDescription"; "children"; "flatten"; "render"; "toMessageTree"; "conjoin"; "alternatives" ]
+
+        // A string identity never appears on a violation; keys exist only as a rendering projection.
+        violationMembers |> assertContainsNone [ "code"; "kind"; "fold"; "describe"; "generic" ]
+
+        typeof<Violation> |> publicUnionCaseNames |> (=) (set [ "Atomic"; "All"; "Any" ]) |> (fun equal -> test <@ equal @>)
+        typeof<AtomicViolation> |> publicUnionCaseNames |> (=) (set [ "Expected"; "Described"; "UnsupportedOperand" ]) |> (fun equal -> test <@ equal @>)
+
+        // A violation is plain data: no closure and no description tree is reachable from it.
+        let forbiddenViolationTypeNames = [ "Axial.Constraint.Constraint`1"; "Axial.Constraint.ConstraintDescription" ]
+
+        let reachableFieldTypes =
+            [ typeof<Violation>; typeof<AtomicViolation> ]
+            |> List.collect (fun unionType ->
+                FSharpType.GetUnionCases(unionType, BindingFlags.Public)
+                |> Array.collect (fun caseInfo -> caseInfo.GetFields() |> Array.map _.PropertyType)
+                |> List.ofArray)
+
+        let forbidden =
+            reachableFieldTypes
+            |> List.filter (fun fieldType ->
+                let fullName = fieldType.FullName
+
+                (not (isNull fullName) && List.contains fullName forbiddenViolationTypeNames)
+                || (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() = typedefof<FSharpFunc<_, _>>))
+
+        test <@ List.isEmpty forbidden @>
+
+        // The DSL is optional vocabulary over the same values, with the documented collision omissions.
+        let dslMembers =
+            moduleTypeFromAssembly "Axial.Constraint" "Axial.Constraint.ConstraintDSL"
+            |> publicStaticMemberNames
+            |> Set.filter (fun name -> not (name.Contains "$"))
+
+        dslMembers
+        |> assertContainsAll [ "present"; "blank"; "optional"; "minLength"; "notWith"; "test"; "guard"; "orError"; "mapError" ]
+
+        dslMembers |> assertContainsNone [ "check"; "all"; "any"; "length"; "between"; "contains"; "distinct" ]
 
         // String, Option, ValueOption, Nullable, Result, and sequence predicates are exposed as extension
         // members directly on those types (see PredicateExtensions), not as PredicateModule submodules.
@@ -1756,7 +1440,9 @@ module ApiShapeTests =
 
         moduleTypeFromAssembly "Axial.Refined" "Axial.Refined.Refinement"
         |> publicStaticMemberNames
-        |> assertContainsAll [ "define"; "defineAll"; "defineWithCheck"; "create"; "underlying"; "constraints" ]
+        // One constraint, one constructor: several rules compose with `Constraint.all` before the refinement is
+        // defined, and an arbitrary predicate is `Constraint.custom`.
+        |> assertContainsAll [ "define"; "create"; "underlying"; "constraint'" ]
 
         moduleType typeof<Flow<unit, unit, unit>> "Axial.Flow.Bind"
         |> publicStaticMemberNames

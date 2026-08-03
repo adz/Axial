@@ -1,7 +1,7 @@
 ---
 title: "Refined.Bounded.clamp"
 linkTitle: "clamp"
-weight: 2728
+weight: 2727
 type: docs
 ---
 

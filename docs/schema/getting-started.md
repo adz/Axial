@@ -273,8 +273,8 @@ Which to reach for:
 
 Schema will not take metadata without an executable check behind it, so what an inspector reports is always what
 parsing enforces. Constraint names come from
-[Check constraints]({{< relref "/error-handling/check/constraints/" >}}); see
-[Refined Schemas](../refined-values/) for application-defined constraints via `fromCheck`.
+[Constraints]({{< relref "/error-handling/constraint/constraints/" >}}); see
+[Refined Schemas](../refined-values/) for application-defined constraints.
 
 ## 4. A private model behind a checked constructor
 

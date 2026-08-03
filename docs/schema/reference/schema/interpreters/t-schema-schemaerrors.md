@@ -13,4 +13,4 @@ One or more accumulated schema failures.
 </div>
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L83-83)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaErrors.fs#L84-84)

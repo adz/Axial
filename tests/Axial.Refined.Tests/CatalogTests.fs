@@ -1,14 +1,14 @@
 namespace Axial.Refined.Tests
 
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 open Swensen.Unquote
 open Xunit
 
 module CatalogTests =
     [<Fact>]
-    let ``named refined constructors return check failures directly`` () =
-        test <@ Refine.nonBlankString " " = Error [ Blank ] @>
+    let ``named refined constructors return the constraint violation directly`` () =
+        test <@ Refine.nonBlankString " " = Error(Atomic(Expected(PresenceAtom Present, None))) @>
 
     [<Fact>]
     let ``collection refinements use canonical concrete representations`` () =

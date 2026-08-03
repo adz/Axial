@@ -2,12 +2,13 @@ namespace Axial.Tests
 
 open Axial
 
-open Axial.Check
+open Axial.Constraint
 
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module ManySchemaParseTests =
     type private ContactMethod = { Kind: string; Value: string }
@@ -145,7 +146,7 @@ module ManySchemaParseTests =
         test
             <@
                 parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts" ]
-                                    Error = SchemaError.InvalidLength(CheckLengthExpectation.MinimumLength 1, Some 0) } ]
+                                    Error = SchemaError.Violation(Atomic(Expected(CardinalityAtom(Cardinality.Minimum 1), Some(ConstraintValue.Integer 0L)))) } ]
             @>
 
     [<Fact>]
@@ -166,7 +167,7 @@ module ManySchemaParseTests =
         test
             <@
                 parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts" ]
-                                    Error = SchemaError.InvalidLength(CheckLengthExpectation.MaximumLength 2, Some 3) } ]
+                                    Error = SchemaError.Violation(Atomic(Expected(CardinalityAtom(Cardinality.Maximum 2), Some(ConstraintValue.Integer 3L)))) } ]
             @>
 
     [<Fact>]
@@ -239,7 +240,7 @@ module ManySchemaParseTests =
 
         test
             <@ parsed.Errors = [ { Path = TestPath.fromLegacy [ PathSegment.Name "values"; PathSegment.Index 1 ]
-                                   Error = SchemaError.Blank } ] @>
+                                   Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ] @>
 
     [<Fact>]
     let ``parse accumulates errors from every failing item instead of stopping at the first`` () =
@@ -262,9 +263,9 @@ module ManySchemaParseTests =
                 |> List.sortBy (fun diagnostic -> diagnostic.Path)
                 |> (=)
                     [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 0; PathSegment.Name "kind" ]
-                        Error = SchemaError.Blank }
+                        Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) }
                       { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
-                        Error = SchemaError.Blank } ]
+                        Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ]
             @>
 
     [<Fact>]
@@ -309,7 +310,7 @@ module ManySchemaParseTests =
                 |> List.sortBy (fun diagnostic -> diagnostic.Path)
                 |> (=)
                     [ { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "kind" ]
-                        Error = SchemaError.Blank }
+                        Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) }
                       { Path = TestPath.fromLegacy [ PathSegment.Name "contacts"; PathSegment.Index 1; PathSegment.Name "value" ]
-                        Error = SchemaError.Blank } ]
+                        Error = SchemaError.Violation(Atomic(Expected(PresenceAtom Present, None))) } ]
             @>

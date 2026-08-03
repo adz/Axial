@@ -3,6 +3,8 @@
 // description — behavior lives in interpreters (parsing, checking, codecs, JSON Schema, docs).
 namespace Axial.Schema
 
+open Axial.Constraint
+
 open System
 open System.Collections.Generic
 
@@ -37,7 +39,7 @@ type Schema<'model> internal (definition: SchemaDefinition<'model>, recordPlan: 
         | ModelDefinition model ->
             { Shape = NestedValueDefinition(ModelSchemaErasure.erase model, box this)
               Format = None
-              Constraints = []
+              Rules = []
               Description = None
               Default = None }
         | PendingDefinition -> invalidOp "Expected a completed schema definition."

@@ -2,7 +2,7 @@ namespace Axial.ReferenceApp
 
 open System
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 
 /// Domain values use private representations so successful construction is the durable proof.
@@ -88,7 +88,8 @@ module Workspace =
         |> List.choose _.Assignee
         |> Collection.traverseResult (fun assignee ->
             memberIds
-            |> Check.Seq.contains assignee
+            |> Set.toList
+            |> Constraint.check (Constraint.contains assignee)
             |> Result.orError (DomainError.AssigneeNotMember assignee))
         |> Result.map (fun _ -> { Id = id; Name = name; Members = members; Items = items })
 

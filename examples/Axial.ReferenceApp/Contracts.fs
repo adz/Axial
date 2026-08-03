@@ -2,7 +2,7 @@ namespace Axial.ReferenceApp
 
 open System
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 open Axial.Schema
 
@@ -33,16 +33,17 @@ module ProductionAdmissionError =
 [<RequireQualifiedAccess>]
 module Contracts =
     open Axial.Schema.Syntax
+    open Axial.Constraint.ConstraintDSL
 
     let private requiredText create inspect maximum : Schema<'value> =
+        let constraint' = Constraint.all [ Constraint.present; Constraint.maxLength maximum ]
+
         let refinement =
-            Refinement.defineAll
-                [ Axial.Check.Constraint.present; Axial.Check.Constraint.maxLength maximum ]
-                (fun value -> create value |> Result.defaultWith (CheckFailure.describeAll >> failwith))
+            Refinement.define
+                constraint'
+                (fun value -> create value |> Result.defaultWith (Violation.render >> failwith))
                 inspect
-        Schema.text
-        |> Schema.constrainAll [ Constraint.present; Constraint.maxLength maximum ]
-        |> Schema.refine refinement
+        Schema.text |> Schema.constrain constraint' |> Schema.refine refinement
 
     let workspaceName = requiredText WorkspaceName.create WorkspaceName.value 80
     let personName = requiredText PersonName.create PersonName.value 80
@@ -103,7 +104,7 @@ module Contracts =
                 withSchema (Schema.option Schema.guid)
             }
             field "state" (fun (value: WorkItemV2) -> value.state) {
-                constrain (oneOf [ "todo"; "done" ])
+                constrain (Constraint.oneOf [ "todo"; "done" ])
             }
             construct (fun id title assignee state ->
                 { id = id; title = title; assignee = assignee; state = state })

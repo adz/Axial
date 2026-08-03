@@ -15,7 +15,7 @@ open OpenTelemetry.Metrics
 open OpenTelemetry.Resources
 open OpenTelemetry.Trace
 open Axial.Result
-open Axial.Check
+open Axial.Constraint
 open Axial.Flow
 open Axial.Flow.FileSystem
 open Axial.Refined
@@ -34,7 +34,7 @@ let private renderError = function
         |> SchemaErrors.toList
         |> List.map (fun issue -> $"{Path.format issue.Path}: {SchemaError.render issue.Error}")
         |> String.concat "; "
-    | AppError.InvalidValue failures -> CheckFailure.describeAll failures
+    | AppError.InvalidValue failures -> Violation.render failures
     | AppError.ProductionRejected error -> ProductionAdmissionError.describe error
     | error -> string error
 
@@ -118,17 +118,21 @@ li { margin: .75rem 0; } code { background: #eee; padding: .15rem .3rem; }
 </body></html>"""
 
     let private attributes (field: FieldDescription) =
-        let metadata =
-            (field.Constraints |> List.map _.Metadata)
-            @ (field.Schema.Constraints |> List.map _.Metadata)
+        let atoms =
+            field.Constraints @ field.Schema.Constraints
+            |> List.collect ConstraintDescription.atoms
 
         let required =
-            if metadata |> List.contains (ConstraintMetadata.ValueConstraint Axial.Check.ConstraintMetadata.Present) then " required" else ""
+            if field.Supply = Some Supply.Supplied || atoms |> List.contains (PresenceAtom Present) then
+                " required"
+            else
+                ""
 
         let maxLength =
-            metadata
+            atoms
             |> List.tryPick (function
-                | ConstraintMetadata.ValueConstraint(Axial.Check.ConstraintMetadata.MaxLength maximum) -> Some $" maxlength=\"{maximum}\""
+                | CardinalityAtom(Cardinality.Maximum maximum)
+                | CardinalityAtom(Cardinality.Between(_, maximum)) -> Some $" maxlength=\"{maximum}\""
                 | _ -> None)
             |> Option.defaultValue ""
 

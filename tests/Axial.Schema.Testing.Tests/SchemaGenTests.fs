@@ -1,16 +1,19 @@
 namespace Axial.Schema.Testing.Tests
 
+open Axial.Constraint
 open Axial
 
 open Axial.Schema
 open Axial.Schema.Testing
 open FsCheck.FSharp
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 module SchemaGenTests =
     type Contact = { Email: string }
+    type Bounded = { Age: int }
     type Kind = Personal | Work
     type Profile = { Age: int; Score: decimal; Active: bool; Contact: Contact; Aliases: string list; Labels: Map<string, string>; Kind: Kind; Note: string option }
     type Category = { Name: string; Children: Category list }
@@ -81,6 +84,54 @@ module SchemaGenTests =
         test <@ models |> Array.forall (fun (model: Profile) -> model.Contact.Email.Contains "@") @>
 
     [<Fact>]
+    let ``an equality rule pins the generated value`` () =
+        // The satisfying population is exactly one value, so the generator emits the operand rather than
+        // ignoring the rule and drawing at random.
+        let textEquality =
+            schema<Contact> {
+                field "email" _.Email { withSchema (Schema.text |> Schema.constrain (Constraint.equalTo "exact")) }
+                construct (fun email -> { Email = email })
+            }
+
+        let generated =
+            SchemaGen.raw textEquality
+            |> Result.defaultWith (failwithf "Expected equality to be generatable, but got %A")
+            |> Gen.sample 20
+
+        test <@ generated |> Array.forall (fun value -> value = Data.objectOfMap (Map.ofList [ "email", Data.Text "exact" ])) @>
+
+        // And the generated value survives a round trip through the schema it came from.
+        test <@ generated |> Array.forall (Schema.parse textEquality >> Result.isOk) @>
+
+    [<Fact>]
+    let ``a rule the generator would ignore is reported rather than silently violated`` () =
+        // Generatability is decided per shape-and-atom pairing, not per atom alone. `atLeast` is the ordering
+        // comparison, so on text it means "sorts at or after \"m\"" — not a length; that is `minLength`. The
+        // numeric generators can honour ordering by picking a number in range, but the text generator has no
+        // notion of sort order, so claiming support here would emit strings that violate the rule.
+        let textOrdering =
+            schema<Contact> {
+                field "email" _.Email { withSchema (Schema.text |> Schema.constrain (Constraint.atLeast "m")) }
+                construct (fun email -> { Email = email })
+            }
+
+        match SchemaGen.raw textOrdering with
+        | Error error -> test <@ error = SchemaGenerationError.UnsupportedConstraint([ "email" ], "constraint.relation.atLeast") @>
+        | Ok _ -> failwith "Expected text ordering to be reported as unsupported."
+
+        // The numeric generators do honour bounds, so the same family stays supported where it is real.
+        let numericBound =
+            schema<Bounded> {
+                // Annotated because `Profile` also has an `Age: int` label.
+                field "age" (fun (value: Bounded) -> value.Age) {
+                    withSchema (Schema.``int`` |> Schema.constrain (Constraint.atLeast 18))
+                }
+                construct (fun age -> { Bounded.Age = age })
+            }
+
+        test <@ SchemaGen.raw numericBound |> Result.isOk @>
+
+    [<Fact>]
     let ``pattern constraints require a caller-owned generator`` () =
         let schema =
             schema<Contact> {
@@ -91,7 +142,7 @@ module SchemaGenTests =
             }
 
         match SchemaGen.raw schema with
-        | Error error -> test <@ error = SchemaGenerationError.UnsupportedConstraint([ "email" ], "pattern") @>
+        | Error error -> test <@ error = SchemaGenerationError.UnsupportedConstraint([ "email" ], "constraint.format.pattern") @>
         | Ok _ -> failwith "Expected pattern generation to require a custom generator."
 
         let custom = Map.ofList [ "email", Gen.constant (Data.Text "AXIAL") ]

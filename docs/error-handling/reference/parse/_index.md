@@ -3,7 +3,7 @@ title: "Parse"
 weight: 500
 ---
 
-`Axial.Parse` decodes serialized strings into primitive F# values. Every named parser returns `Result<'value, ParseError>` and remains independent of Check, Refined, Result, and Schema.
+`Axial.Parse` decodes serialized strings into primitive F# values. Every named parser returns `Result<'value, ParseError>` and remains independent of Constraint, Refined, Result, and Schema.
 
 ## Error
 

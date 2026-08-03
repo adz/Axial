@@ -20,4 +20,4 @@ Describes a 32-bit integer.
 | <code><span><a href="t-schema-schema.md">Schema</a>&lt;int&gt;</span></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L14-14)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/SchemaApi.fs#L16-16)

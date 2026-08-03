@@ -25,4 +25,4 @@ Describes a standalone schema field as inspectable field metadata.
 | <code><a href="t-schema-fielddescription.md">FieldDescription</a></code> |  |
 
 
-[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L257-257)
+[Source](https://github.com/adz/Axial/blob/main/src/Axial.Schema/Inspection.fs#L268-268)

@@ -1,13 +1,15 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial
 
 open System
 open Axial.Refined
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Proves that <c>Schema.convert</c> describes a named refined/domain value as a portable
@@ -74,8 +76,8 @@ module SchemaRefinedValueTests =
         let schema =
             Schema.text
             |> Schema.refine
-                (Refinement.defineWithCheck
-                    (fun _ -> Error [ Axial.Check.CheckFailure.Custom "email.blocked" ])
+                (Refinement.define
+                    (Constraint.custom "must not be a blocked address" (fun _ -> false))
                     Email.create
                     Email.value)
 
@@ -86,7 +88,7 @@ module SchemaRefinedValueTests =
         | Error diagnostics ->
             let errors = diagnostics |> SchemaErrors.toList
             test <@ errors |> List.map _.Path = [ Path.root ] @>
-            test <@ errors |> List.map _.Error = [ SchemaError.Custom("email.blocked", None) ] @>
+            test <@ errors |> List.map _.Error = [ SchemaError.Violation(Atomic(Described("must not be a blocked address", None))) ] @>
 
     [<Fact>]
     let ``refined retains the raw value schema as inspectable metadata`` () =
@@ -107,21 +109,20 @@ module SchemaRefinedValueTests =
     let ``refined value schemas start with no constraints and accept constraints like any value schema`` () =
         test <@ Schema.constraints Email.schema = [] @>
 
-        let required = Email.schema |> Schema.constrain Constraint.supplied
-        test <@ Schema.constraints required |> List.map Constraint.code = [ "supplied" ] @>
+        let required = Email.schema |> Schema.mustSupply
+        test <@ Schema.supply required = Some Supply.Supplied @>
 
     [<Fact>]
     let ``refined value schemas compose with an object shape like a primitive value schema`` () =
         let emailField =
-            Field.create "email" (fun (contact: Contact) -> contact.Email) Email.schema
-            |> Field.withConstraint Constraint.supplied
+            Field.create "email" (fun (contact: Contact) -> contact.Email) (Email.schema |> Schema.mustSupply)
 
         let nameField = Field.create "name" (fun (contact: Contact) -> contact.Name) Schema.text
 
         let schema =
             schema<Contact> {
                 field "email" _.Email {
-                    withSchema (Email.schema |> Schema.constrainAll [ Constraint.supplied ])
+                    withSchema (Email.schema |> Schema.mustSupply)
                 }
                 field "name" _.Name
                 construct (fun email name -> { Email = email; Name = name })
@@ -135,12 +136,12 @@ module SchemaRefinedValueTests =
         match schema.Definition with
         | ModelDefinition model ->
             let email = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "email")
-            test <@ email.ValueSchema.Constraints |> List.map Constraint.code = [ "supplied" ] @>
+            test <@ SchemaRule.trySupply email.ValueSchema.Rules = Some Supply.Supplied @>
         | PendingDefinition -> failwith "Expected public schema API to create a model definition."
 
     [<Fact>]
     let ``model schemas can attach required to a refined field's value schema, matching field "email" _.Email Email.schema { required }`` () =
-        let requiredEmail = Email.schema |> Schema.constrain Constraint.supplied
+        let requiredEmail = Email.schema |> Schema.mustSupply
 
         let schema =
             schema<Contact> {
@@ -154,7 +155,7 @@ module SchemaRefinedValueTests =
         match schema.Definition with
         | ModelDefinition model ->
             let email = model.Fields |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "email")
-            test <@ email.ValueSchema.Constraints |> List.map Constraint.code = [ "supplied" ] @>
+            test <@ SchemaRule.trySupply email.ValueSchema.Rules = Some Supply.Supplied @>
 
             match email.ValueSchema.Shape with
             | RefinedValueDefinition _ -> ()
@@ -223,15 +224,15 @@ module SchemaRefinedValueTests =
 
     [<Fact>]
     let ``refined text value schemas keep raw text constraint metadata inspectable`` () =
-        test <@ Schema.rawConstraints ContactName.schema |> List.map Constraint.code = [ "minLength"; "maxLength" ] @>
+        test <@ Schema.rawConstraints ContactName.schema |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.cardinality.minimum"; "constraint.cardinality.maximum" ] @>
         test <@ Schema.underlyingPrimitiveKind ContactName.schema = PrimitiveValueKind.Text @>
 
         // Constraints attached to the refined schema itself stay separate from the raw schema's constraints.
         test <@ Schema.constraints ContactName.schema = [] @>
 
-        let required = ContactName.schema |> Schema.constrain Constraint.supplied
-        test <@ Schema.constraints required |> List.map Constraint.code = [ "supplied" ] @>
-        test <@ Schema.rawConstraints required |> List.map Constraint.code = [ "minLength"; "maxLength" ] @>
+        let required = ContactName.schema |> Schema.mustSupply
+        test <@ Schema.supply required = Some Supply.Supplied @>
+        test <@ Schema.rawConstraints required |> List.collect ConstraintDescription.atoms |> List.map ConstraintAtom.key = [ "constraint.cardinality.minimum"; "constraint.cardinality.maximum" ] @>
 
     [<Fact>]
     let ``rawConstraints raises for primitive value schemas`` () =

@@ -11,7 +11,7 @@ to yours, and — just as importantly — shows how to decide whether it should 
 all.
 
 ```fsharp
-open Axial.Check
+open Axial.Constraint
 open Axial.Refined
 ```
 

@@ -81,7 +81,7 @@ module Emitter =
         | ExactLength length -> $"Constraint.length ({length})"
         | LengthRange(minimum, maximum) -> $"Constraint.lengthBetween ({minimum}) ({maximum})"
         | Present -> "Constraint.present"
-        | Supplied -> "Constraint.supplied"
+        | Supplied -> failwith "supply is emitted as Schema.mustSupply, not as a constraint"
         | Pattern value -> $"Constraint.pattern (\"{escapeString value}\")"
         | Distinct -> "Constraint.distinct"
         | CheckRef name -> failwith $"check reference '{name}' should have been rejected by the resolver"
@@ -104,12 +104,12 @@ module Emitter =
         | MultipleOf literal -> $"multipleOf {renderNumericLiteral (numericKind fieldType) literal |> argument}"
         | MinSize _
         | MaxSize _ -> sized "minLength" "maxLength" ""
-        | ExactLength length -> $"length {length}"
+        | ExactLength length -> $"Constraint.length {length}"
         | LengthRange(minimum, maximum) -> $"lengthBetween {minimum} {maximum}"
         | Present -> "present"
-        | Supplied -> "supplied"
+        | Supplied -> failwith "supply is emitted as Schema.mustSupply, not as a constraint"
         | Pattern value -> $"pattern \"{escapeString value}\""
-        | Distinct -> "distinct"
+        | Distinct -> "Constraint.distinct"
         | CheckRef name -> failwith $"check reference '{name}' should have been rejected by the resolver"
 
     /// The F# type of a field as written in the record. `refTypeName` maps a
@@ -226,12 +226,16 @@ module Emitter =
         else
             expression
 
+    /// True when the contract declares that boundary input must be supplied. Supply is decided before a typed
+    /// value exists, so it is emitted as a Schema operation rather than as a value constraint.
+    let private declaresSupply (field: FieldDecl) =
+        field.Constraints |> List.exists (fst >> (=) Supplied)
+
     let private fieldLevelConstraints (field: FieldDecl) =
         if field.Optional then
             field.Constraints
             |> List.choose (fun (constraint', _) ->
                 match constraint' with
-                | Supplied
                 | Present -> Some(renderFieldConstraint field.FieldType constraint')
                 | _ -> None)
         else
@@ -241,7 +245,9 @@ module Emitter =
                 | _ -> []
 
             emailPrefix
-            @ (field.Constraints |> List.map (fun (constraint', _) -> renderFieldConstraint field.FieldType constraint'))
+            @ (field.Constraints
+               |> List.filter (fun (constraint', _) -> constraint' <> Supplied)
+               |> List.map (fun (constraint', _) -> renderFieldConstraint field.FieldType constraint'))
 
     /// True when SchemaDefaults can resolve the generated F# field type without an explicit value schema.
     let rec private hasCanonicalSchema fieldType =
@@ -314,6 +320,7 @@ module Emitter =
         line $"namespace {namespaceName}"
         line ""
         line "open Axial"
+        line "open Axial.Constraint"
         line "open Axial.Schema"
 
         for contract in file.Contracts do
@@ -392,6 +399,7 @@ module Emitter =
             line $"module {contractTypeName} ="
             line ""
             line "    open Axial.Schema.Syntax"
+            line "    open Axial.Constraint.ConstraintDSL"
 
             for field in caseFields do
                 line ""
@@ -467,8 +475,9 @@ module Emitter =
                 let getter =
                     $"(fun (value: {contractTypeName}) -> value.{escapeIdent (fsFieldName field)})"
                 let constraints = fieldLevelConstraints field
+                let supplies = declaresSupply field
 
-                if canInferField field && List.isEmpty constraints then
+                if canInferField field && List.isEmpty constraints && not supplies then
                     line $"            field \"{escapeString wire}\" {getter}"
                 else
                     line $"            field \"{escapeString wire}\" {getter} {{"
@@ -476,6 +485,9 @@ module Emitter =
                     if not (canInferField field) then
                         let value = valueExpr refTypeName (contract.ContractName, contract.Version, contractTypeName) field
                         line $"                withSchema {parenthesize value}"
+
+                    if supplies then
+                        line "                mustSupply"
 
                     match constraints with
                     | [] -> ()

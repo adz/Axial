@@ -1,9 +1,11 @@
 namespace Axial.Tests
 
+open Axial.Constraint
 open Axial.Schema
-open Swensen.Unquote
 open Xunit
 open Axial.Schema.Syntax
+open Axial.Constraint.ConstraintDSL
+open Swensen.Unquote
 
 /// <summary>
 /// Proves that a nested model schema can be inspected as portable field metadata from an outer model schema, without
@@ -65,7 +67,7 @@ module SchemaNestedValueTests =
                     withSchema (Schema.text |> Schema.constrain Constraint.present)
                 }
                 field "address" _.Address {
-                    withSchema (addressSchema |> Schema.constrainAll [ Constraint.supplied ])
+                    withSchema (addressSchema |> Schema.mustSupply)
                 }
                 construct (fun name address -> { Name = name; Address = address })
             }
@@ -76,7 +78,7 @@ module SchemaNestedValueTests =
             model.Fields
             |> List.find (fun field -> ExternalFieldName.value field.ExternalName = "address")
 
-        test <@ addressField.ValueSchema.Constraints |> List.map Constraint.code = [ "supplied" ] @>
+        test <@ SchemaRule.trySupply addressField.ValueSchema.Rules = Some Supply.Supplied @>
 
     [<Fact>]
     let ``a nested value schema built from is not a refined or primitive value schema`` () =

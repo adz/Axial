@@ -20,17 +20,17 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   `Axial.Schema`.
 - `Axial.Result` (`src/Axial.Result/`): generic Result combinators, conversions/extraction helpers, and `result { }`
   in the `Axial.Result` namespace. Independent leaf.
-- `Axial.Check` (`src/Axial.Check/`): `Check`, `Constraint`, `Predicate`, and `CheckDSL` in the `Axial.Check` namespace.
+- `Axial.Constraint` (`src/Axial.Constraint/`): `Constraint<'value>`, `Violation`, the `ConstraintDescription` read model, and `ConstraintDSL`, all in the `Axial.Constraint` namespace. One value-rule vocabulary; there is no `Check` type and no second catalogue.
   Returns the standard F# `Result` type; does not depend on `Axial.Result`. Independent leaf.
 - `Axial.Parse` (`src/Axial.Parse/`): `ParseError` and primitive `Parse.*` functions. Independent leaf.
 - `Axial.Refined` (`src/Axial.Refined/`): invariant-carrying types and the operations that justify them. Depends
-  only on `Axial.Check`. A type ships only if it makes a partial operation total or removes a branch from consumers;
-  validation-shaped concepts are constraints in `Axial.Check` instead.
+  only on `Axial.Constraint`. A type ships only if it makes a partial operation total or removes a branch from consumers;
+  validation-shaped concepts are constraints in `Axial.Constraint` instead.
 - `Axial.ErrorHandling` (`src/Axial.ErrorHandling/`): dependency-only meta-package installing Result, Check, Parse, and
   Refined. No source files, no public API, `IncludeBuildOutput=false` so its `.nupkg` carries no assembly.
 - `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
   `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
-  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Check`, and
+  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Constraint`, and
   `Axial.Refined` (never `Axial.Result`). Schema owns path-aware accumulated errors.
 - `Axial.Schema.JsonSchema` (`src/Axial.Schema.JsonSchema/`): JSON Schema generation (`JsonSchema.generate`) in the
   `Axial.Schema` namespace. Depends on `Axial.Schema`.
@@ -58,8 +58,8 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 
 - Flow/runtime/layers/services: `src/Axial.Flow/**`, relevant `src/Axial.Flow.*/*`, `tests/Axial.Flow.Tests/*Workflow*`,
   `tests/Axial.Flow.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
-- Check/Result: `src/Axial.Check/Check.fs`, `src/Axial.Result/Result.fs`,
-  `tests/Axial.Check.Tests/CheckTests.fs`, `tests/Axial.Result.Tests/ResultTests.fs`,
+- Check/Result: `src/Axial.Constraint/Check.fs`, `src/Axial.Result/Result.fs`,
+  `tests/Axial.Constraint.Tests/CheckTests.fs`, `tests/Axial.Result.Tests/ResultTests.fs`,
   `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
 - Parsing and refined values: `src/Axial.Parse/{Errors,Parse}.fs`, and in `src/Axial.Refined/` (compile order)
   `Refinement.fs` -> `NonEmpty.fs` -> `Interval.fs` -> `Bounded.fs` -> `Finite.fs` -> `UnitInterval.fs` ->

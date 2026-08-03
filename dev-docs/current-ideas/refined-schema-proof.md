@@ -1,6 +1,6 @@
 # Axial — Refined schema proof and safe record updates
 
-**Status:** unresolved design exploration; split from `refined-parse-cleanup.md`.
+**Status:** unresolved design exploration; split from the implemented Parse/Check/Refine/Schema cleanup.
 
 **Prototype:** `dev-docs/current-ideas/prototypes/refined-private-record/`
 
@@ -224,7 +224,7 @@ Confirm whether generated checked wrappers for intentionally public records dese
 
 ## 7. Relationship to accepted cleanup
 
-This exploration does not block the independent cleanup in `refined-parse-cleanup.md`:
+This exploration does not block the implemented Parse/Check/Refine/Schema cleanup:
 
 - unit-returning `Check`;
 - portable `Constraint` metadata;

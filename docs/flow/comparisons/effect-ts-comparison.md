@@ -59,7 +59,7 @@ Do not evaluate it as a feature-peer to Effect-TS. Evaluate it against the F# co
 
 The closest Axial substitute is not the whole Effect-TS runtime. It is the combination of:
 
-- `Check` for pure guards
+- `Constraint` for pure guards
 - `Validation` for accumulating validation
 - `Flow` for explicit application boundaries
 

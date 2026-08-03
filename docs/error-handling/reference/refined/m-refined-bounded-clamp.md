@@ -1,7 +1,7 @@
 ---
 title: "Refined.Bounded.clamp"
 linkTitle: "clamp"
-weight: 2728
+weight: 2727
 ---
 
  Restricts a value into the bounds. Total — this is the constructor to reach for

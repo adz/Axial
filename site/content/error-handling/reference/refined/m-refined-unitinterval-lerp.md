@@ -1,7 +1,7 @@
 ---
 title: "Refined.UnitInterval.lerp"
 linkTitle: "lerp"
-weight: 2723
+weight: 2722
 type: docs
 ---
 
