@@ -45,6 +45,27 @@ module SchemaGen =
     /// the Boolean, date, and identifier generators honour nothing. Deciding on the atom alone let a rule the
     /// generator silently ignored still count as supported, so `equalTo "exact"` produced random strings — the
     /// generator claiming satisfaction it never checked. This answers for the pairing instead.
+    /// The wire rendering of a scalar operand, matching how the generators below emit the same shapes. `None`
+    /// means the operand has no single wire form this generator can commit to, so the rule stays unsupported.
+    let private scalarLiteral (operand: ConstraintValue) =
+        match operand with
+        | ConstraintValue.Text value -> Some value
+        | ConstraintValue.Char value -> Some(string value)
+        | ConstraintValue.Boolean value -> Some(string value)
+        | ConstraintValue.Integer value -> Some(string value)
+        | ConstraintValue.BigInteger value -> Some(string value)
+        | ConstraintValue.Decimal value -> Some(value.ToString Globalization.CultureInfo.InvariantCulture)
+        | ConstraintValue.Guid value -> Some(string value)
+        | ConstraintValue.DateTime value -> Some(string value)
+        | ConstraintValue.DateTimeOffset value -> Some(string value)
+        // A float literal cannot be committed to a wire form the parser is guaranteed to read back
+        // identically, and NaN and the infinities have no JSON spelling at all.
+        | ConstraintValue.Float _
+        | ConstraintValue.Float32 _
+        | ConstraintValue.TimeSpan _
+        | ConstraintValue.Null
+        | ConstraintValue.List _ -> None
+
     let rec private underlyingShape (shape: SchemaShape) =
         // A constraint attached above a refinement is written against the raw representation, and the generator
         // recurses to that raw shape, so the pairing must be judged there too.
@@ -64,7 +85,14 @@ module SchemaGen =
             | SchemaShape.Primitive PrimitiveValueKind.Float -> true
             | _ -> false
 
+        let scalar =
+            match shape with
+            | SchemaShape.Primitive _ -> true
+            | _ -> false
+
         match shape, atom with
+        // The satisfying population is exactly one value, so the generator emits the operand itself.
+        | _, RelationAtom(Compared(Equal, operand)) -> scalar && (scalarLiteral operand).IsSome
         | SchemaShape.Primitive PrimitiveValueKind.Text, PresenceAtom Present
         | SchemaShape.Primitive PrimitiveValueKind.Text, CardinalityAtom _
         | SchemaShape.Primitive PrimitiveValueKind.Text, MembershipAtom(OneOf _)
@@ -263,6 +291,14 @@ module SchemaGen =
             | Some generator, _ -> Ok generator
             | None, Error error -> Error error
             | None, Ok atoms ->
+
+            // An equality rule pins the value, so it outranks every other generator for this node.
+            match atoms |> List.tryPick (function
+                      | RelationAtom(Compared(Equal, operand)) -> scalarLiteral operand
+                      | _ -> None) with
+            | Some literal -> Ok(Gen.constant (Data.Text literal))
+            | None ->
+
                 match description.Shape with
                 | SchemaShape.Primitive PrimitiveValueKind.Text -> Ok(textGenerator atoms |> Gen.map Data.Text)
                 | SchemaShape.Primitive PrimitiveValueKind.Int -> Ok(intGenerator atoms |> Gen.map (string >> Data.Text))
