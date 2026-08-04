@@ -127,30 +127,34 @@ dotnet add package Axial.Data
 dotnet add package Axial.Schema
 ```
 
-### Namespace convention — optional, and not what it looks like
+### Namespace convention — settled
 
-Two conventions are in use, both deliberate:
+`Axial.Data` is now the only package using convention B, and it stays that way.
 
-- **A** — namespace is the package id, module is the leaf: `Axial.Result` / `module Result`, giving
-  `Axial.Result.Result`. You `open` the package id. Used by Result, Parse, Refined, Schema, Schema.Json,
-  Schema.Http, Schema.Contracts, Schema.Testing.
-- **B** — namespace is the parent, module is the leaf, so the fully-qualified module path *equals* the
-  package id: `Axial` / `module Data` → `Axial.Data`; `Axial.Schema` / `module JsonSchema` →
-  `Axial.Schema.JsonSchema`. You `open` the parent. Used by Data and JsonSchema.
+- **A** — namespace is the package id, module is the leaf: `Axial.Result` / `module Result`. You `open` the
+  package id. Used by every package except Data.
+- **B** — namespace is the parent, so the fully-qualified module path *equals* the package id: `Axial` /
+  `module Data` → `Axial.Data`. You `open Axial`.
 
-B is intentional — `Data` carries `[<CompilationRepresentation(ModuleSuffix)>]` and
-`[<RequireQualifiedAccess>]`, and `scripts/docgen` addresses symbols as `M:Axial.Schema.JsonSchema.generate`.
-Converting B to A was attempted and does not work: `namespace Axial.Data` plus `module Data` yields
-`Axial.Data.Data` and `Axial.Data.Data.Syntax`, breaking `Axial.Data.Tests` and the generated contracts.
+Converting Data to A was attempted twice and rejected both times:
 
-Unifying either way is breaking, so it is free now and expensive later — but it is optional, and the
-trade-off is real in both directions. A makes each `open` name the package you installed, which serves the
-"install only what you need" claim, at the cost of stuttering symbol ids. B keeps symbol ids equal to
-package ids, at the cost of `open Axial.Schema` silently gaining members when an extra package is
-referenced.
+1. `namespace Axial.Data` plus `module Data` yields `Axial.Data.Data`, and the nested modules become
+   `Axial.Data.Data.Syntax` and `Axial.Data.Data.Json` — user-facing, since consumers write
+   `open Axial.Data.Syntax` today. The build fails across `Axial.Data.Tests` and the generated contracts.
+2. Promoting the nested modules to namespace level fixes the stutter but puts a `Json` module in
+   `Axial.Data` that collides with `Axial.Schema.Json`'s `module rec Json` whenever both are opened. And
+   `Data.Json.render` is used directly in tests and doc examples.
 
-Required regardless: the reference must state each type's package, since namespace cannot imply it under
-either convention. See `docs-information-architecture.md` §6 item 5.
+B is well-formed here: `module Data` carries `[<RequireQualifiedAccess>]` and is the package's entire API
+surface, so nesting `Syntax` and `Json` beneath it is correct design rather than an accident.
+
+The one real cost is that `[<AutoOpen>] module DataErgonomicsHelpers` sits in namespace `Axial`, so a bare
+`open Axial` auto-opens it. That is harmless while Data is the only package declaring into the root
+namespace — which it now is, and must remain. **No other package may declare into `namespace Axial`**;
+doing so would put every AutoOpen module in one namespace and make `open Axial` unscoped.
+
+Required regardless of convention: the reference must state each type's package, since namespace cannot
+imply it. See `docs-information-architecture.md` §6 item 5.
 
 ### Reserve NuGet prefixes
 
@@ -254,14 +258,21 @@ docs/flow
 benchmarks/Axial.Flow.Benchmarks
 ```
 
-**Needs individual inspection before assignment** — these reference Flow and may exercise both sides. Some
-will need one copy each:
+**Needs individual inspection before assignment — resolved.** Every example, benchmark, and cross-cutting
+test project classified by its actual project references:
 
-- `examples/Axial.Hosting.{Browser,Desktop,DotNet,GenericHost,Node}`
-- `examples/Axial.{Examples,App.Example,MaintenanceExamples,ReadmeExample,ReferenceApp,Playground}`
-- `benchmarks/Axial.Benchmarks.Fable` — benchmarks Flow, Result, Constraint, and Schema.Json under Fable in
-  one project. Either splits along the seam or becomes a consumer of released packages.
-- `tests/Axial.ApiShape.Tests`
+| Destination | Projects |
+| --- | --- |
+| **FsFlow** — Flow-only | `Axial.App.Example`, `Axial.Flow.AotProbe`, `Axial.Flow.Comparisons`, `Axial.Flow.PlatformService.Examples`, `Axial.Hosting.Browser`, `Axial.Hosting.Desktop`, `Axial.Hosting.GenericHost`, `Axial.Hosting.Node`, `benchmarks/Axial.Flow.Benchmarks` |
+| **FsFlow** — adapter examples | `Axial.Api`, `Axial.Api.GenHttp` (no direct Flow reference, but they consume the AspNetCore/GenHttp adapters, which move) |
+| **FsFlow** — with released Axial deps | `Axial.Hosting.DotNet` (Flow.Hosting plus incidental Parse and Refined) |
+| **Axial** | `Axial.Constraint.AotProbe`, `Axial.Refined.AotProbe`, `Axial.Result.AotProbe`, `Axial.Schema.AotProbe`, `Axial.ReferenceApp.Intro`, `Axial.ReferenceApp.Wire`, `benchmarks/Axial.Schema.Benchmarks` |
+| **Must split in two** | `Axial.Examples`, `Axial.MaintenanceExamples`, `Axial.Playground`, `Axial.ReadmeExample`, `benchmarks/Axial.Benchmarks.Fable`, `tests/Axial.ApiShape.Tests` |
+| **Integration app** | `Axial.ReferenceApp` — consumes both sides plus both adapters. Becomes the integration application against released packages, per "Examples And Reference Applications". |
+
+The six in "must split" each hold Flow content and Axial content in one project. `Axial.ApiShape.Tests` is
+the most consequential: it asserts package layout across both products, so each repository needs its own
+copy asserting only its own packages.
 
 ### Order
 

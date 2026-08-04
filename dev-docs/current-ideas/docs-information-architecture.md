@@ -98,7 +98,7 @@ src/Axial.Flow.FileSystem           src/Axial.Flow.Telemetry
 src/Axial.Flow.Hosting              src/Axial.Flow.Telemetry.JavaScript
 src/Axial.Flow.Hosting.Browser      src/Axial.Flow.Telemetry.Shared
 src/Axial.Flow.Hosting.Node
-src/Axial.Flow.HttpClient           src/Axial.Schema.Http.AspNetCore   ← becomes FsFlow.Http.*
+src/Axial.Flow.HttpClient           src/Axial.Schema.Http.AspNetCore   ← becomes FsFlow.AspNetCore
                                     src/Axial.Schema.Http.GenHttp
 
 tests/Axial.Flow.Tests              tests/Axial.Flow.Integration.Tests
@@ -111,15 +111,8 @@ docs/flow
 benchmarks/Axial.Flow.Benchmarks
 ```
 
-**Needs individual inspection before assignment** — these reference Flow but may exercise both sides:
-
-- `examples/Axial.Hosting.Browser`, `.Desktop`, `.DotNet`, `.GenericHost`, `.Node`
-- `examples/Axial.Examples`, `.App.Example`, `.MaintenanceExamples`, `.ReadmeExample`, `.ReferenceApp`,
-  `.Playground`
-- `benchmarks/Axial.Benchmarks.Fable`
-- `tests/Axial.ApiShape.Tests`
-
-Some will need one copy each side.
+**Project assignments are resolved** — see `project-split.md`, "Paths to extract", for the full
+classification of every example, benchmark, and cross-cutting test project.
 
 ### 3.3 Order
 
