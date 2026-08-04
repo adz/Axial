@@ -356,21 +356,29 @@ Update repository URLs and source-link metadata before publishing from the new l
 
 ## Implementation Sequence
 
-| Phase | Work |
-| --- | --- |
-| 1 | Fold `Schema.JsonSchema` into `Schema`; move `Data` to convention A |
-| 2 | Rename and move the HTTP adapters to `FsFlow.AspNetCore` / `FsFlow.GenHttp`; set the `0.7.*` floats and packed upper bound |
-| 3 | Verify the extraction path list; resolve the ambiguous examples, benchmark, and ApiShape tests |
-| 4 | Split the version property in two; create package-consumer fixtures for Flow and its satellites |
-| 5 | Verify Flow builds and tests with no Axial source present |
-| 6 | `filter-repo` into FsFlow; install maintainer files and CI; confirm green |
-| 7 | Rename `Axial.Flow` → `FsFlow` in ordinary commits |
-| 8 | Publish prerelease FsFlow packages; run adapters against released Axial packages |
-| 9 | Remove Flow paths from Axial |
-| 10 | Documentation work — see `docs-information-architecture.md` |
-| 11 | Prefix reservations; publish Axial, then FsFlow |
+| Phase | Work | Status |
+| --- | --- | --- |
+| 1 | Fold `Schema.JsonSchema` into `Schema` | **done** — 548a7b84 |
+| 2 | Settle the namespace convention (Data stays on B) | **done** — f3ab2d46 |
+| 3 | Resolve the extraction path list and every ambiguous project | **done** — f3ab2d46 |
+| 4 | Stop committing generated reference and `site/content` | **done** — 8d574579 |
+| 5 | Split the version property in two; create package-consumer fixtures | not started |
+| 6 | Verify Flow builds and tests with no Axial source present | not started |
+| 7 | `filter-repo` into FsFlow; install maintainer files and CI; confirm green | blocked — needs `git-filter-repo` installed and the target repository created |
+| 8 | Rename `Axial.Flow` → `FsFlow`, including the two HTTP adapters | not started — see below |
+| 9 | Publish prerelease FsFlow packages; run adapters against released Axial packages | not started |
+| 10 | Remove Flow paths from Axial | not started |
+| 11 | Documentation work — see `docs-information-architecture.md` | in progress |
+| 12 | Prefix reservations; publish Axial, then FsFlow | not started |
 
-Phases 1–3 are much cheaper in the combined repository, with the compiler checking every call site.
+Phases 1–4 were much cheaper in the combined repository, with the compiler checking every call site.
+
+**On phase 8.** The rename is deliberately *after* extraction. In the combined repository it touches 1,011
+occurrences across 212 files — down from 2,330 across 1,416 before phase 4 removed the generated trees —
+and it would leave `FsFlow.*` packages sitting in the Axial repository alongside `docs/flow`, the Flow
+sidebar, and `validate-flow-docs.sh`, all still named Axial. In the extracted repository it is the same
+change against a tree that contains nothing else, with no confusing intermediate state. Nothing is blocked
+by deferring it: phases 5 and 6 do not depend on the name.
 
 ## Acceptance Criteria
 
