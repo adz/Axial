@@ -32,7 +32,7 @@ Schemas are consumed by interpreters that stay independent of workflow execution
 
 - [`JsonSchema`](./schema/#json-schema-generation) — generates a JSON Schema document from a built schema's
   metadata. The module remains in the `Axial.Schema` namespace, but installation requires the separate
-  `Axial.Schema.JsonSchema` package.
+  `Axial.Schema` package.
 
 ## Axial.Schema.Http
 

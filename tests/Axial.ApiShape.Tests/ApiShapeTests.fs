@@ -554,9 +554,9 @@ module ApiShapeTests =
         |> assertContainsAll
             [ "compile"; "serialize"; "serializeBytes"; "parseData"; "deserialize"; "deserializeBytes"; "tryDeserialize" ]
 
-        // JSON Schema generation lives in its own package; the namespace stays Axial.Schema so
-        // callers only add a package reference, not a new open.
-        moduleTypeFromAssembly "Axial.Schema.JsonSchema" "Axial.Schema.JsonSchema"
+        // JSON Schema generation ships inside Axial.Schema; the module path stays
+        // Axial.Schema.JsonSchema so no caller changed an open when the package was folded in.
+        moduleTypeFromAssembly "Axial.Schema" "Axial.Schema.JsonSchema"
         |> publicStaticMemberNames
         |> assertContainsAll [ "generate"; "generateValue" ]
 
@@ -629,7 +629,6 @@ module ApiShapeTests =
               "Axial.Data"
               "Axial.Schema"
               "Axial.Schema.Json"
-              "Axial.Schema.JsonSchema"
               "Axial.Flow"
               "Axial.Flow.Hosting"
               "Axial.Flow.Telemetry" ]

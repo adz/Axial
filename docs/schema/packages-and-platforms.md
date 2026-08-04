@@ -20,7 +20,6 @@ that provide the JavaScript primitives they use.
 | `Axial.Parse` | Yes | Yes | Node and browser | Serialized primitive parsing. |
 | `Axial.Schema` | Yes | Yes | Node and browser | Schema declaration, parsing, checking, accumulated errors, and inspection. |
 | `Axial.Schema.Json` | Yes | Yes | Node and browser | Portable JSON-to-`Data` parsing and compiled typed JSON codecs. |
-| `Axial.Schema.JsonSchema` | Yes | No | — | JSON Schema document generation. |
 | `Axial.Schema.Http` | Yes, .NET 8+ | No | — | Host-neutral .NET HTTP boundary contracts and OpenAPI assembly. |
 | `Axial.Schema.Http.AspNetCore` | Yes, .NET 8+ | No | — | ASP.NET Core boundary adapter. |
 | `Axial.Schema.Http.GenHttp` | Yes, .NET 8+ | No | — | GenHTTP boundary adapter. |

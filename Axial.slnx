@@ -51,7 +51,6 @@
     <Project Path="src/Axial.Refined/Axial.Refined.fsproj" />
     <Project Path="src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />
     <Project Path="src/Axial.Schema/Axial.Schema.fsproj" />
-    <Project Path="src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj" />
     <Project Path="src/Axial.Schema.Http/Axial.Schema.Http.fsproj" />
     <Project Path="src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj" />
     <Project Path="src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj" />

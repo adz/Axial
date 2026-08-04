@@ -39,7 +39,7 @@ the overview, the comments are the ground truth.
 
 `Data` lives in its own dependency-free package (`src/Axial.Data`).
 
-The JSON Schema interpreter lives in its own package (`src/Axial.Schema.JsonSchema`), and the compiled
+The JSON Schema interpreter lives in `src/Axial.Schema/JsonSchema.fs`, and the compiled
 JSON codecs in `src/Axial.Schema.Json`; both keep the `Axial.Schema` namespace family.
 
 ## Map of the core files (former Schema.fs), in compile order:
@@ -147,5 +147,5 @@ changes, so wire names, constraints, docs, parsing, and checking all survive int
 |---|---|
 | Add a constraint | `Constraint` module (`Schema.fs`), its check in `SchemaValidation.fs`, JSON Schema lowering in `Axial.Schema.JsonSchema`, typed wrapper in `Syntax` (`Shape.fs`) |
 | Add a primitive | `PrimitiveValueKind`, `Value` module, parsing in `SchemaValidation.fs`, `SchemaDefaults` overloads |
-| Add an interpreter | New file after `SchemaApi.fs` (or a new package, like `Axial.Schema.JsonSchema`); walk `Inspect.model` output or compile the typed record plan |
+| Add an interpreter | New file after `SchemaApi.fs` (as `JsonSchema.fs` does), or a new package; walk `Inspect.model` output or compile the typed record plan |
 | Change generated code | `src/Axial.Schema.Contracts` (Emitter) — not this project |

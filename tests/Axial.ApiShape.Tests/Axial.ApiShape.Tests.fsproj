@@ -31,7 +31,6 @@
     <!-- Loaded by name through Assembly.Load. The umbrella package no longer references the optional
          Schema interpreters, so these must be explicit or the reflection-based assertions cannot find them. -->
     <ProjectReference Include="..\..\src\Axial.Schema.Json\Axial.Schema.Json.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema.JsonSchema\Axial.Schema.JsonSchema.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Hosting\Axial.Flow.Hosting.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Telemetry\Axial.Flow.Telemetry.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Flow.Console\Axial.Flow.Console.fsproj" />

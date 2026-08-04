@@ -83,6 +83,6 @@ neither optional package.
 
 `Axial.Schema.Json` also installs as part of `Axial`, or individually with `dotnet add package Axial.Schema.Json`.
 
-Install JSON Schema generation with `dotnet add package Axial.Schema.JsonSchema`.
+JSON Schema generation ships in `Axial.Schema`; no extra package is needed.
 
 See [JSON Codec](../json-codec/) for what that package buys you.

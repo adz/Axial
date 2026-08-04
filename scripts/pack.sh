@@ -28,7 +28,6 @@ projects=(
   "src/Axial.Parse/Axial.Parse.fsproj"
   "src/Axial.Schema/Axial.Schema.fsproj"
   "src/Axial.Schema.Json/Axial.Schema.Json.fsproj"
-  "src/Axial.Schema.JsonSchema/Axial.Schema.JsonSchema.fsproj"
   "src/Axial.Schema.Http/Axial.Schema.Http.fsproj"
   "src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj"
   "src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj"

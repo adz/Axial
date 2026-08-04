@@ -1318,7 +1318,6 @@ let main argv =
         yield! validationDllPaths
         Path.Combine(artifactsDir, "Axial.Data/debug_net8.0/Axial.Data.dll")
         Path.Combine(artifactsDir, "Axial.Schema/debug_net8.0/Axial.Schema.dll")
-        Path.Combine(artifactsDir, "Axial.Schema.JsonSchema/debug_net8.0/Axial.Schema.JsonSchema.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Json/debug_net8.0/Axial.Schema.Json.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http/debug/Axial.Schema.Http.dll")
         Path.Combine(artifactsDir, "Axial.Schema.Http.AspNetCore/debug/Axial.Schema.Http.AspNetCore.dll")
