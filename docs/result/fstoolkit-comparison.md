@@ -1,7 +1,7 @@
 ---
 weight: 90
 title: FsToolkit.ErrorHandling
-description: How Axial Result, Refined, Schema, and Flow relate to FsToolkit.ErrorHandling.
+description: How Axial Result, Constraint, Refined, Schema, and Flow relate to FsToolkit.ErrorHandling.
 ---
 
 # FsToolkit.ErrorHandling
@@ -9,12 +9,17 @@ description: How Axial Result, Refined, Schema, and Flow relate to FsToolkit.Err
 FsToolkit.ErrorHandling provides a broad set of combinators and computation expressions for `Result`, asynchronous
 results, validation, and related standard F# types.
 
-Axial separates four roles:
+Axial separates five roles, each installable on its own:
 
-- `Axial.Result` contains a smaller `Result` surface, `Constraint`, and `result { }`.
+- `Axial.Result` supplies a smaller `Result` surface, `result { }`, and the accumulating builders that
+  collect every error rather than stopping at the first.
+- `Axial.Constraint` describes which values are acceptable, and derives the failure from that description.
 - `Axial.Refined` constructs values whose types record successful checks.
 - `Axial.Schema` declares structured boundaries and accumulates path-aware failures.
 - `Axial.Flow` runs effectful workflows with explicit dependencies.
+
+None of these depends on `Axial.Result`; every one of them returns the standard F# `Result`, so they compose
+with `Axial.Result`, with FsToolkit.ErrorHandling, or with your own helpers.
 
 Existing FsToolkit Result helpers can remain in an application. Both libraries use the standard F# `Result` type.
 
