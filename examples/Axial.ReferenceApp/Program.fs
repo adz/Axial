@@ -1,6 +1,6 @@
 module Axial.ReferenceApp.Program
 
-open Axial
+open Axial.Data
 
 open System
 open System.Net

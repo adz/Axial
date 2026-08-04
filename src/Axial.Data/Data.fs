@@ -1,4 +1,4 @@
-namespace Axial
+namespace Axial.Data
 
 open System
 open System.Globalization

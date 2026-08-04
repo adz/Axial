@@ -1,4 +1,4 @@
-open Axial
+open Axial.Data
 
 // The generated-wire reference slice: the same boundary discipline as Axial.ReferenceApp,
 // but the wire tier is generated from [<DeriveSchema>] records instead of hand-written.

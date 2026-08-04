@@ -13,7 +13,7 @@ takes a `Data` value, and every source that can become `Data` can therefore feed
 ## Feeding a schema
 
 ```fsharp
-open Axial
+open Axial.Data
 open Axial.Data.Syntax
 open Axial.Schema
 

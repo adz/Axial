@@ -127,34 +127,38 @@ dotnet add package Axial.Data
 dotnet add package Axial.Schema
 ```
 
-### Namespace convention — settled
+### Namespace convention — unified on A
 
-`Axial.Data` is now the only package using convention B, and it stays that way.
+Every package now declares its own namespace equal to its package id, and `namespace Axial` is empty.
 
-- **A** — namespace is the package id, module is the leaf: `Axial.Result` / `module Result`. You `open` the
-  package id. Used by every package except Data.
-- **B** — namespace is the parent, so the fully-qualified module path *equals* the package id: `Axial` /
-  `module Data` → `Axial.Data`. You `open Axial`.
+`Axial.Data` was the last holdout. It declared `namespace Axial` with `module Data` inside, so the module
+path already equalled the package id — deliberate, but it meant `open Axial` was the way to reach Data, and
+`[<AutoOpen>] module DataErgonomicsHelpers` leaked from the root namespace on any such open.
 
-Converting Data to A was attempted twice and rejected both times:
+What made the move work, after one failed attempt:
 
-1. `namespace Axial.Data` plus `module Data` yields `Axial.Data.Data`, and the nested modules become
-   `Axial.Data.Data.Syntax` and `Axial.Data.Data.Json` — user-facing, since consumers write
-   `open Axial.Data.Syntax` today. The build fails across `Axial.Data.Tests` and the generated contracts.
-2. Promoting the nested modules to namespace level fixes the stutter but puts a `Json` module in
-   `Axial.Data` that collides with `Axial.Schema.Json`'s `module rec Json` whenever both are opened. And
-   `Data.Json.render` is used directly in tests and doc examples.
+- `namespace Axial.Data`, keeping `module Data`. The resulting `Axial.Data.Data` stutter is invisible at
+  call sites — consumers write `open Axial.Data` then `Data.assoc` — and matches `Axial.Result.Result`.
+- **`module Syntax` promoted out of `module Data` to namespace level**, so it stays `Axial.Data.Syntax` and
+  every `open Axial.Data.Syntax` is unchanged. Its body needed `Data.` qualification on eight helpers it
+  had been reaching unqualified from inside the enclosing module.
+- **`module Json` deliberately left nested**, as `Axial.Data.Data.Json`. Promoting it would put a `Json`
+  module in `Axial.Data` that shadows `Axial.Schema.Json`'s `module rec Json` in the twelve files that open
+  both, and `Data.Json.render` is used directly in tests and examples. It is referenced as `Data.Json`, so
+  nesting costs nothing.
 
-B is well-formed here: `module Data` carries `[<RequireQualifiedAccess>]` and is the package's entire API
-surface, so nesting `Syntax` and `Json` beneath it is correct design rather than an accident.
+Consumer impact was one line each: `open Axial` → `open Axial.Data`. Ten fully-qualified `Axial.Data.X`
+references became `Axial.Data.Data.X`; the CLR module types moved from `Axial.DataModule` to
+`Axial.Data.DataModule`, which two ApiShape assertions name directly.
 
-The one real cost is that `[<AutoOpen>] module DataErgonomicsHelpers` sits in namespace `Axial`, so a bare
-`open Axial` auto-opens it. That is harmless while Data is the only package declaring into the root
-namespace — which it now is, and must remain. **No other package may declare into `namespace Axial`**;
-doing so would put every AutoOpen module in one namespace and make `open Axial` unscoped.
+Also fixed: `tests/Axial.Schema.Tests/SchemaTestSupport.fs` declared `namespace Axial`, squatting the root
+namespace from a test project. Moved to `Axial.Tests`.
 
-Required regardless of convention: the reference must state each type's package, since namespace cannot
-imply it. See `docs-information-architecture.md` §6 item 5.
+**Rule going forward: nothing declares into `namespace Axial`.** It is now empty, and keeping it that way
+is what stops `open Axial` becoming an unscoped catch-all that drags every `[<AutoOpen>]` module with it.
+
+Required regardless: the reference must state each type's package, since namespace alone cannot imply it
+for satellites. See `docs-information-architecture.md` §6 item 5.
 
 ### Reserve NuGet prefixes
 
@@ -359,7 +363,7 @@ Update repository URLs and source-link metadata before publishing from the new l
 | Phase | Work | Status |
 | --- | --- | --- |
 | 1 | Fold `Schema.JsonSchema` into `Schema` | **done** — 548a7b84 |
-| 2 | Settle the namespace convention (Data stays on B) | **done** — f3ab2d46 |
+| 2 | Unify the namespace convention on A; empty `namespace Axial` | **done** — f3ab2d46, then completed here |
 | 3 | Resolve the extraction path list and every ambiguous project | **done** — f3ab2d46 |
 | 4 | Stop committing generated reference and `site/content` | **done** — 8d574579 |
 | 5 | Split the version property in two; create package-consumer fixtures | not started |

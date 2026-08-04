@@ -1,6 +1,6 @@
 namespace Axial.Schema.Http
 
-open Axial
+open Axial.Data
 
 open Axial.Schema
 

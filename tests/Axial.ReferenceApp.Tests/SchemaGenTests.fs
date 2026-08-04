@@ -1,6 +1,6 @@
 namespace Axial.ReferenceApp.Tests
 
-open Axial
+open Axial.Data
 
 open System.Text.Json
 open Axial.Schema.Json

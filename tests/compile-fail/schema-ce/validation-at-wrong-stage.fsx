@@ -1,6 +1,6 @@
 #load "references.fsx"
 
-open Axial
+open Axial.Data
 open Axial.Refined
 open Axial.Schema
 open Axial.Schema.Syntax

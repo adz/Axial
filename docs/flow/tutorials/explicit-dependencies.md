@@ -19,7 +19,7 @@ Use this approach first when:
 ```fsharp
 open System
 open System.Threading.Tasks
-open Axial
+open Axial.Data
 
 type OrderId = OrderId of Guid
 

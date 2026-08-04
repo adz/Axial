@@ -19,7 +19,7 @@ dotnet add package Axial.Schema
 ```
 
 ```fsharp
-open Axial
+open Axial.Data
 open Axial.Schema
 open Axial.Schema.Syntax
 open type Axial.Schema.Syntax

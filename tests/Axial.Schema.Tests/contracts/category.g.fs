@@ -4,7 +4,7 @@
 // </auto-generated>
 namespace Axial.Tests.Generated
 
-open Axial
+open Axial.Data
 open Axial.Constraint
 open Axial.Schema
 

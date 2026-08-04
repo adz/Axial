@@ -7,7 +7,7 @@ description: Short examples of fields, checked construction, refinement, recursi
 # Schema Overview Examples
 
 ```fsharp
-open Axial
+open Axial.Data
 open Axial.Schema
 open Axial.Schema.Syntax
 open type Axial.Schema.Syntax

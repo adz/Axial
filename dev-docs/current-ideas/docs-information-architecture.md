@@ -318,16 +318,17 @@ empty entity.
 Reference groups Core and Schema extensions separately. Docs does not tier at all: task folders cut across
 the tiers, which is the point.
 
-### 5.8 Two namespace conventions — a real decision, not two defects
+### 5.8 Namespace convention — unified
 
-The reference tree is rebuilt from entity ids by `reconstructHierarchy`, so it is organised by *namespace*.
-That would give package grouping for free if namespace always equalled package id. It does not, because
-**two conventions are in use, and both are deliberate.**
+Every package declares its own namespace equal to its package id, and `namespace Axial` is now empty. See
+`project-split.md`, "Namespace convention — unified on A", for how `Axial.Data` moved and why `module Json`
+stayed nested.
 
-**Convention A — namespace is the package id; the module is the leaf.**
+This does not remove the need for **package identity in the reference model** (§6 item 5): satellites like
+`Axial.Schema.Json` and `Axial.Schema.Testing` still share the `Axial.Schema.*` namespace prefix, so a
+namespace tree cannot say which NuGet a type ships in.
 
-| Package | Namespace | Module | Fully-qualified |
-| --- | --- | --- | --- |
+--- | --- | --- | --- |
 | `Axial.Result` | `Axial.Result` | `Result` | `Axial.Result.Result` |
 | `Axial.Parse` | `Axial.Parse` | `Parse` | `Axial.Parse.Parse` |
 | `Axial.Schema.Json` | `Axial.Schema.Json` | `Json` | `Axial.Schema.Json.Json` |
@@ -347,7 +348,7 @@ You `open` the parent. No stutter. This is clearly intentional: `Data` carries
 addresses symbols as `M:Axial.Schema.JsonSchema.generate` — the symbol id *is* the package id plus member.
 
 **Attempting to "fix" B into A does not work and was tried.** `namespace Axial.Data` plus `module Data`
-yields `Axial.Data.Data`, and the nested syntax module becomes `Axial.Data.Data.Syntax`. The build fails
+yields `Axial.Data.Data`, and the nested syntax module becomes `Axial.Data.Syntax`. The build fails
 across `Axial.Data.Tests` and the generated contract files. B is not a defect; if anything it is the
 better-formed convention.
 
@@ -406,7 +407,7 @@ churns a large tree; doing it first means Axial migrates once, directly onto nes
 | Phase | Work | Where |
 | --- | --- | --- |
 | 1 | FsLiveDocs items 1–4 | FsLiveDocs |
-| 2 | Fold `Schema.JsonSchema` into `Schema`; move `Data` to convention A | Axial (combined repo) |
+| 2 | Fold `Schema.JsonSchema` into `Schema`; move `Data` to convention A | **done** |
 | 3 | Verify split path list; inspect ambiguous examples and tests | combined repo |
 | 4 | `filter-repo` extract to FsFlow; confirm it builds green | new repo |
 | 5 | Rename `Axial.Flow` → `FsFlow`; move the two HTTP adapters | FsFlow |

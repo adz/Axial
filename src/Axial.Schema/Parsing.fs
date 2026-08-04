@@ -6,7 +6,7 @@ namespace Axial.Schema
 
 open Axial.Parse
 
-open Axial
+open Axial.Data
 
 open System
 open System.Globalization

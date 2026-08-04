@@ -2,7 +2,7 @@ namespace Axial.Tests
 
 open Axial.Parse
 
-open Axial
+open Axial.Data
 
 open System
 open System.Diagnostics
@@ -455,7 +455,7 @@ module ApiShapeTests =
         assertTypeAbsentFromAssembly "Axial.Schema" "Axial.Schema.ValueSchema`1"
 
         let dataMembers =
-            moduleTypeFromAssembly "Axial.Data" "Axial.DataModule"
+            moduleTypeFromAssembly "Axial.Data" "Axial.Data.DataModule"
             |> publicStaticMemberNames
 
         dataMembers
@@ -497,7 +497,7 @@ module ApiShapeTests =
               "redisplayPath" ]
 
         let dataEditMembers =
-            moduleTypeFromAssembly "Axial.Data" "Axial.DataEditModule"
+            moduleTypeFromAssembly "Axial.Data" "Axial.Data.DataEditModule"
             |> publicStaticMemberNames
 
         dataEditMembers

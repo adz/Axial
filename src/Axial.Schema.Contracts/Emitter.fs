@@ -1,6 +1,6 @@
 namespace Axial.Schema.Contracts
 
-open Axial
+open Axial.Data
 
 open System
 open System.Text
@@ -319,7 +319,7 @@ module Emitter =
         line "// </auto-generated>"
         line $"namespace {namespaceName}"
         line ""
-        line "open Axial"
+        line "open Axial.Data"
         line "open Axial.Constraint"
         line "open Axial.Schema"
 

@@ -4,7 +4,7 @@
 and also works well for fixtures, configuration, command-line input, form values, events, and other tree-shaped data.
 
 ```fsharp
-open Axial
+open Axial.Data
 open Data.Syntax
 
 let customer =

@@ -5,7 +5,7 @@ module PolicyExamples
 
 open Axial.Parse
 
-open Axial
+open Axial.Data
 open Axial.Constraint
 open Axial.Flow
 open Axial.Refined

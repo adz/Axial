@@ -10,7 +10,7 @@ description: Every literal, rendering, and immutable edit operation in Axial.Dat
 Open `Axial` for `Data`. Open `Data.Syntax` for the concise operators and functions used on this page.
 
 ```fsharp
-open Axial
+open Axial.Data
 open Data.Syntax
 ```
 

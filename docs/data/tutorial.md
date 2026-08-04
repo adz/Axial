@@ -15,7 +15,7 @@ matter to the test.
 Open `Axial` for the `Data` type and module. Open `Data.Syntax` for the concise literal, edit, and matching syntax:
 
 ```fsharp
-open Axial
+open Axial.Data
 open Data.Syntax
 
 let customer =

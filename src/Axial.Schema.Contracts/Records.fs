@@ -1,6 +1,6 @@
 namespace Axial.Schema.Contracts
 
-open Axial
+open Axial.Data
 
 open System
 open System.Text.RegularExpressions

@@ -70,8 +70,8 @@ module SchemaRefinedValueCheckTests =
         test <@ Schema.check schema (Email.create "grace@example.com") |> Result.isError @>
         test <@ SchemaCheck.text schema allowed = Ok () @>
         test <@ SchemaCheck.text schema (Email.create "grace@example.com") = Error(Atomic(Described("must be the allowed address", None))) @>
-        test <@ Schema.parse schema (Axial.Data.Text "ada@example.com") = Ok allowed @>
-        test <@ Schema.parse schema (Axial.Data.Text "grace@example.com") |> Result.isError @>
+        test <@ Schema.parse schema (Axial.Data.Data.Text "ada@example.com") = Ok allowed @>
+        test <@ Schema.parse schema (Axial.Data.Data.Text "grace@example.com") |> Result.isError @>
 
     [<Fact>]
     let ``inspectUnderlying projects a refined value to its primitive representation`` () =

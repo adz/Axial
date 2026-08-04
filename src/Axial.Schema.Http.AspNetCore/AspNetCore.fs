@@ -1,6 +1,6 @@
 namespace Axial.Schema.Http.AspNetCore
 
-open Axial
+open Axial.Data
 
 open System
 open System.Text.Json

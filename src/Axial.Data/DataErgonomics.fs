@@ -1,4 +1,4 @@
-namespace Axial
+namespace Axial.Data
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -240,163 +240,6 @@ module Data =
     /// <example><code>Data.tryObject (Data.Object []) // Some []</code></example>
     let tryObject = function Data.Object fields -> Some fields | _ -> None
 
-    /// <summary>Concise opt-in syntax for literals, immutable edits, cases, and matching.</summary>
-    module Syntax =
-        /// <summary>Associates a field name with an exact value or recursive data pattern.</summary>
-        let inline (=>) (name: string) (value: ^value) : DataField =
-            assoc name value
-
-        /// <summary>Associates a field name with an optional exact value, omitting <c>None</c>.</summary>
-        let inline (?=>) (name: string) (value: ^value option) : DataField =
-            optionalAssoc name value
-
-        /// <summary>An explicit structured null used by literals and edits.</summary>
-        let nil = Data.Null
-
-        /// <summary>Constructs an exact number from a validated portable JSON number token.</summary>
-        let num = number
-
-        /// <summary>Builds an object from ordered field instructions.</summary>
-        /// <example><code>data [ "name" =&gt; "Ada"; "active" =&gt; true ]
-        /// // Data.Object [ "name", Data.Text "Ada"; "active", Data.Bool true ]</code></example>
-        let data = data
-
-        /// <summary>Returns exact field instructions for spreading an existing object literal.</summary>
-        let fields = fields
-
-        /// <summary>Replaces a value or adds a missing final object field.</summary>
-        let inline set path value = DataEdit.set path value
-
-        /// <summary>Replaces an existing value.</summary>
-        let inline replace path value = DataEdit.replace path value
-
-        /// <summary>Removes an existing field or list item.</summary>
-        let remove = DataEdit.remove
-
-        /// <summary>Appends an item to an existing list.</summary>
-        let inline append path value = DataEdit.append path value
-
-        /// <summary>Prepends an item to an existing list.</summary>
-        let inline prepend path value = DataEdit.prepend path value
-
-        /// <summary>Inserts an item at a valid list insertion index.</summary>
-        let inline insert path index value =
-            DataEdit.insert path index value
-
-        /// <summary>Renames an existing object field without moving it.</summary>
-        let rename = DataEdit.rename
-
-        /// <summary>Applies an ordinary function to an existing value.</summary>
-        let update = DataEdit.update
-
-        /// <summary>Declares one named variation from a baseline.</summary>
-        let variant name edits =
-            ensureNonEmptyText (nameof name) name |> ignore
-            if isNull (box edits) then nullArg (nameof edits)
-            { Name = name; Edits = edits }
-
-        /// <summary>Materializes named variations from one baseline.</summary>
-        /// <example><code>variants [ variant "inactive" [ replace "active" false ] ] (data [ "active" =&gt; true ])
-        /// // [ { Name = "inactive"; Value = data [ "active" =&gt; false ] } ]</code></example>
-        let variants (variations: DataVariation list) baseline : DataCase list =
-            if isNull (box variations) then nullArg (nameof variations)
-            let duplicate = variations |> List.countBy _.Name |> List.tryFind (fun (_, count) -> count > 1)
-            match duplicate with
-            | Some(name, _) -> invalidArg (nameof variations) $"Variation name '{name}' is duplicated."
-            | None ->
-                variations
-                |> List.map (fun (variation: DataVariation) ->
-                    match tryPatch variation.Edits baseline with
-                    | Ok value -> ({ Name = variation.Name; Value = value }: DataCase)
-                    | Error failures -> raise (DataPatchException failures))
-
-        /// <summary>Declares one named dimension in a Cartesian matrix.</summary>
-        let dimension name variations =
-            ensureNonEmptyText (nameof name) name |> ignore
-            if isNull (box variations) then nullArg (nameof variations)
-            { Name = name; Variations = variations }
-
-        /// <summary>Materializes a deterministic Cartesian matrix, limited to 256 cases.</summary>
-        /// <example><code>matrix [ dimension "status" [ variant "active" []; variant "inactive" [ replace "active" false ] ] ] baseline
-        /// // cases named "status: active" and "status: inactive"</code></example>
-        let matrix dimensions baseline =
-            if isNull (box dimensions) then nullArg (nameof dimensions)
-            let maximum = 256
-            let count = dimensions |> List.fold (fun product dimension -> product * int64 dimension.Variations.Length) 1L
-            if count > int64 maximum then invalidArg (nameof dimensions) $"The matrix would create {count} cases; the maximum is {maximum}."
-
-            let folder cases dimension =
-                [ for case in cases do
-                      for variation in dimension.Variations do
-                          let value = patch variation.Edits case.Value
-                          let part = $"{dimension.Name}: {variation.Name}"
-                          let name = if case.Name = "" then part else $"{case.Name} / {part}"
-                          yield { Name = name; Value = value } ]
-
-            dimensions |> List.fold folder [ { Name = ""; Value = baseline } ]
-
-        /// <summary>Creates an exact recursive pattern.</summary>
-        let inline exactly value = toPattern value
-
-        /// <summary>Creates a partial object pattern from required fields.</summary>
-        /// <example><code>Data.tryMatch [ at "" (containing [ "id" =&gt; 42 ]) ] (data [ "id" =&gt; 42; "extra" =&gt; true ])
-        /// // Ok ()</code></example>
-        let containing fields =
-            if isNull (box fields) then nullArg (nameof fields)
-            DataPattern(ObjectContaining fields)
-
-        let inline private patterns values = values |> List.map toPattern
-
-        /// <summary>Matches expected items as an unordered consumed subset.</summary>
-        /// <example><code>Data.tryMatch [ at "items" (containingItems [ "Ada"; "Grace" ]) ] actual
-        /// // Ok () when both values occur, in either order</code></example>
-        let inline containingItems values = DataPattern.CreateListContaining(patterns values)
-
-        /// <summary>Matches expected items as an ordered subsequence.</summary>
-        let inline inOrder values = DataPattern.CreateListInOrder(patterns values)
-
-        /// <summary>Requires every actual list item to satisfy a pattern.</summary>
-        let inline allItems value = DataPattern.CreateEveryItem(toPattern value)
-
-        /// <summary>Requires at least one actual list item to satisfy a pattern.</summary>
-        let inline someItem value = DataPattern.CreateSomeItem(toPattern value)
-
-        /// <summary>Matches any present value.</summary>
-        let any = DataPattern Any
-
-        /// <summary>Matches any text value.</summary>
-        let anyText = DataPattern AnyText
-
-        /// <summary>Matches any number token.</summary>
-        let anyNumber = DataPattern AnyNumber
-
-        /// <summary>Matches when one supplied alternative matches.</summary>
-        let oneOf patterns = DataPattern(OneOf patterns)
-
-        /// <summary>Matches an ordinary predicate and uses its description in diagnostics.</summary>
-        let satisfying description predicate =
-            ensureNonEmptyText (nameof description) description |> ignore
-            if isNull (box predicate) then nullArg (nameof predicate)
-            DataPattern(DataPatternNode.Predicate(description, predicate))
-
-        /// <summary>Requires a path to contain an exact value or recursive pattern.</summary>
-        let inline at path expected =
-            ensureText (nameof path) path |> ignore
-            DataExpectation.Create(path, toPattern expected)
-
-        /// <summary>Requires a path to be absent.</summary>
-        let absent path =
-            ensureText (nameof path) path |> ignore
-            DataExpectation(DataPath.parse path, None, path)
-
-        /// <summary>Checks expectations or raises <c>DataMatchException</c>.</summary>
-        /// <example><code>matching [ at "user.name" "Ada"; absent "error" ] actual
-        /// // returns unit when both expectations hold; otherwise raises DataMatchException</code></example>
-        let matching expectations actual =
-            match tryMatch expectations actual with
-            | Ok() -> ()
-            | Error mismatches -> raise (DataMatchException mismatches)
-
     /// <summary>Deterministic JSON rendering for structured values.</summary>
     module Json =
         /// <summary>Renders compact deterministic JSON.</summary>
@@ -410,3 +253,162 @@ module Data =
         /// //   "name": "Ada"
         /// // }</code></example>
         let renderIndented = DataRendering.jsonRenderIndented
+
+
+/// <summary>Concise opt-in syntax for literals, immutable edits, cases, and matching.</summary>
+module Syntax =
+    /// <summary>Associates a field name with an exact value or recursive data pattern.</summary>
+    let inline (=>) (name: string) (value: ^value) : DataField =
+        Data.assoc name value
+
+    /// <summary>Associates a field name with an optional exact value, omitting <c>None</c>.</summary>
+    let inline (?=>) (name: string) (value: ^value option) : DataField =
+        Data.optionalAssoc name value
+
+    /// <summary>An explicit structured null used by literals and edits.</summary>
+    let nil = Data.Null
+
+    /// <summary>Constructs an exact number from a validated portable JSON number token.</summary>
+    let num = Data.number
+
+    /// <summary>Builds an object from ordered field instructions.</summary>
+    /// <example><code>data [ "name" =&gt; "Ada"; "active" =&gt; true ]
+    /// // Data.Object [ "name", Data.Text "Ada"; "active", Data.Bool true ]</code></example>
+    let data = Data.data
+
+    /// <summary>Returns exact field instructions for spreading an existing object literal.</summary>
+    let fields = Data.fields
+
+    /// <summary>Replaces a value or adds a missing final object field.</summary>
+    let inline set path value = DataEdit.set path value
+
+    /// <summary>Replaces an existing value.</summary>
+    let inline replace path value = DataEdit.replace path value
+
+    /// <summary>Removes an existing field or list item.</summary>
+    let remove = DataEdit.remove
+
+    /// <summary>Appends an item to an existing list.</summary>
+    let inline append path value = DataEdit.append path value
+
+    /// <summary>Prepends an item to an existing list.</summary>
+    let inline prepend path value = DataEdit.prepend path value
+
+    /// <summary>Inserts an item at a valid list insertion index.</summary>
+    let inline insert path index value =
+        DataEdit.insert path index value
+
+    /// <summary>Renames an existing object field without moving it.</summary>
+    let rename = DataEdit.rename
+
+    /// <summary>Applies an ordinary function to an existing value.</summary>
+    let update = DataEdit.update
+
+    /// <summary>Declares one named variation from a baseline.</summary>
+    let variant name edits =
+        ensureNonEmptyText (nameof name) name |> ignore
+        if isNull (box edits) then nullArg (nameof edits)
+        { Name = name; Edits = edits }
+
+    /// <summary>Materializes named variations from one baseline.</summary>
+    /// <example><code>variants [ variant "inactive" [ replace "active" false ] ] (data [ "active" =&gt; true ])
+    /// // [ { Name = "inactive"; Value = data [ "active" =&gt; false ] } ]</code></example>
+    let variants (variations: DataVariation list) baseline : DataCase list =
+        if isNull (box variations) then nullArg (nameof variations)
+        let duplicate = variations |> List.countBy _.Name |> List.tryFind (fun (_, count) -> count > 1)
+        match duplicate with
+        | Some(name, _) -> invalidArg (nameof variations) $"Variation name '{name}' is duplicated."
+        | None ->
+            variations
+            |> List.map (fun (variation: DataVariation) ->
+                match Data.tryPatch variation.Edits baseline with
+                | Ok value -> ({ Name = variation.Name; Value = value }: DataCase)
+                | Error failures -> raise (DataPatchException failures))
+
+    /// <summary>Declares one named dimension in a Cartesian matrix.</summary>
+    let dimension name variations =
+        ensureNonEmptyText (nameof name) name |> ignore
+        if isNull (box variations) then nullArg (nameof variations)
+        { Name = name; Variations = variations }
+
+    /// <summary>Materializes a deterministic Cartesian matrix, limited to 256 cases.</summary>
+    /// <example><code>matrix [ dimension "status" [ variant "active" []; variant "inactive" [ replace "active" false ] ] ] baseline
+    /// // cases named "status: active" and "status: inactive"</code></example>
+    let matrix dimensions baseline =
+        if isNull (box dimensions) then nullArg (nameof dimensions)
+        let maximum = 256
+        let count = dimensions |> List.fold (fun product dimension -> product * int64 dimension.Variations.Length) 1L
+        if count > int64 maximum then invalidArg (nameof dimensions) $"The matrix would create {count} cases; the maximum is {maximum}."
+
+        let folder cases dimension =
+            [ for case in cases do
+                  for variation in dimension.Variations do
+                      let value = Data.patch variation.Edits case.Value
+                      let part = $"{dimension.Name}: {variation.Name}"
+                      let name = if case.Name = "" then part else $"{case.Name} / {part}"
+                      yield { Name = name; Value = value } ]
+
+        dimensions |> List.fold folder [ { Name = ""; Value = baseline } ]
+
+    /// <summary>Creates an exact recursive pattern.</summary>
+    let inline exactly value = toPattern value
+
+    /// <summary>Creates a partial object pattern from required fields.</summary>
+    /// <example><code>Data.tryMatch [ at "" (containing [ "id" =&gt; 42 ]) ] (data [ "id" =&gt; 42; "extra" =&gt; true ])
+    /// // Ok ()</code></example>
+    let containing fields =
+        if isNull (box fields) then nullArg (nameof fields)
+        DataPattern(ObjectContaining fields)
+
+    let inline private patterns values = values |> List.map toPattern
+
+    /// <summary>Matches expected items as an unordered consumed subset.</summary>
+    /// <example><code>Data.tryMatch [ at "items" (containingItems [ "Ada"; "Grace" ]) ] actual
+    /// // Ok () when both values occur, in either order</code></example>
+    let inline containingItems values = DataPattern.CreateListContaining(patterns values)
+
+    /// <summary>Matches expected items as an ordered subsequence.</summary>
+    let inline inOrder values = DataPattern.CreateListInOrder(patterns values)
+
+    /// <summary>Requires every actual list item to satisfy a pattern.</summary>
+    let inline allItems value = DataPattern.CreateEveryItem(toPattern value)
+
+    /// <summary>Requires at least one actual list item to satisfy a pattern.</summary>
+    let inline someItem value = DataPattern.CreateSomeItem(toPattern value)
+
+    /// <summary>Matches any present value.</summary>
+    let any = DataPattern Any
+
+    /// <summary>Matches any text value.</summary>
+    let anyText = DataPattern AnyText
+
+    /// <summary>Matches any number token.</summary>
+    let anyNumber = DataPattern AnyNumber
+
+    /// <summary>Matches when one supplied alternative matches.</summary>
+    let oneOf patterns = DataPattern(OneOf patterns)
+
+    /// <summary>Matches an ordinary predicate and uses its description in diagnostics.</summary>
+    let satisfying description predicate =
+        ensureNonEmptyText (nameof description) description |> ignore
+        if isNull (box predicate) then nullArg (nameof predicate)
+        DataPattern(DataPatternNode.Predicate(description, predicate))
+
+    /// <summary>Requires a path to contain an exact value or recursive pattern.</summary>
+    let inline at path expected =
+        ensureText (nameof path) path |> ignore
+        DataExpectation.Create(path, toPattern expected)
+
+    /// <summary>Requires a path to be absent.</summary>
+    let absent path =
+        ensureText (nameof path) path |> ignore
+        DataExpectation(DataPath.parse path, None, path)
+
+    /// <summary>Checks expectations or raises <c>DataMatchException</c>.</summary>
+    /// <example><code>matching [ at "user.name" "Ada"; absent "error" ] actual
+    /// // returns unit when both expectations hold; otherwise raises DataMatchException</code></example>
+    let matching expectations actual =
+        match Data.tryMatch expectations actual with
+        | Ok() -> ()
+        | Error mismatches -> raise (DataMatchException mismatches)
+

@@ -3,7 +3,7 @@
 // contracts when multiple wire versions must stay readable.
 namespace Axial.Schema
 
-open Axial
+open Axial.Data
 
 open System
 /// A failure produced while migrating an older wire representation.

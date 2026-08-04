@@ -1,4 +1,4 @@
-namespace Axial
+namespace Axial.Data
 
 /// <summary>Internal lookup and scalar redisplay operations over owned structured data.</summary>
 [<RequireQualifiedAccess>]

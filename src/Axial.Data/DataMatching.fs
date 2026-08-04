@@ -1,4 +1,4 @@
-namespace Axial
+namespace Axial.Data
 
 /// <summary>Internal recursive pattern matching and expectation evaluation for structured data.</summary>
 [<RequireQualifiedAccess>]

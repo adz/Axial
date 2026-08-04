@@ -1,4 +1,4 @@
-namespace Axial
+namespace Axial.Tests
 
 open Axial.Schema
 

@@ -16,7 +16,7 @@ This example declares nested data, omits an optional field, applies an atomic pa
 opening `Data.Syntax`:
 
 ```fsharp
-open Axial
+open Axial.Data
 
 let nickname : string option = None
 
@@ -54,7 +54,7 @@ customer |> Data.replace "name" "Grace"
 ## The same example with Data.Syntax
 
 ```fsharp
-open Axial
+open Axial.Data
 open Data.Syntax
 
 let customer =

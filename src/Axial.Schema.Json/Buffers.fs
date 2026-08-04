@@ -1,6 +1,6 @@
 namespace Axial.Schema.Json
 
-open Axial
+open Axial.Data
 
 open System.Buffers
 open System.Globalization

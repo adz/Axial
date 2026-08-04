@@ -5,7 +5,7 @@ open Axial.Flow
 open Axial.Flow.Hosting.Browser
 open Axial.Flow.Hosting.Node
 open Axial.Flow.Telemetry.JavaScript
-open Axial
+open Axial.Data
 open Axial.Schema.Json
 
 /// An in-memory `@opentelemetry/api` fake proving the OTel JS surface works end to end under Fable.

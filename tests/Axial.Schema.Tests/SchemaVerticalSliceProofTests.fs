@@ -1,6 +1,6 @@
 namespace Axial.Tests
 
-open Axial
+open Axial.Data
 
 open System
 open System.Text

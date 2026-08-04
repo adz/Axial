@@ -33,7 +33,7 @@ dotnet add package Axial.Data
 ## Build, change, and check one value
 
 ```fsharp
-open Axial
+open Axial.Data
 open Data.Syntax
 
 let baseline =
@@ -84,7 +84,7 @@ Use `data` to build a `Data` value. Lists represent both objects and lists. A li
 is an object; a list containing ordinary values is a list.
 
 ```fsharp
-open Axial
+open Axial.Data
 open Data.Syntax
 
 let person = data [ "name" => "Ada"; "active" => true ]

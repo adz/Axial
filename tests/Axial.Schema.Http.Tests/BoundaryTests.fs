@@ -1,6 +1,6 @@
 module Axial.Schema.Http.Tests.BoundaryTests
 
-open Axial
+open Axial.Data
 
 open System.Text.Json
 open Xunit

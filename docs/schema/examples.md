@@ -343,7 +343,7 @@ Source code:
 /// self-contained smoke pass with `AXIAL_EXAMPLE=smoke`, which is what CI and the docs build execute.
 module Axial.Api.Program
 
-open Axial
+open Axial.Data
 open Axial.Constraint
 open System
 open System.Net
@@ -686,7 +686,7 @@ module PolicyExamples
 
 open Axial.Parse
 
-open Axial
+open Axial.Data
 open Axial.Constraint
 open Axial.Flow
 open Axial.Refined

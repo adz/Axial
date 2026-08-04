@@ -1,6 +1,6 @@
 namespace Axial.ReferenceApp
 
-open Axial
+open Axial.Data
 
 open System
 open System.IO

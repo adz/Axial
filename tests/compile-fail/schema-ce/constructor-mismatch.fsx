@@ -1,6 +1,6 @@
 #load "references.fsx"
 
-open Axial
+open Axial.Data
 open Axial.Schema
 
 type Person = { Name: string; Age: int }

@@ -1,6 +1,6 @@
 namespace Axial.Schema.Testing
 
-open Axial
+open Axial.Data
 
 open System
 open Axial.Constraint

@@ -1,7 +1,7 @@
 namespace Axial.Tests
 
 open Axial.Constraint
-open Axial
+open Axial.Data
 
 open System
 open Axial.Refined

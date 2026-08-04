@@ -7,7 +7,7 @@ open BenchmarkDotNet.Order
 open Axial.Schema
 open Axial.Schema.Json
 open Axial.Schema.Syntax
-open Axial
+open Axial.Data
 
 /// The shared benchmark model: a realistic aggregate with primitives, a nested record, and collections.
 module CodecModel =

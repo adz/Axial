@@ -1,4 +1,4 @@
-namespace Axial
+namespace Axial.Data
 
 /// <summary>Internal immutable edit application and atomic patching for structured data.</summary>
 [<RequireQualifiedAccess>]

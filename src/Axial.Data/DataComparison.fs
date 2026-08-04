@@ -1,4 +1,4 @@
-namespace Axial
+namespace Axial.Data
 
 /// <summary>Internal exact structural comparison for structured data.</summary>
 [<RequireQualifiedAccess>]
