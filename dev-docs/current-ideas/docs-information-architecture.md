@@ -280,10 +280,106 @@ Highest leverage, and neither depends on any tooling change.
 
 ---
 
+### 5.7 Site structure: four areas, and three package tiers
+
+Guides and reference are organised on orthogonal axes — guides by reader task, reference by code structure —
+so they cannot be interleaved. They are separate top-level areas, as in Effect (Docs + API Reference), Rust
+(the Book + docs.rs), and Django (topics + reference).
+
+**Top nav: Docs · Reference · Packages · GitHub.**
+
+- **Docs** — the task folders of §5.1.
+- **Reference** — the generated entity tree, enriched per entity by hand-written prose (below).
+- **Packages** — install matrix, dependency graph, standalone badges. Kept separate from Reference because
+  "what do I install" is asked far more often than "what is the signature of X", and independent
+  installability is the pitch.
+
+FsLiveDocs already separates these: generated pages live at `/api/{entityId}.html`, `collectGuideOutputs`
+excludes anything under `/api/`, `xref:` resolves to `api/{id}.html`, and `View.fs` already models
+`overview` / `guides` / `api-docs` areas with labels and ordering. They are hardcoded and rendered as
+sidebar groups rather than a top bar; a `navItem title url` helper already exists.
+
+**Deep reference is authored, not just generated.** `ContentProvider.applyApiDocs` reads
+`docs/api/{EntityId}.md` and substitutes it for that entity's generated summary:
+
+```fsharp
+let summary = docs |> Map.tryFind e.Id |> Option.defaultValue e.SummaryHtml
+```
+
+So any namespace, module, or type can carry a full authored page keyed by its entity id. With `<example>`
+blocks verified against the real assembly and `{{< snippet >}}` transclusion, reference depth lives next to
+the code and cannot drift.
+
+**Three package tiers**, distinguished by what they are rather than by convenience:
+
+| Tier | Packages | API surface | Appears in |
+| --- | --- | --- | --- |
+| Core | `Result`, `Parse`, `Refined`, `Data`, `Schema` | yes | Reference, Packages |
+| Schema extensions | `Schema.Json`, `Schema.JsonSchema`, `Schema.Contracts`, `Schema.Http`, `Schema.Testing` | yes | Reference, Packages |
+| Build tooling | `Schema.Contracts.Build` | **none** | Packages only |
+
+`Schema.Contracts.Build` is `DevelopmentDependency=true`, `IncludeBuildOutput=false`, and compiles nothing —
+it ships an MSBuild targets file and a generator. It must be excluded from Reference or it renders as an
+empty entity.
+
+Reference groups Core and Schema extensions separately. Docs does not tier at all: task folders cut across
+the tiers, which is the point.
+
+### 5.8 Two namespace conventions — a real decision, not two defects
+
+The reference tree is rebuilt from entity ids by `reconstructHierarchy`, so it is organised by *namespace*.
+That would give package grouping for free if namespace always equalled package id. It does not, because
+**two conventions are in use, and both are deliberate.**
+
+**Convention A — namespace is the package id; the module is the leaf.**
+
+| Package | Namespace | Module | Fully-qualified |
+| --- | --- | --- | --- |
+| `Axial.Result` | `Axial.Result` | `Result` | `Axial.Result.Result` |
+| `Axial.Parse` | `Axial.Parse` | `Parse` | `Axial.Parse.Parse` |
+| `Axial.Schema.Json` | `Axial.Schema.Json` | `Json` | `Axial.Schema.Json.Json` |
+
+You `open` the package id. Cost: the qualified name stutters.
+
+**Convention B — namespace is the parent; the module is the leaf, so the fully-qualified module path
+equals the package id exactly.**
+
+| Package | Namespace | Module | Fully-qualified |
+| --- | --- | --- | --- |
+| `Axial.Data` | `Axial` | `Data` | `Axial.Data` |
+| `Axial.Schema.JsonSchema` | `Axial.Schema` | `JsonSchema` | `Axial.Schema.JsonSchema` |
+
+You `open` the parent. No stutter. This is clearly intentional: `Data` carries
+`[<CompilationRepresentation(ModuleSuffix)>]` and `[<RequireQualifiedAccess>]`, and `scripts/docgen` already
+addresses symbols as `M:Axial.Schema.JsonSchema.generate` — the symbol id *is* the package id plus member.
+
+**Attempting to "fix" B into A does not work and was tried.** `namespace Axial.Data` plus `module Data`
+yields `Axial.Data.Data`, and the nested syntax module becomes `Axial.Data.Data.Syntax`. The build fails
+across `Axial.Data.Tests` and the generated contract files. B is not a defect; if anything it is the
+better-formed convention.
+
+**The genuine trade-off:**
+
+- **A** makes the `open` name the package you installed, which serves the "install only what you need"
+  claim. It stutters in symbol ids.
+- **B** makes the symbol id equal the package id, which is cleaner for reference addressing and docgen. But
+  `open Axial` and `open Axial.Schema` do not say which package supplied what — and `open Axial.Schema`
+  yielding `JsonSchema` members *only when that package is referenced* is genuinely confusing.
+
+Unifying is a breaking change, therefore free now and expensive after first publish. It is a larger
+decision than it first appears, because unifying on A costs the clean symbol ids docgen relies on, and
+unifying on B makes package attribution invisible in every `open`.
+
+**Independently of that choice, package identity in the reference model (§6 item 5) is required.** Under
+either convention the reference must state which NuGet a type ships in; namespace can never be relied on to
+imply it.
+
+---
+
 ## 6. Work: FsLiveDocs
 
-Both projects use it as an ordinary consumer. Only four items are needed; mounts, artifact packaging, and
-merged symbol tables are not, since there is no merged site.
+Both projects use it as an ordinary consumer. Mounts, artifact packaging, and merged symbol tables are not
+needed, since there is no merged site.
 
 1. **Preserve folder structure in output paths.** The real prerequisite. `ContentProvider.fs:272` flattens
    every page — `Path.GetFileNameWithoutExtension(f).ToLowerInvariant() + ".html"` — so files discovered
@@ -295,8 +391,19 @@ merged symbol tables are not, since there is no merged site.
    and order. Derive from folder name instead.
 3. **Numeric prefix stripping** for ordering, in URLs and titles.
 4. **Optional `_index.md` title override** per folder, for irregular casing ("JSON", "HTTP", "F#").
+5. **Package identity in the model.** `PackageModel` is `{ Version; Entities; Scenarios }` — no package
+   name — and `SymbolLister.merge` flattens N packages into one entity list, rebuilding the tree from
+   namespace ids alone. With eleven packages in one build, the reference cannot tell a reader which NuGet a
+   type ships in, and §5.8 shows namespace is not a reliable proxy. Carry a package name and tier through
+   the merge, and display the package on every reference page.
+6. **Areas as top nav, derived rather than hardcoded.** `View.fs:63-90` fixes `overview` / `guides` /
+   `api-docs` with labels and ordering; derive them and render in the top bar (§5.7). A package with no API
+   surface must be excludable from Reference entirely.
 
-Do these while the only consumer is FsLiveDocs' own small docs tree. Once Axial migrates, the same change
+Items 1–4 are needed for the docs reorganisation. Items 5–6 are needed for the reference to be honest about
+packaging, which matters more here than in a single-package project.
+
+Do items 1–4 while the only consumer is FsLiveDocs' own small docs tree. Once Axial migrates, the same change
 churns a large tree; doing it first means Axial migrates once, directly onto nested output.
 
 ---

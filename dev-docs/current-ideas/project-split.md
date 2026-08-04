@@ -79,7 +79,28 @@ one such table — and that is unaffected by which package the code ships in.
 
 `Axial.Parse` stays as it is: zero dependencies, a crisp standalone story, a self-explanatory name.
 
-Resulting installs:
+### Resulting package list — eleven, in three tiers
+
+| Tier | Package | Depends on | API surface |
+| --- | --- | --- | --- |
+| Core | `Axial.Result` | — | yes |
+| Core | `Axial.Parse` | — | yes |
+| Core | `Axial.Refined` | — | yes |
+| Core | `Axial.Data` | — | yes |
+| Core | `Axial.Schema` | Data, Parse, Refined | yes |
+| Extension | `Axial.Schema.Json` | Schema | yes |
+| Extension | `Axial.Schema.JsonSchema` | Schema | yes |
+| Extension | `Axial.Schema.Contracts` | Schema | yes |
+| Extension | `Axial.Schema.Http` | Schema | yes |
+| Extension | `Axial.Schema.Testing` | Schema | yes |
+| Build tooling | `Axial.Schema.Contracts.Build` | Contracts | **none** |
+
+Down from 26 packages to 11.
+
+The tiers are not presentational convenience. Core packages are what a reader chooses between; extensions
+are added when a specific need arises; `Axial.Schema.Contracts.Build` is `DevelopmentDependency=true`,
+`IncludeBuildOutput=false`, and compiles nothing — it ships an MSBuild targets file and a generator, so it
+has no API and must be excluded from the reference entirely.
 
 ```bash
 dotnet add package Axial.Result
@@ -88,6 +109,31 @@ dotnet add package Axial.Refined
 dotnet add package Axial.Data
 dotnet add package Axial.Schema
 ```
+
+### Namespace convention — optional, and not what it looks like
+
+Two conventions are in use, both deliberate:
+
+- **A** — namespace is the package id, module is the leaf: `Axial.Result` / `module Result`, giving
+  `Axial.Result.Result`. You `open` the package id. Used by Result, Parse, Refined, Schema, Schema.Json,
+  Schema.Http, Schema.Contracts, Schema.Testing.
+- **B** — namespace is the parent, module is the leaf, so the fully-qualified module path *equals* the
+  package id: `Axial` / `module Data` → `Axial.Data`; `Axial.Schema` / `module JsonSchema` →
+  `Axial.Schema.JsonSchema`. You `open` the parent. Used by Data and JsonSchema.
+
+B is intentional — `Data` carries `[<CompilationRepresentation(ModuleSuffix)>]` and
+`[<RequireQualifiedAccess>]`, and `scripts/docgen` addresses symbols as `M:Axial.Schema.JsonSchema.generate`.
+Converting B to A was attempted and does not work: `namespace Axial.Data` plus `module Data` yields
+`Axial.Data.Data` and `Axial.Data.Data.Syntax`, breaking `Axial.Data.Tests` and the generated contracts.
+
+Unifying either way is breaking, so it is free now and expensive later — but it is optional, and the
+trade-off is real in both directions. A makes each `open` name the package you installed, which serves the
+"install only what you need" claim, at the cost of stuttering symbol ids. B keeps symbol ids equal to
+package ids, at the cost of `open Axial.Schema` silently gaining members when an extra package is
+referenced.
+
+Required regardless: the reference must state each type's package, since namespace cannot imply it under
+either convention. See `docs-information-architecture.md` §6 item 5.
 
 ### Reserve NuGet prefixes
 
