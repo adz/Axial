@@ -61,8 +61,11 @@ generate clients, run contract tests) needs no server, so that layer stays in Ax
 | Today | After |
 | --- | --- |
 | `Axial.Schema.Http` | stays in Axial, unchanged |
-| `Axial.Schema.Http.AspNetCore` | → `FsFlow.Http.AspNetCore`, depends on `Axial.Schema.Http` |
-| `Axial.Schema.Http.GenHttp` | → `FsFlow.Http.GenHttp`, depends on `Axial.Schema.Http` |
+| `Axial.Schema.Http.AspNetCore` | → `FsFlow.AspNetCore`, depends on `Axial.Schema.Http` |
+| `Axial.Schema.Http.GenHttp` | → `FsFlow.GenHttp`, depends on `Axial.Schema.Http` |
+
+(Top-level, as siblings of `FsFlow.HttpClient`. See `project-split.md` for the reasoning and the open
+question about `FsFlow.*` versus `FsFlow.Hosting.*`.)
 
 Axial then has zero knowledge of FsFlow. FsFlow carries two optional satellites that pull `Axial.Schema.Http`
 only if used.
