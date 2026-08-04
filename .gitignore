@@ -15,3 +15,9 @@ site/output/
 site/.hugo_build.lock
 BenchmarkDotNet.Artifacts/
 examples/Axial.ReferenceApp/.axial-reference-data/
+
+# Generated documentation. Reference trees are produced by scripts/generate-api-docs.sh
+# and site/content by scripts/populate-hugo-content.sh; CI regenerates both in
+# scripts/build-docs-site.sh, so neither belongs in history.
+docs/*/reference/
+site/content/
