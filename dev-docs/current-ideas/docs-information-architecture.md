@@ -139,11 +139,11 @@ Some will need one copy each side.
 
 Free today, breaking after first publish.
 
-1. **Merge `Axial.Constraint` into `Axial.Refined`.** Constraint alone is clunky — check, then map or
-   render — and anyone going that far will take Schema too. Constraint + Refined is the real standalone
-   unit: domain invariants with no boundary and no serialization. `Constraint` becomes a module inside
-   `Refined`. Package boundaries do not control payload — trimming and tree-shaking work on reachability,
-   not package identity — so nothing is lost by merging.
+1. **Deferred: merging `Axial.Constraint` into `Axial.Refined`.** Not decided; Constraint stays separate
+   for now. The clunkiness that motivated it is an API ergonomics problem that merging would not fix, so
+   improve the standalone path first and see whether the premise survives. Free now, breaking after first
+   publish — revisit before then. Note there is no payload argument either way: trimming and tree-shaking
+   work on reachability, not package identity.
 2. **Leave `Axial.Parse` alone.** Zero dependencies, a crisp standalone story, a self-explanatory name.
 3. **Apply for NuGet prefix reservation**: `Axial.*` and `FsFlow*`.
 4. **Request the `Flow` package ID** from its current owner (unlisted, .NET Standard 1.1, empty repo) if
@@ -413,7 +413,7 @@ churns a large tree; doing it first means Axial migrates once, directly onto nes
 | Phase | Work | Where |
 | --- | --- | --- |
 | 1 | FsLiveDocs items 1–4 | FsLiveDocs |
-| 2 | Merge `Constraint` into `Refined` | Axial (combined repo) |
+| 2 | Fold `Schema.JsonSchema` into `Schema`; move `Data` to convention A | Axial (combined repo) |
 | 3 | Verify split path list; inspect ambiguous examples and tests | combined repo |
 | 4 | `filter-repo` extract to FsFlow; confirm it builds green | new repo |
 | 5 | Rename `Axial.Flow` → `FsFlow`; move the two HTTP adapters | FsFlow |

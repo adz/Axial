@@ -9,8 +9,8 @@ Everything below is work to do or current state. Superseded directions are not r
 **Two independent projects, split on the one seam that is real — description versus execution.**
 
 1. **Axial** (the current repository) — constraints, values, schema, and data. Keeps the name; in practice
-   it already means this. Packages: `Axial.Result`, `Axial.Parse`, `Axial.Refined` (absorbing
-   `Axial.Constraint`), `Axial.Data`, `Axial.Schema` and its satellites.
+   it already means this. Packages: `Axial.Result`, `Axial.Parse`, `Axial.Constraint`, `Axial.Refined`,
+   `Axial.Data`, `Axial.Schema` and its satellites.
 2. **FsFlow** (new repository) — the effect system and its satellites. Restores the identity last published
    at 0.6, which is the only released identity; nothing has ever shipped as `Axial.Flow`.
 
@@ -67,15 +67,30 @@ A **product** is a top-level package and documentation identity presented to use
 
 Free now, breaking later. Do these in the combined repository.
 
-### Merge `Axial.Constraint` into `Axial.Refined`
+### Deferred: merging `Axial.Constraint` into `Axial.Refined`
 
-`Constraint` alone is clunky in practice — check, then map or render — and anyone going that far will take
-Schema too. `Constraint` + `Refined` is the real standalone unit: domain invariants with no boundary and no
-serialization involved. `Constraint` becomes a module inside `Axial.Refined`.
+**Not decided. Constraint stays a separate package for now.**
 
-Package boundaries do not control payload. Trimming and tree-shaking work on reachability, not package
-identity, so nothing is lost by merging. What blocks shaking is module-level data — `Catalogue.entries` is
-one such table — and that is unaffected by which package the code ships in.
+The case for merging: `Constraint` alone is clunky in practice — check, then map or render — and anyone
+going that far will likely take Schema too, so `Constraint` + `Refined` may be the real standalone unit
+(domain invariants with no boundary and no serialization involved).
+
+The case against acting yet: it is a one-way door for the vocabulary, and the clunkiness is an API
+ergonomics problem that merging does not fix. Better to improve the standalone `Constraint` path first and
+see whether the premise survives.
+
+Worth knowing either way: package boundaries do not control payload. Trimming and tree-shaking work on
+reachability, not package identity. What blocks shaking is module-level data — `Catalogue.entries` is one
+such table — and that is unaffected by which package the code ships in. So there is no payload argument
+pushing in either direction.
+
+Revisit before first publish, since it is free now and breaking afterwards.
+
+### Fold `Axial.Schema.JsonSchema` into `Axial.Schema`
+
+Done. 635 lines in one file, depending only on Schema, and already declared in `namespace Axial.Schema` —
+so the fold was a file move plus package deletion, with no call-site changes. JSON Schema emission is part
+of "declare once, derive everything" rather than an optional extra.
 
 `Axial.Parse` stays as it is: zero dependencies, a crisp standalone story, a self-explanatory name.
 
@@ -85,17 +100,18 @@ one such table — and that is unaffected by which package the code ships in.
 | --- | --- | --- | --- |
 | Core | `Axial.Result` | — | yes |
 | Core | `Axial.Parse` | — | yes |
-| Core | `Axial.Refined` | — | yes |
+| Core | `Axial.Constraint` | — | yes |
+| Core | `Axial.Refined` | Constraint | yes |
 | Core | `Axial.Data` | — | yes |
-| Core | `Axial.Schema` | Data, Parse, Refined | yes |
+| Core | `Axial.Schema` | Constraint, Data, Parse, Refined | yes |
 | Extension | `Axial.Schema.Json` | Schema | yes |
-| Extension | `Axial.Schema.JsonSchema` | Schema | yes |
 | Extension | `Axial.Schema.Contracts` | Schema | yes |
 | Extension | `Axial.Schema.Http` | Schema | yes |
 | Extension | `Axial.Schema.Testing` | Schema | yes |
 | Build tooling | `Axial.Schema.Contracts.Build` | Contracts | **none** |
 
-Down from 26 packages to 11.
+Down from 26 packages to 11. `Axial.Schema.JsonSchema` folded into `Axial.Schema`; `Axial.Constraint`
+stays separate pending the deferred decision above.
 
 The tiers are not presentational convenience. Core packages are what a reader chooses between; extensions
 are added when a specific need arises; `Axial.Schema.Contracts.Build` is `DevelopmentDependency=true`,
@@ -105,6 +121,7 @@ has no API and must be excluded from the reference entirely.
 ```bash
 dotnet add package Axial.Result
 dotnet add package Axial.Parse
+dotnet add package Axial.Constraint
 dotnet add package Axial.Refined
 dotnet add package Axial.Data
 dotnet add package Axial.Schema
@@ -330,7 +347,7 @@ Update repository URLs and source-link metadata before publishing from the new l
 
 | Phase | Work |
 | --- | --- |
-| 1 | Merge `Constraint` into `Refined`; update tests, docs, and inventories |
+| 1 | Fold `Schema.JsonSchema` into `Schema`; move `Data` to convention A |
 | 2 | Rename and move the HTTP adapters to `FsFlow.AspNetCore` / `FsFlow.GenHttp`; set the `0.7.*` floats and packed upper bound |
 | 3 | Verify the extraction path list; resolve the ambiguous examples, benchmark, and ApiShape tests |
 | 4 | Split the version property in two; create package-consumer fixtures for Flow and its satellites |
