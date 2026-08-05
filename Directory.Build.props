@@ -1,7 +1,22 @@
 <Project>
   <PropertyGroup>
     <UseArtifactsOutput>true</UseArtifactsOutput>
-    <Version>0.7.0</Version>
+
+    <!-- Two independent release trains, split ahead of the repository split. Axial and FsFlow versions
+         are deliberately unrelated: a v0.8.0 tag in Axial says nothing about FsFlow. FsFlow continues
+         the line last published as FsFlow 0.6; Axial has never published. -->
+    <AxialVersion>0.7.0</AxialVersion>
+    <FsFlowVersion>0.6.1</FsFlowVersion>
+
+    <!-- A project belongs to the FsFlow train if it is a Flow project, or one of the two HTTP adapters
+         that become FsFlow.AspNetCore / FsFlow.GenHttp. Everything else is Axial. -->
+    <IsFsFlowProject Condition="'$(IsFsFlowProject)' == '' And $(MSBuildProjectName.StartsWith('Axial.Flow'))">true</IsFsFlowProject>
+    <IsFsFlowProject Condition="'$(IsFsFlowProject)' == '' And '$(MSBuildProjectName)' == 'Axial.Schema.Http.AspNetCore'">true</IsFsFlowProject>
+    <IsFsFlowProject Condition="'$(IsFsFlowProject)' == '' And '$(MSBuildProjectName)' == 'Axial.Schema.Http.GenHttp'">true</IsFsFlowProject>
+    <IsFsFlowProject Condition="'$(IsFsFlowProject)' == ''">false</IsFsFlowProject>
+
+    <Version Condition="'$(IsFsFlowProject)' == 'true'">$(FsFlowVersion)</Version>
+    <Version Condition="'$(Version)' == ''">$(AxialVersion)</Version>
     <NuGetAudit>false</NuGetAudit>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="Consumer.Schema">
+    <resource name="FSharpSignatureData.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpSignatureCompressedData.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpSignatureDataB.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpSignatureCompressedDataB.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpOptimizationData.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpOptimizationCompressedData.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpOptimizationDataB.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpOptimizationCompressedDataB.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpOptimizationInfo.Consumer.Schema" action="remove"></resource>
+    <resource name="FSharpSignatureInfo.Consumer.Schema" action="remove"></resource>
+  </assembly>
+</linker>

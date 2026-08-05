@@ -10,14 +10,26 @@ output_dir="artifacts/package"
 mkdir -p "$output_dir"
 find "$output_dir" -maxdepth 1 -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -delete
 
-# Default version comes from Directory.Build.props if not provided via -v.
+# Axial and FsFlow are separate release trains with separate version properties (see
+# Directory.Build.props). Overriding one must not move the other, so -v sets the Axial version and
+# -f sets the FsFlow version; either may be omitted to take the checked-in default.
 VERSION=""
-while getopts "v:" opt; do
+FSFLOW_VERSION=""
+while getopts "v:f:" opt; do
   case $opt in
     v) VERSION="$OPTARG" ;;
-    *) echo "Usage: $0 [-v <version>]"; exit 1 ;;
+    f) FSFLOW_VERSION="$OPTARG" ;;
+    *) echo "Usage: $0 [-v <axial-version>] [-f <fsflow-version>]"; exit 1 ;;
   esac
 done
+
+version_args=()
+if [[ -n "$VERSION" ]]; then
+  version_args+=("-p:AxialVersion=$VERSION")
+fi
+if [[ -n "$FSFLOW_VERSION" ]]; then
+  version_args+=("-p:FsFlowVersion=$FSFLOW_VERSION")
+fi
 
 projects=(
   "src/Axial.Flow/Axial.Flow.fsproj"
@@ -48,11 +60,7 @@ echo "Packing projects to $output_dir..."
 
 for project in "${projects[@]}"; do
   echo "--- Packing $(basename "$project") ---"
-  if [[ -n "$VERSION" ]]; then
-    dotnet pack "$project" --configuration Release --output "$output_dir" -p:Version="$VERSION"
-  else
-    dotnet pack "$project" --configuration Release --output "$output_dir"
-  fi
+  dotnet pack "$project" --configuration Release --output "$output_dir" "${version_args[@]}"
 done
 
 echo "Done. Packages are in $output_dir"

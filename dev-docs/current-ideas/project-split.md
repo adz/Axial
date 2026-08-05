@@ -38,10 +38,20 @@ Landed in the combined repository:
 - Per-package test projects, AOT probes, source inventory checks, and doc generator inputs track the
   focused package set.
 
+- Axial and FsFlow have separate version properties. `Directory.Build.props` declares `AxialVersion`
+  (0.7.0) and `FsFlowVersion` (0.6.1) and selects between them with `IsFsFlowProject`, which is true for
+  `Axial.Flow*` and for the two HTTP adapters that become `FsFlow.AspNetCore` / `FsFlow.GenHttp`.
+  `scripts/pack.sh` takes `-v` for the Axial train and `-f` for the FsFlow train; it no longer has a
+  single `-p:Version` override that would silently re-couple them.
+- Package-consumer fixtures exist at `tests/package-consumers/`, run by
+  `scripts/run-package-consumers.sh`: Result alone, Parse alone, Refined alone, Schema alone, and
+  FsToolkit + Refined/Schema. They restore from `artifacts/package` through their own `nuget.config`
+  with `<clear />`, deliberately do not inherit the repository `Directory.Build.props`, and evict the
+  matching version from the global cache first, so they see the packages as an outside consumer does.
+  They are not in `Axial.slnx` — they only build after a pack.
+
 Open follow-ups, still pre-extraction:
 
-- No minimal package-consumer fixture projects (Result alone, Parse alone, Refined alone, Schema with its
-  own deps, FsToolkit + Refined/Schema with no builder ambiguity). Coverage today is indirect.
 - Repository topics and release-notes vocabulary not audited against the current package names.
 
 ## Why Split
@@ -262,6 +272,27 @@ docs/flow
 benchmarks/Axial.Flow.Benchmarks
 ```
 
+### The path list above is incomplete — it truncates history at 2026-06-21
+
+**`filter-repo` matches path strings per commit and does not follow renames.** The Flow tree has been
+renamed four times, so the `Axial.Flow*` names above only exist in the most recent era. Verified:
+
+| Era | From | Paths |
+| --- | --- | --- |
+| 1 | 2026-03-30 | `src/EffectFs`, `tests/EffectFs.Tests`, `examples/EffectFs.*` |
+| 2 | — | `src/EffectfulFlow`, `tests/EffectfulFlow.Tests`, `examples/EffectfulFlow.*` |
+| 3 | — | `src/FlowKit`, `tests/FlowKit.Tests`, `examples/FlowKit.*` |
+| 4 | 2026-04-27 | `src/FsFlow`, `src/FsFlow.{Capabilities,Caps,Services}.*`, `src/FsFlow.Hosting`, `src/FsFlow.Net`, `src/FsFlow.Runtime.Telemetry`, `tests/FsFlow.Tests`, `examples/FsFlow.*`, `benchmarks/FsFlow.Benchmarks{,.Fable}` |
+| 5 | 2026-06-21 (`3a2a13f2`, "Split FsFlow into Axial packages") | `src/Axial.Flow*` — the list above |
+
+`git log -- src/Axial.Flow` bottoms out at `3a2a13f2`. Filtering on the documented list alone would
+produce an FsFlow repository whose history begins six weeks before the split and **omits the v0.6.0
+tag entirely** — `git ls-tree v0.6.0 src/` is all `src/FsFlow*`, and 0.6 is the only version ever
+published. That is the one loss in this whole plan that cannot be recovered afterwards.
+
+Use `--path-glob` for the historical names, and check `git log --oneline | wc -l` on the result against
+the ~231 commits that touch Flow lineage before pushing anywhere.
+
 **Needs individual inspection before assignment — resolved.** Every example, benchmark, and cross-cutting
 test project classified by its actual project references:
 
@@ -277,6 +308,10 @@ test project classified by its actual project references:
 The six in "must split" each hold Flow content and Axial content in one project. `Axial.ApiShape.Tests` is
 the most consequential: it asserts package layout across both products, so each repository needs its own
 copy asserting only its own packages.
+
+**A seventh: `tests/Axial.Flow.Tests`.** Found by the phase 6 verification — see "On phase 6" below. Its
+runnable-example-docs test asserted both products' docs pages. Already split; listed here so the count
+is right.
 
 ### Order
 
@@ -366,8 +401,8 @@ Update repository URLs and source-link metadata before publishing from the new l
 | 2 | Unify the namespace convention on A; empty `namespace Axial` | **done** — f3ab2d46, then completed here |
 | 3 | Resolve the extraction path list and every ambiguous project | **done** — f3ab2d46 |
 | 4 | Stop committing generated reference and `site/content` | **done** — 8d574579 |
-| 5 | Split the version property in two; create package-consumer fixtures | not started |
-| 6 | Verify Flow builds and tests with no Axial source present | not started |
+| 5 | Split the version property in two; create package-consumer fixtures | **done** |
+| 6 | Verify Flow builds and tests with no Axial source present | **done** — with one caveat below |
 | 7 | `filter-repo` into FsFlow; install maintainer files and CI; confirm green | blocked — needs `git-filter-repo` installed and the target repository created |
 | 8 | Rename `Axial.Flow` → `FsFlow`, including the two HTTP adapters | not started — see below |
 | 9 | Publish prerelease FsFlow packages; run adapters against released Axial packages | not started |
@@ -376,6 +411,29 @@ Update repository URLs and source-link metadata before publishing from the new l
 | 12 | Prefix reservations; publish Axial, then FsFlow | not started |
 
 Phases 1–4 were much cheaper in the combined repository, with the compiler checking every call site.
+
+**On phase 6.** Verified by copying only `src/Axial.Flow*`, `tests/Axial.Flow*`,
+`examples/Axial.Flow.Comparisons`, and `benchmarks/Axial.Flow.Benchmarks` into a scratch tree with no
+Axial source and building it standalone: **build succeeded, 258 of 259 tests passed.** No Flow project
+holds a `ProjectReference` to a non-Flow Axial project, and no Flow source file opens `Axial.Result`,
+`Axial.Parse`, `Axial.Constraint`, `Axial.Refined`, `Axial.Data`, or `Axial.Schema`. The core seam is
+genuinely clean.
+
+The single failure was `Axial.Flow.Tests` asserting that **both** `docs/schema/examples.md` and
+`docs/flow/examples.md` regenerate from `scripts/generate-example-docs.sh` — a cross-product test in a
+Flow project, and the only coverage the schema page had. Now split: the Flow test passes `flow` and
+asserts only the flow page, and `tests/Axial.Schema.Tests/ExampleDocsTests.fs` passes `schema` and
+asserts only the schema page. `runBashScript` grew a `runBashScriptWithArguments` form to carry the
+product argument. So **`tests/Axial.Flow.Tests` belongs on the "must split in two" list**, which it was
+not on.
+
+**Caveat, and a prerequisite that was not previously recorded.** The flow half of that generator renders
+its page from `examples/Axial.Examples`, `examples/Axial.Playground`, and
+`examples/Axial.MaintenanceExamples` — all three on the "must split in two" list, and between them they
+reference `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, `Axial.Parse`, `Axial.Schema`, and
+`Axial.Data`. So FsFlow's docs test cannot go green until those three examples are split or repointed at
+released Axial packages. Splitting the examples is a **prerequisite for FsFlow CI being green**, not
+post-extraction tidying.
 
 **On phase 8.** The rename is deliberately *after* extraction. In the combined repository it touches 1,011
 occurrences across 212 files — down from 2,330 across 1,416 before phase 4 removed the generated trees —

@@ -96,30 +96,24 @@ module WorkflowBasicTests =
         test <@ syncRecovered = Exit.Success 7 @>
 
     [<Fact>]
-    let ``Runnable example docs are generated from executable example projects`` () =
+    let ``Runnable Flow example docs are generated from executable example projects`` () =
+        // Scoped to the flow product deliberately: after the repository split this project moves to
+        // FsFlow, where docs/schema and the Schema examples do not exist. The schema half of this
+        // assertion lives in Axial.Schema.Tests.
         let repoRoot = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", ".."))
-        let schemaDocsPath = Path.Combine(repoRoot, "docs", "schema", "examples.md")
         let flowDocsPath = Path.Combine(repoRoot, "docs", "flow", "examples.md")
         let generatorPath = Path.Combine(repoRoot, "scripts", "generate-example-docs.sh")
-        let generatedSchemaPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}-schema.md")
         let generatedFlowPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}-flow.md")
 
         try
             let exitCode, output =
-                runBashScript
-                    generatorPath
-                    [ "DOCS_SCHEMA_EXAMPLES_OUTPUT", generatedSchemaPath
-                      "DOCS_FLOW_EXAMPLES_OUTPUT", generatedFlowPath ]
+                runBashScriptWithArguments generatorPath [ "flow" ] [ "DOCS_FLOW_EXAMPLES_OUTPUT", generatedFlowPath ]
 
             if exitCode <> 0 then
-                failwithf "generate-example-docs.sh failed with exit code %d:%s%s" exitCode Environment.NewLine output
+                failwithf "generate-example-docs.sh flow failed with exit code %d:%s%s" exitCode Environment.NewLine output
 
-            test <@ File.ReadAllText generatedSchemaPath = File.ReadAllText schemaDocsPath @>
             test <@ File.ReadAllText generatedFlowPath = File.ReadAllText flowDocsPath @>
         finally
-            if File.Exists generatedSchemaPath then
-                File.Delete generatedSchemaPath
-
             if File.Exists generatedFlowPath then
                 File.Delete generatedFlowPath
 

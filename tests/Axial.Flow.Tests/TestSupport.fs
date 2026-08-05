@@ -121,13 +121,16 @@ module TestSupport =
         finally
             File.Delete scriptPath
 
-    let runBashScript (scriptPath: string) (environment: (string * string) list) =
+    let runBashScriptWithArguments (scriptPath: string) (arguments: string list) (environment: (string * string) list) =
+        let quotedArguments =
+            arguments |> List.map (fun argument -> $"\"{argument}\"") |> String.concat " "
+
         use childProcess =
             new Process(
                 StartInfo =
                     ProcessStartInfo(
                         FileName = "bash",
-                        Arguments = $"\"{scriptPath}\"",
+                        Arguments = $"\"{scriptPath}\" {quotedArguments}",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false
@@ -169,6 +172,9 @@ module TestSupport =
             childProcess.ExitCode, output
         else
             124, output + $"{Environment.NewLine}Timed out waiting for {scriptPath}."
+
+    let runBashScript (scriptPath: string) (environment: (string * string) list) =
+        runBashScriptWithArguments scriptPath [] environment
 
     type SingleConsumptionValueTaskSource<'value>(value: 'value) as this =
         let consumptionCount = ref 0
