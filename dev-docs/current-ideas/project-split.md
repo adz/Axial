@@ -39,7 +39,8 @@ Landed in the combined repository:
   focused package set.
 
 - Axial and FsFlow have separate version properties. `Directory.Build.props` declares `AxialVersion`
-  (0.7.0) and `FsFlowVersion` (0.6.1) and selects between them with `IsFsFlowProject`, which is true for
+  and `FsFlowVersion` — both 0.7.0 for now, which is convenience, not a rule — and selects between them
+  with `IsFsFlowProject`, which is true for
   `Axial.Flow*` and for the two HTTP adapters that become `FsFlow.AspNetCore` / `FsFlow.GenHttp`.
   `scripts/pack.sh` takes `-v` for the Axial train and `-f` for the FsFlow train; it no longer has a
   single `-p:Version` override that would silently re-couple them.
