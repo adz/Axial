@@ -148,6 +148,27 @@ Free today, breaking after first publish.
 Folder name is the section name, so the IA is expressed by naming folders after reader tasks. Numeric
 prefixes order them and are stripped from URLs.
 
+The first five minutes are governed separately from the full information architecture. Flame's NuGet
+README is the useful reference: it states the job in one sentence, installs, defines an ordinary F# record,
+builds one schema, parses realistic JSON, uses the typed success value, and shows the failure shape before
+expanding into rules or a catalogue. Its later README mixes tutorial, reference, internals, and benchmarks;
+that is not the part to copy. Copy the speed and concreteness of the opening transaction.
+
+For both projects:
+
+1. **Complete one realistic transaction before explaining the architecture.** The reader must see familiar
+   input become a useful typed result, or a familiar handler run successfully, before meeting the full
+   vocabulary behind it.
+2. **One route is visually dominant.** The landing page has one primary `Get started` action. Package
+   matrices, overview tours, reference-app walkthroughs, and API reference must not compete with it.
+3. **Show the payoff beside the declaration.** Do not ask the reader to carry boilerplate for several
+   sections before showing what that declaration replaces or derives.
+4. **Name concepts after the reader has observed them.** Terms such as interpreter, refinement, environment,
+   and effect system explain behaviour already seen; they do not precede the first working example.
+5. **Move catalogues out of the opening path.** Complete rule lists, parser tables, package inventories,
+   performance details, AOT notes, and implementation paths belong in task guides, Reference, Packages, or
+   Notes.
+
 ### 5.1 Reified — `./docs`
 
 ```
@@ -192,17 +213,43 @@ two, whether `Stm` and `Ref` are public API worth teaching, whether `Stream` war
 
 **Reified** — declaration shaped: declare once, then derive. Lead with the concept; it sells when explained.
 
-1. The problem: the same rule restated in a parser, a validator, a form, and a test
-2. Install what you need
-3. Declare one constraint; check a value with it
-4. Attach the declaration to a type so nothing re-checks it
-5. Declare a whole model; derive the codec and contract from it
-6. Derive test fixtures from the same declaration
-7. How failures are reported: an ordinary F# `Result` carrying a `Violation` or `ParseError` — Reified's
+The page opens with one complete boundary transaction, not a definition of `Schema<'model>` and not the
+package graph:
+
+```text
+ordinary F# model
+    → explicit schema declaration
+    → realistic untrusted input
+    → typed success or path-aware accumulated errors
+    → one derived output from the same declaration
+```
+
+Use an ordinary application shape such as signup, checkout, or configuration. Show the model, declaration,
+input, `Schema.parse`, the successful value being used, and two failures together. Then derive exactly one
+second artefact — preferably the JSON codec or JSON Schema — so the declaration pays for itself on the same
+screen. Reified deliberately uses an explicit, reflection-free declaration rather than Flame's
+`Schema.fromType`; the prose and example sequence must therefore make the return on that declaration
+immediate. The first impression must not be "repeat the record fields and constructor now; learn why later."
+
+After that completed transaction, widen from one value rule to the whole Reified story:
+
+1. State the problem: the same rule is restated in a parser, a validator, a form, and a test.
+2. Install only the package used by the example; defer the package matrix.
+3. Declare one constraint and check a value with it.
+4. Attach the declaration to a type so downstream code does not re-check it.
+5. Return to the opening model and show how its fields consume the same declarations.
+6. Derive the remaining codec, contract, and test fixtures from the model declaration.
+7. Explain failures: an ordinary F# `Result` carrying a `Violation` or `ParseError` — Reified's
    types, derived from the rule, carrying context worth keeping. This is where the name earns itself: a
    `Constraint` carries its `ConstraintDescription`, and a violation carries the atom and the offending
-   value as data, so the rule and its message cannot drift apart
-8. Where to go next
+   value as data, so the rule and its message cannot drift apart.
+8. Route by the reader's next task, not by package.
+
+Do not enumerate every interpreter before the first transaction finishes. `Data`, `SchemaErrors`, paths,
+codec compilation, inspection, contracts, forms, OpenAPI, AOT, trimming, and Fable are all legitimate, but
+introducing them before the reader has parsed one useful model turns the getting-started into an architecture
+tour. The current material can be retained by moving each explanation after the complete example or into its
+task guide.
 
 **Axial** — root-type shaped, but problem-led rather than type-led. Effect opens with `Effect<A, E, R>` as
 a type shape; the likeliest curious newcomer here is a C# developer who has never heard of ZIO or Effect,
@@ -219,10 +266,19 @@ and a three-parameter generic on page one will lose them. **Do not say "effect s
 7. Swapping the dependency in a test — the payoff
 8. Where to go next
 
+Axial follows the same transaction-first rule: one handler, one expected failure, one explicit dependency,
+one live run, then the same handler with a fake dependency. Concurrency, scheduling, layers, runtimes, and
+the category name come later.
+
 ### 5.4 Landing page per project: route by symptom
 
 Plain problem statements the destination page genuinely solves. Claim only what the library does —
 observability is the honest promise; diagnosing a slow production system is not.
+
+These symptom routes sit below the primary getting-started action. They are for a reader who already knows
+which pain brought them here, not a replacement for the single newcomer path. Do not lead either landing
+page with a package-card grid: that asks the reader to understand the product decomposition before seeing
+the product work. Package inventory belongs in the Packages area.
 
 **Reified**
 
@@ -376,8 +432,6 @@ churns a large tree; doing it first means Axial migrates once, directly onto nes
 
 ## 7. Sequencing
 
-| Phase | Work | Where |
-| --- | --- | --- |
 This table tracks documentation work. `project-split.md` holds the authoritative split sequence; the two
 agree, with different granularity.
 
