@@ -101,7 +101,7 @@ interop boundaries. `App` adds ownership around a root workflow:
 | Execute one operation | `workflow.ToTask env` or `workflow.ToAsync env` |
 | Run a finite root application | `App.run env application` |
 | Start and later stop a root application | `App.start env application` |
-| Integrate with .NET Generic Host | [`Axial.Flow.Hosting`](./hosting/) |
+| Integrate with .NET Generic Host | [`Axial.Hosting`](./hosting/) |
 | Run under Node signals | [Node hosting](./hosting/node/) |
 | Tie lifetime to a browser owner | [Browser hosting](./hosting/browser/) |
 

@@ -1,6 +1,6 @@
 module Axial.ReferenceApp.Program
 
-open Axial.Data
+open Reified.Data
 
 open System
 open System.Net
@@ -14,18 +14,18 @@ open OpenTelemetry.Logs
 open OpenTelemetry.Metrics
 open OpenTelemetry.Resources
 open OpenTelemetry.Trace
-open Axial.Result
-open Axial.Constraint
-open Axial.Flow
-open Axial.Flow.FileSystem
-open Axial.Refined
-open Axial.Schema
-open Axial.Schema.Http
-open Axial.Schema.Http.AspNetCore
-open Axial.Schema.Json
-open Axial.Flow.PlatformService
-open Axial.Flow.Hosting
-open Axial.Flow.Telemetry
+open Reified.Result
+open Reified.Constraint
+open Axial
+open Axial.FileSystem
+open Reified.Refinements
+open Reified.Schema
+open Reified.Schema.Http
+open Axial.Hosting.AspNetCore
+open Reified.Schema.Json
+open Axial.PlatformService
+open Axial.Hosting
+open Axial.Telemetry
 open Axial.ReferenceApp
 
 let private renderError = function
@@ -172,14 +172,14 @@ let buildWebApp (baseEnvironment: AppEnv) (args: string array) =
         .ConfigureResource(fun resource -> resource.AddService("axial-reference-app") |> ignore)
         .WithTracing(fun tracing ->
             tracing
-                .AddSource("Axial.Flow")
+                .AddSource("Axial")
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddOtlpExporter()
             |> ignore)
         .WithMetrics(fun metrics ->
             metrics
-                .AddMeter("Axial.Flow")
+                .AddMeter("Axial")
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()

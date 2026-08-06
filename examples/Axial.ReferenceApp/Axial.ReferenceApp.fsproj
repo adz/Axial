@@ -11,19 +11,13 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.Result\Axial.Result.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Constraint\Axial.Constraint.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Refined\Axial.Refined.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Flow\Axial.Flow.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema.Json\Axial.Schema.Json.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema.Http\Axial.Schema.Http.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema.Http.AspNetCore\Axial.Schema.Http.AspNetCore.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Flow.PlatformService\Axial.Flow.PlatformService.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Flow.FileSystem\Axial.Flow.FileSystem.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Flow.Hosting\Axial.Flow.Hosting.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Flow.Telemetry\Axial.Flow.Telemetry.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
+    <PackageReference Include="Reified" Version="$(ReifiedVersion)" />
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Hosting.AspNetCore\Axial.Hosting.AspNetCore.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.FileSystem\Axial.FileSystem.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Hosting\Axial.Hosting.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Telemetry\Axial.Telemetry.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />

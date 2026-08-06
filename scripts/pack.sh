@@ -32,7 +32,7 @@ if [[ -n "$FSFLOW_VERSION" ]]; then
 fi
 
 projects=(
-  "src/Axial.Flow/Axial.Flow.fsproj"
+  "src/Axial/Axial.fsproj"
   "src/Axial.Data/Axial.Data.fsproj"
   "src/Axial.Result/Axial.Result.fsproj"
   "src/Axial.Constraint/Axial.Constraint.fsproj"
@@ -44,16 +44,16 @@ projects=(
   "src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj"
   "src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj"
   "src/Axial.Schema.Contracts.Build/Axial.Schema.Contracts.Build.fsproj"
-  "src/Axial.Flow.Console/Axial.Flow.Console.fsproj"
-  "src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj"
-  "src/Axial.Flow.HttpClient/Axial.Flow.HttpClient.fsproj"
-  "src/Axial.Flow.Process/Axial.Flow.Process.fsproj"
-  "src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj"
-  "src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj"
-  "src/Axial.Flow.Hosting.Node/Axial.Flow.Hosting.Node.fsproj"
-  "src/Axial.Flow.Hosting.Browser/Axial.Flow.Hosting.Browser.fsproj"
-  "src/Axial.Flow.Telemetry/Axial.Flow.Telemetry.fsproj"
-  "src/Axial.Flow.Telemetry.JavaScript/Axial.Flow.Telemetry.JavaScript.fsproj"
+  "src/Axial.Console/Axial.Console.fsproj"
+  "src/Axial.FileSystem/Axial.FileSystem.fsproj"
+  "src/Axial.HttpClient/Axial.HttpClient.fsproj"
+  "src/Axial.Process/Axial.Process.fsproj"
+  "src/Axial.PlatformService/Axial.PlatformService.fsproj"
+  "src/Axial.Hosting/Axial.Hosting.fsproj"
+  "src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj"
+  "src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj"
+  "src/Axial.Telemetry/Axial.Telemetry.fsproj"
+  "src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj"
 )
 
 echo "Packing projects to $output_dir..."

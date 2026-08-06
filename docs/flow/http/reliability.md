@@ -50,7 +50,7 @@ let policy =
 workflow |> Flow.Runtime.retry policy
 ```
 
-`Schedule.retry` from `Axial.Flow` also composes with HTTP workflows when you need jitter or custom cadence:
+`Schedule.retry` from `Axial` also composes with HTTP workflows when you need jitter or custom cadence:
 
 ```fsharp
 workflow |> Schedule.retry (Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |> Schedule.jittered)

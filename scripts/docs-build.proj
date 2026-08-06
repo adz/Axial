@@ -11,10 +11,10 @@
     <DocsProject Include="../src/Axial.Schema.Json/Axial.Schema.Json.fsproj" />
     <DocsProject Include="../src/Axial.Schema.Http.AspNetCore/Axial.Schema.Http.AspNetCore.fsproj" />
     <DocsProject Include="../src/Axial.Schema.Http.GenHttp/Axial.Schema.Http.GenHttp.fsproj" />
-    <DocsProject Include="../src/Axial.Flow.Process/Axial.Flow.Process.fsproj" />
-    <DocsProject Include="../src/Axial.Flow.Hosting/Axial.Flow.Hosting.fsproj" />
-    <DocsProject Include="../src/Axial.Flow.Hosting.Node/Axial.Flow.Hosting.Node.fsproj" />
-    <DocsProject Include="../src/Axial.Flow.Hosting.Browser/Axial.Flow.Hosting.Browser.fsproj" />
+    <DocsProject Include="../src/Axial.Process/Axial.Process.fsproj" />
+    <DocsProject Include="../src/Axial.Hosting/Axial.Hosting.fsproj" />
+    <DocsProject Include="../src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj" />
+    <DocsProject Include="../src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj" />
     <DocsProject Include="docgen/docgen.fsproj" />
   </ItemGroup>
 

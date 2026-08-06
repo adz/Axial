@@ -1,7 +1,7 @@
 # Portable App Example
 
 This is the smallest application-shaped Axial program. It uses `App.run` directly and has no dependency on
-`Axial.Flow.Hosting`, dependency injection, or a platform host.
+`Axial.Hosting`, dependency injection, or a platform host.
 
 Run it from the repository root:
 

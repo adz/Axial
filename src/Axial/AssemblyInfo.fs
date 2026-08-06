@@ -1,0 +1,19 @@
+namespace Axial
+
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Tests")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.PlatformService.Tests")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Benchmarks")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Examples")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Playground")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.MaintenanceExamples")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.ReadmeExample")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.PlatformService.Examples")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.PlatformService")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Console")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.FileSystem")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.HttpClient")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Process")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Hosting")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Telemetry")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Telemetry.JavaScript")>]
+do ()

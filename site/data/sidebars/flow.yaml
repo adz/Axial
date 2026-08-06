@@ -5,7 +5,7 @@ groups:
     caption: Environment-aware workflows with typed errors, cancellation, scheduling, and structured concurrency.
     descendants: false
 
-  - title: Axial.Flow
+  - title: Axial
     home: /flow/overview
     caption: The core package. Platform-service, console, filesystem, HTTP, process, and hosting packages extend it.
     descendants: false
@@ -42,7 +42,7 @@ groups:
       - /flow/reference/service/http
       - /flow/reference/service/process
 
-  - title: Axial.Flow.PlatformService
+  - title: Axial.PlatformService
     home: /flow/platform-service
     caption: The standard clock, logging, randomness, GUID, and environment-variable services.
     children_of:
@@ -51,7 +51,7 @@ groups:
       entries:
         - /flow/reference/service/core
 
-  - title: Axial.Flow.Console
+  - title: Axial.Console
     home: /flow/console
     caption: The explicit console and terminal service.
     children_of:
@@ -60,7 +60,7 @@ groups:
       entries:
         - /flow/reference/service/console
 
-  - title: Axial.Flow.FileSystem
+  - title: Axial.FileSystem
     home: /flow/filesystem
     caption: Explicit file, directory, path, stream, and metadata operations.
     children_of:
@@ -69,7 +69,7 @@ groups:
       entries:
         - /flow/reference/service/filesystem
 
-  - title: Axial.Flow.HttpClient
+  - title: Axial.HttpClient
     home: /flow/http
     caption: Build typed HTTP requests, decode responses safely, and retry transient failures.
     children_of:
@@ -78,7 +78,7 @@ groups:
       entries:
         - /flow/reference/service/http
 
-  - title: Axial.Flow.Process
+  - title: Axial.Process
     home: /flow/processes
     caption: Run external commands as typed Axial workflows.
     children_of:
@@ -87,35 +87,35 @@ groups:
       entries:
         - /flow/reference/service/process
 
-  - title: Axial.Flow.Hosting
+  - title: Axial.Hosting
     home: /flow/hosting
     caption: Standalone process, Generic Host, dependency injection, and Microsoft logging integration.
     reference:
       entries:
         - /flow/reference/hosting
 
-  - title: Axial.Flow.Hosting.Node
+  - title: Axial.Hosting.Node
     home: /flow/hosting/node
     caption: Running Fable Flow applications under Node signals, process exit, and process.env.
     reference:
       entries:
         - /flow/reference/hosting-node
 
-  - title: Axial.Flow.Hosting.Browser
+  - title: Axial.Hosting.Browser
     home: /flow/hosting/browser
     caption: Owning a Fable Flow application from a browser UI module or AbortSignal.
     reference:
       entries:
         - /flow/reference/hosting-browser
 
-  - title: Axial.Flow.Telemetry
+  - title: Axial.Telemetry
     home: /flow/telemetry
     caption: Flow annotations and trace metadata for .NET activities and telemetry spans.
     reference:
       entries:
         - /flow/telemetry/reference
 
-  - title: Axial.Flow.Telemetry.JavaScript
+  - title: Axial.Telemetry.JavaScript
     home: /flow/telemetry/javascript
     caption: OpenTelemetry tracing for Flow applications compiled with Fable.
     reference:

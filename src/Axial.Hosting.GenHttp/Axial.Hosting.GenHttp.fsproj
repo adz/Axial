@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>Axial.Hosting.GenHttp</PackageId>
+    <AssemblyName>Axial.Hosting.GenHttp</AssemblyName>
+    <RootNamespace>Axial.Hosting.GenHttp</RootNamespace>
+    <Authors>Adam Davies</Authors>
+    <Description>GenHTTP hosting for schema-driven Axial Flow endpoints, with trusted request parsing, typed outcome lowering, problem details, compiled codecs, and OpenAPI support.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;axial;schema;http;genhttp</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GenHTTP.Api" Version="10.5.3" />
+    <PackageReference Include="GenHTTP.Modules.IO" Version="10.5.3" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Axial\Axial.fsproj" />
+    <PackageReference Include="Reified.Schema.Http" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Schema.Json" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Data" Version="$(ReifiedVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="GenHttp.fs" />
+  </ItemGroup>
+
+</Project>

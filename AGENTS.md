@@ -21,12 +21,12 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 
 ### EFFECT BOUNDARY — DO NOT HIDE AMBIENT EFFECTS IN SERVICE ADAPTERS
 
-- `Axial.Flow.Process` and `Axial.Flow.HttpClient` may perform only the effect named by their core, mockable service type (`IProcess` or `IHttp`). Any additional effect must be an explicit, mockable dependency visible in the implementation signature.
-- In particular, never call `DateTimeOffset.UtcNow`, `DateTime.Now`, or another ambient clock from Process or Http. Inject `Axial.Flow.PlatformService.IClock` into live implementations and use `clock.UtcNow()`.
-- Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.Flow.PlatformService` or another package whose core type is present in the signature.
+- `Axial.Process` and `Axial.HttpClient` may perform only the effect named by their core, mockable service type (`IProcess` or `IHttp`). Any additional effect must be an explicit, mockable dependency visible in the implementation signature.
+- In particular, never call `DateTimeOffset.UtcNow`, `DateTime.Now`, or another ambient clock from Process or Http. Inject `Axial.PlatformService.IClock` into live implementations and use `clock.UtcNow()`.
+- Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.PlatformService` or another package whose core type is present in the signature.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
-- Keep `Axial.Flow` and `Axial.Schema` independent; neither package may depend on the other.
+- Keep `Axial` and `Axial.Schema` independent; neither package may depend on the other.
 - Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
 - Keep `Constraint<'value>` as the one public value-rule concept. A constraint is a reusable description of valid values; `check` is the operation that runs it. There is no separate `Check` type and no second constructor catalogue: `Axial.Refined` and `Axial.Schema` consume the same `Constraint` value a caller checks directly.
 - Constraints have two tiers, and the split is load-bearing. **Interpreted** constraints are a closed algebra: each built-in constructor builds one `ConstraintAtom` and places that same value in both its description and any violation, so execution, export, and future proof cannot drift. The algebra grows only by Axial release — there is no registration API, and no authored code or string may claim inspectable logic. **Opaque** constraints (`custom`, `customWith`, `notWith`, `contramap`) run normally, report author-supplied prose, and are honestly invisible to export and proof.

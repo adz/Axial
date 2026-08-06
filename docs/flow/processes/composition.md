@@ -28,7 +28,7 @@ let countErrors =
 The DSL offers the same model with shorter names:
 
 ```fsharp
-open Axial.Flow.Process.DSL
+open Axial.Process.DSL
 
 let result =
     cmd $"printf %s {value}"

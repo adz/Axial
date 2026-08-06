@@ -7,7 +7,7 @@ description: The same seven programs written with Task/exceptions/tokens and wit
 # Task vs Flow, Seven Scenarios
 
 Effect syntax in isolation proves nothing. This page walks through seven realistic programs implemented twice in
-[`examples/Axial.Flow.Comparisons`](https://github.com/adz/Axial/tree/main/examples/Axial.Flow.Comparisons) —
+[`examples/Axial.Comparisons`](https://github.com/adz/Axial/tree/main/examples/Axial.Comparisons) —
 once with `Task`, exceptions, cancellation tokens, and manually passed services, and once with
 `Flow<'env, 'error, 'value>` — over identical domain types and service interfaces, so the only variable is the
 workflow model.
@@ -15,7 +15,7 @@ workflow model.
 Flow does not make side effects pure and does not prevent all defects. The gain, scenario by scenario, is that
 expected failure, dependencies, cancellation, resource lifetime, and composition policy become **visible in the
 signature** and **testable at the composition point**. Every guarantee claimed below has a test in
-[`tests/Axial.Flow.Comparisons.Tests`](https://github.com/adz/Axial/tree/main/tests/Axial.Flow.Comparisons.Tests)
+[`tests/Axial.Comparisons.Tests`](https://github.com/adz/Axial/tree/main/tests/Axial.Comparisons.Tests)
 that fails if the guarantee is removed.
 
 Each scenario ends with three lists: what the type makes visible, what the runtime enforces, and what remains the
@@ -49,7 +49,7 @@ adapter), and interruption. ZIO correspondence: environment services, typed erro
 
 ## 2. Resilient HTTP call with a retry budget
 
-Fetch an exchange rate through [`Axial.Flow.HttpClient`]({{< relref "/flow/http/" >}}): retry only transient
+Fetch an exchange rate through [`Axial.HttpClient`]({{< relref "/flow/http/" >}}): retry only transient
 transport failures, back off exponentially, stop after three attempts, and turn a two-second deadline into
 `RateError.TimedOut`. Never retry malformed successful responses.
 
@@ -83,7 +83,7 @@ let recommended = loadRecommendations |> Flow.orElse (Flow.succeed [])  // recov
 
 Flow.zipPar (Flow.zipPar account recent) recommended
 |> Flow.map (fun ((account, recent), recommended) -> { ... })
-|> Activity.trace "dashboard.load"                                       // Axial.Flow.Telemetry span
+|> Activity.trace "dashboard.load"                                       // Axial.Telemetry span
 ```
 
 The ordinary `Task.WhenAll` version must cancel siblings by hand through a linked token source, and two simultaneous
@@ -102,7 +102,7 @@ ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
 
 ## 4. Scoped temporary workspace
 
-Create a temporary directory through [`Axial.Flow.FileSystem`]({{< relref "/flow/filesystem/" >}}), perform fallible
+Create a temporary directory through [`Axial.FileSystem`]({{< relref "/flow/filesystem/" >}}), perform fallible
 steps, remove the directory exactly once on every exit shape.
 
 The ordinary comparison includes `importBatchLeaky`, the classic leak: construction succeeds, then a setup check
@@ -225,8 +225,8 @@ park a reservation on empty stock until a replenishment commits. ZIO corresponde
 ## Running the comparisons
 
 ```bash
-dotnet test tests/Axial.Flow.Comparisons.Tests --nologo
+dotnet test tests/Axial.Comparisons.Tests --nologo
 ```
 
-Each source file in `examples/Axial.Flow.Comparisons` is self-contained: shared domain types at the top, the
+Each source file in `examples/Axial.Comparisons` is self-contained: shared domain types at the top, the
 `Ordinary` module, then the `WithFlow` module, with the full return type stated above each implementation.

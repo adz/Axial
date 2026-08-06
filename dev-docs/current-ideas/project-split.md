@@ -72,7 +72,7 @@ Landed in the combined repository:
 - `Axial.Refined` depends only on `Axial.Constraint`.
 - `Axial.Parse` is a separate leaf depending on nothing.
 - `Axial.Schema` depends on Data, Constraint, Refined, and Parse directly, never on `Axial.Result`.
-- `Axial.Flow` depends on no other Axial package.
+- `Axial` depends on no other Axial package.
 - Both meta-packages are gone: `src/Axial.ErrorHandling/` and `src/Axial/`, deleted with their solution,
   pack, and docs-build entries. `Axial.ApiShape.Tests` asserts no meta-package remains in the graph.
 - Per-package test projects, AOT probes, source inventory checks, and doc generator inputs track the
@@ -80,7 +80,7 @@ Landed in the combined repository:
 
 - The two products have separate version properties. `Directory.Build.props` declares `AxialVersion` and
   `FsFlowVersion` — both 0.7.0 for now, which is convenience, not a rule — and selects between them with
-  `IsFsFlowProject`, which is true for `Axial.Flow*` and for the two HTTP adapters. `scripts/pack.sh` takes
+  `IsFsFlowProject`, which is true for `Axial*` and for the two HTTP adapters. `scripts/pack.sh` takes
   `-v` for one train and `-f` for the other; it no longer has a single `-p:Version` override that would
   silently re-couple them. **The property names now point the wrong way** and are renamed with the rest:
   `FsFlowVersion` → `AxialVersion` (the effect system), `AxialVersion` → `ReifiedVersion`,
@@ -198,7 +198,7 @@ type, so `namespace Axial` holding `Flow<'env,'error,'value>` and the `flow { }`
 `open Axial` gives you exactly what you installed. The rule survives in its new form on the other side —
 nothing declares into `namespace Reified`.
 
-Whether the core package is `Axial` or stays `Axial.Flow` is listed under "Choices To Resolve".
+Whether the core package is `Axial` or stays `Axial` is listed under "Choices To Resolve".
 
 ### Namespace convention — unified on A
 
@@ -331,8 +331,8 @@ The effect system *is* the trunk — it is the initial commit. The description p
 
 **This inversion is the single biggest risk reduction in the plan.** The earlier direction filtered the
 effect system, whose paths have been renamed four times — `src/EffectFs` → `src/EffectfulFlow` →
-`src/FlowKit` → `src/FsFlow*` → `src/Axial.Flow*`. Since `filter-repo` matches path strings per commit and
-**does not follow renames**, filtering on the `Axial.Flow*` names alone would have produced a repository
+`src/FlowKit` → `src/FsFlow*` → `src/Axial*`. Since `filter-repo` matches path strings per commit and
+**does not follow renames**, filtering on the `Axial*` names alone would have produced a repository
 whose history began 2026-06-21 and **omitted the v0.6.0 tag entirely** (`git ls-tree v0.6.0 src/` is all
 `src/FsFlow*`). That loss is unrecoverable once the original is gone. Filtering the description side has no
 such exposure: its whole history is six weeks under one `Axial.*` family.
@@ -369,7 +369,7 @@ test project classified by its actual project references:
 
 | Destination | Projects |
 | --- | --- |
-| **Axial** — stays, Flow-only | `Axial.App.Example`, `Axial.Flow.AotProbe`, `Axial.Flow.Comparisons`, `Axial.Flow.PlatformService.Examples`, `Axial.Hosting.Browser`, `Axial.Hosting.Desktop`, `Axial.Hosting.GenericHost`, `Axial.Hosting.Node`, `benchmarks/Axial.Flow.Benchmarks` |
+| **Axial** — stays, Flow-only | `Axial.App.Example`, `Axial.AotProbe`, `Axial.Comparisons`, `Axial.PlatformService.Examples`, `Axial.Hosting.Browser`, `Axial.Hosting.Desktop`, `Axial.Hosting.GenericHost`, `Axial.Hosting.Node`, `benchmarks/Axial.Benchmarks` |
 | **Axial** — stays, adapter examples | `Axial.Api`, `Axial.Api.GenHttp` (no direct Flow reference, but they consume the AspNetCore/GenHttp adapters, which stay) |
 | **Axial** — stays, with released Reified deps | `Axial.Hosting.DotNet` (Flow.Hosting plus incidental Parse and Refinements) |
 | **Reified** — extracts | `Axial.Constraint.AotProbe`, `Axial.Refined.AotProbe`, `Axial.Result.AotProbe`, `Axial.Schema.AotProbe`, `Axial.ReferenceApp.Intro`, `Axial.ReferenceApp.Wire`, `benchmarks/Axial.Schema.Benchmarks` |
@@ -380,7 +380,7 @@ The six in "must split" each hold content from both products in one project. `Ax
 the most consequential: it asserts package layout across both products, so each repository needs its own
 copy asserting only its own packages.
 
-**A seventh: `tests/Axial.Flow.Tests`.** Found by the phase 6 verification — see "On phase 6" below. Its
+**A seventh: `tests/Axial.Tests`.** Found by the phase 6 verification — see "On phase 6" below. Its
 runnable-example-docs test asserted both products' docs pages. Already split; listed here so the count
 is right.
 
@@ -394,7 +394,7 @@ and optimization into one opaque migration.
 3. Confirm the extracted repository builds and its tests pass standalone.
 4. Make path and package renames in normal commits, **one per repository against a tree containing nothing
    else**: `Axial.*` description packages → `Reified.*` (with `Refined` → `Refinements`) in the new
-   repository; `Axial.Flow*` → `Axial*` and the two adapters → `Axial.AspNetCore` / `Axial.GenHttp` here.
+   repository; `Axial*` → `Axial*` and the two adapters → `Axial.AspNetCore` / `Axial.GenHttp` here.
 5. Update build, CI, docs, and release configuration; install maintainer files.
 6. Publish prerelease packages from each repository.
 7. Run consumer and integration tests.
@@ -482,7 +482,7 @@ Update repository URLs and source-link metadata before publishing from the new l
 | 6 | Verify the effect system builds and tests with no description source present | **done** — with one caveat below |
 | 7 | Split cross-product examples and tests | **in progress** — product examples and HTTP tests are split; the combined reference/integration examples deliberately stay in Axial for now; focused Fable and API-shape replacements remain before phase 11 |
 | 8 | `filter-repo` into Reified; install maintainer files and CI; confirm green | **local extraction complete** — `/home/adam/projects/Reified`, generated history pruned, standalone solution builds and retained tests pass; remote, maintainer cleanup, and CI remain |
-| 9 | Rename in each repository: `Axial.*` → `Reified.*` there, `Axial.Flow*` → `Axial*` and the adapters here | not started — see below |
+| 9 | Rename in each repository: `Axial.*` → `Reified.*` there, `Axial*` → `Axial*` and the adapters here | not started — see below |
 | 10 | Publish prerelease Reified packages; run adapters against them | not started |
 | 11 | Remove the description paths from Axial | not started |
 | 12 | Documentation work — see `docs-information-architecture.md` | in progress |
@@ -490,19 +490,19 @@ Update repository URLs and source-link metadata before publishing from the new l
 
 Phases 1–4 were much cheaper in the combined repository, with the compiler checking every call site.
 
-**On phase 6.** Verified by copying only `src/Axial.Flow*`, `tests/Axial.Flow*`,
-`examples/Axial.Flow.Comparisons`, and `benchmarks/Axial.Flow.Benchmarks` into a scratch tree with no
+**On phase 6.** Verified by copying only `src/Axial*`, `tests/Axial*`,
+`examples/Axial.Comparisons`, and `benchmarks/Axial.Benchmarks` into a scratch tree with no
 description source and building it standalone: **build succeeded, 258 of 259 tests passed.** No Flow project
 holds a `ProjectReference` to a description project, and no Flow source file opens `Axial.Result`,
 `Axial.Parse`, `Axial.Constraint`, `Axial.Refined`, `Axial.Data`, or `Axial.Schema`. The core seam is
 genuinely clean.
 
-The single failure was `Axial.Flow.Tests` asserting that **both** `docs/schema/examples.md` and
+The single failure was `Axial.Tests` asserting that **both** `docs/schema/examples.md` and
 `docs/flow/examples.md` regenerate from `scripts/generate-example-docs.sh` — a cross-product test in a
 Flow project, and the only coverage the schema page had. Now split: the Flow test passes `flow` and
 asserts only the flow page, and `tests/Axial.Schema.Tests/ExampleDocsTests.fs` passes `schema` and
 asserts only the schema page. `runBashScript` grew a `runBashScriptWithArguments` form to carry the
-product argument. So **`tests/Axial.Flow.Tests` belongs on the "must split in two" list**, which it was
+product argument. So **`tests/Axial.Tests` belongs on the "must split in two" list**, which it was
 not on.
 
 **Caveat, now promoted to phase 7.** The flow half of that generator renders its page from
@@ -556,7 +556,7 @@ Phases 1–11 need nothing from it.
 
 ## Choices To Resolve During Implementation
 
-- Whether Axial's core package is `Axial` or stays `Axial.Flow`. `Axial` is the natural reading now that the
+- Whether Axial's core package is `Axial` or stays `Axial`. `Axial` is the natural reading now that the
   product is the flow, and it makes `open Axial` give exactly what was installed — but it is a larger change
   and interacts with the namespace rule above.
 - Final GitHub repository name and documentation URL for Reified. Axial keeps this repository.

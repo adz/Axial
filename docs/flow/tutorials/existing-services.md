@@ -14,7 +14,7 @@ These are still explicit dependencies. The workflow only sees them when your env
 
 ```fsharp
 open Axial.Data
-open Axial.Flow.PlatformService
+open Axial.PlatformService
 
 type AppEnv =
     { Runtime: BaseRuntime }

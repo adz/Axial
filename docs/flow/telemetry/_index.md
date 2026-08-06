@@ -1,5 +1,5 @@
 ---
-title: Axial.Flow.Telemetry
+title: Axial.Telemetry
 linkTitle: Telemetry
 weight: 110
 ---
@@ -7,7 +7,7 @@ weight: 110
 This page shows how Flow annotations and trace metadata enter .NET activities and telemetry spans.
 For the big picture — how traces, logs, and metrics fit together and how to wire up OpenTelemetry — see
 [Observability]({{< relref "/flow/observability.md" >}}). On Fable JavaScript targets, the counterpart
-package is `Axial.Flow.Telemetry.JavaScript` (`Otel.trace`, same tag vocabulary, emitting through
+package is `Axial.Telemetry.JavaScript` (`Otel.trace`, same tag vocabulary, emitting through
 OpenTelemetry JS); its wiring is shown on the Observability page.
 
 - [Running Flows](/flow/getting-started/running-flows/) and [Failures and Defects](/flow/getting-started/failures-and-defects/)
@@ -15,7 +15,7 @@ OpenTelemetry JS); its wiring is shown on the Observability page.
 
 ## Workflow spans
 
-`Activity.trace` wraps a flow in a span on the `Axial.Flow` activity source. The span covers the workflow's
+`Activity.trace` wraps a flow in a span on the `Axial` activity source. The span covers the workflow's
 execution — it stops when the workflow settles, so asynchronous work is measured — and the final exit is
 stamped onto it:
 
@@ -37,10 +37,10 @@ them. Typed errors are rendered with `string`; use `Activity.traceWith` to suppl
 ## Fiber defect spans
 
 `FiberTelemetry.observe` installs a [fiber observer]({{< relref "/flow/concurrency/supervision.md" >}}) that records
-fiber defects on the `Axial.Flow` activity source:
+fiber defects on the `Axial` activity source:
 
 ```fsharp
-open Axial.Flow.Telemetry
+open Axial.Telemetry
 
 application
 |> FiberTelemetry.observe
@@ -64,12 +64,12 @@ hot paths forking many fibers can stay on the defect-only `FiberTelemetry.observ
 
 ## Logging
 
-`Axial.Flow.Hosting` ships the `Microsoft.Extensions.Logging` counterpart: `FiberLogging.observe logger`
+`Axial.Hosting` ships the `Microsoft.Extensions.Logging` counterpart: `FiberLogging.observe logger`
 writes fiber defects as errors and unobserved defects as critical entries, with the exception attached so
 stack traces survive. Stack it with telemetry from one edge install:
 
 ```fsharp
-open Axial.Flow.Hosting
+open Axial.Hosting
 
 application
 |> Flow.withFiberObserver

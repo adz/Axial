@@ -1,10 +1,10 @@
 namespace Axial.ReferenceApp
 
 open System
-open Axial.Result
-open Axial.Constraint
-open Axial.Refined
-open Axial.Schema
+open Reified.Result
+open Reified.Constraint
+open Reified.Refinements
+open Reified.Schema
 
 // Wire records can represent untrusted drafts and old persisted versions.
 type WorkspaceV1 = { version: int; id: Guid; name: string }
@@ -32,8 +32,8 @@ module ProductionAdmissionError =
 
 [<RequireQualifiedAccess>]
 module Contracts =
-    open Axial.Schema.Syntax
-    open Axial.Constraint.ConstraintDSL
+    open Reified.Schema.Syntax
+    open Reified.Constraint.ConstraintDSL
 
     let private requiredText create inspect maximum : Schema<'value> =
         let constraint' = Constraint.all [ Constraint.present; Constraint.maxLength maximum ]

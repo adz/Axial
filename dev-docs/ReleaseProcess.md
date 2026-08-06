@@ -4,7 +4,7 @@ This project uses a coordinated pre-1.0 release train.
 
 ## Versioning policy
 
-- `Axial.Flow`, `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, `Axial.Parse`, `Axial.Data`, `Axial.Schema`, and
+- `Axial`, `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, `Axial.Parse`, `Axial.Data`, `Axial.Schema`, and
   the add-on packages share one package version before 1.0.
 - The shared version is declared once in `Directory.Build.props`.
 - Packable project files must not declare their own `<Version>`.
@@ -16,25 +16,25 @@ This project uses a coordinated pre-1.0 release train.
 
 The coordinated release currently packs:
 
-- `Axial.Flow`
+- `Axial`
 - `Axial.Result`
 - `Axial.Constraint`
 - `Axial.Refined`
 - `Axial.Schema`
-- `Axial.Flow.Console`
-- `Axial.Flow.FileSystem`
-- `Axial.Flow.HttpClient`
-- `Axial.Flow.Process`
-- `Axial.Flow.PlatformService`
-- `Axial.Flow.Hosting`
-- `Axial.Flow.Hosting.Node`
-- `Axial.Flow.Hosting.Browser`
-- `Axial.Flow.Telemetry`
+- `Axial.Console`
+- `Axial.FileSystem`
+- `Axial.HttpClient`
+- `Axial.Process`
+- `Axial.PlatformService`
+- `Axial.Hosting`
+- `Axial.Hosting.Node`
+- `Axial.Hosting.Browser`
+- `Axial.Telemetry`
 
 There is no meta-package and no umbrella: `Axial.ErrorHandling` and `Axial` were both retired pre-1.0. Every
 package in the list above is installed on its own.
 
-The `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
+The `Axial.*` add-on packages depend on `Axial`.
 
 ## Preparing a release
 

@@ -7,10 +7,10 @@ description: Running Fable Flow applications under Node signals, process exit, a
 
 # Node Hosting
 
-`Axial.Flow.Hosting.Node` is a JavaScript-only Fable package for Node processes.
+`Axial.Hosting.Node` is a JavaScript-only Fable package for Node processes.
 
 ```sh
-dotnet add package Axial.Flow.Hosting.Node
+dotnet add package Axial.Hosting.Node
 ```
 
 The NuGet package uses a .NET target asset because Fable consumes F# projects through MSBuild. It is not a .NET
@@ -43,7 +43,7 @@ live Node object. `Expand` expands `$NAME` and `${NAME}` forms.
 At the Fable entry point:
 
 ```fsharp
-open Axial.Flow.Hosting.Node
+open Axial.Hosting.Node
 
 NodeApp.run AppError.describe inputs application
 |> Async.StartImmediate
@@ -78,7 +78,7 @@ async {
 ## Logging and Telemetry
 
 Supply Node logging as an explicit `ILog` implementation in the application environment. For tracing, install
-`Axial.Flow.Telemetry.JavaScript` with the host's `@opentelemetry/api` object before starting the application. Hosting
+`Axial.Telemetry.JavaScript` with the host's `@opentelemetry/api` object before starting the application. Hosting
 does not choose an SDK, exporter, or context manager.
 
 ## Build Shape

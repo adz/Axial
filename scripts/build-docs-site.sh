@@ -10,11 +10,11 @@ for project in \
   "src/Axial.Constraint/Axial.Constraint.fsproj" \
   "src/Axial.Refined/Axial.Refined.fsproj" \
   "src/Axial.Parse/Axial.Parse.fsproj" \
-  "src/Axial.Flow.PlatformService/Axial.Flow.PlatformService.fsproj" \
-  "src/Axial.Flow.Console/Axial.Flow.Console.fsproj" \
-  "src/Axial.Flow.FileSystem/Axial.Flow.FileSystem.fsproj" \
-  "src/Axial.Flow.HttpClient/Axial.Flow.HttpClient.fsproj" \
-  "src/Axial.Flow.Process/Axial.Flow.Process.fsproj" \
+  "src/Axial.PlatformService/Axial.PlatformService.fsproj" \
+  "src/Axial.Console/Axial.Console.fsproj" \
+  "src/Axial.FileSystem/Axial.FileSystem.fsproj" \
+  "src/Axial.HttpClient/Axial.HttpClient.fsproj" \
+  "src/Axial.Process/Axial.Process.fsproj" \
   "src/Axial.Schema/Axial.Schema.fsproj"
 do
   dotnet build "$root_dir/$project" --nologo -v minimal

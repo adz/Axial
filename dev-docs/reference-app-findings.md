@@ -289,7 +289,7 @@ line is not evidence of product value.
 specific typed-failure, scope, interruption, backpressure, or environment semantics that cannot be expressed cleanly
 with a thin adapter.
 
-`Axial.Flow.Process` is concrete evidence that this can be worthwhile: its bounded stream of structured process output
+`Axial.Process` is concrete evidence that this can be worthwhile: its bounded stream of structured process output
 connects process lifetime, cancellation, completion, typed failure, and backpressure in one application-facing model.
 That is not speculative parity; it solves a real operational workflow. Future concurrency should be derived from more
 work of that kind, with shared primitives extracted only after repeated use.

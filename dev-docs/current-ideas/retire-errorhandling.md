@@ -24,7 +24,7 @@ are about admitting values.
 Target end state:
 
 - `Axial.Result` becomes a top-level product entry point next to `Axial.Data`, `Axial.Schema`, and
-  `Axial.Flow`, with its own docs tree at `/result`.
+  `Axial`, with its own docs tree at `/result`.
 - `Constraint`, `Refined`, and `Parse` collapse under a single nav group titled **Values**.
   Values is a *navigation* grouping only — there is no `Axial.Values` package, no namespace, and no
   meta-package. The packages stay independent leaves and install individually.
@@ -252,7 +252,7 @@ Deleted `src/Axial.ErrorHandling/`, `src/Axial/`, `docs/error-handling/`,
 (the "installs as part of `Axial.ErrorHandling`" installation line), `README.md`, `llms.txt`,
 `RELEASE_NOTES.md`, `prd.md`, `examples/README.md`,
 `examples/Axial.ReferenceApp.Intro/{README.md,Program.fs,*.fsproj}`,
-`examples/Axial.Hosting.DotNet/*.fsproj`, `benchmarks/Axial.Flow.Benchmarks/*`, plus cross-links in
+`examples/Axial.Hosting.DotNet/*.fsproj`, `benchmarks/Axial.Benchmarks/*`, plus cross-links in
 `docs/{schema,flow}/**`.
 
 ### dev-docs to update

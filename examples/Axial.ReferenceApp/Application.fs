@@ -1,18 +1,18 @@
 namespace Axial.ReferenceApp
 
-open Axial.Data
+open Reified.Data
 
 open System
 open System.IO
 open System.Text.Json
-open Axial.Result
-open Axial.Constraint
-open Axial.Flow
-open Axial.Flow.FileSystem
-open Axial.Flow.PlatformService
-open Axial.Schema
-open Axial.Schema.Json
-open Axial.Refined
+open Reified.Result
+open Reified.Constraint
+open Axial
+open Axial.FileSystem
+open Axial.PlatformService
+open Reified.Schema
+open Reified.Schema.Json
+open Reified.Refinements
 
 [<RequireQualifiedAccess>]
 type AppError =

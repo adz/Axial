@@ -16,7 +16,7 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 
 ## Package Graph
 
-- `Axial.Flow`: independent workflow package (`src/Axial.Flow/`). Must not depend on the ErrorHandling packages or
+- `Axial`: independent workflow package (`src/Axial/`). Must not depend on the ErrorHandling packages or
   `Axial.Schema`.
 - `Axial.Result` (`src/Axial.Result/`): generic Result combinators, conversions/extraction helpers, and `result { }`
   in the `Axial.Result` namespace. Independent leaf.
@@ -35,9 +35,9 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
 - `Axial.Schema.Json` (`src/Axial.Schema.Json/`): compiled JSON codecs. Depends on `Axial.Schema`.
 - `Axial.Schema.Http` (`src/Axial.Schema.Http/`): host-neutral HTTP boundary support — query/form structured data
   (`BoundaryInput`), RFC 9457 problem details from parse diagnostics, and OpenAPI 3.1 documents assembled from
-  `EndpointSpec` values. Depends on `Axial.Schema` only; never on `Axial.Flow`.
+  `EndpointSpec` values. Depends on `Axial.Schema` only; never on `Axial`.
 - `Axial.Schema.Http.AspNetCore` / `Axial.Schema.Http.GenHttp` (`src/Axial.Schema.Http.*/`): host boundaries over
-  `Axial.Schema.Http` and `Axial.Flow`. The default API lowers an ordinary endpoint Flow from schema-trusted request
+  `Axial.Schema.Http` and `Axial`. The default API lowers an ordinary endpoint Flow from schema-trusted request
   input through explicit application services to a native response; lower-level `RetainedParseResult` adapters remain for
   redisplay and custom boundaries. Routing and app wiring remain the host's idiom.
 - `Axial.Schema.Testing` (`src/Axial.Schema.Testing/`): non-packable FsCheck adapter deriving test data from Schema.
@@ -48,15 +48,15 @@ Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implem
   FCS stays tool-tier only: never referenced from a packable library.
 - `Axial.Schema.Contracts.Build` (`src/Axial.Schema.Contracts.Build/`): packable targets-only MSBuild package
   running `scripts/schemagen` before compile over `<AxialDeriveSchema>`/`<AxialContract>` items.
-- `Axial.Flow.*` add-on packages depend on `Axial.Flow`.
+- `Axial.*` add-on packages depend on `Axial`.
 - There are no meta-packages. `Axial.ErrorHandling` and the `Axial` umbrella were both deleted; every install is a
   focused package. **Values** — Constraint, Refined, and Parse — is a documentation grouping only: no package, no
   namespace. `Axial.ApiShape.Tests` pins this with `no meta-package remains in the graph`.
 
 ## Open These First
 
-- Flow/runtime/layers/services: `src/Axial.Flow/**`, relevant `src/Axial.Flow.*/*`, `tests/Axial.Flow.Tests/*Workflow*`,
-  `tests/Axial.Flow.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
+- Flow/runtime/layers/services: `src/Axial/**`, relevant `src/Axial.*/*`, `tests/Axial.Tests/*Workflow*`,
+  `tests/Axial.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
 - Check/Result: `src/Axial.Constraint/Check.fs`, `src/Axial.Result/Result.fs`,
   `tests/Axial.Constraint.Tests/CheckTests.fs`, `tests/Axial.Result.Tests/ResultTests.fs`,
   `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.

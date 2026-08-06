@@ -1,7 +1,7 @@
 open System
 open System.IO
 open System.Threading
-open Axial.Flow
+open Axial
 
 type ReadmeEnv =
     { Root: string }

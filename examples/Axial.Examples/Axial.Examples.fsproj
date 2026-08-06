@@ -6,24 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="ServiceExamples.fs" />
-    <Compile Include="RequestBoundaryExample.fs" />
-    <Compile Include="PolicyExamples.fs" />
     <Compile Include="SupervisionExample.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Axial.Result\Axial.Result.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Constraint\Axial.Constraint.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Parse\Axial.Parse.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Schema\Axial.Schema.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Flow\Axial.Flow.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
   </ItemGroup>
 
 </Project>

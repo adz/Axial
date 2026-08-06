@@ -7,11 +7,11 @@ description: Owning a Fable Flow application from a browser UI module or AbortSi
 
 # Browser Hosting
 
-`Axial.Flow.Hosting.Browser` is a JavaScript-only Fable package. It connects a root `App` to browser ownership without
+`Axial.Hosting.Browser` is a JavaScript-only Fable package. It connects a root `App` to browser ownership without
 pretending the browser has a dependable process-shutdown phase.
 
 ```sh
-dotnet add package Axial.Flow.Hosting.Browser
+dotnet add package Axial.Hosting.Browser
 ```
 
 The package's .NET target asset exists for Fable project compilation. Calling its entry points outside Fable browser
@@ -22,7 +22,7 @@ JavaScript fails immediately.
 Mount the application when the UI root or feature is created:
 
 ```fsharp
-open Axial.Flow.Hosting.Browser
+open Axial.Hosting.Browser
 
 let running =
     BrowserApp.mount browserEnvironment application

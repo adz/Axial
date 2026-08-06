@@ -102,12 +102,12 @@ incremental consumer for unbounded streams.
 
 ## Process Output
 
-`Axial.Flow.Process.Process.stream` is a concrete example of an effectful, backpressured source. It emits structured
+`Axial.Process.Process.stream` is a concrete example of an effectful, backpressured source. It emits structured
 stdout/stderr events followed by a completion transcript and cancels the child pipeline if stream consumption stops.
 See [Output and streaming](processes/output-streaming/).
 
 ## Platform Boundary
 
 All `FlowStream` functions on this page are Fable-compatible. Platform-specific producers should implement their I/O
-adapter outside `Axial.Flow`; only executor mechanics belong in `Platform.fs`. For example, Node child-process launching
+adapter outside `Axial`; only executor mechanics belong in `Platform.fs`. For example, Node child-process launching
 belongs in a process adapter package, while the resulting values still compose through this same stream API.

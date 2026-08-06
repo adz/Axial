@@ -1,9 +1,9 @@
 namespace Axial.ReferenceApp
 
 open System
-open Axial.Result
-open Axial.Constraint
-open Axial.Refined
+open Reified.Result
+open Reified.Constraint
+open Reified.Refinements
 
 /// Domain values use private representations so successful construction is the durable proof.
 type WorkspaceId = private WorkspaceId of Guid

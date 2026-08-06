@@ -37,7 +37,7 @@ The dashboard then shows:
 - **Structured logs:** the `Running observability demo` entry has `DemoKind` and `ExpectedFibers` properties. Messages
   emitted inside the workflow through `Log.info` use the `Axial.ReferenceApp.Flow` category and correlate through the
   active trace and span IDs.
-- **Metrics:** select the `Axial.Flow` meter to inspect fibers started, live, settled, duration, and unobserved defects.
+- **Metrics:** select the `Axial` meter to inspect fibers started, live, settled, duration, and unobserved defects.
 
 Ordinary API requests use the same instrumentation. For example, an invalid import demonstrates a typed Flow failure
 on the `workspaces.import` span:
@@ -70,7 +70,7 @@ Data is written to `.axial-reference-data` unless `AXIAL_REFERENCE_DATA` names a
 1. `Domain.fs` defines private refined values and business transitions.
 2. `Contracts.fs` defines schemas, version migration, fallible domain mapping, and production admission.
 3. `Application.fs` defines persistence and Flow use cases over an explicit store, `BaseRuntime`, and `IFileSystem`.
-4. `Program.fs` adapts CLI commands, configures OpenTelemetry, and uses `Axial.Schema.Http.AspNetCore` for routes, JSON,
+4. `Program.fs` adapts CLI commands, configures OpenTelemetry, and uses `Axial.Hosting.AspNetCore` for routes, JSON,
    forms, endpoint Flow, problem details, compiled responses, schema-derived OpenAPI, inspection, and retained-input
    redisplay.
 5. `apphost.cs` is the single-file Aspire orchestration entry point.
@@ -128,7 +128,7 @@ schema<WorkspaceV2> {
 }
 ```
 
-`Axial.Schema.Syntax` supplies field constraints and the constructor-last record syntax. Value schemas remain
+`Reified.Schema.Syntax` supplies field constraints and the constructor-last record syntax. Value schemas remain
 qualified under `Schema`.
 
 ## Rules at the right level
@@ -145,14 +145,14 @@ specific workflow.
 
 ## Integration boundaries
 
-`Data` handles untrusted source-neutral data. `Contract` selects and migrates persisted versions. `Axial.Schema.Json`
-handles trusted current-version JSON for storage, HTTP responses, and CLI output. `Axial.Schema.Http` and its ASP.NET
+`Data` handles untrusted source-neutral data. `Contract` selects and migrates persisted versions. `Reified.Schema.Json`
+handles trusted current-version JSON for storage, HTTP responses, and CLI output. `Reified.Schema.Http` and its ASP.NET
 Core adapter parse route, JSON, and form input before embedding application Flow into native endpoints. The same schema
 catalog generates `/openapi.json`; `Inspect` renders the new-workspace form; `RetainedParseResult` redisplays invalid
 form values beside their path-specific diagnostics.
 
 `Constraint` and `Result` express path-free admission and domain transitions. `Flow` then orchestrates those fallible values
-with the workspace store. The file adapter performs its operational work through `Axial.Flow.FileSystem`, so filesystem
+with the workspace store. The file adapter performs its operational work through `Axial.FileSystem`, so filesystem
 failures enter the typed application error channel instead of escaping from ambient `System.IO`. `BaseRuntime.liveValue`
 supplies the standard live clock, logging, randomness, GUID, and environment-variable services as one bundle; tests
 replace only the GUID service when deterministic identifiers matter.

@@ -1,7 +1,7 @@
 ---
 weight: 2
 title: Installation
-description: Install Axial.Flow and open its namespace.
+description: Install Axial and open its namespace.
 ---
 
 # Installation
@@ -9,23 +9,23 @@ description: Install Axial.Flow and open its namespace.
 Flow is independent from the `Axial` package. Install it directly:
 
 ```sh
-dotnet add package Axial.Flow
+dotnet add package Axial
 ```
 
 Open its namespace where workflows are defined:
 
 ```fsharp
-open Axial.Flow
+open Axial
 ```
 
-`Axial.Flow` contains the workflow type, `flow {}` builder, runtime, structured concurrency, schedules, and
+`Axial` contains the workflow type, `flow {}` builder, runtime, structured concurrency, schedules, and
 application lifecycle.
 
 Platform services and hosts are separate packages. Add one only when the application needs that integration:
 
 ```sh
-dotnet add package Axial.Flow.HttpClient
-dotnet add package Axial.Flow.Hosting
+dotnet add package Axial.HttpClient
+dotnet add package Axial.Hosting
 ```
 
 See [Packages and Platforms]({{< relref "/flow/packages-and-platforms/" >}}) for the complete package map.

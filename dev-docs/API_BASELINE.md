@@ -24,12 +24,12 @@ bash scripts/check-source-inventory.sh
 dotnet build tests/Axial.ApiShape.Tests/Axial.ApiShape.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Result.Tests/Axial.Result.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Constraint.Tests/Axial.Constraint.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj --no-restore --nologo -v minimal
-dotnet build tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.FileSystem.Tests/Axial.FileSystem.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Hosting.Tests/Axial.Hosting.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Integration.Tests/Axial.Integration.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.PlatformService.Tests/Axial.PlatformService.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Telemetry.Tests/Axial.Telemetry.Tests.fsproj --no-restore --nologo -v minimal
+dotnet build tests/Axial.Tests/Axial.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
 dotnet build tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj --no-restore --nologo -v minimal
@@ -48,7 +48,7 @@ dotnet test tests/Axial.ApiShape.Tests --nologo (36 passed)
 dotnet test tests/Axial.Schema.Tests --nologo (56 passed)
 dotnet test tests/Axial.Schema.Json.Tests --nologo (13 passed)
 dotnet test tests/Axial.Schema.Tests --nologo (stale count; re-baseline after the 2026-07 renames)
-dotnet test tests/Axial.Flow.Tests --nologo (89 passed)
+dotnet test tests/Axial.Tests --nologo (89 passed)
 bash scripts/validate-docs.sh
 => Docs validation build succeeded, including regenerated reference docs.
 ```
@@ -71,13 +71,13 @@ The old monolithic `tests/Axial.Tests/Axial.Tests.fsproj` harness has been repla
 - `tests/Axial.Result.Tests/Axial.Result.Tests.fsproj`
 - `tests/Axial.Constraint.Tests/Axial.Constraint.Tests.fsproj`
 - `tests/Axial.Refined.Tests/Axial.Refined.Tests.fsproj`
-- `tests/Axial.Flow.FileSystem.Tests/Axial.Flow.FileSystem.Tests.fsproj`
-- `tests/Axial.Flow.Hosting.Tests/Axial.Flow.Hosting.Tests.fsproj`
-- `tests/Axial.Flow.HttpClient.Tests/Axial.Flow.HttpClient.Tests.fsproj`
-- `tests/Axial.Flow.Integration.Tests/Axial.Flow.Integration.Tests.fsproj`
-- `tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj`
-- `tests/Axial.Flow.Telemetry.Tests/Axial.Flow.Telemetry.Tests.fsproj`
-- `tests/Axial.Flow.Tests/Axial.Flow.Tests.fsproj`
+- `tests/Axial.FileSystem.Tests/Axial.FileSystem.Tests.fsproj`
+- `tests/Axial.Hosting.Tests/Axial.Hosting.Tests.fsproj`
+- `tests/Axial.HttpClient.Tests/Axial.HttpClient.Tests.fsproj`
+- `tests/Axial.Integration.Tests/Axial.Integration.Tests.fsproj`
+- `tests/Axial.PlatformService.Tests/Axial.PlatformService.Tests.fsproj`
+- `tests/Axial.Telemetry.Tests/Axial.Telemetry.Tests.fsproj`
+- `tests/Axial.Tests/Axial.Tests.fsproj`
 - `tests/Axial.ReferenceApp.Tests/Axial.ReferenceApp.Tests.fsproj`
 - `tests/Axial.Schema.Contracts.Tests/Axial.Schema.Contracts.Tests.fsproj`
 - `tests/Axial.Schema.Testing.Tests/Axial.Schema.Testing.Tests.fsproj`

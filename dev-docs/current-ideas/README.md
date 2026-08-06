@@ -10,7 +10,7 @@ Active sketches:
 
 - `refined-schema-proof.md` — unresolved exploration of refined schema proof and safe record updates, with a prototype
   under `prototypes/refined-private-record/`.
-- `flow-gate-rename.md` — extracted proposal for Axial.Flow application gate naming, independent of the
+- `flow-gate-rename.md` — extracted proposal for Axial application gate naming, independent of the
   Parse/Constraint/Refinement/Schema work.
 - `architecture-guardrails.md` — proposed adopter-facing architecture guidance and a staged tooling direction for
   schema laws, compile-negative proofs, project roles, and compiled-code/public-surface audits.
@@ -36,4 +36,4 @@ language, `FieldReference`, `Origin`, and `ConstraintExpression.Relational` were
 rather than deferred as placeholders, so they return only when a real consumer establishes field identity,
 nesting, and proof semantics. Contract generation, versioning, and record-first
 derivation outcomes are recorded in `dev-docs/decisions/README.md`; remaining consumer-gated schema work is in
-`dev-docs/TASKS.md`. The implemented Flow comparison examples live in `examples/Axial.Flow.Comparisons`.
+`dev-docs/TASKS.md`. The implemented Flow comparison examples live in `examples/Axial.Comparisons`.

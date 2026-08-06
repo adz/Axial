@@ -4,10 +4,10 @@ description: Run external commands as typed Axial workflows.
 weight: 40
 ---
 
-`Axial.Flow.Process` represents external work as an immutable `ProcessSpec`. Building a specification performs no I/O. `Process.run` asks the `IProcess` service to interpret it in the current Flow runtime.
+`Axial.Process` represents external work as an immutable `ProcessSpec`. Building a specification performs no I/O. `Process.run` asks the `IProcess` service to interpret it in the current Flow runtime.
 
 ```fsharp
-open Axial.Flow.Process
+open Axial.Process
 
 let version =
     Process.command "dotnet" [ "--version" ]

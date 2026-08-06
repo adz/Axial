@@ -30,34 +30,34 @@ The packages compress operational knowledge into:
 Proposed dependency direction:
 
 ```text
-Axial.Flow
+Axial
     |
-    +-- Axial.Flow.Transport
+    +-- Axial.Transport
     |       +-- byte/message capabilities
     |       +-- framing
     |       +-- protocol errors
     |
-    +-- Axial.Flow.Network
+    +-- Axial.Network
     |       +-- DNS/endpoints/interfaces
     |       +-- TCP/UDP/Unix sockets
     |       +-- TLS
     |
-    +-- Axial.Flow.Serial
+    +-- Axial.Serial
     |
-    +-- Axial.Flow.HttpClient
+    +-- Axial.HttpClient
     |       +-- streaming request/response bodies
     |       +-- SSE
     |
-    +-- Axial.Flow.WebSocket
+    +-- Axial.WebSocket
     |
-    +-- Axial.Flow.Compression
+    +-- Axial.Compression
 ```
 
 Exact package count should follow implementation evidence. `Transport` and framing may begin together to avoid
 premature package fragmentation. They should split only if pure framing becomes useful without Flow transport types or
 dependency weight makes the boundary valuable.
 
-`Axial.Flow` must not depend on any satellite. Process may later depend on the shared framing package, but framing must
+`Axial` must not depend on any satellite. Process may later depend on the shared framing package, but framing must
 not depend on Process, Network, Serial, or HttpClient.
 
 No public package should depend on `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, or `Axial.Parse`. Each
@@ -340,7 +340,7 @@ is active fails deterministically. Sends serialize complete encoded frames, not 
 
 ### Scope
 
-`Axial.Flow.Network` owns network observation and native network transport effects:
+`Axial.Network` owns network observation and native network transport effects:
 
 - endpoint parsing and formatting;
 - IP address and DNS resolution;
@@ -816,7 +816,7 @@ portable cases. Using it explicitly accepts platform coupling; it does not trans
 
 ### Scope
 
-`Axial.Flow.Serial` owns:
+`Axial.Serial` owns:
 
 - port enumeration and immutable port metadata;
 - serial configuration;
@@ -1010,7 +1010,7 @@ permission failure normally are not. Caller interruption remains Flow interrupti
 
 ### Native reach and platform support
 
-.NET remains default. `System.IO.Ports` may be an explicit package dependency of `Axial.Flow.Serial`; its version and
+.NET remains default. `System.IO.Ports` may be an explicit package dependency of `Axial.Serial`; its version and
 platform limitations must not leak into Flow core.
 
 Expose a .NET native handle only under:
@@ -1046,7 +1046,7 @@ Beyond FlowStream laws:
 
 ### Scope and placement
 
-`Axial.Flow.WebSocket` owns WebSocket client connections on .NET and Fable. Server upgrade integration belongs with a
+`Axial.WebSocket` owns WebSocket client connections on .NET and Fable. Server upgrade integration belongs with a
 future web-server adapter and is outside this plan, although connection/message types should not prevent it.
 
 WebSocket depends on Flow and shared message transport concepts. It may depend on Network/TLS on .NET only if doing so
@@ -1105,7 +1105,7 @@ Advanced very-large-message streaming may later expose message metadata plus a s
 complicate the common complete-message API before an actual consumer requires it.
 
 WebSocket compression extensions such as `permessage-deflate` are negotiated connection behavior, not application use
-of `Axial.Flow.Compression`. Expose a negotiation policy and negotiated metadata where native platforms permit it.
+of `Axial.Compression`. Expose a negotiation policy and negotiated metadata where native platforms permit it.
 Never manually compress application payloads while also claiming WebSocket extension semantics, and enforce decoded
 message limits after decompression.
 
@@ -1346,7 +1346,7 @@ streams if it can preserve cancellation and error semantics.
 
 ### Scope
 
-`Axial.Flow.Compression` provides bounded, streaming transforms and archive traversal over FlowStream/byte capabilities.
+`Axial.Compression` provides bounded, streaming transforms and archive traversal over FlowStream/byte capabilities.
 Compression algorithms are deterministic computation; they do not need an environment service merely because .NET
 uses disposable stream objects internally. File access remains an explicit FileSystem effect outside Compression.
 

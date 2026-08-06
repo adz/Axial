@@ -7,11 +7,11 @@ description: Standalone process, Generic Host, dependency injection, and Microso
 
 # .NET Hosting
 
-`Axial.Flow.Hosting` connects root Flow applications to .NET process and Generic Host lifecycle. It also adapts
+`Axial.Hosting` connects root Flow applications to .NET process and Generic Host lifecycle. It also adapts
 `Microsoft.Extensions.Logging` to the explicit `ILog` service and provides fiber-defect logging.
 
 ```sh
-dotnet add package Axial.Flow.Hosting
+dotnet add package Axial.Hosting
 ```
 
 The package is optional. [`App`](../applications/) works in console, desktop, test, and embedded applications without
@@ -22,8 +22,8 @@ Microsoft.Extensions.Hosting or a dependency-injection container.
 Use `DotNetApp.run` when the application owns a console process but does not use Generic Host:
 
 ```fsharp
-open Axial.Flow
-open Axial.Flow.Hosting
+open Axial
+open Axial.Hosting
 
 type AppError = | InvalidArguments of string
 
@@ -67,8 +67,8 @@ from it:
 ```fsharp
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
-open Axial.Flow
-open Axial.Flow.Hosting
+open Axial
+open Axial.Hosting
 
 let builder = Host.CreateApplicationBuilder(args)
 

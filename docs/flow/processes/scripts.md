@@ -4,10 +4,10 @@ description: Author concise, safely interpolated process workflows.
 weight: 40
 ---
 
-Open `Axial.Flow.Process.DSL` for command-line-shaped authoring:
+Open `Axial.Process.DSL` for command-line-shaped authoring:
 
 ```fsharp
-open Axial.Flow.Process.DSL
+open Axial.Process.DSL
 
 let workflow =
     cmd $"device-tool connect {deviceId}"

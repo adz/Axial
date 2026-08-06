@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CheckoutCompensation.fs" />
+    <Compile Include="RetryBudget.fs" />
+    <Compile Include="DashboardFanOut.fs" />
+    <Compile Include="ScopedWorkspace.fs" />
+    <Compile Include="ReportWiring.fs" />
+    <Compile Include="OutputPipeline.fs" />
+    <Compile Include="InventoryStm.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.HttpClient\Axial.HttpClient.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.FileSystem\Axial.FileSystem.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Console\Axial.Console.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Telemetry\Axial.Telemetry.fsproj" />
+  </ItemGroup>
+
+</Project>

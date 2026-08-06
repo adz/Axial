@@ -2,22 +2,8 @@
   <PropertyGroup>
     <UseArtifactsOutput>true</UseArtifactsOutput>
 
-    <!-- Two independent release trains, split ahead of the repository split. They hold the same value
-         today, which is convenient rather than required: nothing may assume they move together, and a
-         v0.8.0 tag on one side says nothing about the other. The point of the split is that either can
-         be bumped alone. -->
-    <AxialVersion>0.7.0</AxialVersion>
-    <FsFlowVersion>0.7.0</FsFlowVersion>
-
-    <!-- A project belongs to the FsFlow train if it is a Flow project, or one of the two HTTP adapters
-         that become FsFlow.AspNetCore / FsFlow.GenHttp. Everything else is Axial. -->
-    <IsFsFlowProject Condition="'$(IsFsFlowProject)' == '' And $(MSBuildProjectName.StartsWith('Axial.Flow'))">true</IsFsFlowProject>
-    <IsFsFlowProject Condition="'$(IsFsFlowProject)' == '' And '$(MSBuildProjectName)' == 'Axial.Schema.Http.AspNetCore'">true</IsFsFlowProject>
-    <IsFsFlowProject Condition="'$(IsFsFlowProject)' == '' And '$(MSBuildProjectName)' == 'Axial.Schema.Http.GenHttp'">true</IsFsFlowProject>
-    <IsFsFlowProject Condition="'$(IsFsFlowProject)' == ''">false</IsFsFlowProject>
-
-    <Version Condition="'$(IsFsFlowProject)' == 'true'">$(FsFlowVersion)</Version>
-    <Version Condition="'$(Version)' == ''">$(AxialVersion)</Version>
+    <Version>0.7.0</Version>
+    <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.7.0</ReifiedVersion>
     <NuGetAudit>false</NuGetAudit>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>

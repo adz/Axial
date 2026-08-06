@@ -90,10 +90,10 @@ Note the interaction with `supervise`: a supervised flow that exhausts its resta
 
 ## Telemetry integration
 
-`Axial.Flow.Telemetry` ships a ready-made observer that records defects on the `Axial.Flow` activity source:
+`Axial.Telemetry` ships a ready-made observer that records defects on the `Axial` activity source:
 
 ```fsharp
-open Axial.Flow.Telemetry
+open Axial.Telemetry
 
 application
 |> FiberTelemetry.observe   // = Flow.withFiberObserver FiberTelemetry.observer
@@ -103,13 +103,13 @@ Every fiber that settles with a defect produces an `axial.flow.fiber.defect` err
 
 ### Logging
 
-`Axial.Flow.Hosting` ships the `Microsoft.Extensions.Logging` wiring: `FiberLogging.observe logger` logs
+`Axial.Hosting` ships the `Microsoft.Extensions.Logging` wiring: `FiberLogging.observe logger` logs
 fiber defects as errors and unobserved defects as critical entries, with the exception attached. Observers
 compose, so telemetry and logging stack from one edge install:
 
 ```fsharp
-open Axial.Flow.Hosting
-open Axial.Flow.Telemetry
+open Axial.Hosting
+open Axial.Telemetry
 
 application
 |> Flow.withFiberObserver

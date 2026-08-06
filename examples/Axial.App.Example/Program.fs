@@ -1,4 +1,4 @@
-open Axial.Flow
+open Axial
 
 type AppError =
     | MissingName

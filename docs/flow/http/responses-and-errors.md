@@ -33,7 +33,7 @@ let workflow =
 `string -> Result<'value, string>`. Any JSON library fits that shape:
 
 ```fsharp
-open Axial.Flow.HttpClient.DSL
+open Axial.HttpClient.DSL
 
 let user : Flow<#IHas<IHttp>, HttpError, User> =
     GET $"https://api.example.com/users/{userId}"

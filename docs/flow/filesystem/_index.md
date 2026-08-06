@@ -1,5 +1,5 @@
 ---
-title: Axial.Flow.FileSystem
+title: Axial.FileSystem
 linkTitle: FileSystem
 weight: 70
 ---

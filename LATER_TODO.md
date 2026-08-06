@@ -49,7 +49,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Replace `Flow.service` and `Flow.inject` with `Service<'service>.get()` and `Service<'service>.resolve()`.
 - [x] Make `Scope`, `Layer`, and `Flow.provide` part of the public service provisioning model.
 - [x] Move former ambient operational services to explicit services.
-- [x] Add `BaseRuntime` and live/provider-backed layer helpers in `Axial.Flow.PlatformService`.
+- [x] Add `BaseRuntime` and live/provider-backed layer helpers in `Axial.PlatformService`.
 - [x] Align Console, FileSystem, Http, and Process packages to the service-plus-layer model.
 - [x] Add public docs for explicit services, provider boundaries, layers, scopes/resources, and base runtime construction.
 - [x] Update `llms.txt`, agent guidance, and generated API reference docs for the service/layer model.
@@ -79,29 +79,29 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 - [x] Add scoped runtime annotations, trace IDs, annotation sinks, and request/correlation/tenant metadata propagation into telemetry spans.
 - [x] Add a minimal `ActivitySource` telemetry wrapper that creates spans and tags environment metadata plus existing and dynamically-added runtime annotations.
-- [x] Integrate observability with `Axial.Flow.Telemetry` and `Microsoft.Extensions.Logging` (fiber-lifecycle wiring: `FiberTelemetry.observe` records fiber defect / unobserved-defect error spans; `Microsoft.Extensions.Logging` recipe documented in the supervision guide).
+- [x] Integrate observability with `Axial.Telemetry` and `Microsoft.Extensions.Logging` (fiber-lifecycle wiring: `FiberTelemetry.observe` records fiber defect / unobserved-defect error spans; `Microsoft.Extensions.Logging` recipe documented in the supervision guide).
 - [x] Fix `Activity.trace` span lifetime: stop the activity when the execution settles instead of `use`-disposing when the workflow is started, so async work is measured by its span.
 - [x] Stamp exits onto spans with one canonical tag vocabulary: `ActivityStatusCode` from the exit, `axial.flow.outcome` (success/fail/die/interrupt), `axial.flow.error` for rendered typed errors (`Activity.traceWith` for custom renderers), OTel `exception.*` tags for defects, `axial.flow.interrupted` for cancellation, and `axial.flow.cause` (via `Cause.prettyPrint`) for composite causes.
 - [x] Expose the current fiber id through `Flow.Runtime` (`Flow.Runtime.fiberId`) and tag it on traced spans so workflow spans correlate with fiber telemetry.
 - [x] Make annotation sinks composable (`Flow.addAnnotationSink` tees to the previous sink), swallow sink exceptions at the annotate call site, and switch `Activity.trace` to the composing form so nested traces and user sinks all receive annotations.
 - [x] Give forked fibers real spans: `FiberTelemetry.observeWithSpans` opens an `axial.flow.fiber` activity at the fork site (parented to the forking workflow span), closes it with exit conventions at settle, links unobserved-defect spans to it, and stays opt-in alongside the defect-only `FiberTelemetry.observe`.
 - [x] Add an extensible `IHasTelemetryTags` environment trait applied by `Activity.trace` alongside the existing `IHasRequestId`/`IHasCorrelationId`/`IHasTenantId` trio. (Fiber spans cannot apply environment traits — the observer deliberately never sees the environment.)
-- [x] Add an exception-carrying member to `ILog` (`LogException`, with `Log.logException`/`errorExn`/`criticalExn` helpers), forward it through the Hosting MEL bridge, and ship `FiberLogging.observer`/`FiberLogging.observe` in `Axial.Flow.Hosting` plus `FiberObserver.compose` in core (replacing the docs-recipe-only logging integration).
+- [x] Add an exception-carrying member to `ILog` (`LogException`, with `Log.logException`/`errorExn`/`criticalExn` helpers), forward it through the Hosting MEL bridge, and ship `FiberLogging.observer`/`FiberLogging.observe` in `Axial.Hosting` plus `FiberObserver.compose` in core (replacing the docs-recipe-only logging integration).
 - [x] Remove the unused `LogEntry` type (it had no consumers).
 - [x] Add a producer for `Cause.Traced` (`Flow.tracedError`) so the existing cause-trace channel and `Cause.prettyPrint` rendering are reachable from user code.
 - [x] Add tests for annotation/span propagation through flows, fibers, layers, resources, retries, and supervised restarts, plus span-lifetime, exit-mapping, nesting/parentage, fiber-span, and logging-observer coverage.
-- [x] Add `Axial.Flow.Telemetry.JavaScript`: OpenTelemetry JS tracing for Fable targets (Node and browser) — `Otel.install` over a host-supplied `@opentelemetry/api` object via structural bindings, `Otel.trace`/`traceWith` with the .NET span vocabulary, `FiberTelemetry` observer twins; covered by the Fable JS surface gate with an in-memory api fake.
+- [x] Add `Axial.Telemetry.JavaScript`: OpenTelemetry JS tracing for Fable targets (Node and browser) — `Otel.install` over a host-supplied `@opentelemetry/api` object via structural bindings, `Otel.trace`/`traceWith` with the .NET span vocabulary, `FiberTelemetry` observer twins; covered by the Fable JS surface gate with an in-memory api fake.
 
 ## 7a. Future Service Packages
 
 - [ ] Treat service packages as explicit service contracts over the expected .NET API surface: wrap most operations a competent .NET developer would look for, omitting only obsolete, legacy-only, redundant, unsafe-to-abstract, or poor-Axial-fit APIs.
-- [x] Use `Axial.Flow.PlatformService` and `Axial.Flow.FileSystem` as the first examples of near-complete service surfaces with live implementations, typed Flow helpers, fake-friendly contracts, tests, and generated reference docs.
-- [x] Expand `Axial.Flow.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
-- [x] Expand `Axial.Flow.HttpClient` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
-- [x] Expand `Axial.Flow.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
+- [x] Use `Axial.PlatformService` and `Axial.FileSystem` as the first examples of near-complete service surfaces with live implementations, typed Flow helpers, fake-friendly contracts, tests, and generated reference docs.
+- [x] Expand `Axial.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
+- [x] Expand `Axial.HttpClient` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
+- [x] Expand `Axial.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
 - [x] Add explicit process timeout/deadline configuration and tests (`Process.timeout` / DSL `timeout` on `ProcessSpec`, enforced via `Flow.Runtime.timeout` with `ProcessError.TimedOut` and process-tree termination; live integration test in `ProcessServiceTests`).
-- [ ] Design `Axial.Flow.Network` after the core v1 service/layer surface is stable.
-- [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Flow.Telemetry` — see `dev-docs/decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
+- [ ] Design `Axial.Network` after the core v1 service/layer surface is stable.
+- [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Telemetry` — see `dev-docs/decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
 - [x] Define telemetry-service composition with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries — not applicable; no telemetry service contracts are introduced per the decision above.
 
 ## 8. v1.0 Compatibility Tracks
@@ -129,7 +129,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Add supervision hooks for fiber start/end/failure/interruption (`FiberObserver` with `OnStart`/`OnEnd`/`OnUnobservedDefect`, installed via `Flow.withFiberObserver`; interruption is reported through `OnEnd` status; unobserved defects are detected at race/timeout discard sites, scope close, and a GC net).
 - [x] Add `Flow.Runtime.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget.
 - [ ] Add runtime flags and execution strategy where they materially affect .NET behavior.
-- [x] Add structured fiber dumps and richer runtime diagnostics: enriched `FiberDump` (name, annotations, settle time), `Flow.forkNamed`, `FiberRegistry` live-fiber tree dumps, `FiberMetrics` on the `Axial.Flow` meter, and `FiberDumpTelemetry.record` for dump events on traces.
+- [x] Add structured fiber dumps and richer runtime diagnostics: enriched `FiberDump` (name, annotations, settle time), `Flow.forkNamed`, `FiberRegistry` live-fiber tree dumps, `FiberMetrics` on the `Axial` meter, and `FiberDumpTelemetry.record` for dump events on traces.
 
 ## 11. Post-v1.0 STM Expansion
 

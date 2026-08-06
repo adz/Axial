@@ -210,9 +210,9 @@ definitions stay ordinary provided Flow values rather than inheriting a host-spe
 
 Platform hosting packages translate native events into `App.Stop()` and translate the final `Exit` at the outer edge:
 
-- `Axial.Flow.Hosting`: standalone .NET console and Microsoft Generic Host, plus MEL adaptation
-- `Axial.Flow.Hosting.Node`: Node signals, process exit, arguments, and `process.env`
-- `Axial.Flow.Hosting.Browser`: UI ownership and `AbortSignal`
+- `Axial.Hosting`: standalone .NET console and Microsoft Generic Host, plus MEL adaptation
+- `Axial.Hosting.Node`: Node signals, process exit, arguments, and `process.env`
+- `Axial.Hosting.Browser`: UI ownership and `AbortSignal`
 
 The browser adapter never equates tab visibility or unload with dependable application shutdown. Node and browser
 packages are JavaScript-only Fable bindings and fail immediately outside their named runtime.
@@ -243,16 +243,16 @@ over reflection, proxy types, or hidden service maps.
 
 Service packages should focus on explicit, typed, testable system effects:
 
-- Core (`Axial.Flow.PlatformService`): clock, log, random, GUID, environment variables
-- Console (`Axial.Flow.Console`)
-- FileSystem (`Axial.Flow.FileSystem`)
-- Http (`Axial.Flow.HttpClient`)
-- Process (`Axial.Flow.Process`)
-- Telemetry (`Axial.Flow.Telemetry`) and hosting adapters (`Axial.Flow.Hosting`)
+- Core (`Axial.PlatformService`): clock, log, random, GUID, environment variables
+- Console (`Axial.Console`)
+- FileSystem (`Axial.FileSystem`)
+- Http (`Axial.HttpClient`)
+- Process (`Axial.Process`)
+- Telemetry (`Axial.Telemetry`) and hosting adapters (`Axial.Hosting`)
 - future Network package
 
-`Axial.Flow` owns no operational service contracts. The contracts for clock, log, random, GUID, and environment
-variables live in `Axial.Flow.PlatformService`; all target-specific implementations in that package are isolated in
+`Axial` owns no operational service contracts. The contracts for clock, log, random, GUID, and environment
+variables live in `Axial.PlatformService`; all target-specific implementations in that package are isolated in
 its internal `Platform` module. Fable-facing public operations and test implementations remain target-neutral.
 
 Service-package operations should use explicit services. They should normally be thin wrappers over
@@ -286,7 +286,7 @@ console ambiently, and `Script.run` takes an explicit `IConsole` and returns the
 improve public guide coverage and future service packages, not ambient-core or `Flow.service` / `Flow.inject`
 direction.
 
-`Axial.Flow.Process` uses one immutable `ProcessSpec` construction model. `IProcess.Run` returns a lazy
+`Axial.Process` uses one immutable `ProcessSpec` construction model. `IProcess.Run` returns a lazy
 `Flow<unit, ProcessError, ProcessResult>` and `IProcess.Stream` returns a lazy event stream. `Process.run` and
 `Process.stream` compose those programs into the caller's environment. Flow owns timeout racing, cancellation, and
 scope cleanup; the native interpreter owns process-tree termination and partial-start cleanup.

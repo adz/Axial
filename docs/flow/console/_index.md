@@ -1,5 +1,5 @@
 ---
-title: Axial.Flow.Console
+title: Axial.Console
 linkTitle: Console
 weight: 60
 ---

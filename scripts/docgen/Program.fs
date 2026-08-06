@@ -433,14 +433,14 @@ let pageSpecs = [
         Description = "Source-documented workflow surface in Axial."
         Intro = "This page shows the Flow surface for cold workflow descriptions that only start when you call an execution member such as `workflow.ToTask(env)`, `workflow.ToValueTask(env)`, `workflow.ToAsync(env)`, or `workflow.RunSynchronously(env)`. The smallest useful signature is `Flow<'value>`: no environment and no typed failure. `Flow<'error, 'value>` adds typed failure with no environment; `EnvFlow<'env, 'value>` adds an environment with no typed failure; `ExnFlow`/`ExnEnvFlow` put recoverable exceptions in the typed error channel; the full `Flow<'env, 'error, 'value>` form carries both. Use this page as the API map for building fail-fast workflows with `flow { }`, `Flow.read`, `Flow.bind`, and `Flow.map`; reading dependencies from `env`; reshaping environments with `localEnv`; composing typed failures; and introducing concurrency with fibers, `zipPar`, or `race`. Reach for [runtime helpers](./runtime/) and parallel orchestration only at the boundary where the workflow actually needs them."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Flow`3"; "T:Axial.Flow.Flow`2"; "T:Axial.Flow.Flow`1"; "T:Axial.Flow.EnvFlow`2"; "T:Axial.Flow.ExnFlow`1"; "T:Axial.Flow.ExnEnvFlow`2"; "T:Axial.Flow.Never"]
-            "Fiber operations", ["M:Axial.Flow.Flow.fork"; "M:Axial.Flow.Flow.forkDetached"; "M:Axial.Flow.Flow.join"; "M:Axial.Flow.Flow.interrupt"; "M:Axial.Flow.Flow.withFiberObserver"]
-            "Execution", ["M:Axial.Flow.Flow.ToAsync"; "M:Axial.Flow.Flow.ToTask"; "M:Axial.Flow.Flow.ToValueTask"; "M:Axial.Flow.Flow.RunSynchronously"]
-            "Module functions", ["M:Axial.Flow.Flow.ok"; "M:Axial.Flow.Flow.error"; "M:Axial.Flow.Flow.succeed"; "M:Axial.Flow.Flow.value"; "M:Axial.Flow.Flow.fail"; "M:Axial.Flow.Flow.fromResult"; "M:Axial.Flow.Flow.fromOption"; "M:Axial.Flow.Flow.fromValueOption"; "M:Axial.Flow.Flow.fromAsync"; "M:Axial.Flow.Flow.attemptAsync"; "M:Axial.Flow.Flow.fromTask"; "M:Axial.Flow.Flow.attemptTask"; "M:Axial.Flow.Flow.fromValueTask"; "M:Axial.Flow.Flow.attemptValueTask"; "M:Axial.Flow.Flow.verify"; "M:Axial.Flow.Flow.orElseFlow"; "M:Axial.Flow.Flow.env"; "M:Axial.Flow.Flow.read"; "M:Axial.Flow.Flow.map"; "M:Axial.Flow.Flow.bind"; "M:Axial.Flow.Flow.tap"; "M:Axial.Flow.Flow.tapError"; "M:Axial.Flow.Flow.mapError"; "M:Axial.Flow.Flow.tracedError"; "M:Axial.Flow.Flow.catch"; "M:Axial.Flow.Flow.orElseWith"; "M:Axial.Flow.Flow.orElse"; "M:Axial.Flow.Flow.zip"; "M:Axial.Flow.Flow.map2"; "M:Axial.Flow.Flow.map3"; "M:Axial.Flow.Flow.apply"; "M:Axial.Flow.Flow.ignore"; "M:Axial.Flow.Flow.localEnv"; "M:Axial.Flow.Flow.provide"; "M:Axial.Flow.Flow.delay"; "M:Axial.Flow.Flow.traverse"; "M:Axial.Flow.Flow.sequence"]
-            "Policies", ["T:Axial.Flow.Policy`4"; "M:Axial.Flow.Policy.pure"; "M:Axial.Flow.Policy.withError"; "M:Axial.Flow.Policy.context"; "P:Axial.Flow.Policy.pass"; "M:Axial.Flow.Policy.compose"; "M:Axial.Flow.Policy.optional"]
-            "Scoped resources", ["M:Axial.Flow.Flow.addFinalizer"; "M:Axial.Flow.Flow.addDisposable"; "M:Axial.Flow.Flow.addAsyncDisposable"; "M:Axial.Flow.Flow.acquireRelease"; "M:Axial.Flow.Flow.acquireReleaseWith"]
-            "Parallel orchestration", ["M:Axial.Flow.Flow.zipPar"; "M:Axial.Flow.Flow.race"]
-            "Scheduling", ["M:Axial.Flow.ScheduleModule.retry"; "M:Axial.Flow.ScheduleModule.repeat"]
+            "Core type", ["T:Axial.Flow`3"; "T:Axial.Flow`2"; "T:Axial.Flow`1"; "T:Axial.EnvFlow`2"; "T:Axial.ExnFlow`1"; "T:Axial.ExnEnvFlow`2"; "T:Axial.Never"]
+            "Fiber operations", ["M:Axial.Flow.fork"; "M:Axial.Flow.forkDetached"; "M:Axial.Flow.join"; "M:Axial.Flow.interrupt"; "M:Axial.Flow.withFiberObserver"]
+            "Execution", ["M:Axial.Flow.ToAsync"; "M:Axial.Flow.ToTask"; "M:Axial.Flow.ToValueTask"; "M:Axial.Flow.RunSynchronously"]
+            "Module functions", ["M:Axial.Flow.ok"; "M:Axial.Flow.error"; "M:Axial.Flow.succeed"; "M:Axial.Flow.value"; "M:Axial.Flow.fail"; "M:Axial.Flow.fromResult"; "M:Axial.Flow.fromOption"; "M:Axial.Flow.fromValueOption"; "M:Axial.Flow.fromAsync"; "M:Axial.Flow.attemptAsync"; "M:Axial.Flow.fromTask"; "M:Axial.Flow.attemptTask"; "M:Axial.Flow.fromValueTask"; "M:Axial.Flow.attemptValueTask"; "M:Axial.Flow.verify"; "M:Axial.Flow.orElseFlow"; "M:Axial.Flow.env"; "M:Axial.Flow.read"; "M:Axial.Flow.map"; "M:Axial.Flow.bind"; "M:Axial.Flow.tap"; "M:Axial.Flow.tapError"; "M:Axial.Flow.mapError"; "M:Axial.Flow.tracedError"; "M:Axial.Flow.catch"; "M:Axial.Flow.orElseWith"; "M:Axial.Flow.orElse"; "M:Axial.Flow.zip"; "M:Axial.Flow.map2"; "M:Axial.Flow.map3"; "M:Axial.Flow.apply"; "M:Axial.Flow.ignore"; "M:Axial.Flow.localEnv"; "M:Axial.Flow.provide"; "M:Axial.Flow.delay"; "M:Axial.Flow.traverse"; "M:Axial.Flow.sequence"]
+            "Policies", ["T:Axial.Policy`4"; "M:Axial.Policy.pure"; "M:Axial.Policy.withError"; "M:Axial.Policy.context"; "P:Axial.Policy.pass"; "M:Axial.Policy.compose"; "M:Axial.Policy.optional"]
+            "Scoped resources", ["M:Axial.Flow.addFinalizer"; "M:Axial.Flow.addDisposable"; "M:Axial.Flow.addAsyncDisposable"; "M:Axial.Flow.acquireRelease"; "M:Axial.Flow.acquireReleaseWith"]
+            "Parallel orchestration", ["M:Axial.Flow.zipPar"; "M:Axial.Flow.race"]
+            "Scheduling", ["M:Axial.ScheduleModule.retry"; "M:Axial.ScheduleModule.repeat"]
         ]
         Alias = None
     }
@@ -448,10 +448,10 @@ let pageSpecs = [
         OutPath = ["app"; "_index.md"]
         Title = "App"
         Description = "Source-documented root application lifecycle for Flow."
-        Intro = "This page shows the portable `App` lifecycle in `Axial.Flow`. Use `App.run` for a finite root workflow, or `App.start` when a console signal, host, window, UI owner, or test controls stop through an `AppHandle`. The handle keeps the final structured `Exit`, makes stop idempotent, and completes only after the root Flow scope has closed. Platform event subscription and error rendering stay in the host adapter."
+        Intro = "This page shows the portable `App` lifecycle in `Axial`. Use `App.run` for a finite root workflow, or `App.start` when a console signal, host, window, UI owner, or test controls stop through an `AppHandle`. The handle keeps the final structured `Exit`, makes stop idempotent, and completes only after the root Flow scope has closed. Platform event subscription and error rendering stay in the host adapter."
         SymbolIds = [
-            "Lifecycle", ["T:Axial.Flow.AppStatus"; "T:Axial.Flow.AppHandle`2"; "P:Axial.Flow.AppHandle`2.Status"; "P:Axial.Flow.AppHandle`2.Completion"; "M:Axial.Flow.AppHandle`2.Stop"]
-            "Start and run", ["M:Axial.Flow.App.start"; "M:Axial.Flow.App.startWithCancellation"; "M:Axial.Flow.App.run"; "M:Axial.Flow.App.runWithCancellation"]
+            "Lifecycle", ["T:Axial.AppStatus"; "T:Axial.AppHandle`2"; "P:Axial.AppHandle`2.Status"; "P:Axial.AppHandle`2.Completion"; "M:Axial.AppHandle`2.Stop"]
+            "Start and run", ["M:Axial.App.start"; "M:Axial.App.startWithCancellation"; "M:Axial.App.run"; "M:Axial.App.runWithCancellation"]
         ]
         Alias = None
     }
@@ -459,11 +459,11 @@ let pageSpecs = [
         OutPath = ["hosting"; "_index.md"]
         Title = ".NET Hosting"
         Description = "Source-documented .NET standalone, Generic Host, and Microsoft logging adapters."
-        Intro = "This page shows `Axial.Flow.Hosting` for .NET. `DotNetApp` owns Ctrl+C and process exit codes without requiring Generic Host. `Hosting.addApp` installs one root Flow application into Generic Host lifetime. `MicrosoftLogging` adapts MEL to the explicit `ILog` service, while `FiberLogging` reports fiber defects at the root edge. See the [.NET hosting guide](/flow/hosting/) for complete setup."
+        Intro = "This page shows `Axial.Hosting` for .NET. `DotNetApp` owns Ctrl+C and process exit codes without requiring Generic Host. `Hosting.addApp` installs one root Flow application into Generic Host lifetime. `MicrosoftLogging` adapts MEL to the explicit `ILog` service, while `FiberLogging` reports fiber defects at the root edge. See the [.NET hosting guide](/flow/hosting/) for complete setup."
         SymbolIds = [
-            "Standalone", ["M:Axial.Flow.Hosting.DotNetApp.run"; "M:Axial.Flow.Hosting.DotNetApp.exitCode"]
-            "Generic Host", ["T:Axial.Flow.Hosting.HostedAppOptions"; "T:Axial.Flow.Hosting.FlowHostedService`2"; "M:Axial.Flow.Hosting.Hosting.addApp"; "M:Axial.Flow.Hosting.Hosting.addAppWith"]
-            "Logging", ["M:Axial.Flow.Hosting.MicrosoftLogging.create"; "M:Axial.Flow.Hosting.MicrosoftLogging.fromFactory"; "M:Axial.Flow.Hosting.MicrosoftLogging.layer"; "M:Axial.Flow.Hosting.FiberLogging.observer"; "M:Axial.Flow.Hosting.FiberLogging.observe"]
+            "Standalone", ["M:Axial.Hosting.DotNetApp.run"; "M:Axial.Hosting.DotNetApp.exitCode"]
+            "Generic Host", ["T:Axial.Hosting.HostedAppOptions"; "T:Axial.Hosting.FlowHostedService`2"; "M:Axial.Hosting.Hosting.addApp"; "M:Axial.Hosting.Hosting.addAppWith"]
+            "Logging", ["M:Axial.Hosting.MicrosoftLogging.create"; "M:Axial.Hosting.MicrosoftLogging.fromFactory"; "M:Axial.Hosting.MicrosoftLogging.layer"; "M:Axial.Hosting.FiberLogging.observer"; "M:Axial.Hosting.FiberLogging.observe"]
         ]
         Alias = None
     }
@@ -471,10 +471,10 @@ let pageSpecs = [
         OutPath = ["hosting-node"; "_index.md"]
         Title = "Node Hosting"
         Description = "Source-documented Node process adapters for Fable applications."
-        Intro = "This page shows the JavaScript-only `Axial.Flow.Hosting.Node` surface. `NodeApp` connects SIGINT/SIGTERM and `process.exitCode` to a root `App`; `NodeEnvironment.live` exposes `process.env` as the explicit `IEnvironmentVariables` service. See the [Node hosting guide](/flow/hosting/node/) for complete Fable setup."
+        Intro = "This page shows the JavaScript-only `Axial.Hosting.Node` surface. `NodeApp` connects SIGINT/SIGTERM and `process.exitCode` to a root `App`; `NodeEnvironment.live` exposes `process.env` as the explicit `IEnvironmentVariables` service. See the [Node hosting guide](/flow/hosting/node/) for complete Fable setup."
         SymbolIds = [
-            "Node application", ["M:Axial.Flow.Hosting.Node.NodeApp.arguments"; "M:Axial.Flow.Hosting.Node.NodeApp.start"; "M:Axial.Flow.Hosting.Node.NodeApp.run"; "M:Axial.Flow.Hosting.Node.NodeApp.exitCode"]
-            "Environment", ["P:Axial.Flow.Hosting.Node.NodeEnvironment.live"]
+            "Node application", ["M:Axial.Hosting.Node.NodeApp.arguments"; "M:Axial.Hosting.Node.NodeApp.start"; "M:Axial.Hosting.Node.NodeApp.run"; "M:Axial.Hosting.Node.NodeApp.exitCode"]
+            "Environment", ["P:Axial.Hosting.Node.NodeEnvironment.live"]
         ]
         Alias = None
     }
@@ -482,9 +482,9 @@ let pageSpecs = [
         OutPath = ["hosting-browser"; "_index.md"]
         Title = "Browser Hosting"
         Description = "Source-documented browser ownership and AbortSignal adapters for Fable applications."
-        Intro = "This page shows the JavaScript-only `Axial.Flow.Hosting.Browser` surface. `BrowserApp.mount` gives a UI owner an `AppHandle`; `startWithSignal` connects a structural browser `AbortSignal` to coordinated stop. The package deliberately does not treat page visibility or unload events as dependable application shutdown. See the [browser hosting guide](/flow/hosting/browser/) for complete setup."
+        Intro = "This page shows the JavaScript-only `Axial.Hosting.Browser` surface. `BrowserApp.mount` gives a UI owner an `AppHandle`; `startWithSignal` connects a structural browser `AbortSignal` to coordinated stop. The package deliberately does not treat page visibility or unload events as dependable application shutdown. See the [browser hosting guide](/flow/hosting/browser/) for complete setup."
         SymbolIds = [
-            "Browser application", ["T:Axial.Flow.Hosting.Browser.AbortSignal"; "M:Axial.Flow.Hosting.Browser.BrowserApp.mount"; "M:Axial.Flow.Hosting.Browser.BrowserApp.startWithSignal"]
+            "Browser application", ["T:Axial.Hosting.Browser.AbortSignal"; "M:Axial.Hosting.Browser.BrowserApp.mount"; "M:Axial.Hosting.Browser.BrowserApp.startWithSignal"]
         ]
         Alias = None
     }
@@ -494,8 +494,8 @@ let pageSpecs = [
         Description = "Source-documented handle for running workflows."
         Intro = "This page shows the `Fiber<'error, 'value>` handle used by Axial concurrency. A fiber represents a flow that has already been started in the background; it keeps the workflow's typed error and success values attached to the running work, plus diagnostic metadata such as fiber id, parent id, start time, and lifecycle status. The operations that create and consume fibers are still part of the [`Flow`](../flow/) API: use [`Flow.fork`](../flow/concurrency/m-flow-fork.md), [`Flow.join`](../flow/concurrency/m-flow-join.md), and [`Flow.interrupt`](../flow/concurrency/m-flow-interrupt.md) when a workflow needs explicit child execution. Prefer higher-level helpers such as `Flow.zipPar` or `Flow.race` when the code only needs parallel composition."
         SymbolIds = [
-            "Core types", ["T:Axial.Flow.Fiber`2"; "T:Axial.Flow.FiberId"; "T:Axial.Flow.FiberStatus"; "T:Axial.Flow.FiberMetadata"; "T:Axial.Flow.FiberDump"; "T:Axial.Flow.FiberObserver"]
-            "Module functions", ["M:Axial.Flow.Fiber.dump"; "P:Axial.Flow.FiberObserverModule.none"; "M:Axial.Flow.FiberObserverModule.compose"]
+            "Core types", ["T:Axial.Fiber`2"; "T:Axial.FiberId"; "T:Axial.FiberStatus"; "T:Axial.FiberMetadata"; "T:Axial.FiberDump"; "T:Axial.FiberObserver"]
+            "Module functions", ["M:Axial.Fiber.dump"; "P:Axial.FiberObserverModule.none"; "M:Axial.FiberObserverModule.compose"]
         ]
         Alias = None
     }
@@ -505,8 +505,8 @@ let pageSpecs = [
         Description = "Source-documented deferred and semaphore primitives for Axial."
         Intro = "This page shows the small Flow-native concurrency primitives added for coordination that needs Axial semantics rather than raw .NET behavior. `Deferred<'error, 'value>` is a one-shot typed handoff point backed by a full `Exit<'value, 'error>`. `FlowSemaphore` limits concurrent workflow sections through scoped `Semaphore.withPermit`, releasing permits after success, typed failure, defect, or interruption."
         SymbolIds = [
-            "Deferred", ["T:Axial.Flow.Deferred`2"; "M:Axial.Flow.Deferred.make"; "M:Axial.Flow.Deferred.await"; "M:Axial.Flow.Deferred.complete"; "M:Axial.Flow.Deferred.succeed"; "M:Axial.Flow.Deferred.fail"; "M:Axial.Flow.Deferred.die"; "M:Axial.Flow.Deferred.interrupt"]
-            "Semaphore", ["T:Axial.Flow.FlowSemaphore"; "M:Axial.Flow.Semaphore.make"; "M:Axial.Flow.Semaphore.create"; "M:Axial.Flow.Semaphore.withPermit"]
+            "Deferred", ["T:Axial.Deferred`2"; "M:Axial.Deferred.make"; "M:Axial.Deferred.await"; "M:Axial.Deferred.complete"; "M:Axial.Deferred.succeed"; "M:Axial.Deferred.fail"; "M:Axial.Deferred.die"; "M:Axial.Deferred.interrupt"]
+            "Semaphore", ["T:Axial.FlowSemaphore"; "M:Axial.Semaphore.make"; "M:Axial.Semaphore.create"; "M:Axial.Semaphore.withPermit"]
         ]
         Alias = None
     }
@@ -516,8 +516,8 @@ let pageSpecs = [
         Description = "Documentation for the Exit workflow outcome."
         Intro = "This page shows the `Exit<'value, 'error>` type, which is Axial's name for `Result<'value, Cause<'error>>`. We name it `Exit` because it represents a completed workflow execution, not an ordinary domain result. Use the `Exit` module functions to transform completed outcomes without manually pattern matching at every boundary."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Exit`2"]
-            "Module functions", ["M:Axial.Flow.Exit.map"; "M:Axial.Flow.Exit.bind"; "M:Axial.Flow.Exit.mapError"; "M:Axial.Flow.Exit.mapBoth"; "M:Axial.Flow.Exit.fromResult"; "M:Axial.Flow.Exit.toResult"]
+            "Core type", ["T:Axial.Exit`2"]
+            "Module functions", ["M:Axial.Exit.map"; "M:Axial.Exit.bind"; "M:Axial.Exit.mapError"; "M:Axial.Exit.mapBoth"; "M:Axial.Exit.fromResult"; "M:Axial.Exit.toResult"]
         ]
         Alias = None
     }
@@ -527,8 +527,8 @@ let pageSpecs = [
         Description = "Documentation for the Cause of workflow failure."
         Intro = "This page shows the `Cause<'error>` type, which distinguishes expected domain failures, unexpected technical defects, administrative interruptions, sequential failure composition, parallel failure composition, and diagnostic traces. Understanding the cause tree lets Axial preserve what happened during retries, cleanup, parallel execution, and observability boundaries without flattening everything into one exception or one typed error."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Cause`1"]
-            "Module functions", ["M:Axial.Flow.Cause.map"; "M:Axial.Flow.Cause.thenCause"; "M:Axial.Flow.Cause.both"; "M:Axial.Flow.Cause.traced"; "M:Axial.Flow.Cause.failures"; "M:Axial.Flow.Cause.defects"; "M:Axial.Flow.Cause.isInterrupted"; "M:Axial.Flow.Cause.prettyPrint"]
+            "Core type", ["T:Axial.Cause`1"]
+            "Module functions", ["M:Axial.Cause.map"; "M:Axial.Cause.thenCause"; "M:Axial.Cause.both"; "M:Axial.Cause.traced"; "M:Axial.Cause.failures"; "M:Axial.Cause.defects"; "M:Axial.Cause.isInterrupted"; "M:Axial.Cause.prettyPrint"]
         ]
         Alias = None
     }
@@ -538,8 +538,8 @@ let pageSpecs = [
         Description = "Runtime helpers for operational concerns like logging, timeout, retry, and cleanup."
         Intro = "This page shows the `Flow.Runtime` helpers for closed executor mechanics. These functions expose cancellation, scope ownership, runtime annotations, timeout handling, and retry. User-facing resource combinators such as `Flow.acquireRelease` live on the main `Flow` module; `Flow.Runtime.scope` remains available for advanced code that needs direct scope access."
         SymbolIds = [
-            "Runtime types", ["T:Axial.Flow.RetryPolicy`1"; "T:Axial.Flow.SupervisePolicy"]
-            "Runtime helpers", ["M:Axial.Flow.Flow.Runtime.cancellationToken"; "M:Axial.Flow.Flow.Runtime.catchCancellation"; "M:Axial.Flow.Flow.Runtime.ensureNotCanceled"; "M:Axial.Flow.Flow.Runtime.sleep"; "M:Axial.Flow.Flow.Runtime.scope"; "M:Axial.Flow.Flow.Runtime.annotations"; "M:Axial.Flow.Flow.Runtime.traceId"; "M:Axial.Flow.Flow.Runtime.timeout"; "M:Axial.Flow.Flow.Runtime.timeoutToOk"; "M:Axial.Flow.Flow.Runtime.timeoutToError"; "M:Axial.Flow.Flow.Runtime.timeoutWith"; "M:Axial.Flow.Flow.Runtime.retry"; "M:Axial.Flow.Flow.Runtime.supervise"; "M:Axial.Flow.Flow.Runtime.fiberId"]
+            "Runtime types", ["T:Axial.RetryPolicy`1"; "T:Axial.SupervisePolicy"]
+            "Runtime helpers", ["M:Axial.Flow.Runtime.cancellationToken"; "M:Axial.Flow.Runtime.catchCancellation"; "M:Axial.Flow.Runtime.ensureNotCanceled"; "M:Axial.Flow.Runtime.sleep"; "M:Axial.Flow.Runtime.scope"; "M:Axial.Flow.Runtime.annotations"; "M:Axial.Flow.Runtime.traceId"; "M:Axial.Flow.Runtime.timeout"; "M:Axial.Flow.Runtime.timeoutToOk"; "M:Axial.Flow.Runtime.timeoutToError"; "M:Axial.Flow.Runtime.timeoutWith"; "M:Axial.Flow.Runtime.retry"; "M:Axial.Flow.Runtime.supervise"; "M:Axial.Flow.Runtime.fiberId"]
         ]
         Alias = None
     }
@@ -549,8 +549,8 @@ let pageSpecs = [
         Description = "Source-documented retry and repeat logic for Axial."
         Intro = "This page shows the `Schedule` surface for describing retry and repeat policies as values. A `Schedule` on its own does nothing — it is a definition of when to run again (recur or stop) and how long to wait, not an action. Build one with `recurs` (bounded repetition), `spaced` (fixed delay), `exponential` (backoff), and `jittered`/`jitteredWith` (randomized delay, so callers don't retry in lockstep; `jitteredWith` takes the sample source for deterministic schedules), then apply it to a flow with `Schedule.retry` (rerun on a typed failure) or `Schedule.repeat` (rerun on a success) — nothing happens until one of those two runs the schedule against an actual workflow. Use schedules when retry behavior is part of the workflow boundary and must stay explicit, testable, and separate from the domain operation being retried."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Schedule`3"]
-            "Module functions", ["M:Axial.Flow.ScheduleModule.recurs"; "M:Axial.Flow.ScheduleModule.spaced"; "M:Axial.Flow.ScheduleModule.exponential"; "M:Axial.Flow.ScheduleModule.jittered"; "M:Axial.Flow.ScheduleModule.jitteredWith"; "M:Axial.Flow.ScheduleModule.retry"; "M:Axial.Flow.ScheduleModule.repeat"]
+            "Core type", ["T:Axial.Schedule`3"]
+            "Module functions", ["M:Axial.ScheduleModule.recurs"; "M:Axial.ScheduleModule.spaced"; "M:Axial.ScheduleModule.exponential"; "M:Axial.ScheduleModule.jittered"; "M:Axial.ScheduleModule.jitteredWith"; "M:Axial.ScheduleModule.retry"; "M:Axial.ScheduleModule.repeat"]
         ]
         Alias = None
     }
@@ -560,8 +560,8 @@ let pageSpecs = [
         Description = "Source-documented atomic mutable references for Axial."
         Intro = "This page shows the `Ref` surface for small pieces of shared mutable state inside flows. A `Ref<'T>` is an atomic handle that can be created, read, set, updated, or modified from workflow code without turning the whole environment into a mutable object. Use `Ref` for counters, flags, request-local caches, and coordination points where a single value is enough. For multi-value invariants that must change together, use STM instead."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Ref`1"]
-            "Module functions", ["M:Axial.Flow.Ref.make"; "M:Axial.Flow.Ref.get"; "M:Axial.Flow.Ref.set"; "M:Axial.Flow.Ref.update"; "M:Axial.Flow.Ref.modify"]
+            "Core type", ["T:Axial.Ref`1"]
+            "Module functions", ["M:Axial.Ref.make"; "M:Axial.Ref.get"; "M:Axial.Ref.set"; "M:Axial.Ref.update"; "M:Axial.Ref.modify"]
         ]
         Alias = None
     }
@@ -571,9 +571,9 @@ let pageSpecs = [
         Description = "Source-documented Software Transactional Memory for Axial."
         Intro = "This page shows the STM surface for composable atomic state transitions. STM is for cases where several transactional references must be read and updated as one operation, or where a workflow should wait until state satisfies a condition. Build transactions with `TRef` reads and writes, compose them before execution, then cross back into `Flow` with `STM.atomically`. Use `Ref` for one independent mutable value; use STM when correctness depends on a group of values changing together. \n\n**Note**: The current implementation uses a global synchronizing lock for coordination and is available on .NET only."
         SymbolIds = [
-            "Core types", ["T:Axial.Flow.TRef`1"; "T:Axial.Flow.STM`1"]
-            "Module functions", ["M:Axial.Flow.TRef.make"; "M:Axial.Flow.TRef.get"; "M:Axial.Flow.TRef.set"; "M:Axial.Flow.TRef.update"; "M:Axial.Flow.STM.atomically"]
-            "Builder", ["T:Axial.Flow.StmBuilder"; "P:Axial.Flow.StmBuilders.stm"]
+            "Core types", ["T:Axial.TRef`1"; "T:Axial.STM`1"]
+            "Module functions", ["M:Axial.TRef.make"; "M:Axial.TRef.get"; "M:Axial.TRef.set"; "M:Axial.TRef.update"; "M:Axial.STM.atomically"]
+            "Builder", ["T:Axial.StmBuilder"; "P:Axial.StmBuilders.stm"]
         ]
         Alias = None
     }
@@ -583,11 +583,11 @@ let pageSpecs = [
         Description = "Source-documented effectful streams for Axial."
         Intro = "This page shows the Fable-compatible `FlowStream` surface for cold, pull-based streams that participate in Axial's environment, typed-error, cancellation, and scope model. Construct streams from values or effectful state transitions, transform them without starting work, and consume them back into an ordinary `Flow`."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.FlowStream`3"]
-            "Construction", ["M:Axial.Flow.FlowStream.empty"; "M:Axial.Flow.FlowStream.singleton"; "M:Axial.Flow.FlowStream.fromSeq"; "M:Axial.Flow.FlowStream.fromFlow"; "M:Axial.Flow.FlowStream.unfoldFlow"]
-            "Transformation", ["M:Axial.Flow.FlowStream.map"; "M:Axial.Flow.FlowStream.mapError"; "M:Axial.Flow.FlowStream.filter"; "M:Axial.Flow.FlowStream.choose"; "M:Axial.Flow.FlowStream.mapFlow"; "M:Axial.Flow.FlowStream.tapFlow"; "M:Axial.Flow.FlowStream.take"; "M:Axial.Flow.FlowStream.skip"; "M:Axial.Flow.FlowStream.takeWhile"; "M:Axial.Flow.FlowStream.skipWhile"; "M:Axial.Flow.FlowStream.indexed"; "M:Axial.Flow.FlowStream.scan"; "M:Axial.Flow.FlowStream.distinctUntilChangedBy"]
-            "Composition", ["M:Axial.Flow.FlowStream.append"; "M:Axial.Flow.FlowStream.collect"; "M:Axial.Flow.FlowStream.zip"]
-            "Consumption", ["M:Axial.Flow.FlowStream.runForEach"; "M:Axial.Flow.FlowStream.runForEachFlow"; "M:Axial.Flow.FlowStream.runFold"; "M:Axial.Flow.FlowStream.runCollect"; "M:Axial.Flow.FlowStream.runDrain"]
+            "Core type", ["T:Axial.FlowStream`3"]
+            "Construction", ["M:Axial.FlowStream.empty"; "M:Axial.FlowStream.singleton"; "M:Axial.FlowStream.fromSeq"; "M:Axial.FlowStream.fromFlow"; "M:Axial.FlowStream.unfoldFlow"]
+            "Transformation", ["M:Axial.FlowStream.map"; "M:Axial.FlowStream.mapError"; "M:Axial.FlowStream.filter"; "M:Axial.FlowStream.choose"; "M:Axial.FlowStream.mapFlow"; "M:Axial.FlowStream.tapFlow"; "M:Axial.FlowStream.take"; "M:Axial.FlowStream.skip"; "M:Axial.FlowStream.takeWhile"; "M:Axial.FlowStream.skipWhile"; "M:Axial.FlowStream.indexed"; "M:Axial.FlowStream.scan"; "M:Axial.FlowStream.distinctUntilChangedBy"]
+            "Composition", ["M:Axial.FlowStream.append"; "M:Axial.FlowStream.collect"; "M:Axial.FlowStream.zip"]
+            "Consumption", ["M:Axial.FlowStream.runForEach"; "M:Axial.FlowStream.runForEachFlow"; "M:Axial.FlowStream.runFold"; "M:Axial.FlowStream.runCollect"; "M:Axial.FlowStream.runDrain"]
         ]
         Alias = None
     }
@@ -597,7 +597,7 @@ let pageSpecs = [
         Description = "Documentation for the flow { } computation expression."
         Intro = "This page shows the `flow { }` computation expression, the primary syntax for writing Axial workflows. Inside the builder, ordinary values, `Result`, `Async`, `Task`, `Flow`, and guarded sources can be sequenced without manually unwrapping each layer. The builder preserves the important boundaries: expected errors stay typed, defects become `Cause.Die`, cancellation becomes interruption, and environment access remains explicit through `Flow.env` or `Flow.read`. Prefer `flow { }` for application orchestration; keep pure value rules and simple predicates in `Constraint` or `Result` until the code needs environment or effects."
         SymbolIds = [
-            "Builder", ["P:Axial.Flow.Builders.flow"]
+            "Builder", ["P:Axial.Builders.flow"]
         ]
         Alias = None
     }
@@ -629,8 +629,8 @@ let pageSpecs = [
         Description = "Source-documented flow bind-site error adaptation for Axial."
         Intro = "This page shows the `Bind` helpers used when a source needs its error assigned or mapped immediately before `flow { }` binds it. Use `Bind.error` for option or value-option absence and unit-error failures such as `Result<'value, unit>` or `Flow<'env, unit, 'value>`. Use `Bind.mapError` when the source already carries a meaningful error that must be wrapped or translated into the surrounding flow error. The helpers return a `BindError` marker for the flow builder. Do not use `Bind` as a general Result adapter; in pure code use `Result.mapError` or `Result.orError`."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.BindError`3"]
-            "Module functions", ["M:Axial.Flow.Bind.error"; "M:Axial.Flow.Bind.mapError"]
+            "Core type", ["T:Axial.BindError`3"]
+            "Module functions", ["M:Axial.Bind.error"; "M:Axial.Bind.mapError"]
         ]
         Alias = None
     }
@@ -692,9 +692,9 @@ let pageSpecs = [
         Description = "Source-documented service contracts and dependency access helpers for Axial."
         Intro = "This page shows the service helpers around Axial's explicit environment model. In Axial, a service is a named dependency contract such as `IClock`, `IConsole`, or `IHttp`. Prefer plain records plus `Flow.read` for local workflow code, use `IHas<'T>` plus `Service<'service>.get()` when reusable helpers need a nominal service contract, and keep `Service<'service>.resolve()` at .NET host boundaries where `IServiceProvider` interop is useful. Layers provision explicit services, while the ambient runtime is reserved for closed executor mechanics only.\n\nSee the standard service packages: [Core](./core/), [Console](./console/), [FileSystem](./filesystem/), [Http](./http/), and [Process](./process/)."
         SymbolIds = [
-            "Service contracts", ["T:Axial.Flow.IHas`1"; "T:Axial.Flow.Service`1"]
-            "Service accessors", ["M:Axial.Flow.Service.get"; "M:Axial.Flow.Service.resolve"]
-            "Environment helpers", ["M:Axial.Flow.Flow.read"]
+            "Service contracts", ["T:Axial.IHas`1"; "T:Axial.Service`1"]
+            "Service accessors", ["M:Axial.Service.get"; "M:Axial.Service.resolve"]
+            "Environment helpers", ["M:Axial.Flow.read"]
         ]
         Alias = None
     }
@@ -704,10 +704,10 @@ let pageSpecs = [
         Description = "Source-documented service provisioning surface for Axial."
         Intro = "This page shows the `Layer<'input, 'error, 'output>` surface used to provision explicit services and environments. Layers build service values inside a `Scope`, can fail during provisioning, and are consumed through `Flow.provide`. Use `layer { }` for application environment construction: plain `let!` is dependent and sequential, while sibling `and!` bindings use `Layer.merge` / `Layer.zipPar` for independent parallel provisioning."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Layer`3"]
-            "Builder", ["P:Axial.Flow.Builders.layer"]
-            "Module functions", ["M:Axial.Flow.Layer.fromAsync"; "M:Axial.Flow.Layer.fromTask"; "M:Axial.Flow.Layer.fromValueTask"; "M:Axial.Flow.Layer.succeed"; "M:Axial.Flow.Layer.read"; "M:Axial.Flow.Layer.addFinalizer"; "M:Axial.Flow.Layer.acquireRelease"; "M:Axial.Flow.Layer.map"; "M:Axial.Flow.Layer.mapError"; "M:Axial.Flow.Layer.bind"; "M:Axial.Flow.Layer.zip"; "M:Axial.Flow.Layer.zipPar"; "M:Axial.Flow.Layer.merge"; "M:Axial.Flow.Layer.map2"; "M:Axial.Flow.Layer.apply"; "M:Axial.Flow.Layer.map3"]
-            "Flow integration", ["M:Axial.Flow.Flow.provide"]
+            "Core type", ["T:Axial.Layer`3"]
+            "Builder", ["P:Axial.Builders.layer"]
+            "Module functions", ["M:Axial.Layer.fromAsync"; "M:Axial.Layer.fromTask"; "M:Axial.Layer.fromValueTask"; "M:Axial.Layer.succeed"; "M:Axial.Layer.read"; "M:Axial.Layer.addFinalizer"; "M:Axial.Layer.acquireRelease"; "M:Axial.Layer.map"; "M:Axial.Layer.mapError"; "M:Axial.Layer.bind"; "M:Axial.Layer.zip"; "M:Axial.Layer.zipPar"; "M:Axial.Layer.merge"; "M:Axial.Layer.map2"; "M:Axial.Layer.apply"; "M:Axial.Layer.map3"]
+            "Flow integration", ["M:Axial.Flow.provide"]
         ]
         Alias = None
     }
@@ -717,189 +717,189 @@ let pageSpecs = [
         Description = "Source-documented resource scope for Axial."
         Intro = "This page shows the `Scope` surface used to own cleanup for resources acquired during provisioning and execution. Scopes register finalizers, disposables, and async disposables, and they close in reverse registration order."
         SymbolIds = [
-            "Core type", ["T:Axial.Flow.Scope"]
-            "Methods", ["M:Axial.Flow.Scope.AddFinalizer(Microsoft.FSharp.Core.FSharpFunc{System.Threading.CancellationToken,System.Threading.Tasks.Task})"; "M:Axial.Flow.Scope.AddDisposable(System.IDisposable)"; "M:Axial.Flow.Scope.AddAsyncDisposable(System.IAsyncDisposable)"; "M:Axial.Flow.Scope.AddChild"; "M:Axial.Flow.Scope.Close(System.Threading.CancellationToken)"]
+            "Core type", ["T:Axial.Scope"]
+            "Methods", ["M:Axial.Scope.AddFinalizer(Microsoft.FSharp.Core.FSharpFunc{System.Threading.CancellationToken,System.Threading.Tasks.Task})"; "M:Axial.Scope.AddDisposable(System.IDisposable)"; "M:Axial.Scope.AddAsyncDisposable(System.IAsyncDisposable)"; "M:Axial.Scope.AddChild"; "M:Axial.Scope.Close(System.Threading.CancellationToken)"]
         ]
         Alias = None
     }
     {
         OutPath = ["service"; "core"; "_index.md"]
         Title = "Services Core"
-        Description = "Source-documented synchronous service primitives for Axial.Flow.PlatformService."
+        Description = "Source-documented synchronous service primitives for Axial.PlatformService."
         Intro = "This page shows the core service package: clock, logging, random numbers, GUID generation, and environment-variable lookup. These are explicit services, not ambient runtime slots. Use the helper modules when a workflow needs one of these services, and use `BaseRuntime` or custom environments to supply deterministic or live implementations."
         SymbolIds = [
-            "Service types", ["T:Axial.Flow.PlatformService.IClock"; "T:Axial.Flow.PlatformService.ILog"; "T:Axial.Flow.LogLevel"; "T:Axial.Flow.PlatformService.IRandom"; "T:Axial.Flow.PlatformService.IGuid"; "T:Axial.Flow.PlatformService.IEnvironmentVariables"; "T:Axial.Flow.PlatformService.EnvironmentVariableError"; "T:Axial.Flow.PlatformService.BaseRuntimeError"; "T:Axial.Flow.PlatformService.BaseRuntime"]
-            "Base runtime", ["P:Axial.Flow.PlatformService.BaseRuntimeModule.liveValue"; "P:Axial.Flow.PlatformService.BaseRuntimeModule.live"; "P:Axial.Flow.PlatformService.BaseRuntimeModule.fromServiceProvider"]
-            "Clock", ["M:Axial.Flow.PlatformService.Clock.now"; "M:Axial.Flow.PlatformService.Clock.utcDateTime"; "M:Axial.Flow.PlatformService.Clock.unixTimeSeconds"; "M:Axial.Flow.PlatformService.Clock.unixTimeMilliseconds"; "P:Axial.Flow.PlatformService.Clock.live"; "P:Axial.Flow.PlatformService.Clock.layer"; "M:Axial.Flow.PlatformService.Clock.fromValue"]
-            "Logging", ["M:Axial.Flow.PlatformService.Log.log"; "M:Axial.Flow.PlatformService.Log.trace"; "M:Axial.Flow.PlatformService.Log.debug"; "M:Axial.Flow.PlatformService.Log.info"; "M:Axial.Flow.PlatformService.Log.warning"; "M:Axial.Flow.PlatformService.Log.error"; "M:Axial.Flow.PlatformService.Log.critical"; "P:Axial.Flow.PlatformService.Log.live"; "P:Axial.Flow.PlatformService.Log.layer"; "M:Axial.Flow.PlatformService.Log.fromSink"]
-            "Random", ["M:Axial.Flow.PlatformService.Random.next"; "M:Axial.Flow.PlatformService.Random.nextMax"; "M:Axial.Flow.PlatformService.Random.nextInt"; "M:Axial.Flow.PlatformService.Random.nextDouble"; "M:Axial.Flow.PlatformService.Random.nextBytes"; "M:Axial.Flow.PlatformService.Random.bytes"; "P:Axial.Flow.PlatformService.Random.live"; "P:Axial.Flow.PlatformService.Random.layer"; "M:Axial.Flow.PlatformService.Random.fromValue"; "M:Axial.Flow.PlatformService.Random.fromFixed"]
-            "GUID", ["M:Axial.Flow.PlatformService.Guid.newGuid"; "P:Axial.Flow.PlatformService.Guid.live"; "P:Axial.Flow.PlatformService.Guid.layer"; "M:Axial.Flow.PlatformService.Guid.fromValue"]
-            "Environment variables", ["M:Axial.Flow.PlatformService.EnvironmentVariables.tryGet"; "M:Axial.Flow.PlatformService.EnvironmentVariables.getAll"; "M:Axial.Flow.PlatformService.EnvironmentVariables.set"; "M:Axial.Flow.PlatformService.EnvironmentVariables.clear"; "M:Axial.Flow.PlatformService.EnvironmentVariables.expand"; "P:Axial.Flow.PlatformService.EnvironmentVariables.live"; "P:Axial.Flow.PlatformService.EnvironmentVariables.layer"; "M:Axial.Flow.PlatformService.EnvironmentVariables.fromPairs"; "M:Axial.Flow.PlatformService.EnvironmentVariable.tryGet"; "M:Axial.Flow.PlatformService.EnvironmentVariable.get"; "M:Axial.Flow.PlatformService.EnvironmentVariable.getInt"; "M:Axial.Flow.PlatformService.EnvironmentVariable.getInt64"; "M:Axial.Flow.PlatformService.EnvironmentVariable.getDouble"; "M:Axial.Flow.PlatformService.EnvironmentVariable.getDecimal"; "M:Axial.Flow.PlatformService.EnvironmentVariable.getGuid"; "M:Axial.Flow.PlatformService.EnvironmentVariable.getUri"; "M:Axial.Flow.PlatformService.EnvironmentVariable.getTimeSpan"; "M:Axial.Flow.PlatformService.EnvironmentVariable.getBool"; "M:Axial.Flow.PlatformService.EnvironmentVariableErrors.describe"]
+            "Service types", ["T:Axial.PlatformService.IClock"; "T:Axial.PlatformService.ILog"; "T:Axial.LogLevel"; "T:Axial.PlatformService.IRandom"; "T:Axial.PlatformService.IGuid"; "T:Axial.PlatformService.IEnvironmentVariables"; "T:Axial.PlatformService.EnvironmentVariableError"; "T:Axial.PlatformService.BaseRuntimeError"; "T:Axial.PlatformService.BaseRuntime"]
+            "Base runtime", ["P:Axial.PlatformService.BaseRuntimeModule.liveValue"; "P:Axial.PlatformService.BaseRuntimeModule.live"; "P:Axial.PlatformService.BaseRuntimeModule.fromServiceProvider"]
+            "Clock", ["M:Axial.PlatformService.Clock.now"; "M:Axial.PlatformService.Clock.utcDateTime"; "M:Axial.PlatformService.Clock.unixTimeSeconds"; "M:Axial.PlatformService.Clock.unixTimeMilliseconds"; "P:Axial.PlatformService.Clock.live"; "P:Axial.PlatformService.Clock.layer"; "M:Axial.PlatformService.Clock.fromValue"]
+            "Logging", ["M:Axial.PlatformService.Log.log"; "M:Axial.PlatformService.Log.trace"; "M:Axial.PlatformService.Log.debug"; "M:Axial.PlatformService.Log.info"; "M:Axial.PlatformService.Log.warning"; "M:Axial.PlatformService.Log.error"; "M:Axial.PlatformService.Log.critical"; "P:Axial.PlatformService.Log.live"; "P:Axial.PlatformService.Log.layer"; "M:Axial.PlatformService.Log.fromSink"]
+            "Random", ["M:Axial.PlatformService.Random.next"; "M:Axial.PlatformService.Random.nextMax"; "M:Axial.PlatformService.Random.nextInt"; "M:Axial.PlatformService.Random.nextDouble"; "M:Axial.PlatformService.Random.nextBytes"; "M:Axial.PlatformService.Random.bytes"; "P:Axial.PlatformService.Random.live"; "P:Axial.PlatformService.Random.layer"; "M:Axial.PlatformService.Random.fromValue"; "M:Axial.PlatformService.Random.fromFixed"]
+            "GUID", ["M:Axial.PlatformService.Guid.newGuid"; "P:Axial.PlatformService.Guid.live"; "P:Axial.PlatformService.Guid.layer"; "M:Axial.PlatformService.Guid.fromValue"]
+            "Environment variables", ["M:Axial.PlatformService.EnvironmentVariables.tryGet"; "M:Axial.PlatformService.EnvironmentVariables.getAll"; "M:Axial.PlatformService.EnvironmentVariables.set"; "M:Axial.PlatformService.EnvironmentVariables.clear"; "M:Axial.PlatformService.EnvironmentVariables.expand"; "P:Axial.PlatformService.EnvironmentVariables.live"; "P:Axial.PlatformService.EnvironmentVariables.layer"; "M:Axial.PlatformService.EnvironmentVariables.fromPairs"; "M:Axial.PlatformService.EnvironmentVariable.tryGet"; "M:Axial.PlatformService.EnvironmentVariable.get"; "M:Axial.PlatformService.EnvironmentVariable.getInt"; "M:Axial.PlatformService.EnvironmentVariable.getInt64"; "M:Axial.PlatformService.EnvironmentVariable.getDouble"; "M:Axial.PlatformService.EnvironmentVariable.getDecimal"; "M:Axial.PlatformService.EnvironmentVariable.getGuid"; "M:Axial.PlatformService.EnvironmentVariable.getUri"; "M:Axial.PlatformService.EnvironmentVariable.getTimeSpan"; "M:Axial.PlatformService.EnvironmentVariable.getBool"; "M:Axial.PlatformService.EnvironmentVariableErrors.describe"]
         ]
         Alias = None
     }
     {
         OutPath = ["service"; "console"; "_index.md"]
         Title = "Services Console"
-        Description = "Source-documented console I/O service for Axial.Flow.Console."
+        Description = "Source-documented console I/O service for Axial.Console."
         Intro = "This page shows the console service package. `IConsole` models standard input and output as an explicit workflow service. Keep business logic typed against the service contract, provide `Console.live` only at the edge, and replace it with a test implementation when you need deterministic input or captured output."
         SymbolIds = [
-            "Service", ["T:Axial.Flow.Console.IConsole"]
-            "Helpers", ["M:Axial.Flow.Console.Console.readLine"; "M:Axial.Flow.Console.Console.writeLine"; "P:Axial.Flow.Console.Console.live"; "P:Axial.Flow.Console.Console.layer"]
+            "Service", ["T:Axial.Console.IConsole"]
+            "Helpers", ["M:Axial.Console.Console.readLine"; "M:Axial.Console.Console.writeLine"; "P:Axial.Console.Console.live"; "P:Axial.Console.Console.layer"]
         ]
         Alias = None
     }
     {
         OutPath = ["service"; "filesystem"; "_index.md"]
         Title = "Services FileSystem"
-        Description = "Source-documented file-system service for Axial.Flow.FileSystem."
+        Description = "Source-documented file-system service for Axial.FileSystem."
         Intro = "This page shows the file-system service package. `IFileSystem` models common `System.IO.File`, `Directory`, `Path`, text, byte, stream, metadata, and timestamp operations as an explicit workflow service. Keep workflow code typed against the service contract, provide `FileSystem.live` only at the edge, and replace it with a deterministic implementation in tests. File-system helpers classify thrown platform exceptions into `FileSystemError` so workflow errors stay typed instead of escaping as ordinary exceptions."
         SymbolIds = [
-            "Service", ["T:Axial.Flow.FileSystem.IFileSystem"; "T:Axial.Flow.FileSystem.FileSystemError"]
-            "Errors", ["M:Axial.Flow.FileSystem.FileSystemError.fromException"; "M:Axial.Flow.FileSystem.FileSystemError.describe"]
+            "Service", ["T:Axial.FileSystem.IFileSystem"; "T:Axial.FileSystem.FileSystemError"]
+            "Errors", ["M:Axial.FileSystem.FileSystemError.fromException"; "M:Axial.FileSystem.FileSystemError.describe"]
             "Text and bytes",
-                [ "M:Axial.Flow.FileSystem.FileSystem.readAllText"
-                  "M:Axial.Flow.FileSystem.FileSystem.readAllTextWithEncoding"
-                  "M:Axial.Flow.FileSystem.FileSystem.readAllTextAsync"
-                  "M:Axial.Flow.FileSystem.FileSystem.readAllLines"
-                  "M:Axial.Flow.FileSystem.FileSystem.readAllLinesWithEncoding"
-                  "M:Axial.Flow.FileSystem.FileSystem.readAllLinesAsync"
-                  "M:Axial.Flow.FileSystem.FileSystem.readAllBytes"
-                  "M:Axial.Flow.FileSystem.FileSystem.readAllBytesAsync"
-                  "M:Axial.Flow.FileSystem.FileSystem.writeAllText"
-                  "M:Axial.Flow.FileSystem.FileSystem.writeAllTextWithEncoding"
-                  "M:Axial.Flow.FileSystem.FileSystem.writeAllTextAsync"
-                  "M:Axial.Flow.FileSystem.FileSystem.writeAllLines"
-                  "M:Axial.Flow.FileSystem.FileSystem.writeAllLinesWithEncoding"
-                  "M:Axial.Flow.FileSystem.FileSystem.writeAllLinesAsync"
-                  "M:Axial.Flow.FileSystem.FileSystem.writeAllBytes"
-                  "M:Axial.Flow.FileSystem.FileSystem.writeAllBytesAsync"
-                  "M:Axial.Flow.FileSystem.FileSystem.appendAllText"
-                  "M:Axial.Flow.FileSystem.FileSystem.appendAllTextWithEncoding"
-                  "M:Axial.Flow.FileSystem.FileSystem.appendAllTextAsync"
-                  "M:Axial.Flow.FileSystem.FileSystem.appendAllLines"
-                  "M:Axial.Flow.FileSystem.FileSystem.appendAllLinesWithEncoding" ]
+                [ "M:Axial.FileSystem.FileSystem.readAllText"
+                  "M:Axial.FileSystem.FileSystem.readAllTextWithEncoding"
+                  "M:Axial.FileSystem.FileSystem.readAllTextAsync"
+                  "M:Axial.FileSystem.FileSystem.readAllLines"
+                  "M:Axial.FileSystem.FileSystem.readAllLinesWithEncoding"
+                  "M:Axial.FileSystem.FileSystem.readAllLinesAsync"
+                  "M:Axial.FileSystem.FileSystem.readAllBytes"
+                  "M:Axial.FileSystem.FileSystem.readAllBytesAsync"
+                  "M:Axial.FileSystem.FileSystem.writeAllText"
+                  "M:Axial.FileSystem.FileSystem.writeAllTextWithEncoding"
+                  "M:Axial.FileSystem.FileSystem.writeAllTextAsync"
+                  "M:Axial.FileSystem.FileSystem.writeAllLines"
+                  "M:Axial.FileSystem.FileSystem.writeAllLinesWithEncoding"
+                  "M:Axial.FileSystem.FileSystem.writeAllLinesAsync"
+                  "M:Axial.FileSystem.FileSystem.writeAllBytes"
+                  "M:Axial.FileSystem.FileSystem.writeAllBytesAsync"
+                  "M:Axial.FileSystem.FileSystem.appendAllText"
+                  "M:Axial.FileSystem.FileSystem.appendAllTextWithEncoding"
+                  "M:Axial.FileSystem.FileSystem.appendAllTextAsync"
+                  "M:Axial.FileSystem.FileSystem.appendAllLines"
+                  "M:Axial.FileSystem.FileSystem.appendAllLinesWithEncoding" ]
             "Files and streams",
-                [ "M:Axial.Flow.FileSystem.FileSystem.fileExists"
-                  "M:Axial.Flow.FileSystem.FileSystem.exists"
-                  "M:Axial.Flow.FileSystem.FileSystem.deleteFile"
-                  "M:Axial.Flow.FileSystem.FileSystem.copyFile"
-                  "M:Axial.Flow.FileSystem.FileSystem.moveFile"
-                  "M:Axial.Flow.FileSystem.FileSystem.createFileSymbolicLink"
-                  "M:Axial.Flow.FileSystem.FileSystem.createDirectorySymbolicLink"
-                  "M:Axial.Flow.FileSystem.FileSystem.getSymbolicLinkTarget"
-                  "M:Axial.Flow.FileSystem.FileSystem.resolveSymbolicLinkTarget"
-                  "M:Axial.Flow.FileSystem.FileSystem.openFile"
-                  "M:Axial.Flow.FileSystem.FileSystem.openFileWithAccess"
-                  "M:Axial.Flow.FileSystem.FileSystem.openFileWithShare"
-                  "M:Axial.Flow.FileSystem.FileSystem.openRead"
-                  "M:Axial.Flow.FileSystem.FileSystem.openText"
-                  "M:Axial.Flow.FileSystem.FileSystem.openWrite"
-                  "M:Axial.Flow.FileSystem.FileSystem.createFile"
-                  "M:Axial.Flow.FileSystem.FileSystem.createText"
-                  "M:Axial.Flow.FileSystem.FileSystem.appendText" ]
+                [ "M:Axial.FileSystem.FileSystem.fileExists"
+                  "M:Axial.FileSystem.FileSystem.exists"
+                  "M:Axial.FileSystem.FileSystem.deleteFile"
+                  "M:Axial.FileSystem.FileSystem.copyFile"
+                  "M:Axial.FileSystem.FileSystem.moveFile"
+                  "M:Axial.FileSystem.FileSystem.createFileSymbolicLink"
+                  "M:Axial.FileSystem.FileSystem.createDirectorySymbolicLink"
+                  "M:Axial.FileSystem.FileSystem.getSymbolicLinkTarget"
+                  "M:Axial.FileSystem.FileSystem.resolveSymbolicLinkTarget"
+                  "M:Axial.FileSystem.FileSystem.openFile"
+                  "M:Axial.FileSystem.FileSystem.openFileWithAccess"
+                  "M:Axial.FileSystem.FileSystem.openFileWithShare"
+                  "M:Axial.FileSystem.FileSystem.openRead"
+                  "M:Axial.FileSystem.FileSystem.openText"
+                  "M:Axial.FileSystem.FileSystem.openWrite"
+                  "M:Axial.FileSystem.FileSystem.createFile"
+                  "M:Axial.FileSystem.FileSystem.createText"
+                  "M:Axial.FileSystem.FileSystem.appendText" ]
             "File metadata",
-                [ "M:Axial.Flow.FileSystem.FileSystem.getFileAttributes"
-                  "M:Axial.Flow.FileSystem.FileSystem.setFileAttributes"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileCreationTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileCreationTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.setFileCreationTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.setFileCreationTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileLastAccessTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileLastAccessTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.setFileLastAccessTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.setFileLastAccessTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileLastWriteTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileLastWriteTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.setFileLastWriteTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.setFileLastWriteTimeUtc" ]
+                [ "M:Axial.FileSystem.FileSystem.getFileAttributes"
+                  "M:Axial.FileSystem.FileSystem.setFileAttributes"
+                  "M:Axial.FileSystem.FileSystem.getFileCreationTime"
+                  "M:Axial.FileSystem.FileSystem.getFileCreationTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.setFileCreationTime"
+                  "M:Axial.FileSystem.FileSystem.setFileCreationTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.getFileLastAccessTime"
+                  "M:Axial.FileSystem.FileSystem.getFileLastAccessTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.setFileLastAccessTime"
+                  "M:Axial.FileSystem.FileSystem.setFileLastAccessTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.getFileLastWriteTime"
+                  "M:Axial.FileSystem.FileSystem.getFileLastWriteTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.setFileLastWriteTime"
+                  "M:Axial.FileSystem.FileSystem.setFileLastWriteTimeUtc" ]
             "Directories",
-                [ "M:Axial.Flow.FileSystem.FileSystem.directoryExists"
-                  "M:Axial.Flow.FileSystem.FileSystem.createDirectory"
-                  "M:Axial.Flow.FileSystem.FileSystem.deleteDirectory"
-                  "M:Axial.Flow.FileSystem.FileSystem.moveDirectory"
-                  "M:Axial.Flow.FileSystem.FileSystem.enumerateFiles"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFiles"
-                  "M:Axial.Flow.FileSystem.FileSystem.enumerateDirectories"
-                  "M:Axial.Flow.FileSystem.FileSystem.getDirectories"
-                  "M:Axial.Flow.FileSystem.FileSystem.enumerateFileSystemEntries"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileSystemEntries"
-                  "M:Axial.Flow.FileSystem.FileSystem.getLogicalDrives"
-                  "M:Axial.Flow.FileSystem.FileSystem.getDirectoryRoot"
-                  "M:Axial.Flow.FileSystem.FileSystem.getParent"
-                  "M:Axial.Flow.FileSystem.FileSystem.getCurrentDirectory"
-                  "M:Axial.Flow.FileSystem.FileSystem.setCurrentDirectory" ]
+                [ "M:Axial.FileSystem.FileSystem.directoryExists"
+                  "M:Axial.FileSystem.FileSystem.createDirectory"
+                  "M:Axial.FileSystem.FileSystem.deleteDirectory"
+                  "M:Axial.FileSystem.FileSystem.moveDirectory"
+                  "M:Axial.FileSystem.FileSystem.enumerateFiles"
+                  "M:Axial.FileSystem.FileSystem.getFiles"
+                  "M:Axial.FileSystem.FileSystem.enumerateDirectories"
+                  "M:Axial.FileSystem.FileSystem.getDirectories"
+                  "M:Axial.FileSystem.FileSystem.enumerateFileSystemEntries"
+                  "M:Axial.FileSystem.FileSystem.getFileSystemEntries"
+                  "M:Axial.FileSystem.FileSystem.getLogicalDrives"
+                  "M:Axial.FileSystem.FileSystem.getDirectoryRoot"
+                  "M:Axial.FileSystem.FileSystem.getParent"
+                  "M:Axial.FileSystem.FileSystem.getCurrentDirectory"
+                  "M:Axial.FileSystem.FileSystem.setCurrentDirectory" ]
             "Directory metadata",
-                [ "M:Axial.Flow.FileSystem.FileSystem.getDirectoryCreationTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.getDirectoryCreationTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.setDirectoryCreationTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.setDirectoryCreationTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.getDirectoryLastAccessTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.getDirectoryLastAccessTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.setDirectoryLastAccessTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.setDirectoryLastAccessTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.getDirectoryLastWriteTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.getDirectoryLastWriteTimeUtc"
-                  "M:Axial.Flow.FileSystem.FileSystem.setDirectoryLastWriteTime"
-                  "M:Axial.Flow.FileSystem.FileSystem.setDirectoryLastWriteTimeUtc" ]
+                [ "M:Axial.FileSystem.FileSystem.getDirectoryCreationTime"
+                  "M:Axial.FileSystem.FileSystem.getDirectoryCreationTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.setDirectoryCreationTime"
+                  "M:Axial.FileSystem.FileSystem.setDirectoryCreationTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.getDirectoryLastAccessTime"
+                  "M:Axial.FileSystem.FileSystem.getDirectoryLastAccessTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.setDirectoryLastAccessTime"
+                  "M:Axial.FileSystem.FileSystem.setDirectoryLastAccessTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.getDirectoryLastWriteTime"
+                  "M:Axial.FileSystem.FileSystem.getDirectoryLastWriteTimeUtc"
+                  "M:Axial.FileSystem.FileSystem.setDirectoryLastWriteTime"
+                  "M:Axial.FileSystem.FileSystem.setDirectoryLastWriteTimeUtc" ]
             "Paths",
-                [ "M:Axial.Flow.FileSystem.FileSystem.combine"
-                  "M:Axial.Flow.FileSystem.FileSystem.changeExtension"
-                  "M:Axial.Flow.FileSystem.FileSystem.getDirectoryName"
-                  "M:Axial.Flow.FileSystem.FileSystem.getInvalidFileNameChars"
-                  "M:Axial.Flow.FileSystem.FileSystem.getInvalidPathChars"
-                  "M:Axial.Flow.FileSystem.FileSystem.getExtension"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileName"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFileNameWithoutExtension"
-                  "M:Axial.Flow.FileSystem.FileSystem.getFullPath"
-                  "M:Axial.Flow.FileSystem.FileSystem.getPathRoot"
-                  "M:Axial.Flow.FileSystem.FileSystem.getRelativePath"
-                  "M:Axial.Flow.FileSystem.FileSystem.getTempPath"
-                  "M:Axial.Flow.FileSystem.FileSystem.getTempFileName"
-                  "M:Axial.Flow.FileSystem.FileSystem.getRandomFileName"
-                  "M:Axial.Flow.FileSystem.FileSystem.hasExtension"
-                  "M:Axial.Flow.FileSystem.FileSystem.endsInDirectorySeparator"
-                  "M:Axial.Flow.FileSystem.FileSystem.trimEndingDirectorySeparator"
-                  "M:Axial.Flow.FileSystem.FileSystem.isPathFullyQualified"
-                  "M:Axial.Flow.FileSystem.FileSystem.isPathRooted" ]
-            "Implementations", ["P:Axial.Flow.FileSystem.FileSystem.live"; "P:Axial.Flow.FileSystem.FileSystem.layer"]
+                [ "M:Axial.FileSystem.FileSystem.combine"
+                  "M:Axial.FileSystem.FileSystem.changeExtension"
+                  "M:Axial.FileSystem.FileSystem.getDirectoryName"
+                  "M:Axial.FileSystem.FileSystem.getInvalidFileNameChars"
+                  "M:Axial.FileSystem.FileSystem.getInvalidPathChars"
+                  "M:Axial.FileSystem.FileSystem.getExtension"
+                  "M:Axial.FileSystem.FileSystem.getFileName"
+                  "M:Axial.FileSystem.FileSystem.getFileNameWithoutExtension"
+                  "M:Axial.FileSystem.FileSystem.getFullPath"
+                  "M:Axial.FileSystem.FileSystem.getPathRoot"
+                  "M:Axial.FileSystem.FileSystem.getRelativePath"
+                  "M:Axial.FileSystem.FileSystem.getTempPath"
+                  "M:Axial.FileSystem.FileSystem.getTempFileName"
+                  "M:Axial.FileSystem.FileSystem.getRandomFileName"
+                  "M:Axial.FileSystem.FileSystem.hasExtension"
+                  "M:Axial.FileSystem.FileSystem.endsInDirectorySeparator"
+                  "M:Axial.FileSystem.FileSystem.trimEndingDirectorySeparator"
+                  "M:Axial.FileSystem.FileSystem.isPathFullyQualified"
+                  "M:Axial.FileSystem.FileSystem.isPathRooted" ]
+            "Implementations", ["P:Axial.FileSystem.FileSystem.live"; "P:Axial.FileSystem.FileSystem.layer"]
         ]
         Alias = None
     }
     {
         OutPath = ["service"; "http"; "_index.md"]
         Title = "Services Http"
-        Description = "Source-documented HTTP client service for Axial.Flow.HttpClient."
+        Description = "Source-documented HTTP client service for Axial.HttpClient."
         Intro = "This page shows the HTTP client service package. Immutable `HttpRequest` values carry the method, encoded URL, headers, body, timeout, and status expectation; `Http.send` converts a request through the explicit `IHttp` capability and reports connection, timeout, status, and decode failures through `HttpError` with redacted request transcripts. The `DSL` module adds interpolated URL builders and terminal fetch verbs for concise call sites."
         SymbolIds = [
-            "Model", ["T:Axial.Flow.HttpClient.Method"; "T:Axial.Flow.HttpClient.RequestBody"; "T:Axial.Flow.HttpClient.StatusExpectation"; "T:Axial.Flow.HttpClient.HttpRequest"; "T:Axial.Flow.HttpClient.RequestPlan"; "T:Axial.Flow.HttpClient.HttpResponse"; "T:Axial.Flow.HttpClient.HttpError"; "T:Axial.Flow.HttpClient.DSL.SecretValue"]
-            "Service", ["T:Axial.Flow.HttpClient.IHttp"]
-            "Errors", ["M:Axial.Flow.HttpClient.HttpError.describe"; "M:Axial.Flow.HttpClient.HttpError.tryResponse"; "M:Axial.Flow.HttpClient.HttpError.isTransient"; "M:Axial.Flow.HttpClient.HttpError.transientPolicy"]
-            "Request building", ["M:Axial.Flow.HttpClient.Request.create"; "M:Axial.Flow.HttpClient.Request.query"; "M:Axial.Flow.HttpClient.Request.secretQuery"; "M:Axial.Flow.HttpClient.Request.header"; "M:Axial.Flow.HttpClient.Request.secretHeader"; "M:Axial.Flow.HttpClient.Request.bearer"; "M:Axial.Flow.HttpClient.Request.basicAuth"; "M:Axial.Flow.HttpClient.Request.accept"; "M:Axial.Flow.HttpClient.Request.acceptJson"; "M:Axial.Flow.HttpClient.Request.userAgent"; "M:Axial.Flow.HttpClient.Request.timeout"; "M:Axial.Flow.HttpClient.Request.textBody"; "M:Axial.Flow.HttpClient.Request.jsonBody"; "M:Axial.Flow.HttpClient.Request.jsonBodyWith"; "M:Axial.Flow.HttpClient.Request.bytesBody"; "M:Axial.Flow.HttpClient.Request.formBody"; "M:Axial.Flow.HttpClient.Request.expect"; "M:Axial.Flow.HttpClient.Request.expectAny"; "M:Axial.Flow.HttpClient.Request.render"; "M:Axial.Flow.HttpClient.Request.plan"]
-            "Responses", ["M:Axial.Flow.HttpClient.Response.text"; "M:Axial.Flow.HttpClient.Response.bytes"; "M:Axial.Flow.HttpClient.Response.statusCode"; "M:Axial.Flow.HttpClient.Response.tryHeader"; "M:Axial.Flow.HttpClient.Response.json"; "M:Axial.Flow.HttpClient.Response.create"]
-            "Execution", ["M:Axial.Flow.HttpClient.Http.get"; "M:Axial.Flow.HttpClient.Http.head"; "M:Axial.Flow.HttpClient.Http.post"; "M:Axial.Flow.HttpClient.Http.put"; "M:Axial.Flow.HttpClient.Http.patch"; "M:Axial.Flow.HttpClient.Http.delete"; "M:Axial.Flow.HttpClient.Http.send"; "M:Axial.Flow.HttpClient.Http.sendResult"; "M:Axial.Flow.HttpClient.Http.text"; "M:Axial.Flow.HttpClient.Http.bytes"; "M:Axial.Flow.HttpClient.Http.json"; "M:Axial.Flow.HttpClient.Http.getString"; "M:Axial.Flow.HttpClient.Http.getBytes"; "M:Axial.Flow.HttpClient.Http.getJson"; "M:Axial.Flow.HttpClient.Http.postString"; "M:Axial.Flow.HttpClient.Http.postJson"; "M:Axial.Flow.HttpClient.Http.retryTransient"]
-            "Concise DSL", ["M:Axial.Flow.HttpClient.DSL.GET"; "M:Axial.Flow.HttpClient.DSL.HEAD"; "M:Axial.Flow.HttpClient.DSL.POST"; "M:Axial.Flow.HttpClient.DSL.PUT"; "M:Axial.Flow.HttpClient.DSL.PATCH"; "M:Axial.Flow.HttpClient.DSL.DELETE"; "M:Axial.Flow.HttpClient.DSL.secret"; "M:Axial.Flow.HttpClient.DSL.query"; "M:Axial.Flow.HttpClient.DSL.secretQuery"; "M:Axial.Flow.HttpClient.DSL.header"; "M:Axial.Flow.HttpClient.DSL.bearer"; "M:Axial.Flow.HttpClient.DSL.basicAuth"; "M:Axial.Flow.HttpClient.DSL.timeout"; "M:Axial.Flow.HttpClient.DSL.jsonBody"; "M:Axial.Flow.HttpClient.DSL.jsonBodyOf"; "M:Axial.Flow.HttpClient.DSL.textBody"; "M:Axial.Flow.HttpClient.DSL.formBody"; "M:Axial.Flow.HttpClient.DSL.expect"; "M:Axial.Flow.HttpClient.DSL.expectAny"; "M:Axial.Flow.HttpClient.DSL.fetch"; "M:Axial.Flow.HttpClient.DSL.fetchText"; "M:Axial.Flow.HttpClient.DSL.fetchBytes"; "M:Axial.Flow.HttpClient.DSL.fetchJson"; "M:Axial.Flow.HttpClient.DSL.withRetries"]
-            "Implementations", ["M:Axial.Flow.HttpClient.Http.live"; "M:Axial.Flow.HttpClient.Http.layer"]
+            "Model", ["T:Axial.HttpClient.Method"; "T:Axial.HttpClient.RequestBody"; "T:Axial.HttpClient.StatusExpectation"; "T:Axial.HttpClient.HttpRequest"; "T:Axial.HttpClient.RequestPlan"; "T:Axial.HttpClient.HttpResponse"; "T:Axial.HttpClient.HttpError"; "T:Axial.HttpClient.DSL.SecretValue"]
+            "Service", ["T:Axial.HttpClient.IHttp"]
+            "Errors", ["M:Axial.HttpClient.HttpError.describe"; "M:Axial.HttpClient.HttpError.tryResponse"; "M:Axial.HttpClient.HttpError.isTransient"; "M:Axial.HttpClient.HttpError.transientPolicy"]
+            "Request building", ["M:Axial.HttpClient.Request.create"; "M:Axial.HttpClient.Request.query"; "M:Axial.HttpClient.Request.secretQuery"; "M:Axial.HttpClient.Request.header"; "M:Axial.HttpClient.Request.secretHeader"; "M:Axial.HttpClient.Request.bearer"; "M:Axial.HttpClient.Request.basicAuth"; "M:Axial.HttpClient.Request.accept"; "M:Axial.HttpClient.Request.acceptJson"; "M:Axial.HttpClient.Request.userAgent"; "M:Axial.HttpClient.Request.timeout"; "M:Axial.HttpClient.Request.textBody"; "M:Axial.HttpClient.Request.jsonBody"; "M:Axial.HttpClient.Request.jsonBodyWith"; "M:Axial.HttpClient.Request.bytesBody"; "M:Axial.HttpClient.Request.formBody"; "M:Axial.HttpClient.Request.expect"; "M:Axial.HttpClient.Request.expectAny"; "M:Axial.HttpClient.Request.render"; "M:Axial.HttpClient.Request.plan"]
+            "Responses", ["M:Axial.HttpClient.Response.text"; "M:Axial.HttpClient.Response.bytes"; "M:Axial.HttpClient.Response.statusCode"; "M:Axial.HttpClient.Response.tryHeader"; "M:Axial.HttpClient.Response.json"; "M:Axial.HttpClient.Response.create"]
+            "Execution", ["M:Axial.HttpClient.Http.get"; "M:Axial.HttpClient.Http.head"; "M:Axial.HttpClient.Http.post"; "M:Axial.HttpClient.Http.put"; "M:Axial.HttpClient.Http.patch"; "M:Axial.HttpClient.Http.delete"; "M:Axial.HttpClient.Http.send"; "M:Axial.HttpClient.Http.sendResult"; "M:Axial.HttpClient.Http.text"; "M:Axial.HttpClient.Http.bytes"; "M:Axial.HttpClient.Http.json"; "M:Axial.HttpClient.Http.getString"; "M:Axial.HttpClient.Http.getBytes"; "M:Axial.HttpClient.Http.getJson"; "M:Axial.HttpClient.Http.postString"; "M:Axial.HttpClient.Http.postJson"; "M:Axial.HttpClient.Http.retryTransient"]
+            "Concise DSL", ["M:Axial.HttpClient.DSL.GET"; "M:Axial.HttpClient.DSL.HEAD"; "M:Axial.HttpClient.DSL.POST"; "M:Axial.HttpClient.DSL.PUT"; "M:Axial.HttpClient.DSL.PATCH"; "M:Axial.HttpClient.DSL.DELETE"; "M:Axial.HttpClient.DSL.secret"; "M:Axial.HttpClient.DSL.query"; "M:Axial.HttpClient.DSL.secretQuery"; "M:Axial.HttpClient.DSL.header"; "M:Axial.HttpClient.DSL.bearer"; "M:Axial.HttpClient.DSL.basicAuth"; "M:Axial.HttpClient.DSL.timeout"; "M:Axial.HttpClient.DSL.jsonBody"; "M:Axial.HttpClient.DSL.jsonBodyOf"; "M:Axial.HttpClient.DSL.textBody"; "M:Axial.HttpClient.DSL.formBody"; "M:Axial.HttpClient.DSL.expect"; "M:Axial.HttpClient.DSL.expectAny"; "M:Axial.HttpClient.DSL.fetch"; "M:Axial.HttpClient.DSL.fetchText"; "M:Axial.HttpClient.DSL.fetchBytes"; "M:Axial.HttpClient.DSL.fetchJson"; "M:Axial.HttpClient.DSL.withRetries"]
+            "Implementations", ["M:Axial.HttpClient.Http.live"; "M:Axial.HttpClient.Http.layer"]
         ]
         Alias = None
     }
     {
         OutPath = ["service"; "process"; "_index.md"]
         Title = "Services Process"
-        Description = "Source-documented external process service for Axial.Flow.Process."
+        Description = "Source-documented external process service for Axial.Process."
         Intro = "This page shows the external-process service package. Immutable `ProcessSpec` values describe safely tokenized commands, connected topologies, I/O routing, and execution policy. `Process.run` composes the selected `IProcess` interpreter into the current Flow runtime; `Process.stream` emits output incrementally."
         SymbolIds = [
-            "Model", ["T:Axial.Flow.Process.ProcessSpec"; "T:Axial.Flow.Process.ProcessPlan"; "T:Axial.Flow.Process.InputSource"; "T:Axial.Flow.Process.OutputTarget"; "T:Axial.Flow.Process.OutputFraming"; "T:Axial.Flow.Process.ProcessResult"; "T:Axial.Flow.Process.StageResult"; "T:Axial.Flow.Process.CapturedOutput"; "T:Axial.Flow.Process.ProcessOutput"; "T:Axial.Flow.Process.ProcessEvent"; "T:Axial.Flow.Process.ProcessStartFailure"; "T:Axial.Flow.Process.ProcessTimeout"; "T:Axial.Flow.Process.ProcessCancellation"; "T:Axial.Flow.Process.StageFailure"; "T:Axial.Flow.Process.ProcessIoFailure"; "T:Axial.Flow.Process.ProcessError"; "T:Axial.Flow.Process.ScriptEnvironment"; "T:Axial.Flow.Process.DSL.SecretArgument"]
-            "Service", ["T:Axial.Flow.Process.IProcess"]
-            "Errors", ["M:Axial.Flow.Process.ProcessError.describe"; "M:Axial.Flow.Process.ProcessError.exitCode"]
-            "Commands", ["M:Axial.Flow.Process.Process.command"; "M:Axial.Flow.Process.Process.arg"; "M:Axial.Flow.Process.Process.secretArg"; "M:Axial.Flow.Process.Process.workingDirectory"; "M:Axial.Flow.Process.Process.environment"; "M:Axial.Flow.Process.Process.removeEnvironment"; "M:Axial.Flow.Process.Process.encoding"; "M:Axial.Flow.Process.Process.successCodes"; "M:Axial.Flow.Process.Process.render"]
-            "Composition", ["M:Axial.Flow.Process.Process.pipe"; "M:Axial.Flow.Process.Process.pipeBoth"; "M:Axial.Flow.Process.Process.merge"; "M:Axial.Flow.Process.Process.stdin"; "M:Axial.Flow.Process.Process.stdout"; "M:Axial.Flow.Process.Process.stderr"; "M:Axial.Flow.Process.Process.mergeStderr"; "M:Axial.Flow.Process.Process.framing"; "M:Axial.Flow.Process.Process.timeout"; "M:Axial.Flow.Process.Process.plan"]
-            "Execution", ["M:Axial.Flow.Process.Process.run"; "M:Axial.Flow.Process.Process.capture"; "M:Axial.Flow.Process.Process.stream"; "M:Axial.Flow.Process.Script.run"]
-            "Input endpoints", ["P:Axial.Flow.Process.DSL.Input.empty"; "M:Axial.Flow.Process.DSL.Input.text"; "M:Axial.Flow.Process.DSL.Input.bytes"; "M:Axial.Flow.Process.DSL.Input.file"; "M:Axial.Flow.Process.DSL.Input.read"; "M:Axial.Flow.Process.DSL.Input.produce"; "M:Axial.Flow.Process.DSL.Input.stream"]
-            "Output endpoints", ["P:Axial.Flow.Process.DSL.Output.capture"; "M:Axial.Flow.Process.DSL.Output.captureTail"; "P:Axial.Flow.Process.DSL.Output.console"; "P:Axial.Flow.Process.DSL.Output.inheritHandles"; "P:Axial.Flow.Process.DSL.Output.discard"; "M:Axial.Flow.Process.DSL.Output.file"; "M:Axial.Flow.Process.DSL.Output.appendFile"; "M:Axial.Flow.Process.DSL.Output.callback"; "M:Axial.Flow.Process.DSL.Output.tee"; "M:Axial.Flow.Process.DSL.Output.stream"; "M:Axial.Flow.Process.DSL.Output.textWriter"]
-            "Concise DSL", ["M:Axial.Flow.Process.DSL.cmd"; "M:Axial.Flow.Process.DSL.cmdText"; "M:Axial.Flow.Process.DSL.pipe"; "M:Axial.Flow.Process.DSL.pipeTo"; "M:Axial.Flow.Process.DSL.pipeBothTo"; "M:Axial.Flow.Process.DSL.merge"; "M:Axial.Flow.Process.DSL.mergeBytes"; "M:Axial.Flow.Process.DSL.mergeStderr"; "M:Axial.Flow.Process.DSL.cwd"; "M:Axial.Flow.Process.DSL.env"; "M:Axial.Flow.Process.DSL.stdin"; "M:Axial.Flow.Process.DSL.stdout"; "M:Axial.Flow.Process.DSL.stderr"; "M:Axial.Flow.Process.DSL.timeout"; "M:Axial.Flow.Process.DSL.run"; "M:Axial.Flow.Process.DSL.capture"; "M:Axial.Flow.Process.DSL.console"; "M:Axial.Flow.Process.DSL.stream"; "M:Axial.Flow.Process.DSL.writeTo"; "M:Axial.Flow.Process.DSL.appendTo"; "M:Axial.Flow.Process.DSL.captureParallel"]
-            "Shells", ["M:Axial.Flow.Process.DSL.bash"; "M:Axial.Flow.Process.DSL.sh"; "M:Axial.Flow.Process.DSL.pwsh"; "M:Axial.Flow.Process.DSL.bashText"; "M:Axial.Flow.Process.DSL.shText"; "M:Axial.Flow.Process.DSL.pwshText"; "M:Axial.Flow.Process.DSL.secret"]
-            "Implementations", ["M:Axial.Flow.Process.Process.live"; "M:Axial.Flow.Process.Process.layer"]
+            "Model", ["T:Axial.Process.ProcessSpec"; "T:Axial.Process.ProcessPlan"; "T:Axial.Process.InputSource"; "T:Axial.Process.OutputTarget"; "T:Axial.Process.OutputFraming"; "T:Axial.Process.ProcessResult"; "T:Axial.Process.StageResult"; "T:Axial.Process.CapturedOutput"; "T:Axial.Process.ProcessOutput"; "T:Axial.Process.ProcessEvent"; "T:Axial.Process.ProcessStartFailure"; "T:Axial.Process.ProcessTimeout"; "T:Axial.Process.ProcessCancellation"; "T:Axial.Process.StageFailure"; "T:Axial.Process.ProcessIoFailure"; "T:Axial.Process.ProcessError"; "T:Axial.Process.ScriptEnvironment"; "T:Axial.Process.DSL.SecretArgument"]
+            "Service", ["T:Axial.Process.IProcess"]
+            "Errors", ["M:Axial.Process.ProcessError.describe"; "M:Axial.Process.ProcessError.exitCode"]
+            "Commands", ["M:Axial.Process.Process.command"; "M:Axial.Process.Process.arg"; "M:Axial.Process.Process.secretArg"; "M:Axial.Process.Process.workingDirectory"; "M:Axial.Process.Process.environment"; "M:Axial.Process.Process.removeEnvironment"; "M:Axial.Process.Process.encoding"; "M:Axial.Process.Process.successCodes"; "M:Axial.Process.Process.render"]
+            "Composition", ["M:Axial.Process.Process.pipe"; "M:Axial.Process.Process.pipeBoth"; "M:Axial.Process.Process.merge"; "M:Axial.Process.Process.stdin"; "M:Axial.Process.Process.stdout"; "M:Axial.Process.Process.stderr"; "M:Axial.Process.Process.mergeStderr"; "M:Axial.Process.Process.framing"; "M:Axial.Process.Process.timeout"; "M:Axial.Process.Process.plan"]
+            "Execution", ["M:Axial.Process.Process.run"; "M:Axial.Process.Process.capture"; "M:Axial.Process.Process.stream"; "M:Axial.Process.Script.run"]
+            "Input endpoints", ["P:Axial.Process.DSL.Input.empty"; "M:Axial.Process.DSL.Input.text"; "M:Axial.Process.DSL.Input.bytes"; "M:Axial.Process.DSL.Input.file"; "M:Axial.Process.DSL.Input.read"; "M:Axial.Process.DSL.Input.produce"; "M:Axial.Process.DSL.Input.stream"]
+            "Output endpoints", ["P:Axial.Process.DSL.Output.capture"; "M:Axial.Process.DSL.Output.captureTail"; "P:Axial.Process.DSL.Output.console"; "P:Axial.Process.DSL.Output.inheritHandles"; "P:Axial.Process.DSL.Output.discard"; "M:Axial.Process.DSL.Output.file"; "M:Axial.Process.DSL.Output.appendFile"; "M:Axial.Process.DSL.Output.callback"; "M:Axial.Process.DSL.Output.tee"; "M:Axial.Process.DSL.Output.stream"; "M:Axial.Process.DSL.Output.textWriter"]
+            "Concise DSL", ["M:Axial.Process.DSL.cmd"; "M:Axial.Process.DSL.cmdText"; "M:Axial.Process.DSL.pipe"; "M:Axial.Process.DSL.pipeTo"; "M:Axial.Process.DSL.pipeBothTo"; "M:Axial.Process.DSL.merge"; "M:Axial.Process.DSL.mergeBytes"; "M:Axial.Process.DSL.mergeStderr"; "M:Axial.Process.DSL.cwd"; "M:Axial.Process.DSL.env"; "M:Axial.Process.DSL.stdin"; "M:Axial.Process.DSL.stdout"; "M:Axial.Process.DSL.stderr"; "M:Axial.Process.DSL.timeout"; "M:Axial.Process.DSL.run"; "M:Axial.Process.DSL.capture"; "M:Axial.Process.DSL.console"; "M:Axial.Process.DSL.stream"; "M:Axial.Process.DSL.writeTo"; "M:Axial.Process.DSL.appendTo"; "M:Axial.Process.DSL.captureParallel"]
+            "Shells", ["M:Axial.Process.DSL.bash"; "M:Axial.Process.DSL.sh"; "M:Axial.Process.DSL.pwsh"; "M:Axial.Process.DSL.bashText"; "M:Axial.Process.DSL.shText"; "M:Axial.Process.DSL.pwshText"; "M:Axial.Process.DSL.secret"]
+            "Implementations", ["M:Axial.Process.Process.live"; "M:Axial.Process.Process.layer"]
         ]
         Alias = None
     }
@@ -917,30 +917,30 @@ let flowSectionDirectories =
 
 let groupedFlowEnvironmentMembers =
     set [
-        "M:Axial.Flow.Flow.env"
-        "M:Axial.Flow.Flow.read"
-        "M:Axial.Flow.Flow.localEnv"
-        "M:Axial.Flow.Flow.provide"
+        "M:Axial.Flow.env"
+        "M:Axial.Flow.read"
+        "M:Axial.Flow.localEnv"
+        "M:Axial.Flow.provide"
     ]
 
 let groupedFlowConstructionMembers =
     set [
-        "M:Axial.Flow.Flow.ok"
-        "M:Axial.Flow.Flow.error"
-        "M:Axial.Flow.Flow.succeed"
-        "M:Axial.Flow.Flow.value"
-        "M:Axial.Flow.Flow.fail"
-        "M:Axial.Flow.Flow.fromResult"
-        "M:Axial.Flow.Flow.fromOption"
-        "M:Axial.Flow.Flow.fromValueOption"
-        "M:Axial.Flow.Flow.fromAsync"
-        "M:Axial.Flow.Flow.attemptAsync"
-        "M:Axial.Flow.Flow.fromTask"
-        "M:Axial.Flow.Flow.attemptTask"
-        "M:Axial.Flow.Flow.fromValueTask"
-        "M:Axial.Flow.Flow.attemptValueTask"
-        "M:Axial.Flow.Flow.orElseFlow"
-        "M:Axial.Flow.Flow.delay"
+        "M:Axial.Flow.ok"
+        "M:Axial.Flow.error"
+        "M:Axial.Flow.succeed"
+        "M:Axial.Flow.value"
+        "M:Axial.Flow.fail"
+        "M:Axial.Flow.fromResult"
+        "M:Axial.Flow.fromOption"
+        "M:Axial.Flow.fromValueOption"
+        "M:Axial.Flow.fromAsync"
+        "M:Axial.Flow.attemptAsync"
+        "M:Axial.Flow.fromTask"
+        "M:Axial.Flow.attemptTask"
+        "M:Axial.Flow.fromValueTask"
+        "M:Axial.Flow.attemptValueTask"
+        "M:Axial.Flow.orElseFlow"
+        "M:Axial.Flow.delay"
     ]
 
 let serviceCoreSectionDirectories =
@@ -1163,7 +1163,7 @@ let noLinkGeneratedReferenceSlugs =
         "axial-schema-constructorstep-2"       // ConstructorStep<'model, 'constructor> (EditorBrowsable.Never)
         "axial-schema-checkedconstructorstep-2" // CheckedConstructorStep<'model, 'constructor> (EditorBrowsable.Never)
         "axial-schema-schemabuilder-1"         // SchemaBuilder<'model> (<exclude/>, EditorBrowsable.Never)
-        "axial-flow-platform-finalizer"        // Axial.Flow.Platform.Finalizer: source-internal module, leaked into
+        "axial-flow-platform-finalizer"        // Axial.Platform.Finalizer: source-internal module, leaked into
         "axial-flow-platform-deed"             // public signatures only via reflection visibility, not a documented type
     ]
 
@@ -1329,15 +1329,15 @@ let main argv =
     ]
 
     let flowDllPaths = [
-        Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.PlatformService/debug_net8.0/Axial.Flow.PlatformService.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Console/debug_net8.0/Axial.Flow.Console.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.FileSystem/debug_net8.0/Axial.Flow.FileSystem.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.HttpClient/debug_net8.0/Axial.Flow.HttpClient.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Process/debug_net8.0/Axial.Flow.Process.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Hosting/debug_net8.0/Axial.Flow.Hosting.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Hosting.Node/debug/Axial.Flow.Hosting.Node.dll")
-        Path.Combine(artifactsDir, "Axial.Flow.Hosting.Browser/debug/Axial.Flow.Hosting.Browser.dll")
+        Path.Combine(artifactsDir, "Axial/debug_net8.0/Axial.dll")
+        Path.Combine(artifactsDir, "Axial.PlatformService/debug_net8.0/Axial.PlatformService.dll")
+        Path.Combine(artifactsDir, "Axial.Console/debug_net8.0/Axial.Console.dll")
+        Path.Combine(artifactsDir, "Axial.FileSystem/debug_net8.0/Axial.FileSystem.dll")
+        Path.Combine(artifactsDir, "Axial.HttpClient/debug_net8.0/Axial.HttpClient.dll")
+        Path.Combine(artifactsDir, "Axial.Process/debug_net8.0/Axial.Process.dll")
+        Path.Combine(artifactsDir, "Axial.Hosting/debug_net8.0/Axial.Hosting.dll")
+        Path.Combine(artifactsDir, "Axial.Hosting.Node/debug/Axial.Hosting.Node.dll")
+        Path.Combine(artifactsDir, "Axial.Hosting.Browser/debug/Axial.Hosting.Browser.dll")
     ]
 
     let dllPaths =
@@ -1367,7 +1367,7 @@ let main argv =
           typeof<Microsoft.AspNetCore.Http.HttpContext>.Assembly.Location
           typeof<GenHTTP.Api.Protocol.IRequest>.Assembly.Location
           typeof<Fable.Core.JS.Promise<_>>.Assembly.Location
-          Path.Combine(artifactsDir, "Axial.Flow/debug_net8.0/Axial.Flow.dll") ]
+          Path.Combine(artifactsDir, "Axial/debug_net8.0/Axial.dll") ]
         |> List.map Path.GetDirectoryName
         |> List.distinct
 
@@ -1468,14 +1468,14 @@ let main argv =
             formatterApiSlug "Axial.ConstraintModule", Path.Combine(outRoot, "constraint", "_index.md")
             formatterApiSlug "Axial.BindModule", Path.Combine(outRoot, "bind", "_index.md")
             formatterApiSlug "Axial.BindErrorModule", Path.Combine(outRoot, "bind", "_index.md")
-            formatterApiSlug "Axial.FlowModule", Path.Combine(outRoot, "flow", "_index.md")
+            formatterApiSlug "AxialModule", Path.Combine(outRoot, "flow", "_index.md")
             formatterApiSlug "Axial.PolicyModule", Path.Combine(outRoot, "flow", "_index.md")
             formatterApiSlug "Axial.LayerBuilder", Path.Combine(outRoot, "layer", "p-layer.md")
-            formatterApiSlug "Axial.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
+            formatterApiSlug "AxialBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
             formatterApiSlug "Axial.ResultBuilder", Path.Combine(outRoot, "result", "result-ce", "p-errorhandling--result.md")
             formatterApiSlug "Axial.RefineBuilder", Path.Combine(outRoot, "refined", "refine-ce", "p-refined--refine.md")
-            formatterApiSlug "Axial.Flow.LayerBuilder", Path.Combine(outRoot, "layer", "p-flow--layer.md")
-            formatterApiSlug "Axial.Flow.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
+            formatterApiSlug "Axial.LayerBuilder", Path.Combine(outRoot, "layer", "p-flow--layer.md")
+            formatterApiSlug "Axial.FlowBuilder", Path.Combine(outRoot, "flow", "builders-flow.md")
             formatterApiSlug "Axial.Result.ResultBuilder", Path.Combine(outRoot, "result", "result-ce", "p-errorhandling--result.md")
             formatterApiSlug "Axial.Refined.RefineBuilder", Path.Combine(outRoot, "refined", "refine-ce", "p-refined--refine.md")
             formatterApiSlug "Axial.StmBuilder", Path.Combine(outRoot, "stm", "t-flow-stmbuilder.md")
@@ -1484,17 +1484,17 @@ let main argv =
             formatterApiSlug "Axial.RetryPolicy`1", Path.Combine(outRoot, "flow", "runtime", "t-flow-retrypolicy.md")
             formatterApiSlug "Axial.SupervisePolicy", Path.Combine(outRoot, "flow", "runtime", "t-flow-supervisepolicy.md")
             formatterApiSlug "Axial.Never", Path.Combine(outRoot, "flow", "t-flow-never.md")
-            formatterApiSlug "Axial.Flow.PlatformService.Clock", Path.Combine(outRoot, "service", "core", "_index.md")
-            formatterApiSlug "Axial.Flow.PlatformService.Log", Path.Combine(outRoot, "service", "core", "_index.md")
-            formatterApiSlug "Axial.Flow.PlatformService.Random", Path.Combine(outRoot, "service", "core", "_index.md")
-            formatterApiSlug "Axial.Flow.PlatformService.Guid", Path.Combine(outRoot, "service", "core", "_index.md")
-            formatterApiSlug "Axial.Flow.PlatformService.EnvironmentVariables", Path.Combine(outRoot, "service", "core", "_index.md")
-            formatterApiSlug "Axial.Flow.PlatformService.BaseRuntime", Path.Combine(outRoot, "service", "core", "_index.md")
-            formatterApiSlug "Axial.Flow.Console.Console", Path.Combine(outRoot, "service", "console", "_index.md")
-            formatterApiSlug "Axial.Flow.FileSystem.FileSystem", Path.Combine(outRoot, "service", "filesystem", "_index.md")
-            formatterApiSlug "Axial.Flow.FileSystem.FileSystemError", Path.Combine(outRoot, "service", "filesystem", "_index.md")
-            formatterApiSlug "Axial.Flow.HttpClient.Http", Path.Combine(outRoot, "service", "http", "_index.md")
-            formatterApiSlug "Axial.Flow.Process.Process", Path.Combine(outRoot, "service", "process", "_index.md")
+            formatterApiSlug "Axial.PlatformService.Clock", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "Axial.PlatformService.Log", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "Axial.PlatformService.Random", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "Axial.PlatformService.Guid", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "Axial.PlatformService.EnvironmentVariables", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "Axial.PlatformService.BaseRuntime", Path.Combine(outRoot, "service", "core", "_index.md")
+            formatterApiSlug "Axial.Console.Console", Path.Combine(outRoot, "service", "console", "_index.md")
+            formatterApiSlug "Axial.FileSystem.FileSystem", Path.Combine(outRoot, "service", "filesystem", "_index.md")
+            formatterApiSlug "Axial.FileSystem.FileSystemError", Path.Combine(outRoot, "service", "filesystem", "_index.md")
+            formatterApiSlug "Axial.HttpClient.Http", Path.Combine(outRoot, "service", "http", "_index.md")
+            formatterApiSlug "Axial.Process.Process", Path.Combine(outRoot, "service", "process", "_index.md")
             formatterApiSlug "Axial.Schema.Json.Json", Path.Combine(outRoot, "codec", "_index.md")
         ]
 

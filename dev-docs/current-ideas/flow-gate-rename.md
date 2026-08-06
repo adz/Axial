@@ -1,4 +1,4 @@
-# Axial.Flow — application gate naming
+# Axial — application gate naming
 
 **Status:** extracted idea; not implemented or accepted.
 

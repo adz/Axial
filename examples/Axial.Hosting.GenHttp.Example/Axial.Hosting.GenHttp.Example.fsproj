@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GenHTTP.Core" Version="10.5.3" />
+    <PackageReference Include="GenHTTP.Modules.Functional" Version="10.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Reified.Schema" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Schema.Json" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Schema.Http" Version="$(ReifiedVersion)" />
+    <ProjectReference Include="..\..\src\Axial.Hosting.GenHttp\Axial.Hosting.GenHttp.fsproj" />
+  </ItemGroup>
+
+</Project>

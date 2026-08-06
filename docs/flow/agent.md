@@ -6,7 +6,7 @@ weight: 100
 
 # For AI agents
 
-Use this section for `Axial.Flow` and its service and hosting packages. Flow depends on no other Axial
+Use this section for `Axial` and its service and hosting packages. Flow depends on no other Axial
 package — not Schema, not Result — though its builder lifts a plain F# `Result` when you have one.
 
 - Start with the smallest useful `Flow` alias and expand to `Flow<'env, 'error, 'value>` when both channels matter.

@@ -1,10 +1,10 @@
 ---
 weight: 1
-title: Axial.Flow
+title: Axial
 description: The Flow type, getting started, dependencies, concurrency, and the full guide list.
 ---
 
-# Axial.Flow
+# Axial
 
 ## Core Flow
 

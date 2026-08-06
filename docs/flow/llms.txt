@@ -29,9 +29,9 @@
 
 ## Hosts
 
-- `Axial.Flow.Hosting` is .NET-only.
-- `Axial.Flow.Hosting.Node` is Fable JavaScript for Node only.
-- `Axial.Flow.Hosting.Browser` is Fable JavaScript for browsers only.
+- `Axial.Hosting` is .NET-only.
+- `Axial.Hosting.Node` is Fable JavaScript for Node only.
+- `Axial.Hosting.Browser` is Fable JavaScript for browsers only.
 - Core Flow is supported in Fable JavaScript on both Node and browsers.
 
 See `/flow/packages-and-platforms/` for the complete package matrix.

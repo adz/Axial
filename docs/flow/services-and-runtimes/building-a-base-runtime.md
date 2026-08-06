@@ -6,10 +6,10 @@ description: Supplying clock, logging, random, GUID, and environment-variable se
 
 # Building a Base Runtime
 
-Clock, logging, random, GUID, and environment-variable access are explicit services. `Axial.Flow.PlatformService` provides a
+Clock, logging, random, GUID, and environment-variable access are explicit services. `Axial.PlatformService` provides a
 `BaseRuntime` record that groups the standard services most hosts need:
 
-The service contracts live in `Axial.Flow.PlatformService`, not `Axial.Flow`: the core package only owns workflow
+The service contracts live in `Axial.PlatformService`, not `Axial`: the core package only owns workflow
 execution. This keeps operational dependencies optional and lets .NET, browser, Node, and other Fable hosts provide
 implementations appropriate to their runtime.
 

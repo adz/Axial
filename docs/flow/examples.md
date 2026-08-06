@@ -35,7 +35,7 @@ module RequestBoundaryExample
 open System
 open System.Threading
 open System.Threading.Tasks
-open Axial.Flow
+open Axial
 open Axial.Result
 open Axial.Constraint
 
@@ -132,7 +132,7 @@ Source code:
 open System
 open System.Threading
 open System.Threading.Tasks
-open Axial.Flow
+open Axial
 open Axial.Result
 open Axial.Constraint
 
@@ -212,7 +212,7 @@ Source code:
 open System
 open System.Threading
 open System.Threading.Tasks
-open Axial.Flow
+open Axial
 open Axial.Result
 open Axial.Constraint
 
@@ -283,7 +283,7 @@ Source code:
 module SupervisionExample
 
 open System
-open Axial.Flow
+open Axial
 
 // Demonstrates defect supervision and fiber observability:
 // 1. Flow.Runtime.supervise restarts background work that dies with a defect.

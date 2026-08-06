@@ -81,7 +81,7 @@ definition, so parsers, docs, forms, and tests can't drift out of sync with each
 
 <a class="axial-door axial-door--flow" href="{{< relref "/flow/" >}}">
 <span class="axial-door-kicker">Effects and execution</span>
-<h2>Axial.Flow</h2>
+<h2>Axial</h2>
 <p>Describe async work with its required environment and expected failure type in the signature, so missing
 dependencies and unhandled failures show up at compile time instead of in production. 
 </p>

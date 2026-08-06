@@ -1,5 +1,5 @@
 ---
-title: Axial.Flow.PlatformService
+title: Axial.PlatformService
 linkTitle: PlatformService
 weight: 50
 ---

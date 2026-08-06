@@ -195,7 +195,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
   It exposes no public API and no `Axial.ErrorHandling` namespace.
 - Final dependency edges (verified by `dotnet pack` nuspec inspection and `Axial.ApiShape.Tests`):
   `Axial.ErrorHandling` → `Axial.Result` + `Axial.Check` + `Axial.Refined`; `Axial.Refined` → `Axial.Check`;
-  `Axial.Schema` → `Axial.Check` + `Axial.Refined` (+ `Axial.Data`); `Axial.Flow` depends on none of the above.
+  `Axial.Schema` → `Axial.Check` + `Axial.Refined` (+ `Axial.Data`); `Axial` depends on none of the above.
   `Axial.Result` and `Axial.Check` are independent leaves.
 - The broad `Axial` umbrella package is kept for now: several example projects (`Axial.Examples`,
   `Axial.MaintenanceExamples`, `Axial.Playground`, `Axial.ReadmeExample`, `Axial.ReferenceApp`,
@@ -232,7 +232,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - `Axial.Result`, `Axial.Diagnostics`, and `Axial.Refined` are focused implementation packages.
   `Axial.ErrorHandling` is their meta-package; the public namespaces remain `Axial.ErrorHandling`,
   `Axial.Validation`, and `Axial.Refined`.
-- The `Axial` umbrella installs Validation, Schema, and the core Schema interpreters. `Axial.Flow` remains an
+- The `Axial` umbrella installs Validation, Schema, and the core Schema interpreters. `Axial` remains an
   independent package and is not re-exported by the umbrella.
 
 ## 2026-07-24: Schema owns accumulated path-aware validation
@@ -259,7 +259,7 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
 ## 2026-07-16: HTTP hosts lower schema-trusted endpoint Flows without owning routing
 
-- `Axial.Schema.Http.AspNetCore` and `.GenHttp` depend on both `Axial.Schema.Http` and `Axial.Flow`. Their default
+- `Axial.Schema.Http.AspNetCore` and `.GenHttp` depend on both `Axial.Schema.Http` and `Axial`. Their default
   endpoint API is an ordinary `flow { }`: `Request.json`/`form`/`query` establish trusted input,
   `EndpointFlow.run` embeds an HTTP-independent application workflow by projecting the explicit application
   environment, and `Response` constructs the successful native response plan.
@@ -326,16 +326,16 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 
 ## 2026-07-15: App owns portable root lifetime; hosts adapt native lifecycle
 
-- `App` in `Axial.Flow` is the portable application launcher. `App.run` runs a finite root Flow;
+- `App` in `Axial` is the portable application launcher. `App.run` runs a finite root Flow;
   `App.start` returns one `AppHandle<'error,'value>` with `Status`, shared `Completion`, and idempotent `Stop()`.
   Completion is published only after the root Flow scope has closed. Direct `ToTask`/`ToAsync` execution remains the
   interface for individual operations and interop boundaries.
 - An application is still an ordinary Flow value. Its live `Layer` is composed with `Flow.provide` before launch;
   there is no `IApp` inheritance model, hidden environment, universal error renderer, or ambient application registry.
-- Host adapters translate only native lifecycle and outcomes. `Axial.Flow.Hosting` supplies standalone .NET Ctrl+C /
+- Host adapters translate only native lifecycle and outcomes. `Axial.Hosting` supplies standalone .NET Ctrl+C /
   exit-code integration, Microsoft Generic Host lifetime, the MEL `ILog` adapter, and fiber logging.
-  `Axial.Flow.Hosting.Node` supplies Node arguments, `process.env`, SIGINT/SIGTERM, and `process.exitCode`.
-  `Axial.Flow.Hosting.Browser` supplies explicit UI ownership and structural `AbortSignal` integration; it does not
+  `Axial.Hosting.Node` supplies Node arguments, `process.env`, SIGINT/SIGTERM, and `process.exitCode`.
+  `Axial.Hosting.Browser` supplies explicit UI ownership and structural `AbortSignal` integration; it does not
   treat visibility or unload events as dependable shutdown.
 - Node and browser packages are JavaScript-only Fable bindings. Their .NET target asset exists because Fable consumes
   F# projects through MSBuild; entry points touch a native runtime guard immediately and fail loudly on .NET or the
@@ -347,8 +347,8 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 ## 2026-07-14: Telemetry is runtime instrumentation, not a service contract
 
 - There is no telemetry service package and no `IHas<...>` telemetry contract. Tracing, annotations, and fiber
-  observability stay runtime instrumentation in `Axial.Flow.Telemetry`: `Activity.trace`/`Activity.traceWith` over
-  the static `ActivitySource("Axial.Flow")`, annotation sinks via `Flow.addAnnotationSink`, and
+  observability stay runtime instrumentation in `Axial.Telemetry`: `Activity.trace`/`Activity.traceWith` over
+  the static `ActivitySource("Axial")`, annotation sinks via `Flow.addAnnotationSink`, and
   `FiberTelemetry.observe`/`observeWithSpans` installed through `Flow.withFiberObserver`.
 - The rule "operational services are explicit services, not runtime slots" does not extend to telemetry, for two
   structural reasons. `ActivitySource`/`ActivityListener` is .NET's own ambient instrumentation model — hosts and
@@ -358,10 +358,10 @@ been folded into `AGENTS.md`, `dev-docs/PLAN.md`, or this summary.
 - Environment still participates declaratively, not as a service: `Activity.trace` reads the
   `IHasRequestId`/`IHasCorrelationId`/`IHasTenantId` trio and the extensible `IHasTelemetryTags` trait from `'env`
   and stamps them as span tags.
-- Logging is the opposite case and stays an explicit service: `ILog` (with the MEL bridge in `Axial.Flow.Hosting`
+- Logging is the opposite case and stays an explicit service: `ILog` (with the MEL bridge in `Axial.Hosting`
   and `FiberLogging.observe`) is a substitutable application dependency, not host instrumentation.
 - On Fable JavaScript targets the same decision holds with OpenTelemetry JS in the `ActivitySource` role:
-  `Axial.Flow.Telemetry.JavaScript` ships `Otel.trace`/`Otel.traceWith` and `FiberTelemetry`
+  `Axial.Telemetry.JavaScript` ships `Otel.trace`/`Otel.traceWith` and `FiberTelemetry`
   observers with the .NET tag vocabulary, emitting through a host-supplied `@opentelemetry/api` object
   (`Otel.install`) via structural bindings — the package has no npm dependency, and the SDK, exporter, and
   context manager stay the application's concern. The .NET build of that package is inert (`install` throws,
@@ -436,20 +436,20 @@ required update abstraction before it becomes public API again.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Platform carriers are execution/adaptation boundaries, not
   user-facing workflow types.
-- `Axial.Result` and `Axial.Flow` are independent leaves. `Axial.Refined` depends only on `Axial.Result`;
+- `Axial.Result` and `Axial` are independent leaves. `Axial.Refined` depends only on `Axial.Result`;
   `Axial.ErrorHandling` installs both. `Axial.Schema` depends on Data, Result, and Refined. Flow stays independent of
   the whole group.
 - Explicit dependencies live in `'env`. The ambient runtime is reserved for closed executor mechanics such as
   cancellation, scope, scheduling, interruption, and trace metadata.
 - Operational services are explicit services provisioned through records, nominal `IHas<'service>` contracts, host-edge
   `IServiceProvider` resolution, and `Layer`.
-- Operational service contracts do not live in `Axial.Flow`. Clock, log, random, GUID, and environment-variable
-  contracts and operations belong to the optional `Axial.Flow.PlatformService` package. Its internal `Platform` file
+- Operational service contracts do not live in `Axial`. Clock, log, random, GUID, and environment-variable
+  contracts and operations belong to the optional `Axial.PlatformService` package. Its internal `Platform` file
   is the only place target-specific implementations may use `FABLE_COMPILER`; the public operation layer stays
   portable and host-specific capabilities such as process environment access are injected at the boundary.
 - `Check` and `Result` helpers belong to the `Axial.ErrorHandling` namespace; `Parse`, `Refine`, and the `refine { }`
   builder belong to `Axial.Refined`; path-aware accumulated errors belong to `Axial.Schema`; `Policy`, `Bind`, and
-  `BindError` belong to `Axial.Flow`.
+  `BindError` belong to `Axial`.
 - `Check` is a complete typed value-constraint subsystem:
   `Check<'value> = 'value -> Result<'value, CheckFailure list>`. Checks are path-free, raw-input-free value programs;
   value-preserving guards and extraction helpers belong in `Result`, and parsing and refined value construction belong in

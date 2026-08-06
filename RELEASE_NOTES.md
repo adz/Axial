@@ -14,7 +14,7 @@ depends on them.
 | Before | Now |
 | --- | --- |
 | `dotnet add package Axial.ErrorHandling` | `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, `Axial.Parse` — whichever you use |
-| `dotnet add package Axial` | the focused packages above, plus `Axial.Schema` and/or `Axial.Flow` |
+| `dotnet add package Axial` | the focused packages above, plus `Axial.Schema` and/or `Axial` |
 | `open Axial` for `result { }` | `open Axial.Result` |
 
 `open Axial` remains valid where it means `Axial.Data`'s namespace; only the umbrella package's re-export is gone.
@@ -80,11 +80,11 @@ release settles the package family shape; treat it as the project's actual debut
 prior `FsFlow`/`Axial` previews. See the docs site for guides and API reference — these notes stay at the
 package level.
 
-- **`Axial.Flow`** — the effect and runtime package: explicit environments, typed failures, async/task/`ColdTask`
+- **`Axial`** — the effect and runtime package: explicit environments, typed failures, async/task/`ColdTask`
   interop, layers, scoped cleanup, fibers and structured concurrency, STM, streams, scheduling, and runtime
-  policy. Companion service packages (`Axial.Flow.Console`, `.FileSystem`, `.HttpClient`, `.Process`,
-  `.PlatformService`), hosting adapters (`Axial.Flow.Hosting`, `.Hosting.Node`, `.Hosting.Browser`), and
-  telemetry (`Axial.Flow.Telemetry` for .NET, `Axial.Flow.Telemetry.JavaScript` for Fable) round out the runtime
+  policy. Companion service packages (`Axial.Console`, `.FileSystem`, `.HttpClient`, `.Process`,
+  `.PlatformService`), hosting adapters (`Axial.Hosting`, `.Hosting.Node`, `.Hosting.Browser`), and
+  telemetry (`Axial.Telemetry` for .NET, `Axial.Telemetry.JavaScript` for Fable) round out the runtime
   story with fiber diagnostics, a `FiberRegistry`, and OpenTelemetry integration on both platforms.
 - **`Axial.ErrorHandling`** (the error-handling family) — fail-fast `Result` composition and `result {}`
   (`Axial.Result`), reusable value checks and predicates (`Axial.Constraint`), constraint-backed refined/domain types
@@ -96,14 +96,14 @@ package level.
   RFC 9457 problem details (`Axial.Schema.Http`, with ASP.NET Core and GenHTTP hosting adapters), and compile-time
   wire schema generation from `[<DeriveSchema>]` records or `.contract` files via `schemagen` and the
   `Axial.Schema.Contracts.Build` MSBuild package, including versioned contract chains.
-- **`Axial`** — the top-level umbrella package installing `Axial.ErrorHandling`, `Axial.Schema`, and `Axial.Flow`
+- **`Axial`** — the top-level umbrella package installing `Axial.ErrorHandling`, `Axial.Schema`, and `Axial`
   together. App templates built on this umbrella are planned as follow-up work, not part of this release.
 - Standardized pre-1.0 release versioning so every public Axial package in the release train ships at the same
   version from `Directory.Build.props`.
 - Refreshed package metadata, README content, examples, generated reference pages, and documentation site content
   across the full package family.
 
-Looking ahead: the repository itself is expected to split into `Axial`, `Axial.Schema`, and `Axial.Flow` repos
+Looking ahead: the repository itself is expected to split into `Axial`, `Axial.Schema`, and `Axial` repos
 post-release, with the current repo becoming home to the root docs site and reference apps. Not yet decided
 whether reference docs stay centralized or move per sub-repo.
 

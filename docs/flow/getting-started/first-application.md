@@ -10,7 +10,7 @@ Use `App.run` when a Flow is the root of an application. It carries cancellation
 after the root scope and its resources have closed.
 
 ```fsharp
-open Axial.Flow
+open Axial
 
 let application : Flow<string> =
     flow {

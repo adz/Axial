@@ -39,7 +39,7 @@ let ordersLayer : Layer<IServiceProvider, StartupError, IOrderRepository> =
 
 Then compose provider-backed layers into the application environment and run the real workflow with `Flow.provide`.
 
-`Axial.Flow.PlatformService` follows this pattern with `BaseRuntime.fromServiceProvider`. Register `IClock`, `ILog`,
+`Axial.PlatformService` follows this pattern with `BaseRuntime.fromServiceProvider`. Register `IClock`, `ILog`,
 `IRandom`, `IGuid`, and `IEnvironmentVariables` in a Microsoft DI `ServiceCollection`, build the provider at the host
 edge, and use the layer to convert those dynamic registrations into an explicit `BaseRuntime`. Missing registrations
 fail as typed startup errors through `BaseRuntimeError.MissingService`, while direct `Service<'T>.resolve()` remains a

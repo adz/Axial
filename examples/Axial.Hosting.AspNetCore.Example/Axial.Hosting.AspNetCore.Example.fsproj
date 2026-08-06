@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Axial.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Reified.Schema" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Schema.Json" Version="$(ReifiedVersion)" />
+    <PackageReference Include="Reified.Schema.Http" Version="$(ReifiedVersion)" />
+    <ProjectReference Include="..\..\src\Axial.Hosting.AspNetCore\Axial.Hosting.AspNetCore.fsproj" />
+    <PackageReference Include="Reified.Data" Version="$(ReifiedVersion)" />
+  </ItemGroup>
+
+</Project>

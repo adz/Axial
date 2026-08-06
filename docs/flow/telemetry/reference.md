@@ -1,12 +1,12 @@
 ---
 weight: 90
 title: Reference
-description: Public modules in Axial.Flow.Telemetry for .NET tracing, fiber spans, metrics, and dumps.
+description: Public modules in Axial.Telemetry for .NET tracing, fiber spans, metrics, and dumps.
 ---
 
-# Axial.Flow.Telemetry Reference
+# Axial.Telemetry Reference
 
-`Axial.Flow.Telemetry` connects Flow execution and fiber lifecycle to .NET `ActivitySource` and `Meter` APIs. The host
+`Axial.Telemetry` connects Flow execution and fiber lifecycle to .NET `ActivitySource` and `Meter` APIs. The host
 still chooses and configures its OpenTelemetry listeners, exporters, and sampling.
 
 | Module | Members | Purpose |

@@ -1,7 +1,7 @@
 module SupervisionExample
 
 open System
-open Axial.Flow
+open Axial
 
 // Demonstrates defect supervision and fiber observability:
 // 1. Flow.Runtime.supervise restarts background work that dies with a defect.

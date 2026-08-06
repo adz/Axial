@@ -25,7 +25,7 @@ path-aware diagnostics, and typed Flow errors.
 
   The package dependency direction matters:
 
-  Axial.Flow         Axial.Schema
+  Axial         Axial.Schema
        \                 /
             Axial.Sql
             /       \
@@ -504,7 +504,7 @@ path-aware diagnostics, and typed Flow errors.
   Potentially split execution from pure query construction later:
 
   Axial.Sql             // metadata and immutable AST
-  Axial.Flow.Sql        // IDatabase and Flow execution
+  Axial.Sql        // IDatabase and Flow execution
 
   That split is architecturally cleaner if users might want query generation without Flow, though it creates another package to explain. I would begin with
   Axial.Sql as the integrated add-on unless a non-Flow consumer appears.

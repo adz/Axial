@@ -169,10 +169,10 @@ pass with `AXIAL_EXAMPLE=smoke`.
 
 ## Flow Comparisons
 
-The comparisons library in [`examples/Axial.Flow.Comparisons`](./Axial.Flow.Comparisons/) implements seven
+The comparisons library in [`examples/Axial.Comparisons`](./Axial.Comparisons/) implements seven
 scenarios twice — once with ordinary `Task`/exception/token code and once with Flow — over identical domain
 types, with failure-path tests for every claimed guarantee in
-[`tests/Axial.Flow.Comparisons.Tests`](../tests/Axial.Flow.Comparisons.Tests/). It exercises core Flow plus
+[`tests/Axial.Comparisons.Tests`](../tests/Axial.Comparisons.Tests/). It exercises core Flow plus
 the HttpClient, FileSystem, Console, Process, PlatformService, and Telemetry packages.
 
 ## Smallest Docs-First Examples

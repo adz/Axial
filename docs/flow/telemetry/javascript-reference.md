@@ -1,15 +1,15 @@
 ---
 weight: 91
 title: Reference
-description: Public types and modules in Axial.Flow.Telemetry.JavaScript.
+description: Public types and modules in Axial.Telemetry.JavaScript.
 url: /flow/telemetry/javascript/reference/
 build:
   list: never
 ---
 
-# Axial.Flow.Telemetry.JavaScript Reference
+# Axial.Telemetry.JavaScript Reference
 
-`Axial.Flow.Telemetry.JavaScript` emits spans through a host-supplied `@opentelemetry/api` object. It does not import
+`Axial.Telemetry.JavaScript` emits spans through a host-supplied `@opentelemetry/api` object. It does not import
 or configure the JavaScript SDK.
 
 | Surface | Purpose |

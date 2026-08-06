@@ -44,7 +44,7 @@ Flow also carries cancellation, resource scopes, concurrency, retries, schedulin
 
 ## Install
 
-Axial has not been published under its final package ID. The first prerelease will use `Axial`; the source tree still uses `Axial.Flow` until the post-split rename commit.
+Axial has not been published under its final package ID. The first prerelease will use `Axial`; the source tree still uses `Axial` until the post-split rename commit.
 
 ## Packages
 
@@ -56,7 +56,7 @@ The core is independent. Add service and hosting packages only when the workflow
 - `Axial.Hosting`, `Axial.Hosting.Node`, `Axial.Hosting.Browser` — application lifecycle integrations
 - `Axial.Telemetry` — tracing and runtime observability
 
-The package list describes the settled names. Current project paths retain `Axial.Flow*` until the rename commit.
+The package list describes the settled names. Current project paths retain `Axial*` until the rename commit.
 
 ## Documentation and examples
 

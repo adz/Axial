@@ -1,5 +1,5 @@
 ---
-title: "Axial.Flow: structured workflows"
+title: "Axial: structured workflows"
 linkTitle: Flow
 description: Environment-aware workflows with typed errors, cancellation, scheduling, and structured concurrency.
 type: docs
@@ -31,7 +31,7 @@ menu:
 <div class="axial-coord-mid">
 <div class="coord-hub">
 <img src="/content/img/favicon-light.svg" alt="Axial" />
-<span class="coord-hub-name">Axial.Flow</span>
+<span class="coord-hub-name">Axial</span>
 </div>
 </div>
 
@@ -51,7 +51,7 @@ menu:
 other. Flow is the seam where structure meets execution &mdash; on .NET, NativeAOT, Fable, browser and server.</p>
 </section>
 
-<span class="eyebrow" style="color:#6d4fc4">Axial.Flow &middot; Effects</span>
+<span class="eyebrow" style="color:#6d4fc4">Axial &middot; Effects</span>
 
 <h1>A type, not a framework.</h1>
 
@@ -82,28 +82,28 @@ services, HTTP, processes, telemetry, and .NET, Node, or browser hosting.
 
 ## Packages
 
-`Axial.Flow` contains the workflow model and runtime. The other packages add one platform service, host, or telemetry
+`Axial` contains the workflow model and runtime. The other packages add one platform service, host, or telemetry
 integration at a time.
 
 | Package | Use it for | Documentation |
 | --- | --- | --- |
-| `Axial.Flow` | Workflows, environments, typed failures, concurrency, and runtime execution | [Axial.Flow](./overview/) |
-| `Axial.Flow.PlatformService` | Shared clock and platform service contracts | [Platform services](./platform-service/) |
-| `Axial.Flow.Console` | Console input and output | [Console](./console/) |
-| `Axial.Flow.FileSystem` | Filesystem operations | [FileSystem](./filesystem/) |
-| `Axial.Flow.HttpClient` | HTTP client requests | [HTTP client](./http/) |
-| `Axial.Flow.Process` | Child processes | [Processes](./processes/) |
-| `Axial.Flow.Hosting` | .NET application hosting | [Hosting](./hosting/) |
-| `Axial.Flow.Hosting.Node` | Node application hosting | [Node hosting](./hosting/node/) |
-| `Axial.Flow.Hosting.Browser` | Browser application hosting | [Browser hosting](./hosting/browser/) |
-| `Axial.Flow.Telemetry` | Runtime telemetry contracts | [Telemetry](./telemetry/) |
-| `Axial.Flow.Telemetry.JavaScript` | JavaScript telemetry integration | [JavaScript telemetry](./telemetry/javascript/) |
+| `Axial` | Workflows, environments, typed failures, concurrency, and runtime execution | [Axial](./overview/) |
+| `Axial.PlatformService` | Shared clock and platform service contracts | [Platform services](./platform-service/) |
+| `Axial.Console` | Console input and output | [Console](./console/) |
+| `Axial.FileSystem` | Filesystem operations | [FileSystem](./filesystem/) |
+| `Axial.HttpClient` | HTTP client requests | [HTTP client](./http/) |
+| `Axial.Process` | Child processes | [Processes](./processes/) |
+| `Axial.Hosting` | .NET application hosting | [Hosting](./hosting/) |
+| `Axial.Hosting.Node` | Node application hosting | [Node hosting](./hosting/node/) |
+| `Axial.Hosting.Browser` | Browser application hosting | [Browser hosting](./hosting/browser/) |
+| `Axial.Telemetry` | Runtime telemetry contracts | [Telemetry](./telemetry/) |
+| `Axial.Telemetry.JavaScript` | JavaScript telemetry integration | [JavaScript telemetry](./telemetry/javascript/) |
 
 Flow is one of Axial's three entry points. If the code is still pure, start in
 [Result]({{< relref "/result/" >}}), [Values]({{< relref "/values/" >}}), or [Schema]({{< relref "/schema/" >}})
 instead; both work without Flow.
 
-See [Axial.Flow](./overview/) for the Flow type, getting started, dependencies, concurrency, and the full guide list.
+See [Axial](./overview/) for the Flow type, getting started, dependencies, concurrency, and the full guide list.
 
 </div>
 

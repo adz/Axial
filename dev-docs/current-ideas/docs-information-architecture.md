@@ -99,7 +99,7 @@ until `3a2a13f2` (2026-06-21). So:
   push to a new empty repository.
 
 This inverts the earlier plan and removes its worst hazard: filtering the effect system would have had to
-chase four historical renames (`EffectFs` → `EffectfulFlow` → `FlowKit` → `FsFlow*` → `Axial.Flow*`) and
+chase four historical renames (`EffectFs` → `EffectfulFlow` → `FlowKit` → `FsFlow*` → `Axial*`) and
 would have silently dropped the v0.6.0 tag. Full detail in `project-split.md`, "Method — inverted".
 
 ### 3.2 Paths to extract
@@ -113,12 +113,12 @@ benchmark, and cross-cutting test project.
 ### 3.3 Order
 
 1. Enumerate and verify the path list; confirm each ambiguous example's true dependencies.
-2. Split the six "must split in two" projects, plus `Axial.Flow.Tests`, while both halves are in one tree.
+2. Split the six "must split in two" projects, plus `Axial.Tests`, while both halves are in one tree.
 3. Extract to Reified. **Do not rename in the same pass** — `--path-rename` would make history read as
    though it was always Reified. Extraction must be mechanically reviewable.
 4. Confirm the extracted repository builds and its tests pass standalone.
 5. Rename in ordinary commits, one repository at a time: `Axial.*` → `Reified.*` (and `Refined` →
-   `Refinements`) there; `Axial.Flow*` → `Axial*` and the two adapters here.
+   `Refinements`) there; `Axial*` → `Axial*` and the two adapters here.
 6. Duplicate shared scaffolding into Reified: `Directory.Build.props`, `mise.toml`, CI workflows, test
    conventions, docs theme.
 7. Only then remove the description paths from Axial.
@@ -441,7 +441,7 @@ agree, with different granularity.
 | 2 | Fold `Schema.JsonSchema` into `Schema`; unify the namespace convention | **done** |
 | 3 | Verify split path list; separate product examples and host-neutral/adapter HTTP tests | combined repo — complete |
 | 4 | `filter-repo` extract to Reified; prune generated history; confirm it builds green | local Reified repo — complete; remote pending |
-| 5 | Rename in each repository: `Axial.*` → `Reified.*` there, `Axial.Flow*` → `Axial*` here | both |
+| 5 | Rename in each repository: `Axial.*` → `Reified.*` there, `Axial*` → `Axial*` here | both |
 | 6 | Remove the description paths from Axial | Axial |
 | 7 | Migrate docs to FsLiveDocs; stop committing generated reference | both |
 | 8 | Reorganise into task folders (§5.1, §5.2) | both |
