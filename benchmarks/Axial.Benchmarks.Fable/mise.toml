@@ -1,5 +1,0 @@
-[tools]
-dotnet = "10.0"
-node = "26.1.0"
-erlang = "27.2.2"
-rebar = "3.24.0"
