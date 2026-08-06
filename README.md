@@ -6,105 +6,20 @@
   <img alt="Axial" src="docs/content/img/axial-readme-light.svg" width="160">
 </picture>
 
-Axial is a set of F# libraries with three entry points:
-
-- Error Handling — four focused packages: `Axial.Result` (Result composition and `result { }`),
-  `Axial.Constraint` (reusable value checks), `Axial.Parse` (serialized primitive decoding), and `Axial.Refined`
-  (invariant-carrying domain values);
-- Schema for turning structured input into domain values, with path-aware accumulated diagnostics;
-- Flow for async work with explicit dependencies and expected failures.
-
-Every install is a focused package: there is no meta-package and no umbrella. Install exactly the packages you
-use.
+Write asynchronous F# workflows whose expected failures and required dependencies are visible in their types.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
-[![NuGet](https://img.shields.io/nuget/v/Axial.Schema.svg)](https://www.nuget.org/packages/Axial.Schema)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 > [!WARNING]
-> Axial 0.7.0 is the first planned release under the Axial name. It replaces the former monolithic FsFlow package with
-> smaller packages. The public surface is still pre-1.0 and may change.
+> Axial is pre-1.0. The package and API names are being finalized before the first release under this name.
 
-## Handle expected errors and refine values
+## Your first flow
 
-Error Handling is four focused packages that keep ordinary `Result<'value, 'error>` in your interfaces: `Axial.Result`
-for Result composition, `Axial.Constraint` for reusable value checks, `Axial.Parse` for serialized primitive decoding, and
-`Axial.Refined` for invariant-carrying domain values. Install any focused package independently; none requires
-`Axial.Result`.
+A handler often needs services and can fail, but ordinary `Task` signatures show neither fact. `Flow<'env, 'error, 'value>` makes both part of the contract.
 
 ```fsharp
-open Axial.Constraint
-open Axial.Constraint.ConstraintDSL
-
-let requireName value =
-    value
-    |> Result.guard present
-    |> Result.mapError (fun _ -> NameMissing)
-```
-
-- [Result](docs/result/_index.md)
-- [Values overview](docs/values/_index.md)
-- [Checks and constraints](docs/values/getting-started.md)
-- [Refined domain values](docs/values/refined/domain-values.md)
-
-```bash
-dotnet add package Axial.Result    # Result composition and result { }
-dotnet add package Axial.Constraint     # reusable checks and portable constraints
-dotnet add package Axial.Parse     # serialized primitive parsing
-dotnet add package Axial.Refined   # invariant-carrying domain values
-```
-
-## Parse input into domain values
-
-A schema describes fields, parsing, constraints, and construction in one value:
-
-```fsharp
-open Axial.Schema
-open Axial.Schema.Syntax
-
-type Signup =
-    { Email: string
-      Age: int }
-
-let signupSchema =
-    Schema.define<Signup>
-    |> field "email" _.Email
-    |> constrain emailFormat
-    |> field "age" _.Age
-    |> constrain (atLeast 13)
-    |> construct (fun email age -> { Email = email; Age = age })
-
-match (Schema.parse signupSchema dataInput) with
-| Ok signup -> register signup
-| Error diagnostics -> display diagnostics
-```
-
-`Schema.parse` either returns the model or path-aware diagnostics. The same declaration can drive checking, JSON
-Schema, compiled codecs, form redisplay, test-data generation, and versioned wire contracts.
-
-A schema only controls values produced through the schema. When every value of a type must satisfy an invariant, use a
-private representation and expose a fallible constructor or named domain operations.
-
-Start here:
-
-- [Schema overview](docs/landing/schema.md)
-- [Getting started with Schema](docs/schema/getting-started.md)
-- [Construction guarantees](docs/schema/trusted-construction.md)
-- [Recommended Schema patterns](docs/schema/patterns/_index.md)
-- [Versioned wire contracts](docs/schema/contracts.md)
-
-Install the core package:
-
-```bash
-dotnet add package Axial.Schema
-```
-
-## Keep workflow dependencies visible
-
-`Flow<'env, 'error, 'value>` describes async work, its dependencies, and its expected failure type:
-
-```fsharp
-open Axial.Flow
+open Axial
 
 type RegistrationError =
     | UserNotFound
@@ -123,28 +38,38 @@ let register userId : Flow<RegistrationEnv, RegistrationError, unit> =
     }
 ```
 
-Tests supply a small record of fakes. The application host supplies live implementations. Cancellation, resource
-scopes, retries, and child fibers stay within the workflow runtime.
+The application supplies live functions. A test supplies a small record of fakes. The workflow stays unchanged.
 
-Start here:
+Flow also carries cancellation, resource scopes, concurrency, retries, scheduling, streams, and structured child fibers through the same runtime.
 
-- [Flow overview](docs/landing/flow.md)
-- [Getting started with Flow](docs/flow/getting-started.md)
-- [Dependencies](docs/flow/services-and-runtimes/dependencies.md)
-- [Service-provider boundaries](docs/flow/services-and-runtimes/service-provider-boundaries.md)
+## Install
 
-Install Flow:
+Axial has not been published under its final package ID. The first prerelease will use `Axial`; the source tree still uses `Axial.Flow` until the post-split rename commit.
 
-```bash
-dotnet add package Axial.Flow
-```
+## Packages
 
-## Platforms and examples
+The core is independent. Add service and hosting packages only when the workflow uses them.
 
-The authored schema and workflow paths avoid runtime reflection. The core packages support NativeAOT, trimming, and
-Fable; individual host and service packages document their supported targets.
+- `Axial` — workflows, typed failures, dependencies, concurrency, schedules, streams, and layers
+- `Axial.PlatformService` — explicit clock, logging, randomness, GUID, and environment services
+- `Axial.Console`, `Axial.FileSystem`, `Axial.HttpClient`, `Axial.Process` — mockable operational services
+- `Axial.Hosting`, `Axial.Hosting.Node`, `Axial.Hosting.Browser` — application lifecycle integrations
+- `Axial.Telemetry` — tracing and runtime observability
 
-- [Documentation](docs/index.md)
-- [Runnable examples](examples/README.md)
-- [Reference application](examples/Axial.ReferenceApp/README.md)
-- [Packages and generated reference](docs/reference-indexes/)
+The package list describes the settled names. Current project paths retain `Axial.Flow*` until the rename commit.
+
+## Documentation and examples
+
+- [Getting started](docs/flow/getting-started/_index.md)
+- [Dependencies and services](docs/flow/services-and-runtimes/dependencies.md)
+- [Failures and defects](docs/flow/getting-started/failures-and-defects.md)
+- [Concurrency](docs/flow/concurrency/_index.md)
+- [HTTP client](docs/flow/http/_index.md)
+- [Runnable examples](docs/flow/examples.md)
+- [Integration reference application](examples/Axial.ReferenceApp/README.md)
+
+## Reified integration
+
+[Reified](https://github.com/adz/Reified) declares value, model, JSON, and HTTP contracts. Axial's optional server adapters execute Reified HTTP contracts as workflows; neither core depends on the other.
+
+Declare a contract with Reified. Serve it with Axial.
