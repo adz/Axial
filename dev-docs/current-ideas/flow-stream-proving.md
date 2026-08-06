@@ -3,7 +3,7 @@
 Status: active design sketch. This is not accepted architecture until the implementation work and proving slices below
 validate it. Once accepted, fold durable rules into `dev-docs/PLAN.md` and delete this file.
 
-Sequence this work immediately after the repository/package split described in `project-split.md`.
+The repository/package split is complete. Sequence this work only when a concrete application needs the proving slices.
 
 ## Decision to make before 1.0
 

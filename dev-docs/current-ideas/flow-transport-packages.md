@@ -5,8 +5,8 @@ document's FlowStream lifecycle, cancellation, scope, backpressure, portability,
 It describes only additional package and API requirements. None of this is accepted architecture until concrete proving
 slices validate it.
 
-Sequence the FlowStream proving work and these package slices immediately after the repository/package split described
-in `project-split.md`.
+The repository/package split is complete. Sequence the FlowStream proving work and these package slices only when a
+concrete application needs them.
 
 ## Outcome
 

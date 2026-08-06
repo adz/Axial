@@ -10,7 +10,6 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 ## Product work
 
 - Reassess remaining demand-driven Flow work in `LATER_TODO.md` against a concrete application before expanding the API.
-- Refresh `dev-docs/API_BASELINE.md` after the final package rename and record the validated commands and counts.
 
 ## Acceptance
 

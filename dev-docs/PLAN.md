@@ -26,4 +26,4 @@ Core `Axial` has no Reified dependency. Host adapters are the only library proje
 
 Teach from the smallest useful `Flow` shape, then introduce environment and typed failure channels. The public site is Flow-only. Reified appears only where an integration example genuinely crosses the repository boundary.
 
-Historical pre-split decisions remain in `dev-docs/decisions/README.md`; current work belongs in `dev-docs/TASKS.md`.
+Durable decisions remain in `dev-docs/decisions/README.md`; current work belongs in `dev-docs/TASKS.md`.
