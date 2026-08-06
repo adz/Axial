@@ -1,4 +1,4 @@
-# Two Projects: Axial And FsFlow — Split And Documentation Plan
+# Two Projects: Reified And Axial — Split And Documentation Plan
 
 Status: planned work. Supersedes `project-split.md`'s three-repository and docs-shaping sections.
 
@@ -9,19 +9,24 @@ Everything below is work to do. Reasoning that led here is not repeated.
 ## 1. The Decisions
 
 1. **Two independent projects**, not a family with an umbrella.
-   - **Axial** — constraints, values, schema. Keeps the name; in practice it already means this.
-   - **FsFlow** — the effect system. Restores the identity last published at 0.6, which is the only
-     released identity; nothing has ever shipped as `Axial.Flow`.
+   - **Reified** — constraints, values, schema. Extracted to a new repository.
+   - **Axial** — the effect system. Keeps this repository, its name, and its history; it is the trunk.
 2. **No umbrella**: no third repository, no shared site, no mounts, no cross-repo `xref:`, no assembly
    pipeline. Each project has one repository and one site.
-3. **The shared thesis is stated in prose, not encoded in package IDs.** Axial encodes invariants about
-   values, boundaries, and models; FsFlow encodes invariants about computation — what can fail, what it
+3. **The shared thesis is stated in prose, not encoded in package IDs.** Reified encodes invariants about
+   values, boundaries, and models; Axial encodes invariants about computation — what can fail, what it
    requires, how it runs concurrently. One sentence on each site; no shared code.
 4. **Navigation is by reader task, not by package**, in both projects.
 5. **Generated reference is never committed** — it is produced at build.
-6. **Nothing is published until the shape is settled.** No Axial package has ever been released, so package
+6. **Nothing is published until the shape is settled.** Nothing with users has been released, so package
    boundaries and names are free to change today and breaking tomorrow. That window closes at first
    publish.
+7. **The two pitches are deliberately asymmetric**, because the concepts land differently when explained.
+   Reified leads with its concept — *the rule and its message are the same object, so they cannot drift* —
+   because people immediately see why that is better. Axial does **not** lead with "effect system", which
+   produces blank stares in most of .NET and much of F#. It leads with *easier async and Result*: failures
+   in the signature, dependencies in the signature, swapped in a test. See `project-split.md`,
+   "Positioning, per product".
 
 ---
 
@@ -29,18 +34,21 @@ Everything below is work to do. Reasoning that led here is not repeated.
 
 Core dependency graph:
 
+Names below are post-rename. Current source paths are still `Axial.*` throughout; see `project-split.md`
+phase 9.
+
 | Package | Depends on | Depended on by |
 | --- | --- | --- |
-| `Axial.Result` | — | nothing |
-| `Axial.Parse` | — | Schema |
-| `Axial.Constraint` | — | Refined, Schema |
-| `Axial.Refined` | Constraint | Schema |
-| `Axial.Data` | — | Schema |
-| `Axial.Schema` | Constraint, Data, Parse, Refined | — |
-| `Axial.Flow` | — | the two server adapters below |
-| `Axial.Schema.Http` | Schema | the two server adapters below |
-| `Axial.Schema.Http.AspNetCore` | **Flow**, Schema.Http, Schema.Json, Data | — |
-| `Axial.Schema.Http.GenHttp` | **Flow**, Schema.Http, Schema.Json, Data | — |
+| `Reified.Result` | — | nothing |
+| `Reified.Parse` | — | Schema |
+| `Reified.Constraint` | — | Refinements, Schema |
+| `Reified.Refinements` | Constraint | Schema |
+| `Reified.Data` | — | Schema |
+| `Reified.Schema` | Constraint, Data, Parse, Refinements | — |
+| `Axial` (the effect system) | — | the two server adapters below |
+| `Reified.Schema.Http` | Schema | the two server adapters below |
+| `Axial.AspNetCore` | **Axial**, Reified.Schema.Http, Schema.Json, Data | — |
+| `Axial.GenHttp` | **Axial**, Reified.Schema.Http, Schema.Json, Data | — |
 
 The two cores are independent. **One real seam exists**: the HTTP server adapters depend on both, and Flow
 is in their public API rather than an implementation detail —
@@ -50,81 +58,71 @@ let json (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'e
 (workflow: Flow<HttpEndpointEnv<'app>, EndpointError<'error>, IResult>)
 ```
 
-So the integration is: **declare a contract with Schema, serve it with FsFlow.**
+So the integration is: **declare a contract with Reified, serve it with Axial.**
 
-`Axial.Schema.Http` is Flow-free — 406 lines describing endpoints and emitting an OpenAPI document via
+`Schema.Http` is Flow-free — 406 lines describing endpoints and emitting an OpenAPI document via
 `OpenApi.document : OpenApiInfo -> EndpointSpec list -> string`. Contract-first use (emit `openapi.json`,
-generate clients, run contract tests) needs no server, so that layer stays in Axial and stands alone.
+generate clients, run contract tests) needs no server, so that layer goes with Reified and stands alone.
 
 **Ownership after the split.** Description must not depend on execution, so the glue goes with the runtime:
 
 | Today | After |
 | --- | --- |
-| `Axial.Schema.Http` | stays in Axial, unchanged |
-| `Axial.Schema.Http.AspNetCore` | → `FsFlow.AspNetCore`, depends on `Axial.Schema.Http` |
-| `Axial.Schema.Http.GenHttp` | → `FsFlow.GenHttp`, depends on `Axial.Schema.Http` |
+| `Axial.Schema.Http` | → `Reified.Schema.Http`, extracts with Reified |
+| `Axial.Schema.Http.AspNetCore` | → `Axial.AspNetCore`, stays, depends on `Reified.Schema.Http` |
+| `Axial.Schema.Http.GenHttp` | → `Axial.GenHttp`, stays, depends on `Reified.Schema.Http` |
 
-(Top-level, as siblings of `FsFlow.HttpClient`. See `project-split.md` for the reasoning and the open
-question about `FsFlow.*` versus `FsFlow.Hosting.*`.)
+(Top-level, as siblings of `Axial.HttpClient`. See `project-split.md` for the reasoning and the open
+question about `Axial.*` versus `Axial.Hosting.*`.)
 
-Axial then has zero knowledge of FsFlow. FsFlow carries two optional satellites that pull `Axial.Schema.Http`
-only if used.
+Reified then has zero knowledge of Axial. Axial carries two optional satellites that pull
+`Reified.Schema.Http` only if used.
 
 ---
 
 ## 3. Work: Repository Split
 
-### 3.1 Method
+### 3.1 Method — the description side is what gets extracted
 
 Use `git filter-repo` (not `filter-branch`, which is deprecated; not a fork, which carries every unrelated
-file's history forever and is marked as a fork by GitHub). Not currently installed — `pip install
-git-filter-repo`.
+file's history forever and is marked as a fork by GitHub). Not currently installed —
+`sudo dnf install git-filter-repo`.
 
-**Asymmetric, deliberately:**
+**Which side gets filtered is settled by history.** The effect system is this repository's trunk — the
+initial commit `d3b9617a` (2026-03-30) is the effect system, and the description packages do not appear
+until `3a2a13f2` (2026-06-21). So:
 
-- **FsFlow** — fresh `git clone --no-local` into scratch, `filter-repo` down to the Flow paths, push to a
-  new empty repository. Clean history, `git blame` and `git bisect` intact over the 33 commits that touch
-  `src/Axial.Flow`.
-- **Axial** — an ordinary `git rm` commit removing the Flow paths. **Do not `filter-repo` the existing
-  repository**: it rewrites every SHA and breaks existing clones and branches. Axial's history honestly
-  includes Flow, and should keep saying so.
+- **Axial** — keeps this repository, its name, its history, and its tags. Removing the description paths is
+  an ordinary `git rm` commit. **Do not `filter-repo` this repository**: it rewrites every SHA, breaks
+  existing clones and branches, and orphans the v0.6.0 objects.
+- **Reified** — fresh `git clone --no-local` into scratch, `filter-repo` down to the description paths,
+  push to a new empty repository.
+
+This inverts the earlier plan and removes its worst hazard: filtering the effect system would have had to
+chase four historical renames (`EffectFs` → `EffectfulFlow` → `FlowKit` → `FsFlow*` → `Axial.Flow*`) and
+would have silently dropped the v0.6.0 tag. Full detail in `project-split.md`, "Method — inverted".
 
 ### 3.2 Paths to extract
 
-```
-src/Axial.Flow                      src/Axial.Flow.PlatformService
-src/Axial.Flow.Console              src/Axial.Flow.Process
-src/Axial.Flow.FileSystem           src/Axial.Flow.Telemetry
-src/Axial.Flow.Hosting              src/Axial.Flow.Telemetry.JavaScript
-src/Axial.Flow.Hosting.Browser      src/Axial.Flow.Telemetry.Shared
-src/Axial.Flow.Hosting.Node
-src/Axial.Flow.HttpClient           src/Axial.Schema.Http.AspNetCore   ← becomes FsFlow.AspNetCore
-                                    src/Axial.Schema.Http.GenHttp
+See `project-split.md`, "Paths to extract into Reified", which is the authoritative list, including the
+historical `Axial.*` description names that `--path-glob` must also catch.
 
-tests/Axial.Flow.Tests              tests/Axial.Flow.Integration.Tests
-tests/Axial.Flow.Comparisons.Tests  tests/Axial.Flow.PlatformService.Tests
-tests/Axial.Flow.FileSystem.Tests   tests/Axial.Flow.Telemetry.Tests
-tests/Axial.Flow.Hosting.Tests
-tests/Axial.Flow.HttpClient.Tests
-
-docs/flow
-benchmarks/Axial.Flow.Benchmarks
-```
-
-**Project assignments are resolved** — see `project-split.md`, "Paths to extract", for the full
-classification of every example, benchmark, and cross-cutting test project.
+**Project assignments are resolved** — see `project-split.md` for the full classification of every example,
+benchmark, and cross-cutting test project.
 
 ### 3.3 Order
 
 1. Enumerate and verify the path list; confirm each ambiguous example's true dependencies.
-2. Extract to FsFlow. **Do not rename in the same pass** — `--path-rename` would make history read as
-   though it was always FsFlow. Extraction must be mechanically reviewable.
-3. Confirm the extracted repository builds and its tests pass standalone.
-4. Rename `Axial.Flow` → `FsFlow` in ordinary commits: package IDs, namespace, the two HTTP adapters.
-5. Duplicate shared scaffolding into FsFlow: `Directory.Build.props`, `mise.toml`, CI workflows, test
+2. Split the six "must split in two" projects, plus `Axial.Flow.Tests`, while both halves are in one tree.
+3. Extract to Reified. **Do not rename in the same pass** — `--path-rename` would make history read as
+   though it was always Reified. Extraction must be mechanically reviewable.
+4. Confirm the extracted repository builds and its tests pass standalone.
+5. Rename in ordinary commits, one repository at a time: `Axial.*` → `Reified.*` (and `Refined` →
+   `Refinements`) there; `Axial.Flow*` → `Axial*` and the two adapters here.
+6. Duplicate shared scaffolding into Reified: `Directory.Build.props`, `mise.toml`, CI workflows, test
    conventions, docs theme.
-6. Only then remove the Flow paths from Axial.
-7. Publish Axial first (FsFlow's adapters depend on `Axial.Schema.Http`), then FsFlow.
+7. Only then remove the description paths from Axial.
+8. Publish Reified first (Axial's adapters depend on `Reified.Schema.Http`), then Axial.
 
 ---
 
@@ -132,17 +130,16 @@ classification of every example, benchmark, and cross-cutting test project.
 
 Free today, breaking after first publish.
 
-1. **Deferred: merging `Axial.Constraint` into `Axial.Refined`.** Not decided; Constraint stays separate
-   for now. The clunkiness that motivated it is an API ergonomics problem that merging would not fix, so
-   improve the standalone path first and see whether the premise survives. Free now, breaking after first
-   publish — revisit before then. Note there is no payload argument either way: trimming and tree-shaking
-   work on reachability, not package identity.
-2. **Leave `Axial.Parse` alone.** Zero dependencies, a crisp standalone story, a self-explanatory name.
-3. **Apply for NuGet prefix reservation**: `Axial.*` and `FsFlow*`.
-4. **Request the `Flow` package ID** from its current owner (unlisted, .NET Standard 1.1, empty repo) if
-   wanted — but do not wait on it or plan around it. Package ID and namespace are independent, and the
-   namespace must stay qualified regardless, so winning it changes one line in a `.fsproj` and nothing a
-   user types.
+1. **Deferred: merging `Reified.Constraint` into `Reified.Refinements`.** Not decided; Constraint stays
+   separate for now. The clunkiness that motivated it is an API ergonomics problem that merging would not
+   fix, so improve the standalone path first and see whether the premise survives. Free now, breaking after
+   first publish — revisit before then. Note there is no payload argument either way: trimming and
+   tree-shaking work on reachability, not package identity.
+2. **Leave `Reified.Parse` alone.** Zero dependencies, a crisp standalone story, a self-explanatory name.
+3. **`Refined` becomes `Refinements`.** Plural noun rather than past participle, so `Reified.Refinements`
+   reads as adjective-plus-noun rather than two participles; it also agrees with the existing
+   `Refinement.fs` and `Refinement<'input,'output>`. See `project-split.md`.
+4. **Apply for NuGet prefix reservation**: `Reified.*` and `Axial.*`. Both verified free as of 2026-08-06.
 
 ---
 
@@ -151,7 +148,7 @@ Free today, breaking after first publish.
 Folder name is the section name, so the IA is expressed by naming folders after reader tasks. Numeric
 prefixes order them and are stripped from URLs.
 
-### 5.1 Axial — `./docs`
+### 5.1 Reified — `./docs`
 
 ```
 01-getting-started/
@@ -168,7 +165,7 @@ prefixes order them and are stripped from URLs.
 10-notes/                    benchmarks, AOT and trimming detail
 ```
 
-### 5.2 FsFlow — `./docs`
+### 5.2 Axial — `./docs`
 
 ```
 01-getting-started/
@@ -182,7 +179,7 @@ prefixes order them and are stripped from URLs.
 08-streams/
 09-observability/            Telemetry (+JavaScript)
 10-platforms-and-hosting/    providing an env and hooking it up
-11-http/                     HttpClient, and serving Axial.Schema contracts
+11-http/                     HttpClient, and serving Reified.Schema contracts
 12-testing/                  fakes, layer swapping
 13-notes/
 ```
@@ -193,7 +190,7 @@ two, whether `Stm` and `Ref` are public API worth teaching, whether `Stream` war
 
 ### 5.3 Getting started, one per project
 
-**Axial** — declaration shaped: declare once, then derive.
+**Reified** — declaration shaped: declare once, then derive. Lead with the concept; it sells when explained.
 
 1. The problem: the same rule restated in a parser, a validator, a form, and a test
 2. Install what you need
@@ -201,13 +198,16 @@ two, whether `Stm` and `Ref` are public API worth teaching, whether `Stream` war
 4. Attach the declaration to a type so nothing re-checks it
 5. Declare a whole model; derive the codec and contract from it
 6. Derive test fixtures from the same declaration
-7. How failures are reported: an ordinary F# `Result` carrying a `Violation` or `ParseError` — Axial's
-   types, derived from the rule, carrying context worth keeping
+7. How failures are reported: an ordinary F# `Result` carrying a `Violation` or `ParseError` — Reified's
+   types, derived from the rule, carrying context worth keeping. This is where the name earns itself: a
+   `Constraint` carries its `ConstraintDescription`, and a violation carries the atom and the offending
+   value as data, so the rule and its message cannot drift apart
 8. Where to go next
 
-**FsFlow** — root-type shaped, but problem-led rather than type-led. Effect opens with `Effect<A, E, R>` as
+**Axial** — root-type shaped, but problem-led rather than type-led. Effect opens with `Effect<A, E, R>` as
 a type shape; the likeliest curious newcomer here is a C# developer who has never heard of ZIO or Effect,
-and a three-parameter generic on page one will lose them.
+and a three-parameter generic on page one will lose them. **Do not say "effect system" on this page** — see
+§1 item 7. The reader should get most of the way through before the category is named at all.
 
 1. The problem: a handler needs a database and can fail, and neither fact is in its signature
 2. Install
@@ -224,7 +224,7 @@ and a three-parameter generic on page one will lose them.
 Plain problem statements the destination page genuinely solves. Claim only what the library does —
 observability is the honest promise; diagnosing a slow production system is not.
 
-**Axial**
+**Reified**
 
 | Problem | Goes to |
 | --- | --- |
@@ -235,7 +235,8 @@ observability is the honest promise; diagnosing a slow production system is not.
 | Constructing test data by hand is slow and repetitive | `09-testing/` |
 | You want one small library, not a framework | Packages index |
 
-**FsFlow**
+**Axial** — note every row states a symptom, not a category. That is the positioning rule, not a stylistic
+preference.
 
 | Problem | Goes to |
 | --- | --- |
@@ -305,10 +306,12 @@ the code and cannot drift.
 
 **Three package tiers**, distinguished by what they are rather than by convenience:
 
+Reified's packages; Axial's reference tiers its own the same way.
+
 | Tier | Packages | API surface | Appears in |
 | --- | --- | --- | --- |
-| Core | `Result`, `Parse`, `Refined`, `Data`, `Schema` | yes | Reference, Packages |
-| Schema extensions | `Schema.Json`, `Schema.JsonSchema`, `Schema.Contracts`, `Schema.Http`, `Schema.Testing` | yes | Reference, Packages |
+| Core | `Result`, `Parse`, `Constraint`, `Refinements`, `Data`, `Schema` | yes | Reference, Packages |
+| Schema extensions | `Schema.Json`, `Schema.Contracts`, `Schema.Http`, `Schema.Testing` | yes | Reference, Packages |
 | Build tooling | `Schema.Contracts.Build` | **none** | Packages only |
 
 `Schema.Contracts.Build` is `DevelopmentDependency=true`, `IncludeBuildOutput=false`, and compiles nothing —
@@ -318,55 +321,24 @@ empty entity.
 Reference groups Core and Schema extensions separately. Docs does not tier at all: task folders cut across
 the tiers, which is the point.
 
-### 5.8 Namespace convention — unified
+### 5.8 Namespace convention — settled
 
-Every package declares its own namespace equal to its package id, and `namespace Axial` is now empty. See
-`project-split.md`, "Namespace convention — unified on A", for how `Axial.Data` moved and why `module Json`
-stayed nested.
+**Every package declares its own namespace equal to its package id.** You `open` the package you installed.
+The cost is a stutter in the qualified name — `Reified.Result.Result`, `Reified.Data.Data` — which is
+invisible at call sites, since consumers write `open Reified.Data` then `Data.assoc`. Accepted.
 
-This does not remove the need for **package identity in the reference model** (§6 item 5): satellites like
-`Axial.Schema.Json` and `Axial.Schema.Testing` still share the `Axial.Schema.*` namespace prefix, so a
-namespace tree cannot say which NuGet a type ships in.
+The A-versus-B debate that used to sit here is resolved and no longer repeated; `project-split.md`,
+"Namespace convention", holds the mechanics — how `Data` moved, why `module Syntax` was promoted, and why
+`module Json` stayed nested. Those carry over unchanged under the new names.
 
---- | --- | --- | --- |
-| `Axial.Result` | `Axial.Result` | `Result` | `Axial.Result.Result` |
-| `Axial.Parse` | `Axial.Parse` | `Parse` | `Axial.Parse.Parse` |
-| `Axial.Schema.Json` | `Axial.Schema.Json` | `Json` | `Axial.Schema.Json.Json` |
+**The rule that nothing declares into the product root namespace now attaches to `Reified` only.** It
+existed to stop `open Axial` becoming an unscoped catch-all across many unrelated value packages. Axial is
+now a single product with a single root type, so `namespace Axial` holding `Flow<'env,'error,'value>` and
+the `flow { }` builder is correct and desirable — `open Axial` gives exactly what was installed.
 
-You `open` the package id. Cost: the qualified name stutters.
-
-**Convention B — namespace is the parent; the module is the leaf, so the fully-qualified module path
-equals the package id exactly.**
-
-| Package | Namespace | Module | Fully-qualified |
-| --- | --- | --- | --- |
-| `Axial.Data` | `Axial` | `Data` | `Axial.Data` |
-| `Axial.Schema.JsonSchema` | `Axial.Schema` | `JsonSchema` | `Axial.Schema.JsonSchema` |
-
-You `open` the parent. No stutter. This is clearly intentional: `Data` carries
-`[<CompilationRepresentation(ModuleSuffix)>]` and `[<RequireQualifiedAccess>]`, and `scripts/docgen` already
-addresses symbols as `M:Axial.Schema.JsonSchema.generate` — the symbol id *is* the package id plus member.
-
-**Attempting to "fix" B into A does not work and was tried.** `namespace Axial.Data` plus `module Data`
-yields `Axial.Data.Data`, and the nested syntax module becomes `Axial.Data.Syntax`. The build fails
-across `Axial.Data.Tests` and the generated contract files. B is not a defect; if anything it is the
-better-formed convention.
-
-**The genuine trade-off:**
-
-- **A** makes the `open` name the package you installed, which serves the "install only what you need"
-  claim. It stutters in symbol ids.
-- **B** makes the symbol id equal the package id, which is cleaner for reference addressing and docgen. But
-  `open Axial` and `open Axial.Schema` do not say which package supplied what — and `open Axial.Schema`
-  yielding `JsonSchema` members *only when that package is referenced* is genuinely confusing.
-
-Unifying is a breaking change, therefore free now and expensive after first publish. It is a larger
-decision than it first appears, because unifying on A costs the clean symbol ids docgen relies on, and
-unifying on B makes package attribution invisible in every `open`.
-
-**Independently of that choice, package identity in the reference model (§6 item 5) is required.** Under
-either convention the reference must state which NuGet a type ships in; namespace can never be relied on to
-imply it.
+**Package identity in the reference model (§6 item 5) is still required.** Satellites like
+`Reified.Schema.Json` and `Reified.Schema.Testing` share the `Reified.Schema.*` namespace prefix, so a
+namespace tree can never say which NuGet a type ships in. The reference must state it explicitly.
 
 ---
 
@@ -406,19 +378,29 @@ churns a large tree; doing it first means Axial migrates once, directly onto nes
 
 | Phase | Work | Where |
 | --- | --- | --- |
+This table tracks documentation work. `project-split.md` holds the authoritative split sequence; the two
+agree, with different granularity.
+
+| Phase | Work | Where |
+| --- | --- | --- |
 | 1 | FsLiveDocs items 1–4 | FsLiveDocs |
-| 2 | Fold `Schema.JsonSchema` into `Schema`; move `Data` to convention A | **done** |
-| 3 | Verify split path list; inspect ambiguous examples and tests | combined repo |
-| 4 | `filter-repo` extract to FsFlow; confirm it builds green | new repo |
-| 5 | Rename `Axial.Flow` → `FsFlow`; move the two HTTP adapters | FsFlow |
-| 6 | Remove Flow paths from Axial | Axial |
+| 2 | Fold `Schema.JsonSchema` into `Schema`; unify the namespace convention | **done** |
+| 3 | Verify split path list; split the seven cross-product projects | combined repo |
+| 4 | `filter-repo` extract to Reified; confirm it builds green | new repo |
+| 5 | Rename in each repository: `Axial.*` → `Reified.*` there, `Axial.Flow*` → `Axial*` here | both |
+| 6 | Remove the description paths from Axial | Axial |
 | 7 | Migrate docs to FsLiveDocs; stop committing generated reference | both |
 | 8 | Reorganise into task folders (§5.1, §5.2) | both |
 | 9 | Getting-starteds, landing pages, the two lead pages (§5.5) | both |
-| 10 | Prefix reservations; publish Axial, then FsFlow | both |
+| 10 | Prefix reservations; publish Reified, then Axial | both |
 
 Phases 2–3 are cheapest in the combined repository. Phase 8 touches nearly every docs file and should not
 run concurrently with other docs work.
+
+**Docs directories move with their product.** `docs/schema`, `docs/values`, `docs/result`, and `docs/data`
+extract to Reified; `docs/flow` stays. `scripts/validate-*-docs.sh` split the same way, and
+`scripts/generate-example-docs.sh` already takes a `schema|flow|all` product argument, so it splits cleanly
+into one per repository.
 
 ---
 
@@ -427,8 +409,11 @@ run concurrently with other docs work.
 1. **Is `Data` a Foundation or a Schema satellite?** It exists because building maps of lists by hand in
    tests and docs was miserable, which is a testing story. But it may be the easiest package to adopt
    first, which argues for prominence.
-2. **Does a plain-ASP.NET serving path need a package?** After the split, Axial declares contracts and
+2. **Does a plain-ASP.NET serving path need a package?** After the split, Reified declares contracts and
    emits OpenAPI but ships no server. Write the "serve it on plain ASP.NET" page first (§5.1, folder 08);
    if the manual wiring turns out to be boilerplate people copy every time, it earns a package. If not, a
    page is the whole answer.
 3. **Flow sections 6–9** — see §5.2.
+4. **How long can Axial's getting-started avoid naming the category?** §1 item 7 says lead with symptoms,
+   not "effect system". Where the phrase first appears, and whether `02-how-it-compares/` is the right place
+   for it, is a writing decision to make when that page is drafted.
