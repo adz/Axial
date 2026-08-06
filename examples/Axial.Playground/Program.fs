@@ -2,8 +2,6 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial.Flow
-open Axial.Result
-open Axial.Constraint
 
 type AppEnv =
     { Prefix: string
@@ -17,9 +15,10 @@ let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
         let! (checkedGreeting: string) =
-            greeting
-            |> Constraint.guard Constraint.present
-            |> Result.mapError (fun _ -> "Blanko")
+            if String.IsNullOrWhiteSpace greeting then
+                Error "Blank greeting"
+            else
+                Ok greeting
 
         return checkedGreeting.ToUpperInvariant()
     }

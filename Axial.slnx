@@ -12,6 +12,7 @@
     <Project Path="examples/Axial.Flow.AotProbe/Axial.Flow.AotProbe.fsproj" />
     <Project Path="examples/Axial.Api/Axial.Api.fsproj" />
     <Project Path="examples/Axial.Examples/Axial.Examples.fsproj" />
+    <Project Path="examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj" />
     <Project Path="examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj" />
     <Project Path="examples/Axial.ReferenceApp/Axial.ReferenceApp.fsproj" />
     <Project Path="examples/Axial.ReferenceApp.Intro/Axial.ReferenceApp.Intro.fsproj" />

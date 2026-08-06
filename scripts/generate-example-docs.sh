@@ -130,19 +130,19 @@ output_file="$schema_staging"
 render_example_section \
   "Refined Catalog Example" \
   "This example shows a request boundary that parses strings, builds refined numeric/text/collection values, chooses a domain union case, and rejects invalid input before the domain record is created." \
-  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
-  "$root_dir/examples/Axial.Examples/RefinedCatalogExample.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RefinedCatalogExample.fs" \
-  "AXIAL_EXAMPLE=refined-catalog dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
+  "$root_dir/examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj" \
+  "$root_dir/examples/Axial.Schema.Examples/RefinedCatalogExample.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Schema.Examples/RefinedCatalogExample.fs" \
+  "AXIAL_EXAMPLE=refined-catalog dotnet run --project examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj --nologo" \
   "refined-catalog"
 
 render_example_section \
   "Refined Value Schema Example" \
   "This example shows total domain conversions built with Schema.convert, composed into a record schema, and lowered to executable checks." \
-  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
-  "$root_dir/examples/Axial.Examples/RefinedValueSchemaExample.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RefinedValueSchemaExample.fs" \
-  "AXIAL_EXAMPLE=refined-value-schema dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
+  "$root_dir/examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj" \
+  "$root_dir/examples/Axial.Schema.Examples/RefinedValueSchemaExample.fs" \
+  "https://github.com/adz/Axial/blob/main/examples/Axial.Schema.Examples/RefinedValueSchemaExample.fs" \
+  "AXIAL_EXAMPLE=refined-value-schema dotnet run --project examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj --nologo" \
   "refined-value-schema"
 
 render_example_section \

@@ -20,6 +20,7 @@
 
   <ItemGroup Condition="'$(DocsBuildScope)' == 'All' Or '$(DocsBuildScope)' == 'Examples'">
     <DocsProject Include="../examples/Axial.Examples/Axial.Examples.fsproj" />
+    <DocsProject Include="../examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj" />
     <DocsProject Include="../examples/Axial.Api/Axial.Api.fsproj" />
     <DocsProject Include="../examples/Axial.Playground/Axial.Playground.fsproj" />
     <DocsProject Include="../examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" />
