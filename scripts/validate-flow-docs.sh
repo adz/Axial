@@ -3,4 +3,4 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-exec bash "$root_dir/scripts/validate-product-docs.sh" flow
+exec bash "$root_dir/scripts/validate-docs.sh"

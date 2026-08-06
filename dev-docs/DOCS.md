@@ -1,101 +1,30 @@
-# Axial Documentation Guide
+# Documentation guide
 
-Source of truth for Hugo + Docsy maintenance and documentation style.
+Axial has one user-facing documentation area: `docs/flow/`. The root landing page is `docs/index.md`; `llms.txt` and `docs/flow/llms.txt` are hand-written machine entry points.
 
-## Audience and voice
+Write guides for library users under `docs/flow/`. Keep contributor instructions under `dev-docs/` or `AGENTS.md`, never in user documentation.
 
-Write for pragmatic F# devs solving dependency, async, and typed-failure problems.
+## Sources and generated output
 
-- Skip category theory.
-- Explain trade-offs vs `Async<Result<_,_>>` or FsToolkit.
-- Prefer concise, code-first examples.
-- Use direct, instructive language.
-- Start with the user's problem, not the abstraction.
-- Stay factual and avoid marketing, filler, or internal narrative.
+- Public API facts originate in source XML comments.
+- `scripts/docgen` generates `docs/flow/reference/**`.
+- `scripts/generate-example-docs.sh flow` regenerates `docs/flow/examples.md` from runnable projects.
+- `scripts/populate-hugo-content.sh` stages guides into ignored `site/content/**`.
+- `site/public/**`, `output/**`, `.fsdocs/**`, and build artifacts are generated and untracked.
 
-## Hugo workflow
+Do not hand-edit generated reference pages as the primary fix. Update source comments or generator inputs and regenerate.
 
-- The short Axial index lives at `/docs/index.md`.
-- Data guides and generated reference live under `/docs/data`.
-- Schema guides and generated reference live under `/docs/schema`.
-- Flow guides and generated reference live under `/docs/flow`.
-- The Hugo site source lives in `/site`.
-- Content is synced from `/docs` to `/site/content` via `scripts/populate-hugo-content.sh`.
-- The site uses Hugo with the Docsy theme.
+## Style
 
-## Docs Source Of Truth
+Name the API and behavior directly. Prefer short executable examples to restating signatures. Use fenced `fsharp` blocks for F# and verify every local link.
 
-The docs system has two different kinds of pages:
+## Commands
 
-There are five product documentation areas, one per top-nav entry:
+```bash
+bash scripts/generate-example-docs.sh flow
+bash scripts/generate-api-docs.sh flow
+bash scripts/validate-docs.sh
+npm run build --prefix site
+```
 
-- hand-written Result guides and its API member pages live in `docs/result/`
-- hand-written Values guides (Constraint, Refined, Parse) and their API member pages live in `docs/values/`
-- hand-written Data guides and its API member pages live in `docs/data/`
-- hand-written Schema guides and its API member pages live in `docs/schema/`
-- hand-written Flow guides and its API member pages live in `docs/flow/`
-
-Values is a navigation grouping over three independently installable packages. There is no `Axial.Values` package,
-so no page may tell a reader to install one.
-
-The API member pages are generated from the XML doc comments in `src/`. When you change public API wording, update the code comments first and then regenerate the reference pages.
-
-The pipeline is:
-
-1. Edit the public XML doc comments in `src/`.
-2. Run `bash scripts/validate-result-docs.sh`, `bash scripts/validate-values-docs.sh`,
-   `bash scripts/validate-data-docs.sh`, `bash scripts/validate-schema-docs.sh`, or
-   `bash scripts/validate-flow-docs.sh` for the affected product.
-3. Review regenerated reference pages with `bash scripts/preview-docs.sh` when browser inspection or screenshots are needed.
-4. Update the hand-written guides in `docs/` as needed.
-
-Do not hand-edit the generated API member pages unless you are fixing a generated-doc bug. If the source comments change, the generated markdown should change with them.
-
-### Generated content
-
-- The "Runnable Examples" page is generated from real code in `/examples/`.
-- Use `scripts/generate-example-docs.sh` to refresh it.
-- Do not edit `site/content/docs/examples/_index.md` directly; it is managed by the population script.
-- The API reference member pages under `docs/result/reference/`, `docs/values/reference/`, `docs/data/reference/`, `docs/schema/reference/`, and `docs/flow/reference/` are generated from the XML docs in `src/`.
-- Update the generator in `scripts/docgen/Program.fs` when the reference structure changes, then rerun
-  `bash scripts/generate-api-docs.sh`. Page groups are routed to a product area there: `result` to `docs/result/`,
-  `constraint`/`refined`/`parse` to `docs/values/`, and so on.
-- The reference index pages and guide pages are hand-written markdown in `docs/`.
-
-### Validate, preview, and deploy
-
-Run `bash scripts/validate-result-docs.sh`, `bash scripts/validate-values-docs.sh`,
-`bash scripts/validate-data-docs.sh`, `bash scripts/validate-schema-docs.sh`, or
-`bash scripts/validate-flow-docs.sh` for routine product documentation validation. Each command builds only that
-product's reference inputs and any examples, regenerates its API pages, syncs Hugo content, and performs a static
-render. Run `bash scripts/validate-docs.sh` at a cross-product phase or release boundary.
-
-Run `bash scripts/preview-docs.sh` for a local live-reload server at `http://localhost:3000` when you need browser review or screenshots. The preview hashes the source, project, and generator inputs and reuses generated docs when those inputs are unchanged. On a cache miss, it builds the shared docs project graph once, then generates runnable examples and API reference pages concurrently. Use `--force-generate` to ignore the cache or `--no-generate` to start from the existing generated docs without checking generator inputs. Stop the preview with `SIGHUP`, `TERM`, `INT`, or by creating `$AXIAL_DOCS_PREVIEW_STOP_FILE` (default `/tmp/axial-docs-preview.stop`).
-
-Use `bash scripts/build-docs-site.sh` only when preparing or checking deployment output. It builds all projects and writes the deployable site to `/output`, so it is heavier than the normal validation path.
-
-## Documentation rules
-
-- Structure API pages around the package and module hierarchy.
-- Use F# code blocks with syntax highlighting (` ```fsharp `).
-- Include "Source-Lifted Notes" for implementation-derived insights.
-- Use small, credible examples before semantic deep-dives.
-- Prefer plain descriptions of what code does. Technical terms are useful when they make the explanation shorter or
-  more exact. Explain a term such as "bind" the first time it appears instead of replacing it with vague wording.
-- When a computation expression is introduced, follow any statement that it "binds" a type with two small examples:
-  first show what `let!`, `do!`, `return!`, and any builder-specific keyword do; then repeat the example with type
-  annotations on the right-hand expressions and the names bound on the left.
-- Add an XML doc comment with an example to every public function.
-- Avoid FAQ-style rhetorical questions.
-- Avoid justifying why a section exists.
-- Avoid promises about future features as an excuse for current gaps.
-
-## LLM and Agent Optimization
-
-We maintain specific files to optimize the experience for AI agents (Claude, Gemini, Codex) used by our library users.
-
-- `llms.txt`: A short product index served at the site root.
-- `docs/data/llms.txt`, `docs/schema/llms.txt`, and `docs/flow/llms.txt`: product-local machine-readable context.
-- `docs/data/agent.md`, `docs/schema/agent.md`, and `docs/flow/agent.md`: product-local user-facing guidance for AI agents.
-
-When the public API changes, ensure both of these files are updated to reflect the current idiomatic "Golden Path."
+Run the full validation and site build at phase or release boundaries.

@@ -60,7 +60,7 @@ dependency weight makes the boundary valuable.
 `Axial` must not depend on any satellite. Process may later depend on the shared framing package, but framing must
 not depend on Process, Network, Serial, or HttpClient.
 
-No public package should depend on `Axial.Result`, `Axial.Constraint`, `Axial.Refined`, or `Axial.Parse`. Each
+No public package should depend on Reified. Each
 package owns its operational error types or accepts
 caller-provided codec errors.
 

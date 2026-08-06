@@ -99,7 +99,7 @@ module WorkflowBasicTests =
     let ``Runnable Flow example docs are generated from executable example projects`` () =
         // Scoped to the flow product deliberately: after the repository split this project moves to
         // FsFlow, where docs/schema and the Schema examples do not exist. The schema half of this
-        // assertion lives in Axial.Schema.Tests.
+        // The source workflow remains cold until explicitly executed.
         let repoRoot = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", ".."))
         let flowDocsPath = Path.Combine(repoRoot, "docs", "flow", "examples.md")
         let generatorPath = Path.Combine(repoRoot, "scripts", "generate-example-docs.sh")

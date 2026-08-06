@@ -1,12 +1,7 @@
 # Axial documentation
 
-Axial contains five independent documentation entry points. Load only the context for the product being used:
+Axial is an asynchronous F# workflow library. Its public model is `Flow<'env,'error,'value>`: required dependencies and expected failures are visible in the workflow type.
 
-- Result composition, `result { }`, and accumulating builders: `/result/llms.txt`
-- Values — Constraint, Refined, and Parse: `/values/llms.txt`
-- Data, structured fixtures, immutable edits, comparisons, and produced-data matching: `/data/llms.txt`
-- Schema, parsing, codecs, contracts, and path-aware diagnostics: `/schema/llms.txt`
-- Flow, effects, services, resources, concurrency, and hosting: `/flow/llms.txt`
+Load `/flow/llms.txt` for API selection, execution, resources, concurrency, services, hosting, and platform guidance. User documentation starts at `/flow/`.
 
-Product documentation starts at `/result/`, `/values/`, `/data/`, `/schema/`, and `/flow/`.
-Values is a navigation grouping over three independently installable packages; there is no `Axial.Values` package.
+Reified is a separate library for constraints, refinements, parsing, structured data, schemas, codecs, and contracts: https://github.com/adz/Reified

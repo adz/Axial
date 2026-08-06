@@ -21,7 +21,6 @@ An app record solves that by bundling dependencies once at the boundary while ke
 ```fsharp
 open System
 open System.Threading.Tasks
-open Axial.Data
 
 type OrderId = OrderId of Guid
 

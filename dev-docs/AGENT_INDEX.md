@@ -1,105 +1,32 @@
 # Axial Agent Index
 
-Open this file after `AGENTS.md` and before broad repository search.
+Read this after `AGENTS.md` and before broad repository search.
 
-## Current Slice
+## Product boundary
 
-The active queue is `dev-docs/TASKS.md`. Keep completed work out of that file, but keep the remaining active queue
-there because loop scripts consume it directly.
+Axial is the workflow product. Core is `src/Axial`; focused operational and hosting packages are the other `src/Axial.*` directories. Reified owns constraints, refinements, parsing, Result helpers, Data, Schema, codecs, and contracts in a separate repository.
 
-Current product direction is in `dev-docs/PLAN.md`. Durable high-level decisions are in
-`dev-docs/decisions/README.md`. Speculative sketches are in `dev-docs/current-ideas/` and should be opened only when the
-task is about promoting, rejecting, or implementing that sketch.
+`src/Axial.Hosting.AspNetCore` and `src/Axial.Hosting.GenHttp` are explicit cross-product adapters. `examples/Axial.ReferenceApp` is retained temporarily as the integration example. They consume Reified packages and are intentionally excluded from `Axial.slnx` until those packages are published; core Axial must never depend on Reified.
 
-Working on `src/Axial.Schema`? Read `dev-docs/schema/internals.md` first (implementation map), and
-`dev-docs/schema/constructor-last.md` for the current authoring-surface direction.
+## Task routing
 
-## Package Graph
+- Core workflow/runtime: `src/Axial/**`, `tests/Axial.Tests/**`
+- Operational services: matching `src/Axial.{Console,FileSystem,HttpClient,Process,PlatformService}` and test projects
+- Hosting: `src/Axial.Hosting*`, `tests/Axial.Hosting.Tests/**`
+- Telemetry: `src/Axial.Telemetry*`, `tests/Axial.Telemetry.Tests/**`
+- User documentation: `docs/flow/**`; read `dev-docs/DOCS.md` first
+- Architecture and queue: `dev-docs/PLAN.md`, `dev-docs/TASKS.md`, `dev-docs/decisions/README.md`
 
-- `Axial`: independent workflow package (`src/Axial/`). Must not depend on the ErrorHandling packages or
-  `Axial.Schema`.
-- `Axial.Result` (`src/Axial.Result/`): generic Result combinators, conversions/extraction helpers, and `result { }`
-  in the `Axial.Result` namespace. Independent leaf.
-- `Axial.Constraint` (`src/Axial.Constraint/`): `Constraint<'value>`, `Violation`, the `ConstraintDescription` read model, and `ConstraintDSL`, all in the `Axial.Constraint` namespace. One value-rule vocabulary; there is no `Check` type and no second catalogue.
-  Returns the standard F# `Result` type; does not depend on `Axial.Result`. Independent leaf.
-- `Axial.Parse` (`src/Axial.Parse/`): `ParseError` and primitive `Parse.*` functions. Independent leaf.
-- `Axial.Refined` (`src/Axial.Refined/`): invariant-carrying types and the operations that justify them. Depends
-  only on `Axial.Constraint`. A type ships only if it makes a partial operation total or removes a branch from consumers;
-  validation-shaped concepts are constraints in `Axial.Constraint` instead.
-- `Axial.Schema` (`src/Axial.Schema/`): schema declaration (`Schema` module), parsing and checking (`Schema.parse`,
-  `Schema.parseRetainingInput`, `Schema.check`), inspection (`Inspect`), contracts,
-  and refined schema adapters (`RefinedSchemas`) in one package. Depends on `Axial.Data`, `Axial.Constraint`, and
-  `Axial.Refined` (never `Axial.Result`). Schema owns path-aware accumulated errors.
-- `Axial.Schema.JsonSchema` (`src/Axial.Schema.JsonSchema/`): JSON Schema generation (`JsonSchema.generate`) in the
-  `Axial.Schema` namespace. Depends on `Axial.Schema`.
-- `Axial.Schema.Json` (`src/Axial.Schema.Json/`): compiled JSON codecs. Depends on `Axial.Schema`.
-- `Axial.Schema.Http` (`src/Axial.Schema.Http/`): host-neutral HTTP boundary support — query/form structured data
-  (`BoundaryInput`), RFC 9457 problem details from parse diagnostics, and OpenAPI 3.1 documents assembled from
-  `EndpointSpec` values. Depends on `Axial.Schema` only; never on `Axial`.
-- `Axial.Schema.Http.AspNetCore` / `Axial.Schema.Http.GenHttp` (`src/Axial.Schema.Http.*/`): host boundaries over
-  `Axial.Schema.Http` and `Axial`. The default API lowers an ordinary endpoint Flow from schema-trusted request
-  input through explicit application services to a native response; lower-level `RetainedParseResult` adapters remain for
-  redisplay and custom boundaries. Routing and app wiring remain the host's idiom.
-- `Axial.Schema.Testing` (`src/Axial.Schema.Testing/`): non-packable FsCheck adapter deriving test data from Schema.
-  Depends on `Axial.Schema` and FsCheck; never move the test-library dependency into a public package.
-- `Axial.Schema.Contracts` (`src/Axial.Schema.Contracts/`): non-packable wire-tier generation library — the
-  `[<DeriveSchema>]` record frontend (`Records.fs`, FCS syntax-only), the `.contract` parser, and the shared
-  resolver/emitter. The `Axial.Schema.Derive` attribute namespace lives in `Axial.Schema` itself (inert metadata).
-  FCS stays tool-tier only: never referenced from a packable library.
-- `Axial.Schema.Contracts.Build` (`src/Axial.Schema.Contracts.Build/`): packable targets-only MSBuild package
-  running `scripts/schemagen` before compile over `<AxialDeriveSchema>`/`<AxialContract>` items.
-- `Axial.*` add-on packages depend on `Axial`.
-- There are no meta-packages. `Axial.ErrorHandling` and the `Axial` umbrella were both deleted; every install is a
-  focused package. **Values** — Constraint, Refined, and Parse — is a documentation grouping only: no package, no
-  namespace. `Axial.ApiShape.Tests` pins this with `no meta-package remains in the graph`.
+## Generated paths
 
-## Open These First
+`docs/flow/reference/**`, `site/content/**`, `site/public/**`, `.fsdocs/**`, `output/**`, `artifacts/**`, `**/bin/**`, and `**/obj/**` are generated and must remain untracked.
 
-- Flow/runtime/layers/services: `src/Axial/**`, relevant `src/Axial.*/*`, `tests/Axial.Tests/*Workflow*`,
-  `tests/Axial.PlatformService.Tests/**`, and `dev-docs/PLAN.md`.
-- Check/Result: `src/Axial.Constraint/Check.fs`, `src/Axial.Result/Result.fs`,
-  `tests/Axial.Constraint.Tests/CheckTests.fs`, `tests/Axial.Result.Tests/ResultTests.fs`,
-  `tests/Axial.ApiShape.Tests/ApiShapeTests.fs`, and `dev-docs/PLAN.md`.
-- Parsing and refined values: `src/Axial.Parse/{Errors,Parse}.fs`, and in `src/Axial.Refined/` (compile order)
-  `Refinement.fs` -> `NonEmpty.fs` -> `Interval.fs` -> `Bounded.fs` -> `Finite.fs` -> `UnitInterval.fs` ->
-  `Refine.fs`. Tests are one file per area under `tests/Axial.Refined.Tests/`. Adding or removing a refined type
-  also means editing the `SchemaDefaults` witnesses in `src/Axial.Schema/Shape.fs` and
-  `src/Axial.Schema/RefinedSchemas.fs`. There are no refined numeric types: a numeric range is a constraint, because
-  F# cannot carry it through arithmetic.
-- Schema metadata/builder: `src/Axial.Schema/Schema.fs`, `tests/Axial.Schema.Tests/Schema*Tests.fs`, and the schema section in
-  `dev-docs/PLAN.md`.
-- Schema input/rules/interpreters: `src/Axial.Schema/{Model,Data,SchemaValidation,RetainedParseResult,Rules}.fs` and
-  `tests/Axial.Schema.Tests/*ParseTests.fs`.
-- User-facing docs: one area per top-nav product — `docs/result/`, `docs/values/`, `docs/data/`, `docs/schema/`,
-  `docs/flow/`. Values covers Constraint, Refined, and Parse and is navigation only. Read `dev-docs/DOCS.md`
-  before editing `docs/**`, source comments, generated reference pages, `llms.txt`, or site content.
-- Agent process/docs: `AGENTS.md`, this file, `dev-docs/TASKS.md`, and `dev-docs/PLAN.md`.
+## Validation
 
-## Generated Or Noisy Paths
-
-Default `rg` ignores generated/vendor-heavy paths through `.rgignore`:
-
-- `docs/result/reference/**`
-- `docs/values/reference/**`
-- `docs/data/reference/**`
-- `docs/schema/reference/**`
-- `docs/flow/reference/**`
-- `site/content/reference/**`
-- `site/_vendor/**`
-- `site/public/**`
-- `BenchmarkDotNet.Artifacts/**`
-- `.fsdocs/**`
-- `output/**`
-
-Search these with `rg -u` or an explicit target only when the task is about generated output, reference docs, site
-artifacts, or build artifacts.
-
-## Validation Commands
-
-- Source/package moves: `bash scripts/check-source-inventory.sh`.
-- Schema CE type-state changes: `bash scripts/check-schema-ce-errors.sh`.
-- Focused .NET tests: `dotnet test <project> --nologo -v minimal`.
-- Public API/doc generator impact: update source comments or generator inputs first, regenerate affected docs, and defer
-  `bash scripts/validate-docs.sh` until a phase or release checkpoint unless the task asks for full validation.
-- Release/deploy doc checkpoint: `bash scripts/validate-docs.sh`, then `npm run build` in `site`.
-- Live docs preview only when browser review is needed: `bash scripts/preview-docs.sh`.
+- `bash scripts/check-source-inventory.sh`
+- `dotnet build Axial.slnx --nologo -v minimal`
+- `dotnet test Axial.slnx --nologo -v minimal`
+- `bash scripts/run-aot-probe.sh`
+- `bash scripts/check-fable-js-surface.sh`
+- `bash scripts/validate-docs.sh`
+- `npm run build` in `site` at release boundaries

@@ -3,201 +3,46 @@
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-product="all"
 skip_build=false
 
 for arg in "$@"; do
   case "$arg" in
-    schema|flow|all) product="$arg" ;;
+    flow) ;;
     --no-build) skip_build=true ;;
-    *) echo "Usage: $0 [schema|flow|all] [--no-build]" >&2; exit 2 ;;
+    *) echo "Usage: $0 [flow] [--no-build]" >&2; exit 2 ;;
   esac
 done
 
-schema_output="${DOCS_SCHEMA_EXAMPLES_OUTPUT:-$root_dir/docs/schema/examples.md}"
-flow_output="${DOCS_FLOW_EXAMPLES_OUTPUT:-$root_dir/docs/flow/examples.md}"
-
-case "$product" in
-  schema) emit_schema=true; emit_flow=false ;;
-  flow) emit_schema=false; emit_flow=true ;;
-  all) emit_schema=true; emit_flow=true ;;
-  *) echo "Usage: $0 [schema|flow|all] [--no-build]" >&2; exit 2 ;;
-esac
-
 if ! $skip_build; then
-  dotnet msbuild "$root_dir/scripts/docs-build.proj" \
-    -t:Build -m -nologo -verbosity:minimal -p:DocsBuildScope=Examples
+  dotnet msbuild "$root_dir/scripts/docs-build.proj" -t:Build -m -nologo -verbosity:minimal -p:DocsBuildScope=Examples
 fi
 
-mkdir -p "$(dirname "$schema_output")" "$(dirname "$flow_output")"
+output="${DOCS_FLOW_EXAMPLES_OUTPUT:-$root_dir/docs/flow/examples.md}"
+staging="$(mktemp "${TMPDIR:-/tmp}/axial-examples.XXXXXX")"
+trap 'rm -f "$staging"' EXIT
 
-# Build the pages in temp files and move them into place only after every section succeeded,
-# so a mid-run failure (or a killed run) can never leave truncated docs behind.
-schema_staging="$(mktemp "${TMPDIR:-/tmp}/axial-schema-examples.XXXXXX")"
-flow_staging="$(mktemp "${TMPDIR:-/tmp}/axial-flow-examples.XXXXXX")"
-trap 'rm -f "$schema_staging" "$flow_staging"' EXIT
+{
+  printf '%s\n' '---' 'weight: 85' 'title: Runnable Examples' 'description: Executable Axial examples mirrored into the documentation.' '---' '' '# Runnable Examples' ''
+  printf '%s\n\n' 'These examples are built and run while this page is generated, keeping the documentation tied to executable code.'
+} > "$staging"
 
-render_code_block() {
-  local language="$1"
-  local file_path="$2"
-
-  printf '```%s\n' "$language"
-  cat "$file_path"
-  printf '\n```\n'
-}
-
-run_example() {
-  local project_path="$1"
-  local example_filter="${2:-}"
-
-  if [[ -n "$example_filter" ]]; then
-    AXIAL_EXAMPLE="$example_filter" dotnet run --project "$project_path" --no-build --no-restore --nologo 2>&1
-  else
-    dotnet run --project "$project_path" --no-build --no-restore --nologo 2>&1
-  fi
-}
-
-render_example_section() {
-  local title="$1"
-  local description="$2"
-  local project_path="$3"
-  local source_file="$4"
-  local source_link="$5"
-  local run_command="$6"
-  local example_filter="${7:-}"
-
-  local example_output
-  printf 'Building docs example: %s\n' "$title"
-
-  if ! example_output="$(run_example "$project_path" "$example_filter")"; then
-    printf 'Docs example failed: %s\n' "$title" >&2
-    printf '%s\n' "$example_output" >&2
-    return 1
-  fi
-
+render_example() {
+  local title="$1" project="$2" source="$3"
+  local observed
+  observed="$(dotnet run --project "$root_dir/$project" --no-build --no-restore --nologo 2>&1)"
   {
     printf '## %s\n\n' "$title"
-    printf '%s\n\n' "$description"
-    printf 'Run it:\n\n'
-    printf '```bash\n%s\n```\n\n' "$run_command"
-    printf 'Source:\n\n'
-    printf -- '- [%s](%s)\n\n' "$(basename "$source_file")" "$source_link"
-    printf 'Source code:\n\n'
-    render_code_block fsharp "$source_file"
-    printf '\n'
-  } >> "$output_file"
+    printf 'Run it:\n\n```bash\ndotnet run --project %s --nologo\n```\n\n' "$project"
+    printf 'Source: [%s](https://github.com/adz/Axial/blob/main/%s)\n\n' "$(basename "$source")" "$source"
+    printf '```fsharp\n'
+    cat "$root_dir/$source"
+    printf '\n```\n\nObserved output:\n\n```text\n%s\n```\n\n' "$observed"
+  } >> "$staging"
 }
 
-write_page_header() {
-  local file="$1"
-  local description="$2"
+render_example 'Playground' 'examples/Axial.Playground/Axial.Playground.fsproj' 'examples/Axial.Playground/Program.fs'
+render_example 'Maintenance patterns' 'examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj' 'examples/Axial.MaintenanceExamples/Program.fs'
+render_example 'Supervision and fiber observability' 'examples/Axial.Examples/Axial.Examples.fsproj' 'examples/Axial.Examples/SupervisionExample.fs'
 
-  {
-    printf -- '---\n'
-    printf 'weight: 85\n'
-    printf 'title: Runnable Examples\n'
-    printf 'description: %s\n' "$description"
-    printf -- '---\n\n'
-    printf '# Runnable Examples\n\n'
-    printf 'This page shows the examples that are executed during the docs build, so the public docs stay tied to real code and observed output.\n\n'
-    printf 'The examples below are built from the repository projects, run with the current source, and then written back into this page.\n\n'
-    printf 'The code blocks keep the important API calls on the same lines as the values they bind, with trailing comments where that makes the signature easier to read.\n'
-    printf 'The examples prefer the normal direct-bind style inside computation expressions, so the docs reflect the recommended day-to-day usage.\n\n'
-  } > "$file"
-}
-
-if $emit_schema; then
-  write_page_header "$schema_staging" "Executable schema, refined, diagnostics, and policy examples mirrored back into the docs."
-fi
-if $emit_flow; then
-  write_page_header "$flow_staging" "Executable workflow boundary examples mirrored back into the docs."
-fi
-
-if $emit_flow; then
-output_file="$flow_staging"
-render_example_section \
-  "Request Boundary Example" \
-  "This example shows a request boundary that pulls a user from a database-like environment, threads a trace id through the request context, and reuses the same validation shape across Flow." \
-  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
-  "$root_dir/examples/Axial.Examples/RequestBoundaryExample.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RequestBoundaryExample.fs" \
-  "AXIAL_EXAMPLE=request-boundary dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
-  "request-boundary"
-fi
-
-if $emit_schema; then
-output_file="$schema_staging"
-render_example_section \
-  "Refined Catalog Example" \
-  "This example shows a request boundary that parses strings, builds refined numeric/text/collection values, chooses a domain union case, and rejects invalid input before the domain record is created." \
-  "$root_dir/examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj" \
-  "$root_dir/examples/Axial.Schema.Examples/RefinedCatalogExample.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Schema.Examples/RefinedCatalogExample.fs" \
-  "AXIAL_EXAMPLE=refined-catalog dotnet run --project examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj --nologo" \
-  "refined-catalog"
-
-render_example_section \
-  "Refined Value Schema Example" \
-  "This example shows total domain conversions built with Schema.convert, composed into a record schema, and lowered to executable checks." \
-  "$root_dir/examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj" \
-  "$root_dir/examples/Axial.Schema.Examples/RefinedValueSchemaExample.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Schema.Examples/RefinedValueSchemaExample.fs" \
-  "AXIAL_EXAMPLE=refined-value-schema dotnet run --project examples/Axial.Schema.Examples/Axial.Schema.Examples.fsproj --nologo" \
-  "refined-value-schema"
-
-render_example_section \
-  "Minimal API Boundary Example" \
-  "This example is a complete ASP.NET Core minimal API where one schema declaration drives JSON body parsing with 400 path diagnostics, trusted-model serialization through the compiled codec, a generated OpenAPI document, and an HTML form with redisplay. Running it with AXIAL_EXAMPLE=smoke starts the server and exercises every endpoint." \
-  "$root_dir/examples/Axial.Api/Axial.Api.fsproj" \
-  "$root_dir/examples/Axial.Api/Program.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Api/Program.fs" \
-  "AXIAL_EXAMPLE=smoke dotnet run --project examples/Axial.Api/Axial.Api.fsproj --nologo" \
-  "smoke"
-
-render_example_section \
-  "Policy Example" \
-  "This example shows Policy adapting raw parsing, refined construction, schema input parsing, intrinsic validation, and environment-aware admission into one workflow error type run with Flow.verify." \
-  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
-  "$root_dir/examples/Axial.Examples/PolicyExamples.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/PolicyExamples.fs" \
-  "AXIAL_EXAMPLE=policy dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
-  "policy"
-fi
-
-if $emit_flow; then
-output_file="$flow_staging"
-render_example_section \
-  'Playground Example' \
-  "This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression." \
-  "$root_dir/examples/Axial.Playground/Axial.Playground.fsproj" \
-  "$root_dir/examples/Axial.Playground/Program.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Playground/Program.fs" \
-  "dotnet run --project examples/Axial.Playground/Axial.Playground.fsproj --nologo"
-
-render_example_section \
-  "Maintenance Example" \
-  "This example shows smaller, focused shapes for maintenance and interop scenarios without switching away from the normal direct-bind style." \
-  "$root_dir/examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" \
-  "$root_dir/examples/Axial.MaintenanceExamples/Program.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.MaintenanceExamples/Program.fs" \
-  "dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --nologo"
-
-render_example_section \
-  "Supervision and Fiber Observability Example" \
-  "This example shows Flow.Runtime.supervise restarting a background worker that dies with a defect, a FiberObserver reporting the defect of a fiber whose fork handle was discarded, and Flow.forkDetached stating intentional fire-and-forget so the report is suppressed." \
-  "$root_dir/examples/Axial.Examples/Axial.Examples.fsproj" \
-  "$root_dir/examples/Axial.Examples/SupervisionExample.fs" \
-  "https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs" \
-  "AXIAL_EXAMPLE=supervision dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo" \
-  "supervision"
-fi
-
-# mktemp creates the staging files with mode 600; the docs should stay world-readable.
-if $emit_schema; then
-  chmod 644 "$schema_staging"
-  mv "$schema_staging" "$schema_output"
-fi
-if $emit_flow; then
-  chmod 644 "$flow_staging"
-  mv "$flow_staging" "$flow_output"
-fi
+mkdir -p "$(dirname "$output")"
+mv "$staging" "$output"

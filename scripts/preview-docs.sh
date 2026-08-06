@@ -24,7 +24,6 @@ generation_fingerprint() {
     find \
       "$root_dir/src" \
       "$root_dir/examples/Axial.Examples" \
-      "$root_dir/examples/Axial.Api" \
       "$root_dir/examples/Axial.Playground" \
       "$root_dir/examples/Axial.MaintenanceExamples" \
       "$root_dir/scripts/docgen" \
@@ -59,21 +58,16 @@ if $generate; then
 
   if ! $force_generate &&
      [ "$fingerprint" = "$cached_fingerprint" ] &&
-     [ -f "$root_dir/docs/schema/examples.md" ] &&
      [ -f "$root_dir/docs/flow/examples.md" ] &&
-     [ -d "$root_dir/docs/data/reference" ] &&
-     [ -d "$root_dir/docs/result/reference" ] &&
-     [ -d "$root_dir/docs/values/reference" ] &&
-     [ -d "$root_dir/docs/schema/reference" ] &&
      [ -d "$root_dir/docs/flow/reference" ]; then
     echo "Docs generator inputs unchanged; reusing cached generated docs."
   else
     dotnet msbuild "$root_dir/scripts/docs-build.proj" \
       -t:Build -m -nologo -verbosity:minimal -p:DocsBuildScope=All
 
-    "$root_dir/scripts/generate-example-docs.sh" --no-build &
+    "$root_dir/scripts/generate-example-docs.sh" flow --no-build &
     examples_pid=$!
-    bash "$root_dir/scripts/generate-api-docs.sh" --no-build &
+    bash "$root_dir/scripts/generate-api-docs.sh" flow --no-build &
     api_pid=$!
 
     generation_status=0

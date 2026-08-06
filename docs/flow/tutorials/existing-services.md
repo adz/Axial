@@ -13,7 +13,6 @@ These are still explicit dependencies. The workflow only sees them when your env
 ## Build An Environment
 
 ```fsharp
-open Axial.Data
 open Axial.PlatformService
 
 type AppEnv =

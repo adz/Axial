@@ -15,7 +15,6 @@ Use these helpers at the application boundary. They are not substitutes for doma
 ```fsharp
 open System
 open System.Threading
-open Axial.Data
 
 type CheckoutError =
     | GatewayUnavailable

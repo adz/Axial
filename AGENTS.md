@@ -26,18 +26,10 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.PlatformService` or another package whose core type is present in the signature.
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
-- Keep `Axial` and `Axial.Schema` independent; neither package may depend on the other.
+- Core `Axial` and its operational packages must not depend on Reified. Only the explicit HTTP host adapters may reference Reified packages.
 - Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
-- Keep `Constraint<'value>` as the one public value-rule concept. A constraint is a reusable description of valid values; `check` is the operation that runs it. There is no separate `Check` type and no second constructor catalogue: `Axial.Refined` and `Axial.Schema` consume the same `Constraint` value a caller checks directly.
-- Constraints have two tiers, and the split is load-bearing. **Interpreted** constraints are a closed algebra: each built-in constructor builds one `ConstraintAtom` and places that same value in both its description and any violation, so execution, export, and future proof cannot drift. The algebra grows only by Axial release — there is no registration API, and no authored code or string may claim inspectable logic. **Opaque** constraints (`custom`, `customWith`, `notWith`, `contramap`) run normally, report author-supplied prose, and are honestly invisible to export and proof.
-- `Violation` is a diagnostic contract, not an application error union. It is plain comparable data: no closure and no `ConstraintDescription` is reachable from one. Never lower a constraint failure into a parse-shaped `SchemaError` case, and never attach a string code to a violation — identity comes from the atom, and message keys are a rendering projection computed at the edge.
-- Localization is a rendering-edge concern owned by `Renderer`. A `Violation` never carries a culture, resource manager, renderer, Schema `Path`, or application context; `Renderer.context`/`attribute` supply those when a message is produced. Catalogue entries are bare predicates, and the attribute noun, the actual-value clause, and group/list joining are separate composition entries. `Axial.Constraint` must never learn a Schema message identity — Schema pushes its own `MessageFormatSpec` values through the generic renderer instead. The .NET resource-manager constructors are conditionally absent under Fable and must never compile to a silent no-op.
-- Interpreters divide by what they *claim*, not by whether they produce a value. Admission and constraint-satisfying generation fail closed; trusted structural codecs make no constraint claim and stay outside constraint interpretation; documentation and export degrade honestly, emitting what the target enforces and retaining the rest as prose and `x-axial-runtime-constraints`. No interpreter may silently claim enforcement it did not perform.
-- Before lowering an atom to a wire keyword, check that the *path between them* — parse, round, canonicalize — preserves the relation the atom asserts. Portable in storage is not portable in meaning: a regex dialect, a text length, and a decoded GUID each survive the trip as data while changing what they mean at the other end.
-- Boundary supply stays Schema-owned (`Schema.mustSupply`/`mayOmit`). It is decided before a typed value exists, so it is not a value constraint.
-- Value-preserving guards and extraction helpers belong in `Result`, parsing belongs in `Axial.Parse`, and refined value construction belongs in `Axial.Refined`.
 - Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.
-- Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for core workflow, validation, schema, or service-access APIs; use explicit definitions first and consider build-time generation only after the API shape stabilizes.
+- Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for workflow or service-access APIs.
 
 ## Dev Doc Organization
 
@@ -59,11 +51,11 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 ## Test Authoring
 
 - Tests that demonstrate public APIs should use the expected end-user pipeline form, not a lower-level or transitional shape, unless the test is explicitly covering that lower-level API. Public API tests are examples readers copy from; keep their formatting aligned with the authoring style the library intends to teach.
-- Do not define shared fixtures as module-level `let` values in xUnit test modules (schemas, refs, prebuilt inputs). Module-level bindings in test modules can be observed as null before file-level initialization runs, which surfaces as confusing `NullReferenceException`/`ArgumentNullException` failures. Build fixtures inside each test or expose them as functions (`let private mySchema () = ...`).
+- Do not define shared fixtures as module-level `let` values in xUnit test modules. Build fixtures inside each test or expose them as functions.
 
 ## Doc Workflow
 
-- Treat `docs/schema/reference/**`, `docs/flow/reference/**`, `docs/examples/README.md`, and versioned docs as generated outputs or generator-backed outputs. The three `llms.txt` files are hand-written product entry points.
+- Treat `docs/flow/reference/**`, `docs/examples/README.md`, and versioned docs as generated outputs or generator-backed outputs. Root `llms.txt` and `docs/flow/llms.txt` are hand-written product entry points.
 - When changing an API, update the source comments and the doc generator inputs first, then regenerate the docs. Do not hand-edit generated reference pages as the primary fix.
 - When a user-facing guide needs to cite a new or renamed API, update the source comments and reference pages in the same pass, then run the generators immediately.
 - For small checkbox tasks, regenerate directly affected docs as needed but defer `bash scripts/validate-docs.sh` until the phase end or a release/deploy checkpoint. `dev-docs/**` idea/planning notes do not require validation. For release/deploy checks, also run `npm run build` in `site`.

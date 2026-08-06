@@ -1,120 +1,14 @@
 ---
 weight: 85
 title: Runnable Examples
-description: Executable workflow boundary examples mirrored back into the docs.
+description: Executable Axial examples mirrored into the documentation.
 ---
 
 # Runnable Examples
 
-This page shows the examples that are executed during the docs build, so the public docs stay tied to real code and observed output.
+These examples are built and run while this page is generated, keeping the documentation tied to executable code.
 
-The examples below are built from the repository projects, run with the current source, and then written back into this page.
-
-The code blocks keep the important API calls on the same lines as the values they bind, with trailing comments where that makes the signature easier to read.
-The examples prefer the normal direct-bind style inside computation expressions, so the docs reflect the recommended day-to-day usage.
-
-## Request Boundary Example
-
-This example shows a request boundary that pulls a user from a database-like environment, threads a trace id through the request context, and reuses the same validation shape across Flow.
-
-Run it:
-
-```bash
-AXIAL_EXAMPLE=request-boundary dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
-```
-
-Source:
-
-- [RequestBoundaryExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/RequestBoundaryExample.fs)
-
-Source code:
-
-```fsharp
-module RequestBoundaryExample
-
-open System
-open System.Threading
-open System.Threading.Tasks
-open Axial
-open Axial.Result
-open Axial.Constraint
-
-type User =
-    { Id: int
-      Name: string }
-
-type AppDb =
-    { FindUser: int -> User option }
-
-type RequestEnv =
-    { TraceId: Guid
-      Prefix: string
-      Db: AppDb
-      LoadSuffix: Task<string> }
-
-let validateName (name: string) : Result<string, string> =
-    name
-    |> Constraint.guard Constraint.present
-    |> Result.mapError (fun _ -> "name is required")
-
-let loadUser : Flow<RequestEnv, string, User> =
-    flow {
-        let! db = Flow.read _.Db // Flow<RequestEnv, string, AppDb>
-        let! user = db.FindUser 42 |> Flow.fromOption "user not found" // Flow<RequestEnv, string, User>
-        return user
-    }
-
-let renderTrace : Flow<RequestEnv, string, string> =
-    flow {
-        let! env = Flow.env // Flow<RequestEnv, string, RequestEnv>
-        let! user = loadUser // Flow<RequestEnv, string, User>
-        let! validName = validateName user.Name // Flow<RequestEnv, string, string>
-        return $"{env.Prefix} [{env.TraceId}] {validName}"
-    }
-
-let publishResponse : Flow<RequestEnv, string, string> =
-    flow {
-        let! env = Flow.env // Flow<RequestEnv, string, RequestEnv>
-        let! user = loadUser // Flow<RequestEnv, string, User>
-        let! suffix = env.LoadSuffix // Flow<RequestEnv, string, string>
-        return $"{env.Prefix} [{env.TraceId}] {user.Name}{suffix}"
-    }
-
-let run () =
-    let environment =
-        { TraceId = Guid.Parse "11111111-1111-1111-1111-111111111111"
-          Prefix = "Hello"
-          Db =
-            { FindUser =
-                function
-                | 42 -> Some { Id = 42; Name = "Ada" }
-                | _ -> None }
-          LoadSuffix = Task.FromResult "!" }
-
-    let syncResult =
-        loadUser
-        |> fun workflow -> workflow.RunSynchronously(environment)
-
-    let asyncResult =
-        renderTrace
-        |> fun workflow -> workflow.RunSynchronously(environment)
-
-    let taskResult =
-        publishResponse
-        |> fun workflow -> workflow.RunSynchronously(environment)
-
-    printfn "Flow result: %A" syncResult
-    printfn "Flow result: %A" asyncResult
-    printfn "Flow result: %A" taskResult
-    // Flow result: Ok { Id = 42; Name = "Ada" }
-    // Flow result: Ok "Hello [11111111-1111-1111-1111-111111111111] Ada"
-    // Flow result: Ok "Hello [11111111-1111-1111-1111-111111111111] Ada!"
-
-```
-
-## Playground Example
-
-This example shows the same core boundary across Flow using the normal direct-bind style inside each computation expression.
+## Playground
 
 Run it:
 
@@ -122,19 +16,13 @@ Run it:
 dotnet run --project examples/Axial.Playground/Axial.Playground.fsproj --nologo
 ```
 
-Source:
-
-- [Program.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Playground/Program.fs)
-
-Source code:
+Source: [Program.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Playground/Program.fs)
 
 ```fsharp
 open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Result
-open Axial.Constraint
 
 type AppEnv =
     { Prefix: string
@@ -148,9 +36,10 @@ let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
         let! (checkedGreeting: string) =
-            greeting
-            |> Constraint.guard Constraint.present
-            |> Result.mapError (fun _ -> "Blanko")
+            if String.IsNullOrWhiteSpace greeting then
+                Error "Blank greeting"
+            else
+                Ok greeting
 
         return checkedGreeting.ToUpperInvariant()
     }
@@ -192,9 +81,15 @@ let main _ =
 
 ```
 
-## Maintenance Example
+Observed output:
 
-This example shows smaller, focused shapes for maintenance and interop scenarios without switching away from the normal direct-bind style.
+```text
+Flow: Success "Hello Ada"
+Async: Success "HELLO ADA"
+Task: Success "Hello Ada!"
+```
+
+## Maintenance patterns
 
 Run it:
 
@@ -202,19 +97,13 @@ Run it:
 dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --nologo
 ```
 
-Source:
-
-- [Program.fs](https://github.com/adz/Axial/blob/main/examples/Axial.MaintenanceExamples/Program.fs)
-
-Source code:
+Source: [Program.fs](https://github.com/adz/Axial/blob/main/examples/Axial.MaintenanceExamples/Program.fs)
 
 ```fsharp
 open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Result
-open Axial.Constraint
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
     let result = workflow.RunSynchronously(env)
@@ -263,21 +152,23 @@ let main _ =
 
 ```
 
-## Supervision and Fiber Observability Example
+Observed output:
 
-This example shows Flow.Runtime.supervise restarting a background worker that dies with a defect, a FiberObserver reporting the defect of a fiber whose fork handle was discarded, and Flow.forkDetached stating intentional fire-and-forget so the report is suppressed.
+```text
+Flow: Success 21
+Async: Success 42
+Task: Success 25
+```
+
+## Supervision and fiber observability
 
 Run it:
 
 ```bash
-AXIAL_EXAMPLE=supervision dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
+dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
 ```
 
-Source:
-
-- [SupervisionExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs)
-
-Source code:
+Source: [SupervisionExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs)
 
 ```fsharp
 module SupervisionExample
@@ -365,5 +256,20 @@ let run () =
     unobservedDefectReporting ()
     intentionalFireAndForget ()
 
+```
+
+Observed output:
+
+```text
+=== Supervision and fiber observability ===
+-- Flow.Runtime.supervise: restart a background worker that dies with a defect
+  result after 3 attempts: Success "worker succeeded on attempt 3"
+-- FiberObserver: a discarded fork handle whose fiber dies is reported
+  [observer] fiber 4 died: background job blew up
+  [observer] UNOBSERVED DEFECT from fiber 4: background job blew up
+  result: Success "main workflow finished fine"
+-- Flow.forkDetached: intentional fire-and-forget is not reported as unobserved
+  [observer] fiber 6 died: best-effort work failed
+  result: Success "no unobserved-defect report for detached work"
 ```
 

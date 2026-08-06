@@ -21,7 +21,6 @@ Use a layer when you need to:
 open System
 open System.Threading
 open System.Threading.Tasks
-open Axial.Data
 
 type IOrders =
     abstract Save : string -> Task<unit>

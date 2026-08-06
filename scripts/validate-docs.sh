@@ -6,8 +6,8 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HUGO_BASEURL="${HUGO_BASEURL:-http://localhost:3000/}"
 validate_dir="${AXIAL_DOCS_VALIDATE_DIR:-"$root_dir/.fsdocs/validate"}"
 
-"$root_dir/scripts/generate-example-docs.sh" all
-bash "$root_dir/scripts/generate-api-docs.sh" all
+"$root_dir/scripts/generate-example-docs.sh" flow
+bash "$root_dir/scripts/generate-api-docs.sh" flow
 bash "$root_dir/scripts/populate-hugo-content.sh"
 
 hugo --source "$root_dir/site" --destination "$validate_dir" --baseURL "$HUGO_BASEURL" --cleanDestinationDir
@@ -23,7 +23,7 @@ assert_edit_link() {
   fi
 }
 
-assert_edit_link "schema/getting-started/index.html" "docs/schema/getting-started.md"
-assert_edit_link "schema/reference/schema/t-schema-schema/index.html" "docs/schema/reference/schema/t-schema-schema.md"
+assert_edit_link "flow/getting-started/index.html" "docs/flow/getting-started/_index.md"
+test -f "$validate_dir/flow/reference/flow/index.html"
 
 echo "Docs validation build written to $validate_dir"

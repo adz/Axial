@@ -12,7 +12,7 @@ Write asynchronous F# workflows whose expected failures and required dependencie
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 > [!WARNING]
-> Axial is pre-1.0. The package and API names are being finalized before the first release under this name.
+> Axial is pre-1.0 and its API may change before the first stable release.
 
 ## Your first flow
 
@@ -44,7 +44,9 @@ Flow also carries cancellation, resource scopes, concurrency, retries, schedulin
 
 ## Install
 
-Axial has not been published under its final package ID. The first prerelease will use `Axial`; the source tree still uses `Axial` until the post-split rename commit.
+```bash
+dotnet add package Axial
+```
 
 ## Packages
 
@@ -55,8 +57,7 @@ The core is independent. Add service and hosting packages only when the workflow
 - `Axial.Console`, `Axial.FileSystem`, `Axial.HttpClient`, `Axial.Process` — mockable operational services
 - `Axial.Hosting`, `Axial.Hosting.Node`, `Axial.Hosting.Browser` — application lifecycle integrations
 - `Axial.Telemetry` — tracing and runtime observability
-
-The package list describes the settled names. Current project paths retain `Axial*` until the rename commit.
+- `Axial.Hosting.AspNetCore`, `Axial.Hosting.GenHttp` — optional adapters for serving Reified HTTP contracts
 
 ## Documentation and examples
 

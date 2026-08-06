@@ -8,18 +8,26 @@ cd "$root_dir"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
-find src tests -name '*.fsproj' -print | sort > "$tmp_dir/projects.actual"
+find src tests -name '*.fsproj' \
+  ! -path 'src/Axial.Hosting.AspNetCore/*' \
+  ! -path 'src/Axial.Hosting.GenHttp/*' \
+  ! -path 'tests/Axial.Hosting.Http.Tests/*' \
+  -print | sort > "$tmp_dir/projects.actual"
 grep -o 'Path="[^"]*\.fsproj"' Axial.slnx \
   | sed 's/^Path="//; s/"$//' \
   | grep -E '^(src|tests)/' \
   | sort > "$tmp_dir/projects.expected"
 
-find src tests -name '*.fs' -print | sort > "$tmp_dir/sources.actual"
+find src tests -name '*.fs' \
+  ! -path 'src/Axial.Hosting.AspNetCore/*' \
+  ! -path 'src/Axial.Hosting.GenHttp/*' \
+  ! -path 'tests/Axial.Hosting.Http.Tests/*' \
+  -print | sort > "$tmp_dir/sources.actual"
 
 > "$tmp_dir/sources.expected"
 while IFS= read -r project; do
   project_dir="$(dirname "$project")"
-  # A project may compile no sources at all (targets-only packages like Axial.Schema.Contracts.Build).
+  # A project may compile no sources at all (projects with no F# compile items).
   { grep -o '<Compile Include="[^"]*\.fs"' "$project" || true; } \
     | sed 's/^<Compile Include="//; s/"$//' \
     | while IFS= read -r include_path; do
