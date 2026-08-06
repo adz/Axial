@@ -439,8 +439,8 @@ agree, with different granularity.
 | --- | --- | --- |
 | 1 | FsLiveDocs items 1–4 | FsLiveDocs |
 | 2 | Fold `Schema.JsonSchema` into `Schema`; unify the namespace convention | **done** |
-| 3 | Verify split path list; split the seven cross-product projects | combined repo |
-| 4 | `filter-repo` extract to Reified; confirm it builds green | new repo |
+| 3 | Verify split path list; separate product examples and host-neutral/adapter HTTP tests | combined repo — complete |
+| 4 | `filter-repo` extract to Reified; prune generated history; confirm it builds green | local Reified repo — complete; remote pending |
 | 5 | Rename in each repository: `Axial.*` → `Reified.*` there, `Axial.Flow*` → `Axial*` here | both |
 | 6 | Remove the description paths from Axial | Axial |
 | 7 | Migrate docs to FsLiveDocs; stop committing generated reference | both |

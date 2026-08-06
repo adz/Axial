@@ -480,8 +480,8 @@ Update repository URLs and source-link metadata before publishing from the new l
 | 4 | Stop committing generated reference and `site/content` | **done** — 8d574579 |
 | 5 | Split the version property in two; create package-consumer fixtures | **done** — ddcd9640 |
 | 6 | Verify the effect system builds and tests with no description source present | **done** — with one caveat below |
-| 7 | Split the six "must split in two" projects, plus `Axial.Flow.Tests` | not started — **now a prerequisite for phase 8**, see the caveat |
-| 8 | `filter-repo` into Reified; install maintainer files and CI; confirm green | blocked — needs `git-filter-repo` installed and the target repository created |
+| 7 | Split cross-product examples and tests | **in progress** — product examples and HTTP tests are split; the combined reference/integration examples deliberately stay in Axial for now; focused Fable and API-shape replacements remain before phase 11 |
+| 8 | `filter-repo` into Reified; install maintainer files and CI; confirm green | **local extraction complete** — `/home/adam/projects/Reified`, generated history pruned, standalone solution builds and retained tests pass; remote, maintainer cleanup, and CI remain |
 | 9 | Rename in each repository: `Axial.*` → `Reified.*` there, `Axial.Flow*` → `Axial*` and the adapters here | not started — see below |
 | 10 | Publish prerelease Reified packages; run adapters against them | not started |
 | 11 | Remove the description paths from Axial | not started |
