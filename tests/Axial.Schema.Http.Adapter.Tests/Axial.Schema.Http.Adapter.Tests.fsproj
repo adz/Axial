@@ -9,8 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Fixtures.fs" />
-    <Compile Include="BoundaryTests.fs" />
+    <Compile Include="AspNetCoreAdapterTests.fs" />
+    <Compile Include="GenHttpAdapterTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,10 +26,16 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Unquote" Version="7.0.0" />
+    <PackageReference Include="GenHTTP.Core" Version="10.5.3" />
+    <PackageReference Include="GenHTTP.Modules.Functional" Version="10.5.3" />
+    <PackageReference Include="GenHTTP.Modules.Layouting" Version="10.5.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Schema.Http\Axial.Schema.Http.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.Http.AspNetCore\Axial.Schema.Http.AspNetCore.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.Http.GenHttp\Axial.Schema.Http.GenHttp.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Schema.Json\Axial.Schema.Json.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Data\Axial.Data.fsproj" />
   </ItemGroup>
 

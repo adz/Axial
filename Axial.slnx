@@ -73,6 +73,7 @@
     <Project Path="tests/Axial.Schema.Json.Tests/Axial.Schema.Json.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Tests/Axial.Schema.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Http.Tests/Axial.Schema.Http.Tests.fsproj" />
+    <Project Path="tests/Axial.Schema.Http.Adapter.Tests/Axial.Schema.Http.Adapter.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Contracts.Tests/Axial.Schema.Contracts.Tests.fsproj" />
     <Project Path="tests/Axial.Schema.Testing.Tests/Axial.Schema.Testing.Tests.fsproj" />
     <Project Path="tests/Axial.Flow.PlatformService.Tests/Axial.Flow.PlatformService.Tests.fsproj" />
