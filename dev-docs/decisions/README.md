@@ -4,27 +4,24 @@ This file records only decisions that remain necessary to understand Axial. Impl
 
 ## 2026-08-07: Axial is the workflow product
 
-- The repository contains the Flow side of the former combined project. Constraint, Refinements, Parse, Result, Data, Schema, codecs, and contracts belong to [Reified](https://github.com/adz/Reified).
+- This project is workflows and their operational surface. Constraints, refinements, parsing, result composition, structured data, schema, codecs, and contracts were removed to a separate project and are out of scope here.
 - `Axial.Flow` became the `Axial` package and namespace. Add-ons became `Axial.*`; pre-1.0 compatibility packages and namespace aliases were not retained.
-- Core `Axial` and its operational packages have no Reified dependency.
-- `Axial.Hosting.AspNetCore` and `Axial.Hosting.GenHttp` are explicit optional integrations over Reified HTTP contracts. The retained reference application is temporary integration evidence and should eventually move to a separate examples repository.
+- Core `Axial` and its operational packages take no dependency outside this project.
+- `Axial.Hosting.AspNetCore` and `Axial.Hosting.GenHttp` are the sole exception: explicit optional integrations that serve externally declared HTTP contracts, consumed as released packages. The retained reference application is temporary integration evidence and should eventually move to a separate examples repository.
 
-## 2026-08-07: Why these two names
+## 2026-08-07: Why the name is Axial
 
-Both names are load-bearing and the reasoning is not recoverable from the code.
+The reasoning is not recoverable from the code.
 
-- **Axial went to the workflow side, not the description side.** It never meant anything for constraints and schema — "along an axis" says nothing about declaring a rule once and deriving a parser, a codec, and a contract from it. It reads better against directed, controlled execution. Nothing had shipped under the name, so the move cost nothing.
-- **Reified names the decision the description side rests on.** A `Constraint<'value>` is not a `'value -> bool`; it carries its description, and a violation carries the constraint atom and the offending value as data rather than as rendered prose. Rendering, localization, JSON Schema emission, and derived fixtures are only possible because the rule is an inspectable value. That is reification in the strict sense.
+- **The name belongs on the workflow side.** "Along an axis" reads as directed, controlled execution. It said nothing useful about the value and model work that used to share this repository, which is part of why that work is no longer here.
 - **`FsFlow` was considered and rejected.** The published 0.6 had no users beyond CI, so there was no continuity to protect, and "Flow" reads as workflow engine — Airflow, Prefect, Camunda — for a library that is not one.
-- **This repository kept its history because the workflow side is the trunk.** The initial commit is the effect system; the description packages appear months later. So Reified was extracted out and this repository stayed intact, rather than the reverse.
+- **This repository kept its history because the workflow side is the trunk.** The initial commit is the effect system; everything else arrived months later. So the rest was extracted out and this repository stayed intact, rather than the reverse.
 
 ## 2026-08-07: Do not lead with "effect system"
 
 A positioning rule, not a style preference. It governs how the documentation is structured.
 
 Most .NET developers and many F# developers have never used an effect system, and the phrase produces blank stares. Lead with symptoms — failures that are not visible in a signature, code that cannot be tested without a real database, retry logic copy-pasted at every call site — and let the reader meet the category afterwards. Polly is the precedent: an unfamiliar concept carried by an opaque name and a concrete pitch.
-
-The asymmetry with Reified is deliberate. Reified leads with its concept, because "the rule and its message are the same object, so they cannot drift" lands the moment it is explained. This one does not, so it waits.
 
 ## Public workflow model
 

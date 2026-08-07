@@ -8,4 +8,4 @@ Active sketches:
 - `flow-stream-proving.md` — prove resource-safe, portable `FlowStream` semantics through concrete transport slices
 - `flow-transport-packages.md` — package and API direction for transports, framing, networking, serial, WebSocket, streaming HTTP/SSE, and compression
 
-Reified design work belongs in the Reified repository.
+Sketches for other projects belong in their own repositories.

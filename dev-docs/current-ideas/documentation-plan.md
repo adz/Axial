@@ -35,7 +35,7 @@ Numeric prefixes order them and are stripped from URLs. `docs/flow/` collapses i
 08-streams/
 09-observability/            Telemetry (+JavaScript)
 10-platforms-and-hosting/    providing an env and hooking it up
-11-http/                     HttpClient, and serving Reified.Schema contracts
+11-http/                     HttpClient, and serving externally declared HTTP contracts
 12-testing/                  fakes, layer swapping
 13-notes/                    benchmarks, AOT/trimming/Fable detail
 ```
@@ -103,8 +103,8 @@ so they cannot be interleaved. Separate top-level areas, as in Effect (Docs + AP
 - **Docs** — the task folders above.
 - **Reference** — the generated entity tree, enriched per entity by hand-written prose.
 - **Packages** — install matrix and dependency graph. Separate from Reference because "what do I install" is
-  asked far more often than "what is the signature of X". `Axial.Hosting.AspNetCore` and
-  `Axial.Hosting.GenHttp` are the only packages that pull Reified, and the matrix should say so plainly.
+  asked far more often than "what is the signature of X". The two hosting adapters are the only packages
+  carrying a dependency outside this project, and the matrix should say so plainly.
 
 ## FsLiveDocs prerequisites
 
@@ -138,9 +138,6 @@ let summary = docs |> Map.tryFind e.Id |> Option.defaultValue e.SummaryHtml
 So any namespace, module, or type can carry a full authored page keyed by its entity id. With `<example>`
 blocks verified against the real assembly and snippet transclusion, reference depth lives next to the code
 and cannot drift.
-
-Reified needs items 1–6 too, so whichever product migrates first pays for both — coordinate rather than
-filing the request twice.
 
 ## Sequencing
 
