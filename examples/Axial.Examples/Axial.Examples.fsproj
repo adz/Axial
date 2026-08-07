@@ -6,8 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ServiceExamples.fs" />
+    <Compile Include="RequestBoundaryExample.fs" />
+    <Compile Include="PolicyExamples.fs" />
     <Compile Include="SupervisionExample.fs" />
     <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
