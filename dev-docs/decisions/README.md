@@ -20,7 +20,7 @@ Both names are load-bearing and the reasoning is not recoverable from the code.
 
 ## 2026-08-07: Do not lead with "effect system"
 
-A positioning rule, not a style preference. It governs the documentation plan in `dev-docs/current-ideas/documentation-plan.md`.
+A positioning rule, not a style preference. It governs how the documentation is structured.
 
 Most .NET developers and many F# developers have never used an effect system, and the phrase produces blank stares. Lead with symptoms — failures that are not visible in a signature, code that cannot be tested without a real database, retry logic copy-pasted at every call site — and let the reader meet the category afterwards. Polly is the precedent: an unfamiliar concept carried by an opaque name and a concrete pitch.
 
