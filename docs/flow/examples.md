@@ -261,15 +261,29 @@ let run () =
 Observed output:
 
 ```text
+Flow result: Success { Id = 42
+          Name = "Ada" }
+Flow result: Success "Hello [11111111-1111-1111-1111-111111111111] Ada"
+Flow result: Success "Hello [11111111-1111-1111-1111-111111111111] Ada!"
+
+Policy examples
+  accepted:            Success { Sku = "SKU-1"
+          Quantity = 3 }
+  rejected (not int):  Failure (Fail QuantityNotANumber)
+  rejected (zero):     Failure (Fail QuantityNotPositive)
+  rejected (over cap): Failure (Fail (QuantityOverCap 10))
+  cap disabled:        Success { Sku = "SKU-1"
+          Quantity = 50 }
+
 === Supervision and fiber observability ===
 -- Flow.Runtime.supervise: restart a background worker that dies with a defect
   result after 3 attempts: Success "worker succeeded on attempt 3"
 -- FiberObserver: a discarded fork handle whose fiber dies is reported
-  [observer] fiber 4 died: background job blew up
-  [observer] UNOBSERVED DEFECT from fiber 4: background job blew up
+  [observer] fiber N died: background job blew up
+  [observer] UNOBSERVED DEFECT from fiber N: background job blew up
   result: Success "main workflow finished fine"
 -- Flow.forkDetached: intentional fire-and-forget is not reported as unobserved
-  [observer] fiber 6 died: best-effort work failed
+  [observer] fiber N died: best-effort work failed
   result: Success "no unobserved-defect report for detached work"
 ```
 

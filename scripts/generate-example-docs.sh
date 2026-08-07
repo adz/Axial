@@ -29,7 +29,10 @@ trap 'rm -f "$staging"' EXIT
 render_example() {
   local title="$1" project="$2" source="$3"
   local observed
-  observed="$(dotnet run --project "$root_dir/$project" --no-build --no-restore --nologo 2>&1)"
+  # Fiber ids depend on how many fibers the runtime happened to start first, so they
+  # change between runs without the example behaving differently. Elide them to keep
+  # regeneration from producing spurious documentation diffs.
+  observed="$(dotnet run --project "$root_dir/$project" --no-build --no-restore --nologo 2>&1 | sed -E 's/fiber [0-9]+/fiber N/g')"
   {
     printf '## %s\n\n' "$title"
     printf 'Run it:\n\n```bash\ndotnet run --project %s --nologo\n```\n\n' "$project"
