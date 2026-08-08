@@ -61,12 +61,12 @@ The core is independent. Add service and hosting packages only when the workflow
 
 ## Documentation and examples
 
-- [Getting started](docs/flow/getting-started/_index.md)
-- [Dependencies and services](docs/flow/services-and-runtimes/dependencies.md)
-- [Failures and defects](docs/flow/getting-started/failures-and-defects.md)
-- [Concurrency](docs/flow/concurrency/_index.md)
-- [HTTP client](docs/flow/http/_index.md)
-- [Runnable examples](docs/flow/examples.md)
+- [Getting started](docs/01-getting-started/_index.md)
+- [Dependencies and services](docs/04-dependencies/_index.md)
+- [Failures and defects](docs/05-error-handling/_index.md)
+- [Concurrency](docs/06-concurrency-and-state/_index.md)
+- [HTTP client](docs/11-http/_index.md)
+- [Runnable examples](docs/12-testing/runnable-examples.md)
 - [Integration reference application](examples/Axial.ReferenceApp/README.md)
 
 ## Reified integration

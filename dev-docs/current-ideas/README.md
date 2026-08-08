@@ -4,7 +4,6 @@ This folder contains unaccepted Axial design sketches. Promote accepted rules in
 
 Active sketches:
 
-- `documentation-plan.md` — target information architecture for `docs/`: collapse `docs/flow/`, reorganise into reader-task folders, rewrite getting-started and the landing page around symptoms rather than the category, and the FsLiveDocs changes that unblock it
 - `flow-stream-proving.md` — prove resource-safe, portable `FlowStream` semantics through concrete transport slices
 - `flow-transport-packages.md` — package and API direction for transports, framing, networking, serial, WebSocket, streaming HTTP/SSE, and compression
 

@@ -14,12 +14,12 @@ Axial is the workflow product. Core is `src/Axial`; focused operational and host
 - Operational services: matching `src/Axial.{Console,FileSystem,HttpClient,Process,PlatformService}` and test projects
 - Hosting: `src/Axial.Hosting*`, `tests/Axial.Hosting.Tests/**`
 - Telemetry: `src/Axial.Telemetry*`, `tests/Axial.Telemetry.Tests/**`
-- User documentation: `docs/flow/**`; read `dev-docs/DOCS.md` first
+- User documentation: `docs/**`; read `dev-docs/DOCS.md` first
 - Architecture and queue: `dev-docs/PLAN.md`, `dev-docs/TASKS.md`, `dev-docs/decisions/README.md`
 
 ## Generated paths
 
-`docs/flow/reference/**`, `site/content/**`, `site/public/**`, `.fsdocs/**`, `output/**`, `artifacts/**`, `**/bin/**`, and `**/obj/**` are generated and must remain untracked.
+`.livedocs/build-history/**`, `output/**`, `artifacts/**`, `**/bin/**`, and `**/obj/**` are generated and must remain untracked.
 
 ## Validation
 
@@ -29,4 +29,3 @@ Axial is the workflow product. Core is `src/Axial`; focused operational and host
 - `bash scripts/run-aot-probe.sh`
 - `bash scripts/check-fable-js-surface.sh`
 - `bash scripts/validate-docs.sh`
-- `npm run build` in `site` at release boundaries

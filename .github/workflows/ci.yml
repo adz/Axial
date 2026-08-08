@@ -110,24 +110,18 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
+
+      - name: Check out FsLiveDocs
+        uses: actions/checkout@v4
+        with:
+          repository: adz/FsLiveDocs
+          path: tools/FsLiveDocs
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-
-      - name: Set up Hugo
-        uses: peaceiris/actions-hugo@v3
-        with:
-          hugo-version: 'latest'
-          extended: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -140,11 +134,10 @@ jobs:
       - name: Restore .NET
         run: dotnet restore
 
-      - name: Install PostCSS dependencies
-        run: npm install --prefix site
-
-      - name: Build docs site
-        run: bash scripts/build-docs-site.sh
+      - name: Validate docs site
+        env:
+          FSLIVEDOCS_ROOT: ${{ github.workspace }}/tools/FsLiveDocs
+        run: bash scripts/validate-docs.sh
 
       - name: Prepare Pages artifact
         run: touch output/.nojekyll

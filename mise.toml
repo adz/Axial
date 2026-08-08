@@ -1,10 +1,3 @@
 [tools]
-# Pinned exactly rather than floating on "10.0". The docs toolchain needs an SDK whose
-# bundled FSharp.Core is at least 10.1.203: FSharp.Formatting 22.0.1 pulls in
-# FSharp.Compiler.Service 43.12.203, which requires exactly that version. An older SDK
-# (10.0.108 ships FSharp.Core 10.1.826 as a package but resolves the implicit reference
-# lower) downgrades it — NU1605 — and docgen then fails at run time with
-# "Could not load file or assembly 'FSharp.Core, Version=10.1.0.0'".
+# Pinned so local builds and FsLiveDocs extraction use the same compiler/runtime surface as CI.
 dotnet = "10.0.300"
-hugo-extended = "latest"
-go = "latest"

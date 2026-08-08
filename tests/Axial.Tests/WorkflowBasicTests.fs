@@ -1,7 +1,6 @@
 namespace Axial.Tests
 
 open System
-open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
@@ -94,28 +93,6 @@ module WorkflowBasicTests =
         test <@ syncIgnored = Exit.Success () @>
         test <@ syncBound = Exit.Success 42 @>
         test <@ syncRecovered = Exit.Success 7 @>
-
-    [<Fact>]
-    let ``Runnable Flow example docs are generated from executable example projects`` () =
-        // Scoped to the flow product deliberately: after the repository split this project moves to
-        // FsFlow, where docs/schema and the Schema examples do not exist. The schema half of this
-        // The source workflow remains cold until explicitly executed.
-        let repoRoot = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "..", ".."))
-        let flowDocsPath = Path.Combine(repoRoot, "docs", "flow", "examples.md")
-        let generatorPath = Path.Combine(repoRoot, "scripts", "generate-example-docs.sh")
-        let generatedFlowPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}-flow.md")
-
-        try
-            let exitCode, output =
-                runBashScriptWithArguments generatorPath [ "flow" ] [ "DOCS_FLOW_EXAMPLES_OUTPUT", generatedFlowPath ]
-
-            if exitCode <> 0 then
-                failwithf "generate-example-docs.sh flow failed with exit code %d:%s%s" exitCode Environment.NewLine output
-
-            test <@ File.ReadAllText generatedFlowPath = File.ReadAllText flowDocsPath @>
-        finally
-            if File.Exists generatedFlowPath then
-                File.Delete generatedFlowPath
 
     [<Fact>]
     let ``Flow delay reruns from scratch even for async work`` () =

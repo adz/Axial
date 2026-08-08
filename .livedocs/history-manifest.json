@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "version": "0.7.0",
+      "tag": "v0.7.0",
+      "modelSchemaVersion": 1,
+      "modelAsset": "axial-livedocs-model-v1-0.7.0.json",
+      "checksumAsset": "axial-livedocs-model-v1-0.7.0.json.sha256"
+    }
+  ]
+}

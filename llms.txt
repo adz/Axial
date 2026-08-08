@@ -2,6 +2,6 @@
 
 Axial is an asynchronous F# workflow library. Its public model is `Flow<'env,'error,'value>`: required dependencies and expected failures are visible in the workflow type.
 
-Load `/flow/llms.txt` for API selection, execution, resources, concurrency, services, hosting, and platform guidance. User documentation starts at `/flow/`.
+Load `/llms.txt` for API selection, execution, resources, concurrency, services, hosting, and platform guidance. User documentation starts at `/index.html`.
 
 Reified is a separate library for constraints, refinements, parsing, structured data, schemas, codecs, and contracts: https://github.com/adz/Reified

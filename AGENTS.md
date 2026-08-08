@@ -55,10 +55,10 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 
 ## Doc Workflow
 
-- Treat `docs/flow/reference/**`, `docs/examples/README.md`, and versioned docs as generated outputs or generator-backed outputs. Root `llms.txt` and `docs/flow/llms.txt` are hand-written product entry points.
-- When changing an API, update the source comments and the doc generator inputs first, then regenerate the docs. Do not hand-edit generated reference pages as the primary fix.
-- When a user-facing guide needs to cite a new or renamed API, update the source comments and reference pages in the same pass, then run the generators immediately.
-- For small checkbox tasks, regenerate directly affected docs as needed but defer `bash scripts/validate-docs.sh` until the phase end or a release/deploy checkpoint. `dev-docs/**` idea/planning notes do not require validation. For release/deploy checks, also run `npm run build` in `site`.
+- Treat `output/**`, `.livedocs/build-history/**`, and API reference pages as generated outputs. Root `llms.txt` and `docs/llms.txt` are hand-written product entry points.
+- When changing an API, update source comments and any `docs/api/{EntityId}.md` enrichment page, then rebuild with FsLiveDocs. Do not commit generated reference pages.
+- Use numbered task folders under `docs/`; FsLiveDocs strips ordering prefixes from generated URLs.
+- For small checkbox tasks, defer `bash scripts/validate-docs.sh` until the phase end or a release/deploy checkpoint. `dev-docs/**` idea/planning notes do not require validation.
 
 ## Versioning and Compatibility
 
@@ -70,7 +70,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 
 ## Documentation Integrity
 
-- **Validate At Phase Or Release Boundaries:** For small checkbox tasks, defer `bash scripts/validate-docs.sh` until phase end or a release/deploy checkpoint, even after changes to user-facing docs, generated docs, public API signatures, XML comments, doc generator inputs, docs examples, reference docs, `llms.txt`, or site content. Regenerate affected generated docs during the task. `dev-docs/**` idea/planning notes and code-only changes with no public-doc impact do not require validation. Use `bash scripts/preview-docs.sh` only when a live server is needed for browser review or screenshots.
+- **Validate At Phase Or Release Boundaries:** For small checkbox tasks, defer `bash scripts/validate-docs.sh` until phase end or a release/deploy checkpoint, even after changes to user-facing docs, public API signatures, XML comments, examples, reference enrichment, `llms.txt`, or site content. `dev-docs/**` idea/planning notes and code-only changes with no public-doc impact do not require validation. Use `bash scripts/preview-docs.sh` only when a live server is needed for browser review or screenshots.
 - **Preview Lifecycle:** `bash scripts/preview-docs.sh` stops cleanly on `SIGHUP`, `TERM`, or `INT`. It can also be stopped by creating `$AXIAL_DOCS_PREVIEW_STOP_FILE`, which defaults to `/tmp/axial-docs-preview.stop`.
 - **Link Integrity:** Ensure that all cross-references between guides and reference pages are valid. Broken links degrade the experience for both humans and AI agents.
 - **Code Highlighting:** Ensure all code examples are wrapped in triple-backticks with the `fsharp` language hint for proper syntax highlighting.

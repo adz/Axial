@@ -8,12 +8,6 @@
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryBranch>main</RepositoryBranch>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
-    <FsDocsCollectionName>Axial</FsDocsCollectionName>
-    <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
-    <FsDocsLogoSource>content/img/axial-inline-light.svg</FsDocsLogoSource>
-    <FsDocsFaviconSource>content/img/favicon-light.svg</FsDocsFaviconSource>
-    <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
-    <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == ''">README.md</PackageReadmeFile>
   </PropertyGroup>
 

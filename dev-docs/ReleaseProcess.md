@@ -17,9 +17,17 @@ bash scripts/check-fable-js-surface.sh
 bash scripts/run-aot-probe.sh
 bash scripts/pack.sh
 bash scripts/validate-docs.sh
-npm run build --prefix site
 ```
 
-3. Commit, push `main`, then create and push the release tag.
+3. Add the release to `.livedocs/history-manifest.json`. Its tag, API model asset name, checksum asset name, and
+   schema version must match the version in `Directory.Build.props`.
+4. Commit, push `main`, then create and push the release tag.
 
-The release workflow uploads packages and documentation, creates the GitHub release, and publishes NuGet artifacts through the protected `nuget` environment using `NUGET_API_KEY`.
+The tag-triggered release workflow validates Axial, extracts the schema-versioned API model, publishes the model and
+checksum as immutable release assets, verifies every manifest entry, rebuilds all documentation versions from their
+Git tags with the current FsLiveDocs renderer, deploys a GitHub Pages artifact, and publishes NuGet packages through
+the protected `nuget` environment using `NUGET_API_KEY`. Tags and release assets are durable inputs; Pages output is
+disposable.
+
+Repository settings must keep GitHub Pages on the **GitHub Actions** source and immutable releases enabled. The
+workflow calls `gh release verify` after publishing and fails if GitHub does not report the release as immutable.

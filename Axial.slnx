@@ -17,9 +17,6 @@
     <Project Path="examples/Axial.Playground/Axial.Playground.fsproj" />
     <Project Path="examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj" />
   </Folder>
-  <Folder Name="/scripts/">
-    <Project Path="scripts/docgen/docgen.fsproj" />
-  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Axial.Console/Axial.Console.fsproj" />
     <Project Path="src/Axial.FileSystem/Axial.FileSystem.fsproj" />

@@ -1,0 +1,11 @@
+{
+  "repoUrl": "https://github.com/adz/Axial",
+  "siteName": "Axial",
+  "logoText": "Ax",
+  "navigation": [
+    { "label": "Docs", "href": "index.html" },
+    { "label": "Reference", "href": "api.html" },
+    { "label": "Packages", "href": "notes/packages-and-platforms.html" },
+    { "label": "GitHub", "href": "https://github.com/adz/Axial" }
+  ]
+}
