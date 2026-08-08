@@ -2,6 +2,11 @@
   "repoUrl": "https://github.com/adz/Axial",
   "siteName": "Axial",
   "logoText": "Ax",
+  "logoPath": "content/img/hero-lockup-light.png",
+  "logoDarkPath": "content/img/hero-lockup-dark.png",
+  "showSiteName": false,
+  "stylesheet": "content/axial-docs.css",
+  "themes": ["light", "dark"],
   "navigation": [
     { "label": "Docs", "href": "index.html" },
     { "label": "Reference", "href": "api.html" },

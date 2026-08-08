@@ -3,46 +3,25 @@ title: Axial
 weight: 0
 ---
 
-<img src="content/img/axial-inline-light.svg" alt="Axial" width="220" />
-
-# Typed asynchronous workflows for F#
-
-Axial makes a workflow's required services and expected failures visible in its type. The same workflow model
-carries cancellation, resource scopes, structured concurrency, retries, streams, hosting, and telemetry on .NET
-and Fable JavaScript.
-
-<p><a class="btn btn-primary btn-lg" href="getting-started/index.html">Get started</a></p>
-
-## Start with the problem you have
-
-| If this is familiar | Read |
-| --- | --- |
-| Code cannot be tested without a real database or HTTP call | [Dependencies](dependencies/index.html) |
-| A function's expected failures are hidden behind exceptions | [Error handling](error-handling/index.html) |
-| Retry and timeout logic is repeated at each call site | [Scheduling and retries](scheduling-and-retries/index.html) |
-| Tracing or metrics require plumbing through every function | [Observability](observability/index.html) |
-| The same logic must run on the server and in the browser | [Platforms and hosting](platforms-and-hosting/index.html) |
-| You need a mockable HTTP client | [HTTP](http/index.html) |
-
-## One workflow model
-
-`Flow<'env, 'error, 'value>` describes the services a workflow reads, the expected errors it may return, and its
-successful value. Application code supplies the environment at the boundary; tests supply a smaller value with the
-same shape.
-
-```fsharp
-type RegistrationEnv =
-    { LoadUser: int -> Task<Result<User, RegistrationError>>
-      SaveUser: User -> Task<Result<unit, RegistrationError>> }
-
-let register userId : Flow<RegistrationEnv, RegistrationError, unit> =
-    flow {
-        let! loadUser = Flow.read _.LoadUser
-        let! saveUser = Flow.read _.SaveUser
-        let! user = loadUser userId
-        return! saveUser user
-    }
-```
-
-The [getting-started guide](getting-started/index.html) builds and runs this shape before introducing Axial's wider
-vocabulary.
+<div class="docs-home-container axial-landing">
+<div class="docs-home-hero">
+<div class="docs-home-hero-visual">
+<img class="hero-lockup hero-lockup--light" src="content/img/hero-lockup-light.png" alt="Axial" width="1560" height="600" />
+<img class="hero-lockup hero-lockup--dark" src="content/img/hero-lockup-dark.png" alt="Axial" width="1560" height="600" />
+</div>
+<div class="docs-home-copy">
+<span class="eyebrow">Typed asynchronous workflows for F#</span>
+<h1>Put dependencies and expected failures in the workflow type.</h1>
+<div class="lede">
+<p><code>Flow&lt;'env,'error,'value&gt;</code> describes asynchronous work, the services it requires, and the failures callers must handle.</p>
+</div>
+<p>Axial also provides structured concurrency, resource scopes, retries, streams, STM, operational services, hosting, and telemetry over the same workflow model.</p>
+<p><a class="btn btn-primary" href="getting-started/index.html">Get started</a></p>
+</div>
+</div>
+<div class="docs-home-meta">
+<a class="docs-chip" href="getting-started/index.html">Documentation</a>
+<a class="docs-chip" href="https://github.com/adz/Axial">GitHub</a>
+<a class="docs-chip" href="https://github.com/adz/Reified">Reified</a>
+</div>
+</div>
