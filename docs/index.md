@@ -6,8 +6,8 @@ weight: 0
 <div class="docs-home-container axial-landing">
 <div class="docs-home-hero">
 <div class="docs-home-hero-visual">
-<img class="hero-lockup hero-lockup--light" src="content/img/hero-lockup-light.png" alt="Axial" width="1560" height="600" />
-<img class="hero-lockup hero-lockup--dark" src="content/img/hero-lockup-dark.png" alt="Axial" width="1560" height="600" />
+<img class="hero-lockup hero-lockup--light" data-theme-variant="light" src="content/img/hero-lockup-light.png" alt="Axial" width="1560" height="600" />
+<img class="hero-lockup hero-lockup--dark" data-theme-variant="dark" src="content/img/hero-lockup-dark.png" alt="Axial" width="1560" height="600" />
 </div>
 <div class="docs-home-copy">
 <span class="eyebrow">Typed asynchronous workflows for F#</span>

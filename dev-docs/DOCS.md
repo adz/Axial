@@ -34,5 +34,12 @@ bash scripts/validate-docs.sh
 bash scripts/preview-docs.sh
 ```
 
+The preview binds to `0.0.0.0:5000` so it is reachable from another device on the local network. Override either
+value when needed:
+
+```bash
+AXIAL_DOCS_PREVIEW_HOST=127.0.0.1 AXIAL_DOCS_PREVIEW_PORT=8080 bash scripts/preview-docs.sh
+```
+
 Set `FSLIVEDOCS_ROOT` when FsLiveDocs is not checked out at `../../FsLiveDocs/main` relative to this repository.
 Run full validation at phase and release boundaries.
