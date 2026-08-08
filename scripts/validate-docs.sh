@@ -28,9 +28,17 @@ if rg -q 'data-set-theme="(cupcake|dracula|emerald|corporate|retro|cyberpunk)"' 
 fi
 rg -q 'href="api/Axial.Process.ProcessPlan.html"' "$root_dir/output/api.html"
 rg -q 'href="api/Axial.Telemetry.FiberTelemetry.html"' "$root_dir/output/api.html"
+rg -q 'href="api/Axial.Flow.html"' "$root_dir/output/api.html"
+rg -q 'href="api/Axial.Flow`3.html"' "$root_dir/output/api.html"
+rg -q 'href="api/Axial.Schedule`3.html"' "$root_dir/output/api.html"
+
+if rg -q '<details class="group"[^>]*open' "$root_dir/output/api.html"; then
+  echo "Sidebar sections must be initially closed." >&2
+  exit 1
+fi
 
 api_index_entries="$(rg -o 'href="api/[^"]+\.html" class="card' "$root_dir/output/api.html" | wc -l)"
-if (( api_index_entries < 90 )); then
+if (( api_index_entries < 160 )); then
   echo "API index contains only $api_index_entries entries; expected the complete Axial reference." >&2
   exit 1
 fi
