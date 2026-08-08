@@ -106,27 +106,50 @@ so they cannot be interleaved. Separate top-level areas, as in Effect (Docs + AP
   asked far more often than "what is the signature of X". The two hosting adapters are the only packages
   carrying a dependency outside this project, and the matrix should say so plainly.
 
-## FsLiveDocs prerequisites
+## Use FsLiveDocs as it exists
 
-Axial would use it as an ordinary consumer. Items 1–4 are needed before the reorganisation; 5–6 before the
-reference can be honest about packaging.
+FsLiveDocs is not a drop-in replacement for the current Hugo pipeline yet, but it already owns more of the
+pipeline than this sketch originally assumed:
 
-1. **Preserve folder structure in output paths.** The real prerequisite. `ContentProvider.fs:272` flattens
-   every page — `Path.GetFileNameWithoutExtension(f).ToLowerInvariant() + ".html"` — so files discovered
-   recursively via `SearchOption.AllDirectories` collapse to the site root. `docs/guides/foo.md` becomes
-   `/foo.html`, and same-named files in different folders collide silently. `collectGuideOutputs` (:148)
-   flattens identically, and `validateLinks` builds its allowed-set from those names, so link validation
-   changes with this.
-2. **Folder-derived sections.** `View.fs:66-90` hardcodes a `guides` mapping for section id, display name,
-   and order. Derive from folder name instead.
-3. **Numeric prefix stripping** for ordering, in URLs and titles.
-4. **Optional `_index.md` title override** per folder, for irregular casing ("JSON", "HTTP", "F#").
-5. **Package identity in the model.** `PackageModel` is `{ Version; Entities; Scenarios }` — no package
-   name — and `SymbolLister.merge` flattens N packages into one entity list, rebuilding the tree from
-   namespace ids alone. With a dozen packages sharing the `Axial.*` prefix, the reference cannot tell a
-   reader which NuGet a type ships in. Carry a package name through the merge and show it on every page.
-6. **Areas as top nav, derived rather than hardcoded.** `View.fs:63-90` fixes `overview` / `guides` /
-   `api-docs` with labels and ordering; derive them and render in the top bar.
+- `livedocs build` accepts multiple project files, extracts API models from their built DLL and XML files,
+  enriches entities from `docs/api/{EntityId}.md`, renders Markdown below `docs/`, writes `output/`, and runs
+  Pagefind.
+- `livedocs test` executes documented examples. `livedocs generate-tests` generates an xUnit/Verify project
+  for examples marked as snapshots. The migration must choose one verification path and put that exact
+  command in Axial's validation scripts; "FsLiveDocs verifies examples" is not itself a build step.
+- `{{< snippet id="..." >}}`, `{{< example id="..." >}}`, and `xref:` are FsLiveDocs syntax. Existing Hugo
+  `relref` shortcodes are not portable and must be converted during migration.
+- The CLI currently assumes `docs/`, `.livedocs/`, and `output/` relative to its working directory and invokes
+  `npx -y pagefind`. Axial should initially conform to that contract rather than add Axial-only path options.
+
+### Generic guide-tree support now landed in FsLiveDocs
+
+The reusable prerequisite for this information architecture has been implemented in FsLiveDocs:
+
+1. Markdown folder structure is preserved in output paths and local-link validation. Output collisions fail
+   the build instead of silently overwriting a page.
+2. Leading numeric ordering prefixes are removed from folder and page URLs and from inferred page titles.
+3. Sidebar sections are derived from the top-level folder. A section `_index.md` supplies its display title,
+   including intentional casing such as "HTTP" or "F#".
+4. Nested pages receive the correct root-relative navigation links.
+5. An authored `docs/index.md` is the homepage; the renderer no longer overwrites it with the FsLiveDocs
+   product landing page.
+
+### Remaining general FsLiveDocs work
+
+These are separate capabilities and should land as separate tool changes:
+
+1. **Consumer identity and navigation.** The document body is consumer-owned now, but the HTML title,
+   navbar brand, and top navigation still say FsLiveDocs and expose only Home and API. Extend `SiteConfig`
+   with general site identity and navigation/area configuration. Do not add Axial-named branches in the
+   renderer.
+2. **Package provenance.** `PackageModel` is `{ Version; Entities; Scenarios }`; `SymbolLister.merge` merges
+   projects by entity id and discards their package identity. Carry assembly/package identity through
+   extraction and merge, then display it on entity pages. This is required before Axial's Reference and
+   Packages areas can make accurate NuGet claims.
+3. **Versioned guide links.** Confirm nested guide, xref, asset, and Pagefind links under
+   `output/history/{version}/`. Version snapshots currently preserve API data, not a versioned copy of guide
+   source, so the intended historical-guide semantics need an explicit decision and tests.
 
 **Deep reference is authored, not just generated.** `ContentProvider.applyApiDocs` reads
 `docs/api/{EntityId}.md` and substitutes it for that entity's generated summary:
@@ -135,28 +158,26 @@ reference can be honest about packaging.
 let summary = docs |> Map.tryFind e.Id |> Option.defaultValue e.SummaryHtml
 ```
 
-So any namespace, module, or type can carry a full authored page keyed by its entity id. With `<example>`
-blocks verified against the real assembly and snippet transclusion, reference depth lives next to the code
-and cannot drift.
+So any namespace, module, or type can carry a full authored introduction keyed by its entity id. Member
+tables and signatures remain generated. `<example>` blocks and transcluded snippets reduce drift only when
+Axial runs the corresponding FsLiveDocs test/generation commands in CI.
 
 ## Sequencing
 
 | Phase | Work |
 | --- | --- |
-| 1 | FsLiveDocs items 1–4 |
-| 2 | Collapse `docs/flow/` to `docs/`; migrate to FsLiveDocs; stop committing generated reference |
-| 3 | Reorganise into the task folders above |
-| 4 | Rewrite getting-started and the landing page |
-| 5 | FsLiveDocs items 5–6, and the Packages area |
+| 1 | Add general FsLiveDocs consumer identity/navigation configuration; prove a small Axial build against the local tool |
+| 2 | Collapse `docs/flow/` to `docs/`; convert Hugo links; replace the Hugo/docgen scripts with explicit FsLiveDocs build and example-verification commands; stop committing generated reference |
+| 3 | Reorganise into the task folders above using numeric prefixes and `_index.md` section metadata |
+| 4 | Rewrite getting-started and the authored `docs/index.md` landing page |
+| 5 | Add package provenance to FsLiveDocs, then build the Reference and Packages areas |
 
 Phase 3 touches nearly every docs file and should not run concurrently with other docs work.
 
 ## Also outstanding
 
-- **Dead cross-links.** `[text]({{< relref … >}})` renders as plain text with no anchor. The `{{% … %}}`
-  form, absolute links, relative links, and `relref` inside a raw HTML `href` all work. Mechanical
-  substitution, but likely moot if the FsLiveDocs migration lands first. Recount against `docs/flow/` — the
-  original count spanned both products.
+- **Dead cross-links.** Do not repair these by changing Hugo shortcode delimiters. Inventory them against
+  `docs/flow/`, then convert them to relative Markdown links or FsLiveDocs `xref:` links as part of phase 2.
 - **Move meta pages** (`packages-and-platforms.md`, benchmarks, AOT/trimming/Fable notes, comparisons) out
   of the learning path into `13-notes/`.
 - **`overview.md` and `applications.md`** predate the split and should be folded into the landing page and
