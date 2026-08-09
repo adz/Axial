@@ -101,7 +101,7 @@ ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
 
 ## 4. Scoped temporary workspace
 
-Create a temporary directory through [`Axial.FileSystem`](/dependencies/filesystem.html), perform fallible
+Create a temporary directory through [`Axial.FileSystem`](/services/filesystem.html), perform fallible
 steps, remove the directory exactly once on every exit shape.
 
 The ordinary comparison includes `importBatchLeaky`, the classic leak: construction succeeds, then a setup check
@@ -137,8 +137,8 @@ constructor parameters through every caller, and nothing stops a hurried edit fr
 
 The Flow version declares the capability set once as an environment record implementing `IHas<'service>` per
 capability, and business code names only what it uses through the package operations
-([`Clock.now`](/platforms-and-hosting/platform-services.html), [`FileSystem.readAllText`](/dependencies/filesystem.html),
-[`Console.writeLine`](/dependencies/console.html)):
+([`Clock.now`](/platforms-and-hosting/platform-services.html), [`FileSystem.readAllText`](/services/filesystem.html),
+[`Console.writeLine`](/services/console.html)):
 
 ```fsharp
 let writeDailyReport (sourcePath: string) : Flow<ReportEnv, ReportError, string> =
@@ -172,7 +172,7 @@ producer keeps writing) is one forgotten `linked.Cancel()` away.
 
 A `FlowStream` is cold and pull-based: when persistence fails, the stream is simply never pulled again. The test
 streams from an instrumented infinite sequence and asserts almost nothing was produced past the failing element.
-The process variant uses [`Process.stream`](/dependencies/processes/index.html) — typed `ProcessEvent`s from a live
+The process variant uses [`Process.stream`](/services/processes/index.html) — typed `ProcessEvent`s from a live
 process through the same pipeline shape:
 
 ```fsharp

@@ -49,12 +49,12 @@ if rg -q '<details class="group"[^>]*open' "$root_dir/output/api.html"; then
   exit 1
 fi
 
-rg -q 'data-docs-group="dependencies/processes"' "$root_dir/output/dependencies/index.html"
+rg -q 'data-docs-group="services/processes"' "$root_dir/output/services/index.html"
 rg -q 'data-docs-group="dependencies/tutorials"' "$root_dir/output/dependencies/index.html"
 rg -q 'data-docs-group="observability/telemetry"' "$root_dir/output/observability/index.html"
-rg -q "currentSidebarLink.setAttribute('aria-current', 'page')" "$root_dir/output/dependencies/processes/composition.html"
-rg -Fq '#sidebar-root [data-sidebar-item="true"] a[href]' "$root_dir/output/dependencies/processes/composition.html"
-rg -q 'href="composition.html"' "$root_dir/output/dependencies/processes/index.html"
+rg -q "currentSidebarLink.setAttribute('aria-current', 'page')" "$root_dir/output/services/processes/composition.html"
+rg -Fq '#sidebar-root [data-sidebar-item="true"] a[href]' "$root_dir/output/services/processes/composition.html"
+rg -q 'href="composition.html"' "$root_dir/output/services/processes/index.html"
 
 while IFS= read -r source_page; do
   page_name="$(basename "$source_page")"
