@@ -1,5 +1,4 @@
 ---
-weight: 90
 title: HTTP
 linkTitle: HTTP
 description: Build typed HTTP requests, decode responses safely, and retry transient failures.
@@ -59,7 +58,7 @@ Because the service boundary is one `IHttp.Send` method, a complete test fake is
 
 ## Choose A Guide
 
-- [Requests](requests/): safe interpolated URLs, query parameters, headers, bodies, and secret redaction.
-- [Responses and errors](responses-and-errors/): response transcripts, typed JSON decoding, and the `HttpError` model.
-- [Reliability](reliability/): per-request timeouts, expected statuses, and transient-failure retries.
-- [Testing and layers](testing-and-layers/): fakes, the live `HttpClient` service, and layer composition.
+- [Requests](requests.html): safe interpolated URLs, query parameters, headers, bodies, and secret redaction.
+- [Responses and errors](responses-and-errors.html): response transcripts, typed JSON decoding, and the `HttpError` model.
+- [Reliability](reliability.html): per-request timeouts, expected statuses, and transient-failure retries.
+- [Testing and layers](/testing/http.html): fakes, the live `HttpClient` service, and layer composition.

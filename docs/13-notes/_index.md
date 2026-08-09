@@ -1,6 +1,5 @@
 ---
 title: Notes
-weight: 13
 ---
 
 # Notes

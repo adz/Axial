@@ -1,5 +1,4 @@
 ---
-weight: 8
 title: Error Handling
 description: Distinguish expected failures, unexpected defects, and interruption.
 ---

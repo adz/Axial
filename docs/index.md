@@ -1,6 +1,5 @@
 ---
 title: Axial
-weight: 0
 ---
 
 <div class="docs-home-container axial-landing">

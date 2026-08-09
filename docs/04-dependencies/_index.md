@@ -1,5 +1,4 @@
 ---
-weight: 30
 title: Dependencies
 description: Explicit services, dependency management, layers, scoped resources, and runtimes.
 ---

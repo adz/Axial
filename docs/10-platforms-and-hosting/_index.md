@@ -1,6 +1,5 @@
 ---
 title: Platforms and Hosting
-weight: 10
 ---
 
 # Platforms and Hosting

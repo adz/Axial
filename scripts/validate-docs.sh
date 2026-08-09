@@ -38,7 +38,31 @@ if rg -q '<details class="group"[^>]*open' "$root_dir/output/api.html"; then
 fi
 
 rg -q 'data-docs-group="dependencies/processes"' "$root_dir/output/dependencies/index.html"
+rg -q 'data-docs-group="dependencies/tutorials"' "$root_dir/output/dependencies/index.html"
 rg -q 'data-docs-group="observability/telemetry"' "$root_dir/output/observability/index.html"
+rg -q "currentSidebarLink.setAttribute('aria-current', 'page')" "$root_dir/output/dependencies/processes/composition.html"
+rg -q 'href="composition.html"' "$root_dir/output/dependencies/processes/index.html"
+
+while IFS= read -r source_page; do
+  page_name="$(basename "$source_page")"
+  if [[ ! "$page_name" =~ ^[0-9][0-9]- ]]; then
+    echo "Documentation page lacks a numeric ordering prefix: ${source_page#"$root_dir/"}" >&2
+    exit 1
+  fi
+done < <(find "$root_dir"/docs/[0-9][0-9]-* -mindepth 1 -type f -name '*.md' ! -name '_index.md' | sort)
+
+while IFS= read -r source_folder; do
+  folder_name="$(basename "$source_folder")"
+  if [[ ! "$folder_name" =~ ^[0-9][0-9]- ]]; then
+    echo "Nested documentation folder lacks a numeric ordering prefix: ${source_folder#"$root_dir/"}" >&2
+    exit 1
+  fi
+done < <(find "$root_dir"/docs/[0-9][0-9]-* -mindepth 1 -type d | sort)
+
+if rg -n '^weight:' "$root_dir/docs" --glob '*.md'; then
+  echo "Documentation ordering must use numeric file and folder prefixes, not frontmatter weights." >&2
+  exit 1
+fi
 
 api_index_entries="$(rg -o 'href="api/[^"]+\.html" class="card' "$root_dir/output/api.html" | wc -l)"
 if (( api_index_entries < 160 )); then

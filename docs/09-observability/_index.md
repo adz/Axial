@@ -1,5 +1,4 @@
 ---
-weight: 100
 title: Observability
 description: How tracing, logging, and metrics fit together across Axial packages, and how to plug in OpenTelemetry.
 ---

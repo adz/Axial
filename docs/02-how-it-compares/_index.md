@@ -1,5 +1,4 @@
 ---
-weight: 90
 title: How It Compares
 description: Task vs Flow across seven runnable scenarios, and how Flow relates to FSharpPlus and Effect-TS.
 ---

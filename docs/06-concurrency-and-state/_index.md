@@ -1,5 +1,4 @@
 ---
-weight: 25
 title: Concurrency and State
 description: Fibers, atomic references, coordination primitives, scheduling, STM, and streams.
 ---

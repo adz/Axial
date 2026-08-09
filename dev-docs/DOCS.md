@@ -20,6 +20,8 @@ Do not commit generated API pages. Update source comments or `docs/api/` enrichm
 
 - A top-level folder is a sidebar section. Prefix it with two digits to order it; FsLiveDocs strips the prefix from
   the generated URL.
+- Prefix pages and nested folders with two digits at every depth. Pages and folders share one ordering, so their
+  prefixes determine exactly where each appears in the sidebar. Do not use frontmatter weights.
 - Use `_index.md` for a section landing page and to supply casing such as `HTTP` or `F#`.
 - Link to guide output paths with `.html`. Use `xref:` for API entities and members.
 - Use `{{< snippet id="..." >}}` for source snippets and `{{< example id="..." >}}` for extracted examples.

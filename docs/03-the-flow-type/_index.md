@@ -1,6 +1,5 @@
 ---
 title: The Flow Type
-weight: 3
 ---
 
 # The Flow Type

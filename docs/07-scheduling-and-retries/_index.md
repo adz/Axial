@@ -1,5 +1,4 @@
 ---
-weight: 40
 title: Scheduling and Retries
 description: Declarative policies for retrying failures and repeating successes in Axial.
 ---

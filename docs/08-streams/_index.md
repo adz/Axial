@@ -1,5 +1,4 @@
 ---
-weight: 60
 title: Streams
 description: Cold, pull-based, effectful streams for .NET and Fable.
 ---
@@ -104,7 +103,7 @@ incremental consumer for unbounded streams.
 
 `Axial.Process.Process.stream` is a concrete example of an effectful, backpressured source. It emits structured
 stdout/stderr events followed by a completion transcript and cancels the child pipeline if stream consumption stops.
-See [Output and streaming](processes/output-streaming/).
+See [Output and streaming](/dependencies/processes/output-streaming.html).
 
 ## Platform Boundary
 
