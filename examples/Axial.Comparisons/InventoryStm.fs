@@ -13,6 +13,7 @@ module Axial.Comparisons.InventoryStm
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.State
 
 // --- Shared domain -----------------------------------------------------------------
 

@@ -7,7 +7,10 @@ description: Shared mutable state with atomic updates in Axial.
 
 `Ref<'T>` is a handle to a mutable reference that can be updated atomically. It is the simplest way to manage shared state between multiple concurrent parts of your application.
 
-> **Note:** `Ref` is currently available on **.NET** only.
+```fsharp
+open Axial
+open Axial.State
+```
 
 ## Why Use Ref?
 

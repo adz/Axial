@@ -5,6 +5,7 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.State
 open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit

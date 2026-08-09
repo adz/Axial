@@ -42,6 +42,9 @@ Most .NET developers and many F# developers have never used an effect system, an
 - Structured child fibers are owned by their scope. `forkDetached` is the explicit declaration of intentional fire-and-forget work.
 - Resource lifetime uses scopes and finalizers. Acquisition APIs must make ownership and release behavior visible rather than relying on ambient disposal.
 - `FlowStream` reuses Flow execution, scope, cancellation, and failure semantics; it must not become a second runtime.
+- Mutable state lives under `Axial.State`: `Ref` handles one independently atomic value, while `TRef` and `STM`
+  compose transactions across values. Coordination primitives such as `Deferred` and `FlowSemaphore` remain in
+  `Axial`; STM journal, context, and commit machinery are internal implementation details.
 
 ## Application and hosting boundary
 

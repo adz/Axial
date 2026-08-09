@@ -863,7 +863,7 @@ let awaitExitTaskAsSuccess (exitTask: ExitTask<'value, 'error>) : Execution<Exit
 
 // ---------------------------------------------------------------------------------------------
 // Signal: a single-assignment async rendezvous cell shared by Concurrency.fs (Deferred, Semaphore)
-// and Stm.fs (the retry/commit wait).
+// and State.fs (the STM retry/commit wait).
 // ---------------------------------------------------------------------------------------------
 
 #if FABLE_COMPILER

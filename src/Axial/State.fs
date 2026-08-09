@@ -1,22 +1,23 @@
-namespace Axial
+namespace Axial.State
 
 open System
 open System.Collections.Generic
 open System.Threading
+open Axial
 
 /// <summary>
 /// Internal interface for transactional references used by the STM engine.
 /// </summary>
-type ITRef =
+type internal ITRef =
     abstract Id: int64
     abstract Commit: obj -> unit
     abstract CurrentValue: obj
 
 /// <summary>
-/// Represents a transactional reference that can be updated atomically within an <see cref="T:Axial.STM`1" /> transaction.
+/// Represents a transactional reference that can be updated atomically within an <see cref="T:Axial.State.STM`1" /> transaction.
 /// </summary>
 /// <typeparam name="T">The type of the value stored in the reference.</typeparam>
-type TRef<'T>(initialValue: 'T) =
+type TRef<'T> internal (initialValue: 'T) =
     static let idCounter = ref 0L
     let id = Platform.nextId idCounter
     let mutable value = initialValue
@@ -32,13 +33,13 @@ type TRef<'T>(initialValue: 'T) =
 /// <summary>
 /// Internal journal used to track transactional changes.
 /// </summary>
-type TJournal = Dictionary<int64, obj * ITRef>
+type internal TJournal = Dictionary<int64, obj * ITRef>
 
-type TransactionResult<'T> =
+type internal TransactionResult<'T> =
     | Done of 'T
     | Retry
 
-type TContext =
+type internal TContext =
     {
         Journal: TJournal
         Reads: HashSet<int64>
@@ -48,12 +49,12 @@ type TContext =
 /// Represents a transactional operation that can be composed, retried, and executed atomically.
 /// </summary>
 /// <typeparam name="T">The type of the value produced by the operation.</typeparam>
-type STM<'T> = STM of (TContext -> TransactionResult<'T>)
+type STM<'T> = private STM of (TContext -> TransactionResult<'T>)
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module TRef =
-    /// <summary>Creates a new <see cref="T:Axial.TRef`1" /> with the initial value within an STM transaction.</summary>
+    /// <summary>Creates a new <see cref="T:Axial.State.TRef`1" /> with the initial value within an STM transaction.</summary>
     /// <param name="value">The initial value for the transactional reference.</param>
     /// <returns>An STM operation that, when executed, produces a new transactional reference.</returns>
     /// <example>

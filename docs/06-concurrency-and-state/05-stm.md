@@ -5,6 +5,11 @@ description: Composable atomic transactions across multiple variables in Axial.
 
 # STM (Software Transactional Memory)
 
+```fsharp
+open Axial
+open Axial.State
+```
+
 Software Transactional Memory (STM) is a concurrency primitive that lets you compose multiple
 atomic operations into a single **transaction**.
 
@@ -12,8 +17,6 @@ While `Ref` is perfect for updating a single variable, `STM` is designed for sce
 need to update **multiple** variables consistently. Axial ensures that the entire transaction is
 executed atomically, and supports `retry` / `orElse` style coordination for transactions
 that need to wait on state changes or fall back to alternate branches.
-
-> **Note:** `STM` is currently available on **.NET** only.
 
 ## Core Concepts
 

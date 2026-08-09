@@ -31,6 +31,12 @@ rg -q 'href="api/Axial.Telemetry.FiberTelemetry.html"' "$root_dir/output/api.htm
 rg -q 'href="api/Axial.Flow.html"' "$root_dir/output/api.html"
 rg -q 'href="api/Axial.Flow`3.html"' "$root_dir/output/api.html"
 rg -q 'href="api/Axial.Schedule`3.html"' "$root_dir/output/api.html"
+rg -q 'href="api/Axial.State.html"' "$root_dir/output/api.html"
+rg -q 'href="api/Axial.State.STM`1.html"' "$root_dir/output/api.html"
+if rg -q 'Axial\.(State\.)?(ITRef|TJournal|TransactionResult|TContext)' "$root_dir/output/api.html"; then
+  echo "Internal STM engine types leaked into the API reference." >&2
+  exit 1
+fi
 
 if rg -q '<details class="group"[^>]*open' "$root_dir/output/api.html"; then
   echo "Sidebar sections must be initially closed." >&2
