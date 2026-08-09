@@ -34,6 +34,11 @@ rg -q 'href="api/Axial.Flow`3.html"' "$root_dir/output/api.html"
 rg -q 'href="api/Axial.Schedule`3.html"' "$root_dir/output/api.html"
 rg -q 'href="api/Axial.State.html"' "$root_dir/output/api.html"
 rg -q 'href="api/Axial.State.STM`1.html"' "$root_dir/output/api.html"
+rg -Fq 'href="Axial.Exit`2.html">Exit</a>' "$root_dir/output/api/Axial.Deferred`2.html"
+if rg -n 'href="/reference/' "$root_dir/output/api" --glob '*.html'; then
+  echo "Legacy FSharp.Formatting reference links remain in generated API pages." >&2
+  exit 1
+fi
 if rg -q 'Axial\.(State\.)?(ITRef|TJournal|TransactionResult|TContext)' "$root_dir/output/api.html"; then
   echo "Internal STM engine types leaked into the API reference." >&2
   exit 1
