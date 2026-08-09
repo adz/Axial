@@ -34,7 +34,12 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-bash "$root_dir/scripts/run-livedocs.sh" watch --host "$preview_host" --port "$preview_port" &
+watch_args=(--host "$preview_host" --port "$preview_port")
+if [ -n "${AXIAL_DOCS_PREVIEW_IGNORE:-}" ]; then
+  watch_args+=(--ignore "$AXIAL_DOCS_PREVIEW_IGNORE")
+fi
+
+bash "$root_dir/scripts/run-livedocs.sh" watch "${watch_args[@]}" &
 preview_pid=$!
 
 echo "FsLiveDocs preview binding to http://$preview_host:$preview_port/"
