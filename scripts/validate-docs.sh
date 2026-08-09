@@ -19,6 +19,7 @@ rg -q 'src="content/img/hero-lockup-dark.png"' "$root_dir/output/index.html"
 rg -q 'data-theme-variant="light"' "$root_dir/output/index.html"
 rg -q 'data-theme-variant="dark"' "$root_dir/output/index.html"
 rg -q 'applySiteTheme' "$root_dir/output/index.html"
+rg -Fq "el.style.display = el.getAttribute('data-theme-variant') === theme ? 'block' : 'none'" "$root_dir/output/index.html"
 rg -q 'href="content/axial-docs.css"' "$root_dir/output/index.html"
 rg -q 'data-set-theme="light"' "$root_dir/output/index.html"
 rg -q 'data-set-theme="dark"' "$root_dir/output/index.html"
@@ -47,6 +48,7 @@ rg -q 'data-docs-group="dependencies/processes"' "$root_dir/output/dependencies/
 rg -q 'data-docs-group="dependencies/tutorials"' "$root_dir/output/dependencies/index.html"
 rg -q 'data-docs-group="observability/telemetry"' "$root_dir/output/observability/index.html"
 rg -q "currentSidebarLink.setAttribute('aria-current', 'page')" "$root_dir/output/dependencies/processes/composition.html"
+rg -Fq '#sidebar-root [data-sidebar-item="true"] a[href]' "$root_dir/output/dependencies/processes/composition.html"
 rg -q 'href="composition.html"' "$root_dir/output/dependencies/processes/index.html"
 
 while IFS= read -r source_page; do
