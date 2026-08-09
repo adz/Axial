@@ -37,6 +37,9 @@ if rg -q '<details class="group"[^>]*open' "$root_dir/output/api.html"; then
   exit 1
 fi
 
+rg -q 'data-docs-group="dependencies/processes"' "$root_dir/output/dependencies/index.html"
+rg -q 'data-docs-group="observability/telemetry"' "$root_dir/output/observability/index.html"
+
 api_index_entries="$(rg -o 'href="api/[^"]+\.html" class="card' "$root_dir/output/api.html" | wc -l)"
 if (( api_index_entries < 160 )); then
   echo "API index contains only $api_index_entries entries; expected the complete Axial reference." >&2
