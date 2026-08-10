@@ -1,5 +1,5 @@
 ---
-title: Reference
+title: Telemetry Reference
 description: Public modules in Axial.Telemetry for .NET tracing, fiber spans, metrics, and dumps.
 ---
 

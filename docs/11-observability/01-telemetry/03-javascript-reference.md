@@ -1,5 +1,5 @@
 ---
-title: Reference
+title: JavaScript Reference
 description: Public types and modules in Axial.Telemetry.JavaScript.
 build:
   list: never

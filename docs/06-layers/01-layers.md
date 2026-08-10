@@ -1,9 +1,9 @@
 ---
-title: Layers
+title: Composing Layers
 description: Provisioning explicit environments with Layer and Layer.provide.
 ---
 
-# Layers
+# Composing Layers
 
 A `Layer<'input, 'error, 'output>` builds an environment or service bundle from an input value. It runs inside a
 `Scope`, so resources acquired during provisioning can be finalized when the provided flow finishes.

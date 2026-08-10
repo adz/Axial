@@ -1,9 +1,9 @@
 ---
-title: Managing Dependencies
+title: Choosing an Approach
 description: How Axial models records, services, layers, scopes, and host-provider boundaries.
 ---
 
-# Managing Dependencies
+# Choosing an Approach
 
 Keep dependencies explicit. Axial has one dependency model for v1: workflows read an explicit environment, reusable
 helpers name service contracts, and layers build the environment at the boundary.

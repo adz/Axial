@@ -1,5 +1,5 @@
 ---
-title: Testing And Layers
+title: Testing HTTP
 description: Fake the one-method HTTP service, wire the live HttpClient service, and compose layers.
 ---
 

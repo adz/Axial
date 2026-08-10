@@ -36,7 +36,7 @@ interface. Because the requirement is in the type, neither one can be forgotten.
 
 Use these services when you genuinely need the real capability. When a workflow only needs "somewhere to report
 progress" or "the current configuration", declare a narrow application dependency instead — see
-[dependencies](/dependencies/dependencies.html). Depending on `IConsole` to print one line couples the workflow to a
+[choosing an approach](/dependencies/choosing-an-approach.html). Depending on `IConsole` to print one line couples the workflow to a
 terminal it may not have.
 
 ## In this section

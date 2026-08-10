@@ -61,4 +61,4 @@ Because the service boundary is one `IHttp.Send` method, a complete test fake is
 - [Requests](requests.html): safe interpolated URLs, query parameters, headers, bodies, and secret redaction.
 - [Responses and errors](responses-and-errors.html): response transcripts, typed JSON decoding, and the `HttpError` model.
 - [Reliability](reliability.html): per-request timeouts, expected statuses, and transient-failure retries.
-- [Testing and layers](/testing/http.html): fakes, the live `HttpClient` service, and layer composition.
+- [Testing HTTP](/testing/http.html): fakes, the live `HttpClient` service, and layer composition.
