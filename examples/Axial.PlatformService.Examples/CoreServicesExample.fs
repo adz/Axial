@@ -12,10 +12,10 @@ module CoreServicesExample =
             Guid: IGuid
             EnvVars: IEnvironmentVariables
         }
-        interface IHas<IClock> with member this.Service = this.Clock
-        interface IHas<IRandom> with member this.Service = this.Random
-        interface IHas<IGuid> with member this.Service = this.Guid
-        interface IHas<IEnvironmentVariables> with member this.Service = this.EnvVars
+        interface IHasClock with member this.Clock = this.Clock
+        interface IHasRandom with member this.Random = this.Random
+        interface IHasGuid with member this.Guid = this.Guid
+        interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.EnvVars
 
     let private renderExit formatter result =
         match result with

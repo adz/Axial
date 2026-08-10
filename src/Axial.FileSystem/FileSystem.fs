@@ -337,6 +337,15 @@ type IFileSystem =
     abstract IsPathRooted : path: string -> bool
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+/// <summary>Declares that an environment supplies the file-system service.</summary>
+/// <remarks>
+/// Implement this on the environment supplied at the host edge. A workflow that touches the file
+/// system constrains its environment with <c>'env :&gt; IHasFileSystem</c>.
+/// </remarks>
+type IHasFileSystem =
+    /// The file-system service supplied by this environment.
+    abstract FileSystem : IFileSystem
+
 [<RequireQualifiedAccess>]
 module FileSystemError =
     let private describePath path =
@@ -381,6 +390,10 @@ module FileSystemError =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module FileSystem =
+    /// Reads the file-system service from the environment.
+    let service<'env, 'error when 'env :> IHasFileSystem> : Flow<'env, 'error, IFileSystem> =
+        Flow.read _.FileSystem
+
     let private directorySeparators =
         [| Path.DirectorySeparatorChar; Path.AltDirectorySeparatorChar |]
 
@@ -401,9 +414,9 @@ module FileSystem =
         (path: string option)
         (operation: IFileSystem -> 'value)
         : Flow<'env, FileSystemError, 'value>
-        when 'env :> IHas<IFileSystem> =
+        when 'env :> IHasFileSystem =
         flow {
-            let! fileSystem = Service<IFileSystem>.get()
+            let! fileSystem = service
             return operation fileSystem
         }
         |> protect path
@@ -412,9 +425,9 @@ module FileSystem =
         (path: string option)
         (operation: IFileSystem -> CancellationToken -> Task<'value>)
         : Flow<'env, FileSystemError, 'value>
-        when 'env :> IHas<IFileSystem> =
+        when 'env :> IHasFileSystem =
         flow {
-            let! fileSystem = Service<IFileSystem>.get()
+            let! fileSystem = service
             let! cancellationToken = Flow.Runtime.cancellationToken
             return! operation fileSystem cancellationToken
         }
@@ -424,73 +437,73 @@ module FileSystem =
         (path: string option)
         (operation: IFileSystem -> CancellationToken -> Task)
         : Flow<'env, FileSystemError, unit>
-        when 'env :> IHas<IFileSystem> =
+        when 'env :> IHasFileSystem =
         flow {
-            let! fileSystem = Service<IFileSystem>.get()
+            let! fileSystem = service
             let! cancellationToken = Flow.Runtime.cancellationToken
             do! operation fileSystem cancellationToken
         }
         |> protect path
 
     /// <summary>Reads all text through an explicit file-system service.</summary>
-    let readAllText<'env when 'env :> IHas<IFileSystem>>
+    let readAllText<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.ReadAllText path)
 
     /// <summary>Reads all text with the specified encoding through an explicit file-system service.</summary>
-    let readAllTextWithEncoding<'env when 'env :> IHas<IFileSystem>>
+    let readAllTextWithEncoding<'env when 'env :> IHasFileSystem>
         (encoding: Encoding)
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.ReadAllText(path, encoding))
 
     /// <summary>Asynchronously reads all text through an explicit file-system service.</summary>
-    let readAllTextAsync<'env when 'env :> IHas<IFileSystem>>
+    let readAllTextAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withServiceAsync (Some path) (fun fileSystem cancellationToken -> fileSystem.ReadAllTextAsync(path, cancellationToken))
 
     /// <summary>Reads all lines through an explicit file-system service.</summary>
-    let readAllLines<'env when 'env :> IHas<IFileSystem>>
+    let readAllLines<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string array> =
         withService (Some path) (fun fileSystem -> fileSystem.ReadAllLines path)
 
     /// <summary>Reads all lines with the specified encoding through an explicit file-system service.</summary>
-    let readAllLinesWithEncoding<'env when 'env :> IHas<IFileSystem>>
+    let readAllLinesWithEncoding<'env when 'env :> IHasFileSystem>
         (encoding: Encoding)
         (path: string)
         : Flow<'env, FileSystemError, string array> =
         withService (Some path) (fun fileSystem -> fileSystem.ReadAllLines(path, encoding))
 
     /// <summary>Asynchronously reads all lines through an explicit file-system service.</summary>
-    let readAllLinesAsync<'env when 'env :> IHas<IFileSystem>>
+    let readAllLinesAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string array> =
         withServiceAsync (Some path) (fun fileSystem cancellationToken -> fileSystem.ReadAllLinesAsync(path, cancellationToken))
 
     /// <summary>Reads all bytes through an explicit file-system service.</summary>
-    let readAllBytes<'env when 'env :> IHas<IFileSystem>>
+    let readAllBytes<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, byte array> =
         withService (Some path) (fun fileSystem -> fileSystem.ReadAllBytes path)
 
     /// <summary>Asynchronously reads all bytes through an explicit file-system service.</summary>
-    let readAllBytesAsync<'env when 'env :> IHas<IFileSystem>>
+    let readAllBytesAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, byte array> =
         withServiceAsync (Some path) (fun fileSystem cancellationToken -> fileSystem.ReadAllBytesAsync(path, cancellationToken))
 
     /// <summary>Writes all text through an explicit file-system service.</summary>
-    let writeAllText<'env when 'env :> IHas<IFileSystem>>
+    let writeAllText<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: string)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.WriteAllText(path, contents))
 
     /// <summary>Writes all text with the specified encoding through an explicit file-system service.</summary>
-    let writeAllTextWithEncoding<'env when 'env :> IHas<IFileSystem>>
+    let writeAllTextWithEncoding<'env when 'env :> IHasFileSystem>
         (encoding: Encoding)
         (path: string)
         (contents: string)
@@ -498,21 +511,21 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.WriteAllText(path, contents, encoding))
 
     /// <summary>Asynchronously writes all text through an explicit file-system service.</summary>
-    let writeAllTextAsync<'env when 'env :> IHas<IFileSystem>>
+    let writeAllTextAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: string)
         : Flow<'env, FileSystemError, unit> =
         withServiceTask (Some path) (fun fileSystem cancellationToken -> fileSystem.WriteAllTextAsync(path, contents, cancellationToken))
 
     /// <summary>Writes all lines through an explicit file-system service.</summary>
-    let writeAllLines<'env when 'env :> IHas<IFileSystem>>
+    let writeAllLines<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: seq<string>)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.WriteAllLines(path, contents))
 
     /// <summary>Writes all lines with the specified encoding through an explicit file-system service.</summary>
-    let writeAllLinesWithEncoding<'env when 'env :> IHas<IFileSystem>>
+    let writeAllLinesWithEncoding<'env when 'env :> IHasFileSystem>
         (encoding: Encoding)
         (path: string)
         (contents: seq<string>)
@@ -520,35 +533,35 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.WriteAllLines(path, contents, encoding))
 
     /// <summary>Asynchronously writes all lines through an explicit file-system service.</summary>
-    let writeAllLinesAsync<'env when 'env :> IHas<IFileSystem>>
+    let writeAllLinesAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: seq<string>)
         : Flow<'env, FileSystemError, unit> =
         withServiceTask (Some path) (fun fileSystem cancellationToken -> fileSystem.WriteAllLinesAsync(path, contents, cancellationToken))
 
     /// <summary>Writes all bytes through an explicit file-system service.</summary>
-    let writeAllBytes<'env when 'env :> IHas<IFileSystem>>
+    let writeAllBytes<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: byte array)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.WriteAllBytes(path, contents))
 
     /// <summary>Asynchronously writes all bytes through an explicit file-system service.</summary>
-    let writeAllBytesAsync<'env when 'env :> IHas<IFileSystem>>
+    let writeAllBytesAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: byte array)
         : Flow<'env, FileSystemError, unit> =
         withServiceTask (Some path) (fun fileSystem cancellationToken -> fileSystem.WriteAllBytesAsync(path, contents, cancellationToken))
 
     /// <summary>Appends all text through an explicit file-system service.</summary>
-    let appendAllText<'env when 'env :> IHas<IFileSystem>>
+    let appendAllText<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: string)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.AppendAllText(path, contents))
 
     /// <summary>Appends all text with the specified encoding through an explicit file-system service.</summary>
-    let appendAllTextWithEncoding<'env when 'env :> IHas<IFileSystem>>
+    let appendAllTextWithEncoding<'env when 'env :> IHasFileSystem>
         (encoding: Encoding)
         (path: string)
         (contents: string)
@@ -556,21 +569,21 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.AppendAllText(path, contents, encoding))
 
     /// <summary>Asynchronously appends all text through an explicit file-system service.</summary>
-    let appendAllTextAsync<'env when 'env :> IHas<IFileSystem>>
+    let appendAllTextAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: string)
         : Flow<'env, FileSystemError, unit> =
         withServiceTask (Some path) (fun fileSystem cancellationToken -> fileSystem.AppendAllTextAsync(path, contents, cancellationToken))
 
     /// <summary>Appends all lines through an explicit file-system service.</summary>
-    let appendAllLines<'env when 'env :> IHas<IFileSystem>>
+    let appendAllLines<'env when 'env :> IHasFileSystem>
         (path: string)
         (contents: seq<string>)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.AppendAllLines(path, contents))
 
     /// <summary>Appends all lines with the specified encoding through an explicit file-system service.</summary>
-    let appendAllLinesWithEncoding<'env when 'env :> IHas<IFileSystem>>
+    let appendAllLinesWithEncoding<'env when 'env :> IHasFileSystem>
         (encoding: Encoding)
         (path: string)
         (contents: seq<string>)
@@ -578,25 +591,25 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.AppendAllLines(path, contents, encoding))
 
     /// <summary>Checks file existence through an explicit file-system service.</summary>
-    let fileExists<'env when 'env :> IHas<IFileSystem>>
+    let fileExists<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, bool> =
         withService (Some path) (fun fileSystem -> fileSystem.FileExists path)
 
     /// <summary>Checks file existence through an explicit file-system service.</summary>
-    let exists<'env when 'env :> IHas<IFileSystem>>
+    let exists<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, bool> =
         fileExists path
 
     /// <summary>Deletes a file through an explicit file-system service.</summary>
-    let deleteFile<'env when 'env :> IHas<IFileSystem>>
+    let deleteFile<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.DeleteFile path)
 
     /// <summary>Copies a file through an explicit file-system service.</summary>
-    let copyFile<'env when 'env :> IHas<IFileSystem>>
+    let copyFile<'env when 'env :> IHasFileSystem>
         (sourcePath: string)
         (destinationPath: string)
         (overwrite: bool)
@@ -604,7 +617,7 @@ module FileSystem =
         withService (Some sourcePath) (fun fileSystem -> fileSystem.CopyFile(sourcePath, destinationPath, overwrite))
 
     /// <summary>Moves a file through an explicit file-system service.</summary>
-    let moveFile<'env when 'env :> IHas<IFileSystem>>
+    let moveFile<'env when 'env :> IHasFileSystem>
         (sourcePath: string)
         (destinationPath: string)
         (overwrite: bool)
@@ -613,7 +626,7 @@ module FileSystem =
 
     /// <summary>Creates a symbolic link to a file through an explicit file-system service.</summary>
     /// <example><code>FileSystem.createFileSymbolicLink "current.json" "releases/v2.json"</code></example>
-    let createFileSymbolicLink<'env when 'env :> IHas<IFileSystem>>
+    let createFileSymbolicLink<'env when 'env :> IHasFileSystem>
         (linkPath: string)
         (targetPath: string)
         : Flow<'env, FileSystemError, unit> =
@@ -621,7 +634,7 @@ module FileSystem =
 
     /// <summary>Creates a symbolic link to a directory through an explicit file-system service.</summary>
     /// <example><code>FileSystem.createDirectorySymbolicLink "current" "releases/v2"</code></example>
-    let createDirectorySymbolicLink<'env when 'env :> IHas<IFileSystem>>
+    let createDirectorySymbolicLink<'env when 'env :> IHasFileSystem>
         (linkPath: string)
         (targetPath: string)
         : Flow<'env, FileSystemError, unit> =
@@ -629,28 +642,28 @@ module FileSystem =
 
     /// <summary>Returns the immediate target stored in a symbolic link.</summary>
     /// <example><code>FileSystem.getSymbolicLinkTarget "current"</code></example>
-    let getSymbolicLinkTarget<'env when 'env :> IHas<IFileSystem>>
+    let getSymbolicLinkTarget<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string option> =
         withService (Some path) (fun fileSystem -> fileSystem.GetSymbolicLinkTarget path)
 
     /// <summary>Resolves a symbolic link target, optionally following the complete chain.</summary>
     /// <example><code>FileSystem.resolveSymbolicLinkTarget true "current"</code></example>
-    let resolveSymbolicLinkTarget<'env when 'env :> IHas<IFileSystem>>
+    let resolveSymbolicLinkTarget<'env when 'env :> IHasFileSystem>
         (returnFinalTarget: bool)
         (path: string)
         : Flow<'env, FileSystemError, string option> =
         withService (Some path) (fun fileSystem -> fileSystem.ResolveSymbolicLinkTarget(path, returnFinalTarget))
 
     /// <summary>Opens a file with the specified mode through an explicit file-system service.</summary>
-    let openFile<'env when 'env :> IHas<IFileSystem>>
+    let openFile<'env when 'env :> IHasFileSystem>
         (mode: FileMode)
         (path: string)
         : Flow<'env, FileSystemError, FileStream> =
         withService (Some path) (fun fileSystem -> fileSystem.OpenFile(path, mode))
 
     /// <summary>Opens a file with the specified mode and access through an explicit file-system service.</summary>
-    let openFileWithAccess<'env when 'env :> IHas<IFileSystem>>
+    let openFileWithAccess<'env when 'env :> IHasFileSystem>
         (mode: FileMode)
         (access: FileAccess)
         (path: string)
@@ -658,7 +671,7 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.OpenFile(path, mode, access))
 
     /// <summary>Opens a file with the specified mode, access, and sharing behavior through an explicit file-system service.</summary>
-    let openFileWithShare<'env when 'env :> IHas<IFileSystem>>
+    let openFileWithShare<'env when 'env :> IHasFileSystem>
         (mode: FileMode)
         (access: FileAccess)
         (share: FileShare)
@@ -667,130 +680,130 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.OpenFile(path, mode, access, share))
 
     /// <summary>Opens a file for reading through an explicit file-system service.</summary>
-    let openRead<'env when 'env :> IHas<IFileSystem>>
+    let openRead<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, Stream> =
         withService (Some path) (fun fileSystem -> fileSystem.OpenRead path)
 
     /// <summary>Opens a text reader through an explicit file-system service.</summary>
-    let openText<'env when 'env :> IHas<IFileSystem>>
+    let openText<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, StreamReader> =
         withService (Some path) (fun fileSystem -> fileSystem.OpenText path)
 
     /// <summary>Opens a file for writing through an explicit file-system service.</summary>
-    let openWrite<'env when 'env :> IHas<IFileSystem>>
+    let openWrite<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, Stream> =
         withService (Some path) (fun fileSystem -> fileSystem.OpenWrite path)
 
     /// <summary>Creates or overwrites a file through an explicit file-system service.</summary>
-    let createFile<'env when 'env :> IHas<IFileSystem>>
+    let createFile<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, Stream> =
         withService (Some path) (fun fileSystem -> fileSystem.CreateFile path)
 
     /// <summary>Creates a text writer through an explicit file-system service.</summary>
-    let createText<'env when 'env :> IHas<IFileSystem>>
+    let createText<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, StreamWriter> =
         withService (Some path) (fun fileSystem -> fileSystem.CreateText path)
 
     /// <summary>Creates an append text writer through an explicit file-system service.</summary>
-    let appendText<'env when 'env :> IHas<IFileSystem>>
+    let appendText<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, StreamWriter> =
         withService (Some path) (fun fileSystem -> fileSystem.AppendText path)
 
     /// <summary>Gets file attributes through an explicit file-system service.</summary>
-    let getFileAttributes<'env when 'env :> IHas<IFileSystem>>
+    let getFileAttributes<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, FileAttributes> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileAttributes path)
 
     /// <summary>Sets file attributes through an explicit file-system service.</summary>
-    let setFileAttributes<'env when 'env :> IHas<IFileSystem>>
+    let setFileAttributes<'env when 'env :> IHasFileSystem>
         (path: string)
         (attributes: FileAttributes)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetFileAttributes(path, attributes))
 
     /// <summary>Gets file creation time through an explicit file-system service.</summary>
-    let getFileCreationTime<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getFileCreationTime<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileCreationTime path)
 
     /// <summary>Gets file creation time in UTC through an explicit file-system service.</summary>
-    let getFileCreationTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getFileCreationTimeUtc<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileCreationTimeUtc path)
 
     /// <summary>Sets file creation time through an explicit file-system service.</summary>
-    let setFileCreationTime<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setFileCreationTime<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetFileCreationTime(path, time))
 
     /// <summary>Sets file creation time in UTC through an explicit file-system service.</summary>
-    let setFileCreationTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setFileCreationTimeUtc<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetFileCreationTimeUtc(path, time))
 
     /// <summary>Gets file last access time through an explicit file-system service.</summary>
-    let getFileLastAccessTime<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getFileLastAccessTime<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileLastAccessTime path)
 
     /// <summary>Gets file last access time in UTC through an explicit file-system service.</summary>
-    let getFileLastAccessTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getFileLastAccessTimeUtc<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileLastAccessTimeUtc path)
 
     /// <summary>Sets file last access time through an explicit file-system service.</summary>
-    let setFileLastAccessTime<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setFileLastAccessTime<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetFileLastAccessTime(path, time))
 
     /// <summary>Sets file last access time in UTC through an explicit file-system service.</summary>
-    let setFileLastAccessTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setFileLastAccessTimeUtc<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetFileLastAccessTimeUtc(path, time))
 
     /// <summary>Gets file last write time through an explicit file-system service.</summary>
-    let getFileLastWriteTime<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getFileLastWriteTime<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileLastWriteTime path)
 
     /// <summary>Gets file last write time in UTC through an explicit file-system service.</summary>
-    let getFileLastWriteTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getFileLastWriteTimeUtc<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileLastWriteTimeUtc path)
 
     /// <summary>Sets file last write time through an explicit file-system service.</summary>
-    let setFileLastWriteTime<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setFileLastWriteTime<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetFileLastWriteTime(path, time))
 
     /// <summary>Sets file last write time in UTC through an explicit file-system service.</summary>
-    let setFileLastWriteTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setFileLastWriteTimeUtc<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetFileLastWriteTimeUtc(path, time))
 
     /// <summary>Checks directory existence through an explicit file-system service.</summary>
-    let directoryExists<'env when 'env :> IHas<IFileSystem>>
+    let directoryExists<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, bool> =
         withService (Some path) (fun fileSystem -> fileSystem.DirectoryExists path)
 
     /// <summary>Creates a directory through an explicit file-system service.</summary>
-    let createDirectory<'env when 'env :> IHas<IFileSystem>>
+    let createDirectory<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.CreateDirectory path)
 
     /// <summary>Deletes a directory through an explicit file-system service.</summary>
-    let deleteDirectory<'env when 'env :> IHas<IFileSystem>>
+    let deleteDirectory<'env when 'env :> IHasFileSystem>
         (path: string)
         (recursive: bool)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.DeleteDirectory(path, recursive))
 
     /// <summary>Moves a directory through an explicit file-system service.</summary>
-    let moveDirectory<'env when 'env :> IHas<IFileSystem>>
+    let moveDirectory<'env when 'env :> IHasFileSystem>
         (sourcePath: string)
         (destinationPath: string)
         : Flow<'env, FileSystemError, unit> =
         withService (Some sourcePath) (fun fileSystem -> fileSystem.MoveDirectory(sourcePath, destinationPath))
 
     /// <summary>Enumerates files through an explicit file-system service.</summary>
-    let enumerateFiles<'env when 'env :> IHas<IFileSystem>>
+    let enumerateFiles<'env when 'env :> IHasFileSystem>
         (path: string)
         (searchPattern: string)
         (searchOption: SearchOption)
@@ -798,7 +811,7 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.EnumerateFiles(path, searchPattern, searchOption))
 
     /// <summary>Gets files through an explicit file-system service.</summary>
-    let getFiles<'env when 'env :> IHas<IFileSystem>>
+    let getFiles<'env when 'env :> IHasFileSystem>
         (path: string)
         (searchPattern: string)
         (searchOption: SearchOption)
@@ -806,7 +819,7 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.GetFiles(path, searchPattern, searchOption))
 
     /// <summary>Enumerates directories through an explicit file-system service.</summary>
-    let enumerateDirectories<'env when 'env :> IHas<IFileSystem>>
+    let enumerateDirectories<'env when 'env :> IHasFileSystem>
         (path: string)
         (searchPattern: string)
         (searchOption: SearchOption)
@@ -814,7 +827,7 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.EnumerateDirectories(path, searchPattern, searchOption))
 
     /// <summary>Gets directories through an explicit file-system service.</summary>
-    let getDirectories<'env when 'env :> IHas<IFileSystem>>
+    let getDirectories<'env when 'env :> IHasFileSystem>
         (path: string)
         (searchPattern: string)
         (searchOption: SearchOption)
@@ -822,7 +835,7 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectories(path, searchPattern, searchOption))
 
     /// <summary>Enumerates files and directories through an explicit file-system service.</summary>
-    let enumerateFileSystemEntries<'env when 'env :> IHas<IFileSystem>>
+    let enumerateFileSystemEntries<'env when 'env :> IHasFileSystem>
         (path: string)
         (searchPattern: string)
         (searchOption: SearchOption)
@@ -830,7 +843,7 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.EnumerateFileSystemEntries(path, searchPattern, searchOption))
 
     /// <summary>Gets files and directories through an explicit file-system service.</summary>
-    let getFileSystemEntries<'env when 'env :> IHas<IFileSystem>>
+    let getFileSystemEntries<'env when 'env :> IHasFileSystem>
         (path: string)
         (searchPattern: string)
         (searchOption: SearchOption)
@@ -838,188 +851,188 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileSystemEntries(path, searchPattern, searchOption))
 
     /// <summary>Gets logical drives through an explicit file-system service.</summary>
-    let getLogicalDrives<'env when 'env :> IHas<IFileSystem>>
+    let getLogicalDrives<'env when 'env :> IHasFileSystem>
         : Flow<'env, FileSystemError, string array> =
         withService None (fun fileSystem -> fileSystem.GetLogicalDrives())
 
     /// <summary>Gets the directory root through an explicit file-system service.</summary>
-    let getDirectoryRoot<'env when 'env :> IHas<IFileSystem>>
+    let getDirectoryRoot<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectoryRoot path)
 
     /// <summary>Gets the parent directory through an explicit file-system service.</summary>
-    let getParent<'env when 'env :> IHas<IFileSystem>>
+    let getParent<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string option> =
         withService (Some path) (fun fileSystem -> fileSystem.GetParent path)
 
     /// <summary>Gets the current working directory through an explicit file-system service.</summary>
-    let getCurrentDirectory<'env when 'env :> IHas<IFileSystem>>
+    let getCurrentDirectory<'env when 'env :> IHasFileSystem>
         : Flow<'env, FileSystemError, string> =
         withService None (fun fileSystem -> fileSystem.GetCurrentDirectory())
 
     /// <summary>Sets the current working directory through an explicit file-system service.</summary>
-    let setCurrentDirectory<'env when 'env :> IHas<IFileSystem>>
+    let setCurrentDirectory<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetCurrentDirectory path)
 
     /// <summary>Gets directory creation time through an explicit file-system service.</summary>
-    let getDirectoryCreationTime<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getDirectoryCreationTime<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectoryCreationTime path)
 
     /// <summary>Gets directory creation time in UTC through an explicit file-system service.</summary>
-    let getDirectoryCreationTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getDirectoryCreationTimeUtc<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectoryCreationTimeUtc path)
 
     /// <summary>Sets directory creation time through an explicit file-system service.</summary>
-    let setDirectoryCreationTime<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setDirectoryCreationTime<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetDirectoryCreationTime(path, time))
 
     /// <summary>Sets directory creation time in UTC through an explicit file-system service.</summary>
-    let setDirectoryCreationTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setDirectoryCreationTimeUtc<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetDirectoryCreationTimeUtc(path, time))
 
     /// <summary>Gets directory last access time through an explicit file-system service.</summary>
-    let getDirectoryLastAccessTime<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getDirectoryLastAccessTime<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectoryLastAccessTime path)
 
     /// <summary>Gets directory last access time in UTC through an explicit file-system service.</summary>
-    let getDirectoryLastAccessTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getDirectoryLastAccessTimeUtc<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectoryLastAccessTimeUtc path)
 
     /// <summary>Sets directory last access time through an explicit file-system service.</summary>
-    let setDirectoryLastAccessTime<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setDirectoryLastAccessTime<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetDirectoryLastAccessTime(path, time))
 
     /// <summary>Sets directory last access time in UTC through an explicit file-system service.</summary>
-    let setDirectoryLastAccessTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setDirectoryLastAccessTimeUtc<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetDirectoryLastAccessTimeUtc(path, time))
 
     /// <summary>Gets directory last write time through an explicit file-system service.</summary>
-    let getDirectoryLastWriteTime<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getDirectoryLastWriteTime<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectoryLastWriteTime path)
 
     /// <summary>Gets directory last write time in UTC through an explicit file-system service.</summary>
-    let getDirectoryLastWriteTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) : Flow<'env, FileSystemError, DateTime> =
+    let getDirectoryLastWriteTimeUtc<'env when 'env :> IHasFileSystem> (path: string) : Flow<'env, FileSystemError, DateTime> =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectoryLastWriteTimeUtc path)
 
     /// <summary>Sets directory last write time through an explicit file-system service.</summary>
-    let setDirectoryLastWriteTime<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setDirectoryLastWriteTime<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetDirectoryLastWriteTime(path, time))
 
     /// <summary>Sets directory last write time in UTC through an explicit file-system service.</summary>
-    let setDirectoryLastWriteTimeUtc<'env when 'env :> IHas<IFileSystem>> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
+    let setDirectoryLastWriteTimeUtc<'env when 'env :> IHasFileSystem> (path: string) (time: DateTime) : Flow<'env, FileSystemError, unit> =
         withService (Some path) (fun fileSystem -> fileSystem.SetDirectoryLastWriteTimeUtc(path, time))
 
     /// <summary>Combines path segments through an explicit file-system service.</summary>
-    let combine<'env when 'env :> IHas<IFileSystem>>
+    let combine<'env when 'env :> IHasFileSystem>
         (paths: string array)
         : Flow<'env, FileSystemError, string> =
         withService None (fun fileSystem -> fileSystem.Combine paths)
 
     /// <summary>Changes a path extension through an explicit file-system service.</summary>
-    let changeExtension<'env when 'env :> IHas<IFileSystem>>
+    let changeExtension<'env when 'env :> IHasFileSystem>
         (path: string)
         (extension: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.ChangeExtension(path, extension))
 
     /// <summary>Gets the directory name for a path through an explicit file-system service.</summary>
-    let getDirectoryName<'env when 'env :> IHas<IFileSystem>>
+    let getDirectoryName<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string option> =
         withService (Some path) (fun fileSystem -> fileSystem.GetDirectoryName path)
 
     /// <summary>Gets invalid file-name characters through an explicit file-system service.</summary>
-    let getInvalidFileNameChars<'env when 'env :> IHas<IFileSystem>>
+    let getInvalidFileNameChars<'env when 'env :> IHasFileSystem>
         : Flow<'env, FileSystemError, char array> =
         withService None (fun fileSystem -> fileSystem.GetInvalidFileNameChars())
 
     /// <summary>Gets invalid path characters through an explicit file-system service.</summary>
-    let getInvalidPathChars<'env when 'env :> IHas<IFileSystem>>
+    let getInvalidPathChars<'env when 'env :> IHasFileSystem>
         : Flow<'env, FileSystemError, char array> =
         withService None (fun fileSystem -> fileSystem.GetInvalidPathChars())
 
     /// <summary>Gets the extension for a path through an explicit file-system service.</summary>
-    let getExtension<'env when 'env :> IHas<IFileSystem>>
+    let getExtension<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.GetExtension path)
 
     /// <summary>Gets the file name for a path through an explicit file-system service.</summary>
-    let getFileName<'env when 'env :> IHas<IFileSystem>>
+    let getFileName<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileName path)
 
     /// <summary>Gets the file name without extension for a path through an explicit file-system service.</summary>
-    let getFileNameWithoutExtension<'env when 'env :> IHas<IFileSystem>>
+    let getFileNameWithoutExtension<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFileNameWithoutExtension path)
 
     /// <summary>Gets the full path through an explicit file-system service.</summary>
-    let getFullPath<'env when 'env :> IHas<IFileSystem>>
+    let getFullPath<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.GetFullPath path)
 
     /// <summary>Gets the path root through an explicit file-system service.</summary>
-    let getPathRoot<'env when 'env :> IHas<IFileSystem>>
+    let getPathRoot<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string option> =
         withService (Some path) (fun fileSystem -> fileSystem.GetPathRoot path)
 
     /// <summary>Gets a relative path through an explicit file-system service.</summary>
-    let getRelativePath<'env when 'env :> IHas<IFileSystem>>
+    let getRelativePath<'env when 'env :> IHasFileSystem>
         (relativeTo: string)
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.GetRelativePath(relativeTo, path))
 
     /// <summary>Gets the temporary directory path through an explicit file-system service.</summary>
-    let getTempPath<'env when 'env :> IHas<IFileSystem>>
+    let getTempPath<'env when 'env :> IHasFileSystem>
         : Flow<'env, FileSystemError, string> =
         withService None (fun fileSystem -> fileSystem.GetTempPath())
 
     /// <summary>Creates a temporary file through an explicit file-system service and returns its path.</summary>
-    let getTempFileName<'env when 'env :> IHas<IFileSystem>>
+    let getTempFileName<'env when 'env :> IHasFileSystem>
         : Flow<'env, FileSystemError, string> =
         withService None (fun fileSystem -> fileSystem.GetTempFileName())
 
     /// <summary>Gets a random file name through an explicit file-system service.</summary>
-    let getRandomFileName<'env when 'env :> IHas<IFileSystem>>
+    let getRandomFileName<'env when 'env :> IHasFileSystem>
         : Flow<'env, FileSystemError, string> =
         withService None (fun fileSystem -> fileSystem.GetRandomFileName())
 
     /// <summary>Checks whether a path has an extension through an explicit file-system service.</summary>
-    let hasExtension<'env when 'env :> IHas<IFileSystem>>
+    let hasExtension<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, bool> =
         withService (Some path) (fun fileSystem -> fileSystem.HasExtension path)
 
     /// <summary>Checks whether a path ends in a directory separator through an explicit file-system service.</summary>
-    let endsInDirectorySeparator<'env when 'env :> IHas<IFileSystem>>
+    let endsInDirectorySeparator<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, bool> =
         withService (Some path) (fun fileSystem -> fileSystem.EndsInDirectorySeparator path)
 
     /// <summary>Trims one trailing directory separator through an explicit file-system service.</summary>
-    let trimEndingDirectorySeparator<'env when 'env :> IHas<IFileSystem>>
+    let trimEndingDirectorySeparator<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
         withService (Some path) (fun fileSystem -> fileSystem.TrimEndingDirectorySeparator path)
 
     /// <summary>Checks whether a path is fully qualified through an explicit file-system service.</summary>
-    let isPathFullyQualified<'env when 'env :> IHas<IFileSystem>>
+    let isPathFullyQualified<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, bool> =
         withService (Some path) (fun fileSystem -> fileSystem.IsPathFullyQualified path)
 
     /// <summary>Checks whether a path is rooted through an explicit file-system service.</summary>
-    let isPathRooted<'env when 'env :> IHas<IFileSystem>>
+    let isPathRooted<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, bool> =
         withService (Some path) (fun fileSystem -> fileSystem.IsPathRooted path)

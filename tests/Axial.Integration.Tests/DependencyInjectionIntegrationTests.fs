@@ -34,14 +34,14 @@ type ServicePackageLayerServices =
         Process: IProcess
     }
 
-    interface IHas<IConsole> with
-        member this.Service = this.Console
+    interface IHasConsole with
+        member this.Console = this.Console
 
-    interface IHas<IFileSystem> with
-        member this.Service = this.FileSystem
+    interface IHasFileSystem with
+        member this.FileSystem = this.FileSystem
 
-    interface IHas<IHttp> with
-        member this.Service = this.Http
+    interface IHasHttp with
+        member this.Http = this.Http
 
     interface IHasProcess with
         member this.Process = this.Process

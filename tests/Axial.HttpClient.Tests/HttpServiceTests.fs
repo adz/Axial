@@ -15,8 +15,8 @@ open Xunit
 type HttpTestEnv =
     { Http: IHttp }
 
-    interface IHas<IHttp> with
-        member this.Service = this.Http
+    interface IHasHttp with
+        member this.Http = this.Http
 
 module HttpServiceTests =
     let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)

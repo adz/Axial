@@ -143,7 +143,7 @@ For a quick local look without infrastructure, use `.AddConsoleExporter()`, or r
 Logging is deliberately the opposite design from tracing: *which logger* is an application dependency you
 substitute, so `ILog` is an explicit environment service, not ambient instrumentation.
 
-- Workflows log through `Log.info`/`Log.error`/`Log.errorExn`/... against `IHas<ILog>`.
+- Workflows log through `Log.info`/`Log.error`/`Log.errorExn`/... against `IHasLog`.
 - [`Axial.Hosting`](/platforms-and-hosting/dotnet.html) bridges `ILog` to
   `Microsoft.Extensions.Logging`, exceptions included, so entries flow into the host's providers.
 - `FiberLogging.observe logger` is the logging counterpart of `FiberTelemetry.observe`: fiber defects are

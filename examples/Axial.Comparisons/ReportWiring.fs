@@ -62,14 +62,14 @@ module WithFlow =
           Console: IConsole
           Store: IReportStore }
 
-        interface IHas<IClock> with
-            member this.Service = this.Clock
+        interface IHasClock with
+            member this.Clock = this.Clock
 
-        interface IHas<IFileSystem> with
-            member this.Service = this.FileSystem
+        interface IHasFileSystem with
+            member this.FileSystem = this.FileSystem
 
-        interface IHas<IConsole> with
-            member this.Service = this.Console
+        interface IHasConsole with
+            member this.Console = this.Console
 
         interface IHas<IReportStore> with
             member this.Service = this.Store

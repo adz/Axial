@@ -25,7 +25,7 @@ Every built-in service follows the same three-part shape:
 A workflow names the contract and never the implementation:
 
 ```fsharp
-let greet name : Flow<#IHas<IConsole>, Never, unit> =
+let greet name : Flow<#IHasConsole, Never, unit> =
     Console.writeLine $"Hello, {name}."
 ```
 

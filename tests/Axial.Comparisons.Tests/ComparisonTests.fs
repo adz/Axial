@@ -103,8 +103,8 @@ module RetryTests =
     type private HttpEnv =
         { Http: IHttp }
 
-        interface IHas<IHttp> with
-            member this.Service = this.Http
+        interface IHasHttp with
+            member this.Http = this.Http
 
     [<Fact>]
     let ``transient transport failures are retried within the budget`` () =

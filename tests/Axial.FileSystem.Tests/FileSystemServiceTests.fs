@@ -11,8 +11,8 @@ open Xunit
 type FileSystemTestEnv =
     { FileSystem: IFileSystem }
 
-    interface IHas<IFileSystem> with
-        member this.Service = this.FileSystem
+    interface IHasFileSystem with
+        member this.FileSystem = this.FileSystem
 
 module FileSystemServiceTests =
     let private env () : FileSystemTestEnv =

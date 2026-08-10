@@ -14,8 +14,8 @@ The whole service surface is one method, and `Response.create` builds synthetic 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type TestEnv =
     { Http: IHttp }
-    interface IHas<IHttp> with
-        member this.Service = this.Http
+    interface IHasHttp with
+        member this.Http = this.Http
 
 let stub status body =
     let startedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
@@ -41,8 +41,8 @@ fallback paths deterministically, with no network and no clock.
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =
     { Http: IHttp }
-    interface IHas<IHttp> with
-        member this.Service = this.Http
+    interface IHasHttp with
+        member this.Http = this.Http
 
 let appLayer (clock: IClock) (client: HttpClient) : Layer<unit, Never, AppEnv> =
     layer {
@@ -76,12 +76,12 @@ Service records compose the same way as the other platform packages:
 type WorkerEnv =
     { Http: IHttp
       Process: IProcess }
-    interface IHas<IHttp> with member this.Service = this.Http
+    interface IHasHttp with member this.Http = this.Http
     interface IHasProcess with member this.Process = this.Process
 ```
 
 A workflow that needs both declares `Flow<WorkerEnv, ...>` (or stays polymorphic with
-`'env :> IHas<IHttp>` constraints) and runs against one environment value.
+`'env :> IHasHttp` constraints) and runs against one environment value.
 
 ## Portability
 

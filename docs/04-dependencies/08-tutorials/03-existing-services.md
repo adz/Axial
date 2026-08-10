@@ -17,14 +17,14 @@ open Axial.PlatformService
 type AppEnv =
     { Runtime: BaseRuntime }
 
-    interface IHas<IClock> with
-        member this.Service = this.Runtime.Clock
+    interface IHasClock with
+        member this.Clock = this.Runtime.Clock
 
-    interface IHas<ILog> with
-        member this.Service = this.Runtime.Log
+    interface IHasLog with
+        member this.Log = this.Runtime.Log
 
-    interface IHas<IEnvironmentVariables> with
-        member this.Service = this.Runtime.EnvironmentVariables
+    interface IHasEnvironmentVariables with
+        member this.EnvironmentVariables = this.Runtime.EnvironmentVariables
 ```
 
 ## Use The Services

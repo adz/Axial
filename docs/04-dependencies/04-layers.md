@@ -96,8 +96,8 @@ type AppEnv =
     { Runtime: BaseRuntime
       Orders: IOrderRepository }
 
-    interface IHas<IClock> with member this.Service = this.Runtime.Clock
-    interface IHas<ILog> with member this.Service = this.Runtime.Log
+    interface IHasClock with member this.Clock = this.Runtime.Clock
+    interface IHasLog with member this.Log = this.Runtime.Log
     interface IHas<IOrderRepository> with member this.Service = this.Orders
 
 let ordersLayer : Layer<IServiceProvider, BaseRuntimeError, IOrderRepository> =
@@ -178,7 +178,7 @@ type AppEnv =
     { Runtime: BaseRuntime
       Orders: IOrderRepository }
 
-    interface IHas<IClock> with member this.Service = this.Runtime.Clock
+    interface IHasClock with member this.Clock = this.Runtime.Clock
     interface IHas<IOrderRepository> with member this.Service = this.Orders
 ```
 

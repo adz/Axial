@@ -34,7 +34,7 @@ let workflow =
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.HttpClient.DSL
 
-let user : Flow<#IHas<IHttp>, HttpError, User> =
+let user : Flow<#IHasHttp, HttpError, User> =
     GET $"https://api.example.com/users/{userId}"
     |> fetchJson (Json.deserializeResult userCodec)   // Reified.Schema.Json, Thoth, or hand-written
 ```

@@ -38,48 +38,61 @@ type IConsole =
     abstract Title : string with get, set
     abstract TreatControlCAsInput : bool with get, set
 
+/// <summary>Declares that an environment supplies the console service.</summary>
+/// <remarks>
+/// Implement this on the environment supplied at the host edge. A workflow that reads or writes
+/// the console constrains its environment with <c>'env :&gt; IHasConsole</c>.
+/// </remarks>
+type IHasConsole =
+    /// The console service supplied by this environment.
+    abstract Console : IConsole
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Console =
-    let private withService<'env, 'error, 'value when 'env :> IHas<IConsole>> operation : Flow<'env, 'error, 'value> =
-        Service<IConsole>.get() |> Flow.map operation
+    /// Reads the console service from the environment.
+    let service<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, IConsole> =
+        Flow.read _.Console
 
-    let input<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, TextReader> = withService _.In
-    let output<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, TextWriter> = withService _.Out
-    let error<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, TextWriter> = withService _.Error
-    let inputEncoding<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, Encoding> = withService _.InputEncoding
-    let setInputEncoding<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.InputEncoding <- value)
-    let outputEncoding<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, Encoding> = withService _.OutputEncoding
-    let setOutputEncoding<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.OutputEncoding <- value)
-    let isInputRedirected<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, bool> = withService _.IsInputRedirected
-    let isOutputRedirected<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, bool> = withService _.IsOutputRedirected
-    let isErrorRedirected<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, bool> = withService _.IsErrorRedirected
-    let keyAvailable<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, bool> = withService _.KeyAvailable
-    let read<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, int> = withService (fun console -> console.Read())
-    let readLine<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, string> = withService (fun console -> console.ReadLine())
-    let readKey<'env, 'error when 'env :> IHas<IConsole>> intercept : Flow<'env, 'error, ConsoleKeyInfo> = withService (fun console -> console.ReadKey intercept)
-    let write<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.Write value)
-    let writeLine<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.WriteLine value)
-    let writeError<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.WriteError value)
-    let writeErrorLine<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.WriteErrorLine value)
-    let openStandardInput<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, Stream> = withService (fun console -> console.OpenStandardInput())
-    let openStandardOutput<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, Stream> = withService (fun console -> console.OpenStandardOutput())
-    let openStandardError<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, Stream> = withService (fun console -> console.OpenStandardError())
-    let clear<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, unit> = withService (fun console -> console.Clear())
-    let beep<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, unit> = withService (fun console -> console.Beep())
-    let resetColor<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, unit> = withService (fun console -> console.ResetColor())
-    let foregroundColor<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, ConsoleColor> = withService _.ForegroundColor
-    let setForegroundColor<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.ForegroundColor <- value)
-    let backgroundColor<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, ConsoleColor> = withService _.BackgroundColor
-    let setBackgroundColor<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.BackgroundColor <- value)
-    let cursorPosition<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, int * int> = withService (fun console -> console.CursorLeft, console.CursorTop)
-    let setCursorPosition<'env, 'error when 'env :> IHas<IConsole>> left top : Flow<'env, 'error, unit> = withService (fun console -> console.SetCursorPosition(left, top))
-    let cursorVisible<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, bool> = withService _.CursorVisible
-    let setCursorVisible<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.CursorVisible <- value)
-    let title<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, string> = withService _.Title
-    let setTitle<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.Title <- value)
-    let treatControlCAsInput<'env, 'error when 'env :> IHas<IConsole>> : Flow<'env, 'error, bool> = withService _.TreatControlCAsInput
-    let setTreatControlCAsInput<'env, 'error when 'env :> IHas<IConsole>> value : Flow<'env, 'error, unit> = withService (fun console -> console.TreatControlCAsInput <- value)
+    let private withService<'env, 'error, 'value when 'env :> IHasConsole> operation : Flow<'env, 'error, 'value> =
+        service |> Flow.map operation
+
+    let input<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, TextReader> = withService _.In
+    let output<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, TextWriter> = withService _.Out
+    let error<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, TextWriter> = withService _.Error
+    let inputEncoding<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, Encoding> = withService _.InputEncoding
+    let setInputEncoding<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.InputEncoding <- value)
+    let outputEncoding<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, Encoding> = withService _.OutputEncoding
+    let setOutputEncoding<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.OutputEncoding <- value)
+    let isInputRedirected<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, bool> = withService _.IsInputRedirected
+    let isOutputRedirected<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, bool> = withService _.IsOutputRedirected
+    let isErrorRedirected<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, bool> = withService _.IsErrorRedirected
+    let keyAvailable<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, bool> = withService _.KeyAvailable
+    let read<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, int> = withService (fun console -> console.Read())
+    let readLine<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, string> = withService (fun console -> console.ReadLine())
+    let readKey<'env, 'error when 'env :> IHasConsole> intercept : Flow<'env, 'error, ConsoleKeyInfo> = withService (fun console -> console.ReadKey intercept)
+    let write<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.Write value)
+    let writeLine<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.WriteLine value)
+    let writeError<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.WriteError value)
+    let writeErrorLine<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.WriteErrorLine value)
+    let openStandardInput<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, Stream> = withService (fun console -> console.OpenStandardInput())
+    let openStandardOutput<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, Stream> = withService (fun console -> console.OpenStandardOutput())
+    let openStandardError<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, Stream> = withService (fun console -> console.OpenStandardError())
+    let clear<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, unit> = withService (fun console -> console.Clear())
+    let beep<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, unit> = withService (fun console -> console.Beep())
+    let resetColor<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, unit> = withService (fun console -> console.ResetColor())
+    let foregroundColor<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, ConsoleColor> = withService _.ForegroundColor
+    let setForegroundColor<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.ForegroundColor <- value)
+    let backgroundColor<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, ConsoleColor> = withService _.BackgroundColor
+    let setBackgroundColor<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.BackgroundColor <- value)
+    let cursorPosition<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, int * int> = withService (fun console -> console.CursorLeft, console.CursorTop)
+    let setCursorPosition<'env, 'error when 'env :> IHasConsole> left top : Flow<'env, 'error, unit> = withService (fun console -> console.SetCursorPosition(left, top))
+    let cursorVisible<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, bool> = withService _.CursorVisible
+    let setCursorVisible<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.CursorVisible <- value)
+    let title<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, string> = withService _.Title
+    let setTitle<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.Title <- value)
+    let treatControlCAsInput<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, bool> = withService _.TreatControlCAsInput
+    let setTreatControlCAsInput<'env, 'error when 'env :> IHasConsole> value : Flow<'env, 'error, unit> = withService (fun console -> console.TreatControlCAsInput <- value)
 
 #if !FABLE_COMPILER
     /// <summary>Creates a live console service backed by <see cref="T:System.Console" />.</summary>

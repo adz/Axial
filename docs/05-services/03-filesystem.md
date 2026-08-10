@@ -11,7 +11,7 @@ description: Files, directories, paths, and typed file-system errors as an expli
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.FileSystem
 
-let loadConfig path : Flow<#IHas<IFileSystem>, FileSystemError, Config> =
+let loadConfig path : Flow<#IHasFileSystem, FileSystemError, Config> =
     flow {
         let! text = FileSystem.readAllText path
         return parseConfig text
@@ -26,8 +26,8 @@ let loadConfig path : Flow<#IHas<IFileSystem>, FileSystemError, Config> =
 type AppEnv =
     { FileSystem: IFileSystem }
 
-    interface IHas<IFileSystem> with
-        member this.Service = this.FileSystem
+    interface IHasFileSystem with
+        member this.FileSystem = this.FileSystem
 
 let! exit = (loadConfig "app.json").StartAsTask({ FileSystem = FileSystem.live })
 ```

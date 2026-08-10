@@ -30,7 +30,7 @@ let user =
     |> fetchJson decodeUser
 ```
 
-`user` is a `Flow<#IHas<IHttp>, HttpError, User>`. The URL hole is URL-encoded as one value, the bearer token is
+`user` is a `Flow<#IHasHttp, HttpError, User>`. The URL hole is URL-encoded as one value, the bearer token is
 redacted from every plan and error transcript, connection failures, timeouts, unexpected statuses, and decode
 failures all arrive as one typed `HttpError`, and nothing is sent until a Flow runtime runs the workflow.
 
@@ -50,7 +50,7 @@ and finish it with `Request.expect [ 200; 404 ] >> Http.sendResult`.
 
 1. `Http.get`/`GET $"..."` create an immutable `HttpRequest`. Construction never performs I/O.
 2. `Request.*` and DSL combinators (`query`, `bearer`, `timeout`, `jsonBody`, `expect`) configure it.
-3. `Http.send`, `fetch`, `fetchText`, or `fetchJson` convert it to `Flow<#IHas<IHttp>, HttpError, _>`.
+3. `Http.send`, `fetch`, `fetchText`, or `fetchJson` convert it to `Flow<#IHasHttp, HttpError, _>`.
 4. The Flow runtime resolves `IHttp` from the environment and performs the exchange.
 
 Because the service boundary is one `IHttp.Send` method, a complete test fake is a few lines, and

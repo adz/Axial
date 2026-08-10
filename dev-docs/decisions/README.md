@@ -57,3 +57,25 @@ Most .NET developers and many F# developers have never used an effect system, an
 - Core designs remain AOT-, trimming-, and Fable-friendly. Runtime reflection is not the foundation of workflow execution or service access.
 - Before 1.0, obsolete APIs are removed directly instead of accumulating aliases. After 1.0, normal semantic-versioning and deprecation rules apply.
 - Public packages currently share the version in `Directory.Build.props`; independent versioning can be reconsidered after package boundaries stabilize.
+
+## 2026-08-10: Environment contracts are one non-generic interface per service
+
+`IHas<'service>` is being replaced by one ordinary interface per service — `IHasClock` exposing
+`Clock`, `IHasFileSystem` exposing `FileSystem`, and so on.
+
+- **Why.** F# rejects a type parameter constrained by two instantiations of the same generic
+  interface (`FS0193`). With `IHas<'service>`, a workflow using two services could not be expressed
+  without naming a concrete environment *inside* the `flow { }` block, because the annotation on the
+  binding applies to the block's result after the body has already been checked. Distinct interfaces
+  carry no such restriction, so the constraints merge on their own. Adding a generic type anywhere in
+  a contract's inheritance chain reintroduces the failure, so contracts must not inherit one.
+- **Naming rule for producers.** A contract named `IHasFoo` exposes exactly one member named `Foo`.
+  This is what makes `Flow.read _.Foo` predictable and keeps composition roots readable.
+- **`member this.Foo = this.Foo` is not recursive.** F# interface implementations are always
+  explicit, so the interface member is not in scope on the concrete type; `this.Foo` on the
+  right-hand side resolves to the record field. A type with no such field fails to compile rather
+  than recursing.
+- **Each package ships one accessor**, `Foo.service`, bound at module level. `Flow.read _.Foo` cannot
+  resolve inside a `flow { }` block, where the lambda's parameter type is not yet known; binding it
+  at module level puts the annotation next to the expression that needs it, and every caller then
+  binds it with no annotation.

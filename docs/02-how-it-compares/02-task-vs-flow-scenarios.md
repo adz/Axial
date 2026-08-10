@@ -66,7 +66,7 @@ defects and interruption are structurally out of its reach — `Flow.Runtime.ret
 tests pin all four behaviors: recovery within the budget, budget exhaustion, no retry of `Malformed`, and the
 timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed `Schedule`, `retry`.
 
-- **Made visible by the type**: the transient/terminal error taxonomy and the `IHas<IHttp>` requirement.
+- **Made visible by the type**: the transient/terminal error taxonomy and the `IHasHttp` requirement.
 - **Enforced by the runtime**: only predicate-accepted typed failures are retried; the timeout reaches sleeps and
   the in-flight request through the ambient cancellation token.
 - **Still the application's responsibility**: the operation must be safe to repeat, and the adapter must not hide a

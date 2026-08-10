@@ -35,23 +35,23 @@ and AppEnv =
       Runtime: BaseRuntime
       FileSystem: IFileSystem }
 
-    interface IHas<IClock> with
-        member this.Service = this.Runtime.Clock
+    interface IHasClock with
+        member this.Clock = this.Runtime.Clock
 
-    interface IHas<ILog> with
-        member this.Service = this.Runtime.Log
+    interface IHasLog with
+        member this.Log = this.Runtime.Log
 
-    interface IHas<IRandom> with
-        member this.Service = this.Runtime.Random
+    interface IHasRandom with
+        member this.Random = this.Runtime.Random
 
-    interface IHas<IGuid> with
-        member this.Service = this.Runtime.Guid
+    interface IHasGuid with
+        member this.Guid = this.Runtime.Guid
 
-    interface IHas<IEnvironmentVariables> with
-        member this.Service = this.Runtime.EnvironmentVariables
+    interface IHasEnvironmentVariables with
+        member this.EnvironmentVariables = this.Runtime.EnvironmentVariables
 
-    interface IHas<IFileSystem> with
-        member this.Service = this.FileSystem
+    interface IHasFileSystem with
+        member this.FileSystem = this.FileSystem
 
 [<RequireQualifiedAccess>]
 module FileWorkspaceStore =

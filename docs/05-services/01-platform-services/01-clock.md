@@ -13,7 +13,7 @@ open Axial.PlatformService
 ```
 
 ```fsharp
-let expiresWithin (window: TimeSpan) (expiry: DateTimeOffset) : Flow<#IHas<IClock>, Never, bool> =
+let expiresWithin (window: TimeSpan) (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
     Clock.now |> Flow.map (fun now -> expiry - now <= window)
 ```
 

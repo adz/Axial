@@ -12,7 +12,7 @@ open Axial.PlatformService
 ```
 
 ```fsharp
-let recordAttempt name : Flow<#IHas<ILog>, Never, unit> =
+let recordAttempt name : Flow<#IHasLog, Never, unit> =
     Log.info $"Processing {name}"
 ```
 

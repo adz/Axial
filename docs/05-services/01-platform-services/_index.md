@@ -23,10 +23,10 @@ open Axial.PlatformService
 | `IEnvironmentVariables` | `Environment.GetEnvironmentVariable` | `EnvironmentVariables`, `EnvironmentVariable` |
 
 These are the smallest services Axial ships, and the most valuable to make explicit. A function that reads the clock
-directly cannot be tested at a chosen instant; one that declares `IHas<IClock>` can:
+directly cannot be tested at a chosen instant; one that declares `IHasClock` can:
 
 ```fsharp
-let isExpired (expiry: DateTimeOffset) : Flow<#IHas<IClock>, Never, bool> =
+let isExpired (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
     Clock.now |> Flow.map (fun now -> now >= expiry)
 ```
 

@@ -163,6 +163,15 @@ module HttpError =
 type IHttp =
     abstract Send : request: HttpRequest * cancellationToken: System.Threading.CancellationToken -> Async<Result<HttpResponse, HttpError>>
 
+/// <summary>Declares that an environment supplies the HTTP service.</summary>
+/// <remarks>
+/// Implement this on the environment supplied at the host edge. A workflow that sends requests
+/// constrains its environment with <c>'env :&gt; IHasHttp</c>.
+/// </remarks>
+type IHasHttp =
+    /// The HTTP service supplied by this environment.
+    abstract Http : IHttp
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Request =
@@ -377,17 +386,21 @@ module Http =
 
     /// Sends a request and returns the transcript without interpreting the status expectation.
     /// <example><code>request |&gt; Http.sendResult</code></example>
-    let sendResult<'env when 'env :> IHas<IHttp>> (request: HttpRequest) : Flow<'env, HttpError, HttpResponse> =
+    /// Reads the HTTP service from the environment.
+    let service<'env, 'error when 'env :> IHasHttp> : Flow<'env, 'error, IHttp> =
+        Flow.read _.Http
+
+    let sendResult<'env when 'env :> IHasHttp> (request: HttpRequest) : Flow<'env, HttpError, HttpResponse> =
         flow {
-            let! service = Service<IHttp>.get()
+            let! http = service
             let! cancellationToken = Flow.Runtime.cancellationToken
-            let! outcome: Result<HttpResponse, HttpError> = service.Send(request, cancellationToken)
+            let! outcome: Result<HttpResponse, HttpError> = http.Send(request, cancellationToken)
             return! outcome
         }
 
     /// Sends a request and fails with <c>HttpError.Status</c> when the response is outside the expectation.
     /// <example><code>request |&gt; Http.send</code></example>
-    let send<'env when 'env :> IHas<IHttp>> (request: HttpRequest) : Flow<'env, HttpError, HttpResponse> =
+    let send<'env when 'env :> IHasHttp> (request: HttpRequest) : Flow<'env, HttpError, HttpResponse> =
         flow {
             let! response = sendResult request
             if Request.succeeded request response.StatusCode then return response
@@ -396,17 +409,17 @@ module Http =
 
     /// Sends a request and returns the response body text.
     /// <example><code>Http.get url |&gt; Request.bearer token |&gt; Http.text</code></example>
-    let text<'env when 'env :> IHas<IHttp>> (request: HttpRequest) : Flow<'env, HttpError, string> =
+    let text<'env when 'env :> IHasHttp> (request: HttpRequest) : Flow<'env, HttpError, string> =
         send request |> Flow.map Response.text
 
     /// Sends a request and returns the exact response body bytes.
     /// <example><code>Http.get url |&gt; Http.bytes</code></example>
-    let bytes<'env when 'env :> IHas<IHttp>> (request: HttpRequest) : Flow<'env, HttpError, byte array> =
+    let bytes<'env when 'env :> IHasHttp> (request: HttpRequest) : Flow<'env, HttpError, byte array> =
         send request |> Flow.map Response.bytes
 
     /// Sends a request and decodes the JSON response body with the supplied decoder.
     /// <example><code>Http.get url |&gt; Request.acceptJson |&gt; Http.json (Json.deserializeResult codec)</code></example>
-    let json<'env, 'value when 'env :> IHas<IHttp>>
+    let json<'env, 'value when 'env :> IHasHttp>
         (decode: string -> Result<'value, string>)
         (request: HttpRequest)
         : Flow<'env, HttpError, 'value> =
@@ -417,17 +430,17 @@ module Http =
 
     /// Sends a GET request and returns the response body, mirroring <c>HttpClient.GetStringAsync</c>.
     /// <example><code>Http.getString "https://example.com"</code></example>
-    let getString<'env when 'env :> IHas<IHttp>> (url: string) : Flow<'env, HttpError, string> =
+    let getString<'env when 'env :> IHasHttp> (url: string) : Flow<'env, HttpError, string> =
         get url |> text
 
     /// Sends a GET request and returns the body bytes, mirroring <c>HttpClient.GetByteArrayAsync</c>.
     /// <example><code>Http.getBytes "https://example.com/logo.png"</code></example>
-    let getBytes<'env when 'env :> IHas<IHttp>> (url: string) : Flow<'env, HttpError, byte array> =
+    let getBytes<'env when 'env :> IHasHttp> (url: string) : Flow<'env, HttpError, byte array> =
         get url |> bytes
 
     /// Sends a GET request and decodes the JSON response.
     /// <example><code>Http.getJson (Json.deserializeResult codec) "https://api.example.com/users/1"</code></example>
-    let getJson<'env, 'value when 'env :> IHas<IHttp>>
+    let getJson<'env, 'value when 'env :> IHasHttp>
         (decode: string -> Result<'value, string>)
         (url: string)
         : Flow<'env, HttpError, 'value> =
@@ -435,12 +448,12 @@ module Http =
 
     /// Sends a POST request with a text body, mirroring <c>HttpClient.PostAsync</c> with string content.
     /// <example><code>Http.postString "https://example.com/echo" "hello"</code></example>
-    let postString<'env when 'env :> IHas<IHttp>> (url: string) (content: string) : Flow<'env, HttpError, HttpResponse> =
+    let postString<'env when 'env :> IHasHttp> (url: string) (content: string) : Flow<'env, HttpError, HttpResponse> =
         post url |> Request.textBody content |> send
 
     /// Encodes a value as JSON, POSTs it, and decodes the JSON response.
     /// <example><code>Http.postJson (Json.serialize codec) (Json.deserializeResult codec) url user</code></example>
-    let postJson<'env, 'input, 'value when 'env :> IHas<IHttp>>
+    let postJson<'env, 'input, 'value when 'env :> IHasHttp>
         (encode: 'input -> string)
         (decode: string -> Result<'value, string>)
         (url: string)

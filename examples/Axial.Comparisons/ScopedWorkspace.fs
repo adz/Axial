@@ -69,8 +69,8 @@ module WithFlow =
     type WorkspaceEnv =
         { FileSystem: IFileSystem }
 
-        interface IHas<IFileSystem> with
-            member this.Service = this.FileSystem
+        interface IHasFileSystem with
+            member this.FileSystem = this.FileSystem
 
     /// Flow<WorkspaceEnv, ImportError, int>
     ///

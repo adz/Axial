@@ -35,6 +35,31 @@ type IEnvironmentVariables =
     abstract Expand: text: string -> string
     abstract GetAll: unit -> IReadOnlyDictionary<string, string>
 
+/// <summary>Declares that an environment supplies the clock service.</summary>
+type IHasClock =
+    /// The clock service supplied by this environment.
+    abstract Clock : IClock
+
+/// <summary>Declares that an environment supplies the logging service.</summary>
+type IHasLog =
+    /// The logging service supplied by this environment.
+    abstract Log : ILog
+
+/// <summary>Declares that an environment supplies the random-number service.</summary>
+type IHasRandom =
+    /// The random-number service supplied by this environment.
+    abstract Random : IRandom
+
+/// <summary>Declares that an environment supplies the GUID service.</summary>
+type IHasGuid =
+    /// The GUID service supplied by this environment.
+    abstract Guid : IGuid
+
+/// <summary>Declares that an environment supplies the environment-variable service.</summary>
+type IHasEnvironmentVariables =
+    /// The environment-variable service supplied by this environment.
+    abstract EnvironmentVariables : IEnvironmentVariables
+
 [<RequireQualifiedAccess>]
 type EnvironmentVariableError =
     | MissingVariable of name: string

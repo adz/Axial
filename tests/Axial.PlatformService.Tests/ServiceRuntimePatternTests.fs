@@ -1,8 +1,6 @@
 namespace Axial.Tests
 
 open System
-open System.Threading
-open System.Threading.Tasks
 open Axial
 open Swensen.Unquote
 open Xunit
@@ -20,6 +18,20 @@ module ServiceRuntimePatternTests =
     type ITodoStore =
         abstract Todos : string list
 
+    /// One non-generic contract per service. Because these are distinct interfaces, a single
+    /// environment can carry any combination of them and the constraints merge without help.
+    type IHasClock =
+        abstract Clock : IClock
+
+    type IHasLogger =
+        abstract Logger : ILogger
+
+    type IHasRandom =
+        abstract Random : IRandom
+
+    type IHasTodoStore =
+        abstract TodoStore : ITodoStore
+
     type FixedClock(now: DateTimeOffset) =
         interface IClock with
             member _.UtcNow() = now
@@ -34,96 +46,73 @@ module ServiceRuntimePatternTests =
 
     type FixedRandom(index: int) =
         interface IRandom with
-            member _.NextInt minInclusive maxExclusive = index
+            member _.NextInt _ _ = index
 
     type InMemoryTodoStore(todos: string list) =
         interface ITodoStore with
             member _.Todos = todos
 
-    type ClockServices =
-        interface
-            inherit IHas<IClock>
-            abstract Clock : IClock
-        end
-
-    type LoggerServices =
-        interface
-            inherit IHas<ILogger>
-            abstract Logger : ILogger
-        end
-
-    type RandomServices =
-        interface
-            inherit IHas<IRandom>
-            abstract Random : IRandom
-        end
-
-    type TodoStoreServices =
-        interface
-            inherit IHas<ITodoStore>
-            abstract TodoStore : ITodoStore
-        end
-
-    type ChooseTodoServices =
-        interface
-            inherit IHas<IRandom>
-            inherit IHas<ITodoStore>
-            abstract Random : IRandom
-            abstract TodoStore : ITodoStore
-        end
-
-    type AppServices =
-        interface
-            inherit ChooseTodoServices
-            inherit IHas<IClock>
-            inherit IHas<ILogger>
-            abstract Clock : IClock
-            abstract Logger : ILogger
-        end
-
+    /// A small runtime supplying only what the todo workflow needs.
     type ChooseTodoTestRuntime =
         { RandomService: IRandom
           TodoStoreService: ITodoStore }
-        with
-            interface ChooseTodoServices with
-                member x.Random = x.RandomService
-                member x.TodoStore = x.TodoStoreService
 
-            interface IHas<IRandom> with
-                member x.Service = x.RandomService
+        interface IHasRandom with
+            member this.Random = this.RandomService
 
-            interface IHas<ITodoStore> with
-                member x.Service = x.TodoStoreService
+        interface IHasTodoStore with
+            member this.TodoStore = this.TodoStoreService
 
+    /// The full application runtime, supplying every service.
     type AppRuntime =
         { ClockService: IClock
           LoggerService: ILogger
           RandomService: IRandom
           TodoStoreService: ITodoStore }
-        with
-            interface AppServices with
-                member x.Clock = x.ClockService
-                member x.Logger = x.LoggerService
-                member x.Random = x.RandomService
-                member x.TodoStore = x.TodoStoreService
 
-            interface IHas<IClock> with
-                member x.Service = x.ClockService
+        interface IHasClock with
+            member this.Clock = this.ClockService
 
-            interface IHas<ILogger> with
-                member x.Service = x.LoggerService
+        interface IHasLogger with
+            member this.Logger = this.LoggerService
 
-            interface IHas<IRandom> with
-                member x.Service = x.RandomService
+        interface IHasRandom with
+            member this.Random = this.RandomService
 
-            interface IHas<ITodoStore> with
-                member x.Service = x.TodoStoreService
+        interface IHasTodoStore with
+            member this.TodoStore = this.TodoStoreService
+
+    [<RequireQualifiedAccess>]
+    module Random =
+        let service<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, IRandom> =
+            Flow.read _.Random
+
+    [<RequireQualifiedAccess>]
+    module TodoStore =
+        let service<'env, 'error when 'env :> IHasTodoStore> : Flow<'env, 'error, ITodoStore> =
+            Flow.read _.TodoStore
 
     type TodoError =
         | EmptyTodoList
 
+    /// Declares exactly the two services it uses, and stays generic over any environment that
+    /// supplies them. No annotation inside the block, and no aggregate interface.
+    let chooseTodo<'env when 'env :> IHasRandom and 'env :> IHasTodoStore>
+        ()
+        : Flow<'env, TodoError, string option> =
+        flow {
+            let! todoStore = TodoStore.service
+            let! random = Random.service
+
+            match todoStore.Todos with
+            | [] -> return None
+            | todos ->
+                let index = random.NextInt 0 todos.Length
+                return Some todos[index]
+        }
+
     [<Fact>]
-    let ``fine-grained services expose their dependencies through IHas`` () =
+    let ``environments expose their services through per-service contracts`` () =
         let clock = FixedClock(DateTimeOffset(2026, 5, 9, 12, 30, 0, TimeSpan.Zero))
         let logger = RecordingLogger()
         let random = FixedRandom 1
@@ -139,30 +128,21 @@ module ServiceRuntimePatternTests =
             { RandomService = random :> IRandom
               TodoStoreService = todoStore :> ITodoStore }
 
-        let clockNeeds = appRuntime :> IHas<IClock>
-        let loggerNeeds = appRuntime :> IHas<ILogger>
-        let randomNeeds = appRuntime :> IHas<IRandom>
-        let todoStoreNeeds = appRuntime :> IHas<ITodoStore>
-        let testRandomNeeds = chooseTodoRuntime :> IHas<IRandom>
-        let testTodoStoreNeeds = chooseTodoRuntime :> IHas<ITodoStore>
-
-        test <@ obj.ReferenceEquals(box clockNeeds.Service, box clock) @>
-        test <@ obj.ReferenceEquals(box loggerNeeds.Service, box logger) @>
-        test <@ obj.ReferenceEquals(box randomNeeds.Service, box random) @>
-        test <@ obj.ReferenceEquals(box todoStoreNeeds.Service, box todoStore) @>
-        test <@ obj.ReferenceEquals(box testRandomNeeds.Service, box random) @>
-        test <@ obj.ReferenceEquals(box testTodoStoreNeeds.Service, box todoStore) @>
+        test <@ obj.ReferenceEquals(box (appRuntime :> IHasClock).Clock, box clock) @>
+        test <@ obj.ReferenceEquals(box (appRuntime :> IHasLogger).Logger, box logger) @>
+        test <@ obj.ReferenceEquals(box (appRuntime :> IHasRandom).Random, box random) @>
+        test <@ obj.ReferenceEquals(box (appRuntime :> IHasTodoStore).TodoStore, box todoStore) @>
+        test <@ obj.ReferenceEquals(box (chooseTodoRuntime :> IHasRandom).Random, box random) @>
+        test <@ obj.ReferenceEquals(box (chooseTodoRuntime :> IHasTodoStore).TodoStore, box todoStore) @>
 
     [<Fact>]
-    let ``named service-set flows run on both larger app runtimes and smaller test runtimes`` () =
-        let clock = FixedClock(DateTimeOffset(2026, 5, 9, 12, 30, 0, TimeSpan.Zero))
-        let logger = RecordingLogger()
+    let ``one flow declaring two services runs on both a full runtime and a smaller test runtime`` () =
         let random = FixedRandom 1
         let todoStore = InMemoryTodoStore [ "alpha"; "beta"; "gamma" ]
 
         let appRuntime =
-            { ClockService = clock :> IClock
-              LoggerService = logger :> ILogger
+            { ClockService = FixedClock(DateTimeOffset(2026, 5, 9, 12, 30, 0, TimeSpan.Zero)) :> IClock
+              LoggerService = RecordingLogger() :> ILogger
               RandomService = random :> IRandom
               TodoStoreService = todoStore :> ITodoStore }
 
@@ -170,68 +150,16 @@ module ServiceRuntimePatternTests =
             { RandomService = random :> IRandom
               TodoStoreService = todoStore :> ITodoStore }
 
-        let chooseTodoFlowForApp : Flow<AppRuntime, TodoError, string option> =
-            flow {
-                let! todoStore = Service<ITodoStore>.get<AppRuntime, TodoError>()
-                let! random = Service<IRandom>.get<AppRuntime, TodoError>()
-                let todos = todoStore.Todos
-
-                match todos with
-                | [] -> return None
-                | _ ->
-                    let index = random.NextInt 0 todos.Length
-                    return Some todos[index]
-            }
-
-        let chooseTodoFlowForTest : Flow<ChooseTodoTestRuntime, TodoError, string option> =
-            flow {
-                let! todoStore = Service<ITodoStore>.get<ChooseTodoTestRuntime, TodoError>()
-                let! random = Service<IRandom>.get<ChooseTodoTestRuntime, TodoError>()
-                let todos = todoStore.Todos
-
-                match todos with
-                | [] -> return None
-                | _ ->
-                    let index = random.NextInt 0 todos.Length
-                    return Some todos[index]
-            }
-
-        let appResult =
-            Flow.runSync appRuntime chooseTodoFlowForApp
-
-        let testResult =
-            Flow.runSync chooseTodoRuntime chooseTodoFlowForTest
+        let appResult = Flow.run appRuntime (chooseTodo ())
+        let testResult = Flow.run chooseTodoRuntime (chooseTodo ())
 
         test <@ appResult = Exit.Success (Some "beta") @>
         test <@ testResult = Exit.Success (Some "beta") @>
 
     [<Fact>]
-    let ``flexible type boundaries keep the app runtime story small and explicit`` () =
-        let clock = FixedClock(DateTimeOffset(2026, 5, 9, 12, 30, 0, TimeSpan.Zero))
-        let logger = RecordingLogger()
-        let random = FixedRandom 1
-        let todoStore = InMemoryTodoStore [ "alpha"; "beta"; "gamma" ]
+    let ``an empty store returns no todo`` () =
+        let runtime =
+            { RandomService = FixedRandom 0 :> IRandom
+              TodoStoreService = InMemoryTodoStore [] :> ITodoStore }
 
-        let appRuntime =
-            { ClockService = clock :> IClock
-              LoggerService = logger :> ILogger
-              RandomService = random :> IRandom
-              TodoStoreService = todoStore :> ITodoStore }
-
-        let chooseTodoFlow : Flow<AppRuntime, TodoError, string option> =
-            flow {
-                let! todoStore = Service<ITodoStore>.get<AppRuntime, TodoError>()
-                let! random = Service<IRandom>.get<AppRuntime, TodoError>()
-                let todos = todoStore.Todos
-
-                match todos with
-                | [] -> return None
-                | _ ->
-                    let index = random.NextInt 0 todos.Length
-                    return Some todos[index]
-            }
-
-        let chooseTodoResult =
-            Flow.runSync appRuntime chooseTodoFlow
-
-        test <@ chooseTodoResult = Exit.Success (Some "beta") @>
+        test <@ Flow.run runtime (chooseTodo ()) = Exit.Success None @>

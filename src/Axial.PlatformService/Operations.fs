@@ -14,30 +14,34 @@ type BaseRuntime =
       Random: IRandom
       Guid: IGuid
       EnvironmentVariables: IEnvironmentVariables }
-    interface IHas<IClock> with member this.Service = this.Clock
-    interface IHas<ILog> with member this.Service = this.Log
-    interface IHas<IRandom> with member this.Service = this.Random
-    interface IHas<IGuid> with member this.Service = this.Guid
-    interface IHas<IEnvironmentVariables> with member this.Service = this.EnvironmentVariables
+    interface IHasClock with member this.Clock = this.Clock
+    interface IHasLog with member this.Log = this.Log
+    interface IHasRandom with member this.Random = this.Random
+    interface IHasGuid with member this.Guid = this.Guid
+    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.EnvironmentVariables
 
 /// <summary>Helpers for the clock service.</summary>
 [<RequireQualifiedAccess>]
 module Clock =
+    /// Reads the service from the environment.
+    let service<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, IClock> =
+        Flow.read _.Clock
+
     /// <summary>Reads the current UTC timestamp from an explicit clock service.</summary>
-    let now<'env, 'error when 'env :> IHas<IClock>> : Flow<'env, 'error, DateTimeOffset> =
-        Service<IClock>.get()
+    let now<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, DateTimeOffset> =
+        service
         |> Flow.map (fun clock -> clock.UtcNow())
 
     /// <summary>Reads the current UTC date/time from an explicit clock service.</summary>
-    let utcDateTime<'env, 'error when 'env :> IHas<IClock>> : Flow<'env, 'error, DateTime> =
+    let utcDateTime<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, DateTime> =
         now |> Flow.map _.UtcDateTime
 
     /// <summary>Reads the current Unix timestamp in seconds from an explicit clock service.</summary>
-    let unixTimeSeconds<'env, 'error when 'env :> IHas<IClock>> : Flow<'env, 'error, int64> =
+    let unixTimeSeconds<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, int64> =
         now |> Flow.map _.ToUnixTimeSeconds()
 
     /// <summary>Reads the current Unix timestamp in milliseconds from an explicit clock service.</summary>
-    let unixTimeMilliseconds<'env, 'error when 'env :> IHas<IClock>> : Flow<'env, 'error, int64> =
+    let unixTimeMilliseconds<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, int64> =
         now |> Flow.map _.ToUnixTimeMilliseconds()
 
     /// <summary>Creates a live clock backed by <see cref="P:System.DateTimeOffset.UtcNow" />.</summary>
@@ -57,53 +61,57 @@ module Clock =
 /// <summary>Helpers for the logging service.</summary>
 [<RequireQualifiedAccess>]
 module Log =
+    /// Reads the service from the environment.
+    let service<'env, 'error when 'env :> IHasLog> : Flow<'env, 'error, ILog> =
+        Flow.read _.Log
+
     /// <summary>Writes a log message at the requested level through an explicit logging service.</summary>
-    let log<'env, 'error when 'env :> IHas<ILog>>
+    let log<'env, 'error when 'env :> IHasLog>
         (level: LogLevel)
         (message: string)
         : Flow<'env, 'error, unit> =
-        Service<ILog>.get()
+        service
         |> Flow.map (fun log -> log.Log level message)
 
     /// <summary>Writes a trace log message through an explicit logging service.</summary>
-    let trace<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+    let trace<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Trace message
 
     /// <summary>Writes a debug log message through an explicit logging service.</summary>
-    let debug<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+    let debug<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Debug message
 
     /// <summary>Writes an informational log message through an explicit logging service.</summary>
-    let info<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+    let info<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Information message
 
     /// <summary>Writes a warning log message through an explicit logging service.</summary>
-    let warning<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+    let warning<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Warning message
 
     /// <summary>Writes an error log message through an explicit logging service.</summary>
-    let error<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+    let error<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Error message
 
     /// <summary>Writes a critical log message through an explicit logging service.</summary>
-    let critical<'env, 'error when 'env :> IHas<ILog>> (message: string) : Flow<'env, 'error, unit> =
+    let critical<'env, 'error when 'env :> IHasLog> (message: string) : Flow<'env, 'error, unit> =
         log LogLevel.Critical message
 
     /// <summary>Writes a log message carrying an exception through an explicit logging service.</summary>
-    let logException<'env, 'error when 'env :> IHas<ILog>>
+    let logException<'env, 'error when 'env :> IHasLog>
         (level: LogLevel)
         (error: exn)
         (message: string)
         : Flow<'env, 'error, unit> =
-        Service<ILog>.get()
+        service
         |> Flow.map (fun log -> log.LogException level error message)
 
     /// <summary>Writes an error log message carrying an exception through an explicit logging service.</summary>
-    let errorExn<'env, 'error when 'env :> IHas<ILog>> (error: exn) (message: string) : Flow<'env, 'error, unit> =
+    let errorExn<'env, 'error when 'env :> IHasLog> (error: exn) (message: string) : Flow<'env, 'error, unit> =
         logException LogLevel.Error error message
 
     /// <summary>Writes a critical log message carrying an exception through an explicit logging service.</summary>
-    let criticalExn<'env, 'error when 'env :> IHas<ILog>> (error: exn) (message: string) : Flow<'env, 'error, unit> =
+    let criticalExn<'env, 'error when 'env :> IHasLog> (error: exn) (message: string) : Flow<'env, 'error, unit> =
         logException LogLevel.Critical error message
 
     /// <summary>Creates a no-op logger for tests and local service bundles.</summary>
@@ -125,40 +133,44 @@ module Log =
 /// <summary>Helpers for the random-number service.</summary>
 [<RequireQualifiedAccess>]
 module Random =
+    /// Reads the service from the environment.
+    let service<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, IRandom> =
+        Flow.read _.Random
+
     /// <summary>Reads a non-negative random integer from an explicit random-number service.</summary>
-    let next<'env, 'error when 'env :> IHas<IRandom>> : Flow<'env, 'error, int> =
-        Service<IRandom>.get()
+    let next<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, int> =
+        service
         |> Flow.map (fun random -> random.Next())
 
     /// <summary>Reads a random integer less than the supplied maximum from an explicit random-number service.</summary>
-    let nextMax<'env, 'error when 'env :> IHas<IRandom>>
+    let nextMax<'env, 'error when 'env :> IHasRandom>
         (maxExclusive: int)
         : Flow<'env, 'error, int> =
-        Service<IRandom>.get()
+        service
         |> Flow.map (fun random -> random.NextMax maxExclusive)
 
     /// <summary>Reads a random integer from an explicit random-number service.</summary>
-    let nextInt<'env, 'error when 'env :> IHas<IRandom>>
+    let nextInt<'env, 'error when 'env :> IHasRandom>
         (minInclusive: int)
         (maxExclusive: int)
         : Flow<'env, 'error, int> =
-        Service<IRandom>.get()
+        service
         |> Flow.map (fun random -> random.NextInt minInclusive maxExclusive)
 
     /// <summary>Reads a random floating-point value from an explicit random-number service.</summary>
-    let nextDouble<'env, 'error when 'env :> IHas<IRandom>> : Flow<'env, 'error, float> =
-        Service<IRandom>.get()
+    let nextDouble<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, float> =
+        service
         |> Flow.map (fun random -> random.NextDouble())
 
     /// <summary>Fills a byte buffer through an explicit random-number service.</summary>
-    let nextBytes<'env, 'error when 'env :> IHas<IRandom>>
+    let nextBytes<'env, 'error when 'env :> IHasRandom>
         (buffer: byte array)
         : Flow<'env, 'error, unit> =
-        Service<IRandom>.get()
+        service
         |> Flow.map (fun random -> random.NextBytes buffer)
 
     /// <summary>Creates a byte array filled through an explicit random-number service.</summary>
-    let bytes<'env, 'error when 'env :> IHas<IRandom>>
+    let bytes<'env, 'error when 'env :> IHasRandom>
         (count: int)
         : Flow<'env, 'error, byte array> =
         flow {
@@ -204,9 +216,13 @@ module Random =
 /// <summary>Helpers for the GUID service.</summary>
 [<RequireQualifiedAccess>]
 module Guid =
+    /// Reads the service from the environment.
+    let service<'env, 'error when 'env :> IHasGuid> : Flow<'env, 'error, IGuid> =
+        Flow.read _.Guid
+
     /// <summary>Reads a GUID from an explicit GUID service.</summary>
-    let newGuid<'env, 'error when 'env :> IHas<IGuid>> : Flow<'env, 'error, global.System.Guid> =
-        Service<IGuid>.get()
+    let newGuid<'env, 'error when 'env :> IHasGuid> : Flow<'env, 'error, global.System.Guid> =
+        service
         |> Flow.map (fun guid -> guid.NewGuid())
 
     /// <summary>Creates a live GUID service backed by <c>Guid.NewGuid()</c>.</summary>
@@ -226,39 +242,43 @@ module Guid =
 /// <summary>Helpers for the environment-variable service.</summary>
 [<RequireQualifiedAccess>]
 module EnvironmentVariables =
+    /// Reads the service from the environment.
+    let service<'env, 'error when 'env :> IHasEnvironmentVariables> : Flow<'env, 'error, IEnvironmentVariables> =
+        Flow.read _.EnvironmentVariables
+
     /// <summary>Reads a raw environment-variable value from an explicit environment-variable service.</summary>
-    let tryGet<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+    let tryGet<'env, 'error when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, 'error, string option> =
-        Service<IEnvironmentVariables>.get()
+        service
         |> Flow.map (fun environmentVariables -> environmentVariables.TryGet name)
 
     /// <summary>Returns all visible environment variables from an explicit environment-variable service.</summary>
-    let getAll<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+    let getAll<'env, 'error when 'env :> IHasEnvironmentVariables>
         : Flow<'env, 'error, IReadOnlyDictionary<string, string>> =
-        Service<IEnvironmentVariables>.get()
+        service
         |> Flow.map (fun environmentVariables -> environmentVariables.GetAll())
 
     /// <summary>Sets or updates an environment variable through an explicit environment-variable service.</summary>
-    let set<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+    let set<'env, 'error when 'env :> IHasEnvironmentVariables>
         (name: string)
         (value: string)
         : Flow<'env, 'error, unit> =
-        Service<IEnvironmentVariables>.get()
+        service
         |> Flow.map (fun environmentVariables -> environmentVariables.Set(name, Some value))
 
     /// <summary>Clears an environment variable through an explicit environment-variable service.</summary>
-    let clear<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+    let clear<'env, 'error when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, 'error, unit> =
-        Service<IEnvironmentVariables>.get()
+        service
         |> Flow.map (fun environmentVariables -> environmentVariables.Set(name, None))
 
     /// <summary>Expands environment-variable references in text through an explicit environment-variable service.</summary>
-    let expand<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+    let expand<'env, 'error when 'env :> IHasEnvironmentVariables>
         (text: string)
         : Flow<'env, 'error, string> =
-        Service<IEnvironmentVariables>.get()
+        service
         |> Flow.map (fun environmentVariables -> environmentVariables.Expand text)
 
     /// <summary>Creates a live provider backed by the current process environment.</summary>
@@ -281,7 +301,7 @@ module EnvironmentVariable =
         (parser: string -> 'value option)
         (name: string)
         : Flow<'env, EnvironmentVariableError, 'value>
-        when 'env :> IHas<IEnvironmentVariables> =
+        when 'env :> IHasEnvironmentVariables =
         flow {
             let! value = EnvironmentVariables.tryGet name
 
@@ -294,7 +314,7 @@ module EnvironmentVariable =
         }
 
     /// <summary>Reads a raw string environment variable through an explicit service.</summary>
-    let get<'env when 'env :> IHas<IEnvironmentVariables>>
+    let get<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, string> =
         flow {
@@ -306,13 +326,13 @@ module EnvironmentVariable =
         }
 
     /// <summary>Reads a raw string environment variable without wrapping it in a result.</summary>
-    let tryGet<'env, 'error when 'env :> IHas<IEnvironmentVariables>>
+    let tryGet<'env, 'error when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, 'error, string option> =
         EnvironmentVariables.tryGet name
 
     /// <summary>Reads an integer environment variable through an explicit service.</summary>
-    let getInt<'env when 'env :> IHas<IEnvironmentVariables>>
+    let getInt<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, int> =
         readParsed "an integer" (fun value ->
@@ -321,7 +341,7 @@ module EnvironmentVariable =
             | false, _ -> None) name
 
     /// <summary>Reads a 64-bit integer environment variable through an explicit service.</summary>
-    let getInt64<'env when 'env :> IHas<IEnvironmentVariables>>
+    let getInt64<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, int64> =
         readParsed "a 64-bit integer" (fun value ->
@@ -330,7 +350,7 @@ module EnvironmentVariable =
             | false, _ -> None) name
 
     /// <summary>Reads a floating-point environment variable through an explicit service.</summary>
-    let getDouble<'env when 'env :> IHas<IEnvironmentVariables>>
+    let getDouble<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, float> =
         readParsed "a floating-point number" (fun value ->
@@ -339,7 +359,7 @@ module EnvironmentVariable =
             | false, _ -> None) name
 
     /// <summary>Reads a decimal environment variable through an explicit service.</summary>
-    let getDecimal<'env when 'env :> IHas<IEnvironmentVariables>>
+    let getDecimal<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, decimal> =
         readParsed "a decimal number" (fun value ->
@@ -348,7 +368,7 @@ module EnvironmentVariable =
             | false, _ -> None) name
 
     /// <summary>Reads a GUID environment variable through an explicit service.</summary>
-    let getGuid<'env when 'env :> IHas<IEnvironmentVariables>>
+    let getGuid<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, global.System.Guid> =
         readParsed "a GUID" (fun value ->
@@ -357,7 +377,7 @@ module EnvironmentVariable =
             | false, _ -> None) name
 
     /// <summary>Reads a URI environment variable through an explicit service.</summary>
-    let getUri<'env when 'env :> IHas<IEnvironmentVariables>>
+    let getUri<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, Uri> =
         readParsed "an absolute URI" (fun value ->
@@ -366,7 +386,7 @@ module EnvironmentVariable =
             | false, _ -> None) name
 
     /// <summary>Reads a time span environment variable through an explicit service.</summary>
-    let getTimeSpan<'env when 'env :> IHas<IEnvironmentVariables>>
+    let getTimeSpan<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, TimeSpan> =
         readParsed "a time span" (fun value ->
@@ -375,7 +395,7 @@ module EnvironmentVariable =
             | false, _ -> None) name
 
     /// <summary>Reads a boolean environment variable through an explicit service.</summary>
-    let getBool<'env when 'env :> IHas<IEnvironmentVariables>>
+    let getBool<'env when 'env :> IHasEnvironmentVariables>
         (name: string)
         : Flow<'env, EnvironmentVariableError, bool> =
         readParsed "a boolean" (fun value ->

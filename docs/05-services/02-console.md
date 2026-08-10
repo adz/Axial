@@ -14,7 +14,7 @@ open Axial.Console
 ```
 
 ```fsharp
-let confirm question : Flow<#IHas<IConsole>, Never, bool> =
+let confirm question : Flow<#IHasConsole, Never, bool> =
     flow {
         do! Console.write $"{question} [y/N] "
         let! answer = Console.readLine
@@ -27,14 +27,14 @@ console, and it cannot reach the real terminal behind your back.
 
 ## Supplying the service
 
-Implement `IHas<IConsole>` on the application environment and supply `Console.live` at the host edge:
+Implement `IHasConsole` on the application environment and supply `Console.live` at the host edge:
 
 ```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 type AppEnv =
     { Console: IConsole }
 
-    interface IHas<IConsole> with
-        member this.Service = this.Console
+    interface IHasConsole with
+        member this.Console = this.Console
 
 let! exit = (confirm "Continue?").StartAsTask({ Console = Console.live })
 ```
@@ -70,7 +70,7 @@ Check redirection before using anything interactive. A program whose output is p
 cursor to move:
 
 ```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-let report line : Flow<#IHas<IConsole>, Never, unit> =
+let report line : Flow<#IHasConsole, Never, unit> =
     flow {
         let! redirected = Console.isOutputRedirected
 

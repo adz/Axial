@@ -38,7 +38,7 @@ contract rather than `IRandom`.
 `IGuid` has one member. `Guid.newGuid` reads it:
 
 ```fsharp
-let tagged name : Flow<#IHas<IGuid>, Never, string> =
+let tagged name : Flow<#IHasGuid, Never, string> =
     Guid.newGuid |> Flow.map (fun id -> $"{name}-{id}")
 ```
 
