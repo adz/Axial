@@ -9,6 +9,6 @@
   <ItemGroup><Compile Include="Program.fs" /></ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj"
-                      AdditionalProperties="TargetFramework=net8.0;PublishAot=false" />
+                      AdditionalProperties="TargetFramework=net8.0" />
   </ItemGroup>
 </Project>
