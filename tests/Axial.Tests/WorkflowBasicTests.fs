@@ -216,11 +216,11 @@ module WorkflowBasicTests =
         let provider = RecordingServiceProvider(typeof<IDeviceClient>, app.DeviceClient :> obj) :> IServiceProvider
 
         let providerResult =
-            Service<IDeviceClient>.resolve()
+            ServiceProvider.get<IDeviceClient, _, _>()
             |> Flow.runSync provider
 
         let missingProviderResult =
-            Service<IDeviceClient>.resolve()
+            ServiceProvider.get<IDeviceClient, _, _>()
             |> Flow.runSync (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
 
         let serviceLookup : Flow<AppDependencies, string, IDeviceClient> =

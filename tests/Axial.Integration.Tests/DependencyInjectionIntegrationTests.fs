@@ -116,7 +116,7 @@ module DependencyInjectionIntegrationTests =
         use provider = ServiceCollection().BuildServiceProvider()
 
         let result =
-            Service<IClock>.resolve<IServiceProvider, unit>()
+            ServiceProvider.get<IClock, IServiceProvider, unit>()
             |> Flow.runSync (provider :> IServiceProvider)
 
         match result with

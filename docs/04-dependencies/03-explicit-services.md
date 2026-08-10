@@ -79,12 +79,12 @@ fields or distinct service contracts.
 
 ## Keep Resolve At The Edge
 
-`Service<'service>.resolve()` reads from `IServiceProvider`. Use it in host glue or adapters where dynamic container
+`ServiceProvider.get` reads from `IServiceProvider`. Use it in host glue or adapters where dynamic container
 lookup is the intended behavior.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadFromHost : Flow<IServiceProvider, unit, IOrderRepository> =
-    Service<IOrderRepository>.resolve()
+    ServiceProvider.get<IOrderRepository, _, _>()
 ```
 
 Missing provider registrations are defects. If missing registrations should be typed startup errors, build an explicit

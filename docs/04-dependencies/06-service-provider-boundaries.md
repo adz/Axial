@@ -10,12 +10,12 @@ at the edge and move into explicit environments before core workflows.
 
 ## Direct Resolve
 
-Use `Service<'service>.resolve()` when dynamic lookup is the intended boundary behavior.
+Use `ServiceProvider.get` when dynamic lookup is the intended boundary behavior.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let handler : Flow<IServiceProvider, unit, unit> =
     flow {
-        let! orders = Service<IOrderRepository>.resolve()
+        let! orders = ServiceProvider.get<IOrderRepository, _, _>()
         do! orders.Flush()
     }
 ```
@@ -41,7 +41,7 @@ Then compose provider-backed layers into the application environment and run the
 `Axial.PlatformService` follows this pattern with `BaseRuntime.fromServiceProvider`. Register `IClock`, `ILog`,
 `IRandom`, `IGuid`, and `IEnvironmentVariables` in a Microsoft DI `ServiceCollection`, build the provider at the host
 edge, and use the layer to convert those dynamic registrations into an explicit `BaseRuntime`. Missing registrations
-fail as typed startup errors through `BaseRuntimeError.MissingService`, while direct `Service<'T>.resolve()` remains a
+fail as typed startup errors through `BaseRuntimeError.MissingService`, while direct `ServiceProvider.get` remains a
 defect-oriented escape hatch for host-edge code.
 
 ## Boundary Rule

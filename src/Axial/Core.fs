@@ -905,16 +905,27 @@ type Service<'service> private () =
             let env = environment :> IHas<'service>
             Service<'service>.succeed env.Service)
 
-    /// <summary>Resolves a service dynamically from an <see cref="T:System.IServiceProvider" /> environment.</summary>
+/// <summary>Reads services from an <see cref="T:System.IServiceProvider" /> environment.</summary>
+/// <remarks>
+/// This is the host boundary. Use it in glue and adapters where dynamic container lookup is the
+/// intended behaviour; application workflows should declare what they need instead. Missing
+/// registrations are configuration defects and fail through <c>Cause.Die</c> rather than the typed
+/// error channel — build the environment with a layer when a missing registration should be a typed
+/// startup error.
+/// </remarks>
+type ServiceProvider =
+    /// <summary>Resolves a service from the <c>IServiceProvider</c> in the environment.</summary>
+    /// <typeparam name="service">The service type being requested.</typeparam>
     /// <typeparam name="env">The environment type.</typeparam>
     /// <typeparam name="error">The workflow error type.</typeparam>
     /// <returns>A flow that succeeds with the requested service instance.</returns>
-    /// <remarks>
-    /// Missing registrations are treated as configuration defects and therefore fail through
-    /// <c>Cause.Die</c> rather than the typed error channel.
-    /// </remarks>
-    static member resolve<'env, 'error when 'env :> IServiceProvider> () : Flow<'env, 'error, 'service> =
+    /// <example>
+    /// <code>
+    /// let orders = ServiceProvider.get&lt;IOrderRepository, _, _&gt; ()
+    /// </code>
+    /// </example>
+    static member get<'service, 'env, 'error when 'env :> IServiceProvider> () : Flow<'env, 'error, 'service> =
         Flow(fun environment _ ->
             match Platform.resolveService<'service> (environment :> IServiceProvider) with
-            | Some service -> Service<'service>.succeed service
+            | Some service -> Platform.ofExit (Exit.Success service)
             | None -> Platform.serviceResolutionUnavailable<'service, 'error> ())

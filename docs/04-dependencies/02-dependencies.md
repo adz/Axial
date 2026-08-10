@@ -13,7 +13,7 @@ Use this order:
 1. Use records plus `Flow.read` for most application code.
 2. Use `IHas<'service>` plus `Service<'service>.get()` for reusable named services.
 3. Use `Layer` and `Flow.provide` to build environments and own resource cleanup.
-4. Use `Service<'service>.resolve()` only at .NET host edges where direct `IServiceProvider` lookup is intentional.
+4. Use `ServiceProvider.get` only at .NET host edges where direct `IServiceProvider` lookup is intentional.
 
 ## Default Shape
 

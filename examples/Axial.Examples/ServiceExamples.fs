@@ -33,7 +33,7 @@ module NominalExample =
 // --- LEVEL 3: DEPENDENCY INJECTION (PRAGMATIC) ---
 module DIExample =
     let saveOrder order : Flow<IServiceProvider, OrderError, unit> = flow {
-        let! repo = Service<IOrderRepo>.resolve()
+        let! repo = ServiceProvider.get<IOrderRepo, _, _>()
         repo.Save order
     }
 
