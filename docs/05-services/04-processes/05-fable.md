@@ -10,7 +10,7 @@ Fable applications can construct specifications and run them against an `IProces
 
 ```fsharp no-check reason="Requires Fable compiler validation; FsLiveDocs currently checks .NET contexts only"
     { Process: IProcess }
-    interface IHas<IProcess> with member this.Service = this.Process
+    interface IHasProcess with member this.Process = this.Process
 
 let workflow =
     Process.command "device-tool" [ "inspect" ]

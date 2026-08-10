@@ -77,7 +77,7 @@ type WorkerEnv =
     { Http: IHttp
       Process: IProcess }
     interface IHas<IHttp> with member this.Service = this.Http
-    interface IHas<IProcess> with member this.Service = this.Process
+    interface IHasProcess with member this.Process = this.Process
 ```
 
 A workflow that needs both declares `Flow<WorkerEnv, ...>` (or stays polymorphic with

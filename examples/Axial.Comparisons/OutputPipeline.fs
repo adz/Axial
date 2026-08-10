@@ -115,8 +115,8 @@ module WithFlow =
         }
 
     /// The process-output variant: `Process.stream` emits typed events from a live process, and
-    /// the same pipeline shape consumes them. Requires IHas<IProcess> in the environment.
-    let streamProcessOutput<'env when 'env :> IHas<IProcess>>
+    /// the same pipeline shape consumes them. Requires IHasProcess in the environment.
+    let streamProcessOutput<'env when 'env :> IHasProcess>
         (specification: ProcessSpec)
         (persist: string -> Result<unit, RecordError>)
         : Flow<'env, RecordError, int> =

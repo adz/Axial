@@ -392,8 +392,8 @@ module PipelineTests =
             |> Axial.Process.Process.framing Axial.Process.OutputFraming.Lines
 
         let environment =
-            { new IHas<Axial.Process.IProcess> with
-                member _.Service =
+            { new Axial.Process.IHasProcess with
+                member _.Process =
                     Axial.Process.Process.live
                         (Axial.PlatformService.Clock.live)
                         (Axial.FileSystem.FileSystem.live)

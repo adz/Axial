@@ -17,8 +17,8 @@ open Xunit
 
 type ProcessTestEnv =
     { Process: IProcess }
-    interface IHas<IProcess> with
-        member this.Service = this.Process
+    interface IHasProcess with
+        member this.Process = this.Process
 
 module ProcessServiceTests =
     let private env = { Process = Process.live Clock.live FileSystem.live Console.live }

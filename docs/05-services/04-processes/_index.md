@@ -14,12 +14,20 @@ let version =
     |> Process.run
 ```
 
-`Process.command` creates a runnable one-stage specification. Configuration functions return updated values, and `Process.pipe` connects specifications through real standard streams. `Process.run` returns `Flow<#IHas<IProcess>, ProcessError, ProcessResult>`; `Process.stream` returns output and completion events with backpressure.
+`Process.command` creates a runnable one-stage specification. Configuration functions return updated values, and `Process.pipe` connects specifications through real standard streams. `Process.run` returns `Flow<#IHasProcess, ProcessError, ProcessResult>`; `Process.stream` returns output and completion events with backpressure.
 
 The live interpreter receives its operational dependencies explicitly:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let process = Process.live clock fileSystem console
+```
+
+Supply it by implementing `IHasProcess` on the environment given to the workflow:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+type AppEnv =
+    { Processes: IProcess }
+    interface IHasProcess with member this.Process = this.Processes
 ```
 
 Flow owns scheduling, cancellation, timeout racing, and scope cleanup. The live interpreter translates interruption into process-tree termination and cleans up every stage that started, including partial startup.

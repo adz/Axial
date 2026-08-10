@@ -152,6 +152,15 @@ type IProcess =
     /// Returns a lazy, backpressured stream of output and completion events.
     abstract Stream : specification: ProcessSpec -> FlowStream<unit, ProcessError, ProcessEvent>
 
+/// <summary>Declares that an environment supplies the process service.</summary>
+/// <remarks>
+/// Implement this on the environment record supplied at the host edge. A workflow that runs
+/// processes constrains its environment with <c>'env :&gt; IHasProcess</c>.
+/// </remarks>
+type IHasProcess =
+    /// The process service supplied by this environment.
+    abstract Process : IProcess
+
 type private AsyncRendezvous<'value>() =
     let gate = obj()
     let mutable pending: ('value * (unit -> unit)) option = None
@@ -422,25 +431,25 @@ module Process =
 
     /// Runs a process specification in the current Flow runtime.
     /// <example><code>specification |&gt; Process.run</code></example>
-    let run<'env when 'env :> IHas<IProcess>> specification : Flow<'env, ProcessError, ProcessResult> =
+    let run<'env when 'env :> IHasProcess> specification : Flow<'env, ProcessError, ProcessResult> =
         if specification.Leaves.Count <> 1 then invalidArg (nameof specification) "A process topology requires one final output stage. Connect merged producers to a consumer first."
         flow {
-            let! service = Service<IProcess>.get()
+            let! service = Flow.read (fun (environment: 'env) -> environment.Process)
             return! service.Run specification |> Flow.localEnv (fun _ -> ())
         }
 
     /// Runs a process specification with complete stdout and stderr capture.
     /// <example><code>Process.command "dotnet" [ "--info" ] |&gt; Process.capture</code></example>
-    let capture<'env when 'env :> IHas<IProcess>> specification : Flow<'env, ProcessError, ProcessResult> =
+    let capture<'env when 'env :> IHasProcess> specification : Flow<'env, ProcessError, ProcessResult> =
         specification
         |> stdout OutputTarget.Capture
         |> stderr OutputTarget.Capture
         |> run
 
     /// Streams process events in the current Flow runtime. The last event is <c>Completed</c>.
-    let stream<'env when 'env :> IHas<IProcess>> specification : FlowStream<'env, ProcessError, ProcessEvent> =
+    let stream<'env when 'env :> IHasProcess> specification : FlowStream<'env, ProcessError, ProcessEvent> =
         FlowStream(fun environment cancellationToken ->
-            let service = (environment :> IHas<IProcess>).Service
+            let service = (environment :> IHasProcess).Process
             let (FlowStream stream) = service.Stream specification
             stream () cancellationToken)
 
@@ -1076,7 +1085,7 @@ module DSL =
 #if !FABLE_COMPILER
 type ScriptEnvironment =
     { Process: IProcess }
-    interface IHas<IProcess> with member this.Service = this.Process
+    interface IHasProcess with member this.Process = this.Process
 
 [<RequireQualifiedAccess>]
 module Script =
