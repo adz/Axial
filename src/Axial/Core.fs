@@ -869,42 +869,6 @@ type ExnFlow<'value> = Flow<unit, exn, 'value>
 /// <summary>A flow that reads an environment and uses exceptions as recoverable typed errors.</summary>
 type ExnEnvFlow<'env, 'value> = Flow<'env, exn, 'value>
 
-/// <summary>Nominal contract for an explicit service dependency.</summary>
-/// <remarks>
-/// Environments implement <c>IHas&lt;'service&gt;</c> when they can supply one service value of that type
-/// through <see cref="T:Axial.Service`1" />.
-/// </remarks>
-/// <typeparam name="service">The dependency type exposed by the environment.</typeparam>
-/// <example>
-/// <code>
-/// type IDb =
-///     abstract Query : string -> string
-///
-/// type AppEnv =
-///     { Database : IDb }
-///     interface IHas&lt;IDb&gt; with member x.Service = x.Database
-///
-/// let db = Service&lt;IDb&gt;.get&lt;AppEnv, unit&gt;()
-/// </code>
-/// </example>
-type IHas<'service> =
-    abstract Service : 'service
-
-/// <summary>Typed accessors for explicit and provider-resolved services.</summary>
-/// <typeparam name="service">The service type being requested.</typeparam>
-type Service<'service> private () =
-    static member private succeed<'error> (value: 'service) : Execution<'service, 'error> =
-        Platform.ofExit (Exit.Success value)
-
-    /// <summary>Reads a statically declared service from an environment that implements <c>IHas&lt;'service&gt;</c>.</summary>
-    /// <typeparam name="env">The environment type.</typeparam>
-    /// <typeparam name="error">The workflow error type.</typeparam>
-    /// <returns>A flow that succeeds with the requested service instance.</returns>
-    static member get<'env, 'error when 'env :> IHas<'service>> () : Flow<'env, 'error, 'service> =
-        Flow(fun environment _ ->
-            let env = environment :> IHas<'service>
-            Service<'service>.succeed env.Service)
-
 /// <summary>Reads services from an <see cref="T:System.IServiceProvider" /> environment.</summary>
 /// <remarks>
 /// This is the host boundary. Use it in glue and adapters where dynamic container lookup is the

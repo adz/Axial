@@ -19,17 +19,25 @@ type IExchangeRates =
 ## Write A Reusable Helper
 
 ```fsharp
-let priceInAud<'env, 'error when 'env :> IHas<IExchangeRates>>
+type IHasExchangeRates =
+    abstract ExchangeRates : IExchangeRates
+
+[<RequireQualifiedAccess>]
+module ExchangeRates =
+    let service<'env, 'error when 'env :> IHasExchangeRates> : Flow<'env, 'error, IExchangeRates> =
+        Flow.read _.ExchangeRates
+
+let priceInAud<'env, 'error when 'env :> IHasExchangeRates>
     (usdAmount: decimal)
     : Flow<'env, 'error, decimal> =
     flow {
-        let! rates = Service<IExchangeRates>.get()
+        let! rates = ExchangeRates.service
         let! rate = rates.GetUsdToAud()
         return usdAmount * rate
     }
 ```
 
-This helper no longer cares whether the caller stores the service in `Rates`, `Runtime.ExchangeRates`, or any other field. It only needs `IHas<IExchangeRates>`.
+This helper no longer cares whether the caller stores the service in `Rates`, `Runtime.ExchangeRates`, or any other field. It only needs `IHasExchangeRates`.
 
 ## Provide An App Environment
 
@@ -38,8 +46,8 @@ type AppEnv =
     { Rates: IExchangeRates
       Region: string }
 
-    interface IHas<IExchangeRates> with
-        member this.Service = this.Rates
+    interface IHasExchangeRates with
+        member this.ExchangeRates = this.Rates
 ```
 
 ## Use A Test Double

@@ -33,7 +33,7 @@ let isExpired (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
 ## The base runtime
 
 Applications rarely want one of these — they want all five. `BaseRuntime` is the record that bundles them, and it
-implements `IHas<'service>` for each, so a workflow requiring any combination is satisfied by the single value:
+implements one contract per service, so a workflow requiring any combination is satisfied by the single value:
 
 ```fsharp
 let liveRuntime : BaseRuntime = BaseRuntime.liveValue

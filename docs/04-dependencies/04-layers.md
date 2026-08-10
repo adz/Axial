@@ -98,7 +98,7 @@ type AppEnv =
 
     interface IHasClock with member this.Clock = this.Runtime.Clock
     interface IHasLog with member this.Log = this.Runtime.Log
-    interface IHas<IOrderRepository> with member this.Service = this.Orders
+    interface IHasOrders with member this.Orders = this.Orders
 
 let ordersLayer : Layer<IServiceProvider, BaseRuntimeError, IOrderRepository> =
     Layer.fromValueTask (fun (provider, _) _ ->
@@ -170,7 +170,7 @@ let combined =
     |> Layer.map (fun (runtime, orders) -> { Runtime = runtime; Orders = orders })
 ```
 
-`Layer.merge` does not automatically merge `IHas<'service>` contracts or synthesize a new environment type. It only
+`Layer.merge` does not automatically merge service contracts or synthesize a new environment type. It only
 provisions both sides and returns their outputs. Keep the final environment explicit:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
@@ -179,7 +179,7 @@ type AppEnv =
       Orders: IOrderRepository }
 
     interface IHasClock with member this.Clock = this.Runtime.Clock
-    interface IHas<IOrderRepository> with member this.Service = this.Orders
+    interface IHasOrders with member this.Orders = this.Orders
 ```
 
 This keeps service requirements visible to people, the compiler, and LLMs. It also avoids ambiguous cases such as two

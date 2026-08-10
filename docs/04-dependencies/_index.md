@@ -24,7 +24,7 @@ provisioning failure, or a resource that must be released deterministically make
 1. [Getting started](getting-started-dependencies.html) — records, `Flow.read`, and when an environment earns its
    keep.
 2. [Dependencies](dependencies.html) — arguments, records, named services, and layers compared.
-3. [Explicit services](explicit-services.html) — `IHas<'service>` contracts and `Service<'service>` accessors.
+3. [Explicit services](explicit-services.html) — per-service contracts and their accessors.
 4. [Layers](layers.html) — construction, composition, and provisioning failure.
 5. [Scopes and resources](scopes-and-resources.html) — deterministic cleanup.
 6. [Service provider boundaries](service-provider-boundaries.html) — meeting `IServiceProvider` at the host edge.

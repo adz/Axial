@@ -21,7 +21,7 @@ type BaseRuntime =
       EnvironmentVariables: IEnvironmentVariables }
 ```
 
-`BaseRuntime` implements `IHas<'service>` for each service, so helpers such as `Clock.now` and `EnvironmentVariable.get`
+`BaseRuntime` implements one contract per service, so helpers such as `Clock.now` and `EnvironmentVariable.get`
 work against it directly.
 
 ## Live Runtime

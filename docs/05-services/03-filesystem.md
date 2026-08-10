@@ -156,6 +156,6 @@ See [packages and platforms](/notes/packages-and-platforms.html).
 
 ## Related
 
-- [Explicit services](/dependencies/explicit-services.html) — the `IHas<'service>` mechanism.
+- [Explicit services](/dependencies/explicit-services.html) — how a package declares the service it needs.
 - [Scopes and resources](/dependencies/scopes-and-resources.html) — deterministic cleanup for open handles.
 - [Error handling](/error-handling/index.html) — expected failures against defects.

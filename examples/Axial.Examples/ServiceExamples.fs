@@ -23,10 +23,14 @@ module RecordExample =
 
 // --- LEVEL 2: NOMINAL SERVICES (HONEST) ---
 module NominalExample =
-    type IHasOrderRepo = inherit IHas<IOrderRepo>
+    type IHasOrderRepo =
+        abstract OrderRepo : IOrderRepo
+
+    let service<'env, 'error when 'env :> IHasOrderRepo> : Flow<'env, 'error, IOrderRepo> =
+        Flow.read _.OrderRepo
 
     let saveOrder order : Flow<#IHasOrderRepo, OrderError, unit> = flow {
-        let! repo = Service<IOrderRepo>.get()
+        let! repo = service
         repo.Save order
     }
 
@@ -45,7 +49,7 @@ module HonestBridgeExample =
     // Host Edge implements the bridge
     type AppEnv(sp: IServiceProvider) =
         interface NominalExample.IHasOrderRepo with
-            member _.Service = sp.GetRequiredService<IOrderRepo>()
+            member _.OrderRepo = sp.GetRequiredService<IOrderRepo>()
 
     let run (sp: IServiceProvider) order =
         let env = AppEnv(sp)
@@ -59,7 +63,7 @@ type MockRepo() =
 type Env2 =
     { Repo: IOrderRepo }
     interface NominalExample.IHasOrderRepo with
-        member x.Service = x.Repo
+        member x.OrderRepo = x.Repo
 
 module ServiceExamples =
     let run () =

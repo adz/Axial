@@ -11,7 +11,7 @@ helpers name service contracts, and layers build the environment at the boundary
 Use this order:
 
 1. Use records plus `Flow.read` for most application code.
-2. Use `IHas<'service>` plus `Service<'service>.get()` for reusable named services.
+2. Declare a per-service contract for reusable named services.
 3. Use `Layer` and `Flow.provide` to build environments and own resource cleanup.
 4. Use `ServiceProvider.get` only at .NET host edges where direct `IServiceProvider` lookup is intentional.
 
@@ -37,11 +37,11 @@ Reusable helpers can ask for a named service without forcing every application t
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type IHasOrders =
-    inherit IHas<IOrderRepo>
+    abstract OrderRepo : IOrderRepo
 
 let save order : Flow<#IHasOrders, OrderError, unit> =
     flow {
-        let! orders = Service<IOrderRepo>.get()
+        let! orders = Flow.read _.OrderRepo
         do! orders.Save order
     }
 ```

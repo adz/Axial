@@ -79,12 +79,12 @@ let greetInBigEnv : Flow<BigEnv, string, string> =
 
 Example 2: Services
 
-If a helper requires `IHas<IDatabase>` but you are running it in an environment that doesn't implement it, the compiler will error.
+If a helper requires `IHasDatabase` but you are running it in an environment that doesn't implement it, the compiler will error.
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-let helper : Flow<#IHas<IDatabase>, _, _> = ...
+let helper : Flow<#IHasDatabase, _, _> = ...
 
-// This fails if AppEnv doesn't implement IHas<IDatabase>
+// This fails if AppEnv doesn't implement IHasDatabase
 let run (env: AppEnv) = helper.StartAsTask(env)
 ```
 

@@ -25,6 +25,9 @@ type ReportError = | StoreRejected of string
 type IReportStore =
     abstract Save : name: string * body: string -> Result<unit, string>
 
+type IHasReportStore =
+    abstract ReportStore : IReportStore
+
 // --- Ordinary implementation -------------------------------------------------------
 
 module Ordinary =
@@ -71,8 +74,8 @@ module WithFlow =
         interface IHasConsole with
             member this.Console = this.Console
 
-        interface IHas<IReportStore> with
-            member this.Service = this.Store
+        interface IHasReportStore with
+            member this.ReportStore = this.Store
 
     /// Flow<ReportEnv, ReportError, string>
     let writeDailyReport (sourcePath: string) : Flow<ReportEnv, ReportError, string> =

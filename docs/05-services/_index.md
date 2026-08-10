@@ -18,7 +18,7 @@ Every built-in service follows the same three-part shape:
 
 | Part | Purpose |
 | --- | --- |
-| `IClock`, `IConsole`, `IFileSystem`, `IProcess`, `IHttp` | The contract a workflow depends on through `IHas<'service>` |
+| `IHasClock`, `IHasConsole`, `IHasFileSystem`, `IHasProcess`, `IHasHttp` | The contract a workflow constrains its environment with |
 | `Console.live`, `FileSystem.live`, `Http.live` | The implementation backed by the real platform |
 | `Console.layer`, `FileSystem.layer`, `Http.layer` | The same implementation as a `Layer` for runtime composition |
 

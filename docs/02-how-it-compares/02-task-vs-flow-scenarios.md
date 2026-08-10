@@ -135,7 +135,7 @@ A daily report needs a clock, a filesystem, a console, and a report store. The o
 constructor parameters through every caller, and nothing stops a hurried edit from reading
 `DateTimeOffset.UtcNow` directly.
 
-The Flow version declares the capability set once as an environment record implementing `IHas<'service>` per
+The Flow version declares the capability set once as an environment record implementing one contract per
 capability, and business code names only what it uses through the package operations
 ([`Clock.now`](/services/platform-services/clock.html), [`FileSystem.readAllText`](/services/filesystem.html),
 [`Console.writeLine`](/services/console.html)):

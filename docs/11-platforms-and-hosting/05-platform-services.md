@@ -20,24 +20,21 @@ open Axial.PlatformService
 let runtime : BaseRuntime = BaseRuntime.liveValue
 ```
 
-`BaseRuntime` implements `IHas<'service>` for each of the five, so any workflow requiring some combination of them
+`BaseRuntime` implements one contract per service, so any workflow requiring some combination of them
 runs against this single value:
 
 ```fsharp
 let startup : Flow<BaseRuntime, EnvironmentVariableError, int> =
     flow {
-        let! port = (EnvironmentVariable.getInt "PORT" : Flow<BaseRuntime, _, _>)
+        let! port = EnvironmentVariable.getInt "PORT"
         do! Log.info $"Listening on {port}"
         return port
     }
 ```
 
-One bind names the environment explicitly. When a single `flow { }` uses services from two different contracts —
-`IEnvironmentVariables` and `ILog` here — the compiler gives each call its own environment variable and then cannot
-merge them, because one type cannot be constrained by two `IHas<_>` contracts at once. The annotation on `startup`
-does not resolve this: it applies to the result of the `flow { }`, after the body has already been checked.
-
-Naming the type on any one bind is enough, wherever it appears in the block. The rest of the body follows from it.
+Nothing inside the block names a type. The two services come from different contracts —
+`IHasEnvironmentVariables` and `IHasLog` — and because those are distinct interfaces their constraints merge on
+their own.
 
 Use `BaseRuntime.live` when the environment is composed from layers, and `BaseRuntime.fromServiceProvider` when the
 host already has an `IServiceProvider` — that variant reports missing registrations as typed `BaseRuntimeError`

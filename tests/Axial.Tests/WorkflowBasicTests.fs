@@ -224,7 +224,7 @@ module WorkflowBasicTests =
             |> Flow.runSync (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
 
         let serviceLookup : Flow<AppDependencies, string, IDeviceClient> =
-            Service<IDeviceClient>.get()
+            Flow.read _.DeviceClient
 
         let serviceLookupResult =
             serviceLookup

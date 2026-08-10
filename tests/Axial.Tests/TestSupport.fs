@@ -43,11 +43,14 @@ module TestSupport =
         { RuntimePrefix: string
           Seen: ResizeArray<string> }
 
+    type IHasDeviceClient =
+        abstract DeviceClient : IDeviceClient
+
     type AppDependencies =
         { DeviceClient: IDeviceClient
           Value: int }
-        interface IHas<IDeviceClient> with
-            member this.Service = this.DeviceClient
+        interface IHasDeviceClient with
+            member this.DeviceClient = this.DeviceClient
 
     type RecordingServiceProvider(serviceType: Type, service: obj) =
         interface IServiceProvider with
