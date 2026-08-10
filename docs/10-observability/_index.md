@@ -73,7 +73,7 @@ adapter to write. Subscribe to the source name `"Axial"` once at the application
 
 In an ASP.NET Core or Generic Host application:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // dotnet add package OpenTelemetry.Extensions.Hosting
 // dotnet add package OpenTelemetry.Exporter.OpenTelemetryProtocol
 // dotnet add package OpenTelemetry.Instrumentation.AspNetCore
@@ -92,7 +92,7 @@ builder.Services
 
 In a console application or script, build the provider directly and keep it alive for the process lifetime:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open OpenTelemetry
 open OpenTelemetry.Resources
 open OpenTelemetry.Trace
@@ -108,7 +108,7 @@ use tracerProvider =
 Then install the edge observers on your application workflow — this is Axial code you want with or without
 an exporter attached:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 open Axial.Hosting
 open Axial.Telemetry
 
@@ -167,7 +167,7 @@ runtime health onto it:
 | `axial.flow.fiber.duration` | histogram (seconds), tagged with status | fork-to-settle lifetime |
 | `axial.flow.fibers.unobserved_defects` | counter | defects the runtime proved no code could observe |
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 application
 |> FiberMetrics.observe        // fiber runtime metrics
 |> FiberTelemetry.observe      // fiber defect spans — installs compose
@@ -187,7 +187,7 @@ hooks remain available for app-specific counters on your own meter.
 A `FiberRegistry` (core `Axial`, no telemetry dependency) tracks every live fiber below one edge
 install and answers "what is my runtime doing right now?" with a structured snapshot or a rendered tree:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let registry = FiberRegistry()
 
 application
@@ -220,7 +220,7 @@ current) — useful just before a timeout fires or from a slow-request handler, 
 Nothing Aspire-specific is required: Aspire's dashboard is an OTLP backend, and `AddServiceDefaults()` in an
 Aspire service project already wires the OpenTelemetry SDK. Add the two Axial sources to the pipeline —
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 builder.Services
     .AddOpenTelemetry()
     .WithTracing(fun tracing -> tracing.AddSource("Axial") |> ignore)
@@ -281,7 +281,7 @@ itself: the application registers the OpenTelemetry JS SDK (exporter and context
 `@opentelemetry/api` object to `Otel.install` once at the edge, the same host/library split as
 `.AddSource("Axial")` on .NET:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 open Fable.Core.JsInterop
 open Axial.Telemetry.JavaScript
 

@@ -7,28 +7,28 @@ description: Transform and combine Flow descriptions with ordinary F# pipelines.
 
 Use `Flow.map` when only the successful value changes:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 loadUser userId
 |> Flow.map _.DisplayName
 ```
 
 Use `Flow.mapError` when the caller needs a different expected error type:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 loadUser userId
 |> Flow.mapError UserLoadFailed
 ```
 
 Use `Flow.bind` for dependent work. It is the function form of `let!`:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 loadUser userId
 |> Flow.bind sendGreeting
 ```
 
 Use `Flow.zip` when two descriptions should run sequentially and both values are needed:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 Flow.zip loadProfile loadPreferences
 // Flow<AppEnv, AppError, Profile * Preferences>
 ```

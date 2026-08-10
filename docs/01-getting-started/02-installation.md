@@ -32,5 +32,5 @@ See [Packages and Platforms](/notes/packages-and-platforms.html) for the complet
 ## Go Further
 
 - [Hosting](/platforms-and-hosting/dotnet.html) chooses between standalone .NET, Generic Host, Node, and browser entry points.
-- [Platform services](/platforms-and-hosting/platform-services.html) introduces the explicit clock, logging, random,
+- [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random,
   GUID, and environment-variable contracts.

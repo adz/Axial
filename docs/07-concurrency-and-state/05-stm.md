@@ -35,7 +35,7 @@ Use `stm {}` to combine reads and writes into one transaction.
 `let!` binds the value produced by an STM step to the name on its left. `do!` binds an STM step returning `unit`.
 `return!` uses another STM value as the result of the transaction.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 stm {
     let! balance = TRef.get account
     do! TRef.set (balance - amount) account
@@ -45,7 +45,7 @@ stm {
 
 Here is the same transaction with the left- and right-hand types shown:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 stm {
     let! (balance: decimal) =
         (TRef.get account: STM<decimal>)

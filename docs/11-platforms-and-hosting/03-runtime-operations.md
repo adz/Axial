@@ -63,7 +63,7 @@ let checkoutWithTimeout =
 
 ## Retry
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let retryingCheckout =
     checkout
     |> Flow.Runtime.retry (function
@@ -110,7 +110,7 @@ If the host cancels the token, the flow finishes with `Exit.Failure Cause.Interr
 
 ## Annotations
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let annotatedCharge =
     flow {
         let! annotations = Flow.Runtime.annotations
@@ -123,7 +123,7 @@ Annotations are useful for observability and correlation. They belong to runtime
 
 ## Pulling It Together
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let guardedCheckout =
     safeGatewayCall
     |> Flow.bind (fun receiptId ->

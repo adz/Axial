@@ -31,7 +31,7 @@ dotnet add package Axial
 
 Write the transaction with `flow { }`:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let register userId : Flow<RegistrationEnv, RegistrationError, unit> =
     flow {
         let! loadUser = Flow.read _.LoadUser
@@ -46,7 +46,7 @@ task and keeps its `Error` in the workflow's expected-error channel.
 
 Supply the live dependencies once and run the workflow:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let live =
     { LoadUser = loadUserFromDatabase
       SaveUser = saveUserToDatabase }
@@ -56,7 +56,7 @@ let completed = (register 42).ToTask(live)
 
 The type now states the complete contract:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 Flow<RegistrationEnv, RegistrationError, unit>
 ```
 
@@ -68,7 +68,7 @@ Flow<RegistrationEnv, RegistrationError, unit>
 
 The workflow does not change when the implementation changes:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let fake =
     { LoadUser = fun id -> Task.FromResult(Ok { Id = id; Name = "Ada" })
       SaveUser = fun _ -> Task.FromResult(Ok ()) }

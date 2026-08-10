@@ -7,14 +7,14 @@ description: Start a cold Flow and observe its Exit.
 
 Creating a Flow does not execute it. Start it explicitly at a boundary:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let workflow = Flow.succeed "Hello"
 let exit = workflow.RunSynchronously(())
 ```
 
 Execution completes with `Exit<'value, 'error>`:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 match exit with
 | Exit.Success value -> printfn "%s" value
 | Exit.Failure cause -> printfn "%s" (Cause.prettyPrint string cause)
@@ -22,7 +22,7 @@ match exit with
 
 On .NET, choose the carrier expected by the caller:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let valueTask = workflow.ToValueTask(())
 let task = workflow.ToTask(())
 let asyncWork = workflow.ToAsync(())

@@ -23,7 +23,7 @@ Both stay inside Axial's error model:
 - `retry` re-runs typed `Cause.Fail` errors and never touches defects.
 - `supervise` re-runs `Cause.Die` defects and never touches typed errors or interruptions.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let reliableWorker =
     pollQueueForever
     |> Flow.Runtime.supervise
@@ -45,7 +45,7 @@ Two semantics worth knowing:
 
 If a background fiber's outcome genuinely does not matter, say so at the call site:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let! _fiber = Flow.forkDetached bestEffortCacheWarmup
 ```
 
@@ -55,7 +55,7 @@ A detached fiber counts as observed from birth, so a defect it dies with is neve
 
 `FiberObserver` is a record of lifecycle hooks installed once at the application edge and carried implicitly to every descendant fork:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let observer =
     { FiberObserver.none with
         OnUnobservedDefect = fun metadata defect ->
@@ -91,7 +91,7 @@ Note the interaction with `supervise`: a supervised flow that exhausts its resta
 
 `Axial.Telemetry` ships a ready-made observer that records defects on the `Axial` activity source:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 open Axial.Telemetry
 
 application
@@ -106,7 +106,7 @@ Every fiber that settles with a defect produces an `axial.flow.fiber.defect` err
 fiber defects as errors and unobserved defects as critical entries, with the exception attached. Observers
 compose, so telemetry and logging stack from one edge install:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 open Axial.Hosting
 open Axial.Telemetry
 

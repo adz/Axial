@@ -29,7 +29,7 @@ This usually happens when the compiler cannot tell which wrapper shape a `let!` 
 
 Example:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let nested : Async<Async<Result<int, string>>> =
     async {
         return async { return Ok 42 }
@@ -47,7 +47,7 @@ The second `let!` is ambiguous.
 
 Fix it with a type annotation:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let workflow : Flow<unit, string, int> =
     flow {
         let! next = nested
@@ -81,7 +81,7 @@ Example 2: Services
 
 If a helper requires `IHas<IDatabase>` but you are running it in an environment that doesn't implement it, the compiler will error.
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let helper : Flow<#IHas<IDatabase>, _, _> = ...
 
 // This fails if AppEnv doesn't implement IHas<IDatabase>
@@ -97,7 +97,7 @@ Implicit option binding only works when the workflow error type is `unit`.
 
 This fails:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let workflow : Flow<unit, string, int> =
     flow {
         let! value = Some 42
@@ -119,7 +119,7 @@ Direct `flow { let! ... }` binding supports `ColdTask<'value>` for delayed task 
 
 `ColdTask<'value>` means:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 CancellationToken -> Task<'value>
 ```
 

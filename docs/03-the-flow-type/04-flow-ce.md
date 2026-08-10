@@ -9,7 +9,7 @@ Use `flow {}` when later work depends on earlier success.
 
 Suppose the block calls these functions:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let loadUser (id: UserId) : Flow<AppEnv, AppError, User> = ...
 let auditUser (user: User) : Flow<AppEnv, AppError, unit> = ...
 let greetUser (user: User) : Flow<AppEnv, AppError, string> = ...
@@ -18,7 +18,7 @@ let greetUser (user: User) : Flow<AppEnv, AppError, string> = ...
 `let!` binds a successful value to the name on its left. `do!` binds a step whose success value is `unit`.
 `return!` uses another complete Flow as the result of the block.
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 flow {
     let! user = loadUser userId
     do! auditUser user
@@ -28,7 +28,7 @@ flow {
 
 Here is the same block with the important left- and right-hand types shown:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 flow {
     let! (user: User) =
         (loadUser userId: Flow<AppEnv, AppError, User>)

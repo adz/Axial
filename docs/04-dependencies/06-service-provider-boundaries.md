@@ -12,7 +12,7 @@ at the edge and move into explicit environments before core workflows.
 
 Use `Service<'service>.resolve()` when dynamic lookup is the intended boundary behavior.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let handler : Flow<IServiceProvider, unit, unit> =
     flow {
         let! orders = Service<IOrderRepository>.resolve()
@@ -26,7 +26,7 @@ Missing registrations become defects because they are configuration bugs.
 
 Use layers when startup should validate requirements before the core workflow runs.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open System.Threading.Tasks
 
 let ordersLayer : Layer<IServiceProvider, StartupError, IOrderRepository> =

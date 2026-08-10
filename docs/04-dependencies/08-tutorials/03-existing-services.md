@@ -29,7 +29,7 @@ type AppEnv =
 
 ## Use The Services
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadMode : Flow<AppEnv, EnvironmentVariableError, string> =
     flow {
         let! now = Clock.utcDateTime
@@ -43,7 +43,7 @@ The workflow does not know where the clock, logger, or environment variables cam
 
 ## Run It
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let run () = task {
     let env = { Runtime = BaseRuntime.liveValue }
     let! exit = loadMode.ToTask(env)

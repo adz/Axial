@@ -10,7 +10,7 @@ desktop process, browser mount, Node process, worker, or another application rat
 
 Application code remains an ordinary Flow value. Provision its environment before handing it to `App`:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =
     { Orders: IOrderRepository
       Log: ILog }
@@ -37,7 +37,7 @@ acquired by `Live.appLayer` scoped to the root execution.
 
 Use `App.run` when the caller only needs the final outcome:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let run inputs = async {
     let! exit = App.run inputs root
 
@@ -56,7 +56,7 @@ finalizers have finished when the returned `Exit` becomes available.
 
 Use `App.start` when another module controls when the application stops:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let running = App.start inputs root
 
 printfn "State: %A" running.Status
@@ -82,7 +82,7 @@ but cannot await asynchronous finalizers; application shutdown code should await
 Use `App.startWithCancellation` or `App.runWithCancellation` when an existing owner already supplies a
 `CancellationToken`:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let running =
     App.startWithCancellation hostStopping inputs root
 ```

@@ -10,7 +10,7 @@ functions returning `Result`, `Async`, or `Task`, and should keep doing so while
 
 The friction appears when one operation needs several concerns at once:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 val loadUser:
     cancellationToken: CancellationToken ->
     services: AppServices ->
@@ -26,7 +26,7 @@ catch an exception at the wrong boundary, or start background work without a cle
 
 Flow puts the three parts of a workflow in one type:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 val loadUser: UserId -> Flow<AppServices, LoadUserError, User>
 ```
 

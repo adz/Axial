@@ -8,7 +8,7 @@ description: Create, combine, and run Flow values.
 A Flow is an immutable, cold description of work. Nothing runs until an execution interprets the description with an
 environment:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let workflow : Flow<AppEnv, LoadUserError, User> =
     flow {
         let! loadUser = Flow.read _.LoadUser

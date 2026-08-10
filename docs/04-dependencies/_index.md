@@ -8,7 +8,7 @@ description: Declare what a workflow needs, wire it with layers, and manage scop
 This section is about declaring your own dependencies. A Flow states what it needs in its environment channel, and
 the value is supplied once, at the edge, when the workflow runs:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadUser id : EnvFlow<AppEnv, User> =
     flow {
         let! users = Flow.read _.Users

@@ -8,7 +8,7 @@ description: Provisioning explicit environments with Layer and Flow.provide.
 A `Layer<'input, 'error, 'output>` builds an environment or service bundle from an input value. It runs inside a
 `Scope`, so resources acquired during provisioning can be finalized when the provided flow finishes.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let appFlow : Flow<AppEnv, AppError, unit> =
     placeOrder order
 
@@ -23,7 +23,7 @@ Use `layer { }` for application environment construction:
 `let!` binds a layer's output to the name on its left. `do!` binds a layer returning `unit`, while `return!` uses
 another layer as the block's result. Sibling `and!` bindings build independent layers in parallel.
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 layer {
     let! config = configLayer
     let! orders = ordersLayerFromConfig config
@@ -34,7 +34,7 @@ layer {
 
 Here is the same block with the left- and right-hand types shown:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 layer {
     let! (config: Config) =
         (configLayer: Layer<IServiceProvider, AppError, Config>)
@@ -53,7 +53,7 @@ layer {
 // Layer<IServiceProvider, AppError, AppEnv>
 ```
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let appLayer =
     layer {
         let! runtime = BaseRuntime.fromServiceProvider
@@ -70,7 +70,7 @@ branches in parallel through child scopes.
 
 The core layer surface is:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 Layer.succeed value
 Layer.read projection
 Layer.fromValueTask provision
@@ -89,7 +89,7 @@ Use `Layer.succeed` for already-built values, `Layer.fromValueTask` when constru
 
 ## Example
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 open System.Threading.Tasks
 
 type AppEnv =
@@ -126,7 +126,7 @@ one startup error type before calling `Flow.provide`.
 
 Use `let!` when provisioning is dependent:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let ordersLayerFromConfig config : Layer<IServiceProvider, BaseRuntimeError, IOrderRepository> =
     Layer.fromValueTask (fun (provider, scope) cancellationToken ->
         // Build or resolve the repository from config, provider, and scope.
@@ -143,7 +143,7 @@ let appLayer =
 
 Use sibling `and!` when provisioning is independent:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let appLayer =
     layer {
         let! runtime = BaseRuntime.fromServiceProvider
@@ -164,7 +164,7 @@ scope error, which is the desired signal: if a service needs another value, sepa
 
 `Layer.merge` is the layer-domain name for `zipPar`. Prefer it when combining service bundles or environment fragments:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let combined =
     Layer.merge runtimeLayer ordersLayer
     |> Layer.map (fun (runtime, orders) -> { Runtime = runtime; Orders = orders })
@@ -173,7 +173,7 @@ let combined =
 `Layer.merge` does not automatically merge `IHas<'service>` contracts or synthesize a new environment type. It only
 provisions both sides and returns their outputs. Keep the final environment explicit:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =
     { Runtime: BaseRuntime
       Orders: IOrderRepository }
@@ -197,7 +197,7 @@ the layer fails, the downstream flow fails, or the downstream flow succeeds.
 Use `Layer.acquireRelease` when a layer provisions a service implementation or resource that must live for the whole
 provided flow:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let connectionLayer =
     Layer.acquireRelease
         (Layer.fromValueTask (fun (connectionString, _) _ ->

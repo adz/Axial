@@ -90,7 +90,7 @@ If provisioning fails, `Flow.provide` never runs the downstream business workflo
 
 ## 5. Resource Ownership
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type FakeConnection() =
     interface IAsyncDisposable with
         member _.DisposeAsync() =

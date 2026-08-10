@@ -48,7 +48,7 @@ finishes, whether that flow succeeds, fails, defects, or is interrupted.
 
 Use `Flow.acquireRelease` when the acquired resource should live until the current runtime scope closes.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let acquireRequestCache =
     Flow.acquireRelease
         (Flow.succeed (new RequestCache()))
@@ -65,7 +65,7 @@ released when the surrounding execution scope or `Flow.provide` scope closes.
 Use `Layer.acquireRelease` when a layer provisions a service implementation or resource that must be closed after the
 provided flow finishes.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let connectionLayer : Layer<ConnectionString, DbError, IDbConnection> =
     Layer.acquireRelease
         (Layer.fromValueTask (fun (connectionString, _) _ ->
@@ -78,7 +78,7 @@ let connectionLayer : Layer<ConnectionString, DbError, IDbConnection> =
 
 For lower-level cases, register finalizers directly through `Flow.addFinalizer`, `Layer.addFinalizer`, or `Scope`.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 Flow.addFinalizer(fun cancellationToken ->
     telemetry.FlushAsync(cancellationToken))
 ```

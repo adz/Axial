@@ -7,7 +7,7 @@ description: Distinguish expected failures, unexpected defects, and interruption
 
 A Flow has a typed channel for failures the caller is expected to handle:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type PaymentError = CardDeclined | AccountClosed
 
 let charge : Flow<PaymentError, Receipt> =

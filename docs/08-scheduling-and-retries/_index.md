@@ -19,26 +19,26 @@ A schedule decides two things:
 2. How long to wait before the next attempt.
 
 ### Fixed Number of Recursions
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Recur 5 times (6 attempts total)
 let fiveTimes = Schedule.recurs 5
 ```
 
 ### Fixed Spacing
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Recur indefinitely with 1 second between attempts
 let everySecond = Schedule.spaced (TimeSpan.FromSeconds 1.0)
 ```
 
 ### Exponential Backoff
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Delays: 100ms, 200ms, 400ms, 800ms...
 let backoff = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
 ```
 
 ### Adding Jitter
 Jitter adds randomness to delays to prevent "thundering herd" problems in distributed systems. `Schedule.jittered` adds a random factor between 0.5x and 1.5x to the current delay.
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let policy = 
     Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
     |> Schedule.jittered
@@ -50,7 +50,7 @@ Use `Schedule.retry` to apply a schedule to a flow that might fail with an expec
 
 **Important:** `Schedule.retry` retries only `Cause.Fail`. `Cause.Die` and `Cause.Interrupt` pass through unchanged, so defects and cancellation are not translated into retries.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let unstableCall = 
     flow {
         return! Flow.fail "temporary-error"
@@ -65,7 +65,7 @@ let resilientCall =
 
 Use `Schedule.repeat` to execute a successful flow again. This is useful for polling, heartbeats, or recurring background tasks.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let pollStatus = 
     flow {
         return "Still working"

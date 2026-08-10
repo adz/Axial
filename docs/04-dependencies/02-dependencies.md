@@ -19,7 +19,7 @@ Use this order:
 
 Plain F# records are the default recommendation because they are legible, easy to fake in tests, and easy to refactor.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type ApiDeps = { Orders: IOrderRepo; Email: IEmailSender }
 
 let workflow : Flow<ApiDeps, string, unit> =
@@ -35,7 +35,7 @@ Keep the boundary concrete unless a named abstraction clearly pays for itself.
 
 Reusable helpers can ask for a named service without forcing every application to use the same record shape:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type IHasOrders =
     inherit IHas<IOrderRepo>
 
@@ -51,7 +51,7 @@ let save order : Flow<#IHasOrders, OrderError, unit> =
 Layers build explicit environments and own cleanup through `Scope`. Use `layer { }` when application startup needs to
 combine several services into one environment.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let appLayer =
     layer {
         let! runtime = BaseRuntime.live

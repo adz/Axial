@@ -8,7 +8,7 @@ description: Read explicit application dependencies from a Flow environment.
 Start with ordinary function arguments. Add an environment when several workflows need the same application
 dependencies and passing them through unrelated callers has become noise.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =
     { Users: IUserStore
       Audit: IAuditLog }
@@ -16,7 +16,7 @@ type AppEnv =
 
 `Flow.read` projects the dependency needed by the current operation:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadUser id : EnvFlow<AppEnv, User> =
     flow {
         let! users = Flow.read _.Users
@@ -27,7 +27,7 @@ let loadUser id : EnvFlow<AppEnv, User> =
 The environment appears in the Flow type, so callers can see the requirement. The concrete value is supplied once
 when the workflow runs:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let! exit = (loadUser userId).ToTask(liveEnv)
 ```
 

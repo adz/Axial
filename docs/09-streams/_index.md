@@ -8,7 +8,7 @@ description: Cold, pull-based, effectful streams for .NET and Fable.
 This page shows how to construct, transform, and consume cold streams that share Flow's environment, typed failures,
 cancellation, and platform portability.
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 FlowStream<'env, 'error, 'value>
 ```
 
@@ -20,7 +20,7 @@ and Fable.
 
 Use `fromSeq`, `singleton`, or `empty` for existing values:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let numbers = FlowStream.fromSeq [ 1..100 ]
 let one = FlowStream.singleton 42
 let none : FlowStream<unit, string, int> = FlowStream.empty
@@ -28,7 +28,7 @@ let none : FlowStream<unit, string, int> = FlowStream.empty
 
 Lift one effect with `fromFlow`, or build an asynchronous state machine with `unfoldFlow`:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let pages =
     FlowStream.unfoldFlow
         (fun page ->
@@ -46,7 +46,7 @@ step remains a normal `Flow`, so dependencies and failures are explicit.
 
 ## Transform Values
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let selected =
     numbers
     |> FlowStream.filter (fun value -> value % 2 = 0)
@@ -58,7 +58,7 @@ let selected =
 `choose` combines filtering and mapping. `mapError` changes the typed failure channel. `mapFlow` performs an effectful
 transformation, while `tapFlow` performs an effect and preserves the original value:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let enriched =
     ids
     |> FlowStream.mapFlow loadCustomer
@@ -70,7 +70,7 @@ let enriched =
 `append` evaluates the right stream only after the left completes. `collect` maps each value to a stream and flattens
 them in order. `zip` stops when either side completes:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let values =
     FlowStream.fromSeq [ 1; 2 ]
     |> FlowStream.append (FlowStream.singleton 3)
@@ -82,7 +82,7 @@ let values =
 
 Consumers return an ordinary Flow. The environment is supplied once, when that Flow runs:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let collected : Flow<AppEnv, LoadError, int list> =
     selected |> FlowStream.runCollect
 

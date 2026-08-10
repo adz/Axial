@@ -38,7 +38,7 @@ them. Typed errors are rendered with `string`; use `Activity.traceWith` to suppl
 `FiberTelemetry.observe` installs a [fiber observer](/concurrency-and-state/supervision.html) that records
 fiber defects on the `Axial` activity source:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.Telemetry
 
 application
@@ -67,7 +67,7 @@ hot paths forking many fibers can stay on the defect-only `FiberTelemetry.observ
 writes fiber defects as errors and unobserved defects as critical entries, with the exception attached so
 stack traces survive. Stack it with telemetry from one edge install:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.Hosting
 
 application

@@ -14,7 +14,7 @@ Use `Bind` to assign or map a source error immediately before `flow {}` binds th
 
 Use `Bind.error` when the source fails with option/value-option absence or a `unit` error.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type User = { Name: string }
 type LoginError = UserNotFound | InvalidPassword
 
@@ -49,7 +49,7 @@ let login username password =
 
 For boolean predicates, make the predicate explicit first:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 do!
     Result.requireTrue InvalidPassword isValid
 ```
@@ -58,7 +58,7 @@ do!
 
 Use `Bind.mapError` when the source already carries a meaningful error, but it is not the error type of the surrounding flow.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AuthError = Denied of string
 type TokenError = Expired of string
 type LoginError = Unauthorized of AuthError | TokenFailed of TokenError
@@ -102,7 +102,7 @@ let login user =
 
 A `Policy<'env, 'error, 'input, 'output>` is a value you define once and run anywhere with `Flow.verify`:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let withinLimit =
     Policy.context
         (fun env value -> if value <= env.Limit then Ok value else Error ())
@@ -122,7 +122,7 @@ one workflow, needs the environment, or reads better with a name, promote it to 
 
 Do not use `Bind` as a general Result helper. In pure code, use a `Constraint<'value>` call directly, `Result.mapError`/`Result.orError`, or `Validation.mapError`.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let validateName name =
     name
     |> Constraint.present

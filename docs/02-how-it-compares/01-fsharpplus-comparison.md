@@ -39,7 +39,7 @@ The practical rule is: if the code is generic and reusable across many domains, 
 
 Keep the reusable helper separate from the boundary:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =
     { Prefix: string
       Name: string }
@@ -62,7 +62,7 @@ If you already use `FSharpPlus` for generic mapping or chaining, keep that code 
 
 The same helper can sit under an async boundary without changing its shape:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let greetAsync : Flow<AppEnv, string, string> =
     flow {
         let! prefix = Flow.read _.Prefix

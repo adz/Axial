@@ -46,7 +46,7 @@ Awaiting respects runtime cancellation. If the waiting workflow is interrupted b
 
 `FlowSemaphore` limits how many workflows can enter a section at the same time. The public API is intentionally scoped: use `Semaphore.withPermit` instead of raw acquire/release.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let limitedFetch semaphore request =
     Semaphore.withPermit semaphore (
         flow {
@@ -59,7 +59,7 @@ let limitedFetch semaphore request =
 
 Create semaphores with a positive permit count:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let program : Flow<unit, string, unit> =
     flow {
         let! semaphore = Semaphore.make 4

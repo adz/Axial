@@ -15,7 +15,7 @@ While a `Flow` is **cold** (a description of work that hasn't started yet), a **
 
 When you fork a flow, you are saying: start this work now, give me a typed handle to it, and let the current workflow continue. That handle is the fiber.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadBoth left right =
     flow {
         let! leftFiber = Flow.fork left

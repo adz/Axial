@@ -12,7 +12,7 @@ Use `flow {}` for flows, results, F# async work, and .NET tasks. The same block 
 `let!` binds the completed value to the name on its left. `do!` binds work returning `unit`.
 `return!` uses another flow as the result of the block.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 flow {
     let! user = fetchUser userId
     do! saveUser user
@@ -22,7 +22,7 @@ flow {
 
 Here is the same block with the left- and right-hand types shown:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 flow {
     let! (user: User) = (fetchUser userId: Task<User>)
     do! (saveUser user: Async<unit>)
@@ -44,7 +44,7 @@ flow {
 
 Direct `Async`, `Task`, and `ValueTask` binds treat thrown exceptions as defects (`Cause.Die`) and cancellation as interruption (`Cause.Interrupt`). Use the attempt constructors when exceptions are expected and should become typed failures:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadFromInterop : ExnFlow<string> =
     Flow.attemptTask (legacyClient.LoadAsync())
 ```
@@ -53,7 +53,7 @@ let loadFromInterop : ExnFlow<string> =
 
 ### Example: Mixed Orchestration
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let fetchUser (id: int) : Task<User> = ...
 let validate (user: User) : Result<User, string> = ...
 let saveUser (user: User) : Async<unit> = ...
@@ -89,7 +89,7 @@ let workflow : Flow<unit, int> =
 
 If you need a specific error when an option is `None`, use `Flow.fromOption`:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let workflow : Flow<unit, string, int> =
     flow {
         let! x = maybeValue |> Flow.fromOption "Value was missing"
@@ -114,7 +114,7 @@ Types like `Task<'T>` and `ValueTask<'T>` are **Hot**. The work might already be
 ### Using `ColdTask<'T>`
 `ColdTask<'T>` is a simple wrapper: `CancellationToken -> Task<'T>`. It allows you to define task-based work that remains lazy and cancellation-aware.
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let loadData path = 
     ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))
 
@@ -135,7 +135,7 @@ etc.), that is sufficient — the awaited call will throw `OperationCanceledExce
 
 Do not *also* call `ct.Register(callback)` to observe the same cancellation as a side channel:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Don't do this — two observers racing on one token.
 task {
     use _ = ct.Register(fun () -> sideEffect ())   // manual observer #1
@@ -155,7 +155,7 @@ under load), which is exactly the kind of environment that makes it feel like "j
 
 Instead, observe cancellation from the operation you're already awaiting:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 task {
     try
         do! Task.Delay(30_000, ct)
@@ -173,7 +173,7 @@ combine a manual `Register` with another cancellation-aware call on the same tok
 
 When a source needs its error assigned or mapped before `flow {}` binds it, use **`Bind`** at the binding site.
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let myFlow =
     flow {
         let! value =

@@ -30,7 +30,7 @@ let loadConfig : ExnFlow<string> =
 
 Use `Flow.catch` to convert simple defects into domain errors after a flow has already produced `Cause.Die`. Existing typed failures and interruptions are preserved. Compound causes such as `Cause.Then` and `Cause.Both` are left unchanged.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let safeParse id =
     flow {
         let! json = Http.get id

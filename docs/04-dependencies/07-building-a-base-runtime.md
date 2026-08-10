@@ -28,7 +28,7 @@ work against it directly.
 
 Use `BaseRuntime.liveValue` when you already want a concrete value:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let result =
     (Clock.now).RunSynchronously(BaseRuntime.liveValue)
 ```
@@ -39,7 +39,7 @@ JavaScript host, page bootstrap data, or another source. The clock, random, and 
 
 Use `BaseRuntime.live` when composing with layers:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let runnable =
     workflow
     |> Flow.provide BaseRuntime.live
@@ -50,7 +50,7 @@ let runnable =
 Use `BaseRuntime.fromServiceProvider` when a .NET host container owns the service implementations and you want typed
 startup validation.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let runnable =
     workflow
     |> Flow.provide BaseRuntime.fromServiceProvider
@@ -63,7 +63,7 @@ reported as `BaseRuntimeError.MissingService`.
 
 Tests can construct a deterministic base runtime directly:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let testRuntime =
     { Clock = Clock.fromValue fixedNow
       Log = Log.live

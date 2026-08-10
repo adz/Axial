@@ -12,7 +12,7 @@ That value can be a small record, a larger application record, or an object that
 
 For feature-local code, prefer records and `Flow.read`.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type CheckoutEnv =
     { Orders: IOrderRepository
       Email: IEmailSender }
@@ -34,7 +34,7 @@ This is the default because the requirement is visible and the test setup is jus
 Use `IHas<'service>` when a helper module should advertise one named dependency without caring about the concrete
 environment record.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type IHasOrders =
     inherit IHas<IOrderRepository>
 
@@ -47,7 +47,7 @@ let save order : Flow<#IHasOrders, CheckoutError, unit> =
 
 Application environments can implement many `IHas<'service>` contracts:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =
     { Orders: IOrderRepository
       Email: IEmailSender }
@@ -65,7 +65,7 @@ does not type-check.
 Layers do not automatically compose `IHas<'service>` implementations for you. Build a named environment record and
 implement the contracts explicitly:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let appLayer =
     Layer.merge ordersLayer emailLayer
     |> Layer.map (fun (orders, email) ->
@@ -82,7 +82,7 @@ fields or distinct service contracts.
 `Service<'service>.resolve()` reads from `IServiceProvider`. Use it in host glue or adapters where dynamic container
 lookup is the intended behavior.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadFromHost : Flow<IServiceProvider, unit, IOrderRepository> =
     Service<IOrderRepository>.resolve()
 ```

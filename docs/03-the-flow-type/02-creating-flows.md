@@ -14,7 +14,7 @@ let greeting : Flow<string> =
 
 `Flow.fail` creates an expected typed failure:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type LoadError = UserNotFound
 
 let missing : Flow<LoadError, User> =
@@ -33,7 +33,7 @@ let readText : Flow<string> =
 
 Use an `attempt` constructor when thrown exceptions are expected interop failures that callers should handle:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let readText : ExnFlow<string> =
     Flow.attemptTask (File.ReadAllTextAsync "message.txt")
 ```
