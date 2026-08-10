@@ -36,7 +36,7 @@ let ordersLayer : Layer<IServiceProvider, StartupError, IOrderRepository> =
         | service -> ValueTask(Exit.Success (service :?> IOrderRepository)))
 ```
 
-Then compose provider-backed layers into the application environment and run the real workflow with `Flow.provide`.
+Then compose provider-backed layers into the application environment and run the real workflow with `Layer.provide`.
 
 `Axial.PlatformService` follows this pattern with `BaseRuntime.fromServiceProvider`. Register `IClock`, `ILog`,
 `IRandom`, `IGuid`, and `IEnvironmentVariables` in a Microsoft DI `ServiceCollection`, build the provider at the host

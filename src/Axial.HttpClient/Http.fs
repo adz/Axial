@@ -555,11 +555,6 @@ module Http =
                             return Error(HttpError.InvalidRequest error.Message)
                     } |> Async.AwaitTask
                 } }
-
-    /// Builds a live HTTP service from an explicit clock as a layer.
-    /// <example><code>Http.layer Clock.live (new HttpClient())</code></example>
-    let layer (clock: IClock) (client: HttpClient) : Layer<unit, Never, IHttp> =
-        Layer.succeed (live clock client)
 #endif
 
 module DSL =

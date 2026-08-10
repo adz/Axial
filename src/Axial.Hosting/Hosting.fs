@@ -7,6 +7,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial
+open Axial.Layers
 open Axial.PlatformService
 
 /// <summary>Adapts Microsoft.Extensions.Logging loggers to Axial's explicit logging service.</summary>

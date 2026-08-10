@@ -32,7 +32,7 @@ type AppEnv =
 let! exit = (loadConfig "app.json").StartAsTask({ FileSystem = FileSystem.live })
 ```
 
-`FileSystem.layer : Layer<unit, Never, IFileSystem>` provides the same implementation to a layer-assembled runtime.
+For a runtime assembled with [layers](/layers/index.html), wrap it: `Layer.succeed FileSystem.live`.
 
 ## Typed errors
 
@@ -151,7 +151,7 @@ to the live service and override the one that should fail — that keeps the fak
 
 ## Fable
 
-`FileSystem.live` is not compiled for Fable, and `FileSystem.layer` fails with `PlatformNotSupportedException` there.
+`FileSystem.live` is not compiled for Fable, and `Layer.succeed FileSystem.live` fails with `PlatformNotSupportedException` there.
 See [packages and platforms](/notes/packages-and-platforms.html).
 
 ## Related

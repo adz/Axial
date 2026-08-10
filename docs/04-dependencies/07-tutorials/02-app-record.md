@@ -196,4 +196,4 @@ Move beyond it when:
 - you want startup-time provisioning with failure handling
 - you want scope-owned resources and cleanup
 
-Continue with [Tutorial: Creating Reusable Services](custom-services.html) and then [Tutorial: Layers](layers.html).
+Continue with [Tutorial: Creating Reusable Services](custom-services.html) and then [Tutorial: Layers](/layers/tutorial.html).

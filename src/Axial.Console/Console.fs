@@ -129,11 +129,3 @@ module Console =
             member _.Title with get () = System.Console.Title and set value = System.Console.Title <- value
             member _.TreatControlCAsInput with get () = System.Console.TreatControlCAsInput and set value = System.Console.TreatControlCAsInput <- value }
 #endif
-
-    /// <summary>Builds the live console service as a layer.</summary>
-    let layer : Layer<unit, Never, IConsole> =
-#if FABLE_COMPILER
-        Layer.fromAsync (fun _ _ -> async { return Exit.Failure (Cause.Die (PlatformNotSupportedException("Console services are not supported on Fable."))) })
-#else
-        Layer.succeed live
-#endif

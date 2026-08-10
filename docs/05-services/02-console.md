@@ -39,7 +39,7 @@ type AppEnv =
 let! exit = (confirm "Continue?").StartAsTask({ Console = Console.live })
 ```
 
-`Console.layer : Layer<unit, Never, IConsole>` is the same implementation for runtimes assembled with layers. See
+For a runtime assembled with [layers](/layers/index.html), wrap it: `Layer.succeed Console.live`. See
 [building a base runtime](/dependencies/building-a-base-runtime.html).
 
 ## Reading and writing
@@ -135,7 +135,7 @@ few members a suite exercises overridden — rather than in each test.
 
 ## Fable
 
-`Console.live` is not compiled for Fable, and `Console.layer` fails with `PlatformNotSupportedException` there. A
+`Console.live` is not compiled for Fable, and `Layer.succeed Console.live` fails with `PlatformNotSupportedException` there. A
 workflow that must run on both .NET and Fable should depend on its own narrow output contract and adapt it to
 `IConsole` only in the .NET host. See [packages and platforms](/notes/packages-and-platforms.html).
 

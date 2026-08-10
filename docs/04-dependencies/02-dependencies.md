@@ -12,7 +12,7 @@ Use this order:
 
 1. Use records plus `Flow.read` for most application code.
 2. Declare a per-service contract for reusable named services.
-3. Use `Layer` and `Flow.provide` to build environments and own resource cleanup.
+3. Use `Layer` and `Layer.provide` to build environments and own resource cleanup.
 4. Use `ServiceProvider.get` only at .NET host edges where direct `IServiceProvider` lookup is intentional.
 
 ## Default Shape
@@ -66,12 +66,12 @@ startup. Plain `let!` is sequential and dependent; sibling `and!` bindings are i
 
 ## Tutorials
 
-For concrete starting points, use [App Record](tutorials/app-record.html) and [Layers](tutorials/layers.html).
+For concrete starting points, use [App Record](tutorials/app-record.html) and [Layers](/layers/tutorial.html).
 
 ## More Detail
 
 - [Explicit Services](./explicit-services.html)
-- [Layers](./layers.html)
+- [Layers](/layers/layers.html)
 - [Scopes and Resources](./scopes-and-resources.html)
 - [Building a Base Runtime](./building-a-base-runtime.html)
 - [Service Provider Boundaries](./service-provider-boundaries.html)

@@ -5,6 +5,7 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.Layers
 open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
@@ -172,7 +173,7 @@ module WorkflowResourceTests =
 
         let result =
             workflow
-            |> Flow.provide layer
+            |> Layer.provide layer
             |> Flow.runSync ()
 
         test <@ result = Exit.Success "service" @>
@@ -194,7 +195,7 @@ module WorkflowResourceTests =
 
         let result =
             Flow.env<string * string, string>
-            |> Flow.provide (Layer.merge successful failed)
+            |> Layer.provide (Layer.merge successful failed)
             |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "failed") @>

@@ -7,6 +7,7 @@ open System.Net.Http
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.Layers
 open Axial.Console
 open Axial.PlatformService
 open Axial.FileSystem
@@ -91,7 +92,7 @@ module DependencyInjectionIntegrationTests =
 
         let result =
             workflow
-            |> Flow.provide BaseRuntime.fromServiceProvider
+            |> Layer.provide BaseRuntime.fromServiceProvider
             |> Flow.runSync (provider :> IServiceProvider)
 
         test <@ result = Exit.Success "17:cccccccc-cccc-cccc-cccc-cccccccccccc:registered" @>
@@ -106,7 +107,7 @@ module DependencyInjectionIntegrationTests =
 
         let result =
             Flow.env<BaseRuntime, BaseRuntimeError>
-            |> Flow.provide BaseRuntime.fromServiceProvider
+            |> Layer.provide BaseRuntime.fromServiceProvider
             |> Flow.runSync (provider :> IServiceProvider)
 
         test <@ result = Exit.Failure(Cause.Fail(BaseRuntimeError.MissingService "ILog")) @>
@@ -131,11 +132,11 @@ module DependencyInjectionIntegrationTests =
 
         let serviceLayer : Layer<unit, FileSystemError, ServicePackageLayerServices> =
             layer {
-                let! console = ConsoleService.layer
-                and! fileSystem = FileSystemService.layer
-                and! http = HttpService.layer CoreClock.live httpClient
+                let! console = Layer.succeed ConsoleService.live
+                and! fileSystem = Layer.succeed FileSystemService.live
+                and! http = Layer.succeed (HttpService.live CoreClock.live httpClient)
 
-                let! processService = ProcessService.layer CoreClock.live fileSystem console
+                let! processService = Layer.succeed (ProcessService.live CoreClock.live fileSystem console)
 
                 return
                     {
@@ -165,7 +166,7 @@ module DependencyInjectionIntegrationTests =
         try
             let result =
                 workflow
-                |> Flow.provide serviceLayer
+                |> Layer.provide serviceLayer
                 |> Flow.runSync ()
 
             test <@ result = Exit.Success("file-body", "http-body", 0) @>

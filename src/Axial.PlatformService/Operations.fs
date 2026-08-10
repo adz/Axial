@@ -6,6 +6,7 @@ open System.Collections.Generic
 open System.Globalization
 open System.Threading.Tasks
 open Axial
+open Axial.Layers
 
 /// <summary>Groups the standard operational services commonly used by workflow hosts.</summary>
 type BaseRuntime =

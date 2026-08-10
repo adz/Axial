@@ -1,4 +1,6 @@
-namespace Axial
+namespace Axial.Layers
+
+open Axial
 
 open System.Threading
 open System.Threading.Tasks
@@ -207,3 +209,23 @@ module Layer =
         apply
             (map2 (fun leftValue middleValue -> fun rightValue -> mapper leftValue middleValue rightValue) left middle)
             right
+
+    /// <summary>Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.</summary>
+    /// <remarks>
+    /// This is the provisioning boundary. It creates a fresh scope, builds the supplied layer inside
+    /// that scope, runs the downstream flow with the built environment, and finalizes all acquired
+    /// resources when the downstream flow completes or fails.
+    /// </remarks>
+    /// <param name="layer">The layer that builds the downstream environment.</param>
+    /// <param name="flow">The flow to run with the provided environment.</param>
+    /// <returns>A flow that requires only the input environment of the layer.</returns>
+    /// <example>
+    /// <code>
+    /// let program = Layer.provide runtimeLayer workflow
+    /// </code>
+    /// </example>
+    let provide
+        (layer: Layer<'input, 'error, 'environment>)
+        (flow: Flow<'environment, 'error, 'value>)
+        : Flow<'input, 'error, 'value> =
+        Flow.provideScoped (fun input scope cancellationToken -> invoke layer input scope cancellationToken) flow

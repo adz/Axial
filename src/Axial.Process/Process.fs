@@ -781,9 +781,6 @@ module Process =
             member _.Run specification = execute None specification
             member _.Stream specification = stream specification }
 
-    /// Builds a live process service from an explicit clock as a layer.
-    let layer (clock: IClock) (fileSystem: IFileSystem) (console: IConsole) : Layer<unit, Never, IProcess> =
-        Layer.succeed (live clock fileSystem console)
 #endif
 
 module DSL =

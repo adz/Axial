@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.Layers
 open Swensen.Unquote
 open Xunit
 
@@ -57,7 +58,7 @@ module RuntimeSemanticsTests =
 
         let workflow =
             Flow.env<int * int, string>
-            |> Flow.provide (Layer.zipPar left right)
+            |> Layer.provide (Layer.zipPar left right)
 
         let result = Flow.runSync () workflow
 

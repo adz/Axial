@@ -8,6 +8,7 @@ namespace Axial
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.MaintenanceExamples")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.ReadmeExample")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.PlatformService.Examples")>]
+[<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Layers")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.PlatformService")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.Console")>]
 [<assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Axial.FileSystem")>]

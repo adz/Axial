@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\Axial.Layers\Axial.Layers.fsproj" />
     <ProjectReference Include="..\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 

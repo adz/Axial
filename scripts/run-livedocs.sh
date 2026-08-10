@@ -19,6 +19,7 @@ shift
 
 projects=(
   src/Axial/Axial.fsproj
+  src/Axial.Layers/Axial.Layers.fsproj
   src/Axial.PlatformService/Axial.PlatformService.fsproj
   src/Axial.Console/Axial.Console.fsproj
   src/Axial.FileSystem/Axial.FileSystem.fsproj

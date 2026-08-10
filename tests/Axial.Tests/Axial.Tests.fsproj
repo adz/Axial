@@ -40,6 +40,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
   </ItemGroup>
 
 </Project>

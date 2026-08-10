@@ -1,6 +1,7 @@
 namespace Axial.Tests
 
 open Axial
+open Axial.Layers
 open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
@@ -207,7 +208,7 @@ module FlowRuntimeMetadataTests =
                 do! Flow.annotate "layered" service (Flow.succeed ())
                 return service
             }
-            |> Flow.provide layer
+            |> Layer.provide layer
             |> Flow.addAnnotationSink (fun name value -> lock sunk (fun () -> sunk.Add(name, value)))
 
         let result = Flow.runSync () workflow

@@ -27,7 +27,7 @@ let program : Flow<AppEnv, AppError, unit> =
 
 let root : Flow<StartupInputs, AppError, unit> =
     program
-    |> Flow.provide Live.appLayer
+    |> Layer.provide Live.appLayer
 ```
 
 `root` is the complete application description: startup inputs in, typed application failures out, and all resources

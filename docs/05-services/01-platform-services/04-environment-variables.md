@@ -90,7 +90,7 @@ let readSettings =
 
 This binds sequentially, so it stops at the first problem. Run it as a layer during startup and the application
 cannot reach its first request with unparsed configuration — see
-[layers](/dependencies/layers.html) for provisioning failure.
+[layers](/layers/index.html) for provisioning failure.
 
 ## Supplying the service
 

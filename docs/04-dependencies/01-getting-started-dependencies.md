@@ -46,4 +46,4 @@ introducing Layers.
 - [App Record tutorial](/dependencies/tutorials/app-record.html) builds a feature over a concrete environment record.
 - [Creating Reusable Services](/dependencies/tutorials/custom-services.html) introduces nominal service
   contracts when helpers must be shared across environment shapes.
-- [Layers](/dependencies/layers.html) covers construction, composition, and provisioning failure.
+- [Layers](/layers/layers.html) covers construction, composition, and provisioning failure.

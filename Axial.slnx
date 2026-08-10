@@ -24,6 +24,7 @@
     <Project Path="src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj" />
     <Project Path="src/Axial.Hosting/Axial.Hosting.fsproj" />
     <Project Path="src/Axial.HttpClient/Axial.HttpClient.fsproj" />
+    <Project Path="src/Axial.Layers/Axial.Layers.fsproj" />
     <Project Path="src/Axial.PlatformService/Axial.PlatformService.fsproj" />
     <Project Path="src/Axial.Process/Axial.Process.fsproj" />
     <Project Path="src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj" />

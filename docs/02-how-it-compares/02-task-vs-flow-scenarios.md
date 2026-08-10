@@ -149,7 +149,7 @@ let writeDailyReport (sourcePath: string) : Flow<ReportEnv, ReportError, string>
     }
 
 // Production edge: live services merged into the record once.
-Layer.merge (Layer.merge Clock.layer FileSystem.layer) Console.layer
+Layer.merge (Layer.merge Clock.layer (Layer.succeed FileSystem.live)) (Layer.succeed Console.live)
 |> Layer.map (fun ((clock, fileSystem), console) -> { Clock = clock; FileSystem = fileSystem; Console = console; Store = store })
 ```
 

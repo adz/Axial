@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.Layers
 open Axial.PlatformService
 open Swensen.Unquote
 open Xunit
@@ -92,7 +93,7 @@ module RuntimeFoundationTests =
 
         let result =
             Flow.succeed "unreachable"
-            |> Flow.provide layer
+            |> Layer.provide layer
             |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "startup failed") @>
@@ -112,7 +113,7 @@ module RuntimeFoundationTests =
 
         let result =
             Flow.fail "workflow failed"
-            |> Flow.provide layer
+            |> Layer.provide layer
             |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "workflow failed") @>
@@ -134,7 +135,7 @@ module RuntimeFoundationTests =
 
         let result =
             Flow.env<int * int, string>
-            |> Flow.provide (Layer.zip left right)
+            |> Layer.provide (Layer.zip left right)
             |> Flow.runSync ()
 
         test <@ result = Exit.Success (1, 2) @>
@@ -169,7 +170,7 @@ module RuntimeFoundationTests =
 
         let workflow =
             Flow.env<int * int, string>
-            |> Flow.provide (Layer.zipPar (makeLayer "left" 1) (makeLayer "right" 2))
+            |> Layer.provide (Layer.zipPar (makeLayer "left" 1) (makeLayer "right" 2))
 
         let runTask = Task.Run(fun () -> Flow.runSync () workflow)
 
@@ -193,7 +194,7 @@ module RuntimeFoundationTests =
 
         let result =
             Flow.env<int * int, string>
-            |> Flow.provide (Layer.merge left right)
+            |> Layer.provide (Layer.merge left right)
             |> Flow.runSync ()
 
         test <@ result = Exit.Success (1, 2) @>
@@ -215,7 +216,7 @@ module RuntimeFoundationTests =
 
         let result =
             Flow.env<string * string, string>
-            |> Flow.provide (Layer.zipPar successful failed)
+            |> Layer.provide (Layer.zipPar successful failed)
             |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "failed") @>
@@ -228,7 +229,7 @@ module RuntimeFoundationTests =
 
         let result =
             Flow.env<string * string, string>
-            |> Flow.provide (Layer.zipPar left right)
+            |> Layer.provide (Layer.zipPar left right)
             |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Both(Cause.Fail "left", Cause.Fail "right")) @>
@@ -243,7 +244,7 @@ module RuntimeFoundationTests =
             Layer.map2 (+) (Layer.succeed 1) (Layer.succeed 2)
             |> fun layer ->
                 Flow.env<int, string>
-                |> Flow.provide layer
+                |> Layer.provide layer
                 |> Flow.runSync ()
 
         let map3Result =
@@ -254,12 +255,12 @@ module RuntimeFoundationTests =
                 (Layer.succeed 3)
             |> fun layer ->
                 Flow.env<LayerCompositionEnv, string>
-                |> Flow.provide layer
+                |> Layer.provide layer
                 |> Flow.runSync ()
 
         let mappedErrorResult =
             Flow.env<int, string>
-            |> Flow.provide mappedError
+            |> Layer.provide mappedError
             |> Flow.runSync ()
 
         test <@ map2Result = Exit.Success 3 @>
@@ -289,7 +290,7 @@ module RuntimeFoundationTests =
 
         let result =
             Flow.env<int * int, string>
-            |> Flow.provide composed
+            |> Layer.provide composed
             |> Flow.runSync ()
 
         test <@ result = Exit.Success (1, 2) @>
@@ -327,7 +328,7 @@ module RuntimeFoundationTests =
 
         let workflow =
             Flow.env<int, string>
-            |> Flow.provide composed
+            |> Layer.provide composed
 
         let runTask = Task.Run(fun () -> Flow.runSync () workflow)
 
@@ -375,7 +376,7 @@ module RuntimeFoundationTests =
 
         let workflow =
             Flow.env<int, string>
-            |> Flow.provide composed
+            |> Layer.provide composed
 
         let runTask = Task.Run(fun () -> Flow.runSync () workflow)
 
@@ -424,7 +425,7 @@ module RuntimeFoundationTests =
 
         let result =
             workflow
-            |> Flow.provide BaseRuntime.fromServiceProvider
+            |> Layer.provide BaseRuntime.fromServiceProvider
             |> Flow.runSync provider
 
         test <@ result = Exit.Success "42:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:value" @>
@@ -439,7 +440,7 @@ module RuntimeFoundationTests =
 
         let result =
             Flow.env<BaseRuntime, BaseRuntimeError>
-            |> Flow.provide BaseRuntime.fromServiceProvider
+            |> Layer.provide BaseRuntime.fromServiceProvider
             |> Flow.runSync provider
 
         test <@ result = Exit.Failure (Cause.Fail (BaseRuntimeError.MissingService "ILog")) @>

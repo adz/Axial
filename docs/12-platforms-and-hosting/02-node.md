@@ -32,7 +32,7 @@ let inputs =
 
 let application : Flow<StartupInputs, AppError, unit> =
     program
-    |> Flow.provide Live.appLayer
+    |> Layer.provide Live.appLayer
 ```
 
 `NodeEnvironment.live` implements `IEnvironmentVariables` over `process.env`. `TryGet`, `Set`, and `GetAll` use the

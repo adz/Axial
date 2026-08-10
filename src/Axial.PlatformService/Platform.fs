@@ -5,6 +5,7 @@ open System.Collections
 open System.Collections.Generic
 open System.Threading.Tasks
 open Axial
+open Axial.Layers
 
 /// Runtime-specific implementations for the otherwise portable service surface.
 module internal Platform =

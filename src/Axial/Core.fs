@@ -793,6 +793,11 @@ module internal FlowInternal =
         : Execution<'value, 'error> =
         operation environment cancellationToken
 
+    let create
+        (operation: 'env -> CancellationToken -> Execution<'value, 'error>)
+        : Flow<'env, 'error, 'value> =
+        Flow operation
+
 /// <summary>
 /// Log levels used by runtime logging helpers and environment-provided logging functions.
 /// </summary>

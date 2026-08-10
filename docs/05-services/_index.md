@@ -6,7 +6,7 @@ description: The clock, logging, console, file-system, process, and HTTP service
 Axial ships implementations for the ambient capabilities most applications reach for: the clock and other
 operational services, the console, the file system, external processes, and HTTP. Each one is an ordinary explicit
 dependency. Nothing here is a new mechanism — these pages apply
-[explicit services](/dependencies/explicit-services.html) and [layers](/dependencies/layers.html) to capabilities the
+[explicit services](/dependencies/explicit-services.html) and [layers](/layers/index.html) to capabilities the
 library already wrote for you.
 
 ```fsharp
@@ -20,7 +20,7 @@ Every built-in service follows the same three-part shape:
 | --- | --- |
 | `IHasClock`, `IHasConsole`, `IHasFileSystem`, `IHasProcess`, `IHasHttp` | The contract a workflow constrains its environment with |
 | `Console.live`, `FileSystem.live`, `Http.live` | The implementation backed by the real platform |
-| `Console.layer`, `FileSystem.layer`, `Http.layer` | The same implementation as a `Layer` for runtime composition |
+| `Layer.succeed Console.live`, `Layer.succeed FileSystem.live`, `Layer.succeed (Http.live …)` | The same implementation as a `Layer` for runtime composition |
 
 A workflow names the contract and never the implementation:
 

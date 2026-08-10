@@ -1,6 +1,6 @@
 ---
 title: Layers
-description: Provisioning explicit environments with Layer and Flow.provide.
+description: Provisioning explicit environments with Layer and Layer.provide.
 ---
 
 # Layers
@@ -8,12 +8,17 @@ description: Provisioning explicit environments with Layer and Flow.provide.
 A `Layer<'input, 'error, 'output>` builds an environment or service bundle from an input value. It runs inside a
 `Scope`, so resources acquired during provisioning can be finalized when the provided flow finishes.
 
+```fsharp
+open Axial
+open Axial.Layers
+```
+
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let appFlow : Flow<AppEnv, AppError, unit> =
     placeOrder order
 
 let runnable : Flow<IServiceProvider, AppError, unit> =
-    appFlow |> Flow.provide appLayer
+    appFlow |> Layer.provide appLayer
 ```
 
 ## Primary Shape
@@ -120,7 +125,7 @@ let appLayer : Layer<IServiceProvider, BaseRuntimeError, AppEnv> =
 ```
 
 Layer error types must match the flow error type. When different provisioning steps use different errors, map them into
-one startup error type before calling `Flow.provide`.
+one startup error type before calling `Layer.provide`.
 
 ## let! And and!
 
@@ -191,7 +196,7 @@ expression, sibling `and!` bindings use `merge` instead.
 
 ## Cleanup
 
-`Flow.provide` creates a root scope, builds the layer, runs the downstream flow, and closes the scope. Cleanup runs when
+`Layer.provide` creates a root scope, builds the layer, runs the downstream flow, and closes the scope. Cleanup runs when
 the layer fails, the downstream flow fails, or the downstream flow succeeds.
 
 Use `Layer.acquireRelease` when a layer provisions a service implementation or resource that must live for the whole

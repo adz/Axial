@@ -12,4 +12,3 @@ environment and composition style that fits the application.
 - [Application records](app-record.html)
 - [Existing services](existing-services.html)
 - [Custom services](custom-services.html)
-- [Layers](layers.html)

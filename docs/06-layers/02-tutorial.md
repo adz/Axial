@@ -20,6 +20,8 @@ Use a layer when you need to:
 open System
 open System.Threading
 open System.Threading.Tasks
+open Axial
+open Axial.Layers
 
 type IOrders =
     abstract Save : string -> Task<unit>
@@ -86,7 +88,7 @@ let failingOrdersLayer : Layer<unit, string, IOrders> =
         })
 ```
 
-If provisioning fails, `Flow.provide` never runs the downstream business workflow. That separation is one of the main reasons to use layers.
+If provisioning fails, `Layer.provide` never runs the downstream business workflow. That separation is one of the main reasons to use layers.
 
 ## 5. Resource Ownership
 
@@ -104,13 +106,13 @@ let connectionLayer : Layer<unit, string, FakeConnection> =
 
 This is another main reason to use layers: acquired resources belong to the provisioning scope and are released when the provided workflow completes, fails, or is interrupted.
 
-## 6. Run Through `Flow.provide`
+## 6. Run Through `Layer.provide`
 
 ```fsharp
 let run () = task {
     let! exit =
         saveOrder "A-100"
-        |> Flow.provide appLayer
+        |> Layer.provide appLayer
         |> fun flow -> flow.StartAsTask(())
 
     match exit with

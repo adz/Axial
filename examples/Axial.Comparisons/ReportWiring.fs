@@ -14,6 +14,7 @@ module Axial.Comparisons.ReportWiring
 open System
 open System.IO
 open Axial
+open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
@@ -97,7 +98,7 @@ module WithFlow =
     /// Production wiring: live platform services, merged into the one environment record at the
     /// application edge. Tests build the same record from Clock.fromValue and in-memory doubles.
     let liveLayer (store: IReportStore) : Layer<unit, Never, ReportEnv> =
-        Layer.merge (Layer.merge Clock.layer FileSystem.layer) Console.layer
+        Layer.merge (Layer.merge Clock.layer (Layer.succeed FileSystem.live)) (Layer.succeed Console.live)
         |> Layer.map (fun ((clock, fileSystem), console) ->
             { Clock = clock
               FileSystem = fileSystem

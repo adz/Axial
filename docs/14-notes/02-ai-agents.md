@@ -11,7 +11,7 @@ package — not Schema, not Result — though its builder lifts a plain F# `Resu
 - Start with the smallest useful `Flow` alias and expand to `Flow<'env, 'error, 'value>` when both channels matter.
 - Keep application and operational dependencies explicit in `'env`; reserve the runtime for executor mechanics.
 - Use plain records for application environments and a per-service contract when a reusable nominal service is worthwhile.
-- Use `Layer` and `Flow.provide` to construct environments and own scoped resources.
+- Use `Layer` and `Layer.provide` to construct environments and own scoped resources.
 - Treat exceptions as defects unless an `attempt*` constructor explicitly turns them into typed failures.
 - Run finite roots with `App.run`; use `App.start` when a .NET, Node, or browser owner needs an `AppHandle`.
 - Keep Process and HttpClient effects behind `IProcess` and `IHttp`; clocks, randomness, environment variables, files,

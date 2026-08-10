@@ -1170,11 +1170,3 @@ module FileSystem =
             member _.IsPathFullyQualified(path) = Path.IsPathFullyQualified(path)
             member _.IsPathRooted(path) = Path.IsPathRooted(path) }
 #endif
-
-    /// <summary>Builds the live file-system service as a layer.</summary>
-    let layer : Layer<unit, Never, IFileSystem> =
-#if FABLE_COMPILER
-        Layer.fromAsync (fun _ _ -> async { return Exit.Failure (Cause.Die (PlatformNotSupportedException("File-system services are not supported on Fable."))) })
-#else
-        Layer.succeed live
-#endif

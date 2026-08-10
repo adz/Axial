@@ -1439,17 +1439,13 @@ module Flow =
             let innerEnvironment = mapping environment
             invoke flow innerEnvironment ct)
 
-    /// <summary>Builds an environment with a layer, runs a downstream flow, and always closes the layer scope.</summary>
+    /// <summary>Runs a provisioning step in a fresh scope, then the downstream flow, closing the scope after.</summary>
     /// <remarks>
-    /// This is the provisioning boundary for explicit services. It creates a fresh scope, builds the
-    /// supplied layer inside that scope, runs the downstream flow with the built environment, and
-    /// finalizes all acquired resources when the downstream flow completes or fails.
+    /// Internal seam for <c>Axial.Layers</c>. The provisioning step is supplied as a plain function so
+    /// that the scope handling, which depends on inlined runtime internals, stays inside this assembly.
     /// </remarks>
-    /// <param name="layer">The layer that builds the downstream environment.</param>
-    /// <param name="flow">The flow to run with the provided environment.</param>
-    /// <returns>A flow that requires only the input environment of the layer.</returns>
-    let provide
-        (layer: Layer<'input, 'error, 'environment>)
+    let internal provideScoped
+        (provision: 'input -> Scope -> CancellationToken -> Execution<'environment, 'error>)
         (flow: Flow<'environment, 'error, 'value>)
         : Flow<'input, 'error, 'value> =
         Flow(fun environment cancellationToken ->
@@ -1461,7 +1457,7 @@ module Flow =
                 cancellationToken
                 (fun () ->
                     RuntimeState.withRuntime runtime (fun () ->
-                        Layer.invoke layer environment scope cancellationToken
+                        provision environment scope cancellationToken
                         |> Execution.bind (fun innerEnvironment ->
                             invoke flow innerEnvironment cancellationToken)))
                 (fun cleanupError executionError exit ->

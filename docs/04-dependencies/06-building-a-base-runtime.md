@@ -42,7 +42,7 @@ Use `BaseRuntime.live` when composing with layers:
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let runnable =
     workflow
-    |> Flow.provide BaseRuntime.live
+    |> Layer.provide BaseRuntime.live
 ```
 
 ## Provider-Backed Runtime
@@ -53,7 +53,7 @@ startup validation.
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let runnable =
     workflow
-    |> Flow.provide BaseRuntime.fromServiceProvider
+    |> Layer.provide BaseRuntime.fromServiceProvider
 ```
 
 The provider must contain `IClock`, `ILog`, `IRandom`, `IGuid`, and `IEnvironmentVariables`. Missing registrations are

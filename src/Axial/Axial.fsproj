@@ -38,7 +38,6 @@
     <Compile Include="Core.fs" />
     <Compile Include="Foundation.fs" />
     <Compile Include="Runtime.fs" />
-    <Compile Include="RuntimeLayer.fs" />
     <Compile Include="Policy.fs" />
     <Compile Include="Flow.fs" />
     <Compile Include="App.fs" />
@@ -49,7 +48,6 @@
     <Compile Include="Stream.fs" />
     <Compile Include="Schedule.fs" />
     <Compile Include="FlowBuilder.fs" />
-    <Compile Include="LayerBuilder.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Builders.fs" />
   </ItemGroup>

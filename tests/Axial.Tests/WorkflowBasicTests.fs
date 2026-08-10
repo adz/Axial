@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.Layers
 open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
@@ -207,7 +208,7 @@ module WorkflowBasicTests =
 
         let composed =
             workflow
-            |> Flow.provide appLayer
+            |> Layer.provide appLayer
 
         let composedResult =
             composed
@@ -239,7 +240,7 @@ module WorkflowBasicTests =
 
         let flowLayerResult =
             flowLayerWorkflow
-            |> Flow.provide (Layer.succeed app)
+            |> Layer.provide (Layer.succeed app)
             |> Flow.runSync ()
 
         test <@ composedResult = Exit.Success "provider-client:10" @>

@@ -36,7 +36,7 @@ fallback paths deterministically, with no network and no clock.
 
 ## The Live Service
 
-`Http.live` adapts an explicit `IClock` and one `HttpClient`; `Http.layer` exposes them as a layer:
+`Http.live` adapts an explicit `IClock` and one `HttpClient`; `Layer.succeed (Http.live …)` exposes them as a layer:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =
@@ -46,12 +46,12 @@ type AppEnv =
 
 let appLayer (clock: IClock) (client: HttpClient) : Layer<unit, Never, AppEnv> =
     layer {
-        let! http = Http.layer clock client
+        let! http = Layer.succeed (Http.live clock client)
         return { Http = http }
     }
 
 workflow
-|> Flow.provide (appLayer Clock.live client)
+|> Layer.provide (appLayer Clock.live client)
 |> Flow.runSync ()
 ```
 
@@ -86,7 +86,7 @@ A workflow that needs both declares `Flow<WorkerEnv, ...>` (or stays polymorphic
 ## Portability
 
 Request construction, the `Request`/`Response` modules, `HttpError`, and the DSL are portable and compile under
-Fable. The `Http.live` service and `Http.layer` are .NET-only: on other hosts, implement `IHttp` over the
+Fable. The `Http.live` service and `Layer.succeed (Http.live …)` are .NET-only: on other hosts, implement `IHttp` over the
 platform's fetch primitive and provide it through the same environment record.
 
 ## When Not To Fake

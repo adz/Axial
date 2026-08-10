@@ -79,7 +79,7 @@ builder.Services.AddSingleton<IOrderRepository, SqlOrderRepository>()
 
 let application : Flow<AppEnv, AppError, unit> =
     program
-    |> Flow.provide Live.appLayer
+    |> Layer.provide Live.appLayer
 
 builder.Services
 |> Hosting.addApp
