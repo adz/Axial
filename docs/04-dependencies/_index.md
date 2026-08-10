@@ -5,19 +5,30 @@ description: Declare what a workflow needs, supply it at the edge, and manage sc
 
 # Dependencies
 
-This section is about declaring your own dependencies. A Flow states what it needs in its environment channel, and
-the value is supplied once, at the edge, when the workflow runs:
+**Pass Flow a record.** A workflow states what it needs in its environment channel; you build that record and hand
+it over when the workflow runs:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+type AppEnv =
+    { Users: IUserStore
+      Audit: IAuditLog }
+
 let loadUser id : EnvFlow<AppEnv, User> =
     flow {
         let! users = Flow.read _.Users
         return! users.Load id
     }
+
+let exit = loadUser userId |> Flow.run { Users = liveUsers; Audit = liveAudit }
 ```
 
-Start with records and `Flow.read`. Reach for named service contracts, layers, and scopes when a shared library,
-provisioning failure, or a resource that must be released deterministically makes the simpler form insufficient.
+That is the whole mechanism for most applications. There is no container, no registration, and no resolution step —
+a record is a record, and a test supplies a different one.
+
+Two things build on it, and neither is needed to start. **Contracts** let a *package* ask for a service without
+knowing your record type; that is how `Console.writeLine` and the rest of the
+[built-in services](/services/index.html) work, and how you would publish your own. **Layers** are for provisioning
+that is itself effectful — see [layers](/layers/index.html), a separate package.
 
 ## In this section
 
@@ -30,7 +41,5 @@ provisioning failure, or a resource that must be released deterministically make
 6. [Building a base runtime](building-a-base-runtime.html) — assembling the environment an application runs on.
 7. [Tutorials](tutorials/index.html) — the same material worked end to end.
 
-Provisioning that itself needs flow capabilities lives in [layers](/layers/index.html), a separate package.
-
-For the services Axial already implements — console, file system, and processes — see
+For the services Axial already implements — the clock, console, file system, processes, and HTTP — see
 [built-in services](/services/index.html).

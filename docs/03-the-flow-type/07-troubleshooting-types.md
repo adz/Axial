@@ -85,7 +85,7 @@ If a helper requires `IHasDatabase` but you are running it in an environment tha
 let helper : Flow<#IHasDatabase, _, _> = ...
 
 // This fails if AppEnv doesn't implement IHasDatabase
-let run (env: AppEnv) = helper.StartAsTask(env)
+let run (env: AppEnv) = helper |> Flow.startTask env
 ```
 
 Fix it by implementing the interface on your environment type.

@@ -29,7 +29,7 @@ type AppEnv =
     interface IHasFileSystem with
         member this.FileSystem = this.FileSystem
 
-let! exit = (loadConfig "app.json").StartAsTask({ FileSystem = FileSystem.live })
+let! exit = loadConfig "app.json" |> Flow.startTask { FileSystem = FileSystem.live }
 ```
 
 For a runtime assembled with [layers](/layers/index.html), wrap it: `Layer.succeed FileSystem.live`.
@@ -140,7 +140,7 @@ let root = Path.Combine(Path.GetTempPath(), "my-tests", Guid.NewGuid().ToString 
 Directory.CreateDirectory root |> ignore
 
 try
-    let exit = (workflow root).RunSynchronously({ FileSystem = FileSystem.live })
+    let exit = workflow root |> Flow.run { FileSystem = FileSystem.live }
     test <@ exit = Exit.Success expected @>
 finally
     Directory.Delete(root, true)

@@ -39,7 +39,7 @@ applications get the clock as part of [the base runtime](index.html) rather than
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let clock = Clock.fromValue (DateTimeOffset.Parse "2026-01-01T12:00:00Z")
-let exit = (expiresWithin (TimeSpan.FromHours 1.0) deadline).RunSynchronously({ Clock = clock })
+let exit = expiresWithin (TimeSpan.FromHours 1.0) deadline |> Flow.run { Clock = clock }
 ```
 
 A clock that returns a fixed instant does not advance, which is usually what you want for assertions. When a test

@@ -64,7 +64,7 @@ let observer =
 
 application
 |> Flow.withFiberObserver observer
-|> fun workflow -> workflow.RunSynchronously(env)
+|> fun workflow -> workflow |> Flow.run env
 ```
 
 The hooks:

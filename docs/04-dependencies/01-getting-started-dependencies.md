@@ -28,16 +28,14 @@ The environment appears in the Flow type, so callers can see the requirement. Th
 when the workflow runs:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let! exit = (loadUser userId).StartAsTask(liveEnv)
+let exit = loadUser userId |> Flow.run liveEnv
 ```
 
 Tests provide a different record using the same shape. There is no hidden service locator in the workflow.
 
-Records plus `Flow.read` are the default for application code. Named services and Layers are useful later for shared
-libraries, provisioning, startup failure, or scope-owned resources.
-
-Continue with the [Explicit Dependencies tutorial](/dependencies/tutorials/explicit-dependencies.html) before
-introducing Layers.
+Records plus `Flow.read` are the default, and for most applications the end of the story. Contracts matter when a
+*package* must ask for a service without knowing your record type; layers matter when building the environment is
+itself effectful. Neither is needed to start.
 
 ## Go Further
 
@@ -46,4 +44,5 @@ introducing Layers.
 - [App Record tutorial](/dependencies/tutorials/app-record.html) builds a feature over a concrete environment record.
 - [Creating Reusable Services](/dependencies/tutorials/custom-services.html) introduces nominal service
   contracts when helpers must be shared across environment shapes.
-- [Layers](/layers/layers.html) covers construction, composition, and provisioning failure.
+- [Layers](/layers/index.html) covers provisioning that needs flow capabilities to build — a separate package, and
+  not required for ordinary wiring.

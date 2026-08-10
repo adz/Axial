@@ -113,7 +113,7 @@ let run () = task {
     let! exit =
         saveOrder "A-100"
         |> Layer.provide appLayer
-        |> fun flow -> flow.StartAsTask(())
+        |> Flow.startTask ()
 
     match exit with
     | Exit.Success () -> printfn "done"

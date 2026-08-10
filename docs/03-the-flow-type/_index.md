@@ -15,7 +15,7 @@ let workflow : Flow<AppEnv, LoadUserError, User> =
         return! loadUser 42
     }
 
-let completed = workflow.StartAsTask(live)
+let completed = workflow |> Flow.startTask live
 ```
 
 The three type parameters state the whole contract — what the workflow needs, how it can fail, and what it produces:

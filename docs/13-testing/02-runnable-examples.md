@@ -60,15 +60,15 @@ let main _ =
 
     let syncResult =
         greetingFlow
-        |> fun workflow -> workflow.RunSynchronously(env)
+        |> fun workflow -> workflow |> Flow.run env
 
     let asyncResult =
         greetingAsync
-        |> fun workflow -> workflow.RunSynchronously(env)
+        |> fun workflow -> workflow |> Flow.run env
 
     let taskResult =
         greetingTask
-        |> fun workflow -> workflow.RunSynchronously(env)
+        |> fun workflow -> workflow |> Flow.run env
 
     printfn "Flow: %A" syncResult
     printfn "Async: %A" asyncResult
@@ -105,20 +105,20 @@ open System.Threading.Tasks
 open Axial
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
-    let result = workflow.RunSynchronously(env)
+    let result = workflow |> Flow.run env
     printfn "%s: %A" label result
 
 let runAsyncExample label env (workflow: Flow<'env, 'error, 'value>) =
     let result =
         workflow
-        |> fun workflow -> workflow.RunSynchronously(env)
+        |> fun workflow -> workflow |> Flow.run env
 
     printfn "%s: %A" label result
 
 let runTaskExample label env (workflow: Flow<'env, 'error, 'value>) =
     let result =
         workflow
-        |> fun workflow -> workflow.RunSynchronously(env)
+        |> fun workflow -> workflow |> Flow.run env
 
     printfn "%s: %A" label result
 
@@ -216,7 +216,7 @@ let private supervisedRecovery () =
     let result =
         flakyWorker attempts
         |> Flow.Runtime.supervise policy
-        |> fun workflow -> workflow.RunSynchronously(())
+        |> Flow.run ()
 
     printfn $"  result after {attempts.Value} attempts: %A{result}"
 
@@ -232,7 +232,7 @@ let private unobservedDefectReporting () =
         }
         |> Flow.withFiberObserver consoleObserver
 
-    let result = workflow.RunSynchronously(())
+    let result = workflow |> Flow.run ()
     printfn $"  result: %A{result}"
 
 let private intentionalFireAndForget () =
@@ -246,7 +246,7 @@ let private intentionalFireAndForget () =
         }
         |> Flow.withFiberObserver consoleObserver
 
-    let result = workflow.RunSynchronously(())
+    let result = workflow |> Flow.run ()
     printfn $"  result: %A{result}"
 
 let run () =

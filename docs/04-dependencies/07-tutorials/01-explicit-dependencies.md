@@ -137,7 +137,7 @@ let runExample () = task {
           Email = "ada@example.com"
           Total = 99.95m }
 
-    let! exit = (placeOrder orders email order).StartAsTask(())
+    let! exit = placeOrder orders email order |> Flow.startTask ()
 
     match exit with
     | Exit.Success orderId ->

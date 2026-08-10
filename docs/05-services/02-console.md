@@ -36,7 +36,7 @@ type AppEnv =
     interface IHasConsole with
         member this.Console = this.Console
 
-let! exit = (confirm "Continue?").StartAsTask({ Console = Console.live })
+let! exit = confirm "Continue?" |> Flow.startTask { Console = Console.live }
 ```
 
 For a runtime assembled with [layers](/layers/index.html), wrap it: `Layer.succeed Console.live`. See
@@ -126,7 +126,7 @@ let testConsole =
         // remaining members raise or return defaults
         }
 
-let! exit = (report "ready").StartAsTask({ Console = testConsole })
+let! exit = report "ready" |> Flow.startTask { Console = testConsole }
 test <@ recorded.ToString().Trim() = "ready" @>
 ```
 

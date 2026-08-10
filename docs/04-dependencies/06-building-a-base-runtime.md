@@ -30,7 +30,7 @@ Use `BaseRuntime.liveValue` when you already want a concrete value:
 
 ```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let result =
-    (Clock.now).RunSynchronously(BaseRuntime.liveValue)
+    Clock.now |> Flow.run BaseRuntime.liveValue
 ```
 
 On Fable, the live environment-variable service is empty because browsers do not expose a process environment. Inject

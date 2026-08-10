@@ -9,10 +9,15 @@
 
 ## Execution and dependencies
 
-- Use `Flow.read` for record environments and `Service<'service>.get()` for nominal `IHas<'service>` dependencies.
-- Use `Layer` plus `Flow.provide` to build explicit environments and own scoped cleanup.
+- Pass a record environment and read it with `Flow.read`. This is the default and needs no other machinery.
+- Declare a per-service contract — an interface `IHasFoo` exposing one member `Foo` — only when a package must ask
+  for a service without knowing the caller's record type. Read it through the package's `service` accessor.
+- Run with `Flow.run`, `Flow.startTask`, or `Flow.toAsync`; `to*` starts nothing, `start*` begins immediately.
+- Use `Layer` plus `Layer.provide` from the separate `Axial.Layers` package only when building the environment is
+  itself effectful. Scopes and `acquireRelease` are core and work without layers.
 - Use `Flow.fromTask`/`fromAsync` when thrown exceptions are defects; use `attemptTask`/`attemptAsync` when expected
-  exceptions belong in the typed failure channel.
+  exceptions belong in the typed failure channel. These take a cancellable factory; `awaitStartedTask` wraps work
+  that is already running.
 - Use `Bind.error` or `Bind.mapError` only at a `flow {}` bind site where the source error needs immediate assignment.
 - Execute finite roots with `App.run`. Use `App.start` when an outer host owns stopping and awaits cleanup.
 

@@ -46,7 +46,7 @@ The workflow does not know where the clock, logger, or environment variables cam
 ```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let run () = task {
     let env = { Runtime = BaseRuntime.liveValue }
-    let! exit = loadMode.StartAsTask(env)
+    let! exit = loadMode |> Flow.startTask env
     printfn "%A" exit
 }
 ```

@@ -14,7 +14,8 @@ title: Axial
 <div class="lede">
 <p><code>Flow&lt;'env,'error,'value&gt;</code> describes asynchronous work, the services it requires, and the failures callers must handle.</p>
 </div>
-<p>Axial also provides structured concurrency, resource scopes, retries, streams, STM, operational services, hosting, and telemetry over the same workflow model.</p>
+<p>Pass a workflow a plain record and get typed failures, cancellation, resource scopes and structured concurrency. No container, no registration step.</p>
+<p>Axial also provides retries, streams, STM, operational services, hosting, and telemetry over the same workflow model.</p>
 <p><a class="btn btn-primary" href="getting-started/index.html">Get started</a></p>
 </div>
 </div>

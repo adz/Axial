@@ -9,7 +9,7 @@ Creating a Flow does not execute it. Start it explicitly at a boundary:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let workflow = Flow.succeed "Hello"
-let exit = workflow.RunSynchronously(())
+let exit = workflow |> Flow.run ()
 ```
 
 Execution completes with `Exit<'value, 'error>`:
