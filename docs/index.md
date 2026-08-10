@@ -4,35 +4,41 @@ title: Axial
 
 <div class="docs-home-container axial-landing">
 <div class="docs-home-hero">
-<div class="docs-home-hero-visual">
-<img class="hero-lockup hero-lockup--light" data-theme-variant="light" src="content/img/hero-lockup-light.png" alt="Axial" width="1560" height="600" />
-<img class="hero-lockup hero-lockup--dark" data-theme-variant="dark" src="content/img/hero-lockup-dark.png" alt="Axial" width="1560" height="600" />
-</div>
 <div class="docs-home-copy">
 <span class="eyebrow">Typed asynchronous workflows for F#</span>
 <h1>Dependencies in the type. Supplied at the edge.</h1>
-<div class="docs-home-example">
-<span class="docs-home-example-label">A complete checkout workflow</span>
-<pre><code class="language-fsharp">type CheckoutEnv =
-    { FindTotal: int -&gt; Task&lt;Result&lt;decimal, CheckoutError&gt;&gt;
-      ApplyDiscount: decimal -&gt; Result&lt;decimal, CheckoutError&gt;
-      Charge: decimal -&gt; Async&lt;Result&lt;Payment, CheckoutError&gt;&gt; }
-&#8203;
-let checkout orderId : Flow&lt;CheckoutEnv, CheckoutError, Receipt&gt; =
-    flow {
-        let! env = Flow.env
-&#8203;
-        let! subtotal = env.FindTotal orderId       // Task&lt;Result&lt;_, _&gt;&gt;
-        let! total = env.ApplyDiscount subtotal     // Result&lt;_, _&gt;
-        let! payment = env.Charge total             // Async&lt;Result&lt;_, _&gt;&gt;
-&#8203;
-        return
-            { OrderId = orderId
-              Total = total
-              PaymentId = payment.Id }
-    }
-&#8203;
-let exit = checkout 42 |&gt; Flow.run live</code></pre>
+<div class="docs-home-example" aria-label="Axial dependency and runtime model">
+<span class="docs-home-example-label">One workflow model from dependencies to runtime</span>
+<div class="axial-coord">
+<div class="axial-coord-col axial-coord-col--left">
+<span class="axial-coord-label">Typed environment</span>
+<div class="coord-row"><span class="coord-pill">Application record</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Clock</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">HTTP</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">File system</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Process</span><span class="coord-line"></span></div>
+<div class="coord-row"><span class="coord-pill">Your services</span><span class="coord-line"></span></div>
+</div>
+<div class="axial-coord-mid">
+<div class="coord-hub">
+<span class="coord-hub-logo">
+<img class="hero-lockup hero-lockup--light" data-theme-variant="light" src="content/img/hero-lockup-light.png" alt="Axial" width="1560" height="600" />
+<img class="hero-lockup hero-lockup--dark" data-theme-variant="dark" src="content/img/hero-lockup-dark.png" alt="Axial" width="1560" height="600" />
+</span>
+<span>Flow&lt;'env, 'error, 'value&gt;</span>
+</div>
+</div>
+<div class="axial-coord-col axial-coord-col--right">
+<span class="axial-coord-label">Supplied at the edge</span>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Live services</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Test doubles</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">.NET</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">NativeAOT</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Browser</span></div>
+<div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Node</span></div>
+</div>
+</div>
+<p class="axial-coord-caption">A workflow names the environment it needs. The caller supplies the implementation when it runs the workflow.</p>
 </div>
 <div class="docs-home-benefits" aria-label="Flow benefits">
 <span><strong aria-hidden="true">✓</strong> Typed expected failures</span>
