@@ -79,3 +79,22 @@ Most .NET developers and many F# developers have never used an effect system, an
   resolve inside a `flow { }` block, where the lambda's parameter type is not yet known; binding it
   at module level puts the annotation next to the expression that needs it, and every caller then
   binds it with no annotation.
+
+## 2026-08-10: Module-level values in a test project's last file are never initialised
+
+F# compiles the **last compiled file's** top-level initialisation into `main@`, the assembly's entry
+point. Test assemblies are built with an entry point, and the test host invokes test methods
+reflectively without ever calling it, so those values stay `null`. The access site is an unguarded
+`ldsfld`, and the file's startup class has no static constructor, so nothing forces initialisation.
+
+Verified: `Axial.PlatformService.Tests.dll` reports its entry point as
+`<StartupCode$Axial-PlatformService-Tests>.$ServiceRuntimePatternTests::main@` — the last file.
+`Axial.dll` has no entry point, so every file including `Builders.fs` gets a static constructor and
+`flow` and `layer` initialise normally. Moving the file out of last position also fixes it, because
+`main@` moves with the position.
+
+`<OutputType>Library</OutputType>` does not prevent this; the test SDK arranges the entry point
+regardless, and `GenerateProgramFile=false` only suppresses the generated `Program.fs`.
+
+Bind such values locally inside the test, or make them functions. Do not fix it by reordering files
+— the next file added moves the problem.
