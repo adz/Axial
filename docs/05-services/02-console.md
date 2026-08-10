@@ -40,7 +40,7 @@ let! exit = confirm "Continue?" |> Flow.startTask { Console = Console.live }
 ```
 
 For a runtime assembled with [layers](/layers/index.html), wrap it: `Layer.succeed Console.live`. See
-[building a base runtime](/dependencies/building-a-base-runtime.html).
+[building a base runtime](/dependencies/providing-the-environment.html).
 
 ## Reading and writing
 
@@ -141,5 +141,5 @@ workflow that must run on both .NET and Fable should depend on its own narrow ou
 
 ## Related
 
-- [Explicit services](/dependencies/explicit-services.html) — why the dependency is in the type.
+- [Service contracts](/dependencies/service-contracts.html) — why the dependency is in the type.
 - [Processes](processes/index.html) — the process service uses a console for stream wiring.

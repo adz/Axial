@@ -105,7 +105,7 @@ Use `Hosting.addAppWith { StopHostOnCompletion = false }` when the root Flow is 
 hosted service owns process completion.
 
 `IServiceProvider` stays at the application edge. Prefer constructing an explicit record or providing a `Layer` before
-domain workflows run. See [Service-provider boundaries](/dependencies/service-provider-boundaries.html).
+domain workflows run. See [Providing the environment](/dependencies/providing-the-environment.html).
 
 ## Microsoft Logging as `ILog`
 

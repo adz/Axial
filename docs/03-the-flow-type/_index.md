@@ -37,3 +37,4 @@ Aliases such as `Flow<'value>` and `EnvFlow<'env, 'value>` abbreviate the same t
 5. [Combining flows](combining-flows.html) — sequencing, mapping, and channel transformations.
 6. [Task and async interop](task-async-interop.html) — moving between Flow, `Task`, and `Async`.
 7. [Troubleshooting types](troubleshooting-types.html) — the compiler errors produced when channels do not line up.
+8. [Resources](resources.html) — acquiring something that must be released.

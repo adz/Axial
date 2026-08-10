@@ -40,6 +40,6 @@ and run one root workflow.
 ## Go Further
 
 - [Application Lifecycle](/platforms-and-hosting/application-lifecycle.html) covers `App.start`, coordinated stop, and lifecycle ownership.
-- [Scopes and Resources](/dependencies/scopes-and-resources.html) explains finalizers and
+- [Scopes and Resources](/advanced/scopes-and-resources.html) explains finalizers and
   acquisition/release safety.
 - [Hosting](/platforms-and-hosting/dotnet.html) connects the root application to .NET, Node, or browser hosts.

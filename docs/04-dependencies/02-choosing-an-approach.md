@@ -70,8 +70,7 @@ For concrete starting points, use [App Record](tutorials/app-record.html) and [L
 
 ## More Detail
 
-- [Explicit Services](./explicit-services.html)
+- [Service contracts](service-contracts.html)
 - [Layers](/layers/layers.html)
-- [Scopes and Resources](./scopes-and-resources.html)
-- [Building a Base Runtime](./building-a-base-runtime.html)
-- [Service Provider Boundaries](./service-provider-boundaries.html)
+- [Scopes and resources](/advanced/scopes-and-resources.html)
+- [Providing the environment](providing-the-environment.html)

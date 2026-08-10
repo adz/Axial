@@ -10,7 +10,7 @@ package is `Axial.Telemetry.JavaScript` (`Otel.trace`, same tag vocabulary, emit
 OpenTelemetry JS); its wiring is shown on the Observability page.
 
 - [Running Flows](/the-flow-type/running-flows.html) and [Failures and Defects](/error-handling/index.html)
-- [Explicit services and runtimes](/dependencies/explicit-services.html)
+- [Providing the environment](/dependencies/providing-the-environment.html)
 
 ## Workflow spans
 

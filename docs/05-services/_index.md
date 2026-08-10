@@ -6,7 +6,7 @@ description: The clock, logging, console, file-system, process, and HTTP service
 Axial ships implementations for the ambient capabilities most applications reach for: the clock and other
 operational services, the console, the file system, external processes, and HTTP. Each one is an ordinary explicit
 dependency. Nothing here is a new mechanism — these pages apply
-[explicit services](/dependencies/explicit-services.html) and [layers](/layers/index.html) to capabilities the
+[service contracts](/dependencies/service-contracts.html) and [layers](/layers/index.html) to capabilities the
 library already wrote for you.
 
 ```fsharp

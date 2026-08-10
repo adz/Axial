@@ -35,13 +35,11 @@ that is itself effectful — see [layers](/layers/index.html), a separate packag
 
 ## In this section
 
-1. [Choosing an approach](choosing-an-approach.html) — arguments, records, contracts, and layers compared, with the
-   order to reach for them.
-2. [Explicit services](explicit-services.html) — per-service contracts and their accessors.
-3. [Scopes and resources](scopes-and-resources.html) — deterministic cleanup.
-4. [Service provider boundaries](service-provider-boundaries.html) — meeting `IServiceProvider` at the host edge.
-5. [Building a base runtime](building-a-base-runtime.html) — assembling the environment an application runs on.
-6. [Tutorials](tutorials/index.html) — the same material worked end to end.
+1. [The environment](the-environment.html) — what `'env` actually is, and the functions that read it.
+2. [Choosing an approach](choosing-an-approach.html) — arguments, records, contracts, and layers compared.
+3. [Service contracts](service-contracts.html) — how a package asks for a dependency it cannot name.
+4. [Providing the environment](providing-the-environment.html) — building the value at a host boundary.
+5. [Tutorials](tutorials/index.html) — the same material worked end to end.
 
 For the services Axial already implements — the clock, console, file system, processes, and HTTP — see
 [built-in services](/services/index.html).

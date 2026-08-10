@@ -44,7 +44,7 @@ let liveRuntime : BaseRuntime = BaseRuntime.liveValue
 container, turning missing registrations into typed startup errors.
 
 Most applications extend `BaseRuntime` rather than replacing it — see
-[building a base runtime](/dependencies/building-a-base-runtime.html) for the composition, and
+[building a base runtime](/dependencies/providing-the-environment.html) for the composition, and
 [platform services getting started](/platforms-and-hosting/platform-services.html) for the shortest path to a
 running host.
 

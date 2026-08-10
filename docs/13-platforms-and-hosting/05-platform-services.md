@@ -41,7 +41,7 @@ host already has an `IServiceProvider` — that variant reports missing registra
 startup failures rather than resolution exceptions.
 
 Applications normally extend the bundle with their own services rather than using it bare; see
-[building a base runtime](/dependencies/building-a-base-runtime.html).
+[building a base runtime](/dependencies/providing-the-environment.html).
 
 ## Go further
 
