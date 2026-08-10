@@ -172,25 +172,19 @@ body:has(.axial-landing) #search-ui {
   }
 }
 
-.docs-home-signature {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-  gap: 1rem;
-  margin: 0 auto 2.5rem;
-  text-align: left;
-}
-
-.docs-home-signature-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.docs-home-example {
+  max-width: 52rem;
+  margin: 0 auto 1rem;
   padding: 1rem 1.25rem;
   border: 1px solid var(--axial-border);
   border-radius: 0.75rem;
   background: var(--axial-surface);
+  text-align: left;
 }
 
-.docs-home-signature-label {
+.docs-home-example-label {
+  display: block;
+  margin-bottom: 0.75rem;
   color: var(--axial-muted);
   font-size: 0.8rem;
   font-weight: 700;
@@ -198,16 +192,32 @@ body:has(.axial-landing) #search-ui {
   text-transform: uppercase;
 }
 
-.docs-home-signature pre {
+.docs-home-example pre {
   margin: 0;
   overflow-x: auto;
   background: transparent;
 }
 
-.docs-home-signature code {
+.docs-home-example code {
   font-size: 0.9rem;
   line-height: 1.5;
   white-space: pre;
+}
+
+.docs-home-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.5rem;
+  margin: 0 auto 2.5rem;
+  color: var(--axial-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.docs-home-benefits strong {
+  margin-right: 0.25rem;
+  color: #3767b1;
 }
 
 .docs-home-note {

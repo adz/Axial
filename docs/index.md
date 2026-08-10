@@ -10,21 +10,34 @@ title: Axial
 </div>
 <div class="docs-home-copy">
 <span class="eyebrow">Typed asynchronous workflows for F#</span>
-<h1>One signature instead of four arguments.</h1>
-<div class="docs-home-signature">
-<div class="docs-home-signature-pane">
-<span class="docs-home-signature-label">Without Axial</span>
-<pre><code class="language-fsharp">val loadUser:
-    cancellationToken: CancellationToken -&gt;
-    services: AppServices -&gt;
-    userId: UserId -&gt;
-        Task&lt;Result&lt;User, LoadUserError&gt;&gt;</code></pre>
+<h1>Dependencies in the type. Supplied at the edge.</h1>
+<div class="docs-home-example">
+<span class="docs-home-example-label">A complete checkout workflow</span>
+<pre><code class="language-fsharp">type CheckoutEnv =
+    { FindTotal: int -&gt; Task&lt;Result&lt;decimal, CheckoutError&gt;&gt;
+      ApplyDiscount: decimal -&gt; Result&lt;decimal, CheckoutError&gt;
+      Charge: decimal -&gt; Async&lt;Result&lt;Payment, CheckoutError&gt;&gt; }
+&#8203;
+let checkout orderId : Flow&lt;CheckoutEnv, CheckoutError, Receipt&gt; =
+    flow {
+        let! env = Flow.env
+&#8203;
+        let! subtotal = env.FindTotal orderId       // Task&lt;Result&lt;_, _&gt;&gt;
+        let! total = env.ApplyDiscount subtotal     // Result&lt;_, _&gt;
+        let! payment = env.Charge total             // Async&lt;Result&lt;_, _&gt;&gt;
+&#8203;
+        return
+            { OrderId = orderId
+              Total = total
+              PaymentId = payment.Id }
+    }
+&#8203;
+let exit = checkout 42 |&gt; Flow.run live</code></pre>
 </div>
-<div class="docs-home-signature-pane">
-<span class="docs-home-signature-label">With Axial</span>
-<pre><code class="language-fsharp">val loadUser:
-    UserId -&gt; Flow&lt;AppServices, LoadUserError, User&gt;</code></pre>
-</div>
+<div class="docs-home-benefits" aria-label="Flow benefits">
+<span><strong aria-hidden="true">✓</strong> Typed expected failures</span>
+<span><strong aria-hidden="true">✓</strong> Built-in cancellation</span>
+<span><strong aria-hidden="true">✓</strong> Plain-record dependencies</span>
 </div>
 <div class="lede">
 <p>Cancellation, dependencies, and expected failures stop being extra arguments the caller has to thread through. They become part of the type.</p>
