@@ -7,6 +7,7 @@
   "showSiteName": false,
   "stylesheet": "content/axial-docs.css",
   "themes": ["light", "dark"],
+  "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.HttpClient\nopen Axial.PlatformService\nopen Axial.Process\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript",
   "navigation": [
     { "label": "Docs", "href": "index.html" },
     { "label": "Services", "href": "services/index.html" },
