@@ -11,7 +11,7 @@ This page shows how the single `IHttp.Send` boundary makes HTTP workflows testab
 
 The whole service surface is one method, and `Response.create` builds synthetic transcripts from an explicit timestamp:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type TestEnv =
     { Http: IHttp }
     interface IHas<IHttp> with
@@ -38,7 +38,7 @@ fallback paths deterministically, with no network and no clock.
 
 `Http.live` adapts an explicit `IClock` and one `HttpClient`; `Http.layer` exposes them as a layer:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =
     { Http: IHttp }
     interface IHas<IHttp> with
@@ -63,7 +63,7 @@ or another `IClock` fake for deterministic time.
 Base addresses configured on the client work as usual — relative request URLs resolve against
 `client.BaseAddress`:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let client = new HttpClient(BaseAddress = Uri "https://api.example.com/")
 // Http.get "users/1" now resolves to https://api.example.com/users/1
 ```

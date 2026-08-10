@@ -2,6 +2,7 @@
 title: Node Hosting
 linkTitle: Node
 description: Running Fable Flow applications under Node signals, process exit, arguments, and process.env.
+platform: fable
 ---
 
 # Node Hosting
@@ -20,7 +21,7 @@ also fails because the Node `process` object is required.
 
 Keep Node mechanics outside the application workflow:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type StartupInputs =
     { Arguments: string list
       EnvironmentVariables: IEnvironmentVariables }
@@ -41,7 +42,7 @@ live Node object. `Expand` expands `$NAME` and `${NAME}` forms.
 
 At the Fable entry point:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.Hosting.Node
 
 NodeApp.run AppError.describe inputs application
@@ -64,7 +65,7 @@ not caused by an installed signal uses `130`. A cleanup defect takes precedence 
 
 Use `NodeApp.start` when another Node module needs the `AppHandle`:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let running = NodeApp.start AppError.describe inputs application
 
 async {

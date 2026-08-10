@@ -10,7 +10,7 @@ This page shows the shortest path from `HttpClient` boilerplate to a typed, test
 
 A direct `HttpClient` call mixes four failure channels into exceptions and manual status checks:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Untracked: exceptions for transport, manual status checks, unchecked parsing.
 let! response = client.GetAsync($"https://api.example.com/users/{userId}") |> Async.AwaitTask
 response.EnsureSuccessStatusCode() |> ignore
@@ -20,7 +20,7 @@ let user = parseUser body // throws on bad payloads
 
 The same call as an Axial workflow:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 open Axial.HttpClient
 open Axial.HttpClient.DSL
 

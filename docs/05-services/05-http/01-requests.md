@@ -26,7 +26,7 @@ query parameters; only the literal text of the template controls URL structure.
 
 When a URL is already a complete string with no inserted values, use the plain builders:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let request = Http.get "https://api.example.com/users"
 ```
 
@@ -45,7 +45,7 @@ GET $"https://api.example.com/search"
 
 API keys and tokens must not appear in logs, error messages, or plans. Three tools keep them out:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 // A secret interpolation hole renders as *** in every transcript.
 GET $"https://api.example.com/lookup?key={secret apiKey}"
 
@@ -62,7 +62,7 @@ that appears inside `HttpError` values, so error logging is safe by default.
 
 ## Headers
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 request
 |> header "Accept" "application/json"
 |> Request.userAgent "my-app/1.0"
@@ -75,7 +75,7 @@ request
 
 Bodies carry their content type with them:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 POST $"https://api.example.com/users"
 |> jsonBody """{"name":"Ada"}"""                  // application/json
 
@@ -95,7 +95,7 @@ any other JSON library without coupling this package to one.
 `Request.plan` returns a redacted, serializable description without performing any I/O — useful for logging,
 dry runs, and approval flows:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let plan =
     Http.post "https://api.example.com/users"
     |> Request.bearer token

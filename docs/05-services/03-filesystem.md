@@ -8,7 +8,7 @@ description: Files, directories, paths, and typed file-system errors as an expli
 `File.ReadAllText` throws one of a dozen exception types, `FileSystem.readAllText` returns
 `Flow<'env, FileSystemError, string>` — the ways it can fail are part of the signature.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.FileSystem
 
 let loadConfig path : Flow<#IHas<IFileSystem>, FileSystemError, Config> =
@@ -22,7 +22,7 @@ let loadConfig path : Flow<#IHas<IFileSystem>, FileSystemError, Config> =
 
 `IFileSystem` is supplied the same way as any other explicit service:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 type AppEnv =
     { FileSystem: IFileSystem }
 
@@ -53,7 +53,7 @@ Every operation fails with `FileSystemError`, a union that classifies what went 
 
 Because failures are typed, recovery is a match rather than an exception filter:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadOrDefault path =
     loadConfig path
     |> Flow.orElseWith (function
@@ -69,7 +69,7 @@ classification itself, which is useful when adapting a third-party API into the 
 Whole-file reads and writes come in text, line, and byte forms, each with an encoding-explicit and an asynchronous
 variant:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 FileSystem.readAllText path
 FileSystem.readAllTextWithEncoding Encoding.UTF8 path
 FileSystem.readAllTextAsync path
@@ -98,7 +98,7 @@ whether to follow the whole chain or stop at the immediate target.
 `openRead`, `openText`, `openWrite`, `createFile`, `createText`, `appendText`, and the `openFile` family return open
 handles. An open handle is a resource, so acquire it inside a scope rather than trusting a later `Dispose`:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let copyThrough source destination =
     Flow.acquireReleaseWith
         (FileSystem.openRead source)
@@ -118,7 +118,7 @@ recursive delete is visible at the call site. Listing comes in eager (`getFiles`
 `getFileSystemEntries`) and lazy (`enumerateFiles`, `enumerateDirectories`, `enumerateFileSystemEntries`) forms, each
 taking a search pattern and a `SearchOption`:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let fsharpSources root =
     FileSystem.enumerateFiles root "*.fs" SearchOption.AllDirectories
 ```
@@ -135,7 +135,7 @@ work better:
 **Use `FileSystem.live` against a temporary directory.** This is what Axial's own tests do. The workflow exercises
 real I/O, and the test owns cleanup:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let root = Path.Combine(Path.GetTempPath(), "my-tests", Guid.NewGuid().ToString "N")
 Directory.CreateDirectory root |> ignore
 

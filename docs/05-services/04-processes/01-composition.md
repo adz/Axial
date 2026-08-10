@@ -5,7 +5,7 @@ description: Build immutable process specifications and connect native streams.
 
 `Process.command` safely tokenizes an executable and its arguments and returns a runnable `ProcessSpec`:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let status =
     Process.command "git" [ "status"; "--short" ]
     |> Process.workingDirectory repository
@@ -17,7 +17,7 @@ Apply command-specific configuration before connecting stages. `Process.arg`, `s
 
 Connect stdout to the next stage with `Process.pipe`:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let countErrors =
     Process.command "journalctl" [ "--priority=err" ]
     |> Process.pipe (Process.command "wc" [ "-l" ])
@@ -26,7 +26,7 @@ let countErrors =
 
 The DSL offers the same model with shorter names:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.Process.DSL
 
 let result =

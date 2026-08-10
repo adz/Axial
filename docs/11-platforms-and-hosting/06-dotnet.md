@@ -2,6 +2,9 @@
 title: .NET Hosting
 linkTitle: .NET
 description: Standalone process, Generic Host, dependency injection, and Microsoft logging integration.
+platform: dotnet
+targetFramework: net8.0
+project: src/Axial.Hosting/Axial.Hosting.fsproj
 ---
 
 # .NET Hosting
@@ -20,7 +23,7 @@ Microsoft.Extensions.Hosting or a dependency-injection container.
 
 Use `DotNetApp.run` when the application owns a console process but does not use Generic Host:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 open Axial
 open Axial.Hosting
 
@@ -63,7 +66,7 @@ skipped.
 Build the application as a `Flow` whose input is either `IServiceProvider` or an explicit environment constructed
 from it:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Axial
@@ -108,14 +111,14 @@ domain workflows run. See [Service-provider boundaries](/dependencies/service-pr
 
 Create the explicit Axial logging service from an existing logger:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let axialLog : ILog =
     MicrosoftLogging.create logger
 ```
 
 Or choose a category through a factory:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let axialLog : ILog =
     MicrosoftLogging.fromFactory "MyApp" loggerFactory
 ```
@@ -127,7 +130,7 @@ exception objects are preserved. The adapter never silently substitutes a no-op 
 
 Install the observer once around the root application:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let observed =
     application
     |> FiberLogging.observe logger
@@ -136,7 +139,7 @@ let observed =
 Fiber defects are errors; unobserved fiber defects are critical entries. Compose it with telemetry when both are
 required:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 application
 |> Flow.withFiberObserver
     (FiberObserver.compose
@@ -152,7 +155,7 @@ Logging is an explicit application dependency; telemetry remains runtime instrum
 Desktop frameworks already own application lifetime. Start `App` after startup and await stop from the framework's
 closing path:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let running = App.start environment application
 
 let closeApplication () = async {

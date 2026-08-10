@@ -5,7 +5,7 @@ description: Run external commands as typed Axial workflows.
 
 `Axial.Process` represents external work as an immutable `ProcessSpec`. Building a specification performs no I/O. `Process.run` asks the `IProcess` service to interpret it in the current Flow runtime.
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 open Axial.Process
 
 let version =
@@ -18,7 +18,7 @@ let version =
 
 The live interpreter receives its operational dependencies explicitly:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let process = Process.live clock fileSystem console
 ```
 

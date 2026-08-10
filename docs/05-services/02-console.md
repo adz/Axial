@@ -9,8 +9,11 @@ standard streams, the redirection and encoding state around them, and interactiv
 title, and key reads.
 
 ```fsharp
+open Axial
 open Axial.Console
+```
 
+```fsharp
 let confirm question : Flow<#IHas<IConsole>, Never, bool> =
     flow {
         do! Console.write $"{question} [y/N] "
@@ -26,7 +29,7 @@ console, and it cannot reach the real terminal behind your back.
 
 Implement `IHas<IConsole>` on the application environment and supply `Console.live` at the host edge:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 type AppEnv =
     { Console: IConsole }
 
@@ -66,7 +69,7 @@ should survive it.
 Check redirection before using anything interactive. A program whose output is piped into another process has no
 cursor to move:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let report line : Flow<#IHas<IConsole>, Never, unit> =
     flow {
         let! redirected = Console.isOutputRedirected
@@ -96,7 +99,7 @@ a full-screen terminal application wants.
 Every one of these is mutable terminal state that outlives the workflow that set it. Restore what you change through
 a finalizer, so an interrupted or failed workflow cannot leave the user with an invisible cursor or a green prompt:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let withHiddenCursor (console: IConsole) body =
     flow {
         do! Flow.addFinalizer(fun _ ->
@@ -113,7 +116,7 @@ let withHiddenCursor (console: IConsole) body =
 Substitute any `IConsole` implementation. A recording console over `StringWriter` is usually enough, and it makes
 assertions ordinary value comparisons:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let recorded = StringWriter()
 
 let testConsole =

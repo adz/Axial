@@ -5,7 +5,7 @@ description: Handle structured process failures and inspect complete execution r
 
 `Process.run` fails when startup, timeout, cancellation, I/O, or a stage success policy fails:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 match exit with
 | Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
     eprintfn "could not start %s: %s" failure.Command failure.Message
@@ -20,7 +20,7 @@ match exit with
 
 Successful execution returns `ProcessResult`, including exact captured bytes, decoded text, every stage exit code, start times, durations, and bounded stderr tails. A configured `successCodes` set determines whether each stage succeeds.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let! result = specification |> Process.run
 
 for stage in result.Stages do

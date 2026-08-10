@@ -1,14 +1,14 @@
 ---
 title: Fable
 description: Use process specifications with a supplied interpreter on non-native targets.
+platform: fable
 ---
 
 `ProcessSpec`, `ProcessResult`, `ProcessError`, the DSL, and `IProcess` are target-neutral. A browser cannot start an operating-system process, so `Process.live` and native stream adapters are available only on .NET.
 
 Fable applications can construct specifications and run them against an `IProcess` implementation that delegates execution to a worker or another host:
 
-```fsharp
-type AppEnvironment =
+```fsharp no-check reason="Requires Fable compiler validation; FsLiveDocs currently checks .NET contexts only"
     { Process: IProcess }
     interface IHas<IProcess> with member this.Service = this.Process
 

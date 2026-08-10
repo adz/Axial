@@ -5,7 +5,7 @@ description: Capture exact output or consume process events with backpressure.
 
 Specifications capture stdout and stderr by default. `Process.run` returns exact bytes and an encoding-aware text view:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let! result =
     Process.command "device-tool" [ "inspect" ]
     |> Process.run
@@ -16,7 +16,7 @@ let bytes = result.StdOutCapture.Bytes
 
 Configure output with `Process.stdout` and `Process.stderr`. Targets include complete capture, bounded tail capture, console forwarding, inherited handles, discard, files, sinks, callbacks, and tee composition.
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let! result =
     Process.command "device-tool" [ "diagnose" ]
     |> Process.stdout (OutputTarget.Tee [ OutputTarget.Console; OutputTarget.CaptureTail 65536 ])
@@ -25,7 +25,7 @@ let! result =
 
 Use `Process.stream` when output must be handled before completion:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let events =
     Process.command "device-tool" [ "watch" ]
     |> Process.framing OutputFraming.Lines

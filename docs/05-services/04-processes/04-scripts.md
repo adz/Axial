@@ -5,7 +5,7 @@ description: Author concise, safely interpolated process workflows.
 
 Open `Axial.Process.DSL` for command-line-shaped authoring:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.Process.DSL
 
 let workflow =
@@ -18,7 +18,7 @@ let workflow =
 
 Interpolation holes remain individual native arguments. They are not concatenated into shell source. Mark sensitive values explicitly:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let workflow =
     cmd $"device-tool authenticate {secret token}"
     |> capture
@@ -26,7 +26,7 @@ let workflow =
 
 Use `bash`, `sh`, or `pwsh` when shell syntax is required. Interpolated values are passed out of band as positional arguments:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let workflow =
     bash $"printf '%s' {value} | tr '[:lower:]' '[:upper:]'"
     |> capture

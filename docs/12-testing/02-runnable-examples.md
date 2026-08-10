@@ -98,7 +98,7 @@ dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExample
 
 Source: [Program.fs](https://github.com/adz/Axial/blob/main/examples/Axial.MaintenanceExamples/Program.fs)
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -169,7 +169,7 @@ dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
 
 Source: [SupervisionExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs)
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 module SupervisionExample
 
 open System

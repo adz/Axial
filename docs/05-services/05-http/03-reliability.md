@@ -12,7 +12,7 @@ This page shows how typed errors turn timeout and retry policy into ordinary, te
 `HttpClient.Timeout` is one global setting that throws `TaskCanceledException`, indistinguishable from real
 cancellation. An Axial timeout is per request and produces a dedicated typed error:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 GET $"https://api.example.com/slow-report"
 |> timeout (TimeSpan.FromSeconds 5.0)
 |> fetch
@@ -27,7 +27,7 @@ deadline passes, not merely abandoned.
 Retrying a 404 or a decode failure wastes time and can duplicate side effects. `HttpError.isTransient`
 classifies exactly the failures where a retry can help: connection failures, timeouts, and 408/429/5xx statuses.
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let users =
     Http.getJson decodeUsers "https://api.example.com/users"
     |> Http.retryTransient 4 (TimeSpan.FromMilliseconds 200.0)
@@ -39,7 +39,7 @@ attempt. The DSL shorthand `withRetries 4` applies the same policy with a 200ms 
 
 For full control, build the policy yourself and use the general Flow retry machinery:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let policy =
     { HttpError.transientPolicy 6 (TimeSpan.FromMilliseconds 100.0) with
         ShouldRetry = fun error ->
@@ -51,7 +51,7 @@ workflow |> Flow.Runtime.retry policy
 
 `Schedule.retry` from `Axial` also composes with HTTP workflows when you need jitter or custom cadence:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 workflow |> Schedule.retry (Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |> Schedule.jittered)
 ```
 
@@ -63,7 +63,7 @@ permanent failures stay fast.
 Reliability starts with saying what success means. The expectation travels with the request, so callers cannot
 forget to check:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 DELETE $"https://api.example.com/users/{userId}"
 |> expect [ 204; 404 ]   // idempotent delete: already-gone is fine
 |> fetch
@@ -78,7 +78,7 @@ Do not wrap non-idempotent POSTs in `retryTransient` unless the server deduplica
 idempotency key header): a timeout does not prove the server ignored the request. Send the key explicitly, then
 retry safely:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 POST $"https://api.example.com/payments"
 |> header "Idempotency-Key" (Guid.NewGuid().ToString())
 |> jsonBodyOf encodePayment payment

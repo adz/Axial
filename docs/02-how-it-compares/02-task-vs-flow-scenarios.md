@@ -29,7 +29,7 @@ The ordinary version is a `Task<CheckoutReceipt>` whose expected failures leave 
 whose compensation lives in a catch block someone must remember. The comparison includes `checkoutBuggy`, the common
 real-world edit — a failure branch added outside the `try` — and a test proving the reservation leaks.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Flow<CheckoutEnv, CheckoutError, CheckoutReceipt>
 Flow.acquireReleaseWith
     reserve                                                  // acquire: typed InventoryError -> CheckoutError
@@ -48,14 +48,14 @@ adapter), and interruption. ZIO correspondence: environment services, typed erro
 
 ## 2. Resilient HTTP call with a retry budget
 
-Fetch an exchange rate through [`Axial.HttpClient`](/http/index.html): retry only transient
+Fetch an exchange rate through [`Axial.HttpClient`](/services/http/index.html): retry only transient
 transport failures, back off exponentially, stop after three attempts, and turn a two-second deadline into
 `RateError.TimedOut`. Never retry malformed successful responses.
 
 The ordinary version interleaves a retry loop, `CancellationTokenSource.CancelAfter`, `Task.Delay`, and exception
 classification in one function — and one overly broad `with _ ->` away from retrying a `NullReferenceException`.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 request                                          // Flow<'env, RateError, Rate>, cold
 |> Flow.Runtime.retry transientOnly              // RetryPolicy<RateError>: ShouldRetry = Transport only
 |> Flow.Runtime.timeout (TimeSpan.FromSeconds 2.0) TimedOut
@@ -77,7 +77,7 @@ timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed `S
 Load account, orders, and recommendations concurrently. Account and orders are mandatory; recommendations fall back
 to an empty list on their typed failure; a mandatory failure interrupts the still-running sibling.
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let recommended = loadRecommendations |> Flow.orElse (Flow.succeed [])  // recover ONLY this branch
 
 Flow.zipPar (Flow.zipPar account recent) recommended
@@ -109,7 +109,7 @@ throws *before* ownership transfers into `try/finally`. The test proves the dire
 there is no such gap — `Flow.acquireReleaseWith` owns the resource from the instant acquisition succeeds, and the
 failing gate lives inside the resource's lifetime:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 Flow.acquireReleaseWith
     acquire                                                     // FileSystem.createDirectory, typed errors
     (fun workspace _ -> Task.Run(fun () -> Directory.Delete(workspace, recursive = true)))
@@ -137,10 +137,10 @@ constructor parameters through every caller, and nothing stops a hurried edit fr
 
 The Flow version declares the capability set once as an environment record implementing `IHas<'service>` per
 capability, and business code names only what it uses through the package operations
-([`Clock.now`](/platforms-and-hosting/platform-services.html), [`FileSystem.readAllText`](/services/filesystem.html),
+([`Clock.now`](/services/platform-services/clock.html), [`FileSystem.readAllText`](/services/filesystem.html),
 [`Console.writeLine`](/services/console.html)):
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let writeDailyReport (sourcePath: string) : Flow<ReportEnv, ReportError, string> =
     flow {
         let! now = Clock.now
@@ -175,7 +175,7 @@ streams from an instrumented infinite sequence and asserts almost nothing was pr
 The process variant uses [`Process.stream`](/services/processes/index.html) — typed `ProcessEvent`s from a live
 process through the same pipeline shape:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 Process.stream specification
 |> FlowStream.mapError (ProcessError.describe >> BadRecord)
 |> FlowStream.choose (function
@@ -203,7 +203,7 @@ The ordinary version is a lock, a counting semaphore for wakeups, and a hand-mai
 reservation counts change together; the comment in the example marks exactly where swapping the semaphore for a
 `Monitor` pulse introduces a missed wakeup.
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 STM.atomically (
     STM.orElse
         (reserveFrom inventory.LocalStock Local inventory)      // STM.retry when empty

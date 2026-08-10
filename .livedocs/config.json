@@ -9,6 +9,7 @@
   "themes": ["light", "dark"],
   "navigation": [
     { "label": "Docs", "href": "index.html" },
+    { "label": "Services", "href": "services/index.html" },
     { "label": "Reference", "href": "api.html" },
     { "label": "Packages", "href": "notes/packages-and-platforms.html" },
     { "label": "GitHub", "href": "https://github.com/adz/Axial" }

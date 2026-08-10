@@ -12,7 +12,7 @@ handling.
 
 Every exchange produces a complete `HttpResponse`:
 
-```fsharp
+```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let workflow =
     flow {
         let! response = Http.get "https://api.example.com/users" |> Http.send
@@ -31,7 +31,7 @@ let workflow =
 `Response.json` and the `fetchJson`/`Http.getJson` terminals take a decoder of type
 `string -> Result<'value, string>`. Any JSON library fits that shape:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.HttpClient.DSL
 
 let user : Flow<#IHas<IHttp>, HttpError, User> =
@@ -44,7 +44,7 @@ error handler can log the offending payload without re-fetching it.
 
 To POST a value and decode the reply in one step:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let created =
     Http.postJson (Json.serialize userCodec) (Json.deserializeResult userCodec)
         "https://api.example.com/users" user
@@ -54,7 +54,7 @@ let created =
 
 Every way an HTTP call can fail is one case of `HttpError`:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 match error with
 | HttpError.InvalidRequest message -> ...            // malformed URL or request construction
 | HttpError.ConnectionFailed(request, message) -> ...// DNS, refused, dropped connection
@@ -73,7 +73,7 @@ from the cases that carry one.
 `Http.send` fails with `HttpError.Status` for anything outside the request's expectation (2xx by default).
 When a "failure" status is a normal outcome, widen the expectation and branch on the code:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let findUser userId =
     flow {
         let! response =

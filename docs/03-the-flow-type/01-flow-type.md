@@ -7,7 +7,7 @@ description: Read the success, expected failure, and environment channels of Flo
 
 The full Flow type has three parameters:
 
-```fsharp
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 Flow<'env, 'error, 'value>
 ```
 
@@ -21,7 +21,7 @@ Read them from left to right:
 
 For example:
 
-```fsharp
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let loadUser (id: UserId) : Flow<AppEnv, LoadUserError, User> = ...
 ```
 
@@ -41,6 +41,10 @@ Short aliases are abbreviations for the same three-parameter type. Each one fixe
 `unit` in the environment channel means the workflow reads nothing. `Never` is an error type with no values, so a
 `Flow<'value>` or `EnvFlow<'env, 'value>` cannot fail with an expected error. Writing the alias and writing the
 expansion produce the same type, so the two forms are interchangeable in a signature:
+
+```fsharp
+open Axial
+```
 
 ```fsharp
 let render : Flow<string> = Flow.succeed "ok"

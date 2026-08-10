@@ -1,6 +1,7 @@
 ---
 title: JavaScript Telemetry
 description: OpenTelemetry tracing for Flow applications compiled with Fable.
+platform: fable
 ---
 
 # JavaScript Telemetry
