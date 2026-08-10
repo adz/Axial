@@ -36,9 +36,20 @@ let readPort : Flow<BaseRuntime, EnvironmentVariableError, int> =
     EnvironmentVariable.getInt "PORT"
 ```
 
-The environment is named concretely here rather than written as `#IHas<IEnvironmentVariables>`. A flow bound to a
-plain value, with no parameters, hits F#'s value restriction if its environment stays generic. Give the value a
-concrete environment type, or make it a function of something.
+The environment is named concretely here rather than written as `#IHas<IEnvironmentVariables>`, because a flow bound
+to a plain value hits F#'s value restriction while its environment is still generic — a value cannot be generalised
+over a type variable.
+
+Adding a parameter removes the restriction, because a function can be. A `unit` parameter is enough, and the result
+stays usable in any environment supplying the service:
+
+```fsharp
+let readPortIn () : Flow<#IHas<IEnvironmentVariables>, EnvironmentVariableError, int> =
+    EnvironmentVariable.getInt "PORT"
+```
+
+Prefer naming the environment when a workflow belongs to one application, and the parameterised form when a helper
+is genuinely shared across environment shapes.
 
 | Function | Result |
 | --- | --- |

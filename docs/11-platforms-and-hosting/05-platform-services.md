@@ -32,9 +32,12 @@ let startup : Flow<BaseRuntime, EnvironmentVariableError, int> =
     }
 ```
 
-The first bind names the environment explicitly. When one `flow { }` uses services from two different contracts —
-`IEnvironmentVariables` and `ILog` here — inference has no single environment to settle on until something anchors
-it, so pin it once at the top and the rest follows.
+One bind names the environment explicitly. When a single `flow { }` uses services from two different contracts —
+`IEnvironmentVariables` and `ILog` here — the compiler gives each call its own environment variable and then cannot
+merge them, because one type cannot be constrained by two `IHas<_>` contracts at once. The annotation on `startup`
+does not resolve this: it applies to the result of the `flow { }`, after the body has already been checked.
+
+Naming the type on any one bind is enough, wherever it appears in the block. The rest of the body follows from it.
 
 Use `BaseRuntime.live` when the environment is composed from layers, and `BaseRuntime.fromServiceProvider` when the
 host already has an `IServiceProvider` — that variant reports missing registrations as typed `BaseRuntimeError`
