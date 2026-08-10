@@ -74,17 +74,17 @@ module WorkflowErrorTests =
 
         let fromTaskResult =
             Task.FromException<int>(taskDefect)
-            |> Flow.fromTask
+            |> Flow.awaitStartedTask
             |> Flow.runSync ()
 
         let attemptTaskResult =
             Task.FromException<int>(taskDefect)
-            |> Flow.attemptTask
+            |> Flow.attemptStartedTask
             |> Flow.runSync ()
 
         let attemptValueTaskResult =
             ValueTask<int>(Task.FromException<int>(valueTaskDefect))
-            |> Flow.attemptValueTask
+            |> Flow.attemptStartedValueTask
             |> Flow.runSync ()
 
         let attemptAsyncResult =
@@ -94,7 +94,7 @@ module WorkflowErrorTests =
 
         let attemptCancellationResult =
             Task.FromCanceled<int>(CancellationToken(true))
-            |> Flow.attemptTask
+            |> Flow.attemptStartedTask
             |> Flow.runSync ()
 
         match fromTaskResult with
@@ -538,7 +538,7 @@ module WorkflowErrorTests =
     let ``ToValueTask catches synchronous exception and returns Exit.Failure`` () =
         let defect = InvalidOperationException "sync boom"
         let badFlow = Flow(fun env ct -> raise defect)
-        let vt = badFlow.ToValueTask(())
+        let vt = badFlow.StartAsValueTask(())
         let exit = vt.GetAwaiter().GetResult()
         match exit with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>

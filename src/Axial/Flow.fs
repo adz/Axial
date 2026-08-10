@@ -262,29 +262,48 @@ module Flow =
                     | error -> Platform.ofExit (Exit.Failure(Cause.Fail error))))
 
 #if !FABLE_COMPILER
-    /// <summary>Creates a flow from a raw task operation.</summary>
-    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptTask</c> when expected exceptions should enter the typed error channel.</remarks>
+    // -----------------------------------------------------------------------------------------
+    // Task interop.
+    //
+    // The factory forms are the default: they keep the flow a cold description, run again on every
+    // execution, and receive the runtime's cancellation token. The `awaitStarted*` forms wrap work
+    // that is already in flight and are named so the call site says so.
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>Creates a flow from a cancellable task factory.</summary>
+    /// <remarks>
+    /// The factory runs on each execution and receives the runtime's cancellation token, so the flow
+    /// stays cold and cancellable. Thrown exceptions are recorded as defects (<c>Cause.Die</c>).
+    /// Use <c>attemptTask</c> when expected exceptions should enter the typed error channel.
+    /// </remarks>
+    /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
     /// <platforms>.NET only</platforms>
-    let fromTask (operation: Task<'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ ->
+    /// <example>
+    /// <code>
+    /// let flow = Flow.fromTask (fun token -> client.GetStringAsync(url, token))
+    /// </code>
+    /// </example>
+    let fromTask (factory: CancellationToken -> Task<'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ cancellationToken ->
             ValueTask<Exit<'value, 'error>>(
                 task {
                     try
-                        let! value = operation
+                        let! value = factory cancellationToken
                         return Exit.Success value
                     with error ->
                         return Exit.Failure (Execution.causeOfException error)
                 }))
 
-    /// <summary>Creates a flow from a task operation and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <summary>Creates a flow from a cancellable task factory and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
     /// <platforms>.NET only</platforms>
-    let attemptTask (operation: Task<'value>) : Flow<'env, exn, 'value> =
-        Flow(fun _ _ ->
+    let attemptTask (factory: CancellationToken -> Task<'value>) : Flow<'env, exn, 'value> =
+        Flow(fun _ cancellationToken ->
             ValueTask<Exit<'value, exn>>(
                 task {
                     try
-                        let! value = operation
+                        let! value = factory cancellationToken
                         return Exit.Success value
                     with
                     | :? OperationCanceledException ->
@@ -293,29 +312,31 @@ module Flow =
                         return Exit.Failure (Cause.Fail error)
                 }))
 
-    /// <summary>Creates a flow from a raw value task operation.</summary>
-    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptValueTask</c> when expected exceptions should enter the typed error channel.</remarks>
+    /// <summary>Creates a flow from a cancellable value-task factory.</summary>
+    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>). Use <c>attemptValueTask</c> when expected exceptions should enter the typed error channel.</remarks>
+    /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
     /// <platforms>.NET only</platforms>
-    let fromValueTask (operation: ValueTask<'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ ->
+    let fromValueTask (factory: CancellationToken -> ValueTask<'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ cancellationToken ->
             ValueTask<Exit<'value, 'error>>(
                 task {
                     try
-                        let! value = operation.AsTask()
+                        let! value = (factory cancellationToken).AsTask()
                         return Exit.Success value
                     with error ->
                         return Exit.Failure (Execution.causeOfException error)
                 }))
 
-    /// <summary>Creates a flow from a value task operation and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <summary>Creates a flow from a cancellable value-task factory and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
     /// <platforms>.NET only</platforms>
-    let attemptValueTask (operation: ValueTask<'value>) : Flow<'env, exn, 'value> =
-        Flow(fun _ _ ->
+    let attemptValueTask (factory: CancellationToken -> ValueTask<'value>) : Flow<'env, exn, 'value> =
+        Flow(fun _ cancellationToken ->
             ValueTask<Exit<'value, exn>>(
                 task {
                     try
-                        let! value = operation.AsTask()
+                        let! value = (factory cancellationToken).AsTask()
                         return Exit.Success value
                     with
                     | :? OperationCanceledException ->
@@ -323,6 +344,39 @@ module Flow =
                     | error ->
                         return Exit.Failure (Cause.Fail error)
                 }))
+
+    /// <summary>Observes a task that has already been started.</summary>
+    /// <remarks>
+    /// The operation is in flight before this is called. It therefore starts outside the workflow,
+    /// ignores the runtime's cancellation token, and yields the same single result no matter how
+    /// many times the flow is executed. Prefer <c>fromTask</c>, which keeps the flow cold.
+    /// Thrown exceptions are recorded as defects (<c>Cause.Die</c>).
+    /// </remarks>
+    /// <param name="startedTask">A task that is already running.</param>
+    /// <platforms>.NET only</platforms>
+    let awaitStartedTask (startedTask: Task<'value>) : Flow<'env, 'error, 'value> =
+        fromTask (fun _ -> startedTask)
+
+    /// <summary>Observes a task that has already been started and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>
+    /// <param name="startedTask">A task that is already running.</param>
+    /// <platforms>.NET only</platforms>
+    let attemptStartedTask (startedTask: Task<'value>) : Flow<'env, exn, 'value> =
+        attemptTask (fun _ -> startedTask)
+
+    /// <summary>Observes a value task that has already been started.</summary>
+    /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>
+    /// <param name="startedValueTask">A value task that is already running.</param>
+    /// <platforms>.NET only</platforms>
+    let awaitStartedValueTask (startedValueTask: ValueTask<'value>) : Flow<'env, 'error, 'value> =
+        fromValueTask (fun _ -> startedValueTask)
+
+    /// <summary>Observes a value task that has already been started and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>
+    /// <param name="startedValueTask">A value task that is already running.</param>
+    /// <platforms>.NET only</platforms>
+    let attemptStartedValueTask (startedValueTask: ValueTask<'value>) : Flow<'env, exn, 'value> =
+        attemptValueTask (fun _ -> startedValueTask)
 #endif
 
     /// <summary>Creates a successful synchronous flow.</summary>
@@ -1458,3 +1512,50 @@ module Flow =
     /// </example>
     let sequence (flows: seq<Flow<'env, 'error, 'value>>) : Flow<'env, 'error, 'value list> =
         traverse id flows
+
+    // -----------------------------------------------------------------------------------------
+    // Execution entry points.
+    //
+    // Naming states when work begins: `to*` builds a description and starts nothing, `start*`
+    // begins execution immediately and hands back a handle, `run` executes to completion.
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>Builds a cold async that runs the workflow when it is started.</summary>
+    /// <remarks>Nothing executes until the returned async is run.</remarks>
+    /// <param name="environment">The environment used by the workflow.</param>
+    /// <param name="flow">The workflow to describe.</param>
+    /// <returns>A cold async that completes with the workflow exit.</returns>
+    /// <example>
+    /// <code>
+    /// let handle = workflow |> Flow.toAsync environment
+    /// </code>
+    /// </example>
+    let toAsync (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Async<Exit<'value, 'error>> =
+        flow.ToAsync(environment)
+
+#if !FABLE_COMPILER
+    /// <summary>Starts the workflow immediately and returns a task handle for its final exit.</summary>
+    /// <remarks>The work is already in flight when this returns. Use <c>Flow.toAsync</c> for a cold handle.</remarks>
+    /// <param name="environment">The environment used by the workflow.</param>
+    /// <param name="flow">The workflow to start.</param>
+    /// <returns>A task that completes with the workflow exit.</returns>
+    /// <example>
+    /// <code>
+    /// let running = workflow |> Flow.startTask environment
+    /// </code>
+    /// </example>
+    let startTask (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Task<Exit<'value, 'error>> =
+        flow.StartAsTask(environment)
+
+    /// <summary>Runs the workflow and blocks until the final exit is available.</summary>
+    /// <param name="environment">The environment used by the workflow.</param>
+    /// <param name="flow">The workflow to run.</param>
+    /// <returns>The final workflow exit.</returns>
+    /// <example>
+    /// <code>
+    /// let exit = workflow |> Flow.run environment
+    /// </code>
+    /// </example>
+    let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
+        flow.RunSynchronously(environment)
+#endif

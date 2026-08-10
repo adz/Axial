@@ -270,7 +270,7 @@ module FlowEndpoint =
                     { App = getAppEnvironment context
                       Request = context.Request }
 
-                let! exit = workflow.ToTask(environment, cancellationToken = context.RequestAborted)
+                let! exit = workflow.StartAsTask(environment, cancellationToken = context.RequestAborted)
 
                 match exit with
                 | Exit.Success response -> return response

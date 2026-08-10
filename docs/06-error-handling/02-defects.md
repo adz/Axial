@@ -25,7 +25,7 @@ Use `Flow.attemptAsync`, `Flow.attemptTask`, or `Flow.attemptValueTask` when exc
 
 ```fsharp
 let loadConfig : ExnFlow<string> =
-    Flow.attemptTask (File.ReadAllTextAsync("appsettings.json"))
+    Flow.attemptTask (fun token -> File.ReadAllTextAsync("appsettings.json", token))
 ```
 
 Use `Flow.catch` to convert simple defects into domain errors after a flow has already produced `Cause.Die`. Existing typed failures and interruptions are preserved. Compound causes such as `Cause.Then` and `Cause.Both` are left unchanged.

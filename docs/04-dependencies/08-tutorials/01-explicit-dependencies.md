@@ -137,7 +137,7 @@ let runExample () = task {
           Email = "ada@example.com"
           Total = 99.95m }
 
-    let! exit = (placeOrder orders email order).ToTask(())
+    let! exit = (placeOrder orders email order).StartAsTask(())
 
     match exit with
     | Exit.Success orderId ->

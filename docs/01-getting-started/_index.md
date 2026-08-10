@@ -51,7 +51,7 @@ let live =
     { LoadUser = loadUserFromDatabase
       SaveUser = saveUserToDatabase }
 
-let completed = (register 42).ToTask(live)
+let completed = (register 42).StartAsTask(live)
 ```
 
 The type now states the complete contract:
@@ -73,7 +73,7 @@ let fake =
     { LoadUser = fun id -> Task.FromResult(Ok { Id = id; Name = "Ada" })
       SaveUser = fun _ -> Task.FromResult(Ok ()) }
 
-let result = (register 42).ToTask(fake)
+let result = (register 42).StartAsTask(fake)
 ```
 
 No container or ambient service lookup is involved. The fake value satisfies the same environment type as the live

@@ -23,19 +23,19 @@ let missing : Flow<LoadError, User> =
 
 Neither value runs when it is created.
 
-Use `Flow.fromTask` or `Flow.fromAsync` when the operation is already represented by a Task or Async and thrown
+Use `Flow.fromTask` or `Flow.fromAsync` when the operation comes from a Task- or Async-returning API and thrown
 exceptions are defects:
 
 ```fsharp
 let readText : Flow<string> =
-    Flow.fromTask (File.ReadAllTextAsync "message.txt")
+    Flow.fromTask (fun token -> File.ReadAllTextAsync("message.txt", token))
 ```
 
 Use an `attempt` constructor when thrown exceptions are expected interop failures that callers should handle:
 
 ```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let readText : ExnFlow<string> =
-    Flow.attemptTask (File.ReadAllTextAsync "message.txt")
+    Flow.attemptTask (fun token -> File.ReadAllTextAsync("message.txt", token))
 ```
 
 The distinction is deliberate. `fromTask` preserves an unexpected exception as a defect; `attemptTask` places it in

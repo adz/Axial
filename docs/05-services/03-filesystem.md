@@ -29,7 +29,7 @@ type AppEnv =
     interface IHas<IFileSystem> with
         member this.Service = this.FileSystem
 
-let! exit = (loadConfig "app.json").ToTask({ FileSystem = FileSystem.live })
+let! exit = (loadConfig "app.json").StartAsTask({ FileSystem = FileSystem.live })
 ```
 
 `FileSystem.layer : Layer<unit, Never, IFileSystem>` provides the same implementation to a layer-assembled runtime.

@@ -110,7 +110,7 @@ type BindErrorWithError =
                 | Ok value -> Ok value
                 | Error () -> Error error
         }
-        |> Flow.fromTask
+        |> Flow.awaitStartedTask
         |> Flow.bind Flow.fromResult
         |> BindError
 
@@ -123,7 +123,7 @@ type BindErrorWithError =
             let! value = source
             return OptionFlow.toResult error value
         }
-        |> Flow.fromTask
+        |> Flow.awaitStartedTask
         |> Flow.bind Flow.fromResult
         |> BindError
 
@@ -136,7 +136,7 @@ type BindErrorWithError =
             let! value = source
             return OptionFlow.toResultValueOption error value
         }
-        |> Flow.fromTask
+        |> Flow.awaitStartedTask
         |> Flow.bind Flow.fromResult
         |> BindError
 
@@ -152,7 +152,7 @@ type BindErrorWithError =
                 | Ok value -> Ok value
                 | Error () -> Error error
         }
-        |> Flow.fromTask
+        |> Flow.awaitStartedTask
         |> Flow.bind Flow.fromResult
         |> BindError
 
@@ -165,7 +165,7 @@ type BindErrorWithError =
             let! value = source.AsTask()
             return OptionFlow.toResult error value
         }
-        |> Flow.fromTask
+        |> Flow.awaitStartedTask
         |> Flow.bind Flow.fromResult
         |> BindError
 
@@ -178,7 +178,7 @@ type BindErrorWithError =
             let! value = source.AsTask()
             return OptionFlow.toResultValueOption error value
         }
-        |> Flow.fromTask
+        |> Flow.awaitStartedTask
         |> Flow.bind Flow.fromResult
         |> BindError
 #endif
@@ -241,7 +241,7 @@ type BindErrorMap =
             let! result = source
             return Result.mapError mapper result
         }
-        |> Flow.fromTask
+        |> Flow.awaitStartedTask
         |> Flow.bind Flow.fromResult
         |> BindError
 
@@ -254,7 +254,7 @@ type BindErrorMap =
             let! result = source.AsTask()
             return Result.mapError mapper result
         }
-        |> Flow.fromTask
+        |> Flow.awaitStartedTask
         |> Flow.bind Flow.fromResult
         |> BindError
 #endif

@@ -25,7 +25,7 @@ module WorkflowBasicTests =
 
         test <@ Flow.runSync 21 workflow = Exit.Success 42 @>
         test <@ workflow.RunSynchronously(21, cancellationToken = CancellationToken.None) = Exit.Success 42 @>
-        test <@ workflow.ToValueTask(21, cancellationToken = CancellationToken.None).AsTask().GetAwaiter().GetResult() = Exit.Success 42 @>
+        test <@ workflow.StartAsValueTask(21, cancellationToken = CancellationToken.None).AsTask().GetAwaiter().GetResult() = Exit.Success 42 @>
 
     [<Fact>]
     let ``Flow delay reruns from scratch`` () =

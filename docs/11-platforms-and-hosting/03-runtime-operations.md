@@ -97,7 +97,7 @@ Use `Flow.catch` when you are deliberately translating technical exceptions into
 ```fsharp
 let runCancellable (cancellationToken: CancellationToken) =
     task {
-        let! exit = checkoutWithTimeout.ToTask((), cancellationToken = cancellationToken)
+        let! exit = checkoutWithTimeout.StartAsTask((), cancellationToken = cancellationToken)
 
         match exit with
         | Exit.Success receipt -> printfn "Receipt %s" receipt

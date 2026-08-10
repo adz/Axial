@@ -92,12 +92,12 @@ typed error channel.
 
 ## App and Direct Flow Execution
 
-`ToTask`, `ToAsync`, and `RunSynchronously` remain the direct execution interface for individual workflows and
+`Flow.run`, `Flow.startTask`, and `Flow.toAsync` remain the direct execution interface for individual workflows and
 interop boundaries. `App` adds ownership around a root workflow:
 
 | Use | Entry point |
 | --- | --- |
-| Execute one operation | `workflow.ToTask env` or `workflow.ToAsync env` |
+| Execute one operation | `workflow |> Flow.run env` or `workflow |> Flow.startTask env` |
 | Run a finite root application | `App.run env application` |
 | Start and later stop a root application | `App.start env application` |
 | Integrate with .NET Generic Host | [`Axial.Hosting`](./dotnet.html) |

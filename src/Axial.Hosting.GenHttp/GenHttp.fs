@@ -239,7 +239,7 @@ module FlowEndpoint =
                         { App = getAppEnvironment request
                           Request = request }
 
-                    let! exit = workflow.ToValueTask(environment).AsTask()
+                    let! exit = workflow.StartAsValueTask(environment).AsTask()
 
                     match exit with
                     | Exit.Success (HttpResponse respond) -> return respond request

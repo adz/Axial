@@ -20,15 +20,28 @@ match exit with
 | Exit.Failure cause -> printfn "%s" (Cause.prettyPrint string cause)
 ```
 
-On .NET, choose the carrier expected by the caller:
+In a pipeline, use the module functions:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let valueTask = workflow.ToValueTask(())
-let task = workflow.ToTask(())
-let asyncWork = workflow.ToAsync(())
+let exit = workflow |> Flow.run ()               // executes, blocks
+let running = workflow |> Flow.startTask ()      // executes now, returns a handle
+let cold = workflow |> Flow.toAsync ()           // executes nothing yet
 ```
 
-On Fable, use `ToAsync`.
+The name states when work begins. `to*` builds a description and starts nothing, `start*` begins execution
+immediately and hands back a handle, and `run` executes to completion:
+
+| Entry point | Starts work? |
+| --- | --- |
+| `Flow.run` / `RunSynchronously` | Yes, and blocks until the Exit is available |
+| `Flow.startTask` / `StartAsTask` / `StartAsValueTask` | Yes — the work is already in flight when it returns |
+| `Flow.toAsync` / `ToAsync` | No — nothing runs until the returned async is started |
+
+This matters when you build a handle without awaiting it. `StartAsTask` has already begun the work at that point;
+`ToAsync` has not, and discarding the async discards the work.
+
+The members carry optional `cancellationToken` and `timeout` arguments for interop callers; the module functions
+take none, which keeps the common path short. On Fable, use `ToAsync`.
 
 Every call starts a fresh execution with its own root scope. Await the returned handle to receive the final Exit.
 

@@ -62,7 +62,7 @@ module FiberDiagnosticsTests =
         use release = new SemaphoreSlim(0)
 
         let blocked : Flow<unit, string, unit> =
-            Flow.fromTask (task { do! release.WaitAsync() })
+            Flow.fromTask (fun _ -> task { do! release.WaitAsync() })
 
         let result =
             flow {

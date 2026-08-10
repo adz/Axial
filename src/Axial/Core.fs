@@ -487,34 +487,58 @@ type ColdTask<'value> =
     | ColdTask of (CancellationToken -> Task<'value>)
 
 /// <summary>
-/// Core functions for creating and executing cold tasks.
+/// Functions for creating and executing cold tasks.
 /// </summary>
+/// <remarks>
+/// A cold task is a task factory, not a task. Nothing runs until it is executed, and it can be
+/// executed more than once. Prefer these over already-started <c>Task</c> values so a workflow
+/// stays a description and observes the runtime's cancellation token.
+/// </remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
-module internal ColdTask =
+module ColdTask =
+    /// <summary>Creates a cold task from a cancellable factory.</summary>
+    /// <param name="operation">The factory invoked on each execution.</param>
     let create (operation: CancellationToken -> Task<'value>) : ColdTask<'value> =
         ColdTask operation
 
+    /// <summary>Creates a cold task from a factory that does not observe cancellation.</summary>
+    /// <param name="factory">The factory invoked on each execution.</param>
     let fromTaskFactory (factory: unit -> Task<'value>) : ColdTask<'value> =
         create (fun _ -> factory ())
 
-    let fromTask (startedTask: Task<'value>) : ColdTask<'value> =
+    /// <summary>Wraps a task that has already been started.</summary>
+    /// <remarks>
+    /// The work is in flight before this is called, so it cannot be cancelled by the runtime and
+    /// every execution observes the same single result. Prefer <c>create</c> or
+    /// <c>fromTaskFactory</c>.
+    /// </remarks>
+    /// <param name="startedTask">A task that is already running.</param>
+    let awaitStartedTask (startedTask: Task<'value>) : ColdTask<'value> =
         fromTaskFactory (fun () -> startedTask)
 
+    /// <summary>Creates a cold task from a cancellable value-task factory.</summary>
+    /// <param name="factory">The factory invoked on each execution.</param>
     let fromValueTaskFactory
         (factory: CancellationToken -> ValueTask<'value>)
         : ColdTask<'value> =
         create (fun cancellationToken -> factory cancellationToken |> _.AsTask())
 
+    /// <summary>Creates a cold task from a value-task factory that does not observe cancellation.</summary>
+    /// <param name="factory">The factory invoked on each execution.</param>
     let fromValueTaskFactoryWithoutCancellation
         (factory: unit -> ValueTask<'value>)
         : ColdTask<'value> =
         create (fun _ -> factory () |> _.AsTask())
 
-    let fromValueTask (startedValueTask: ValueTask<'value>) : ColdTask<'value> =
+    /// <summary>Wraps a value task that has already been started.</summary>
+    /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>
+    /// <param name="startedValueTask">A value task that is already running.</param>
+    let awaitStartedValueTask (startedValueTask: ValueTask<'value>) : ColdTask<'value> =
         let startedTask = startedValueTask.AsTask()
-        fromTask startedTask
+        awaitStartedTask startedTask
 
+    /// <summary>Executes the cold task with the supplied cancellation token.</summary>
     let run (cancellationToken: CancellationToken) (ColdTask operation: ColdTask<'value>) : Task<'value> =
         operation cancellationToken
 #endif
@@ -698,10 +722,14 @@ type Flow<'env, 'error, 'value> =
                 | None, result ->
                     result)
 
-    /// <summary>Starts the workflow and returns an F# async handle that completes with the final exit.</summary>
+    /// <summary>Builds a cold async that runs the workflow when it is started.</summary>
+    /// <remarks>
+    /// Nothing executes until the returned <c>Async</c> is run. Use <c>StartAsTask</c> or
+    /// <c>StartAsValueTask</c> when the work should begin immediately.
+    /// </remarks>
     /// <param name="environment">The environment used by the workflow.</param>
     /// <param name="cancellationToken">The optional cancellation token to use instead of <c>Async.CancellationToken</c>.</param>
-    /// <returns>An async handle that completes with the workflow exit.</returns>
+    /// <returns>A cold async that completes with the workflow exit.</returns>
     /// <platforms>Fable compatible</platforms>
     member this.ToAsync(environment: 'env, ?cancellationToken: CancellationToken) : Async<Exit<'value, 'error>> =
         async {
@@ -714,20 +742,22 @@ type Flow<'env, 'error, 'value> =
         }
 
 #if !FABLE_COMPILER
-    /// <summary>Starts the workflow and returns a value-task handle that completes with the final exit.</summary>
+    /// <summary>Starts the workflow immediately and returns a value-task handle for its final exit.</summary>
+    /// <remarks>The work is already in flight when this returns. Use <c>ToAsync</c> for a cold handle.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
     /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
     /// <returns>A value task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
-    member this.ToValueTask(environment: 'env, ?cancellationToken: CancellationToken) : ValueTask<Exit<'value, 'error>> =
+    member this.StartAsValueTask(environment: 'env, ?cancellationToken: CancellationToken) : ValueTask<Exit<'value, 'error>> =
         this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None)
 
-    /// <summary>Starts the workflow and returns a task handle that completes with the final exit.</summary>
+    /// <summary>Starts the workflow immediately and returns a task handle for its final exit.</summary>
+    /// <remarks>The work is already in flight when this returns. Use <c>ToAsync</c> for a cold handle.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
     /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
     /// <returns>A task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
-    member this.ToTask(environment: 'env, ?cancellationToken: CancellationToken) : Task<Exit<'value, 'error>> =
+    member this.StartAsTask(environment: 'env, ?cancellationToken: CancellationToken) : Task<Exit<'value, 'error>> =
         this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None).AsTask()
 
     /// <summary>Starts the workflow and blocks until the final exit is available.</summary>
@@ -742,7 +772,7 @@ type Flow<'env, 'error, 'value> =
             ?timeout: int,
             ?cancellationToken: CancellationToken
         ) : Exit<'value, 'error> =
-        let task = this.ToTask(environment, cancellationToken = defaultArg cancellationToken CancellationToken.None)
+        let task = this.StartAsTask(environment, cancellationToken = defaultArg cancellationToken CancellationToken.None)
 
         match timeout with
         | None ->

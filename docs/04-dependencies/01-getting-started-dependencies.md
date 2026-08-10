@@ -28,7 +28,7 @@ The environment appears in the Flow type, so callers can see the requirement. Th
 when the workflow runs:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let! exit = (loadUser userId).ToTask(liveEnv)
+let! exit = (loadUser userId).StartAsTask(liveEnv)
 ```
 
 Tests provide a different record using the same shape. There is no hidden service locator in the workflow.

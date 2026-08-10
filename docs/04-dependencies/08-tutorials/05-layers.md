@@ -111,7 +111,7 @@ let run () = task {
     let! exit =
         saveOrder "A-100"
         |> Flow.provide appLayer
-        |> fun flow -> flow.ToTask(())
+        |> fun flow -> flow.StartAsTask(())
 
     match exit with
     | Exit.Success () -> printfn "done"

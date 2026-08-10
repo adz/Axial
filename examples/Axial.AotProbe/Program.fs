@@ -4,7 +4,7 @@ open Axial
 let main _ =
     Flow.succeed 21
     |> Flow.map ((*) 2)
-    |> fun workflow -> workflow.ToTask(())
+    |> fun workflow -> workflow.StartAsTask(())
     |> fun task -> task.GetAwaiter().GetResult()
     |> function
         | Exit.Success 42 -> 0

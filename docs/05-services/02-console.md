@@ -36,7 +36,7 @@ type AppEnv =
     interface IHas<IConsole> with
         member this.Service = this.Console
 
-let! exit = (confirm "Continue?").ToTask({ Console = Console.live })
+let! exit = (confirm "Continue?").StartAsTask({ Console = Console.live })
 ```
 
 `Console.layer : Layer<unit, Never, IConsole>` is the same implementation for runtimes assembled with layers. See
@@ -126,7 +126,7 @@ let testConsole =
         // remaining members raise or return defaults
         }
 
-let! exit = (report "ready").ToTask({ Console = testConsole })
+let! exit = (report "ready").StartAsTask({ Console = testConsole })
 test <@ recorded.ToString().Trim() = "ready" @>
 ```
 

@@ -46,7 +46,7 @@ Direct `Async`, `Task`, and `ValueTask` binds treat thrown exceptions as defects
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let loadFromInterop : ExnFlow<string> =
-    Flow.attemptTask (legacyClient.LoadAsync())
+    Flow.attemptTask (fun _ -> legacyClient.LoadAsync())
 ```
 
 `Flow.attemptAsync`, `Flow.attemptTask`, and `Flow.attemptValueTask` return `Cause.Fail exn` for non-cancellation exceptions. `Flow.attemptTask` and `Flow.attemptValueTask` are .NET only.
@@ -102,12 +102,21 @@ let workflow : Flow<unit, string, int> =
 Understanding the difference between "Hot" and "Cold" work is crucial for correct execution and cancellation behavior.
 
 ### Hot Work (Started Tasks)
-Types like `Task<'T>` and `ValueTask<'T>` are **Hot**. The work might already be running before you bind it. 
+Types like `Task<'T>` and `ValueTask<'T>` are **Hot**. The work is already running before you bind it.
 - Rerunning the flow re-awaits the same underlying work.
 - You cannot pass the flow's runtime `CancellationToken` into work that has already started.
 
+The constructors say which you are getting. `Flow.fromTask` and `Flow.attemptTask` take a *factory*
+(`CancellationToken -> Task<'T>`), so they stay cold and cancellable. `Flow.awaitStartedTask` and
+`Flow.attemptStartedTask` take a task that is already running, and are named to make that visible at the call site:
+
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+Flow.fromTask (fun token -> client.GetStringAsync(url, token))   // cold, cancellable, re-runnable
+Flow.awaitStartedTask alreadyRunningTask                          // hot, uncancellable, single result
+```
+
 ### Cold Work (Flows and ColdTask)
-`Flow` itself and the `ColdTask<'T>` type are **Cold**. The work only starts when the flow is executed by `ToTask`, `ToAsync`, `ToValueTask`, or `RunSynchronously`.
+`Flow` itself and the `ColdTask<'T>` type are **Cold**. The work only starts when the flow is executed by `Flow.run`, `Flow.startTask`, or one of the `StartAs*` / `RunSynchronously` members. `Flow.toAsync` builds another cold handle and starts nothing.
 - Rerunning the flow repeats the work from scratch.
 - The runtime `CancellationToken` is automatically passed into the work.
 

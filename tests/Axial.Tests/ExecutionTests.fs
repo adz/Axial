@@ -30,7 +30,7 @@ module ExecutionTests =
     let ``Flow ToTask can be converted to Result within task block`` () =
         task {
             let flow = Flow.ok 42
-            let! result = flow.ToTask(())
+            let! result = flow.StartAsTask(())
             Assert.Equal(Exit.Success 42, result)
             Assert.Equal(Ok 42, Exit.toResult result)
         } :> Task

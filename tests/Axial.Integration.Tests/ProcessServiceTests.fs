@@ -129,7 +129,7 @@ module ProcessServiceTests =
         use cancellation = new CancellationTokenSource()
         try
             let specification = shText $"sleep 30 & echo $! > '{childPidPath}'; wait"
-            let running = Process.run<ProcessTestEnv> specification |> fun workflow -> workflow.ToTask(env, cancellation.Token)
+            let running = Process.run<ProcessTestEnv> specification |> fun workflow -> workflow.StartAsTask(env, cancellation.Token)
             test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> File.Exists childPidPath) @>
             let childPid = File.ReadAllText(childPidPath).Trim() |> Int32.Parse
             let nativeChild = System.Diagnostics.Process.GetProcessById childPid
