@@ -88,7 +88,7 @@ module WithFlow =
                 FileSystem.readAllText sourcePath
                 |> Flow.mapError (FileSystemError.describe >> StoreRejected)
 
-            let! store = Flow.read _.Store
+            let! store = Flow.envWith _.Store
             do! store.Save(name, body) |> Flow.fromResult |> Flow.mapError StoreRejected
 
             do! Console.writeLine $"wrote {name}"

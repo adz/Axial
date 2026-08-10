@@ -52,7 +52,7 @@ type IHasConsole =
 module Console =
     /// Reads the console service from the environment.
     let service<'env, 'error when 'env :> IHasConsole> : Flow<'env, 'error, IConsole> =
-        Flow.read _.Console
+        Flow.envWith _.Console
 
     let private withService<'env, 'error, 'value when 'env :> IHasConsole> operation : Flow<'env, 'error, 'value> =
         service |> Flow.map operation

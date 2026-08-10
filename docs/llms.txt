@@ -9,7 +9,11 @@
 
 ## Execution and dependencies
 
-- Pass a record environment and read it with `Flow.read`. This is the default and needs no other machinery.
+- Pass a record environment and read it with `Flow.envWith`. This is the default and needs no other machinery.
+- `Flow.env` is the whole environment; `Flow.envWith f` projects one value out of it. These are ZIO's
+  `ZIO.environment` and `ZIO.environmentWith`; a package's `service` accessor is ZIO's `ZIO.service[A]`.
+- `Flow.envWith` takes a selector, not a type or a tag: `Flow.envWith _.Clock`. `'env` is an ordinary F# record,
+  so there is no type-directed service lookup and no `Flow.service`.
 - Declare a per-service contract — an interface `IHasFoo` exposing one member `Foo` — only when a package must ask
   for a service without knowing the caller's record type. Read it through the package's `service` accessor.
 - Run with `Flow.run`, `Flow.startTask`, or `Flow.toAsync`; `to*` starts nothing, `start*` begins immediately.

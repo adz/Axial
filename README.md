@@ -16,31 +16,48 @@ Write asynchronous F# workflows whose expected failures and required dependencie
 
 ## Your first flow
 
-A handler often needs services and can fail, but ordinary `Task` signatures show neither fact. `Flow<'env, 'error, 'value>` makes both part of the contract.
+A handler usually needs services and can fail, but a `Task` signature shows neither fact. `Flow<'env, 'error, 'value>`
+makes both part of the contract.
 
 ```fsharp
+open System.Threading.Tasks
 open Axial
 
-type RegistrationError =
-    | UserNotFound
-    | SaveFailed of string
+type CheckoutError =
+    | OrderNotFound of orderId: int
+    | PaymentDeclined of reason: string
 
-type RegistrationEnv =
-    { LoadUser: int -> Task<Result<User, RegistrationError>>
-      SaveUser: User -> Task<Result<unit, RegistrationError>> }
+type Receipt = { OrderId: int; Total: decimal; Reference: string }
 
-let register userId : Flow<RegistrationEnv, RegistrationError, unit> =
+type CheckoutEnv =
+    { FindTotal: int -> Task<Result<decimal, CheckoutError>>
+      Charge: decimal -> Task<Result<string, CheckoutError>> }
+
+let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
-        let! loadUser = Flow.read _.LoadUser
-        let! saveUser = Flow.read _.SaveUser
-        let! user = loadUser userId
-        return! saveUser user
+        let! findTotal = Flow.envWith _.FindTotal
+        let! charge = Flow.envWith _.Charge
+        let! total = findTotal orderId
+        let! reference = charge total
+        return { OrderId = orderId; Total = total; Reference = reference }
     }
 ```
 
-The application supplies live functions. A test supplies a small record of fakes. The workflow stays unchanged.
+The application supplies live functions. A test supplies a record of fakes. The workflow does not change.
 
-Flow also carries cancellation, resource scopes, concurrency, retries, scheduling, streams, and structured child fibers through the same runtime.
+Adding a timeout, a retry policy, and a resource that must be released does not change the signature either, because
+the runtime that starts the workflow owns cancellation, retries, and cleanup:
+
+```fsharp
+open System
+
+let checkoutOrder orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
+    checkout orderId
+    |> Flow.Runtime.retry (RetryPolicy.noDelay 3)
+    |> Flow.Runtime.timeout (TimeSpan.FromSeconds 5.0) (PaymentDeclined "checkout timed out")
+```
+
+Flow also carries concurrency, scheduling, streams, and structured child fibers through the same runtime.
 
 ## Install
 
@@ -62,11 +79,12 @@ The core is independent. Add service and hosting packages only when the workflow
 ## Documentation and examples
 
 - [Getting started](docs/01-getting-started/_index.md)
+- [Add Axial to an existing Task application](docs/01-getting-started/03-existing-task-application.md)
 - [Dependencies and services](docs/04-dependencies/_index.md)
-- [Failures and defects](docs/05-error-handling/_index.md)
-- [Concurrency](docs/06-concurrency-and-state/_index.md)
-- [HTTP client](docs/11-http/_index.md)
-- [Runnable examples](docs/12-testing/runnable-examples.md)
+- [Failures and defects](docs/08-error-handling/_index.md)
+- [Concurrency](docs/09-concurrency-and-state/_index.md)
+- [HTTP client](docs/05-services/05-http/_index.md)
+- [Runnable examples](docs/14-testing/02-runnable-examples.md)
 - [Integration reference application](examples/Axial.ReferenceApp/README.md)
 
 ## Reified integration

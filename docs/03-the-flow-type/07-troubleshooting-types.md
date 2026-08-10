@@ -68,7 +68,7 @@ type BigEnv = { App: SmallEnv; RequestId: string }
 
 let greet : Flow<SmallEnv, string, string> =
     flow {
-        let! prefix = Flow.read _.Prefix
+        let! prefix = Flow.envWith _.Prefix
         return $"{prefix} world"
     }
 

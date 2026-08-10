@@ -25,7 +25,7 @@ let validateName (name: string) : Result<string, string> =
 
 let loadUser : Flow<RequestEnv, string, User> =
     flow {
-        let! db = Flow.read _.Db // Flow<RequestEnv, string, AppDb>
+        let! db = Flow.envWith _.Db // Flow<RequestEnv, string, AppDb>
         let! user = db.FindUser 42 |> Flow.fromOption "user not found" // Flow<RequestEnv, string, User>
         return user
     }

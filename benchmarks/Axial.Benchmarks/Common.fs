@@ -210,7 +210,7 @@ module internal Shared =
 
     let buildFlowLocalEnvChain () =
         let baseFlow =
-            Flow.read id
+            Flow.envWith id
             |> Flow.map (fun value -> value * 2)
 
         let mutable flow = baseFlow

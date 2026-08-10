@@ -120,17 +120,17 @@ module WithFlow =
     let checkout (sku: string) (amount: decimal) : Flow<CheckoutEnv, CheckoutError, CheckoutReceipt> =
         let reserve: Flow<CheckoutEnv, CheckoutError, ReservationId * IInventory> =
             flow {
-                let! inventory = Flow.read _.Inventory
+                let! inventory = Flow.envWith _.Inventory
                 let! reservation = inventory.Reserve(sku, 1) |> Bind.mapError Inventory
                 return reservation, inventory
             }
 
         let fulfil (reservation: ReservationId) : Flow<CheckoutEnv, CheckoutError, CheckoutReceipt> =
             flow {
-                let! payments = Flow.read _.Payments
+                let! payments = Flow.envWith _.Payments
                 let! payment = payments.Charge amount |> Bind.mapError Payment
 
-                let! shipping = Flow.read _.Shipping
+                let! shipping = Flow.envWith _.Shipping
                 let! shipment = shipping.CreateShipment reservation |> Bind.mapError Shipping
 
                 return { Reservation = reservation; Payment = payment; Shipment = shipment }

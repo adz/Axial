@@ -10,7 +10,7 @@ open Xunit
 module AppTests =
     [<Fact>]
     let ``App start exposes completion and completed status`` () =
-        let running = App.start "environment" (Flow.read (fun value -> value.Length))
+        let running = App.start "environment" (Flow.envWith (fun value -> value.Length))
 
         let exit = running.Completion |> Async.RunSynchronously
 

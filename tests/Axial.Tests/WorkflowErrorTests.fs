@@ -30,7 +30,7 @@ module WorkflowErrorTests =
 
         let recovered =
             Flow.fail "missing"
-            |> Flow.orElse (Flow.read (fun env -> env + 1))
+            |> Flow.orElse (Flow.envWith (fun env -> env + 1))
             |> Flow.runSync 41
 
         let bypassesFallback =
@@ -39,11 +39,11 @@ module WorkflowErrorTests =
             |> Flow.runSync ()
 
         let zipped =
-            Flow.zip (Flow.read (fun env -> env + 1)) (Flow.read (fun env -> env * 2))
+            Flow.zip (Flow.envWith (fun env -> env + 1)) (Flow.envWith (fun env -> env * 2))
             |> Flow.runSync 5
 
         let mapped =
-            Flow.map2 (+) (Flow.read (fun env -> env + 1)) (Flow.read (fun env -> env * 2))
+            Flow.map2 (+) (Flow.envWith (fun env -> env + 1)) (Flow.envWith (fun env -> env * 2))
             |> Flow.runSync 5
 
         test <@ tapPreservesOriginalError = Exit.Failure (Cause.Fail "primary") @>
@@ -283,7 +283,7 @@ module WorkflowErrorTests =
     let ``a unit-error result takes its error from the environment`` () =
         let flowBridge =
             Error ()
-            |> Flow.orElseFlow (Flow.read (fun env -> $"flow:{env}"))
+            |> Flow.orElseFlow (Flow.envWith (fun env -> $"flow:{env}"))
             |> Flow.runSync "env"
 
         let flowValue = Flow.value "flow-value" |> Flow.runSync ()

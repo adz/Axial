@@ -65,7 +65,7 @@ let validateOrder (order: Order) : Result<Order, PlaceOrderError> =
 
 let saveOrder (order: Order) : Flow<AppEnv, PlaceOrderError, Order> =
     flow {
-        let! orders = Flow.read _.Orders
+        let! orders = Flow.envWith _.Orders
         let! saveResult = orders.Save order
 
         match saveResult with
@@ -75,13 +75,13 @@ let saveOrder (order: Order) : Flow<AppEnv, PlaceOrderError, Order> =
 
 let sendConfirmation (order: Order) : Flow<AppEnv, PlaceOrderError, unit> =
     flow {
-        let! email = Flow.read _.Email
+        let! email = Flow.envWith _.Email
         do! email.SendConfirmation order
     }
 
 let writeAudit (message: string) : Flow<AppEnv, PlaceOrderError, unit> =
     flow {
-        let! audit = Flow.read _.Audit
+        let! audit = Flow.envWith _.Audit
         let! result = audit.Write message
 
         match result with

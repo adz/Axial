@@ -431,7 +431,7 @@ module Process =
 
     /// Reads the process service from the environment.
     let service<'env, 'error when 'env :> IHasProcess> : Flow<'env, 'error, IProcess> =
-        Flow.read _.Process
+        Flow.envWith _.Process
 
     /// Runs a process specification in the current Flow runtime.
     /// <example><code>specification |&gt; Process.run</code></example>

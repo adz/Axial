@@ -1,16 +1,33 @@
 ---
 title: Why Flow?
-description: Why an application may need more than Task, Async, and Result composition.
+description: When an application needs more than Task, Async, and Result composition, and when it does not.
 ---
 
 # Why Flow?
 
-F# already has good tools for pure functions, expected failures, and asynchronous work. Many applications start with
-functions returning `Result`, `Async`, or `Task`, and should keep doing so while those types are enough.
+## Do you need Flow?
 
-The friction appears when one operation needs several concerns at once:
+You do not need Flow for pure functions, local validation, or a single `Task` call. Keep using `Result`, `Async`, and
+`Task` while they are enough. F# is good at those, and Flow adds a type parameter and a runtime that a small function
+does not repay.
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+Reach for Flow when one call tree carries several of these at once:
+
+- dependencies that a test has to replace;
+- expected failures that callers must handle by name;
+- cancellation that has to reach every inner call;
+- retries, timeouts, or scheduled repetition;
+- resources whose release must survive a failure;
+- background work that needs an owner.
+
+Any one of those is manageable by hand. The cost is that each is a separate mechanism, and each caller in the tree
+has to repeat the policy correctly.
+
+## The signature is the argument
+
+Here is one operation with three of those concerns, written against `Task`:
+
+```fsharp no-check reason="Illustrative signature; AppServices and LoadUserError belong to the reader's application"
 val loadUser:
     cancellationToken: CancellationToken ->
     services: AppServices ->
@@ -18,35 +35,36 @@ val loadUser:
         Task<Result<User, LoadUserError>>
 ```
 
-The return type records the expected error, but cancellation and dependencies are separate arguments. Exceptions can
-still escape the Task, and callers must decide who owns retries, child work, and resource cleanup.
+The return type records the expected error. Cancellation and dependencies are separate arguments the caller must
+remember to thread through, exceptions can still escape the `Task`, and nothing states who owns retries, child work,
+or cleanup.
 
-As operations compose, that policy is repeated across the call tree. A caller may pass dependencies it never uses,
-catch an exception at the wrong boundary, or start background work without a clear owner.
+Flow puts the same three parts in one type:
 
-Flow puts the three parts of a workflow in one type:
-
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
+```fsharp no-check reason="Illustrative signature; AppServices and LoadUserError belong to the reader's application"
 val loadUser: UserId -> Flow<AppServices, LoadUserError, User>
 ```
 
-The signature says that the workflow:
+The signature says that the workflow requires `AppServices`, can fail with `LoadUserError`, and can succeed with
+`User`. Callers do not pass a token, because the runtime that starts the workflow owns cancellation.
 
-- requires `AppServices`;
-- may fail with `LoadUserError`;
-- may succeed with `User`.
+## A Flow is a description
 
-A Flow is a description, not an already-running Task. The runtime starts that description at an explicit boundary and
-owns cancellation, child work, scopes, and cleanup for that execution.
+A `Flow` value is not an already-running `Task`. Nothing happens until you start it at an explicit boundary, and that
+boundary owns cancellation, child fibers, scopes, and cleanup for the execution. Two consequences follow:
+
+- Building a workflow twice and running it twice is safe, so retries and schedules are ordinary combinators rather
+  than hand-written loops.
+- A workflow value can be passed around, stored, and composed before anyone decides to run it.
 
 Use Flow for application orchestration and operational work. Keep local validation and ordinary pure composition in
 `Result` or another focused type until the code actually needs Flow's execution model.
 
-## Go Further
+## Go further
 
-- [Task vs Flow: seven scenarios](/how-it-compares/task-vs-flow-scenarios.html) compares ownership,
-  cancellation, retries, and background work in concrete examples.
-- [Flow compared with Effect-TS](/how-it-compares/effect-ts-comparison.html) explains the shared model
-  and the places where F# leads to a different API.
-- [Compiler-directed, AOT, and Fable](/notes/packages-and-platforms.html) describes the supported runtime
-  targets and package boundaries.
+- [Task vs Flow: seven scenarios](/how-it-compares/task-vs-flow-scenarios.html) compares ownership, cancellation,
+  retries, and background work in concrete examples.
+- [Flow compared with Effect-TS](/how-it-compares/effect-ts-comparison.html) explains the shared model and the
+  places where F# leads to a different API.
+- [Compiler-directed, AOT, and Fable](/notes/packages-and-platforms.html) describes the supported runtime targets and
+  package boundaries.

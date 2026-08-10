@@ -171,3 +171,46 @@ body:has(.axial-landing) #search-ui {
     font-size: 2.8rem;
   }
 }
+
+.docs-home-signature {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1rem;
+  margin: 0 auto 2.5rem;
+  text-align: left;
+}
+
+.docs-home-signature-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--axial-border);
+  border-radius: 0.75rem;
+  background: var(--axial-surface);
+}
+
+.docs-home-signature-label {
+  color: var(--axial-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.docs-home-signature pre {
+  margin: 0;
+  overflow-x: auto;
+  background: transparent;
+}
+
+.docs-home-signature code {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.docs-home-note {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+}

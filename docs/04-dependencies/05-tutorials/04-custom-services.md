@@ -25,7 +25,7 @@ type IHasExchangeRates =
 [<RequireQualifiedAccess>]
 module ExchangeRates =
     let service<'env, 'error when 'env :> IHasExchangeRates> : Flow<'env, 'error, IExchangeRates> =
-        Flow.read _.ExchangeRates
+        Flow.envWith _.ExchangeRates
 
 let priceInAud<'env, 'error when 'env :> IHasExchangeRates>
     (usdAmount: decimal)

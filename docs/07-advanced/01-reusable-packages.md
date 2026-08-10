@@ -37,10 +37,10 @@ type IHasExchangeRates =
 [<RequireQualifiedAccess>]
 module ExchangeRates =
     let service<'env, 'error when 'env :> IHasExchangeRates> : Flow<'env, 'error, IExchangeRates> =
-        Flow.read _.ExchangeRates
+        Flow.envWith _.ExchangeRates
 ```
 
-Bind the accessor at module level, not inline. `Flow.read _.ExchangeRates` cannot resolve inside a `flow { }` block,
+Bind the accessor at module level, not inline. `Flow.envWith _.ExchangeRates` cannot resolve inside a `flow { }` block,
 because the lambda's parameter type is not known until the surrounding annotation is applied — and that happens after
 the body is checked. At module level the annotation sits next to the expression that needs it, so it resolves once
 and every caller binds it with no annotation at all.
@@ -58,7 +58,7 @@ let priceInAud (usdAmount: decimal) : Flow<#IHasExchangeRates, RateError, decima
 
 ## Rules that keep contracts composable
 
-**One member per contract, named after the suffix.** `IHasFoo` exposes `Foo`. This is what makes `Flow.read _.Foo`
+**One member per contract, named after the suffix.** `IHasFoo` exposes `Foo`. This is what makes `Flow.envWith _.Foo`
 predictable and keeps a consumer's composition root readable when it implements six of them.
 
 **Never inherit a generic interface.** F# rejects a type parameter constrained by two instantiations of the same

@@ -1018,7 +1018,7 @@ module Flow =
     /// <example>
     /// <code>
     /// let result = Result.Error ()
-    /// let flow = Flow.orElseFlow (Flow.read (fun env -> "error")) result
+    /// let flow = Flow.orElseFlow (Flow.envWith (fun env -> "error")) result
     /// </code>
     /// </example>
     let orElseFlow
@@ -1036,7 +1036,7 @@ module Flow =
     /// <remarks>
     /// Use this when the next step genuinely needs the whole environment value, for example when
     /// passing a request context to another helper. For a single dependency or configuration value,
-    /// prefer <c>Flow.read</c>; it keeps the dependency local and makes the workflow easier to scan.
+    /// prefer <c>Flow.envWith</c>; it keeps the dependency local and makes the workflow easier to scan.
     /// </remarks>
     /// <returns>A <see cref="T:Axial`3" /> whose successful value is the current environment.</returns>
     /// <example>
@@ -1058,10 +1058,10 @@ module Flow =
     /// <returns>A <see cref="T:Axial`3" /> containing the projected value.</returns>
     /// <example>
     /// <code>
-    /// let myFlow = Flow.read (fun env -> env)
+    /// let myFlow = Flow.envWith _.Clock
     /// </code>
     /// </example>
-    let read (projection: 'env -> 'value) : Flow<'env, 'error, 'value> =
+    let envWith (projection: 'env -> 'value) : Flow<'env, 'error, 'value> =
         Flow(fun environment _ -> Execution.ofValue (projection environment))
 
     /// <summary>Transforms the successful value of a flow.</summary>

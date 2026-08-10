@@ -17,7 +17,7 @@ module RecordExample =
     type AppEnv = { Repo: IOrderRepo }
 
     let saveOrder order = flow {
-        let! repo = Flow.read _.Repo
+        let! repo = Flow.envWith _.Repo
         repo.Save order
     }
 
@@ -27,7 +27,7 @@ module NominalExample =
         abstract OrderRepo : IOrderRepo
 
     let service<'env, 'error when 'env :> IHasOrderRepo> : Flow<'env, 'error, IOrderRepo> =
-        Flow.read _.OrderRepo
+        Flow.envWith _.OrderRepo
 
     let saveOrder order : Flow<#IHasOrderRepo, OrderError, unit> = flow {
         let! repo = service

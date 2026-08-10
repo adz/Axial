@@ -22,7 +22,7 @@ let runTaskExample label env (workflow: Flow<'env, 'error, 'value>) =
     printfn "%s: %A" label result
 
 let syncExample : Flow<int, string, int> =
-    Flow.read id // Flow<int, string, int>
+    Flow.envWith id // Flow<int, string, int>
     |> Flow.map ((+) 1)
 
 let asyncExample : Flow<int, string, int> =
@@ -33,7 +33,7 @@ let asyncExample : Flow<int, string, int> =
 
 let taskExample : Flow<int, string, int> =
     flow {
-        let! env = Flow.read id
+        let! env = Flow.envWith id
         let! suffix = Task.FromResult 5
         return env + suffix
     }

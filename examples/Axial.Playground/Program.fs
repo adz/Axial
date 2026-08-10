@@ -9,7 +9,7 @@ type AppEnv =
       LoadSuffix: Task<string> }
 
 let greetingFlow : Flow<AppEnv, string, string> =
-    Flow.read (fun env -> $"{env.Prefix} {env.Name}") // Flow<AppEnv, string, string>
+    Flow.envWith (fun env -> $"{env.Prefix} {env.Name}") // Flow<AppEnv, string, string>
 
 let greetingAsync : Flow<AppEnv, string, string> =
     flow {

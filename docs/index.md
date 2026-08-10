@@ -10,13 +10,28 @@ title: Axial
 </div>
 <div class="docs-home-copy">
 <span class="eyebrow">Typed asynchronous workflows for F#</span>
-<h1>Put dependencies and expected failures in the workflow type.</h1>
-<div class="lede">
-<p><code>Flow&lt;'env,'error,'value&gt;</code> describes asynchronous work, the services it requires, and the failures callers must handle.</p>
+<h1>One signature instead of four arguments.</h1>
+<div class="docs-home-signature">
+<div class="docs-home-signature-pane">
+<span class="docs-home-signature-label">Without Axial</span>
+<pre><code class="language-fsharp">val loadUser:
+    cancellationToken: CancellationToken -&gt;
+    services: AppServices -&gt;
+    userId: UserId -&gt;
+        Task&lt;Result&lt;User, LoadUserError&gt;&gt;</code></pre>
 </div>
-<p>Pass a workflow a plain record and get typed failures, cancellation, resource scopes and structured concurrency. No container, no registration step.</p>
-<p>Axial also provides retries, streams, STM, operational services, hosting, and telemetry over the same workflow model.</p>
-<p><a class="btn btn-primary" href="getting-started/index.html">Get started</a></p>
+<div class="docs-home-signature-pane">
+<span class="docs-home-signature-label">With Axial</span>
+<pre><code class="language-fsharp">val loadUser:
+    UserId -&gt; Flow&lt;AppServices, LoadUserError, User&gt;</code></pre>
+</div>
+</div>
+<div class="lede">
+<p>Cancellation, dependencies, and expected failures stop being extra arguments the caller has to thread through. They become part of the type.</p>
+</div>
+<p>Pass a workflow a plain record and get typed failures, cancellation, resource scopes, and structured concurrency. There is no container and no registration step. Axial adds retries, streams, STM, operational services, hosting, and telemetry over the same workflow model.</p>
+<p><a class="btn btn-primary" href="getting-started/index.html">Run your first workflow</a></p>
+<p class="docs-home-note">Axial is pre-1.0. Its API can change before the first stable release.</p>
 </div>
 </div>
 <div class="docs-home-meta">

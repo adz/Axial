@@ -52,8 +52,8 @@ let buildGreeting prefix name =
 
 let greet : Flow<AppEnv, string, string> =
     flow {
-        let! prefix = Flow.read _.Prefix
-        let! name = Flow.read _.Name
+        let! prefix = Flow.envWith _.Prefix
+        let! name = Flow.envWith _.Name
         return buildGreeting prefix name
     }
 ```
@@ -65,8 +65,8 @@ The same helper can sit under an async boundary without changing its shape:
 ```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let greetAsync : Flow<AppEnv, string, string> =
     flow {
-        let! prefix = Flow.read _.Prefix
-        let! name = Flow.read _.Name
+        let! prefix = Flow.envWith _.Prefix
+        let! name = Flow.envWith _.Name
         return buildGreeting prefix name
     }
 ```

@@ -18,7 +18,7 @@ type AppEnv =
 
 let loadUser id : EnvFlow<AppEnv, User> =
     flow {
-        let! users = Flow.read _.Users
+        let! users = Flow.envWith _.Users
         return! users.Load id
     }
 

@@ -26,7 +26,7 @@ type BaseRuntime =
 module Clock =
     /// Reads the service from the environment.
     let service<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, IClock> =
-        Flow.read _.Clock
+        Flow.envWith _.Clock
 
     /// <summary>Reads the current UTC timestamp from an explicit clock service.</summary>
     let now<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, DateTimeOffset> =
@@ -64,7 +64,7 @@ module Clock =
 module Log =
     /// Reads the service from the environment.
     let service<'env, 'error when 'env :> IHasLog> : Flow<'env, 'error, ILog> =
-        Flow.read _.Log
+        Flow.envWith _.Log
 
     /// <summary>Writes a log message at the requested level through an explicit logging service.</summary>
     let log<'env, 'error when 'env :> IHasLog>
@@ -136,7 +136,7 @@ module Log =
 module Random =
     /// Reads the service from the environment.
     let service<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, IRandom> =
-        Flow.read _.Random
+        Flow.envWith _.Random
 
     /// <summary>Reads a non-negative random integer from an explicit random-number service.</summary>
     let next<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, int> =
@@ -219,7 +219,7 @@ module Random =
 module Guid =
     /// Reads the service from the environment.
     let service<'env, 'error when 'env :> IHasGuid> : Flow<'env, 'error, IGuid> =
-        Flow.read _.Guid
+        Flow.envWith _.Guid
 
     /// <summary>Reads a GUID from an explicit GUID service.</summary>
     let newGuid<'env, 'error when 'env :> IHasGuid> : Flow<'env, 'error, global.System.Guid> =
@@ -245,7 +245,7 @@ module Guid =
 module EnvironmentVariables =
     /// Reads the service from the environment.
     let service<'env, 'error when 'env :> IHasEnvironmentVariables> : Flow<'env, 'error, IEnvironmentVariables> =
-        Flow.read _.EnvironmentVariables
+        Flow.envWith _.EnvironmentVariables
 
     /// <summary>Reads a raw environment-variable value from an explicit environment-variable service.</summary>
     let tryGet<'env, 'error when 'env :> IHasEnvironmentVariables>

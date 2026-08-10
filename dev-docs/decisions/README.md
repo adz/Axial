@@ -32,7 +32,7 @@ Most .NET developers and many F# developers have never used an effect system, an
 
 ## Explicit dependencies and runtime boundary
 
-- Application and operational dependencies live in `'env`. Plain records plus `Flow.read` are the default local application style; nominal `IHas<'service>` contracts are available when their static contract is worth the ceremony.
+- Application and operational dependencies live in `'env`. Plain records plus `Flow.envWith` are the default local application style; nominal `IHas<'service>` contracts are available when their static contract is worth the ceremony.
 - The ambient runtime is closed and contains executor mechanics only: cancellation, scopes, scheduling, interruption, fiber bookkeeping, annotations, and tracing mechanics.
 - Clock, randomness, GUID generation, environment variables, filesystem, console, HTTP, process execution, and other operational effects are explicit mockable services.
 - A service implementation may perform only the effect named by its core service type unless every additional effect is visible as another explicit dependency.
@@ -70,12 +70,12 @@ Most .NET developers and many F# developers have never used an effect system, an
   carry no such restriction, so the constraints merge on their own. Adding a generic type anywhere in
   a contract's inheritance chain reintroduces the failure, so contracts must not inherit one.
 - **Naming rule for producers.** A contract named `IHasFoo` exposes exactly one member named `Foo`.
-  This is what makes `Flow.read _.Foo` predictable and keeps composition roots readable.
+  This is what makes `Flow.envWith _.Foo` predictable and keeps composition roots readable.
 - **`member this.Foo = this.Foo` is not recursive.** F# interface implementations are always
   explicit, so the interface member is not in scope on the concrete type; `this.Foo` on the
   right-hand side resolves to the record field. A type with no such field fails to compile rather
   than recursing.
-- **Each package ships one accessor**, `Foo.service`, bound at module level. `Flow.read _.Foo` cannot
+- **Each package ships one accessor**, `Foo.service`, bound at module level. `Flow.envWith _.Foo` cannot
   resolve inside a `flow { }` block, where the lambda's parameter type is not yet known; binding it
   at module level puts the annotation next to the expression that needs it, and every caller then
   binds it with no annotation.

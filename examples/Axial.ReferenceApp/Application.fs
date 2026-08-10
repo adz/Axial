@@ -119,7 +119,7 @@ module Application =
     let private invalidValue result = result |> Result.mapError AppError.InvalidValue
 
     let private store operation : Flow<AppEnv, AppError, 'value> =
-        Flow.read (fun env -> operation env.Store)
+        Flow.envWith (fun env -> operation env.Store)
         |> Flow.bind id
 
     let private update id change =

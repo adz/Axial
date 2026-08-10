@@ -8,6 +8,7 @@ artifacts/*
 .fsdocs/
 .livedocs/build-history/
 .livedocs/models/
+.livedocs/cache/
 output/
 tmp/
 site/

@@ -122,7 +122,7 @@ module WithFlow =
     let loadPage (accountId: string) : Flow<DashboardEnv, PageError, DashboardPage> =
         let account: Flow<DashboardEnv, PageError, Account> =
             flow {
-                let! accounts = Flow.read _.Accounts
+                let! accounts = Flow.envWith _.Accounts
                 let! token = Flow.Runtime.cancellationToken
                 let! loaded = accounts.Load(accountId, token) |> Bind.mapError AccountUnavailable
                 return loaded
@@ -130,7 +130,7 @@ module WithFlow =
 
         let recent: Flow<DashboardEnv, PageError, Order list> =
             flow {
-                let! orders = Flow.read _.Orders
+                let! orders = Flow.envWith _.Orders
                 let! token = Flow.Runtime.cancellationToken
                 let! loaded = orders.Recent(accountId, token) |> Bind.mapError OrdersUnavailable
                 return loaded
@@ -138,7 +138,7 @@ module WithFlow =
 
         let recommended: Flow<DashboardEnv, PageError, Recommendation list> =
             flow {
-                let! recommendations = Flow.read _.Recommendations
+                let! recommendations = Flow.envWith _.Recommendations
                 let! token = Flow.Runtime.cancellationToken
                 let! loaded = recommendations.For(accountId, token) |> Bind.mapError OrdersUnavailable
                 return loaded

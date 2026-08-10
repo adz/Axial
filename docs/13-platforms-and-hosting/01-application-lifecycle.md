@@ -21,7 +21,7 @@ type AppError =
 
 let program : Flow<AppEnv, AppError, unit> =
     flow {
-        let! orders = Flow.read _.Orders
+        let! orders = Flow.envWith _.Orders
         return! orders.ProcessPending()
     }
 

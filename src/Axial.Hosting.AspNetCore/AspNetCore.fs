@@ -110,7 +110,7 @@ module Request =
     let private parsed
         (parse: HttpRequest -> Task<RetainedParseResult<'model>>)
         : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
-        Flow.read _.Request
+        Flow.envWith _.Request
         |> Flow.bind (fun request ->
             parse request
             |> Flow.fromTask
@@ -121,7 +121,7 @@ module Request =
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example><code>let! signup = Request.json Signup.schema</code></example>
     let json (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
-        Flow.read _.Request
+        Flow.envWith _.Request
         |> Flow.bind (fun request ->
             task {
                 try
@@ -147,7 +147,7 @@ module Request =
     /// <returns>An endpoint Flow that succeeds with the trusted model.</returns>
     /// <example><code>let! search = Request.query Search.schema</code></example>
     let query (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
-        Flow.read _.Request
+        Flow.envWith _.Request
         |> Flow.bind (SchemaRequest.query schema >> fromParsed)
 
     /// <summary>Schema-parses one named ASP.NET route value.</summary>
@@ -159,7 +159,7 @@ module Request =
         (name: string)
         (schema: Schema<'model>)
         : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
-        Flow.read _.Request
+        Flow.envWith _.Request
         |> Flow.bind (fun request ->
             let found, value = request.RouteValues.TryGetValue name
 
@@ -174,13 +174,13 @@ module Request =
     /// <returns>An endpoint Flow containing the projected, still-untrusted value.</returns>
     /// <example><code>let! signature = Request.raw (fun request -&gt; string request.Headers["x-signature"])</code></example>
     let raw (projection: HttpRequest -> 'input) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'input> =
-        Flow.read (fun environment -> projection environment.Request)
+        Flow.envWith (fun environment -> projection environment.Request)
 
     /// <summary>Returns the native ASP.NET request for host-specific boundary handling.</summary>
     /// <returns>An endpoint Flow containing the current native request.</returns>
     /// <example><code>let! request = Request.native</code></example>
     let native<'app, 'error> : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, HttpRequest> =
-        Flow.read _.Request
+        Flow.envWith _.Request
 
 /// <summary>Embeds an application Flow into an HTTP endpoint Flow.</summary>
 [<RequireQualifiedAccess>]

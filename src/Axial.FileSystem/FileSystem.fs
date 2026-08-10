@@ -392,7 +392,7 @@ module FileSystemError =
 module FileSystem =
     /// Reads the file-system service from the environment.
     let service<'env, 'error when 'env :> IHasFileSystem> : Flow<'env, 'error, IFileSystem> =
-        Flow.read _.FileSystem
+        Flow.envWith _.FileSystem
 
     let private directorySeparators =
         [| Path.DirectorySeparatorChar; Path.AltDirectorySeparatorChar |]

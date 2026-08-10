@@ -11,7 +11,7 @@ environment:
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let workflow : Flow<AppEnv, LoadUserError, User> =
     flow {
-        let! loadUser = Flow.read _.LoadUser
+        let! loadUser = Flow.envWith _.LoadUser
         return! loadUser 42
     }
 

@@ -37,7 +37,7 @@ guides show the .NET, Node, and browser boundaries.
 You now have the complete introductory path: describe work, compose it, distinguish outcomes, provide dependencies,
 and run one root workflow.
 
-## Go Further
+## Go further
 
 - [Application Lifecycle](/platforms-and-hosting/application-lifecycle.html) covers `App.start`, coordinated stop, and lifecycle ownership.
 - [Scopes and Resources](/advanced/scopes-and-resources.html) explains finalizers and

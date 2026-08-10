@@ -12,7 +12,7 @@ ordinary value.
 open Axial
 
 let doubled : Flow<int, Never, int> =
-    Flow.read (fun environment -> environment * 2)
+    Flow.envWith (fun environment -> environment * 2)
 
 let result = doubled |> Flow.run 21    // Success 42
 ```
@@ -22,21 +22,21 @@ function whatever value you passed to `Flow.run`, and that is the entire mechani
 
 ## What the functions do
 
-`Flow.read` **runs a function against the environment** and continues with the result:
+`Flow.envWith` **runs a function against the environment** and continues with the result:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-Flow.read (fun environment -> environment.Users)   // 'env -> 'a, giving Flow<'env, _, 'a>
+Flow.envWith (fun environment -> environment.Users)   // 'env -> 'a, giving Flow<'env, _, 'a>
 ```
 
-`_.Users` is F# shorthand for `fun environment -> environment.Users`, so `Flow.read _.Users` is the same thing
+`_.Users` is F# shorthand for `fun environment -> environment.Users`, so `Flow.envWith _.Users` is the same thing
 written shorter.
 
 The rest of the environment surface is equally small:
 
 | Function | What it does |
 | --- | --- |
-| `Flow.read projection` | Runs `projection` against the environment, continues with its result |
-| `Flow.read id` | Continues with the environment value itself |
+| `Flow.envWith projection` | Runs `projection` against the environment, continues with its result |
+| `Flow.envWith id` | Continues with the environment value itself |
 | `Flow.localEnv change` | Runs a flow against a *different* environment computed by `change` |
 
 `Flow.localEnv` is how a workflow needing a small environment runs inside one that has more:
@@ -60,7 +60,7 @@ type AppEnv =
 
 let loadUser id : EnvFlow<AppEnv, User> =
     flow {
-        let! users = Flow.read _.Users
+        let! users = Flow.envWith _.Users
         return! users.Load id
     }
 ```

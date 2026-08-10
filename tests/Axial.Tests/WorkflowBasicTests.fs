@@ -43,7 +43,7 @@ module WorkflowBasicTests =
     [<Fact>]
     let ``shared combinators preserve sync and async environment semantics`` () =
         let syncBase : Flow<int, int, int> =
-            Flow.read (fun env -> env + 1)
+            Flow.envWith (fun env -> env + 1)
             |> Flow.map ((*) 2)
             |> Flow.bind (fun value -> Flow.succeed(value + 3))
             |> Flow.mapError String.length
@@ -151,7 +151,7 @@ module WorkflowBasicTests =
     [<Fact>]
     let ``shared combinators preserve environment and error semantics`` () =
         let baseWorkflow : Flow<int, int, int> =
-            Flow.read (fun env -> env + 1)
+            Flow.envWith (fun env -> env + 1)
             |> Flow.map ((*) 2)
             |> Flow.bind (fun value -> Flow.succeed(value + 3))
             |> Flow.mapError String.length
@@ -201,8 +201,8 @@ module WorkflowBasicTests =
 
         let workflow : Flow<AppDependencies, string, string> =
             flow {
-                let! client = Flow.read _.DeviceClient
-                let! value = Flow.read _.Value
+                let! client = Flow.envWith _.DeviceClient
+                let! value = Flow.envWith _.Value
                 return $"{client.Name}:{value}"
             }
 
@@ -225,7 +225,7 @@ module WorkflowBasicTests =
             |> Flow.runSync (RecordingServiceProvider(typeof<string>, "nope") :> IServiceProvider)
 
         let serviceLookup : Flow<AppDependencies, string, IDeviceClient> =
-            Flow.read _.DeviceClient
+            Flow.envWith _.DeviceClient
 
         let serviceLookupResult =
             serviceLookup
@@ -233,8 +233,8 @@ module WorkflowBasicTests =
 
         let flowLayerWorkflow : Flow<AppDependencies, string, string> =
             flow {
-                let! client = Flow.read _.DeviceClient
-                let! value = Flow.read _.Value
+                let! client = Flow.envWith _.DeviceClient
+                let! value = Flow.envWith _.Value
                 return $"{client.Name}:{value}"
             }
 

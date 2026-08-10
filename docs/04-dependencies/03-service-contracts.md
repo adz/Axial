@@ -23,7 +23,7 @@ The helper constrains its environment to that interface instead of naming a type
 [<RequireQualifiedAccess>]
 module Orders =
     let service<'env, 'error when 'env :> IHasOrders> : Flow<'env, 'error, IOrderRepository> =
-        Flow.read _.Orders
+        Flow.envWith _.Orders
 
 let save order : Flow<#IHasOrders, CheckoutError, unit> =
     flow {
@@ -33,7 +33,7 @@ let save order : Flow<#IHasOrders, CheckoutError, unit> =
 ```
 
 Read `Flow<#IHasOrders, …>` as "any environment that can give me an `IOrderRepository`". This is still just
-[`Flow.read`](the-environment.html) — the interface only says which member it may read.
+[`Flow.envWith`](the-environment.html) — the interface only says which member it may read.
 
 ## Supplying one
 

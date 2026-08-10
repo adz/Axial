@@ -23,7 +23,7 @@ let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
 
 let program : Flow<ReadmeEnv, FileReadError, string * string> =
     flow {
-        let! root = Flow.read _.Root // ReadmeEnv.Root -> string
+        let! root = Flow.envWith _.Root // ReadmeEnv.Root -> string
         let settingsFile = Path.Combine(root, "settings.json")
         let featureFlagsFile = Path.Combine(root, "feature-flags.json")
 

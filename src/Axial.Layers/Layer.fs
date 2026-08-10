@@ -62,7 +62,7 @@ module Layer =
         Layer(fun _ _ -> Execution.ofValue value)
 
     /// <summary>Projects part of the input environment into the layer output.</summary>
-    let read (projection: 'input -> 'output) : Layer<'input, 'error, 'output> =
+    let envWith (projection: 'input -> 'output) : Layer<'input, 'error, 'output> =
         Layer(fun (input, _) _ -> Execution.ofValue (projection input))
 
     /// <summary>Registers an asynchronous finalizer with the layer scope.</summary>

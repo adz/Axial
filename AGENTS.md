@@ -39,6 +39,19 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - Keep speculative or pre-idea work in `dev-docs/current-ideas/`.
 - Do not retain detailed historical specs after their useful decisions have been folded into current instructions. Delete stale specs instead of archiving large files that no longer match the codebase.
 
+## API Naming
+
+- Environment access is `Flow.env` (the whole record) and `Flow.envWith f` (one value out of it); `Layer.envWith`
+  mirrors it. These correspond to ZIO's `ZIO.environment` and `ZIO.environmentWith`. Name the combinator after the
+  `'env` type parameter it hands you, so the rule stays derivable from any signature.
+- A package's `service` accessor — `Clock.service`, `Http.service` — is the type-directed form and corresponds to
+  ZIO's `ZIO.service[A]`. Keep `service` meaning only that.
+- There is no `Flow.service`. `'env` is an ordinary F# record, so a service is selected with a projection
+  (`Flow.envWith _.Clock`), not looked up by type or tag. `ServiceProvider.get` remains the host-boundary escape
+  hatch for dynamic container lookup.
+- Reserve `read` for I/O that actually reads something (`Console.read`, stream readers). It must not name a pure
+  environment projection.
+
 ## Writing
 
 - Write concrete prose that names the API, behavior, tradeoff, or decision directly. Remove generic AI filler,

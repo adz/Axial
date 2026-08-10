@@ -35,7 +35,7 @@ module Deferred =
         (exit: Exit<'value, 'error>)
         (Deferred signal: Deferred<'error, 'value>)
         : Flow<'env, 'workflowError, bool> =
-        Flow.read (fun _ -> Platform.resolveSignal signal exit)
+        Flow.envWith (fun _ -> Platform.resolveSignal signal exit)
 
     /// <summary>Attempts to complete the deferred value successfully.</summary>
     let succeed

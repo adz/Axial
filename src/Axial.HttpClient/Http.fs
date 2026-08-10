@@ -388,7 +388,7 @@ module Http =
     /// <example><code>request |&gt; Http.sendResult</code></example>
     /// Reads the HTTP service from the environment.
     let service<'env, 'error when 'env :> IHasHttp> : Flow<'env, 'error, IHttp> =
-        Flow.read _.Http
+        Flow.envWith _.Http
 
     let sendResult<'env when 'env :> IHasHttp> (request: HttpRequest) : Flow<'env, HttpError, HttpResponse> =
         flow {

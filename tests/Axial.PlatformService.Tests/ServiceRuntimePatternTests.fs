@@ -95,17 +95,17 @@ module ServiceRuntimePatternTests =
     [<RequireQualifiedAccess>]
     module Random =
         let service<'env, 'error when 'env :> IHasRandom> : Flow<'env, 'error, IRandom> =
-            Flow.read _.Random
+            Flow.envWith _.Random
 
     [<RequireQualifiedAccess>]
     module TodoStore =
         let service<'env, 'error when 'env :> IHasTodoStore> : Flow<'env, 'error, ITodoStore> =
-            Flow.read _.TodoStore
+            Flow.envWith _.TodoStore
 
     [<RequireQualifiedAccess>]
     module Clock =
         let service<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, IClock> =
-            Flow.read _.Clock
+            Flow.envWith _.Clock
 
     type TodoError =
         | EmptyTodoList

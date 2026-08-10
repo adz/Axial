@@ -10,7 +10,7 @@ helpers name service contracts, and layers build the environment at the boundary
 
 Use this order:
 
-1. Use records plus `Flow.read` for most application code.
+1. Use records plus `Flow.envWith` for most application code.
 2. Declare a per-service contract for reusable named services.
 3. Use `Layer` and `Layer.provide` to build environments and own resource cleanup.
 4. Use `ServiceProvider.get` only at .NET host edges where direct `IServiceProvider` lookup is intentional.
@@ -24,7 +24,7 @@ type ApiDeps = { Orders: IOrderRepo; Email: IEmailSender }
 
 let workflow : Flow<ApiDeps, string, unit> =
     flow {
-        let! email = Flow.read _.Email
+        let! email = Flow.envWith _.Email
         do! email.SendConfirmation()
     }
 ```
@@ -41,7 +41,7 @@ type IHasOrders =
 
 let save order : Flow<#IHasOrders, OrderError, unit> =
     flow {
-        let! orders = Flow.read _.OrderRepo
+        let! orders = Flow.envWith _.OrderRepo
         do! orders.Save order
     }
 ```

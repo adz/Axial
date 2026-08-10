@@ -77,7 +77,7 @@ The core layer surface is:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 Layer.succeed value
-Layer.read projection
+Layer.envWith projection
 Layer.fromValueTask provision
 Layer.map mapper layer
 Layer.mapError mapper layer
