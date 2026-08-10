@@ -429,13 +429,17 @@ module Process =
         | Some stage -> Error(ProcessError.StageFailed { Stage = stage; Result = result })
         | None -> Ok result
 
+    /// Reads the process service from the environment.
+    let service<'env, 'error when 'env :> IHasProcess> : Flow<'env, 'error, IProcess> =
+        Flow.read _.Process
+
     /// Runs a process specification in the current Flow runtime.
     /// <example><code>specification |&gt; Process.run</code></example>
     let run<'env when 'env :> IHasProcess> specification : Flow<'env, ProcessError, ProcessResult> =
         if specification.Leaves.Count <> 1 then invalidArg (nameof specification) "A process topology requires one final output stage. Connect merged producers to a consumer first."
         flow {
-            let! service = Flow.read (fun (environment: 'env) -> environment.Process)
-            return! service.Run specification |> Flow.localEnv (fun _ -> ())
+            let! processes = service
+            return! processes.Run specification |> Flow.localEnv (fun _ -> ())
         }
 
     /// Runs a process specification with complete stdout and stderr capture.
