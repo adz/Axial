@@ -33,8 +33,10 @@ let result = Clock.now |> Flow.run BaseRuntime.liveValue
 ```
 
 `BaseRuntime` groups `IClock`, `ILog`, `IRandom`, `IGuid`, and `IEnvironmentVariables`, and implements one contract
-per service, so helpers like `Clock.now` and `EnvironmentVariable.get` work against it directly. Embed it in your own
-record when you need your services alongside the standard ones.
+per service, so helpers like `Clock.now` and `EnvironmentVariable.get` work against it directly. Embedding it
+alongside your own services takes one interface member per service, delegating to wherever `BaseRuntime` ends up
+living in your record — see [Tutorial: Composing Built-in Services](/services/existing-services.html) for the full
+pattern.
 
 ## 2. Take it from a host container
 

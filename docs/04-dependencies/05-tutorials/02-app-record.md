@@ -196,4 +196,7 @@ Move beyond it when:
 - you want startup-time provisioning with failure handling
 - you want scope-owned resources and cleanup
 
-Continue with [Tutorial: Creating Reusable Services](custom-services.html) and then [Tutorial: Layers](/layers/tutorial.html).
+Continue with [Tutorial: Composing Built-in Services](/services/existing-services.html) to add `BaseRuntime`
+alongside dependencies like this one, [Tutorial: Creating Reusable Services](/advanced/custom-services.html) to
+name a contract like `IOrderRepository` the way the built-in services are named, and then
+[Tutorial: Layers](/layers/tutorial.html).

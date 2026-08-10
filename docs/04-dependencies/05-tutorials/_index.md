@@ -10,5 +10,7 @@ environment and composition style that fits the application.
 
 - [Explicit dependencies](explicit-dependencies.html)
 - [Application records](app-record.html)
-- [Existing services](existing-services.html)
-- [Custom services](custom-services.html)
+
+Two further tutorials continue past this point but live elsewhere, alongside the material they depend on:
+[Composing built-in services](/services/existing-services.html) embeds `BaseRuntime` in an app record, and
+[Creating reusable services](/advanced/custom-services.html) defines a named contract of your own.

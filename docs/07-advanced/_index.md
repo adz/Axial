@@ -5,10 +5,10 @@ description: Publishing services from a package, and owning resources whose life
 
 # Advanced
 
-Two topics that most applications never need, and that make the earlier sections harder to read if they sit inline.
+Topics that most applications never need, and that make the earlier sections harder to read if they sit inline.
 
-Neither is required to use Axial. [Dependencies](/dependencies/index.html) covers the model you will actually write
-day to day; this section is for the two places that model runs out.
+None of these are required to use Axial. [Dependencies](/dependencies/index.html) covers the model you will
+actually write day to day; this section is for the places that model runs out, or scales past one application.
 
 ## In this section
 
@@ -16,3 +16,5 @@ day to day; this section is for the two places that model runs out.
    see, and the contract shape that makes it composable.
 2. [Scopes and resources](scopes-and-resources.html) — deterministic cleanup for resources acquired during
    provisioning or execution.
+3. [Tutorial: Creating reusable services](custom-services.html) — define your own named service contract, the way
+   the built-in services are defined, instead of tying a dependency to one record field name.
