@@ -18,7 +18,7 @@ module Policy =
         (operation: 'input -> Result<'output, 'innerError>)
         (mapError: 'innerError -> 'error)
         : Policy<'env, 'error, 'input, 'output> =
-        fun _ input ->
+        fun environment input ->
             match operation input with
             | Ok value -> Ok value
             | Error failure -> Error(mapError failure)
@@ -42,7 +42,7 @@ module Policy =
 
     /// <summary>A policy that returns the input unchanged.</summary>
     let pass : Policy<'env, 'error, 'input, 'input> =
-        fun _ input -> Ok input
+        fun environment input -> Ok input
 
     /// <summary>Composes two policies left to right.</summary>
     let compose
