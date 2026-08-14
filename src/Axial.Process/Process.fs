@@ -561,7 +561,10 @@ module Process =
                                         let proc = new Diagnostics.Process(StartInfo = startInfo redirectOutput redirectError command)
                                         // This is Axial.Process's own live IProcess implementation: it is the explicit,
                                         // mockable boundary around OS process creation.
-                                        if not (proc.Start()) then raise (Exception $"Could not start {command.FileName}.") // axial-allow-effect: process
+                                        // The surrounding try/with (below) catches this and every other exception in this
+                                        // block and converts it into ProcessError.StartFailed/IoFailed - raise here is a
+                                        // local control-flow escape into that translation boundary, not a bypass of it.
+                                        if not (proc.Start()) then raise (Exception $"Could not start {command.FileName}.") // axial-allow-effect: process // axial-allow-raise
                                         processes.Add proc; started.Add(clock.UtcNow())
                                     let copies =
                                         specification.Connections
@@ -608,12 +611,15 @@ module Process =
                                         |> List.toArray
                                     let targets = specification.Connections |> Seq.map (fun (_, target, _) -> target) |> Set.ofSeq
                                     let roots = [ for index in 0 .. processes.Count - 1 do if not (targets.Contains index) then yield index ]
+                                    // These two invalidArg calls signal a spec-building bug (an invariant ValidateTopology
+                                    // should already guarantee), not a runtime process failure; the surrounding try/with
+                                    // still converts them into a typed ProcessError like any other exception here.
                                     let inputWrites : Task array =
                                         match specification.StdIn, roots with
                                         | InputSource.Empty, roots ->
                                             roots |> List.iter (fun index -> processes[index].StandardInput.Close())
                                             Array.empty
-                                        | _, _ :: _ :: _ -> invalidArg "specification" "A primary input source requires exactly one root command."
+                                        | _, _ :: _ :: _ -> invalidArg "specification" "A primary input source requires exactly one root command." // axial-allow-raise
                                         | source, [ root ] ->
                                             [| task {
                                                 let target = processes[root].StandardInput.BaseStream
@@ -632,7 +638,7 @@ module Process =
                                                     do! Async.StartAsTask(produce write, cancellationToken = cancellationToken)
                                                 processes[root].StandardInput.Close()
                                             } :> Task |]
-                                        | _, [] -> invalidArg "specification" "A process topology has no root command."
+                                        | _, [] -> invalidArg "specification" "A process topology has no root command." // axial-allow-raise
 
                                     use observerGate = new SemaphoreSlim(1, 1)
                                     use stdoutGate = new SemaphoreSlim(1, 1)

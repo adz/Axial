@@ -17,7 +17,7 @@
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and Exists('$(_AxialGuardrailsCli)')">
-    <Exec Command="dotnet &quot;$(_AxialGuardrailsCli)&quot; --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsSeverityFlag) AXG001 AXG002 --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
+    <Exec Command="dotnet &quot;$(_AxialGuardrailsCli)&quot; --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsSeverityFlag) AXG001 AXG002 AXG003 --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
   </Target>
 
 </Project>

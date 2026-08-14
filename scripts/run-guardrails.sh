@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Runs the Axial.Guardrails analyzers (AXG001 effect boundary, AXG002 suppression integrity)
-# against every src/Axial* project in Axial.slnx, plus examples/Axial.Examples, minus
-# scripts/guardrails-exclude.txt.
+# Runs the Axial.Guardrails analyzers (AXG001 effect boundary, AXG002 suppression integrity,
+# AXG003 raise/failwith inside flow { }) against every src/Axial* project in Axial.slnx, plus
+# examples/Axial.Examples, minus scripts/guardrails-exclude.txt.
 #
 # Severity:
 #   By default findings fail the run (exit non-zero). Set AXIAL_GUARDRAILS_SEVERITY=warning
@@ -22,7 +22,7 @@ cd "$repo_root"
 
 analyzers_path="artifacts/bin/Axial.Guardrails/debug"
 exclude_file="scripts/guardrails-exclude.txt"
-codes=(AXG001 AXG002)
+codes=(AXG001 AXG002 AXG003)
 
 severity="${AXIAL_GUARDRAILS_SEVERITY:-error}"
 if [ "$severity" = "warning" ]; then

@@ -113,3 +113,19 @@ directive in a checked project is cross-referenced against `EffectCatalog.knownC
 `AXG001` findings it's positioned to cover. `scripts/run-guardrails.sh` and the packaged `Axial.Guardrails`
 MSBuild target both check `AXG001` and `AXG002` together, so a mistyped or orphaned suppression fails the build
 the same way an unmarked effect call does.
+
+## Catching `raise`/`failwith` inside `flow { }`
+
+A `Flow<'env, 'error, 'value>` already has a typed `'error` channel for expected failures. Reaching for
+`raise`/`failwith`/`failwithf`/`invalidOp`/`invalidArg`/`reraise` directly inside a `flow { }` block is the single
+most common mistake when writing Axial code for the first time - it's the instinct carried over from ordinary
+F#/C#, and it silently turns what should be an `'error` value into an unhandled defect (`Cause.Die`) instead,
+which a caller matching on `'error` never sees coming.
+
+`AXG003` (`RaiseInFlow`) flags exactly that: any of those calls found lexically inside a `flow { }` block,
+including inside a nested `if`/`match`/`let`/lambda within it. Prefer `return! Flow.fail err` (or `Flow.die`, if
+the failure genuinely is meant to be an unrecoverable defect). If the call is deliberate - most often because a
+surrounding `try`/`with` inside the same block already converts every exception into a typed error, and `raise` is
+just the local control-flow escape into that boundary - mark it with `// axial-allow-raise` on the flagged line or
+the line above it. There's no category to name; unlike `axial-allow-effect`, this is a single, generic escape
+hatch, so use it only when the raise is genuinely caught and translated nearby, not as a shortcut past the finding.
