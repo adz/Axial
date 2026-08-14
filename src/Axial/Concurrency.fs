@@ -119,10 +119,6 @@ module Semaphore =
             else
                 Execution.ofValue (FlowSemaphore(PermitQueue.create permits)))
 
-    /// <summary>Alias for <c>make</c>.</summary>
-    let create (permits: int) : Flow<'env, 'error, FlowSemaphore> =
-        make permits
-
     /// <summary>Runs a workflow while holding one permit and always releases the permit afterward.</summary>
     let withPermit
         (FlowSemaphore queue)
