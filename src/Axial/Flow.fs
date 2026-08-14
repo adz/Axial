@@ -518,6 +518,7 @@ module Flow =
         addFiberObserver registry.Observer flow
 
     /// <summary>Installs a runtime annotation sink for integration packages.</summary>
+    /// <exclude/>
     [<System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>]
     let withAnnotationSink
         (sink: string -> string -> unit)
@@ -526,6 +527,7 @@ module Flow =
         withRuntime (RuntimeContext.withAnnotationSink sink) flow
 
     /// <summary>Adds a runtime annotation sink, composing with any sink already installed.</summary>
+    /// <exclude/>
     /// <remarks>
     /// Unlike <c>withAnnotationSink</c>, which replaces the ambient sink, this tees annotations to the
     /// existing sink first, so nested telemetry regions and user sinks all receive them. Sinks are guarded:

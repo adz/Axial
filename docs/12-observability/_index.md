@@ -45,17 +45,20 @@ Tracing is **explicit at workflow granularity**. Axial does not span every `flow
 exists where you put one:
 
 ```fsharp
+open System.Diagnostics
 open Axial.Telemetry
+
+let applicationActivitySource = new ActivitySource("Orders.Application")
 
 let placeOrder order =
     flow { (* validate, charge, persist *) }
-    |> Activity.trace "orders.place"
+    |> Activity.traceOn applicationActivitySource "orders.place"
 ```
 
-`Activity.trace` stamps the span with environment identity traits (`IHasRequestId`,
-`IHasCorrelationId`, `IHasTenantId`, `IHasTelemetryTags`), the fiber id, every runtime annotation, and — when
-the workflow settles, so the duration covers asynchronous work — the exit outcome and error/defect tags. The
-full tag vocabulary is documented on the [Telemetry page](/observability/telemetry/index.html).
+`Activity.traceOn` stamps the span with the ambient typed attributes attached through `Axial.Telemetry.Context`, the
+fiber id, every runtime annotation, and — when the workflow settles, so the duration covers asynchronous work — the
+exit outcome and error or defect attributes. The [Telemetry guide](/observability/telemetry/index.html) starts with a
+complete Aspire setup and shows semantic and application-defined attributes.
 
 What you get without per-callsite work:
 
@@ -68,8 +71,9 @@ What you get without per-callsite work:
 
 ## Plugging in OpenTelemetry
 
-Because Axial emits through a standard `ActivitySource`, the OpenTelemetry SDK is the listener — there is no
-adapter to write. Subscribe to the source name `"Axial"` once at the application edge.
+Because Axial emits through standard `ActivitySource` instances, the OpenTelemetry SDK is the listener — there is no
+adapter to write. Use an application-owned source for spans around user workflows, and subscribe to `"Axial"` separately
+for automatic runtime and fiber spans.
 
 In an ASP.NET Core or Generic Host application:
 
@@ -78,12 +82,14 @@ In an ASP.NET Core or Generic Host application:
 // dotnet add package OpenTelemetry.Exporter.OpenTelemetryProtocol
 // dotnet add package OpenTelemetry.Instrumentation.AspNetCore
 
+let applicationActivitySource = new System.Diagnostics.ActivitySource("MyApp")
+
 builder.Services
     .AddOpenTelemetry()
     .ConfigureResource(fun resource -> resource.AddService("my-app") |> ignore)
     .WithTracing(fun tracing ->
         tracing
-            .AddSource("Axial")          // subscribe to Axial's spans
+            .AddSource(applicationActivitySource.Name, "Axial")
             .AddAspNetCoreInstrumentation()   // incoming request spans
             .AddOtlpExporter()                // collector, Jaeger, Tempo, Honeycomb, ...
         |> ignore)
@@ -93,14 +99,17 @@ builder.Services
 In a console application or script, build the provider directly and keep it alive for the process lifetime:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+open System.Diagnostics
 open OpenTelemetry
 open OpenTelemetry.Resources
 open OpenTelemetry.Trace
 
+use applicationActivitySource = new ActivitySource("MyScript")
+
 use tracerProvider =
     Sdk.CreateTracerProviderBuilder()
         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("my-script"))
-        .AddSource("Axial")
+        .AddSource(applicationActivitySource.Name, "Axial")
         .AddOtlpExporter()   // or .AddConsoleExporter() to print spans locally
         .Build()
 ```
@@ -121,14 +130,15 @@ Sampling is the host's knob: the SDK samples everything by default, and somethin
 `.SetSampler(TraceIdRatioBasedSampler 0.1)` scales that back in production. When the sampler declines,
 Axial's `StartActivity` returns `null` and the span site costs almost nothing.
 
-For a quick local look without infrastructure, use `.AddConsoleExporter()`, or run
-`docker run -p 4317:4317 -p 16686:16686 jaegertracing/all-in-one` and browse traces at `localhost:16686`.
+For a quick local look without infrastructure, use `.AddConsoleExporter()`. For a complete runnable setup, the
+[Axial.ReferenceApp](https://github.com/adz/Axial/tree/main/examples/Axial.ReferenceApp) starts an Aspire dashboard and
+OTLP receiver and provides an endpoint that generates every Axial observability signal.
 
 ## Correlation: how the signals join up
 
-- **Environment traits → span tags.** `Activity.trace` reads `IHasRequestId`, `IHasCorrelationId`,
-  `IHasTenantId`, and the extensible `IHasTelemetryTags` from the workflow environment and stamps them as
-  tags, so spans carry your identity model without manual tagging.
+- **Telemetry context → span attributes.** `Context.withEndUserId`, `Context.withAttribute`, and
+  `Context.withAttributes` scope typed, searchable attributes around a workflow. Both the .NET and JavaScript adapters
+  consume the same ambient context; no environment interfaces or runtime field discovery are involved.
 - **Annotations → every observer.** `Flow.annotate "payment.attempt" attemptId` is scoped runtime metadata,
   not a tracing call: `Activity.trace` tees annotations onto the active span as
   `axial.flow.annotation.*` tags, and custom sinks (`Flow.addAnnotationSink`) can route the same values into
@@ -218,19 +228,20 @@ current) — useful just before a timeout fires or from a slow-request handler, 
 ## The Aspire dashboard
 
 Nothing Aspire-specific is required: Aspire's dashboard is an OTLP backend, and `AddServiceDefaults()` in an
-Aspire service project already wires the OpenTelemetry SDK. Add the two Axial sources to the pipeline —
+Aspire service project already wires the OpenTelemetry SDK. Add your application source, Axial's runtime source, and
+Axial's meter to the pipeline —
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 builder.Services
     .AddOpenTelemetry()
-    .WithTracing(fun tracing -> tracing.AddSource("Axial") |> ignore)
+    .WithTracing(fun tracing -> tracing.AddSource(applicationActivitySource.Name, "Axial") |> ignore)
     .WithMetrics(fun metrics -> metrics.AddMeter("Axial") |> ignore)
 |> ignore
 ```
 
 — and the dashboard shows:
 
-- **Traces**: workflow spans from `Activity.trace`, and with `FiberTelemetry.observeWithSpans` a span per
+- **Traces**: application workflow spans from `Activity.traceOn`, and with `FiberTelemetry.observeWithSpans` a span per
   forked fiber (named fibers display as `axial.flow.fiber <name>`), nested under the ASP.NET Core request
   span. Fiber dump events from `FiberDumpTelemetry.record` appear on the span that recorded them.
 - **Metrics**: the `axial.flow.fibers.*` instruments as live charts — watch `fibers.live` breathe under
@@ -243,14 +254,14 @@ The two telemetry packages join into one distributed trace through the W3C `trac
 package does the propagation itself — that is the OpenTelemetry SDKs' job on both ends:
 
 1. The browser app bootstraps OTel JS (`WebTracerProvider`, `ZoneContextManager`, an OTLP exporter, and
-   `@opentelemetry/instrumentation-fetch`), then `Otel.install`.
+   `@opentelemetry/instrumentation-fetch`), then `Otel.installNamed api "Orders.Web"`.
 2. A user action runs `submitOrder |> Otel.trace "orders.submit"` — a span starts and becomes the active
    context.
 3. The workflow calls the backend with `fetch`; the fetch instrumentation opens a client span under it and
    injects `traceparent` into the request.
 4. ASP.NET Core reads `traceparent` natively, so the request span is a remote child of the browser's; with
    `.AddAspNetCoreInstrumentation()` it is recorded.
-5. The handler runs `placeOrder |> Activity.trace "orders.place"`, nesting under the request span via
+5. The handler runs `placeOrder |> Activity.traceOn applicationActivitySource "orders.place"`, nesting under the request span via
    `Activity.Current`.
 
 Both ends export to the same collector, and the trace view shows one tree —
@@ -278,15 +289,15 @@ Hosting turns them into MEL logs.
 `Axial.Telemetry.JavaScript`, which emits through OpenTelemetry JS instead — in Node and the browser
 alike — with the same span semantics and `axial.flow.*` tag vocabulary. It never imports the npm module
 itself: the application registers the OpenTelemetry JS SDK (exporter and context manager) and hands the
-`@opentelemetry/api` object to `Otel.install` once at the edge, the same host/library split as
-`.AddSource("Axial")` on .NET:
+`@opentelemetry/api` object to `Otel.installNamed` once at the edge, the same host/library split as registering an
+application `ActivitySource` on .NET:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 open Fable.Core.JsInterop
 open Axial.Telemetry.JavaScript
 
 // after registering the OpenTelemetry JS SDK (NodeSDK / WebTracerProvider)
-Otel.install (importAll "@opentelemetry/api")
+Otel.installNamed (importAll "@opentelemetry/api") "Orders.Web"
 
 application
 |> Otel.trace "orders.place"      // the JS counterpart of Activity.trace

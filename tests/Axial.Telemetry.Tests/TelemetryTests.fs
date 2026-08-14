@@ -6,21 +6,6 @@ open Axial.Telemetry
 open Swensen.Unquote
 open Xunit
 
-type MockTelemetryEnv =
-    {
-        RequestId: string
-        CorrelationId: string option
-    }
-    interface IHasRequestId with member this.RequestId = this.RequestId
-    interface IHasCorrelationId with member this.CorrelationId = this.CorrelationId
-
-type TaggedEnv =
-    {
-        SessionId: string
-    }
-    interface IHasTelemetryTags with
-        member this.TelemetryTags = [ "app.session_id", this.SessionId; "app.region", "eu-west" ]
-
 module TelemetryTests =
     /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
     /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
@@ -32,9 +17,10 @@ module TelemetryTests =
         }
 
     [<Fact>]
-    let ``Activity.trace: automatically maps metadata traits to tags`` () =
-        let env = { RequestId = "req-123"; CorrelationId = Some "corr-456" }
-        
+    let ``Activity.trace: exports ambient context and runtime annotations`` () =
+        let requestId = AttributeKey.string "app.request.id"
+        let correlationId = AttributeKey.string "app.correlation.id"
+
         let listener = new ActivityListener()
         listener.ShouldListenTo <- (fun source -> source.Name = "Axial")
         listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
@@ -53,20 +39,40 @@ module TelemetryTests =
             |> Flow.annotate "deviceId" "device-1"
             |> Flow.traceId "trace-1"
             |> Activity.trace "test-op"
+            |> Context.withAttributes [
+                Context.attribute requestId "req-123"
+                Context.attribute correlationId "corr-456"
+            ]
 
-        let result = Flow.runSync env workflow
-        
+        let result = Flow.runSync () workflow
+
         test <@ result = Exit.Success 42 @>
-        test <@ capturedTags.ContainsKey("axial.flow.request_id") @>
-        test <@ capturedTags["axial.flow.request_id"] = "req-123" @>
-        test <@ capturedTags.ContainsKey("axial.flow.correlation_id") @>
-        test <@ capturedTags["axial.flow.correlation_id"] = "corr-456" @>
+        test <@ capturedTags["app.request.id"] = "req-123" @>
+        test <@ capturedTags["app.correlation.id"] = "corr-456" @>
         test <@ capturedTags.ContainsKey("axial.flow.annotation.deviceId") @>
         test <@ capturedTags["axial.flow.annotation.deviceId"] = "device-1" @>
         test <@ capturedTags.ContainsKey("axial.flow.annotation.trace_id") @>
         test <@ capturedTags["axial.flow.annotation.trace_id"] = "trace-1" @>
 
         listener.Dispose()
+
+    [<Fact>]
+    let ``Activity.traceOn: emits application spans from the supplied source`` () =
+        use applicationSource = new ActivitySource("Example.Checkout")
+        use listener = new ActivityListener()
+        listener.ShouldListenTo <- (fun source -> source.Name = applicationSource.Name)
+        listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
+
+        let mutable capturedSource = None
+        listener.ActivityStopped <- (fun activity -> capturedSource <- Some activity.Source.Name)
+        ActivitySource.AddActivityListener(listener)
+
+        Flow.succeed 42
+        |> Activity.traceOn applicationSource "checkout.submit"
+        |> Flow.runSync ()
+        |> ignore
+
+        test <@ capturedSource = Some "Example.Checkout" @>
 
     let private captureSpans (action: unit -> unit) =
         use listener = new ActivityListener()
@@ -162,19 +168,26 @@ module TelemetryTests =
         | other -> failwithf "Expected one composite-op span, got %A" other
 
     [<Fact>]
-    let ``Activity.trace: applies IHasTelemetryTags from the environment`` () =
-        let spans =
-            captureSpans (fun () ->
-                (Flow.succeed 1 : Flow<TaggedEnv, string, int>)
-                |> Activity.trace "tagged-op"
-                |> Flow.runSync { SessionId = "session-9" }
-                |> ignore)
+    let ``Activity.trace: exports typed attributes added inside its region`` () =
+        let retryCount = AttributeKey.int64 "app.retry.count"
+        let mutable capturedValue = None
 
-        match spans |> List.filter (fun (name, _, _, _) -> name = "tagged-op") with
-        | [ _, _, _, tags ] ->
-            test <@ tags["app.session_id"] = "session-9" @>
-            test <@ tags["app.region"] = "eu-west" @>
-        | other -> failwithf "Expected one tagged-op span, got %A" other
+        use listener = new ActivityListener()
+        listener.ShouldListenTo <- (fun source -> source.Name = "Axial")
+        listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
+        listener.ActivityStopped <- (fun activity ->
+            capturedValue <-
+                activity.TagObjects
+                |> Seq.tryPick (fun pair -> if pair.Key = "app.retry.count" then Some pair.Value else None))
+        ActivitySource.AddActivityListener(listener)
+
+        (Flow.succeed 1 : Flow<unit, string, int>)
+        |> Context.withAttribute (Context.attribute retryCount 3L)
+        |> Activity.trace "tagged-op"
+        |> Flow.runSync ()
+        |> ignore
+
+        test <@ capturedValue = Some(box 3L) @>
 
     [<Fact>]
     let ``Activity.trace: nested traces both receive annotations set in the inner region`` () =

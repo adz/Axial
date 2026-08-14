@@ -2,11 +2,64 @@ namespace Axial.Tests
 
 open Axial
 open Axial.Layers
+open Axial.Telemetry
 open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
 
 module FlowRuntimeMetadataTests =
+    [<Fact>]
+    let ``Telemetry context supports typed custom and semantic attributes`` () =
+        let retryCount = AttributeKey.int64 "example.retry.count"
+
+        let workflow =
+            Context.runtime
+            |> Flow.map (fun context ->
+                Context.tryFind Context.Keys.endUserId context,
+                Context.tryFind retryCount context)
+            |> Context.withEndUserId "user-42"
+            |> Context.withAttribute (Context.attribute retryCount 3L)
+
+        let result = Flow.runSync () workflow
+
+        test <@ result = Exit.Success (Some "user-42", Some 3L) @>
+
+    [<Fact>]
+    let ``Telemetry context overrides nested attributes and restores the outer context`` () =
+        let scope = AttributeKey.string "example.scope"
+        let readScope = Context.runtime |> Flow.map (Context.tryFind scope)
+        let inner = readScope |> Context.withAttribute (Context.attribute scope "inner")
+
+        let workflow =
+            flow {
+                let! before = readScope
+                let! during = inner
+                let! after = readScope
+                return before, during, after
+            }
+            |> Context.withAttribute (Context.attribute scope "outer")
+
+        let result = Flow.runSync () workflow
+
+        test <@ result = Exit.Success (Some "outer", Some "inner", Some "outer") @>
+
+    [<Fact>]
+    let ``Forked fibers inherit the telemetry context present at the fork`` () =
+        let tenantId = AttributeKey.string "example.tenant.id"
+
+        let workflow =
+            flow {
+                let! fiber = Flow.fork Context.runtime
+                return! Flow.join fiber
+            }
+            |> Context.withAttribute (Context.attribute tenantId "tenant-7")
+
+        let result = Flow.runSync () workflow
+
+        match result with
+        | Exit.Success context -> test <@ Context.tryFind tenantId context = Some "tenant-7" @>
+        | other -> failwithf "Expected a successful context snapshot, got %A" other
+
     [<Fact>]
     let ``Flow annotations and trace id are visible inside the annotated flow`` () =
         let workflow =

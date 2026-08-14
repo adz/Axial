@@ -33,7 +33,8 @@ curl http://localhost:5080/observability/demo
 The dashboard then shows:
 
 - **Traces:** an ASP.NET Core request span containing `observability.demo`, plus `demo-fast` and `demo-slow` named
-  fiber spans. The Flow span carries the `axial.flow.annotation.demo.kind` attribute and a fiber-dump event.
+  fiber spans. The application-owned `observability.demo` span carries both the typed `example.demo.kind` context
+  attribute and the `axial.flow.annotation.demo.kind` runtime annotation, plus a fiber-dump event.
 - **Structured logs:** the `Running observability demo` entry has `DemoKind` and `ExpectedFibers` properties. Messages
   emitted inside the workflow through `Log.info` use the `Axial.ReferenceApp.Flow` category and correlate through the
   active trace and span IDs.
@@ -70,7 +71,8 @@ Data is written to `.axial-reference-data` unless `AXIAL_REFERENCE_DATA` names a
 1. `Domain.fs` defines private refined values and business transitions.
 2. `Contracts.fs` defines schemas, version migration, fallible domain mapping, and production admission.
 3. `Application.fs` defines persistence and Flow use cases over an explicit store, `BaseRuntime`, and `IFileSystem`.
-4. `Program.fs` adapts CLI commands, configures OpenTelemetry, and uses `Axial.Hosting.AspNetCore` for routes, JSON,
+4. `Program.fs` adapts CLI commands, configures the `Axial.ReferenceApp` application activity source alongside Axial's
+   runtime source and meter, exports them through OpenTelemetry, and uses `Axial.Hosting.AspNetCore` for routes, JSON,
    forms, endpoint Flow, problem details, compiled responses, schema-derived OpenAPI, inspection, and retained-input
    redisplay.
 5. `apphost.cs` is the single-file Aspire orchestration entry point.

@@ -25,7 +25,7 @@ module private ResultFlow =
         Result.mapError mapper result
 
 [<EditorBrowsable(EditorBrowsableState.Never)>]
-module OptionFlow =
+module internal OptionFlow =
     let toUnitResult (value: 'value option) : Result<'value, unit> =
         match value with
         | Some innerValue -> Ok innerValue

@@ -539,7 +539,10 @@ module ColdTask =
         awaitStartedTask startedTask
 
     /// <summary>Executes the cold task with the supplied cancellation token.</summary>
-    let run (cancellationToken: CancellationToken) (ColdTask operation: ColdTask<'value>) : Task<'value> =
+    /// <param name="cancellationToken">The token passed to the cold task factory.</param>
+    /// <param name="coldTask">The cold task to execute.</param>
+    let run (cancellationToken: CancellationToken) (coldTask: ColdTask<'value>) : Task<'value> =
+        let (ColdTask operation) = coldTask
         operation cancellationToken
 #endif
 
@@ -622,6 +625,8 @@ type internal RuntimeContext =
         Scope: Scope
         Annotations: Map<string, string>
         AnnotationSink: string -> string -> unit
+        TelemetryContext: Axial.Telemetry.TelemetryContext
+        TelemetrySink: Axial.Telemetry.Attribute -> unit
         FiberId: FiberId
         Observer: FiberObserver
     }
@@ -634,6 +639,8 @@ module internal RuntimeContext =
             Scope = scope
             Annotations = Map.empty
             AnnotationSink = fun _ _ -> ()
+            TelemetryContext = Axial.Telemetry.TelemetryContext Map.empty
+            TelemetrySink = ignore
             FiberId = FiberId.next ()
             Observer = FiberObserver.none
         }
@@ -661,6 +668,21 @@ module internal RuntimeContext =
                 fun name value ->
                     (try previous name value with _ -> ())
                     (try sink name value with _ -> ()) }
+
+    let withTelemetryContext (context: Axial.Telemetry.TelemetryContext) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with TelemetryContext = context }
+
+    let withTelemetrySink (sink: Axial.Telemetry.Attribute -> unit) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with TelemetrySink = sink }
+
+    let withComposedTelemetrySink (sink: Axial.Telemetry.Attribute -> unit) (runtime: RuntimeContext) : RuntimeContext =
+        let previous = runtime.TelemetrySink
+
+        { runtime with
+            TelemetrySink =
+                fun attribute ->
+                    (try previous attribute with _ -> ())
+                    (try sink attribute with _ -> ()) }
 
     let withFiberId (fiberId: FiberId) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with FiberId = fiberId }

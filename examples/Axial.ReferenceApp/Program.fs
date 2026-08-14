@@ -3,6 +3,7 @@ module Axial.ReferenceApp.Program
 open Reified.Data
 
 open System
+open System.Diagnostics
 open System.Net
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
@@ -27,6 +28,9 @@ open Axial.PlatformService
 open Axial.Hosting
 open Axial.Telemetry
 open Axial.ReferenceApp
+
+let private applicationActivitySource = new ActivitySource("Axial.ReferenceApp")
+let private demoKindAttribute = AttributeKey.string "example.demo.kind"
 
 let private renderError = function
     | AppError.InvalidInput errors ->
@@ -172,7 +176,7 @@ let buildWebApp (baseEnvironment: AppEnv) (args: string array) =
         .ConfigureResource(fun resource -> resource.AddService("axial-reference-app") |> ignore)
         .WithTracing(fun tracing ->
             tracing
-                .AddSource("Axial")
+                .AddSource("Axial", applicationActivitySource.Name)
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddOtlpExporter()
@@ -212,7 +216,7 @@ let buildWebApp (baseEnvironment: AppEnv) (args: string array) =
 
     let endpoint name application =
         application
-        |> Activity.traceWith (fun error -> string error) name
+        |> Activity.traceWithSource applicationActivitySource (fun error -> string error) name
         |> Flow.withFiberRegistry registry
         |> FiberTelemetry.observeWithSpans
         |> FiberMetrics.observe
@@ -388,7 +392,8 @@ input, select, button {{ padding: .35rem; }} code {{ background: #eee; padding: 
                 do! Log.info "Finished the observability demonstration"
             }
             |> Flow.annotate "demo.kind" "concurrent-work"
-            |> Activity.traceWith renderError "observability.demo"
+            |> Context.withAttribute (Context.attribute demoKindAttribute "concurrent-work")
+            |> Activity.traceWithSource applicationActivitySource renderError "observability.demo"
             |> Flow.withFiberRegistry registry
             |> FiberTelemetry.observeWithSpans
             |> FiberMetrics.observe

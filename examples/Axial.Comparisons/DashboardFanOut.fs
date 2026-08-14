@@ -13,6 +13,7 @@
 module Axial.Comparisons.DashboardFanOut
 
 open System
+open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
 open Axial
@@ -23,6 +24,8 @@ open Axial.Telemetry
 type Account = { Id: string; Name: string }
 type Order = { Id: string; Total: decimal }
 type Recommendation = { Sku: string }
+
+let private activitySource = new ActivitySource("Axial.Comparisons")
 
 type PageError =
     | AccountUnavailable of string
@@ -148,7 +151,7 @@ module WithFlow =
         Flow.zipPar (Flow.zipPar account recent) recommended
         |> Flow.map (fun ((account, recent), recommended) ->
             { Account = account; Orders = recent; Recommendations = recommended })
-        |> Activity.trace "dashboard.load"
+        |> Activity.traceOn activitySource "dashboard.load"
 
     /// First-success semantics are a different contract, so they get a different composition:
     /// race two equivalent sources and take whichever answers first; the loser is interrupted.

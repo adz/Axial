@@ -48,7 +48,7 @@ title: Axial
 <div class="lede">
 <p>Cancellation, dependencies, and expected failures stop being extra arguments the caller has to thread through. They become part of the type.</p>
 </div>
-<p>Pass a workflow a plain record and get typed failures, cancellation, resource scopes, and structured concurrency. There is no container and no registration step. Axial adds retries, streams, STM, operational services, hosting, and telemetry over the same workflow model.</p>
+<p>Pass a workflow a plain record and get typed failures, cancellation, resource scopes, and structured concurrency. There is no container and no registration step. Axial adds retries, streams, operational services, hosting, and telemetry over the same workflow model.</p>
 <p><a class="btn btn-primary" href="getting-started/index.html">Run your first workflow</a></p>
 <p class="docs-home-note">Axial is pre-1.0. Its API can change before the first stable release.</p>
 </div>

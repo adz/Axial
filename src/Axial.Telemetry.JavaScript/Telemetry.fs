@@ -16,7 +16,7 @@ open Axial
 
 /// An opaque OpenTelemetry JS `Context`. Values are only ever obtained from and passed back to the api.
 [<AllowNullLiteral>]
-type Context =
+type OtelContext =
     interface
     end
 
@@ -24,7 +24,7 @@ type Context =
 [<AllowNullLiteral>]
 type Span =
     /// Sets one string attribute on the span.
-    abstract setAttribute: key: string * value: string -> unit
+    abstract setAttribute: key: string * value: obj -> unit
     /// Sets the span status; the object is `{ code: SpanStatusCode; message: string }`.
     abstract setStatus: status: obj -> unit
     /// Returns the span's `SpanContext`, used for links.
@@ -36,7 +36,7 @@ type Span =
 [<AllowNullLiteral>]
 type Tracer =
     /// Starts a span with explicit options and parent context. Options may be an empty object.
-    abstract startSpan: name: string * options: obj * context: Context -> Span
+    abstract startSpan: name: string * options: obj * context: OtelContext -> Span
 
 /// The subset of the OpenTelemetry JS `trace` api namespace this package calls.
 [<AllowNullLiteral>]
@@ -44,16 +44,16 @@ type TraceApi =
     /// Returns a tracer for the given instrumentation scope name.
     abstract getTracer: name: string -> Tracer
     /// Returns a new context with the given span set as the active span.
-    abstract setSpan: context: Context * span: Span -> Context
+    abstract setSpan: context: OtelContext * span: Span -> OtelContext
 
 /// The subset of the OpenTelemetry JS `context` api namespace this package calls.
 [<AllowNullLiteral>]
 type ContextApi =
     /// Returns the currently active context.
-    abstract active: unit -> Context
+    abstract active: unit -> OtelContext
     /// Runs the function with the given context active. Cross-await propagation requires the
     /// application's context manager (Node `AsyncLocalStorageContextManager`, browser `ZoneContextManager`).
-    abstract ``with``: context: Context * operation: (unit -> 'result) -> 'result
+    abstract ``with``: context: OtelContext * operation: (unit -> 'result) -> 'result
 
 /// The `@opentelemetry/api` module surface this package consumes: its `trace` and `context` namespaces.
 [<AllowNullLiteral>]
@@ -74,7 +74,7 @@ module internal JsTags =
         span.setStatus (box ({| code = code; message = message |}: SpanStatus))
 
     let writer (span: Span) : SpanWriter =
-        { SetTag = fun name value -> span.setAttribute (name, value)
+        { SetTag = fun name value -> span.setAttribute (name, box value)
           SetStatus =
             function
             | SpanStatusOutcome.Ok -> setStatus span 1 ""
@@ -95,62 +95,19 @@ module internal JsTags =
     let stampExit (renderError: 'error -> string) (span: Span) (exit: Exit<'value, 'error>) =
         SpanConventions.stampExit renderError (writer span) exit
 
-#if FABLE_COMPILER
-    // Interface type tests are erased in Fable JavaScript, so the environment traits are read
-    // structurally: Fable attaches interface members by name, `string option` erases to
-    // `string | undefined`, and a missing member reads as `undefined`. A string-valued member with a
-    // trait's name therefore tags the span exactly as the interface would on .NET.
-    let tagEnvironment (span: Span) (environment: 'env) =
-        let env: obj = box environment
+    let attributeValue =
+        function
+        | Axial.Telemetry.AttributeValue.StringValue value -> box value
+        | Axial.Telemetry.AttributeValue.BooleanValue value -> box value
+        | Axial.Telemetry.AttributeValue.IntegerValue value -> box value
+        | Axial.Telemetry.AttributeValue.FloatValue value -> box value
+        | Axial.Telemetry.AttributeValue.StringValues value -> box (List.toArray value)
+        | Axial.Telemetry.AttributeValue.BooleanValues value -> box (List.toArray value)
+        | Axial.Telemetry.AttributeValue.IntegerValues value -> box (List.toArray value)
+        | Axial.Telemetry.AttributeValue.FloatValues value -> box (List.toArray value)
 
-        if not (isNull env) then
-            let stringMember (name: string) : string option =
-                let value: obj = Fable.Core.JsInterop.emitJsExpr (env, name) "$0[$1]"
-
-                match value with
-                | :? string as text -> Some text
-                | _ -> None
-
-            stringMember "RequestId"
-            |> Option.iter (fun id -> span.setAttribute ("axial.flow.request_id", id))
-
-            stringMember "CorrelationId"
-            |> Option.iter (fun id -> span.setAttribute ("axial.flow.correlation_id", id))
-
-            stringMember "TenantId"
-            |> Option.iter (fun id -> span.setAttribute ("axial.flow.tenant_id", id))
-
-            let tags: obj = Fable.Core.JsInterop.emitJsExpr env "$0['TelemetryTags']"
-
-            if Fable.Core.JsInterop.emitJsExpr tags "$0 != null" then
-                for tagName, tagValue in unbox<(string * string) list> tags do
-                    span.setAttribute (tagName, tagValue)
-#else
-    let tagEnvironment (span: Span) (environment: 'env) =
-        match box environment with
-        | :? IHasRequestId as req -> span.setAttribute ("axial.flow.request_id", req.RequestId)
-        | _ -> ()
-
-        match box environment with
-        | :? IHasCorrelationId as corr ->
-            match corr.CorrelationId with
-            | Some id -> span.setAttribute ("axial.flow.correlation_id", id)
-            | None -> ()
-        | _ -> ()
-
-        match box environment with
-        | :? IHasTenantId as tenant ->
-            match tenant.TenantId with
-            | Some id -> span.setAttribute ("axial.flow.tenant_id", id)
-            | None -> ()
-        | _ -> ()
-
-        match box environment with
-        | :? IHasTelemetryTags as tagged ->
-            for tagName, tagValue in tagged.TelemetryTags do
-                span.setAttribute (tagName, tagValue)
-        | _ -> ()
-#endif
+    let setAttribute (span: Span) (attribute: Axial.Telemetry.Attribute) =
+        span.setAttribute (attribute.Key, attributeValue attribute.AttributeValue)
 
 /// <summary>
 /// OpenTelemetry JS tracing for Axial workflows compiled with Fable: the JavaScript counterpart of the
@@ -161,19 +118,28 @@ module Otel =
     let mutable private installed: (OpenTelemetryApi * Tracer) option = None
 
     /// <summary>
-    /// Installs a tracer obtained from the supplied api's <c>getTracer</c> under the instrumentation
-    /// scope name <c>Axial</c>. Call once at the application edge, after the OpenTelemetry JS SDK
-    /// (and its context manager) is registered. JavaScript targets only.
+    /// Installs a tracer under the supplied instrumentation scope name. Use the application's scope name for spans
+    /// that describe application behavior. Call once at the application edge, after the OpenTelemetry JS SDK and its
+    /// context manager are registered. JavaScript targets only.
     /// </summary>
     /// <param name="api">The <c>@opentelemetry/api</c> module object.</param>
-    let install (api: OpenTelemetryApi) : unit =
+    /// <param name="instrumentationScopeName">The application instrumentation scope name.</param>
+    let installNamed (api: OpenTelemetryApi) (instrumentationScopeName: string) : unit =
 #if FABLE_COMPILER
-        installed <- Some (api, api.trace.getTracer "Axial")
+        installed <- Some (api, api.trace.getTracer instrumentationScopeName)
 #else
         ignore api
+        ignore instrumentationScopeName
         raise (NotSupportedException
             "Axial.Telemetry.JavaScript targets Fable JavaScript only. On .NET, use Axial.Telemetry.")
 #endif
+
+    /// <summary>
+    /// Installs a tracer under Axial's default instrumentation scope. Prefer <c>installNamed</c> when traced flows
+    /// represent application behavior.
+    /// </summary>
+    /// <param name="api">The <c>@opentelemetry/api</c> module object.</param>
+    let install (api: OpenTelemetryApi) : unit = installNamed api "Axial"
 
     /// <summary>Installs an explicit tracer, for a custom instrumentation scope name. JavaScript targets only.</summary>
     /// <param name="api">The <c>@opentelemetry/api</c> module object.</param>
@@ -195,8 +161,8 @@ module Otel =
 
 #if FABLE_COMPILER
     /// <summary>
-    /// Wraps a flow in a new OpenTelemetry span that covers the workflow's execution, maps metadata traits
-    /// from the environment to attributes, and stamps the final exit onto the span.
+    /// Wraps a flow in a new OpenTelemetry span that covers the workflow's execution, exports the ambient telemetry
+    /// context, and stamps the final exit onto the span.
     /// </summary>
     /// <remarks>
     /// The semantics mirror the .NET package's <c>Activity.traceWith</c>: the span ends when the workflow
@@ -227,12 +193,12 @@ module Otel =
                 // sink are all captured now. The span itself starts when the returned async runs (so
                 // its duration covers the execution), and tags arriving before then are buffered.
                 let runtime = RuntimeState.current ()
-                let pendingTags = ResizeArray<string * string> ()
+                let pendingTags = ResizeArray<string * obj> ()
                 let mutable activeSpan: Span option = None
 
                 let setTag key value =
                     match activeSpan with
-                    | Some span -> span.setAttribute (key, value)
+                    | Some span -> span.setAttribute (key, box value)
                     | None -> pendingTags.Add (key, value)
 
                 setTag "axial.flow.fiber.id" (string runtime.FiberId.Value)
@@ -240,10 +206,17 @@ module Otel =
                 for KeyValue(annotationName, value) in runtime.Annotations do
                     setTag ("axial.flow.annotation." + annotationName) value
 
+                for attribute in Axial.Telemetry.Context.toSeq runtime.TelemetryContext do
+                    pendingTags.Add(attribute.Key, JsTags.attributeValue attribute.AttributeValue)
+
                 let sinkRuntime =
                     runtime
                     |> RuntimeContext.withComposedAnnotationSink (fun annotationName value ->
                         setTag ("axial.flow.annotation." + annotationName) value)
+                    |> RuntimeContext.withComposedTelemetrySink (fun attribute ->
+                        match activeSpan with
+                        | Some span -> JsTags.setAttribute span attribute
+                        | None -> pendingTags.Add(attribute.Key, JsTags.attributeValue attribute.AttributeValue))
 
                 let causeOfThrown (error: exn) : Cause<'error> =
                     match error with
@@ -262,8 +235,6 @@ module Otel =
                     let parent = api.context.active ()
                     let span = tracer.startSpan (name, obj (), parent)
                     activeSpan <- Some span
-                    JsTags.tagEnvironment span environment
-
                     for key, value in pendingTags do
                         span.setAttribute (key, value)
 
@@ -321,14 +292,14 @@ module Otel =
 [<RequireQualifiedAccess>]
 module FiberTelemetry =
     let private tagMetadata (span: Span) (metadata: FiberMetadata) =
-        span.setAttribute ("axial.flow.fiber.id", string metadata.Id.Value)
+        span.setAttribute ("axial.flow.fiber.id", box (string metadata.Id.Value))
 
         match metadata.ParentId with
-        | Some parentId -> span.setAttribute ("axial.flow.fiber.parent_id", string parentId.Value)
+        | Some parentId -> span.setAttribute ("axial.flow.fiber.parent_id", box (string parentId.Value))
         | None -> ()
 
-        span.setAttribute ("axial.flow.fiber.started_at", metadata.StartedAt.ToString "O")
-        span.setAttribute ("axial.flow.fiber.status", string metadata.Status)
+        span.setAttribute ("axial.flow.fiber.started_at", box (metadata.StartedAt.ToString "O"))
+        span.setAttribute ("axial.flow.fiber.status", box (string metadata.Status))
 
     /// <summary>
     /// A fiber observer that records fiber defects as spans: every fiber that settles with a defect

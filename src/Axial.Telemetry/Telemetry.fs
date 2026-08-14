@@ -6,6 +6,20 @@ open Axial.Telemetry.Shared
 
 /// The `Activity` adapter for the shared span vocabulary in `Axial.Telemetry.Shared`.
 module internal Tags =
+    let setAttribute (activity: Activity) (attribute: Attribute) =
+        let value: obj =
+            match attribute.AttributeValue with
+            | AttributeValue.StringValue value -> box value
+            | AttributeValue.BooleanValue value -> box value
+            | AttributeValue.IntegerValue value -> box value
+            | AttributeValue.FloatValue value -> box value
+            | AttributeValue.StringValues value -> box (List.toArray value)
+            | AttributeValue.BooleanValues value -> box (List.toArray value)
+            | AttributeValue.IntegerValues value -> box (List.toArray value)
+            | AttributeValue.FloatValues value -> box (List.toArray value)
+
+        activity.SetTag(attribute.Key, value) |> ignore
+
     let writer (activity: Activity) : SpanWriter =
         { SetTag = fun name value -> activity.SetTag(name, value) |> ignore
           SetStatus =
@@ -27,52 +41,36 @@ module Activity =
     let source = new ActivitySource("Axial")
 
     /// <summary>
-    /// Wraps a flow in a new activity that spans the workflow's execution, maps metadata traits from the
-    /// environment to tags, and stamps the final exit onto the span.
+    /// Wraps a flow in a new activity from the supplied application-owned source, exports the ambient telemetry
+    /// context, and stamps the final exit onto the span.
     /// </summary>
     /// <remarks>
     /// The activity stops when the workflow settles, so span duration covers asynchronous work. On settle the
     /// span receives <c>ActivityStatusCode</c> from the exit, <c>axial.flow.outcome</c>
     /// (<c>success</c>/<c>fail</c>/<c>die</c>/<c>interrupt</c>), <c>axial.flow.error</c> for typed errors,
     /// OpenTelemetry <c>exception.*</c> tags for defects, <c>axial.flow.interrupted</c> for cancellation, and
-    /// <c>axial.flow.cause</c> with the pretty-printed tree for composite causes. Typed errors are rendered
-    /// with <c>string</c>; use <c>traceWith</c> to supply a custom renderer.
+    /// <c>axial.flow.cause</c> with the pretty-printed tree for composite causes. Register the source name with
+    /// the host's OpenTelemetry tracing pipeline. Axial's automatic fiber spans continue to use the
+    /// <c>Axial</c> source because they describe Axial runtime behavior.
     /// </remarks>
+    /// <param name="activitySource">The application-owned activity source that emits the span.</param>
+    /// <param name="renderError">Renders typed errors for the <c>axial.flow.error</c> attribute.</param>
     /// <param name="name">The name of the activity.</param>
-    /// <param name="flow">The flow to trace.</param>
+    /// <param name="sourceFlow">The flow to trace.</param>
     /// <returns>A flow that executes within the activity span.</returns>
-    let traceWith
+    let traceWithSource
+        (activitySource: ActivitySource)
         (renderError: 'error -> string)
         (name: string)
         (sourceFlow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun env cancellationToken ->
-            let activity = source.StartActivity(name)
+            let activity = activitySource.StartActivity(name)
 
             if not (isNull activity) then
-                match box env with
-                | :? IHasRequestId as req -> activity.SetTag("axial.flow.request_id", req.RequestId) |> ignore
-                | _ -> ()
-
-                match box env with
-                | :? IHasCorrelationId as corr ->
-                    match corr.CorrelationId with
-                    | Some id -> activity.SetTag("axial.flow.correlation_id", id) |> ignore
-                    | None -> ()
-                | _ -> ()
-
-                match box env with
-                | :? IHasTenantId as t ->
-                    match t.TenantId with
-                    | Some id -> activity.SetTag("axial.flow.tenant_id", id) |> ignore
-                    | None -> ()
-                | _ -> ()
-
-                match box env with
-                | :? IHasTelemetryTags as tagged ->
-                    for tagName, tagValue in tagged.TelemetryTags do
-                        activity.SetTag(tagName, tagValue) |> ignore
-                | _ -> ()
+                RuntimeState.current().TelemetryContext
+                |> Context.toSeq
+                |> Seq.iter (Tags.setAttribute activity)
 
             let tracedFlow =
                 let sourceWithExistingAnnotations =
@@ -95,6 +93,7 @@ module Activity =
                     sourceWithExistingAnnotations
                     |> Flow.addAnnotationSink (fun name value ->
                         activity.SetTag($"axial.flow.annotation.{name}", value) |> ignore)
+                    |> Context.addSink (Tags.setAttribute activity)
 
             let (Flow operation) = tracedFlow
 
@@ -121,15 +120,36 @@ module Activity =
                         settle (Exit.Failure(Execution.causeOfException error))
                         raise error))
 
-    /// <summary>
-    /// Wraps a flow in a new activity that spans the workflow's execution. Typed errors are rendered onto the
-    /// span with <c>string</c>; see <c>traceWith</c> for a custom renderer.
-    /// </summary>
+    /// <summary>Wraps a flow in an application-owned activity source and renders typed errors with <c>string</c>.</summary>
+    /// <param name="activitySource">The application-owned activity source that emits the span.</param>
     /// <param name="name">The name of the activity.</param>
-    /// <param name="flow">The flow to trace.</param>
+    /// <param name="sourceFlow">The flow to trace.</param>
     /// <returns>A flow that executes within the activity span.</returns>
+    let traceOn
+        (activitySource: ActivitySource)
+        (name: string)
+        (sourceFlow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        traceWithSource activitySource (fun error -> string (box error)) name sourceFlow
+
+    /// <summary>
+    /// Wraps a flow in Axial's default activity source and uses the supplied typed-error renderer. Use
+    /// <c>traceWithSource</c> when the span represents application behavior and should belong to the application's
+    /// instrumentation scope.
+    /// </summary>
+    let traceWith
+        (renderError: 'error -> string)
+        (name: string)
+        (sourceFlow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        traceWithSource source renderError name sourceFlow
+
+    /// <summary>
+    /// Wraps a flow in Axial's default activity source and renders typed errors with <c>string</c>. Use
+    /// <c>traceOn</c> for application-owned workflow spans.
+    /// </summary>
     let trace (name: string) (sourceFlow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        traceWith (fun error -> string (box error)) name sourceFlow
+        traceOn source name sourceFlow
 
 /// <summary>Telemetry wiring for runtime fiber-lifecycle observation.</summary>
 [<RequireQualifiedAccess>]

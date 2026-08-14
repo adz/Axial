@@ -37,6 +37,26 @@ Most .NET developers and many F# developers have never used an effect system, an
 - Clock, randomness, GUID generation, environment variables, filesystem, console, HTTP, process execution, and other operational effects are explicit mockable services.
 - A service implementation may perform only the effect named by its core service type unless every additional effect is visible as another explicit dependency.
 
+## Ambient telemetry context
+
+- Telemetry attributes are executor metadata, not application services. Core `Axial` owns one typed, immutable
+  `Axial.Telemetry.Context` in the ambient runtime; it does not discover telemetry fields by inspecting `'env`.
+- `AttributeKey<'value>` validates application-defined attribute values at compile time. `Context` provides generic
+  constructors and concise helpers for curated OpenTelemetry semantic conventions. Each helper documents the
+  convention's stability and privacy constraints.
+- Context is lexically scoped, restored after nested workflows, and inherited by child fibers. Runtime annotations
+  remain a distinct diagnostic channel exported under `axial.flow.annotation.*`.
+- The adapters remain separate: `Axial.Telemetry` emits through .NET `ActivitySource` and `Meter`;
+  `Axial.Telemetry.JavaScript` emits through a host-supplied OpenTelemetry JS API and context manager. Both consume the
+  same core context and shared Axial span vocabulary.
+- Workflow spans that describe user code should use an application-owned instrumentation scope: an explicit
+  `ActivitySource` on .NET or `Otel.installNamed` on JavaScript. Axial's default source, automatic fiber spans, and
+  fiber metrics retain the `Axial` scope because they describe runtime behavior. Service names remain OpenTelemetry
+  resource configuration owned by the host.
+- Axial does not invent generic request, correlation, tenant, or user marker interfaces. Use OpenTelemetry conventions
+  where they apply and custom typed keys otherwise. Expose a non-stable convention only when its status is explicit.
+  Use trace context for trace identity and baggage only when a value must cross process boundaries.
+
 ## Resources and concurrency
 
 - Structured child fibers are owned by their scope. `forkDetached` is the explicit declaration of intentional fire-and-forget work.

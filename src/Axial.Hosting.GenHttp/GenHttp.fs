@@ -108,14 +108,14 @@ module Request =
     let json (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.envWith _.Request
         |> Flow.bind (fun request ->
-            task {
-                try
-                    let! parsed = (SchemaRequest.json schema request).AsTask()
-                    return Ok parsed
-                with :? JsonException ->
-                    return Error ProblemDetails.malformedJson
-            }
-            |> Flow.fromTask
+            Flow.fromTask (fun _ ->
+                task {
+                    try
+                        let! parsed = (SchemaRequest.json schema request).AsTask()
+                        return Ok parsed
+                    with :? JsonException ->
+                        return Error ProblemDetails.malformedJson
+                })
             |> Flow.bind (function
                 | Ok parsed -> fromParsed parsed
                 | Error problem -> Flow.fail (EndpointError.InvalidRequest problem)))

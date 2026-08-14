@@ -78,11 +78,12 @@ Load account, orders, and recommendations concurrently. Account and orders are m
 to an empty list on their typed failure; a mandatory failure interrupts the still-running sibling.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+let applicationActivitySource = new System.Diagnostics.ActivitySource("Dashboard.Application")
 let recommended = loadRecommendations |> Flow.orElse (Flow.succeed [])  // recover ONLY this branch
 
 Flow.zipPar (Flow.zipPar account recent) recommended
 |> Flow.map (fun ((account, recent), recommended) -> { ... })
-|> Activity.trace "dashboard.load"                                       // Axial.Telemetry span
+|> Activity.traceOn applicationActivitySource "dashboard.load"           // application-owned span
 ```
 
 The ordinary `Task.WhenAll` version must cancel siblings by hand through a linked token source, and two simultaneous

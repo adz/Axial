@@ -7,7 +7,7 @@ open System.Runtime.CompilerServices
 open System.ComponentModel
 
 [<EditorBrowsable(EditorBrowsableState.Never)>]
-module FlowBuilderRuntime =
+module internal FlowBuilderRuntime =
     let run environment cancellationToken (Flow operation) =
         operation environment cancellationToken
 
