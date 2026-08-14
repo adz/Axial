@@ -116,18 +116,6 @@ module Schedule =
                 out, jitteredDelay
             ) (op input attempt))
 
-    /// <summary>Adds random jitter to a schedule's delay.</summary>
-    /// <param name="schedule">The base schedule to which jitter will be applied.</param>
-    /// <returns>A new schedule where each delay is multiplied by a random factor between 0.5 and 1.5.</returns>
-    /// <example>
-    /// <code>
-    /// let schedule = Schedule.spaced (TimeSpan.FromSeconds 1.0) |> Schedule.jittered
-    /// </code>
-    /// </example>
-    let jittered (schedule: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
-        let random = Random()
-        jitteredWith random.NextDouble schedule
-
     /// <summary>Retries a failing flow according to the supplied schedule.</summary>
     /// <param name="schedule">The schedule that determines when and if to retry based on the error.</param>
     /// <param name="flow">The workflow to retry if it fails.</param>

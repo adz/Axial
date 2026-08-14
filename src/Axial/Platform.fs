@@ -11,6 +11,12 @@
 /// module's purpose (isolating genuine platform variance) they are left as `#if !FABLE_COMPILER` guarded
 /// declarations in their original files.
 ///
+/// This file also implements the scheduler's own delay/timeout mechanics (Flow.sleep, timeout, and the
+/// retry/repeat delay loop), which is the "ambient runtime for executor mechanics only" carve-out named in
+/// AGENTS.md's effect-boundary invariant: these `Task.Delay` calls are the scheduler itself, not a
+/// core API silently reaching for ambient time on an application's behalf.
+// axial-allow-effect-file: clock
+///
 /// <remarks>
 /// <b>Scope of the "Fable" half below: Fable's JavaScript target specifically, not Fable in general.</b> Fable
 /// also compiles to Python, Rust, Dart, PHP, and (as of this writing, newly) Erlang, each with a genuinely

@@ -9,3 +9,4 @@ main learning path.
 
 - [Packages and platforms](packages-and-platforms.html)
 - [Context for AI agents](ai-agents.html)
+- [Effect-boundary guardrails](guardrails.html)

@@ -44,6 +44,27 @@ jobs:
       - name: Run maintenance example
         run: dotnet run --project examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj --configuration Release --no-build --nologo
 
+  guardrails:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore local tools
+        run: dotnet tool restore
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Run Axial.Guardrails effect-boundary analyzer
+        run: bash scripts/run-guardrails.sh
+
   fable:
     runs-on: ubuntu-latest
 

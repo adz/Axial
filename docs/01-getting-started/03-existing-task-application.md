@@ -37,15 +37,15 @@ type CheckoutError =
 type Receipt = { OrderId: int; Total: decimal; Reference: string }
 
 type CheckoutEnv =
-    { FindTotal: int -> Task<Result<decimal, CheckoutError>>
-      Charge: decimal -> Task<Result<string, CheckoutError>> }
+    { FindTotal: int -> CancellationToken -> Task<Result<decimal, CheckoutError>>
+      Charge: decimal -> CancellationToken -> Task<Result<string, CheckoutError>> }
 
 let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
         let! findTotal = Flow.envWith _.FindTotal
         let! charge = Flow.envWith _.Charge
-        let! total = ColdTask(fun _ -> findTotal orderId)
-        let! reference = ColdTask(fun _ -> charge total)
+        let! total = ColdTask(fun cancellationToken -> findTotal orderId cancellationToken)
+        let! reference = ColdTask(fun cancellationToken -> charge total cancellationToken)
         return { OrderId = orderId; Total = total; Reference = reference }
     }
 
@@ -71,7 +71,8 @@ Three properties of that match matter:
 - The final case covers `Cause.Die` and `Cause.Interrupt`: defects and interruption, not expected failures. Re-raise
   or log them the way your host already handles unhandled exceptions.
 - The host's cancellation token flows in, so cancelling the request cancels every inner call and closes the
-  workflow's scope. You do not thread the token through the module below.
+  workflow's scope. `ColdTask` supplies that token to each task dependency without adding it to the workflow's public
+  parameters.
 
 ## Keep the environment where the host already keeps services
 
@@ -82,8 +83,8 @@ let checkoutEnv (provider: IServiceProvider) : CheckoutEnv =
     let orders = provider.GetRequiredService<IOrderRepository>()
     let payments = provider.GetRequiredService<IPaymentGateway>()
 
-    { FindTotal = fun orderId -> orders.FindTotalAsync orderId
-      Charge = fun total -> payments.ChargeAsync total }
+    { FindTotal = fun orderId cancellationToken -> orders.FindTotalAsync(orderId, cancellationToken)
+      Charge = fun total cancellationToken -> payments.ChargeAsync(total, cancellationToken) }
 ```
 
 Register that function with your container and resolve `CheckoutEnv` in the handler. The workflows below the boundary
@@ -98,6 +99,18 @@ builder routes `Error` into the expected-error channel.
 Use `Flow.fromTask` or `Flow.fromTaskResult` when composing without `flow { }`. Use `Flow.awaitStartedTask` only when a
 host API has already started the operation.
 
+Some legacy APIs do not accept a cancellation token. You can adapt one with `ColdTask(fun _ -> legacyCall ())`, but
+cancelling the Flow cannot stop the underlying operation. Prefer cancellation-aware overloads when the dependency
+provides them, and add token support to adapters you control.
+
+## Trial the effect-boundary guardrails alongside the migration
+
+Adopting Flow one module at a time is a good moment to also try `dotnet add package Axial.Guardrails` — see
+[Installation](installation.html#add-effect-boundary-guardrails-optional). Left at its default warning severity, it
+won't fail your existing build; it just starts naming any ambient clock, randomness, or console access it finds in
+the module you're converting, so you catch a hidden effect while you're already looking at that code instead of
+after it ships.
+
 ## Go further
 
 - [Task and async interop](/the-flow-type/task-async-interop.html) covers the full set of conversions in both
@@ -105,3 +118,5 @@ host API has already started the operation.
 - [Expected errors and defects](/error-handling/index.html) explains which failures belong in `'error` and which
   belong in the defect channel.
 - [Your first application](first-application.html) replaces the host entirely when a Flow is the application root.
+- [Effect-boundary guardrails](/notes/guardrails.html) covers what the analyzer checks and how to mark an
+  intended boundary.

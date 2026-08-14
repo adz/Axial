@@ -1,3 +1,6 @@
+// This file is the live IConsole implementation: its entire purpose is to be the explicit,
+// mockable boundary around System.Console, so ambient console access here is intentional.
+// axial-allow-effect-file: console
 namespace Axial.Console
 
 open System

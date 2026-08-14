@@ -1,3 +1,6 @@
+// This file defines each service's Flow-facing operations alongside its `live` implementation (Clock.live,
+// Guid.live, ...): the ambient effects here are each service's own explicit, mockable boundary, not a leak.
+// axial-allow-effect-file: clock, guid
 namespace Axial.PlatformService
 
 open System

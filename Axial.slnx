@@ -20,6 +20,7 @@
   <Folder Name="/src/">
     <Project Path="src/Axial.Console/Axial.Console.fsproj" />
     <Project Path="src/Axial.FileSystem/Axial.FileSystem.fsproj" />
+    <Project Path="src/Axial.Guardrails/Axial.Guardrails.fsproj" />
     <Project Path="src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj" />
     <Project Path="src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj" />
     <Project Path="src/Axial.Hosting/Axial.Hosting.fsproj" />

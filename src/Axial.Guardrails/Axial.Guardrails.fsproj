@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>Axial.Guardrails.Analyzers</AssemblyName>
+    <RootNamespace>Axial.Guardrails</RootNamespace>
+    <PackageId>Axial.Guardrails</PackageId>
+    <Authors>Adam Davies</Authors>
+    <Description>FSharp.Analyzers.SDK analyzer that flags direct use of ambient effects (clock, randomness, GUIDs, console, filesystem, process, environment) so they stay explicit, mockable services instead of hidden dependencies.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>fsharp;axial;analyzer;linter;fsharp-analyzers</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IsPackable>true</IsPackable>
+    <!-- Analyzer dlls are loaded standalone by the fsharp-analyzers CLI; they are not compiled into consumers. -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <!--
+      The fsharp-analyzers CLI loads this assembly standalone, outside our own dependency-resolution
+      context, so its full transitive closure (FSharp.Analyzers.SDK.dll, FSharp.Compiler.Service.dll,
+      etc.) must sit next to it on disk. This copies that closure into the build output so it can be
+      packed as-is under analyzers/ below, instead of a classlib's normal reference-only output.
+    -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Consumers never compile against this assembly; only the fsharp-analyzers CLI loads it, from analyzers/. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!--
+      NU5128: expected because this package intentionally has no lib/ref assemblies to compile against.
+      NU5100: expected for every dll under analyzers/ and cli/ - none of them are meant to be referenced.
+    -->
+    <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="FSharp.Analyzers.SDK" Version="0.37.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      fsharp-analyzers is packaged as a DotnetTool, which NuGet refuses as an ordinary PackageReference
+      (NU1212) and so cannot flow as a transitive dependency to consumers. PackageDownload instead
+      fetches it to the local package cache at our own build/pack time only; _AxialGuardrailsPackAnalyzerOutput
+      below copies its CLI dll out of that cache into our own package payload under cli/, so the
+      consumer needs no tool install of their own - the CLI travels inside Axial.Guardrails itself.
+    -->
+    <PackageDownload Include="fsharp-analyzers" Version="[0.37.2]" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="EffectCatalog.fs" />
+    <Compile Include="Suppressions.fs" />
+    <Compile Include="EffectBoundaryAnalyzer.fs" />
+    <Compile Include="SuppressionIntegrityAnalyzer.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build\Axial.Guardrails.props" Pack="true" PackagePath="build\" />
+    <None Include="build\Axial.Guardrails.targets" Pack="true" PackagePath="build\" />
+  </ItemGroup>
+
+  <!--
+    Bundle the built analyzer assembly and its full dependency closure (see CopyLocalLockFileAssemblies
+    above) into the package under analyzers/, so build/Axial.Guardrails.targets can point the CLI's
+    analyzers path flag at it directly. Runs at pack time, after Build has populated $(TargetDir).
+  -->
+  <Target Name="_AxialGuardrailsPackAnalyzerOutput" BeforeTargets="_GetPackageFiles" DependsOnTargets="Build">
+    <ItemGroup>
+      <_AxialGuardrailsAnalyzerFile Include="$(TargetDir)*.dll" />
+      <None Include="@(_AxialGuardrailsAnalyzerFile)" Pack="true" PackagePath="analyzers\%(Filename)%(Extension)" />
+      <_AxialGuardrailsCliFile Include="$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\*.*" />
+      <None Include="@(_AxialGuardrailsCliFile)" Pack="true" PackagePath="cli\%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

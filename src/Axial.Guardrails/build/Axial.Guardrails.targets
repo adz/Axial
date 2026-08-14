@@ -1,0 +1,23 @@
+<Project>
+
+  <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <_AxialGuardrailsAnalyzersPath>$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
+    <_AxialGuardrailsCli>$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll</_AxialGuardrailsCli>
+    <_AxialGuardrailsSeverityFlag Condition="'$(AxialGuardrailsSeverity)' == 'error'">--treat-as-error</_AxialGuardrailsSeverityFlag>
+    <_AxialGuardrailsSeverityFlag Condition="'$(AxialGuardrailsSeverity)' != 'error'">--treat-as-warning</_AxialGuardrailsSeverityFlag>
+  </PropertyGroup>
+
+  <!--
+    Runs after every build of a project that references Axial.Guardrails. Deliberately does not use
+    FSharp.Analyzers.Build's own AfterBuild target: that target hardcodes IgnoreExitCode="true", so it
+    can never fail a build regardless of severity. This target instead lets Exec's normal exit-code
+    handling do the work: the CLI itself exits non-zero only when a finding is treated as an error, so
+    AxialGuardrailsSeverity=warning (the default) can never fail the build, and =error always does.
+  -->
+  <Target Name="AxialGuardrailsEffectBoundaryCheck"
+          AfterTargets="Build"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and Exists('$(_AxialGuardrailsCli)')">
+    <Exec Command="dotnet &quot;$(_AxialGuardrailsCli)&quot; --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsSeverityFlag) AXG001 AXG002 --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
+  </Target>
+
+</Project>

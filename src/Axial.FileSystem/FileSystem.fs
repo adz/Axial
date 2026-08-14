@@ -1,3 +1,6 @@
+// This file is the live IFileSystem implementation: its entire purpose is to be the explicit,
+// mockable boundary around System.IO.File/Directory, so ambient filesystem access here is intentional.
+// axial-allow-effect-file: filesystem
 namespace Axial.FileSystem
 
 open System

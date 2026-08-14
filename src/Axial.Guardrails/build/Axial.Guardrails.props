@@ -1,0 +1,10 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Set to false to skip the analyzer for this project entirely. -->
+    <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
+    <!-- "warning" (default) reports findings without failing the build; "error" fails it. -->
+    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == ''">warning</AxialGuardrailsSeverity>
+  </PropertyGroup>
+
+</Project>

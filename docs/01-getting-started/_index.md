@@ -25,6 +25,7 @@ Put this in a project that references `Axial`, or save it as `checkout.fsx` with
 line and run `dotnet fsi checkout.fsx`:
 
 ```fsharp
+open System.Threading
 open System.Threading.Tasks
 open Axial
 
@@ -35,26 +36,26 @@ type CheckoutError =
 type Receipt = { OrderId: int; Total: decimal; Reference: string }
 
 type CheckoutEnv =
-    { FindTotal: int -> Task<Result<decimal, CheckoutError>>
-      Charge: decimal -> Task<Result<string, CheckoutError>> }
+    { FindTotal: int -> CancellationToken -> Task<Result<decimal, CheckoutError>>
+      Charge: decimal -> CancellationToken -> Task<Result<string, CheckoutError>> }
 
 let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
         let! findTotal = Flow.envWith _.FindTotal
         let! charge = Flow.envWith _.Charge
-        let! total = ColdTask(fun _ -> findTotal orderId)
-        let! reference = ColdTask(fun _ -> charge total)
+        let! total = ColdTask(fun cancellationToken -> findTotal orderId cancellationToken)
+        let! reference = ColdTask(fun cancellationToken -> charge total cancellationToken)
         return { OrderId = orderId; Total = total; Reference = reference }
     }
 
 let live =
     { FindTotal =
-        fun orderId ->
+        fun orderId _ ->
             if orderId = 42 then
                 Task.FromResult(Ok 19.99m)
             else
                 Task.FromResult(Error(OrderNotFound orderId))
-      Charge = fun _ -> Task.FromResult(Ok "ch_1a2b3c") }
+      Charge = fun _ _ -> Task.FromResult(Ok "ch_1a2b3c") }
 
 let report orderId =
     match checkout orderId |> Flow.run live with
@@ -76,8 +77,8 @@ Three things happened in that program:
 
 - `Flow.envWith` selected a dependency from the environment. The workflow never constructs its dependencies and never
   looks them up in a container.
-- Binding a `Task<Result<_, CheckoutError>>` awaited the task and routed its `Error` into the workflow's
-  expected-error channel, so the happy path stayed unnested.
+- `ColdTask` kept task creation cold, passed the runtime cancellation token to each dependency, and routed each
+  `Result.Error` into the workflow's expected-error channel.
 - `Flow.run` supplied the environment at one boundary and returned an `Exit` that is either a success value or a
   `Cause`.
 
@@ -129,7 +130,7 @@ open Axial
 
 type Connection = { Name: string }
 
-let openConnection () = Task.FromResult { Name = "orders-db" }
+let openConnection (_: CancellationToken) = Task.FromResult { Name = "orders-db" }
 
 let closeConnection (connection: Connection) (_: CancellationToken) =
     task { printfn $"closed {connection.Name}" } :> Task
@@ -145,7 +146,7 @@ let retryPayment =
 let checkoutOrder orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
         let! _connection =
-            Flow.acquireReleaseWith (Flow.fromTask (fun _ -> openConnection ())) closeConnection Flow.ok
+            Flow.acquireReleaseWith (Flow.fromTask openConnection) closeConnection Flow.ok
 
         return! checkout orderId
     }
@@ -172,9 +173,9 @@ A test replaces the environment record and leaves the workflow alone:
 let declineOnce =
     let mutable attempts = 0
 
-    { FindTotal = fun _ -> Task.FromResult(Ok 19.99m)
+    { FindTotal = fun _ _ -> Task.FromResult(Ok 19.99m)
       Charge =
-        fun _ ->
+        fun _ _ ->
             attempts <- attempts + 1
 
             if attempts = 1 then

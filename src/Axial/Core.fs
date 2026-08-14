@@ -243,10 +243,6 @@ module FiberDump =
 
         $"#{dump.Id.Value}{name} {dump.Status} {lifetime} (started {dump.StartedAt:o}){annotations}"
 
-    /// <summary>Renders one dump as a single line using the current UTC time for live-fiber lifetime.</summary>
-    let render (dump: FiberDump) : string =
-        renderAt DateTimeOffset.UtcNow dump
-
     /// <summary>
     /// Renders a set of dumps as an indented parent/child tree. Fibers whose parent is absent from
     /// <paramref name="dumps" /> (including root fibers) become top-level nodes.
@@ -290,10 +286,6 @@ module FiberDump =
             renderNode "" "" root
 
         String.concat "\n" lines
-
-    /// <summary>Renders a set of dumps as an indented parent/child tree using the current UTC time.</summary>
-    let renderTree (dumps: FiberDump list) : string =
-        renderTreeAt DateTimeOffset.UtcNow dumps
 
 /// <summary>
 /// Runtime hooks observing fiber lifecycle events for diagnostics and telemetry.
@@ -394,15 +386,22 @@ type FiberRegistry() =
         lock gate (fun () -> live.Values |> Seq.map FiberDump.ofMetadata |> List.ofSeq)
         |> List.sortBy _.Id.Value
 
-    /// <summary>Renders the current live fibers as a human-readable parent/child tree.</summary>
-    member this.Dump() : string =
+    /// <summary>Renders a snapshot of live fibers as a human-readable parent/child tree, timestamped at <paramref name="now" />.</summary>
+    member this.DumpAt(now: DateTimeOffset) : string =
         let snapshot = this.Snapshot()
-        let now = DateTimeOffset.UtcNow
         let header = $"Fiber dump @ {now:o} — {snapshot.Length} live fiber(s)"
 
         match snapshot with
         | [] -> header
         | dumps -> header + "\n" + FiberDump.renderTreeAt now dumps
+
+    /// <summary>
+    /// Renders the current live fibers as a human-readable parent/child tree, timestamped with the current UTC
+    /// time. This is a debugger/console convenience over a diagnostic render, not part of workflow execution or
+    /// any deterministic behavior a test would assert on; use <c>DumpAt</c> when the timestamp itself matters
+    /// to a caller (for example, a test asserting on the rendered header).
+    /// </summary>
+    member this.Dump() : string = this.DumpAt(DateTimeOffset.UtcNow) // axial-allow-effect: clock
 
 /// <summary>
 /// Tracks a forked fiber's settled defect so it can be reported as unobserved exactly once, by whichever

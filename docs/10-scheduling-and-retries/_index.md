@@ -37,12 +37,14 @@ let backoff = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
 ```
 
 ### Adding Jitter
-Jitter adds randomness to delays to prevent "thundering herd" problems in distributed systems. `Schedule.jittered` adds a random factor between 0.5x and 1.5x to the current delay.
+Jitter adds randomness to delays to prevent "thundering herd" problems in distributed systems. `Schedule.jitteredWith` multiplies the current delay by a factor between 0.5x and 1.5x, sampled from a source you supply, so the randomness stays an explicit, testable dependency instead of an ambient one.
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let policy = 
+let policy =
     Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
-    |> Schedule.jittered
+    |> Schedule.jitteredWith random.NextDouble
 ```
+
+In application code, prefer taking the sample function from `Axial.PlatformService`'s `IRandom` service (`Random.service`) rather than constructing a `System.Random` inline, so jitter can be replaced with a deterministic source in tests.
 
 ## Retrying Failures
 
@@ -83,6 +85,6 @@ let recurringPoll =
 | `recurs` | `int -> Schedule<'env, 'i, int>` | Recurs exactly `n` times. The output value is the attempt index. |
 | `spaced` | `TimeSpan -> Schedule<'env, 'i, int>` | Recurs indefinitely with a fixed delay. |
 | `exponential` | `TimeSpan -> Schedule<'env, 'i, TimeSpan>` | Recurs indefinitely with doubling delays. |
-| `jittered` | `Schedule<'env, 'i, 'o> -> Schedule<'env, 'i, 'o>` | Wraps a schedule to add random jitter (0.5x to 1.5x). |
+| `jitteredWith` | `(unit -> float) -> Schedule<'env, 'i, 'o> -> Schedule<'env, 'i, 'o>` | Wraps a schedule to add jitter (0.5x to 1.5x), sampled from the supplied source. |
 | `retry` | `Schedule<'env, 'error, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Retries the flow on `Cause.Fail` only. |
 | `repeat` | `Schedule<'env, 'value, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Repeats the flow on success. |

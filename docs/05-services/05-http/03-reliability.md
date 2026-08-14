@@ -52,7 +52,7 @@ workflow |> Flow.Runtime.retry policy
 `Schedule.retry` from `Axial` also composes with HTTP workflows when you need jitter or custom cadence:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-workflow |> Schedule.retry (Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |> Schedule.jittered)
+workflow |> Schedule.retry (Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |> Schedule.jitteredWith random.NextDouble)
 ```
 
 Note that `Schedule.retry` retries every typed error; prefer `retryTransient` or an explicit `RetryPolicy` so

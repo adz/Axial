@@ -12,6 +12,7 @@ Axial is the workflow product. Core is `src/Axial`; focused operational and host
 
 - Core workflow/runtime: `src/Axial/**`, `tests/Axial.Tests/**`
 - Operational services: matching `src/Axial.{Console,FileSystem,HttpClient,Process,PlatformService}` and test projects
+- Effect-boundary linting: `src/Axial.Guardrails/**`; see `docs/15-notes/03-guardrails.md` and the effect-boundary rule in this file's Architecture Invariants
 - Hosting: `src/Axial.Hosting*`, `tests/Axial.Hosting.Tests/**`
 - Telemetry: `src/Axial.Telemetry*`, `tests/Axial.Telemetry.Tests/**`
 - User documentation: `docs/**`; read `dev-docs/DOCS.md` first
@@ -26,6 +27,7 @@ Axial is the workflow product. Core is `src/Axial`; focused operational and host
 - `bash scripts/check-source-inventory.sh`
 - `dotnet build Axial.slnx --nologo -v minimal`
 - `dotnet test Axial.slnx --nologo -v minimal`
+- `bash scripts/run-guardrails.sh`
 - `bash scripts/run-aot-probe.sh`
 - `bash scripts/check-fable-js-surface.sh`
 - `bash scripts/validate-docs.sh`

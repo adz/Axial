@@ -4,28 +4,7 @@ This sketch records public APIs that deserve a deliberate decision before Axial 
 candidate must change. For each item, test the current API in realistic application code, choose the intended shape,
 update tests and user documentation, and remove the item once the decision has moved into current architecture or code.
 
-## 1. Remove hidden randomness from `Schedule.jittered`
-
-`Schedule.jittered` constructs `System.Random` internally and samples it while evaluating a schedule:
-
-```fsharp
-let jittered schedule =
-    let random = Random()
-    jitteredWith random.NextDouble schedule
-```
-
-That makes workflow timing depend on an ambient effect which an application cannot replace or control in a test. It is
-in tension with Axial's rule that operational effects are explicit.
-
-Review these options:
-
-1. Remove `Schedule.jittered` and retain only `Schedule.jitteredWith`.
-2. Put a service-based convenience function in `Axial.PlatformService` that obtains an explicit randomness service.
-3. Accept a randomness source as part of schedule construction under a more descriptive API.
-
-Do not retain a convenience API that silently creates randomness in core.
-
-## 2. Clarify application and runtime `ActivitySource` ownership
+## 1. Clarify application and runtime `ActivitySource` ownership
 
 Application workflows should normally emit from an application-owned instrumentation scope:
 
@@ -56,7 +35,7 @@ workflow
 
 Any chosen API must keep service name, instrumentation scope, and span name distinct.
 
-## 3. Decide the `Ref.modify` tuple order and complete the atomic family
+## 2. Decide the `Ref.modify` tuple order and complete the atomic family
 
 The current function expects `newState * result`:
 
@@ -79,7 +58,7 @@ Ref.updateAndGet
 
 Avoid adding aliases unless each operation has distinct return semantics.
 
-## 4. Decide whether the public type should remain `TelemetryContext`
+## 3. Decide whether the public type should remain `TelemetryContext`
 
 Users construct and scope values through the `Context` module, while public signatures expose the concrete type name
 `TelemetryContext`:
@@ -93,7 +72,7 @@ This may be the right balance: `Context` alone is broad, while `TelemetryContext
 Review generated reference pages, error messages, and explicit annotations to ensure the module/type distinction is
 clear. Rename only if application code demonstrates recurring confusion.
 
-## 5. Stabilize the schedule contract
+## 4. Stabilize the schedule contract
 
 Before freezing schedules, specify and test:
 
@@ -107,21 +86,6 @@ Before freezing schedules, specify and test:
 - retry and repeat behavior on interruption and defects.
 
 Keep the 1.0 schedule surface small if these semantics do not justify broader composition yet.
-
-## 6. Remove ambient time from fiber-dump rendering
-
-`FiberRegistry.Dump()` reads `DateTimeOffset.UtcNow`. The registry already exposes snapshots, and the rendering API has
-an explicit `FiberDump.renderTreeAt now` form. Review whether the convenience method should instead require a timestamp
-or whether timestamped rendering belongs in a package with an explicit clock service.
-
-A deterministic boundary could be:
-
-```fsharp
-let snapshots = registry.Snapshot()
-let rendered = FiberDump.renderTreeAt now snapshots
-```
-
-Diagnostic convenience does not automatically justify an ambient clock in core.
 
 ## Reviewed and not currently considered awkward
 
@@ -139,9 +103,7 @@ without separate evidence from application use.
 
 ## Suggested review order
 
-1. Hidden randomness in `Schedule.jittered`.
-2. Application versus Axial `ActivitySource` ownership.
-3. `Ref.modify` tuple order and atomic helpers.
-4. `TelemetryContext` type naming.
-5. Exact schedule semantics.
-6. Ambient time in fiber-dump rendering.
+1. Application versus Axial `ActivitySource` ownership.
+2. `Ref.modify` tuple order and atomic helpers.
+3. `TelemetryContext` type naming.
+4. Exact schedule semantics.

@@ -559,7 +559,9 @@ module Process =
                                         let inheritError = isInherit specification.StdErr && not (isFinal && specification.MergeStdErr)
                                         let redirectError = hasErrorConnection || not inheritError
                                         let proc = new Diagnostics.Process(StartInfo = startInfo redirectOutput redirectError command)
-                                        if not (proc.Start()) then raise (Exception $"Could not start {command.FileName}.")
+                                        // This is Axial.Process's own live IProcess implementation: it is the explicit,
+                                        // mockable boundary around OS process creation.
+                                        if not (proc.Start()) then raise (Exception $"Could not start {command.FileName}.") // axial-allow-effect: process
                                         processes.Add proc; started.Add(clock.UtcNow())
                                     let copies =
                                         specification.Connections

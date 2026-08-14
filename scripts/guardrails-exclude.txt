@@ -1,0 +1,11 @@
+# Opt-out list for scripts/run-guardrails.sh.
+#
+# One .fsproj path per line (relative to the repo root), plus a comment above it explaining
+# why the project is excluded. A project that's excluded here still compiles and ships normally;
+# it is simply never checked by the Axial.Guardrails analyzer. Prefer a narrow
+# `// axial-allow-effect[-file]: <category>` suppression at the call site over adding a project
+# here — this file is for a project that can't reasonably be checked at all (for example, one
+# that hasn't been migrated onto explicit services yet), not a substitute for reviewing findings.
+#
+# Example:
+# src/Axial.SomeLegacyPackage/Axial.SomeLegacyPackage.fsproj

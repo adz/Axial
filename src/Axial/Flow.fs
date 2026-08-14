@@ -816,7 +816,9 @@ module Flow =
                     Name = name
                     ParentId = Some parentRuntime.FiberId
                     Annotations = parentRuntime.Annotations
-                    StartedAt = DateTimeOffset.UtcNow
+                    // Fiber lifecycle bookkeeping is scheduler mechanics, not application behavior — the
+                    // AGENTS.md effect-boundary invariant carves out "ambient runtime for executor mechanics".
+                    StartedAt = DateTimeOffset.UtcNow // axial-allow-effect: clock
                     SettledAt = None
                     Status = FiberStatus.Running
                     Observed = false
@@ -831,6 +833,7 @@ module Flow =
                 Platform.startFiber
                     cancellationToken
                     (fun status exit ->
+                        // axial-allow-effect: clock
                         metadata.SettledAt <- Some DateTimeOffset.UtcNow
                         metadata.Status <- status
 
