@@ -437,7 +437,7 @@ module StmTests =
                 let! inventory = WithFlow.createInventory 0 0
 
                 let! waiting = Flow.fork (WithFlow.reserve inventory)
-                do! Task.Delay 50
+                do! Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 50.0)
                 do! WithFlow.replenish Regional 1 inventory
 
                 let! warehouse = Flow.join waiting

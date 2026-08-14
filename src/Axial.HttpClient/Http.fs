@@ -394,8 +394,7 @@ module Http =
         flow {
             let! http = service
             let! cancellationToken = Flow.Runtime.cancellationToken
-            let! outcome: Result<HttpResponse, HttpError> = http.Send(request, cancellationToken)
-            return! outcome
+            return! http.Send(request, cancellationToken)
         }
 
     /// Sends a request and fails with <c>HttpError.Status</c> when the response is outside the expectation.

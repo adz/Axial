@@ -244,10 +244,13 @@ module Flow =
     /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>Fable compatible</platforms>
     let fromAsync (operation: Async<'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ cancellationToken ->
-            Platform.tryExecution
-                (fun () -> operation |> Platform.executionOfAsyncUnguarded cancellationToken Exit.Success)
-                (fun error -> Platform.ofExit (Exit.Failure(Execution.causeOfException error))))
+        AsyncInterop.from Exit.Success operation
+
+    /// <summary>Creates a flow from an async operation whose <c>Error</c> enters the typed error channel.</summary>
+    /// <remarks>Thrown exceptions are recorded as defects; cancellation is recorded as interruption.</remarks>
+    /// <platforms>Fable compatible</platforms>
+    let fromAsyncResult (operation: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+        AsyncInterop.from Exit.fromResult operation
 
     /// <summary>Creates a flow from an async operation and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
@@ -284,15 +287,15 @@ module Flow =
     /// </code>
     /// </example>
     let fromTask (factory: CancellationToken -> Task<'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ cancellationToken ->
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    try
-                        let! value = factory cancellationToken
-                        return Exit.Success value
-                    with error ->
-                        return Exit.Failure (Execution.causeOfException error)
-                }))
+        TaskInterop.from Exit.Success factory
+
+    /// <summary>Creates a flow from a cold task factory whose <c>Error</c> enters the typed error channel.</summary>
+    /// <remarks>The factory runs on each execution and receives the runtime cancellation token. Thrown exceptions are defects.</remarks>
+    /// <platforms>.NET only</platforms>
+    let fromTaskResult
+        (factory: CancellationToken -> Task<Result<'value, 'error>>)
+        : Flow<'env, 'error, 'value> =
+        TaskInterop.from Exit.fromResult factory
 
     /// <summary>Creates a flow from a cancellable task factory and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
@@ -317,15 +320,15 @@ module Flow =
     /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
     /// <platforms>.NET only</platforms>
     let fromValueTask (factory: CancellationToken -> ValueTask<'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ cancellationToken ->
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    try
-                        let! value = (factory cancellationToken).AsTask()
-                        return Exit.Success value
-                    with error ->
-                        return Exit.Failure (Execution.causeOfException error)
-                }))
+        ValueTaskInterop.from Exit.Success factory
+
+    /// <summary>Creates a flow from a cold value-task factory whose <c>Error</c> enters the typed error channel.</summary>
+    /// <remarks>The factory runs on each execution and receives the runtime cancellation token. Thrown exceptions are defects.</remarks>
+    /// <platforms>.NET only</platforms>
+    let fromValueTaskResult
+        (factory: CancellationToken -> ValueTask<Result<'value, 'error>>)
+        : Flow<'env, 'error, 'value> =
+        ValueTaskInterop.from Exit.fromResult factory
 
     /// <summary>Creates a flow from a cancellable value-task factory and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
@@ -355,7 +358,15 @@ module Flow =
     /// <param name="startedTask">A task that is already running.</param>
     /// <platforms>.NET only</platforms>
     let awaitStartedTask (startedTask: Task<'value>) : Flow<'env, 'error, 'value> =
-        fromTask (fun _ -> startedTask)
+        TaskInterop.from Exit.Success (fun _ -> startedTask)
+
+    /// <summary>Observes an already-started task whose <c>Error</c> enters the typed error channel.</summary>
+    /// <remarks>The work started outside Flow and cannot receive the runtime cancellation token. Thrown exceptions are defects.</remarks>
+    /// <platforms>.NET only</platforms>
+    let awaitStartedTaskResult
+        (startedTask: Task<Result<'value, 'error>>)
+        : Flow<'env, 'error, 'value> =
+        TaskInterop.from Exit.fromResult (fun _ -> startedTask)
 
     /// <summary>Observes a task that has already been started and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>
@@ -369,7 +380,15 @@ module Flow =
     /// <param name="startedValueTask">A value task that is already running.</param>
     /// <platforms>.NET only</platforms>
     let awaitStartedValueTask (startedValueTask: ValueTask<'value>) : Flow<'env, 'error, 'value> =
-        fromValueTask (fun _ -> startedValueTask)
+        ValueTaskInterop.from Exit.Success (fun _ -> startedValueTask)
+
+    /// <summary>Observes an already-started value task whose <c>Error</c> enters the typed error channel.</summary>
+    /// <remarks>The work started outside Flow and cannot receive the runtime cancellation token. Thrown exceptions are defects.</remarks>
+    /// <platforms>.NET only</platforms>
+    let awaitStartedValueTaskResult
+        (startedValueTask: ValueTask<Result<'value, 'error>>)
+        : Flow<'env, 'error, 'value> =
+        ValueTaskInterop.from Exit.fromResult (fun _ -> startedValueTask)
 
     /// <summary>Observes a value task that has already been started and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Carries the same caveats as <c>awaitStartedTask</c>.</remarks>

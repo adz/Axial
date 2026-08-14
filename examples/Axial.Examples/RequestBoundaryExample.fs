@@ -42,7 +42,7 @@ let publishResponse : Flow<RequestEnv, string, string> =
     flow {
         let! env = Flow.env // Flow<RequestEnv, string, RequestEnv>
         let! user = loadUser // Flow<RequestEnv, string, User>
-        let! suffix = env.LoadSuffix // Flow<RequestEnv, string, string>
+        let! suffix = Flow.awaitStartedTask env.LoadSuffix
         return $"{env.Prefix} [{env.TraceId}] {user.Name}{suffix}"
     }
 

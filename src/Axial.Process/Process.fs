@@ -734,7 +734,7 @@ module Process =
                                 stderrFiles.Values |> Seq.iter (fun stream -> stream.Dispose())
                         } |> Async.AwaitTask
                       }
-                      return! outcome |> Result.bind validate
+                      return! validate outcome
                     }
             match specification.Timeout with
             | Some timeout -> execution |> Flow.Runtime.timeout timeout (ProcessError.TimedOut { Specification = render specification; Timeout = timeout })
@@ -748,9 +748,8 @@ module Process =
                     flow {
                         let! item = session.Events.Take()
                         match item with
-                        | Ok(ProcessEvent.Completed result) -> return Some(ProcessEvent.Completed result, Finished)
-                        | Ok event -> return Some(event, Running session)
-                        | Error error -> return! Flow.fail error
+                        | ProcessEvent.Completed result -> return Some(ProcessEvent.Completed result, Finished)
+                        | event -> return Some(event, Running session)
                     }
                 | NotStarted ->
                     flow {
@@ -771,9 +770,8 @@ module Process =
                         let session = { Events = events }
                         let! item = events.Take()
                         match item with
-                        | Ok(ProcessEvent.Completed result) -> return Some(ProcessEvent.Completed result, Finished)
-                        | Ok event -> return Some(event, Running session)
-                        | Error error -> return! Flow.fail error
+                        | ProcessEvent.Completed result -> return Some(ProcessEvent.Completed result, Finished)
+                        | event -> return Some(event, Running session)
                     }
             FlowStream.unfoldFlow step NotStarted
 

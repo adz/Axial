@@ -130,6 +130,11 @@ module WorkflowBasicTests =
                 return value * 2
             }
 
+        let returned : Flow<unit, string, int> =
+            flow {
+                return! load
+            }
+
         use cts = new CancellationTokenSource()
 
         let first = Flow.runSyncWithToken () cts.Token workflow
@@ -137,16 +142,47 @@ module WorkflowBasicTests =
 
         test <@ first = Exit.Success 2 @>
         test <@ second = Exit.Success 4 @>
-        test <@ List.ofSeq observedCancellation = [ true; true ] @>
+        test <@ Flow.runSyncWithToken () cts.Token returned = Exit.Success 3 @>
+        test <@ List.ofSeq observedCancellation = [ true; true; true ] @>
 
     [<Fact>]
-    let ``flow binds ColdTask Result as a plain value`` () =
-        let workflow : Flow<unit, string, Result<int, string>> =
+    let ``flow lifts ColdTask Result through let and return`` () =
+        let succeeds : Flow<unit, string, int> =
             flow {
-                return! ColdTask(fun _ -> Task.FromResult(Ok 42))
+                let! value = ColdTask(fun _ -> Task.FromResult(Ok 41))
+                return value + 1
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(Ok 42) @>
+        let fails : Flow<unit, string, int> =
+            flow {
+                return! ColdTask(fun _ -> Task.FromResult(Error "unavailable"))
+            }
+
+        test <@ Flow.runSync () succeeds = Exit.Success 42 @>
+        test <@ Flow.runSync () fails = Exit.Failure(Cause.Fail "unavailable") @>
+
+    [<Fact>]
+    let ``async interop Result constructors lift the typed error channel`` () =
+        let taskFlow : Flow<unit, string, int> =
+            Flow.fromTaskResult(fun _ -> Task.FromResult(Error "task"))
+
+        let valueTaskFlow : Flow<unit, string, int> =
+            Flow.fromValueTaskResult(fun _ -> ValueTask.FromResult(Error "value-task"))
+
+        let asyncFlow : Flow<unit, string, int> =
+            Flow.fromAsyncResult(async { return Error "async" })
+
+        let startedTaskFlow : Flow<unit, string, int> =
+            Flow.awaitStartedTaskResult(Task.FromResult(Error "started-task"))
+
+        let startedValueTaskFlow : Flow<unit, string, int> =
+            Flow.awaitStartedValueTaskResult(ValueTask.FromResult(Error "started-value-task"))
+
+        test <@ Flow.runSync () taskFlow = Exit.Failure(Cause.Fail "task") @>
+        test <@ Flow.runSync () valueTaskFlow = Exit.Failure(Cause.Fail "value-task") @>
+        test <@ Flow.runSync () asyncFlow = Exit.Failure(Cause.Fail "async") @>
+        test <@ Flow.runSync () startedTaskFlow = Exit.Failure(Cause.Fail "started-task") @>
+        test <@ Flow.runSync () startedValueTaskFlow = Exit.Failure(Cause.Fail "started-value-task") @>
 
     [<Fact>]
     let ``shared combinators preserve environment and error semantics`` () =
@@ -276,7 +312,7 @@ module WorkflowBasicTests =
         test <@ publicMethods |> Array.contains "ReturnFrom" @>
         test <@ publicMethods |> Array.exists (fun name -> name.StartsWith("Yield")) |> not @>
         test <@ publicMethods |> Array.contains "Run" @>
-        test <@ argumentTypeNames = [| "BindError`3"; "ColdTask`1"; "FSharpAsync`1"; "FSharpFunc`2"; "FSharpOption`1"; "FSharpResult`2"; "FSharpValueOption`1"; "Flow`3"; "Task"; "Task`1"; "ValueTask"; "ValueTask`1" |] @>
+        test <@ argumentTypeNames = [| "FSharpFunc`2"; "Flow`3" |] @>
 
     [<Fact>]
     let ``flow lives in Axial Flow and composes sync flows`` () =

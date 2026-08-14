@@ -66,27 +66,30 @@ let validateOrder (order: Order) : Result<Order, PlaceOrderError> =
 let saveOrder (order: Order) : Flow<AppEnv, PlaceOrderError, Order> =
     flow {
         let! orders = Flow.envWith _.Orders
-        let! saveResult = orders.Save order
+        do!
+            Flow.fromTaskResult(fun _ -> orders.Save order)
+            |> Flow.mapError OrderRejected
 
-        match saveResult with
-        | Ok () -> return order
-        | Error reason -> return! Flow.fail (OrderRejected reason)
+        return order
     }
 
 let sendConfirmation (order: Order) : Flow<AppEnv, PlaceOrderError, unit> =
     flow {
         let! email = Flow.envWith _.Email
-        do! email.SendConfirmation order
+        do!
+            ColdTask(fun _ ->
+                task {
+                    do! email.SendConfirmation order
+                    return ()
+                })
     }
 
 let writeAudit (message: string) : Flow<AppEnv, PlaceOrderError, unit> =
     flow {
         let! audit = Flow.envWith _.Audit
-        let! result = audit.Write message
-
-        match result with
-        | Ok () -> return ()
-        | Error () -> return! Flow.fail AuditWriteFailed
+        return!
+            Flow.fromTaskResult(fun _ -> audit.Write message)
+            |> Flow.mapError (fun () -> AuditWriteFailed)
     }
 
 let placeOrder (order: Order) : Flow<AppEnv, PlaceOrderError, OrderId> =

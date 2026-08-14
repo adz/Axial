@@ -117,15 +117,18 @@ let verifyCustomer customer : Async<Result<unit, CustomerError>> =
     }
 ```
 
-A Flow can then bind both the `taskResult`-based `loadCustomer` function from above and this `asyncResult` function in
-the same block:
+A Flow can then bind the `taskResult`-based `loadCustomer` function through `ColdTask` and bind this `asyncResult`
+function directly in the same block:
 
 ```fsharp no-check reason="Uses the application-specific FsToolkit.ErrorHandling functions from the preceding examples"
 let prepareOrder customerId : Flow<OrderEnv, CustomerError, Order> =
     flow {
         let! repository = Flow.envWith _.Customers
-        let! customer, address = loadCustomer repository customerId // Task<Result<_, _>>
-        do! verifyCustomer customer                              // Async<Result<_, _>>
+        let! customer, address =
+            ColdTask(fun _ ->
+                loadCustomer repository customerId)
+
+        do! verifyCustomer customer // Async<Result<_, _>>
         return createOrder customer address
     }
 ```

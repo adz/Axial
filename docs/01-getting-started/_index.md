@@ -42,8 +42,8 @@ let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
         let! findTotal = Flow.envWith _.FindTotal
         let! charge = Flow.envWith _.Charge
-        let! total = findTotal orderId
-        let! reference = charge total
+        let! total = ColdTask(fun _ -> findTotal orderId)
+        let! reference = ColdTask(fun _ -> charge total)
         return { OrderId = orderId; Total = total; Reference = reference }
     }
 

@@ -37,7 +37,7 @@ let readFirstLine path =
             Task.CompletedTask)
         (fun reader ->
             flow {
-                return! reader.ReadLineAsync()
+                return! ColdTask(fun _ -> reader.ReadLineAsync())
             })
 ```
 

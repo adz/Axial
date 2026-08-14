@@ -36,7 +36,12 @@ type AppEnv =
 let saveOrder (orderId: string) : Flow<AppEnv, string, unit> =
     flow {
         let! env = Flow.env
-        do! env.Orders.Save orderId
+        do!
+            ColdTask(fun _ ->
+                task {
+                    do! env.Orders.Save orderId
+                    return ()
+                })
         let now = env.Clock.UtcNow()
         printfn "[%O] saved %s" now orderId
     }

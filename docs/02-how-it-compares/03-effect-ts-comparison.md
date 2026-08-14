@@ -30,7 +30,7 @@ Axial keeps the workflow and domain model in F#:
 
 - `flow { }` uses F# computation-expression syntax.
 - `Flow<'env, 'error, 'value>` exposes dependencies, expected errors, and success in an F# type.
-- `Result` and `Async` bind directly on .NET and Fable; .NET targets also bind `Task`, `ValueTask`, and `ColdTask`.
+- `Result` and `Async` bind directly on .NET and Fable; .NET targets bind `ColdTask` for cold, cancellation-aware task factories. Raw `Task` and `ValueTask` values require explicit started-work adapters.
 - On Fable, `Async` is the Flow-facing bridge for JavaScript asynchronous work. Promise-returning APIs can be adapted
   to `Async` and then bound in `flow { }`; application code does not need Effect-TS merely to await a Promise.
 - Environment records and layers use ordinary F# values rather than a JavaScript-facing context boundary.

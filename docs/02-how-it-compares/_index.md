@@ -16,7 +16,7 @@ focused library is enough.
   testing, with failure-path tests for each claimed guarantee.
 - [FsToolkit.ErrorHandling Comparison](./fstoolkit-errorhandling-comparison.html) compares Flow with `Result`,
   `Async<Result<_, _>>`, and `Task<Result<_, _>>` computation expressions. It explains when a local railway-oriented
-  pipeline is sufficient and how to bind an existing `Task<Result<_, _>>` inside Flow.
+  pipeline is sufficient and how to bring a `Task<Result<_, _>>` function into Flow through `ColdTask`.
 
 ## The wider effect model
 

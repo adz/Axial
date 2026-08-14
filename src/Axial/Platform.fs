@@ -5,7 +5,7 @@
 /// file rather than two conditionally-included ones; split them if Fable restores the property.)
 ///
 /// Not every FABLE_COMPILER directive in the package is a true platform swap. A handful of members inside
-/// otherwise dual-bodied files (BindError.fs's Task/ValueTask overloads, FlowBuilder.fs's ColdTask/Task/ValueTask
+/// otherwise dual-bodied files (BindError.fs's Task/ValueTask adapters, FlowBuilder.fs's ColdTask sources
 /// overloads) have no Fable-side counterpart at all. Moving those into this module would bloat Platform.fs with
 /// business logic that never varies -- it would just be "the .NET body" with an empty Fable twin -- so per this
 /// module's purpose (isolating genuine platform variance) they are left as `#if !FABLE_COMPILER` guarded

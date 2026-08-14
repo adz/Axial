@@ -43,7 +43,7 @@ let priceInAud<'env, 'error when 'env :> IHasExchangeRates>
     : Flow<'env, 'error, decimal> =
     flow {
         let! rates = ExchangeRates.service
-        let! rate = rates.GetUsdToAud()
+        let! rate = ColdTask(fun _ -> rates.GetUsdToAud())
         return usdAmount * rate
     }
 ```

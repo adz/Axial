@@ -44,8 +44,8 @@ let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
         let! findTotal = Flow.envWith _.FindTotal
         let! charge = Flow.envWith _.Charge
-        let! total = findTotal orderId
-        let! reference = charge total
+        let! total = ColdTask(fun _ -> findTotal orderId)
+        let! reference = ColdTask(fun _ -> charge total)
         return { OrderId = orderId; Total = total; Reference = reference }
     }
 
@@ -91,10 +91,12 @@ still take a plain record and stay testable without the container.
 
 ## Convert leaf functions last
 
-Inside the module, an existing `Task`-returning function is already usable: binding a
-`Task<Result<'value, 'error>>` in a `flow { }` routes its `Error` into the expected-error channel, and
-`Flow.fromTask` lifts a plain `Task`. Convert those leaves only when they need the runtime themselves, for example
-when they acquire a resource or start child work.
+Inside the module, wrap a `CancellationToken -> Task<_>` function in `ColdTask` before binding it. The wrapper keeps
+task creation cold and receives Flow's runtime cancellation token. When the task returns `Result<'value,'error>`, the
+builder routes `Error` into the expected-error channel.
+
+Use `Flow.fromTask` or `Flow.fromTaskResult` when composing without `flow { }`. Use `Flow.awaitStartedTask` only when a
+host API has already started the operation.
 
 ## Go further
 

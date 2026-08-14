@@ -113,24 +113,37 @@ let workflow : Flow<unit, string, int> =
     |> Flow.fromOption "missing value"
 ```
 
-## Error: ColdTask Does Not Match `Task`
+## Error: Task is not a Flow builder source
 
-Direct `flow { let! ... }` binding supports `ColdTask<'value>` for delayed task work.
+Raw `Task<'value>` and `ValueTask<'value>` values do not bind directly in `flow { }`. A task is already running, while
+Flow is a cold description that may run more than once.
 
-`ColdTask<'value>` means:
+Wrap work that should start with the Flow in `ColdTask`:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-CancellationToken -> Task<'value>
-```
-
-Wrap the factory explicitly:
-
-```fsharp
+```fsharp no-check reason="The application service is described in the surrounding prose"
 let load : ColdTask<int> =
-    ColdTask(fun _ -> Task.FromResult 42)
+    ColdTask(fun cancellationToken -> service.loadAsync cancellationToken)
+
+let workflow =
+    flow {
+        let! value = load
+        return value
+    }
 ```
 
-If you already have a started `Task<'value>`, bind it directly in `flow {}` instead.
+If the cold task returns `Result<'value,'error>`, `let!` and `return!` place `Error` in Flow's typed error channel.
+
+When work has already started, name that lifecycle explicitly:
+
+```fsharp no-check reason="The already-running application task is described in the surrounding prose"
+let workflow =
+    flow {
+        let! value = Flow.awaitStartedTask runningTask
+        return value
+    }
+```
+
+Use `Flow.awaitStartedTaskResult` when the started task returns `Result`.
 
 ## When Type Errors Usually Mean A Boundary Problem
 

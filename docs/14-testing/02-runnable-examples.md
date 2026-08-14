@@ -47,7 +47,7 @@ let greetingTask : Flow<AppEnv, string, string> =
     flow {
         let! env = Flow.env // Flow<AppEnv, string, AppEnv>
         let! greeting = greetingFlow // Flow<AppEnv, string, string>
-        let! suffix = env.LoadSuffix // Flow<AppEnv, string, string>
+        let! suffix = Flow.awaitStartedTask env.LoadSuffix
         return $"{greeting}{suffix}"
     }
 
@@ -135,7 +135,7 @@ let asyncExample : Flow<int, string, int> =
 let taskExample : Flow<int, string, int> =
     flow {
         let! env = Flow.envWith id
-        let! suffix = Task.FromResult 5
+        let! suffix = ColdTask(fun _ -> Task.FromResult 5)
         return env + suffix
     }
 

@@ -428,8 +428,7 @@ module FileSystem =
         when 'env :> IHasFileSystem =
         flow {
             let! fileSystem = service
-            let! cancellationToken = Flow.Runtime.cancellationToken
-            return! operation fileSystem cancellationToken
+            return! ColdTask(fun cancellationToken -> operation fileSystem cancellationToken)
         }
         |> protect path
 
@@ -440,8 +439,12 @@ module FileSystem =
         when 'env :> IHasFileSystem =
         flow {
             let! fileSystem = service
-            let! cancellationToken = Flow.Runtime.cancellationToken
-            do! operation fileSystem cancellationToken
+            do!
+                ColdTask(fun cancellationToken ->
+                    task {
+                        do! operation fileSystem cancellationToken
+                        return ()
+                    })
         }
         |> protect path
 

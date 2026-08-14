@@ -482,6 +482,11 @@ module Fiber =
 /// <summary>
 /// Represents delayed task work that can observe a runtime cancellation token when it is started.
 /// </summary>
+/// <remarks>
+/// Bind a cold task directly in <c>flow { }</c>. When the task produces <c>Result&lt;'value,'error&gt;</c>,
+/// the builder places <c>Error</c> in Flow's typed error channel for both <c>let!</c> and <c>return!</c>.
+/// A raw, already-started <c>Task</c> is not a Flow builder source.
+/// </remarks>
 /// <typeparam name="value">The type of the produced task value.</typeparam>
 type ColdTask<'value> =
     | ColdTask of (CancellationToken -> Task<'value>)

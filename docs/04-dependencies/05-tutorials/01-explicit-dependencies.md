@@ -52,16 +52,21 @@ let validateOrder (order: Order) : Result<Order, PlaceOrderError> =
 
 let saveOrder (orders: IOrderRepository) (order: Order) : Flow<unit, PlaceOrderError, Order> =
     flow {
-        let! saveResult = orders.Save order
+        do!
+            Flow.fromTaskResult(fun _ -> orders.Save order)
+            |> Flow.mapError OrderRejected
 
-        match saveResult with
-        | Ok () -> return order
-        | Error reason -> return! Flow.fail (OrderRejected reason)
+        return order
     }
 
 let sendConfirmation (email: IEmailSender) (order: Order) : Flow<unit, PlaceOrderError, unit> =
     flow {
-        do! email.SendConfirmation order
+        do!
+            ColdTask(fun _ ->
+                task {
+                    do! email.SendConfirmation order
+                    return ()
+                })
     }
 
 let placeOrder

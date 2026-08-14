@@ -4,7 +4,7 @@ open System
 open System.Collections.Generic
 
 /// <summary>
-/// A one-shot, typed handoff point that can be completed exactly once with a full <see cref="T:Axial.Exit`2" />.
+/// A one-shot, typed handoff point that can be completed exactly once with a full <see cref="T:Axial.Exit`2">Exit</see>.
 /// </summary>
 /// <remarks>
 /// Use <c>Deferred</c> when fibers need to coordinate through Axial Flow outcomes rather than raw platform-native

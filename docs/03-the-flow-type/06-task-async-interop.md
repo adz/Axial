@@ -1,201 +1,199 @@
 ---
-title: Task and Async Interop
-description: Direct binding rules for async and task work in Axial.
+title: Async and Task interop
+description: Convert .NET asynchronous work into cold, cancellable Flows without losing the typed error channel.
 ---
 
-# Task and Async Interop
+# Async and Task interop
 
-Use `flow {}` for flows, results, F# async work, and .NET tasks. The same block can use all of them.
+Axial distinguishes a description of asynchronous work from work that has already started. Use that distinction to keep
+workflows rerunnable, pass cancellation to external operations, and preserve `Result.Error` in Flow's typed error
+channel.
 
-## Direct Binds
+## Choose an interop form
 
-`let!` binds the completed value to the name on its left. `do!` binds work returning `unit`.
-`return!` uses another flow as the result of the block.
+| Source | Use | Behavior |
+| --- | --- | --- |
+| `Async<'value>` | Bind directly in `flow { }` | Cold and rerunnable; the value is successful output |
+| `Async<Result<'value,'error>>` | Bind directly in `flow { }` | Cold and rerunnable; `Error` enters the typed error channel |
+| `ColdTask<'value>` | Bind directly in `flow { }` | Cold task factory; receives Flow's cancellation token |
+| `ColdTask<Result<'value,'error>>` | Bind directly in `flow { }` | Cold task factory; `Error` enters the typed error channel |
+| `CancellationToken -> Task<'value>` | `Flow.fromTask` | Creates a cold Flow whose task value is successful output |
+| `CancellationToken -> Task<Result<'value,'error>>` | `Flow.fromTaskResult` | Creates a cold Flow whose `Error` enters the typed error channel |
+| Already-running `Task<'value>` | `Flow.awaitStartedTask` | Awaits the existing operation; Flow cannot pass cancellation into it |
+| Already-running `Task<Result<'value,'error>>` | `Flow.awaitStartedTaskResult` | Awaits the existing operation and lifts `Error` |
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-flow {
-    let! user = fetchUser userId
-    do! saveUser user
-    return! notifyUser user
-}
-```
+`ValueTask` has the corresponding `fromValueTask`, `fromValueTaskResult`, `awaitStartedValueTask`, and
+`awaitStartedValueTaskResult` functions.
 
-Here is the same block with the left- and right-hand types shown:
+## Bind Async values
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-flow {
-    let! (user: User) = (fetchUser userId: Task<User>)
-    do! (saveUser user: Async<unit>)
-    return! (notifyUser user: Flow<AppEnv, AppError, Receipt>)
-}
-// Flow<AppEnv, AppError, Receipt>
-```
+`Async` is already a cold F# computation. Bind it directly:
 
-| Type | Outcome |
-| :--- | :--- |
-| `Flow<'env, 'error, 'value>` | Continues with the flow's value. |
-| `Result<'value, 'error>` | Continues on `Ok`, short-circuits on `Error`. |
-| `Async<'value>` | Awaits the async and continues with the value. |
-| `Async<Result<'value, 'error>>` | Awaits the async and handles the Result outcome. |
-| `Task<'value>` | Awaits the task and continues with the value. |
-| `Task<Result<'value, 'error>>` | Awaits the task and handles the Result outcome. |
-| `ValueTask<'value>` | Awaits the value task and continues with the value. |
-| `ValueTask<Result<'value, 'error>>` | Awaits and handles the Result outcome. |
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let loadCount : Async<int> =
+    async { return 42 }
 
-Direct `Async`, `Task`, and `ValueTask` binds treat thrown exceptions as defects (`Cause.Die`) and cancellation as interruption (`Cause.Interrupt`). Use the attempt constructors when exceptions are expected and should become typed failures:
-
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let loadFromInterop : ExnFlow<string> =
-    Flow.attemptTask (fun _ -> legacyClient.LoadAsync())
-```
-
-`Flow.attemptAsync`, `Flow.attemptTask`, and `Flow.attemptValueTask` return `Cause.Fail exn` for non-cancellation exceptions. `Flow.attemptTask` and `Flow.attemptValueTask` are .NET only.
-
-### Example: Mixed Orchestration
-
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-let fetchUser (id: int) : Task<User> = ...
-let validate (user: User) : Result<User, string> = ...
-let saveUser (user: User) : Async<unit> = ...
-
-let processUser id =
+let workflow =
     flow {
-        // Bind a .NET Task
-        let! user = fetchUser id
-        
-        // Bind a Result
-        let! validUser = validate user
-        
-        // Bind an F# Async
-        do! saveUser validUser
-        
-        return "Done"
+        let! count = loadCount
+        return count + 1
     }
 ```
 
-## Option and ValueOption
+An outer `Result` is part of the Flow contract, not a nested success value:
 
-`Option<'value>` and `ValueOption<'value>` can also be bound directly, but only if the flow's error type is `unit`.
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let loadUser : Async<Result<User, LoadUserError>> =
+    repository.loadUser userId
 
-```fsharp
-let maybeValue = Some 42
-
-let workflow : Flow<unit, int> =
+let workflow : Flow<unit, LoadUserError, string> =
     flow {
-        let! x = maybeValue // Binds directly because error is unit
-        return x
+        let! user = loadUser
+        return user.Name
     }
 ```
 
-If you need a specific error when an option is `None`, use `Flow.fromOption`:
+The same lifting applies to `return!`:
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-let workflow : Flow<unit, string, int> =
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let workflow : Flow<unit, LoadUserError, User> =
     flow {
-        let! x = maybeValue |> Flow.fromOption "Value was missing"
-        return x
+        return! loadUser
     }
 ```
 
-## Hot vs. Cold Work
+Use `Flow.fromAsync` or `Flow.fromAsyncResult` when composing without `flow { }`.
 
-Understanding the difference between "Hot" and "Cold" work is crucial for correct execution and cancellation behavior.
+## Bind cold Task work
 
-### Hot Work (Started Tasks)
-Types like `Task<'T>` and `ValueTask<'T>` are **Hot**. The work is already running before you bind it.
-- Rerunning the flow re-awaits the same underlying work.
-- You cannot pass the flow's runtime `CancellationToken` into work that has already started.
+A `Task` starts when the method that returns it runs. Wrap the factory in `ColdTask` so the method runs only when the
+Flow runs:
 
-The constructors say which you are getting. `Flow.fromTask` and `Flow.attemptTask` take a *factory*
-(`CancellationToken -> Task<'T>`), so they stay cold and cancellable. `Flow.awaitStartedTask` and
-`Flow.attemptStartedTask` take a task that is already running, and are named to make that visible at the call site:
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let loadUser : ColdTask<Result<User, LoadUserError>> =
+    ColdTask(fun cancellationToken ->
+        repository.loadUserAsync(userId, cancellationToken))
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-Flow.fromTask (fun token -> client.GetStringAsync(url, token))   // cold, cancellable, re-runnable
-Flow.awaitStartedTask alreadyRunningTask                          // hot, uncancellable, single result
-```
-
-### Cold Work (Flows and ColdTask)
-`Flow` itself and the `ColdTask<'T>` type are **Cold**. The work only starts when the flow is executed by `Flow.run`, `Flow.startTask`, or one of the `StartAs*` / `RunSynchronously` members. `Flow.toAsync` builds another cold handle and starts nothing.
-- Rerunning the flow repeats the work from scratch.
-- The runtime `CancellationToken` is automatically passed into the work.
-
-### Using `ColdTask<'T>`
-`ColdTask<'T>` is a simple wrapper: `CancellationToken -> Task<'T>`. It allows you to define task-based work that remains lazy and cancellation-aware.
-
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-let loadData path = 
-    ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))
-
-let myFlow =
+let workflow : Flow<unit, LoadUserError, string> =
     flow {
-        let! text = loadData "info.txt"
-        return text
+        let! user = loadUser
+        return user.Name
     }
 ```
 
-### Pitfall: Don't Register a Second Cancellation Observer on the Same Token
+`ColdTask<Result<_,_>>` lifts its outer `Result` for both `let!` and `return!`:
 
-`Flow.zipPar`, `Flow.race`, and `Flow.Runtime.timeout` interrupt a branch by cancelling the
-`CancellationToken` your adapter was handed. If your adapter already awaits a cancellation-aware
-operation on that token (`Task.Delay(ms, ct)`, an `HttpClient` call, `File.ReadAllTextAsync(path, ct)`,
-etc.), that is sufficient — the awaited call will throw `OperationCanceledException` /
-`TaskCanceledException` when interrupted, and `flow {}` turns that into `Cause.Interrupt` for you.
-
-Do not *also* call `ct.Register(callback)` to observe the same cancellation as a side channel:
-
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-// Don't do this — two observers racing on one token.
-task {
-    use _ = ct.Register(fun () -> sideEffect ())   // manual observer #1
-    do! Task.Delay(30_000, ct)                     // observer #2, built into Task.Delay
-    return result
-}
-```
-
-`CancellationTokenSource.Cancel()` runs every registered callback synchronously, in unspecified
-order, on whichever thread called `Cancel()`. If the framework's own registration (the one behind
-`Task.Delay`) happens to run first, its continuation can execute *reentrantly*, inside that same
-`Cancel()` call — and if that continuation disposes your registration (e.g. a `use` binding going
-out of scope in a `finally`) before your callback has run, your callback is silently skipped, not
-delayed. This isn't a race that resolves given enough time; it's a real chance the side effect
-never happens, and it reproduces more often under contention (many concurrent fibers, CI runners
-under load), which is exactly the kind of environment that makes it feel like "just flakiness."
-
-Instead, observe cancellation from the operation you're already awaiting:
-
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-task {
-    try
-        do! Task.Delay(30_000, ct)
-        return result
-    with :? OperationCanceledException ->
-        sideEffect ()
-        return fallback
-}
-```
-
-This applies to any adapter written against a `Flow`-supplied token, not just tests — anywhere you
-combine a manual `Register` with another cancellation-aware call on the same token is at risk.
-
-## Bind: Bridging with Error Packaging
-
-When a source needs its error assigned or mapped before `flow {}` binds it, use **`Bind`** at the binding site.
-
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-let myFlow =
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let workflow : Flow<unit, LoadUserError, User> =
     flow {
-        let! value =
-            Task.FromResult(None)
-            |> Bind.error "missing"
-
-        return value
+        return! loadUser
     }
 ```
+
+Each execution invokes the factory again and supplies that execution's cancellation token. Retry, repeat, timeout, race,
+and interruption therefore operate on newly started work.
+
+## Convert a Task factory without a builder
+
+Use `Flow.fromTask` when the task returns an ordinary value:
+
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let download : Flow<unit, Never, byte array> =
+    Flow.fromTask(fun cancellationToken ->
+        client.GetByteArrayAsync(uri, cancellationToken))
+```
+
+Use `Flow.fromTaskResult` when the task returns an expected application failure:
+
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let loadUser : Flow<unit, LoadUserError, User> =
+    Flow.fromTaskResult(fun cancellationToken ->
+        repository.loadUserAsync(userId, cancellationToken))
+```
+
+Both functions invoke their factory on every execution. Thrown exceptions are defects; cancellation is interruption.
+The `Result` variant changes only how the returned value is interpreted.
+
+## Await work that already started
+
+Sometimes an API gives you a Task that is already running:
+
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let runningTask = repository.beginRefresh()
+
+let refresh : Flow<unit, Never, RefreshSummary> =
+    Flow.awaitStartedTask runningTask
+```
+
+If it returns `Result`, use the typed-error form:
+
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let runningTask : Task<Result<RefreshSummary, RefreshError>> =
+    repository.beginRefresh()
+
+let refresh : Flow<unit, RefreshError, RefreshSummary> =
+    Flow.awaitStartedTaskResult runningTask
+```
+
+An already-running task has different lifecycle semantics:
+
+- It started before the Flow.
+- Reusing the Flow awaits the same operation.
+- Flow cannot inject its cancellation token into work that already started.
+- Prefer a cold factory when you control task creation.
+
+Raw `Task` and `ValueTask` values do not bind directly in `flow { }`. This prevents an already-running operation from
+looking like a cold workflow description.
+
+## Handle expected exceptions
+
+The `from*`, `ColdTask`, and `awaitStarted*` paths treat thrown exceptions as defects. Use an `attempt*` function when
+an exception is an expected failure that callers should handle:
+
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let read : Flow<unit, exn, string> =
+    Flow.attemptTask(fun cancellationToken ->
+        File.ReadAllTextAsync(path, cancellationToken))
+```
+
+Available functions include:
+
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+Flow.attemptAsync
+Flow.attemptTask
+Flow.attemptValueTask
+Flow.attemptStartedTask
+Flow.attemptStartedValueTask
+```
+
+`OperationCanceledException` and `TaskCanceledException` become interruption rather than `Cause.Fail exn`.
+
+## Keep a Result as the successful value
+
+The builder interprets one outer `Result` as Flow's error channel. Add another successful layer when a nested Result is
+the value you intentionally need:
+
+```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+let inspect : ColdTask<Result<Result<User, LoadUserError>, Never>> =
+    ColdTask(fun cancellationToken ->
+        task {
+            let! result = repository.loadUserAsync(userId, cancellationToken)
+            return (Ok result : Result<_, Never>)
+        })
+
+let workflow : Flow<unit, Never, Result<User, LoadUserError>> =
+    flow {
+        return! inspect
+    }
+```
+
+The builder lifts the outer `Result<_,Never>` and leaves the inner `Result<User,LoadUserError>` as the successful value.
 
 ## Summary
 
-- Use **`flow {}`** for all application orchestration.
-- Prefer **direct binding** for `Async`, `Task`, and `Result`.
-- Use **`ColdTask`** for task-based logic that should respect flow cancellation, retry, and repetition.
-- Use **`Bind`** when a bind source needs `error` or `mapError` before entering `flow {}`.
+- Bind `Async` and `ColdTask` directly in `flow { }`.
+- An outer `Result.Error` always enters Flow's typed error channel.
+- Use `ColdTask` or `Flow.fromTask*` to start task work when the Flow runs.
+- Use `Flow.awaitStarted*` only for work that has already started.
+- Raw `Task` and `ValueTask` values are not Flow builder sources.
+- Use `attempt*` when exceptions are expected failures rather than defects.

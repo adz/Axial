@@ -129,4 +129,6 @@ let validateName name =
     |> Result.orError "Name required"
 ```
 
-Inside `flow {}`, direct binding is still the default. Reach for `Bind` only when the source error must be assigned or mapped before the bind.
+Inside `flow { }`, directly bind sources that already expose the intended error channel. Reach for `Bind` only when a
+source error must be assigned or mapped at that bind site. Raw `Task` and `ValueTask` values still require an explicit
+[Task interop adapter](/the-flow-type/task-async-interop.html); `Bind` changes an error, not an operation's lifecycle.

@@ -34,7 +34,7 @@ let asyncExample : Flow<int, string, int> =
 let taskExample : Flow<int, string, int> =
     flow {
         let! env = Flow.envWith id
-        let! suffix = Task.FromResult 5
+        let! suffix = ColdTask(fun _ -> Task.FromResult 5)
         return env + suffix
     }
 

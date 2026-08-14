@@ -72,12 +72,12 @@ let client = new HttpClient(BaseAddress = Uri "https://api.example.com/")
 
 Service records compose the same way as the other platform packages:
 
-```fsharp
+```fsharp no-check reason="The cross-package service fixtures are described in the surrounding prose"
 type WorkerEnv =
-    { Http: IHttp
-      Process: IProcess }
-    interface IHasHttp with member this.Http = this.Http
-    interface IHasProcess with member this.Process = this.Process
+    { HttpService: IHttp
+      ProcessService: IProcess }
+    interface IHasHttp with member this.Http = this.HttpService
+    interface IHasProcess with member this.Process = this.ProcessService
 ```
 
 A workflow that needs both declares `Flow<WorkerEnv, ...>` (or stays polymorphic with

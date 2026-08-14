@@ -177,14 +177,14 @@ module WorkflowErrorTests =
 
         let taskDefect =
             flow {
-                let! value = Task.FromException<int>(defect)
+                let! value = Task.FromException<int>(defect) |> Flow.awaitStartedTask
                 return value
             }
             |> Flow.runSync ()
 
         let taskCanceled =
             flow {
-                let! value = Task.FromCanceled<int>(CancellationToken(true))
+                let! value = Task.FromCanceled<int>(CancellationToken(true)) |> Flow.awaitStartedTask
                 return value
             }
             |> Flow.runSync ()
@@ -234,7 +234,7 @@ module WorkflowErrorTests =
 
         let taskBoundaryResult =
             flow {
-                let! value = Task.FromException<int>(defect)
+                let! value = Task.FromException<int>(defect) |> Flow.awaitStartedTask
                 return value
             }
             |> Flow.runSync ()
@@ -343,8 +343,6 @@ module WorkflowErrorTests =
         let taskReturnFromValueNone : Flow<unit, unit, int> =
             flow { return! ValueNone }
 
-        let flowArgumentTypeNames = flowBuilderBindAndReturnFromArgumentNames ()
-
         test <@ Flow.runSync 20 syncSome = Exit.Success 42 @>
         test <@ Flow.runSync 20 syncNone = Exit.Failure (Cause.Fail ()) @>
         test <@ Flow.runSync 20 syncValueSome = Exit.Success 42 @>
@@ -353,9 +351,6 @@ module WorkflowErrorTests =
         test <@ Flow.runSync () asyncReturnFromNone = Exit.Failure (Cause.Fail ()) @>
         test <@ Flow.runSync 19 taskWorkflow = Exit.Success 42 @>
         test <@ Flow.runSync () taskReturnFromValueNone = Exit.Failure (Cause.Fail ()) @>
-        test <@ flowArgumentTypeNames |> Array.contains "FSharpOption`1" @>
-        test <@ flowArgumentTypeNames |> Array.contains "FSharpResult`2" @>
-        test <@ flowArgumentTypeNames |> Array.contains "FSharpValueOption`1" @>
 
     [<Fact>]
     let ``explicit option adapters support custom workflow errors across modules`` () =

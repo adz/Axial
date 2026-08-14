@@ -256,7 +256,7 @@ module internal Shared =
                 let! cancellationToken = Flow.Runtime.cancellationToken
                 cancellationToken.ThrowIfCancellationRequested()
                 let (task: Task<int>) = Task.FromResult index
-                return! task
+                return! Flow.awaitStartedTask task
             }
 
         let mutable flow = Flow.succeed 0

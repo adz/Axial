@@ -28,6 +28,9 @@ Most .NET developers and many F# developers have never used an effect system, an
 - `Flow<'env,'error,'value>` is the one public workflow model. Carrier-specific workflow concepts such as `Effect`, `AsyncFlow`, and `TaskFlow` are not public alternatives.
 - Short aliases describe common channel combinations without introducing different execution models.
 - Workflows are cold descriptions. Execution happens only through explicit runners and application roots.
+- `flow { }` normalizes `Async` and `ColdTask` sources through `FlowBuilder.Source`; an outer `Result.Error` enters the
+  typed error channel for both `let!` and `return!`. Raw `Task` and `ValueTask` values are not builder sources because
+  they are already running. Use `ColdTask` for cold task factories and `Flow.awaitStarted*` for existing work.
 - Expected failures use `'error`; defects, interruption, and cancellation remain distinct in `Cause` and `Exit`.
 
 ## Explicit dependencies and runtime boundary

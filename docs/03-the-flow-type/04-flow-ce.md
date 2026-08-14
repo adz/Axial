@@ -39,8 +39,10 @@ flow {
 // Flow<AppEnv, AppError, string>
 ```
 
-`flow {}` can also bind compatible `Result`, `Task`, `ValueTask`, and `Async` values. The output remains one Flow
-description; execution still waits for an explicit boundary.
+`flow {}` also binds `Result`, `Option`, `ValueOption`, `Async`, and `ColdTask`. An outer `Result.Error` enters the
+Flow error channel. Raw `Task` and `ValueTask` values do not bind directly; use `ColdTask` for work that should start
+with the Flow or an explicit `Flow.awaitStarted*` function for work already running. The output remains one cold Flow
+description until an execution boundary runs it.
 
 Normal F# `if`, `match`, `for`, and `while` expressions work inside the computation expression.
 

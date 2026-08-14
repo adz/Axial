@@ -37,6 +37,7 @@
     <Compile Include="Platform.fs" />
     <Compile Include="TelemetryTypes.fs" />
     <Compile Include="Core.fs" />
+    <Compile Include="Interop.fs" />
     <Compile Include="Foundation.fs" />
     <Compile Include="Runtime.fs" />
     <Compile Include="Policy.fs" />
