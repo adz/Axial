@@ -83,8 +83,8 @@ module Context =
     let withEndUserId value flow =
         flow |> withAttribute (endUserId value)
 
-    /// <summary>Reads the ambient telemetry context.</summary>
-    let runtime<'env, 'error> : Flow<'env, 'error, TelemetryContext> =
+    /// <summary>Reads the currently scoped telemetry context.</summary>
+    let current<'env, 'error> : Flow<'env, 'error, TelemetryContext> =
         Flow(fun _ _ -> RuntimeState.current().TelemetryContext |> Execution.ofValue)
 
     /// <exclude/>

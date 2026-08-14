@@ -11,7 +11,7 @@ still chooses and configures its OpenTelemetry listeners, exporters, and samplin
 | Surface | Members | Purpose |
 | --- | --- | --- |
 | `AttributeKey` | `string`, `boolean`, `int64`, `float`, and list variants | Define a typed application attribute |
-| `Context` | `attribute`, construction, scoping, inspection, and semantic helpers | Carry typed telemetry attributes through the ambient Flow runtime |
+| `Context` | `attribute`, `current`, construction, scoping, inspection, and semantic helpers | Carry typed telemetry attributes through the ambient Flow runtime |
 | `Activity` | `source`, `traceOn`, `traceWithSource`, `trace`, `traceWith` | Wrap a workflow in an Activity and stamp its final Exit |
 | `FiberTelemetry` | `observer`, `observe`, `observerWithSpans`, `observeWithSpans` | Report fiber defects or create one span per fiber |
 | `FiberMetrics` | `meter`, `observer`, `observe` | Record fiber starts, live counts, settlement, duration, and unobserved defects |

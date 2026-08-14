@@ -166,6 +166,18 @@ application
 |> Context.withContext requestContext
 ```
 
+Read the currently scoped context from a workflow when an integration needs to inspect it:
+
+```fsharp no-check reason="The integration-specific export function is defined elsewhere"
+flow {
+    let! telemetryContext = Context.current
+    return exportContext telemetryContext
+}
+```
+
+Most workflows should scope attributes rather than read the whole context. Adapters use `Context.current` at integration
+boundaries; application dependencies still belong in the Flow environment.
+
 Attribute names are contracts with dashboards and alerts. Follow OpenTelemetry semantic conventions when one applies.
 Use an application-owned prefix otherwise. Do not attach secrets, unrestricted personal information, or high-cardinality
 values to metrics. A correlation value that must cross process boundaries may belong in OpenTelemetry baggage; trace

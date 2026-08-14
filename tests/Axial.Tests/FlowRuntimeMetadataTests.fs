@@ -13,7 +13,7 @@ module FlowRuntimeMetadataTests =
         let retryCount = AttributeKey.int64 "example.retry.count"
 
         let workflow =
-            Context.runtime
+            Context.current
             |> Flow.map (fun context ->
                 Context.tryFind Context.Keys.endUserId context,
                 Context.tryFind retryCount context)
@@ -27,7 +27,7 @@ module FlowRuntimeMetadataTests =
     [<Fact>]
     let ``Telemetry context overrides nested attributes and restores the outer context`` () =
         let scope = AttributeKey.string "example.scope"
-        let readScope = Context.runtime |> Flow.map (Context.tryFind scope)
+        let readScope = Context.current |> Flow.map (Context.tryFind scope)
         let inner = readScope |> Context.withAttribute (Context.attribute scope "inner")
 
         let workflow =
@@ -49,7 +49,7 @@ module FlowRuntimeMetadataTests =
 
         let workflow =
             flow {
-                let! fiber = Flow.fork Context.runtime
+                let! fiber = Flow.fork Context.current
                 return! Flow.join fiber
             }
             |> Context.withAttribute (Context.attribute tenantId "tenant-7")
