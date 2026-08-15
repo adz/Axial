@@ -62,8 +62,21 @@ Updates the value and returns a derived result (a common pattern for "get and in
 let incrementAndGet (counter: Ref<int>) =
     Ref.modify (fun x -> 
         let next = x + 1
-        next, next // (new state, return value)
+        next, next // (return value, new state)
     ) counter
+```
+
+### The atomic family
+
+`Ref.getAndSet`, `Ref.getAndUpdate`, and `Ref.updateAndGet` cover the common "get the previous/updated value while
+changing state" cases without writing a custom `modify` function:
+
+```fsharp
+let incrementAndGet (counter: Ref<int>) =
+    Ref.updateAndGet (fun x -> x + 1) counter
+
+let snapshotAndReset (counter: Ref<int>) =
+    Ref.getAndSet 0 counter
 ```
 
 ## Example: Shared Progress Tracker
@@ -73,11 +86,7 @@ let trackProgress (total: int) =
     flow {
         let! progress = Ref.make 0
         
-        let doStep = 
-            flow {
-                let! current = Ref.modify (fun p -> p + 1, p + 1) progress
-                return current
-            }
+        let doStep = Ref.updateAndGet (fun p -> p + 1) progress
             
         // Run several steps
         for _ in 1 .. total do
@@ -95,4 +104,7 @@ let trackProgress (total: int) =
 | `get` | `Ref<'T> -> Flow<'env, 'none, 'T>` | Reads the current value of the reference. |
 | `set` | `'T -> Ref<'T> -> Flow<'env, 'none, unit>` | Sets the value of the reference to a new value. |
 | `update` | `('T -> 'T) -> Ref<'T> -> Flow<'env, 'none, unit>` | Atomically updates the value using the supplied function. |
-| `modify` | `('T -> 'T * 'v) -> Ref<'T> -> Flow<'env, 'none, 'v>` | Atomically updates the value and returns a derived result. |
+| `modify` | `('T -> 'v * 'T) -> Ref<'T> -> Flow<'env, 'none, 'v>` | Atomically updates the value and returns a derived result. |
+| `getAndSet` | `'T -> Ref<'T> -> Flow<'env, 'none, 'T>` | Sets the value and returns the value it held before the update. |
+| `getAndUpdate` | `('T -> 'T) -> Ref<'T> -> Flow<'env, 'none, 'T>` | Updates the value and returns the value it held before the update. |
+| `updateAndGet` | `('T -> 'T) -> Ref<'T> -> Flow<'env, 'none, 'T>` | Updates the value and returns the value after the update. |

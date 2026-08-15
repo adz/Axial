@@ -70,17 +70,65 @@ module Ref =
         Flow.envWith (fun _ -> Platform.lock gate (fun () -> cell.Value <- f cell.Value))
 
     /// <summary>Updates the value of the reference using the supplied function and returns a derived value.</summary>
-    /// <param name="f">The update function of type <c>'T -> 'T * 'v</c>.</param>
+    /// <param name="f">The update function of type <c>'T -> 'v * 'T</c>, returning the result before the next state.</param>
     /// <param name="reference">The <see cref="T:Axial.State.Ref`1" /> to update.</param>
-    /// <returns>A flow that updates the value and returns the second part of the tuple returned by <paramref name="f" />.</returns>
+    /// <returns>A flow that updates the value and returns the first part of the tuple returned by <paramref name="f" />.</returns>
     /// <example>
     /// <code>
-    /// Ref.modify (fun x -> x + 1, "increased") myRef
+    /// Ref.modify (fun x -> "increased", x + 1) myRef
     /// </code>
     /// </example>
-    let modify (f: 'T -> 'T * 'v) (Ref (cell, gate) as reference) : Flow<'env, 'none, 'v> =
+    let modify (f: 'T -> 'v * 'T) (Ref (cell, gate) as reference) : Flow<'env, 'none, 'v> =
         Flow.envWith (fun _ ->
             Platform.lock gate (fun () ->
-                let next, result = f cell.Value
+                let result, next = f cell.Value
                 cell.Value <- next
                 result))
+
+    /// <summary>Sets the value of the reference and returns the value it held before the update.</summary>
+    /// <param name="value">The new value to set.</param>
+    /// <param name="reference">The <see cref="T:Axial.State.Ref`1" /> to update.</param>
+    /// <returns>A flow that returns the previous value.</returns>
+    /// <example>
+    /// <code>
+    /// Ref.getAndSet 20 myRef
+    /// </code>
+    /// </example>
+    let getAndSet (value: 'T) (Ref (cell, gate) as reference) : Flow<'env, 'none, 'T> =
+        Flow.envWith (fun _ ->
+            Platform.lock gate (fun () ->
+                let previous = cell.Value
+                cell.Value <- value
+                previous))
+
+    /// <summary>Updates the value using the supplied function and returns the value it held before the update.</summary>
+    /// <param name="f">The update function of type <c>'T -> 'T</c>.</param>
+    /// <param name="reference">The <see cref="T:Axial.State.Ref`1" /> to update.</param>
+    /// <returns>A flow that returns the previous value.</returns>
+    /// <example>
+    /// <code>
+    /// Ref.getAndUpdate (fun x -> x + 1) myRef
+    /// </code>
+    /// </example>
+    let getAndUpdate (f: 'T -> 'T) (Ref (cell, gate) as reference) : Flow<'env, 'none, 'T> =
+        Flow.envWith (fun _ ->
+            Platform.lock gate (fun () ->
+                let previous = cell.Value
+                cell.Value <- f previous
+                previous))
+
+    /// <summary>Updates the value using the supplied function and returns the value after the update.</summary>
+    /// <param name="f">The update function of type <c>'T -> 'T</c>.</param>
+    /// <param name="reference">The <see cref="T:Axial.State.Ref`1" /> to update.</param>
+    /// <returns>A flow that returns the updated value.</returns>
+    /// <example>
+    /// <code>
+    /// Ref.updateAndGet (fun x -> x + 1) myRef
+    /// </code>
+    /// </example>
+    let updateAndGet (f: 'T -> 'T) (Ref (cell, gate) as reference) : Flow<'env, 'none, 'T> =
+        Flow.envWith (fun _ ->
+            Platform.lock gate (fun () ->
+                let next = f cell.Value
+                cell.Value <- next
+                next))

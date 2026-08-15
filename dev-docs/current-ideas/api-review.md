@@ -17,62 +17,37 @@ Axial's automatic fiber spans and metrics correctly retain the `Axial` instrumen
 runtime behavior. The public `Activity.source`, `Activity.trace`, and `Activity.traceWith` defaults can nevertheless
 encourage applications to place user operations under Axial's scope.
 
-Review whether 1.0 should:
-
-- rename `Activity.source` to `Activity.runtimeSource`;
-- hide the runtime source if applications do not need direct access;
-- retain or remove the default-source `trace` and `traceWith` shortcuts;
-- expose an adapter value that captures an application source once, rather than requiring it at every tracing call.
-
-One possible configured shape is:
+Decision: introduce an `ActivityTracer` adapter that captures an application source once, and drop the
+default-source `trace`/`traceWith` shortcuts that currently make it easy to tag application spans under Axial's own
+`ActivitySource`. Also rename `Activity.source` to `Activity.runtimeSource` (or hide it) so it reads unambiguously as
+Axial-internal, not a general-purpose default.
 
 ```fsharp
-let tracing = ActivityTracing.create applicationActivitySource
+let appTracer = ActivityTracer.create appActivitySource
 
 workflow
-|> tracing.trace "orders.place"
+|> appTracer.trace "orders.place"
 ```
+
+Decided: ambient, not explicit-via-`'env`. Route the tracer through `RuntimeContext` the same way Axial already
+threads `TelemetryContext`, `AnnotationSink`, and `Observer` — a fiber-scoped cell, inherited by forked children, not
+a process-wide global. Install it once near the composition root, e.g. `Flow.Runtime.withTracer appTracer workflow`.
+Routing it through `'env` instead would put a tracer-capability constraint on every workflow's environment type
+across the whole public API, disproportionate to the problem and inconsistent with how every other cross-cutting
+concern in Axial already works.
+
+"By construction" here means no silent wrong answer, not compile-time proof: if `Activity.trace` runs with no
+tracer installed, it must throw immediately rather than default to Axial's own `ActivitySource`. That converts the
+original defect (spans silently mistagged under the wrong scope) into a loud, obvious startup-composition failure
+instead of a compile-time impossibility — which is sufficient, and consistent with the rest of the ambient
+`RuntimeContext` design.
+
+`ActivityTracer.create` remains the only way to obtain a value with a `.trace` member for the explicit call-site
+form (`appTracer.trace name flow`); the ambient path is the convenience layer on top of it, not a replacement.
 
 Any chosen API must keep service name, instrumentation scope, and span name distinct.
 
-## 2. Decide the `Ref.modify` tuple order and complete the atomic family
-
-The current function expects `newState * result`:
-
-```fsharp
-Ref.modify (fun current ->
-    let next = current + 1
-    next, current)
-```
-
-Many functional state APIs, including ZIO's `Ref.modify`, use `result * newState`. Either order can work, but changing it
-after 1.0 would be especially error-prone. Test both forms in realistic pipelines and choose one deliberately.
-
-Also decide whether the 1.0 surface should include the predictable atomic family:
-
-```fsharp
-Ref.getAndSet
-Ref.getAndUpdate
-Ref.updateAndGet
-```
-
-Avoid adding aliases unless each operation has distinct return semantics.
-
-## 3. Decide whether the public type should remain `TelemetryContext`
-
-Users construct and scope values through the `Context` module, while public signatures expose the concrete type name
-`TelemetryContext`:
-
-```fsharp
-Context.empty
-Context.withAttribute attribute flow
-```
-
-This may be the right balance: `Context` alone is broad, while `TelemetryContext` is unambiguous in type annotations.
-Review generated reference pages, error messages, and explicit annotations to ensure the module/type distinction is
-clear. Rename only if application code demonstrates recurring confusion.
-
-## 4. Stabilize the schedule contract
+## 2. Stabilize the schedule contract
 
 Before freezing schedules, specify and test:
 
@@ -104,6 +79,4 @@ without separate evidence from application use.
 ## Suggested review order
 
 1. Application versus Axial `ActivitySource` ownership.
-2. `Ref.modify` tuple order and atomic helpers.
-3. `TelemetryContext` type naming.
-4. Exact schedule semantics.
+2. Exact schedule semantics.

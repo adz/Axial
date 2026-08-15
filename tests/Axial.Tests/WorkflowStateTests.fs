@@ -18,12 +18,26 @@ module WorkflowStateTests =
                 let! r = Ref.make 10
                 do! r |> Ref.update (fun v -> v + 1)
                 let! v1 = r |> Ref.get
-                let! v2 = r |> Ref.modify (fun v -> v * 2, "result")
+                let! v2 = r |> Ref.modify (fun v -> "result", v * 2)
                 let! v3 = r |> Ref.get
                 return v1, v2, v3
             }
 
         test <@ Flow.runSync () workflow = Exit.Success (11, "result", 22) @>
+
+    [<Fact>]
+    let ``Ref: atomic family returns distinct previous/updated values`` () =
+        let workflow =
+            flow {
+                let! r = Ref.make 10
+                let! previousOnSet = r |> Ref.getAndSet 20
+                let! previousOnUpdate = r |> Ref.getAndUpdate (fun v -> v + 1)
+                let! updated = r |> Ref.updateAndGet (fun v -> v * 2)
+                let! final = r |> Ref.get
+                return previousOnSet, previousOnUpdate, updated, final
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success (10, 20, 42, 42) @>
 
     [<Fact>]
     let ``STM: atomic transactional updates`` () =
