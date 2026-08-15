@@ -10,6 +10,9 @@ building one does nothing by itself. It only takes effect once you hand it to `S
 `Schedule.repeat` (rerun on success) — those two are what actually run a flow against the schedule. Use schedules for
 retries, exponential backoff with jitter, and recurring tasks.
 
+A `Schedule` value carries no state of its own — the attempt count lives in the `retry`/`repeat` call, not in the
+schedule — so the same `Schedule` value is safe to build once and reuse across independent, unrelated calls.
+
 > **Note:** `Schedule` is currently available on **.NET** only.
 
 ## Basic Schedules
@@ -20,7 +23,8 @@ A schedule decides two things:
 
 ### Fixed Number of Recursions
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-// Recur 5 times (6 attempts total)
+// Recur 5 more times on top of the source flow's one free initial attempt (6 attempts total
+// via Schedule.retry/Schedule.repeat)
 let fiveTimes = Schedule.recurs 5
 ```
 

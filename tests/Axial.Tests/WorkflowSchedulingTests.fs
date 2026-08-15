@@ -48,6 +48,95 @@ module WorkflowSchedulingTests =
         test <@ count = 4 @>
 
     [<Fact>]
+    let ``Scheduling: recurs n means n additional attempts, not n total`` () =
+        let mutable retryAttempts = 0
+        let retryWorkflow : Flow<unit, string, string> =
+            flow {
+                retryAttempts <- retryAttempts + 1
+                return! Flow.fail "always fails"
+            }
+
+        let retryResult = retryWorkflow |> Schedule.retry (Schedule.recurs 3) |> Flow.runSync ()
+
+        // recurs 3 permits the schedule to fire at attempt 0, 1, 2 (three retries), after the
+        // one initial try that retry/repeat always perform for free: 1 + 3 = 4 executions.
+        test <@ retryAttempts = 4 @>
+        test <@ retryResult = Exit.Failure(Cause.Fail "always fails") @>
+
+        let mutable repeatCount = 0
+        let repeatWorkflow : Flow<unit, unit, int> =
+            flow {
+                repeatCount <- repeatCount + 1
+                return repeatCount
+            }
+
+        let repeatResult = repeatWorkflow |> Schedule.repeat (Schedule.recurs 3) |> Flow.runSync ()
+
+        test <@ repeatCount = 4 @>
+        test <@ repeatResult = Exit.Success 4 @>
+
+        let mutable zeroRecursAttempts = 0
+        let zeroRecursWorkflow : Flow<unit, string, string> =
+            flow {
+                zeroRecursAttempts <- zeroRecursAttempts + 1
+                return! Flow.fail "fails"
+            }
+
+        zeroRecursWorkflow |> Schedule.retry (Schedule.recurs 0) |> Flow.runSync () |> ignore
+
+        // recurs 0 permits no retries at all: only the one initial, unretried try runs.
+        test <@ zeroRecursAttempts = 1 @>
+
+    [<Fact>]
+    let ``Scheduling: a Schedule value is stateless and reusable across independent runs`` () =
+        let schedule = Schedule.recurs 2
+
+        let run () =
+            let mutable attempts = 0
+            let workflow : Flow<unit, string, string> =
+                flow {
+                    attempts <- attempts + 1
+                    return! Flow.fail "always fails"
+                }
+
+            workflow |> Schedule.retry schedule |> Flow.runSync () |> ignore
+            attempts
+
+        // Reusing the same Schedule value across separate retry runs must not leak attempt
+        // state between them: each run starts counting from attempt 0 again.
+        test <@ run () = 3 @>
+        test <@ run () = 3 @>
+        test <@ run () = 3 @>
+
+    [<Fact>]
+    let ``Scheduling: retry does not retry defects or interruptions`` () =
+        let mutable defectAttempts = 0
+        let defectResult =
+            flow {
+                defectAttempts <- defectAttempts + 1
+                return! Flow.die (InvalidOperationException "boom")
+            }
+            |> Schedule.retry (Schedule.recurs 5)
+            |> Flow.runSync ()
+
+        test <@ defectAttempts = 1 @>
+        match defectResult with
+        | Exit.Failure(Cause.Die error) -> test <@ error.Message = "boom" @>
+        | other -> failwithf "Expected defect, got %A" other
+
+        let mutable interruptAttempts = 0
+        let interruptResult : Exit<string, string> =
+            flow {
+                interruptAttempts <- interruptAttempts + 1
+                return! Flow.ofExit (Exit.Failure Cause.Interrupt)
+            }
+            |> Schedule.retry (Schedule.recurs 5)
+            |> Flow.runSync ()
+
+        test <@ interruptAttempts = 1 @>
+        test <@ interruptResult = Exit.Failure Cause.Interrupt @>
+
+    [<Fact>]
     let ``Scheduling: repeat surfaces schedule evaluation failure as a defect`` () =
         let failingSchedule : Schedule<unit, int, int> =
             Schedule(fun _ _ -> Flow.fail ())
@@ -123,6 +212,21 @@ module WorkflowSchedulingTests =
             | other -> failwithf "Expected a delay decision, got %A" other
 
         test <@ cappedDelay = TimeSpan.MaxValue @>
+
+    [<Fact>]
+    let ``Scheduling: jitteredWith clamps out-of-contract samples instead of throwing`` () =
+        // The documented contract is sample() in [0.0, 1.0), but jitteredWith never validates it:
+        // out-of-range samples are clamped, not rejected. Pin that down so it stays a deliberate
+        // choice, not an accident.
+        let delayWithSample baseDelay sample =
+            let (Schedule op) = Schedule.spaced baseDelay |> Schedule.jitteredWith sample
+
+            match Flow.runSync () (op 0 0) with
+            | Exit.Success(_, delay) -> delay
+            | other -> failwithf "Expected a delay decision, got %A" other
+
+        test <@ delayWithSample (TimeSpan.FromSeconds 1.0) (fun () -> -1.0) = TimeSpan.Zero @>
+        test <@ delayWithSample TimeSpan.MaxValue (fun () -> 5.0) = TimeSpan.MaxValue @>
 
     [<Fact>]
     let ``Flow runtime helpers cover timeout and retry`` () =

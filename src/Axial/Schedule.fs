@@ -35,12 +35,21 @@ module Schedule =
             (FlowInternal.invoke (op input attempt) env ct)
 
     /// <summary>Creates a schedule that recurs a fixed number of times.</summary>
-    /// <param name="n">The maximum number of times to recur.</param>
+    /// <remarks>
+    /// <paramref name="n"/> counts the schedule's own decisions, not the total number of flow executions:
+    /// <c>Schedule.retry</c> and <c>Schedule.repeat</c> always run the source flow once before consulting the
+    /// schedule at all, so <c>recurs 3</c> means 3 additional retries/repeats on top of that one free attempt —
+    /// 4 executions in total, not 3. A <c>Schedule</c> value carries no state of its own (the attempt count lives
+    /// in the <c>retry</c>/<c>repeat</c> call), so the same schedule value is safe to reuse across independent runs.
+    /// </remarks>
+    /// <param name="n">The maximum number of additional times to recur, on top of the source flow's one free
+    /// initial attempt.</param>
     /// <returns>A schedule that recurs up to <paramref name="n"/> times, emitting the current attempt count (0 to n-1).</returns>
     /// <example>
     /// <code>
     /// let schedule = Schedule.recurs 3
-    /// // Will run for attempts 0, 1, 2 and then stop.
+    /// // Schedule.retry runs the source flow once for free, then consults the schedule at
+    /// // attempts 0, 1, 2 (three retries) before giving up: 4 executions in total.
     /// </code>
     /// </example>
     let recurs (n: int) : Schedule<'env, 'input, int> =
@@ -92,6 +101,13 @@ module Schedule =
             Flow.ok (Some delay, delay))
 
     /// <summary>Adds jitter to a schedule's delay using a caller-supplied sample source.</summary>
+    /// <remarks>
+    /// <paramref name="sample"/> is not validated: a value outside [0.0, 1.0) is not rejected, it just produces a
+    /// jitter factor outside the documented 0.5–1.5 range. The result is still always a valid, non-negative
+    /// <c>TimeSpan</c> — negative factors clamp to <see cref="P:System.TimeSpan.Zero"/> and overflowing ones clamp
+    /// to <see cref="P:System.TimeSpan.MaxValue"/>, the same as the base schedule's own overflow handling. This is
+    /// deliberate: <c>jitteredWith</c> never throws for a badly-behaved sample source.
+    /// </remarks>
     /// <param name="sample">A function returning a value in [0.0, 1.0), sampled once per attempt. Supply a deterministic function for reproducible schedules and tests.</param>
     /// <param name="schedule">The base schedule to which jitter will be applied.</param>
     /// <returns>A new schedule where each delay is multiplied by <c>sample () + 0.5</c>, giving a factor between 0.5 and 1.5, capped at <see cref="P:System.TimeSpan.MaxValue"/>.</returns>
@@ -117,6 +133,8 @@ module Schedule =
             ) (op input attempt))
 
     /// <summary>Retries a failing flow according to the supplied schedule.</summary>
+    /// <remarks>Only <c>Cause.Fail</c> is retried. Defects and interruptions propagate immediately without
+    /// consulting the schedule.</remarks>
     /// <param name="schedule">The schedule that determines when and if to retry based on the error.</param>
     /// <param name="flow">The workflow to retry if it fails.</param>
     /// <returns>A flow that will retry the original flow according to the schedule until it succeeds or the schedule stops.</returns>
@@ -156,6 +174,8 @@ module Schedule =
         loop 0
 
     /// <summary>Repeats a successful flow according to the supplied schedule.</summary>
+    /// <remarks>Only success is repeated. Any failure — typed, defect, or interruption — propagates immediately
+    /// without consulting the schedule.</remarks>
     /// <param name="schedule">The schedule that determines when and if to repeat based on the successful value.</param>
     /// <param name="flow">The workflow to repeat if it succeeds.</param>
     /// <returns>A flow that repeats the original flow according to the schedule, returning the last successful value when it stops.</returns>
