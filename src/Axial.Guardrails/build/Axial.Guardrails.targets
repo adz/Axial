@@ -5,6 +5,22 @@
     <_AxialGuardrailsCli>$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll</_AxialGuardrailsCli>
     <_AxialGuardrailsSeverityFlag Condition="'$(AxialGuardrailsSeverity)' == 'error'">--treat-as-error</_AxialGuardrailsSeverityFlag>
     <_AxialGuardrailsSeverityFlag Condition="'$(AxialGuardrailsSeverity)' != 'error'">--treat-as-warning</_AxialGuardrailsSeverityFlag>
+    <!--
+      AXG001-003 are about ambient effects and raw exceptions bypassing Axial's own explicit
+      service boundaries - real signal in application/library code, but noise in a test project,
+      which legitimately touches Thread.Sleep/File/DateTimeOffset/raw exceptions for setup and
+      assertions. $(IsTestProject) is set by the test SDK (Microsoft.NET.Test.Sdk), so a project
+      built with `dotnet test` gets only AXG004 (shared xUnit fixtures) by default.
+    -->
+    <_AxialGuardrailsCodes Condition="'$(IsTestProject)' == 'true'">AXG004</_AxialGuardrailsCodes>
+    <_AxialGuardrailsCodes Condition="'$(IsTestProject)' != 'true'">AXG001 AXG002 AXG003 AXG004</_AxialGuardrailsCodes>
+    <!--
+      The severity flag only overrides the severity of the named codes; it does not restrict which
+      analyzers run. The analyzers filter (below, by analyzer name) is what actually keeps
+      AXG001-003 from running - and therefore from being reported at their default Warning
+      severity - against a test project at all.
+    -->
+    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true'">--include-analyzers Fixture</_AxialGuardrailsIncludeAnalyzersFlag>
   </PropertyGroup>
 
   <!--
@@ -17,7 +33,7 @@
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and Exists('$(_AxialGuardrailsCli)')">
-    <Exec Command="dotnet &quot;$(_AxialGuardrailsCli)&quot; --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsSeverityFlag) AXG001 AXG002 AXG003 --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
+    <Exec Command="dotnet &quot;$(_AxialGuardrailsCli)&quot; --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) $(_AxialGuardrailsSeverityFlag) $(_AxialGuardrailsCodes) --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
   </Target>
 
 </Project>

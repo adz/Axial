@@ -21,7 +21,7 @@ type ProcessTestEnv =
         member this.Process = this.Process
 
 module ProcessServiceTests =
-    let private env = { Process = Process.live Clock.live FileSystem.live Console.live }
+    let private env () = { Process = Process.live Clock.live FileSystem.live Console.live }
 
     let private waitUntil timeout predicate =
         let deadline = DateTime.UtcNow + timeout
@@ -36,7 +36,7 @@ module ProcessServiceTests =
         with :? ArgumentException -> true
 
     let private run workflow =
-        match Flow.runSync env workflow with
+        match Flow.runSync (env ()) workflow with
         | Exit.Success result -> result
         | failure -> failwithf "Expected success, got %A" failure
 
@@ -61,7 +61,7 @@ module ProcessServiceTests =
             => cmd $"tr '[:lower:]' '[:upper:]'"
             |> capture
 
-        match Flow.runSync env workflow with
+        match Flow.runSync (env ()) workflow with
         | Exit.Success result ->
             test <@ result.StdOut = "HELLO WORLD" @>
             test <@ result.StdErr = "" @>
@@ -76,7 +76,7 @@ module ProcessServiceTests =
         try
             let first = Process.command "sh" [ "-c"; $"echo $$ > '{pidPath}'; sleep 30" ]
             let missing = Process.command $"axial-missing-{Guid.NewGuid():N}" []
-            let outcome = first => missing |> capture |> Flow.runSync env
+            let outcome = first => missing |> capture |> Flow.runSync (env ())
 
             match outcome with
             | Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
@@ -105,7 +105,7 @@ module ProcessServiceTests =
                 |> Process.timeout timeout
                 |> Process.run
 
-            match Flow.runSync env workflow with
+            match Flow.runSync (env ()) workflow with
             | Exit.Failure(Cause.Fail(ProcessError.TimedOut failure)) ->
                 test <@ failure.Specification.Contains "sleep 30" @>
                 test <@ failure.Timeout = timeout @>
@@ -129,7 +129,7 @@ module ProcessServiceTests =
         use cancellation = new CancellationTokenSource()
         try
             let specification = shText $"sleep 30 & echo $! > '{childPidPath}'; wait"
-            let running = Process.run<ProcessTestEnv> specification |> fun workflow -> workflow.StartAsTask(env, cancellation.Token)
+            let running = Process.run<ProcessTestEnv> specification |> fun workflow -> workflow.StartAsTask((env ()), cancellation.Token)
             test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> File.Exists childPidPath) @>
             let childPid = File.ReadAllText(childPidPath).Trim() |> Int32.Parse
             let nativeChild = System.Diagnostics.Process.GetProcessById childPid
@@ -174,7 +174,7 @@ module ProcessServiceTests =
     [<Fact>]
     let ``startup failure identifies the command without escaping the typed channel`` () =
         let executable = $"axial-missing-{Guid.NewGuid():N}"
-        let outcome = Process.command executable [] |> Process.run |> Flow.runSync env
+        let outcome = Process.command executable [] |> Process.run |> Flow.runSync (env ())
         match outcome with
         | Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
             test <@ failure.Command = executable @>
@@ -187,7 +187,7 @@ module ProcessServiceTests =
             Process.command "sh" [ "-c"; "printf out; printf err >&2" ]
             |> Process.stream
 
-        match stream |> FlowStream.runCollect |> Flow.runSync env with
+        match stream |> FlowStream.runCollect |> Flow.runSync (env ()) with
         | Exit.Success events ->
             test <@ events |> List.exists (function ProcessEvent.Output output -> output.Channel = OutputChannel.StdOut && output.Text = "out" | _ -> false) @>
             test <@ events |> List.exists (function ProcessEvent.Output output -> output.Channel = OutputChannel.StdErr && output.Stage = 0 && output.Text = "err" | _ -> false) @>
@@ -201,7 +201,7 @@ module ProcessServiceTests =
             => Process.command "cat" []
             |> capture
 
-        match Flow.runSync env workflow with
+        match Flow.runSync (env ()) workflow with
         | Exit.Failure(Cause.Fail(ProcessError.StageFailed failure)) ->
             test <@ failure.Stage.Stage = 0 @>
             test <@ failure.Result.ExitCodes = [ 7; 0 ] @>
@@ -275,7 +275,7 @@ module ProcessServiceTests =
             |> Process.framing OutputFraming.Lines
             |> Process.stream
 
-        let events = stream |> FlowStream.runCollect |> Flow.runSync env
+        let events = stream |> FlowStream.runCollect |> Flow.runSync (env ())
         match events with
         | Exit.Success [ ProcessEvent.Output output; ProcessEvent.Completed result ] ->
             test <@ output.Text = "streamed" @>
@@ -294,7 +294,7 @@ module ProcessServiceTests =
                 |> Process.stream
                 |> FlowStream.take 1
                 |> FlowStream.runCollect
-                |> Flow.runSync env
+                |> Flow.runSync (env ())
 
             match events with
             | Exit.Success [ ProcessEvent.Output output ] -> test <@ output.Text = "ready\n" @>

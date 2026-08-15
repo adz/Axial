@@ -57,6 +57,7 @@
     <Compile Include="EffectBoundaryAnalyzer.fs" />
     <Compile Include="SuppressionIntegrityAnalyzer.fs" />
     <Compile Include="RaiseInFlowAnalyzer.fs" />
+    <Compile Include="FixtureAnalyzer.fs" />
   </ItemGroup>
 
   <ItemGroup>

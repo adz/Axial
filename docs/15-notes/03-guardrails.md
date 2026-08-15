@@ -129,3 +129,21 @@ surrounding `try`/`with` inside the same block already converts every exception 
 just the local control-flow escape into that boundary - mark it with `// axial-allow-raise` on the flagged line or
 the line above it. There's no category to name; unlike `axial-allow-effect`, this is a single, generic escape
 hatch, so use it only when the raise is genuinely caught and translated nearby, not as a shortcut past the finding.
+
+## Catching shared xUnit fixtures
+
+A module-level `let` binding with no parameters is a value, computed once - the module's static initializer runs
+it a single time, and every test in the module shares the result. Under xUnit's parallel test execution, that's a
+correctness hazard for anything mutable or stateful, and it's already a documented rule in `AGENTS.md`'s Test
+Authoring section: "Do not define shared fixtures as module-level `let` values in xUnit test modules."
+
+`AXG004` (`Fixture`) checks it mechanically: a module-level `let` value (not a function - `let f () = ...` is
+re-invoked per call and isn't flagged) in a module that also contains an xUnit `[<Fact>]`/`[<Theory>]` or FsCheck
+`[<Property>]` test. A bare constant (`let tolerance = 0.0001`) and a point-free function definition (`let f =
+function | ... -> ...`) are both excluded, since neither is the shared-mutable-state hazard this targets. Mark a
+genuinely safe, immutable shared value with `// axial-allow-fixture` on the flagged line or the line above; there's
+no category, the same as `axial-allow-raise`. Otherwise, build the fixture inside each test, or expose it as a
+function so each caller gets a fresh value.
+
+`scripts/run-guardrails.sh` checks every `tests/Axial*` project alongside `src/Axial*`, since `AXG004` only has
+anything to find in a test project.

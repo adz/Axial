@@ -19,7 +19,7 @@ type HttpTestEnv =
         member this.Http = this.Http
 
 module HttpServiceTests =
-    let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+    let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-fixture
     let private runSync (environment: 'env) (workflow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
         workflow.RunSynchronously(environment)
 
