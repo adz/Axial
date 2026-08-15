@@ -633,6 +633,9 @@ type internal RuntimeContext =
         TelemetrySink: Axial.Telemetry.Attribute -> unit
         FiberId: FiberId
         Observer: FiberObserver
+        /// Opaque ambient tracer slot. `Axial` has no dependency on `System.Diagnostics.DiagnosticSource`, so this
+        /// is untyped here; `Axial.Telemetry` is the only package that boxes/unboxes it (as `ActivitySource`).
+        Tracer: obj option
     }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -647,6 +650,7 @@ module internal RuntimeContext =
             TelemetrySink = ignore
             FiberId = FiberId.next ()
             Observer = FiberObserver.none
+            Tracer = None
         }
 
     let detached : RuntimeContext =
@@ -693,6 +697,9 @@ module internal RuntimeContext =
 
     let withObserver (observer: FiberObserver) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Observer = observer }
+
+    let withTracer (tracer: obj) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with Tracer = Some tracer }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]

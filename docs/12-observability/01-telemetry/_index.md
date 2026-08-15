@@ -73,8 +73,8 @@ These names answer different questions:
 - `checkout.submit` is the **span name** for one operation.
 
 An `ActivitySource` only publishes spans. The OpenTelemetry SDK listens, samples, and exports them. Register every source
-used by `Activity.traceOn` or `Activity.traceWithSource`; otherwise `.NET` returns `null` from `StartActivity` and the
-workflow runs without a span.
+used by `Activity.traceOn`, `Activity.traceWithSource`, or captured in an `ActivityTracer`; otherwise `.NET` returns
+`null` from `StartActivity` and the workflow runs without a span.
 
 ## Trace a workflow
 
@@ -96,9 +96,35 @@ checkout order
 |> Activity.traceOn applicationActivitySource "checkout.submit"
 ```
 
-`Activity.trace` and `Activity.traceWith` remain shortcuts using Axial's default source. They are useful for small
-programs and compatibility, but application-owned sources produce clearer instrumentation-scope labels in Aspire and
-other backends.
+### Trace without repeating the source at every call site
+
+Passing `applicationActivitySource` into every `traceOn` call gets repetitive once tracing spreads across a codebase.
+Capture the source once as an `ActivityTracer`, and call `.Trace` on it wherever you need a span:
+
+```fsharp no-check reason="The checkout workflow is application-specific"
+let checkoutTracer = ActivityTracer.create applicationActivitySource
+
+checkout order
+|> checkoutTracer.Trace "checkout.submit"
+```
+
+For a workflow tree that traces from many places, install the tracer once near the composition root instead, and call
+the ambient `Activity.trace`/`Activity.traceWith` from anywhere underneath it — no source to pass or capture at the
+call site at all:
+
+```fsharp no-check reason="The application composition root and inner workflows are illustrative"
+application
+|> Activity.withTracer checkoutTracer
+
+// deep inside the workflow tree, in code that has no reference to checkoutTracer:
+checkout order |> Activity.trace "checkout.submit"
+```
+
+`Activity.trace` and `Activity.traceWith` read the tracer installed by the nearest enclosing `Activity.withTracer`;
+forked child fibers inherit it too. There is no default source to fall back to: calling `Activity.trace` outside a
+`withTracer` scope throws immediately, so a workflow can never end up silently tagged under the wrong instrumentation
+scope. Use the ambient form for workflow trees under one application source, and `traceOn`/`traceWithSource` (or a
+second `ActivityTracer`) when a call site needs a different source than the one currently installed.
 
 The span starts when the workflow runs and stops when its asynchronous execution settles. Axial records:
 

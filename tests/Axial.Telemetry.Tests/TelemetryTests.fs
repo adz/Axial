@@ -7,6 +7,13 @@ open Swensen.Unquote
 open Xunit
 
 module TelemetryTests =
+    // The name of the application source used to exercise the ambient Activity.trace/Activity.traceWith, which now
+    // require a tracer installed via Activity.withTracer rather than defaulting to Axial's own source. Each test
+    // creates its own ActivitySource/ActivityTracer instance from this name so construction cannot race other
+    // tests' global ActivityListeners under xUnit's parallel execution.
+    [<Literal>]
+    let private appTracerSourceName = "Axial.Tests.App"
+
     /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
     /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
     let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
@@ -20,15 +27,17 @@ module TelemetryTests =
     let ``Activity.trace: exports ambient context and runtime annotations`` () =
         let requestId = AttributeKey.string "app.request.id"
         let correlationId = AttributeKey.string "app.correlation.id"
+        use appSource = new ActivitySource(appTracerSourceName)
+        let appTracer = ActivityTracer.create appSource
 
         let listener = new ActivityListener()
-        listener.ShouldListenTo <- (fun source -> source.Name = "Axial")
+        listener.ShouldListenTo <- (fun source -> source.Name = appTracerSourceName)
         listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
-        
+
         let mutable capturedTags = Map.empty
         listener.ActivityStopped <- (fun activity ->
-            capturedTags <- 
-                activity.Tags 
+            capturedTags <-
+                activity.Tags
                 |> Seq.map (fun kv -> kv.Key, kv.Value)
                 |> Map.ofSeq)
 
@@ -39,6 +48,7 @@ module TelemetryTests =
             |> Flow.annotate "deviceId" "device-1"
             |> Flow.traceId "trace-1"
             |> Activity.trace "test-op"
+            |> Activity.withTracer appTracer
             |> Context.withAttributes [
                 Context.attribute requestId "req-123"
                 Context.attribute correlationId "corr-456"
@@ -55,6 +65,34 @@ module TelemetryTests =
         test <@ capturedTags["axial.flow.annotation.trace_id"] = "trace-1" @>
 
         listener.Dispose()
+
+    [<Fact>]
+    let ``Activity.trace: throws when no ambient tracer is installed`` () =
+        let workflow = Flow.succeed 1 |> Activity.trace "untracered-op"
+
+        match Flow.runSync () workflow with
+        | Exit.Failure(Cause.Die exn) -> test <@ exn :? System.InvalidOperationException @>
+        | other -> failwithf "Expected a Die failure from the missing-tracer guard, got %A" other
+
+    [<Fact>]
+    let ``ActivityTracer.Trace: emits application spans without installing an ambient tracer`` () =
+        use applicationSource = new ActivitySource("Example.Refunds")
+        use listener = new ActivityListener()
+        listener.ShouldListenTo <- (fun source -> source.Name = applicationSource.Name)
+        listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
+
+        let mutable capturedSource = None
+        listener.ActivityStopped <- (fun activity -> capturedSource <- Some activity.Source.Name)
+        ActivitySource.AddActivityListener(listener)
+
+        let tracer = ActivityTracer.create applicationSource
+
+        Flow.succeed 42
+        |> tracer.Trace "refund.issue"
+        |> Flow.runSync ()
+        |> ignore
+
+        test <@ capturedSource = Some "Example.Refunds" @>
 
     [<Fact>]
     let ``Activity.traceOn: emits application spans from the supplied source`` () =
@@ -76,7 +114,7 @@ module TelemetryTests =
 
     let private captureSpans (action: unit -> unit) =
         use listener = new ActivityListener()
-        listener.ShouldListenTo <- (fun source -> source.Name = "Axial")
+        listener.ShouldListenTo <- (fun source -> source.Name = "Axial" || source.Name = appTracerSourceName)
         listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
 
         let stopped = ResizeArray<string * ActivityStatusCode * System.TimeSpan * Map<string, string>>()
@@ -94,10 +132,14 @@ module TelemetryTests =
 
     [<Fact>]
     let ``Activity.trace: span lasts until asynchronous work settles`` () =
+        use appSource = new ActivitySource(appTracerSourceName)
+        let appTracer = ActivityTracer.create appSource
+
         let spans =
             captureSpans (fun () ->
                 Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 80.0)
                 |> Activity.trace "async-op"
+                |> Activity.withTracer appTracer
                 |> Flow.runSync ()
                 |> ignore)
 
@@ -111,20 +153,26 @@ module TelemetryTests =
 
     [<Fact>]
     let ``Activity.trace: stamps typed failures, defects, and interruptions onto the span`` () =
+        use appSource = new ActivitySource(appTracerSourceName)
+        let appTracer = ActivityTracer.create appSource
+
         let spans =
             captureSpans (fun () ->
                 (Flow.fail "domain error" : Flow<unit, string, int>)
                 |> Activity.trace "fail-op"
+                |> Activity.withTracer appTracer
                 |> Flow.runSync ()
                 |> ignore
 
                 (Flow.die (System.InvalidOperationException "defect") : Flow<unit, string, int>)
                 |> Activity.trace "die-op"
+                |> Activity.withTracer appTracer
                 |> Flow.runSync ()
                 |> ignore
 
                 (Flow.ofExit (Exit.Failure Cause.Interrupt) : Flow<unit, string, int>)
                 |> Activity.trace "interrupt-op"
+                |> Activity.withTracer appTracer
                 |> Flow.runSync ()
                 |> ignore)
 
@@ -150,11 +198,14 @@ module TelemetryTests =
     let ``Activity.trace: composite causes carry the pretty-printed cause tree`` () =
         let composite =
             Exit.Failure(Cause.Then(Cause.Fail "first", Cause.Die(System.InvalidOperationException "second")))
+        use appSource = new ActivitySource(appTracerSourceName)
+        let appTracer = ActivityTracer.create appSource
 
         let spans =
             captureSpans (fun () ->
                 (Flow.ofExit composite : Flow<unit, string, int>)
                 |> Activity.trace "composite-op"
+                |> Activity.withTracer appTracer
                 |> Flow.runSync ()
                 |> ignore)
 
@@ -171,9 +222,11 @@ module TelemetryTests =
     let ``Activity.trace: exports typed attributes added inside its region`` () =
         let retryCount = AttributeKey.int64 "app.retry.count"
         let mutable capturedValue = None
+        use appSource = new ActivitySource(appTracerSourceName)
+        let appTracer = ActivityTracer.create appSource
 
         use listener = new ActivityListener()
-        listener.ShouldListenTo <- (fun source -> source.Name = "Axial")
+        listener.ShouldListenTo <- (fun source -> source.Name = appTracerSourceName)
         listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
         listener.ActivityStopped <- (fun activity ->
             capturedValue <-
@@ -184,6 +237,7 @@ module TelemetryTests =
         (Flow.succeed 1 : Flow<unit, string, int>)
         |> Context.withAttribute (Context.attribute retryCount 3L)
         |> Activity.trace "tagged-op"
+        |> Activity.withTracer appTracer
         |> Flow.runSync ()
         |> ignore
 
@@ -191,6 +245,9 @@ module TelemetryTests =
 
     [<Fact>]
     let ``Activity.trace: nested traces both receive annotations set in the inner region`` () =
+        use appSource = new ActivitySource(appTracerSourceName)
+        let appTracer = ActivityTracer.create appSource
+
         let spans =
             captureSpans (fun () ->
                 flow {
@@ -199,6 +256,7 @@ module TelemetryTests =
                 }
                 |> Activity.trace "inner-op"
                 |> Activity.trace "outer-op"
+                |> Activity.withTracer appTracer
                 |> Flow.runSync ()
                 |> ignore)
 
@@ -210,7 +268,7 @@ module TelemetryTests =
 
     let private captureSpansWithIds (action: unit -> unit) =
         use listener = new ActivityListener()
-        listener.ShouldListenTo <- (fun source -> source.Name = "Axial")
+        listener.ShouldListenTo <- (fun source -> source.Name = "Axial" || source.Name = appTracerSourceName)
         listener.Sample <- (fun _ -> ActivitySamplingResult.AllData)
 
         let stopped = ResizeArray<string * string * string * System.TimeSpan * Map<string, string>>()
@@ -234,6 +292,9 @@ module TelemetryTests =
 
     [<Fact>]
     let ``FiberTelemetry.observeWithSpans: fiber spans cover fork to settle and parent to the workflow span`` () =
+        use appSource = new ActivitySource(appTracerSourceName)
+        let appTracer = ActivityTracer.create appSource
+
         let spans =
             captureSpansWithIds (fun () ->
                 flow {
@@ -243,6 +304,7 @@ module TelemetryTests =
                 }
                 |> FiberTelemetry.observeWithSpans
                 |> Activity.trace "workflow-op"
+                |> Activity.withTracer appTracer
                 |> Flow.runSync ()
                 |> ignore)
 

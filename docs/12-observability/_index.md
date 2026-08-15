@@ -67,7 +67,8 @@ What you get without per-callsite work:
   every forked fiber to a real span covering fork to settle.
 - **Host and client spans** — ASP.NET Core, `HttpClient`, and database instrumentation span their own
   boundaries. Axial spans nest inside them via `Activity.Current`, so in a web application every request is
-  already a trace; `Activity.trace` adds the meaningful interior structure.
+  already a trace; `Activity.traceOn` (or an `ActivityTracer` installed ambiently) adds the meaningful
+  interior structure.
 
 ## Plugging in OpenTelemetry
 
@@ -140,9 +141,9 @@ OTLP receiver and provides an endpoint that generates every Axial observability 
   `Context.withAttributes` scope typed, searchable attributes around a workflow. Both the .NET and JavaScript adapters
   consume the same ambient context; no environment interfaces or runtime field discovery are involved.
 - **Annotations → every observer.** `Flow.annotate "payment.attempt" attemptId` is scoped runtime metadata,
-  not a tracing call: `Activity.trace` tees annotations onto the active span as
-  `axial.flow.annotation.*` tags, and custom sinks (`Flow.addAnnotationSink`) can route the same values into
-  log scopes or anywhere else. See the
+  not a tracing call: any active trace (`Activity.traceOn`, `Activity.trace`, or a tracer's `.Trace`) tees
+  annotations onto the active span as `axial.flow.annotation.*` tags, and custom sinks
+  (`Flow.addAnnotationSink`) can route the same values into log scopes or anywhere else. See the
   [runtime operations tutorial](/platforms-and-hosting/runtime-operations.html).
 - **Fiber ids link spans.** Workflow spans and fiber spans both carry `axial.flow.fiber.id`
   (and fiber spans `axial.flow.fiber.parent_id`), so fiber-lifecycle spans correlate with the workflows that

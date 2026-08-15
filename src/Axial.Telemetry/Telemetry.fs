@@ -35,10 +35,22 @@ module internal Tags =
     let stampExit (renderError: 'error -> string) (activity: Activity) (exit: Exit<'value, 'error>) =
         SpanConventions.stampExit renderError (writer activity) exit
 
+/// <summary>
+/// Captures an application-owned <c>ActivitySource</c> so application code can trace its own workflows without
+/// repeating the source at every call site. The only way to obtain a value of this type is
+/// <c>ActivityTracer.create</c>, so there is no code path that traces without an assigned application source.
+/// </summary>
+[<Sealed>]
+type ActivityTracer internal (source: ActivitySource) =
+    /// <summary>The application-owned activity source this tracer emits from.</summary>
+    member _.Source = source
+
 [<RequireQualifiedAccess>]
 module Activity =
-    /// <summary>The activity source for Axial Flow tracing.</summary>
-    let source = new ActivitySource("Axial")
+    /// <summary>The activity source for Axial's own runtime spans (fiber lifecycle, defects, and metrics).</summary>
+    /// <remarks>Application workflows should trace through an <c>ActivityTracer</c> built from their own
+    /// <c>ActivitySource</c>, not this one — see <c>ActivityTracer.create</c>.</remarks>
+    let runtimeSource = new ActivitySource("Axial")
 
     /// <summary>
     /// Wraps a flow in a new activity from the supplied application-owned source, exports the ambient telemetry
@@ -133,23 +145,69 @@ module Activity =
         traceWithSource activitySource (fun error -> string (box error)) name sourceFlow
 
     /// <summary>
-    /// Wraps a flow in Axial's default activity source and uses the supplied typed-error renderer. Use
-    /// <c>traceWithSource</c> when the span represents application behavior and should belong to the application's
-    /// instrumentation scope.
+    /// Installs an application-owned <see cref="T:Axial.Telemetry.ActivityTracer" /> as the ambient tracer for the
+    /// scope of <paramref name="sourceFlow" />. <c>trace</c> and <c>traceWith</c> read this ambient tracer; child
+    /// fibers forked within the scope inherit it.
+    /// </summary>
+    /// <param name="tracer">The application-owned tracer to install.</param>
+    /// <param name="sourceFlow">The flow to run with the tracer installed.</param>
+    let withTracer (tracer: ActivityTracer) (Flow operation: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            let runtime = RuntimeState.current() |> RuntimeContext.withTracer (box tracer.Source)
+            RuntimeState.withRuntime runtime (fun () -> operation environment cancellationToken))
+
+    let private ambientSource () : ActivitySource =
+        match RuntimeState.current().Tracer with
+        | Some source -> unbox<ActivitySource> source
+        | None ->
+            invalidOp
+                "Activity.trace/traceWith requires an ambient tracer. Call Activity.withTracer with a tracer from \
+                 ActivityTracer.create, or use Activity.traceOn/traceWithSource with an explicit ActivitySource."
+
+    /// <summary>
+    /// Wraps a flow in the ambient application tracer installed by <c>withTracer</c>, using the supplied typed-error
+    /// renderer. Throws if no ambient tracer is installed. Use <c>traceWithSource</c> to supply a source explicitly
+    /// instead of relying on the ambient one.
     /// </summary>
     let traceWith
         (renderError: 'error -> string)
         (name: string)
         (sourceFlow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
-        traceWithSource source renderError name sourceFlow
+        // The ambient tracer is only known once the flow actually runs (withTracer installs it during
+        // execution), so it must be read lazily inside this wrapper, not eagerly when composing the flow.
+        Flow(fun env cancellationToken ->
+            let (Flow operation) = traceWithSource (ambientSource ()) renderError name sourceFlow
+            operation env cancellationToken)
 
     /// <summary>
-    /// Wraps a flow in Axial's default activity source and renders typed errors with <c>string</c>. Use
-    /// <c>traceOn</c> for application-owned workflow spans.
+    /// Wraps a flow in the ambient application tracer installed by <c>withTracer</c>, and renders typed errors with
+    /// <c>string</c>. Throws if no ambient tracer is installed. Use <c>traceOn</c> to supply a source explicitly
+    /// instead of relying on the ambient one.
     /// </summary>
     let trace (name: string) (sourceFlow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        traceOn source name sourceFlow
+        Flow(fun env cancellationToken ->
+            let (Flow operation) = traceOn (ambientSource ()) name sourceFlow
+            operation env cancellationToken)
+
+/// <summary>Creates <see cref="T:Axial.Telemetry.ActivityTracer" /> values.</summary>
+[<RequireQualifiedAccess>]
+module ActivityTracer =
+    /// <summary>Captures an application-owned activity source.</summary>
+    /// <param name="source">The application-owned activity source that emits application spans.</param>
+    let create (source: ActivitySource) : ActivityTracer = ActivityTracer(source)
+
+type ActivityTracer with
+    /// <summary>Wraps a flow in a span from this tracer's activity source, rendering typed errors with <c>string</c>.</summary>
+    /// <param name="name">The name of the activity.</param>
+    member this.Trace(name: string) : Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value> =
+        fun sourceFlow -> Activity.traceOn this.Source name sourceFlow
+
+    /// <summary>Wraps a flow in a span from this tracer's activity source, using the supplied typed-error renderer.</summary>
+    /// <param name="renderError">Renders typed errors for the <c>axial.flow.error</c> attribute.</param>
+    /// <param name="name">The name of the activity.</param>
+    member this.TraceWith(renderError: 'error -> string, name: string) : Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value> =
+        fun sourceFlow -> Activity.traceWithSource this.Source renderError name sourceFlow
 
 /// <summary>Telemetry wiring for runtime fiber-lifecycle observation.</summary>
 [<RequireQualifiedAccess>]
@@ -183,7 +241,7 @@ module FiberTelemetry =
                 fun metadata defect ->
                     match defect with
                     | Some exn ->
-                        use activity = Activity.source.StartActivity("axial.flow.fiber.defect")
+                        use activity = Activity.runtimeSource.StartActivity("axial.flow.fiber.defect")
 
                         if not (isNull activity) then
                             tagMetadata activity metadata
@@ -191,7 +249,7 @@ module FiberTelemetry =
                     | None -> ()
             OnUnobservedDefect =
                 fun metadata defect ->
-                    use activity = Activity.source.StartActivity("axial.flow.fiber.unobserved_defect")
+                    use activity = Activity.runtimeSource.StartActivity("axial.flow.fiber.unobserved_defect")
 
                     if not (isNull activity) then
                         metadata |> Option.iter (tagMetadata activity)
@@ -224,7 +282,7 @@ module FiberTelemetry =
             OnStart =
                 fun metadata ->
                     let previous = System.Diagnostics.Activity.Current
-                    let activity = Activity.source.StartActivity("axial.flow.fiber")
+                    let activity = Activity.runtimeSource.StartActivity("axial.flow.fiber")
                     System.Diagnostics.Activity.Current <- previous
 
                     if not (isNull activity) then
@@ -252,7 +310,7 @@ module FiberTelemetry =
                         | None -> []
 
                     use activity =
-                        Activity.source.StartActivity(
+                        Activity.runtimeSource.StartActivity(
                             "axial.flow.fiber.unobserved_defect",
                             ActivityKind.Internal,
                             ActivityContext(),
@@ -358,7 +416,7 @@ module FiberDumpTelemetry =
 
         match System.Diagnostics.Activity.Current with
         | null ->
-            use activity = Activity.source.StartActivity("axial.flow.fiber.dump")
+            use activity = Activity.runtimeSource.StartActivity("axial.flow.fiber.dump")
 
             if not (isNull activity) then
                 for KeyValue(name, value) in tags do

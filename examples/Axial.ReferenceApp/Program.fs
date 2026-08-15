@@ -30,6 +30,7 @@ open Axial.Telemetry
 open Axial.ReferenceApp
 
 let private applicationActivitySource = new ActivitySource("Axial.ReferenceApp")
+let private applicationTracer = ActivityTracer.create applicationActivitySource
 let private demoKindAttribute = AttributeKey.string "example.demo.kind"
 
 let private renderError = function
@@ -216,7 +217,7 @@ let buildWebApp (baseEnvironment: AppEnv) (args: string array) =
 
     let endpoint name application =
         application
-        |> Activity.traceWithSource applicationActivitySource (fun error -> string error) name
+        |> applicationTracer.TraceWith((fun error -> string error), name)
         |> Flow.withFiberRegistry registry
         |> FiberTelemetry.observeWithSpans
         |> FiberMetrics.observe
@@ -393,7 +394,7 @@ input, select, button {{ padding: .35rem; }} code {{ background: #eee; padding: 
             }
             |> Flow.annotate "demo.kind" "concurrent-work"
             |> Context.withAttribute (Context.attribute demoKindAttribute "concurrent-work")
-            |> Activity.traceWithSource applicationActivitySource renderError "observability.demo"
+            |> applicationTracer.TraceWith(renderError, "observability.demo")
             |> Flow.withFiberRegistry registry
             |> FiberTelemetry.observeWithSpans
             |> FiberMetrics.observe

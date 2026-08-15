@@ -4,50 +4,7 @@ This sketch records public APIs that deserve a deliberate decision before Axial 
 candidate must change. For each item, test the current API in realistic application code, choose the intended shape,
 update tests and user documentation, and remove the item once the decision has moved into current architecture or code.
 
-## 1. Clarify application and runtime `ActivitySource` ownership
-
-Application workflows should normally emit from an application-owned instrumentation scope:
-
-```fsharp
-workflow
-|> Activity.traceOn applicationActivitySource "orders.place"
-```
-
-Axial's automatic fiber spans and metrics correctly retain the `Axial` instrumentation scope because they describe
-runtime behavior. The public `Activity.source`, `Activity.trace`, and `Activity.traceWith` defaults can nevertheless
-encourage applications to place user operations under Axial's scope.
-
-Decision: introduce an `ActivityTracer` adapter that captures an application source once, and drop the
-default-source `trace`/`traceWith` shortcuts that currently make it easy to tag application spans under Axial's own
-`ActivitySource`. Also rename `Activity.source` to `Activity.runtimeSource` (or hide it) so it reads unambiguously as
-Axial-internal, not a general-purpose default.
-
-```fsharp
-let appTracer = ActivityTracer.create appActivitySource
-
-workflow
-|> appTracer.trace "orders.place"
-```
-
-Decided: ambient, not explicit-via-`'env`. Route the tracer through `RuntimeContext` the same way Axial already
-threads `TelemetryContext`, `AnnotationSink`, and `Observer` — a fiber-scoped cell, inherited by forked children, not
-a process-wide global. Install it once near the composition root, e.g. `Flow.Runtime.withTracer appTracer workflow`.
-Routing it through `'env` instead would put a tracer-capability constraint on every workflow's environment type
-across the whole public API, disproportionate to the problem and inconsistent with how every other cross-cutting
-concern in Axial already works.
-
-"By construction" here means no silent wrong answer, not compile-time proof: if `Activity.trace` runs with no
-tracer installed, it must throw immediately rather than default to Axial's own `ActivitySource`. That converts the
-original defect (spans silently mistagged under the wrong scope) into a loud, obvious startup-composition failure
-instead of a compile-time impossibility — which is sufficient, and consistent with the rest of the ambient
-`RuntimeContext` design.
-
-`ActivityTracer.create` remains the only way to obtain a value with a `.trace` member for the explicit call-site
-form (`appTracer.trace name flow`); the ambient path is the convenience layer on top of it, not a replacement.
-
-Any chosen API must keep service name, instrumentation scope, and span name distinct.
-
-## 2. Stabilize the schedule contract
+## 1. Stabilize the schedule contract
 
 Before freezing schedules, specify and test:
 
@@ -78,5 +35,4 @@ without separate evidence from application use.
 
 ## Suggested review order
 
-1. Application versus Axial `ActivitySource` ownership.
-2. Exact schedule semantics.
+1. Exact schedule semantics.
