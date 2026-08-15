@@ -1,0 +1,34 @@
+<Project>
+
+  <!--
+    Runs Axial.Guardrails against every project in this repo except itself, the same way a
+    package consumer gets it via PackageReference to Axial.Guardrails - see
+    src/Axial.Guardrails/build/Axial.Guardrails.targets for the actual check, and
+    docs/15-notes/03-guardrails.md for what it covers. No separate script: `dotnet build` (or
+    `dotnet test`, for AXG004 in a test project) runs the check as part of the normal build.
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails'">
+    <!--
+      ReferenceOutputAssembly="false" orders the build (Axial.Guardrails builds first, so its
+      analyzer output already exists when this project's own AfterTargets="Build" check runs)
+      without making this project actually compile against Axial.Guardrails.Analyzers.dll.
+    -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\Axial.Guardrails\Axial.Guardrails.fsproj"
+                       ReferenceOutputAssembly="false"
+                       SkipGetTargetFrameworkProperties="true"
+                       SetTargetFramework="TargetFramework=net8.0"
+                       GlobalPropertiesToRemove="TargetFramework"
+                       Private="false" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails'">
+    <!-- The analyzer's own build output, not the packaged analyzers/ folder these paths default to. -->
+    <_AxialGuardrailsAnalyzersPath>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Guardrails\$(Configuration.ToLower())</_AxialGuardrailsAnalyzersPath>
+    <!-- The fsharp-analyzers local tool from .config/dotnet-tools.json, not a packaged cli/ copy. -->
+    <_AxialGuardrailsExe>dotnet fsharp-analyzers</_AxialGuardrailsExe>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)src\Axial.Guardrails\build\Axial.Guardrails.targets"
+          Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails'" />
+
+</Project>

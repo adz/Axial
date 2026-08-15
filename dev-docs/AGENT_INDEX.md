@@ -25,9 +25,8 @@ Axial is the workflow product. Core is `src/Axial`; focused operational and host
 ## Validation
 
 - `bash scripts/check-source-inventory.sh`
-- `dotnet build Axial.slnx --nologo -v minimal`
+- `dotnet build Axial.slnx --nologo -v minimal` (also runs Axial.Guardrails; see `Directory.Build.targets`)
 - `dotnet test Axial.slnx --nologo -v minimal`
-- `bash scripts/run-guardrails.sh`
 - `bash scripts/run-aot-probe.sh`
 - `bash scripts/check-fable-js-surface.sh`
 - `bash scripts/validate-docs.sh`

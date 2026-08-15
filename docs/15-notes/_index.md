@@ -4,9 +4,7 @@ title: Notes
 
 # Notes
 
-Package selection, platform constraints, AI-agent context, benchmarks, and implementation detail live outside the
-main learning path.
+Package selection, platform constraints, benchmarks, and implementation detail live outside the main learning path.
 
-- [Packages and platforms](packages-and-platforms.html)
-- [Context for AI agents](ai-agents.html)
 - [Effect-boundary guardrails](guardrails.html)
+- [Packages and platforms](packages-and-platforms.html)

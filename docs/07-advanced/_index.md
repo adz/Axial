@@ -18,3 +18,5 @@ actually write day to day; this section is for the places that model runs out, o
    provisioning or execution.
 3. [Tutorial: Creating reusable services](custom-services.html) — define your own named service contract, the way
    the built-in services are defined, instead of tying a dependency to one record field name.
+4. [Writing your own effect-boundary analyzer](writing-effect-analyzers.html) — package an ambient-effect check for
+   your own service contract, wired into a consumer's build the same way `Axial.Guardrails` is.

@@ -1,8 +1,15 @@
 <Project>
 
   <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
-    <_AxialGuardrailsAnalyzersPath>$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
-    <_AxialGuardrailsCli>$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll</_AxialGuardrailsCli>
+    <!--
+      A caller that imports this file directly (rather than getting it via PackageReference) can
+      set _AxialGuardrailsAnalyzersPath and _AxialGuardrailsExe before importing, to point at a
+      locally built analyzer and locally installed CLI instead of the packaged analyzers/ and
+      cli/ folders. Axial's own repo does exactly this in Directory.Build.targets, so its own
+      build runs the identical check a package consumer gets, with no separate script.
+    -->
+    <_AxialGuardrailsAnalyzersPath Condition="'$(_AxialGuardrailsAnalyzersPath)' == ''">$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
+    <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll&quot;</_AxialGuardrailsExe>
     <_AxialGuardrailsSeverityFlag Condition="'$(AxialGuardrailsSeverity)' == 'error'">--treat-as-error</_AxialGuardrailsSeverityFlag>
     <_AxialGuardrailsSeverityFlag Condition="'$(AxialGuardrailsSeverity)' != 'error'">--treat-as-warning</_AxialGuardrailsSeverityFlag>
     <!--
@@ -13,7 +20,7 @@
       built with `dotnet test` gets only AXG004 (shared xUnit fixtures) by default.
     -->
     <_AxialGuardrailsCodes Condition="'$(IsTestProject)' == 'true'">AXG004</_AxialGuardrailsCodes>
-    <_AxialGuardrailsCodes Condition="'$(IsTestProject)' != 'true'">AXG001 AXG002 AXG003 AXG004</_AxialGuardrailsCodes>
+    <_AxialGuardrailsCodes Condition="'$(IsTestProject)' != 'true'">AXG001 AXG002 AXG003 AXG004 AXG005</_AxialGuardrailsCodes>
     <!--
       The severity flag only overrides the severity of the named codes; it does not restrict which
       analyzers run. The analyzers filter (below, by analyzer name) is what actually keeps
@@ -32,8 +39,8 @@
   -->
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
-          Condition="'$(AxialGuardrailsEnabled)' == 'true' and Exists('$(_AxialGuardrailsCli)')">
-    <Exec Command="dotnet &quot;$(_AxialGuardrailsCli)&quot; --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) $(_AxialGuardrailsSeverityFlag) $(_AxialGuardrailsCodes) --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
+          Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) $(_AxialGuardrailsSeverityFlag) $(_AxialGuardrailsCodes) --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
   </Target>
 
 </Project>

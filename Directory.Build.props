@@ -9,6 +9,26 @@
     <RepositoryBranch>main</RepositoryBranch>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == ''">README.md</PackageReadmeFile>
+
+    <!--
+      Axial.Guardrails' own repo-internal defaults: see Directory.Build.targets for how every
+      project gets the same check a package consumer gets via PackageReference, without one.
+      strict for src/Axial* (library code, where the effect-boundary rule is a hard requirement -
+      see AGENTS.md's Architecture Invariants) and tests/Axial* (the only check that runs there,
+      AXG004, has already been cleaned up); warning everywhere else, since examples/ and
+      benchmarks/ are often deliberately showing plain, pre-Axial code. A single root
+      Directory.Build.props (rather than one nested under src/ and tests/) avoids breaking the SDK's
+      artifacts-output root detection, which keys off the nearest Directory.Build.props found by
+      walking up from each project. AXIAL_GUARDRAILS_SEVERITY, if set in the environment, overrides
+      whichever default applies; an individual project can still override
+      AxialGuardrailsEnabled/AxialGuardrailsSeverity itself, the same way an external consumer
+      would.
+    -->
+    <_AxialGuardrailsInStrictTree Condition="$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src')) or $(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)tests'))">true</_AxialGuardrailsInStrictTree>
+    <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
+    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == '' and '$(AXIAL_GUARDRAILS_SEVERITY)' != ''">$(AXIAL_GUARDRAILS_SEVERITY)</AxialGuardrailsSeverity>
+    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == '' and '$(_AxialGuardrailsInStrictTree)' == 'true'">error</AxialGuardrailsSeverity>
+    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == ''">warning</AxialGuardrailsSeverity>
   </PropertyGroup>
 
   <ItemGroup>
