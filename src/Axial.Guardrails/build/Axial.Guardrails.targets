@@ -30,17 +30,65 @@
     <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true'">--include-analyzers Fixture</_AxialGuardrailsIncludeAnalyzersFlag>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <!--
+      Without Inputs/Outputs, MSBuild has no way to know this target's work is already done, and
+      reruns the external CLI process - a full, independent, cold project reload and re-typecheck,
+      redundant with the compile that just happened - on every single build, even when nothing
+      analyzed changed. The stamp file below is what lets MSBuild skip the target entirely on a
+      rebuild where @(Compile) hasn't changed, which is the common case in an edit-build loop.
+    -->
+    <_AxialGuardrailsStampFile>$(IntermediateOutputPath)axial-guardrails.stamp</_AxialGuardrailsStampFile>
+  </PropertyGroup>
+
   <!--
-    Runs after every build of a project that references Axial.Guardrails. Deliberately does not use
-    FSharp.Analyzers.Build's own AfterBuild target: that target hardcodes IgnoreExitCode="true", so it
-    can never fail a build regardless of severity. This target instead lets Exec's normal exit-code
-    handling do the work: the CLI itself exits non-zero only when a finding is treated as an error, so
-    AxialGuardrailsSeverity=warning (the default) can never fail the build, and =error always does.
+    @(Compile) includes generated files under $(IntermediateOutputPath) - AssemblyInfo.fs is
+    rewritten with a fresh timestamp on every build regardless of whether anything actually
+    changed, which would make the Inputs/Outputs check below always consider itself out of date.
+    Filtering those out leaves only real source files, so the timestamp comparison means what it's
+    supposed to: "did the checked source change since the last successful check".
+  -->
+  <ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <_AxialGuardrailsSourceInputs Include="@(Compile)" Exclude="$(IntermediateOutputPath)*" />
+  </ItemGroup>
+
+  <!--
+    Self-heals the case the Exists() guard below exists for: a repo (like this one) pointing
+    _AxialGuardrailsAnalyzersPath at its own live build output, hit before that project has ever
+    been built. Builds it once, directly - no ProjectReference, so no per-project graph-evaluation
+    cost on every subsequent build (see Directory.Build.targets for why that matters). A real
+    package consumer never sets _AxialGuardrailsBootstrapProject, so this never runs for them: the
+    analyzer always arrives pre-built inside the restored nupkg.
+
+    If several projects build in parallel before the folder exists, more than one of these can fire
+    at once; harmless (dotnet build is idempotent), just briefly redundant.
+  -->
+  <Target Name="AxialGuardrailsEnsureBuilt"
+          BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsBootstrapProject)' != '' and !Exists('$(_AxialGuardrailsAnalyzersPath)')">
+    <Exec Command="dotnet build &quot;$(_AxialGuardrailsBootstrapProject)&quot; --nologo -v quiet" />
+  </Target>
+
+  <!--
+    Runs after every build of a project that references Axial.Guardrails, but only when @(Compile)
+    is newer than the stamp file from the last successful run (see Inputs/Outputs above). Deliberately
+    does not use FSharp.Analyzers.Build's own AfterBuild target: that target hardcodes
+    IgnoreExitCode="true", so it can never fail a build regardless of severity. This target instead
+    lets Exec's normal exit-code handling do the work: the CLI itself exits non-zero only when a
+    finding is treated as an error, so AxialGuardrailsSeverity=warning (the default) can never fail
+    the build, and =error always does.
+
+    Still skips silently if the analyzers path is somehow missing after AxialGuardrailsEnsureBuilt
+    (or there was nothing to bootstrap with) - a real package consumer never hits this at all.
   -->
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
-          Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and Exists('$(_AxialGuardrailsAnalyzersPath)')"
+          Inputs="@(_AxialGuardrailsSourceInputs)"
+          Outputs="$(_AxialGuardrailsStampFile)">
+    <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) $(_AxialGuardrailsSeverityFlag) $(_AxialGuardrailsCodes) --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
+    <Touch Files="$(_AxialGuardrailsStampFile)" AlwaysCreate="true" />
   </Target>
 
 </Project>

@@ -6,26 +6,27 @@
     src/Axial.Guardrails/build/Axial.Guardrails.targets for the actual check, and
     docs/15-notes/03-guardrails.md for what it covers. No separate script: `dotnet build` (or
     `dotnet test`, for AXG004 in a test project) runs the check as part of the normal build.
-  -->
-  <ItemGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails'">
-    <!--
-      ReferenceOutputAssembly="false" orders the build (Axial.Guardrails builds first, so its
-      analyzer output already exists when this project's own AfterTargets="Build" check runs)
-      without making this project actually compile against Axial.Guardrails.Analyzers.dll.
-    -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)src\Axial.Guardrails\Axial.Guardrails.fsproj"
-                       ReferenceOutputAssembly="false"
-                       SkipGetTargetFrameworkProperties="true"
-                       SetTargetFramework="TargetFramework=net8.0"
-                       GlobalPropertiesToRemove="TargetFramework"
-                       Private="false" />
-  </ItemGroup>
 
+    A real consumer never pays a build-order cost for this at all: `dotnet add package
+    Axial.Guardrails` restores a nupkg with the analyzer already compiled, sitting in the
+    package's own analyzers/ folder - there's nothing to build, so nothing to order against.
+    That's only a problem for us, because we deliberately point at this repo's own live source
+    (artifacts/bin/Axial.Guardrails/$(Configuration)) instead of a published package, so we're
+    always checking against the analyzer's current code. A ProjectReference to Axial.Guardrails
+    would force MSBuild to resolve and build-order-check its entire dependency graph - which
+    includes FSharp.Compiler.Service, expensive to evaluate - on every single build of every
+    single project in the repo, whether or not the check itself ends up running. Instead,
+    AxialGuardrailsEnsureBuilt (in the imported targets below) builds Axial.Guardrails directly
+    with a plain `dotnet build`, the first time any project finds its output missing - self-healing
+    without a graph edge, and near-free on every build after the first.
+  -->
   <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails'">
     <!-- The analyzer's own build output, not the packaged analyzers/ folder these paths default to. -->
     <_AxialGuardrailsAnalyzersPath>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Guardrails\$(Configuration.ToLower())</_AxialGuardrailsAnalyzersPath>
     <!-- The fsharp-analyzers local tool from .config/dotnet-tools.json, not a packaged cli/ copy. -->
     <_AxialGuardrailsExe>dotnet fsharp-analyzers</_AxialGuardrailsExe>
+    <!-- Only this repo sets this; a real package consumer never needs to bootstrap-build anything. -->
+    <_AxialGuardrailsBootstrapProject>$(MSBuildThisFileDirectory)src\Axial.Guardrails\Axial.Guardrails.fsproj</_AxialGuardrailsBootstrapProject>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)src\Axial.Guardrails\build\Axial.Guardrails.targets"
