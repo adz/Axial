@@ -469,10 +469,14 @@ module Flow =
     let fromResult (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofResult result)
 
-    /// <summary>Runs an environment-aware policy against an input value inside a workflow.</summary>
-    /// <param name="policy">The policy to run.</param>
-    /// <param name="input">The input value supplied to the policy.</param>
-    /// <returns>A flow that succeeds or fails with the policy result.</returns>
+    /// <summary>Creates a flow that verifies an input with an environment-aware policy.</summary>
+    /// <remarks>
+    /// When the Flow runs, <c>verify</c> supplies its current environment to the policy. An <c>Ok</c> result succeeds
+    /// with the policy output. An <c>Error</c> result short-circuits the workflow through its typed error channel.
+    /// </remarks>
+    /// <param name="policy">The reusable verification rule to apply.</param>
+    /// <param name="input">The input value to verify.</param>
+    /// <returns>A cold flow that succeeds or fails with the policy result.</returns>
     let verify
         (policy: Policy<'env, 'error, 'input, 'output>)
         (input: 'input)

@@ -5,9 +5,9 @@ description: Install Axial and open its namespace.
 
 # Installation
 
-`Axial` is the package you install. `Flow<'env, 'error, 'value>` is the type it gives you, and `flow { }` is the
-computation expression that builds values of that type. The documentation says "Flow" when it means the workflow
-model and "Axial" when it means the library or a package name.
+Install the `Axial` package to use `Flow<'env, 'error, 'value>` and the `flow { }` computation expression.
+
+This documentation uses "Flow" for the workflow model and "Axial" for the library or a package name.
 
 Install the core package:
 
@@ -35,34 +35,22 @@ See [Packages and Platforms](/notes/packages-and-platforms.html) for the complet
 
 ## Add effect-boundary guardrails (optional)
 
-Axial's workflows are only as honest as the code around them: a `Flow` that hides a `DateTime.Now` or a
-`new Random()` inside a dependency looks pure but isn't. `Axial.Guardrails` is an analyzer that catches that —
-direct calls to the clock, randomness, GUIDs, the console, the filesystem, environment variables, or the process —
-anywhere it isn't explicitly named as an intended boundary.
+A workflow can bypass its declared dependencies by reading ambient state such as `DateTime.Now` or by creating
+`System.Random` directly. `Axial.Guardrails` detects these calls and related Axial usage errors during the build.
+
+Install the analyzer package:
 
 ```sh
 dotnet add package Axial.Guardrails
 ```
 
-That's the whole install. The package wires itself into your build the moment it's referenced — no MSBuild edits,
-no separate CLI to learn. What happens next depends on how you want to work with it.
+The package configures the analyzer automatically. Findings are warnings by default, so you can add it to an
+existing project without failing the build.
 
-**Trialing it in an existing codebase.** Leave the defaults alone. Findings show up as build warnings, so nothing
-that already builds today stops building tomorrow. Read through them at your own pace, add a
-`// axial-allow-effect: <category>` comment at any call site that's a genuine, intended boundary, and move on.
-When a project is clean, promote it to build-breaking:
+Review each finding. Replace accidental ambient access with an explicit service. Add a category-specific
+suppression only when the call implements an intentional effect boundary.
 
-```xml
-<PropertyGroup>
-  <AxialGuardrailsSeverity>error</AxialGuardrailsSeverity>
-</PropertyGroup>
-```
-
-Not interested yet? `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` turns it off for that project, no
-uninstall required.
-
-**Driving the change with an LLM.** Set errors from the start instead of easing in — an agent works better against
-a build that fails with a specific, fixable diagnostic than against warnings it can ignore:
+After resolving the initial findings, configure the analyzer to fail the build on new findings:
 
 ```xml
 <PropertyGroup>
@@ -70,14 +58,11 @@ a build that fails with a specific, fixable diagnostic than against warnings it 
 </PropertyGroup>
 ```
 
-Then point an agent at `dotnet build` and let it work the list: each `AXG001` finding names the exact call, the
-service to route it through instead (`Axial.PlatformService`'s `IClock`, `IRandom`, `IGuid`, `IEnvironment`, or
-the matching package for console/filesystem/process), and the suppression comment to use instead if the call site
-turns out to be a genuine boundary. The build stays red until every finding is fixed or explicitly annotated, so
-there's no ambiguity about when the pass is done.
+To disable the analyzer for one project without removing the package, set
+`AxialGuardrailsEnabled` to `false`.
 
-See [Effect-boundary guardrails](/notes/guardrails.html) for the full list of what's checked and how suppression
-comments work.
+See [Effect-boundary guardrails](/notes/guardrails.html) for the diagnostic list, configuration options, and
+suppression syntax.
 
 ## Go further
 

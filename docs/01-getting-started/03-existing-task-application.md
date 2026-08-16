@@ -13,9 +13,10 @@ compiles on its own.
 
 ## Choose the boundary
 
-Put the boundary where a request, job, or message already begins: a controller action, a minimal API endpoint handler, a
-hosted service loop, or a message consumer. Above that line, callers keep seeing `Task`. Below it, the module is
-workflows.
+Put the boundary where a request, job, or message begins. For example, use a controller action, endpoint handler,
+hosted service loop, or message consumer.
+
+Above the boundary, callers continue to use `Task`. Below it, the module uses workflows.
 
 Do not scatter boundaries through the call tree. Each boundary starts its own runtime with its own scope, so
 converting a leaf function first gives you the costs of Flow and none of its cancellation or cleanup guarantees.
@@ -92,24 +93,29 @@ still take a plain record and stay testable without the container.
 
 ## Convert leaf functions last
 
-Inside the module, wrap a `CancellationToken -> Task<_>` function in `ColdTask` before binding it. The wrapper keeps
-task creation cold and receives Flow's runtime cancellation token. When the task returns `Result<'value,'error>`, the
-builder routes `Error` into the expected-error channel.
+Before binding a `CancellationToken -> Task<_>` function, wrap it in `ColdTask`. The wrapper keeps task creation cold
+and receives Flow's runtime cancellation token.
 
-Use `Flow.fromTask` or `Flow.fromTaskResult` when composing without `flow { }`. Use `Flow.awaitStartedTask` only when a
-host API has already started the operation.
+When the task returns `Result<'value,'error>`, the builder sends `Error` to the expected-error channel.
+
+Use `Flow.fromTask` or `Flow.fromTaskResult` when you compose without `flow { }`. Use `Flow.awaitStartedTask` only when
+a host API has already started the operation.
 
 Some legacy APIs do not accept a cancellation token. You can adapt one with `ColdTask(fun _ -> legacyCall ())`, but
-cancelling the Flow cannot stop the underlying operation. Prefer cancellation-aware overloads when the dependency
-provides them, and add token support to adapters you control.
+Flow cancellation cannot stop the underlying operation.
 
-## Trial the effect-boundary guardrails alongside the migration
+Prefer cancellation-aware overloads. Add cancellation support to adapters that you control.
 
-Adopting Flow one module at a time is a good moment to also try `dotnet add package Axial.Guardrails` — see
-[Installation](installation.html#add-effect-boundary-guardrails-optional). Left at its default warning severity, it
-won't fail your existing build; it just starts naming any ambient clock, randomness, or console access it finds in
-the module you're converting, so you catch a hidden effect while you're already looking at that code instead of
-after it ships.
+## Check effect boundaries during migration
+
+Add `Axial.Guardrails` while you migrate modules to find dependencies that the existing signatures do not expose.
+The analyzer detects ambient access to clocks, randomness, the console, and other operational effects.
+
+The default warning severity does not fail an existing build. Resolve findings in each module as you migrate it,
+then configure the analyzer to report errors when the project is clean.
+
+For installation and configuration, see
+[Installation](installation.html#add-effect-boundary-guardrails-optional).
 
 ## Go further
 

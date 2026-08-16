@@ -37,8 +37,10 @@ Flow.acquireReleaseWith
     (fun (reservation, _) -> fulfil reservation)             // use: charge + ship, each error mapped at its bind
 ```
 
-Failures enter `CheckoutError` at each bind site with `Bind.mapError`; the release action is attached to the
-reservation's lexical lifetime, so it runs on success, typed failure, defect (a test throws from the shipping
+Failures enter `CheckoutError` at each bind site with
+[`Bind.mapError`](/error-handling/bind.html). The Bind guide explains why the same mapping syntax works for
+`Result`, asynchronous results, and Flow sources. The release action is attached to the reservation's lexical
+lifetime, so it runs on success, typed failure, defect (a test throws from the shipping
 adapter), and interruption. ZIO correspondence: environment services, typed errors, `acquireRelease`.
 
 - **Made visible by the type**: the required services (`CheckoutEnv`) and the complete failure set (`CheckoutError`).

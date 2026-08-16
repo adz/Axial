@@ -72,7 +72,7 @@ let incrementAndGet (counter: Ref<int>) =
 changing state" cases without writing a custom `modify` function:
 
 ```fsharp
-let incrementAndGet (counter: Ref<int>) =
+let incrementAndGetWithHelper (counter: Ref<int>) =
     Ref.updateAndGet (fun x -> x + 1) counter
 
 let snapshotAndReset (counter: Ref<int>) =

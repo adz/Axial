@@ -38,8 +38,10 @@ when the application deliberately translates a defect into a typed error.
 `Exit.toResult` is intentionally lossy. Use it only at a boundary that has decided how defects, interruption, and
 combined causes should be represented.
 
-## Go Further
+## Learn more
 
+- [Bind](/error-handling/bind.html) explains how to assign or map an error at a `flow { }` bind site.
+- [Policy and verification](/error-handling/policy.html) explains reusable verification rules and `Flow.verify`.
 - [Defects](/error-handling/defects.html) covers exception capture and intentional recovery in detail.
 - [Cause reference](/api.html) lists cause transformations and rendering.
 - [Supervision](/concurrency-and-state/supervision.html) explains how unjoined child defects are reported.

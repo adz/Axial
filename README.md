@@ -80,11 +80,11 @@ The core is independent. Add service and hosting packages only when the workflow
 
 - [Getting started](docs/01-getting-started/_index.md)
 - [Add Axial to an existing Task application](docs/01-getting-started/03-existing-task-application.md)
-- [Dependencies and services](docs/04-dependencies/_index.md)
-- [Failures and defects](docs/08-error-handling/_index.md)
-- [Concurrency](docs/09-concurrency-and-state/_index.md)
-- [HTTP client](docs/05-services/05-http/_index.md)
-- [Runnable examples](docs/14-testing/02-runnable-examples.md)
+- [Failures and defects](docs/04-error-handling/_index.md)
+- [Dependencies and services](docs/05-dependencies/_index.md)
+- [Concurrency](docs/08-concurrency-and-state/_index.md)
+- [HTTP client](docs/06-services/05-http/_index.md)
+- [Runnable examples](docs/13-testing/02-runnable-examples.md)
 - [Integration reference application](examples/Axial.ReferenceApp/README.md)
 
 ## Reified integration

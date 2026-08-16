@@ -22,7 +22,10 @@
 - Use `Flow.fromTask`/`fromAsync` when thrown exceptions are defects; use `attemptTask`/`attemptAsync` when expected
   exceptions belong in the typed failure channel. These take a cancellable factory; `awaitStartedTask` wraps work
   that is already running.
-- Use `Bind.error` or `Bind.mapError` only at a `flow {}` bind site where the source error needs immediate assignment.
+- `Bind.error` and `Bind.mapError` create markers consumed by `let!`, `do!`, or `return!` in `flow { }`; use them only
+  where a source error needs assignment or mapping at that bind site.
+- `Policy<'env,'error,'input,'output>` is a reusable environment-aware verification function. Run it as a workflow
+  step with `Flow.verify`; use `Bind` instead for one-time bind-site error adaptation.
 - Execute finite roots with `App.run`. Use `App.start` when an outer host owns stopping and awaits cleanup.
 
 ## Effects and resources
