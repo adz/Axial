@@ -50,8 +50,19 @@ jobs:
       - name: Check for committed release history
         id: history
         run: echo "has_entries=$(jq -r '(.Entries | length) > 0' .livedocs/history.json)" >> "$GITHUB_OUTPUT"
+      - name: Initialize the released documentation history
+        if: inputs.version != '' && steps.history.outputs.has_entries != 'true'
+        env:
+          VERSION: ${{ inputs.version }}
+          CAPSULE_URL: ${{ inputs.capsule_url }}
+          CAPSULE_SHA256: ${{ inputs.capsule_sha256 }}
+        run: |
+          jq --arg version "$VERSION" --arg url "$CAPSULE_URL" --arg sha256 "$CAPSULE_SHA256" \
+            '.CurrentVersion = $version | .Entries = [{Version: $version, CapsulePath: null, CapsuleUrl: $url, CapsuleSha256: $sha256}]' \
+            .livedocs/history.json > .livedocs/history.json.tmp
+          mv .livedocs/history.json.tmp .livedocs/history.json
       - name: Add the newly released capsule to this history build
-        if: inputs.version != ''
+        if: inputs.version != '' && steps.history.outputs.has_entries == 'true'
         run: |
           dotnet livedocs history-add "${{ inputs.version }}" \
             --url "${{ inputs.capsule_url }}" \

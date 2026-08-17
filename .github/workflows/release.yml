@@ -57,7 +57,7 @@ jobs:
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF_NAME#v}"
           else
-            version="$(tr -d '[:space:]' < RELEASE_RESUME)"
+            version="$(head -n 1 RELEASE_RESUME | tr -d '[:space:]')"
           fi
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Release version must have the form MAJOR.MINOR.PATCH; got $version" >&2
