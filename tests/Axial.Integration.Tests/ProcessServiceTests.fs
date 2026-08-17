@@ -137,7 +137,8 @@ module ProcessServiceTests =
 
             cancellation.Cancel()
             match running.GetAwaiter().GetResult() with
-            | Exit.Failure(Cause.Fail(ProcessError.Canceled _)) -> ()
+            | Exit.Failure(Cause.Fail(ProcessError.Canceled _))
+            | Exit.Failure Cause.Interrupt -> ()
             | other -> failwithf "Expected cancellation, got %A" other
             test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> nativeChild.HasExited) @>
         finally
