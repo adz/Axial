@@ -58,26 +58,10 @@ jobs:
       - name: Build
         run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal -p:Version="${{ steps.version.outputs.value }}"
 
-      - name: Test
-        run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
-
-      - name: Validate Fable surface
-        run: bash scripts/check-fable-js-surface.sh
-
-      - name: Validate NativeAOT
-        run: bash scripts/run-aot-probe.sh
-
       - name: Validate documentation
         run: |
           bash scripts/check-docs-conventions.sh
-          # FsLiveDocs 0.3.5 loads project assemblies into one process and cannot validate
-          # the version-stamped multi-target Release outputs. Validate a fresh Debug build.
-          dotnet clean Axial.slnx --configuration Release --nologo -v minimal
-          dotnet build Axial.slnx --configuration Debug --nologo -v minimal
           dotnet livedocs test --warn-as-error
-
-      - name: Pack libraries
-        run: bash scripts/pack.sh -v "${{ steps.version.outputs.value }}"
 
       - name: Capture immutable documentation
         id: docs
@@ -88,6 +72,18 @@ jobs:
           mkdir -p artifacts/release
           dotnet livedocs capture --warn-as-error --version "$version" --output "artifacts/release/$capsule"
           echo "capsule=$capsule" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
+
+      - name: Validate Fable surface
+        run: bash scripts/check-fable-js-surface.sh
+
+      - name: Validate NativeAOT
+        run: bash scripts/run-aot-probe.sh
+
+      - name: Pack libraries
+        run: bash scripts/pack.sh -v "${{ steps.version.outputs.value }}"
 
       - name: Create draft release with immutable inputs
         env:
