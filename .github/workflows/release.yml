@@ -70,9 +70,10 @@ jobs:
       - name: Validate documentation
         run: |
           bash scripts/check-docs-conventions.sh
-          # FsLiveDocs loads project assemblies into one process. Remove the release build
-          # outputs first so it cannot discover duplicate copies produced by earlier probes.
+          # FsLiveDocs 0.3.5 loads project assemblies into one process and cannot validate
+          # the version-stamped multi-target Release outputs. Validate a fresh Debug build.
           dotnet clean Axial.slnx --configuration Release --nologo -v minimal
+          dotnet build Axial.slnx --configuration Debug --nologo -v minimal
           dotnet livedocs test --warn-as-error
 
       - name: Pack libraries
