@@ -13,8 +13,8 @@
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageTags>fsharp;axial;analyzer;linter;fsharp-analyzers</PackageTags>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- This analyzer package excludes normal build output and therefore has no portable PDB payload for a symbol package. -->
+    <IncludeSymbols>false</IncludeSymbols>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IsPackable>true</IsPackable>
     <!-- Analyzer dlls are loaded standalone by the fsharp-analyzers CLI; they are not compiled into consumers. -->
