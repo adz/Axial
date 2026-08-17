@@ -35,6 +35,9 @@ jobs:
       - name: Check source inventory
         run: bash scripts/check-source-inventory.sh
 
+      - name: Check release notes
+        run: bash scripts/check-release-notes.sh
+
       - name: Build
         # Also runs Axial.Guardrails (see Directory.Build.targets) against every project it builds.
         run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
@@ -112,49 +115,3 @@ jobs:
 
       - name: Pack libraries
         run: bash scripts/pack.sh
-
-  docs:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check out FsLiveDocs
-        uses: actions/checkout@v4
-        with:
-          repository: adz/FsLiveDocs
-          path: tools/FsLiveDocs
-
-      - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-
-      - name: Restore local tools
-        run: dotnet tool restore
-
-      - name: Restore .NET
-        run: dotnet restore
-
-      - name: Validate docs site
-        env:
-          FSLIVEDOCS_ROOT: ${{ github.workspace }}/tools/FsLiveDocs
-        run: bash scripts/validate-docs.sh
-
-      - name: Prepare Pages artifact
-        run: touch output/.nojekyll
-
-      - name: Upload generated docs artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-docs
-          path: output/
-          if-no-files-found: error

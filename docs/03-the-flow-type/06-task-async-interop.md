@@ -158,7 +158,7 @@ let read : Flow<unit, exn, string> =
 
 Available functions include:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
+```fsharp
 Flow.attemptAsync
 Flow.attemptTask
 Flow.attemptValueTask

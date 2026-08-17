@@ -12,7 +12,8 @@ Write guides for library users under the numbered task folders. Keep contributor
 - FsLiveDocs extracts API reference data from the built public projects.
 - `docs/api/{EntityId}.md` can add an authored introduction to a generated entity page.
 - FsLiveDocs copies non-Markdown files below `docs/` into the generated site, preserving their paths.
-- `output/**`, `.livedocs/history/**`, and build artifacts are generated and untracked.
+- `output/**`, `.livedocs/cache/**`, `.livedocs/releases/**`, and build artifacts are generated and untracked.
+- `.livedocs/history.json` is the committed index of immutable release capsules.
 
 Do not commit generated API pages. Update source comments or `docs/api/` enrichment pages, then rebuild.
 
@@ -31,16 +32,17 @@ Do not commit generated API pages. Update source comments or `docs/api/` enrichm
 ## Commands
 
 ```bash
-bash scripts/build-docs-site.sh
-bash scripts/validate-docs.sh
-bash scripts/preview-docs.sh
+dotnet build Axial.slnx --nologo -v minimal
+dotnet livedocs test --warn-as-error
+dotnet livedocs build --warn-as-error
+dotnet livedocs watch
 ```
 
 The preview binds to `0.0.0.0:5000` so it is reachable from another device on the local network. Override either
 value when needed:
 
 ```bash
-AXIAL_DOCS_PREVIEW_HOST=127.0.0.1 AXIAL_DOCS_PREVIEW_PORT=8080 bash scripts/preview-docs.sh
+dotnet livedocs watch --host 127.0.0.1 --port 8080
 ```
 
 The preview rebuilds when a watched `.fs`, `.fsproj`, `.fsx`, `.md`, or `.css` file changes. Generated and vendored
@@ -48,8 +50,7 @@ directories such as `.git`, `node_modules`, `artifacts`, `bin`, `obj`, and `outp
 top-level directories with a comma-separated list:
 
 ```bash
-AXIAL_DOCS_PREVIEW_IGNORE=examples,benchmarks bash scripts/preview-docs.sh
+dotnet livedocs watch --ignore examples,benchmarks
 ```
 
-Set `FSLIVEDOCS_ROOT` when FsLiveDocs is not checked out at `../../FsLiveDocs/main` relative to this repository.
-Run full validation at phase and release boundaries.
+Run `bash scripts/check-docs-conventions.sh` and `dotnet livedocs test --warn-as-error` at phase and release boundaries.

@@ -80,7 +80,7 @@ so there is no record field to put it in — the layer is the conversion.
 Compare with the case that does **not** need a layer. Wrapping a value that is already built and cannot fail is
 `Layer.succeed`, which provisions nothing:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp
 Layer.succeed Console.live
 ```
 

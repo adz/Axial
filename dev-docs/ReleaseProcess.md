@@ -1,12 +1,12 @@
 # Release process
 
-All public Axial packages inherit one pre-1.0 version from `Directory.Build.props`. A `vX.Y.Z` tag produces that version of core and every focused add-on listed by `scripts/pack.sh`.
+All public Axial packages share one pre-1.0 version, taken from the `vX.Y.Z` release tag itself (not from a version committed in the repo). A `vX.Y.Z` tag produces that version of core and every focused add-on listed by `scripts/pack.sh`.
 
 The Reified release train is independent. The two HTTP contract adapters are not packed until public `Reified.*` dependencies are available.
 
 ## Prepare
 
-1. Update `<Version>` in `Directory.Build.props` and `RELEASE_NOTES.md`.
+1. Update `NEXT_VERSION` to the version you intend to tag next and add `dev-docs/releases/<version>.md` with that version's release notes. CI fails on `main` (and again defensively in the release workflow) until this file exists for whatever `NEXT_VERSION` currently says — this is deliberate, so a missing notes file is caught before a tag is ever pushed, not after. `NEXT_VERSION` is a planning file only; it is not read by the build. The version that actually ships is whatever you tag with, so the tag must match `NEXT_VERSION` (and thus the notes file already written) or the release job will fail looking for `dev-docs/releases/<tag-version>.md`.
 2. Run:
 
 ```bash
@@ -16,18 +16,15 @@ bash scripts/check-source-inventory.sh
 bash scripts/check-fable-js-surface.sh
 bash scripts/run-aot-probe.sh
 bash scripts/pack.sh
-bash scripts/validate-docs.sh
+bash scripts/check-docs-conventions.sh
+dotnet livedocs test --warn-as-error
 ```
 
-3. Add the release to `.livedocs/history-manifest.json`. Its tag, API model asset name, checksum asset name, and
-   schema version must match the version in `Directory.Build.props`.
-4. Commit, push `main`, then create and push the release tag.
+3. Ensure `.livedocs/history.json` contains every previously published documentation capsule. Add a missing release with `dotnet livedocs history-add <version> --url <capsule-url> --sha256 <sha256>`.
+4. Commit and push `main`, then create and push the release tag.
 
-The tag-triggered release workflow validates Axial, extracts the schema-versioned API model, publishes the model and
-checksum as immutable release assets, verifies every manifest entry, rebuilds all documentation versions from their
-Git tags with the current FsLiveDocs renderer, deploys a GitHub Pages artifact, and publishes NuGet packages through
-the protected `nuget` environment using `NUGET_API_KEY`. Tags and release assets are durable inputs; Pages output is
-disposable.
+The tag-triggered release workflow validates Axial, captures an immutable FsLiveDocs documentation capsule, publishes the capsule and NuGet packages as release assets, and publishes NuGet packages through the protected `nuget` environment using NuGet.org trusted publishing (OIDC via `NuGet/login@v1`, scoped to the `nuget` GitHub environment and the `NUGET_USER` repo variable — no long-lived API key stored in GitHub). After publishing the GitHub release, it dispatches the LiveDocs workflow with the released capsule URL and checksum. That workflow adds the capsule to a temporary copy of the history index and deploys the complete release history. This ordering prevents Pages from trying to download a capsule before its release asset exists. Commit the new entry to `.livedocs/history.json` before the following release.
 
-Repository settings must keep GitHub Pages on the **GitHub Actions** source and immutable releases enabled. The
-workflow calls `gh release verify` after publishing and fails if GitHub does not report the release as immutable.
+The LiveDocs workflow also verifies documentation on pull requests and deploys the current site from `main`.
+
+Repository settings must keep GitHub Pages on the **GitHub Actions** source and immutable releases enabled. The release workflow calls `gh release verify` after publishing and fails if GitHub does not report the release as immutable.

@@ -9,6 +9,7 @@ artifacts/*
 .livedocs/build-history/
 .livedocs/models/
 .livedocs/cache/
+.livedocs/releases/
 output/
 tmp/
 site/

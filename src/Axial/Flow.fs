@@ -409,8 +409,7 @@ module Flow =
     /// <returns>A flow that always succeeds with the provided value.</returns>
     /// <example>
     /// <code>
-    /// let flow = Flow.succeed 42
-    /// let result = flow.RunSynchronously(())
+    /// let result = Flow.succeed 42 |> Flow.run ()
     /// // result = Success 42
     /// </code>
     /// </example>
@@ -422,7 +421,7 @@ module Flow =
     /// <returns>A flow that always succeeds with the provided value.</returns>
     /// <example>
     /// <code>
-    /// let flow = Flow.value "constant"
+    /// Flow.value "constant" |> Flow.run ()
     /// </code>
     /// </example>
     let value (item: 'value) : Flow<'env, 'error, 'value> =
@@ -439,8 +438,7 @@ module Flow =
     /// <returns>A flow that always fails with the provided error.</returns>
     /// <example>
     /// <code>
-    /// let flow = Flow.fail "error"
-    /// let result = flow.RunSynchronously(())
+    /// let result = Flow.fail "error" |> Flow.run ()
     /// // result = Failure (Cause.Fail "error")
     /// </code>
     /// </example>
@@ -462,8 +460,7 @@ module Flow =
     /// <returns>A flow that succeeds or fails based on the result.</returns>
     /// <example>
     /// <code>
-    /// let res = Ok "success"
-    /// let flow = Flow.fromResult res
+    /// Flow.fromResult (Ok "success") |> Flow.run ()
     /// </code>
     /// </example>
     let fromResult (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
@@ -965,7 +962,8 @@ module Flow =
     /// <returns>A flow that returns a tuple of both successful values.</returns>
     /// <example>
     /// <code>
-    /// let combined = Flow.zipPar flow1 flow2
+    /// let combined = Flow.zipPar (Flow.succeed 1) (Flow.succeed 2)
+    /// combined |> Flow.run ()
     /// </code>
     /// </example>
     let zipPar
@@ -988,7 +986,8 @@ module Flow =
     /// <returns>A flow containing the result of the first flow to complete.</returns>
     /// <example>
     /// <code>
-    /// let fastOrSlow = Flow.race fastFlow slowFlow
+    /// let fastOrSlow = Flow.race (Flow.succeed "cached") (Flow.succeed "loaded")
+    /// fastOrSlow |> Flow.run ()
     /// </code>
     /// </example>
     let race
@@ -1009,7 +1008,7 @@ module Flow =
     /// <example>
     /// <code>
     /// let opt = Some "value"
-    /// let flow = Flow.fromOption "missing" opt
+    /// Flow.fromOption "missing" opt |> Flow.run ()
     /// </code>
     /// </example>
     let fromOption (error: 'error) (value: 'value option) : Flow<'env, 'error, 'value> =
@@ -1086,7 +1085,8 @@ module Flow =
     /// <returns>A <see cref="T:Axial`3" /> containing the projected value.</returns>
     /// <example>
     /// <code>
-    /// let myFlow = Flow.envWith _.Clock
+    /// let currentTime () =
+    ///     Flow.envWith (fun (environment: BaseRuntime) -> environment.Clock.UtcNow())
     /// </code>
     /// </example>
     let envWith (projection: 'env -> 'value) : Flow<'env, 'error, 'value> =
@@ -1364,7 +1364,7 @@ module Flow =
     /// <returns>A flow that returns a tuple of both successful values.</returns>
     /// <example>
     /// <code>
-    /// let flow = Flow.zip (Flow.succeed 1) (Flow.succeed 2)
+    /// Flow.zip (Flow.succeed 1) (Flow.succeed 2) |> Flow.run ()
     /// </code>
     /// </example>
     let zip
@@ -1531,7 +1531,7 @@ module Flow =
     /// <returns>A flow containing a list of the successful values.</returns>
     /// <example>
     /// <code>
-    /// let flow = Flow.sequence [Flow.succeed 1; Flow.succeed 2]
+    /// Flow.sequence [Flow.succeed 1; Flow.succeed 2] |> Flow.run ()
     /// </code>
     /// </example>
     let sequence (flows: seq<Flow<'env, 'error, 'value>>) : Flow<'env, 'error, 'value list> =

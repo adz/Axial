@@ -221,7 +221,10 @@ module Layer =
     /// <returns>A flow that requires only the input environment of the layer.</returns>
     /// <example>
     /// <code>
-    /// let program = Layer.provide runtimeLayer workflow
+    /// let program () =
+    ///     let runtimeLayer = Layer.succeed "production"
+    ///     let workflow = Flow.envWith String.length
+    ///     Layer.provide runtimeLayer workflow
     /// </code>
     /// </example>
     let provide

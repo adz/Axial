@@ -40,7 +40,7 @@ trace in a structured logging backend.
 `Log.live` is a **no-op logger**. That is the deliberate default: a library that logs should not start writing to
 somebody's console because they forgot to configure a sink. Wire a real one with `Log.fromSink`:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let log = Log.fromSink (fun level message -> printfn $"[{level}] {message}")
 ```
 

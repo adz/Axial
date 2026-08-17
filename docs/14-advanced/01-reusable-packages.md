@@ -18,7 +18,7 @@ Three declarations per service, and the third is the only one with any subtlety.
 
 **The service** — an ordinary interface describing the capability:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 type IExchangeRates =
     abstract GetUsdToAud : unit -> Task<decimal>
 ```
@@ -26,14 +26,14 @@ type IExchangeRates =
 **The contract** — how an environment advertises that it supplies one. Named `IHasFoo`, exposing exactly one member
 `Foo`:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 type IHasExchangeRates =
     abstract ExchangeRates : IExchangeRates
 ```
 
 **The accessor** — one module-level binding that reads it:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 [<RequireQualifiedAccess>]
 module ExchangeRates =
     let service<'env, 'error when 'env :> IHasExchangeRates> : Flow<'env, 'error, IExchangeRates> =

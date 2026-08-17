@@ -36,7 +36,7 @@ workflow, and `Error error` short-circuits it through the typed error channel.
 
 The following policy checks a limit from the workflow environment:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 type AppEnv =
     { EnforceLimit: bool
       Limit: int }
@@ -107,7 +107,7 @@ policy's input type.
 
 Use `Policy.optional enabled policy` when the environment decides whether a policy applies:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let orderLimit =
     withinLimit
     |> Policy.optional _.EnforceLimit

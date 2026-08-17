@@ -29,7 +29,7 @@ This usually happens when the compiler cannot tell which wrapper shape a `let!` 
 
 Example:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let nested : Async<Async<Result<int, string>>> =
     async {
         return async { return Ok 42 }
@@ -108,7 +108,7 @@ let workflow : Flow<unit, string, int> =
 Use an explicit adapter when you want a custom error:
 
 ```fsharp
-let workflow : Flow<unit, string, int> =
+let optionWorkflow : Flow<unit, string, int> =
     Some 42
     |> Flow.fromOption "missing value"
 ```

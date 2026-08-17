@@ -53,7 +53,7 @@ source. If the source already uses the workflow's error type, bind it without `B
 or successful value. It turns `None`, `ValueNone`, or `Error ()` into the supplied workflow error when `flow { }`
 binds the source.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 type User = { Name: string }
 type LoginError = UserNotFound | InvalidPassword
 

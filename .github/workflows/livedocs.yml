@@ -1,0 +1,85 @@
+name: LiveDocs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Released semantic version to add to the history build
+        required: false
+        type: string
+      capsule_url:
+        description: HTTPS URL of the released documentation capsule
+        required: false
+        type: string
+      capsule_sha256:
+        description: SHA-256 of the released documentation capsule
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: dotnet tool restore
+      - run: dotnet restore
+      - name: Build
+        run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
+      - name: Check documentation conventions
+        run: bash scripts/check-docs-conventions.sh
+      - name: Verify documentation
+        run: dotnet livedocs test --warn-as-error
+      - name: Check for committed release history
+        id: history
+        run: echo "has_entries=$(jq -r '(.Entries | length) > 0' .livedocs/history.json)" >> "$GITHUB_OUTPUT"
+      - name: Add the newly released capsule to this history build
+        if: inputs.version != ''
+        run: |
+          dotnet livedocs history-add "${{ inputs.version }}" \
+            --url "${{ inputs.capsule_url }}" \
+            --sha256 "${{ inputs.capsule_sha256 }}" \
+            --interactive false \
+            --banner false
+      - name: Build current documentation
+        if: inputs.version == '' && (github.event_name == 'pull_request' || steps.history.outputs.has_entries != 'true')
+        run: dotnet livedocs build --warn-as-error --interactive false
+      - name: Build released documentation history
+        if: inputs.version != '' || (github.ref == 'refs/heads/main' && steps.history.outputs.has_entries == 'true')
+        run: dotnet livedocs build-history .livedocs/history.json --interactive false --banner false
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: output
+
+  deploy-pages:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

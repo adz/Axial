@@ -47,7 +47,7 @@ module Schedule =
     /// <returns>A schedule that recurs up to <paramref name="n"/> times, emitting the current attempt count (0 to n-1).</returns>
     /// <example>
     /// <code>
-    /// let schedule = Schedule.recurs 3
+    /// let retryThreeTimes () = Schedule.recurs 3
     /// // Schedule.retry runs the source flow once for free, then consults the schedule at
     /// // attempts 0, 1, 2 (three retries) before giving up: 4 executions in total.
     /// </code>
@@ -65,7 +65,7 @@ module Schedule =
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="delay"/> is negative.</exception>
     /// <example>
     /// <code>
-    /// let schedule = Schedule.spaced (TimeSpan.FromSeconds 1.0)
+    /// let everySecond () = Schedule.spaced (TimeSpan.FromSeconds 1.0)
     /// </code>
     /// </example>
     let spaced (delay: TimeSpan) : Schedule<'env, 'input, int> =
@@ -81,7 +81,7 @@ module Schedule =
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="baseDelay"/> is negative.</exception>
     /// <example>
     /// <code>
-    /// let schedule = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+    /// let backoff () = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
     /// // Delays: 100ms, 200ms, 400ms, 800ms...
     /// </code>
     /// </example>

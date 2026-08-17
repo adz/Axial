@@ -43,7 +43,7 @@ boilerplate you write once, at the boundary, rather than something that spreads 
 Nothing about calling a service changes because it arrived through `Runtime` instead of a top-level field. The
 workflow names the contract, not the storage:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let loadMode : Flow<AppEnv, EnvironmentVariableError, string> =
     flow {
         let! now = Clock.utcDateTime

@@ -69,7 +69,7 @@ should survive it.
 Check redirection before using anything interactive. A program whose output is piped into another process has no
 cursor to move:
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
+```fsharp
 let report line : Flow<#IHasConsole, Never, unit> =
     flow {
         let! redirected = Console.isOutputRedirected

@@ -19,7 +19,7 @@ let expiresWithin (window: TimeSpan) (expiry: DateTimeOffset) : Flow<#IHasClock,
 
 `Clock.now` returns a `DateTimeOffset`. The other readers derive from it:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp
 Clock.now                    // DateTimeOffset
 Clock.utcDateTime            // DateTime, Kind = Utc
 Clock.unixTimeSeconds        // int64

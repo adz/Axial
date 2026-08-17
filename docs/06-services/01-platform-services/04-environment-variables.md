@@ -97,7 +97,7 @@ cannot reach its first request with unparsed configuration — see
 `EnvironmentVariables.live` reads the current process environment. `EnvironmentVariables.fromPairs` builds a fixed
 provider, which is how tests avoid mutating global process state:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let environment =
     EnvironmentVariables.fromPairs
         [ "PORT", "8080"

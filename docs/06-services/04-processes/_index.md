@@ -24,7 +24,7 @@ let process = Process.live clock fileSystem console
 
 Supply it by implementing `IHasProcess` on the environment given to the workflow:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 type AppEnv =
     { Processes: IProcess }
     interface IHasProcess with member this.Process = this.Processes

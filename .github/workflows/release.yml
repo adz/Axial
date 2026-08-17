@@ -8,27 +8,19 @@ on:
 env:
   DOTNET_NOLOGO: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-  FSLIVEDOCS_ROOT: ${{ github.workspace }}/tools/FsLiveDocs
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: write
-      pages: write
-      id-token: write
 
     steps:
       - name: Check out Axial tag
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Check out FsLiveDocs
-        uses: actions/checkout@v4
-        with:
-          repository: adz/FsLiveDocs
-          path: tools/FsLiveDocs
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
@@ -46,21 +38,25 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      - name: Resolve and verify release version
+      - name: Resolve release version
         id: version
         shell: bash
         run: |
           version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tags must have the form vMAJOR.MINOR.PATCH; got $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
           echo "value=$version" >> "$GITHUB_OUTPUT"
-          bash scripts/verify-release-history.sh "$version"
-          declared_version="$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' Directory.Build.props | head -n 1)"
-          test "$declared_version" = "$version"
 
       - name: Check source inventory
         run: bash scripts/check-source-inventory.sh
 
+      - name: Check release notes
+        run: bash scripts/check-release-notes.sh "${{ steps.version.outputs.value }}"
+
       - name: Build
-        run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
+        run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal -p:Version="${{ steps.version.outputs.value }}"
 
       - name: Test
         run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
@@ -72,49 +68,52 @@ jobs:
         run: bash scripts/run-aot-probe.sh
 
       - name: Validate documentation
-        run: bash scripts/validate-docs.sh
+        run: |
+          bash scripts/check-docs-conventions.sh
+          dotnet livedocs test --warn-as-error
 
       - name: Pack libraries
         run: bash scripts/pack.sh -v "${{ steps.version.outputs.value }}"
 
-      - name: Extract immutable API model
-        id: model
+      - name: Capture immutable documentation
+        id: docs
         shell: bash
         run: |
           version="${{ steps.version.outputs.value }}"
-          model_asset="$(jq -r --arg version "$version" '.entries[] | select(.version == $version) | .modelAsset' .livedocs/history-manifest.json)"
-          checksum_asset="$(jq -r --arg version "$version" '.entries[] | select(.version == $version) | .checksumAsset' .livedocs/history-manifest.json)"
+          capsule="Axial-$version-livedocs.zip"
           mkdir -p artifacts/release
-          bash scripts/run-livedocs.sh extract --version "$version" --output "artifacts/release/$model_asset"
-          (cd artifacts/release && sha256sum "$model_asset" > "$checksum_asset")
-          bash scripts/verify-release-history.sh "$version" "artifacts/release/$model_asset" "artifacts/release/$checksum_asset"
-          echo "model_asset=$model_asset" >> "$GITHUB_OUTPUT"
-          echo "checksum_asset=$checksum_asset" >> "$GITHUB_OUTPUT"
+          dotnet livedocs capture --warn-as-error --version "$version" --output "artifacts/release/$capsule"
+          echo "capsule=$capsule" >> "$GITHUB_OUTPUT"
 
       - name: Create draft release with immutable inputs
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "$GITHUB_REF_NAME" --draft --generate-notes --title "$GITHUB_REF_NAME"
+          version="${{ steps.version.outputs.value }}"
+          gh release create "$GITHUB_REF_NAME" --draft --notes-file "dev-docs/releases/$version.md" --title "$GITHUB_REF_NAME"
           gh release upload "$GITHUB_REF_NAME" \
             artifacts/package/*.nupkg \
             artifacts/package/*.snupkg \
-            "artifacts/release/${{ steps.model.outputs.model_asset }}" \
-            "artifacts/release/${{ steps.model.outputs.checksum_asset }}"
+            "artifacts/release/${{ steps.docs.outputs.capsule }}" \
+            "artifacts/release/${{ steps.docs.outputs.capsule }}.report.json"
           gh release edit "$GITHUB_REF_NAME" --draft=false
           gh release verify "$GITHUB_REF_NAME"
 
-      - name: Materialize tagged documentation history
+      - name: Publish release documentation to GitHub Pages
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash scripts/prepare-docs-history.sh
-
-      - name: Build complete documentation history
-        run: bash scripts/run-livedocs.sh build-history .livedocs/build-history/manifest.json
-
-      - name: Prepare Pages artifact
-        run: touch output/.nojekyll
+        shell: bash
+        run: |
+          version="${{ steps.version.outputs.value }}"
+          capsule="artifacts/release/${{ steps.docs.outputs.capsule }}"
+          capsule_url="https://github.com/${{ github.repository }}/releases/download/$GITHUB_REF_NAME/${{ steps.docs.outputs.capsule }}"
+          capsule_sha256="$(sha256sum "$capsule" | cut -d ' ' -f 1)"
+          gh workflow run livedocs.yml \
+            --ref "${{ github.event.repository.default_branch }}" \
+            -f version="$version" \
+            -f capsule_url="$capsule_url" \
+            -f capsule_sha256="$capsule_sha256"
 
       - name: Upload packages for NuGet publication
         uses: actions/upload-artifact@v4
@@ -123,20 +122,13 @@ jobs:
           path: artifacts/package/
           if-no-files-found: error
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: output/
-
   publish-nuget:
     runs-on: ubuntu-latest
     needs: release
     environment: nuget
     permissions:
       contents: read
+      id-token: write
 
     steps:
       - name: Set up .NET 10
@@ -150,10 +142,16 @@ jobs:
           name: packages
           path: artifacts/package
 
+      - name: Authenticate to NuGet.org
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
       - name: Publish NuGet packages
         shell: bash
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           for package in artifacts/package/*.nupkg; do
             dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
@@ -162,18 +160,3 @@ jobs:
             [ -e "$package" ] || continue
             dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
-
-  deploy-pages:
-    runs-on: ubuntu-latest
-    needs: release
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy GitHub Pages artifact
-        id: deployment
-        uses: actions/deploy-pages@v4

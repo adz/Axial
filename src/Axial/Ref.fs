@@ -6,16 +6,6 @@ open Axial
 /// Represents a handle to a mutable reference that can be updated atomically.
 /// </summary>
 /// <typeparam name="T">The type of the value stored in the reference.</typeparam>
-/// <example>
-/// <code>
-/// flow {
-///     let! r = Ref.make 0
-///     do! Ref.set 1 r
-///     let! v = Ref.get r
-///     return v
-/// }
-/// </code>
-/// </example>
 type Ref<'T> =
     private
     | Ref of ('T ref * obj)
@@ -39,7 +29,11 @@ module Ref =
     /// <returns>A flow that returns the current value.</returns>
     /// <example>
     /// <code>
-    /// Ref.get myRef
+    /// let readInitialValue () =
+    ///     flow {
+    ///         let! reference = Ref.make 10
+    ///         return! Ref.get reference
+    ///     }
     /// </code>
     /// </example>
     let get (Ref (cell, gate) as reference) : Flow<'env, 'none, 'T> =
@@ -51,7 +45,11 @@ module Ref =
     /// <returns>A flow that sets the value and returns unit.</returns>
     /// <example>
     /// <code>
-    /// Ref.set 20 myRef
+    /// let replaceValue () =
+    ///     flow {
+    ///         let! reference = Ref.make 10
+    ///         do! Ref.set 20 reference
+    ///     }
     /// </code>
     /// </example>
     let set (value: 'T) (Ref (cell, gate) as reference) : Flow<'env, 'none, unit> =
@@ -91,7 +89,11 @@ module Ref =
     /// <returns>A flow that returns the previous value.</returns>
     /// <example>
     /// <code>
-    /// Ref.getAndSet 20 myRef
+    /// let replaceAndReturnPrevious () =
+    ///     flow {
+    ///         let! reference = Ref.make 10
+    ///         return! Ref.getAndSet 20 reference
+    ///     }
     /// </code>
     /// </example>
     let getAndSet (value: 'T) (Ref (cell, gate) as reference) : Flow<'env, 'none, 'T> =

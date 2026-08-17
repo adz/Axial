@@ -45,7 +45,7 @@ let tagged name : Flow<#IHasGuid, Never, string> =
 `Guid.live` calls `System.Guid.NewGuid()`. `Guid.fromValue` returns a fixed identifier, which makes generated
 identifiers assertable:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let guid = Guid.fromValue (System.Guid.Parse "11111111-1111-1111-1111-111111111111")
 ```
 

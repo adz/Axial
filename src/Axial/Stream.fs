@@ -46,7 +46,9 @@ module FlowStream =
     /// <returns>A <see cref="T:AxialStream`3"/> that yields each value from the sequence.</returns>
     /// <example>
     /// <code>
-    /// let stream = FlowStream.fromSeq [1..10]
+    /// FlowStream.fromSeq [1..10]
+    /// |> FlowStream.runCollect
+    /// |> Flow.run ()
     /// </code>
     /// </example>
     let fromSeq (values: seq<'value>) : FlowStream<'env, 'error, 'value> =
@@ -81,8 +83,9 @@ module FlowStream =
     /// <returns>A flow that represents the execution of the stream. If the stream fails, the flow fails with the same cause.</returns>
     /// <example>
     /// <code>
-    /// let stream = FlowStream.fromSeq ["a"; "b"; "c"]
-    /// let flow = FlowStream.runForEach (printfn "%s") stream
+    /// FlowStream.fromSeq ["a"; "b"; "c"]
+    /// |> FlowStream.runForEach (printfn "%s")
+    /// |> Flow.run ()
     /// </code>
     /// </example>
     let runForEach
