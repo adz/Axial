@@ -9,6 +9,8 @@
 Write asynchronous F# workflows whose expected failures and required dependencies are visible in their types.
 
 [![ci](https://github.com/adz/Axial/actions/workflows/ci.yml/badge.svg)](https://github.com/adz/Axial/actions/workflows/ci.yml)
+[![docs](https://github.com/adz/Axial/actions/workflows/livedocs.yml/badge.svg)](https://adz.github.io/Axial/)
+[![NuGet](https://img.shields.io/nuget/v/Axial.svg)](https://www.nuget.org/packages/Axial)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 > [!WARNING]

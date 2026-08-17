@@ -20,7 +20,7 @@ while IFS= read -r source_folder; do
   fi
 done < <(find "$root_dir"/docs/[0-9][0-9]-* -mindepth 1 -type d | sort)
 
-if rg -n '^weight:' "$root_dir/docs" --glob '*.md'; then
+if grep -R -n --include='*.md' '^weight:' "$root_dir/docs"; then
   echo "Documentation ordering must use numeric file and folder prefixes, not frontmatter weights." >&2
   exit 1
 fi
