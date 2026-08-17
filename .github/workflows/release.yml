@@ -91,13 +91,17 @@ jobs:
         shell: bash
         run: |
           version="${{ steps.version.outputs.value }}"
-          gh release create "$GITHUB_REF_NAME" --draft --notes-file "dev-docs/releases/$version.md" --title "$GITHUB_REF_NAME"
-          gh release upload "$GITHUB_REF_NAME" \
-            artifacts/package/*.nupkg \
-            artifacts/package/*.snupkg \
-            "artifacts/release/${{ steps.docs.outputs.capsule }}" \
-            "artifacts/release/${{ steps.docs.outputs.capsule }}.report.json"
-          gh release edit "$GITHUB_REF_NAME" --draft=false
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "GitHub release $GITHUB_REF_NAME already exists; preserving its immutable assets."
+          else
+            gh release create "$GITHUB_REF_NAME" --draft --notes-file "dev-docs/releases/$version.md" --title "$GITHUB_REF_NAME"
+            gh release upload "$GITHUB_REF_NAME" \
+              artifacts/package/*.nupkg \
+              artifacts/package/*.snupkg \
+              "artifacts/release/${{ steps.docs.outputs.capsule }}" \
+              "artifacts/release/${{ steps.docs.outputs.capsule }}.report.json"
+            gh release edit "$GITHUB_REF_NAME" --draft=false
+          fi
 
       - name: Publish release documentation to GitHub Pages
         env:
