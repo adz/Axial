@@ -27,4 +27,4 @@ The tag-triggered release workflow validates Axial, captures an immutable FsLive
 
 The LiveDocs workflow also verifies documentation on pull requests and deploys the current site from `main`.
 
-Repository settings must keep GitHub Pages on the **GitHub Actions** source and immutable releases enabled. The release workflow calls `gh release verify` after publishing and fails if GitHub does not report the release as immutable.
+Repository settings must keep GitHub Pages on the **GitHub Actions** source. GitHub release immutability is a repository setting; `gh release verify` verifies artifact attestations instead and must not be used as an immutability check. The release workflow publishes the GitHub release before dispatching its documentation build.

@@ -98,7 +98,6 @@ jobs:
             "artifacts/release/${{ steps.docs.outputs.capsule }}" \
             "artifacts/release/${{ steps.docs.outputs.capsule }}.report.json"
           gh release edit "$GITHUB_REF_NAME" --draft=false
-          gh release verify "$GITHUB_REF_NAME"
 
       - name: Publish release documentation to GitHub Pages
         env:
