@@ -3,7 +3,7 @@
     <UseArtifactsOutput>true</UseArtifactsOutput>
 
     <!-- Local/dev default only; the release workflow stamps the real version via -p:Version from the release tag. -->
-    <VersionPrefix>0.7.0</VersionPrefix>
+    <VersionPrefix>0.7.1</VersionPrefix>
     <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.7.0</ReifiedVersion>
     <NuGetAudit>false</NuGetAudit>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

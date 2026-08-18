@@ -22,7 +22,6 @@ A handler usually needs services and can fail, but a `Task` signature shows neit
 makes both part of the contract.
 
 ```fsharp
-open System.Threading.Tasks
 open Axial
 
 type CheckoutError =
@@ -32,8 +31,8 @@ type CheckoutError =
 type Receipt = { OrderId: int; Total: decimal; Reference: string }
 
 type CheckoutEnv =
-    { FindTotal: int -> Task<Result<decimal, CheckoutError>>
-      Charge: decimal -> Task<Result<string, CheckoutError>> }
+    { FindTotal: int -> ColdTask<Result<decimal, CheckoutError>>
+      Charge: decimal -> ColdTask<Result<string, CheckoutError>> }
 
 let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {

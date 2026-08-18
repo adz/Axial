@@ -111,6 +111,15 @@ jobs:
           tag="${{ steps.version.outputs.tag }}"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "GitHub release $tag already exists; preserving its immutable assets."
+            # A retry rebuilds the docs capsule locally, but its bytes (and therefore its
+            # sha256) are not guaranteed to match what was actually uploaded on the first
+            # successful attempt. Re-download the real asset so the checksum we hand to
+            # livedocs.yml always matches what's actually at the release URL - otherwise
+            # build-history's checksum verification fails (see the 0.7.0 LiveDocs failure).
+            gh release download "$tag" \
+              --pattern "${{ steps.docs.outputs.capsule }}" \
+              --dir artifacts/release \
+              --clobber
           else
             gh release create "$tag" --draft --notes-file "dev-docs/releases/$version.md" --title "$tag"
             gh release upload "$tag" \
@@ -174,10 +183,35 @@ jobs:
         env:
           NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
+          # Idempotency guard: a resumed release re-runs this job from scratch. Pushing the
+          # same package+version twice races two independent symbol-validation passes on
+          # nuget.org, and one of them can come back "failed" even though the first push
+          # already landed a good package - see the Axial.PlatformService 0.7.0 symbol
+          # validation emails from the first resumable-release attempt. So before pushing a
+          # package, check whether that exact id+version is already live and skip it (both
+          # its .nupkg and .snupkg) entirely rather than re-submitting.
+          already_published() {
+            local id="$1" version="$2"
+            local url="https://api.nuget.org/v3-flatcontainer/${id,,}/${version,,}/${id,,}.${version,,}.nupkg"
+            status="$(curl -s -o /dev/null -w '%{http_code}' "$url")"
+            [ "$status" = "200" ]
+          }
+
           for package in artifacts/package/*.nupkg; do
+            filename="$(basename "$package" .nupkg)"
+            version="${filename##*.[0-9]}"
+            version="$(echo "$filename" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$')"
+            id="${filename%."$version"}"
+
+            if already_published "$id" "$version"; then
+              echo "Skipping $filename: $id $version already published to NuGet."
+              continue
+            fi
+
             dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
-          done
-          for package in artifacts/package/*.snupkg; do
-            [ -e "$package" ] || continue
-            dotnet nuget push "$package" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+            snupkg="artifacts/package/$id.$version.snupkg"
+            if [ -e "$snupkg" ]; then
+              dotnet nuget push "$snupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+            fi
           done
