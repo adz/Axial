@@ -18,12 +18,22 @@ bash scripts/run-aot-probe.sh
 bash scripts/pack.sh
 bash scripts/check-docs-conventions.sh
 dotnet livedocs test --warn-as-error
+dotnet livedocs history-check
 ```
 
-3. Ensure `.livedocs/history.json` contains every previously published documentation capsule. Add a missing release with `dotnet livedocs history-add <version> --url <capsule-url> --sha256 <sha256>`.
+3. Ensure `.livedocs/history.json` contains every previously published documentation capsule. It is the source of truth for
+   the versioned site. Backfill immutable GitHub Release capsules with `dotnet livedocs history-sync adz/Axial --output
+   .livedocs/history.json`, then commit the result. Before the tag, `history-check --capsule <candidate> --version <version>`
+   must render the candidate with the committed history.
 4. Commit and push `main`, then create and push the release tag.
 
-The tag-triggered release workflow validates Axial, captures an immutable FsLiveDocs documentation capsule, publishes the capsule and NuGet packages as release assets, and publishes NuGet packages through the protected `nuget` environment using NuGet.org trusted publishing (OIDC via `NuGet/login@v1`, scoped to the `nuget` GitHub environment and the `NUGET_USER` repo variable — no long-lived API key stored in GitHub). After publishing the GitHub release, it dispatches the LiveDocs workflow with the released capsule URL and checksum. That workflow adds the capsule to a temporary copy of the history index and deploys the complete release history. This ordering prevents Pages from trying to download a capsule before its release asset exists. Commit the new entry to `.livedocs/history.json` before the following release.
+The tag-triggered release workflow validates Axial, captures an immutable FsLiveDocs documentation capsule, verifies the
+candidate against the committed history, and publishes the capsule and NuGet packages as GitHub release assets. It then
+switches to the default branch, synchronizes the immutable capsule into `.livedocs/history.json`, verifies that history,
+commits it, and explicitly dispatches and awaits the LiveDocs Pages workflow. That workflow renders only the committed
+history. NuGet packages publish through the protected `nuget` environment using NuGet.org trusted publishing (OIDC via
+`NuGet/login@v1`, scoped to the `nuget` GitHub environment and the `NUGET_USER` repo variable — no long-lived API key
+stored in GitHub) only after Pages succeeds.
 
 The LiveDocs workflow also verifies documentation on pull requests and deploys the current site from `main`.
 

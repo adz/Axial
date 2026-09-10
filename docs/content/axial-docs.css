@@ -175,6 +175,31 @@ body:has(.axial-landing) #search-ui {
   background: #073b9a;
 }
 
+.flow-type-diagram {
+  max-width: 68rem;
+  margin: 2rem auto;
+}
+
+.flow-type-diagram img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border-radius: 1rem;
+}
+
+.flow-type-diagram--dark {
+  display: none !important;
+}
+
+[data-theme="dark"] .flow-type-diagram--light {
+  display: none !important;
+}
+
+[data-theme="dark"] .flow-type-diagram--dark {
+  display: block !important;
+}
+
 @media (max-width: 996px) {
   .docs-home-copy h1 {
     font-size: 2.8rem;
@@ -215,7 +240,9 @@ body:has(.axial-landing) #search-ui {
 
 .axial-coord {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 5rem minmax(0, 1fr);
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr) 20rem minmax(0, 1fr);
+  padding: 0 1.5rem;
   align-items: stretch;
   margin-top: 1.5rem;
 }
@@ -277,7 +304,7 @@ body:has(.axial-landing) #search-ui {
 
 .coord-hub {
   display: flex;
-  width: 25rem;
+  width: 20rem;
   max-width: 100%;
   flex: none;
   flex-direction: column;
@@ -288,7 +315,7 @@ body:has(.axial-landing) #search-ui {
 
 .coord-hub-logo {
   display: block;
-  width: 25rem;
+  width: 20rem;
   max-width: 100%;
 }
 

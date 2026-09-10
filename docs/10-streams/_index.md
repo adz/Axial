@@ -103,7 +103,7 @@ incremental consumer for unbounded streams.
 
 `Axial.Process.Process.stream` is a concrete example of an effectful, backpressured source. It emits structured
 stdout/stderr events followed by a completion transcript and cancels the child pipeline if stream consumption stops.
-See [Output and streaming](/process/output-streaming.html).
+See [Streaming output](/process/streaming.html).
 
 ## Platform Boundary
 

@@ -74,8 +74,8 @@ module ProcessServiceTests =
         File.Delete pidPath
         let mutable leaked: System.Diagnostics.Process option = None
         try
-            let first = Process.command "sh" [ "-c"; $"echo $$ > '{pidPath}'; sleep 30" ]
-            let missing = Process.command $"axial-missing-{Guid.NewGuid():N}" []
+            let first = Process.commandArgs "sh" [ "-c"; $"echo $$ > '{pidPath}'; sleep 30" ]
+            let missing = Process.command $"axial-missing-{Guid.NewGuid():N}"
             let outcome = first => missing |> capture |> Flow.runSync (env ())
 
             match outcome with
@@ -103,7 +103,7 @@ module ProcessServiceTests =
             let workflow =
                 shText $"echo $$ > '{pidPath}'; sleep 30"
                 |> Process.timeout timeout
-                |> Process.run
+                |> Process.toFlow
 
             match Flow.runSync (env ()) workflow with
             | Exit.Failure(Cause.Fail(ProcessError.TimedOut failure)) ->
@@ -129,7 +129,7 @@ module ProcessServiceTests =
         use cancellation = new CancellationTokenSource()
         try
             let specification = shText $"sleep 30 & echo $! > '{childPidPath}'; wait"
-            let running = Process.run<ProcessTestEnv> specification |> fun workflow -> workflow.StartAsTask((env ()), cancellation.Token)
+            let running = Process.toFlow<ProcessTestEnv> specification |> fun workflow -> workflow.StartAsTask((env ()), cancellation.Token)
             test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> File.Exists childPidPath) @>
             let childPid = File.ReadAllText(childPidPath).Trim() |> Int32.Parse
             let nativeChild = System.Diagnostics.Process.GetProcessById childPid
@@ -154,16 +154,16 @@ module ProcessServiceTests =
         Directory.CreateDirectory directory |> ignore
         try
             let workingDirectoryResult =
-                Process.command "sh" [ "-c"; "printf '%s|%s' \"$PWD\" \"$AXIAL_DEVICE\"" ]
+                Process.commandArgs "sh" [ "-c"; "printf '%s|%s' \"$PWD\" \"$AXIAL_DEVICE\"" ]
                 |> Process.workingDirectory directory
                 |> Process.environment "AXIAL_DEVICE" "override"
-                |> Process.run
+                |> Process.toFlow
                 |> run
             let environmentResult =
-                Process.command "/usr/bin/env" []
+                Process.command $"/usr/bin/env"
                 |> Process.environment "AXIAL_DEVICE" "override"
                 |> Process.removeEnvironment "PATH"
-                |> Process.run
+                |> Process.toFlow
                 |> run
 
             test <@ workingDirectoryResult.StdOut = $"{directory}|override" @>
@@ -175,7 +175,7 @@ module ProcessServiceTests =
     [<Fact>]
     let ``startup failure identifies the command without escaping the typed channel`` () =
         let executable = $"axial-missing-{Guid.NewGuid():N}"
-        let outcome = Process.command executable [] |> Process.run |> Flow.runSync (env ())
+        let outcome = Process.commandArgs executable [] |> Process.toFlow |> Flow.runSync (env ())
         match outcome with
         | Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
             test <@ failure.Command = executable @>
@@ -185,7 +185,7 @@ module ProcessServiceTests =
     [<Fact>]
     let ``streaming emits stdout and stderr before the complete result`` () =
         let stream =
-            Process.command "sh" [ "-c"; "printf out; printf err >&2" ]
+            Process.commandArgs "sh" [ "-c"; "printf out; printf err >&2" ]
             |> Process.stream
 
         match stream |> FlowStream.runCollect |> Flow.runSync (env ()) with
@@ -198,8 +198,8 @@ module ProcessServiceTests =
     [<Fact>]
     let ``run reports every non-zero stage through the typed error channel`` () =
         let workflow =
-            Process.command "sh" [ "-c"; "exit 7" ]
-            => Process.command "cat" []
+            Process.commandArgs "sh" [ "-c"; "exit 7" ]
+            => Process.command $"cat"
             |> capture
 
         match Flow.runSync (env ()) workflow with
@@ -213,7 +213,7 @@ module ProcessServiceTests =
         let result =
             cmd $"printf %%s 0123456789"
             |> Process.stdout (OutputTarget.CaptureTail 4)
-            |> Process.run
+            |> Process.toFlow
             |> run
 
         test <@ result.StdOut = "6789" @>
@@ -227,7 +227,7 @@ module ProcessServiceTests =
             let result =
                 cmd $"printf %%s artifact-output"
                 |> Process.stdout (OutputTarget.Tee [ OutputTarget.File path; OutputTarget.CaptureTail 6 ])
-                |> Process.run
+                |> Process.toFlow
                 |> run
 
             test <@ File.ReadAllText path = "artifact-output" @>
@@ -238,9 +238,9 @@ module ProcessServiceTests =
     [<Fact>]
     let ``binary output is retained exactly and decoded with the configured encoding`` () =
         let result =
-            Process.command "sh" [ "-c"; "printf '\\377\\000A'" ]
+            Process.commandArgs "sh" [ "-c"; "printf '\\377\\000A'" ]
             |> Process.encoding Encoding.Latin1
-            |> Process.run
+            |> Process.toFlow
             |> run
 
         test <@ result.StdOutCapture.Bytes = [| 255uy; 0uy; 65uy |] @>
@@ -249,9 +249,9 @@ module ProcessServiceTests =
     [<Fact>]
     let ``accepted exit codes are immutable per command`` () =
         let result =
-            Process.command "sh" [ "-c"; "exit 7" ]
+            Process.commandArgs "sh" [ "-c"; "exit 7" ]
             |> Process.successCodes [ 0; 7 ]
-            |> Process.run
+            |> Process.toFlow
             |> run
 
         test <@ result.Stages.Head.ExitCode = 7 @>
@@ -363,7 +363,7 @@ module ProcessServiceTests =
             cmd $"true"
             |> Process.stdout Output.inheritHandles
             |> Process.stderr Output.inheritHandles
-            |> Process.run
+            |> Process.toFlow
             |> run
         test <@ result.ExitCode = 0 @>
         test <@ result.StdOut = "" @>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title description">
+  <title id="title">The three parts of a Flow type</title>
+  <desc id="description">Flow env error value, with arrows to cards explaining environment, expected failures, and the success value.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#f5f6fb"/></linearGradient>
+    <linearGradient id="env" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f9f8b"/><stop offset="1" stop-color="#4cc8b3"/></linearGradient>
+    <linearGradient id="error" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ef5e69"/><stop offset="1" stop-color="#fa8a8e"/></linearGradient>
+    <linearGradient id="value" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7c56d9"/><stop offset="1" stop-color="#ad7bea"/></linearGradient>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#25324a" flood-opacity=".12"/></filter>
+  </defs>
+  <rect width="1200" height="620" rx="28" fill="url(#canvas)"/>
+  <text x="600" y="115" text-anchor="middle" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="72" font-weight="800" letter-spacing="-3" fill="#111a2d">Flow&lt; <tspan fill="url(#env)">'env</tspan>, <tspan fill="url(#error)">'error</tspan>, <tspan fill="url(#value)">'value</tspan> &gt;</text>
+  <path d="M380 142 C380 188 222 178 222 245" fill="none" stroke="url(#env)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M222 245 l-12 -18 M222 245 l12 -18" fill="none" stroke="#0f9f8b" stroke-width="9" stroke-linecap="round"/>
+  <path d="M600 142 C600 190 600 198 600 245" fill="none" stroke="url(#error)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M600 245 l-12 -18 M600 245 l12 -18" fill="none" stroke="#ef5e69" stroke-width="9" stroke-linecap="round"/>
+  <path d="M827 142 C827 188 978 178 978 245" fill="none" stroke="url(#value)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M978 245 l-12 -18 M978 245 l12 -18" fill="none" stroke="#7c56d9" stroke-width="9" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <rect x="65" y="245" width="315" height="275" rx="24" fill="#ffffff" stroke="#26aa97" stroke-width="3"/>
+    <rect x="443" y="245" width="315" height="275" rx="24" fill="#ffffff" stroke="#f07178" stroke-width="3"/>
+    <rect x="820" y="245" width="315" height="275" rx="24" fill="#ffffff" stroke="#8a62dc" stroke-width="3"/>
+  </g>
+  <g font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+    <text x="98" y="310" font-size="29" font-weight="800" fill="#0f9f8b">'env</text><text x="174" y="310" font-size="22" font-weight="700" fill="#0f9f8b">capabilities</text><text x="98" y="350" font-size="24" fill="#243041">The services and</text><text x="98" y="382" font-size="24" fill="#243041">configuration the</text><text x="98" y="414" font-size="24" fill="#243041">workflow receives</text><text x="98" y="446" font-size="24" fill="#243041">when it runs.</text>
+    <text x="476" y="310" font-size="29" font-weight="800" fill="#ef5e69">'error</text><text x="476" y="350" font-size="24" fill="#243041">Expected failures</text><text x="476" y="382" font-size="24" fill="#243041">the caller can</text><text x="476" y="414" font-size="24" fill="#243041">handle explicitly.</text>
+    <text x="853" y="310" font-size="29" font-weight="800" fill="#7c56d9">'value</text><text x="853" y="350" font-size="24" fill="#243041">The value produced</text><text x="853" y="382" font-size="24" fill="#243041">when the workflow</text><text x="853" y="414" font-size="24" fill="#243041">succeeds.</text>
+  </g>
+</svg>

@@ -1,12 +1,9 @@
 ---
 title: Getting Started
-description: Run a complete Axial workflow, then add the timeout, retry, and cleanup that plain Task code has to hand-roll.
+description: Start with a tiny Flow, then use one real application service without hiding its dependency or failure cases.
 ---
 
 # Get started
-
-This page has one program in it. Install the package, paste the program into a script, and run it. Everything after
-that adds one requirement at a time to the same program.
 
 ## Before you begin
 
@@ -16,181 +13,88 @@ Install the [.NET SDK](https://dotnet.microsoft.com/download) 8.0 or later, then
 dotnet add package Axial
 ```
 
-`Axial` is the package. `Flow<'env, 'error, 'value>` is the type it gives you: a description of asynchronous work,
-the environment it reads, and the failure it can produce.
+## The smallest Flow
 
-## Run your first workflow
-
-Put this in a project that references `Axial`, or save it as `checkout.fsx` with `#r "nuget: Axial"` as the first
-line and run `dotnet fsi checkout.fsx`:
+Put this in a project that references `Axial`, or save it as `first-flow.fsx` with `#r "nuget: Axial"` as the first
+line and run `dotnet fsi first-flow.fsx`:
 
 ```fsharp
-open System.Threading
-open System.Threading.Tasks
 open Axial
 
-type CheckoutError =
-    | OrderNotFound of orderId: int
-    | PaymentDeclined of reason: string
+let ready : Flow<string> =
+    Flow.succeed "The application is ready."
 
-type Receipt = { OrderId: int; Total: decimal; Reference: string }
-
-type CheckoutEnv =
-    { FindTotal: int -> CancellationToken -> Task<Result<decimal, CheckoutError>>
-      Charge: decimal -> CancellationToken -> Task<Result<string, CheckoutError>> }
-
-let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
-    flow {
-        let! findTotal = Flow.envWith _.FindTotal
-        let! charge = Flow.envWith _.Charge
-        let! total = ColdTask(fun cancellationToken -> findTotal orderId cancellationToken)
-        let! reference = ColdTask(fun cancellationToken -> charge total cancellationToken)
-        return { OrderId = orderId; Total = total; Reference = reference }
-    }
-
-let live =
-    { FindTotal =
-        fun orderId _ ->
-            if orderId = 42 then
-                Task.FromResult(Ok 19.99m)
-            else
-                Task.FromResult(Error(OrderNotFound orderId))
-      Charge = fun _ _ -> Task.FromResult(Ok "ch_1a2b3c") }
-
-let report orderId =
-    match checkout orderId |> Flow.run live with
-    | Exit.Success receipt -> printfn $"paid %.2f{receipt.Total} for order {receipt.OrderId} ({receipt.Reference})"
-    | Exit.Failure cause -> printfn $"{Cause.prettyPrint string cause}"
-
-report 42
-report 7
+let result = Flow.run () ready
+printfn "%A" result
 ```
 
 The output is:
 
 ```text
-paid 19.99 for order 42 (ch_1a2b3c)
-Fail(OrderNotFound 7)
+Success "The application is ready."
 ```
 
-Three things happened in that program:
+`ready` describes work; it has not started. `Flow.run ()` is the edge that starts it. `Flow<string>` is the short
+spelling for a Flow with no capabilities and no expected failure: `Flow<unit, Never, string>`.
 
-- `Flow.envWith` selected a dependency from the environment. The workflow never constructs its dependencies and never
-  looks them up in a container.
-- `ColdTask` kept task creation cold, passed the runtime cancellation token to each dependency, and routed each
-  `Result.Error` into the workflow's expected-error channel.
-- `Flow.run` supplied the environment at one boundary and returned an `Exit` that is either a success value or a
-  `Cause`.
+<div class="flow-type-diagram">
+<img class="flow-type-diagram--light" data-theme-variant="light" src="../content/img/flow-type-light.svg" alt="Flow env error value: environment is the services it needs, error is expected failure, and value is the successful result." />
+<img class="flow-type-diagram--dark" data-theme-variant="dark" src="../content/img/flow-type-dark.svg" alt="Flow env error value: environment is the services it needs, error is expected failure, and value is the successful result." />
+</div>
 
-The signature states the whole contract. `CheckoutEnv` is what the workflow needs, `CheckoutError` is what callers
-must handle, and `Receipt` is the success value.
+Here, `unit` means no capabilities and `Never` means no expected failure. A capability is a value the workflow is
+allowed to use—usually a service dependency, but sometimes configuration or request context. Only `string` carries
+information here, so the alias keeps the first signature uncluttered.
 
-## Add the requirements that plain Task makes you hand-roll
+You do not need to carry those two empty slots around until the workflow needs them. The next example does.
 
-A real checkout has more rules than the version above: hold a database connection, give up after five seconds, and
-retry a declined payment a few times but never retry a missing order.
+## A useful Flow: quote a price
 
-Written against `Task`, each rule is a separate mechanism, and the signature records none of them:
+Suppose the application already has an exchange-rate service. The service is ordinary application code: its live
+implementation might call an API, use a cache, or dispatch to another service. Axial does not construct it and does
+not need to know how it works.
 
-```fsharp no-check reason="Contrasting Task-based sketch; its database and payment APIs are not part of Axial"
-let checkout (cancellationToken: CancellationToken) (services: AppServices) orderId =
-    task {
-        use connection = services.OpenConnection()
-        use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
-        timeoutSource.CancelAfter(TimeSpan.FromSeconds 5.0)
+The workflow names the one service it needs and turns the service's cancellable `Task<Result<_, _>>` operation into a
+Flow:
 
-        let mutable attempt = 1
-        let mutable result = Unchecked.defaultof<Result<Receipt, CheckoutError>>
-        let mutable finished = false
-
-        while not finished do
-            match! chargeOnce connection timeoutSource.Token orderId with
-            | Error(PaymentDeclined _) when attempt < 3 ->
-                do! Task.Delay(100 * attempt, timeoutSource.Token)
-                attempt <- attempt + 1
-            | outcome ->
-                result <- outcome
-                finished <- true
-
-        return result
-    }
-```
-
-Every caller of that function has to be told, out of band, that it takes a cancellation token, that it already
-retries, and that a `TaskCanceledException` might mean a timeout rather than a shutdown. Forgetting to pass
-`timeoutSource.Token` to an inner call is a silent bug.
-
-In Axial the same three rules are three combinators wrapped around the workflow you already wrote:
-
-```fsharp
+```fsharp no-check reason="IExchangeRates is an application service implemented and registered by the host."
 open System
 open System.Threading
 open System.Threading.Tasks
-open Axial
 
-type Connection = { Name: string }
+type QuoteError =
+    | RateUnavailable
 
-let openConnection (_: CancellationToken) = Task.FromResult { Name = "orders-db" }
+type IExchangeRates =
+    abstract UsdToAud : CancellationToken -> Task<Result<decimal, QuoteError>>
 
-let closeConnection (connection: Connection) (_: CancellationToken) =
-    task { printfn $"closed {connection.Name}" } :> Task
+type QuoteApp =
+    { ExchangeRates: IExchangeRates }
 
-let retryPayment =
-    { RetryPolicy.noDelay 3 with
-        Delay = fun attempt -> TimeSpan.FromMilliseconds(100.0 * float attempt)
-        ShouldRetry =
-            function
-            | PaymentDeclined _ -> true
-            | OrderNotFound _ -> false }
-
-let checkoutOrder orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
+let quoteAud (usd: decimal) : Flow<QuoteApp, QuoteError, decimal> =
     flow {
-        let! _connection =
-            Flow.acquireReleaseWith (Flow.fromTask openConnection) closeConnection Flow.ok
-
-        return! checkout orderId
+        let! rates = Flow.envWith _.ExchangeRates
+        let! rate = ColdTask rates.UsdToAud
+        return Math.Round(usd * rate, 2)
     }
-    |> Flow.Runtime.retry retryPayment
-    |> Flow.Runtime.timeout (TimeSpan.FromSeconds 5.0) (PaymentDeclined "checkout timed out")
 ```
 
-Running `checkoutOrder 42 |> Flow.run live` releases the connection before it returns the receipt:
+The type reads as a contract: `quoteAud` needs `QuoteApp`, can fail with `QuoteError`, and otherwise returns a decimal.
+The caller does not pass a cancellation token; `ColdTask` receives the one owned by the Flow runtime and gives it to
+the service.
 
-```text
-closed orders-db
+At the host edge, build the small capability record from services the application already owns:
+
+```fsharp no-check reason="The host application owns the DI container and exchange-rate implementation."
+let quoteApp (services: IServiceProvider) : QuoteApp =
+    { ExchangeRates = services.GetRequiredService<IExchangeRates>() }
+
+let exit = quoteAud 80m |> Flow.run (quoteApp services)
 ```
 
-Note what the type did not change to. `checkoutOrder` is still
-`int -> Flow<CheckoutEnv, CheckoutError, Receipt>`, because cancellation, the connection's lifetime, and the retry
-loop are the runtime's job rather than the caller's. The timeout produces a `CheckoutError` value that the caller
-already handles instead of an exception the caller has to know about.
-
-## Swap the boundary in a test
-
-A test replaces the environment record and leaves the workflow alone:
-
-```fsharp
-let declineOnce =
-    let mutable attempts = 0
-
-    { FindTotal = fun _ _ -> Task.FromResult(Ok 19.99m)
-      Charge =
-        fun _ _ ->
-            attempts <- attempts + 1
-
-            if attempts = 1 then
-                Task.FromResult(Error(PaymentDeclined "insufficient funds"))
-            else
-                Task.FromResult(Ok "ch_retry") }
-
-let retried = checkoutOrder 42 |> Flow.run declineOnce
-```
-
-`retried` is `Exit.Success` with reference `ch_retry`, because the retry policy ran the second attempt. No container,
-ambient service locator, or mocking framework is involved: the fake value has the same type as the live value.
-
-The retry wraps the acquisition, so the second attempt opens and closes its own connection. Move the
-`Flow.acquireReleaseWith` call outside the `Flow.Runtime.retry` call when every attempt should share one connection.
+That is not a second dependency-injection system. It is the explicit value passed to the workflow boundary. In a
+test, supply an `IExchangeRates` test implementation; in production, resolve the application's registered
+implementation. The workflow remains exactly the same.
 
 ## What's next
 

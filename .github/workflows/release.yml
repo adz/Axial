@@ -90,6 +90,15 @@ jobs:
           dotnet livedocs capture --warn-as-error --version "$version" --output "artifacts/release/$capsule"
           echo "capsule=$capsule" >> "$GITHUB_OUTPUT"
 
+      - name: Verify the candidate renders in the release history
+        if: github.ref_type == 'tag'
+        run: |
+          dotnet livedocs history-check \
+            --capsule "$PWD/artifacts/release/${{ steps.docs.outputs.capsule }}" \
+            --version "${{ steps.version.outputs.value }}" \
+            --interactive false \
+            --banner false
+
       - name: Test
         run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal
 
@@ -130,20 +139,36 @@ jobs:
             gh release edit "$tag" --draft=false
           fi
 
-      - name: Publish release documentation to GitHub Pages
+      - name: Record release documentation and await GitHub Pages
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          version="${{ steps.version.outputs.value }}"
-          capsule="artifacts/release/${{ steps.docs.outputs.capsule }}"
-          capsule_url="https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/${{ steps.docs.outputs.capsule }}"
-          capsule_sha256="$(sha256sum "$capsule" | cut -d ' ' -f 1)"
-          gh workflow run livedocs.yml \
-            --ref "${{ github.event.repository.default_branch }}" \
-            -f version="$version" \
-            -f capsule_url="$capsule_url" \
-            -f capsule_sha256="$capsule_sha256"
+          branch="${{ github.event.repository.default_branch }}"
+          git fetch origin "$branch"
+          git switch "$branch"
+          dotnet livedocs history-sync "$GITHUB_REPOSITORY" \
+            --output .livedocs/history.json \
+            --interactive false \
+            --banner false
+          dotnet livedocs history-check --interactive false --banner false
+          if ! git diff --quiet -- .livedocs/history.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .livedocs/history.json
+            git commit -m "Record ${{ steps.version.outputs.value }} in the release history"
+            git push origin "$branch"
+          fi
+          sha="$(git rev-parse HEAD)"
+          gh workflow run livedocs.yml --ref "$branch"
+          for attempt in $(seq 1 60); do
+            run_id="$(gh run list --workflow livedocs.yml --branch "$branch" --json databaseId,event,headSha \
+              --jq '[.[] | select(.event == "workflow_dispatch" and .headSha == "'"$sha"'")][0].databaseId // 0')"
+            [ "$run_id" != "0" ] && break
+            sleep 2
+          done
+          [ "$run_id" != "0" ] || { echo "LiveDocs run for $sha was not observed." >&2; exit 1; }
+          gh run watch "$run_id" --exit-status
 
       - name: Upload packages for NuGet publication
         uses: actions/upload-artifact@v4

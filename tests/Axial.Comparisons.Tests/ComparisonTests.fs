@@ -388,7 +388,7 @@ module PipelineTests =
             Ok()
 
         let specification =
-            Axial.Process.Process.command "/bin/sh" [ "-c"; "printf 'one\\ntwo\\n'" ]
+            Axial.Process.Process.commandArgs "/bin/sh" [ "-c"; "printf 'one\\ntwo\\n'" ]
             |> Axial.Process.Process.framing Axial.Process.OutputFraming.Lines
 
         let environment =

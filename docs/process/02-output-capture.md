@@ -1,33 +1,33 @@
 ---
-title: Output and streaming
-description: Capture exact output or consume process events with backpressure.
+title: Output capture and destinations
+description: Capture exact output, bound it, forward it, or write it elsewhere.
 ---
 
-Specifications capture stdout and stderr by default. `Process.run` returns exact bytes and an encoding-aware text view:
+Specifications capture stdout and stderr by default. [`Process.toFlow`](xref:M:Axial.Process.Process.toFlow) preserves that policy and returns exact bytes and an encoding-aware text view:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let! result =
-    Process.command "device-tool" [ "inspect" ]
-    |> Process.run
+    Process.command $"device-tool inspect"
+    |> Process.toFlow
 
 printfn "%s" result.StdOut
 let bytes = result.StdOutCapture.Bytes
 ```
 
-Configure output with `Process.stdout` and `Process.stderr`. Targets include complete capture, bounded tail capture, console forwarding, inherited handles, discard, files, sinks, callbacks, and tee composition.
+Configure output with [`Process.stdout`](xref:M:Axial.Process.Process.stdout) and [`Process.stderr`](xref:M:Axial.Process.Process.stderr). Targets include complete capture, bounded tail capture, console forwarding, inherited handles, discard, files, sinks, callbacks, and tee composition.
 
 ```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let! result =
-    Process.command "device-tool" [ "diagnose" ]
+    Process.command $"device-tool diagnose"
     |> Process.stdout (OutputTarget.Tee [ OutputTarget.Console; OutputTarget.CaptureTail 65536 ])
-    |> Process.run
+    |> Process.toFlow
 ```
 
-Use `Process.stream` when output must be handled before completion:
+Use [`Process.stream`](xref:M:Axial.Process.Process.stream) when output must be handled before completion:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let events =
-    Process.command "device-tool" [ "watch" ]
+    Process.command $"device-tool watch"
     |> Process.framing OutputFraming.Lines
     |> Process.stream
 

@@ -219,4 +219,4 @@ module UnifiedServiceTests =
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.runSync services (Process.command "echo" [ "hi" ] |> Process.run<UnifiedServices>) = Exit.Success processResult @>
+        test <@ Flow.runSync services (Process.command $"echo hi" |> Process.toFlow<UnifiedServices>) = Exit.Success processResult @>

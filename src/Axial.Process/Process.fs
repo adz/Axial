@@ -161,6 +161,21 @@ type IHasProcess =
     /// The process service supplied by this environment.
     abstract Process : IProcess
 
+/// An interpolated argument that is redacted from process plans, failures, and transcripts.
+[<Sealed>]
+type SecretArgument internal (value: obj) =
+    member internal _.Value = value
+
+#if !FABLE_COMPILER
+/// The live environment used by <c>Process.run</c> at a command-line host boundary.
+/// Application workflows normally use their own environment record and <c>Process.runWith</c>.
+type ProcessHostEnvironment =
+    { Process: IProcess
+      Console: IConsole }
+    interface IHasProcess with member this.Process = this.Process
+    interface IHasConsole with member this.Console = this.Console
+#endif
+
 type private AsyncRendezvous<'value>() =
     let gate = obj()
     let mutable pending: ('value * (unit -> unit)) option = None
@@ -202,7 +217,7 @@ type private ProcessStreamState =
 [<RequireQualifiedAccess>]
 module ProcessError =
     /// Formats a process error with stage-aware diagnostic context.
-    /// <example><code>error |&gt; ProcessError.describe</code></example>
+    /// Example: error |&gt; ProcessError.describe
     let describe = function
         | ProcessError.StartFailed failure -> $"Could not start '{failure.Command}': {failure.Message}"
         | ProcessError.TimedOut failure -> $"Process specification '{failure.Specification}' timed out after {failure.Timeout}."
@@ -214,7 +229,7 @@ module ProcessError =
         | ProcessError.IoFailed failure -> $"Process I/O failed: {failure.Message}"
 
     /// Returns a suitable host exit code for a process failure.
-    /// <example><code>Environment.ExitCode &lt;- ProcessError.exitCode error</code></example>
+    /// Example: Environment.ExitCode &lt;- ProcessError.exitCode error
     let exitCode = function
         | ProcessError.StageFailed failure -> failure.Stage.ExitCode
         | ProcessError.TimedOut _ -> 124
@@ -275,14 +290,109 @@ module Process =
         | [ command ] -> command
         | _ -> invalidArg (nameof specification) "The supplied process specification must contain exactly one command."
 
-    /// Creates a runnable, safely tokenized one-command process specification.
-    /// <example><code>Process.command "git" [ "status"; "--short" ] |&gt; Process.run</code></example>
-    let command fileName arguments =
+    let internal withRedactedArguments redacted specification =
+        specification |> mapSingle (fun command -> { command with RedactedArguments = redacted })
+
+    let private formatValue format (value: obj) =
+        if isNull value then ""
+        else
+            match value with
+            | :? IFormattable as formattable -> formattable.ToString(format, CultureInfo.InvariantCulture)
+            | _ -> string value
+
+    /// Creates a one-command process specification from an executable and already-separated arguments.
+    /// Example: Process.commandArgs "git" [ "status"; "--short" ] |&gt; Process.toFlow
+    let commandArgs fileName arguments =
         if String.IsNullOrWhiteSpace fileName then invalidArg (nameof fileName) "A command file name cannot be empty."
         { FileName = fileName; Arguments = arguments; RedactedArguments = Map.empty
           WorkingDirectory = None; Environment = Map.empty
           Encoding = Encoding.UTF8; SuccessCodes = Set.singleton 0 }
         |> one
+
+    let private commandFromTemplate (format: string) (values: obj array) =
+        let tokens = ResizeArray<string * string>()
+        let actual = StringBuilder()
+        let display = StringBuilder()
+        let mutable quote: char option = None
+        let mutable escaped = false
+        let mutable started = false
+
+        let finish () =
+            if started then
+                tokens.Add(actual.ToString(), display.ToString())
+                actual.Clear() |> ignore
+                display.Clear() |> ignore
+                started <- false
+
+        let literal (character: char) =
+            if escaped then
+                actual.Append character |> ignore
+                display.Append character |> ignore
+                started <- true
+                escaped <- false
+            else
+                match quote, character with
+                | _, '\\' -> escaped <- true
+                | None, ('\'' | '"') -> quote <- Some character; started <- true
+                | Some current, character when current = character -> quote <- None
+                | None, character when Char.IsWhiteSpace character -> finish ()
+                | _ -> actual.Append character |> ignore; display.Append character |> ignore; started <- true
+
+        let hole index valueFormat =
+            if index < 0 || index >= values.Length then invalidArg (nameof format) "Interpolation index is out of range."
+            match values[index] with
+            | :? SecretArgument as secret ->
+                actual.Append(formatValue valueFormat secret.Value) |> ignore
+                display.Append("***") |> ignore
+            | value ->
+                let text = formatValue valueFormat value
+                actual.Append text |> ignore
+                display.Append text |> ignore
+            started <- true
+
+        let mutable index = 0
+        while index < format.Length do
+            if format[index] = '{' && index + 1 < format.Length && format[index + 1] = '{' then
+                literal '{'; index <- index + 2
+            elif format[index] = '}' && index + 1 < format.Length && format[index + 1] = '}' then
+                literal '}'; index <- index + 2
+            elif format[index] = '{' then
+                let closing = format.IndexOf('}', index + 1)
+                if closing < 0 then invalidArg (nameof format) "Unclosed interpolation hole."
+                let descriptor = format.Substring(index + 1, closing - index - 1)
+                let separator = descriptor.IndexOfAny [| ','; ':' |]
+                let indexText = if separator < 0 then descriptor else descriptor.Substring(0, separator)
+                let valueIndex = Int32.Parse(indexText, CultureInfo.InvariantCulture)
+                let colon = descriptor.IndexOf ':'
+                hole valueIndex (if colon < 0 then null else descriptor.Substring(colon + 1))
+                index <- closing + 1
+            else
+                literal format[index]
+                index <- index + 1
+
+        if escaped then invalidArg (nameof format) "A command line cannot end with an escape character."
+        if quote.IsSome then invalidArg (nameof format) "A command line contains an unclosed quote."
+        finish ()
+        if tokens.Count = 0 then invalidArg (nameof format) "A command line cannot be empty."
+
+        let executable, executableDisplay = tokens[0]
+        if executable <> executableDisplay then invalidArg (nameof format) "The executable cannot be secret."
+        let arguments = tokens |> Seq.skip 1 |> Seq.map fst |> Seq.toList
+        let redacted =
+            tokens
+            |> Seq.skip 1
+            |> Seq.mapi (fun argumentIndex (value, display) -> if value = display then None else Some(argumentIndex, display))
+            |> Seq.choose id
+            |> Map.ofSeq
+        commandArgs executable arguments |> withRedactedArguments redacted
+
+    /// Creates a safely tokenized one-command process specification from an interpolated command template.
+    /// Each interpolation hole is one native argument.
+    /// Example: Process.command $"git show {revision}" |&gt; Process.toFlow
+    let command (commandLine: FormattableString) = commandFromTemplate commandLine.Format (commandLine.GetArguments())
+
+    /// Creates a safely tokenized one-command process specification from fixed command text.
+    let commandText (commandLine: string) = commandFromTemplate commandLine Array.empty
 
     /// Returns the executable name of a one-command specification.
     let fileName specification = (single specification).FileName
@@ -296,7 +406,7 @@ module Process =
     let acceptedExitCodes specification = (single specification).SuccessCodes
 
     /// Appends one ordinary argument.
-    /// <example><code>command |&gt; Process.arg "--verbose"</code></example>
+    /// Example: command |&gt; Process.arg "--verbose"
     let arg value specification = specification |> mapSingle (fun command -> { command with Arguments = command.Arguments @ [ value ] })
 
     /// Adds an argument whose value is replaced with <c>***</c> in rendered commands and transcripts.
@@ -305,13 +415,13 @@ module Process =
             let index = command.Arguments.Length
             { command with Arguments = command.Arguments @ [ value ]; RedactedArguments = command.RedactedArguments.Add(index, "***") })
 
-    /// Sets the working directory. <example><code>command |&gt; Process.workingDirectory repo</code></example>
+    /// Sets the working directory. Example: command |&gt; Process.workingDirectory repo
     let workingDirectory path specification = specification |> mapSingle (fun command -> { command with WorkingDirectory = Some path })
-    /// Sets an environment override. <example><code>command |&gt; Process.environment "CI" "true"</code></example>
+    /// Sets an environment override. Example: command |&gt; Process.environment "CI" "true"
     let environment name value specification = specification |> mapSingle (fun command -> { command with Environment = command.Environment.Add(name, Some value) })
-    /// Removes an inherited environment variable. <example><code>command |&gt; Process.removeEnvironment "TOKEN"</code></example>
+    /// Removes an inherited environment variable. Example: command |&gt; Process.removeEnvironment "TOKEN"
     let removeEnvironment name specification = specification |> mapSingle (fun command -> { command with Environment = command.Environment.Add(name, None) })
-    /// Selects text decoding for this stage. <example><code>command |&gt; Process.encoding Encoding.Latin1</code></example>
+    /// Selects text decoding for this stage. Example: command |&gt; Process.encoding Encoding.Latin1
     let encoding value specification = specification |> mapSingle (fun command -> { command with Encoding = value })
 
     /// Replaces the set of exit codes considered successful for this command.
@@ -365,7 +475,7 @@ module Process =
         | InputSource.Empty -> ()
         | _ -> invalidArg (nameof source) "A process topology can have only one primary input source."
         { specification with StdIn = source }
-    /// Configures final stdout handling. <example><code>specification |&gt; Process.stdout OutputTarget.Console</code></example>
+    /// Configures final stdout handling. Example: specification |&gt; Process.stdout OutputTarget.Console
     let stdout destination (specification: ProcessSpec) =
         let rec validate = function
             | OutputTarget.CaptureTail maximum when maximum < 0 -> invalidArg (nameof destination) "Capture size cannot be negative."
@@ -375,7 +485,7 @@ module Process =
             | _ -> ()
         validate destination
         { specification with StdOut = destination }
-    /// Configures combined stderr handling. <example><code>specification |&gt; Process.stderr (OutputTarget.CaptureTail 65536)</code></example>
+    /// Configures combined stderr handling. Example: specification |&gt; Process.stderr (OutputTarget.CaptureTail 65536)
     let stderr destination (specification: ProcessSpec) =
         let rec validate = function
             | OutputTarget.CaptureTail maximum when maximum < 0 -> invalidArg (nameof destination) "Capture size cannot be negative."
@@ -387,10 +497,10 @@ module Process =
         { specification with StdErr = destination }
     /// Routes final stderr through the final stdout targets, like the intent of <c>2&gt;&amp;1</c>.
     let mergeStderr (specification: ProcessSpec) = { specification with MergeStdErr = true }
-    /// Selects chunk or line event framing. <example><code>specification |&gt; Process.framing OutputFraming.Lines</code></example>
+    /// Selects chunk or line event framing. Example: specification |&gt; Process.framing OutputFraming.Lines
     let framing value (specification: ProcessSpec) : ProcessSpec = { specification with Framing = value }
     /// Sets the maximum execution time for the complete process topology.
-    /// <example><code>specification |&gt; Process.timeout (TimeSpan.FromSeconds 30.0)</code></example>
+    /// Example: specification |&gt; Process.timeout (TimeSpan.FromSeconds 30.0)
     let timeout after (specification: ProcessSpec) : ProcessSpec =
         if after <= TimeSpan.Zero then invalidArg (nameof after) "A process timeout must be greater than zero."
         { specification with Timeout = Some after }
@@ -433,9 +543,9 @@ module Process =
     let service<'env, 'error when 'env :> IHasProcess> : Flow<'env, 'error, IProcess> =
         Flow.envWith _.Process
 
-    /// Runs a process specification in the current Flow runtime.
-    /// <example><code>specification |&gt; Process.run</code></example>
-    let run<'env when 'env :> IHasProcess> specification : Flow<'env, ProcessError, ProcessResult> =
+    /// Converts a process specification into a lazy Flow in the current environment.
+    /// Example: specification |&gt; Process.toFlow
+    let toFlow<'env when 'env :> IHasProcess> specification : Flow<'env, ProcessError, ProcessResult> =
         if specification.Leaves.Count <> 1 then invalidArg (nameof specification) "A process topology requires one final output stage. Connect merged producers to a consumer first."
         flow {
             let! processes = service
@@ -443,12 +553,20 @@ module Process =
         }
 
     /// Runs a process specification with complete stdout and stderr capture.
-    /// <example><code>Process.command "dotnet" [ "--info" ] |&gt; Process.capture</code></example>
+    /// Example: Process.command $"dotnet --info" |&gt; Process.capture
     let capture<'env when 'env :> IHasProcess> specification : Flow<'env, ProcessError, ProcessResult> =
         specification
         |> stdout OutputTarget.Capture
         |> stderr OutputTarget.Capture
-        |> run
+        |> toFlow
+
+    /// Converts a process specification into a lazy Flow that forwards stdout and stderr to the host console.
+    /// Example: Process.command $"dotnet --version" |&gt; Process.console
+    let console<'env when 'env :> IHasProcess> specification : Flow<'env, ProcessError, ProcessResult> =
+        specification
+        |> stdout OutputTarget.Console
+        |> stderr OutputTarget.Console
+        |> toFlow
 
     /// Streams process events in the current Flow runtime. The last event is <c>Completed</c>.
     let stream<'env when 'env :> IHasProcess> specification : FlowStream<'env, ProcessError, ProcessEvent> =
@@ -456,9 +574,6 @@ module Process =
             let service = (environment :> IHasProcess).Process
             let (FlowStream stream) = service.Stream specification
             stream () cancellationToken)
-
-    let internal withRedactedArguments redacted specification =
-        specification |> mapSingle (fun command -> { command with RedactedArguments = redacted })
 
 #if !FABLE_COMPILER
     let private isInherit = function OutputTarget.Inherit -> true | _ -> false
@@ -787,16 +902,36 @@ module Process =
             member _.Run specification = execute None specification
             member _.Stream specification = stream specification }
 
+    let private describeCause = function
+        | Cause.Fail error -> ProcessError.describe error
+        | Cause.Die error -> error.ToString()
+        | Cause.Interrupt -> "Interrupted."
+        | cause -> $"{cause}"
+
+    /// Runs a process workflow with its supplied application environment and returns a host exit code.
+    /// The environment supplies the console used to report a typed process failure.
+    let runWith<'env, 'value when 'env :> IHasConsole> (environment: 'env) (workflow: Flow<'env, ProcessError, 'value>) : int =
+        match Flow.run environment workflow with
+        | Exit.Success _ -> 0
+        | Exit.Failure(Cause.Fail error) ->
+            (environment :> IHasConsole).Console.WriteErrorLine(ProcessError.describe error)
+            ProcessError.exitCode error
+        | Exit.Failure cause ->
+            (environment :> IHasConsole).Console.WriteErrorLine(describeCause cause)
+            1
+
+    /// Runs a process workflow with live clock, filesystem, console, and process services.
+    let run (workflow: Flow<ProcessHostEnvironment, ProcessError, 'value>) : int =
+        let console = Console.live
+        let environment =
+            { Process = live Clock.live FileSystem.live console
+              Console = console }
+        runWith environment workflow
+
 #endif
 
 module DSL =
     /// Marks an interpolated command value for redaction in plans and transcripts.
-    [<Sealed>]
-    type SecretArgument internal (value: obj) =
-        member internal _.Value = value
-
-    type private ParsedToken = { Value: string; Display: string }
-
     let private formatValue format (value: obj) =
         if isNull value then ""
         else
@@ -804,90 +939,10 @@ module DSL =
             | :? IFormattable as formattable -> formattable.ToString(format, CultureInfo.InvariantCulture)
             | _ -> string value
 
-    let private parseCommandLine (format: string) (values: obj array) =
-        let tokens = ResizeArray<ParsedToken>()
-        let actual = StringBuilder()
-        let display = StringBuilder()
-        let mutable quote: char option = None
-        let mutable escaped = false
-        let mutable started = false
-
-        let finish () =
-            if started then
-                tokens.Add { Value = actual.ToString(); Display = display.ToString() }
-                actual.Clear() |> ignore
-                display.Clear() |> ignore
-                started <- false
-
-        let literal (character: char) =
-            if escaped then
-                actual.Append character |> ignore
-                display.Append character |> ignore
-                started <- true
-                escaped <- false
-            else
-                match quote, character with
-                | _, '\\' -> escaped <- true
-                | None, ('\'' | '"') -> quote <- Some character; started <- true
-                | Some current, character when current = character -> quote <- None
-                | None, character when Char.IsWhiteSpace character -> finish ()
-                | _ -> actual.Append character |> ignore; display.Append character |> ignore; started <- true
-
-        let hole (index: int) (valueFormat: string) =
-            if index < 0 || index >= values.Length then invalidArg (nameof format) "Interpolation index is out of range."
-            match values[index] with
-            | :? SecretArgument as secret ->
-                actual.Append(formatValue valueFormat secret.Value) |> ignore
-                display.Append("***") |> ignore
-            | value ->
-                let text = formatValue valueFormat value
-                actual.Append text |> ignore
-                display.Append text |> ignore
-            started <- true
-
-        let mutable index = 0
-        while index < format.Length do
-            if format[index] = '{' && index + 1 < format.Length && format[index + 1] = '{' then
-                literal '{'; index <- index + 2
-            elif format[index] = '}' && index + 1 < format.Length && format[index + 1] = '}' then
-                literal '}'; index <- index + 2
-            elif format[index] = '{' then
-                let closing = format.IndexOf('}', index + 1)
-                if closing < 0 then invalidArg (nameof format) "Unclosed interpolation hole."
-                let descriptor = format.Substring(index + 1, closing - index - 1)
-                let separator = descriptor.IndexOfAny [| ','; ':' |]
-                let indexText = if separator < 0 then descriptor else descriptor.Substring(0, separator)
-                let valueIndex = Int32.Parse(indexText, CultureInfo.InvariantCulture)
-                if valueIndex < 0 || valueIndex >= values.Length then invalidArg (nameof format) "Interpolation index is out of range."
-                let valueFormat =
-                    let colon = descriptor.IndexOf ':'
-                    if colon < 0 then null else descriptor.Substring(colon + 1)
-                hole valueIndex valueFormat
-                index <- closing + 1
-            else
-                literal format[index]
-                index <- index + 1
-
-        if escaped then invalidArg (nameof format) "A command line cannot end with an escape character."
-        if quote.IsSome then invalidArg (nameof format) "A command line contains an unclosed quote."
-        finish ()
-        if tokens.Count = 0 then invalidArg (nameof format) "A command line cannot be empty."
-
-        let executable = tokens[0]
-        if executable.Value <> executable.Display then invalidArg (nameof format) "The executable cannot be secret."
-        let arguments = tokens |> Seq.skip 1 |> Seq.map _.Value |> Seq.toList
-        let redacted =
-            tokens
-            |> Seq.skip 1
-            |> Seq.mapi (fun index token -> index, token)
-            |> Seq.choose (fun (index, token) -> if token.Value = token.Display then None else Some(index, token.Display))
-            |> Map.ofSeq
-        Process.command executable.Value arguments |> Process.withRedactedArguments redacted
-
     type EndpointConnector =
         static member Connect(source: InputSource, next: ProcessSpec) = Process.stdin source next
         static member Connect(source: ProcessSpec, next: ProcessSpec) = Process.pipe next source
-        static member Connect(source: ProcessSpec, target: OutputTarget) = source |> Process.stdout target |> Process.run
+        static member Connect(source: ProcessSpec, target: OutputTarget) = source |> Process.stdout target |> Process.toFlow
         static member ToSpecification(source: ProcessSpec) = source
 
     /// Connects a typed input, command, specification, or terminal output endpoint.
@@ -895,10 +950,10 @@ module DSL =
         ((^source or ^destination or EndpointConnector) : (static member Connect : ^source * ^destination -> ^result) (source, destination))
 
     /// Builds a command-line-shaped command while preserving every interpolation hole as one argument.
-    let cmd (commandLine: FormattableString) = parseCommandLine commandLine.Format (commandLine.GetArguments())
+    let cmd (commandLine: FormattableString) = Process.command commandLine
 
     /// Parses a fixed command line. Prefer <c>cmd $"...{value}"</c> whenever values are inserted.
-    let cmdText (commandLine: string) = parseCommandLine commandLine Array.empty
+    let cmdText (commandLine: string) = Process.commandText commandLine
 
     /// Builds a vertical specification from safely parsed command templates.
     let pipe (commandLines: seq<FormattableString>) =
@@ -953,7 +1008,7 @@ module DSL =
             |> Array.mapi (fun index value -> index, value)
             |> Array.choose (fun (index, value) -> match value with :? SecretArgument -> Some(firstValue + index, "***") | _ -> None)
             |> Map.ofArray
-        Process.command executable arguments |> Process.withRedactedArguments redacted
+        Process.commandArgs executable arguments |> Process.withRedactedArguments redacted
 
     /// Builds a Bash program with interpolation values passed as positional arguments.
     let bash program = shellCommand "bash" (fun script -> [ "-o"; "pipefail"; "-c"; script; "axial" ]) (fun index -> $"\"${{{index + 1}}}\"") program
@@ -963,11 +1018,11 @@ module DSL =
     let pwsh program = shellCommand "pwsh" (fun script -> [ "-NoProfile"; "-NonInteractive"; "-Command"; script ]) (fun index -> $"$args[{index}]") program
 
     /// Builds an explicitly assembled Bash program. Values in the text are not escaped by Axial.
-    let bashText program = Process.command "bash" [ "-o"; "pipefail"; "-c"; program ]
+    let bashText program = Process.commandArgs "bash" [ "-o"; "pipefail"; "-c"; program ]
     /// Builds an explicitly assembled POSIX shell program. Values in the text are not escaped by Axial.
-    let shText program = Process.command "sh" [ "-c"; program ]
+    let shText program = Process.commandArgs "sh" [ "-c"; program ]
     /// Builds an explicitly assembled PowerShell 7 program. Values in the text are not escaped by Axial.
-    let pwshText program = Process.command "pwsh" [ "-NoProfile"; "-NonInteractive"; "-Command"; program ]
+    let pwshText program = Process.commandArgs "pwsh" [ "-NoProfile"; "-NonInteractive"; "-Command"; program ]
 
     /// Marks an interpolated value for diagnostic redaction.
     let secret value = SecretArgument(box value)
@@ -983,14 +1038,18 @@ module DSL =
     /// Configures combined stderr on the specification.
     let stderr target source = toSpecification source |> Process.stderr target
     /// Sets the maximum execution time for a command or specification.
-    /// <example><code>cmd $"service-device" |&gt; timeout (TimeSpan.FromSeconds 30.0) |&gt; capture</code></example>
+    /// Example: cmd $"service-device" |&gt; timeout (TimeSpan.FromSeconds 30.0) |&gt; capture
     let timeout after source = toSpecification source |> Process.timeout after
-    /// Runs a command or specification in the current Flow runtime.
-    let run source = toSpecification source |> Process.run
+    /// Converts a command or specification into a lazy Flow in the current environment.
+    let toFlow source = toSpecification source |> Process.toFlow
     /// Runs a command or specification and captures stdout and stderr.
     let capture source = toSpecification source |> Process.capture
     /// Forwards stdout and stderr to the host console while retaining structured completion data.
-    let console source = toSpecification source |> Process.stdout OutputTarget.Console |> Process.stderr OutputTarget.Console |> Process.run
+    let console source = toSpecification source |> Process.console
+    /// Starts a process Flow with live services and returns a command-line exit code.
+    let run workflow = Process.run workflow
+    /// Starts a process Flow with the supplied application environment and returns a command-line exit code.
+    let runWith environment workflow = Process.runWith environment workflow
     /// Produces a bounded stream of structured output and completion events.
     let stream source = toSpecification source |> Process.stream
     /// Connects both stdout and stderr from the current final stage to the next command.
@@ -998,15 +1057,15 @@ module DSL =
     /// Routes final stderr through final stdout targets.
     let mergeStderr source = toSpecification source |> Process.mergeStderr
     /// Writes final stdout to a truncating file and runs the specification.
-    let writeTo path source = toSpecification source |> Process.stdout (OutputTarget.File path) |> Process.run
+    let writeTo path source = toSpecification source |> Process.stdout (OutputTarget.File path) |> Process.toFlow
     /// Writes final stdout to an appending file and runs the specification.
-    let appendTo path source = toSpecification source |> Process.stdout (OutputTarget.AppendFile path) |> Process.run
+    let appendTo path source = toSpecification source |> Process.stdout (OutputTarget.AppendFile path) |> Process.toFlow
     /// Captures commands concurrently with a fixed upper bound while preserving input order.
     let captureParallel maximumConcurrency commands =
         if maximumConcurrency <= 0 then invalidArg (nameof maximumConcurrency) "Maximum concurrency must be positive."
         let runBatch batch =
             batch
-            |> List.map (fun specification -> specification |> Process.run |> Flow.map List.singleton)
+            |> List.map (fun specification -> specification |> Process.capture |> Flow.map List.singleton)
             |> function
                 | [] -> Flow.ok []
                 | head :: tail ->
@@ -1087,29 +1146,4 @@ module DSL =
                     if count > 0 then do! target.WriteAsync(chars, 0, count) |> Async.AwaitTask
                     do! target.FlushAsync() |> Async.AwaitTask
                 }))
-#endif
-
-#if !FABLE_COMPILER
-type ScriptEnvironment =
-    { Process: IProcess }
-    interface IHasProcess with member this.Process = this.Process
-
-[<RequireQualifiedAccess>]
-module Script =
-    let private describeCause = function
-        | Cause.Fail error -> ProcessError.describe error
-        | Cause.Die error -> error.ToString()
-        | Cause.Interrupt -> "Interrupted."
-        | cause -> $"{cause}"
-
-    /// Runs a process workflow with live services, writes failures through the supplied console, and returns a host exit code.
-    let run (console: IConsole) (workflow: Flow<ScriptEnvironment, ProcessError, 'value>) : int =
-        match workflow.RunSynchronously({ Process = Process.live Clock.live FileSystem.live console }) with
-        | Exit.Success _ -> 0
-        | Exit.Failure(Cause.Fail error) ->
-            console.WriteErrorLine(ProcessError.describe error)
-            ProcessError.exitCode error
-        | Exit.Failure cause ->
-            console.WriteErrorLine(describeCause cause)
-            1
 #endif

@@ -4,7 +4,7 @@ description: Use process specifications with a supplied interpreter on non-nativ
 platform: fable
 ---
 
-`ProcessSpec`, `ProcessResult`, `ProcessError`, the DSL, and `IProcess` are target-neutral. A browser cannot start an operating-system process, so `Process.live` and native stream adapters are available only on .NET.
+`ProcessSpec`, `ProcessResult`, `ProcessError`, the DSL, and `IProcess` are target-neutral. A browser cannot start an operating-system process, so [`Process.live`](xref:M:Axial.Process.Process.live) and native stream adapters are available only on .NET.
 
 Fable applications can construct specifications and run them against an `IProcess` implementation that delegates execution to a worker or another host:
 
@@ -13,8 +13,8 @@ Fable applications can construct specifications and run them against an `IProces
     interface IHasProcess with member this.Process = this.Process
 
 let workflow =
-    Process.command "device-tool" [ "inspect" ]
-    |> Process.run<AppEnvironment>
+    Process.command $"device-tool inspect"
+    |> Process.toFlow<AppEnvironment>
 ```
 
 An interpreter returns lazy `Flow<unit, ProcessError, ProcessResult>` and `FlowStream<unit, ProcessError, ProcessEvent>` values. It must not start work while constructing those values.

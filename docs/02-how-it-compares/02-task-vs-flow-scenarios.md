@@ -1,29 +1,29 @@
 ---
-title: Task vs Flow, Seven Scenarios
-description: The same seven programs written with Task/exceptions/tokens and with Flow, with failure-path tests for every claimed guarantee.
+title: "Task vs Flow: seven scenarios"
+description: Compare the same application operations written with Task and Flow, including the tests that prove each behavior.
 ---
 
-# Task vs Flow, Seven Scenarios
+# Task vs Flow: seven scenarios
 
-Effect syntax in isolation proves nothing. This page walks through seven realistic programs implemented twice in
-[`examples/Axial.Comparisons`](https://github.com/adz/Axial/tree/main/examples/Axial.Comparisons) —
-once with `Task`, exceptions, cancellation tokens, and manually passed services, and once with
-`Flow<'env, 'error, 'value>` — over identical domain types and service interfaces, so the only variable is the
-workflow model.
+This page compares seven application operations implemented twice: once with `Task`, exceptions, cancellation tokens,
+and manually passed services; once with `Flow<'env, 'error, 'value>`. Both versions use the same domain types and
+service interfaces.
 
-Flow does not make side effects pure and does not prevent all defects. The gain, scenario by scenario, is that
-expected failure, dependencies, cancellation, resource lifetime, and composition policy become **visible in the
-signature** and **testable at the composition point**. Every guarantee claimed below has a test in
-[`tests/Axial.Comparisons.Tests`](https://github.com/adz/Axial/tree/main/tests/Axial.Comparisons.Tests)
-that fails if the guarantee is removed.
+Flow does not remove side effects or make remote operations transactional. It gives each operation a compatible
+contract and runtime model. The type records the capabilities it needs and expected failures it can return. The runtime
+owns cancellation, child work, and scoped cleanup. Retry, timeout, parallelism, and recovery are policies you compose
+with the operation instead of conventions each caller must reproduce.
 
-Each scenario ends with three lists: what the type makes visible, what the runtime enforces, and what remains the
-application's responsibility. The design family is shared with ZIO; correspondences are noted where they help, and
-omitted where Axial has no honest counterpart.
+Every claim on this page has a test in the
+[comparison test file](https://github.com/adz/Axial/blob/main/tests/Axial.Comparisons.Tests/ComparisonTests.fs).
+Each scenario identifies what the type communicates, what the runtime guarantees, and what your application must
+still handle.
 
 ## 1. Checkout orchestration with compensation
 
 Reserve stock, charge a card, create a shipment; release the reservation when charging or shipment creation fails.
+
+Read the [checkout comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/CheckoutCompensation.fs).
 
 The ordinary version is a `Task<CheckoutReceipt>` whose expected failures leave the signature as exceptions, and
 whose compensation lives in a catch block someone must remember. The comparison includes `checkoutBuggy`, the common
@@ -54,6 +54,8 @@ Fetch an exchange rate through [`Axial.HttpClient`](/http/): retry only transien
 transport failures, back off exponentially, stop after three attempts, and turn a two-second deadline into
 `RateError.TimedOut`. Never retry malformed successful responses.
 
+Read the [retry-budget comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/RetryBudget.fs).
+
 The ordinary version interleaves a retry loop, `CancellationTokenSource.CancelAfter`, `Task.Delay`, and exception
 classification in one function — and one overly broad `with _ ->` away from retrying a `NullReferenceException`.
 
@@ -78,6 +80,8 @@ timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed `S
 
 Load account, orders, and recommendations concurrently. Account and orders are mandatory; recommendations fall back
 to an empty list on their typed failure; a mandatory failure interrupts the still-running sibling.
+
+Read the [dashboard comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/DashboardFanOut.fs).
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let applicationActivitySource = new System.Diagnostics.ActivitySource("Dashboard.Application")
@@ -106,6 +110,8 @@ ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
 
 Create a temporary directory through [`Axial.FileSystem`](/services/filesystem.html), perform fallible
 steps, remove the directory exactly once on every exit shape.
+
+Read the [workspace comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/ScopedWorkspace.fs).
 
 The ordinary comparison includes `importBatchLeaky`, the classic leak: construction succeeds, then a setup check
 throws *before* ownership transfers into `try/finally`. The test proves the directory survives. In the Flow version
@@ -138,6 +144,8 @@ A daily report needs a clock, a filesystem, a console, and a report store. The o
 constructor parameters through every caller, and nothing stops a hurried edit from reading
 `DateTimeOffset.UtcNow` directly.
 
+Read the [report-wiring comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/ReportWiring.fs).
+
 The Flow version declares the capability set once as an environment record implementing one contract per
 capability, and business code names only what it uses through the package operations
 ([`Clock.now`](/services/platform-services/clock.html), [`FileSystem.readAllText`](/services/filesystem.html),
@@ -168,6 +176,8 @@ ZIO correspondence: environment requirements and `ZLayer`.
 
 Stream records (or live process output), transform them, persist them, and stop the producer promptly when the
 consumer fails.
+
+Read the [output-pipeline comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/OutputPipeline.fs).
 
 The ordinary version combines a bounded `Channel`, a background producer task, a linked token source, and manual
 observation of the producer's exception — and its classic bug (returning after a consumer failure while the
@@ -202,6 +212,8 @@ Where a producer must genuinely run ahead, `Flow.fork` returns a `Fiber` the cal
 Two checkouts race for the last unit; a reservation waits for replenishment or falls back to an alternative
 warehouse — without locks leaking into business logic.
 
+Read the [inventory STM comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/InventoryStm.fs).
+
 The ordinary version is a lock, a counting semaphore for wakeups, and a hand-maintained invariant that stock and
 reservation counts change together; the comment in the example marks exactly where swapping the semaphore for a
 `Monitor` pulse introduces a missed wakeup.
@@ -230,5 +242,6 @@ park a reservation on empty stock until a replenishment commits. ZIO corresponde
 dotnet test tests/Axial.Comparisons.Tests --nologo
 ```
 
-Each source file in `examples/Axial.Comparisons` is self-contained: shared domain types at the top, the
-`Ordinary` module, then the `WithFlow` module, with the full return type stated above each implementation.
+Each [comparison source file](https://github.com/adz/Axial/tree/main/examples/Axial.Comparisons) is self-contained.
+It defines the shared domain types first, followed by the `Ordinary` module and the `WithFlow` module. Each
+implementation states its full return type.
