@@ -200,3 +200,62 @@ module WorkflowResourceTests =
 
         test <@ result = Exit.Failure (Cause.Fail "failed") @>
         test <@ List.ofSeq events = [ "service:released" ] @>
+
+    [<Fact>]
+    let ``Layer pool hands out instances round-robin`` () =
+        let workflow =
+            flow {
+                let! pool = Flow.env<Pool<int>, string>
+                return [ for _ in 1 .. 5 -> pool.Next() ]
+            }
+
+        let result =
+            workflow
+            |> Layer.provide (Layer.pool 3 Layer.succeed)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success [ 0; 1; 2; 0; 1 ] @>
+
+    [<Fact>]
+    let ``Layer pool acquires instances sequentially in index order`` () =
+        let events = ResizeArray<int>()
+
+        let layer =
+            Layer.pool 3 (fun index ->
+                events.Add index
+                Layer.succeed index)
+
+        let result =
+            (Flow.env<Pool<int>, string> |> Flow.map (fun pool -> pool.Count))
+            |> Layer.provide layer
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success 3 @>
+        test <@ List.ofSeq events = [ 0; 1; 2 ] @>
+
+    [<Fact>]
+    let ``Layer pool releases every acquired instance when a later instance fails`` () =
+        let events = ResizeArray<string>()
+
+        let layer =
+            Layer.pool 3 (fun index ->
+                if index = 2 then
+                    Layer.fromValueTask (fun (_, _) _ -> Execution.ofError "boom")
+                else
+                    Layer.acquireRelease
+                        (Layer.succeed index)
+                        (fun instance _ ->
+                            events.Add($"{instance}:released")
+                            Task.CompletedTask))
+
+        let result =
+            Flow.env<Pool<int>, string>
+            |> Layer.provide layer
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure (Cause.Fail "boom") @>
+        test <@ List.ofSeq events = [ "1:released"; "0:released" ] @>
+
+    [<Fact>]
+    let ``Layer pool rejects a non-positive size`` () =
+        raises<ArgumentException> <@ Layer.pool 0 Layer.succeed @>

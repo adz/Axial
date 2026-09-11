@@ -15,6 +15,27 @@ type Layer<'input, 'error, 'output> =
     internal
     | Layer of (('input * Scope) -> CancellationToken -> Execution<'output, 'error>)
 
+/// <summary>A fixed-size set of eagerly provisioned resource instances, handed out round-robin.</summary>
+/// <remarks>
+/// Use for expensive, non-thread-safe-per-call resources such as compiler services or pinned
+/// clients: acquire a small fixed pool once, then spread concurrent work across instances instead
+/// of contending on one shared instance or reacquiring one per call. Build one with <see cref="M:Axial.Layers.Layer.pool``3" />.
+/// </remarks>
+[<Sealed>]
+type Pool<'resource> internal (instances: 'resource array) =
+    let mutable cursor = -1
+
+    /// <summary>The number of instances in the pool.</summary>
+    member _.Count = instances.Length
+
+    /// <summary>Returns the next instance, distributing calls round-robin across every instance.</summary>
+    member _.Next() : 'resource =
+        let index = System.Threading.Interlocked.Increment(&cursor)
+        instances.[(index &&& System.Int32.MaxValue) % instances.Length]
+
+    /// <summary>Every instance in the pool, e.g. to release or inspect them directly.</summary>
+    member _.Instances: 'resource seq = upcast instances
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Layer =
@@ -92,6 +113,38 @@ module Layer =
             |> Execution.bind (fun resource ->
                 scope.AddFinalizer(fun ct -> release resource ct)
                 Execution.ofValue resource))
+
+    /// <summary>Provisions a fixed-size pool of resource instances, handed out round-robin.</summary>
+    /// <param name="size">The number of instances to provision. Must be at least one.</param>
+    /// <param name="acquire">Builds one instance, given its zero-based index in the pool.</param>
+    /// <returns>A layer that succeeds with a <see cref="T:Axial.Layers.Pool`1" />.</returns>
+    /// <remarks>
+    /// Instances are provisioned sequentially, in index order, inside the layer's scope, so finalizers
+    /// registered by <paramref name="acquire" /> release in the reverse of that order when the scope
+    /// closes. Use <see cref="M:Axial.Layers.Layer.acquireRelease``2" /> inside <paramref name="acquire" />
+    /// when each instance owns a resource that needs an explicit release.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// let checkerPool =
+    ///     Layer.pool 4 (fun _ -> Layer.succeed (FSharpChecker.Create(keepAssemblyContents = true)))
+    /// </code>
+    /// </example>
+    let pool
+        (size: int)
+        (acquire: int -> Layer<'input, 'error, 'resource>)
+        : Layer<'input, 'error, Pool<'resource>> =
+        if size < 1 then invalidArg (nameof size) "A pool requires at least one instance."
+        Layer(fun (input, scope) cancellationToken ->
+            [ 0 .. size - 1 ]
+            |> List.fold
+                (fun effect index ->
+                    effect
+                    |> Execution.bind (fun instances ->
+                        invoke (acquire index) input scope cancellationToken
+                        |> Execution.map (fun instance -> instance :: instances)))
+                (Execution.ofValue [])
+            |> Execution.map (fun instances -> Pool(instances |> List.rev |> List.toArray)))
 
     /// <summary>Maps the successful output of a layer.</summary>
     let map
