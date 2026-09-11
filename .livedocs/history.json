@@ -1,7 +1,13 @@
 {
   "SchemaVersion": 1,
-  "CurrentVersion": "0.9.0",
+  "CurrentVersion": "0.9.1",
   "Entries": [
+    {
+      "Version": "0.9.1",
+      "CapsulePath": null,
+      "CapsuleUrl": "https://github.com/adz/Axial/releases/download/v0.9.1/Axial-0.9.1-livedocs.zip",
+      "CapsuleSha256": "d585a9de2935c69b6682e16cc58fc2d0d1ca1ee2bfe701f454d5941ab0af664a"
+    },
     {
       "Version": "0.9.0",
       "CapsulePath": null,
