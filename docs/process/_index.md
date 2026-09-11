@@ -16,7 +16,7 @@ For a small command-line program, describe commands, connect them, choose where 
 open Axial.Process
 open Axial.Process.DSL // Short pipeline helpers: cwd, env, timeout, =>, capture, run
 
-Process.command $"git log --oneline -20"
+cmd $"git log --oneline -20"
 |> cwd repository
 |> env "NO_COLOR" "1"
 |> timeout (TimeSpan.FromSeconds 5)
