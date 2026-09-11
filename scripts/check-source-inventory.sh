@@ -49,4 +49,21 @@ if ! diff -u "$tmp_dir/sources.actual" "$tmp_dir/sources.expected"; then
   exit 1
 fi
 
+find src -name '*.fsproj' \
+  ! -path 'src/Axial.Hosting.AspNetCore/*' \
+  ! -path 'src/Axial.Hosting.GenHttp/*' \
+  -print0 \
+  | xargs -0 grep -l '<PackageId>' \
+  | sed "s|^|$root_dir/|" \
+  | xargs -I{} realpath --relative-to="$root_dir" {} \
+  | sort > "$tmp_dir/packable.actual"
+grep -o '"src/[^"]*\.fsproj"' scripts/pack.sh \
+  | tr -d '"' \
+  | sort > "$tmp_dir/packable.packed"
+
+if ! diff -u "$tmp_dir/packable.packed" "$tmp_dir/packable.actual"; then
+  echo "Packable project inventory mismatch: every src project declaring <PackageId> must be packed by scripts/pack.sh." >&2
+  exit 1
+fi
+
 echo "Source inventory covers src/tests .fs and .fsproj files."

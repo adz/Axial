@@ -26,6 +26,7 @@ fi
 projects=(
   "src/Axial/Axial.fsproj"
   "src/Axial.Console/Axial.Console.fsproj"
+  "src/Axial.Layers/Axial.Layers.fsproj"
   "src/Axial.FileSystem/Axial.FileSystem.fsproj"
   "src/Axial.HttpClient/Axial.HttpClient.fsproj"
   "src/Axial.Process/Axial.Process.fsproj"
