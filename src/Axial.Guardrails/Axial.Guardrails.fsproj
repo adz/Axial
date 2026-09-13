@@ -33,11 +33,19 @@
       NU5100: expected for every dll under analyzers/ and cli/ - none of them are meant to be referenced.
     -->
     <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
+    <!--
+      This package bundles FSharp.Analyzers.SDK, FSharp.Compiler.Service, its own FSharp.Core, and the
+      fsharp-analyzers CLI in full under analyzers/ and cli/ (see _AxialGuardrailsPackAnalyzerOutput
+      below). Without this, the generated .nuspec would advertise FSharp.Analyzers.SDK/FSharp.Core as
+      consumer dependencies even though nothing under lib/ or ref/ is ever compiled against - causing
+      NU1608 for any consumer pinning a different FSharp.Core.
+    -->
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <PackageReference Include="FSharp.Analyzers.SDK" Version="0.37.2" />
+    <PackageReference Include="FSharp.Analyzers.SDK" Version="0.37.2" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
