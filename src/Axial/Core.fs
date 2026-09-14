@@ -209,24 +209,8 @@ type FiberDump =
         Status: FiberStatus
     }
 
-/// <summary>Snapshot conversion and rendering for fiber dumps.</summary>
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-[<RequireQualifiedAccess>]
-module FiberDump =
-    /// <summary>Takes a dump from live fiber metadata.</summary>
-    let ofMetadata (metadata: FiberMetadata) : FiberDump =
-        {
-            Id = metadata.Id
-            Name = metadata.Name
-            ParentId = metadata.ParentId
-            Annotations = metadata.Annotations
-            StartedAt = metadata.StartedAt
-            SettledAt = metadata.SettledAt
-            Status = metadata.Status
-        }
-
-    /// <summary>Renders one dump as a single line, measuring lifetime against <paramref name="now" /> for live fibers.</summary>
-    let renderAt (now: DateTimeOffset) (dump: FiberDump) : string =
+    /// <summary>Renders the dump as a single line, measuring lifetime against <paramref name="now" /> for live fibers.</summary>
+    member dump.RenderAt(now: DateTimeOffset) : string =
         let name =
             match dump.Name with
             | Some name -> $" \"{name}\""
@@ -247,6 +231,28 @@ module FiberDump =
                 |> sprintf " [%s]"
 
         $"#{dump.Id.Value}{name} {dump.Status} {lifetime} (started {dump.StartedAt:o}){annotations}"
+
+    /// <summary>Renders the dump without reflection (safe under NativeAOT), measuring lifetime to when it settled.</summary>
+    override dump.ToString() = dump.RenderAt(dump.SettledAt |> Option.defaultValue dump.StartedAt)
+
+/// <summary>Snapshot conversion and rendering for fiber dumps.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module FiberDump =
+    /// <summary>Takes a dump from live fiber metadata.</summary>
+    let ofMetadata (metadata: FiberMetadata) : FiberDump =
+        {
+            Id = metadata.Id
+            Name = metadata.Name
+            ParentId = metadata.ParentId
+            Annotations = metadata.Annotations
+            StartedAt = metadata.StartedAt
+            SettledAt = metadata.SettledAt
+            Status = metadata.Status
+        }
+
+    /// <summary>Renders one dump as a single line, measuring lifetime against <paramref name="now" /> for live fibers.</summary>
+    let renderAt (now: DateTimeOffset) (dump: FiberDump) : string = dump.RenderAt now
 
     /// <summary>
     /// Renders a set of dumps as an indented parent/child tree. Fibers whose parent is absent from
@@ -291,10 +297,6 @@ module FiberDump =
             renderNode "" "" root
 
         String.concat "\n" lines
-
-/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see FiberDump.renderAt.
-type FiberDump with
-    override this.ToString() = FiberDump.renderAt (this.SettledAt |> Option.defaultValue this.StartedAt) this
 
 /// <summary>
 /// Runtime hooks observing fiber lifecycle events for diagnostics and telemetry.

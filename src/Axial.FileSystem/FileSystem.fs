@@ -43,6 +43,21 @@ type FileSystemError =
     /// <summary>An unexpected exception escaped a file-system operation.</summary>
     | Unexpected of path: string option * message: string
 
+    /// Hand-written so it stays safe under NativeAOT and trimming (the generated ToString uses reflection).
+    override this.ToString() =
+        let describePath path = defaultArg path "<unknown>"
+        match this with
+        | FileNotFound path -> $"File not found: {path}"
+        | DirectoryNotFound path -> $"Directory not found: {path}"
+        | AlreadyExists path -> $"Path already exists: {path}"
+        | Unauthorized(path, message) -> $"Unauthorized file-system access at {describePath path}: {message}"
+        | InvalidPath(path, message) -> $"Invalid path {describePath path}: {message}"
+        | PathTooLong(path, message) -> $"Path too long {describePath path}: {message}"
+        | Canceled message -> $"File-system operation canceled: {message}"
+        | Io(path, message) -> $"File-system I/O error at {describePath path}: {message}"
+        | Unsupported(path, message) -> $"Unsupported file-system operation at {describePath path}: {message}"
+        | Unexpected(path, message) -> $"Unexpected file-system error at {describePath path}: {message}"
+
 /// <summary>Provides access to common file, directory, and path operations.</summary>
 type IFileSystem =
     /// <summary>Opens a text file, reads all text, and then closes the file.</summary>
@@ -351,9 +366,6 @@ type IHasFileSystem =
 
 [<RequireQualifiedAccess>]
 module FileSystemError =
-    let private describePath path =
-        defaultArg path "<unknown>"
-
     /// <summary>Classifies an exception raised by a file-system operation.</summary>
     let fromException (path: string option) (error: exn) : FileSystemError =
         match error with
@@ -377,23 +389,7 @@ module FileSystemError =
             FileSystemError.Unexpected(path, error.Message)
 
     /// <summary>Formats a human-readable description for a file-system error.</summary>
-    let describe =
-        function
-        | FileSystemError.FileNotFound path -> $"File not found: {path}"
-        | FileSystemError.DirectoryNotFound path -> $"Directory not found: {path}"
-        | FileSystemError.AlreadyExists path -> $"Path already exists: {path}"
-        | FileSystemError.Unauthorized(path, message) -> $"Unauthorized file-system access at {describePath path}: {message}"
-        | FileSystemError.InvalidPath(path, message) -> $"Invalid path {describePath path}: {message}"
-        | FileSystemError.PathTooLong(path, message) -> $"Path too long {describePath path}: {message}"
-        | FileSystemError.Canceled message -> $"File-system operation canceled: {message}"
-        | FileSystemError.Io(path, message) -> $"File-system I/O error at {describePath path}: {message}"
-        | FileSystemError.Unsupported(path, message) -> $"Unsupported file-system operation at {describePath path}: {message}"
-        | FileSystemError.Unexpected(path, message) -> $"Unexpected file-system error at {describePath path}: {message}"
-
-
-/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see FileSystemError.describe.
-type FileSystemError with
-    override this.ToString() = FileSystemError.describe this
+    let describe (error: FileSystemError) = error.ToString()
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]

@@ -23,26 +23,25 @@ type Method =
     | Options
     | Custom of name: string
 
+    /// Hand-written so it stays safe under NativeAOT and trimming (the generated ToString uses reflection).
+    override this.ToString() =
+        match this with
+        | Get -> "GET"
+        | Head -> "HEAD"
+        | Post -> "POST"
+        | Put -> "PUT"
+        | Patch -> "PATCH"
+        | Delete -> "DELETE"
+        | Options -> "OPTIONS"
+        | Custom name -> name.ToUpperInvariant()
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Method =
     /// Returns the canonical uppercase method name. <example><code>Method.name Method.Get</code></example>
-    let name = function
-        | Method.Get -> "GET"
-        | Method.Head -> "HEAD"
-        | Method.Post -> "POST"
-        | Method.Put -> "PUT"
-        | Method.Patch -> "PATCH"
-        | Method.Delete -> "DELETE"
-        | Method.Options -> "OPTIONS"
-        | Method.Custom name -> name.ToUpperInvariant()
+    let name (method: Method) = method.ToString()
 
 /// Supplies the request payload and its media type.
-
-/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see Method.name.
-type Method with
-    override this.ToString() = Method.name this
-
 [<RequireQualifiedAccess>]
 type RequestBody =
     | Empty
@@ -134,23 +133,27 @@ type HttpError =
     /// The response body could not be decoded into the requested value.
     | DecodeFailed of message: string * response: HttpResponse
 
+    /// Hand-written so it stays safe under NativeAOT and trimming (the generated ToString uses reflection).
+    override this.ToString() =
+        match this with
+        | InvalidRequest message -> $"Invalid HTTP request: {message}"
+        | ConnectionFailed(request, message) -> $"Could not reach '{request}': {message}"
+        | TimedOut(request, timeout) ->
+            let seconds = timeout.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)
+            $"'{request}' did not complete within {seconds} seconds."
+        | Canceled message -> $"HTTP request was canceled: {message}"
+        | Status response ->
+            let preview = if response.Text.Length > 512 then response.Text.Substring(0, 512) + "…" else response.Text
+            let detail = if preview = "" then "" else Environment.NewLine + preview
+            $"'{response.Request}' returned {response.StatusCode} {response.ReasonPhrase}.{detail}"
+        | DecodeFailed(message, response) -> $"Could not decode the response from '{response.Request}': {message}"
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module HttpError =
     /// Formats an HTTP error with its redacted request context.
     /// <example><code>error |&gt; HttpError.describe</code></example>
-    let describe = function
-        | HttpError.InvalidRequest message -> $"Invalid HTTP request: {message}"
-        | HttpError.ConnectionFailed(request, message) -> $"Could not reach '{request}': {message}"
-        | HttpError.TimedOut(request, timeout) ->
-            let seconds = timeout.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)
-            $"'{request}' did not complete within {seconds} seconds."
-        | HttpError.Canceled message -> $"HTTP request was canceled: {message}"
-        | HttpError.Status response ->
-            let preview = if response.Text.Length > 512 then response.Text.Substring(0, 512) + "…" else response.Text
-            let detail = if preview = "" then "" else Environment.NewLine + preview
-            $"'{response.Request}' returned {response.StatusCode} {response.ReasonPhrase}.{detail}"
-        | HttpError.DecodeFailed(message, response) -> $"Could not decode the response from '{response.Request}': {message}"
+    let describe (error: HttpError) = error.ToString()
 
     /// Returns the response transcript when the error carries one.
     /// <example><code>HttpError.tryResponse error</code></example>
@@ -177,10 +180,6 @@ module HttpError =
           ShouldRetry = isTransient }
 
 /// Sends fully described HTTP requests for a concrete host platform.
-
-/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see HttpError.describe.
-type HttpError with
-    override this.ToString() = HttpError.describe this
 
 type IHttp =
     abstract Send : request: HttpRequest * cancellationToken: System.Threading.CancellationToken -> Async<Result<HttpResponse, HttpError>>

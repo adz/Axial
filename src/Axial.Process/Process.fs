@@ -180,6 +180,18 @@ type ProcessError =
     | StageFailed of StageFailure
     | IoFailed of ProcessIoFailure
 
+    /// Hand-written so it stays safe under NativeAOT and trimming (the generated ToString uses reflection).
+    override this.ToString() =
+        match this with
+        | StartFailed failure -> $"Could not start '{failure.Command}': {failure.Message}"
+        | TimedOut failure -> $"Process specification '{failure.Specification}' timed out after {failure.Timeout}."
+        | Canceled failure -> $"Process execution was canceled: {failure.Message}"
+        | StageFailed failure ->
+            let stage = failure.Stage
+            let diagnostic = if stage.StdErrTail.Text = "" then "" else Environment.NewLine + stage.StdErrTail.Text
+            $"Stage {stage.Stage} ({stage.Command}) exited with code {stage.ExitCode}.{diagnostic}"
+        | IoFailed failure -> $"Process I/O failed: {failure.Message}"
+
 /// Interprets process specifications as lazy Axial workflows for a concrete host platform.
 type IProcess =
     /// Returns a lazy workflow that runs the specification when composed into a Flow runtime.
@@ -253,15 +265,7 @@ type private ProcessStreamState =
 module ProcessError =
     /// Formats a process error with stage-aware diagnostic context.
     /// Example: error |&gt; ProcessError.describe
-    let describe = function
-        | ProcessError.StartFailed failure -> $"Could not start '{failure.Command}': {failure.Message}"
-        | ProcessError.TimedOut failure -> $"Process specification '{failure.Specification}' timed out after {failure.Timeout}."
-        | ProcessError.Canceled failure -> $"Process execution was canceled: {failure.Message}"
-        | ProcessError.StageFailed failure ->
-            let stage = failure.Stage
-            let diagnostic = if stage.StdErrTail.Text = "" then "" else Environment.NewLine + stage.StdErrTail.Text
-            $"Stage {stage.Stage} ({stage.Command}) exited with code {stage.ExitCode}.{diagnostic}"
-        | ProcessError.IoFailed failure -> $"Process I/O failed: {failure.Message}"
+    let describe (error: ProcessError) = error.ToString()
 
     /// Returns a suitable host exit code for a process failure.
     /// Example: Environment.ExitCode &lt;- ProcessError.exitCode error
@@ -271,11 +275,6 @@ module ProcessError =
         | ProcessError.Canceled _ -> 130
         | ProcessError.StartFailed _
         | ProcessError.IoFailed _ -> 1
-
-
-/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see ProcessError.describe.
-type ProcessError with
-    override this.ToString() = ProcessError.describe this
 
 #if !FABLE_COMPILER
 type private CaptureBuffer(limit: int option, tail: bool) =

@@ -189,11 +189,16 @@ let rec private findings (e: FSharpExpr) : (range * string) list =
 
     here @ (e.ImmediateSubExpressions |> List.collect findings)
 
+/// Typed-tree translation throws ("error recovery at ...") for code the checker recovered from, and the analyzer CLI
+/// treats an unhandled exception as a failed run. Skip what can't be translated rather than fail the build.
+let private tolerant (f: unit -> (range * string) list) =
+    try f () with _ -> []
+
 let rec private declarationFindings (declaration: FSharpImplementationFileDeclaration) =
     match declaration with
     | FSharpImplementationFileDeclaration.Entity(_, declarations) -> declarations |> List.collect declarationFindings
-    | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body) -> findings body
-    | FSharpImplementationFileDeclaration.InitAction body -> findings body
+    | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body) -> tolerant (fun () -> findings body)
+    | FSharpImplementationFileDeclaration.InitAction body -> tolerant (fun () -> findings body)
 
 let private toMessage (range: range, why: string) : Message =
     { Type = "Axial Reflection Formatting"
@@ -207,11 +212,10 @@ let private toMessage (range: range, why: string) : Message =
       Fixes = [] }
 
 let analyze (ctx: CliContext) : Message list =
-    match ctx.TypedTree with
+    match (try ctx.TypedTree with _ -> None) with
     | None -> []
     | Some tree ->
-        tree.Declarations
-        |> List.collect declarationFindings
+        tolerant (fun () -> tree.Declarations |> List.collect declarationFindings)
         |> List.distinctBy (fun (range, _) -> range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
         |> List.filter (fun (range, _) -> not (isAllowed ctx.SourceText range.StartLine))
         |> List.map toMessage
