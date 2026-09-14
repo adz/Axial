@@ -12,6 +12,12 @@ type StreamStep<'value, 'error> =
     | Done
     | Next of 'value * (unit -> Execution<StreamStep<'value, 'error>, 'error>)
 
+    /// <summary>The step kind, rendered without reflection so it stays safe under NativeAOT.</summary>
+    override this.ToString() =
+        match this with
+        | Done -> "Done"
+        | Next(value, _) -> $"Next({OutcomeText.value (box value)})"
+
 /// <summary>
 /// Represents a cold stream of values that requires an environment, can fail with a typed error,
 /// and supports backpressure.

@@ -38,12 +38,25 @@ module Method =
         | Method.Custom name -> name.ToUpperInvariant()
 
 /// Supplies the request payload and its media type.
+
+/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see Method.name.
+type Method with
+    override this.ToString() = Method.name this
+
 [<RequireQualifiedAccess>]
 type RequestBody =
     | Empty
     | Text of content: string * contentType: string
     | Bytes of content: byte array * contentType: string
     | Form of fields: (string * string) list
+
+    /// The body kind, rendered without reflection so it stays safe under NativeAOT.
+    override this.ToString() =
+        match this with
+        | Empty -> "Empty"
+        | Text(content, contentType) -> $"Text({contentType}, {content.Length} chars)"
+        | Bytes(content, contentType) -> $"Bytes({contentType}, {content.Length} bytes)"
+        | Form fields -> $"Form({fields.Length} fields)"
 
 /// Decides which response status codes count as success for a request.
 [<RequireQualifiedAccess>]
@@ -100,6 +113,10 @@ type HttpResponse =
       StartedAt: DateTimeOffset
       /// Total exchange duration including body download.
       Duration: TimeSpan }
+
+    /// A one-line summary, rendered without reflection so it stays safe under NativeAOT.
+    override this.ToString() =
+        $"HttpResponse({this.Request} -> {this.StatusCode} {this.ReasonPhrase}, {this.Body.Length} bytes, {this.Duration.TotalMilliseconds:F0} ms)"
 
 /// A recoverable HTTP transport, timeout, status, or decoding failure.
 [<RequireQualifiedAccess>]
@@ -160,6 +177,11 @@ module HttpError =
           ShouldRetry = isTransient }
 
 /// Sends fully described HTTP requests for a concrete host platform.
+
+/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see HttpError.describe.
+type HttpError with
+    override this.ToString() = HttpError.describe this
+
 type IHttp =
     abstract Send : request: HttpRequest * cancellationToken: System.Threading.CancellationToken -> Async<Result<HttpResponse, HttpError>>
 

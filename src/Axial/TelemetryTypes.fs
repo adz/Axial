@@ -12,6 +12,19 @@ type AttributeValue =
     | IntegerValues of int64 list
     | FloatValues of float list
 
+    /// <summary>The attribute value, rendered without reflection so it stays safe under NativeAOT.</summary>
+    override this.ToString() =
+        let join (values: string list) = "[" + String.concat "; " values + "]"
+        match this with
+        | StringValue value -> value
+        | BooleanValue value -> (if value then "true" else "false")
+        | IntegerValue value -> string value
+        | FloatValue value -> string value
+        | StringValues values -> join values
+        | BooleanValues values -> values |> List.map (fun value -> if value then "true" else "false") |> join
+        | IntegerValues values -> values |> List.map string |> join
+        | FloatValues values -> values |> List.map string |> join
+
 /// <summary>A typed name for one telemetry attribute.</summary>
 /// <typeparam name="value">The value type required by the attribute.</typeparam>
 type AttributeKey<'value> =

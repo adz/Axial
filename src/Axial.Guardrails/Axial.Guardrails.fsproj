@@ -67,6 +67,7 @@
     <Compile Include="RaiseInFlowAnalyzer.fs" />
     <Compile Include="FixtureAnalyzer.fs" />
     <Compile Include="DiscardedCancellationAnalyzer.fs" />
+    <Compile Include="ReflectionFormattingAnalyzer.fs" />
   </ItemGroup>
 
   <ItemGroup>

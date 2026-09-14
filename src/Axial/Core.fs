@@ -147,13 +147,18 @@ module Exit =
             elif Cause.isInterrupted cause then
                 raise (OperationCanceledException("Workflow was interrupted"))
             else
-                let rendered = Cause.prettyPrint (fun error -> string error) cause
+                let rendered = Cause.prettyPrint (fun error -> OutcomeText.value (box error)) cause
                 raise (InvalidOperationException($"Workflow failed with a composite cause that cannot be represented as Result: {rendered}"))
 
 /// <summary>Unique identifier for a running fiber.</summary>
 [<Struct>]
 type FiberId =
     | FiberId of int64
+
+    /// <summary>The id as <c>#n</c>, rendered without reflection.</summary>
+    override this.ToString() =
+        let (FiberId value) = this
+        $"#{value}"
 
     /// <summary>The numeric fiber identifier.</summary>
     member this.Value =
@@ -287,6 +292,10 @@ module FiberDump =
 
         String.concat "\n" lines
 
+/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see FiberDump.renderAt.
+type FiberDump with
+    override this.ToString() = FiberDump.renderAt (this.SettledAt |> Option.defaultValue this.StartedAt) this
+
 /// <summary>
 /// Runtime hooks observing fiber lifecycle events for diagnostics and telemetry.
 /// </summary>
@@ -296,6 +305,7 @@ module FiberDump =
 /// exceptions, never typed exits), and must not throw; exceptions raised by hooks are swallowed so a
 /// diagnostics hook can never alter a fiber's outcome.
 /// </remarks>
+
 type FiberObserver =
     {
         /// <summary>A fiber was forked. Receives the child fiber's metadata.</summary>
@@ -842,6 +852,16 @@ type LogLevel =
     | Warning
     | Error
     | Critical
+
+    /// <summary>The level name, rendered without reflection so it stays safe under NativeAOT.</summary>
+    override this.ToString() =
+        match this with
+        | Trace -> "Trace"
+        | Debug -> "Debug"
+        | Information -> "Information"
+        | Warning -> "Warning"
+        | Error -> "Error"
+        | Critical -> "Critical"
 
 /// <summary>
 /// Defines how runtime retry helpers repeat typed failures in a controlled way.

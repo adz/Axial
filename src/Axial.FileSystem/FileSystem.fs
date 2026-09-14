@@ -390,6 +390,11 @@ module FileSystemError =
         | FileSystemError.Unsupported(path, message) -> $"Unsupported file-system operation at {describePath path}: {message}"
         | FileSystemError.Unexpected(path, message) -> $"Unexpected file-system error at {describePath path}: {message}"
 
+
+/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see FileSystemError.describe.
+type FileSystemError with
+    override this.ToString() = FileSystemError.describe this
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module FileSystem =

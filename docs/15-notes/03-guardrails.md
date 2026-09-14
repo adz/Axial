@@ -57,8 +57,9 @@ The repository sets `AxialGuardrailsSeverity` to `error`. To change the severity
 | `AXG003` | `RaiseInFlow` | Direct exception-raising calls inside `flow { }` |
 | `AXG004` | `Fixture` | Shared module-level values in xUnit test modules |
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
+| `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
 
-`AXG001`, `AXG002`, `AXG003`, and `AXG005` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions.
+`AXG001`, `AXG002`, `AXG003`, `AXG005`, and `AXG006` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions.
 
 `AXG004` runs only in projects where MSBuild sets `IsTestProject`. It checks a test-specific risk and does not apply to application or library projects.
 
@@ -157,3 +158,50 @@ let legacy = ColdTask(fun _ -> legacyCall ()) // axial-allow-discarded-cancellat
 ```
 
 This check does not run in test projects. Test adapters often wrap completed tasks that have no work to cancel.
+
+## AXG006: Format without reflection
+
+F# unions and records get a compiler-generated `ToString()` that calls `sprintf "%+A"`. `%A` walks the value with
+`FSharp.Reflection`, and FSharp.Core's `option`, `voption`, `list`, `Result`, `Choice`, `Map`, and `Set` print their
+contents the same way. NativeAOT and full trimming remove the metadata this needs. The call then throws or prints the
+wrong text, and the build gives no specific warning because the reflection happens inside FSharp.Core.
+
+`AXG006` reports these formatting sites in typed code:
+
+- `x.ToString()`, `string x`, and interpolation holes such as `$"{x}"` when `x` is an F# union, record, anonymous
+  record, exception, or one of the FSharp.Core types above, and the type has no hand-written `ToString` override
+- the same forms on a type parameter, whose substituted type may be a union or record
+- `%A` on any value other than a primitive, even when its type overrides `ToString`
+- a boxed value of those types passed to `String.Format`, `String.Concat`, `StringBuilder.Append`,
+  `TextWriter.Write`, `Console.Write`, `Trace.WriteLine`, or `Debug.WriteLine`
+
+Render the value explicitly instead. Match on the cases, call a `describe` function, or give the type a hand-written
+override:
+
+```fsharp no-check reason="Illustrative fragment"
+type OrderError =
+    | OutOfStock of sku: string
+    | InvalidQuantity of int
+
+    override this.ToString() =
+        match this with
+        | OutOfStock sku -> $"Out of stock: {sku}"
+        | InvalidQuantity quantity -> $"Invalid quantity: {quantity}"
+```
+
+With that override, `$"{error}"`, `string error`, and `%O` are safe. `%A` is not.
+
+Axial's own public unions render themselves this way, including `Exit`, `Cause`, `FiberStatus`, `FiberId`, and the
+`Process`, `HttpClient`, `FileSystem`, and `PlatformService` error types. A payload inside `Exit` or `Cause` is still
+rendered with its own `ToString`, so give your error types an override too. `Cause.prettyPrint` also accepts an
+explicit error renderer.
+
+If code never runs trimmed, such as a script or a test helper, add `axial-allow-reflection-format` to the flagged line
+or the line immediately above it:
+
+```fsharp no-check reason="Illustrative fragment"
+printfn "%A" diagnostics // axial-allow-reflection-format
+```
+
+`scripts/run-aot-probe.sh` publishes a NativeAOT probe that renders these types and dumps a fiber registry, so the
+release checks catch a regression that the analyzer cannot see.

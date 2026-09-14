@@ -31,6 +31,16 @@ type InputSource =
     | Read of read: (unit -> Async<byte array>)
     | Produce of produce: ((byte array -> Async<unit>) -> Async<unit>)
 
+    /// The source kind, rendered without reflection so it stays safe under NativeAOT.
+    override this.ToString() =
+        match this with
+        | Empty -> "Empty"
+        | Text text -> $"Text ({text.Length} chars)"
+        | Bytes bytes -> $"Bytes ({bytes.Length} bytes)"
+        | File path -> $"File {path}"
+        | Read _ -> "Read"
+        | Produce _ -> "Produce"
+
 /// Receives bytes from a process topology. Capture limits are measured in bytes.
 [<RequireQualifiedAccess>]
 type OutputTarget =
@@ -44,6 +54,20 @@ type OutputTarget =
     | Callback of write: (byte array -> Async<unit>)
     | Sink of write: (byte array -> Async<unit>) * complete: (unit -> Async<unit>)
     | Tee of OutputTarget list
+
+    /// The target kind, rendered without reflection so it stays safe under NativeAOT.
+    override this.ToString() =
+        match this with
+        | Capture -> "Capture"
+        | CaptureTail maxBytes -> $"CaptureTail {maxBytes}"
+        | Console -> "Console"
+        | Inherit -> "Inherit"
+        | Discard -> "Discard"
+        | File path -> $"File {path}"
+        | AppendFile path -> $"AppendFile {path}"
+        | Callback _ -> "Callback"
+        | Sink _ -> "Sink"
+        | Tee targets -> "Tee(" + (targets |> List.map (fun target -> target.ToString()) |> String.concat ", ") + ")"
 
 /// Internal configuration for one safely tokenized external command.
 type internal CommandDefinition =
@@ -104,6 +128,11 @@ type ProcessResult =
       StartedAt: DateTimeOffset
       Duration: TimeSpan }
 
+    /// A one-line summary, rendered without reflection so it stays safe under NativeAOT.
+    override this.ToString() =
+        let codes = this.ExitCodes |> List.map string |> String.concat ","
+        $"ProcessResult(exit {this.ExitCode} [{codes}], {this.Duration.TotalMilliseconds:F0} ms, stdout {this.StdOut.Length} chars, stderr {this.StdErr.Length} chars)"
+
 /// A redacted, serializable description of work that would be executed.
 type ProcessPlan =
     { Commands: string list
@@ -120,6 +149,12 @@ type ProcessPlan =
 type ProcessEvent =
     | Output of ProcessOutput
     | Completed of ProcessResult
+
+    /// The event kind, rendered without reflection so it stays safe under NativeAOT.
+    override this.ToString() =
+        match this with
+        | Output output -> $"Output(stage {output.Stage})"
+        | Completed result -> $"Completed({result.ToString()})"
 
 /// Diagnostic details for a process that could not be started.
 type ProcessStartFailure = { Command: string; Message: string }
@@ -236,6 +271,11 @@ module ProcessError =
         | ProcessError.Canceled _ -> 130
         | ProcessError.StartFailed _
         | ProcessError.IoFailed _ -> 1
+
+
+/// Hand-written ToString (reflection-free, safe under NativeAOT and trimming); see ProcessError.describe.
+type ProcessError with
+    override this.ToString() = ProcessError.describe this
 
 #if !FABLE_COMPILER
 type private CaptureBuffer(limit: int option, tail: bool) =

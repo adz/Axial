@@ -20,7 +20,7 @@
       built with `dotnet test` gets only AXG004 (shared xUnit fixtures) by default.
     -->
     <_AxialGuardrailsCodes Condition="'$(IsTestProject)' == 'true'">AXG004</_AxialGuardrailsCodes>
-    <_AxialGuardrailsCodes Condition="'$(IsTestProject)' != 'true'">AXG001 AXG002 AXG003 AXG004 AXG005</_AxialGuardrailsCodes>
+    <_AxialGuardrailsCodes Condition="'$(IsTestProject)' != 'true'">AXG001 AXG002 AXG003 AXG004 AXG005 AXG006</_AxialGuardrailsCodes>
     <!--
       The severity flag only overrides the severity of the named codes; it does not restrict which
       analyzers run. The analyzers filter (below, by analyzer name) is what actually keeps
