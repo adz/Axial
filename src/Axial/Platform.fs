@@ -107,12 +107,65 @@ let ofExit (exit: Exit<'value, 'error>) : Execution<'value, 'error> =
     ValueTask<Exit<'value, 'error>>(exit)
 #endif
 
+// ---------------------------------------------------------------------------------------------
+// Stack safety. A flow is a chain of closures; when steps complete synchronously each bind, map, loop
+// iteration, or traversal element nests further into the stack instead of returning first. Long loops,
+// large traversals, left-nested bind chains, and deep recursive flows therefore overflowed — within a few
+// thousand steps on 1MB thread stacks (Windows). Every flow invocation passes through `guardStack`, which
+// counts synchronous nesting on the current thread and, past a limit, continues on a fresh thread-pool
+// stack. Fable's `Async` already trampolines, so the guard is the identity there.
+// ---------------------------------------------------------------------------------------------
+
+#if FABLE_COMPILER
+/// Runs <paramref name="run" />; Fable's <c>Async</c> is already stack safe.
+let inline guardStack (run: unit -> Execution<'value, 'error>) : Execution<'value, 'error> = run ()
+#else
+/// Synchronous flow nesting depth on the current thread.
+type internal StackDepth =
+    [<ThreadStatic; DefaultValue>]
+    static val mutable private depth: int
+
+    static member Depth
+        with get () = StackDepth.depth
+        and set value = StackDepth.depth <- value
+
+/// Nesting depth after which a flow invocation continues on a fresh stack. Each level costs a handful of frames,
+/// so this stays far below a 1MB stack while hopping rarely (once per this many nested synchronous steps).
+[<Literal>]
+let MaxSynchronousDepth = 96
+
+/// Runs <paramref name="run" /> inline, or on a fresh thread-pool stack once synchronous nesting is deep.
+/// <c>Task.Run</c> flows the <c>ExecutionContext</c> (so <c>AsyncLocal</c> runtime state is preserved) and ignores
+/// any <c>SynchronizationContext</c>, so a caller blocking on the result cannot deadlock.
+let guardStack (run: unit -> Execution<'value, 'error>) : Execution<'value, 'error> =
+    let depth = StackDepth.Depth
+
+    if depth >= MaxSynchronousDepth then
+        ValueTask<Exit<'value, 'error>>(Task.Run<Exit<'value, 'error>>(fun () -> run().AsTask()))
+    else
+        StackDepth.Depth <- depth + 1
+
+        try
+            run ()
+        finally
+            StackDepth.Depth <- depth
+#endif
+
 /// Awaits an execution and folds both its success and failure channel into a follow-up execution.
 let fold
     (onSuccess: 'value -> Execution<'next, 'nextError>)
     (onFailure: Cause<'error> -> Execution<'next, 'nextError>)
     (effect: Execution<'value, 'error>)
     : Execution<'next, 'nextError> =
+#if !FABLE_COMPILER
+    // Already-completed executions (the common synchronous case) continue directly, without a task state machine.
+    // The continuation is guarded: recursion built directly on executions (stream pulls, schedule loops) nests here.
+    if effect.IsCompletedSuccessfully then
+        match effect.Result with
+        | Exit.Success value -> guardStack (fun () -> onSuccess value)
+        | Exit.Failure cause -> guardStack (fun () -> onFailure cause)
+    else
+#endif
     execution {
         let! exit = effect
 

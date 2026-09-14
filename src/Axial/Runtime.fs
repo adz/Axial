@@ -65,7 +65,7 @@ module Context =
                 current.TelemetrySink item
 
             let runtime = current |> RuntimeContext.withTelemetryContext combined
-            RuntimeState.withRuntime runtime (fun () -> operation environment cancellationToken))
+            RuntimeState.withRuntime runtime (fun () -> Platform.guardStack (fun () -> operation environment cancellationToken)))
 
     /// <summary>Scopes a telemetry context around a workflow.</summary>
     let withContext context flow =
@@ -93,7 +93,7 @@ module Context =
         let (Flow operation) = flow
         Flow(fun environment cancellationToken ->
             let runtime = RuntimeState.current() |> RuntimeContext.withTelemetrySink sink
-            RuntimeState.withRuntime runtime (fun () -> operation environment cancellationToken))
+            RuntimeState.withRuntime runtime (fun () -> Platform.guardStack (fun () -> operation environment cancellationToken)))
 
     /// <exclude/>
     [<EditorBrowsable(EditorBrowsableState.Never)>]
@@ -101,7 +101,7 @@ module Context =
         let (Flow operation) = flow
         Flow(fun environment cancellationToken ->
             let runtime = RuntimeState.current() |> RuntimeContext.withComposedTelemetrySink sink
-            RuntimeState.withRuntime runtime (fun () -> operation environment cancellationToken))
+            RuntimeState.withRuntime runtime (fun () -> Platform.guardStack (fun () -> operation environment cancellationToken)))
 
     let internal iter writer (TelemetryContext values) =
         for KeyValue(name, value) in values do

@@ -6,7 +6,7 @@ open System.ComponentModel
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 module internal FlowBuilderRuntime =
     let run environment cancellationToken (Flow operation) =
-        operation environment cancellationToken
+        Platform.guardStack (fun () -> operation environment cancellationToken)
 
     let fromResult<'env, 'error, 'value> (result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofResult result)

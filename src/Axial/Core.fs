@@ -824,7 +824,7 @@ module internal FlowInternal =
         (environment: 'env)
         (cancellationToken: CancellationToken)
         : Execution<'value, 'error> =
-        operation environment cancellationToken
+        Platform.guardStack (fun () -> operation environment cancellationToken)
 
     let create
         (operation: 'env -> CancellationToken -> Execution<'value, 'error>)
