@@ -49,6 +49,63 @@ module WorkflowStreamTests =
         test <@ seen |> Seq.toList = [ 2; 4; 6 ] @>
 
     [<Fact>]
+    let ``FlowStream: chunked retains bounded non-empty batches`` () =
+        let result =
+            FlowStream.fromSeq [ 1..7 ]
+            |> FlowStream.chunked 3
+            |> FlowStream.runCollect
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success [ [ 1; 2; 3 ]; [ 4; 5; 6 ]; [ 7 ] ] @>
+        raises<ArgumentException> <@ FlowStream.fromSeq [ 1 ] |> FlowStream.chunked 0 |> ignore @>
+
+    [<Fact>]
+    let ``FlowStream: bounded parallel map preserves order and bound`` () =
+        let mutable active = 0
+        let mutable maximum = 0
+
+        let mapper value =
+            Flow.fromTask (fun cancellationToken -> task {
+                let current = Interlocked.Increment(&active)
+                let mutable observed = Volatile.Read(&maximum)
+                while current > observed && Interlocked.CompareExchange(&maximum, current, observed) <> observed do
+                    observed <- Volatile.Read(&maximum)
+                try
+                    do! Task.Delay(10 + (5 - value % 5) * 5, cancellationToken)
+                    return value * 10
+                finally
+                    Interlocked.Decrement(&active) |> ignore
+            })
+
+        let result =
+            FlowStream.fromSeq [ 1..12 ]
+            |> FlowStream.mapFlowPar (Parallelism.bounded 3) mapper
+            |> FlowStream.runCollect
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success [ for value in 1..12 -> value * 10 ] @>
+        test <@ maximum = 3 @>
+        raises<ArgumentException> <@ Parallelism.bounded 0 |> ignore @>
+
+    [<Fact>]
+    let ``FlowStream: bounded parallel map stops before the next batch on failure`` () =
+        let started = ResizeArray<int>()
+        let mapper value = flow {
+            lock started (fun () -> started.Add value)
+            if value = 2 then return! Flow.fail "failed"
+            return value
+        }
+
+        let result =
+            FlowStream.fromSeq [ 1..9 ]
+            |> FlowStream.mapFlowPar (Parallelism.bounded 3) mapper
+            |> FlowStream.runCollect
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Fail "failed") @>
+        test <@ started |> Seq.forall (fun value -> value <= 3) @>
+
+    [<Fact>]
     let ``FlowStream: append collect and zip compose lazily`` () =
         let expanded =
             FlowStream.fromSeq [ 1; 2 ]

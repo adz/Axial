@@ -183,6 +183,23 @@ module FlowStream =
                 | Next(value, tail) -> Flow.invoke (mapper value) env ct |> Execution.map (fun mapped -> Next(mapped, loop env ct tail)))
         FlowStream(fun env ct -> loop env ct (fun () -> op env ct) ())
 
+    /// <summary>Groups consecutive values into non-empty lists of at most <paramref name="size"/> elements.</summary>
+    /// <remarks>The operator pulls and retains at most <paramref name="size"/> upstream values for each emitted list.</remarks>
+    let chunked size (FlowStream op) =
+        if size <= 0 then invalidArg (nameof size) "Chunk size must be positive."
+
+        let rec pullChunk next remaining values () =
+            if remaining = 0 then
+                Execution.ofValue(Next(List.rev values, fun () -> pullChunk next size [] ()))
+            else
+                next ()
+                |> Execution.bind (function
+                    | Done when values.IsEmpty -> Execution.ofValue Done
+                    | Done -> Execution.ofValue(Next(List.rev values, fun () -> Execution.ofValue Done))
+                    | Next(value, tail) -> pullChunk tail (remaining - 1) (value :: values) ())
+
+        FlowStream(fun env ct -> pullChunk (fun () -> op env ct) size [] ())
+
     /// <summary>Emits at most <paramref name="count"/> values.</summary>
     /// <example><code>stream |&gt; FlowStream.take 10</code></example>
     let take count (FlowStream op) =
@@ -273,6 +290,28 @@ module FlowStream =
                 | Done -> pullOuter env ct outerTail ()
                 | Next(value, innerTail) -> Execution.ofValue(Next(value, pullInner env ct outerTail innerTail)))
         FlowStream(fun env ct -> pullOuter env ct (fun () -> outer env ct) ())
+
+    /// <summary>Maps values concurrently up to a fixed bound while preserving input order.</summary>
+    /// <remarks>
+    /// The stream pulls one bounded batch, maps that batch concurrently, then emits its results in input order.
+    /// It retains at most the configured number of source values and mapped results. A failure interrupts the
+    /// other mappings in that batch through <c>Flow.zipPar</c> and stops upstream consumption.
+    /// </remarks>
+    let mapFlowPar (parallelism: Parallelism) mapper stream =
+        let rec allPar flows =
+            match flows with
+            | [] -> Flow.ok []
+            | [ flow ] -> flow |> Flow.map List.singleton
+            | _ ->
+                let midpoint = flows.Length / 2
+                let left, right = List.splitAt midpoint flows
+                Flow.zipPar (allPar left) (allPar right)
+                |> Flow.map (fun (leftValues, rightValues) -> leftValues @ rightValues)
+
+        stream
+        |> chunked (Parallelism.value parallelism)
+        |> mapFlow (fun values -> values |> List.map mapper |> allPar)
+        |> collect fromSeq
 
     /// <summary>Pairs values from two streams until either stream ends.</summary>
     /// <example><code>left |&gt; FlowStream.zip right</code></example>

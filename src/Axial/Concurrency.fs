@@ -3,6 +3,20 @@ namespace Axial
 open System
 open System.Collections.Generic
 
+/// <summary>A validated upper bound for concurrent Flow operations.</summary>
+type Parallelism = private Parallelism of int
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module Parallelism =
+    /// <summary>Creates a positive concurrency bound.</summary>
+    /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="count"/> is not positive.</exception>
+    let bounded count =
+        if count <= 0 then invalidArg (nameof count) "Parallelism must be positive."
+        Parallelism count
+
+    let internal value (Parallelism count) = count
+
 /// <summary>
 /// A one-shot, typed handoff point that can be completed exactly once with a full <see cref="T:Axial.Exit`2">Exit</see>.
 /// </summary>

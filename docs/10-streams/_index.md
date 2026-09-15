@@ -65,6 +65,20 @@ let enriched =
     |> FlowStream.tapFlow (fun customer -> Log.info $"loaded {customer.Id}")
 ```
 
+Use `chunked` when downstream work should receive bounded non-empty batches. Use `mapFlowPar` when independent effects
+should run concurrently:
+
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+let checkedPages =
+    pages
+    |> FlowStream.mapFlowPar (Parallelism.bounded 2) checkAndExtract
+```
+
+`mapFlowPar` pulls and retains at most the configured number of values, maps each bounded batch concurrently, and emits
+results in input order. If one mapping fails, Axial interrupts the other mappings in that batch and does not pull the
+next batch. The batch boundary intentionally trades some scheduling throughput for deterministic ordering and a strict,
+easy-to-audit memory bound.
+
 ## Compose Streams
 
 `append` evaluates the right stream only after the left completes. `collect` maps each value to a stream and flattens
