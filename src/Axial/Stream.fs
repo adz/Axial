@@ -109,6 +109,7 @@ module FlowStream =
                 (nextStep ())
 
         Flow(fun env cancellationToken -> loop (fun () -> op env cancellationToken))
+        |> Flow.scoped
 
     /// <summary>Transforms the successful values of a stream using the provided function.</summary>
     /// <param name="f">The function to transform each value.</param>
@@ -119,7 +120,8 @@ module FlowStream =
     /// let stream = FlowStream.fromSeq [1; 2; 3] |> FlowStream.map (fun n -> n * 2)
     /// </code>
     /// </example>
-    let map (f: 'v -> 'w) (FlowStream op) : FlowStream<'env, 'error, 'w> =
+    let map (f: 'v -> 'w) (stream: FlowStream<'env, 'error, 'v>) : FlowStream<'env, 'error, 'w> =
+        let (FlowStream op) = stream
         let rec mapStep
             (nextStep: unit -> Execution<StreamStep<'v, 'error>, 'error>)
             () : Execution<StreamStep<'w, 'error>, 'error> =
@@ -134,7 +136,8 @@ module FlowStream =
 
     /// <summary>Transforms the typed error channel of a stream.</summary>
     /// <example><code>stream |&gt; FlowStream.mapError DomainError</code></example>
-    let mapError (mapper: 'error -> 'nextError) (FlowStream op) : FlowStream<'env, 'nextError, 'value> =
+    let mapError (mapper: 'error -> 'nextError) (stream: FlowStream<'env, 'error, 'value>) : FlowStream<'env, 'nextError, 'value> =
+        let (FlowStream op) = stream
         let rec loop next () =
             next ()
             |> Execution.mapError mapper
@@ -143,7 +146,8 @@ module FlowStream =
 
     /// <summary>Keeps values that satisfy a predicate.</summary>
     /// <example><code>stream |&gt; FlowStream.filter (fun value -&gt; value &gt; 0)</code></example>
-    let filter predicate (FlowStream op) =
+    let filter predicate stream =
+        let (FlowStream op) = stream
         let rec loop next () =
             next () |> Execution.bind (function
                 | Done -> Execution.ofValue Done
@@ -153,7 +157,8 @@ module FlowStream =
 
     /// <summary>Maps and filters values in one operation.</summary>
     /// <example><code>stream |&gt; FlowStream.choose id</code></example>
-    let choose chooser (FlowStream op) =
+    let choose chooser stream =
+        let (FlowStream op) = stream
         let rec loop next () =
             next () |> Execution.bind (function
                 | Done -> Execution.ofValue Done
@@ -165,7 +170,8 @@ module FlowStream =
 
     /// <summary>Runs an effect for each value before emitting the original value.</summary>
     /// <example><code>stream |&gt; FlowStream.tapFlow logValue</code></example>
-    let tapFlow action (FlowStream op) =
+    let tapFlow action stream =
+        let (FlowStream op) = stream
         let rec loop env ct next () =
             next () |> Execution.bind (function
                 | Done -> Execution.ofValue Done
@@ -176,16 +182,59 @@ module FlowStream =
 
     /// <summary>Transforms every value with a Flow effect.</summary>
     /// <example><code>ids |&gt; FlowStream.mapFlow load</code></example>
-    let mapFlow mapper (FlowStream op) =
+    let mapFlow mapper stream =
+        let (FlowStream op) = stream
         let rec loop env ct next () =
             next () |> Execution.bind (function
                 | Done -> Execution.ofValue Done
                 | Next(value, tail) -> Flow.invoke (mapper value) env ct |> Execution.map (fun mapped -> Next(mapped, loop env ct tail)))
         FlowStream(fun env ct -> loop env ct (fun () -> op env ct) ())
 
+    /// <summary>Maps values with a continuously replenished, bounded set of child fibers.</summary>
+    /// <remarks>
+    /// Results are emitted in completion order. After each result is consumed, the next upstream value starts,
+    /// so there are no strict batch barriers. At most the configured number of mappings are active or retained.
+    /// The first failure observed stops the stream; the terminal consumer's child scope interrupts and awaits
+    /// all remaining mappings before returning.
+    /// </remarks>
+    let mapFlowPar (parallelism: Parallelism) mapper stream =
+        let (FlowStream op) = stream
+        let bound = Parallelism.value parallelism
+
+        let removeAt index values =
+            values
+            |> List.indexed
+            |> List.choose (fun (current, value) -> if current = index then None else Some value)
+
+        let rec fill env ct remaining upstreamDone next active =
+            if remaining = 0 || upstreamDone then
+                pullMapped env ct upstreamDone next active ()
+            else
+                next ()
+                |> Execution.bind (function
+                    | Done -> pullMapped env ct true next active ()
+                    | Next(value, tail) ->
+                        Flow.invoke (Flow.fork (mapper value)) env ct
+                        |> Execution.bind (fun fiber -> fill env ct (remaining - 1) false tail (fiber :: active)))
+
+        and pullMapped env ct upstreamDone next active () =
+            match active with
+            | [] -> Execution.ofValue Done
+            | fibers ->
+                Platform.awaitAnyExitTaskAsSuccess (fibers |> List.map _.ExitTask) ct
+                |> Execution.bind (fun (index, exit) ->
+                    let remaining = removeAt index fibers
+                    match exit with
+                    | Exit.Success mapped ->
+                        Execution.ofValue(Next(mapped, fun () -> fill env ct (bound - remaining.Length) upstreamDone next remaining))
+                    | Exit.Failure cause -> Execution.ofCause cause)
+
+        FlowStream(fun env ct -> fill env ct bound false (fun () -> op env ct) [])
+
     /// <summary>Groups consecutive values into non-empty lists of at most <paramref name="size"/> elements.</summary>
     /// <remarks>The operator pulls and retains at most <paramref name="size"/> upstream values for each emitted list.</remarks>
-    let chunked size (FlowStream op) =
+    let chunkBySize size stream =
+        let (FlowStream op) = stream
         if size <= 0 then invalidArg (nameof size) "Chunk size must be positive."
 
         let rec pullChunk next remaining values () =
@@ -202,7 +251,8 @@ module FlowStream =
 
     /// <summary>Emits at most <paramref name="count"/> values.</summary>
     /// <example><code>stream |&gt; FlowStream.take 10</code></example>
-    let take count (FlowStream op) =
+    let take count stream =
+        let (FlowStream op) = stream
         if count < 0 then invalidArg (nameof count) "Count cannot be negative."
         let rec loop remaining next () =
             if remaining = 0 then Execution.ofValue Done else
@@ -211,7 +261,8 @@ module FlowStream =
 
     /// <summary>Skips the first <paramref name="count"/> values.</summary>
     /// <example><code>stream |&gt; FlowStream.skip 10</code></example>
-    let skip count (FlowStream op) =
+    let skip count stream =
+        let (FlowStream op) = stream
         if count < 0 then invalidArg (nameof count) "Count cannot be negative."
         let rec drop remaining next () =
             next () |> Execution.bind (function
@@ -222,7 +273,8 @@ module FlowStream =
 
     /// <summary>Emits values while a predicate remains true.</summary>
     /// <example><code>stream |&gt; FlowStream.takeWhile (fun value -&gt; value &lt; 100)</code></example>
-    let takeWhile predicate (FlowStream op) =
+    let takeWhile predicate stream =
+        let (FlowStream op) = stream
         let rec loop next () =
             next () |> Execution.map (function
                 | Next(value, tail) when predicate value -> Next(value, loop tail)
@@ -231,7 +283,8 @@ module FlowStream =
 
     /// <summary>Skips values while a predicate remains true.</summary>
     /// <example><code>stream |&gt; FlowStream.skipWhile String.IsNullOrEmpty</code></example>
-    let skipWhile predicate (FlowStream op) =
+    let skipWhile predicate stream =
+        let (FlowStream op) = stream
         let rec dropping next () =
             next () |> Execution.bind (function
                 | Done -> Execution.ofValue Done
@@ -241,14 +294,16 @@ module FlowStream =
 
     /// <summary>Emits each value paired with its zero-based index.</summary>
     /// <example><code>stream |&gt; FlowStream.indexed</code></example>
-    let indexed (FlowStream op) =
+    let indexed stream =
+        let (FlowStream op) = stream
         let rec loop index next () =
             next () |> Execution.map (function Done -> Done | Next(value, tail) -> Next((index, value), loop (index + 1) tail))
         FlowStream(fun env ct -> loop 0 (fun () -> op env ct) ())
 
     /// <summary>Emits successive accumulator states.</summary>
     /// <example><code>stream |&gt; FlowStream.scan (+) 0</code></example>
-    let scan folder initial (FlowStream op) =
+    let scan folder initial stream =
+        let (FlowStream op) = stream
         let rec loop state next () =
             next () |> Execution.map (function
                 | Done -> Done
@@ -257,7 +312,8 @@ module FlowStream =
 
     /// <summary>Suppresses consecutive duplicate values according to a projection.</summary>
     /// <example><code>stream |&gt; FlowStream.distinctUntilChangedBy id</code></example>
-    let distinctUntilChangedBy projection (FlowStream op) =
+    let distinctUntilChangedBy projection stream =
+        let (FlowStream op) = stream
         let rec loop previous next () =
             next () |> Execution.bind (function
                 | Done -> Execution.ofValue Done
@@ -278,7 +334,8 @@ module FlowStream =
 
     /// <summary>Maps each value to a stream and concatenates the resulting streams.</summary>
     /// <example><code>stream |&gt; FlowStream.collect FlowStream.fromSeq</code></example>
-    let collect mapper (FlowStream outer) =
+    let collect mapper stream =
+        let (FlowStream outer) = stream
         let rec pullOuter env ct nextOuter () =
             nextOuter () |> Execution.bind (function
                 | Done -> Execution.ofValue Done
@@ -291,31 +348,11 @@ module FlowStream =
                 | Next(value, innerTail) -> Execution.ofValue(Next(value, pullInner env ct outerTail innerTail)))
         FlowStream(fun env ct -> pullOuter env ct (fun () -> outer env ct) ())
 
-    /// <summary>Maps values concurrently up to a fixed bound while preserving input order.</summary>
-    /// <remarks>
-    /// The stream pulls one bounded batch, maps that batch concurrently, then emits its results in input order.
-    /// It retains at most the configured number of source values and mapped results. A failure interrupts the
-    /// other mappings in that batch through <c>Flow.zipPar</c> and stops upstream consumption.
-    /// </remarks>
-    let mapFlowPar (parallelism: Parallelism) mapper stream =
-        let rec allPar flows =
-            match flows with
-            | [] -> Flow.ok []
-            | [ flow ] -> flow |> Flow.map List.singleton
-            | _ ->
-                let midpoint = flows.Length / 2
-                let left, right = List.splitAt midpoint flows
-                Flow.zipPar (allPar left) (allPar right)
-                |> Flow.map (fun (leftValues, rightValues) -> leftValues @ rightValues)
-
-        stream
-        |> chunked (Parallelism.value parallelism)
-        |> mapFlow (fun values -> values |> List.map mapper |> allPar)
-        |> collect fromSeq
-
     /// <summary>Pairs values from two streams until either stream ends.</summary>
     /// <example><code>left |&gt; FlowStream.zip right</code></example>
-    let zip (FlowStream right) (FlowStream left) =
+    let zip rightStream leftStream =
+        let (FlowStream right) = rightStream
+        let (FlowStream left) = leftStream
         let rec loop leftNext rightNext () =
             leftNext () |> Execution.bind (function
                 | Done -> Execution.ofValue Done
@@ -327,10 +364,12 @@ module FlowStream =
 
     /// <summary>Folds a stream into one value inside Flow.</summary>
     /// <example><code>stream |&gt; FlowStream.runFold (+) 0</code></example>
-    let runFold folder initial (FlowStream op) : Flow<'env, 'error, 'state> =
+    let runFold folder initial (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, 'state> =
+        let (FlowStream op) = stream
         let rec loop state next =
             next () |> Execution.bind (function Done -> Execution.ofValue state | Next(value, tail) -> loop (folder state value) tail)
         Flow(fun env ct -> loop initial (fun () -> op env ct))
+        |> Flow.scoped
 
     /// <summary>Collects all emitted values into a list.</summary>
     /// <example><code>stream |&gt; FlowStream.runCollect</code></example>
@@ -342,9 +381,11 @@ module FlowStream =
 
     /// <summary>Runs an effectful action for every stream value.</summary>
     /// <example><code>stream |&gt; FlowStream.runForEachFlow save</code></example>
-    let runForEachFlow action (FlowStream op) : Flow<'env, 'error, unit> =
+    let runForEachFlow action (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, unit> =
+        let (FlowStream op) = stream
         let rec loop env ct next =
             next () |> Execution.bind (function
                 | Done -> Execution.ofValue ()
                 | Next(value, tail) -> Flow.invoke (action value) env ct |> Execution.bind (fun () -> loop env ct tail))
         Flow(fun env ct -> loop env ct (fun () -> op env ct))
+        |> Flow.scoped

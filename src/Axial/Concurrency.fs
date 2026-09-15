@@ -40,15 +40,17 @@ module Deferred =
         Flow.ok (Deferred(Platform.newSignal ()))
 
     /// <summary>Waits for the deferred outcome, preserving success, typed failure, defect, or interruption.</summary>
-    let await (Deferred signal: Deferred<'error, 'value>) : Flow<'env, 'error, 'value> =
+    let await (deferred: Deferred<'error, 'value>) : Flow<'env, 'error, 'value> =
+        let (Deferred signal) = deferred
         Flow(fun _ cancellationToken ->
             Execution.fold Execution.ofExit Execution.ofCause (Platform.awaitSignal signal cancellationToken))
 
     /// <summary>Attempts to complete the deferred value with a full outcome.</summary>
     let complete
         (exit: Exit<'value, 'error>)
-        (Deferred signal: Deferred<'error, 'value>)
+        (deferred: Deferred<'error, 'value>)
         : Flow<'env, 'workflowError, bool> =
+        let (Deferred signal) = deferred
         Flow.envWith (fun _ -> Platform.resolveSignal signal exit)
 
     /// <summary>Attempts to complete the deferred value successfully.</summary>
@@ -135,9 +137,10 @@ module Semaphore =
 
     /// <summary>Runs a workflow while holding one permit and always releases the permit afterward.</summary>
     let withPermit
-        (FlowSemaphore queue)
+        (semaphore: FlowSemaphore)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
+        let (FlowSemaphore queue) = semaphore
         Flow(fun environment cancellationToken ->
             match PermitQueue.tryAcquire queue with
             | None ->

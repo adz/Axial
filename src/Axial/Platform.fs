@@ -1009,3 +1009,27 @@ let awaitSignal (signal: Signal<'value>) (cancellationToken: CancellationToken) 
                     return Exit.Failure Cause.Interrupt
         })
 #endif
+
+/// Awaits the first fiber exit without interrupting the remaining fibers.
+let awaitAnyExitTaskAsSuccess
+    (exitTasks: ExitTask<'value, 'error> list)
+    (cancellationToken: CancellationToken)
+    : Execution<int * Exit<'value, 'error>, 'none> =
+#if FABLE_COMPILER
+    let signal = newSignal ()
+    exitTasks
+    |> List.iteri (fun index exitTask ->
+        Async.StartImmediate(async {
+            let! exit = exitTask
+            resolveSignal signal (index, exit) |> ignore
+        }, cancellationToken))
+    awaitSignal signal cancellationToken
+#else
+    ValueTask<Exit<int * Exit<'value, 'error>, 'none>>(task {
+        let tasks = List.toArray exitTasks
+        let! completed = Task.WhenAny tasks
+        let index = Array.findIndex (fun candidate -> obj.ReferenceEquals(candidate, completed)) tasks
+        let! exit = completed
+        return Exit.Success(index, exit)
+    })
+#endif

@@ -220,11 +220,10 @@ prove cardinality, then closes upstream.
 ### Bounded parallel consumption
 
 FsLiveDocs provided the first concrete non-server consumer: semantic documentation extraction must reduce each large
-compiler result immediately while checking a small number of pages concurrently. Manually chunking a list and escaping
-to `Async.Parallel` proved that FlowStream needs both `chunked` and bounded effectful mapping. The initial
-`mapFlowPar` preserves input order and uses strict batches; this gives a directly auditable retention bound and
-fail-fast sibling interruption without adding a queue. A future sliding implementation may improve utilization without
-changing those semantics.
+compiler result immediately while checking a small number of pages concurrently. It proved the strict-batch composition
+`FlowStream.chunkBySize` → `FlowStream.mapFlow (List.map work >> Flow.collectAllPar)`. This gives a directly auditable
+retention bound, input ordering, and fail-fast sibling interruption without pretending batch barriers are the semantics
+of a future continuously replenished `mapFlowPar`.
 
 Network servers and worker streams also need one bounded terminal consumer, tentatively:
 

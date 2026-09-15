@@ -240,6 +240,21 @@ module Flow =
                 }))
 #endif
 
+    /// <summary>Runs a flow in a child scope and closes that scope before returning.</summary>
+    /// <remarks>Resources and fibers acquired inside the flow are released after success, typed failure, defect, or interruption without waiting for the surrounding application scope to close.</remarks>
+    let scoped (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            let parentRuntime = RuntimeState.current()
+            let childScope = parentRuntime.Scope.AddChild()
+            let childRuntime = parentRuntime |> RuntimeContext.withScope childScope
+
+            Platform.runScoped
+                childScope.Close
+                cancellationToken
+                (fun () -> RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment cancellationToken))
+                (fun cleanupError executionError exit ->
+                    combineCleanup cleanupError executionError exit "Scoped flow execution produced no outcome."))
+
     /// <summary>Creates a flow from a raw async operation.</summary>
     /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>Fable compatible</platforms>
@@ -848,25 +863,25 @@ module Flow =
                     (fun childToken ->
                         RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment childToken))
 
-            // Deterministic unobserved-defect sweep: when the forking scope closes, report the fiber's defect
-            // if nobody consumed its outcome by then. The tracker is held weakly on .NET so the sweep does not
-            // keep a long-dead fiber's defect alive; if the tracker was already collected, its GC net has
-            // handled reporting. A closed scope cannot accept the sweep, in which case the GC net is the only
-            // detection path.
+            // A fiber belongs to the scope that forked it. Closing that scope interrupts the fiber,
+            // waits for its cleanup, then reports an unobserved defect deterministically.
             try
 #if FABLE_COMPILER
-                parentRuntime.Scope.AddFinalizer(fun _ ->
+                parentRuntime.Scope.AddFinalizer(fun _ -> async {
+                    cts.Cancel()
+                    let! _ = exitTask
                     tracker.TryReport()
-                    Platform.completedDeed ())
+                })
 #else
                 let weakTracker = WeakReference<FiberDefectTracker>(tracker)
 
-                parentRuntime.Scope.AddFinalizer(fun _ ->
+                parentRuntime.Scope.AddFinalizer(fun _ -> task {
+                    cts.Cancel()
+                    let! _ = exitTask
                     match weakTracker.TryGetTarget() with
                     | true, live -> live.TryReport()
                     | _ -> ()
-
-                    Platform.completedDeed ())
+                })
 #endif
             with _ -> ()
 
@@ -976,6 +991,21 @@ module Flow =
                 (invoke right environment)
                 cancellationToken
                 chooseParallelExit)
+
+    /// <summary>Runs all flows concurrently and returns their values in input order.</summary>
+    /// <remarks>An empty input succeeds immediately. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>.</remarks>
+    let rec collectAllPar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
+        let mapValue mapper flow =
+            Flow(fun environment cancellationToken -> invoke flow environment cancellationToken |> Execution.map mapper)
+
+        match flows with
+        | [] -> ok []
+        | [ flow ] -> mapValue List.singleton flow
+        | _ ->
+            let midpoint = flows.Length / 2
+            let left, right = List.splitAt midpoint flows
+            zipPar (collectAllPar left) (collectAllPar right)
+            |> mapValue (fun (leftValues, rightValues) -> leftValues @ rightValues)
 
     /// <summary>Runs two flows concurrently and returns the result of the first one to complete.</summary>
     /// <remarks>
