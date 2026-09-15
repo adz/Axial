@@ -139,11 +139,11 @@ module WorkflowResourceTests =
 
         let workflow =
             flow {
-                do! Flow.addFinalizer(fun _ ->
+                do! Flow.scopeFinalizer(fun _ ->
                     events.Add "first"
                     Task.CompletedTask)
 
-                do! Flow.addFinalizer(fun _ ->
+                do! Flow.scopeFinalizer(fun _ ->
                     events.Add "second"
                     Task.CompletedTask)
             }

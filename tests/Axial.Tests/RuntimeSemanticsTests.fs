@@ -84,7 +84,7 @@ module RuntimeSemanticsTests =
 
         let workflow =
             flow {
-                do! Flow.addFinalizer(fun _ -> Task.FromException finalizerDefect)
+                do! Flow.scopeFinalizer(fun _ -> Task.FromException finalizerDefect)
                 return! Flow.fail "workflow failed"
             }
 
@@ -270,11 +270,11 @@ module RuntimeSemanticsTests =
 
         let workflow : Flow<unit, string, unit> =
             flow {
-                do! Flow.addFinalizer(fun token ->
+                do! Flow.scopeFinalizer(fun token ->
                     calls.Add $"first:{token.IsCancellationRequested}"
                     Task.CompletedTask)
 
-                do! Flow.addFinalizer(fun token ->
+                do! Flow.scopeFinalizer(fun token ->
                     calls.Add $"second:{token.IsCancellationRequested}"
                     Task.CompletedTask)
 
@@ -294,7 +294,7 @@ module RuntimeSemanticsTests =
 
         let workflow : Flow<unit, string, unit> =
             flow {
-                do! Flow.addFinalizer(fun _ -> Task.FromException finalizerDefect)
+                do! Flow.scopeFinalizer(fun _ -> Task.FromException finalizerDefect)
                 do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
             }
 

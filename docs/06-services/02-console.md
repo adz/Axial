@@ -102,7 +102,7 @@ a finalizer, so an interrupted or failed workflow cannot leave the user with an 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let withHiddenCursor (console: IConsole) body =
     flow {
-        do! Flow.addFinalizer(fun _ ->
+        do! Flow.scopeFinalizer(fun _ ->
             console.CursorVisible <- true
             Task.CompletedTask)
 

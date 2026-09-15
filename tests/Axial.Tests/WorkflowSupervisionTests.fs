@@ -97,7 +97,7 @@ module WorkflowSupervisionTests =
                 runs.Value <- runs.Value + 1
                 let attempt = runs.Value
 
-                do! Flow.addFinalizerAsync (fun _ -> async { releases.Add attempt })
+                do! Flow.scopeFinalizerAsync (fun _ -> async { releases.Add attempt })
 
                 if attempt < 3 then
                     return! Flow.die (InvalidOperationException "boom")

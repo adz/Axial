@@ -306,7 +306,7 @@ module WorkflowSchedulingTests =
         let cleanedUp = ref false
         let operation : Flow<unit, string, unit> =
             flow {
-                do! Flow.addFinalizerAsync (fun _ -> async {
+                do! Flow.scopeFinalizerAsync (fun _ -> async {
                     do! Async.Sleep 10
                     cleanedUp.Value <- true
                 })

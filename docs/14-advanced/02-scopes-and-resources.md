@@ -76,10 +76,10 @@ let connectionLayer : Layer<ConnectionString, DbError, IDbConnection> =
             Task.CompletedTask)
 ```
 
-For lower-level cases, register finalizers directly through `Flow.addFinalizer`, `Layer.addFinalizer`, or `Scope`.
+For lower-level cases, register finalizers directly through `Flow.scopeFinalizer`, `Layer.addFinalizer`, or `Scope`.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-Flow.addFinalizer(fun cancellationToken ->
+Flow.scopeFinalizer(fun cancellationToken ->
     telemetry.FlushAsync(cancellationToken))
 ```
 

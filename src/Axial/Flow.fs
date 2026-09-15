@@ -71,8 +71,8 @@ module Flow =
                 combineCleanup cleanupError executionError exit "Flow execution produced no outcome.")
 
     /// <summary>Registers a F# async finalizer with the current runtime scope on .NET or Fable.</summary>
-    /// <example><code>Flow.addFinalizerAsync (fun _ -&gt; async { resource.Close() })</code></example>
-    let addFinalizerAsync
+    /// <example><code>Flow.scopeFinalizerAsync (fun _ -&gt; async { resource.Close() })</code></example>
+    let scopeFinalizerAsync
         (finalizer: CancellationToken -> Async<unit>)
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
@@ -151,7 +151,7 @@ module Flow =
     /// Use this when a resource acquired by a subflow should live until the surrounding
     /// runtime or layer scope closes, rather than only until the current expression ends.
     /// </remarks>
-    let addFinalizer
+    let scopeFinalizer
         (finalizer: CancellationToken -> Task)
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
@@ -161,7 +161,7 @@ module Flow =
     /// <summary>Registers a disposable resource with the current runtime scope.</summary>
     /// <param name="resource">The disposable resource to close when the current scope closes.</param>
     /// <returns>A flow that registers the resource.</returns>
-    let addDisposable
+    let scopeDisposable
         (resource: IDisposable)
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
@@ -171,7 +171,7 @@ module Flow =
     /// <summary>Registers an asynchronously disposable resource with the current runtime scope.</summary>
     /// <param name="resource">The async disposable resource to close when the current scope closes.</param>
     /// <returns>A flow that registers the resource.</returns>
-    let addAsyncDisposable
+    let scopeAsyncDisposable
         (resource: IAsyncDisposable)
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
