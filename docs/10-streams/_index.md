@@ -66,17 +66,17 @@ let enriched =
 ```
 
 Use `chunkBySize` when downstream work should receive bounded non-empty batches. Compose it with
-`Flow.collectAllPar` when every batch should run concurrently and finish before the next batch starts:
+`Flow.sequencePar` when every batch should run concurrently and finish before the next batch starts:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let checkedPages =
     pages
     |> FlowStream.chunkBySize 2
-    |> FlowStream.mapFlow (List.map checkAndExtract >> Flow.collectAllPar)
+    |> FlowStream.mapFlow (List.map checkAndExtract >> Flow.sequencePar)
 ```
 
 This composition pulls and retains at most two source values, preserves input order, and does not pull the next batch
-until the current mapped results are consumed. If one mapping fails, `Flow.collectAllPar` interrupts the other mappings
+until the current mapped results are consumed. If one mapping fails, `Flow.sequencePar` interrupts the other mappings
 in that batch.
 
 Use `mapFlowPar` when work should be continuously replenished instead of separated by strict batch barriers:
@@ -89,7 +89,7 @@ let loaded =
 
 `mapFlowPar` keeps at most the configured number of child mappings active or retained. Results are emitted in completion
 order, so a slow earlier item does not block later results or failures. Consuming one result opens capacity and starts
-the next upstream mapping. Use explicit `chunkBySize` plus `Flow.collectAllPar` when input order and strict batch
+the next upstream mapping. Use explicit `chunkBySize` plus `Flow.sequencePar` when input order and strict batch
 barriers are required.
 
 ## Compose Streams

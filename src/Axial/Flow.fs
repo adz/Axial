@@ -994,7 +994,7 @@ module Flow =
 
     /// <summary>Runs all flows concurrently and returns their values in input order.</summary>
     /// <remarks>An empty input succeeds immediately. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>.</remarks>
-    let rec collectAllPar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
+    let rec sequencePar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
         let mapValue mapper flow =
             Flow(fun environment cancellationToken -> invoke flow environment cancellationToken |> Execution.map mapper)
 
@@ -1004,7 +1004,7 @@ module Flow =
         | _ ->
             let midpoint = flows.Length / 2
             let left, right = List.splitAt midpoint flows
-            zipPar (collectAllPar left) (collectAllPar right)
+            zipPar (sequencePar left) (sequencePar right)
             |> mapValue (fun (leftValues, rightValues) -> leftValues @ rightValues)
 
     /// <summary>Runs two flows concurrently and returns the result of the first one to complete.</summary>

@@ -80,7 +80,7 @@ module WorkflowStreamTests =
         let result =
             FlowStream.fromSeq [ 1..12 ]
             |> FlowStream.chunkBySize 3
-            |> FlowStream.mapFlow (List.map mapper >> Flow.collectAllPar)
+            |> FlowStream.mapFlow (List.map mapper >> Flow.sequencePar)
             |> FlowStream.collect FlowStream.fromSeq
             |> FlowStream.runCollect
             |> Flow.runSync ()
@@ -101,7 +101,7 @@ module WorkflowStreamTests =
         let result =
             FlowStream.fromSeq [ 1..9 ]
             |> FlowStream.chunkBySize 3
-            |> FlowStream.mapFlow (List.map mapper >> Flow.collectAllPar)
+            |> FlowStream.mapFlow (List.map mapper >> Flow.sequencePar)
             |> FlowStream.collect FlowStream.fromSeq
             |> FlowStream.runCollect
             |> Flow.runSync ()

@@ -221,7 +221,7 @@ prove cardinality, then closes upstream.
 
 FsLiveDocs provided the first concrete non-server consumer: semantic documentation extraction must reduce each large
 compiler result immediately while checking a small number of pages concurrently. It proved the strict-batch composition
-`FlowStream.chunkBySize` → `FlowStream.mapFlow (List.map work >> Flow.collectAllPar)`. This gives a directly auditable
+`FlowStream.chunkBySize` → `FlowStream.mapFlow (List.map work >> Flow.sequencePar)`. This gives a directly auditable
 retention bound, input ordering, and fail-fast sibling interruption without pretending batch barriers are the semantics
 of a future continuously replenished `mapFlowPar`.
 
