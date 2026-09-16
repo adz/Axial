@@ -72,6 +72,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - Treat `output/**`, `.livedocs/cache/**`, `.livedocs/releases/**`, and API reference pages as generated outputs. Root `llms.txt` and `docs/llms.txt` are hand-written product entry points.
 - When changing an API, update source comments and any `docs/api/{EntityId}.md` enrichment page, then rebuild with FsLiveDocs. Do not commit generated reference pages.
 - Use numbered task folders under `docs/`; FsLiveDocs strips ordering prefixes from generated URLs.
+- When documentation claims observable runtime output, use a `fsharp transcript` (or a `fsharp run` block when exact output is not part of the claim). Never type a separate illustrative output block that FsLiveDocs does not generate and verify. Run `dotnet livedocs test --warn-as-error`, not only `build`, after adding or changing executable examples.
 - For small checkbox tasks, defer `dotnet livedocs test --warn-as-error` until the phase end or a release/deploy checkpoint. `dev-docs/**` idea/planning notes do not require validation.
 
 ## Versioning and Compatibility

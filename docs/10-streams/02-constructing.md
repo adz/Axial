@@ -4,75 +4,92 @@ title: Constructing Streams
 
 # Constructing Streams
 
-Use `fromSeq`, `singleton`, and `empty` for values already available in memory:
+An array or `seq` is the right source when all values already exist and producing the next value is synchronous. Wrapping
+one in a `FlowStream` becomes useful when it must compose with effectful sources and incremental consumers under one
+failure, cancellation, backpressure, and cleanup model.
 
-```fsharp
-let numbers : FlowStream<unit, Never, int> = FlowStream.fromSeq [ 1..100 ]
-let one : FlowStream<unit, Never, int> = FlowStream.singleton 42
-let none : FlowStream<unit, string, int> = FlowStream.empty
+Use `FlowStream.fromSeq`, `FlowStream.singleton`, and `FlowStream.empty` for those existing values:
 
-numbers
-|> FlowStream.take 3
-|> FlowStream.runForEach (printfn "number %d")
-|> Flow.run ()
-|> ignore
-
-one
-|> FlowStream.runForEach (printfn "one %d")
-|> Flow.run ()
-|> ignore
+```fsharp transcript
+> (FlowStream.fromSeq [ 1..100 ] : FlowStream<int>)
+- |> FlowStream.take 3
+- |> FlowStream.append (FlowStream.singleton 42)
+- |> FlowStream.runCollect
+- |> Flow.run ();;
+val it: Exit<int list,Never> = Success [1; 2; 3; 42]
 ```
 
-```text
-number 1
-number 2
-number 3
-one 42
-```
-
-`empty` emits nothing. `fromSeq` obtains its enumerator only when consumption starts. The enumerator is registered with the stream's Flow
+`FlowStream.empty` emits nothing. `FlowStream.fromSeq` obtains its enumerator only when consumption starts. The enumerator is registered with the stream's Flow
 scope and disposed after completion or early termination.
 
 ## Lift one effect
 
-`fromFlow` creates a stream containing the successful result of one Flow:
+`FlowStream.fromFlow` creates a stream containing the successful result of one Flow:
 
-```fsharp
-Flow.succeed "Ada"
-|> FlowStream.fromFlow
-|> FlowStream.runForEach (printfn "user: %s")
-|> Flow.run ()
-|> ignore
-```
-
-```text
-user: Ada
+```fsharp transcript
+> (Flow.succeed "Ada" : Flow<string>)
+- |> FlowStream.fromFlow
+- |> FlowStream.runCollect
+- |> Flow.run ();;
+val it: Exit<string list,Never> = Success ["Ada"]
 ```
 
 A failed Flow fails the stream before producing a value.
 
 ## Unfold effectful state
 
-`unfoldFlow` repeatedly runs an effectful state transition. Return `Some(value, nextState)` to emit a value or `None`
-to finish:
+`FlowStream.unfoldFlow` repeatedly runs an effectful state transition. Return `Some(value, nextState)` to emit a value
+and remember the state for the next pull, or return `None` to finish.
 
-```fsharp
-FlowStream.unfoldFlow
-    (fun number ->
-        Flow.succeed (
-            if number > 3 then None
-            else Some(number, number + 1)))
-    1
-|> FlowStream.runForEach (printfn "page %d")
-|> Flow.run ()
-|> ignore
+The value and state are separate because they serve different audiences. The value goes downstream; the state stays
+inside the source and tells it how to continue. A paginated source might emit a page of messages while retaining an
+opaque continuation token. A socket parser might emit a decoded frame while retaining unread bytes. Requiring only a
+next state would either emit implementation state to consumers or restrict unfolding to sources whose state happens to
+be their output.
+
+```fsharp transcript
+> (1
+-  |> FlowStream.unfoldFlow (fun number ->
+-      Flow.succeed (
+-          if number > 3 then None
+-          else Some(number, number + 1)))
+-  : FlowStream<int>)
+- |> FlowStream.runCollect
+- |> Flow.run ();;
+val it: Exit<int list,Never> = Success [1; 2; 3]
 ```
 
-```text
-page 1
-page 2
-page 3
+Only one step runs per downstream pull. In this small numeric example the emitted value and next state look similar,
+but they are independent parts of the transition.
+
+## Exercise one Flow per pull
+
+The distinction is clearer in a paginated source. Here the private state is a page number, while the emitted values are
+messages. `Flow.delay` stands in for the client call: it runs only when downstream requests another page.
+
+```fsharp transcript
+> let requestedPages = ResizeArray<int>() in
+- let fetchPage page =
+-     Flow.delay (fun () ->
+-         requestedPages.Add page
+-         match page with
+-         | 1 -> Flow.succeed (Some(["A"; "B"], 2))
+-         | 2 -> Flow.succeed (Some(["C"], 3))
+-         | _ -> Flow.succeed None)
+- in
+- (1 |> FlowStream.unfoldFlow fetchPage : FlowStream<string list>)
+- |> FlowStream.collect FlowStream.fromSeq
+- |> FlowStream.runCollect
+- |> Flow.map (fun messages -> List.ofSeq requestedPages, messages)
+- |> Flow.run ();;
+val requestedPages: List<int> = seq [1; 2; 3]
+val it: Exit<Tuple<int list,string list>,Never> = Success ([1; 2; 3], ["A"; "B"; "C"])
 ```
 
-Only one step runs per downstream pull. This makes `unfoldFlow` the basic integration point for paginated APIs,
-sockets, subscriptions, and other host adapters without moving their I/O into Axial core.
+The terminal pull of page 3 returns `None`, so it emits no value. The result shows both sides of the source: three
+effectful page requests occurred, while consumers saw only the three messages. Because pulls are demand-driven,
+placing `FlowStream.take 2` before the terminal consumer would stop after enough messages and prevent unnecessary later
+pulls.
+
+This makes `FlowStream.unfoldFlow` the basic integration point for paginated APIs, sockets, subscriptions, and other
+host adapters without moving their I/O into Axial core.

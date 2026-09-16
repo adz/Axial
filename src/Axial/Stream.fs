@@ -28,6 +28,12 @@ type StreamStep<'value, 'error> =
 type FlowStream<'env, 'error, 'value> =
     FlowStream of ('env -> CancellationToken -> Execution<StreamStep<'value, 'error>, 'error>)
 
+/// <summary>A stream with no environment requirement and no typed failure.</summary>
+type FlowStream<'value> = FlowStream<unit, Never, 'value>
+
+/// <summary>A stream with no environment requirement.</summary>
+type FlowStream<'error, 'value> = FlowStream<unit, 'error, 'value>
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module FlowStream =
