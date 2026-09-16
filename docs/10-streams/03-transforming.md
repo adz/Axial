@@ -13,6 +13,17 @@ let selected : FlowStream<unit, Never, int> =
     |> FlowStream.map (fun value -> value * 10)
     |> FlowStream.skip 2
     |> FlowStream.take 3
+
+selected
+|> FlowStream.runForEach (printfn "%d")
+|> Flow.run ()
+|> ignore
+```
+
+```text
+60
+80
+100
 ```
 
 `choose` combines filtering and mapping. `indexed`, `scan`, and `distinctUntilChangedBy` retain only the state needed for
@@ -22,18 +33,38 @@ the next result. `takeWhile` and `skipWhile` stop or change behavior according t
 
 `mapFlow` runs one Flow for each value and emits its result:
 
-```fsharp no-check reason="Application-specific customer operation is described in the surrounding prose"
-let customers =
-    customerIds
-    |> FlowStream.mapFlow loadCustomer
+```fsharp
+FlowStream.fromSeq [ "a"; "b" ]
+|> FlowStream.mapFlow (fun letter -> Flow.succeed (letter.ToUpperInvariant()))
+|> FlowStream.runForEach (printfn "mapped %s")
+|> Flow.run ()
+|> ignore
+```
+
+```text
+mapped A
+mapped B
 ```
 
 `tapFlow` runs an effect but preserves the original value:
 
-```fsharp no-check reason="Application-specific logging operation is described in the surrounding prose"
-let observed =
-    customers
-    |> FlowStream.tapFlow (fun customer -> Log.info $"loaded {customer.Id}")
+```fsharp
+FlowStream.fromSeq [ 1; 2 ]
+|> FlowStream.tapFlow (fun number ->
+    Flow.delay (fun () ->
+        printfn "saw %d" number
+        Flow.succeed ()))
+|> FlowStream.map (fun number -> number * 10)
+|> FlowStream.runForEach (printfn "emitted %d")
+|> Flow.run ()
+|> ignore
+```
+
+```text
+saw 1
+emitted 10
+saw 2
+emitted 20
 ```
 
 Both operators remain sequential. They do not pull the next value until the current mapping has completed and the

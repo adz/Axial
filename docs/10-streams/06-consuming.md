@@ -17,16 +17,38 @@ let total : Flow<unit, Never, int> =
     |> FlowStream.runFold (+) 0
 
 let printAll : Flow<unit, Never, unit> =
-    FlowStream.fromSeq [ 1..100 ]
+    FlowStream.fromSeq [ 1; 2; 3 ]
     |> FlowStream.runForEach (printfn "%d")
+
+match total |> Flow.run () with
+| Exit.Success value -> printfn "total = %d" value
+| Exit.Failure cause -> printfn "%s" (Cause.prettyPrint string cause)
+
+printAll |> Flow.run () |> ignore
+```
+
+```text
+total = 5050
+1
+2
+3
 ```
 
 Use `runForEachFlow` when handling each value is effectful:
 
-```fsharp no-check reason="Application-specific save operation is described in the surrounding prose"
-let saveAll =
-    customers
-    |> FlowStream.runForEachFlow saveCustomer
+```fsharp
+FlowStream.fromSeq [ "A"; "B" ]
+|> FlowStream.runForEachFlow (fun letter ->
+    Flow.delay (fun () ->
+        printfn "saved %s" letter
+        Flow.succeed ()))
+|> Flow.run ()
+|> ignore
+```
+
+```text
+saved A
+saved B
 ```
 
 `runDrain` ignores emitted values while preserving producer effects.
@@ -39,6 +61,14 @@ let saveAll =
 let values : Flow<unit, Never, int list> =
     FlowStream.fromSeq [ 1; 2; 3 ]
     |> FlowStream.runCollect
+
+match values |> Flow.run () with
+| Exit.Success collected -> printfn "%A" collected
+| Exit.Failure cause -> printfn "%s" (Cause.prettyPrint string cause)
+```
+
+```text
+[1; 2; 3]
 ```
 
 Use it only when the stream is known to be finite and the complete list is required. It intentionally retains every

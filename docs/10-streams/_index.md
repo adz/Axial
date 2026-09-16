@@ -6,14 +6,22 @@ description: Process effectful values incrementally with bounded memory and back
 # Streams
 
 A `Flow` produces one result. A `FlowStream` produces values over time without first loading all of them into memory.
-Use it when the input may be large, slow, or unbounded: process output, paginated APIs, message subscriptions, and
-incremental file or network adapters.
+Use it when the input may be large, slow, or unbounded: paginated APIs, message subscriptions, and incremental file
+or network adapters.
 
-```fsharp no-check reason="Application-specific operations are described in the surrounding prose"
-source
-|> FlowStream.filter isRelevant
-|> FlowStream.mapFlow process
-|> FlowStream.runForEachFlow save
+```fsharp
+FlowStream.fromSeq [ 1..6 ]
+|> FlowStream.filter (fun number -> number % 2 = 0)
+|> FlowStream.map (fun number -> number * 10)
+|> FlowStream.runForEach (printfn "%d")
+|> Flow.run ()
+|> ignore
+```
+
+```text
+20
+40
+60
 ```
 
 The stream is **cold**: constructing it starts nothing. It is **pull-based**: downstream asks for each next value, so
@@ -30,7 +38,9 @@ each part.
 4. [Batching and parallelism](batching-and-parallelism.html) — strict batches versus continuously replenished work.
 5. [Composing streams](composing.html) — append, flatten, and zip.
 6. [Consuming streams](consuming.html) — folds, incremental effects, collection, and resource cleanup.
-7. [Process output](process-output.html) — a concrete effectful source.
-8. [Platform boundary](platform-boundary.html) — portable stream mechanics and host-specific adapters.
+7. [Platform boundary](platform-boundary.html) — portable stream mechanics and host-specific adapters.
+
+For one OS integration example, see the Process guide's [Streaming output](/process/streaming.html) page. It explains
+how `Axial.Process` exposes stdout and stderr as a `FlowStream`; process handling is not part of the stream model.
 
 The [`FlowStream` API](xref:Axial.FlowStreamModule) lists every operator after these guides establish the model.

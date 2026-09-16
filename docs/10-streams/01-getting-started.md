@@ -17,7 +17,13 @@ let total : Flow<unit, Never, int> =
     |> FlowStream.map (fun value -> value * 10)
     |> FlowStream.runFold (+) 0
 
-let result = total |> Flow.run ()
+match total |> Flow.run () with
+| Exit.Success value -> printfn "total = %d" value
+| Exit.Failure cause -> printfn "%s" (Cause.prettyPrint string cause)
+```
+
+```text
+total = 300
 ```
 
 Constructing `total` does not enumerate the sequence. `Flow.run` starts the terminal Flow. `runFold` then pulls one
@@ -27,15 +33,21 @@ value at a time through `filter` and `map`, retaining only the running total.
 
 Use `mapFlow` when transforming one value requires an effect:
 
-```fsharp no-check reason="Application-specific customer operations are described in the surrounding prose"
-let saveActiveCustomers =
-    customerIds
-    |> FlowStream.mapFlow loadCustomer
-    |> FlowStream.filter _.IsActive
-    |> FlowStream.runForEachFlow saveCustomer
+```fsharp
+FlowStream.fromSeq [ "a"; "b"; "c" ]
+|> FlowStream.mapFlow (fun letter -> Flow.succeed (letter.ToUpperInvariant()))
+|> FlowStream.runForEach (printfn "%s")
+|> Flow.run ()
+|> ignore
 ```
 
-A load or save failure stops further pulls and remains in the stream's typed error channel. Cancellation reaches the
+```text
+A
+B
+C
+```
+
+A mapping failure stops further pulls and remains in the stream's typed error channel. Cancellation reaches the
 active operation through the enclosing Flow runtime.
 
 ## Choose the terminal operation deliberately
