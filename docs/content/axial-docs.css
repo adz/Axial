@@ -424,6 +424,41 @@ body:has(.axial-landing) #search-ui {
   background: var(--axial-surface);
 }
 
+.scope-timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem 1.25rem;
+  color: var(--axial-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.scope-timeline-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.scope-key {
+  display: inline-block;
+  width: 1.5rem;
+  height: 0.55rem;
+  border: 1px solid #3767b1;
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, #3767b1 18%, var(--axial-surface));
+}
+
+.scope-key--flow {
+  border-style: dashed;
+  background: transparent;
+}
+
+.scope-key--lexical {
+  border-color: #b7791f;
+  background: color-mix(in srgb, #d69e2e 22%, var(--axial-surface));
+}
+
 .scope-timeline-axis,
 .scope-timeline-row {
   display: grid;
@@ -456,6 +491,7 @@ body:has(.axial-landing) #search-ui {
 
 .scope-timeline-label {
   color: var(--axial-muted);
+  white-space: nowrap;
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -484,6 +520,11 @@ body:has(.axial-landing) #search-ui {
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.scope-timeline-bar--flow {
+  border-style: dashed;
+  background: transparent;
 }
 
 .scope-timeline-bar--lexical {

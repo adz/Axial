@@ -25,18 +25,23 @@ then closes all of them together after success, failure, interruption, or defect
 
 ## Lifetime map
 
-<div class="scope-timeline" role="img" aria-label="Timeline comparing a Flow execution scope, ordinary subflows, lexical use, a child Flow scope, and a nested child scope">
+<div class="scope-timeline" role="img" aria-label="Timeline showing Flow executions separately from root, lexical, child, and nested resource scopes">
+<div class="scope-timeline-legend"><span><i class="scope-key scope-key--flow"></i>Flow execution</span><span><i class="scope-key scope-key--scope"></i>runtime scope</span><span><i class="scope-key scope-key--lexical"></i>lexical resource</span></div>
 <div class="scope-timeline-axis"><span>execution starts</span><span>time →</span><span>execution returns</span></div>
-<div class="scope-timeline-row"><span class="scope-timeline-label">Flow execution scope</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--root" style="--start: 0; --length: 100">root scope</span></span></div>
-<div class="scope-timeline-row"><span class="scope-timeline-label">ordinary subflow</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--shared" style="--start: 12; --length: 30">shares root ownership</span></span></div>
-<div class="scope-timeline-row"><span class="scope-timeline-label"><code>use</code> / <code>use!</code></span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--lexical" style="--start: 20; --length: 22">disposed when its body exits</span></span></div>
-<div class="scope-timeline-row"><span class="scope-timeline-label"><code>Flow.scoped</code></span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--child" style="--start: 48; --length: 42">child scope</span></span></div>
-<div class="scope-timeline-row"><span class="scope-timeline-label">nested <code>Flow.scoped</code></span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--nested" style="--start: 62; --length: 18">nested child closes first</span></span></div>
+<div class="scope-timeline-row"><span class="scope-timeline-label">root scope</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--root" style="--start: 0; --length: 100">application ownership</span></span></div>
+<div class="scope-timeline-row"><span class="scope-timeline-label">Flow A</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--flow" style="--start: 8; --length: 32">ordinary Flow</span></span></div>
+<div class="scope-timeline-row"><span class="scope-timeline-label"><code>use</code> / <code>use!</code> in Flow A</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--lexical" style="--start: 15; --length: 23">reader</span></span></div>
+<div class="scope-timeline-row"><span class="scope-timeline-label">Flow B</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--flow" style="--start: 45; --length: 48">ordinary Flow</span></span></div>
+<div class="scope-timeline-row"><span class="scope-timeline-label"><code>Flow.scoped</code> in B</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--child" style="--start: 52; --length: 36">child ownership</span></span></div>
+<div class="scope-timeline-row"><span class="scope-timeline-label">Flow C inside child</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--flow" style="--start: 59; --length: 22">shares child</span></span></div>
+<div class="scope-timeline-row"><span class="scope-timeline-label">nested <code>Flow.scoped</code></span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--nested" style="--start: 65; --length: 13">nested</span></span></div>
 </div>
 
-An ordinary function or subflow does not create a scope. It uses the currently active scope. `Flow.scoped` creates a
-child scope and closes it before returning to its caller. A nested scope closes before its parent. The outer execution
-boundary—`Flow.run`, `runSync`, or another host runner—owns the root scope.
+The Flow bars show when code runs. They do not create ownership boundaries: Flow A and Flow B both use the root scope.
+The scope bars show when registered resources and fibers are owned. Flow C runs inside the child scope, so its
+registrations belong to that child. `use` and `use!` are narrower still and dispose when their lexical body exits.
+`Flow.scoped` creates a child scope and closes it before returning; a nested scope closes before its parent. The outer
+execution boundary—`Flow.run` or another host runner—owns the root scope.
 
 ## Create a local runtime scope
 
