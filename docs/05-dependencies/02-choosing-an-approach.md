@@ -72,5 +72,5 @@ For concrete starting points, use [App Record](tutorials/app-record.html) and [L
 
 - [Service contracts](service-contracts.html)
 - [Layers](/layers/layers.html)
-- [Scopes and resources](/advanced/scopes-and-resources.html)
+- [Scopes and resources](/scopes/index.html)
 - [Providing the environment](providing-the-environment.html)

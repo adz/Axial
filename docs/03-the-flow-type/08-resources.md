@@ -39,4 +39,4 @@ let readFirstLine path =
 the local ownership boundary and closes it after success, typed failure, defect, or interruption.
 
 For reusable acquisition descriptions and direct registration of disposables or finalizers, see
-[scopes and resources](/advanced/scopes-and-resources.html).
+[scopes and resources](/scopes/index.html).

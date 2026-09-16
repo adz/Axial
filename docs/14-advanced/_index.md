@@ -1,6 +1,6 @@
 ---
 title: Advanced
-description: Publishing services from a package, and owning resources whose lifetime is the runtime's.
+description: Publishing reusable services and enforcing application effect boundaries.
 ---
 
 # Advanced
@@ -14,9 +14,7 @@ actually write day to day; this section is for the places that model runs out, o
 
 1. [Providing services from a package](reusable-packages.html) — authoring a library whose callers you will never
    see, and the contract shape that makes it composable.
-2. [Scopes and resources](scopes-and-resources.html) — deterministic cleanup for resources acquired during
-   provisioning or execution.
-3. [Tutorial: Creating reusable services](custom-services.html) — define your own named service contract, the way
+2. [Tutorial: Creating reusable services](custom-services.html) — define your own named service contract, the way
    the built-in services are defined, instead of tying a dependency to one record field name.
-4. [Write an effect-boundary analyzer](writing-effect-analyzers.html) — detect direct access to an effect behind
+3. [Write an effect-boundary analyzer](writing-effect-analyzers.html) — detect direct access to an effect behind
    your service contract and run the check from a consumer's build.

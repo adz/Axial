@@ -89,7 +89,7 @@ Console, FileSystem, HttpClient and Process are all of this shape, which is why 
 ## Scopes are not part of this package
 
 Scopes and `acquireRelease` are core, and work without layers. See
-[scopes and resources](/advanced/scopes-and-resources.html).
+[scopes and resources](/scopes/index.html).
 
 ## In this section
 

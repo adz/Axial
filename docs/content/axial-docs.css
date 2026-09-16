@@ -413,3 +413,101 @@ body:has(.axial-landing) #search-ui {
   margin-top: 1.5rem;
   font-size: 0.9rem;
 }
+
+.scope-timeline {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1.5rem 0 2rem;
+  padding: 1.25rem;
+  border: 1px solid var(--axial-border);
+  border-radius: 1rem;
+  background: var(--axial-surface);
+}
+
+.scope-timeline-axis,
+.scope-timeline-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 13rem) repeat(3, minmax(8rem, 1fr));
+  gap: 1rem;
+  align-items: center;
+}
+
+.scope-timeline-axis {
+  color: var(--axial-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scope-timeline-axis span:first-child {
+  grid-column: 2;
+}
+
+.scope-timeline-axis span:nth-child(2) {
+  grid-column: 3;
+  justify-self: center;
+}
+
+.scope-timeline-axis span:last-child {
+  grid-column: 4;
+  justify-self: end;
+}
+
+.scope-timeline-label {
+  color: var(--axial-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.scope-timeline-track {
+  position: relative;
+  grid-column: 2 / 5;
+  display: block;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--axial-muted) 8%, transparent);
+}
+
+.scope-timeline-bar {
+  position: absolute;
+  left: calc(var(--start) * 1%);
+  width: calc(var(--length) * 1%);
+  box-sizing: border-box;
+  height: 2rem;
+  overflow: hidden;
+  padding: 0.42rem 0.65rem;
+  border: 1px solid color-mix(in srgb, #3767b1 55%, var(--axial-border));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, #3767b1 18%, var(--axial-surface));
+  color: var(--axial-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.scope-timeline-bar--lexical {
+  border-color: color-mix(in srgb, #b7791f 65%, var(--axial-border));
+  background: color-mix(in srgb, #d69e2e 22%, var(--axial-surface));
+}
+
+.scope-timeline-bar--child {
+  border-color: color-mix(in srgb, #2f855a 65%, var(--axial-border));
+  background: color-mix(in srgb, #38a169 20%, var(--axial-surface));
+}
+
+.scope-timeline-bar--nested {
+  border-color: color-mix(in srgb, #805ad5 65%, var(--axial-border));
+  background: color-mix(in srgb, #805ad5 20%, var(--axial-surface));
+}
+
+@media (max-width: 760px) {
+  .scope-timeline {
+    overflow-x: auto;
+  }
+
+  .scope-timeline-axis,
+  .scope-timeline-row {
+    min-width: 42rem;
+  }
+}

@@ -111,7 +111,7 @@ let copyThrough source destination =
 ```
 
 Cleanup then runs whether the workflow succeeds, fails, defects, or is interrupted. See
-[scopes and resources](/advanced/scopes-and-resources.html).
+[scopes and resources](/scopes/index.html).
 
 ## Directories and paths
 
@@ -159,5 +159,5 @@ See [packages and platforms](/notes/packages-and-platforms.html).
 ## Related
 
 - [Service contracts](/dependencies/service-contracts.html) — how a package declares the service it needs.
-- [Scopes and resources](/advanced/scopes-and-resources.html) — deterministic cleanup for open handles.
+- [Scopes and resources](/scopes/index.html) — deterministic cleanup for open handles.
 - [Error handling](/error-handling/index.html) — expected failures against defects.
