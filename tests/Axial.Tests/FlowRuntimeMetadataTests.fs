@@ -250,7 +250,7 @@ module FlowRuntimeMetadataTests =
         let workflow =
             flow {
                 let! resource =
-                    Flow.acquireRelease
+                    Flow.scopeAcquireRelease
                         (Flow.succeed "resource")
                         (fun _ _ ->
                             released.Value <- true

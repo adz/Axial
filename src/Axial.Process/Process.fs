@@ -924,7 +924,7 @@ module Process =
                                 return result
                             }
                         let! fiber = Flow.fork producer
-                        do! Flow.scopeFinalizerAsync (fun _ -> async {
+                        do! Flow.scopeAsyncFinalizer (fun _ -> async {
                             fiber.InterruptSource.Cancel()
                             let! _ = fiber.ExitTask |> Async.AwaitTask
                             return ()

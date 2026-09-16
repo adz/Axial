@@ -4,6 +4,42 @@ open System
 open System.Threading
 open System.Threading.Tasks
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module Resource =
+#if !FABLE_COMPILER
+    /// <summary>Describes acquisition together with a task-based release registered in the current Flow scope.</summary>
+    let create
+        (acquire: Flow<'env, 'error, 'value>)
+        (release: 'value -> CancellationToken -> Task)
+        : Resource<'env, 'error, 'value> =
+        Resource(acquire, fun value scope -> scope.AddFinalizer(fun cancellationToken -> release value cancellationToken))
+
+    /// <summary>Describes a task-based finalizer as a unit-valued resource.</summary>
+    let finalizer (cleanup: CancellationToken -> Task) : Resource<'env, 'error, unit> =
+        Resource(Flow(fun _ _ -> Execution.ofValue ()), fun () scope -> scope.AddFinalizer cleanup)
+#endif
+
+    /// <summary>Describes acquisition together with an F# async release registered in the current Flow scope.</summary>
+    let ofAsync
+        (acquire: Flow<'env, 'error, 'value>)
+        (release: 'value -> CancellationToken -> Async<unit>)
+        : Resource<'env, 'error, 'value> =
+        Resource(
+            acquire,
+            fun value scope ->
+                scope.AddFinalizer(fun cancellationToken ->
+#if FABLE_COMPILER
+                    release value cancellationToken
+#else
+                    Async.StartAsTask(release value cancellationToken) :> Task
+#endif
+                ))
+
+    /// <summary>Describes an F# async finalizer as a unit-valued resource.</summary>
+    let asyncFinalizer (cleanup: CancellationToken -> Async<unit>) : Resource<'env, 'error, unit> =
+        ofAsync (Flow(fun _ _ -> Execution.ofValue ())) (fun () cancellationToken -> cleanup cancellationToken)
+
 module Flow =
     let inline internal invoke
         (flow: Flow<'env, 'error, 'value>)
@@ -71,8 +107,8 @@ module Flow =
                 combineCleanup cleanupError executionError exit "Flow execution produced no outcome.")
 
     /// <summary>Registers a F# async finalizer with the current runtime scope on .NET or Fable.</summary>
-    /// <example><code>Flow.scopeFinalizerAsync (fun _ -&gt; async { resource.Close() })</code></example>
-    let scopeFinalizerAsync
+    /// <example><code>Flow.scopeAsyncFinalizer (fun _ -&gt; async { resource.Close() })</code></example>
+    let scopeAsyncFinalizer
         (finalizer: CancellationToken -> Async<unit>)
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
@@ -178,66 +214,28 @@ module Flow =
             RuntimeState.current().Scope.AddAsyncDisposable resource
             Execution.ofValue ())
 
-    /// <summary>Acquires a resource and registers its release with the current runtime scope.</summary>
-    /// <param name="acquire">The flow that acquires the resource.</param>
-    /// <param name="release">The release action to run when the current scope closes.</param>
-    /// <returns>A flow that succeeds with the acquired resource.</returns>
-    /// <remarks>
-    /// The resource is not released when this expression finishes. It is released when the
-    /// surrounding runtime scope closes, which makes it suitable for resources acquired by
-    /// subflows and then shared by later work in the same execution boundary.
-    /// </remarks>
-    let acquireRelease
+#endif
+
+    /// <summary>Acquires a described resource and registers its release with the current runtime scope.</summary>
+    /// <param name="resource">The acquisition and release description.</param>
+    /// <returns>A flow that succeeds with the acquired value.</returns>
+    let scopeResource (Resource(acquire, register)) : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            invoke acquire environment cancellationToken
+            |> Execution.bind (fun value ->
+                register value (RuntimeState.current().Scope)
+                Execution.ofValue value))
+
+#if !FABLE_COMPILER
+    /// <summary>Acquires a value and registers its release with the current runtime scope.</summary>
+    /// <param name="acquire">The flow that acquires the value.</param>
+    /// <param name="release">The release action run when the current scope closes.</param>
+    /// <returns>A flow that succeeds with the acquired value.</returns>
+    let scopeAcquireRelease
         (acquire: Flow<'env, 'error, 'resource>)
         (release: 'resource -> CancellationToken -> Task)
         : Flow<'env, 'error, 'resource> =
-        Flow(fun environment cancellationToken ->
-            invoke acquire environment cancellationToken
-            |> Execution.bind (fun resource ->
-                RuntimeState.current().Scope.AddFinalizer(fun ct -> release resource ct)
-                Execution.ofValue resource))
-
-    /// <summary>Acquires a resource, uses it, and always runs the release action.</summary>
-    /// <param name="acquire">The flow that acquires the resource.</param>
-    /// <param name="release">The release action to run after the resource is used.</param>
-    /// <param name="useResource">The flow that uses the acquired resource.</param>
-    /// <returns>A flow that releases the resource after use, including failure paths.</returns>
-    /// <remarks>
-    /// Use this for lexical acquire/use/release. For resources that should live until the
-    /// surrounding scope closes, use <see cref="M:Axial.acquireRelease" />.
-    /// </remarks>
-    let acquireReleaseWith
-        (acquire: Flow<'env, 'error, 'resource>)
-        (release: 'resource -> CancellationToken -> Task)
-        (useResource: 'resource -> Flow<'env, 'error, 'value>)
-        : Flow<'env, 'error, 'value> =
-        Flow(fun environment cancellationToken ->
-            ValueTask<Exit<'value, 'error>>(
-                task {
-                    let! acquireExit = invoke acquire environment cancellationToken
-
-                    match acquireExit with
-                    | Exit.Failure cause ->
-                        return Exit.Failure cause
-                    | Exit.Success resource ->
-                        let! useExit =
-                            task {
-                                try
-                                    return! invoke (useResource resource) environment cancellationToken |> _.AsTask()
-                                with error ->
-                                    return Exit.Failure (Execution.causeOfException error)
-                            }
-
-                        try
-                            do! release resource cancellationToken
-                            return useExit
-                        with error ->
-                            match useExit with
-                            | Exit.Failure cause ->
-                                return Exit.Failure (Cause.thenCause cause (Execution.causeOfException error))
-                            | Exit.Success _ ->
-                                return Exit.Failure (Execution.causeOfException error)
-                }))
+        Resource.create acquire release |> scopeResource
 #endif
 
     /// <summary>Runs a flow in a child scope and closes that scope before returning.</summary>

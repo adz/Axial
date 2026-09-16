@@ -101,12 +101,13 @@ handles. An open handle is a resource, so acquire it inside a scope rather than 
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let copyThrough source destination =
-    Flow.acquireReleaseWith
-        (FileSystem.openRead source)
-        (fun stream _ ->
-            stream.Dispose()
-            Task.CompletedTask)
-        (fun stream -> readAndTransform stream destination)
+    Flow.scoped (
+        Flow.scopeAcquireRelease
+            (FileSystem.openRead source)
+            (fun stream _ ->
+                stream.Dispose()
+                Task.CompletedTask)
+        |> Flow.bind (fun stream -> readAndTransform stream destination))
 ```
 
 Cleanup then runs whether the workflow succeeds, fails, defects, or is interrupted. See

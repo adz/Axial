@@ -899,6 +899,16 @@ type SupervisePolicy =
       ShouldRestart: exn -> bool
     }
 
+/// <summary>Describes acquisition of a value together with registration of its release in the current Flow scope.</summary>
+/// <typeparam name="env">The environment required to acquire the value.</typeparam>
+/// <typeparam name="error">The typed acquisition failure.</typeparam>
+/// <typeparam name="value">The acquired value.</typeparam>
+type Resource<'env, 'error, 'value> =
+    internal
+    | Resource of
+        acquire: Flow<'env, 'error, 'value> *
+        register: ('value -> Scope -> unit)
+
 /// <summary>
 /// Standard supervision policies for runtime helpers.
 /// </summary>

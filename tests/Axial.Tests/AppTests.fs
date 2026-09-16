@@ -24,7 +24,7 @@ module AppTests =
 
         let application : Flow<unit, string, unit> =
             flow {
-                do! Flow.scopeFinalizerAsync(fun token -> async {
+                do! Flow.scopeAsyncFinalizer(fun token -> async {
                     finalized.Add token.IsCancellationRequested
                 })
                 started.TrySetResult() |> ignore

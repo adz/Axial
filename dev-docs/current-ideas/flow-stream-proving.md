@@ -18,7 +18,7 @@ timeouts, retry, or defects.
 ## Goals
 
 - Make stream acquisition, use, early termination, and release deterministic.
-- Reuse `Flow.scoped`, `Flow.acquireRelease`, runtime cancellation, timeout, retry, and child scopes.
+- Reuse `Flow.scoped`, `Flow.scopeAcquireRelease`, runtime cancellation, timeout, retry, and child scopes.
 - Preserve cold execution, typed failure, explicit environment dependencies, and pull-based backpressure.
 - Keep the public model portable across .NET and Fable, with room for future Python, Rust, and Erlang runtimes.
 - Support long-lived, resource-owning streams without leaking handles or retaining unbounded data.
@@ -50,7 +50,7 @@ timeouts, retry, or defects.
 ### Resources
 
 - Every resource-owning stream executes inside a child Flow scope.
-- Acquisition uses Flow acquisition primitives, ultimately `Flow.acquireRelease`.
+- Acquisition uses Flow acquisition primitives, ultimately `Flow.scopeAcquireRelease`.
 - Closing a stream closes its child scope exactly once.
 - Cleanup order and cleanup defects use existing Flow scope behavior.
 - Stream operators do not maintain an independent finalizer stack.
@@ -156,7 +156,7 @@ FlowStream.acquireRelease
 where:
 
 - `acquire` is `Flow<'env, 'error, 'resource>`;
-- `release` uses the same cleanup contract as `Flow.acquireRelease`;
+- `release` uses the same cleanup contract as `Flow.scopeAcquireRelease`;
 - `pull` returns either one value and next state or completion;
 - release runs exactly once even when acquisition succeeds but the first pull never completes.
 
@@ -491,7 +491,7 @@ without documenting and accepting that tradeoff.
 2. Decide cross-Flow cancellation semantics, including existing Http and Process `Canceled` cases.
 3. Prototype cursor/scoped representation without expanding the public operator catalog.
 4. Port existing operators and add lifecycle-law tests for each.
-5. Add the resource-aware construction primitive using Flow scopes and `Flow.acquireRelease`.
+5. Add the resource-aware construction primitive using Flow scopes and `Flow.scopeAcquireRelease`.
 6. Prove early termination, failure, interruption, cleanup defects, and stack safety.
 7. Migrate or adapt Process streaming to exercise the new model.
 8. Build pure framing and the narrow TCP and Serial proving slices.

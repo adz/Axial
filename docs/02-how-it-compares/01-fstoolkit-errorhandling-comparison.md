@@ -25,7 +25,7 @@ retry, and defects.
 | Execution carrier | Chosen up front: `Result`, `AsyncResult`, `TaskResult`, and related builders | `Flow` describes the workflow; the runtime executes it |
 | Cancellation | The underlying `Async` or `Task` code owns token propagation | The runtime passes its cancellation token to cold work and represents cancellation as `Cause.Interrupt` |
 | Defects | Usually faulted tasks or raised exceptions outside `Result` | Bound work's exceptions become `Cause.Die`, so defects participate in Flow's concurrency semantics |
-| Resource lifetime | Ordinary `use`, `use!`, `try/finally`, or application helpers | `use` and `use!` in `flow { }` for lexical lifetimes; `Flow.acquireReleaseWith` and scopes for wider ownership |
+| Resource lifetime | Ordinary `use`, `use!`, `try/finally`, or application helpers | `use` and `use!` in `flow { }` for lexical lifetimes; `Flow.scoped` and the `Flow.scope...` operations for wider ownership |
 | Retry, timeout, and parallel policy | Application code or another library | Runtime combinators over the workflow |
 
 Neither approach replaces domain validation. Both can carry a validation error type; accumulating independent errors
@@ -79,8 +79,8 @@ that local pipeline also needs Flow's execution, resource, or composition semant
 
 Use Flow when composition itself needs a contract: required services, managed resources, interruption, retry policy,
 or a distinction between expected failures and defects. The `flow { }` computation expression supports `use` and
-`use!` for resources owned by one lexical block. `Flow.acquireReleaseWith` and scopes cover lifetimes that need an
-explicit acquisition boundary or extend beyond that block.
+`use!` for resources owned by one lexical block. `Flow.scoped` and `Flow.scopeAcquireRelease` cover lifetimes that
+need an explicit runtime ownership boundary or extend beyond that block.
 
 ```fsharp no-check reason="Application-specific services and domain types are omitted"
 type CheckoutEnv =

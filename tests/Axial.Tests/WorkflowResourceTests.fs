@@ -11,6 +11,11 @@ open Swensen.Unquote
 open Xunit
 
 module WorkflowResourceTests =
+    let private scopeUse acquire release useResource =
+        Flow.scopeAcquireRelease acquire release
+        |> Flow.bind useResource
+        |> Flow.scoped
+
     type TrackingDisposable(events: ResizeArray<string>, name: string) =
         member _.Name = name
 
@@ -35,11 +40,11 @@ module WorkflowResourceTests =
         test <@ List.ofSeq events = [ "resource:used"; "resource:disposed" ] @>
 
     [<Fact>]
-    let ``Flow acquireReleaseWith releases after typed failure`` () =
+    let ``Flow scoped acquisition releases after typed failure`` () =
         let releaseCount = ref 0
 
         let acquireReleaseResult =
-            Flow.acquireReleaseWith
+            scopeUse
                 (Flow.succeed 7)
                 (fun _ _ ->
                     releaseCount.Value <- releaseCount.Value + 1
@@ -51,11 +56,11 @@ module WorkflowResourceTests =
         test <@ releaseCount.Value = 1 @>
 
     [<Fact>]
-    let ``Flow acquireReleaseWith releases after defects`` () =
+    let ``Flow scoped acquisition releases after defects`` () =
         let releaseCount = ref 0
 
         let acquireReleaseResult =
-            Flow.acquireReleaseWith
+            scopeUse
                 (Flow.succeed 7)
                 (fun _ _ ->
                     releaseCount.Value <- releaseCount.Value + 1
@@ -69,12 +74,12 @@ module WorkflowResourceTests =
         test <@ releaseCount.Value = 1 @>
 
     [<Fact>]
-    let ``Flow acquireReleaseWith releases after interruption`` () =
+    let ``Flow scoped acquisition releases after interruption`` () =
         let releaseCount = ref 0
         let interrupted = Flow(fun _ _ -> Execution.ofInterrupt ())
 
         let acquireReleaseResult =
-            Flow.acquireReleaseWith
+            scopeUse
                 (Flow.succeed 7)
                 (fun _ _ ->
                     releaseCount.Value <- releaseCount.Value + 1
@@ -86,11 +91,11 @@ module WorkflowResourceTests =
         test <@ releaseCount.Value = 1 @>
 
     [<Fact>]
-    let ``Flow acquireReleaseWith releases once when release defects`` () =
+    let ``Flow scoped acquisition releases once when release defects`` () =
         let releaseCount = ref 0
 
         let acquireReleaseResult =
-            Flow.acquireReleaseWith
+            scopeUse
                 (Flow.succeed 7)
                 (fun _ _ ->
                     releaseCount.Value <- releaseCount.Value + 1
@@ -105,13 +110,34 @@ module WorkflowResourceTests =
         test <@ releaseCount.Value = 1 @>
 
     [<Fact>]
-    let ``Flow acquireRelease keeps resource alive until runtime scope closes`` () =
+    let ``Flow scope functions register disposable and resource finalizer`` () =
+        let events = ResizeArray<string>()
+
+        let workflow =
+            Flow.scoped (
+                flow {
+                    let disposable = new TrackingDisposable(events, "disposable")
+                    do! Flow.scopeDisposable disposable
+                    do!
+                        Resource.finalizer(fun _ -> events.Add("finalized"); Task.CompletedTask)
+                        |> Flow.scopeResource
+                        |> Flow.ignore
+                    events.Add("used")
+                })
+
+        let result = Flow.runSync () workflow
+
+        test <@ result = Exit.Success () @>
+        test <@ List.ofSeq events = [ "used"; "finalized"; "disposable:disposed" ] @>
+
+    [<Fact>]
+    let ``Flow scopeAcquireRelease keeps resource alive until runtime scope closes`` () =
         let events = ResizeArray<string>()
 
         let workflow =
             flow {
                 let! resource =
-                    Flow.acquireRelease
+                    Flow.scopeAcquireRelease
                         (Flow.succeed "resource")
                         (fun name _ ->
                             events.Add($"{name}:released")

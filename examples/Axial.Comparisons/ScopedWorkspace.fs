@@ -74,9 +74,8 @@ module WithFlow =
 
     /// Flow<WorkspaceEnv, ImportError, int>
     ///
-    /// acquireReleaseWith owns the directory from the instant acquisition succeeds. There is no
-    /// gap where setup code can fail without an owner, and no way to add a step outside the
-    /// finalizer's reach.
+    /// scopeAcquireRelease owns the directory from the instant acquisition succeeds. Flow.scoped
+    /// closes that ownership boundary before this operation returns.
     let importBatch (records: string list) : Flow<WorkspaceEnv, ImportError, int> =
         let acquire: Flow<WorkspaceEnv, ImportError, string> =
             flow {
@@ -85,10 +84,11 @@ module WithFlow =
                 return workspace
             }
 
-        Flow.acquireReleaseWith
-            acquire
-            (fun workspace _ -> Task.Run(fun () -> Directory.Delete(workspace, recursive = true)))
-            (fun workspace ->
+        Flow.scoped (
+            Flow.scopeAcquireRelease
+                acquire
+                (fun workspace _ -> Task.Run(fun () -> Directory.Delete(workspace, recursive = true)))
+            |> Flow.bind (fun workspace ->
                 flow {
                     // Every step here — including this gate that fails before any file exists —
                     // is inside the resource's lifetime.
@@ -99,4 +99,4 @@ module WithFlow =
                         |> Flow.mapError (FileSystemError.describe >> UnreadableBatch)
 
                     return records.Length
-                })
+                }))

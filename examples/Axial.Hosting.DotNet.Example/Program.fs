@@ -28,7 +28,7 @@ let application : Flow<string array, AppError, unit> =
             return! Flow.fail (NonPositiveDelay seconds)
 
         // DotNetApp does not return an exit code until this root finalizer completes.
-        do! Flow.scopeFinalizerAsync (fun _ -> async { printfn "Root-scope cleanup finished." })
+        do! Flow.scopeAsyncFinalizer (fun _ -> async { printfn "Root-scope cleanup finished." })
         do! async { printfn "Working for %d seconds. Press Ctrl+C to stop cleanly." seconds }
         do! Flow.Runtime.sleep(TimeSpan.FromSeconds(float seconds))
     }

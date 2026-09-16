@@ -31,10 +31,11 @@ real-world edit — a failure branch added outside the `try` — and a test prov
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Flow<CheckoutEnv, CheckoutError, CheckoutReceipt>
-Flow.acquireReleaseWith
-    reserve                                                  // acquire: typed InventoryError -> CheckoutError
-    (fun (reservation, inventory) _ -> inventory.Release reservation)  // release: attached to the resource
-    (fun (reservation, _) -> fulfil reservation)             // use: charge + ship, each error mapped at its bind
+Flow.scoped (
+    Flow.scopeAcquireRelease
+        reserve                                                  // acquire: typed InventoryError -> CheckoutError
+        (fun (reservation, inventory) _ -> inventory.Release reservation)
+    |> Flow.bind (fun (reservation, _) -> fulfil reservation))   // charge + ship, each error mapped at its bind
 ```
 
 Failures enter `CheckoutError` at each bind site with
@@ -115,23 +116,24 @@ Read the [workspace comparison source](https://github.com/adz/Axial/blob/main/ex
 
 The ordinary comparison includes `importBatchLeaky`, the classic leak: construction succeeds, then a setup check
 throws *before* ownership transfers into `try/finally`. The test proves the directory survives. In the Flow version
-there is no such gap — `Flow.acquireReleaseWith` owns the resource from the instant acquisition succeeds, and the
-failing gate lives inside the resource's lifetime:
+there is no such gap — `Flow.scopeAcquireRelease` owns the resource from the instant acquisition succeeds, and
+`Flow.scoped` keeps the failing gate inside the resource's lifetime:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-Flow.acquireReleaseWith
-    acquire                                                     // FileSystem.createDirectory, typed errors
-    (fun workspace _ -> Task.Run(fun () -> Directory.Delete(workspace, recursive = true)))
-    (fun workspace -> flow {
+Flow.scoped (
+    Flow.scopeAcquireRelease
+        acquire                                                     // FileSystem.createDirectory, typed errors
+        (fun workspace _ -> Task.Run(fun () -> Directory.Delete(workspace, recursive = true)))
+    |> Flow.bind (fun workspace -> flow {
         do! if List.isEmpty records then Flow.fail NoRecords else Flow.succeed ()
         do! FileSystem.writeAllLines (Path.Combine(workspace, "batch.csv")) records
             |> Flow.mapError (FileSystemError.describe >> UnreadableBatch)
         return records.Length
-    })
+    }))
 ```
 
 ZIO correspondence: `Scope` and `ZIO.acquireRelease`; for resources that should live as long as a provided layer,
-Axial has `Flow.acquireRelease` and `Layer.acquireRelease`.
+Axial has `Flow.scopeAcquireRelease` and `Layer.acquireRelease`.
 
 - **Made visible by the type**: acquisition and finalization form one construct with one signature.
 - **Enforced by the runtime**: the finalizer runs on success, typed failure, defect, and interruption, and a

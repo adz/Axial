@@ -30,7 +30,7 @@ let application : Flow<obj, string, unit> =
     flow {
         let! statusElement = Flow.env
         // The owner observes this cleanup before Completion settles after an abort.
-        do! Flow.scopeFinalizerAsync (fun _ -> async { setText statusElement "Cleanup finished." })
+        do! Flow.scopeAsyncFinalizer (fun _ -> async { setText statusElement "Cleanup finished." })
         do! async { setText statusElement "Application is running." }
         do! Flow.Runtime.sleep(TimeSpan.FromDays 1.0)
     }

@@ -136,7 +136,8 @@ module WithFlow =
                 return { Reservation = reservation; Payment = payment; Shipment = shipment }
             }
 
-        Flow.acquireReleaseWith
-            reserve
-            (fun (reservation, inventory) _ -> inventory.Release reservation)
-            (fun (reservation, _) -> fulfil reservation)
+        Flow.scoped (
+            Flow.scopeAcquireRelease
+                reserve
+                (fun (reservation, inventory) _ -> inventory.Release reservation)
+            |> Flow.bind (fun (reservation, _) -> fulfil reservation))

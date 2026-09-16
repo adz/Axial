@@ -169,7 +169,7 @@ module WorkflowStreamTests =
     let ``FlowStream: terminal consumers close their child scope before continuation`` () =
         let mutable released = false
         let resource =
-            Flow.acquireRelease
+            Flow.scopeAcquireRelease
                 (Flow.ok ())
                 (fun () _ -> released <- true; Task.CompletedTask)
 

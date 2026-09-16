@@ -1,99 +1,105 @@
 ---
 title: Scopes and Resources
-description: Deterministic cleanup with Scope.
+description: Choose lexical or runtime-owned resource lifetimes.
 ---
 
 # Scopes and Resources
 
-`Scope` owns cleanup for resources acquired during provisioning or execution. It is not a dependency container. It only
-registers finalizers and closes them in a predictable order.
-
-This solves a different problem from `use` / `use!` in `flow { }`.
-
-Use `use` / `use!` when the resource lifetime is local to one lexical block. Use scoped acquisition when a resource is
-acquired in one effect, layer, subflow, or parallel branch and must remain alive until the surrounding runtime or layer
-scope closes. That is the important scope problem: a service can be provisioned before the user flow starts, consumed by
-many subflows, and released only when the whole `Layer.provide` boundary finishes.
-
-The contract is:
-
-- finalizers run in reverse registration order
-- finalizers run at most once
-- registering after closure fails
-- cleanup failures are aggregated
-- cleanup failures are defects, not typed domain errors
-- child scopes are owned by their parent and close deterministically with it
-
-## Local Acquire/Use/Release
-
-Use `Flow.acquireReleaseWith` when acquisition, use, and release all belong to one flow expression.
+.NET already has resources and F# already has `use` and `use!`. Axial's `flow { }` computation expression supports
+`use` directly:
 
 ```fsharp
 let readFirstLine path =
-    Flow.acquireReleaseWith
-        (Flow.succeed (File.OpenText path))
-        (fun reader _ ->
-            reader.Dispose()
-            Task.CompletedTask)
-        (fun reader ->
-            flow {
-                return! ColdTask(fun _ -> reader.ReadLineAsync())
-            })
+    flow {
+        use reader = File.OpenText path
+        return! ColdTask(fun _ -> reader.ReadLineAsync())
+    }
 ```
 
-This is the explicit combinator form of a local acquire/use/release block. The release action runs after the user flow
-finishes, whether that flow succeeds, fails, defects, or is interrupted.
+This is a **lexical lifetime**. The compiler disposes `reader` when control leaves the body governed by that `use`,
+including success and exceptional exit. In a `flow { }`, that means disposal happens before the flow produced by that
+body completes. The resource cannot safely be returned for another function or a later workflow to use.
 
-## Scoped Acquisition
+A Flow scope provides a wider runtime lifetime. Code can acquire a resource in one subflow, use it from other functions
+or child fibers, and release it when the chosen Flow boundary closes. `Flow.scoped` creates that boundary:
 
-Use `Flow.acquireRelease` when the acquired resource should live until the current runtime scope closes.
+```fsharp no-check reason="Application-specific connection operations are described in the surrounding prose"
+Flow.scoped (
+    flow {
+        let! connection =
+            Flow.scopeAcquireRelease
+                openConnection
+                closeConnection
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+        return! runApplicationWork connection
+    })
+```
+
+Everything registered inside `Flow.scoped` is released before the resulting flow returns. Cleanup runs after success,
+typed failure, defect, or interruption.
+
+## Registering with the current scope
+
+The `scope` prefix means "attach this value or cleanup action to the current Flow scope":
+
+```fsharp no-check reason="Application-specific resources are described in the surrounding prose"
+flow {
+    do! Flow.scopeDisposable stream
+    do! Flow.scopeAsyncDisposable response
+    do! Flow.scopeFinalizer flushTelemetry
+    do! Flow.scopeAsyncFinalizer saveState
+}
+```
+
+Use `Flow.scopeDisposable` and `Flow.scopeAsyncDisposable` for resources that have already been created. Use
+`Flow.scopeFinalizer` or `Flow.scopeAsyncFinalizer` for custom cleanup.
+
+`Flow.scopeAcquireRelease` combines acquisition and registration without leaving a cancellation point between them:
+
+```fsharp no-check reason="Application-specific cache type is described in the surrounding prose"
 let acquireRequestCache =
-    Flow.acquireRelease
+    Flow.scopeAcquireRelease
         (Flow.succeed (new RequestCache()))
         (fun cache _ ->
             cache.Dispose()
             Task.CompletedTask)
 ```
 
-The returned resource can be passed to later subflows. It is not released when the acquiring expression ends; it is
-released when the surrounding execution scope or `Layer.provide` scope closes.
+The returned value remains available to later subflows. Its release runs when the current scope closes.
 
-## Layer Resources
+## Reusable resource descriptions
 
-Use `Layer.acquireRelease` when a layer provisions a service implementation or resource that must be closed after the
-provided flow finishes.
+`Resource` separates a reusable acquisition description from the decision to acquire it in a particular scope:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let connectionLayer : Layer<ConnectionString, DbError, IDbConnection> =
-    Layer.acquireRelease
-        (Layer.fromValueTask (fun (connectionString, _) _ ->
-            openConnection connectionString
-            |> Execution.ofValue))
-        (fun connection _ ->
-            connection.Dispose()
-            Task.CompletedTask)
+```fsharp no-check reason="Application-specific connection operations are described in the surrounding prose"
+let connectionResource =
+    Resource.create openConnection closeConnection
+
+let program =
+    Flow.scoped (
+        flow {
+            let! connection =
+                connectionResource
+                |> Flow.scopeResource
+
+            return! query connection
+        })
 ```
 
-For lower-level cases, register finalizers directly through `Flow.scopeFinalizer`, `Layer.addFinalizer`, or `Scope`.
+Use `Resource.finalizer` for a reusable task-based cleanup description and `Resource.asyncFinalizer` for F# async
+cleanup. `Flow.scopeResource` acquires the description, registers its release with the current scope, and returns its
+value.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-Flow.scopeFinalizer(fun cancellationToken ->
-    telemetry.FlushAsync(cancellationToken))
-```
+## Choosing a lifetime
 
-## Root Scope
+Use `use` or `use!` when one computation-expression body exclusively owns the resource and the value does not escape.
 
-The root scope is owned by the execution boundary or `Layer.provide`. Most application code should not create a scope directly. Use
-`Flow.acquireRelease`, `Layer.acquireRelease`, and the finalizer helpers first. Use `Flow.Runtime.scope` only for advanced
-helpers that need direct access to the scope object.
+Use `Flow.scoped` plus the `Flow.scope...` operations when ownership spans functions, subflows, fibers, or a composed
+stream operation. Scope finalizers run in reverse registration order, at most once. Cleanup failures are defects and are
+combined with any failure that caused the scope to close.
 
-## Child Scopes
+Layers use the same model. `Layer.acquireRelease` keeps a provisioned service alive until `Layer.provide` finishes.
 
-`Scope.AddChild()` creates a parent-owned scope. Axial uses this internally for `Layer.zipPar` and `Layer.merge` so each
-parallel provisioning branch can acquire resources independently.
-
-If one parallel branch fails after another branch acquired resources, the successful branch cleanup still runs when
-`Layer.provide` closes the root scope. Parent scopes close child scopes in a deterministic order, and each child still
-applies its own reverse-registration finalizer order.
+[FlowStream](/streams/index.html) uses child scopes internally. Terminal consumption closes the stream's resources and
+child fibers on completion, failure, interruption, or early termination. The stream guide covers the operator-level
+lifetime rules.

@@ -65,14 +65,15 @@ module RuntimeSemanticsTests =
         test <@ result = Exit.Failure(Cause.Both(Cause.Fail "left", Cause.Fail "right")) @>
 
     [<Fact>]
-    let ``Flow acquireReleaseWith sequences use failure before release defect`` () =
+    let ``Flow scoped resource sequences use failure before release defect`` () =
         let releaseDefect = InvalidOperationException "release failed"
 
         let workflow =
-            Flow.acquireReleaseWith
+            Flow.scopeAcquireRelease
                 (Flow.succeed "resource")
                 (fun _ _ -> Task.FromException releaseDefect)
-                (fun _ -> Flow.fail "use failed")
+            |> Flow.bind (fun _ -> Flow.fail "use failed")
+            |> Flow.scoped
 
         let result = Flow.runSync () workflow
 
