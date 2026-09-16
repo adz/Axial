@@ -65,17 +65,17 @@ but they are independent parts of the transition.
 ## Exercise one Flow per pull
 
 The distinction is clearer in a paginated source. Here the private state is a page number, while the emitted values are
-messages. `Flow.delay` stands in for the client call: it runs only when downstream requests another page.
+messages. `FlowStream.unfoldFlow` invokes `fetchPage` only when downstream requests another page, so the simulated client
+call remains demand-driven.
 
 ```fsharp transcript
 > let requestedPages = ResizeArray<int>() in
 - let fetchPage page =
--     Flow.delay (fun () ->
--         requestedPages.Add page
--         match page with
--         | 1 -> Flow.succeed (Some(["A"; "B"], 2))
--         | 2 -> Flow.succeed (Some(["C"], 3))
--         | _ -> Flow.succeed None)
+-     requestedPages.Add page
+-     match page with
+-     | 1 -> Flow.succeed (Some(["A"; "B"], 2))
+-     | 2 -> Flow.succeed (Some(["C"], 3))
+-     | _ -> Flow.succeed None
 - in
 - (1 |> FlowStream.unfoldFlow fetchPage : FlowStream<string list>)
 - |> FlowStream.collect FlowStream.fromSeq
