@@ -454,6 +454,12 @@ body:has(.axial-landing) #search-ui {
   background: transparent;
 }
 
+.scope-key--subflow {
+  border-style: dashed;
+  border-color: #25838c;
+  background: color-mix(in srgb, #25838c 12%, var(--axial-surface));
+}
+
 .scope-key--lexical {
   border-color: #b7791f;
   background: color-mix(in srgb, #d69e2e 22%, var(--axial-surface));
@@ -496,6 +502,15 @@ body:has(.axial-landing) #search-ui {
   font-weight: 700;
 }
 
+.scope-timeline-label--inside {
+  padding-left: 1rem;
+  font-weight: 600;
+}
+
+.scope-timeline-row--flow {
+  align-items: start;
+}
+
 .scope-timeline-track {
   position: relative;
   grid-column: 2 / 5;
@@ -520,6 +535,81 @@ body:has(.axial-landing) #search-ui {
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.scope-timeline-track--flow {
+  height: 5.25rem;
+  background: transparent;
+}
+
+.scope-timeline-row--deep .scope-timeline-track--flow {
+  height: 8.5rem;
+}
+
+.scope-flow-frame,
+.scope-inner {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 0.55rem;
+  color: var(--axial-heading);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.scope-flow-frame {
+  left: calc(var(--start) * 1%);
+  width: calc(var(--length) * 1%);
+  top: 0;
+  height: 100%;
+  padding: 0.45rem;
+  border: 2px dashed color-mix(in srgb, #3767b1 70%, var(--axial-border));
+  background: color-mix(in srgb, #3767b1 5%, var(--axial-surface));
+}
+
+.scope-flow-frame > strong {
+  display: block;
+  height: 1.2rem;
+  color: #3767b1;
+  font-size: 0.72rem;
+}
+
+.scope-inner {
+  left: calc(var(--inner-start) * 1%);
+  width: calc(var(--inner-length) * 1%);
+  top: 1.75rem;
+  min-width: 3.75rem;
+  height: 2.55rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--axial-border);
+}
+
+.scope-inner--lexical {
+  border-color: color-mix(in srgb, #b7791f 65%, var(--axial-border));
+  background: color-mix(in srgb, #d69e2e 22%, var(--axial-surface));
+}
+
+.scope-inner--child {
+  height: 5.9rem;
+  border-color: color-mix(in srgb, #2f855a 65%, var(--axial-border));
+  background: color-mix(in srgb, #38a169 13%, var(--axial-surface));
+}
+
+.scope-inner--subflow,
+.scope-inner--nested {
+  top: 2rem;
+  height: 2.6rem;
+}
+
+.scope-inner--subflow {
+  border-style: dashed;
+  border-color: color-mix(in srgb, #25838c 70%, var(--axial-border));
+  background: color-mix(in srgb, #25838c 12%, var(--axial-surface));
+}
+
+.scope-inner--nested {
+  border-color: color-mix(in srgb, #805ad5 65%, var(--axial-border));
+  background: color-mix(in srgb, #805ad5 20%, var(--axial-surface));
 }
 
 .scope-timeline-bar--flow {
