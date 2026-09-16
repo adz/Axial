@@ -23,20 +23,40 @@ another function or later workflow to use.
 A Flow scope is a runtime ownership boundary. It lets resources and child fibers live across function and subflow calls,
 then closes all of them together after success, failure, interruption, or defect.
 
-## Lifetime map
+## Lifetime maps
 
-<div class="scope-timeline" role="img" aria-label="Nested timeline showing lexical resources, subflows, child scopes, and nested scopes physically inside their owning Flow">
-<div class="scope-timeline-legend"><span><i class="scope-key scope-key--flow"></i>Flow</span><span><i class="scope-key scope-key--subflow"></i>subflow</span><span><i class="scope-key scope-key--scope"></i>runtime scope</span><span><i class="scope-key scope-key--lexical"></i>lexical resource</span></div>
-<div class="scope-timeline-axis"><span>execution starts</span><span>time →</span><span>execution returns</span></div>
-<div class="scope-timeline-row"><span class="scope-timeline-label">root scope</span><span class="scope-timeline-track"><span class="scope-timeline-bar scope-timeline-bar--root" style="--start: 0; --length: 100">application ownership</span></span></div>
-<div class="scope-timeline-row scope-timeline-row--flow"><span class="scope-timeline-label">Flow A</span><span class="scope-timeline-track scope-timeline-track--flow"><span class="scope-flow-frame" style="--start: 7; --length: 34"><strong>Flow A</strong><span class="scope-inner scope-inner--lexical" style="--inner-start: 20; --inner-length: 68"><code>use reader</code></span></span></span></div>
-<div class="scope-timeline-row scope-timeline-row--flow scope-timeline-row--deep"><span class="scope-timeline-label">Flow B</span><span class="scope-timeline-track scope-timeline-track--flow"><span class="scope-flow-frame" style="--start: 44; --length: 50"><strong>Flow B</strong><span class="scope-inner scope-inner--child" style="--inner-start: 12; --inner-length: 78"><code>Flow.scoped</code><span class="scope-inner scope-inner--subflow" style="--inner-start: 10; --inner-length: 40">subflow</span><span class="scope-inner scope-inner--nested" style="--inner-start: 56; --inner-length: 34">nested scope</span></span></span></span></div>
+The diagrams use containment literally: Flow B is a subflow inside Flow A, and a resource bar sits inside the boundary
+that owns it.
+
+### Lexical `use` ends with its subflow body
+
+<div class="lifetime-case" role="img" aria-label="Flow A contains Flow B, whose lexical use resource ends when Flow B ends">
+<div class="lifetime-axis"><span>Flow A starts</span><span>time →</span><span>Flow A ends</span></div>
+<div class="lifetime-stage lifetime-stage--flow"><strong>Flow A</strong><span class="lifetime-region lifetime-region--subflow" style="--x: 18; --w: 38; --y: 2.4; --h: 4.8"><b>Flow B</b><span class="lifetime-region lifetime-region--lexical" style="--x: 14; --w: 72; --y: 1.8; --h: 2">use reader · dispose</span></span></div>
 </div>
 
-Containment in the diagram is literal. The `use` resource is inside Flow A. Flow B contains a child scope; that child
-contains both a subflow call and a nested scope. Calling or binding a subflow does not create another ownership scope:
-it registers resources and fibers with whichever scope surrounds that call. The nested scope closes first, then its
-parent child scope, and finally the root execution scope.
+Flow B owns `reader` lexically. When Flow B returns to Flow A, `reader` has already been disposed.
+
+### Registration in the current scope outlives Flow B
+
+<div class="lifetime-case" role="img" aria-label="The root scope contains Flow A; Flow B registers a resource that remains owned after Flow B ends and is cleaned when the root scope closes">
+<div class="lifetime-axis"><span>execution starts</span><span>time →</span><span>root scope closes</span></div>
+<div class="lifetime-stage lifetime-stage--scope"><strong>current root scope</strong><span class="lifetime-region lifetime-region--flow" style="--x: 5; --w: 90; --y: 2.2; --h: 7"><b>Flow A</b><span class="lifetime-region lifetime-region--subflow" style="--x: 12; --w: 34; --y: 1.8; --h: 2.2">Flow B registers R</span><span class="lifetime-region lifetime-region--resource" style="--x: 30; --w: 64; --y: 4.5; --h: 1.7">R remains owned · cleanup</span></span></div>
+</div>
+
+Flow B ends, but `R` does not. `Flow.scopeResource` and the other `scope...` functions register with the current scope,
+so `R` remains alive while Flow A continues and is cleaned only when that scope closes.
+
+### `Flow.scoped` creates an earlier cleanup boundary
+
+<div class="lifetime-case" role="img" aria-label="Flow A contains a child scope; Flow B registers a resource in it, Flow B ends, then the child scope cleans the resource before Flow A ends">
+<div class="lifetime-axis"><span>Flow A starts</span><span>time →</span><span>Flow A ends</span></div>
+<div class="lifetime-stage lifetime-stage--flow"><strong>Flow A</strong><span class="lifetime-region lifetime-region--scope" style="--x: 12; --w: 70; --y: 2.2; --h: 7"><b>Flow.scoped child</b><span class="lifetime-region lifetime-region--subflow" style="--x: 10; --w: 38; --y: 1.8; --h: 2.2">Flow B registers R</span><span class="lifetime-region lifetime-region--resource" style="--x: 27; --w: 66; --y: 4.5; --h: 1.7">R remains owned · cleanup</span></span></div>
+</div>
+
+Here Flow B still ends before `R` does, but the child scope closes before Flow A ends. This is the reason for
+`Flow.scoped`: it chooses a runtime cleanup boundary independently of the function or subflow that acquired the
+resource.
 
 ## Create a local runtime scope
 

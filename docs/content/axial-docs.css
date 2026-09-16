@@ -414,6 +414,95 @@ body:has(.axial-landing) #search-ui {
   font-size: 0.9rem;
 }
 
+.lifetime-case {
+  margin: 1rem 0 1.5rem;
+  overflow-x: auto;
+}
+
+.lifetime-axis,
+.lifetime-stage {
+  min-width: 42rem;
+}
+
+.lifetime-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  color: var(--axial-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lifetime-stage,
+.lifetime-region {
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 0.65rem;
+}
+
+.lifetime-stage {
+  height: 10.5rem;
+  padding: 0.55rem;
+  border: 2px solid var(--axial-border);
+  background: color-mix(in srgb, var(--axial-surface) 94%, #3767b1);
+}
+
+.lifetime-stage--flow,
+.lifetime-region--flow {
+  border-style: dashed;
+  border-color: color-mix(in srgb, #3767b1 75%, var(--axial-border));
+}
+
+.lifetime-stage--scope,
+.lifetime-region--scope {
+  border-color: color-mix(in srgb, #2f855a 70%, var(--axial-border));
+  background: color-mix(in srgb, #38a169 9%, var(--axial-surface));
+}
+
+.lifetime-stage > strong,
+.lifetime-region > b {
+  display: block;
+  color: var(--axial-heading);
+  font-size: 0.75rem;
+}
+
+.lifetime-region {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1rem);
+  width: calc(var(--w) * 1%);
+  height: calc(var(--h) * 1rem);
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--axial-border);
+  color: var(--axial-heading);
+  font-size: 0.7rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.lifetime-region--flow {
+  background: color-mix(in srgb, #3767b1 5%, var(--axial-surface));
+}
+
+.lifetime-region--subflow {
+  border-style: dashed;
+  border-color: color-mix(in srgb, #25838c 70%, var(--axial-border));
+  background: color-mix(in srgb, #25838c 12%, var(--axial-surface));
+}
+
+.lifetime-region--lexical {
+  border-color: color-mix(in srgb, #b7791f 70%, var(--axial-border));
+  background: color-mix(in srgb, #d69e2e 24%, var(--axial-surface));
+}
+
+.lifetime-region--resource {
+  border-color: color-mix(in srgb, #805ad5 70%, var(--axial-border));
+  background: color-mix(in srgb, #805ad5 20%, var(--axial-surface));
+}
+
 .scope-timeline {
   display: grid;
   gap: 0.65rem;
