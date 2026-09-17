@@ -94,6 +94,22 @@ type CrawlState =
     { Pending: string list
       Seen: Set<string> }
 
+let fetchPagesAndDiscoverLinks seen urls =
+    urls
+    |> List.map (fun url ->
+        fetchHtml url
+        |> Flow.map (fun html ->
+            { Url = url
+              Html = html }))
+    |> Flow.sequencePar
+    |> Flow.map (fun pages ->
+        let discovered =
+            pages
+            |> List.collect (fun page -> extractLinks page.Html)
+            |> List.filter (fun url -> not (Set.contains url seen))
+
+        pages, discovered)
+
 let crawl seeds =
     { Pending = seeds
       Seen = Set.empty }
@@ -110,23 +126,16 @@ let crawl seeds =
             let seen = Set.union state.Seen (Set.ofList batch)
             let remaining = List.except batch state.Pending
 
-            batch
-            |> List.map (fun url ->
-                fetchHtml url
-                |> Flow.map (fun html ->
-                    { Url = url
-                      Html = html }))
-            |> Flow.sequencePar
-            |> Flow.map (fun pages ->
-                let discovered =
-                    pages
-                    |> List.collect (fun page -> extractLinks page.Html)
-                    |> List.filter (fun url -> not (Set.contains url seen))
+            flow {
+                let! pages, discovered =
+                    fetchPagesAndDiscoverLinks seen batch
 
-                Some(
-                    pages,
-                    { Pending = remaining @ discovered
-                      Seen = seen })))
+                return
+                    Some(
+                        pages,
+                        { Pending = remaining @ discovered
+                          Seen = seen })
+            })
     |> FlowStream.collect FlowStream.fromSeq
 ```
 
