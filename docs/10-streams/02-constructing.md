@@ -62,34 +62,79 @@ val it: Exit<int list,Never> = Success [1; 2; 3]
 Only one step runs per downstream pull. In this small numeric example the emitted value and next state look similar,
 but they are independent parts of the transition.
 
-## Exercise one Flow per pull
+## Fetch a known list concurrently
 
-The distinction is clearer in a paginated source. Here the private state is a page number, while the emitted values are
-messages. `FlowStream.unfoldFlow` invokes `fetchPage` only when downstream requests another page, so the simulated client
-call remains demand-driven.
+Suppose `fetchHtml` performs one HTTP request as a Flow, while `extractLinks` is a total function from an HTML document
+to the links it contains. When the URLs are already known, construct a stream from the list and overlap requests with
+`FlowStream.mapFlowPar`:
 
-```fsharp transcript
-> let requestedPages = ResizeArray<int>() in
-- let fetchPage page =
--     requestedPages.Add page
--     match page with
--     | 1 -> Flow.succeed (Some(["A"; "B"], 2))
--     | 2 -> Flow.succeed (Some(["C"], 3))
--     | _ -> Flow.succeed None
-- in
-- (1 |> FlowStream.unfoldFlow fetchPage : FlowStream<string list>)
-- |> FlowStream.collect FlowStream.fromSeq
-- |> FlowStream.runCollect
-- |> Flow.map (fun messages -> List.ofSeq requestedPages, messages)
-- |> Flow.run ();;
-val requestedPages: List<int> = seq [1; 2; 3]
-val it: Exit<Tuple<int list,string list>,Never> = Success ([1; 2; 3], ["A"; "B"; "C"])
+```fsharp no-check reason="fetchHtml and HtmlPage are application HTTP abstractions described in the surrounding prose"
+let fetchKnownPages urls =
+    urls
+    |> FlowStream.fromSeq
+    |> FlowStream.mapFlowPar
+        (Parallelism.bounded 4)
+        (fun url ->
+            fetchHtml url
+            |> Flow.map (fun html ->
+                { Url = url
+                  Html = html }))
 ```
 
-The terminal pull of page 3 returns `None`, so it emits no value. The result shows both sides of the source: three
-effectful page requests occurred, while consumers saw only the three messages. Because pulls are demand-driven,
-placing `FlowStream.take 2` before the terminal consumer would stop after enough messages and prevent unnecessary later
-pulls.
+This keeps at most four requests active or waiting to be emitted. Pages arrive in completion order. Stopping downstream
+also interrupts and awaits requests that are still running.
 
-This makes `FlowStream.unfoldFlow` the basic integration point for paginated APIs, sockets, subscriptions, and other
-host adapters without moving their I/O into Axial core.
+## Discover and pull linked pages
+
+A crawler does not know every URL up front. Each response discovers more work. Here the unfold state is the private
+crawl frontier—pending URLs plus the URLs already seen—while each emitted value is a fetched page:
+
+```fsharp no-check reason="fetchHtml, extractLinks, and HtmlPage are application HTTP abstractions described in the surrounding prose"
+type CrawlState =
+    { Pending: string list
+      Seen: Set<string> }
+
+let crawl seeds =
+    { Pending = seeds
+      Seen = Set.empty }
+    |> FlowStream.unfoldFlow (fun state ->
+        let batch =
+            state.Pending
+            |> List.filter (fun url -> not (Set.contains url state.Seen))
+            |> List.distinct
+            |> List.truncate 4
+
+        if List.isEmpty batch then
+            Flow.succeed None
+        else
+            let seen = Set.union state.Seen (Set.ofList batch)
+            let remaining = List.except batch state.Pending
+
+            batch
+            |> List.map (fun url ->
+                fetchHtml url
+                |> Flow.map (fun html ->
+                    { Url = url
+                      Html = html }))
+            |> Flow.sequencePar
+            |> Flow.map (fun pages ->
+                let discovered =
+                    pages
+                    |> List.collect (fun page -> extractLinks page.Html)
+                    |> List.filter (fun url -> not (Set.contains url seen))
+
+                Some(
+                    pages,
+                    { Pending = remaining @ discovered
+                      Seen = seen })))
+    |> FlowStream.collect FlowStream.fromSeq
+```
+
+One downstream pull fetches one frontier batch. `Flow.sequencePar` fetches the batch concurrently and preserves its URL
+order. The total `extractLinks` function turns those pages into the next private frontier. `FlowStream.collect` then
+flattens each emitted page batch so consumers see `HtmlPage` values rather than crawler state.
+
+Backpressure applies between frontier batches: the crawler does not fetch the next discovered batch until downstream
+pulls again. A terminal consumer supplies the stream scope, so failure, interruption, or early termination cancels
+outstanding requests and closes their resources. This pattern also applies to paginated APIs, where the private state
+is a continuation token and each emitted value is a page or item.
