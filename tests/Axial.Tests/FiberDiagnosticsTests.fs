@@ -149,3 +149,58 @@ module FiberDiagnosticsTests =
             |> Flow.withFiberRegistry registry
 
         test <@ Flow.runSync () workflow = Exit.Success(true, 1, Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, false) @>
+
+    [<Fact>]
+    let ``FiberRegistry keeps settled history, failures, and per-name totals`` () =
+        let registry = FiberRegistry()
+
+        let workflow : Flow<unit, string, unit> =
+            flow {
+                let! ok1 = Flow.forkNamed "load" (Flow.ok 1)
+                let! ok2 = Flow.forkNamed "load" (Flow.sleep (TimeSpan.FromMilliseconds 20.0) |> Flow.map (fun () -> 2))
+                let! failed = Flow.forkNamed "load" (Flow.fail "not found" : Flow<unit, string, int>)
+                let! died = Flow.forkNamed "save" (Flow.die (InvalidOperationException "disk full") : Flow<unit, string, int>)
+                let! stuck = Flow.forkNamed "save" (Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> 0))
+                let! _ = Fiber.await ok1
+                let! _ = Fiber.await ok2
+                let! _ = Fiber.await failed
+                let! _ = Fiber.await died
+                let! _ = Fiber.interrupt stuck
+                return ()
+            }
+            |> Flow.withFiberRegistry registry
+
+        test <@ Flow.runSync () workflow = Exit.Success () @>
+
+        let settled = registry.Settled()
+        let failureOf name = settled |> List.filter (fun fiber -> fiber.Fiber.Name = Some name) |> List.choose _.Failure
+
+        test <@ registry.StartedCount = 5L @>
+        test <@ settled.Length = 5 @>
+        test <@ failureOf "load" = [ "Fail(not found)" ] @>
+        test <@ failureOf "save" |> List.exists (fun text -> text.Contains "InvalidOperationException: disk full") @>
+
+        let stats = registry.Stats()
+        let load = stats |> List.find (fun entry -> entry.Name = "load")
+        let save = stats |> List.find (fun entry -> entry.Name = "save")
+
+        test <@ (load.Count, load.Failed, load.Interrupted) = (3, 1, 0) @>
+        test <@ (save.Count, save.Failed, save.Interrupted) = (2, 1, 1) @>
+        test <@ load.MaxDuration >= TimeSpan.FromMilliseconds 15.0 && load.TotalDuration >= load.MaxDuration @>
+
+    [<Fact>]
+    let ``FiberRegistry history is bounded`` () =
+        let registry = FiberRegistry(3)
+
+        let workflow : Flow<unit, string, unit> =
+            flow {
+                for index in 1..10 do
+                    let! fiber = Flow.forkNamed $"job-{index}" (Flow.ok index)
+                    let! _ = Fiber.await fiber
+                    ()
+            }
+            |> Flow.withFiberRegistry registry
+
+        test <@ Flow.runSync () workflow = Exit.Success () @>
+        test <@ registry.Settled() |> List.map (fun fiber -> fiber.Fiber.Name) = [ Some "job-8"; Some "job-9"; Some "job-10" ] @>
+        test <@ registry.Stats().Length = 10 @>

@@ -221,6 +221,20 @@ ids. Each dump entry also carries the runtime annotations that were in scope at 
 settled fibers, the settle timestamp. `registry.Snapshot()` returns the same data as structured
 `FiberDump` values for programmatic checks; `Fiber.dump fiber` snapshots a single handle.
 
+The registry also remembers what already finished, which is what a diagnostics screen or a hang report needs:
+
+- `registry.Settled()` returns the most recently settled fibers, oldest first. Each carries its final metadata
+  (status, start and settle times, `Duration`) and, for a failed fiber, its cause rendered as text, for typed errors
+  as well as defects.
+- `registry.Stats()` returns totals per fiber name since the registry was installed: how many ran, failed, and were
+  interrupted, with total and longest duration. Unnamed fibers are counted under `(unnamed)`.
+- `registry.UnobservedDefects()` returns defects that nobody joined or awaited.
+- `registry.StartedCount` counts every fiber started.
+
+History is bounded: `FiberRegistry()` keeps the last 200 settled fibers and unobserved defects, and
+`FiberRegistry(capacity)` sets another bound. Totals are kept for every name. Install the registry with
+`Flow.withFiberRegistry` to get typed failure text; an observer composed by hand sees defects only.
+
 A dump that shows a stuck fiber can also act on it: `registry.Interrupt id` signals one live fiber to stop, and
 `registry.InterruptByName "outbox-poller"` signals every live fiber with that name and returns how many it signalled.
 Neither waits; whoever joins or awaits the fiber sees `Cause.Interrupt`.

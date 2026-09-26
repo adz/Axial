@@ -362,6 +362,48 @@ module FiberObserver =
         : unit =
         try observer.OnUnobservedDefect metadata defect with _ -> ()
 
+/// <summary>A forked fiber that has settled, as recorded by a <see cref="T:Axial.FiberRegistry" />.</summary>
+type SettledFiber =
+    {
+        /// <summary>The fiber's metadata at the moment it settled, including <c>SettledAt</c> and <c>Status</c>.</summary>
+        Fiber: FiberDump
+        /// <summary>
+        /// For a fiber that failed, its cause rendered as text: typed errors with their own <c>ToString</c>, defects as
+        /// exception type and message. <c>None</c> for fibers that succeeded or were interrupted.
+        /// </summary>
+        Failure: string option
+    }
+
+    /// <summary>How long the fiber ran.</summary>
+    member this.Duration =
+        (this.Fiber.SettledAt |> Option.defaultValue this.Fiber.StartedAt) - this.Fiber.StartedAt
+
+/// <summary>Totals for every settled fiber that shared a name, as recorded by a <see cref="T:Axial.FiberRegistry" />.</summary>
+type FiberStats =
+    {
+        /// <summary>The name given at the fork site, or <c>(unnamed)</c> for fibers forked without one.</summary>
+        Name: string
+        /// <summary>How many fibers with this name settled.</summary>
+        Count: int
+        /// <summary>How many of them failed with a typed error or a defect.</summary>
+        Failed: int
+        /// <summary>How many of them were interrupted.</summary>
+        Interrupted: int
+        /// <summary>The sum of their durations.</summary>
+        TotalDuration: TimeSpan
+        /// <summary>The longest single duration.</summary>
+        MaxDuration: TimeSpan
+    }
+
+/// <summary>A defect that nobody observed, as recorded by a <see cref="T:Axial.FiberRegistry" />.</summary>
+type UnobservedDefect =
+    {
+        /// <summary>The fiber that died, or <c>None</c> for a discarded race or timeout loser, which is not a fiber.</summary>
+        Fiber: FiberDump option
+        /// <summary>The defect's exception type and message.</summary>
+        Defect: string
+    }
+
 /// The interrupt handle of every running forked fiber, keyed by fiber id. Filled by <c>Flow.fork</c> and emptied as
 /// fibers settle, so it holds only live fibers. It lets <c>FiberRegistry</c> interrupt a fiber it only knows by id.
 module internal FiberInterrupts =
@@ -394,14 +436,100 @@ module internal FiberInterrupts =
 /// <c>SettledAt</c>). Root workflow executions are not forked fibers and do not appear; forked fibers whose
 /// parent is the root render as top-level nodes.
 /// </remarks>
-type FiberRegistry() =
+type FiberRegistry(historyCapacity: int) =
+    do
+        if historyCapacity < 0 then
+            invalidArg (nameof historyCapacity) "The history capacity cannot be negative."
+
     let gate = obj()
     let live = System.Collections.Generic.Dictionary<int64, FiberMetadata>()
+    let settled = System.Collections.Generic.Queue<SettledFiber>()
+    let unobserved = System.Collections.Generic.Queue<UnobservedDefect>()
+    let stats = System.Collections.Generic.Dictionary<string, FiberStats>()
+    // Failure text arrives just before the fiber's OnEnd, which consumes it.
+    let pendingFailures = System.Collections.Generic.Dictionary<int64, string>()
+    let mutable started = 0L
+
+    let enqueueBounded (queue: System.Collections.Generic.Queue<'a>) (item: 'a) =
+        if historyCapacity > 0 then
+            if queue.Count >= historyCapacity then
+                queue.Dequeue() |> ignore
+
+            queue.Enqueue item
+
+    let recordEnd (metadata: FiberMetadata) (defect: exn option) =
+        lock gate (fun () ->
+            live.Remove metadata.Id.Value |> ignore
+
+            let failure =
+                match pendingFailures.TryGetValue metadata.Id.Value with
+                | true, text ->
+                    pendingFailures.Remove metadata.Id.Value |> ignore
+                    Some text
+                | _ when metadata.Status = FiberStatus.Failed -> defect |> Option.map Platform.dieDescription
+                | _ -> None
+
+            let fiber = { Fiber = FiberDump.ofMetadata metadata; Failure = failure }
+            enqueueBounded settled fiber
+
+            let name = metadata.Name |> Option.defaultValue "(unnamed)"
+            let duration = fiber.Duration
+
+            let previous =
+                match stats.TryGetValue name with
+                | true, value -> value
+                | _ -> { Name = name; Count = 0; Failed = 0; Interrupted = 0; TotalDuration = TimeSpan.Zero; MaxDuration = TimeSpan.Zero }
+
+            stats[name] <-
+                { previous with
+                    Count = previous.Count + 1
+                    Failed = previous.Failed + (if metadata.Status = FiberStatus.Failed then 1 else 0)
+                    Interrupted = previous.Interrupted + (if metadata.Status = FiberStatus.Interrupted then 1 else 0)
+                    TotalDuration = previous.TotalDuration + duration
+                    MaxDuration = max previous.MaxDuration duration })
 
     let observer =
         { FiberObserver.none with
-            OnStart = fun metadata -> lock gate (fun () -> live[metadata.Id.Value] <- metadata)
-            OnEnd = fun metadata _ -> lock gate (fun () -> live.Remove metadata.Id.Value |> ignore) }
+            OnStart =
+                fun metadata ->
+                    lock gate (fun () ->
+                        live[metadata.Id.Value] <- metadata
+                        started <- started + 1L)
+            OnEnd = recordEnd
+            OnUnobservedDefect =
+                fun metadata defect ->
+                    lock gate (fun () ->
+                        enqueueBounded
+                            unobserved
+                            { Fiber = metadata |> Option.map FiberDump.ofMetadata
+                              Defect = Platform.dieDescription defect }) }
+
+    /// <summary>Creates a registry that remembers the last 200 settled fibers and unobserved defects.</summary>
+    new() = FiberRegistry(200)
+
+    /// Records a failed fiber's rendered cause; called by the runtime just before the fiber's OnEnd.
+    member internal _.RecordFailure (metadata: FiberMetadata) (text: string) =
+        lock gate (fun () -> pendingFailures[metadata.Id.Value] <- text)
+
+    /// <summary>How many settled fibers and unobserved defects the registry remembers.</summary>
+    member _.HistoryCapacity = historyCapacity
+
+    /// <summary>How many fibers have started since the registry was installed.</summary>
+    member _.StartedCount : int64 = lock gate (fun () -> started)
+
+    /// <summary>The most recently settled fibers, oldest first, up to <c>HistoryCapacity</c>.</summary>
+    /// <remarks>
+    /// Failed fibers carry their rendered cause when the registry was installed with <c>Flow.withFiberRegistry</c>;
+    /// an observer composed by hand sees only defects.
+    /// </remarks>
+    member _.Settled() : SettledFiber list = lock gate (fun () -> List.ofSeq settled)
+
+    /// <summary>Totals per fiber name for every fiber that settled since the registry was installed, ordered by name.</summary>
+    member _.Stats() : FiberStats list =
+        lock gate (fun () -> List.ofSeq stats.Values) |> List.sortBy _.Name
+
+    /// <summary>The most recent defects that nobody observed, oldest first, up to <c>HistoryCapacity</c>.</summary>
+    member _.UnobservedDefects() : UnobservedDefect list = lock gate (fun () -> List.ofSeq unobserved)
 
     /// <summary>The lifecycle observer that feeds the registry. Compose it if installing observers manually.</summary>
     member _.Observer : FiberObserver = observer
@@ -719,6 +847,8 @@ type internal RuntimeContext =
         TelemetrySink: Axial.Telemetry.Attribute -> unit
         FiberId: FiberId
         Observer: FiberObserver
+        /// Registries installed with Flow.withFiberRegistry; a failed fiber hands each its rendered cause.
+        Registries: FiberRegistry list
         /// Opaque ambient tracer slot. `Axial` has no dependency on `System.Diagnostics.DiagnosticSource`, so this
         /// is untyped here; `Axial.Telemetry` is the only package that boxes/unboxes it (as `ActivitySource`).
         Tracer: obj option
@@ -736,6 +866,7 @@ module internal RuntimeContext =
             TelemetrySink = ignore
             FiberId = FiberId.next ()
             Observer = FiberObserver.none
+            Registries = []
             Tracer = None
         }
 
@@ -783,6 +914,9 @@ module internal RuntimeContext =
 
     let withObserver (observer: FiberObserver) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Observer = observer }
+
+    let withRegistry (registry: FiberRegistry) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with Registries = registry :: runtime.Registries }
 
     let withTracer (tracer: obj) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Tracer = Some tracer }

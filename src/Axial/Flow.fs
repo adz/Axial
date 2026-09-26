@@ -633,7 +633,12 @@ module Flow =
         (registry: FiberRegistry)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
-        addFiberObserver registry.Observer flow
+        withRuntime
+            (fun runtime ->
+                runtime
+                |> RuntimeContext.withObserver (FiberObserver.compose runtime.Observer registry.Observer)
+                |> RuntimeContext.withRegistry registry)
+            flow
 
     /// <summary>Installs a runtime annotation sink for integration packages.</summary>
     /// <exclude/>
@@ -1105,6 +1110,15 @@ module Flow =
                             | Exit.Failure cause -> Cause.defects cause |> List.tryHead
 
                         tracker.Settled defect
+
+                        if status = FiberStatus.Failed && not parentRuntime.Registries.IsEmpty then
+                            match exit with
+                            | Exit.Failure cause ->
+                                let text = Cause.prettyPrint (fun error -> OutcomeText.plain (box error)) cause
+
+                                for registry in parentRuntime.Registries do
+                                    try registry.RecordFailure metadata text with _ -> ()
+                            | Exit.Success _ -> ()
 
                         if defect.IsNone then
                             Platform.lock registrationGate (fun () ->
