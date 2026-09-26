@@ -1,5 +1,6 @@
 namespace Axial
 
+open System
 open System.Threading
 
 /// <summary>
@@ -33,6 +34,13 @@ type FlowStream<'value> = FlowStream<unit, Never, 'value>
 
 /// <summary>A stream with no environment requirement.</summary>
 type FlowStream<'error, 'value> = FlowStream<unit, 'error, 'value>
+
+/// An upstream event moved through an operator's internal queue.
+[<RequireQualifiedAccess>]
+type internal Pumped<'value, 'error> =
+    | Item of 'value
+    | Ended
+    | Failed of Cause<'error>
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -261,6 +269,194 @@ module FlowStream =
                     | Exit.Failure cause -> Execution.ofCause cause)
 
         FlowStream(fun env ct -> fill env ct bound false (fun () -> op env ct) [])
+
+    // Moves upstream values into a one-slot queue from a producer fiber, so an operator can wait for "the next value
+    // or a timer" instead of blocking on a pull. The producer is forked into the consumer's scope, so it stops when
+    // the consumer finishes or stops early; a one-slot queue keeps upstream back-pressure.
+    let private pump
+        (op: 'env -> CancellationToken -> Execution<StreamStep<'value, 'error>, 'error>)
+        (env: 'env)
+        (ct: CancellationToken)
+        : Execution<Queue<Pumped<'value, 'error>>, 'error> =
+        let queue : Queue<Pumped<'value, 'error>> = QueueCore.create BackPressure (Some 1)
+
+        let offer item pct =
+            Flow.invoke (Queue.offer item queue) env pct
+
+        let producer : Flow<'env, Never, unit> =
+            Flow(fun env pct ->
+                Execution.loop (fun () -> op env pct) (fun next ->
+                    next ()
+                    |> Execution.fold
+                        (function
+                            | Done -> offer Pumped.Ended pct |> Execution.map (fun _ -> Platform.Break())
+                            | Next(value, tail) -> offer (Pumped.Item value) pct |> Execution.map (fun _ -> Platform.Continue tail))
+                        (fun cause -> offer (Pumped.Failed cause) pct |> Execution.map (fun _ -> Platform.Break()))))
+
+        Flow.invoke (Flow.forkDetached producer) env ct |> Execution.map (fun _ -> queue)
+
+    let private takePumped queue env ct : Execution<Pumped<'value, 'error>, 'error> =
+        Flow.invoke (Queue.take queue) env ct
+
+    // The next pumped event, or None if none arrives within `timeout`. Interrupting the losing take never loses a value.
+    let private takeWithin queue (timeout: TimeSpan) env ct : Execution<Pumped<'value, 'error> option, 'error> =
+        if timeout <= TimeSpan.Zero then
+            Flow.invoke (Queue.poll queue) env ct
+        else
+            Flow.invoke (Flow.race (Queue.take queue |> Flow.map Some) (Flow.sleep timeout |> Flow.map (fun () -> None))) env ct
+
+    let private finished () : Execution<StreamStep<'value, 'error>, 'error> = Execution.ofValue Done
+
+    /// <summary>Groups values into lists of at most <paramref name="size" />, emitting early when <paramref name="window" /> passes.</summary>
+    /// <remarks>
+    /// A group starts with the next value and is emitted when it holds <paramref name="size" /> values or when
+    /// <paramref name="window" /> has passed since its first value, whichever comes first. No empty group is emitted.
+    /// When upstream ends or fails, the partial group is emitted first. Use it to batch writes or progress updates
+    /// without waiting indefinitely for a full batch.
+    /// </remarks>
+    /// <example><code>events |&gt; FlowStream.groupedWithin 100 (TimeSpan.FromSeconds 1.0)</code></example>
+    let groupedWithin (size: int) (window: TimeSpan) stream : FlowStream<'env, 'error, 'value list> =
+        if size <= 0 then invalidArg (nameof size) "Group size must be positive."
+        if window <= TimeSpan.Zero then invalidArg (nameof window) "The window must be positive."
+        let (FlowStream op) = stream
+
+        FlowStream(fun env ct ->
+            pump op env ct
+            |> Execution.bind (fun queue ->
+                let rec group () =
+                    takePumped queue env ct
+                    |> Execution.bind (function
+                        | Pumped.Ended -> finished ()
+                        | Pumped.Failed cause -> Execution.ofCause cause
+                        | Pumped.Item first ->
+                            let deadline = Platform.monotonicNow () + window
+
+                            Execution.loop ([ first ], 1) (fun (values, count) ->
+                                if count >= size then
+                                    Execution.ofValue (Platform.Break(Next(List.rev values, group)))
+                                else
+                                    takeWithin queue (deadline - Platform.monotonicNow ()) env ct
+                                    |> Execution.map (function
+                                        | None -> Platform.Break(Next(List.rev values, group))
+                                        | Some(Pumped.Item value) -> Platform.Continue(value :: values, count + 1)
+                                        | Some Pumped.Ended -> Platform.Break(Next(List.rev values, finished))
+                                        | Some(Pumped.Failed cause) -> Platform.Break(Next(List.rev values, fun () -> Execution.ofCause cause)))))
+
+                group ()))
+
+    /// <summary>Emits a value only once <paramref name="quiet" /> passes without a newer one.</summary>
+    /// <remarks>
+    /// Each value replaces the pending one and restarts the wait, so a burst produces only its last value. The
+    /// pending value is emitted when upstream ends, and before a failure is propagated. Use it for search-as-you-type
+    /// input.
+    /// </remarks>
+    /// <example><code>keystrokes |&gt; FlowStream.debounce (TimeSpan.FromMilliseconds 300.0)</code></example>
+    let debounce (quiet: TimeSpan) stream : FlowStream<'env, 'error, 'value> =
+        if quiet <= TimeSpan.Zero then invalidArg (nameof quiet) "The quiet period must be positive."
+        let (FlowStream op) = stream
+
+        FlowStream(fun env ct ->
+            pump op env ct
+            |> Execution.bind (fun queue ->
+                let rec next () =
+                    takePumped queue env ct
+                    |> Execution.bind (function
+                        | Pumped.Ended -> finished ()
+                        | Pumped.Failed cause -> Execution.ofCause cause
+                        | Pumped.Item value ->
+                            Execution.loop value (fun pending ->
+                                takeWithin queue quiet env ct
+                                |> Execution.map (function
+                                    | None -> Platform.Break(Next(pending, next))
+                                    | Some(Pumped.Item newer) -> Platform.Continue newer
+                                    | Some Pumped.Ended -> Platform.Break(Next(pending, finished))
+                                    | Some(Pumped.Failed cause) -> Platform.Break(Next(pending, fun () -> Execution.ofCause cause)))))
+
+                next ()))
+
+    /// <summary>Emits at most one value per <paramref name="interval" />, keeping the latest value when faster.</summary>
+    /// <remarks>
+    /// The first value is emitted immediately. Values that arrive within <paramref name="interval" /> of the last
+    /// emission replace each other, and the latest is emitted when the interval ends. The pending value is emitted
+    /// when upstream ends, and before a failure is propagated. Use it for progress reporting, where only the
+    /// current state matters.
+    /// </remarks>
+    /// <example><code>progress |&gt; FlowStream.throttle (TimeSpan.FromMilliseconds 100.0)</code></example>
+    let throttle (interval: TimeSpan) stream : FlowStream<'env, 'error, 'value> =
+        if interval <= TimeSpan.Zero then invalidArg (nameof interval) "The interval must be positive."
+        let (FlowStream op) = stream
+
+        FlowStream(fun env ct ->
+            pump op env ct
+            |> Execution.bind (fun queue ->
+                let rec next (lastEmitted: TimeSpan option) () =
+                    takePumped queue env ct
+                    |> Execution.bind (function
+                        | Pumped.Ended -> finished ()
+                        | Pumped.Failed cause -> Execution.ofCause cause
+                        | Pumped.Item value ->
+                            let now = Platform.monotonicNow ()
+
+                            match lastEmitted with
+                            | Some emitted when now - emitted < interval ->
+                                let deadline = emitted + interval
+
+                                Execution.loop value (fun pending ->
+                                    takeWithin queue (deadline - Platform.monotonicNow ()) env ct
+                                    |> Execution.map (function
+                                        | None -> Platform.Break(Next(pending, next (Some(Platform.monotonicNow ()))))
+                                        | Some(Pumped.Item newer) -> Platform.Continue newer
+                                        | Some Pumped.Ended -> Platform.Break(Next(pending, finished))
+                                        | Some(Pumped.Failed cause) -> Platform.Break(Next(pending, fun () -> Execution.ofCause cause))))
+                            | _ -> Execution.ofValue (Next(value, next (Some now))))
+
+                next None ()))
+
+    /// <summary>Maps each value to a flow, interrupting the previous flow when a newer value arrives.</summary>
+    /// <remarks>
+    /// Only the latest value's flow is kept: when upstream produces a new value while a flow is running, that flow is
+    /// interrupted (and its cleanup awaited) and the new value's flow starts. Results are emitted as flows complete.
+    /// When upstream ends, the running flow is allowed to finish. The first failure stops the stream. Use it for
+    /// search-as-you-type and autocomplete, where a result for stale input is worthless.
+    /// </remarks>
+    /// <example><code>queries |&gt; FlowStream.debounce (TimeSpan.FromMilliseconds 200.0) |&gt; FlowStream.switchMapFlow search</code></example>
+    let switchMapFlow (mapper: 'value -> Flow<'env, 'error, 'next>) stream : FlowStream<'env, 'error, 'next> =
+        let (FlowStream op) = stream
+
+        FlowStream(fun env ct ->
+            pump op env ct
+            |> Execution.bind (fun queue ->
+                let start value = Flow.invoke (Flow.fork (mapper value)) env ct
+
+                let rec idle () =
+                    takePumped queue env ct
+                    |> Execution.bind (function
+                        | Pumped.Ended -> finished ()
+                        | Pumped.Failed cause -> Execution.ofCause cause
+                        | Pumped.Item value -> start value |> Execution.bind running)
+
+                and running fiber =
+                    Execution.loop fiber (fun fiber ->
+                        let nextEvent = Queue.take queue |> Flow.map Choice1Of2
+                        let completion = Fiber.await fiber |> Flow.map Choice2Of2
+
+                        Flow.invoke (Flow.race nextEvent completion) env ct
+                        |> Execution.bind (function
+                            | Choice1Of2(Pumped.Item value) ->
+                                Flow.invoke (Fiber.interrupt fiber) env ct
+                                |> Execution.bind (fun _ -> start value)
+                                |> Execution.map Platform.Continue
+                            | Choice1Of2 Pumped.Ended ->
+                                Flow.invoke (Fiber.await fiber) env ct
+                                |> Execution.bind (function
+                                    | Exit.Success result -> Execution.ofValue (Platform.Break(Next(result, finished)))
+                                    | Exit.Failure cause -> Execution.ofCause cause)
+                            | Choice1Of2(Pumped.Failed cause) ->
+                                Flow.invoke (Fiber.interrupt fiber) env ct |> Execution.bind (fun _ -> Execution.ofCause cause)
+                            | Choice2Of2(Exit.Success result) -> Execution.ofValue (Platform.Break(Next(result, idle)))
+                            | Choice2Of2(Exit.Failure cause) -> Execution.ofCause cause))
+
+                idle ()))
 
     /// <summary>Groups consecutive values into non-empty lists of at most <paramref name="size"/> elements.</summary>
     /// <remarks>The operator pulls and retains at most <paramref name="size"/> upstream values for each emitted list.</remarks>
