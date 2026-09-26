@@ -11,19 +11,16 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 - Build `Hub<'a>` with per-subscriber strategies on top of `Queue` (Part 2 of `dev-docs/queues_and_hubs.md`).
 - Add `Schedule.union`, `Schedule.intersect`, and `Schedule.fixed` (Part 3 of `dev-docs/queues_and_hubs.md`).
-- Fix `Semaphore.withPermit` losing a permit when a suspended acquirer is interrupted: its signal stays in
-  `PermitQueue.Waiters`, and the next `release` hands the permit to the dead waiter. Use the `Queue` waiter pattern
-  (state changed under the gate; an interrupted waiter that was already granted a permit releases it).
-- Make `Ref.make` and `Deferred.make` allocate per run. `Ref.make value` is `Flow.ok (Ref(...))`, so the cell is created
-  when the flow value is built and every run of that value shares one cell.
 - FsLiveDocs 0.7.3 bundles its own `Axial.dll` (0.9.1) and runs doc transcripts in-process, so examples that use newer
   Axial APIs (`Queue`, `FlowStream.chunkBySize`, `mapFlowPar`) fail with type-load errors. Fix in FsLiveDocs by
   isolating the evaluated assemblies from the tool's own dependencies.
-- Make unbounded recursive loops run in constant memory. `Platform.guardStack` continues on a fresh stack every 96
-  synchronous steps with `Task.Run`, and each hop's proxy task awaits the next, so a `let rec loop () = flow { ...;
-  return! loop () }` or a long stream pull retains ~5–9 B per iteration until the loop ends (measured 2026-09-26 over
-  1M iterations). Long-lived Queue/Hub consumers and control loops need a trampoline that does not chain tasks;
-  see `dev-docs/current-ideas/flow-as-data.md` for the run-loop direction.
+- Make hand-written recursive loops (`let rec loop () = flow { ...; return! loop () }`) run in constant memory on
+  .NET. Each `return!` of a pending `ValueTask` must be awaited by the caller, so every iteration stays live until
+  the loop ends (~420 B per suspending iteration, ~5 B per synchronous one; measured 2026-09-26). Library loops —
+  `flow { while/for }`, stream consumers and skipping operators, `Schedule.retry`/`repeat`, `Flow.Runtime.retry`/
+  `supervise`, `STM.atomically`, `Queue.offerAll` — already use `Platform.loop`. Fixing user recursion needs the
+  runner to trampoline binds itself; see `dev-docs/current-ideas/flow-as-data.md`. Until then, docs should steer
+  long-running loops to `while`, streams, or schedules.
 - Reassess remaining demand-driven Flow work in `LATER_TODO.md` against a concrete application before expanding the API.
 
 ## Acceptance

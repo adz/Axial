@@ -146,3 +146,18 @@ module WorkflowStateTests =
 
         let exit = waiter.GetAwaiter().GetResult()
         test <@ exit = Exit.Success 1 @>
+
+    [<Fact>]
+    let ``Ref: each run of make creates a new cell`` () =
+        let make = Ref.make 0
+
+        let workflow : Flow<unit, Never, int> =
+            flow {
+                let! first = make
+                let! second = make
+                do! first |> Ref.set 1
+                return! Ref.get second
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success 0 @>
+

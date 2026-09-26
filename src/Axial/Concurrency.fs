@@ -3,6 +3,67 @@ namespace Axial
 open System
 open System.Collections.Generic
 
+/// A growable ring buffer with O(1) operations at both ends. Portable to Fable, unlike LinkedList.
+type internal Deque<'a>() =
+    let mutable items: 'a array = Array.zeroCreate 4
+    let mutable head = 0
+    let mutable count = 0
+
+    let grow () =
+        let next: 'a array = Array.zeroCreate (items.Length * 2)
+
+        for index in 0 .. count - 1 do
+            next[index] <- items[(head + index) % items.Length]
+
+        items <- next
+        head <- 0
+
+    member _.Count = count
+
+    member _.PushBack(value: 'a) =
+        if count = items.Length then grow ()
+        items[(head + count) % items.Length] <- value
+        count <- count + 1
+
+    member _.PushFront(value: 'a) =
+        if count = items.Length then grow ()
+        head <- (head - 1 + items.Length) % items.Length
+        items[head] <- value
+        count <- count + 1
+
+    member _.PopFront() : 'a =
+        let value = items[head]
+        items[head] <- Unchecked.defaultof<'a>
+        head <- (head + 1) % items.Length
+        count <- count - 1
+        value
+
+    /// Removes the first element that is reference-equal to <paramref name="value" />, preserving order.
+    member _.RemoveReference(value: 'a) : bool =
+        let mutable found = -1
+        let mutable index = 0
+
+        while found < 0 && index < count do
+            if obj.ReferenceEquals(items[(head + index) % items.Length], value) then found <- index
+            index <- index + 1
+
+        if found < 0 then
+            false
+        else
+            for shift in found .. count - 2 do
+                items[(head + shift) % items.Length] <- items[(head + shift + 1) % items.Length]
+
+            items[(head + count - 1) % items.Length] <- Unchecked.defaultof<'a>
+            count <- count - 1
+            true
+
+    member _.Drain() : 'a list =
+        let values = [ for index in 0 .. count - 1 -> items[(head + index) % items.Length] ]
+        items <- Array.zeroCreate 4
+        head <- 0
+        count <- 0
+        values
+
 /// <summary>A validated upper bound for concurrent Flow operations.</summary>
 type Parallelism = private Parallelism of int
 
@@ -37,7 +98,8 @@ type Deferred<'error, 'value> =
 module Deferred =
     /// <summary>Creates an empty deferred value.</summary>
     let make<'env, 'error, 'value> () : Flow<'env, 'error, Deferred<'error, 'value>> =
-        Flow.ok (Deferred(Platform.newSignal ()))
+        // Allocated when the flow runs, so each run of the same flow value gets its own deferred.
+        Flow(fun _ _ -> Execution.ofValue (Deferred(Platform.newSignal ())))
 
     /// <summary>Waits for the deferred outcome, preserving success, typed failure, defect, or interruption.</summary>
     let await (deferred: Deferred<'error, 'value>) : Flow<'env, 'error, 'value> =
@@ -80,48 +142,68 @@ module Deferred =
 
 /// <summary>A Flow-native semaphore handle used to limit concurrent workflow sections.</summary>
 type FlowSemaphore =
-    private
+    internal
     | FlowSemaphore of PermitQueue
 
+/// A workflow waiting for a permit. <c>Granted</c> changes only under the queue's gate, so an interrupted waiter and
+/// a release that hands it the permit cannot both win.
+and internal PermitWaiter() =
+    member val Signal: Platform.Signal<unit> = Platform.newSignal<unit> ()
+    member val Granted = false with get, set
+
 /// A small FIFO queue of permits, built on <see cref="T:Axial.Platform.Signal`1" />. Acquiring takes an
-/// available permit immediately, or enqueues a waiter signal that the next <c>release</c> resolves; releasing
+/// available permit immediately, or enqueues a waiter that the next <c>release</c> grants; releasing
 /// hands the freed permit straight to the oldest queued waiter, if any, or returns it to the pool otherwise.
 and internal PermitQueue =
     { Gate: obj
       mutable Available: int
-      Waiters: Queue<Platform.Signal<unit>> }
+      Waiters: Deque<PermitWaiter> }
 
 module internal PermitQueue =
     let create (permits: int) : PermitQueue =
         { Gate = obj ()
           Available = permits
-          Waiters = Queue<Platform.Signal<unit>>() }
+          Waiters = Deque<PermitWaiter>() }
 
-    /// Registers a waiter for a permit, or immediately grants one if available. Returns <c>None</c> when the
-    /// permit was granted synchronously, or <c>Some signal</c> to await otherwise.
-    let tryAcquire (queue: PermitQueue) : Platform.Signal<unit> option =
+    /// Grants a permit immediately if one is available (<c>None</c>), or enqueues a waiter to await (<c>Some</c>).
+    let tryAcquire (queue: PermitQueue) : PermitWaiter option =
         Platform.lock queue.Gate (fun () ->
             if queue.Available > 0 then
                 queue.Available <- queue.Available - 1
                 None
             else
-                let signal = Platform.newSignal ()
-                queue.Waiters.Enqueue signal
-                Some signal)
+                let waiter = PermitWaiter()
+                queue.Waiters.PushBack waiter
+                Some waiter)
 
     /// Releases a permit: hands it directly to the oldest queued waiter, if any, or returns it to the pool.
     let release (queue: PermitQueue) : unit =
         let nextWaiter =
             Platform.lock queue.Gate (fun () ->
                 if queue.Waiters.Count > 0 then
-                    Some(queue.Waiters.Dequeue())
+                    let waiter = queue.Waiters.PopFront()
+                    waiter.Granted <- true
+                    Some waiter
                 else
                     queue.Available <- queue.Available + 1
                     None)
 
         match nextWaiter with
-        | Some signal -> Platform.resolveSignal signal () |> ignore
+        | Some waiter -> Platform.resolveSignal waiter.Signal () |> ignore
         | None -> ()
+
+    /// Withdraws an interrupted waiter. If it was granted a permit in the same instant, the permit is released
+    /// again rather than lost.
+    let withdraw (queue: PermitQueue) (waiter: PermitWaiter) : unit =
+        let wasGranted =
+            Platform.lock queue.Gate (fun () ->
+                if waiter.Granted then
+                    true
+                else
+                    queue.Waiters.RemoveReference waiter |> ignore
+                    false)
+
+        if wasGranted then release queue
 
 /// <summary>Flow-native semaphore helpers.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -152,8 +234,8 @@ module Semaphore =
                         PermitQueue.release queue
                         Execution.ofCause cause)
                     (FlowInternal.invoke flow environment cancellationToken)
-            | Some signal ->
-                Execution.bind
+            | Some waiter ->
+                Execution.fold
                     (fun () ->
                         Execution.fold
                             (fun value ->
@@ -163,4 +245,7 @@ module Semaphore =
                                 PermitQueue.release queue
                                 Execution.ofCause cause)
                             (FlowInternal.invoke flow environment cancellationToken))
-                    (Platform.awaitSignal signal cancellationToken))
+                    (fun cause ->
+                        PermitQueue.withdraw queue waiter
+                        Execution.ofCause cause)
+                    (Platform.awaitSignal waiter.Signal cancellationToken))

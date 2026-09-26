@@ -179,7 +179,6 @@ module StmBuilders =
 [<RequireQualifiedAccess>]
 module STM =
     let private stmLock = obj()
-    let mutable private version = 0L
     let private waiters = ResizeArray<Platform.Signal<unit>>()
 
     let private snapshot (context: TContext) =
@@ -187,6 +186,9 @@ module STM =
             Journal = TJournal(context.Journal)
             Reads = HashSet<int64>(context.Reads)
         }
+
+    /// The number of transactions waiting in <c>retry</c>; used by tests to prove interrupted waits are withdrawn.
+    let internal pendingRetries () = Platform.lock stmLock (fun () -> waiters.Count)
 
     let private freshContext () =
         {
@@ -262,7 +264,7 @@ module STM =
     /// </code>
     /// </example>
     let atomically (transaction: STM<'T>) : Flow<'env, 'none, 'T> =
-        let rec run (cancellationToken: CancellationToken) : Execution<'T, 'none> =
+        let attempt (cancellationToken: CancellationToken) : Execution<Platform.LoopStep<unit, 'T>, 'none> =
             let outcome =
                 Platform.lock stmLock (fun () ->
                     let (STM op) = transaction
@@ -273,10 +275,14 @@ module STM =
                         for KeyValue(_, (v, tref)) in context.Journal do
                             tref.Commit(v)
 
-                        version <- version + 1L
-                        let pending = waiters.ToArray()
-                        waiters.Clear()
-                        Choice1Of2(result, pending)
+                        // A transaction that wrote nothing changed no state a retrying transaction could be
+                        // waiting on, so it wakes nobody.
+                        if context.Journal.Count = 0 then
+                            Choice1Of2(result, [||])
+                        else
+                            let pending = waiters.ToArray()
+                            waiters.Clear()
+                            Choice1Of2(result, pending)
                     | Retry ->
                         let signal = Platform.newSignal ()
                         waiters.Add signal
@@ -287,8 +293,18 @@ module STM =
                 for signal in pending do
                     Platform.resolveSignal signal () |> ignore
 
-                Execution.ofValue result
+                Execution.ofValue (Platform.Break result)
             | Choice2Of2 signal ->
-                Execution.bind (fun () -> run cancellationToken) (Platform.awaitSignal signal cancellationToken)
+                Execution.fold
+                    (fun () -> Execution.ofValue (Platform.Continue ()))
+                    (fun cause ->
+                        // An interrupted retry withdraws its wake-up signal instead of leaving it for the next commit.
+                        Platform.lock stmLock (fun () ->
+                            let index = waiters.FindIndex(fun waiter -> obj.ReferenceEquals(waiter, signal))
+                            if index >= 0 then waiters.RemoveAt index)
 
-        Flow(fun _ cancellationToken -> run cancellationToken)
+                        Execution.ofCause cause)
+                    (Platform.awaitSignal signal cancellationToken)
+
+        // A loop rather than recursion, so a transaction that retries many times runs in constant memory.
+        Flow(fun _ cancellationToken -> Execution.loop () (fun () -> attempt cancellationToken))

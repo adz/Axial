@@ -2,67 +2,6 @@ namespace Axial
 
 open System
 
-/// A growable ring buffer with O(1) operations at both ends. Portable to Fable, unlike LinkedList.
-type internal Deque<'a>() =
-    let mutable items: 'a array = Array.zeroCreate 4
-    let mutable head = 0
-    let mutable count = 0
-
-    let grow () =
-        let next: 'a array = Array.zeroCreate (items.Length * 2)
-
-        for index in 0 .. count - 1 do
-            next[index] <- items[(head + index) % items.Length]
-
-        items <- next
-        head <- 0
-
-    member _.Count = count
-
-    member _.PushBack(value: 'a) =
-        if count = items.Length then grow ()
-        items[(head + count) % items.Length] <- value
-        count <- count + 1
-
-    member _.PushFront(value: 'a) =
-        if count = items.Length then grow ()
-        head <- (head - 1 + items.Length) % items.Length
-        items[head] <- value
-        count <- count + 1
-
-    member _.PopFront() : 'a =
-        let value = items[head]
-        items[head] <- Unchecked.defaultof<'a>
-        head <- (head + 1) % items.Length
-        count <- count - 1
-        value
-
-    /// Removes the first element that is reference-equal to <paramref name="value" />, preserving order.
-    member _.RemoveReference(value: 'a) : bool =
-        let mutable found = -1
-        let mutable index = 0
-
-        while found < 0 && index < count do
-            if obj.ReferenceEquals(items[(head + index) % items.Length], value) then found <- index
-            index <- index + 1
-
-        if found < 0 then
-            false
-        else
-            for shift in found .. count - 2 do
-                items[(head + shift) % items.Length] <- items[(head + shift + 1) % items.Length]
-
-            items[(head + count - 1) % items.Length] <- Unchecked.defaultof<'a>
-            count <- count - 1
-            true
-
-    member _.Drain() : 'a list =
-        let values = [ for index in 0 .. count - 1 -> items[(head + index) % items.Length] ]
-        items <- Array.zeroCreate 4
-        head <- 0
-        count <- 0
-        values
-
 type internal WaiterState =
     | Waiting
     | Completed
@@ -393,7 +332,7 @@ module Queue =
         Flow(fun _ cancellationToken ->
             let items = Seq.toArray values
 
-            let rec offerFrom start allAccepted =
+            Execution.loop (0, true) (fun (start, allAccepted) ->
                 let wake = ResizeArray()
                 let index = ref start
                 let accepted = ref allAccepted
@@ -417,12 +356,10 @@ module Queue =
                     Execution.ofCause Cause.Interrupt
                 else
                     match suspended.Value with
-                    | None -> Execution.ofValue accepted.Value
+                    | None -> Execution.ofValue (Platform.Break accepted.Value)
                     | Some offerer ->
                         QueueCore.awaitOffer queue offerer cancellationToken
-                        |> Execution.bind (fun _ -> offerFrom index.Value accepted.Value)
-
-            offerFrom 0 true)
+                        |> Execution.map (fun _ -> Platform.Continue(index.Value, accepted.Value))))
 
     /// <summary>Removes the oldest value, suspending until one is available.</summary>
     /// <remarks>After shutdown this returns the remaining values, then is interrupted.</remarks>

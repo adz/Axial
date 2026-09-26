@@ -106,6 +106,14 @@ module internal Execution =
         : Execution<'next, 'error> =
         fold binder ofCause effect
 
+    /// Runs <paramref name="step" /> until it returns <c>Platform.Break</c>, in constant memory. Use this rather
+    /// than recursion for any loop whose iteration count is unbounded.
+    let loop
+        (initial: 'state)
+        (step: 'state -> Execution<Platform.LoopStep<'state, 'result>, 'error>)
+        : Execution<'result, 'error> =
+        Platform.loop initial step
+
     let mapError
         (mapper: 'error -> 'nextError)
         (effect: Execution<'value, 'error>)

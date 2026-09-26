@@ -175,6 +175,64 @@ let fold
     }
     |> ofAwaitable
 
+/// One iteration's decision in <c>loop</c>: run another iteration with a new state, or finish with a result.
+type LoopStep<'state, 'result> =
+    | Continue of state: 'state
+    | Break of result: 'result
+
+/// Runs <paramref name="step" /> repeatedly until it returns <c>Break</c> or fails, in constant memory.
+/// Recursing through <c>fold</c> instead keeps every iteration's continuation alive when steps complete
+/// asynchronously: iteration N cannot complete until iteration N+1 does, so a loop that runs for the life of an
+/// application grows without bound. Here synchronous steps run in a <c>while</c> loop (so no stack depth is
+/// needed either), and the first pending step moves the rest of the loop into one state machine that awaits each
+/// step in turn.
+let loop (initial: 'state) (step: 'state -> Execution<LoopStep<'state, 'result>, 'error>) : Execution<'result, 'error> =
+#if FABLE_COMPILER
+    // F# Async runs `return!` as a trampolined tail call, so recursion does not retain earlier iterations.
+    let rec go state =
+        async {
+            let! exit = step state
+
+            match exit with
+            | Exit.Success(Continue next) -> return! go next
+            | Exit.Success(Break result) -> return Exit.Success result
+            | Exit.Failure cause -> return Exit.Failure cause
+        }
+
+    go initial
+#else
+    let awaitRest (pending: Execution<LoopStep<'state, 'result>, 'error>) : Execution<'result, 'error> =
+        ValueTask<Exit<'result, 'error>>(
+            task {
+                let mutable current = pending
+                let mutable outcome = ValueNone
+
+                while outcome.IsNone do
+                    let! exit = current
+
+                    match exit with
+                    | Exit.Success(Continue next) -> current <- step next
+                    | Exit.Success(Break result) -> outcome <- ValueSome(Exit.Success result)
+                    | Exit.Failure cause -> outcome <- ValueSome(Exit.Failure cause)
+
+                return outcome.Value
+            })
+
+    let mutable current = step initial
+    let mutable outcome = ValueNone
+
+    while outcome.IsNone do
+        if current.IsCompletedSuccessfully then
+            match current.Result with
+            | Exit.Success(Continue next) -> current <- step next
+            | Exit.Success(Break result) -> outcome <- ValueSome(ofExit (Exit.Success result))
+            | Exit.Failure cause -> outcome <- ValueSome(ofExit (Exit.Failure cause))
+        else
+            outcome <- ValueSome(awaitRest current)
+
+    outcome.Value
+#endif
+
 /// Transforms both channels of an already-known exit outcome. A private mirror of <c>Exit.mapBoth</c> (defined
 /// later, in Core.fs) so this file does not need to depend on modules compiled after it.
 let private mapBothExit
@@ -519,21 +577,33 @@ let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Ex
     async {
         let! interrupted =
             Async.FromContinuations(fun (onSuccess, onError, onCancel) ->
-                let mutable settled = false
+                let settled = ref false
+                let registration: IDisposable option ref = ref None
 
+                // Disposing the registration when the timer fires keeps a long-lived token from accumulating one
+                // callback per sleep, which a repeating schedule would otherwise do on every tick.
                 let settle value =
-                    if not settled then
-                        settled <- true
+                    if not settled.Value then
+                        settled.Value <- true
+                        registration.Value |> Option.iter (fun disposable -> disposable.Dispose())
                         onSuccess value
 
                 if cancellationToken.IsCancellationRequested then
                     settle true
                 else
                     let timer = scheduleTimer (fun () -> settle false) (int delay.TotalMilliseconds)
-                    cancellationToken.Register(fun () ->
-                        cancelTimer timer
-                        settle true)
-                    |> ignore)
+
+                    // Fable's registration is a plain `{ Dispose }` object; its F# type does not expose Dispose.
+                    registration.Value <-
+                        Some(
+                            unbox<IDisposable> (
+                                box (
+                                    cancellationToken.Register(fun () ->
+                                        cancelTimer timer
+                                        settle true)
+                                )
+                            )
+                        ))
 
         return if interrupted then Exit.Failure Cause.Interrupt else Exit.Success()
     }
@@ -988,15 +1058,24 @@ let awaitSignal (signal: Signal<'value>) (cancellationToken: CancellationToken) 
             async {
                 return!
                     Async.FromContinuations(fun (resolveContinuation, _, _) ->
-                        let mutable settled = false
+                        let settled = ref false
+                        let registration: IDisposable option ref = ref None
 
+                        // Disposing the cancellation registration at settle keeps a long-lived token from
+                        // accumulating one callback per wait.
                         let settle (exit: Exit<'value, 'error>) =
-                            if not settled then
-                                settled <- true
+                            if not settled.Value then
+                                settled.Value <- true
+                                registration.Value |> Option.iter (fun disposable -> disposable.Dispose())
                                 resolveContinuation exit
 
                         signal.Waiters <- (fun value -> settle (Exit.Success value)) :: signal.Waiters
-                        cancellationToken.Register(fun () -> settle (Exit.Failure Cause.Interrupt)) |> ignore)
+
+                        // Fable's registration is a plain `{ Dispose }` object; its F# type does not expose Dispose.
+                        let disposable =
+                            unbox<IDisposable> (box (cancellationToken.Register(fun () -> settle (Exit.Failure Cause.Interrupt))))
+
+                        if settled.Value then disposable.Dispose() else registration.Value <- Some disposable)
             }
 #else
     ValueTask<Exit<'value, 'error>>(

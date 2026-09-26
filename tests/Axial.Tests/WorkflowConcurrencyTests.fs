@@ -212,3 +212,48 @@ module WorkflowConcurrencyTests =
         | Exit.Success (Exit.Failure Cause.Interrupt) -> 
             test <@ executed = false @>
         | _ -> failwithf "Expected interrupted exit, got %A" outcome
+
+    [<Fact>]
+    let ``Semaphore: an interrupted waiter does not lose the permit`` () =
+        let waitingCount (FlowSemaphore queue) () =
+            Platform.lock queue.Gate (fun () -> queue.Waiters.Count)
+
+        let attempt () : Flow<unit, string, bool> =
+            flow {
+                let! semaphore = Semaphore.make 1
+                let! release = Deferred.make<unit, string, unit> ()
+                let! holder = Semaphore.withPermit semaphore (Deferred.await release) |> Flow.fork
+                let! waiter = Semaphore.withPermit semaphore (Flow.succeed ()) |> Flow.fork
+
+                let rec untilQueued remaining =
+                    flow {
+                        if waitingCount semaphore () = 0 && remaining > 0 then
+                            do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 1.0)
+                            return! untilQueued (remaining - 1)
+                    }
+
+                do! untilQueued 5000
+                // Race the interruption against the release that would grant the waiter its permit.
+                let! _ = Flow.zipPar (Flow.interrupt waiter) (Deferred.succeed () release)
+                do! Flow.join holder
+                // The permit must be available again whichever side of the race won.
+                return! Semaphore.withPermit semaphore (Flow.succeed true) |> Flow.Runtime.timeoutToOk (TimeSpan.FromSeconds 5.0) false
+            }
+
+        let workflow = List.init 200 (fun _ -> attempt ()) |> Flow.sequence
+        test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
+
+    [<Fact>]
+    let ``Deferred: each run of make creates a new deferred`` () =
+        let make = Deferred.make<unit, string, int> ()
+
+        let workflow : Flow<unit, string, bool * bool> =
+            flow {
+                let! first = make
+                let! second = make
+                let! completedFirst = Deferred.succeed 1 first
+                let! completedSecond = Deferred.succeed 2 second
+                return completedFirst, completedSecond
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(true, true) @>

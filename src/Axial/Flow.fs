@@ -747,22 +747,20 @@ module Flow =
             if policy.MaxAttempts < 1 then
                 invalidArg (nameof policy.MaxAttempts) "RetryPolicy.MaxAttempts must be at least 1."
 
-            let rec loop attempt =
-                Flow(fun environment cancellationToken ->
+            Flow(fun environment cancellationToken ->
+                Execution.loop 1 (fun attempt ->
                     invoke flow environment cancellationToken
                     |> Execution.fold
-                        Execution.ofValue
+                        (Platform.Break >> Execution.ofValue)
                         (fun cause ->
                             match cause with
                             | Cause.Fail error when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
                                 let delay = policy.Delay attempt
 
                                 Platform.delayThenExecution delay cancellationToken (fun () ->
-                                    invoke (loop (attempt + 1)) environment cancellationToken)
+                                    Execution.ofValue (Platform.Continue(attempt + 1)))
                             | _ ->
-                                Execution.ofCause cause))
-
-            loop 1
+                                Execution.ofCause cause)))
 
         /// <summary>Restarts a flow that terminates with an unexpected defect, according to the specified policy.</summary>
         /// <remarks>
@@ -794,8 +792,8 @@ module Flow =
                     && List.isEmpty (Cause.failures cause)
                     && defects |> List.forall policy.ShouldRestart
 
-            let rec loop attempt =
-                Flow(fun environment cancellationToken ->
+            Flow(fun environment cancellationToken ->
+                Execution.loop 1 (fun attempt ->
                     let parentRuntime = RuntimeState.current()
                     let attemptScope = parentRuntime.Scope.AddChild()
                     let attemptRuntime = parentRuntime |> RuntimeContext.withScope attemptScope
@@ -809,15 +807,13 @@ module Flow =
                         (fun cleanupError executionError exit ->
                             combineCleanup cleanupError executionError exit "Supervised flow execution produced no outcome.")
                     |> Execution.fold
-                        Execution.ofValue
+                        (Platform.Break >> Execution.ofValue)
                         (fun cause ->
                             if attempt < policy.MaxAttempts && shouldRestart cause then
                                 Platform.delayThenExecution (policy.Delay attempt) cancellationToken (fun () ->
-                                    invoke (loop (attempt + 1)) environment cancellationToken)
+                                    Execution.ofValue (Platform.Continue(attempt + 1)))
                             else
-                                Execution.ofCause cause))
-
-            loop 1
+                                Execution.ofCause cause)))
 
     let private forkWith (name: string option) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->

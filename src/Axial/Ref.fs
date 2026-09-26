@@ -22,7 +22,8 @@ module Ref =
     /// </code>
     /// </example>
     let make (value: 'T) : Flow<'env, 'none, Ref<'T>> =
-        Flow.ok (Ref (ref value, obj()))
+        // Allocated when the flow runs, so each run of the same flow value gets its own cell.
+        Flow(fun _ _ -> Execution.ofValue (Ref (ref value, obj())))
 
     /// <summary>Reads the current value of the reference.</summary>
     /// <param name="reference">The <see cref="T:Axial.State.Ref`1" /> to read from.</param>

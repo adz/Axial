@@ -98,10 +98,15 @@ type FlowBuilder() =
             guard: unit -> bool,
             body: Flow<'env, 'error, unit>
         ) : Flow<'env, 'error, unit> =
-        if guard () then
-            this.Bind(body, fun () -> this.While(guard, body))
-        else
-            this.Zero()
+        // A loop, not recursion through Bind: a `while` that suspends each iteration (a queue consumer, a polling
+        // loop) would otherwise retain every iteration until it ends.
+        Flow(fun environment cancellationToken ->
+            Execution.loop () (fun () ->
+                if guard () then
+                    FlowBuilderRuntime.run environment cancellationToken body
+                    |> Execution.map Platform.Continue
+                else
+                    Execution.ofValue (Platform.Break ())))
 
     member this.For
         (

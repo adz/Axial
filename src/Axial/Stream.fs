@@ -121,17 +121,14 @@ module FlowStream =
         (action: 'value -> unit)
         (FlowStream op)
         : Flow<'env, 'error, unit> =
-        let rec loop (nextStep: unit -> Execution<StreamStep<'value, 'error>, 'error>) : Execution<unit, 'error> =
-            Execution.bind
-                (fun step ->
-                    match step with
-                    | Done -> Execution.ofValue ()
-                    | Next(value, continuation) ->
+        Flow(fun env cancellationToken ->
+            Execution.loop (fun () -> op env cancellationToken) (fun next ->
+                next ()
+                |> Execution.map (function
+                    | Done -> Platform.Break ()
+                    | Next(value, tail) ->
                         action value
-                        loop continuation)
-                (nextStep ())
-
-        Flow(fun env cancellationToken -> loop (fun () -> op env cancellationToken))
+                        Platform.Continue tail)))
         |> Flow.scoped
 
     /// <summary>Transforms the successful values of a stream using the provided function.</summary>
@@ -172,10 +169,11 @@ module FlowStream =
     let filter predicate stream =
         let (FlowStream op) = stream
         let rec loop next () =
-            next () |> Execution.bind (function
-                | Done -> Execution.ofValue Done
-                | Next(value, tail) when predicate value -> Execution.ofValue(Next(value, loop tail))
-                | Next(_, tail) -> loop tail ())
+            Execution.loop next (fun next ->
+                next () |> Execution.map (function
+                    | Done -> Platform.Break Done
+                    | Next(value, tail) when predicate value -> Platform.Break(Next(value, loop tail))
+                    | Next(_, tail) -> Platform.Continue tail))
         FlowStream(fun env ct -> loop (fun () -> op env ct) ())
 
     /// <summary>Maps and filters values in one operation.</summary>
@@ -183,12 +181,13 @@ module FlowStream =
     let choose chooser stream =
         let (FlowStream op) = stream
         let rec loop next () =
-            next () |> Execution.bind (function
-                | Done -> Execution.ofValue Done
-                | Next(value, tail) ->
-                    match chooser value with
-                    | Some selected -> Execution.ofValue(Next(selected, loop tail))
-                    | None -> loop tail ())
+            Execution.loop next (fun next ->
+                next () |> Execution.map (function
+                    | Done -> Platform.Break Done
+                    | Next(value, tail) ->
+                        match chooser value with
+                        | Some selected -> Platform.Break(Next(selected, loop tail))
+                        | None -> Platform.Continue tail))
         FlowStream(fun env ct -> loop (fun () -> op env ct) ())
 
     /// <summary>Runs an effect for each value before emitting the original value.</summary>
@@ -287,12 +286,13 @@ module FlowStream =
     let skip count stream =
         let (FlowStream op) = stream
         if count < 0 then invalidArg (nameof count) "Count cannot be negative."
-        let rec drop remaining next () =
-            next () |> Execution.bind (function
-                | Done -> Execution.ofValue Done
-                | Next(_, tail) when remaining > 0 -> drop (remaining - 1) tail ()
-                | Next(value, tail) -> Execution.ofValue(Next(value, tail)))
-        FlowStream(fun env ct -> drop count (fun () -> op env ct) ())
+        let drop next =
+            Execution.loop (count, next) (fun (remaining, next) ->
+                next () |> Execution.map (function
+                    | Done -> Platform.Break Done
+                    | Next(_, tail) when remaining > 0 -> Platform.Continue(remaining - 1, tail)
+                    | Next(value, tail) -> Platform.Break(Next(value, tail))))
+        FlowStream(fun env ct -> drop (fun () -> op env ct))
 
     /// <summary>Emits values while a predicate remains true.</summary>
     /// <example><code>stream |&gt; FlowStream.takeWhile (fun value -&gt; value &lt; 100)</code></example>
@@ -308,12 +308,13 @@ module FlowStream =
     /// <example><code>stream |&gt; FlowStream.skipWhile String.IsNullOrEmpty</code></example>
     let skipWhile predicate stream =
         let (FlowStream op) = stream
-        let rec dropping next () =
-            next () |> Execution.bind (function
-                | Done -> Execution.ofValue Done
-                | Next(value, tail) when predicate value -> dropping tail ()
-                | Next(value, tail) -> Execution.ofValue(Next(value, tail)))
-        FlowStream(fun env ct -> dropping (fun () -> op env ct) ())
+        let dropping next =
+            Execution.loop next (fun next ->
+                next () |> Execution.map (function
+                    | Done -> Platform.Break Done
+                    | Next(value, tail) when predicate value -> Platform.Continue tail
+                    | Next(value, tail) -> Platform.Break(Next(value, tail))))
+        FlowStream(fun env ct -> dropping (fun () -> op env ct))
 
     /// <summary>Emits each value paired with its zero-based index.</summary>
     /// <example><code>stream |&gt; FlowStream.indexed</code></example>
@@ -338,12 +339,13 @@ module FlowStream =
     let distinctUntilChangedBy projection stream =
         let (FlowStream op) = stream
         let rec loop previous next () =
-            next () |> Execution.bind (function
-                | Done -> Execution.ofValue Done
-                | Next(value, tail) ->
-                    let key = projection value
-                    if previous = Some key then loop previous tail ()
-                    else Execution.ofValue(Next(value, loop (Some key) tail)))
+            Execution.loop next (fun next ->
+                next () |> Execution.map (function
+                    | Done -> Platform.Break Done
+                    | Next(value, tail) ->
+                        let key = projection value
+                        if previous = Some key then Platform.Continue tail
+                        else Platform.Break(Next(value, loop (Some key) tail))))
         FlowStream(fun env ct -> loop None (fun () -> op env ct) ())
 
     /// <summary>Concatenates two streams, evaluating the second only after the first ends.</summary>
@@ -359,17 +361,22 @@ module FlowStream =
     /// <example><code>stream |&gt; FlowStream.collect FlowStream.fromSeq</code></example>
     let collect mapper stream =
         let (FlowStream outer) = stream
-        let rec pullOuter env ct nextOuter () =
-            nextOuter () |> Execution.bind (function
-                | Done -> Execution.ofValue Done
-                | Next(value, outerTail) ->
-                    let (FlowStream inner) = mapper value
-                    pullInner env ct outerTail (fun () -> inner env ct) ())
-        and pullInner env ct outerTail nextInner () =
-            nextInner () |> Execution.bind (function
-                | Done -> pullOuter env ct outerTail ()
-                | Next(value, innerTail) -> Execution.ofValue(Next(value, pullInner env ct outerTail innerTail)))
-        FlowStream(fun env ct -> pullOuter env ct (fun () -> outer env ct) ())
+        // The loop state is the outer continuation plus the current inner stream, if any. Empty inner streams
+        // and outer values are passed over inside the loop rather than by recursion.
+        let rec pull env ct outerNext innerNext () =
+            Execution.loop (outerNext, innerNext) (fun (outerNext, innerNext) ->
+                match innerNext with
+                | Some next ->
+                    next () |> Execution.map (function
+                        | Done -> Platform.Continue(outerNext, None)
+                        | Next(value, innerTail) -> Platform.Break(Next(value, pull env ct outerNext (Some innerTail))))
+                | None ->
+                    outerNext () |> Execution.map (function
+                        | Done -> Platform.Break Done
+                        | Next(value, outerTail) ->
+                            let (FlowStream inner) = mapper value
+                            Platform.Continue(outerTail, Some(fun () -> inner env ct))))
+        FlowStream(fun env ct -> pull env ct (fun () -> outer env ct) None ())
 
     /// <summary>Pairs values from two streams until either stream ends.</summary>
     /// <example><code>left |&gt; FlowStream.zip right</code></example>
@@ -389,9 +396,12 @@ module FlowStream =
     /// <example><code>stream |&gt; FlowStream.runFold (+) 0</code></example>
     let runFold folder initial (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, 'state> =
         let (FlowStream op) = stream
-        let rec loop state next =
-            next () |> Execution.bind (function Done -> Execution.ofValue state | Next(value, tail) -> loop (folder state value) tail)
-        Flow(fun env ct -> loop initial (fun () -> op env ct))
+        Flow(fun env ct ->
+            Execution.loop (initial, fun () -> op env ct) (fun (state, next) ->
+                next ()
+                |> Execution.map (function
+                    | Done -> Platform.Break state
+                    | Next(value, tail) -> Platform.Continue(folder state value, tail))))
         |> Flow.scoped
 
     /// <summary>Collects all emitted values into a list.</summary>
@@ -406,9 +416,10 @@ module FlowStream =
     /// <example><code>stream |&gt; FlowStream.runForEachFlow save</code></example>
     let runForEachFlow action (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, unit> =
         let (FlowStream op) = stream
-        let rec loop env ct next =
-            next () |> Execution.bind (function
-                | Done -> Execution.ofValue ()
-                | Next(value, tail) -> Flow.invoke (action value) env ct |> Execution.bind (fun () -> loop env ct tail))
-        Flow(fun env ct -> loop env ct (fun () -> op env ct))
+        Flow(fun env ct ->
+            Execution.loop (fun () -> op env ct) (fun next ->
+                next ()
+                |> Execution.bind (function
+                    | Done -> Execution.ofValue (Platform.Break ())
+                    | Next(value, tail) -> Flow.invoke (action value) env ct |> Execution.map (fun () -> Platform.Continue tail))))
         |> Flow.scoped

@@ -150,10 +150,11 @@ module Schedule =
         : Flow<'env, 'error, 'value> =
         let (Schedule op) = schedule
 
-        let rec loop attempt =
-            Flow(fun env ct ->
+        // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
+        Flow(fun env ct ->
+            Execution.loop 0 (fun attempt ->
                 Execution.fold
-                    (fun v -> Execution.ofValue v)
+                    (fun v -> Execution.ofValue (Platform.Break v))
                     (fun cause ->
                         match cause with
                         | Cause.Fail e ->
@@ -161,17 +162,14 @@ module Schedule =
                                 (fun (decision, delay) ->
                                     match decision with
                                     | Some _ ->
-                                        Execution.bind
-                                            (fun () -> FlowInternal.invoke (loop (attempt + 1)) env ct)
-                                            (FlowInternal.invoke (Flow.Runtime.sleep delay) env ct)
+                                        FlowInternal.invoke (Flow.Runtime.sleep delay) env ct
+                                        |> Execution.map (fun () -> Platform.Continue(attempt + 1))
                                     | None ->
                                         Execution.ofCause cause)
                                 (Execution.mapError (fun () -> e) (FlowInternal.invoke (op e attempt) env ct))
                         | _ ->
                             Execution.ofCause cause)
-                    (FlowInternal.invoke flow env ct))
-
-        loop 0
+                    (FlowInternal.invoke flow env ct)))
 
     /// <summary>Repeats a successful flow according to the supplied schedule.</summary>
     /// <remarks>Only success is repeated. Any failure — typed, defect, or interruption — propagates immediately
@@ -191,20 +189,19 @@ module Schedule =
         : Flow<'env, 'error, 'value> =
         let (Schedule op) = schedule
 
-        let rec loop attempt lastValue =
-            Flow(fun env ct ->
-                Execution.bind
-                    (fun (decision, (delay: TimeSpan)) ->
-                        match decision with
-                        | Some _ ->
-                            Execution.bind
-                                (fun () ->
-                                    Execution.bind
-                                        (fun nextValue -> FlowInternal.invoke (loop (attempt + 1) nextValue) env ct)
-                                        (FlowInternal.invoke flow env ct))
-                                (FlowInternal.invoke (Flow.Runtime.sleep delay) env ct)
-                        | None ->
-                            Execution.ofValue lastValue)
-                    (invokeSchedule op lastValue attempt env ct))
-
-        flow |> Flow.bind (loop 0)
+        // A loop rather than recursion, so a schedule that repeats for the life of an application (a control
+        // scan, a heartbeat) runs in constant memory.
+        Flow(fun env ct ->
+            FlowInternal.invoke flow env ct
+            |> Execution.bind (fun first ->
+                Execution.loop (0, first) (fun (attempt, lastValue) ->
+                    Execution.bind
+                        (fun (decision, (delay: TimeSpan)) ->
+                            match decision with
+                            | Some _ ->
+                                FlowInternal.invoke (Flow.Runtime.sleep delay) env ct
+                                |> Execution.bind (fun () -> FlowInternal.invoke flow env ct)
+                                |> Execution.map (fun nextValue -> Platform.Continue(attempt + 1, nextValue))
+                            | None ->
+                                Execution.ofValue (Platform.Break lastValue))
+                        (invokeSchedule op lastValue attempt env ct))))
