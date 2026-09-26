@@ -314,3 +314,86 @@ module WorkflowStreamTests =
 
         test <@ first = Exit.Success [ 0; 1; 2 ] @>
         test <@ pulled.Value - pulledAtEnd <= 1 @>
+
+    [<Fact>]
+    let ``repeatFlow runs its flow once per pull`` () =
+        let runs = ref 0
+        let next : Flow<unit, string, int> = Flow.delay (fun () -> runs.Value <- runs.Value + 1; Flow.ok runs.Value)
+
+        let values = FlowStream.repeatFlow next |> FlowStream.take 3 |> FlowStream.runCollect |> Flow.runSync ()
+
+        test <@ values = Exit.Success [ 1; 2; 3 ] @>
+        test <@ runs.Value = 3 @>
+
+    [<Fact>]
+    let ``using releases its resource when the stream ends, fails, or is cut short`` () =
+        let acquired = ref 0
+        let released = ref 0
+
+        let resource : Resource<unit, string, int> =
+            Resource.ofAsync
+                (Flow.delay (fun () -> acquired.Value <- acquired.Value + 1; Flow.ok 10))
+                (fun _ _ -> async { released.Value <- released.Value + 1 })
+
+        let numbers = FlowStream.using resource (fun start -> FlowStream.fromSeq [ start .. start + 4 ])
+
+        let all = numbers |> FlowStream.runCollect |> Flow.runSync ()
+        let releasedAfterAll = released.Value
+        let first = numbers |> FlowStream.take 2 |> FlowStream.runCollect |> Flow.runSync ()
+        let releasedAfterTake = released.Value
+
+        let failing =
+            FlowStream.using resource (fun _ -> FlowStream.fromFlow (Flow.fail "boom" : Flow<unit, string, int>))
+            |> FlowStream.runDrain
+            |> Flow.runSync ()
+
+        test <@ all = Exit.Success [ 10..14 ] @>
+        test <@ first = Exit.Success [ 10; 11 ] @>
+        test <@ failing = Exit.Failure(Cause.Fail "boom") @>
+        test <@ (releasedAfterAll, releasedAfterTake, released.Value) = (1, 2, 3) @>
+        test <@ acquired.Value = 3 @>
+
+    [<Fact>]
+    let ``runTryHead pulls one value, runTryLast and runCount consume everything`` () =
+        let pulled = ref 0
+
+        let counted : FlowStream<unit, string, int> =
+            FlowStream.repeatFlow (Flow.delay (fun () -> pulled.Value <- pulled.Value + 1; Flow.ok pulled.Value))
+
+        let head = counted |> FlowStream.runTryHead |> Flow.runSync ()
+        let emptyHead : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryHead |> Flow.runSync ()
+        let last = FlowStream.fromSeq [ 1..5 ] |> FlowStream.runTryLast |> Flow.runSync ()
+        let emptyLast : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryLast |> Flow.runSync ()
+        let count : Exit<int64, string> = FlowStream.fromSeq [ 1..7 ] |> FlowStream.runCount |> Flow.runSync ()
+
+        test <@ head = Exit.Success(Some 1) && pulled.Value = 1 @>
+        test <@ emptyHead = Exit.Success None @>
+        test <@ last = Exit.Success(Some 5) @>
+        test <@ emptyLast = Exit.Success None @>
+        test <@ count = Exit.Success 7L @>
+
+    [<Fact>]
+    let ``a slow consumer holds mapFlowPar's producer within the parallelism bound`` () =
+        let produced = ref 0
+        let consumed = ref 0
+        let lead = ref 0
+
+        let source : FlowStream<unit, string, int> =
+            FlowStream.repeatFlow (Flow.delay (fun () -> Flow.ok (Interlocked.Increment(&produced.contents))))
+            |> FlowStream.take 20
+
+        let result =
+            source
+            |> FlowStream.mapFlowPar (Parallelism.bounded 2) Flow.ok
+            |> FlowStream.runForEachFlow (fun _ ->
+                flow {
+                    consumed.Value <- consumed.Value + 1
+                    lead.Value <- max lead.Value (produced.Value - consumed.Value)
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
+                })
+            |> runOnManualTime
+
+        test <@ result = Exit.Success () @>
+        test <@ consumed.Value = 20 @>
+        // Pulling stops while the consumer is busy: never more than the two in-flight mappings are ahead.
+        test <@ lead.Value <= 2 @>

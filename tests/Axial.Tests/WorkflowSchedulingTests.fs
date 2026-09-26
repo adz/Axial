@@ -390,7 +390,8 @@ module WorkflowSchedulingTests =
                 { Attempt = 0
                   LoopStarted = TimeSpan.Zero
                   ExecutionStarted = ms started
-                  ExecutionEnded = ms ended }
+                  ExecutionEnded = ms ended
+                  RunState = ScheduleContext.newRunState () }
 
         // A run's own duration does not push later runs back.
         test <@ delay 0.0 20.0 = ms 30.0 @>
@@ -410,7 +411,8 @@ module WorkflowSchedulingTests =
                 { Attempt = 0
                   LoopStarted = TimeSpan.Zero
                   ExecutionStarted = ms started
-                  ExecutionEnded = ms ended }
+                  ExecutionEnded = ms ended
+                  RunState = ScheduleContext.newRunState () }
 
         // The first run took more than two periods: run again at once...
         test <@ delay 0.0 130.0 = TimeSpan.Zero @>
@@ -624,3 +626,115 @@ module WorkflowSchedulingTests =
         test <@ result = Exit.Success 3 @>
         test <@ releasedWhenReturned.Value = [| 1; 2 |] @>
         test <@ lock released (fun () -> released.ToArray()) = [| 1; 2; 3 |] @>
+
+    // Records when each attempt of a failing flow starts, relative to the first, on manual time.
+    let private recordAttempts (attempts: ResizeArray<TimeSpan>) (work: TimeSpan) : Flow<unit, string, unit> =
+        flow {
+            let! now = runtimeNow ()
+            attempts.Add now
+            if work > TimeSpan.Zero then do! Flow.sleep work
+            return! Flow.fail "transient"
+        }
+
+    let private offsets (attempts: ResizeArray<TimeSpan>) =
+        attempts |> Seq.map (fun at -> (at - attempts[0]).TotalMilliseconds) |> List.ofSeq
+
+    [<Fact>]
+    let ``Schedule.andThen switches to the next schedule and restarts its count`` () =
+        let attempts = ResizeArray<TimeSpan>()
+
+        let schedule =
+            Schedule.spaced (ms 10.0)
+            |> Schedule.upTo 2
+            |> Schedule.andThen (Schedule.exponential (ms 100.0) |> Schedule.upTo 2)
+
+        let result = recordAttempts attempts TimeSpan.Zero |> Flow.retry schedule |> runOnManualTime
+
+        test <@ result = Exit.Failure(Cause.Fail "transient") @>
+        // Two quick retries 10 ms apart, then the exponential schedule from its own start: 100 ms, then 200 ms.
+        test <@ offsets attempts = [ 0.0; 10.0; 20.0; 120.0; 320.0 ] @>
+
+    [<Fact>]
+    let ``Schedule.andThen reports which phase decided`` () =
+        let (Schedule op) = Schedule.recurs 1 |> Schedule.andThen (Schedule.recurs 1)
+        let runState = ScheduleContext.newRunState ()
+
+        let decide attempt =
+            match Flow.runSync () (op 0 { ScheduleContext.ofAttempt attempt with RunState = runState }) with
+            | Exit.Success(decision, _) -> decision
+            | other -> failwithf "Expected a decision, got %A" other
+
+        test <@ decide 0 = Some(Choice1Of2 0) @>
+        test <@ decide 1 = Some(Choice2Of2 0) @>
+        test <@ decide 2 = None @>
+
+    [<Fact>]
+    let ``Schedule.whileOutput and untilOutput stop on the schedule's own output`` () =
+        let attempts = ResizeArray<TimeSpan>()
+
+        let schedule =
+            Schedule.exponential (ms 100.0)
+            |> Schedule.whileOutput (fun delay -> delay < ms 500.0)
+
+        let result = recordAttempts attempts TimeSpan.Zero |> Flow.retry schedule |> runOnManualTime
+        test <@ result = Exit.Failure(Cause.Fail "transient") @>
+        // Delays 100, 200, 400; the next (800) is not below 500, so the retry stops.
+        test <@ offsets attempts = [ 0.0; 100.0; 300.0; 700.0 ] @>
+
+        let counted = ref 0
+        let untilThird = Schedule.recurs 10 |> Schedule.untilOutput (fun attempt -> attempt >= 2)
+
+        let repeated =
+            Flow.delay (fun () -> counted.Value <- counted.Value + 1; Flow.ok ())
+            |> Flow.repeat untilThird
+            |> Flow.runSync ()
+
+        test <@ repeated = Exit.Success () @>
+        test <@ counted.Value = 3 @>
+
+    [<Fact>]
+    let ``Schedule.within gives up before a retry would start past the budget`` () =
+        let attempts = ResizeArray<TimeSpan>()
+        let schedule = Schedule.spaced (ms 300.0) |> Schedule.within (TimeSpan.FromSeconds 1.0)
+
+        let result = recordAttempts attempts (ms 50.0) |> Flow.retry schedule |> runOnManualTime
+        test <@ result = Exit.Failure(Cause.Fail "transient") @>
+        // Each attempt takes 50 ms and waits 300 ms: starts at 0, 350, 700. A fourth would start at 1050, past 1 s.
+        test <@ offsets attempts = [ 0.0; 350.0; 700.0 ] @>
+
+    [<Fact>]
+    let ``Schedule.elapsed and map report time since the first run`` () =
+        let seen = ResizeArray<float>()
+
+        let schedule =
+            Schedule.elapsed
+            |> Schedule.map (fun elapsed -> seen.Add elapsed.TotalMilliseconds; elapsed)
+            |> Schedule.whileOutput (fun elapsed -> elapsed < ms 250.0)
+
+        let work : Flow<unit, string, unit> = Flow.sleep (ms 100.0)
+        let result = work |> Flow.repeat schedule |> runOnManualTime
+
+        test <@ result = Exit.Success () @>
+        test <@ List.ofSeq seen = [ 100.0; 200.0; 300.0 ] @>
+
+    [<Fact>]
+    let ``Schedule.resetAfter restores the restart budget after a healthy run`` () =
+        let starts = ResizeArray<TimeSpan>()
+        let runs = ref 0
+
+        // Crashes quickly twice, then runs for an hour before crashing, then crashes quickly until the budget ends.
+        let worker : Flow<unit, string, unit> =
+            flow {
+                let! now = runtimeNow ()
+                starts.Add now
+                runs.Value <- runs.Value + 1
+                if runs.Value = 3 then do! Flow.sleep (TimeSpan.FromHours 1.0)
+                return! Flow.die (InvalidOperationException "crash")
+            }
+
+        let schedule = Schedule.recurs 2 |> Schedule.resetAfter (TimeSpan.FromMinutes 10.0)
+        let result = worker |> Flow.supervise schedule |> runOnManualTime
+
+        test <@ match result with Exit.Failure(Cause.Die _) -> true | _ -> false @>
+        // Without the reset the budget of 2 restarts ends after run 3; the healthy hour earns two more.
+        test <@ runs.Value = 5 @>

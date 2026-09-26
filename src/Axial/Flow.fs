@@ -913,11 +913,12 @@ module Flow =
             let remaining = deadline - time.Now()
             time.Sleep((if remaining > TimeSpan.Zero then remaining else TimeSpan.Zero), cancellationToken))
 
-    let private scheduleContext (time: Platform.ITimeSource) attempt loopStarted executionStarted : ScheduleContext =
+    let private scheduleContext (time: Platform.ITimeSource) runState attempt loopStarted executionStarted : ScheduleContext =
         { Attempt = attempt
           LoopStarted = loopStarted
           ExecutionStarted = executionStarted
-          ExecutionEnded = time.Now() }
+          ExecutionEnded = time.Now()
+          RunState = runState }
 
     /// <summary>Retries a flow's typed failures according to a schedule.</summary>
     /// <remarks>
@@ -943,6 +944,7 @@ module Flow =
         // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
         Flow(fun environment cancellationToken ->
             let time = RuntimeState.current().Time
+            let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
 
             Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
@@ -954,7 +956,7 @@ module Flow =
                     (fun cause ->
                         match cause with
                         | Cause.Fail error ->
-                            let context = scheduleContext time attempt loopStarted executionStarted
+                            let context = scheduleContext time runState attempt loopStarted executionStarted
 
                             Schedule.decide schedule error context environment cancellationToken
                             |> Execution.bind (fun (decision, delay) ->
@@ -993,13 +995,14 @@ module Flow =
         // scan, a heartbeat) runs in constant memory.
         Flow(fun environment cancellationToken ->
             let time = RuntimeState.current().Time
+            let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
             let firstScope, first = runAttempt flow environment cancellationToken
 
             first
             |> Execution.bind (fun firstValue ->
                 Execution.loop (0, firstValue, firstScope, loopStarted) (fun (attempt, lastValue, lastScope, executionStarted) ->
-                    let context = scheduleContext time attempt loopStarted executionStarted
+                    let context = scheduleContext time runState attempt loopStarted executionStarted
 
                     Schedule.decide schedule lastValue context environment cancellationToken
                     |> Execution.bind (fun (decision, (delay: TimeSpan)) ->
@@ -1045,6 +1048,7 @@ module Flow =
 
         Flow(fun environment cancellationToken ->
             let time = RuntimeState.current().Time
+            let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
 
             Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
@@ -1056,7 +1060,7 @@ module Flow =
                     (fun cause ->
                         match restartable cause with
                         | Some defect ->
-                            let context = scheduleContext time attempt loopStarted executionStarted
+                            let context = scheduleContext time runState attempt loopStarted executionStarted
 
                             Schedule.decide schedule defect context environment cancellationToken
                             |> Execution.bind (fun (decision, delay) ->

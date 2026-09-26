@@ -14,15 +14,24 @@ type internal ScheduleContext =
         ExecutionStarted: TimeSpan
         /// When the execution that just finished ended.
         ExecutionEnded: TimeSpan
+        /// Memory for one run of the driven flow, shared by all its decisions. A schedule value is stateless, so
+        /// combinators that must remember something between decisions (<c>andThen</c>, <c>resetAfter</c>) keep it
+        /// here, keyed by the combinator instance.
+        RunState: System.Collections.Generic.Dictionary<obj, obj>
     }
 
 module internal ScheduleContext =
     /// A context with no timing information, for decisions that depend only on the attempt number.
+    /// Fresh memory for one run of a driven flow.
+    let newRunState () =
+        System.Collections.Generic.Dictionary<obj, obj>(HashIdentity.Reference)
+
     let ofAttempt attempt =
         { Attempt = attempt
           LoopStarted = TimeSpan.Zero
           ExecutionStarted = TimeSpan.Zero
-          ExecutionEnded = TimeSpan.Zero }
+          ExecutionEnded = TimeSpan.Zero
+          RunState = newRunState () }
 
 /// <summary>
 /// Decides, after each execution of a flow, whether to run it again and how long to wait first.
@@ -55,10 +64,10 @@ module Schedule =
     // schedule; these are the few Flow combinators the schedule constructors need.
     let private ok (value: 'value) : Flow<'env, 'error, 'value> = Flow(fun _ _ -> Execution.ofValue value)
 
-    let private map (mapper: 'value -> 'next) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'next> =
+    let private flowMap (mapper: 'value -> 'next) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'next> =
         Flow(fun env ct -> FlowInternal.invoke flow env ct |> Execution.map mapper)
 
-    let private bind
+    let private flowBind
         (binder: 'value -> Flow<'env, 'error, 'next>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'next> =
@@ -163,7 +172,7 @@ module Schedule =
     /// </example>
     let jitteredWith (sample: unit -> float) (Schedule op) : Schedule<'env, 'input, 'output> =
         Schedule(fun input context ->
-            map (fun (out, (delay: TimeSpan)) ->
+            flowMap (fun (out, (delay: TimeSpan)) ->
                 let jitter = sample () + 0.5
                 let scaledTicks = float delay.Ticks * jitter
 
@@ -200,9 +209,9 @@ module Schedule =
 
         Schedule(fun input context ->
             left input context
-            |> bind (fun (leftOutput, (leftDelay: TimeSpan)) ->
+            |> flowBind (fun (leftOutput, (leftDelay: TimeSpan)) ->
                 right input context
-                |> map (fun (rightOutput, (rightDelay: TimeSpan)) ->
+                |> flowMap (fun (rightOutput, (rightDelay: TimeSpan)) ->
                     match leftOutput, rightOutput with
                     | None, None -> None, TimeSpan.Zero
                     | Some _, None -> Some(leftOutput, None), leftDelay
@@ -228,9 +237,9 @@ module Schedule =
 
         Schedule(fun input context ->
             left input context
-            |> bind (fun (leftOutput, (leftDelay: TimeSpan)) ->
+            |> flowBind (fun (leftOutput, (leftDelay: TimeSpan)) ->
                 right input context
-                |> map (fun (rightOutput, (rightDelay: TimeSpan)) ->
+                |> flowMap (fun (rightOutput, (rightDelay: TimeSpan)) ->
                     match leftOutput, rightOutput with
                     | Some leftValue, Some rightValue -> Some(leftValue, rightValue), max leftDelay rightDelay
                     | _ -> None, TimeSpan.Zero)))
@@ -319,6 +328,155 @@ module Schedule =
 
         Schedule(fun input context ->
             if context.Attempt < n then op input context else ok (None, TimeSpan.Zero))
+
+    /// <summary>Transforms a schedule's output, keeping its decisions and delays.</summary>
+    /// <param name="mapper">Maps each output.</param>
+    /// <param name="schedule">The schedule whose output is mapped.</param>
+    /// <example><code>Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |&gt; Schedule.map (fun delay -&gt; delay.TotalSeconds)</code></example>
+    let map (mapper: 'output -> 'next) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'next> =
+        Schedule(fun input context ->
+            op input context |> flowMap (fun (decision, delay) -> Option.map mapper decision, delay))
+
+    /// <summary>Recurs forever without waiting, emitting the time elapsed since the first run began.</summary>
+    /// <remarks>
+    /// Combine it with <c>whileOutput</c> to stop after a total time, or with <c>intersect</c> to add the elapsed
+    /// time to another schedule's output. <c>within</c> is the shorthand for a time budget.
+    /// </remarks>
+    /// <example><code>Schedule.elapsed |&gt; Schedule.whileOutput (fun elapsed -&gt; elapsed &lt; TimeSpan.FromMinutes 2.0)</code></example>
+    let elapsed<'env, 'input> : Schedule<'env, 'input, TimeSpan> =
+        Schedule(fun _ context -> ok (Some(context.ExecutionEnded - context.LoopStarted), TimeSpan.Zero))
+
+    /// <summary>Continues only while the schedule's output satisfies a predicate.</summary>
+    /// <remarks>
+    /// Where <c>whileInput</c> looks at the error or value being retried, this looks at what the schedule itself
+    /// produced, such as the next backoff delay or the retry count.
+    /// </remarks>
+    /// <param name="predicate">Returns <c>true</c> for outputs that may recur.</param>
+    /// <param name="schedule">The schedule whose output is checked.</param>
+    /// <example>
+    /// <code>
+    /// // Back off exponentially, but stop once the delay would reach 30 seconds
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
+    /// |&gt; Schedule.whileOutput (fun delay -&gt; delay &lt; TimeSpan.FromSeconds 30.0)
+    /// </code>
+    /// </example>
+    let whileOutput
+        (predicate: 'output -> bool)
+        (Schedule op: Schedule<'env, 'input, 'output>)
+        : Schedule<'env, 'input, 'output> =
+        Schedule(fun input context ->
+            op input context
+            |> flowMap (fun (decision, delay) ->
+                match decision with
+                | Some output when predicate output -> decision, delay
+                | _ -> None, TimeSpan.Zero))
+
+    /// <summary>Continues until the schedule's output satisfies a predicate.</summary>
+    /// <remarks>The negation of <c>whileOutput</c>: an output that satisfies the predicate stops the schedule.</remarks>
+    /// <param name="predicate">Returns <c>true</c> for outputs that stop the schedule.</param>
+    /// <param name="schedule">The schedule whose output is checked.</param>
+    let untilOutput
+        (predicate: 'output -> bool)
+        (schedule: Schedule<'env, 'input, 'output>)
+        : Schedule<'env, 'input, 'output> =
+        whileOutput (predicate >> not) schedule
+
+    /// <summary>Stops a schedule once the next run would start after <paramref name="budget" /> has passed.</summary>
+    /// <remarks>
+    /// The budget is measured from when the first run began, with the runtime's clock. A run already in progress
+    /// is never cut short; <c>within</c> only declines to start another one whose delay would end past the budget.
+    /// Use <c>Flow.timeout</c> to bound a single run.
+    /// </remarks>
+    /// <param name="budget">The total time the schedule may keep recurring.</param>
+    /// <param name="schedule">The schedule to bound.</param>
+    /// <example>
+    /// <code>
+    /// // Retry with backoff, but give up after two minutes in total
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0) |&gt; Schedule.within (TimeSpan.FromMinutes 2.0)
+    /// </code>
+    /// </example>
+    let within (budget: TimeSpan) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
+        if budget < TimeSpan.Zero then
+            invalidArg (nameof budget) "A time budget cannot be negative."
+
+        Schedule(fun input context ->
+            op input context
+            |> flowMap (fun (decision, delay) ->
+                match decision with
+                | Some _ when context.ExecutionEnded - context.LoopStarted + delay <= budget -> decision, delay
+                | _ -> None, TimeSpan.Zero))
+
+    /// <summary>Runs <paramref name="schedule" /> until it stops, then continues with <paramref name="next" />.</summary>
+    /// <remarks>
+    /// <paramref name="next" /> starts counting from zero when it takes over, so <c>recurs</c> and
+    /// <c>exponential</c> behave as if it were the only schedule. The output says which phase decided.
+    /// </remarks>
+    /// <param name="next">The schedule that takes over once the first stops.</param>
+    /// <param name="schedule">The schedule that runs first.</param>
+    /// <example>
+    /// <code>
+    /// // Three quick retries, then slower ones
+    /// Schedule.spaced (TimeSpan.FromMilliseconds 100.0)
+    /// |&gt; Schedule.upTo 3
+    /// |&gt; Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |&gt; Schedule.upTo 5)
+    /// </code>
+    /// </example>
+    let andThen
+        (next: Schedule<'env, 'input, 'nextOutput>)
+        (schedule: Schedule<'env, 'input, 'output>)
+        : Schedule<'env, 'input, Choice<'output, 'nextOutput>> =
+        let (Schedule first) = schedule
+        let (Schedule second) = next
+        // Per-run memory: the attempt at which `next` took over, keyed by this combinator.
+        let switchKey = obj ()
+
+        let runSecond input (context: ScheduleContext) (switchedAt: int) =
+            second input { context with Attempt = context.Attempt - switchedAt }
+            |> flowMap (fun (decision, delay) -> Option.map Choice2Of2 decision, delay)
+
+        Schedule(fun input context ->
+            match context.RunState.TryGetValue switchKey with
+            | true, switchedAt -> runSecond input context (unbox<int> switchedAt)
+            | _ ->
+                first input context
+                |> flowBind (fun (decision, delay) ->
+                    match decision with
+                    | Some output -> ok (Some(Choice1Of2 output), delay)
+                    | None ->
+                        context.RunState[switchKey] <- box context.Attempt
+                        runSecond input context context.Attempt))
+
+    /// <summary>Starts a schedule's count again after a run that lasted at least <paramref name="healthy" />.</summary>
+    /// <remarks>
+    /// A long run means the failure that follows is new, not a continuation of earlier ones. With
+    /// <c>Flow.supervise</c>, a worker that crashes after an hour of good work gets its full restart budget back
+    /// instead of having used it up on crashes from the day before. The wrapped schedule then sees attempt 0 again,
+    /// so <c>recurs</c> and <c>exponential</c> restart too.
+    /// </remarks>
+    /// <param name="healthy">How long a run must last for the count to restart.</param>
+    /// <param name="schedule">The schedule whose count restarts.</param>
+    /// <example>
+    /// <code>
+    /// worker |&gt; Flow.supervise (Schedule.recurs 5 |&gt; Schedule.resetAfter (TimeSpan.FromMinutes 10.0))
+    /// </code>
+    /// </example>
+    let resetAfter (healthy: TimeSpan) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
+        if healthy < TimeSpan.Zero then
+            invalidArg (nameof healthy) "The healthy duration cannot be negative."
+
+        // Per-run memory: the attempt number at the last reset, keyed by this combinator.
+        let resetKey = obj ()
+
+        Schedule(fun input context ->
+            if context.ExecutionEnded - context.ExecutionStarted >= healthy then
+                context.RunState[resetKey] <- box context.Attempt
+
+            let resetAt =
+                match context.RunState.TryGetValue resetKey with
+                | true, attempt -> unbox<int> attempt
+                | _ -> 0
+
+            op input { context with Attempt = context.Attempt - resetAt })
 
 /// <summary>How long a <see cref="T:Axial.Retry`1" /> waits between attempts.</summary>
 [<RequireQualifiedAccess>]

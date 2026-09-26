@@ -685,3 +685,63 @@ module FlowStream =
                     | Done -> Execution.ofValue (Platform.Break ())
                     | Next(value, tail) -> Flow.invoke (action value) env ct |> Execution.map (fun () -> Platform.Continue tail))))
         |> Flow.scoped
+
+    /// <summary>Creates a stream that emits the result of running <paramref name="flow" /> again for every pull, forever.</summary>
+    /// <remarks>
+    /// Each pull runs the flow once, so the stream never runs ahead of its consumer. Bound it with <c>take</c> or
+    /// <c>takeWhile</c>, or pace it with <c>throttle</c>. A failure ends the stream.
+    /// </remarks>
+    /// <example><code>FlowStream.repeatFlow readSensor |&gt; FlowStream.takeWhile (fun reading -&gt; reading.Ok)</code></example>
+    let repeatFlow (flow: Flow<'env, 'error, 'value>) : FlowStream<'env, 'error, 'value> =
+        let rec pull env ct () =
+            Flow.invoke flow env ct |> Execution.map (fun value -> Next(value, pull env ct))
+
+        FlowStream(fun env ct -> pull env ct ())
+
+    /// <summary>Creates a stream that owns a resource: acquired when consumption starts, released when it ends.</summary>
+    /// <remarks>
+    /// The resource is acquired on the first pull and released when the consuming Flow finishes, whether the stream
+    /// was exhausted, failed, was interrupted, or was cut short by <c>take</c>. Use it for streams over a file, a
+    /// socket, or a database cursor.
+    /// </remarks>
+    /// <param name="resource">The resource to acquire.</param>
+    /// <param name="build">Builds the stream from the acquired resource.</param>
+    /// <example>
+    /// <code>
+    /// let lines path =
+    ///     FlowStream.using (Resource.create (Flow.fromBlocking (fun _ -&gt; File.OpenText path)) (fun reader _ -&gt; reader.Dispose(); Task.CompletedTask))
+    ///         (fun reader -&gt; FlowStream.repeatFlow (Flow.fromBlocking (fun _ -&gt; reader.ReadLine())) |&gt; FlowStream.takeWhile (isNull &gt;&gt; not))
+    /// </code>
+    /// </example>
+    let using
+        (resource: Resource<'env, 'error, 'resource>)
+        (build: 'resource -> FlowStream<'env, 'error, 'value>)
+        : FlowStream<'env, 'error, 'value> =
+        FlowStream(fun env ct ->
+            Flow.invoke (Flow.scopeResource resource) env ct
+            |> Execution.bind (fun acquired ->
+                let (FlowStream op) = build acquired
+                op env ct))
+
+    /// <summary>Returns the first value, or <c>None</c> for an empty stream, then stops the stream.</summary>
+    /// <remarks>Only one value is pulled; resources and producer fibers are released as soon as it arrives.</remarks>
+    /// <example><code>stream |&gt; FlowStream.runTryHead</code></example>
+    let runTryHead (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, 'value option> =
+        let (FlowStream op) = stream
+
+        Flow(fun env ct ->
+            op env ct
+            |> Execution.map (function
+                | Done -> None
+                | Next(value, _) -> Some value))
+        |> Flow.scoped
+
+    /// <summary>Consumes the whole stream and returns its last value, or <c>None</c> for an empty stream.</summary>
+    /// <example><code>progress |&gt; FlowStream.runTryLast</code></example>
+    let runTryLast (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, 'value option> =
+        runFold (fun _ value -> Some value) None stream
+
+    /// <summary>Consumes the whole stream and returns how many values it emitted.</summary>
+    /// <example><code>stream |&gt; FlowStream.runCount</code></example>
+    let runCount (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, int64> =
+        runFold (fun count _ -> count + 1L) 0L stream

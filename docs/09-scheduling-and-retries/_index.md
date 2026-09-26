@@ -111,6 +111,53 @@ Both pair the two schedules' outputs, with the piped-in schedule first. `interse
 `union` emits `'output option * 'otherOutput option`, because a side that has stopped has no output; it contributes
 `None` while the other side continues.
 
+`Schedule.andThen` runs one schedule until it stops, then hands over to another. The second schedule counts from zero
+when it takes over, so its delays start from the beginning:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+// Three quick retries, then up to five slower ones with backoff
+let patient =
+    Schedule.spaced (TimeSpan.FromMilliseconds 100.0)
+    |> Schedule.upTo 3
+    |> Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |> Schedule.upTo 5)
+```
+
+Its output is `Choice1Of2` while the first schedule decides and `Choice2Of2` after the hand-over.
+
+### Stop on time or on the schedule's own output
+
+`Schedule.within` gives a schedule a total time budget, measured from when the first run began. It never cuts a run
+short; it declines to start another run whose delay would end past the budget:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+// Retry with backoff, but give up after two minutes in total
+let bounded =
+    Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
+    |> Schedule.within (TimeSpan.FromMinutes 2.0)
+```
+
+`Schedule.whileOutput` and `Schedule.untilOutput` stop on what the schedule itself produces, where `whileInput` looks
+at the error or value being retried. For example, stop once exponential backoff reaches 30 seconds:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+let untilSlow =
+    Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
+    |> Schedule.whileOutput (fun delay -> delay < TimeSpan.FromSeconds 30.0)
+```
+
+`Schedule.elapsed` recurs without waiting and emits the time since the first run, and `Schedule.map` transforms any
+schedule's output.
+
+### Restart the count after a healthy run
+
+`Schedule.resetAfter` treats a failure that follows a long, successful run as a new problem. When a run lasted at
+least the given time, the wrapped schedule starts counting from zero again, so `recurs` and `exponential` restart too:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+// Five restarts for a crash loop, but a crash after ten healthy minutes gets the full budget back
+worker |> Flow.supervise (Schedule.recurs 5 |> Schedule.resetAfter (TimeSpan.FromMinutes 10.0))
+```
+
 ## Retry failed flows
 
 Use `Flow.retry` to rerun a flow after an expected domain failure (`Cause.Fail`).
@@ -202,5 +249,13 @@ let recurringPoll =
 | `fixedRate` | `TimeSpan -> Schedule<'env, 'input, int>` | Starts runs at `start + n * period` and emits the zero-based recurrence index. |
 | `union` | `Schedule<'env, 'input, 'o2> -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, 'o1 option * 'o2 option>` | Continues while either continues, with the shorter delay. |
 | `intersect` | `Schedule<'env, 'input, 'o2> -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, 'o1 * 'o2>` | Continues while both continue, with the longer delay. |
-| `retry` | `Schedule<'env, 'error, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Retries the flow after `Cause.Fail`. |
-| `repeat` | `Schedule<'env, 'value, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Repeats the flow after success. |
+| `andThen` | `Schedule<'env, 'input, 'o2> -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, Choice<'o1, 'o2>>` | Runs the first schedule until it stops, then the second from its start. |
+| `whileInput` / `untilInput` | `('input -> bool) -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Continues while (until) the retried error or repeated value satisfies the predicate. |
+| `whileOutput` / `untilOutput` | `('output -> bool) -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Continues while (until) the schedule's own output satisfies the predicate. |
+| `upTo` | `int -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Stops after at most `n` recurrences. |
+| `within` | `TimeSpan -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Stops once the next run would start past a total time budget. |
+| `resetAfter` | `TimeSpan -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Restarts the count after a run that lasted at least the given time. |
+| `elapsed` | `Schedule<'env, 'input, TimeSpan>` | Recurs without waiting and emits the time since the first run. |
+| `map` | `('o1 -> 'o2) -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, 'o2>` | Transforms the schedule's output. |
+| `Flow.retry` | `Schedule<'env, 'error, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Retries the flow after `Cause.Fail`. |
+| `Flow.repeat` | `Schedule<'env, 'value, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Repeats the flow after success. |
