@@ -73,7 +73,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Add a minimal schedule implementation with recurrence limits, fixed spacing, exponential backoff, fixed-range jitter, attempt/delay outputs, and retry/repeat integration.
 - [x] Harden schedule semantics: deterministic jitter (`jitteredWith`), overflow capping, invalid-delay rejection, and pinned `recurs`/statelessness/retry/repeat behavior (see `dev-docs/current-ideas/schedule-expansion.md`).
 - [x] Add `Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate`.
-- [x] Add `andThen`, `whileInput`/`untilInput`, `whileOutput`/`untilOutput`, `upTo`, `within` (time budget), `elapsed`, `map`, and `resetAfter`; retry, repeat, and supervise run each attempt in a child scope, and schedules keep per-run memory for combinators that need it.
+- [x] Add `andThen`, `whileInput`/`untilInput`, `whileOutput`/`untilOutput`, `recursAtMost`, `upTo` (time budget), `elapsed`, `map`, and `resetAfter`; retry, repeat, and supervise run each attempt in a child scope, and schedules keep per-run memory for combinators that need it.
 - [x] Remove `Unchecked.defaultof<'error>` from `Flow.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error (sleep runs at the workflow's error type; schedule-evaluation failure becomes `Cause.Die`). Also hardened: `exponential` caps at the max delay instead of overflowing ticks, `spaced`/`exponential` reject negative delays, and `Schedule.jitteredWith` takes an injectable sample source for deterministic jitter.
 - [x] Add deterministic clock-driven tests for retry, repeat, timeout, and sleep on the runtime's manual time source.
 
