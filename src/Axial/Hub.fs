@@ -129,8 +129,7 @@ module internal HubCore =
                     let full (queue: Dequeue<'a>) =
                         Platform.lock queue.Gate (fun () ->
                             match queue.Strategy with
-                            | QueueStrategy.BackPressure capacity ->
-                                not queue.IsShut && queue.Takers.Count = 0 && queue.Buffer.Count >= capacity
+                            | QueueStrategy.BackPressure _ -> not queue.IsShut && not (QueueCore.canAcceptLocked queue)
                             | _ -> false)
 
                     if targets |> Array.exists full then

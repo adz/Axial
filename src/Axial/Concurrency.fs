@@ -31,6 +31,8 @@ type internal Deque<'a>() =
         items[head] <- value
         count <- count + 1
 
+    member _.PeekFront() : 'a = items[head]
+
     member _.PopFront() : 'a =
         let value = items[head]
         items[head] <- Unchecked.defaultof<'a>
@@ -76,6 +78,9 @@ type internal Waiter<'a>(value: 'a) =
     member val Signal: Platform.Signal<unit> = Platform.newSignal<unit> ()
     member val Value = value with get, set
     member val State = Waiting with get, set
+    /// For a queue taker: how many values it waits for, and the most it takes at once.
+    member val Min = 1 with get, set
+    member val Max = 1 with get, set
 
 /// What an interrupted waiter does with a handover that completed in the same instant as its interruption.
 type internal RacedHandover<'a> =
@@ -100,12 +105,16 @@ type internal WaitList<'a>(gate: obj) =
         waiters.PushBack waiter
         waiter
 
-    /// Completes the oldest waiter by handing it <paramref name="value" />.
-    member _.CompleteOldest(value: 'a, wake: ResizeArray<Platform.Signal<unit>>) =
+    /// The oldest waiter, still waiting.
+    member _.Oldest = waiters.PeekFront()
+
+    /// Completes the oldest waiter by handing it <paramref name="value" />, and returns that waiter.
+    member _.CompleteOldest(value: 'a, wake: ResizeArray<Platform.Signal<unit>>) : Waiter<'a> =
         let waiter = waiters.PopFront()
         waiter.Value <- value
         waiter.State <- Completed
         wake.Add waiter.Signal
+        waiter
 
     /// Completes the oldest waiter by accepting the value it carries, and returns that value.
     member _.AcceptOldest(wake: ResizeArray<Platform.Signal<unit>>) : 'a =
@@ -261,7 +270,7 @@ module internal PermitQueue =
 
     let private releaseLocked (queue: PermitQueue) (wake: ResizeArray<Platform.Signal<unit>>) =
         if queue.Waiters.Count > 0 then
-            queue.Waiters.CompleteOldest((), wake)
+            queue.Waiters.CompleteOldest((), wake) |> ignore
         else
             queue.Available <- queue.Available + 1
 

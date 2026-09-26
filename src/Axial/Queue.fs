@@ -65,7 +65,9 @@ type QueueStats =
 /// </para>
 /// <para>
 /// Interrupting a suspended take never loses a value, and interrupting a suspended offer never enqueues its value.
-/// Suspended takers and suspended offerers are each served in FIFO order.
+/// Suspended takers and suspended offerers are each served in FIFO order, and values leave in FIFO order even when
+/// takers are interrupted: waiting takers are served one at a time, so a value given back by an interrupted taker
+/// returns to the front before anything later has been taken.
 /// </para>
 /// </remarks>
 /// <typeparam name="a">The type of the queued values.</typeparam>
@@ -75,7 +77,12 @@ type Dequeue<'a> internal (strategy: QueueStrategy) =
     member internal _.Gate = gate
     member internal _.Strategy = strategy
     member val internal Buffer = Deque<'a>()
-    member val internal Takers = WaitList<'a>(gate)
+    /// Suspended takers. Each is handed its whole batch at once, as a list.
+    member val internal Takers = WaitList<'a list>(gate)
+    /// The taker most recently handed a batch that has not yet resumed. While it is set, no other taker is served
+    /// and no non-suspending take reads the buffer, so a batch given back by an interrupted taker returns to the front
+    /// with nothing after it consumed: values leave in FIFO order even under interruption.
+    member val internal PendingTaker: Waiter<'a list> voption = ValueNone with get, set
     member val internal Offerers = WaitList<'a>(gate)
     member val internal ShutdownSignal: Platform.Signal<unit> = Platform.newSignal<unit> ()
     member val internal IsShut = false with get, set
@@ -127,8 +134,8 @@ type internal OfferOutcome<'a> =
     | OfferRejected
 
 type internal TakeOutcome<'a> =
-    | Taken of 'a
-    | TakeSuspended of Waiter<'a>
+    | Taken of 'a list
+    | TakeSuspended of Waiter<'a list>
     | Exhausted
 
 /// Queue operations over raw executions. Functions named <c>...Locked</c> require the caller to hold the gate and
@@ -149,43 +156,80 @@ module internal QueueCore =
         | Some limit -> queue.Buffer.Count < limit
         | None -> true
 
-    /// Hands a value to the oldest waiting taker, or buffers it. Takers wait only while the buffer is empty.
-    let private deliverLocked (queue: Dequeue<'a>) (value: 'a) (wake: ResizeArray<Platform.Signal<unit>>) =
-        queue.Accepted <- queue.Accepted + 1L
-
-        if queue.Takers.Count > 0 then
-            queue.Takers.CompleteOldest(value, wake)
-        else
-            queue.Buffer.PushBack value
-
     /// Moves suspended offerers into freed buffer space in FIFO order.
     let private refillLocked (queue: Dequeue<'a>) (wake: ResizeArray<Platform.Signal<unit>>) =
         while queue.Offerers.Count > 0 && hasRoom queue do
             queue.Buffer.PushBack(queue.Offerers.AcceptOldest wake)
             queue.Accepted <- queue.Accepted + 1L
 
-    /// Returns values that a consumer took but could not keep because it was interrupted. They are older than
-    /// anything still buffered, so they go to waiting takers first and otherwise back to the front, in order.
-    let private giveBackLocked (queue: Dequeue<'a>) (values: 'a list) (wake: ResizeArray<Platform.Signal<unit>>) =
-        let rest = ResizeArray<'a>()
+    let private popUpTo (queue: Dequeue<'a>) (max: int) =
+        [ for _ in 1 .. min max queue.Buffer.Count -> queue.Buffer.PopFront() ]
 
-        for value in values do
-            if rest.Count = 0 && queue.Takers.Count > 0 then
-                queue.Takers.CompleteOldest(value, wake)
-            else
-                rest.Add value
+    /// Serves the oldest suspended taker once nothing is pending and enough values are buffered, then releases the
+    /// remaining takers if the queue is shut down and drained. Takers are served one at a time; see PendingTaker.
+    let private serveLocked (queue: Dequeue<'a>) (wake: ResizeArray<Platform.Signal<unit>>) =
+        if queue.PendingTaker.IsNone && queue.Takers.Count > 0 then
+            let head = queue.Takers.Oldest
+            let available = queue.Buffer.Count
 
-        for index in rest.Count - 1 .. -1 .. 0 do
+            if available >= head.Min || (queue.IsShut && available > 0) then
+                let batch = popUpTo queue head.Max
+                queue.PendingTaker <- ValueSome(queue.Takers.CompleteOldest(batch, wake))
+                refillLocked queue wake
+
+        if queue.IsShut && queue.Buffer.Count = 0 && queue.PendingTaker.IsNone then
+            queue.Takers.ShutDownAll wake
+
+    /// Whether the value can enter now: there is room, or it completes the batch of the taker that is next in line.
+    let canAcceptLocked (queue: Dequeue<'a>) =
+        hasRoom queue
+        || (queue.PendingTaker.IsNone
+            && queue.Takers.Count > 0
+            && queue.Buffer.Count + 1 >= queue.Takers.Oldest.Min)
+
+    /// Whether a take that does not wait may read the buffer: no taker is waiting and no batch is pending, so it
+    /// cannot overtake anyone.
+    let private nobodyWaiting (queue: Dequeue<'a>) =
+        queue.Takers.Count = 0 && queue.PendingTaker.IsNone
+
+    let private deliverLocked (queue: Dequeue<'a>) (value: 'a) (wake: ResizeArray<Platform.Signal<unit>>) =
+        queue.Accepted <- queue.Accepted + 1L
+        queue.Buffer.PushBack value
+        serveLocked queue wake
+
+    /// Settles the pending batch of a taker that resumed with it, and serves the next taker.
+    let private acknowledgeLocked (queue: Dequeue<'a>) (taker: Waiter<'a list>) (wake: ResizeArray<Platform.Signal<unit>>) =
+        match queue.PendingTaker with
+        | ValueSome pending when obj.ReferenceEquals(pending, taker) ->
+            queue.PendingTaker <- ValueNone
+            serveLocked queue wake
+        | _ -> ()
+
+    /// Returns a batch that a taker was handed in the same instant it was interrupted. Nothing after it has been
+    /// consumed, so it goes back to the front in order, and the next taker is served.
+    let private giveBackLocked
+        (queue: Dequeue<'a>)
+        (taker: Waiter<'a list>)
+        (values: 'a list)
+        (wake: ResizeArray<Platform.Signal<unit>>)
+        =
+        match queue.PendingTaker with
+        | ValueSome pending when obj.ReferenceEquals(pending, taker) -> queue.PendingTaker <- ValueNone
+        | _ -> ()
+
+        for value in List.rev values do
             match queue.Strategy with
             // A full sliding queue would evict its oldest value next anyway, and the returned value is the oldest.
             | QueueStrategy.Sliding capacity when queue.Buffer.Count >= capacity -> queue.Evicted <- queue.Evicted + 1L
             // Lossless strategies may briefly exceed capacity rather than drop a value that was accepted.
-            | _ -> queue.Buffer.PushFront rest[index]
+            | _ -> queue.Buffer.PushFront value
+
+        serveLocked queue wake
 
     let offerLocked (queue: Dequeue<'a>) (value: 'a) (wake: ResizeArray<Platform.Signal<unit>>) : OfferOutcome<'a> =
         if queue.IsShut then
             OfferRejected
-        elif queue.Takers.Count > 0 || hasRoom queue then
+        elif canAcceptLocked queue then
             deliverLocked queue value wake
             Accepted
         else
@@ -200,26 +244,34 @@ module internal QueueCore =
                 queue.Buffer.PushBack value
                 queue.Accepted <- queue.Accepted + 1L
                 queue.Evicted <- queue.Evicted + 1L
+                serveLocked queue wake
                 AcceptedEvicting
 
-    let takeLocked (queue: Dequeue<'a>) (wake: ResizeArray<Platform.Signal<unit>>) : TakeOutcome<'a> =
-        if queue.Buffer.Count > 0 then
-            let value = queue.Buffer.PopFront()
+    /// Takes between <paramref name="min" /> and <paramref name="max" /> values at once, or waits in line for them.
+    let takeLocked (queue: Dequeue<'a>) (min: int) (max: int) (wake: ResizeArray<Platform.Signal<unit>>) : TakeOutcome<'a> =
+        let available = queue.Buffer.Count
+
+        if nobodyWaiting queue && (available >= min || (queue.IsShut && available > 0)) then
+            let batch = popUpTo queue max
             refillLocked queue wake
-            Taken value
-        elif queue.IsShut then
+            Taken batch
+        elif queue.IsShut && available = 0 && queue.PendingTaker.IsNone then
             Exhausted
         else
-            TakeSuspended(queue.Takers.Enqueue Unchecked.defaultof<'a>)
+            let taker = queue.Takers.Enqueue []
+            taker.Min <- min
+            taker.Max <- max
+            serveLocked queue wake
+            TakeSuspended taker
 
+    /// Takes up to <paramref name="max" /> buffered values without waiting, unless that would overtake a waiting taker.
     let takeUpToLocked (queue: Dequeue<'a>) (max: int) (wake: ResizeArray<Platform.Signal<unit>>) : 'a list =
-        let taken = ResizeArray<'a>()
-
-        while taken.Count < max && queue.Buffer.Count > 0 do
-            taken.Add(queue.Buffer.PopFront())
-
-        refillLocked queue wake
-        List.ofSeq taken
+        if nobodyWaiting queue then
+            let taken = popUpTo queue max
+            refillLocked queue wake
+            taken
+        else
+            []
 
     let shutdown (queue: Dequeue<'a>) =
         let wake = ResizeArray()
@@ -230,7 +282,8 @@ module internal QueueCore =
                     false
                 else
                     queue.IsShut <- true
-                    queue.Takers.ShutDownAll wake
+                    // Waiting takers are released only once the backlog has drained, so they receive it first.
+                    serveLocked queue wake
                     queue.Offerers.ShutDownAll wake
                     wake.Add queue.ShutdownSignal
                     true)
@@ -265,29 +318,50 @@ module internal QueueCore =
                 | _ -> Execution.ofCause Cause.Interrupt)
             cancellationToken
 
-    /// Waits for a suspended take. A taker interrupted after a value was handed to it gives back that value, and any
-    /// values it collected earlier, so interruption never loses an element.
-    let private awaitTakeHolding
+    /// Waits for a suspended taker's batch. A taker interrupted in the same instant it was handed its batch gives the
+    /// batch back to the front, and one interrupted while waiting leaves its place to the next taker.
+    let private awaitTaker
         (queue: Dequeue<'a>)
-        (taker: Waiter<'a>)
-        (held: 'a list)
+        (taker: Waiter<'a list>)
         (onShutdown: unit -> Execution<'result, 'error>)
-        (onValue: 'a -> Execution<'result, 'error>)
+        (onBatch: 'a list -> Execution<'result, 'error>)
         cancellationToken
         : Execution<'result, 'error> =
         WaitList.awaitWith
             queue.Takers
             taker
-            (fun wake -> giveBackLocked queue held wake)
-            (ReturnHandover(fun value wake -> giveBackLocked queue (held @ [ value ]) wake))
+            (fun wake -> serveLocked queue wake)
+            (ReturnHandover(fun batch wake -> giveBackLocked queue taker batch wake))
             (fun taker ->
                 match taker.State with
                 | Completed ->
-                    let value = taker.Value
-                    taker.Value <- Unchecked.defaultof<'a>
-                    onValue value
+                    let batch = taker.Value
+                    taker.Value <- []
+                    let wake = ResizeArray()
+                    Platform.lock queue.Gate (fun () -> acknowledgeLocked queue taker wake)
+                    wakeAll wake
+                    onBatch batch
                 | _ -> onShutdown ())
             cancellationToken
+
+    /// Takes between <paramref name="min" /> and <paramref name="max" /> values, waiting in FIFO order among takers
+    /// until <c>min</c> are available. <paramref name="onShutdown" /> runs once the queue is shut down and drained.
+    let takeBatch
+        (queue: Dequeue<'a>)
+        (min: int)
+        (max: int)
+        (onShutdown: unit -> Execution<'result, 'error>)
+        (onBatch: 'a list -> Execution<'result, 'error>)
+        cancellationToken
+        : Execution<'result, 'error> =
+        let wake = ResizeArray()
+        let outcome = Platform.lock queue.Gate (fun () -> takeLocked queue min max wake)
+        wakeAll wake
+
+        match outcome with
+        | Taken batch -> onBatch batch
+        | Exhausted -> onShutdown ()
+        | TakeSuspended taker -> awaitTaker queue taker onShutdown onBatch cancellationToken
 
     /// Takes one value, suspending while the queue is empty. <paramref name="onShutdown" /> runs once the queue
     /// is shut down and drained.
@@ -297,50 +371,7 @@ module internal QueueCore =
         (onValue: 'a -> Execution<'result, 'error>)
         cancellationToken
         : Execution<'result, 'error> =
-        let wake = ResizeArray()
-        let outcome = Platform.lock queue.Gate (fun () -> takeLocked queue wake)
-        wakeAll wake
-
-        match outcome with
-        | Taken value -> onValue value
-        | Exhausted -> onShutdown ()
-        | TakeSuspended taker -> awaitTakeHolding queue taker [] onShutdown onValue cancellationToken
-
-    /// Takes between <paramref name="min" /> and <paramref name="max" /> values, suspending until <c>min</c> are
-    /// available. After shutdown it returns whatever remains, if anything. An interruption gives every collected
-    /// value back in order.
-    let takeBetween (queue: Dequeue<'a>) (min: int) (max: int) cancellationToken : Execution<'a list, 'error> =
-        Execution.loop [] (fun (held: 'a list) ->
-            let wake = ResizeArray()
-
-            let outcome =
-                Platform.lock queue.Gate (fun () ->
-                    let collected = held @ takeUpToLocked queue (max - held.Length) wake
-
-                    if collected.Length >= min || (queue.IsShut && not collected.IsEmpty) then
-                        Choice1Of3 collected
-                    elif queue.IsShut then
-                        Choice2Of3()
-                    else
-                        Choice3Of3(collected, queue.Takers.Enqueue Unchecked.defaultof<'a>))
-
-            wakeAll wake
-
-            match outcome with
-            | Choice1Of3 collected -> Execution.ofValue (Platform.Break collected)
-            | Choice2Of3() -> Execution.ofCause Cause.Interrupt
-            | Choice3Of3(collected, taker) ->
-                awaitTakeHolding
-                    queue
-                    taker
-                    collected
-                    (fun () ->
-                        if collected.IsEmpty then
-                            Execution.ofCause Cause.Interrupt
-                        else
-                            Execution.ofValue (Platform.Break collected))
-                    (fun value -> Execution.ofValue (Platform.Continue(collected @ [ value ])))
-                    cancellationToken)
+        takeBatch queue 1 1 onShutdown (List.head >> onValue) cancellationToken
 
     let offer (queue: Dequeue<'a>) (value: 'a) cancellationToken : Execution<OfferOutcome<'a>, 'error> =
         let wake = ResizeArray()
@@ -398,10 +429,11 @@ module Dequeue =
     /// </summary>
     /// <remarks>
     /// This is the batching consumer's take: it waits for work, then takes everything that has accumulated up to a
-    /// batch limit. After shutdown it returns the remaining values even if there are fewer than <c>min</c>, and is
-    /// interrupted once nothing remains. If it is interrupted while waiting, every value it had collected goes back to
-    /// the front of the queue in order. <c>min</c> must be at least 1 and no greater than <c>max</c>; otherwise the
-    /// flow fails with a defect.
+    /// batch limit. It takes nothing until <c>min</c> values are available and then takes the whole batch at once, so
+    /// an interruption while it waits leaves every value in the queue. Takers are served in the order they started
+    /// waiting, a single <c>take</c> and a <c>takeBetween</c> alike. After shutdown it returns the remaining values even
+    /// if there are fewer than <c>min</c>, and is interrupted once nothing remains. <c>min</c> must be at least 1, no
+    /// greater than <c>max</c>, and no greater than a bounded queue's capacity; otherwise the flow fails with a defect.
     /// </remarks>
     /// <example>
     /// <code>
@@ -411,12 +443,12 @@ module Dequeue =
     /// </example>
     let takeBetween (min: int) (max: int) (queue: Dequeue<'a>) : Flow<'env, 'error, 'a list> =
         Flow(fun _ cancellationToken ->
-            if min < 1 || max < min then
+            if min < 1 || max < min || queue.Capacity |> Option.exists (fun capacity -> min > capacity) then
                 Execution.ofDie (
-                    ArgumentOutOfRangeException(nameof min, "takeBetween needs 1 <= min <= max.")
+                    ArgumentOutOfRangeException(nameof min, "takeBetween needs 1 <= min <= max, and min <= capacity.")
                 )
             else
-                QueueCore.takeBetween queue min max cancellationToken)
+                QueueCore.takeBatch queue min max (fun () -> Execution.ofCause Cause.Interrupt) Execution.ofValue cancellationToken)
 
     /// <summary>Removes every available value in FIFO order, without suspending.</summary>
     let takeAll (queue: Dequeue<'a>) : Flow<'env, 'error, 'a list> =

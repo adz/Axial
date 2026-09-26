@@ -116,8 +116,9 @@ then takes up to `max`.
 val it: Exit<int list list,Never> = Success [[1; 2; 3; 4; 5]; [6; 7]]
 ```
 
-If `takeBetween` is interrupted while it waits for the rest of its minimum, it puts the values it had collected back at
-the front of the queue, in order. After shutdown it returns whatever remains, even if that is fewer than `min`.
+`takeBetween` takes nothing until its minimum is available and then takes the whole batch at once, so interrupting it
+while it waits leaves every value in the queue. After shutdown it returns whatever remains, even if that is fewer than
+`min`.
 
 ## Shutdown
 
@@ -161,6 +162,7 @@ Without the shutdown, the consumer would have waited for more values forever.
 
 Suspended takers are served in the order they began waiting, and so are suspended offerers of a bounded queue.
 
-A taker interrupted at the same moment a value is handed to it passes that value on to the next taker, or back to the
-front of the queue. An offer interrupted before its value was accepted is withdrawn. An offer accepted in the same
+Values leave in FIFO order even when takers are interrupted. A taker interrupted at the same moment a value is handed to
+it gives the value back to the front of the queue. Takers are served one at a time, the next only after the previous
+one has resumed with its value or given it back, so nothing later can have been taken ahead of a value that comes back. An offer interrupted before its value was accepted is withdrawn. An offer accepted in the same
 moment as its interruption has already taken effect and reports `true`.

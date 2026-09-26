@@ -164,3 +164,8 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   hub's publishing turn, so no update is missed or repeated.
 - Queue metrics are pulled: `Dequeue.stats` keeps counters, and `QueueMetrics.observe` in `Axial.Telemetry` exposes them
   as observable instruments read only at collection, so observing a queue costs nothing per value.
+- Waiting takers are served one batch at a time: the next is served only after the previous taker has resumed with its
+  batch or given it back, and non-suspending takes do not overtake waiting takers. Without this, a value given back by
+  an interrupted taker could return after a later value had already been taken, breaking FIFO order; the torture test
+  in `docs/08-concurrency-and-state/09-torture-test.md` found it. `takeBetween` is one handover of the whole batch, so
+  it never holds values outside the queue while it waits.

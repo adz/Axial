@@ -194,8 +194,10 @@ module TestSupport =
 
             lastCount <- count
 
-            // Unchanged polls over ~15 ms mean no fiber is still running towards a new, possibly earlier, deadline.
-            if stablePolls >= 15 then
+            // Unchanged polls with no queued thread-pool work mean no fiber is still running towards a new, possibly
+            // earlier, deadline. Other tests running in parallel keep the pool busy, so a long enough stable stretch
+            // also counts.
+            if stablePolls >= 15 && (ThreadPool.PendingWorkItemCount = 0L || stablePolls >= 200) then
                 time.AdvanceToNextDeadline() |> ignore
                 lastCount <- -1
                 stablePolls <- 0
