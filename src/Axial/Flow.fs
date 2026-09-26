@@ -1142,6 +1142,103 @@ module Flow =
                     Execution.ofValue fiber)
                 Execution.ofCause)
 
+    // Starts a computation that several callers share. It runs once, as a detached fiber in `owner`'s scope and
+    // with no caller's cancellation token, so a caller that is interrupted stops only its own wait; closing the
+    // owner's scope interrupts the computation. `onSettled` runs before waiters are woken.
+    let internal startShared
+        (owner: RuntimeContext)
+        (environment: 'env)
+        (computation: Flow<'env, 'error, 'value>)
+        (onSettled: Exit<'value, 'error> -> unit)
+        : Platform.Signal<Exit<'value, 'error>> * (unit -> Execution<unit, 'none>) =
+        let signal = Platform.newSignal ()
+
+        let settle exit =
+            onSettled exit
+            Platform.resolveSignal signal exit |> Operators.ignore
+            Execution.ofValue ()
+
+        let publisher : Flow<'env, Never, unit> =
+            Flow(fun environment cancellationToken ->
+                invoke computation environment cancellationToken
+                |> Execution.fold (fun value -> settle (Exit.Success value)) (fun cause -> settle (Exit.Failure cause)))
+
+        let start () =
+            RuntimeState.withRuntime owner (fun () ->
+                invoke (forkDetached publisher) environment CancellationToken.None)
+            |> Execution.map (fun (_: Fiber<Never, unit>) -> ())
+
+        signal, start
+
+    // Waits for a shared computation. Interrupting the waiter ends this wait only.
+    let internal awaitShared
+        (signal: Platform.Signal<Exit<'value, 'error>>)
+        (cancellationToken: CancellationToken)
+        : Execution<'value, 'error> =
+        Execution.fold Execution.ofExit Execution.ofCause (Platform.awaitSignal signal cancellationToken)
+
+    /// <summary>Returns a flow that runs <paramref name="flow" /> at most once at a time and remembers its value.</summary>
+    /// <remarks>
+    /// <para>
+    /// The first caller of the returned flow starts the computation; callers that arrive while it runs wait for the
+    /// same result instead of starting another. A success is remembered for every later caller. A failure is not:
+    /// the next caller starts a fresh attempt.
+    /// </para>
+    /// <para>
+    /// The computation runs in the scope and environment where <c>memoize</c> ran, not in any caller's, so
+    /// interrupting one caller never cancels the computation the others are waiting for. Closing that scope
+    /// interrupts it.
+    /// </para>
+    /// </remarks>
+    /// <param name="flow">The computation to share.</param>
+    /// <returns>A flow that produces the memoized flow.</returns>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! loadConfig = Flow.memoize readConfigFromDisk
+    ///     let! a = loadConfig
+    ///     let! b = loadConfig // the same value; the file is read once
+    ///     return a = b
+    /// }
+    /// </code>
+    /// </example>
+    let memoize (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Flow<'caller, 'error, 'value>> =
+        Flow(fun environment _ ->
+            let owner = RuntimeState.current()
+            let gate = obj()
+            let current : Platform.Signal<Exit<'value, 'error>> option ref = ref None
+
+            let shared =
+                Flow(fun _ cancellationToken ->
+                    let signal, start =
+                        Platform.lock gate (fun () ->
+                            match current.Value with
+                            | Some signal -> signal, None
+                            | None ->
+                                // The computation starts only after this lock is released, so `mine` is set
+                                // before `forget` can run.
+                                let mine = ref None
+
+                                let forget exit =
+                                    match exit with
+                                    | Exit.Failure _ ->
+                                        Platform.lock gate (fun () ->
+                                            match current.Value, mine.Value with
+                                            | Some active, Some own when obj.ReferenceEquals(active, own) -> current.Value <- None
+                                            | _ -> ())
+                                    | Exit.Success _ -> ()
+
+                                let signal, start = startShared owner environment flow forget
+                                mine.Value <- Some signal
+                                current.Value <- Some signal
+                                signal, Some start)
+
+                    match start with
+                    | Some start -> start () |> Execution.bind (fun () -> awaitShared signal cancellationToken)
+                    | None -> awaitShared signal cancellationToken)
+
+            Execution.ofValue shared)
+
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
     /// If either flow fails, the other is interrupted immediately.

@@ -12,10 +12,14 @@ module internal OutcomeText =
         match payload with
         | null -> "null"
         | other ->
+#if FABLE_COMPILER
+            other.ToString()
+#else
             try
                 other.ToString()
             with _ ->
                 "<" + other.GetType().Name + ">"
+#endif
 
     /// Like <c>plain</c>, with strings quoted so they read as values inside a rendered cause or exit.
     let value (payload: obj) : string =

@@ -18,6 +18,7 @@
     <Compile Include="StackSafetyTests.fs" />
     <Compile Include="WorkflowConcurrencyTests.fs" />
     <Compile Include="WorkflowParallelTests.fs" />
+    <Compile Include="CacheTests.fs" />
     <Compile Include="WorkflowErrorTests.fs" />
     <Compile Include="WorkflowSchedulingTests.fs" />
     <Compile Include="WorkflowSupervisionTests.fs" />
