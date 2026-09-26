@@ -11,8 +11,6 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 Follow-up to the Queue/Hub/Schedule review. Work in order; each step is committed and validated on its own.
 
-1. Extract the cancel-safe waiter (suspend under a lock, withdraw on interrupt, pass on a value handed over in the
-   same instant) into one internal `WaitList` and use it from `Queue` and `PermitQueue`.
 2. Split the consumer side into a public `Dequeue<'a>` that `Queue<'a>` extends; `Hub.subscribe` returns a
    `Dequeue<'a>`, and `FlowStream.fromDequeue` replaces `fromQueue`/`fromSubscription`. Replace
    `SubscriberStrategy` and the constructor-only strategies with one public `QueueStrategy` used by `Queue.make`,

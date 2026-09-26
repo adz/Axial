@@ -62,18 +62,6 @@ module internal HubCore =
         // Shutting the subscription's queue also releases a publisher suspended on it.
         QueueCore.shutdown subscription.Queue
 
-    /// Waits for the hub's publishing turn, withdrawing the wait if the publisher is interrupted.
-    let acquireTurn (hub: Hub<'a>) cancellationToken : Execution<unit, 'error> =
-        match PermitQueue.tryAcquire hub.PublishTurn with
-        | None -> Execution.ofValue ()
-        | Some waiter ->
-            Execution.fold
-                Execution.ofValue
-                (fun cause ->
-                    PermitQueue.withdraw hub.PublishTurn waiter
-                    Execution.ofCause cause)
-                (Platform.awaitSignal waiter.Signal cancellationToken)
-
     /// Delivers one value to every current subscription, suspending on full back-pressure subscriptions.
     /// Requires the publishing turn.
     let deliver (hub: Hub<'a>) (value: 'a) cancellationToken : Execution<PublishResult, 'error> =
@@ -113,7 +101,7 @@ module internal HubCore =
                                     Execution.ofCause cause))
 
     let publishAll (hub: Hub<'a>) (values: 'a array) cancellationToken : Execution<PublishResult, 'error> =
-        acquireTurn hub cancellationToken
+        PermitQueue.acquire hub.PublishTurn cancellationToken
         |> Execution.bind (fun () ->
             Execution.loop (0, { Delivered = 0; Dropped = 0 }) (fun (index, total) ->
                 if index = values.Length then

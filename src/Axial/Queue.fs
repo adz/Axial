@@ -2,19 +2,6 @@ namespace Axial
 
 open System
 
-type internal WaiterState =
-    | Waiting
-    | Completed
-    | Cancelled
-    | ShutDown
-
-/// A suspended taker or offerer. Its state changes only under the owning queue's gate, so an interrupted waiter
-/// and a producer or consumer completing it cannot both win.
-type internal QueueWaiter<'a>(value: 'a) =
-    member val Signal: Platform.Signal<unit> = Platform.newSignal<unit> ()
-    member val Value = value with get, set
-    member val State = Waiting with get, set
-
 type internal QueueStrategy =
     | BackPressure
     | Dropping
@@ -30,10 +17,11 @@ type internal QueueStrategy =
 /// <typeparam name="a">The type of the queued values.</typeparam>
 [<Sealed>]
 type Queue<'a> internal (strategy: QueueStrategy, capacity: int option) =
-    member val internal Gate = obj ()
+    let gate = obj ()
+    member internal _.Gate = gate
     member val internal Buffer = Deque<'a>()
-    member val internal Takers = Deque<QueueWaiter<'a>>()
-    member val internal Offerers = Deque<QueueWaiter<'a>>()
+    member val internal Takers = WaitList<'a>(gate)
+    member val internal Offerers = WaitList<'a>(gate)
     member val internal ShutdownSignal: Platform.Signal<unit> = Platform.newSignal<unit> ()
     member val internal IsShut = false with get, set
     member internal _.Strategy = strategy
@@ -47,12 +35,12 @@ type Queue<'a> internal (strategy: QueueStrategy, capacity: int option) =
 
 type internal OfferOutcome<'a> =
     | Accepted of bool
-    | OfferSuspended of QueueWaiter<'a>
+    | OfferSuspended of Waiter<'a>
     | OfferRejected
 
 type internal TakeOutcome<'a> =
     | Taken of 'a
-    | TakeSuspended of QueueWaiter<'a>
+    | TakeSuspended of Waiter<'a>
     | Exhausted
 
 /// Queue operations over raw executions. Functions named <c>...Locked</c> require the caller to hold the gate and
@@ -60,9 +48,7 @@ type internal TakeOutcome<'a> =
 module internal QueueCore =
     let create strategy capacity : Queue<'a> = Queue<'a>(strategy, capacity)
 
-    let wakeAll (wake: ResizeArray<Platform.Signal<unit>>) =
-        for signal in wake do
-            Platform.resolveSignal signal () |> ignore
+    let wakeAll wake = WaitList.wakeAll wake
 
     let private hasRoom (queue: Queue<'a>) =
         match queue.Capacity with
@@ -72,21 +58,14 @@ module internal QueueCore =
     /// Hands a value to the oldest waiting taker, or buffers it. Takers wait only while the buffer is empty.
     let private deliverLocked (queue: Queue<'a>) (value: 'a) (wake: ResizeArray<Platform.Signal<unit>>) =
         if queue.Takers.Count > 0 then
-            let taker = queue.Takers.PopFront()
-            taker.Value <- value
-            taker.State <- Completed
-            wake.Add taker.Signal
+            queue.Takers.CompleteOldest(value, wake)
         else
             queue.Buffer.PushBack value
 
     /// Moves suspended offerers into freed buffer space in FIFO order.
     let private refillLocked (queue: Queue<'a>) (wake: ResizeArray<Platform.Signal<unit>>) =
         while queue.Offerers.Count > 0 && hasRoom queue do
-            let offerer = queue.Offerers.PopFront()
-            queue.Buffer.PushBack offerer.Value
-            offerer.Value <- Unchecked.defaultof<'a>
-            offerer.State <- Completed
-            wake.Add offerer.Signal
+            queue.Buffer.PushBack(queue.Offerers.AcceptOldest wake)
 
     let offerLocked (queue: Queue<'a>) (value: 'a) (wake: ResizeArray<Platform.Signal<unit>>) : OfferOutcome<'a> =
         if queue.IsShut then
@@ -97,9 +76,7 @@ module internal QueueCore =
         else
             match queue.Strategy with
             | BackPressure ->
-                let offerer = QueueWaiter value
-                queue.Offerers.PushBack offerer
-                OfferSuspended offerer
+                OfferSuspended(queue.Offerers.Enqueue value)
             | Dropping -> Accepted false
             | Sliding ->
                 queue.Buffer.PopFront() |> ignore
@@ -114,9 +91,7 @@ module internal QueueCore =
         elif queue.IsShut then
             Exhausted
         else
-            let taker = QueueWaiter Unchecked.defaultof<'a>
-            queue.Takers.PushBack taker
-            TakeSuspended taker
+            TakeSuspended(queue.Takers.Enqueue Unchecked.defaultof<'a>)
 
     let pollLocked (queue: Queue<'a>) (wake: ResizeArray<Platform.Signal<unit>>) : 'a option =
         if queue.Buffer.Count > 0 then
@@ -139,10 +114,8 @@ module internal QueueCore =
         if not queue.IsShut then
             queue.IsShut <- true
 
-            for waiter in queue.Takers.Drain() @ queue.Offerers.Drain() do
-                waiter.Value <- Unchecked.defaultof<'a>
-                waiter.State <- ShutDown
-                wake.Add waiter.Signal
+            queue.Takers.ShutDownAll wake
+            queue.Offerers.ShutDownAll wake
 
             wake.Add queue.ShutdownSignal
 
@@ -153,69 +126,46 @@ module internal QueueCore =
 
     /// Waits for a suspended offer. An offer interrupted before a taker accepted its value is withdrawn and never
     /// enqueued; one accepted in the same instant as the interruption has already happened and reports success.
-    let awaitOffer (queue: Queue<'a>) (offerer: QueueWaiter<'a>) cancellationToken : Execution<bool, 'error> =
-        let settled () =
-            match offerer.State with
-            | Completed -> Execution.ofValue true
-            | _ -> Execution.ofCause Cause.Interrupt
-
-        Execution.fold
-            (fun () -> settled ())
-            (fun _ ->
-                Platform.lock queue.Gate (fun () ->
-                    if offerer.State = Waiting then
-                        offerer.State <- Cancelled
-                        offerer.Value <- Unchecked.defaultof<'a>
-                        queue.Offerers.RemoveReference offerer |> ignore)
-
-                settled ())
-            (Platform.awaitSignal offerer.Signal cancellationToken)
+    let awaitOffer (queue: Queue<'a>) (offerer: Waiter<'a>) cancellationToken : Execution<bool, 'error> =
+        WaitList.await
+            queue.Offerers
+            offerer
+            KeepHandover
+            (fun offerer ->
+                match offerer.State with
+                | Completed -> Execution.ofValue true
+                | _ -> Execution.ofCause Cause.Interrupt)
+            cancellationToken
 
     /// Waits for a suspended take. A taker interrupted after a value was handed to it gives that value back to
     /// the next taker or the front of the buffer, so interruption never loses an element.
     let awaitTake
         (queue: Queue<'a>)
-        (taker: QueueWaiter<'a>)
+        (taker: Waiter<'a>)
         (onShutdown: unit -> Execution<'result, 'error>)
         (onValue: 'a -> Execution<'result, 'error>)
         cancellationToken
         : Execution<'result, 'error> =
-        Execution.fold
-            (fun () ->
+        let giveBack value wake =
+            if queue.Takers.Count > 0 then
+                queue.Takers.CompleteOldest(value, wake)
+            else
+                // The value was accepted when the buffer was empty, so it belongs at the front.
+                // This can briefly exceed capacity by one element; no accepted value is dropped.
+                queue.Buffer.PushFront value
+
+        WaitList.await
+            queue.Takers
+            taker
+            (ReturnHandover giveBack)
+            (fun taker ->
                 match taker.State with
                 | Completed ->
                     let value = taker.Value
                     taker.Value <- Unchecked.defaultof<'a>
                     onValue value
                 | _ -> onShutdown ())
-            (fun cause ->
-                let wake = ResizeArray()
-
-                Platform.lock queue.Gate (fun () ->
-                    match taker.State with
-                    | Waiting ->
-                        taker.State <- Cancelled
-                        queue.Takers.RemoveReference taker |> ignore
-                    | Completed ->
-                        taker.State <- Cancelled
-                        let value = taker.Value
-                        taker.Value <- Unchecked.defaultof<'a>
-
-                        if queue.Takers.Count > 0 then
-                            let next = queue.Takers.PopFront()
-                            next.Value <- value
-                            next.State <- Completed
-                            wake.Add next.Signal
-                        else
-                            // The value was accepted when the buffer was empty, so it belongs at the front.
-                            // This can briefly exceed capacity by one element; no accepted value is dropped.
-                            queue.Buffer.PushFront value
-                    | Cancelled
-                    | ShutDown -> ())
-
-                wakeAll wake
-                Execution.ofCause cause)
-            (Platform.awaitSignal taker.Signal cancellationToken)
+            cancellationToken
 
     /// Takes one value, suspending while the queue is empty. <paramref name="onShutdown" /> runs once the queue
     /// is shut down and drained.

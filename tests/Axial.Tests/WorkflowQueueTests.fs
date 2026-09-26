@@ -131,6 +131,33 @@ module WorkflowQueueTests =
         test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
 
     [<Fact>]
+    let ``Queue: an interrupted take hands its element to the next suspended taker`` () =
+        let attempt () =
+            flow {
+                let! (queue: Queue<int>) = Queue.unbounded ()
+                let! first = Queue.take queue |> Flow.fork
+                do! waitUntil (fun () -> suspendedTakers queue () = 1)
+                let! second = Queue.take queue |> Flow.fork
+                do! waitUntil (fun () -> suspendedTakers queue () = 2)
+                let! firstExit, _ = Flow.zipPar (Flow.interrupt first) (queue |> Queue.offer 7)
+
+                match firstExit with
+                | Exit.Success 7 ->
+                    let! secondExit = Flow.interrupt second
+                    return isInterrupted secondExit
+                | exit when isInterrupted exit ->
+                    // The element went to the first taker in the same instant it was interrupted; it must now
+                    // belong to the second taker rather than sit in the buffer or vanish.
+                    let! secondValue = Flow.join second
+                    let! remaining = Queue.size queue
+                    return secondValue = 7 && remaining = 0
+                | _ -> return false
+            }
+
+        let workflow = List.init 1000 (fun _ -> attempt ()) |> Flow.sequence
+        test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
+
+    [<Fact>]
     let ``Queue: an interrupted offer never enqueues its value`` () =
         let attempt () =
             flow {
