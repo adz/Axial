@@ -14,24 +14,24 @@ the newest reading, and an alarm panel that keeps the first reading it has not y
 ```fsharp transcript
 > (flow {
 -     let! (hub: Hub<int>) = Hub.make ()
--     let! historian = hub |> Hub.subscribe (SubscriberStrategy.BackPressure 4)
+-     let! historian = hub |> Hub.subscribe (SubscriberStrategy.BackPressure 2)
 -     let! display = hub |> Hub.subscribe (SubscriberStrategy.Sliding 1)
 -     let! alarms = hub |> Hub.subscribe (SubscriberStrategy.Dropping 1)
 -     let! recording = historian |> FlowStream.fromSubscription |> FlowStream.runCollect |> Flow.fork
--     do! hub |> Hub.publishAll [ 1..10 ] |> Flow.ignore
+-     do! hub |> Hub.publishAll [ 1..5 ] |> Flow.ignore
 -     do! Hub.shutdown hub
 -     let! history = Flow.join recording
 -     let! latest = Subscription.takeAll display
 -     let! pending = Subscription.takeAll alarms
--     return history, latest, pending
-- } : Flow<unit, Never, int list * int list * int list>)
+-     return [ history; latest; pending ]
+- } : Flow<unit, Never, int list list>)
 - |> Flow.run ();;
-val it: Exit<(int list * int list * int list),Never> =
-  Success ([1; 2; 3; 4; 5; 6; 7; 8; 9; 10], [10], [1])
+val it: Exit<int list list,Never> = Success [[1; 2; 3; 4; 5]; [5]; [1]]
 ```
 
-The display and alarm subscribers never took anything, yet the publisher was never held up by them. The historian's
-buffer holds four readings, so the publisher waited whenever the historian fell four readings behind.
+The three lists are what the historian, the display, and the alarm panel received. The display and alarm subscribers
+never took anything, yet the publisher was never held up by them. The historian's buffer holds two readings, so the
+publisher waited whenever the historian fell two readings behind.
 
 Lossless delivery needs either back-pressure or unbounded memory. A `BackPressure` subscriber that stops taking values
 eventually stops the publisher, and an `Unbounded` one grows without limit instead. Size a lossless subscriber's buffer
@@ -66,13 +66,12 @@ releases a publisher waiting on it, so run `subscribe` inside `Flow.scoped` or a
 -             return! Subscription.takeAll events
 -         }
 -         |> Flow.scoped
--     let! delivered = hub |> Hub.publish "after the scope closed"
+-     do! hub |> Hub.publish "after the scope closed" |> Flow.ignore
 -     let! count = Hub.subscriberCount hub
--     return received, delivered.Delivered, count
-- } : Flow<unit, Never, string list * int * int>)
+-     return received @ [ $"subscribers left: {count}" ]
+- } : Flow<unit, Never, string list>)
 - |> Flow.run ();;
-val it: Exit<(string list * int * int),Never> =
-  Success (["while subscribed"], 0, 0)
+val it: Exit<string list,Never> = Success ["while subscribed"; "subscribers left: 0"]
 ```
 
 ## Ordering and late subscribers

@@ -59,7 +59,16 @@ module FlowStream =
     /// remaining backlog and then completes. Each pull suspends while the queue is empty. Interrupting a pull
     /// leaves any value it would have received in the queue.
     /// </remarks>
-    /// <example><code>jobs |&gt; FlowStream.fromQueue |&gt; FlowStream.runForEachFlow handle</code></example>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! (jobs: Queue&lt;string&gt;) = Queue.bounded 8
+    ///     do! jobs |&gt; Queue.offerAll [ "a"; "b" ] |&gt; Flow.ignore
+    ///     do! Queue.shutdown jobs
+    ///     return! jobs |&gt; FlowStream.fromQueue |&gt; FlowStream.runCollect
+    /// }
+    /// </code>
+    /// </example>
     let fromQueue (queue: Queue<'value>) : FlowStream<'env, 'error, 'value> =
         let rec pull cancellationToken () : Execution<StreamStep<'value, 'error>, 'error> =
             QueueCore.take
@@ -75,7 +84,18 @@ module FlowStream =
     /// The stream ends normally once the hub is shut down or the subscription's scope closes, after the subscriber's
     /// backlog is drained.
     /// </remarks>
-    /// <example><code>samples |&gt; FlowStream.fromSubscription |&gt; FlowStream.runForEachFlow record</code></example>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! (readings: Hub&lt;float&gt;) = Hub.make ()
+    ///     let! history = readings |&gt; Hub.subscribe SubscriberStrategy.Unbounded
+    ///     do! readings |&gt; Hub.publishAll [ 20.0; 21.5 ] |&gt; Flow.ignore
+    ///     do! Hub.shutdown readings
+    ///     return! history |&gt; FlowStream.fromSubscription |&gt; FlowStream.runCollect
+    /// }
+    /// |&gt; Flow.scoped
+    /// </code>
+    /// </example>
     let fromSubscription (subscription: Subscription<'value>) : FlowStream<'env, 'error, 'value> =
         fromQueue subscription.Queue
 

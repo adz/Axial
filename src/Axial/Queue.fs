@@ -284,11 +284,11 @@ module Queue =
     /// <example>
     /// <code>
     /// flow {
-    ///     let! jobs = Queue.boundedScoped 64
-    ///     let! _ = Flow.fork (jobs |> FlowStream.fromQueue |> FlowStream.runForEachFlow handle)
-    ///     do! jobs |> Queue.offer firstJob |> Flow.ignore
+    ///     let! (jobs: Queue&lt;string&gt;) = Queue.boundedScoped 64
+    ///     let! _ = jobs |&gt; FlowStream.fromQueue |&gt; FlowStream.runForEach (printfn "%s") |&gt; Flow.fork
+    ///     do! jobs |&gt; Queue.offer "first job" |&gt; Flow.ignore
     /// }
-    /// |> Flow.scoped
+    /// |&gt; Flow.scoped
     /// </code>
     /// </example>
     let boundedScoped (capacity: int) : Flow<'env, 'error, Queue<'a>> =
@@ -309,7 +309,14 @@ module Queue =
     /// <c>true</c> when the value was accepted, or <c>false</c> when a dropping queue discarded it. A bounded queue
     /// suspends until space exists. The flow is interrupted if the queue is or becomes shut down first.
     /// </returns>
-    /// <example><code>jobs |&gt; Queue.offer job</code></example>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! (jobs: Queue&lt;string&gt;) = Queue.bounded 8
+    ///     return! jobs |&gt; Queue.offer "job"
+    /// }
+    /// </code>
+    /// </example>
     let offer (value: 'a) (queue: Queue<'a>) : Flow<'env, 'error, bool> =
         Flow(fun _ cancellationToken ->
             let wake = ResizeArray()
@@ -363,7 +370,15 @@ module Queue =
 
     /// <summary>Removes the oldest value, suspending until one is available.</summary>
     /// <remarks>After shutdown this returns the remaining values, then is interrupted.</remarks>
-    /// <example><code>Queue.take jobs</code></example>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! (jobs: Queue&lt;string&gt;) = Queue.bounded 8
+    ///     do! jobs |&gt; Queue.offer "job" |&gt; Flow.ignore
+    ///     return! Queue.take jobs
+    /// }
+    /// </code>
+    /// </example>
     let take (queue: Queue<'a>) : Flow<'env, 'error, 'a> =
         Flow(fun _ cancellationToken ->
             QueueCore.take queue (fun () -> Execution.ofCause Cause.Interrupt) Execution.ofValue cancellationToken)
@@ -378,7 +393,15 @@ module Queue =
 
     /// <summary>Removes up to <paramref name="max" /> available values in FIFO order, without suspending.</summary>
     /// <remarks>Returns an empty list when nothing is available. A negative maximum fails with a defect.</remarks>
-    /// <example><code>samples |&gt; Queue.takeUpTo 500</code></example>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! (samples: Queue&lt;float&gt;) = Queue.unbounded ()
+    ///     do! samples |&gt; Queue.offerAll [ 1.0; 2.0; 3.0 ] |&gt; Flow.ignore
+    ///     return! samples |&gt; Queue.takeUpTo 500
+    /// }
+    /// </code>
+    /// </example>
     let takeUpTo (max: int) (queue: Queue<'a>) : Flow<'env, 'error, 'a list> =
         Flow(fun _ _ ->
             if max < 0 then

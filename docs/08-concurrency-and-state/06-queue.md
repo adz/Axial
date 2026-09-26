@@ -91,15 +91,14 @@ state, and `Queue.awaitShutdown` suspends until it happens.
 -             return jobs
 -         }
 -         |> Flow.scoped
--     let! backlog = jobs |> FlowStream.fromQueue |> FlowStream.runCollect
--     let! closed = Queue.isShutdown jobs
--     return backlog, closed
-- } : Flow<unit, Never, string list * bool>)
+-     return! jobs |> FlowStream.fromQueue |> FlowStream.runCollect
+- } : Flow<unit, Never, string list>)
 - |> Flow.run ();;
-val it: Exit<(string list * bool),Never> = Success (["a"; "b"], true)
+val it: Exit<string list,Never> = Success ["a"; "b"]
 ```
 
-Closing the scope shut the queue, and the consumer still received the values that were already queued.
+Closing the scope shut the queue down, so the stream ended once it had delivered the values that were already queued.
+Without the shutdown, the consumer would have waited for more values forever.
 
 ## Fairness and interruption
 

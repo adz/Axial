@@ -165,7 +165,14 @@ module Hub =
     /// Suspends while a <c>BackPressure</c> subscription is full. Interrupted if the hub is or becomes shut down. If
     /// the publisher is interrupted part way, subscriptions already reached keep the value.
     /// </remarks>
-    /// <example><code>hub |&gt; Hub.publish reading</code></example>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! (readings: Hub&lt;float&gt;) = Hub.make ()
+    ///     return! readings |&gt; Hub.publish 21.5
+    /// }
+    /// </code>
+    /// </example>
     let publish (value: 'a) (hub: Hub<'a>) : Flow<'env, 'error, PublishResult> =
         Flow(fun _ cancellationToken -> HubCore.publishAll hub [| value |] cancellationToken)
 
@@ -181,8 +188,10 @@ module Hub =
     /// <example>
     /// <code>
     /// flow {
-    ///     let! samples = hub |&gt; Hub.subscribe (SubscriberStrategy.Sliding 1)
-    ///     return! samples |&gt; FlowStream.fromSubscription |&gt; FlowStream.runForEach render
+    ///     let! (readings: Hub&lt;float&gt;) = Hub.make ()
+    ///     let! latest = readings |&gt; Hub.subscribe (SubscriberStrategy.Sliding 1)
+    ///     do! readings |&gt; Hub.publishAll [ 20.0; 21.5 ] |&gt; Flow.ignore
+    ///     return! Subscription.takeAll latest
     /// }
     /// |&gt; Flow.scoped
     /// </code>
