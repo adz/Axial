@@ -97,11 +97,11 @@ module MemoryRetentionTests =
                             for index in 0..42_000 do
                                 do! queue |> Queue.offer index |> Flow.ignore
 
-                            do! Queue.shutdown queue
+                            do! Dequeue.shutdown queue
                         }
                         |> Flow.fork
 
-                    do! queue |> FlowStream.fromQueue |> FlowStream.runForEach observe
+                    do! queue |> FlowStream.fromDequeue |> FlowStream.runForEach observe
                     do! Flow.join producer
                 })
 

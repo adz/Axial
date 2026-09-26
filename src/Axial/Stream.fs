@@ -53,23 +53,23 @@ module FlowStream =
 
         FlowStream(fun environment cancellationToken -> pull environment cancellationToken initialState ())
 
-    /// <summary>Creates a stream that takes values from a queue until it is shut down and drained.</summary>
+    /// <summary>Creates a stream that takes values from a queue or hub subscription until it is shut down and drained.</summary>
     /// <remarks>
-    /// Shutdown is the normal end of the stream, not a failure: after <c>Queue.shutdown</c> the stream emits the
-    /// remaining backlog and then completes. Each pull suspends while the queue is empty. Interrupting a pull
-    /// leaves any value it would have received in the queue.
+    /// Shutdown is the normal end of the stream, not a failure: after <c>Dequeue.shutdown</c> or <c>Hub.shutdown</c> the
+    /// stream emits the remaining backlog and then completes. Each pull suspends while the queue is empty.
+    /// Interrupting a pull leaves any value it would have received in the queue.
     /// </remarks>
     /// <example>
     /// <code>
     /// flow {
     ///     let! (jobs: Queue&lt;string&gt;) = Queue.bounded 8
     ///     do! jobs |&gt; Queue.offerAll [ "a"; "b" ] |&gt; Flow.ignore
-    ///     do! Queue.shutdown jobs
-    ///     return! jobs |&gt; FlowStream.fromQueue |&gt; FlowStream.runCollect
+    ///     do! Dequeue.shutdown jobs
+    ///     return! jobs |&gt; FlowStream.fromDequeue |&gt; FlowStream.runCollect
     /// }
     /// </code>
     /// </example>
-    let fromQueue (queue: Queue<'value>) : FlowStream<'env, 'error, 'value> =
+    let fromDequeue (queue: Dequeue<'value>) : FlowStream<'env, 'error, 'value> =
         let rec pull cancellationToken () : Execution<StreamStep<'value, 'error>, 'error> =
             QueueCore.take
                 queue
@@ -78,26 +78,6 @@ module FlowStream =
                 cancellationToken
 
         FlowStream(fun _ cancellationToken -> pull cancellationToken ())
-
-    /// <summary>Creates a stream of the values published to a hub subscription.</summary>
-    /// <remarks>
-    /// The stream ends normally once the hub is shut down or the subscription's scope closes, after the subscriber's
-    /// backlog is drained.
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// flow {
-    ///     let! (readings: Hub&lt;float&gt;) = Hub.make ()
-    ///     let! history = readings |&gt; Hub.subscribe SubscriberStrategy.Unbounded
-    ///     do! readings |&gt; Hub.publishAll [ 20.0; 21.5 ] |&gt; Flow.ignore
-    ///     do! Hub.shutdown readings
-    ///     return! history |&gt; FlowStream.fromSubscription |&gt; FlowStream.runCollect
-    /// }
-    /// |&gt; Flow.scoped
-    /// </code>
-    /// </example>
-    let fromSubscription (subscription: Subscription<'value>) : FlowStream<'env, 'error, 'value> =
-        fromQueue subscription.Queue
 
     /// <summary>Creates a stream from a synchronous sequence of values.</summary>
     /// <param name="values">The sequence of values to be emitted by the stream.</param>

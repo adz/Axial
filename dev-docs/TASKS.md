@@ -11,10 +11,6 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 Follow-up to the Queue/Hub/Schedule review. Work in order; each step is committed and validated on its own.
 
-2. Split the consumer side into a public `Dequeue<'a>` that `Queue<'a>` extends; `Hub.subscribe` returns a
-   `Dequeue<'a>`, and `FlowStream.fromDequeue` replaces `fromQueue`/`fromSubscription`. Replace
-   `SubscriberStrategy` and the constructor-only strategies with one public `QueueStrategy` used by `Queue.make`,
-   `Queue.makeScoped`, and `Hub.subscribe`. Add `Dequeue.takeBetween`, and `Dequeue.shutdown` as unsubscribe.
 3. Give every forked fiber its own child scope, closed when the fiber settles, so a fiber's acquisitions (including
    hub subscriptions) end with it. Add `Flow.forkGraceful stop grace`: on scope close, run `stop`, wait up to
    `grace` for the fiber to finish, then interrupt it, so a consumer can drain a shut-down queue on application stop.

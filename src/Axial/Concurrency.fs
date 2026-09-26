@@ -132,11 +132,13 @@ module internal WaitList =
             Platform.resolveSignal signal () |> ignore
 
     /// Awaits a waiter from <c>Enqueue</c>. <paramref name="settled" /> reads the outcome once the waiter is
-    /// completed or shut down. On interruption, a waiter still waiting is withdrawn under the gate; one completed in
-    /// the same instant is resolved by <paramref name="raced" />.
-    let await
+    /// completed or shut down. On interruption, a waiter still waiting is withdrawn under the gate and
+    /// <paramref name="withdrawn" /> runs, still under the gate; one completed in the same instant is resolved by
+    /// <paramref name="raced" /> instead.
+    let awaitWith
         (list: WaitList<'a>)
         (waiter: Waiter<'a>)
+        (withdrawn: ResizeArray<Platform.Signal<unit>> -> unit)
         (raced: RacedHandover<'a>)
         (settled: Waiter<'a> -> Execution<'result, 'error>)
         cancellationToken
@@ -153,6 +155,7 @@ module internal WaitList =
                             waiter.State <- Cancelled
                             waiter.Value <- Unchecked.defaultof<'a>
                             list.Withdraw waiter
+                            withdrawn wake
                             false
                         | Completed ->
                             match raced with
@@ -169,6 +172,10 @@ module internal WaitList =
                 wakeAll wake
                 if keep then settled waiter else Execution.ofCause cause)
             (Platform.awaitSignal waiter.Signal cancellationToken)
+
+    /// <c>awaitWith</c> for waiters that hold nothing else when withdrawn.
+    let await list waiter raced settled cancellationToken =
+        awaitWith list waiter ignore raced settled cancellationToken
 
 /// <summary>A validated upper bound for concurrent Flow operations.</summary>
 type Parallelism = private Parallelism of int
@@ -277,6 +284,15 @@ module internal PermitQueue =
         let wake = ResizeArray()
         Platform.lock queue.Gate (fun () -> releaseLocked queue wake)
         WaitList.wakeAll wake
+
+    /// Takes a permit only if one is free and nobody is waiting for it.
+    let tryAcquireNow (queue: PermitQueue) : bool =
+        Platform.lock queue.Gate (fun () ->
+            if queue.Available > 0 then
+                queue.Available <- queue.Available - 1
+                true
+            else
+                false)
 
     /// Acquires a permit, waiting in FIFO order. An interrupted waiter that was granted a permit in the same
     /// instant passes it on, so interruption never loses a permit.

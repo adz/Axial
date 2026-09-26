@@ -34,7 +34,7 @@ module WorkflowQueueTests =
             flow {
                 let! (queue: Queue<int>) = Queue.bounded 8
                 do! queue |> Queue.offerAll [ 1..5 ] |> Flow.ignore
-                return! queue |> Queue.takeAll
+                return! queue |> Dequeue.takeAll
             }
 
         test <@ Flow.runSync () workflow = Exit.Success [ 1..5 ] @>
@@ -52,7 +52,7 @@ module WorkflowQueueTests =
                     }
 
                 let! producers = [ producer 1; producer 2; producer 3 ] |> Flow.sequencePar |> Flow.fork
-                let! received = List.init 300 (fun _ -> Queue.take queue) |> Flow.sequence
+                let! received = List.init 300 (fun _ -> Dequeue.take queue) |> Flow.sequence
                 do! Flow.join producers |> Flow.ignore
                 return received
             }
@@ -70,17 +70,17 @@ module WorkflowQueueTests =
             flow {
                 let! (dropping: Queue<int>) = Queue.dropping 2
                 let! droppedAccepted = dropping |> Queue.offerAll [ 1; 2; 3 ]
-                let! droppingContents = dropping |> Queue.takeAll
+                let! droppingContents = dropping |> Dequeue.takeAll
 
                 let! (sliding: Queue<int>) = Queue.sliding 2
                 let! slidingAccepted = sliding |> Queue.offerAll [ 1; 2; 3 ]
-                let! slidingContents = sliding |> Queue.takeAll
+                let! slidingContents = sliding |> Dequeue.takeAll
 
                 let! (bounded: Queue<int>) = Queue.bounded 2
                 do! bounded |> Queue.offerAll [ 1; 2 ] |> Flow.ignore
                 let! blocked = bounded |> Queue.offer 3 |> Flow.fork
                 do! waitUntil (fun () -> suspendedOfferers bounded () = 1)
-                let! stillFull = bounded |> Queue.size
+                let! stillFull = bounded |> Dequeue.size
                 let! _ = Flow.interrupt blocked
 
                 return droppedAccepted, droppingContents, slidingAccepted, slidingContents, stillFull
@@ -93,7 +93,7 @@ module WorkflowQueueTests =
         let workflow =
             flow {
                 let! (queue: Queue<string>) = Queue.bounded 1
-                let! taker = Queue.take queue |> Flow.fork
+                let! taker = Dequeue.take queue |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers queue () = 1)
                 do! queue |> Queue.offer "handed" |> Flow.ignore
                 let! taken = Flow.join taker
@@ -101,9 +101,9 @@ module WorkflowQueueTests =
                 do! queue |> Queue.offer "first" |> Flow.ignore
                 let! offerer = queue |> Queue.offer "second" |> Flow.fork
                 do! waitUntil (fun () -> suspendedOfferers queue () = 1)
-                let! first = Queue.take queue
+                let! first = Dequeue.take queue
                 let! accepted = Flow.join offerer
-                let! second = Queue.take queue
+                let! second = Dequeue.take queue
                 return taken, first, accepted, second
             }
 
@@ -114,11 +114,11 @@ module WorkflowQueueTests =
         let attempt () =
             flow {
                 let! (queue: Queue<int>) = Queue.unbounded ()
-                let! taker = Queue.take queue |> Flow.fork
+                let! taker = Dequeue.take queue |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers queue () = 1)
                 // Race the interruption against the offer that would complete the suspended take.
                 let! interrupted, _ = Flow.zipPar (Flow.interrupt taker) (queue |> Queue.offer 7)
-                let! remaining = Queue.poll queue
+                let! remaining = Dequeue.poll queue
 
                 return
                     match interrupted, remaining with
@@ -135,9 +135,9 @@ module WorkflowQueueTests =
         let attempt () =
             flow {
                 let! (queue: Queue<int>) = Queue.unbounded ()
-                let! first = Queue.take queue |> Flow.fork
+                let! first = Dequeue.take queue |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers queue () = 1)
-                let! second = Queue.take queue |> Flow.fork
+                let! second = Dequeue.take queue |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers queue () = 2)
                 let! firstExit, _ = Flow.zipPar (Flow.interrupt first) (queue |> Queue.offer 7)
 
@@ -149,7 +149,7 @@ module WorkflowQueueTests =
                     // The element went to the first taker in the same instant it was interrupted; it must now
                     // belong to the second taker rather than sit in the buffer or vanish.
                     let! secondValue = Flow.join second
-                    let! remaining = Queue.size queue
+                    let! remaining = Dequeue.size queue
                     return secondValue = 7 && remaining = 0
                 | _ -> return false
             }
@@ -165,8 +165,8 @@ module WorkflowQueueTests =
                 do! queue |> Queue.offer 1 |> Flow.ignore
                 let! offerer = queue |> Queue.offer 2 |> Flow.fork
                 do! waitUntil (fun () -> suspendedOfferers queue () = 1)
-                let! interrupted, first = Flow.zipPar (Flow.interrupt offerer) (Queue.take queue)
-                let! remaining = Queue.takeAll queue
+                let! interrupted, first = Flow.zipPar (Flow.interrupt offerer) (Dequeue.take queue)
+                let! remaining = Dequeue.takeAll queue
 
                 return
                     first = 1
@@ -189,7 +189,7 @@ module WorkflowQueueTests =
                     [ 1..3 ]
                     |> Flow.traverse (fun index ->
                         flow {
-                            let! taker = Queue.take queue |> Flow.fork
+                            let! taker = Dequeue.take queue |> Flow.fork
                             do! waitUntil (fun () -> suspendedTakers queue () = index)
                             return taker
                         })
@@ -208,7 +208,7 @@ module WorkflowQueueTests =
                             return offerer
                         })
 
-                let! drained = List.init 4 (fun _ -> Queue.take queue) |> Flow.sequence
+                let! drained = List.init 4 (fun _ -> Dequeue.take queue) |> Flow.sequence
                 do! offerers |> Flow.traverse Flow.join |> Flow.ignore
                 return taken, drained
             }
@@ -220,25 +220,25 @@ module WorkflowQueueTests =
         let workflow =
             flow {
                 let! (empty: Queue<int>) = Queue.bounded 1
-                let! taker = Queue.take empty |> Flow.fork
+                let! taker = Dequeue.take empty |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers empty () = 1)
-                do! Queue.shutdown empty
+                do! Dequeue.shutdown empty
                 let! takerExit = Flow.interrupt taker
 
                 let! (full: Queue<int>) = Queue.bounded 2
                 do! full |> Queue.offerAll [ 1; 2 ] |> Flow.ignore
                 let! offerer = full |> Queue.offer 3 |> Flow.fork
                 do! waitUntil (fun () -> suspendedOfferers full () = 1)
-                do! Queue.shutdown full
-                do! Queue.shutdown full
+                do! Dequeue.shutdown full
+                do! Dequeue.shutdown full
                 let! offererExit = Flow.interrupt offerer
-                let! isShut = Queue.isShutdown full
-                do! Queue.awaitShutdown full
+                let! isShut = Dequeue.isShutdown full
+                do! Dequeue.awaitShutdown full
 
-                let! first = Queue.take full
-                let! second = Queue.take full
-                let! polled = Queue.poll full
-                let! lateTake = Queue.take full |> Flow.fork |> Flow.bind Flow.interrupt
+                let! first = Dequeue.take full
+                let! second = Dequeue.take full
+                let! polled = Dequeue.poll full
+                let! lateTake = Dequeue.take full |> Flow.fork |> Flow.bind Flow.interrupt
                 let! lateOffer = full |> Queue.offer 4 |> Flow.fork |> Flow.bind Flow.interrupt
 
                 return
@@ -258,9 +258,9 @@ module WorkflowQueueTests =
         let workflow =
             flow {
                 let! (queue: Queue<int>) = Queue.bounded 2
-                let! consumer = queue |> FlowStream.fromQueue |> FlowStream.runCollect |> Flow.fork
+                let! consumer = queue |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.fork
                 do! queue |> Queue.offerAll [ 1..5 ] |> Flow.ignore
-                do! Queue.shutdown queue
+                do! Dequeue.shutdown queue
                 return! Flow.join consumer
             }
 
@@ -271,15 +271,69 @@ module WorkflowQueueTests =
         let workflow =
             flow {
                 let! (queue: Queue<int>) = Queue.unbounded ()
-                let! none = queue |> Queue.takeUpTo 3
+                let! none = queue |> Dequeue.takeUpTo 3
                 do! queue |> Queue.offerAll [ 1..5 ] |> Flow.ignore
-                let! firstBatch = queue |> Queue.takeUpTo 3
-                let! rest = queue |> Queue.takeAll
-                let! afterwards = queue |> Queue.takeAll
+                let! firstBatch = queue |> Dequeue.takeUpTo 3
+                let! rest = queue |> Dequeue.takeAll
+                let! afterwards = queue |> Dequeue.takeAll
                 return none, firstBatch, rest, afterwards
             }
 
         test <@ Flow.runSync () workflow = Exit.Success([], [ 1; 2; 3 ], [ 4; 5 ], []) @>
+
+    [<Fact>]
+    let ``Queue: takeBetween waits for the minimum and takes up to the maximum`` () =
+        let workflow =
+            flow {
+                let! (queue: Queue<int>) = Queue.unbounded ()
+                let! batch = queue |> Dequeue.takeBetween 2 3 |> Flow.fork
+                do! queue |> Queue.offer 1 |> Flow.ignore
+                do! waitUntil (fun () -> suspendedTakers queue () = 1)
+                do! queue |> Queue.offerAll [ 2; 3; 4 ] |> Flow.ignore
+                let! first = Flow.join batch
+                let! second = queue |> Dequeue.takeBetween 1 5
+                do! queue |> Queue.offer 5 |> Flow.ignore
+                do! Dequeue.shutdown queue
+                let! remainder = queue |> Dequeue.takeBetween 3 3
+                let! afterDrain = queue |> Dequeue.takeBetween 1 1 |> Flow.fork |> Flow.bind Flow.interrupt
+                return first, second, remainder, isInterrupted afterDrain
+            }
+
+        // The first batch had 1 and waited for 2; 3 arrived in the same offerAll and fits under the maximum.
+        match Flow.runSync () workflow with
+        | Exit.Success(first, second, remainder, interrupted) ->
+            test <@ first @ second = [ 1; 2; 3; 4 ] && first.Length >= 2 && first.Length <= 3 @>
+            test <@ remainder = [ 5 ] && interrupted @>
+        | other -> failwith $"Expected success, got {other}"
+
+    [<Fact>]
+    let ``Queue: an interrupted takeBetween gives its collected values back in order`` () =
+        let workflow =
+            flow {
+                let! (queue: Queue<int>) = Queue.unbounded ()
+                do! queue |> Queue.offerAll [ 1; 2 ] |> Flow.ignore
+                let! batch = queue |> Dequeue.takeBetween 3 3 |> Flow.fork
+                do! waitUntil (fun () -> suspendedTakers queue () = 1)
+                let! exit = Flow.interrupt batch
+                do! queue |> Queue.offer 3 |> Flow.ignore
+                let! remaining = Dequeue.takeAll queue
+                return isInterrupted exit, remaining
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(true, [ 1; 2; 3 ]) @>
+
+    [<Fact>]
+    let ``Queue: takeBetween rejects an empty or inverted range`` () =
+        let exit =
+            flow {
+                let! (queue: Queue<int>) = Queue.unbounded ()
+                return! queue |> Dequeue.takeBetween 0 1
+            }
+            |> Flow.runSync ()
+
+        match exit with
+        | Exit.Failure(Cause.Die error) -> test <@ error :? ArgumentOutOfRangeException @>
+        | other -> failwith $"Expected a defect, got {other}"
 
     [<Fact>]
     let ``Queue: a scoped queue shuts down when its scope closes`` () =
@@ -287,15 +341,15 @@ module WorkflowQueueTests =
             flow {
                 let! queue, consumer =
                     flow {
-                        let! (queue: Queue<int>) = Queue.boundedScoped 4
+                        let! (queue: Queue<int>) = Queue.makeScoped (QueueStrategy.BackPressure 4)
                         do! queue |> Queue.offerAll [ 1; 2 ] |> Flow.ignore
                         return queue
                     }
                     |> Flow.scoped
                     |> Flow.bind (fun queue ->
-                        queue |> FlowStream.fromQueue |> FlowStream.runCollect |> Flow.map (fun values -> queue, values))
+                        queue |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.map (fun values -> queue, values))
 
-                let! isShut = Queue.isShutdown queue
+                let! isShut = Dequeue.isShutdown queue
                 return isShut, consumer
             }
 

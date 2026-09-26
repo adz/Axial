@@ -37,12 +37,16 @@
 - Use `Flow.fork`, `join`, and `interrupt` for owned fibers; `forkDetached` states intentional fire-and-forget.
 - Use `Schedule.retry` for typed failures, `Schedule.repeat` for successful repetition, `FlowStream` for effectful pull
   streams, and STM for composable transactional coordination.
-- Use `Queue` to hand values between fibers when there is exactly one logical consumer: `Queue.bounded` suspends
-  producers when full, `dropping` discards the newest value, `sliding` evicts the oldest. `Queue.shutdown` lets the
-  consumer drain its backlog, and `FlowStream.fromQueue` ends normally after shutdown and drain.
+- Use `Queue` to hand values between fibers when there is exactly one logical consumer. `Queue.make` takes a
+  `QueueStrategy` (`BackPressure n` suspends producers when full, `Dropping n` discards the newest value, `Sliding n`
+  evicts the oldest, `Unbounded`); `Queue.bounded n` and friends are shorthands. Offer with `Queue.offer`; take,
+  batch (`Dequeue.takeBetween 1 500`), and shut down with the `Dequeue` functions, which accept a `Queue`.
+  `Dequeue.shutdown` lets the consumer drain its backlog, and `FlowStream.fromDequeue` ends normally after shutdown
+  and drain.
 - Use `Hub` when there can be zero or many consumers; use `Queue` for exactly one logical consumer. Each
-  `Hub.subscribe` chooses its own `SubscriberStrategy` (`BackPressure`, `Sliding`, `Dropping`, `Unbounded`) and
-  belongs to the current scope; only a full `BackPressure` subscription suspends `Hub.publish`.
+  `Hub.subscribe` chooses its own `QueueStrategy`, returns a `Dequeue`, and belongs to the current scope (a forked
+  fiber's subscription ends with the fiber); `Dequeue.shutdown` unsubscribes. Only a full `BackPressure` subscription
+  suspends `Hub.publish`, and while it waits no subscriber gets later values; `Hub.tryPublish` never waits.
 - Cap backoff with `Schedule.exponential d |> Schedule.union (Schedule.spaced cap)`; bound attempts with
   `Schedule.recurs n |> Schedule.intersect (Schedule.exponential d)`. Use `Schedule.fixedRate period` for drift-free
   periodic work; `Schedule.spaced` waits after each run instead.
