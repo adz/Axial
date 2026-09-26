@@ -35,7 +35,7 @@ let reliableWorker =
 let! fiber = Flow.fork reliableWorker
 ```
 
-`supervise` takes the same `Schedule` as `retry`, but its input is the defect exception, so `Schedule.whileInput` or a `Retry` record's `When` can decide which crashes are worth a restart. Bound the restarts with `Retries` or `Schedule.upTo` so a crash loop eventually surfaces. When the schedule stops, the final defect propagates as the flow's exit.
+`supervise` takes the same `Schedule` as `retry`, but its input is the defect exception, so `Schedule.whileInput` or a `Retry` record's `When` can decide which crashes are worth a restart. Bound the restarts with `Retries` or `Schedule.recursAtMost` (or a time budget with `Schedule.upTo`) so a crash loop eventually surfaces. When the schedule stops, the final defect propagates as the flow's exit.
 
 Two semantics worth knowing:
 

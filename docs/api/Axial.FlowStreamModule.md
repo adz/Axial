@@ -9,7 +9,13 @@ sources include process output, paginated APIs, subscriptions, and host-specific
 A stream does nothing until a terminal operation such as [`runFold`](#Axial.FlowStreamModule.runFold),
 [`runForEachFlow`](#Axial.FlowStreamModule.runForEachFlow), or
 [`runCollect`](#Axial.FlowStreamModule.runCollect) produces a Flow and that Flow is run. Pulling provides backpressure: downstream requests each next value, so upstream cannot run ahead
-without an operator explicitly introducing bounded concurrency.
+without an operator explicitly introducing bounded concurrency. The time-based operators (`groupedWithin`, `throttle`,
+`debounce`, `switchMapFlow`) and `buffer` are such operators: they read ahead into a queue so they can react to
+time or to a newer value.
+
+A stream that reads a file, socket, or cursor should own it with [`using`](#Axial.FlowStreamModule.using), which releases
+the resource however consumption ends. To take a single result without draining the stream, use
+[`runTryHead`](#Axial.FlowStreamModule.runTryHead).
 
 ## Start here
 

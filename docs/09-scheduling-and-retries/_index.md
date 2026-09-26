@@ -118,22 +118,23 @@ when it takes over, so its delays start from the beginning:
 // Three quick retries, then up to five slower ones with backoff
 let patient =
     Schedule.spaced (TimeSpan.FromMilliseconds 100.0)
-    |> Schedule.upTo 3
-    |> Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |> Schedule.upTo 5)
+    |> Schedule.recursAtMost 3
+    |> Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |> Schedule.recursAtMost 5)
 ```
 
 Its output is `Choice1Of2` while the first schedule decides and `Choice2Of2` after the hand-over.
 
 ### Stop on time or on the schedule's own output
 
-`Schedule.within` gives a schedule a total time budget, measured from when the first run began. It never cuts a run
-short; it declines to start another run whose delay would end past the budget:
+`Schedule.upTo` gives a schedule a total time budget, measured from when the first run began. The schedule continues
+while less than the budget has passed; it never cuts a run short. To cap the number of retries instead, use
+`Schedule.recursAtMost`:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Retry with backoff, but give up after two minutes in total
 let bounded =
     Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
-    |> Schedule.within (TimeSpan.FromMinutes 2.0)
+    |> Schedule.upTo (TimeSpan.FromMinutes 2.0)
 ```
 
 `Schedule.whileOutput` and `Schedule.untilOutput` stop on what the schedule itself produces, where `whileInput` looks
@@ -185,7 +186,7 @@ connection or handle it returns is still usable.
 ### Retry only some errors
 
 The schedule sees each typed error as its input. `Schedule.whileInput` continues only for errors that satisfy a
-predicate, and `Schedule.upTo` caps the number of retries of any schedule:
+predicate, and `Schedule.recursAtMost` caps the number of retries of any schedule:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let isTransient error =
@@ -198,7 +199,7 @@ let resilientFetch =
     fetch
     |> Flow.retry (
         Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
-        |> Schedule.upTo 3
+        |> Schedule.recursAtMost 3
         |> Schedule.whileInput isTransient)
 ```
 
@@ -252,8 +253,8 @@ let recurringPoll =
 | `andThen` | `Schedule<'env, 'input, 'o2> -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, Choice<'o1, 'o2>>` | Runs the first schedule until it stops, then the second from its start. |
 | `whileInput` / `untilInput` | `('input -> bool) -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Continues while (until) the retried error or repeated value satisfies the predicate. |
 | `whileOutput` / `untilOutput` | `('output -> bool) -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Continues while (until) the schedule's own output satisfies the predicate. |
-| `upTo` | `int -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Stops after at most `n` recurrences. |
-| `within` | `TimeSpan -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Stops once the next run would start past a total time budget. |
+| `recursAtMost` | `int -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Stops after at most `n` recurrences, keeping the schedule's delays. |
+| `upTo` | `TimeSpan -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Stops once a total time budget has passed since the first run. |
 | `resetAfter` | `TimeSpan -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Restarts the count after a run that lasted at least the given time. |
 | `elapsed` | `Schedule<'env, 'input, TimeSpan>` | Recurs without waiting and emits the time since the first run. |
 | `map` | `('o1 -> 'o2) -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, 'o2>` | Transforms the schedule's output. |

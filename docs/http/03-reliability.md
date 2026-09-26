@@ -55,7 +55,7 @@ workflow
 |> Flow.retry (
     Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
     |> Schedule.jitteredWith random.NextDouble
-    |> Schedule.upTo 5
+    |> Schedule.recursAtMost 5
     |> Schedule.whileInput notRateLimited)
 ```
 

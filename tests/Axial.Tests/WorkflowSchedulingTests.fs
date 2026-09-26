@@ -542,14 +542,14 @@ module WorkflowSchedulingTests =
         test <@ result = Exit.Success 4 @>
 
     [<Fact>]
-    let ``Schedule.upTo caps retries while keeping the schedule's delays`` () =
+    let ``Schedule.recursAtMost caps retries while keeping the schedule's delays`` () =
         let runs = ref 0
 
         let result : Exit<unit, string> =
             Flow.delay(fun () ->
                 runs.Value <- runs.Value + 1
                 Flow.fail "boom")
-            |> Flow.retry (Schedule.spaced TimeSpan.Zero |> Schedule.upTo 2)
+            |> Flow.retry (Schedule.spaced TimeSpan.Zero |> Schedule.recursAtMost 2)
             |> Flow.runSync ()
 
         test <@ result = Exit.Failure (Cause.Fail "boom") @>
@@ -645,8 +645,8 @@ module WorkflowSchedulingTests =
 
         let schedule =
             Schedule.spaced (ms 10.0)
-            |> Schedule.upTo 2
-            |> Schedule.andThen (Schedule.exponential (ms 100.0) |> Schedule.upTo 2)
+            |> Schedule.recursAtMost 2
+            |> Schedule.andThen (Schedule.exponential (ms 100.0) |> Schedule.recursAtMost 2)
 
         let result = recordAttempts attempts TimeSpan.Zero |> Flow.retry schedule |> runOnManualTime
 
@@ -693,14 +693,15 @@ module WorkflowSchedulingTests =
         test <@ counted.Value = 3 @>
 
     [<Fact>]
-    let ``Schedule.within gives up before a retry would start past the budget`` () =
+    let ``Schedule.upTo stops once the time budget has passed`` () =
         let attempts = ResizeArray<TimeSpan>()
-        let schedule = Schedule.spaced (ms 300.0) |> Schedule.within (TimeSpan.FromSeconds 1.0)
+        let schedule = Schedule.spaced (ms 300.0) |> Schedule.upTo (TimeSpan.FromSeconds 1.0)
 
         let result = recordAttempts attempts (ms 50.0) |> Flow.retry schedule |> runOnManualTime
         test <@ result = Exit.Failure(Cause.Fail "transient") @>
-        // Each attempt takes 50 ms and waits 300 ms: starts at 0, 350, 700. A fourth would start at 1050, past 1 s.
-        test <@ offsets attempts = [ 0.0; 350.0; 700.0 ] @>
+        // Each attempt takes 50 ms and waits 300 ms: starts at 0, 350, 700, 1050. The fourth ends at 1100, past 1 s,
+        // so no fifth attempt is scheduled.
+        test <@ offsets attempts = [ 0.0; 350.0; 700.0; 1050.0 ] @>
 
     [<Fact>]
     let ``Schedule.elapsed and map report time since the first run`` () =

@@ -289,7 +289,7 @@ module Schedule =
     /// <example>
     /// <code>
     /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
-    /// |&gt; Schedule.upTo 3
+    /// |&gt; Schedule.recursAtMost 3
     /// |&gt; Schedule.whileInput HttpError.isTransient
     /// </code>
     /// </example>
@@ -312,19 +312,19 @@ module Schedule =
 
     /// <summary>Stops a schedule after at most <paramref name="n" /> recurrences, keeping its output and delays.</summary>
     /// <remarks>
-    /// Like <c>recurs</c>, <paramref name="n" /> counts recurrences after the first run, so <c>upTo 3</c> with
+    /// Like <c>recurs</c>, <paramref name="n" /> counts recurrences after the first run, so <c>recursAtMost 3</c> with
     /// <c>Flow.retry</c> allows 4 executions in total.
     /// </remarks>
     /// <param name="n">The maximum number of recurrences.</param>
     /// <param name="schedule">The schedule to cap.</param>
     /// <example>
     /// <code>
-    /// Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |&gt; Schedule.upTo 5
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |&gt; Schedule.recursAtMost 5
     /// </code>
     /// </example>
-    let upTo (n: int) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
+    let recursAtMost (n: int) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
         if n < 0 then
-            invalidArg (nameof n) "Schedule.upTo requires a non-negative count."
+            invalidArg (nameof n) "Schedule.recursAtMost requires a non-negative count."
 
         Schedule(fun input context ->
             if context.Attempt < n then op input context else ok (None, TimeSpan.Zero))
@@ -340,7 +340,7 @@ module Schedule =
     /// <summary>Recurs forever without waiting, emitting the time elapsed since the first run began.</summary>
     /// <remarks>
     /// Combine it with <c>whileOutput</c> to stop after a total time, or with <c>intersect</c> to add the elapsed
-    /// time to another schedule's output. <c>within</c> is the shorthand for a time budget.
+    /// time to another schedule's output. <c>upTo</c> is the shorthand for a time budget.
     /// </remarks>
     /// <example><code>Schedule.elapsed |&gt; Schedule.whileOutput (fun elapsed -&gt; elapsed &lt; TimeSpan.FromMinutes 2.0)</code></example>
     let elapsed<'env, 'input> : Schedule<'env, 'input, TimeSpan> =
@@ -381,30 +381,30 @@ module Schedule =
         : Schedule<'env, 'input, 'output> =
         whileOutput (predicate >> not) schedule
 
-    /// <summary>Stops a schedule once the next run would start after <paramref name="budget" /> has passed.</summary>
+    /// <summary>Stops a schedule once <paramref name="budget" /> has passed since the first run began.</summary>
     /// <remarks>
-    /// The budget is measured from when the first run began, with the runtime's clock. A run already in progress
-    /// is never cut short; <c>within</c> only declines to start another one whose delay would end past the budget.
-    /// Use <c>Flow.timeout</c> to bound a single run.
+    /// Time is measured with the runtime's clock. The schedule continues while the elapsed time is below the budget,
+    /// so a retry that is already scheduled still runs even if its delay ends a little past the budget; a run in
+    /// progress is never cut short. Use <c>Flow.timeout</c> to bound a single run, and <c>recursAtMost</c> to cap the
+    /// number of recurrences instead.
     /// </remarks>
     /// <param name="budget">The total time the schedule may keep recurring.</param>
     /// <param name="schedule">The schedule to bound.</param>
     /// <example>
     /// <code>
     /// // Retry with backoff, but give up after two minutes in total
-    /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0) |&gt; Schedule.within (TimeSpan.FromMinutes 2.0)
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0) |&gt; Schedule.upTo (TimeSpan.FromMinutes 2.0)
     /// </code>
     /// </example>
-    let within (budget: TimeSpan) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
+    let upTo (budget: TimeSpan) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
         if budget < TimeSpan.Zero then
             invalidArg (nameof budget) "A time budget cannot be negative."
 
         Schedule(fun input context ->
-            op input context
-            |> flowMap (fun (decision, delay) ->
-                match decision with
-                | Some _ when context.ExecutionEnded - context.LoopStarted + delay <= budget -> decision, delay
-                | _ -> None, TimeSpan.Zero))
+            if context.ExecutionEnded - context.LoopStarted < budget then
+                op input context
+            else
+                ok (None, TimeSpan.Zero))
 
     /// <summary>Runs <paramref name="schedule" /> until it stops, then continues with <paramref name="next" />.</summary>
     /// <remarks>
@@ -417,8 +417,8 @@ module Schedule =
     /// <code>
     /// // Three quick retries, then slower ones
     /// Schedule.spaced (TimeSpan.FromMilliseconds 100.0)
-    /// |&gt; Schedule.upTo 3
-    /// |&gt; Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |&gt; Schedule.upTo 5)
+    /// |&gt; Schedule.recursAtMost 3
+    /// |&gt; Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |&gt; Schedule.recursAtMost 5)
     /// </code>
     /// </example>
     let andThen

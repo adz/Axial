@@ -68,7 +68,7 @@ let retryingCheckout =
     checkout
     |> Flow.retry (
         Schedule.exponential (TimeSpan.FromMilliseconds 50.0)
-        |> Schedule.upTo 3
+        |> Schedule.recursAtMost 3
         |> Schedule.whileInput (function
             | GatewayUnavailable
             | ReceiptStoreFailed -> true
@@ -76,7 +76,7 @@ let retryingCheckout =
 ```
 
 `Flow.retry` takes a `Schedule`, which sees each typed error: `Schedule.whileInput` selects the errors worth retrying,
-and `Schedule.upTo` bounds the attempts. For the common case, `Retry.schedule` builds the same schedule from a record
+and `Schedule.recursAtMost` bounds the attempts. For the common case, `Retry.schedule` builds the same schedule from a record
 with named fields.
 
 ## Exceptions
