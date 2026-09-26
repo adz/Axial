@@ -40,6 +40,9 @@
 - Use `Queue` to hand values between fibers when there is exactly one logical consumer: `Queue.bounded` suspends
   producers when full, `dropping` discards the newest value, `sliding` evicts the oldest. `Queue.shutdown` lets the
   consumer drain its backlog, and `FlowStream.fromQueue` ends normally after shutdown and drain.
+- Use `Hub` when there can be zero or many consumers; use `Queue` for exactly one logical consumer. Each
+  `Hub.subscribe` chooses its own `SubscriberStrategy` (`BackPressure`, `Sliding`, `Dropping`, `Unbounded`) and
+  belongs to the current scope; only a full `BackPressure` subscription suspends `Hub.publish`.
 
 ## Hosts
 

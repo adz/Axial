@@ -70,6 +70,15 @@ module FlowStream =
 
         FlowStream(fun _ cancellationToken -> pull cancellationToken ())
 
+    /// <summary>Creates a stream of the values published to a hub subscription.</summary>
+    /// <remarks>
+    /// The stream ends normally once the hub is shut down or the subscription's scope closes, after the subscriber's
+    /// backlog is drained.
+    /// </remarks>
+    /// <example><code>samples |&gt; FlowStream.fromSubscription |&gt; FlowStream.runForEachFlow record</code></example>
+    let fromSubscription (subscription: Subscription<'value>) : FlowStream<'env, 'error, 'value> =
+        fromQueue subscription.Queue
+
     /// <summary>Creates a stream from a synchronous sequence of values.</summary>
     /// <param name="values">The sequence of values to be emitted by the stream.</param>
     /// <returns>A <see cref="T:AxialStream`3"/> that yields each value from the sequence.</returns>

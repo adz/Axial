@@ -162,7 +162,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 ## 14. Post-v1.0 ZIO Parity Work
 
-- [ ] Add hubs/pub-sub where the .NET implementation can preserve backpressure and shutdown semantics.
+- [x] Add `Hub` pub-sub with per-subscription strategies, scope-owned subscriptions, and draining shutdown (`src/Axial/Hub.fs`).
 - [ ] Add latch, barrier, async mutex, reentrant lock, and concurrent map/set helpers where they compose with `Flow` cancellation and failure.
 - [ ] Add metrics primitives: counters, gauges, histograms, labels, listeners, and runtime connectors.
 - [ ] Add tracing/source-location model adapted to F# and .NET stack traces.

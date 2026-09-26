@@ -10,7 +10,8 @@ keeps Axial's interruption guarantees: interrupting a suspended `Queue.take` nev
 a suspended `Queue.offer` never enqueues its value.
 
 Use a queue when there is exactly one logical consumer. Each value goes to exactly one taker, so several fibers taking
-from one queue share its values between them rather than each seeing all of them.
+from one queue share its values between them. When zero or many consumers must each see every value, use a
+[hub](hub.html).
 
 ## Choosing a strategy
 

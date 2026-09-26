@@ -9,7 +9,6 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 ## Product work
 
-- Build `Hub<'a>` with per-subscriber strategies on top of `Queue` (Part 2 of `dev-docs/queues_and_hubs.md`).
 - Add `Schedule.union`, `Schedule.intersect`, and `Schedule.fixed` (Part 3 of `dev-docs/queues_and_hubs.md`).
 - FsLiveDocs 0.7.3 bundles its own `Axial.dll` (0.9.1) and runs doc transcripts in-process, so examples that use newer
   Axial APIs (`Queue`, `FlowStream.chunkBySize`, `mapFlowPar`) fail with type-load errors. Fix in FsLiveDocs by

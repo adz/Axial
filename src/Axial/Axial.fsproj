@@ -46,6 +46,7 @@
     <Compile Include="BindError.fs" />
     <Compile Include="Concurrency.fs" />
     <Compile Include="Queue.fs" />
+    <Compile Include="Hub.fs" />
     <Compile Include="Ref.fs" />
     <Compile Include="State.fs" />
     <Compile Include="Stream.fs" />
