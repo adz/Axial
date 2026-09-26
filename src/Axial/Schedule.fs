@@ -2,7 +2,7 @@ namespace Axial
 
 open System
 
-/// What a schedule knows when it decides whether to recur. Timestamps come from <c>Platform.monotonicNow</c>, so
+/// What a schedule knows when it decides whether to recur. Timestamps come from the runtime's time source, so
 /// only differences between them are meaningful.
 type internal ScheduleContext =
     {

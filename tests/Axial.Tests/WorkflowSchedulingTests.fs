@@ -424,18 +424,93 @@ module WorkflowSchedulingTests =
         let starts = ResizeArray<TimeSpan>()
 
         let run : Flow<unit, Never, unit> =
-            Flow.delay (fun () ->
-                starts.Add(Platform.monotonicNow ())
-                Flow.sleep (ms 15.0))
+            flow {
+                let! now = runtimeNow ()
+                starts.Add now
+                do! Flow.sleep (ms 15.0)
+            }
 
-        let result = run |> Flow.repeat (Schedule.fixedRate (ms 40.0) |> Schedule.intersect (Schedule.recurs 4)) |> Flow.runSync ()
+        let result = run |> Flow.repeat (Schedule.fixedRate (ms 40.0) |> Schedule.intersect (Schedule.recurs 4)) |> runOnManualTime
         test <@ result = Exit.Success () @>
-        test <@ starts.Count = 5 @>
 
-        // Aligned runs start 40 ms apart, so the fifth starts ~160 ms after the first. Drifting by the 15 ms run
-        // time would put it at ~220 ms.
-        let span = (starts[4] - starts[0]).TotalMilliseconds
-        test <@ span >= 150.0 && span < 200.0 @>
+        // Runs start on the 40 ms grid from the first start; drifting by the 15 ms run time would give 55 ms steps.
+        test <@ starts |> Seq.map (fun start -> (start - starts[0]).TotalMilliseconds) |> List.ofSeq = [ 0.0; 40.0; 80.0; 120.0; 160.0 ] @>
+
+    [<Fact>]
+    let ``Scheduling: fixedRate after an overrun runs once immediately, then realigns`` () =
+        let starts = ResizeArray<TimeSpan>()
+        let durations = Collections.Generic.Queue<float>([ 130.0; 5.0; 5.0; 5.0 ])
+
+        let run : Flow<unit, Never, unit> =
+            flow {
+                let! now = runtimeNow ()
+                starts.Add now
+                do! Flow.sleep (ms (if durations.Count > 0 then durations.Dequeue() else 5.0))
+            }
+
+        let result = run |> Flow.repeat (Schedule.fixedRate (ms 50.0) |> Schedule.intersect (Schedule.recurs 3)) |> runOnManualTime
+        test <@ result = Exit.Success () @>
+
+        // The first run overran two ticks (50, 100): the next starts at once (130), with no burst for the missed
+        // ticks, and the one after that realigns to the 150 ms boundary.
+        test <@ starts |> Seq.map (fun start -> (start - starts[0]).TotalMilliseconds) |> List.ofSeq = [ 0.0; 130.0; 150.0; 200.0 ] @>
+
+    [<Fact>]
+    let ``Flow.sleep waits exactly its delay on the runtime time source`` () =
+        let elapsed =
+            flow {
+                let! before = runtimeNow ()
+                do! Flow.sleep (TimeSpan.FromHours 1.0)
+                let! after = runtimeNow ()
+                return after - before
+            }
+            |> runOnManualTime
+
+        test <@ elapsed = Exit.Success(TimeSpan.FromHours 1.0) @>
+
+    [<Fact>]
+    let ``Flow.retry waits each exponential delay before the next attempt`` () =
+        let attempts = ResizeArray<TimeSpan>()
+
+        let failing : Flow<unit, string, unit> =
+            flow {
+                let! now = runtimeNow ()
+                attempts.Add now
+                return! Flow.fail "transient"
+            }
+
+        let result = failing |> Flow.retry (Schedule.exponential (ms 100.0) |> Schedule.intersect (Schedule.recurs 3)) |> runOnManualTime
+        test <@ result = Exit.Failure(Cause.Fail "transient") @>
+        test <@ attempts |> Seq.map (fun at -> (at - attempts[0]).TotalMilliseconds) |> List.ofSeq = [ 0.0; 100.0; 300.0; 700.0 ] @>
+
+    [<Fact>]
+    let ``Flow.repeat with spaced waits after each run`` () =
+        let starts = ResizeArray<TimeSpan>()
+
+        let run : Flow<unit, Never, unit> =
+            flow {
+                let! now = runtimeNow ()
+                starts.Add now
+                do! Flow.sleep (ms 250.0)
+            }
+
+        let result = run |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 1.0) |> Schedule.intersect (Schedule.recurs 2)) |> runOnManualTime
+        test <@ result = Exit.Success () @>
+        // spaced waits after the run ends, so each start is run time plus spacing after the previous one.
+        test <@ starts |> Seq.map (fun start -> (start - starts[0]).TotalMilliseconds) |> List.ofSeq = [ 0.0; 1250.0; 2500.0 ] @>
+
+    [<Fact>]
+    let ``Flow.timeout fires on the runtime time source`` () =
+        let slow : Flow<unit, string, string> =
+            flow {
+                do! Flow.sleep (TimeSpan.FromHours 1.0)
+                return "finished"
+            }
+
+        let timedOut = slow |> Flow.timeout (TimeSpan.FromSeconds 5.0) "timed out" |> runOnManualTime
+        let inTime = slow |> Flow.timeout (TimeSpan.FromHours 2.0) "timed out" |> runOnManualTime
+        test <@ timedOut = Exit.Failure(Cause.Fail "timed out") @>
+        test <@ inTime = Exit.Success "finished" @>
 
     [<Fact>]
     let ``Schedule.whileInput retries only the errors it selects`` () =

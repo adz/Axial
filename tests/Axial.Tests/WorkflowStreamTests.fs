@@ -241,7 +241,7 @@ module WorkflowStreamTests =
             timed [ 1, 0; 2, 0; 3, 0; 4, 0; 5, 600; 6, 0 ]
             |> FlowStream.groupedWithin 3 (TimeSpan.FromMilliseconds 200.0)
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> runOnManualTime
 
         test <@ groups = Exit.Success [ [ 1; 2; 3 ]; [ 4 ]; [ 5; 6 ] ] @>
 
@@ -251,7 +251,7 @@ module WorkflowStreamTests =
             timed [ 1, 0; 2, 5; 3, 5; 4, 250; 5, 5 ]
             |> FlowStream.debounce (TimeSpan.FromMilliseconds 100.0)
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> runOnManualTime
 
         test <@ values = Exit.Success [ 3; 5 ] @>
 
@@ -261,7 +261,7 @@ module WorkflowStreamTests =
             timed [ 1, 0; 2, 5; 3, 5; 4, 5; 5, 300 ]
             |> FlowStream.throttle (TimeSpan.FromMilliseconds 100.0)
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> runOnManualTime
 
         test <@ values = Exit.Success [ 1; 4; 5 ] @>
 
@@ -283,7 +283,7 @@ module WorkflowStreamTests =
             timed [ 1, 0; 2, 30; 3, 30; 4, 900 ]
             |> FlowStream.switchMapFlow search
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> runOnManualTime
 
         test <@ results = Exit.Success [ "result-3"; "result-4" ] @>
         test <@ interrupted.Value = 2 @>
@@ -307,7 +307,7 @@ module WorkflowStreamTests =
             |> FlowStream.throttle (TimeSpan.FromMilliseconds 1.0)
             |> FlowStream.take 3
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> runOnManualTime
 
         let pulledAtEnd = pulled.Value
         Thread.Sleep 100

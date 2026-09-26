@@ -634,11 +634,28 @@ let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Ex
         })
 #endif
 
+/// The runtime's time: a monotonic clock and cancellable sleeps. It is executor mechanics, separate from the
+/// application clock (<c>IClock</c>) that workflows read through their environment. The runtime context carries one,
+/// so tests can replace it with a <c>ManualTime</c> and drive timed behaviour deterministically.
+type ITimeSource =
+    /// A monotonic timestamp; only differences between readings are meaningful.
+    abstract Now: unit -> TimeSpan
+    /// Suspends for <paramref name="delay" />, observing cancellation as an interruption.
+    abstract Sleep<'error> : delay: TimeSpan * cancellationToken: CancellationToken -> Execution<unit, 'error>
+
+/// Real time: <c>monotonicNow</c> and platform timers.
+let systemTime : ITimeSource =
+    { new ITimeSource with
+        member _.Now() = monotonicNow ()
+        member _.Sleep(delay, cancellationToken) = sleepExecution delay cancellationToken }
+
+
 /// Runs <paramref name="operation" />, racing it against a timeout of <paramref name="after" />. Falls back to
 /// <paramref name="onTimeout" /> if the timeout wins. This is the shared implementation behind
 /// <c>Flow.timeout</c>, <c>timeoutToOk</c>, <c>timeoutToError</c>, and <c>timeoutWith</c>, which differ
 /// only in what they do when the timeout fires.
 let timeoutExecution
+    (time: ITimeSource)
     (after: TimeSpan)
     (operation: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
@@ -647,8 +664,10 @@ let timeoutExecution
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
     // Fable's StartChild timeout cancels the child without surfacing its exit, so there is nothing to
-    // report to onDiscardedExit here.
+    // report to onDiscardedExit here. It uses the platform timer directly; a replaced time source applies to
+    // timeouts on .NET only.
     ignore onDiscardedExit
+    ignore time
 
     async {
         try
@@ -663,9 +682,13 @@ let timeoutExecution
     ValueTask<Exit<'value, 'error>>(
         task {
             use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
+            use timerSource = new CancellationTokenSource()
             let running = (operation timeoutSource.Token).AsTask()
-            let timeoutTask = Task.Delay after
+            let timeoutTask = (time.Sleep<unit>(after, timerSource.Token)).AsTask() :> Task
             let! completed = Task.WhenAny([| running :> Task; timeoutTask |])
+
+            if not (obj.ReferenceEquals(completed, timeoutTask)) then
+                timerSource.Cancel()
 
             if obj.ReferenceEquals(completed, timeoutTask) then
                 timeoutSource.Cancel()
@@ -679,31 +702,6 @@ let timeoutExecution
             else
                 return! running
         })
-#endif
-
-/// Waits for <paramref name="delay" /> and then continues with <paramref name="continuation" />. Shared by the
-/// retry, repeat, and supervise loops in <c>Flow.retry</c>, <c>Flow.repeat</c>, and <c>Flow.supervise</c>.
-let delayThenExecution
-    (delay: TimeSpan)
-    (cancellationToken: CancellationToken)
-    (continuation: unit -> Execution<'value, 'error>)
-    : Execution<'value, 'error> =
-#if FABLE_COMPILER
-    execution {
-        if delay > TimeSpan.Zero then
-            do! Async.Sleep(int delay.TotalMilliseconds)
-
-        return! continuation ()
-    }
-    |> ofAwaitable
-#else
-    execution {
-        if delay > TimeSpan.Zero then
-            do! Task.Delay(delay, cancellationToken)
-
-        return! continuation ()
-    }
-    |> ofAwaitable
 #endif
 
 // ---------------------------------------------------------------------------------------------
@@ -1135,4 +1133,78 @@ let awaitAnyExitTaskAsSuccess
         let! exit = completed
         return Exit.Success(index, exit)
     })
+#endif
+
+// ---------------------------------------------------------------------------------------------
+// Manual time for deterministic tests.
+// ---------------------------------------------------------------------------------------------
+
+#if !FABLE_COMPILER
+/// A time source that moves only when a test advances it. Sleepers wake in deadline order, and a cancelled sleep
+/// is forgotten, so <c>Sleepers</c> counts only fibers genuinely waiting on time.
+type ManualTime() =
+    let gate = obj ()
+    let mutable now = TimeSpan.Zero
+    let mutable order = 0L
+    let sleepers = System.Collections.Generic.List<TimeSpan * int64 * Signal<unit>>()
+
+    /// The number of sleeps waiting for time to reach their deadline.
+    member _.Sleepers = lock gate (fun () -> sleepers.Count)
+
+    /// The earliest deadline among waiting sleeps.
+    member _.NextDeadline =
+        lock gate (fun () ->
+            if sleepers.Count = 0 then
+                None
+            else
+                Some(sleepers |> Seq.map (fun (deadline, _, _) -> deadline) |> Seq.min))
+
+    /// Moves time forward and wakes every sleep whose deadline has been reached, earliest first.
+    member _.Advance(by: TimeSpan) =
+        let due =
+            lock gate (fun () ->
+                now <- now + by
+
+                let ready =
+                    sleepers
+                    |> Seq.filter (fun (deadline, _, _) -> deadline <= now)
+                    |> Seq.sortBy (fun (deadline, sequence, _) -> deadline, sequence)
+                    |> Seq.toArray
+
+                for entry in ready do
+                    sleepers.Remove entry |> ignore
+
+                ready)
+
+        for _, _, signal in due do
+            resolveSignal signal () |> ignore
+
+    /// Moves time to the earliest waiting deadline. Returns <c>false</c> when nothing is waiting.
+    member this.AdvanceToNextDeadline() =
+        match this.NextDeadline with
+        | Some deadline ->
+            this.Advance(deadline - lock gate (fun () -> now))
+            true
+        | None -> false
+
+    interface ITimeSource with
+        member _.Now() = lock gate (fun () -> now)
+
+        member _.Sleep(delay, cancellationToken) =
+            if delay <= TimeSpan.Zero then
+                ofExit (Exit.Success())
+            else
+                let signal = newSignal<unit> ()
+
+                let entry =
+                    lock gate (fun () ->
+                        let entry = now + delay, order, signal
+                        order <- order + 1L
+                        sleepers.Add entry
+                        entry)
+
+                cancellationToken.Register(fun () -> lock gate (fun () -> sleepers.Remove entry |> ignore))
+                |> ignore
+
+                awaitSignal signal cancellationToken
 #endif

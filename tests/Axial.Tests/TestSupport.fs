@@ -176,6 +176,38 @@ module TestSupport =
         else
             124, output + $"{Environment.NewLine}Timed out waiting for {scriptPath}."
 
+    /// Runs a flow on manual time. Whenever the fibers have all settled into waiting on time, time jumps to the next
+    /// deadline, so timed behaviour is exact and the sleeps take no wall-clock time.
+    let runOnManualTime (workflow: Flow<unit, 'error, 'value>) : Exit<'value, 'error> =
+        let time = Platform.ManualTime()
+        let running = Task.Run(fun () -> Flow.runSync () (Flow.withTimeSource time workflow))
+        let mutable lastCount = -1
+        let mutable stablePolls = 0
+
+        while not running.IsCompleted do
+            let count = time.Sleepers
+
+            if count > 0 && count = lastCount then
+                stablePolls <- stablePolls + 1
+            else
+                stablePolls <- 0
+
+            lastCount <- count
+
+            // Unchanged polls over ~15 ms mean no fiber is still running towards a new, possibly earlier, deadline.
+            if stablePolls >= 15 then
+                time.AdvanceToNextDeadline() |> ignore
+                lastCount <- -1
+                stablePolls <- 0
+            else
+                Thread.Sleep 1
+
+        running.Result
+
+    /// The runtime's current time, for tests that record when things happen on manual time.
+    let runtimeNow () : Flow<unit, 'error, TimeSpan> =
+        Flow.delay (fun () -> Flow.ok (RuntimeState.current().Time.Now()))
+
     let runBashScript (scriptPath: string) (environment: (string * string) list) =
         runBashScriptWithArguments scriptPath [] environment
 

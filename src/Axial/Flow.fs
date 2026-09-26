@@ -587,6 +587,11 @@ module Flow =
 
             RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
 
+    /// Runs a flow, and every fiber it forks, on a replaced runtime time source. Tests use it with
+    /// <c>Platform.ManualTime</c> to drive sleeps, timeouts, schedules, and timed stream operators deterministically.
+    let internal withTimeSource (time: Platform.ITimeSource) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        withRuntime (RuntimeContext.withTime time) flow
+
     /// <summary>Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.</summary>
     /// <remarks>
     /// The observer is carried implicitly to every fiber forked inside <paramref name="flow" />, so installing
@@ -763,7 +768,7 @@ module Flow =
     /// <param name="delay">The duration to sleep.</param>
     /// <returns>A flow that completes after the specified delay, or is interrupted if cancelled first.</returns>
     let sleep (delay: TimeSpan) : Flow<'env, 'error, unit> =
-        Flow(fun _ cancellationToken -> Platform.sleepExecution delay cancellationToken)
+        Flow(fun _ cancellationToken -> RuntimeState.current().Time.Sleep(delay, cancellationToken))
 
     /// <summary>Reads the current runtime scope.</summary>
     /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
@@ -803,6 +808,7 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             Platform.timeoutExecution
+                (RuntimeState.current().Time)
                 after
                 (invoke flow environment)
                 cancellationToken
@@ -821,6 +827,7 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             Platform.timeoutExecution
+                (RuntimeState.current().Time)
                 after
                 (invoke flow environment)
                 cancellationToken
@@ -847,6 +854,7 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             Platform.timeoutExecution
+                (RuntimeState.current().Time)
                 after
                 (invoke flow environment)
                 cancellationToken
@@ -892,23 +900,24 @@ module Flow =
     // before cleanup starts, so time spent in finalizers is part of the delay rather than added to it; otherwise a
     // fixed-rate schedule would drift by the cleanup time on every run.
     let private supersedeThenWait
+        (time: Platform.ITimeSource)
         (attemptScope: Scope)
         (onCleanupError: exn -> Cause<'error>)
         (delay: TimeSpan)
         (cancellationToken: CancellationToken)
         : Execution<unit, 'error> =
-        let deadline = Platform.monotonicNow () + delay
+        let deadline = time.Now() + delay
 
         closeSuperseded attemptScope onCleanupError cancellationToken
         |> Execution.bind (fun () ->
-            let remaining = deadline - Platform.monotonicNow ()
-            Platform.sleepExecution (if remaining > TimeSpan.Zero then remaining else TimeSpan.Zero) cancellationToken)
+            let remaining = deadline - time.Now()
+            time.Sleep((if remaining > TimeSpan.Zero then remaining else TimeSpan.Zero), cancellationToken))
 
-    let private scheduleContext attempt loopStarted executionStarted : ScheduleContext =
+    let private scheduleContext (time: Platform.ITimeSource) attempt loopStarted executionStarted : ScheduleContext =
         { Attempt = attempt
           LoopStarted = loopStarted
           ExecutionStarted = executionStarted
-          ExecutionEnded = Platform.monotonicNow () }
+          ExecutionEnded = time.Now() }
 
     /// <summary>Retries a flow's typed failures according to a schedule.</summary>
     /// <remarks>
@@ -933,7 +942,8 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
         Flow(fun environment cancellationToken ->
-            let loopStarted = Platform.monotonicNow ()
+            let time = RuntimeState.current().Time
+            let loopStarted = time.Now()
 
             Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
                 let attemptScope, execution = runAttempt flow environment cancellationToken
@@ -944,18 +954,19 @@ module Flow =
                     (fun cause ->
                         match cause with
                         | Cause.Fail error ->
-                            let context = scheduleContext attempt loopStarted executionStarted
+                            let context = scheduleContext time attempt loopStarted executionStarted
 
                             Schedule.decide schedule error context environment cancellationToken
                             |> Execution.bind (fun (decision, delay) ->
                                 match decision with
                                 | Some _ ->
                                     supersedeThenWait
+                                        time
                                         attemptScope
                                         (fun cleanupError -> Cause.thenCause cause (Execution.causeOfException cleanupError))
                                         delay
                                         cancellationToken
-                                    |> Execution.map (fun () -> Platform.Continue(attempt + 1, Platform.monotonicNow ()))
+                                    |> Execution.map (fun () -> Platform.Continue(attempt + 1, time.Now()))
                                 | None -> Execution.ofCause cause)
                         | _ -> Execution.ofCause cause)))
 
@@ -981,21 +992,22 @@ module Flow =
         // A loop rather than recursion, so a schedule that repeats for the life of an application (a control
         // scan, a heartbeat) runs in constant memory.
         Flow(fun environment cancellationToken ->
-            let loopStarted = Platform.monotonicNow ()
+            let time = RuntimeState.current().Time
+            let loopStarted = time.Now()
             let firstScope, first = runAttempt flow environment cancellationToken
 
             first
             |> Execution.bind (fun firstValue ->
                 Execution.loop (0, firstValue, firstScope, loopStarted) (fun (attempt, lastValue, lastScope, executionStarted) ->
-                    let context = scheduleContext attempt loopStarted executionStarted
+                    let context = scheduleContext time attempt loopStarted executionStarted
 
                     Schedule.decide schedule lastValue context environment cancellationToken
                     |> Execution.bind (fun (decision, (delay: TimeSpan)) ->
                         match decision with
                         | Some _ ->
-                            supersedeThenWait lastScope Execution.causeOfException delay cancellationToken
+                            supersedeThenWait time lastScope Execution.causeOfException delay cancellationToken
                             |> Execution.bind (fun () ->
-                                let started = Platform.monotonicNow ()
+                                let started = time.Now()
                                 let nextScope, next = runAttempt flow environment cancellationToken
 
                                 next
@@ -1032,7 +1044,8 @@ module Flow =
             | _ -> None
 
         Flow(fun environment cancellationToken ->
-            let loopStarted = Platform.monotonicNow ()
+            let time = RuntimeState.current().Time
+            let loopStarted = time.Now()
 
             Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
                 let attemptScope, execution = runAttempt flow environment cancellationToken
@@ -1043,18 +1056,19 @@ module Flow =
                     (fun cause ->
                         match restartable cause with
                         | Some defect ->
-                            let context = scheduleContext attempt loopStarted executionStarted
+                            let context = scheduleContext time attempt loopStarted executionStarted
 
                             Schedule.decide schedule defect context environment cancellationToken
                             |> Execution.bind (fun (decision, delay) ->
                                 match decision with
                                 | Some _ ->
                                     supersedeThenWait
+                                        time
                                         attemptScope
                                         (fun cleanupError -> Cause.thenCause cause (Execution.causeOfException cleanupError))
                                         delay
                                         cancellationToken
-                                    |> Execution.map (fun () -> Platform.Continue(attempt + 1, Platform.monotonicNow ()))
+                                    |> Execution.map (fun () -> Platform.Continue(attempt + 1, time.Now()))
                                 | None -> Execution.ofCause cause)
                         | None -> Execution.ofCause cause)))
 
@@ -1201,8 +1215,10 @@ module Flow =
                                 stopFailure <- Cause.defects cause |> List.tryHead
                             | Exit.Success () -> ()
 
-                            let! _ = Task.WhenAny(exitTask :> Task, Task.Delay request.Grace)
-                            ()
+                            use graceTimer = new CancellationTokenSource()
+                            let graceElapsed = (parentRuntime.Time.Sleep<unit>(request.Grace, graceTimer.Token)).AsTask()
+                            let! _ = Task.WhenAny(exitTask :> Task, graceElapsed :> Task)
+                            graceTimer.Cancel()
                         | None -> ()
 
                         cts.Cancel()

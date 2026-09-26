@@ -374,6 +374,8 @@ module FlowStream =
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
+            let time = RuntimeState.current().Time
+
             pump op env ct
             |> Execution.bind (fun queue ->
                 let rec group () =
@@ -382,13 +384,13 @@ module FlowStream =
                         | Pumped.Ended -> finished ()
                         | Pumped.Failed cause -> Execution.ofCause cause
                         | Pumped.Item first ->
-                            let deadline = Platform.monotonicNow () + window
+                            let deadline = time.Now() + window
 
                             Execution.loop ([ first ], 1) (fun (values, count) ->
                                 if count >= size then
                                     Execution.ofValue (Platform.Break(Next(List.rev values, group)))
                                 else
-                                    takeWithin queue (deadline - Platform.monotonicNow ()) env ct
+                                    takeWithin queue (deadline - time.Now()) env ct
                                     |> Execution.map (function
                                         | None -> Platform.Break(Next(List.rev values, group))
                                         | Some(Pumped.Item value) -> Platform.Continue(value :: values, count + 1)
@@ -440,6 +442,8 @@ module FlowStream =
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
+            let time = RuntimeState.current().Time
+
             pump op env ct
             |> Execution.bind (fun queue ->
                 let rec next (lastEmitted: TimeSpan option) () =
@@ -448,16 +452,16 @@ module FlowStream =
                         | Pumped.Ended -> finished ()
                         | Pumped.Failed cause -> Execution.ofCause cause
                         | Pumped.Item value ->
-                            let now = Platform.monotonicNow ()
+                            let now = time.Now()
 
                             match lastEmitted with
                             | Some emitted when now - emitted < interval ->
                                 let deadline = emitted + interval
 
                                 Execution.loop value (fun pending ->
-                                    takeWithin queue (deadline - Platform.monotonicNow ()) env ct
+                                    takeWithin queue (deadline - time.Now()) env ct
                                     |> Execution.map (function
-                                        | None -> Platform.Break(Next(pending, next (Some(Platform.monotonicNow ()))))
+                                        | None -> Platform.Break(Next(pending, next (Some(time.Now()))))
                                         | Some(Pumped.Item newer) -> Platform.Continue newer
                                         | Some Pumped.Ended -> Platform.Break(Next(pending, finished))
                                         | Some(Pumped.Failed cause) -> Platform.Break(Next(pending, fun () -> Execution.ofCause cause))))

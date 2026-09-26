@@ -11,31 +11,22 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 Follow-up to the Queue/Hub/Schedule review. Work in order; each step is committed and validated on its own.
 
-4. Move time into the runtime context as an internal replaceable time source (monotonic now plus delays) used by
-   `Flow.Runtime.sleep`, timeouts, retry delays, `Schedule`, and the new timed stream operators; add a virtual time
-   source for deterministic tests.
-6. Connect streams and the concurrency types: `FlowStream.fromHub`, `runIntoQueue`, `runIntoHub`, `mergePar`,
-   `buffer`, `fromSchedule`, `groupedWithin`, and `throttleLatest`.
-7. Expose `Dequeue.stats` (size, capacity, accepted/dropped/evicted counters, waiters) as OpenTelemetry observable
+1. Connect streams and the concurrency types: `FlowStream.fromHub`, `runIntoQueue`, `runIntoHub`, `mergePar`,
+   `buffer`, and `fromSchedule`. `groupedWithin` and `throttle` already exist.
+2. Expose `Dequeue.stats` (size, capacity, accepted/dropped/evicted counters, waiters) as OpenTelemetry observable
    instruments from `Axial.Telemetry`, so queue and subscription depth and losses reach metrics without per-offer cost.
-8. Hub fixes and gaps: register the subscription finalizer before adding it to the hub; keep sliding queues within
-   capacity when a cancelled taker gives a value back; add `Hub.tryPublish`, `Hub.makeScoped`, `Hub.awaitShutdown`,
-   and `PublishResult.Evicted`; document that a full `BackPressure` subscriber delays every later subscriber and that
-   an interrupted `publish` is not safe to retry.
-9. Tests: a cancelled taker hands its value to the next suspended taker; the mixed-subscriber test asserts the
-   publisher never suspended; deterministic `fixedRate` tests on virtual time.
-10. Housekeeping: fix `LATER_TODO.md`, record decisions, update `docs/llms.txt`, delete `dev-docs/queues_and_hubs.md`.
-11. Add a docs page with a torture test that exercises every guarantee above under interruption, shutdown, overflow,
-    and concurrent publishers.
-12. Run the full validation list, including `run-aot-probe.sh` and `dotnet livedocs test --warn-as-error`.
+3. Housekeeping: fix `LATER_TODO.md`, record decisions, update `docs/llms.txt`, delete `dev-docs/queues_and_hubs.md`.
+4. Add a docs page with a torture test that exercises every guarantee above under interruption, shutdown, overflow,
+   and concurrent publishers.
+5. Run the full validation list, including `run-aot-probe.sh` and `dotnet livedocs test --warn-as-error`.
 
 ## Product work
 
 - Make hand-written recursive loops (`let rec loop () = flow { ...; return! loop () }`) run in constant memory on
   .NET. Each `return!` of a pending `ValueTask` must be awaited by the caller, so every iteration stays live until
   the loop ends (~420 B per suspending iteration, ~5 B per synchronous one; measured 2026-09-26). Library loops —
-  `flow { while/for }`, stream consumers and skipping operators, `Schedule.retry`/`repeat`, `Flow.Runtime.retry`/
-  `supervise`, `STM.atomically`, `Queue.offerAll` — already use `Platform.loop`. Fixing user recursion needs the
+  `flow { while/for }`, stream consumers and skipping operators, `Flow.retry`/`repeat`/`supervise`,
+  `STM.atomically`, `Queue.offerAll` — already use `Platform.loop`. Fixing user recursion needs the
   runner to trampoline binds itself; see `dev-docs/current-ideas/flow-as-data.md`. Until then, docs should steer
   long-running loops to `while`, streams, or schedules.
 - Reassess remaining demand-driven Flow work in `LATER_TODO.md` against a concrete application before expanding the API.

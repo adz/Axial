@@ -849,6 +849,8 @@ type internal RuntimeContext =
         Observer: FiberObserver
         /// Registries installed with Flow.withFiberRegistry; a failed fiber hands each its rendered cause.
         Registries: FiberRegistry list
+        /// The runtime's monotonic clock and sleeps. Forked fibers inherit it; tests replace it with manual time.
+        Time: Platform.ITimeSource
         /// Opaque ambient tracer slot. `Axial` has no dependency on `System.Diagnostics.DiagnosticSource`, so this
         /// is untyped here; `Axial.Telemetry` is the only package that boxes/unboxes it (as `ActivitySource`).
         Tracer: obj option
@@ -867,6 +869,7 @@ module internal RuntimeContext =
             FiberId = FiberId.next ()
             Observer = FiberObserver.none
             Registries = []
+            Time = Platform.systemTime
             Tracer = None
         }
 
@@ -875,6 +878,9 @@ module internal RuntimeContext =
 
     let withScope (scope: Scope) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Scope = scope }
+
+    let withTime (time: Platform.ITimeSource) (runtime: RuntimeContext) : RuntimeContext =
+        { runtime with Time = time }
 
     let withAnnotation (name: string) (value: string) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Annotations = runtime.Annotations |> Map.add name value }
