@@ -312,3 +312,47 @@ module WorkflowConcurrencyTests =
 
         test <@ selfCanceled = Exit.Failure(Cause.Fail "library timeout") @>
         test <@ requested = Exit.Failure Cause.Interrupt @>
+
+    [<Fact>]
+    let ``Blocking constructors run off the calling thread and classify failures`` () =
+        let callerThread = Thread.CurrentThread.ManagedThreadId
+        let blockingThread = ref callerThread
+
+        let value =
+            Flow.fromBlocking (fun _ ->
+                blockingThread.Value <- Thread.CurrentThread.ManagedThreadId
+                Thread.Sleep 10
+                42)
+            |> Flow.runSync ()
+
+        let result : Exit<int, string> = Flow.fromBlockingResult (fun _ -> Error "rejected") |> Flow.runSync ()
+        let defect : Exit<int, string> = Flow.fromBlocking (fun _ -> failwith "boom") |> Flow.runSync ()
+        let attempted = Flow.attemptBlocking (fun _ -> failwith "boom") |> Flow.runSync ()
+
+        test <@ value = Exit.Success 42 @>
+        test <@ blockingThread.Value <> callerThread @>
+        test <@ result = Exit.Failure(Cause.Fail "rejected") @>
+        test <@ match defect with Exit.Failure(Cause.Die _) -> true | _ -> false @>
+        test <@ match attempted with Exit.Failure(Cause.Fail (:? Exception)) -> true | _ -> false @>
+
+    [<Fact>]
+    let ``Blocking work runs to completion when interrupted and reports the interruption`` () =
+        use cts = new CancellationTokenSource(TimeSpan.FromMilliseconds 20.0)
+        let finished = ref false
+
+        let exit : Exit<unit, string> =
+            Flow.fromBlocking (fun token ->
+                while not token.IsCancellationRequested do
+                    Thread.Sleep 5
+
+                finished.Value <- true
+                token.ThrowIfCancellationRequested())
+            |> Flow.runSyncWithToken () cts.Token
+
+        test <@ exit = Exit.Failure Cause.Interrupt @>
+        test <@ finished.Value @>
+
+    [<Fact>]
+    let ``Parallelism.ofProcessors is never below one`` () =
+        test <@ Parallelism.value (Parallelism.ofProcessors (fun _ -> 0)) = 1 @>
+        test <@ Parallelism.value (Parallelism.ofProcessors id) = Environment.ProcessorCount @>

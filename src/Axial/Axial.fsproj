@@ -42,6 +42,7 @@
     <Compile Include="Runtime.fs" />
     <Compile Include="Policy.fs" />
     <Compile Include="Schedule.fs" />
+    <Compile Include="Parallelism.fs" />
     <Compile Include="Flow.fs" />
     <Compile Include="App.fs" />
     <Compile Include="BindError.fs" />

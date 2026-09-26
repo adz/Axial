@@ -333,3 +333,57 @@ module HttpServiceTests =
             (fun root ->
                 let response = Http.get root |> Http.send |> runSync (liveEnv ()) |> requireSuccess
                 test <@ Response.tryHeader "x-custom" response = Some "value-1" @>)
+
+    [<Fact>]
+    let ``live service rejects a declared body larger than the limit`` () =
+        withServer
+            (fun context ->
+                let bytes = Array.create 4096 (byte 'a')
+                context.Response.StatusCode <- 200
+                context.Response.ContentLength64 <- int64 bytes.Length
+                context.Response.OutputStream.Write(bytes, 0, bytes.Length))
+            (fun root ->
+                let error =
+                    Http.get root
+                    |> Request.maxResponseBytes 1024L
+                    |> Http.send
+                    |> runSync (liveEnv ())
+                    |> requireError
+
+                test <@ match error with HttpError.ResponseTooLarge(_, 1024L) -> true | _ -> false @>)
+
+    [<Fact>]
+    let ``live service stops reading a streamed body at the limit`` () =
+        withServer
+            (fun context ->
+                context.Response.StatusCode <- 200
+                context.Response.SendChunked <- true
+                let chunk = Array.create 1024 (byte 'a')
+                for _ in 1..8 do
+                    context.Response.OutputStream.Write(chunk, 0, chunk.Length))
+            (fun root ->
+                let limited =
+                    Http.get root
+                    |> Request.maxResponseBytes 2048L
+                    |> Http.send
+                    |> runSync (liveEnv ())
+                    |> requireError
+
+                let unlimited = Http.get root |> Http.send |> runSync (liveEnv ()) |> requireSuccess
+
+                test <@ match limited with HttpError.ResponseTooLarge(_, 2048L) -> true | _ -> false @>
+                test <@ unlimited.Body.Length = 8192 @>)
+
+    [<Fact>]
+    let ``the response limit also applies to any IHttp implementation`` () =
+        let _, env = fake [ okResponse 200 (String('x', 100)) ]
+
+        let error =
+            Http.get "https://api.example.test/"
+            |> Request.maxResponseBytes 10L
+            |> Http.send
+            |> runSync env
+            |> requireError
+
+        test <@ match error with HttpError.ResponseTooLarge(_, 10L) -> true | _ -> false @>
+        test <@ (Http.get "https://api.example.test/" |> Request.maxResponseBytes 10L |> Request.plan).MaxResponseBytes = Some 10L @>

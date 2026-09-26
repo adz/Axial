@@ -262,6 +262,67 @@ module Flow =
                     else
                         Platform.ofExit (Exit.Failure(Cause.Fail error))))
 
+    // Runs synchronous, blocking work off the caller's thread so it does not stall the workflow's continuations.
+    // Blocking code cannot be abandoned safely, so once started the work always runs to completion and the flow
+    // waits for it; the token lets the operation stop early if it observes cancellation.
+    let private runBlocking
+        (operation: CancellationToken -> 'source)
+        (mapExit: 'source -> Exit<'value, 'error>)
+        (onError: CancellationToken -> exn -> Cause<'error>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun _ cancellationToken ->
+            let run () =
+                try
+                    mapExit (operation cancellationToken)
+                with error ->
+                    Exit.Failure(onError cancellationToken error)
+
+            if cancellationToken.IsCancellationRequested then
+                Execution.ofCause Cause.Interrupt
+            else
+#if FABLE_COMPILER
+                Execution.ofExit (run ())
+#else
+                ValueTask<Exit<'value, 'error>>(Task.Run(run, CancellationToken.None))
+#endif
+        )
+
+    /// <summary>Creates a flow from synchronous, blocking work, such as a database driver or native library call.</summary>
+    /// <remarks>
+    /// On .NET the operation runs on the thread pool, so a blocking call does not stall the thread that runs the
+    /// workflow. Once started it runs to completion even if the workflow is interrupted, because blocking work
+    /// cannot be abandoned safely; it receives the runtime's token so it can stop early. Thrown exceptions are
+    /// defects (<c>Cause.Die</c>); cancellation the token requested is an interruption. On JavaScript the
+    /// operation runs inline.
+    /// </remarks>
+    /// <param name="operation">The blocking operation, observing the supplied cancellation token where it can.</param>
+    /// <platforms>Fable compatible</platforms>
+    /// <example>
+    /// <code>
+    /// let commits = Flow.fromBlocking (fun _ -> repository.Commits |> Seq.truncate 50 |> List.ofSeq)
+    /// </code>
+    /// </example>
+    let fromBlocking (operation: CancellationToken -> 'value) : Flow<'env, 'error, 'value> =
+        runBlocking operation Exit.Success ForeignCancellation.causeOf
+
+    /// <summary>Creates a flow from blocking work whose <c>Error</c> enters the typed error channel.</summary>
+    /// <remarks>Runs like <c>fromBlocking</c>. Thrown exceptions are defects.</remarks>
+    /// <param name="operation">The blocking operation, observing the supplied cancellation token where it can.</param>
+    /// <platforms>Fable compatible</platforms>
+    let fromBlockingResult (operation: CancellationToken -> Result<'value, 'error>) : Flow<'env, 'error, 'value> =
+        runBlocking operation Exit.fromResult ForeignCancellation.causeOf
+
+    /// <summary>Creates a flow from blocking work and treats thrown exceptions as recoverable typed errors.</summary>
+    /// <remarks>
+    /// Runs like <c>fromBlocking</c>. Thrown exceptions return <c>Cause.Fail exn</c>, except cancellation the
+    /// runtime token requested, which is an interruption.
+    /// </remarks>
+    /// <param name="operation">The blocking operation, observing the supplied cancellation token where it can.</param>
+    /// <platforms>Fable compatible</platforms>
+    let attemptBlocking (operation: CancellationToken -> 'value) : Flow<'env, exn, 'value> =
+        runBlocking operation Exit.Success (fun cancellationToken error ->
+            if ForeignCancellation.isOurs cancellationToken error then Cause.Interrupt else Cause.Fail error)
+
 #if !FABLE_COMPILER
     // -----------------------------------------------------------------------------------------
     // Task interop.
@@ -769,6 +830,22 @@ module Flow =
                 | Some error -> Exit.Failure(onCleanupError error)
                 | None -> Exit.Success())
 
+    // Closes a superseded attempt's scope and then waits out the rest of the schedule's delay. The deadline is fixed
+    // before cleanup starts, so time spent in finalizers is part of the delay rather than added to it; otherwise a
+    // fixed-rate schedule would drift by the cleanup time on every run.
+    let private supersedeThenWait
+        (attemptScope: Scope)
+        (onCleanupError: exn -> Cause<'error>)
+        (delay: TimeSpan)
+        (cancellationToken: CancellationToken)
+        : Execution<unit, 'error> =
+        let deadline = Platform.monotonicNow () + delay
+
+        closeSuperseded attemptScope onCleanupError cancellationToken
+        |> Execution.bind (fun () ->
+            let remaining = deadline - Platform.monotonicNow ()
+            Platform.sleepExecution (if remaining > TimeSpan.Zero then remaining else TimeSpan.Zero) cancellationToken)
+
     let private scheduleContext attempt loopStarted executionStarted : ScheduleContext =
         { Attempt = attempt
           LoopStarted = loopStarted
@@ -815,11 +892,11 @@ module Flow =
                             |> Execution.bind (fun (decision, delay) ->
                                 match decision with
                                 | Some _ ->
-                                    closeSuperseded
+                                    supersedeThenWait
                                         attemptScope
                                         (fun cleanupError -> Cause.thenCause cause (Execution.causeOfException cleanupError))
+                                        delay
                                         cancellationToken
-                                    |> Execution.bind (fun () -> Platform.sleepExecution delay cancellationToken)
                                     |> Execution.map (fun () -> Platform.Continue(attempt + 1, Platform.monotonicNow ()))
                                 | None -> Execution.ofCause cause)
                         | _ -> Execution.ofCause cause)))
@@ -858,8 +935,7 @@ module Flow =
                     |> Execution.bind (fun (decision, (delay: TimeSpan)) ->
                         match decision with
                         | Some _ ->
-                            closeSuperseded lastScope Execution.causeOfException cancellationToken
-                            |> Execution.bind (fun () -> Platform.sleepExecution delay cancellationToken)
+                            supersedeThenWait lastScope Execution.causeOfException delay cancellationToken
                             |> Execution.bind (fun () ->
                                 let started = Platform.monotonicNow ()
                                 let nextScope, next = runAttempt flow environment cancellationToken
@@ -915,11 +991,11 @@ module Flow =
                             |> Execution.bind (fun (decision, delay) ->
                                 match decision with
                                 | Some _ ->
-                                    closeSuperseded
+                                    supersedeThenWait
                                         attemptScope
                                         (fun cleanupError -> Cause.thenCause cause (Execution.causeOfException cleanupError))
+                                        delay
                                         cancellationToken
-                                    |> Execution.bind (fun () -> Platform.sleepExecution delay cancellationToken)
                                     |> Execution.map (fun () -> Platform.Continue(attempt + 1, Platform.monotonicNow ()))
                                 | None -> Execution.ofCause cause)
                         | None -> Execution.ofCause cause)))
@@ -1152,6 +1228,43 @@ module Flow =
         value
         |> OptionFlow.toResultValueOption error
         |> fromResult
+
+    /// <summary>Lifts a result that failed without a reason, taking the error from a flow that runs only on failure.</summary>
+    /// <remarks>
+    /// <para>
+    /// The <c>unit</c> error is not an empty error type — it is the absence of a reason. <c>Result.okIf</c> and
+    /// <c>Result.failIf</c> report that a value failed a predicate and deliberately nothing else, leaving the reason
+    /// to a separate step. <c>Result.orError</c> is that step for a constant; this is that step when producing the
+    /// error needs the environment, as a localized message, a correlation id, or a configured code does.
+    /// </para>
+    /// <para>
+    /// Pinning the source to <c>unit</c> is what makes <paramref name="errorFlow" /> the only possible source of the
+    /// error. A result that already carries one keeps it: map it with <c>Result.mapError</c> and use
+    /// <c>Flow.fromResult</c>.
+    /// </para>
+    /// </remarks>
+    /// <param name="errorFlow">A flow that reads the environment to produce an error value.</param>
+    /// <param name="result">The pure result to bridge.</param>
+    /// <returns>A <see cref="T:Axial`3" /> that mirrors the success of the result or fails with the outcome of the error flow.</returns>
+    /// <example>
+    /// <code>
+    /// let result = Result.Error ()
+    /// let flow = Flow.fromResultOr (Flow.envWith (fun env -> "error")) result
+    /// </code>
+    /// </example>
+    let fromResultOr
+        (errorFlow: Flow<'env, 'error, 'error>)
+        (result: Result<'value, unit>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            match result with
+            | Ok value -> Execution.ofValue value
+            | Error () ->
+                invoke errorFlow environment cancellationToken
+                |> Execution.fold Execution.ofError Execution.ofCause)
+
+    /// <summary>Reads the current environment as the successful flow value.</summary>
+    /// <remarks>
 
     /// <summary>Reads the current environment as the successful flow value.</summary>
     /// <remarks>

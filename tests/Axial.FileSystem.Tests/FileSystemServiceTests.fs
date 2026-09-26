@@ -272,3 +272,15 @@ module FileSystemServiceTests =
                 test <@ path = missing @>
             | other ->
                 failwithf "Expected FileNotFound failure, got %A" other)
+
+    [<Fact>]
+    let ``live file-system service reports file length and missing files`` () =
+        withTempRoot (fun root ->
+            let path = Path.Combine(root, "sized.bin")
+            File.WriteAllBytes(path, Array.zeroCreate 1234)
+
+            let length = FileSystem.getFileLength path |> Flow.runSync (env ()) |> requireSuccess
+            let missing = FileSystem.getFileLength (Path.Combine(root, "missing.bin")) |> Flow.runSync (env ())
+
+            test <@ length = 1234L @>
+            test <@ match missing with Exit.Failure(Cause.Fail(FileSystemError.FileNotFound _)) -> true | _ -> false @>)

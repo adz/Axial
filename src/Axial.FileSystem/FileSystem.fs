@@ -170,6 +170,9 @@ type IFileSystem =
     /// <summary>Opens a UTF-8 text writer that appends to a file, creating the file if needed.</summary>
     abstract AppendText : path: string -> StreamWriter
 
+    /// <summary>Gets the size of a file in bytes.</summary>
+    abstract GetFileLength : path: string -> int64
+
     /// <summary>Gets file attributes.</summary>
     abstract GetFileAttributes : path: string -> FileAttributes
 
@@ -716,6 +719,13 @@ module FileSystem =
         : Flow<'env, FileSystemError, StreamWriter> =
         withService (Some path) (fun fileSystem -> fileSystem.AppendText path)
 
+    /// <summary>Gets the size of a file in bytes through an explicit file-system service.</summary>
+    /// <example><code>let! size = FileSystem.getFileLength "report.pdf"</code></example>
+    let getFileLength<'env when 'env :> IHasFileSystem>
+        (path: string)
+        : Flow<'env, FileSystemError, int64> =
+        withService (Some path) (fun fileSystem -> fileSystem.GetFileLength path)
+
     /// <summary>Gets file attributes through an explicit file-system service.</summary>
     let getFileAttributes<'env when 'env :> IHasFileSystem>
         (path: string)
@@ -1110,6 +1120,7 @@ module FileSystem =
             member _.CreateFile(path) = File.Create(path) :> Stream
             member _.CreateText(path) = File.CreateText(path)
             member _.AppendText(path) = File.AppendText(path)
+            member _.GetFileLength(path) = FileInfo(path).Length
             member _.GetFileAttributes(path) = File.GetAttributes(path)
             member _.SetFileAttributes(path, attributes) = File.SetAttributes(path, attributes)
             member _.GetFileCreationTime(path) = File.GetCreationTime(path)

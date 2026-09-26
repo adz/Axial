@@ -62,6 +62,21 @@ workflow
 A schedule without `whileInput` retries every typed error; select the transient ones so permanent failures stay
 fast.
 
+## Limit Response Size
+
+A server you do not control can send a body of any size. `Request.maxResponseBytes` caps it:
+
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+let page =
+    Http.get url
+    |> Request.maxResponseBytes (2L * 1024L * 1024L)
+    |> Http.text
+```
+
+The live service fails with `HttpError.ResponseTooLarge` before reading when `Content-Length` declares a larger body,
+and stops reading a streamed body once it passes the limit, so the client never buffers more than the limit.
+`Http.send` applies the same check to responses from any `IHttp`, including test doubles.
+
 ## Expected Statuses Are Part Of The Request
 
 Reliability starts with saying what success means. The expectation travels with the request, so callers cannot

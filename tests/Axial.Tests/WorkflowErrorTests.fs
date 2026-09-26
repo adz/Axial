@@ -305,6 +305,22 @@ module WorkflowErrorTests =
         test <@ retryAttempts.Value = 1 @>
 
     [<Fact>]
+    let ``a unit-error result takes its error from the environment only on failure`` () =
+        let errorRuns = ref 0
+
+        let errorFlow =
+            Flow.envWith (fun env ->
+                errorRuns.Value <- errorRuns.Value + 1
+                $"flow:{env}")
+
+        let failed = Error() |> Flow.fromResultOr errorFlow |> Flow.runSync "env"
+        let succeeded = Ok "value" |> Flow.fromResultOr errorFlow |> Flow.runSync "env"
+
+        test <@ failed = Exit.Failure (Cause.Fail "flow:env") @>
+        test <@ succeeded = Exit.Success "value" @>
+        test <@ errorRuns.Value = 1 @>
+
+    [<Fact>]
     let ``option and valueoption inputs short-circuit with unit errors across builders`` () =
         let syncSome : Flow<int, unit, int> =
             flow {

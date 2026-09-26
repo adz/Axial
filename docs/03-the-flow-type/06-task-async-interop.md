@@ -166,7 +166,24 @@ Flow.attemptStartedTask
 Flow.attemptStartedValueTask
 ```
 
-`OperationCanceledException` and `TaskCanceledException` become interruption rather than `Cause.Fail exn`.
+`OperationCanceledException` and `TaskCanceledException` become interruption when the runtime's cancellation token
+requested them. Cancellation that the operation raised for its own reasons, such as a library's internal timeout, is a
+failure like any other exception: `Cause.Fail exn` from `attempt*`, a defect from `from*`.
+
+## Wrap blocking calls
+
+Some libraries only offer synchronous, blocking calls: database drivers, LibGit2Sharp, image codecs. Wrap them with
+`Flow.fromBlocking` so the call runs on the thread pool instead of stalling the workflow's thread:
+
+```fsharp no-check reason="Application-specific library calls are described in the surrounding prose"
+let recentCommits : Flow<unit, GitError, Commit list> =
+    Flow.fromBlocking (fun _ -> repository.Commits |> Seq.truncate 50 |> List.ofSeq)
+```
+
+Once started, blocking work runs to completion even if the workflow is interrupted, because it cannot be abandoned
+safely. The operation receives the runtime's cancellation token, so a call that can observe it stops early.
+`Flow.fromBlockingResult` sends an `Error` to the typed error channel, and `Flow.attemptBlocking` treats thrown
+exceptions as `Cause.Fail exn`. On JavaScript the operation runs inline.
 
 ## Keep a Result as the successful value
 
@@ -197,3 +214,4 @@ The builder lifts the outer `Result<_,Never>` and leaves the inner `Result<User,
 - Use `Flow.awaitStarted*` only for work that has already started.
 - Raw `Task` and `ValueTask` values are not Flow builder sources.
 - Use `attempt*` when exceptions are expected failures rather than defects.
+- Use `Flow.fromBlocking*` for synchronous library calls that block.

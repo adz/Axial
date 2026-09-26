@@ -83,6 +83,7 @@ type HttpRequest =
           Headers: Parameter list
           Body: RequestBody
           Timeout: TimeSpan option
+          MaxResponseBytes: int64 option
           Expectation: StatusExpectation }
 
 /// A redacted, serializable description of a request that would be sent.
@@ -92,6 +93,7 @@ type RequestPlan =
       Headers: (string * string) list
       Body: string
       Timeout: TimeSpan option
+      MaxResponseBytes: int64 option
       Expectation: string }
 
 /// The complete response transcript for one HTTP exchange.
@@ -130,6 +132,8 @@ type HttpError =
     | Status of response: HttpResponse
     /// The response body could not be decoded into the requested value.
     | DecodeFailed of message: string * response: HttpResponse
+    /// The response body exceeded the request's <c>Request.maxResponseBytes</c> limit, so it was not read.
+    | ResponseTooLarge of request: string * limit: int64
 
     /// Hand-written so it stays safe under NativeAOT and trimming (the generated ToString uses reflection).
     override this.ToString() =
@@ -144,6 +148,7 @@ type HttpError =
             let detail = if preview = "" then "" else Environment.NewLine + preview
             $"'{response.Request}' returned {response.StatusCode} {response.ReasonPhrase}.{detail}"
         | DecodeFailed(message, response) -> $"Could not decode the response from '{response.Request}': {message}"
+        | ResponseTooLarge(request, limit) -> $"'{request}' returned a body larger than {limit} bytes."
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -208,7 +213,7 @@ module Request =
         if String.IsNullOrWhiteSpace url then invalidArg (nameof url) "A request URL cannot be empty."
         { Method = method; Url = url; DisplayUrl = url
           Query = []; Headers = []
-          Body = RequestBody.Empty; Timeout = None
+          Body = RequestBody.Empty; Timeout = None; MaxResponseBytes = None
           Expectation = StatusExpectation.Success }
 
     /// Returns the request method. <example><code>Request.method request</code></example>
@@ -223,6 +228,8 @@ module Request =
     let body (request: HttpRequest) = request.Body
     /// Returns the per-request timeout. <example><code>Request.tryTimeout request</code></example>
     let tryTimeout (request: HttpRequest) = request.Timeout
+    /// Returns the response size limit, if one is set. <example><code>Request.tryMaxResponseBytes request</code></example>
+    let tryMaxResponseBytes (request: HttpRequest) = request.MaxResponseBytes
     /// Returns the success expectation. <example><code>Request.expectation request</code></example>
     let expectation (request: HttpRequest) = request.Expectation
 
@@ -269,6 +276,14 @@ module Request =
     let timeout (value: TimeSpan) (request: HttpRequest) =
         if value <= TimeSpan.Zero then invalidArg (nameof value) "A request timeout must be positive."
         { request with Timeout = Some value }
+
+    /// Limits the response body to <paramref name="bytes" />. A larger body fails with
+    /// <c>HttpError.ResponseTooLarge</c>: the live service checks <c>Content-Length</c> before reading and stops
+    /// reading once the limit is passed, so an untrusted server cannot make the client buffer an unbounded body.
+    /// <example><code>request |&gt; Request.maxResponseBytes (1024L * 1024L)</code></example>
+    let maxResponseBytes (bytes: int64) (request: HttpRequest) =
+        if bytes < 0L then invalidArg (nameof bytes) "A response size limit cannot be negative."
+        { request with MaxResponseBytes = Some bytes }
 
     /// Sends a plain-text body. <example><code>request |&gt; Request.textBody "hello"</code></example>
     let textBody (content: string) (request: HttpRequest) =
@@ -346,6 +361,7 @@ module Request =
           Headers = request.Headers |> List.map (fun p -> p.Name, (if p.Secret then "***" else p.Value))
           Body = body
           Timeout = request.Timeout
+          MaxResponseBytes = request.MaxResponseBytes
           Expectation = expectation }
 
     let internal succeeded (request: HttpRequest) (statusCode: int) =
@@ -415,7 +431,13 @@ module Http =
         flow {
             let! http = service
             let! cancellationToken = Flow.cancellationToken
-            return! http.Send(request, cancellationToken)
+            let! response = http.Send(request, cancellationToken)
+
+            // The live service stops reading at the limit; this also holds any other IHttp to it.
+            match request.MaxResponseBytes with
+            | Some limit when int64 response.Body.Length > limit ->
+                return! Flow.fail (HttpError.ResponseTooLarge(Request.render request, limit))
+            | _ -> return response
         }
 
     /// Sends a request and fails with <c>HttpError.Status</c> when the response is outside the expectation.
@@ -524,6 +546,36 @@ module Http =
                 | content -> content.Headers.TryAddWithoutValidation(parameter.Name, parameter.Value) |> ignore
         message
 
+    // Reads a response body, observing the request's cancellation and size limit. None means the body exceeded the
+    // limit: a declared Content-Length is checked before reading, and a streamed body stops at the first chunk past it.
+    let private readBody (content: HttpContent) (limit: int64 option) (cancellationToken: CancellationToken) : Task<byte array option> =
+        task {
+            match limit, Option.ofNullable content.Headers.ContentLength with
+            | Some maximum, Some declared when declared > maximum -> return None
+            | _ ->
+                use! stream = content.ReadAsStreamAsync()
+                use buffer = new System.IO.MemoryStream()
+                let chunk = Array.zeroCreate<byte> 81920
+                let maximum = defaultArg limit Int64.MaxValue
+                let mutable total = 0L
+                let mutable reading = true
+
+                while reading do
+                    let! read = stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken)
+
+                    if read = 0 then
+                        reading <- false
+                    else
+                        total <- total + int64 read
+
+                        if total > maximum then
+                            reading <- false
+                        else
+                            buffer.Write(chunk, 0, read)
+
+                return if total > maximum then None else Some(buffer.ToArray())
+        }
+
     /// Creates a live HTTP service backed by an explicit clock and <see cref="T:System.Net.Http.HttpClient" />.
     /// <example><code>Http.live Clock.live (new HttpClient())</code></example>
     let live (clock: IClock) (client: HttpClient) : IHttp =
@@ -538,25 +590,28 @@ module Http =
                         try
                             use message = toMessage request
                             use! response = client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token)
-                            let! body = response.Content.ReadAsByteArrayAsync()
-                            let contentType =
-                                match response.Content.Headers.ContentType with
-                                | null -> None
-                                | value -> Some(value.ToString())
-                            let headers =
-                                [ for pair in response.Headers do
-                                    for value in pair.Value do pair.Key, value
-                                  for pair in response.Content.Headers do
-                                    for value in pair.Value do pair.Key, value ]
-                            return Ok
-                                { StatusCode = int response.StatusCode
-                                  ReasonPhrase = (match response.ReasonPhrase with null -> "" | reason -> reason)
-                                  Headers = headers
-                                  Body = body
-                                  Text = decodeBody contentType body
-                                  Request = display
-                                  StartedAt = startedAt
-                                  Duration = clock.UtcNow() - startedAt }
+                            match! readBody response.Content request.MaxResponseBytes timeoutSource.Token with
+                            | None ->
+                                return Error(HttpError.ResponseTooLarge(display, defaultArg request.MaxResponseBytes 0L))
+                            | Some body ->
+                                let contentType =
+                                    match response.Content.Headers.ContentType with
+                                    | null -> None
+                                    | value -> Some(value.ToString())
+                                let headers =
+                                    [ for pair in response.Headers do
+                                        for value in pair.Value do pair.Key, value
+                                      for pair in response.Content.Headers do
+                                        for value in pair.Value do pair.Key, value ]
+                                return Ok
+                                    { StatusCode = int response.StatusCode
+                                      ReasonPhrase = (match response.ReasonPhrase with null -> "" | reason -> reason)
+                                      Headers = headers
+                                      Body = body
+                                      Text = decodeBody contentType body
+                                      Request = display
+                                      StartedAt = startedAt
+                                      Duration = clock.UtcNow() - startedAt }
                         with
                         | :? OperationCanceledException as error when cancellationToken.IsCancellationRequested ->
                             // The workflow was interrupted: let the cancellation surface as Cause.Interrupt rather

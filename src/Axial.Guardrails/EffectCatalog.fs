@@ -58,13 +58,16 @@ let rules: EffectRule list =
                   "UserName"
                   "get_OSVersion"
                   "OSVersion"
-                  "get_ProcessorCount"
-                  "ProcessorCount"
                   "get_CurrentDirectory"
                   "CurrentDirectory" ]
             )
         Message = "reads or writes ambient process/OS environment state directly"
         Replacement = "Axial.PlatformService.IEnvironment, or an explicit configuration value passed through 'env" }
+
+      { Category = "environment"
+        Match = MembersOf("System.Environment", [ "get_ProcessorCount"; "ProcessorCount" ])
+        Message = "reads Environment.ProcessorCount directly to size concurrency"
+        Replacement = "Parallelism.ofProcessors (fun n -> ...)" }
 
       { Category = "console"
         Match = AnyMemberOf "System.Console"

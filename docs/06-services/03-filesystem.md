@@ -85,8 +85,8 @@ FileSystem.appendAllText path contents
 The `Async` variants pass the flow's cancellation token to the underlying call, so an interrupted workflow stops a
 large read in progress rather than after it. Prefer them for anything that is not small.
 
-`fileExists`, `exists`, `deleteFile`, `copyFile`, and `moveFile` cover the rest of the common surface, and file
-metadata has getters and setters for attributes and the creation, last-access, and last-write times in both local and
+`fileExists`, `exists`, `deleteFile`, `copyFile`, and `moveFile` cover the rest of the common surface.
+`getFileLength` returns a file's size in bytes, and file metadata has getters and setters for attributes and the creation, last-access, and last-write times in both local and
 UTC forms — `getFileLastWriteTimeUtc`, `setFileAttributes`, and so on.
 
 Symbolic links are first class: `createFileSymbolicLink`, `createDirectorySymbolicLink`, `getSymbolicLinkTarget`

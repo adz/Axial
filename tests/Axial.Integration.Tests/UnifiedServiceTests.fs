@@ -70,6 +70,7 @@ module UnifiedServiceTests =
             member _.CreateFile(_) = new MemoryStream() :> Stream
             member _.CreateText(_) = new StreamWriter(new MemoryStream())
             member _.AppendText(_) = new StreamWriter(new MemoryStream())
+            member _.GetFileLength(_) = 0L
             member _.GetFileAttributes(_) = FileAttributes.Normal
             member _.SetFileAttributes(_, _) = ()
             member _.GetFileCreationTime(_) = DateTime(2026, 1, 1)
