@@ -336,6 +336,39 @@ module WorkflowQueueTests =
         | other -> failwith $"Expected a defect, got {other}"
 
     [<Fact>]
+    let ``Queue: stats count accepted, dropped, and evicted values`` () =
+        let workflow =
+            flow {
+                let! (dropping: Queue<int>) = Queue.dropping 2
+                do! dropping |> Queue.offerAll [ 1..5 ] |> Flow.ignore
+                let! droppingStats = Dequeue.stats dropping
+
+                let! (sliding: Queue<int>) = Queue.sliding 2
+                do! sliding |> Queue.offerAll [ 1..5 ] |> Flow.ignore
+                let! slidingStats = Dequeue.stats sliding
+
+                let! (bounded: Queue<int>) = Queue.bounded 1
+                do! bounded |> Queue.offer 1 |> Flow.ignore
+                let! blocked = bounded |> Queue.offer 2 |> Flow.fork
+                do! waitUntil (fun () -> suspendedOfferers bounded () = 1)
+                let! waiting = Dequeue.stats bounded
+                let! _ = Dequeue.take bounded
+                do! Flow.join blocked |> Flow.ignore
+                do! Dequeue.shutdown bounded
+                let! settled = Dequeue.stats bounded
+
+                return droppingStats, slidingStats, waiting, settled
+            }
+
+        match Flow.runSync () workflow with
+        | Exit.Success(dropping, sliding, waiting, settled) ->
+            test <@ (dropping.Accepted, dropping.Dropped, dropping.Evicted, dropping.Size) = (2L, 3L, 0L, 2) @>
+            test <@ (sliding.Accepted, sliding.Dropped, sliding.Evicted, sliding.Size) = (5L, 0L, 3L, 2) @>
+            test <@ (waiting.Accepted, waiting.WaitingOfferers, waiting.Capacity) = (1L, 1, Some 1) @>
+            test <@ (settled.Accepted, settled.WaitingOfferers, settled.Size, settled.IsShutdown) = (2L, 0, 1, true) @>
+        | other -> failwith $"Expected success, got {other}"
+
+    [<Fact>]
     let ``Queue: a scoped queue shuts down when its scope closes`` () =
         let workflow =
             flow {

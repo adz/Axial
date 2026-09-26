@@ -27,6 +27,7 @@
     <Compile Include="WorkflowStateTests.fs" />
     <Compile Include="WorkflowQueueTests.fs" />
     <Compile Include="WorkflowHubTests.fs" />
+    <Compile Include="WorkflowSubscriptionRefTests.fs" />
     <Compile Include="MemoryRetentionTests.fs" />
     <Compile Include="WorkflowStreamTests.fs" />
     <Compile Include="PolicyTests.fs" />

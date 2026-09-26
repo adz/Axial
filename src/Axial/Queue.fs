@@ -22,6 +22,32 @@ type QueueStrategy =
     /// <summary>Lossless and never suspends the producer; memory grows with the backlog.</summary>
     | Unbounded
 
+/// <summary>A snapshot of a queue's backlog and of what it has done with offered values since it was created.</summary>
+/// <remarks>
+/// The counters only grow, so a monitor can report rates from the difference between two snapshots. Read them with
+/// <c>Dequeue.stats</c>, for example to raise an alarm before a lossless hub subscriber fills its buffer or to count a
+/// display's lost updates.
+/// </remarks>
+type QueueStats =
+    {
+        /// <summary>Values currently buffered.</summary>
+        Size: int
+        /// <summary>The capacity, or <c>None</c> for an unbounded queue.</summary>
+        Capacity: int option
+        /// <summary>Values that entered the queue, including those handed straight to a waiting taker.</summary>
+        Accepted: int64
+        /// <summary>Values a full <c>Dropping</c> queue discarded.</summary>
+        Dropped: int64
+        /// <summary>Values a full <c>Sliding</c> queue evicted to make room.</summary>
+        Evicted: int64
+        /// <summary>Fibers suspended waiting to take.</summary>
+        WaitingTakers: int
+        /// <summary>Fibers suspended waiting to offer into a full <c>BackPressure</c> queue.</summary>
+        WaitingOfferers: int
+        /// <summary>Whether the queue has been shut down.</summary>
+        IsShutdown: bool
+    }
+
 /// <summary>
 /// The consuming side of a FIFO queue: take values, inspect the backlog, and shut the queue down.
 /// </summary>
@@ -53,6 +79,9 @@ type Dequeue<'a> internal (strategy: QueueStrategy) =
     member val internal Offerers = WaitList<'a>(gate)
     member val internal ShutdownSignal: Platform.Signal<unit> = Platform.newSignal<unit> ()
     member val internal IsShut = false with get, set
+    member val internal Accepted = 0L with get, set
+    member val internal Dropped = 0L with get, set
+    member val internal Evicted = 0L with get, set
     /// Runs once, after the queue shuts down; a hub uses it to forget a subscription its consumer ended.
     member val internal OnShutdown: unit -> unit = ignore with get, set
 
@@ -122,6 +151,8 @@ module internal QueueCore =
 
     /// Hands a value to the oldest waiting taker, or buffers it. Takers wait only while the buffer is empty.
     let private deliverLocked (queue: Dequeue<'a>) (value: 'a) (wake: ResizeArray<Platform.Signal<unit>>) =
+        queue.Accepted <- queue.Accepted + 1L
+
         if queue.Takers.Count > 0 then
             queue.Takers.CompleteOldest(value, wake)
         else
@@ -131,6 +162,7 @@ module internal QueueCore =
     let private refillLocked (queue: Dequeue<'a>) (wake: ResizeArray<Platform.Signal<unit>>) =
         while queue.Offerers.Count > 0 && hasRoom queue do
             queue.Buffer.PushBack(queue.Offerers.AcceptOldest wake)
+            queue.Accepted <- queue.Accepted + 1L
 
     /// Returns values that a consumer took but could not keep because it was interrupted. They are older than
     /// anything still buffered, so they go to waiting takers first and otherwise back to the front, in order.
@@ -146,7 +178,7 @@ module internal QueueCore =
         for index in rest.Count - 1 .. -1 .. 0 do
             match queue.Strategy with
             // A full sliding queue would evict its oldest value next anyway, and the returned value is the oldest.
-            | QueueStrategy.Sliding capacity when queue.Buffer.Count >= capacity -> ()
+            | QueueStrategy.Sliding capacity when queue.Buffer.Count >= capacity -> queue.Evicted <- queue.Evicted + 1L
             // Lossless strategies may briefly exceed capacity rather than drop a value that was accepted.
             | _ -> queue.Buffer.PushFront rest[index]
 
@@ -160,10 +192,14 @@ module internal QueueCore =
             match queue.Strategy with
             | QueueStrategy.BackPressure _
             | QueueStrategy.Unbounded -> OfferSuspended(queue.Offerers.Enqueue value)
-            | QueueStrategy.Dropping _ -> Discarded
+            | QueueStrategy.Dropping _ ->
+                queue.Dropped <- queue.Dropped + 1L
+                Discarded
             | QueueStrategy.Sliding _ ->
                 queue.Buffer.PopFront() |> ignore
                 queue.Buffer.PushBack value
+                queue.Accepted <- queue.Accepted + 1L
+                queue.Evicted <- queue.Evicted + 1L
                 AcceptedEvicting
 
     let takeLocked (queue: Dequeue<'a>) (wake: ResizeArray<Platform.Signal<unit>>) : TakeOutcome<'a> =
@@ -382,6 +418,30 @@ module Dequeue =
     /// <remarks>Use it on a hub subscription to raise an alarm before a lossless subscriber's buffer fills.</remarks>
     let size (queue: Dequeue<'a>) : Flow<'env, 'error, int> =
         Flow(fun _ _ -> Execution.ofValue (Platform.lock queue.Gate (fun () -> queue.Buffer.Count)))
+
+    /// <summary>Reads the queue's backlog and counters in one consistent snapshot.</summary>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! stats = Dequeue.stats historian
+    ///     if stats.Capacity |&gt; Option.exists (fun limit -&gt; stats.Size * 10 &gt;= limit * 8) then
+    ///         do! raiseAlarm "historian buffer 80% full"
+    /// }
+    /// </code>
+    /// </example>
+    let stats (queue: Dequeue<'a>) : Flow<'env, 'error, QueueStats> =
+        Flow(fun _ _ ->
+            Execution.ofValue (
+                Platform.lock queue.Gate (fun () ->
+                    { Size = queue.Buffer.Count
+                      Capacity = queue.Capacity
+                      Accepted = queue.Accepted
+                      Dropped = queue.Dropped
+                      Evicted = queue.Evicted
+                      WaitingTakers = queue.Takers.Count
+                      WaitingOfferers = queue.Offerers.Count
+                      IsShutdown = queue.IsShut })
+            ))
 
     /// <summary>Returns the queue's capacity, or <c>None</c> for an unbounded queue.</summary>
     let capacity (queue: Dequeue<'a>) : int option = queue.Capacity

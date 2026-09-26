@@ -70,10 +70,12 @@ the others missed.
 -     let! first = hub |> Hub.tryPublish 1
 -     let! second = hub |> Hub.tryPublish 2
 -     let! recorded = Dequeue.takeAll historian
--     return first.IsSome, second.IsSome, recorded
-- } : Flow<unit, Never, bool * bool * int list>)
+-     return [ $"first published: {first.IsSome}"; $"second published: {second.IsSome}"; $"historian has: {recorded}" ]
+- } : Flow<unit, Never, string list>)
 - |> Flow.run ();;
-val it: Exit<(bool * bool * int list),Never> = Success (true, false, [1])
+val it: Exit<string list,Never> =
+  Success
+    ["first published: True"; "second published: False"; "historian has: [1]"]
 ```
 
 Do not bound `Hub.publish` with a timeout instead. An interrupted publish leaves the value with the subscribers it has
@@ -107,7 +109,8 @@ val it: Exit<string list,Never> = Success ["while subscribed"; "subscribers left
 
 Publishes are serialized: every subscriber observes values in the same order, even when several fibers publish
 concurrently. A subscriber sees only values published after its `subscribe` completes. A consumer that joins late and
-needs the current state must get it from the application, for example a snapshot combined with sequence numbers.
+needs the current state first should follow a [`SubscriptionRef`](subscription-ref.html) instead, which starts each
+stream with the current value.
 
 ## Shutdown
 

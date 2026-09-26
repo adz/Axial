@@ -17,11 +17,10 @@ Follow-up to the Queue/Hub/Schedule review. Work in order; each step is committe
 4. Move time into the runtime context as an internal replaceable time source (monotonic now plus delays) used by
    `Flow.Runtime.sleep`, timeouts, retry delays, `Schedule`, and the new timed stream operators; add a virtual time
    source for deterministic tests.
-5. Add `SubscriptionRef<'a>`: a `Ref` whose `changes` stream emits the current value and then every update, with no
-   gap or duplicate, for latest-value consumers and late joiners.
 6. Connect streams and the concurrency types: `FlowStream.fromHub`, `runIntoQueue`, `runIntoHub`, `mergePar`,
    `buffer`, `fromSchedule`, `groupedWithin`, and `throttleLatest`.
-7. Report queue and subscription depth, drops, and evictions through the runtime telemetry sink.
+7. Expose `Dequeue.stats` (size, capacity, accepted/dropped/evicted counters, waiters) as OpenTelemetry observable
+   instruments from `Axial.Telemetry`, so queue and subscription depth and losses reach metrics without per-offer cost.
 8. Hub fixes and gaps: register the subscription finalizer before adding it to the hub; keep sliding queues within
    capacity when a cancelled taker gives a value back; add `Hub.tryPublish`, `Hub.makeScoped`, `Hub.awaitShutdown`,
    and `PublishResult.Evicted`; document that a full `BackPressure` subscriber delays every later subscriber and that

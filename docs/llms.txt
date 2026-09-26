@@ -48,6 +48,8 @@
   `Hub.subscribe` chooses its own `QueueStrategy`, returns a `Dequeue`, and belongs to the current scope (a forked
   fiber's subscription ends with the fiber); `Dequeue.shutdown` unsubscribes. Only a full `BackPressure` subscription
   suspends `Hub.publish`, and while it waits no subscriber gets later values; `Hub.tryPublish` never waits.
+- Use `SubscriptionRef` (namespace `Axial.State`) for current state that consumers join late:
+  `SubscriptionRef.changes strategy` streams the current value and then every update, with no gap or duplicate.
 - Cap backoff with `Schedule.exponential d |> Schedule.union (Schedule.spaced cap)`; bound attempts with
   `Schedule.recurs n |> Schedule.intersect (Schedule.exponential d)`. Use `Schedule.fixedRate period` for drift-free
   periodic work; `Schedule.spaced` waits after each run instead.
