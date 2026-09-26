@@ -9,9 +9,6 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 ## Product work
 
-- FsLiveDocs 0.7.3 bundles its own `Axial.dll` (0.9.1) and runs doc transcripts in-process, so examples that use newer
-  Axial APIs (`Queue`, `FlowStream.chunkBySize`, `mapFlowPar`) fail with type-load errors. Fix in FsLiveDocs by
-  isolating the evaluated assemblies from the tool's own dependencies.
 - Make hand-written recursive loops (`let rec loop () = flow { ...; return! loop () }`) run in constant memory on
   .NET. Each `return!` of a pending `ValueTask` must be awaited by the caller, so every iteration stays live until
   the loop ends (~420 B per suspending iteration, ~5 B per synchronous one; measured 2026-09-26). Library loops —
