@@ -1,7 +1,7 @@
 # Axial Flow-Group and Platform Backlog
 
-This is the Flow-group and platform-track backlog, kept demand-driven per the release strategy in `prd.md`: the
-boundary stack (`dev-docs/TASKS.md`) is the 1.0 gate, and items here are pulled forward when a concrete application
+This is the Flow-group and platform-track backlog, kept demand-driven per `dev-docs/PLAN.md`: the
+active queue (`dev-docs/TASKS.md`) is the 1.0 gate, and items here are pulled forward when a concrete application
 needs them, not worked top to bottom. Section numbering and the v1.0/post-v1.0 labels are preserved from the original
 ZIO-delta roadmap for continuity; "v1.0" sections describe what a full Flow 1.0 would require, not the current gate.
 One ordering rule survives from the original PRD: runtime foundation before broad module expansion — rich
@@ -12,7 +12,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 ## References
 
-- Product PRD: `prd.md`
+- Product plan: `dev-docs/PLAN.md`
 - Reference PRD: external ZIO reference corpus, `specs/prd.md`
 - Reference TODO: external ZIO reference corpus, `TODO.md`
 - Reference source/test specs: external ZIO reference corpus, `specs/*.md`
@@ -24,7 +24,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Add API-shape tests for the public `Flow`, builder, validation, schedule, stream, STM, and service modules.
 - [x] Add a Fable compilation gate for the intended JavaScript surface.
 - [x] Add a .NET trimming/NativeAOT compatibility gate for the `net8.0` target.
-- [x] Keep root docs as `prd.md` and `TODO.md` unless the repository adopts another naming convention.
+- [x] Keep planning docs in `dev-docs/` (`PLAN.md`, `TASKS.md`, `decisions/`); the root `prd.md`/`TODO.md` were retired.
 
 ## 2. v1.0 Core Scope
 
@@ -65,13 +65,14 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [ ] Design bounded and unbounded queues only when a concrete v1 feature needs Axial-owned backpressure, shutdown, and interruption semantics.
 - [x] Add semaphore primitive.
 - [x] Add a minimal atomic `Ref` implementation with `make`, `get`, `set`, `update`, and `modify`, backed by a lock and covered by state tests and public docs.
-- [ ] Stabilize `Ref` for v1.0 by adding and testing the remaining atomic `getAndSet` and `updateAndGet` helpers and confirming the API/semantics are sufficient for realistic concurrent applications.
+- [x] Stabilize `Ref` for v1.0: `modify`, `getAndSet`, and `updateAndGet` are implemented, tested in `WorkflowStateTests.fs`, and documented in `docs/08-concurrency-and-state/03-ref.md`.
 - [ ] Cover future queue shutdown/fairness semantics and remaining state/resource cleanup cases in tests.
 
 ## 6. v1.0 Scheduling and Time
 
 - [x] Add a minimal schedule implementation with recurrence limits, fixed spacing, exponential backoff, fixed-range jitter, attempt/delay outputs, and retry/repeat integration.
-- [ ] Make schedules production-ready with schedule composition, configurable/deterministic jitter, elapsed outputs, reset behavior, overflow/invalid-delay handling, and any additional retry/repeat semantics required by realistic applications.
+- [x] Harden schedule semantics: deterministic jitter (`jitteredWith`), overflow capping, invalid-delay rejection, and pinned `recurs`/statelessness/retry/repeat behavior (see `dev-docs/current-ideas/schedule-expansion.md`).
+- [ ] Add schedule composition (`union`/`intersect`, `andThen`, `whileOutput`), fixed-rate `fixed`, elapsed outputs, and reset behavior when an application needs them (`union`/`intersect`/`fixed` are specified in `dev-docs/queues_and_hubs.md`).
 - [x] Remove `Unchecked.defaultof<'error>` from `Schedule.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error (sleep runs at the workflow's error type; schedule-evaluation failure becomes `Cause.Die`). Also hardened: `exponential` caps at the max delay instead of overflowing ticks, `spaced`/`exponential` reject negative delays, and `Schedule.jitteredWith` takes an injectable sample source for deterministic jitter.
 - [ ] Add deterministic clock-driven tests for retry, repeat, timeout, and sleep.
 
@@ -108,8 +109,8 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 - [ ] Define the supported Fable subset explicitly.
 - [x] Add a runnable Fable JavaScript project/gate that references Axial, compiles the intended surface, executes a codec round trip under Node, and checks that .NET-only APIs do not leak into the output (`benchmarks/Axial.Benchmarks.Fable` via `scripts/check-fable-js-surface.sh`).
-- [ ] Audit APIs guarded by `#if !FABLE_COMPILER`, especially `AsyncAdapter`, `TaskAdapter`, `Ref`, `STM`, `Stream`, `Schedule`, `Task`, `ValueTask`, process, live console, filesystem, hosting, and telemetry APIs.
-- [ ] Provide Fable-safe alternatives or document unsupported modules.
+- [ ] Audit remaining `#if FABLE_COMPILER` branches (now confined to `Platform.fs`, `Flow.fs`, `Core.fs`, `FlowBuilder.fs`, `BindError.fs`, `Interop.fs`, `Outcome.fs`, `App.fs`); `Ref`, `STM`, `Stream`, and `Schedule` are no longer guarded and compile in the Fable gate.
+- [x] Document unsupported modules per package and runtime (`docs/15-notes/01-packages-and-platforms.md`).
 - [ ] Add trimming analyzer warnings as build failures for the `net8.0` target.
 - [x] Add product-scoped NativeAOT probes for Validation, Schema, and Flow (`examples/Axial.*.AotProbe`).
 - [ ] Audit reflection usage in builders, tests, hosting, telemetry, and DI integration.
@@ -142,9 +143,12 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 ## 12. Post-v1.0 Streams, Sinks, Channels, and Pipelines
 
 - [ ] Define a chunked pull model for `FlowStream` that works on .NET and can compile through Fable where supported.
-- [ ] Add core stream constructors: succeed, fail, effect, unfold, repeat, range, async callback/queue-backed constructors.
-- [ ] Add stream combinators: map, mapEffect, filter, take/drop, grouped/chunked, merge, zip, flatMap, retry, schedule, timeout, bracket/scoped resource handling.
-- [ ] Add sinks for fold, collect, head, count, drain, foreach, and failure capture.
+- [x] Add core stream constructors: `empty`, `singleton`, `fromSeq`, `fromFlow`, `unfoldFlow`.
+- [ ] Add remaining constructors: repeat, range, async callback/queue-backed (`FlowStream.fromQueue` is specified in `dev-docs/queues_and_hubs.md`), and resource-owning `FlowStream.acquireRelease`.
+- [x] Add stream combinators: `map`, `mapError`, `mapFlow`, `mapFlowPar`, `tapFlow`, `filter`, `choose`, `take`/`skip`/`takeWhile`/`skipWhile`, `chunkBySize`, `indexed`, `scan`, `distinctUntilChangedBy`, `append`, `collect`, `zip`.
+- [ ] Add remaining combinators only on demand: merge, retry, schedule, timeout/timeoutBetween.
+- [x] Add sinks: `runFold`, `runCollect`, `runDrain`, `runForEach`, `runForEachFlow`.
+- [ ] Add remaining sinks: `runHead`/`runTryHead`, `runExactlyOne`, count, and failure capture.
 - [ ] Add pipelines for transformation, buffering, text encoding/decoding, and compression where .NET APIs are available.
 - [ ] Add channel internals only when needed to support stream correctness and composition.
 - [ ] Add stream tests for backpressure, interruption, finalizers, failures, chunk boundaries, and Fable-compatible subsets.

@@ -1,6 +1,6 @@
 # Schedule expansion: deferred post-1.0 decisions
 
-This is the follow-up to item 1 ("Stabilize the schedule contract") in `api-review.md`. That item is now closed:
+This is the follow-up to the closed "Stabilize the schedule contract" item from the retired `api-review.md`:
 every semantic question on its checklist was already correctly implemented, just undocumented and untested. Pinning
 tests now cover `recurs` count semantics, schedule statelessness/reusability, overflow and negative-delay rejection,
 jitter clamping for out-of-contract samples, and retry/repeat behavior on defects and interruption (see
