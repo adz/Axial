@@ -21,6 +21,7 @@ dotnet add package Axial.Guardrails
 ```
 
 The package configures the analyzer automatically. You don't need to edit an MSBuild file or run a separate command.
+Which rules run depends on the Axial packages the project references; see [Choose guardrails per package](#choose-guardrails-per-package).
 
 Findings are warnings by default. To make findings fail the build, set the severity to `error`:
 
@@ -59,9 +60,58 @@ The repository sets `AxialGuardrailsSeverity` to `error`. To change the severity
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
 | `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
 
-`AXG001`, `AXG002`, `AXG003`, `AXG005`, and `AXG006` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions.
+`AXG001`, `AXG002`, `AXG003`, `AXG005`, and `AXG006` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
 
 `AXG004` runs only in projects where MSBuild sets `IsTestProject`. It checks a test-specific risk and does not apply to application or library projects.
+
+## Choose guardrails per package
+
+The rules are grouped into guardrails, each named after the package whose service replaces the effect it flags.
+Referencing a package turns its guardrail on: a rule that recommends `IHttp` is only useful once `IHttp` is available.
+
+| Guardrail | Rules |
+| --- | --- |
+| `Axial` | `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking task waits inside `flow { }`, and `AXG002`–`AXG006` |
+| `Axial.PlatformService` | Clock, `Stopwatch`, randomness, GUIDs, and environment state |
+| `Axial.Console` | `System.Console` |
+| `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
+| `Axial.Process` | `Process.Start` |
+| `Axial.HttpClient` | `new HttpClient` |
+
+Change the set with ordinary MSBuild item operations in a project or `Directory.Build.props`:
+
+```xml
+<ItemGroup>
+  <!-- Turn a guardrail off -->
+  <AxialGuardrail Remove="Axial.Console" />
+  <!-- Give one guardrail its own severity; the others use AxialGuardrailsSeverity -->
+  <AxialGuardrail Update="Axial.HttpClient" Severity="warning" />
+  <!-- Turn one on without referencing its package -->
+  <AxialGuardrail Include="Axial.FileSystem" />
+</ItemGroup>
+```
+
+### Add rules for your own package
+
+A package can contribute rules to a guardrail of its own. Ship them in the package's `buildTransitive` props, next to
+the item that turns the guardrail on:
+
+```xml
+<ItemGroup>
+  <AxialGuardrail Include="Acme.Payments" />
+  <AxialGuardrailRule Include="acme.gateway-client"
+      Guardrail="Acme.Payments"
+      Category="payments"
+      Match="ctor:Acme.Gateway.GatewayClient"
+      Scope="anywhere"
+      Message="constructs the gateway client directly, which bypasses the payments service"
+      Replacement="Acme.Payments' IPayments service" />
+</ItemGroup>
+```
+
+`Match` is `ctor:Type`, `member:Type::Member1,Member2`, or `any:Type`. `Scope` is `anywhere`, or `insideFlow` to
+report the call only inside `flow { }`. Findings are reported as `AXG001`, and `// axial-allow-effect: payments` allows
+an intentional use. Item metadata cannot contain a semicolon; write it as `%3B`.
 
 ## AXG001: Use explicit effect services
 
@@ -71,12 +121,14 @@ The repository sets `AxialGuardrailsSeverity` to `error`. To change the severity
 | --- | --- | --- |
 | `random` | Construction of `System.Random` | `IRandom`, `Random.service`, or `Random.nextDouble` |
 | `guid` | `Guid.NewGuid()` | `IGuid`, `Guid.service`, or `Guid.newGuid` |
-| `clock` | Ambient date and time properties, and `Task.Delay` | `IClock`, `Clock.service`, `Clock.utcNow`, `Flow.sleep`, or `Schedule` |
-| `environment` | Ambient environment variables and machine or process properties | `IEnvironment` or a value passed through `'env` |
+| `clock` | Ambient date and time properties, `Stopwatch`, and `Task.Delay` | `IClock`, `Clock.service`, `Clock.utcNow`, `Clock.timed`, `Flow.sleep`, or `Schedule` |
+| `environment` | Ambient environment variables and machine or process properties | `IEnvironment` or a value passed through `'env`; `Parallelism.ofProcessors` for `ProcessorCount` |
 | `console` | Any `System.Console` member | `Axial.Console.IConsole` |
 | `filesystem` | Any `System.IO.File` or `System.IO.Directory` member | `Axial.FileSystem.IFileSystem` |
 | `process` | `System.Diagnostics.Process.Start` | `Axial.Process.IProcess` |
 | `sleep` | `Thread.Sleep` | `Flow.sleep` or `Schedule` |
+| `http` | Construction of `HttpClient` | `Axial.HttpClient.IHttp`, with `Http.live` over one shared client |
+| `blocking` | `.GetAwaiter().GetResult()` and `.Result` on a task, inside `flow { }` only | `let!` on the task, or `Flow.fromBlocking` for synchronous work |
 
 The analyzer matches resolved `System.*` symbols, not source text. It does not flag an application type named `Random` or a local value named `now`.
 
@@ -112,7 +164,7 @@ For the exact matching and suppression rules, see `EffectCatalog.fs` and `Suppre
 
 `AXG002` validates every `axial-allow-effect` and `axial-allow-effect-file` directive.
 
-It reports a directive when the category is unknown or when the directive does not suppress an `AXG001` finding. This check catches spelling errors and directives left behind after a refactoring.
+It reports a directive when the category is unknown or when the directive does not suppress an `AXG001` finding. This check catches spelling errors and directives left behind after a refactoring. A directive whose guardrail is turned off suppresses nothing, so it is reported too.
 
 Remove an unused directive. Correct a category only when the associated call is an intentional effect boundary.
 

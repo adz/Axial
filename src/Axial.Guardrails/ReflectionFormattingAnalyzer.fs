@@ -227,4 +227,4 @@ let analyze (ctx: CliContext) : Message list =
               + "which relies on reflection that NativeAOT and trimming remove.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
 let reflectionFormattingAnalyzer: Analyzer<CliContext> =
-    fun ctx -> async { return analyze ctx }
+    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore }

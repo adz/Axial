@@ -10,24 +10,16 @@
     -->
     <_AxialGuardrailsAnalyzersPath Condition="'$(_AxialGuardrailsAnalyzersPath)' == ''">$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
     <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll&quot;</_AxialGuardrailsExe>
-    <_AxialGuardrailsSeverityFlag Condition="'$(AxialGuardrailsSeverity)' == 'error'">--treat-as-error</_AxialGuardrailsSeverityFlag>
-    <_AxialGuardrailsSeverityFlag Condition="'$(AxialGuardrailsSeverity)' != 'error'">--treat-as-warning</_AxialGuardrailsSeverityFlag>
     <!--
-      AXG001-003 are about ambient effects and raw exceptions bypassing Axial's own explicit
-      service boundaries - real signal in application/library code, but noise in a test project,
-      which legitimately touches Thread.Sleep/File/DateTimeOffset/raw exceptions for setup and
-      assertions. $(IsTestProject) is set by the test SDK (Microsoft.NET.Test.Sdk), so a project
-      built with `dotnet test` gets only AXG004 (shared xUnit fixtures) by default.
+      Severity comes from the rules file written by AxialGuardrailsWriteConfig: each enabled guardrail carries its
+      own, defaulting to $(AxialGuardrailsSeverity). The analyzers report findings at that severity, and the CLI
+      exits non-zero only when one of them is an error, so no severity override flags are passed.
+
+      Test projects run only the Fixture analyzer by default: the effect rules flag Thread.Sleep, File and
+      DateTimeOffset that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
+      run every enabled guardrail in a test project. $(IsTestProject) is set by Microsoft.NET.Test.Sdk.
     -->
-    <_AxialGuardrailsCodes Condition="'$(IsTestProject)' == 'true'">AXG004</_AxialGuardrailsCodes>
-    <_AxialGuardrailsCodes Condition="'$(IsTestProject)' != 'true'">AXG001 AXG002 AXG003 AXG004 AXG005 AXG006</_AxialGuardrailsCodes>
-    <!--
-      The severity flag only overrides the severity of the named codes; it does not restrict which
-      analyzers run. The analyzers filter (below, by analyzer name) is what actually keeps
-      AXG001-003 from running - and therefore from being reported at their default Warning
-      severity - against a test project at all.
-    -->
-    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true'">--include-analyzers Fixture</_AxialGuardrailsIncludeAnalyzersFlag>
+    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture</_AxialGuardrailsIncludeAnalyzersFlag>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
@@ -39,6 +31,7 @@
       rebuild where @(Compile) hasn't changed, which is the common case in an edit-build loop.
     -->
     <_AxialGuardrailsStampFile>$(IntermediateOutputPath)axial-guardrails.stamp</_AxialGuardrailsStampFile>
+    <_AxialGuardrailsConfigFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.rules))</_AxialGuardrailsConfigFile>
   </PropertyGroup>
 
   <!--
@@ -81,13 +74,34 @@
     Still skips silently if the analyzers path is somehow missing after AxialGuardrailsEnsureBuilt
     (or there was nothing to bootstrap with) - a real package consumer never hits this at all.
   -->
+  <!--
+    Resolves @(AxialGuardrail) and @(AxialGuardrailRule) into the rules file the analyzers read (see
+    GuardrailConfig.fs for the format). WriteOnlyWhenDifferent keeps its timestamp stable, so the check below reruns
+    only when the configuration or the sources change. Metadata must not contain semicolons; escape them as %3B.
+  -->
+  <Target Name="AxialGuardrailsWriteConfig"
+          BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <ItemGroup>
+      <_AxialGuardrailResolved Include="@(AxialGuardrail)" />
+      <_AxialGuardrailResolved Condition="'%(_AxialGuardrailResolved.Severity)' == ''">
+        <Severity>$(AxialGuardrailsSeverity)</Severity>
+      </_AxialGuardrailResolved>
+      <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailResolved->'guardrail&#9;%(Identity)&#9;%(Severity)')" />
+      <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Category)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
+    </ItemGroup>
+    <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
+    <WriteLinesToFile File="$(_AxialGuardrailsConfigFile)" Lines="@(_AxialGuardrailsConfigLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and Exists('$(_AxialGuardrailsAnalyzersPath)')"
-          Inputs="@(_AxialGuardrailsSourceInputs)"
+          Inputs="@(_AxialGuardrailsSourceInputs);$(_AxialGuardrailsConfigFile)"
           Outputs="$(_AxialGuardrailsStampFile)">
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
-    <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) $(_AxialGuardrailsSeverityFlag) $(_AxialGuardrailsCodes) --code-root &quot;$(MSBuildProjectDirectory)&quot;" />
+    <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
+          EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile)" />
     <Touch Files="$(_AxialGuardrailsStampFile)" AlwaysCreate="true" />
   </Target>
 

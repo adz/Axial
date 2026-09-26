@@ -1,0 +1,8 @@
+<Project>
+  <!-- Referencing Axial.Process turns on its Axial.Guardrails guardrail; its rules ship in Axial.Guardrails.
+       Remove it with <AxialGuardrail Remove="Axial.Process" />, or set its severity with
+       <AxialGuardrail Update="Axial.Process" Severity="warning" />. -->
+  <ItemGroup>
+    <AxialGuardrail Include="Axial.Process" />
+  </ItemGroup>
+</Project>

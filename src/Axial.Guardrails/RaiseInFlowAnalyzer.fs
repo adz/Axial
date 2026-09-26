@@ -149,6 +149,16 @@ let rec private allExprsInModule (decls: SynModuleDecl list) : SynExpr list =
                     | _ -> None))
         | _ -> [])
 
+/// The ranges of every `flow { }` body in the file, for rules that apply only inside a flow.
+let flowBodyRanges (ctx: CliContext) : range list =
+    match ctx.ParseFileResults.ParseTree with
+    | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
+        modules
+        |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
+        |> List.collect flowCeBodies
+        |> List.map _.Range
+    | _ -> []
+
 let private message (range: range) (ident: string) : Message =
     { Type = "Axial Raise In Flow"
       Message =
@@ -189,5 +199,5 @@ let raiseInFlowAnalyzer: Analyzer<CliContext> =
                     else
                         Some(message range ident))
 
-            return messages
+            return GuardrailConfig.applyCore messages
         }

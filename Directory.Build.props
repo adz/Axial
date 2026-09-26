@@ -35,4 +35,22 @@
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
+
+  <!-- A package that owns an Axial.Guardrails guardrail ships a buildTransitive props file that turns it on. -->
+  <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/buildTransitive/$(MSBuildProjectName).props')">
+    <None Include="$(MSBuildProjectDirectory)/buildTransitive/$(MSBuildProjectName).props" Pack="true" PackagePath="buildTransitive/" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    This repository references its packages as projects, so their buildTransitive props never import here. Every
+    project gets every guardrail, as a consumer referencing all the packages would.
+  -->
+  <ItemGroup>
+    <AxialGuardrail Include="Axial" />
+    <AxialGuardrail Include="Axial.PlatformService" />
+    <AxialGuardrail Include="Axial.Console" />
+    <AxialGuardrail Include="Axial.FileSystem" />
+    <AxialGuardrail Include="Axial.Process" />
+    <AxialGuardrail Include="Axial.HttpClient" />
+  </ItemGroup>
 </Project>

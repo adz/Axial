@@ -13,6 +13,7 @@ module Axial.Guardrails.SuppressionIntegrityAnalyzer
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Text
 open Axial.Guardrails.EffectCatalog
+open Axial.Guardrails.GuardrailConfig
 open Axial.Guardrails.Suppressions
 open Axial.Guardrails.EffectBoundaryAnalyzer
 
@@ -42,7 +43,7 @@ let private unknownCategoryFindings
     : Message list =
     [ for line1, categories in directives do
           for category in categories do
-              if not (Set.contains category knownCategories) then
+              if not (Set.contains category ((load ()).KnownCategories)) then
                   yield
                       message
                           (rangeOfLine sourceText line1)
@@ -57,7 +58,7 @@ let private orphanedLineDirectiveFindings
     : Message list =
     [ for line1, categories in directives do
           for category in categories do
-              if Set.contains category knownCategories then
+              if Set.contains category ((load ()).KnownCategories) then
                   let hasMatch =
                       raw
                       |> List.exists (fun (rule, range) -> rule.Category = category && coversLine line1 range.StartLine)
@@ -78,7 +79,7 @@ let private orphanedFileDirectiveFindings
     : Message list =
     [ for line1, categories in directives do
           for category in categories do
-              if Set.contains category knownCategories then
+              if Set.contains category ((load ()).KnownCategories) then
                   let hasMatch = raw |> List.exists (fun (rule, _) -> rule.Category = category)
 
                   if not hasMatch then
@@ -107,4 +108,5 @@ let suppressionIntegrityAnalyzer: Analyzer<CliContext> =
                   yield! unknownCategoryFindings sourceText "// axial-allow-effect-file" fileDirectives
                   yield! orphanedLineDirectiveFindings sourceText raw lineDirectives
                   yield! orphanedFileDirectiveFindings sourceText raw fileDirectives ]
+                |> applyCore
         }

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="ReflectionFormattingAnalyzerTests.fs" />
+    <Compile Include="GuardrailConfigTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

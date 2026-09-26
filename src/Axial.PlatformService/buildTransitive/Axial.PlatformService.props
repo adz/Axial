@@ -1,0 +1,8 @@
+<Project>
+  <!-- Referencing Axial.PlatformService turns on its Axial.Guardrails guardrail; its rules ship in Axial.Guardrails.
+       Remove it with <AxialGuardrail Remove="Axial.PlatformService" />, or set its severity with
+       <AxialGuardrail Update="Axial.PlatformService" Severity="warning" />. -->
+  <ItemGroup>
+    <AxialGuardrail Include="Axial.PlatformService" />
+  </ItemGroup>
+</Project>

@@ -61,10 +61,11 @@
 
   <ItemGroup>
     <Compile Include="EffectCatalog.fs" />
+    <Compile Include="GuardrailConfig.fs" />
     <Compile Include="Suppressions.fs" />
+    <Compile Include="RaiseInFlowAnalyzer.fs" />
     <Compile Include="EffectBoundaryAnalyzer.fs" />
     <Compile Include="SuppressionIntegrityAnalyzer.fs" />
-    <Compile Include="RaiseInFlowAnalyzer.fs" />
     <Compile Include="FixtureAnalyzer.fs" />
     <Compile Include="DiscardedCancellationAnalyzer.fs" />
     <Compile Include="ReflectionFormattingAnalyzer.fs" />

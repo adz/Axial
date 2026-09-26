@@ -145,4 +145,5 @@ let discardedCancellationAnalyzer: Analyzer<CliContext> =
                 |> List.collect findDiscards
                 |> List.filter (fun range -> not (isAllowed sourceText range.StartLine))
                 |> List.map message
+                |> GuardrailConfig.applyCore
         }

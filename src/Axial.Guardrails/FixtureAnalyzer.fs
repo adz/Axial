@@ -116,4 +116,5 @@ let fixtureAnalyzer: Analyzer<CliContext> =
             return
                 modules
                 |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> checkDecls ctx.SourceText decls)
+                |> GuardrailConfig.applyCore
         }
