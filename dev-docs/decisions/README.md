@@ -140,5 +140,27 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   continue, longer delay) for capped back-off, and `fixedRate` for a drift-free scan. `union` emits
   `'output option * 'otherOutput option` because schedules are stateless: a stopped side has no last output to carry.
   `fixedRate` is not named `fixed` because `fixed` is an F# keyword. Schedule decisions receive an internal context
-  with monotonic timestamps (loop start, execution start and end) from `Platform.monotonicNow`, not a wall clock.
+  with monotonic timestamps (loop start, execution start and end) from the runtime's time source, not a wall clock.
   `andThen`, `whileOutput`, `upTo`, and elapsed outputs stay deferred in `dev-docs/current-ideas/schedule-expansion.md`.
+
+## 2026-09-26: Concurrency foundations after Queue and Hub
+
+- One internal `WaitList` holds the cancel-safe waiter rule for `Queue`, `PermitQueue` (semaphores and the hub's
+  publishing turn): an interrupted waiter is withdrawn under the owner's gate, and a handover that raced the
+  interruption is kept (an accepted offer) or passed on (a value or permit). New suspending structures use it rather
+  than reimplementing the rule.
+- A queue's consuming side is a public `Dequeue<'a>`; `Queue<'a>` extends it, and `Hub.subscribe` returns a bare
+  `Dequeue`, so a subscriber cannot offer into its own buffer and consumer operations are written once. One public
+  `QueueStrategy` serves queues, subscriptions, `SubscriptionRef.changes`, and `FlowStream.buffer`.
+- Every forked fiber runs in its own child scope, closed when the fiber settles, so what a fiber acquires ends with it.
+  This fixed a consumer fiber leaving a full back-pressure subscription behind and stalling its publisher.
+- `Flow.forkGraceful stop grace` exists because closing a scope interrupted consumers before they could drain a
+  shut-down queue, which defeated draining shutdown. It is not linked to the forking flow's cancellation, so it also
+  drains when the application is cancelled.
+- Runtime time is a replaceable `ITimeSource` in the runtime context, separate from the application's `IClock`. Timed
+  runtime behaviour is tested on `ManualTime` with exact assertions instead of wall-clock windows. Timeouts under Fable
+  still use the platform timer.
+- `SubscriptionRef` gives late joiners the current value followed by every update; updates and new streams share the
+  hub's publishing turn, so no update is missed or repeated.
+- Queue metrics are pulled: `Dequeue.stats` keeps counters, and `QueueMetrics.observe` in `Axial.Telemetry` exposes them
+  as observable instruments read only at collection, so observing a queue costs nothing per value.

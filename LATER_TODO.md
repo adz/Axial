@@ -75,7 +75,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Add `Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate`.
 - [x] Add `andThen`, `whileInput`/`untilInput`, `whileOutput`/`untilOutput`, `upTo`, `within` (time budget), `elapsed`, `map`, and `resetAfter`; retry, repeat, and supervise run each attempt in a child scope, and schedules keep per-run memory for combinators that need it.
 - [x] Remove `Unchecked.defaultof<'error>` from `Flow.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error (sleep runs at the workflow's error type; schedule-evaluation failure becomes `Cause.Die`). Also hardened: `exponential` caps at the max delay instead of overflowing ticks, `spaced`/`exponential` reject negative delays, and `Schedule.jitteredWith` takes an injectable sample source for deterministic jitter.
-- [ ] Add deterministic clock-driven tests for retry, repeat, timeout, and sleep on the runtime's manual time source (`TASKS.md` step 9; fixed-rate, retry backoff, and the new schedule combinators already run on it).
+- [x] Add deterministic clock-driven tests for retry, repeat, timeout, and sleep on the runtime's manual time source.
 
 ## 7. v1.0 Observability
 
@@ -148,7 +148,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Add queue-backed and resource-owning constructors: `fromDequeue`, `repeatFlow`, and `using` (a stream that owns a `Resource` until consumption ends). A range is `fromSeq [a..b]`.
 - [ ] Add an async-callback constructor (events pushed into a stream) if pushing into a `Queue` and using `fromDequeue` proves awkward.
 - [x] Add stream combinators: `map`, `mapError`, `mapFlow`, `mapFlowPar`, `mapFlowParUsing`, `tapFlow`, `filter`, `choose`, `take`/`skip`/`takeWhile`/`skipWhile`, `chunkBySize`, `groupedWithin`, `throttle`, `debounce`, `switchMapFlow`, `indexed`, `scan`, `distinctUntilChangedBy`, `append`, `collect`, `zip`.
-- [ ] Add remaining combinators only on demand: retry, schedule, timeout/timeoutBetween. (Merging, buffering, and hub/queue connectors are `TASKS.md` step 6.)
+- [ ] Add remaining combinators only on demand: retry, timeout/timeoutBetween. (`mergePar`, `buffer`, `fromSchedule`, `fromHub`, `runIntoQueue`, and `runIntoHub` exist.)
 - [x] Add sinks: `runFold`, `runCollect`, `runDrain`, `runForEach`, `runForEachFlow`, `runTryHead`, `runTryLast`, `runCount`.
 - [ ] Add `runExactlyOne` and failure capture on demand.
 - [ ] Add pipelines for text encoding/decoding and compression with the transport packages (`dev-docs/current-ideas/flow-transport-packages.md`).
