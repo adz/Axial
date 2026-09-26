@@ -156,7 +156,7 @@ If the compiler error mentions one of these shapes, check the boundary first:
 - `Task<Result<...>>`
 - `Flow<...>`
 
-Retry and repeat live on `Schedule` (`Schedule.retry`, `Schedule.repeat`), not on `Flow`, to avoid ambiguity with shorter `Flow` aliases.
+`Flow.retry` and `Flow.repeat` take a `Schedule`. If the compiler reports a mismatch on the schedule's input type, check that the schedule's input matches the flow's error type (for `retry`) or value type (for `repeat`).
 
 Most fixes are one of:
 

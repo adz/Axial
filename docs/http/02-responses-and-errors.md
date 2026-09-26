@@ -59,10 +59,12 @@ match error with
 | HttpError.InvalidRequest message -> ...            // malformed URL or request construction
 | HttpError.ConnectionFailed(request, message) -> ...// DNS, refused, dropped connection
 | HttpError.TimedOut(request, timeout) -> ...        // per-request timeout elapsed
-| HttpError.Canceled message -> ...                  // the workflow was interrupted
 | HttpError.Status response -> ...                   // status outside the expectation, full transcript
 | HttpError.DecodeFailed(message, response) -> ...   // body did not decode, full transcript
 ```
+
+Interrupting the workflow is not one of them: the request is abandoned and the flow ends with `Cause.Interrupt`,
+so no error handler has to recognize a cancellation it did not ask for.
 
 `HttpError.describe` formats any case with its redacted request context and a bounded body preview, so a single
 `Flow.mapError HttpError.describe` produces loggable messages. `HttpError.tryResponse` extracts the transcript

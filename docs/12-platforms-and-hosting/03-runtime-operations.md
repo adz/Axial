@@ -24,19 +24,19 @@ type CheckoutError =
 
 let authorizeCard : Flow<unit, CheckoutError, string> =
     flow {
-        do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50)
+        do! Flow.sleep (TimeSpan.FromMilliseconds 50)
         return "receipt-123"
     }
 
 let storeReceipt (receiptId: string) : Flow<unit, CheckoutError, unit> =
     flow {
-        do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 20)
+        do! Flow.sleep (TimeSpan.FromMilliseconds 20)
         return ()
     }
 
 let notifyCustomer (receiptId: string) : Flow<unit, CheckoutError, unit> =
     flow {
-        do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 20)
+        do! Flow.sleep (TimeSpan.FromMilliseconds 20)
         return ()
     }
 
@@ -56,7 +56,7 @@ Even in this tiny example there are already several composed steps. Runtime help
 ```fsharp
 let checkoutWithTimeout =
     checkout
-    |> Flow.Runtime.timeoutToError (TimeSpan.FromMilliseconds 10) CheckoutTimedOut
+    |> Flow.timeoutToError (TimeSpan.FromMilliseconds 10) CheckoutTimedOut
 ```
 
 `timeout`, `timeoutToError`, `timeoutToOk`, and `timeoutWith` are boundary tools. They answer "what should this workflow do if it takes too long?"
@@ -66,13 +66,18 @@ let checkoutWithTimeout =
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let retryingCheckout =
     checkout
-    |> Flow.Runtime.retry (function
-        | GatewayUnavailable -> Some (TimeSpan.FromMilliseconds 100)
-        | ReceiptStoreFailed -> Some (TimeSpan.FromMilliseconds 50)
-        | _ -> None)
+    |> Flow.retry (
+        Schedule.exponential (TimeSpan.FromMilliseconds 50.0)
+        |> Schedule.upTo 3
+        |> Schedule.whileInput (function
+            | GatewayUnavailable
+            | ReceiptStoreFailed -> true
+            | _ -> false))
 ```
 
-Use `Flow.Runtime.retry` when the retry decision depends on the actual typed error. Use `Schedule` when you want a reusable retry policy value.
+`Flow.retry` takes a `Schedule`, which sees each typed error: `Schedule.whileInput` selects the errors worth retrying,
+and `Schedule.upTo` bounds the attempts. For the common case, `Retry.schedule` builds the same schedule from a record
+with named fields.
 
 ## Exceptions
 
@@ -108,13 +113,24 @@ let runCancellable (cancellationToken: CancellationToken) =
 
 If the host cancels the token, the flow finishes with `Exit.Failure Cause.Interrupt`.
 
+Cancellation stays an interruption inside the workflow. Whoever requested it decides what it means, as `runCancellable`
+does by matching `Cause.Interrupt`. That keeps a `Canceled` case out of every error type, and keeps retries and error
+handlers from treating a cancellation as a failure.
+
+Two helpers cover the edges:
+
+- `Flow.ensureNotCanceled` stops with `Cause.Interrupt` if the token has been cancelled. Put it at safe points in long
+  work that does not otherwise observe cancellation, such as a CPU-bound loop.
+- `Flow.catchCancellation` turns cancellation that a library raised for its own reasons, while the token was still
+  live, into a typed error. Without it, that cancellation is a defect: nobody asked for it.
+
 ## Annotations
 
 ```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
 let annotatedCharge =
     flow {
-        let! annotations = Flow.Runtime.annotations
-        let! traceId = Flow.Runtime.traceId
+        let! annotations = Flow.annotations
+        let! traceId = Flow.traceId
         return annotations, traceId
     }
 ```
@@ -132,11 +148,15 @@ let guardedCheckout =
             do! notifyCustomer receiptId
             return receiptId
         })
-    |> Flow.Runtime.timeoutToError (TimeSpan.FromSeconds 2) CheckoutTimedOut
-    |> Flow.Runtime.retry (function
-        | GatewayUnavailable -> Some (TimeSpan.FromMilliseconds 200)
-        | ReceiptStoreFailed -> Some (TimeSpan.FromMilliseconds 100)
-        | _ -> None)
+    |> Flow.timeoutToError (TimeSpan.FromSeconds 2) CheckoutTimedOut
+    |> Flow.retry (
+        Retry.schedule
+            { Retry.defaults with
+                When =
+                    function
+                    | GatewayUnavailable
+                    | ReceiptStoreFailed -> true
+                    | _ -> false })
 ```
 
 Keep the mental split clear:

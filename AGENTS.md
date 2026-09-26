@@ -26,6 +26,11 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.PlatformService` or another package whose core type is present in the signature.
 - `src/Axial.Guardrails` is an FSharp.Analyzers.SDK analyzer package. `Directory.Build.targets` wires it into every project in this repo the same way a consumer's `dotnet add package Axial.Guardrails` would, so `dotnet build`/`dotnet test` run it automatically — no separate script. Run `dotnet build Axial.slnx` before treating an effect-boundary change as done, and see `docs/15-notes/03-guardrails.md`. A finding at a genuine boundary (a `live` service implementation, a process entry point) is marked with `// axial-allow-effect: <category>` or a file-header `// axial-allow-effect-file: <category>`, never silenced by disabling the analyzer. Set `AXIAL_GUARDRAILS_SEVERITY=warning` in the environment to downgrade findings to non-failing during a migration, or `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` in a project to opt it out entirely; neither is a substitute for reviewing the finding.
 
+### CANCELLATION STAYS AN INTERRUPTION
+
+- Whoever requests a cancellation decides whether it becomes a typed error. Inside a workflow, cancellation of the runtime's token is `Cause.Interrupt`; do not add `Canceled` cases to error types or convert it with a caller-supplied error. It becomes a value only where it is owned: at the edge by matching the `Exit`, or in a combinator that owns the cancellation source (`Flow.timeout`, `Fiber.interrupt`).
+- An `OperationCanceledException` that foreign code raises while the runtime's token is still live was not requested: task and async interop record it as a defect (or `Cause.Fail` for `attempt*`), never as `Cause.Interrupt`. Use `ForeignCancellation.isOurs` to classify.
+
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
 - Core `Axial` and its operational packages must not depend on Reified. Only the explicit HTTP host adapters may reference Reified packages.
 - Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
@@ -50,6 +55,11 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 - There is no `Flow.service`. `'env` is an ordinary F# record, so a service is selected with a projection
   (`Flow.envWith _.Clock`), not looked up by type or tag. `ServiceProvider.get` remains the host-boundary escape
   hatch for dynamic container lookup.
+- A function lives in the module of the type it operates on: `Flow.fork` takes a flow, `Fiber.join` takes a fiber,
+  `Queue.take` takes a queue. Every one of them returns a flow; the input decides the module.
+- An alias is allowed only when it behaves identically and comes from vocabulary users already bring (F# `Result`:
+  `ok`/`error`; ZIO: `succeed`/`fail`). Guides use one canonical name, and the alias's doc comment says "Same as `X`".
+  Never keep an alias for a renamed API, and never add a near-synonym that behaves slightly differently.
 - Reserve `read` for I/O that actually reads something (`Console.read`, stream readers). It must not name a pure
   environment projection.
 

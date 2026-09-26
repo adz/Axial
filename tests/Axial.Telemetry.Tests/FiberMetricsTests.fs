@@ -51,7 +51,7 @@ module FiberMetricsTests =
     let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
-                do! Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 5.0)
+                do! Flow.sleep (System.TimeSpan.FromMilliseconds 5.0)
                 return! waitForSettled fiber
         }
 
@@ -70,10 +70,10 @@ module FiberMetricsTests =
             flow {
                 let! succeeding = Flow.fork (Flow.succeed 1)
                 let! failing = Flow.forkDetached (Flow.fail "boom" : Flow<unit, string, int>)
-                let! sleeper = Flow.fork (Flow.Runtime.sleep (System.TimeSpan.FromSeconds 30.0))
-                let! _ = Flow.join succeeding
+                let! sleeper = Flow.fork (Flow.sleep (System.TimeSpan.FromSeconds 30.0))
+                let! _ = Fiber.join succeeding
                 do! waitForSettled failing
-                let! _ = Flow.interrupt sleeper
+                let! _ = Fiber.interrupt sleeper
                 return ()
             }
             |> FiberMetrics.observe

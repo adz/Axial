@@ -63,12 +63,12 @@ classification in one function — and one overly broad `with _ ->` away from re
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 request                                          // Flow<'env, RateError, Rate>, cold
-|> Flow.Runtime.retry transientOnly              // RetryPolicy<RateError>: ShouldRetry = Transport only
-|> Flow.Runtime.timeout (TimeSpan.FromSeconds 2.0) TimedOut
+|> Flow.retry transientOnly              // Retry.schedule { ...; When = Transport only }
+|> Flow.timeout (TimeSpan.FromSeconds 2.0) TimedOut
 ```
 
 Retry and timeout are policies applied to a cold workflow from outside. The retry predicate selects typed failures;
-defects and interruption are structurally out of its reach — `Flow.Runtime.retry` re-runs `Cause.Fail` only. The
+defects and interruption are structurally out of its reach — `Flow.retry` re-runs `Cause.Fail` only. The
 tests pin all four behaviors: recovery within the budget, budget exhaustion, no retry of `Malformed`, and the
 timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed `Schedule`, `retry`.
 

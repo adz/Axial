@@ -21,7 +21,7 @@ let application : Flow<AppEnv, AppError, unit> =
         do! Flow.scopeAsyncFinalizer (fun _ -> async { printfn "Node root cleanup finished." })
         do! async { printfn "%s Arguments: %A" environment.Greeting environment.Arguments }
         do! async { printfn "Press Ctrl+C to request coordinated shutdown." }
-        do! Flow.Runtime.sleep(TimeSpan.FromDays 1.0)
+        do! Flow.sleep(TimeSpan.FromDays 1.0)
     }
 
 let environment =

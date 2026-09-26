@@ -140,7 +140,7 @@ module WithFlow =
             let! fiber = Flow.fork producer
             let! processed = consumer
 
-            match! Flow.interrupt fiber with
+            match! Fiber.interrupt fiber with
             | Exit.Success() -> ()
             | Exit.Failure _ -> () // already settled; interruption of a finished fiber is a no-op
 

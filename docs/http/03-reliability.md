@@ -16,7 +16,7 @@ cancellation. An Axial timeout is per request and produces a dedicated typed err
 GET $"https://api.example.com/slow-report"
 |> timeout (TimeSpan.FromSeconds 5.0)
 |> fetch
-// Fails with HttpError.TimedOut(request, 5s) — never confused with HttpError.Canceled.
+// Fails with HttpError.TimedOut(request, 5s). Interrupting the workflow is Cause.Interrupt, not an HttpError.
 ```
 
 The live service enforces the timeout with a linked cancellation source, so the connection is torn down when the
@@ -30,33 +30,37 @@ classifies exactly the failures where a retry can help: connection failures, tim
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 let users =
     Http.getJson decodeUsers "https://api.example.com/users"
-    |> Http.retryTransient 4 (TimeSpan.FromMilliseconds 200.0)
+    |> Http.retryTransient 3 (TimeSpan.FromMilliseconds 200.0)
 ```
 
-`retryTransient` uses exponential backoff (200ms, 400ms, 800ms, ...) and gives up after the attempt budget.
+`retryTransient 3` makes up to 3 retries after the first attempt, with exponential backoff (200ms, 400ms, 800ms).
 A permanent failure such as `HttpError.Status 404` or `HttpError.DecodeFailed` fails immediately on the first
-attempt. The DSL shorthand `withRetries 4` applies the same policy with a 200ms base delay.
+attempt. The DSL shorthand `withRetries 3` applies the same schedule with a 200ms base delay.
 
-For full control, build the policy yourself and use the general Flow retry machinery:
-
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-let policy =
-    { HttpError.transientPolicy 6 (TimeSpan.FromMilliseconds 100.0) with
-        ShouldRetry = fun error ->
-            HttpError.isTransient error
-            && (match error with HttpError.Status r -> r.StatusCode <> 429 | _ -> true) }
-
-workflow |> Flow.Runtime.retry policy
-```
-
-`Schedule.retry` from `Axial` also composes with HTTP workflows when you need jitter or custom cadence:
+For full control, describe the retry yourself and pass it to `Flow.retry`. A `Retry` record names each choice:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-workflow |> Schedule.retry (Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |> Schedule.jitteredWith random.NextDouble)
+let notRateLimited error =
+    HttpError.isTransient error
+    && (match error with HttpError.Status r -> r.StatusCode <> 429 | _ -> true)
+
+workflow
+|> Flow.retry (Retry.schedule { Retry.defaults with Retries = 5; When = notRateLimited })
 ```
 
-Note that `Schedule.retry` retries every typed error; prefer `retryTransient` or an explicit `RetryPolicy` so
-permanent failures stay fast.
+The same retry as a `Schedule` pipeline adds what a record cannot express, such as jitter:
+
+```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+workflow
+|> Flow.retry (
+    Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+    |> Schedule.jitteredWith random.NextDouble
+    |> Schedule.upTo 5
+    |> Schedule.whileInput notRateLimited)
+```
+
+A schedule without `whileInput` retries every typed error; select the transient ones so permanent failures stay
+fast.
 
 ## Expected Statuses Are Part Of The Request
 
@@ -83,5 +87,5 @@ POST $"https://api.example.com/payments"
 |> header "Idempotency-Key" (Guid.NewGuid().ToString())
 |> jsonBodyOf encodePayment payment
 |> fetchJson decodeReceipt
-|> withRetries 4
+|> withRetries 3
 ```

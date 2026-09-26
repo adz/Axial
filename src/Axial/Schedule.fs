@@ -51,7 +51,28 @@ module Schedule =
 
     let private maxDelay = TimeSpan.FromTicks maxDelayTicks
 
-    let private invokeSchedule op input context env ct : Execution<'output option * TimeSpan, 'error> =
+    // Schedule compiles before the Flow module so that Flow.retry, Flow.repeat, and Flow.supervise can take a
+    // schedule; these are the few Flow combinators the schedule constructors need.
+    let private ok (value: 'value) : Flow<'env, 'error, 'value> = Flow(fun _ _ -> Execution.ofValue value)
+
+    let private map (mapper: 'value -> 'next) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'next> =
+        Flow(fun env ct -> FlowInternal.invoke flow env ct |> Execution.map mapper)
+
+    let private bind
+        (binder: 'value -> Flow<'env, 'error, 'next>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'next> =
+        Flow(fun env ct -> FlowInternal.invoke flow env ct |> Execution.bind (fun value -> FlowInternal.invoke (binder value) env ct))
+
+    /// Evaluates one decision of a schedule: whether to recur and after what delay. A schedule's own failure is a
+    /// defect, never a typed error of the flow it drives.
+    let internal decide
+        (Schedule op: Schedule<'env, 'input, 'output>)
+        (input: 'input)
+        (context: ScheduleContext)
+        (env: 'env)
+        ct
+        : Execution<'output option * TimeSpan, 'error> =
         Execution.fold
             Execution.ofValue
             (dieOnScheduleFailure >> Execution.ofCause)
@@ -60,7 +81,7 @@ module Schedule =
     /// <summary>Creates a schedule that recurs a fixed number of times.</summary>
     /// <remarks>
     /// <paramref name="n"/> counts the schedule's own decisions, not the total number of flow executions:
-    /// <c>Schedule.retry</c> and <c>Schedule.repeat</c> always run the source flow once before consulting the
+    /// <c>Flow.retry</c> and <c>Flow.repeat</c> always run the source flow once before consulting the
     /// schedule at all, so <c>recurs 3</c> means 3 additional retries/repeats on top of that one free attempt —
     /// 4 executions in total, not 3. A <c>Schedule</c> value carries no state of its own (the attempt count lives
     /// in the <c>retry</c>/<c>repeat</c> call), so the same schedule value is safe to reuse across independent runs.
@@ -71,16 +92,16 @@ module Schedule =
     /// <example>
     /// <code>
     /// let retryThreeTimes () = Schedule.recurs 3
-    /// // Schedule.retry runs the source flow once for free, then consults the schedule at
+    /// // Flow.retry runs the source flow once for free, then consults the schedule at
     /// // attempts 0, 1, 2 (three retries) before giving up: 4 executions in total.
     /// </code>
     /// </example>
     let recurs (n: int) : Schedule<'env, 'input, int> =
         Schedule(fun _ context ->
             if context.Attempt < n then
-                Flow.ok (Some context.Attempt, TimeSpan.Zero)
+                ok (Some context.Attempt, TimeSpan.Zero)
             else
-                Flow.ok (None, TimeSpan.Zero))
+                ok (None, TimeSpan.Zero))
 
     /// <summary>Creates a schedule that recurs with a fixed delay between attempts.</summary>
     /// <param name="delay">The fixed time span to wait between each attempt.</param>
@@ -96,7 +117,7 @@ module Schedule =
             invalidArg (nameof delay) "A spaced schedule requires a non-negative delay."
 
         Schedule(fun _ context ->
-            Flow.ok (Some context.Attempt, delay))
+            ok (Some context.Attempt, delay))
 
     /// <summary>Creates a schedule that recurs with exponential backoff.</summary>
     /// <param name="baseDelay">The initial delay for the first retry.</param>
@@ -121,7 +142,7 @@ module Schedule =
                 else
                     TimeSpan.FromTicks(int64 scaledTicks)
 
-            Flow.ok (Some delay, delay))
+            ok (Some delay, delay))
 
     /// <summary>Adds jitter to a schedule's delay using a caller-supplied sample source.</summary>
     /// <remarks>
@@ -142,7 +163,7 @@ module Schedule =
     /// </example>
     let jitteredWith (sample: unit -> float) (Schedule op) : Schedule<'env, 'input, 'output> =
         Schedule(fun input context ->
-            Flow.map (fun (out, (delay: TimeSpan)) ->
+            map (fun (out, (delay: TimeSpan)) ->
                 let jitter = sample () + 0.5
                 let scaledTicks = float delay.Ticks * jitter
 
@@ -179,9 +200,9 @@ module Schedule =
 
         Schedule(fun input context ->
             left input context
-            |> Flow.bind (fun (leftOutput, (leftDelay: TimeSpan)) ->
+            |> bind (fun (leftOutput, (leftDelay: TimeSpan)) ->
                 right input context
-                |> Flow.map (fun (rightOutput, (rightDelay: TimeSpan)) ->
+                |> map (fun (rightOutput, (rightDelay: TimeSpan)) ->
                     match leftOutput, rightOutput with
                     | None, None -> None, TimeSpan.Zero
                     | Some _, None -> Some(leftOutput, None), leftDelay
@@ -207,9 +228,9 @@ module Schedule =
 
         Schedule(fun input context ->
             left input context
-            |> Flow.bind (fun (leftOutput, (leftDelay: TimeSpan)) ->
+            |> bind (fun (leftOutput, (leftDelay: TimeSpan)) ->
                 right input context
-                |> Flow.map (fun (rightOutput, (rightDelay: TimeSpan)) ->
+                |> map (fun (rightOutput, (rightDelay: TimeSpan)) ->
                     match leftOutput, rightOutput with
                     | Some leftValue, Some rightValue -> Some(leftValue, rightValue), max leftDelay rightDelay
                     | _ -> None, TimeSpan.Zero)))
@@ -239,104 +260,136 @@ module Schedule =
     /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="period"/> is not positive.</exception>
     /// <example>
     /// <code>
-    /// scanOnce |&gt; Schedule.repeat (Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0))
+    /// scanOnce |&gt; Flow.repeat (Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0))
     /// </code>
     /// </example>
     let fixedRate (period: TimeSpan) : Schedule<'env, 'input, int> =
         if period <= TimeSpan.Zero then
             invalidArg (nameof period) "A fixed-rate schedule requires a positive period."
 
-        Schedule(fun _ context -> Flow.ok (Some context.Attempt, fixedRateDelay period context))
+        Schedule(fun _ context -> ok (Some context.Attempt, fixedRateDelay period context))
 
-    /// <summary>Retries a failing flow according to the supplied schedule.</summary>
-    /// <remarks>Only <c>Cause.Fail</c> is retried. Defects and interruptions propagate immediately without
-    /// consulting the schedule.</remarks>
-    /// <param name="schedule">The schedule that determines when and if to retry based on the error.</param>
-    /// <param name="flow">The workflow to retry if it fails.</param>
-    /// <returns>A flow that will retry the original flow according to the schedule until it succeeds or the schedule stops.</returns>
+    /// <summary>Continues only while the input satisfies a predicate.</summary>
+    /// <remarks>
+    /// With <c>Flow.retry</c> the input is the typed error, so this selects which errors are worth retrying; an
+    /// error that fails the predicate stops the schedule and the flow fails with it. With <c>Flow.repeat</c> the
+    /// input is the successful value.
+    /// </remarks>
+    /// <param name="predicate">Returns <c>true</c> for inputs that may recur.</param>
+    /// <param name="schedule">The schedule consulted for inputs that satisfy the predicate.</param>
     /// <example>
     /// <code>
-    /// let flakyWork = Flow.fail "oops"
-    /// let retried = flakyWork |> Schedule.retry (Schedule.recurs 3)
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
+    /// |&gt; Schedule.upTo 3
+    /// |&gt; Schedule.whileInput HttpError.isTransient
     /// </code>
     /// </example>
-    let retry
-        (schedule: Schedule<'env, 'error, 'output>)
-        (flow: Flow<'env, 'error, 'value>)
-        : Flow<'env, 'error, 'value> =
-        let (Schedule op) = schedule
+    let whileInput
+        (predicate: 'input -> bool)
+        (Schedule op: Schedule<'env, 'input, 'output>)
+        : Schedule<'env, 'input, 'output> =
+        Schedule(fun input context ->
+            if predicate input then op input context else ok (None, TimeSpan.Zero))
 
-        // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
-        Flow(fun env ct ->
-            let loopStarted = Platform.monotonicNow ()
+    /// <summary>Continues until the input satisfies a predicate.</summary>
+    /// <remarks>The negation of <c>whileInput</c>: an input that satisfies the predicate stops the schedule.</remarks>
+    /// <param name="predicate">Returns <c>true</c> for inputs that stop the schedule.</param>
+    /// <param name="schedule">The schedule consulted for other inputs.</param>
+    let untilInput
+        (predicate: 'input -> bool)
+        (schedule: Schedule<'env, 'input, 'output>)
+        : Schedule<'env, 'input, 'output> =
+        whileInput (predicate >> not) schedule
 
-            Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
-                Execution.fold
-                    (fun v -> Execution.ofValue (Platform.Break v))
-                    (fun cause ->
-                        match cause with
-                        | Cause.Fail e ->
-                            let context =
-                                { Attempt = attempt
-                                  LoopStarted = loopStarted
-                                  ExecutionStarted = executionStarted
-                                  ExecutionEnded = Platform.monotonicNow () }
-
-                            Execution.bind
-                                (fun (decision, delay) ->
-                                    match decision with
-                                    | Some _ ->
-                                        FlowInternal.invoke (Flow.Runtime.sleep delay) env ct
-                                        |> Execution.map (fun () -> Platform.Continue(attempt + 1, Platform.monotonicNow ()))
-                                    | None ->
-                                        Execution.ofCause cause)
-                                (Execution.mapError (fun () -> e) (FlowInternal.invoke (op e context) env ct))
-                        | _ ->
-                            Execution.ofCause cause)
-                    (FlowInternal.invoke flow env ct)))
-
-    /// <summary>Repeats a successful flow according to the supplied schedule.</summary>
-    /// <remarks>Only success is repeated. Any failure — typed, defect, or interruption — propagates immediately
-    /// without consulting the schedule.</remarks>
-    /// <param name="schedule">The schedule that determines when and if to repeat based on the successful value.</param>
-    /// <param name="flow">The workflow to repeat if it succeeds.</param>
-    /// <returns>A flow that repeats the original flow according to the schedule, returning the last successful value when it stops.</returns>
+    /// <summary>Stops a schedule after at most <paramref name="n" /> recurrences, keeping its output and delays.</summary>
+    /// <remarks>
+    /// Like <c>recurs</c>, <paramref name="n" /> counts recurrences after the first run, so <c>upTo 3</c> with
+    /// <c>Flow.retry</c> allows 4 executions in total.
+    /// </remarks>
+    /// <param name="n">The maximum number of recurrences.</param>
+    /// <param name="schedule">The schedule to cap.</param>
     /// <example>
     /// <code>
-    /// let work = Flow.ok 42
-    /// let repeated = work |> Schedule.repeat (Schedule.recurs 5)
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 100.0) |&gt; Schedule.upTo 5
     /// </code>
     /// </example>
-    let repeat
-        (schedule: Schedule<'env, 'value, 'output>)
-        (flow: Flow<'env, 'error, 'value>)
-        : Flow<'env, 'error, 'value> =
-        let (Schedule op) = schedule
+    let upTo (n: int) (Schedule op: Schedule<'env, 'input, 'output>) : Schedule<'env, 'input, 'output> =
+        if n < 0 then
+            invalidArg (nameof n) "Schedule.upTo requires a non-negative count."
 
-        // A loop rather than recursion, so a schedule that repeats for the life of an application (a control
-        // scan, a heartbeat) runs in constant memory.
-        Flow(fun env ct ->
-            let loopStarted = Platform.monotonicNow ()
+        Schedule(fun input context ->
+            if context.Attempt < n then op input context else ok (None, TimeSpan.Zero))
 
-            FlowInternal.invoke flow env ct
-            |> Execution.bind (fun first ->
-                Execution.loop (0, first, loopStarted) (fun (attempt, lastValue, executionStarted) ->
-                    let context =
-                        { Attempt = attempt
-                          LoopStarted = loopStarted
-                          ExecutionStarted = executionStarted
-                          ExecutionEnded = Platform.monotonicNow () }
+/// <summary>How long a <see cref="T:Axial.Retry`1" /> waits between attempts.</summary>
+[<RequireQualifiedAccess>]
+type Backoff =
+    /// <summary>Retries immediately.</summary>
+    | NoDelay
+    /// <summary>Waits the same delay before every retry.</summary>
+    | Fixed of delay: TimeSpan
+    /// <summary>Doubles the delay before each retry, starting at <c>initial</c> and never exceeding <c>max</c>.</summary>
+    | Exponential of initial: TimeSpan * max: TimeSpan
 
-                    Execution.bind
-                        (fun (decision, (delay: TimeSpan)) ->
-                            match decision with
-                            | Some _ ->
-                                FlowInternal.invoke (Flow.Runtime.sleep delay) env ct
-                                |> Execution.bind (fun () ->
-                                    let started = Platform.monotonicNow ()
+/// <summary>
+/// A retry described with named fields: how many retries, how long to wait, and which inputs to retry.
+/// </summary>
+/// <remarks>
+/// Build one from <c>Retry.defaults</c> with record update syntax and pass it to <c>Flow.retry</c> through
+/// <c>Retry.schedule</c>. It is a shorthand for the common case; anything a record cannot express (jitter,
+/// elapsed-time limits, fixed-rate runs) is written as a <c>Schedule</c> directly.
+/// </remarks>
+/// <typeparam name="input">The input the retry decision sees: the typed error for <c>Flow.retry</c>, the defect for <c>Flow.supervise</c>.</typeparam>
+type Retry<'input> =
+    {
+        /// <summary>The maximum number of retries after the first attempt; <c>3</c> allows 4 executions in total.</summary>
+        Retries: int
+        /// <summary>The delay before each retry.</summary>
+        Backoff: Backoff
+        /// <summary>Returns <c>true</c> for inputs that should be retried; others stop immediately.</summary>
+        When: 'input -> bool
+    }
 
-                                    FlowInternal.invoke flow env ct
-                                    |> Execution.map (fun nextValue -> Platform.Continue(attempt + 1, nextValue, started)))
-                            | None ->
-                                Execution.ofValue (Platform.Break lastValue))
-                        (invokeSchedule op lastValue context env ct))))
+/// <summary>Constructors for <see cref="T:Axial.Retry`1" />.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module Retry =
+    /// <summary>Three retries with exponential backoff from 100 ms, capped at 10 s, retrying every input.</summary>
+    /// <example>
+    /// <code>
+    /// fetch |&gt; Flow.retry (Retry.schedule { Retry.defaults with Retries = 5; When = HttpError.isTransient })
+    /// </code>
+    /// </example>
+    let defaults<'input> : Retry<'input> =
+        { Retries = 3
+          Backoff = Backoff.Exponential(TimeSpan.FromMilliseconds 100.0, TimeSpan.FromSeconds 10.0)
+          When = fun _ -> true }
+
+    /// <summary>Builds the schedule a retry record describes.</summary>
+    /// <param name="retry">The retry description.</param>
+    /// <returns>A schedule that emits the retry number, starting at 0.</returns>
+    /// <exception cref="T:System.ArgumentException">Thrown when <c>Retries</c> is negative or a delay is negative.</exception>
+    let schedule (retry: Retry<'input>) : Schedule<'env, 'input, int> =
+        let delayOf =
+            match retry.Backoff with
+            | Backoff.NoDelay -> fun (_: int) -> TimeSpan.Zero
+            | Backoff.Fixed delay ->
+                if delay < TimeSpan.Zero then
+                    invalidArg (nameof retry) "A fixed backoff requires a non-negative delay."
+
+                fun _ -> delay
+            | Backoff.Exponential(initial, max) ->
+                if initial < TimeSpan.Zero || max < TimeSpan.Zero then
+                    invalidArg (nameof retry) "An exponential backoff requires non-negative delays."
+
+                fun attempt ->
+                    let scaled = float initial.Ticks * Math.Pow(2.0, float attempt)
+
+                    if scaled >= float max.Ticks then max else TimeSpan.FromTicks(int64 scaled)
+
+        Schedule.recurs retry.Retries
+        |> Schedule.whileInput retry.When
+        |> fun (Schedule op) ->
+            Schedule(fun input context ->
+                Flow(fun env ct ->
+                    FlowInternal.invoke (op input context) env ct
+                    |> Execution.map (fun (decision, _) -> decision, delayOf context.Attempt)))

@@ -126,8 +126,6 @@ type HttpError =
     | ConnectionFailed of request: string * message: string
     /// The per-request timeout elapsed before the response completed.
     | TimedOut of request: string * timeout: TimeSpan
-    /// The workflow was canceled while the request was in flight.
-    | Canceled of message: string
     /// The response arrived with a status outside the request's expectation.
     | Status of response: HttpResponse
     /// The response body could not be decoded into the requested value.
@@ -141,7 +139,6 @@ type HttpError =
         | TimedOut(request, timeout) ->
             let seconds = timeout.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)
             $"'{request}' did not complete within {seconds} seconds."
-        | Canceled message -> $"HTTP request was canceled: {message}"
         | Status response ->
             let preview = if response.Text.Length > 512 then response.Text.Substring(0, 512) + "…" else response.Text
             let detail = if preview = "" then "" else Environment.NewLine + preview
@@ -172,12 +169,15 @@ module HttpError =
             response.StatusCode = 408 || response.StatusCode = 429 || response.StatusCode >= 500
         | _ -> false
 
-    /// Builds a retry policy with exponential backoff that retries only transient HTTP errors.
-    /// <example><code>workflow |&gt; Flow.Runtime.retry (HttpError.transientPolicy 4 (TimeSpan.FromMilliseconds 200.0))</code></example>
-    let transientPolicy (maxAttempts: int) (baseDelay: TimeSpan) : RetryPolicy<HttpError> =
-        { MaxAttempts = maxAttempts
-          Delay = fun attempt -> TimeSpan.FromTicks(baseDelay.Ticks <<< min 16 (attempt - 1))
-          ShouldRetry = isTransient }
+    /// Builds a schedule that retries only transient HTTP errors, with exponential backoff from
+    /// <paramref name="baseDelay" /> capped at 65536 times it. <paramref name="retries" /> counts retries after the
+    /// first attempt.
+    /// <example><code>workflow |&gt; Flow.retry (HttpError.transientRetry 3 (TimeSpan.FromMilliseconds 200.0))</code></example>
+    let transientRetry (retries: int) (baseDelay: TimeSpan) : Schedule<'env, HttpError, int> =
+        Retry.schedule
+            { Retries = retries
+              Backoff = Backoff.Exponential(baseDelay, TimeSpan.FromTicks(baseDelay.Ticks <<< 16))
+              When = isTransient }
 
 /// Sends fully described HTTP requests for a concrete host platform.
 
@@ -414,7 +414,7 @@ module Http =
     let sendResult<'env when 'env :> IHasHttp> (request: HttpRequest) : Flow<'env, HttpError, HttpResponse> =
         flow {
             let! http = service
-            let! cancellationToken = Flow.Runtime.cancellationToken
+            let! cancellationToken = Flow.cancellationToken
             return! http.Send(request, cancellationToken)
         }
 
@@ -483,13 +483,13 @@ module Http =
 
     /// Retries a workflow on transient HTTP errors with exponential backoff.
     /// Permanent failures such as 404 or decode errors are never retried.
-    /// <example><code>Http.getJson decode url |&gt; Http.retryTransient 4 (TimeSpan.FromMilliseconds 200.0)</code></example>
+    /// <example><code>Http.getJson decode url |&gt; Http.retryTransient 3 (TimeSpan.FromMilliseconds 200.0)</code></example>
     let retryTransient
-        (maxAttempts: int)
+        (retries: int)
         (baseDelay: TimeSpan)
         (workflow: Flow<'env, HttpError, 'value>)
         : Flow<'env, HttpError, 'value> =
-        workflow |> Flow.Runtime.retry (HttpError.transientPolicy maxAttempts baseDelay)
+        workflow |> Flow.retry (HttpError.transientRetry retries baseDelay)
 
 #if !FABLE_COMPILER
     let private decodeBody (contentType: string option) (body: byte array) =
@@ -558,8 +558,10 @@ module Http =
                                   StartedAt = startedAt
                                   Duration = clock.UtcNow() - startedAt }
                         with
-                        | :? OperationCanceledException when cancellationToken.IsCancellationRequested ->
-                            return Error(HttpError.Canceled display)
+                        | :? OperationCanceledException as error when cancellationToken.IsCancellationRequested ->
+                            // The workflow was interrupted: let the cancellation surface as Cause.Interrupt rather
+                            // than inventing an error for an outcome nobody asked this request to report.
+                            return raise error
                         | :? OperationCanceledException ->
                             let timeout = request.Timeout |> Option.defaultValue client.Timeout
                             return Error(HttpError.TimedOut(display, timeout))
@@ -674,5 +676,5 @@ module DSL =
     /// <example><code>GET $"{root}/users/{id}" |&gt; fetchJson (Json.deserializeResult codec)</code></example>
     let inline fetchJson decode request = Http.json decode request
     /// Retries transient failures with exponential backoff.
-    /// <example><code>GET $"{root}/users" |&gt; fetchJson decode |&gt; withRetries 4</code></example>
-    let withRetries maxAttempts workflow = Http.retryTransient maxAttempts (TimeSpan.FromMilliseconds 200.0) workflow
+    /// <example><code>GET $"{root}/users" |&gt; fetchJson decode |&gt; withRetries 3</code></example>
+    let withRetries retries workflow = Http.retryTransient retries (TimeSpan.FromMilliseconds 200.0) workflow

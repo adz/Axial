@@ -112,7 +112,7 @@ module HostingTests =
             flow {
                 do! Flow.scopeFinalizer(fun _ -> finalized.TrySetResult() |> ignore; Task.CompletedTask)
                 started.TrySetResult() |> ignore
-                do! Flow.Runtime.sleep(TimeSpan.FromSeconds 30.0)
+                do! Flow.sleep(TimeSpan.FromSeconds 30.0)
             }
 
         let hosted =
@@ -145,15 +145,14 @@ module FiberLoggingTests =
         let logger = RecordingLogger()
         let observer = FiberLogging.observer logger
         let defect = InvalidOperationException "fiber failed"
-        let metadata =
+        let metadata : FiberMetadata =
             { Id = FiberId 9L
               Name = None
               ParentId = None
               Annotations = Map.empty
               StartedAt = DateTimeOffset.UtcNow
               SettledAt = None
-              Status = FiberStatus.Failed
-              Observed = false }
+              Status = FiberStatus.Failed }
 
         observer.OnEnd metadata (Some defect)
         observer.OnUnobservedDefect (Some metadata) defect

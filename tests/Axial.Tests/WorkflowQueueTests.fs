@@ -17,7 +17,7 @@ module WorkflowQueueTests =
         let rec loop remaining =
             flow {
                 if not (condition ()) && remaining > 0 then
-                    do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 1.0)
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
                     return! loop (remaining - 1)
             }
 
@@ -53,7 +53,7 @@ module WorkflowQueueTests =
 
                 let! producers = [ producer 1; producer 2; producer 3 ] |> Flow.sequencePar |> Flow.fork
                 let! received = List.init 300 (fun _ -> Dequeue.take queue) |> Flow.sequence
-                do! Flow.join producers |> Flow.ignore
+                do! Fiber.join producers |> Flow.ignore
                 return received
             }
 
@@ -81,7 +81,7 @@ module WorkflowQueueTests =
                 let! blocked = bounded |> Queue.offer 3 |> Flow.fork
                 do! waitUntil (fun () -> suspendedOfferers bounded () = 1)
                 let! stillFull = bounded |> Dequeue.size
-                let! _ = Flow.interrupt blocked
+                let! _ = Fiber.interrupt blocked
 
                 return droppedAccepted, droppingContents, slidingAccepted, slidingContents, stillFull
             }
@@ -96,13 +96,13 @@ module WorkflowQueueTests =
                 let! taker = Dequeue.take queue |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers queue () = 1)
                 do! queue |> Queue.offer "handed" |> Flow.ignore
-                let! taken = Flow.join taker
+                let! taken = Fiber.join taker
 
                 do! queue |> Queue.offer "first" |> Flow.ignore
                 let! offerer = queue |> Queue.offer "second" |> Flow.fork
                 do! waitUntil (fun () -> suspendedOfferers queue () = 1)
                 let! first = Dequeue.take queue
-                let! accepted = Flow.join offerer
+                let! accepted = Fiber.join offerer
                 let! second = Dequeue.take queue
                 return taken, first, accepted, second
             }
@@ -117,7 +117,7 @@ module WorkflowQueueTests =
                 let! taker = Dequeue.take queue |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers queue () = 1)
                 // Race the interruption against the offer that would complete the suspended take.
-                let! interrupted, _ = Flow.zipPar (Flow.interrupt taker) (queue |> Queue.offer 7)
+                let! interrupted, _ = Flow.zipPar (Fiber.interrupt taker) (queue |> Queue.offer 7)
                 let! remaining = Dequeue.poll queue
 
                 return
@@ -139,16 +139,16 @@ module WorkflowQueueTests =
                 do! waitUntil (fun () -> suspendedTakers queue () = 1)
                 let! second = Dequeue.take queue |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers queue () = 2)
-                let! firstExit, _ = Flow.zipPar (Flow.interrupt first) (queue |> Queue.offer 7)
+                let! firstExit, _ = Flow.zipPar (Fiber.interrupt first) (queue |> Queue.offer 7)
 
                 match firstExit with
                 | Exit.Success 7 ->
-                    let! secondExit = Flow.interrupt second
+                    let! secondExit = Fiber.interrupt second
                     return isInterrupted secondExit
                 | exit when isInterrupted exit ->
                     // The element went to the first taker in the same instant it was interrupted; it must now
                     // belong to the second taker rather than sit in the buffer or vanish.
-                    let! secondValue = Flow.join second
+                    let! secondValue = Fiber.join second
                     let! remaining = Dequeue.size queue
                     return secondValue = 7 && remaining = 0
                 | _ -> return false
@@ -165,7 +165,7 @@ module WorkflowQueueTests =
                 do! queue |> Queue.offer 1 |> Flow.ignore
                 let! offerer = queue |> Queue.offer 2 |> Flow.fork
                 do! waitUntil (fun () -> suspendedOfferers queue () = 1)
-                let! interrupted, first = Flow.zipPar (Flow.interrupt offerer) (Dequeue.take queue)
+                let! interrupted, first = Flow.zipPar (Fiber.interrupt offerer) (Dequeue.take queue)
                 let! remaining = Dequeue.takeAll queue
 
                 return
@@ -195,7 +195,7 @@ module WorkflowQueueTests =
                         })
 
                 do! queue |> Queue.offerAll [ 10; 20; 30 ] |> Flow.ignore
-                let! taken = takers |> Flow.traverse Flow.join
+                let! taken = takers |> Flow.traverse Fiber.join
 
                 do! queue |> Queue.offer 0 |> Flow.ignore
 
@@ -209,7 +209,7 @@ module WorkflowQueueTests =
                         })
 
                 let! drained = List.init 4 (fun _ -> Dequeue.take queue) |> Flow.sequence
-                do! offerers |> Flow.traverse Flow.join |> Flow.ignore
+                do! offerers |> Flow.traverse Fiber.join |> Flow.ignore
                 return taken, drained
             }
 
@@ -223,7 +223,7 @@ module WorkflowQueueTests =
                 let! taker = Dequeue.take empty |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers empty () = 1)
                 do! Dequeue.shutdown empty
-                let! takerExit = Flow.interrupt taker
+                let! takerExit = Fiber.interrupt taker
 
                 let! (full: Queue<int>) = Queue.bounded 2
                 do! full |> Queue.offerAll [ 1; 2 ] |> Flow.ignore
@@ -231,15 +231,15 @@ module WorkflowQueueTests =
                 do! waitUntil (fun () -> suspendedOfferers full () = 1)
                 do! Dequeue.shutdown full
                 do! Dequeue.shutdown full
-                let! offererExit = Flow.interrupt offerer
+                let! offererExit = Fiber.interrupt offerer
                 let! isShut = Dequeue.isShutdown full
                 do! Dequeue.awaitShutdown full
 
                 let! first = Dequeue.take full
                 let! second = Dequeue.take full
                 let! polled = Dequeue.poll full
-                let! lateTake = Dequeue.take full |> Flow.fork |> Flow.bind Flow.interrupt
-                let! lateOffer = full |> Queue.offer 4 |> Flow.fork |> Flow.bind Flow.interrupt
+                let! lateTake = Dequeue.take full |> Flow.fork |> Flow.bind Fiber.interrupt
+                let! lateOffer = full |> Queue.offer 4 |> Flow.fork |> Flow.bind Fiber.interrupt
 
                 return
                     isInterrupted takerExit,
@@ -261,7 +261,7 @@ module WorkflowQueueTests =
                 let! consumer = queue |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.fork
                 do! queue |> Queue.offerAll [ 1..5 ] |> Flow.ignore
                 do! Dequeue.shutdown queue
-                return! Flow.join consumer
+                return! Fiber.join consumer
             }
 
         test <@ Flow.runSync () workflow = Exit.Success [ 1..5 ] @>
@@ -290,12 +290,12 @@ module WorkflowQueueTests =
                 do! queue |> Queue.offer 1 |> Flow.ignore
                 do! waitUntil (fun () -> suspendedTakers queue () = 1)
                 do! queue |> Queue.offerAll [ 2; 3; 4 ] |> Flow.ignore
-                let! first = Flow.join batch
+                let! first = Fiber.join batch
                 let! second = queue |> Dequeue.takeBetween 1 5
                 do! queue |> Queue.offer 5 |> Flow.ignore
                 do! Dequeue.shutdown queue
                 let! remainder = queue |> Dequeue.takeBetween 3 3
-                let! afterDrain = queue |> Dequeue.takeBetween 1 1 |> Flow.fork |> Flow.bind Flow.interrupt
+                let! afterDrain = queue |> Dequeue.takeBetween 1 1 |> Flow.fork |> Flow.bind Fiber.interrupt
                 return first, second, remainder, isInterrupted afterDrain
             }
 
@@ -314,7 +314,7 @@ module WorkflowQueueTests =
                 do! queue |> Queue.offerAll [ 1; 2 ] |> Flow.ignore
                 let! batch = queue |> Dequeue.takeBetween 3 3 |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers queue () = 1)
-                let! exit = Flow.interrupt batch
+                let! exit = Fiber.interrupt batch
                 do! queue |> Queue.offer 3 |> Flow.ignore
                 let! remaining = Dequeue.takeAll queue
                 return isInterrupted exit, remaining

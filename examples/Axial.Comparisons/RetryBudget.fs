@@ -94,15 +94,16 @@ module WithFlow =
                 return rate
             }
 
-        let transientOnly: RetryPolicy<RateError> =
-            { MaxAttempts = 3
-              Delay = fun attempt -> TimeSpan.FromMilliseconds(50.0 * float (pown 2 (attempt - 1)))
-              ShouldRetry =
-                function
-                | Transport _ -> true
-                | TimedOut
-                | Malformed _ -> false }
+        let transientOnly =
+            Retry.schedule
+                { Retries = 2
+                  Backoff = Backoff.Exponential(TimeSpan.FromMilliseconds 50.0, TimeSpan.FromSeconds 1.0)
+                  When =
+                    function
+                    | Transport _ -> true
+                    | TimedOut
+                    | Malformed _ -> false }
 
         request
-        |> Flow.Runtime.retry transientOnly
-        |> Flow.Runtime.timeout (TimeSpan.FromSeconds 2.0) TimedOut
+        |> Flow.retry transientOnly
+        |> Flow.timeout (TimeSpan.FromSeconds 2.0) TimedOut

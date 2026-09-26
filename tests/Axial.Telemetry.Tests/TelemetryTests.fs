@@ -19,7 +19,7 @@ module TelemetryTests =
     let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
-                do! Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 5.0)
+                do! Flow.sleep (System.TimeSpan.FromMilliseconds 5.0)
                 return! waitForSettled fiber
         }
 
@@ -46,7 +46,7 @@ module TelemetryTests =
         let workflow =
             flow { return 42 }
             |> Flow.annotate "deviceId" "device-1"
-            |> Flow.traceId "trace-1"
+            |> Flow.withTraceId "trace-1"
             |> Activity.trace "test-op"
             |> Activity.withTracer appTracer
             |> Context.withAttributes [
@@ -137,7 +137,7 @@ module TelemetryTests =
 
         let spans =
             captureSpans (fun () ->
-                Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 80.0)
+                Flow.sleep (System.TimeSpan.FromMilliseconds 80.0)
                 |> Activity.trace "async-op"
                 |> Activity.withTracer appTracer
                 |> Flow.runSync ()
@@ -298,8 +298,8 @@ module TelemetryTests =
         let spans =
             captureSpansWithIds (fun () ->
                 flow {
-                    let! fiber = Flow.fork (Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 80.0) : Flow<unit, string, unit>)
-                    do! Flow.join fiber
+                    let! fiber = Flow.fork (Flow.sleep (System.TimeSpan.FromMilliseconds 80.0) : Flow<unit, string, unit>)
+                    do! Fiber.join fiber
                     return "done"
                 }
                 |> FiberTelemetry.observeWithSpans
@@ -328,7 +328,7 @@ module TelemetryTests =
                     // Wait for the fiber to settle without letting the defect fail this workflow;
                     // interrupting before it dies would flip the outcome to interrupt.
                     do! waitForSettled fiber
-                    let! _exit = Flow.interrupt fiber
+                    let! _exit = Fiber.interrupt fiber
                     return "done"
                 }
                 |> FiberTelemetry.observeWithSpans

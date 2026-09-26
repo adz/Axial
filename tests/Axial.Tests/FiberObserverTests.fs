@@ -49,7 +49,7 @@ module FiberObserverTests =
     let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 5.0)
+                do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
                 return! waitForSettled fiber
         }
 
@@ -60,7 +60,7 @@ module FiberObserverTests =
         let result =
             flow {
                 let! fiber = Flow.fork (Flow.succeed 42)
-                return! Flow.join fiber
+                return! Fiber.join fiber
             }
             |> Flow.withFiberObserver recording.Observer
             |> Flow.runSync ()
@@ -98,7 +98,7 @@ module FiberObserverTests =
         let result =
             flow {
                 let! fiber = Flow.fork (Flow.die (InvalidOperationException "handled crash") : Flow<unit, string, int>)
-                return! Flow.join fiber
+                return! Fiber.join fiber
             }
             |> Flow.withFiberObserver recording.Observer
             |> Flow.runSync ()
@@ -135,8 +135,8 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.Runtime.sleep (TimeSpan.FromSeconds 30.0) : Flow<unit, string, unit>)
-                let! _exit = Flow.interrupt fiber
+                let! fiber = Flow.fork (Flow.sleep (TimeSpan.FromSeconds 30.0) : Flow<unit, string, unit>)
+                let! _exit = Fiber.interrupt fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
@@ -152,7 +152,7 @@ module FiberObserverTests =
 
         let result =
             dieOnCancel "timeout loser"
-            |> Flow.Runtime.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
+            |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
             |> Flow.withFiberObserver recording.Observer
             |> Flow.runSync ()
 
@@ -192,7 +192,7 @@ module FiberObserverTests =
         let result =
             flow {
                 let! fiber = Flow.fork (Flow.succeed 42)
-                return! Flow.join fiber
+                return! Fiber.join fiber
             }
             |> Flow.withFiberObserver throwing
             |> Flow.runSync ()
@@ -212,7 +212,6 @@ module FiberObserverTests =
                     StartedAt = DateTimeOffset.UtcNow
                     SettledAt = None
                     Status = FiberStatus.Failed
-                    Observed = false
                 },
                 recording.Observer)
 
@@ -226,7 +225,7 @@ module FiberObserverTests =
     [<Fact>]
     let ``Tracker respects the observed flag`` () =
         let recording = Recording()
-        let metadata =
+        let metadata : FiberMetadata =
             {
                 Id = FiberId 1000L
                 Name = None
@@ -235,12 +234,11 @@ module FiberObserverTests =
                 StartedAt = DateTimeOffset.UtcNow
                 SettledAt = None
                 Status = FiberStatus.Failed
-                Observed = false
             }
 
         let tracker = FiberDefectTracker(metadata, recording.Observer)
         tracker.Settled(Some(InvalidOperationException "boom"))
-        metadata.Observed <- true
+        tracker.MarkObserved()
         tracker.TryReport()
         GC.SuppressFinalize tracker
 
@@ -258,7 +256,6 @@ module FiberObserverTests =
                     StartedAt = DateTimeOffset.UtcNow
                     SettledAt = None
                     Status = FiberStatus.Failed
-                    Observed = false
                 },
                 recording.Observer)
 

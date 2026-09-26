@@ -18,7 +18,7 @@ module WorkflowHubTests =
             let mutable remaining = 5000
 
             while not (condition ()) && remaining > 0 do
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 1.0)
+                do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
                 remaining <- remaining - 1
         }
 
@@ -47,7 +47,7 @@ module WorkflowHubTests =
             let closeScope =
                 flow {
                     do! Deferred.succeed () close |> Flow.ignore
-                    do! Flow.join owner
+                    do! Fiber.join owner
                 }
 
             return subscription, closeScope
@@ -118,12 +118,12 @@ module WorkflowHubTests =
                 let! blocked = hub |> Hub.publish 2 |> Flow.fork
                 do! waitUntil (fun () -> suspendedPublishers historian () = 1)
                 let! _ = Dequeue.take historian
-                let! afterDrain = Flow.join blocked
+                let! afterDrain = Fiber.join blocked
 
                 let! blockedAgain = hub |> Hub.publish 3 |> Flow.fork
                 do! waitUntil (fun () -> suspendedPublishers historian () = 1)
                 do! closeHistorian
-                let! afterClose = Flow.join blockedAgain
+                let! afterClose = Fiber.join blockedAgain
                 let! remaining = Hub.subscriberCount hub
                 return afterDrain, afterClose, remaining
             }
@@ -145,7 +145,7 @@ module WorkflowHubTests =
                 let! results = [ 1..100 ] |> Flow.traverse (fun reading -> hub |> Hub.tryPublish reading)
                 do! Hub.shutdown hub
 
-                let! history = Flow.join recorded
+                let! history = Fiber.join recorded
                 let! latest = Dequeue.takeAll display
                 let! firstAlarm = Dequeue.takeAll alarms
                 let total = results |> List.choose id |> List.fold PublishResult.add PublishResult.empty
@@ -188,7 +188,7 @@ module WorkflowHubTests =
                 do! waitUntil (fun () -> suspendedPublishers historian () = 1)
                 let! before = Hub.subscriberCount hub
                 do! Dequeue.shutdown historian
-                let! released = Flow.join blocked
+                let! released = Fiber.join blocked
                 let! after = Hub.subscriberCount hub
                 let! finished = Dequeue.isShutdown historian
                 return before - after, released, after, finished
@@ -260,10 +260,10 @@ module WorkflowHubTests =
                 do! Hub.shutdown hub
 
                 let! drained = Dequeue.takeAll backlog
-                let! streamedValues = Flow.join stream
+                let! streamedValues = Fiber.join stream
                 let! isShut = Hub.isShutdown hub
-                let! latePublish = hub |> Hub.publish 4 |> Flow.fork |> Flow.bind Flow.interrupt
-                let! lateTake = Dequeue.take backlog |> Flow.fork |> Flow.bind Flow.interrupt
+                let! latePublish = hub |> Hub.publish 4 |> Flow.fork |> Flow.bind Fiber.interrupt
+                let! lateTake = Dequeue.take backlog |> Flow.fork |> Flow.bind Fiber.interrupt
                 return drained, streamedValues, isShut, isInterrupted latePublish, isInterrupted lateTake
             }
 
@@ -277,7 +277,7 @@ module WorkflowHubTests =
                 let! subscription = hub |> Hub.subscribe QueueStrategy.Unbounded
                 let! taker = Dequeue.take subscription |> Flow.fork
                 do! waitUntil (fun () -> suspendedTakers subscription () = 1)
-                let! interrupted, _ = Flow.zipPar (Flow.interrupt taker) (hub |> Hub.publish 7)
+                let! interrupted, _ = Flow.zipPar (Fiber.interrupt taker) (hub |> Hub.publish 7)
                 let! remaining = Dequeue.poll subscription
 
                 return

@@ -128,7 +128,7 @@ module StackSafetyTests =
         let counter = ref 0
         let workflow : Flow<unit, string, int> =
             Flow.delay (fun () -> counter.Value <- counter.Value + 1; Flow.succeed counter.Value)
-            |> Schedule.repeat (Schedule.recurs 50_000)
+            |> Flow.repeat (Schedule.recurs 50_000)
 
         test <@ onSmallStack (fun () -> Flow.runSync () workflow) = Exit.Success 50_001 @>
 

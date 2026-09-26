@@ -31,9 +31,6 @@ type FileSystemError =
     /// <summary>The requested path was too long for the platform.</summary>
     | PathTooLong of path: string option * message: string
 
-    /// <summary>The operation was canceled.</summary>
-    | Canceled of message: string
-
     /// <summary>The operation failed with a general I/O error.</summary>
     | Io of path: string option * message: string
 
@@ -53,7 +50,6 @@ type FileSystemError =
         | Unauthorized(path, message) -> $"Unauthorized file-system access at {describePath path}: {message}"
         | InvalidPath(path, message) -> $"Invalid path {describePath path}: {message}"
         | PathTooLong(path, message) -> $"Path too long {describePath path}: {message}"
-        | Canceled message -> $"File-system operation canceled: {message}"
         | Io(path, message) -> $"File-system I/O error at {describePath path}: {message}"
         | Unsupported(path, message) -> $"Unsupported file-system operation at {describePath path}: {message}"
         | Unexpected(path, message) -> $"Unexpected file-system error at {describePath path}: {message}"
@@ -377,8 +373,6 @@ module FileSystemError =
             FileSystemError.Unauthorized(path, error.Message)
         | :? PathTooLongException ->
             FileSystemError.PathTooLong(path, error.Message)
-        | :? OperationCanceledException ->
-            FileSystemError.Canceled error.Message
         | :? ArgumentException ->
             FileSystemError.InvalidPath(path, error.Message)
         | :? NotSupportedException ->

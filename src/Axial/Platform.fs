@@ -635,7 +635,7 @@ let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Ex
 
 /// Runs <paramref name="operation" />, racing it against a timeout of <paramref name="after" />. Falls back to
 /// <paramref name="onTimeout" /> if the timeout wins. This is the shared implementation behind
-/// <c>Flow.Runtime.timeout</c>, <c>timeoutToOk</c>, <c>timeoutToError</c>, and <c>timeoutWith</c>, which differ
+/// <c>Flow.timeout</c>, <c>timeoutToOk</c>, <c>timeoutToError</c>, and <c>timeoutWith</c>, which differ
 /// only in what they do when the timeout fires.
 let timeoutExecution
     (after: TimeSpan)
@@ -681,7 +681,7 @@ let timeoutExecution
 #endif
 
 /// Waits for <paramref name="delay" /> and then continues with <paramref name="continuation" />. Shared by the
-/// retry/repeat loops in <c>Flow.Runtime.retry</c> and <c>Schedule.retry</c>/<c>Schedule.repeat</c>.
+/// retry, repeat, and supervise loops in <c>Flow.retry</c>, <c>Flow.repeat</c>, and <c>Flow.supervise</c>.
 let delayThenExecution
     (delay: TimeSpan)
     (cancellationToken: CancellationToken)
@@ -1004,7 +1004,7 @@ let joinExitTask (exitTask: ExitTask<'value, 'error>) : Execution<'value, 'error
     ValueTask<Exit<'value, 'error>>(exitTask)
 #endif
 
-/// Awaits a fiber's exit task and wraps it as an always-successful execution, used by <c>Flow.interrupt</c> to
+/// Awaits a fiber's exit task and wraps it as an always-successful execution, used by <c>Fiber.interrupt</c> to
 /// report the fiber's final outcome without itself being able to fail.
 let awaitExitTaskAsSuccess (exitTask: ExitTask<'value, 'error>) : Execution<Exit<'value, 'error>, 'none> =
     execution {

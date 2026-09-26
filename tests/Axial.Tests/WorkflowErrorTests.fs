@@ -113,7 +113,19 @@ module WorkflowErrorTests =
         | Exit.Failure (Cause.Fail ex) -> test <@ obj.ReferenceEquals(ex, asyncDefect) @>
         | other -> failwithf "Expected typed exception failure, got %A" other
 
-        test <@ attemptCancellationResult = Exit.Failure Cause.Interrupt @>
+        // The task cancelled for its own reasons while the runtime token was live: that is a failure, not an
+        // interruption anybody requested.
+        match attemptCancellationResult with
+        | Exit.Failure (Cause.Fail (:? OperationCanceledException)) -> ()
+        | other -> failwithf "Expected a typed cancellation failure, got %A" other
+
+        use cts = new CancellationTokenSource(TimeSpan.FromMilliseconds 20.0)
+
+        let requestedCancellation =
+            Flow.attemptTask (fun token -> task { do! Task.Delay(Timeout.Infinite, token) })
+            |> Flow.runSyncWithToken () cts.Token
+
+        test <@ requestedCancellation = Exit.Failure Cause.Interrupt @>
 
     [<Fact>]
     let ``Flow catch converts simple defects and preserves typed failures and interruptions`` () =
@@ -199,13 +211,26 @@ module WorkflowErrorTests =
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
 
-        test <@ asyncCanceled = Exit.Failure Cause.Interrupt @>
+        match asyncCanceled with
+        | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, canceled) @>
+        | other -> failwithf "Expected a cancellation defect, got %A" other
 
         match taskDefect with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
 
-        test <@ taskCanceled = Exit.Failure Cause.Interrupt @>
+        // Foreign cancellation the runtime did not request is a defect.
+        match taskCanceled with
+        | Exit.Failure (Cause.Die (:? OperationCanceledException)) -> ()
+        | other -> failwithf "Expected a cancellation defect, got %A" other
+
+        use cts = new CancellationTokenSource(TimeSpan.FromMilliseconds 20.0)
+
+        let requestedCancellation : Exit<unit, string> =
+            Flow.fromTask (fun token -> task { do! Task.Delay(Timeout.Infinite, token) })
+            |> Flow.runSyncWithToken () cts.Token
+
+        test <@ requestedCancellation = Exit.Failure Cause.Interrupt @>
 
     [<Fact>]
     let ``Defects survive combinators boundaries and retry`` () =
@@ -248,7 +273,7 @@ module WorkflowErrorTests =
                     raise defect)
 
             let retried : Flow<unit, string, int> =
-                workflow |> Schedule.retry (Schedule.recurs 5)
+                workflow |> Flow.retry (Schedule.recurs 5)
 
             retried
             |> Flow.runSync ()
@@ -278,18 +303,6 @@ module WorkflowErrorTests =
         | other -> failwithf "Expected defect cause, got %A" other
 
         test <@ retryAttempts.Value = 1 @>
-
-    [<Fact>]
-    let ``a unit-error result takes its error from the environment`` () =
-        let flowBridge =
-            Error ()
-            |> Flow.orElseFlow (Flow.envWith (fun env -> $"flow:{env}"))
-            |> Flow.runSync "env"
-
-        let flowValue = Flow.value "flow-value" |> Flow.runSync ()
-
-        test <@ flowBridge = Exit.Failure (Cause.Fail "flow:env") @>
-        test <@ flowValue = Exit.Success "flow-value" @>
 
     [<Fact>]
     let ``option and valueoption inputs short-circuit with unit errors across builders`` () =

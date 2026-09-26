@@ -16,7 +16,7 @@ Choose the function that matches your intent:
 | :--- | :--- | :--- |
 | **Domain Error** (Expected) | `Flow.fail "Not found"` | `Cause.Fail "Not found"` |
 | **Defect/Panic** (Bug) | `Flow.die (exn "Database down")` | `Cause.Die exn` |
-| **Interruption** | `Flow.interrupt` or runtime cancellation | `Cause.Interrupt` |
+| **Interruption** | `Fiber.interrupt` or runtime cancellation | `Cause.Interrupt` |
 | **Sequential Failures** | Workflow fails, then cleanup fails | `Cause.Then (workflowCause, cleanupCause)` |
 | **Parallel Failures** | Parallel branches both fail | `Cause.Both (leftCause, rightCause)` |
 

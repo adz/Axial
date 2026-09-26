@@ -50,7 +50,7 @@ module FlowRuntimeMetadataTests =
         let workflow =
             flow {
                 let! fiber = Flow.fork Context.current
-                return! Flow.join fiber
+                return! Fiber.join fiber
             }
             |> Context.withAttribute (Context.attribute tenantId "tenant-7")
 
@@ -63,12 +63,12 @@ module FlowRuntimeMetadataTests =
     [<Fact>]
     let ``Flow annotations and trace id are visible inside the annotated flow`` () =
         let workflow =
-            Flow.Runtime.annotations
+            Flow.annotations
             |> Flow.bind (fun annotations ->
-                Flow.Runtime.traceId
+                Flow.traceId
                 |> Flow.map (fun traceId -> annotations["deviceId"], traceId))
             |> Flow.annotate "deviceId" "device-1"
-            |> Flow.traceId "trace-1"
+            |> Flow.withTraceId "trace-1"
 
         let result = Flow.runSync () workflow
 
@@ -77,15 +77,15 @@ module FlowRuntimeMetadataTests =
     [<Fact>]
     let ``Flow annotations restore the outer runtime context after nested flow`` () =
         let inner =
-            Flow.Runtime.traceId
-            |> Flow.traceId "inner"
+            Flow.traceId
+            |> Flow.withTraceId "inner"
 
         let outer =
-            Flow.traceId "outer" (
+            Flow.withTraceId "outer" (
                 flow {
-                    let! before = Flow.Runtime.traceId
+                    let! before = Flow.traceId
                     let! during = inner
-                    let! after = Flow.Runtime.traceId
+                    let! after = Flow.traceId
                     return before, during, after
                 })
 
@@ -96,16 +96,16 @@ module FlowRuntimeMetadataTests =
     [<Fact>]
     let ``Flow annotations override duplicate keys only inside nested flow`` () =
         let inner =
-            Flow.Runtime.annotations
+            Flow.annotations
             |> Flow.map (Map.find "scope")
             |> Flow.annotate "scope" "inner"
 
         let outer =
             Flow.annotate "scope" "outer" (
                 flow {
-                    let! before = Flow.Runtime.annotations |> Flow.map (Map.find "scope")
+                    let! before = Flow.annotations |> Flow.map (Map.find "scope")
                     let! during = inner
-                    let! after = Flow.Runtime.annotations |> Flow.map (Map.find "scope")
+                    let! after = Flow.annotations |> Flow.map (Map.find "scope")
                     return before, during, after
                 })
 
@@ -188,12 +188,12 @@ module FlowRuntimeMetadataTests =
                 let! fiber =
                     Flow.fork (
                         flow {
-                            let! inherited = Flow.Runtime.annotations |> Flow.map (Map.tryFind "request")
+                            let! inherited = Flow.annotations |> Flow.map (Map.tryFind "request")
                             do! Flow.annotate "child" "child-value" (Flow.succeed ())
                             return inherited
                         })
 
-                return! Flow.join fiber
+                return! Fiber.join fiber
             }
             |> Flow.annotate "request" "req-1"
             |> Flow.addAnnotationSink (fun name value -> lock sunk (fun () -> sunk.Add(name, value)))
@@ -216,7 +216,7 @@ module FlowRuntimeMetadataTests =
 
                 Flow.annotate "retry-attempt" (string retryAttempts.Value) (
                     if retryAttempts.Value < 3 then Flow.fail "transient" else Flow.succeed ()))
-            |> Flow.Runtime.retry (RetryPolicy.noDelay 5)
+            |> Flow.retry (Schedule.recurs 4)
             |> Flow.addAnnotationSink sink
 
         let superviseAttempts = ref 0
@@ -230,7 +230,7 @@ module FlowRuntimeMetadataTests =
                         Flow.die (System.InvalidOperationException "crash")
                     else
                         Flow.succeed ()))
-            |> Flow.Runtime.supervise (SupervisePolicy.noDelay 5)
+            |> Flow.supervise (Schedule.recurs 4)
             |> Flow.addAnnotationSink sink
 
         test <@ Flow.runSync () retried = Exit.Success () @>

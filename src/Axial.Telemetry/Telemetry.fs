@@ -87,8 +87,8 @@ module Activity =
             let tracedFlow =
                 let sourceWithExistingAnnotations =
                     flow {
-                        let! fiberId = Flow.Runtime.fiberId
-                        let! annotations = Flow.Runtime.annotations
+                        let! fiberId = Flow.fiberId
+                        let! annotations = Flow.annotations
 
                         if not (isNull activity) then
                             activity.SetTag("axial.flow.fiber.id", string fiberId.Value) |> ignore

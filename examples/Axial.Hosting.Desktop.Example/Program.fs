@@ -7,7 +7,7 @@ let application : Flow<string, string, unit> =
         // The framework closing path below waits for this root cleanup before approving exit.
         do! Flow.scopeAsyncFinalizer (fun _ -> async { printfn "Saving state and releasing application resources." })
         do! async { printfn "%s application scope started." windowName }
-        do! Flow.Runtime.sleep(TimeSpan.FromDays 1.0)
+        do! Flow.sleep(TimeSpan.FromDays 1.0)
     }
 
 [<EntryPoint>]

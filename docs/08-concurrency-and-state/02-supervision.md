@@ -9,16 +9,16 @@ A forked fiber whose handle is discarded can die silently.
 
 `Flow.fork` returns a `Fiber` handle, and nothing stops a caller writing `|> Flow.map ignore` or `let! _ = ...` and dropping it. When such a fiber hits an unhandled exception, the runtime contains it as `Exit.Failure (Cause.Die _)` — but nobody is awaiting that exit. Because Axial converts every exception into an `Exit` *value*, the underlying task never faults, so even .NET's `TaskScheduler.UnobservedTaskException` net never fires. Without help, that is a production failure with no log line.
 
-Axial answers this with two pieces: **`Flow.Runtime.supervise`** restarts background work that dies with defects, and the **fiber observer** reports the defects that still escape.
+Axial answers this with two pieces: **`Flow.supervise`** restarts background work that dies with defects, and the **fiber observer** reports the defects that still escape.
 
 Both stay inside Axial's error model:
 
 - **Typed errors (`Cause.Fail`) are untouched.** They are domain values in your `Flow<'env, 'error, 'value>` signature, not diagnostics. Supervision and observation apply only to *defects* (`Cause.Die`) — bugs that escaped the typed channel.
-- **Joining is the opt-out.** A fiber whose outcome someone consumed (`Flow.join`, `Flow.interrupt`) belongs to that caller; the runtime says nothing about it.
+- **Joining is the opt-out.** A fiber whose outcome someone consumed (`Fiber.join`, `Fiber.interrupt`) belongs to that caller; the runtime says nothing about it.
 
-## Restarting defects: `Flow.Runtime.supervise`
+## Restarting defects: `Flow.supervise`
 
-`supervise` is the defect-channel sibling of `Flow.Runtime.retry`:
+`supervise` is the defect-channel sibling of `Flow.retry`:
 
 - `retry` re-runs typed `Cause.Fail` errors and never touches defects.
 - `supervise` re-runs `Cause.Die` defects and never touches typed errors or interruptions.
@@ -26,19 +26,20 @@ Both stay inside Axial's error model:
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let reliableWorker =
     pollQueueForever
-    |> Flow.Runtime.supervise
-        { MaxAttempts = 5
-          Delay = fun attempt -> TimeSpan.FromSeconds(float attempt)
-          ShouldRestart = fun _ -> true }
+    |> Flow.supervise (
+        Retry.schedule
+            { Retry.defaults with
+                Retries = 4
+                Backoff = Backoff.Exponential(TimeSpan.FromSeconds 1.0, TimeSpan.FromSeconds 30.0) })
 
 let! fiber = Flow.fork reliableWorker
 ```
 
-`SupervisePolicy` mirrors `RetryPolicy`: `MaxAttempts` bounds the restarts (there is deliberately no unlimited variant — a crash loop should eventually surface), `Delay` spaces the attempts, and `ShouldRestart` can inspect the defect exception. When attempts are exhausted, the final defect propagates as the flow's exit.
+`supervise` takes the same `Schedule` as `retry`, but its input is the defect exception, so `Schedule.whileInput` or a `Retry` record's `When` can decide which crashes are worth a restart. Bound the restarts with `Retries` or `Schedule.upTo` so a crash loop eventually surfaces. When the schedule stops, the final defect propagates as the flow's exit.
 
 Two semantics worth knowing:
 
-- **Each attempt runs in its own child scope.** Finalizers registered by a failed attempt run before the next attempt starts, so a supervised worker that acquires resources does not leak one acquisition per restart.
+- **Each attempt runs in its own child scope.** Finalizers registered by a failed attempt run before the next attempt starts, so a supervised worker that acquires resources does not leak one acquisition per restart. The successful attempt's scope stays open until the enclosing scope closes, so a value it returns is still usable.
 - **Restart is not an Erlang restart.** Re-evaluating the cold flow resets state that lives *inside* the flow. If your environment holds mutable state that the crashed attempt corrupted, restarting does not heal it.
 
 ## Deliberate fire-and-forget: `Flow.forkDetached`

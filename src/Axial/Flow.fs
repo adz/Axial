@@ -254,28 +254,29 @@ module Flow =
                     combineCleanup cleanupError executionError exit "Scoped flow execution produced no outcome."))
 
     /// <summary>Creates a flow from a raw async operation.</summary>
-    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>), while cancellation is recorded as interruption. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
+    /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>). Cancellation is recorded as interruption when the runtime token requested it, and as a defect otherwise. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
     /// <platforms>Fable compatible</platforms>
     let fromAsync (operation: Async<'value>) : Flow<'env, 'error, 'value> =
         AsyncInterop.from Exit.Success operation
 
     /// <summary>Creates a flow from an async operation whose <c>Error</c> enters the typed error channel.</summary>
-    /// <remarks>Thrown exceptions are recorded as defects; cancellation is recorded as interruption.</remarks>
+    /// <remarks>Thrown exceptions are recorded as defects. Cancellation is recorded as interruption when the runtime token requested it, and as a defect otherwise.</remarks>
     /// <platforms>Fable compatible</platforms>
     let fromAsyncResult (operation: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
         AsyncInterop.from Exit.fromResult operation
 
     /// <summary>Creates a flow from an async operation and treats thrown exceptions as recoverable typed errors.</summary>
-    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c> when the runtime token requested it. Other exceptions, including cancellation the operation raised for its own reasons, return <c>Cause.Fail exn</c>.</remarks>
     /// <platforms>Fable compatible</platforms>
     let attemptAsync (operation: Async<'value>) : Flow<'env, exn, 'value> =
         Flow(fun _ cancellationToken ->
             Platform.tryExecution
                 (fun () -> operation |> Platform.executionOfAsyncUnguarded cancellationToken Exit.Success)
                 (fun error ->
-                    match error with
-                    | :? OperationCanceledException -> Platform.ofExit (Exit.Failure Cause.Interrupt)
-                    | error -> Platform.ofExit (Exit.Failure(Cause.Fail error))))
+                    if ForeignCancellation.isOurs cancellationToken error then
+                        Platform.ofExit (Exit.Failure Cause.Interrupt)
+                    else
+                        Platform.ofExit (Exit.Failure(Cause.Fail error))))
 
 #if !FABLE_COMPILER
     // -----------------------------------------------------------------------------------------
@@ -311,7 +312,7 @@ module Flow =
         TaskInterop.from Exit.fromResult factory
 
     /// <summary>Creates a flow from a cancellable task factory and treats thrown exceptions as recoverable typed errors.</summary>
-    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c> when the runtime token requested it. Other exceptions, including cancellation the operation raised for its own reasons, return <c>Cause.Fail exn</c>.</remarks>
     /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
     /// <platforms>.NET only</platforms>
     let attemptTask (factory: CancellationToken -> Task<'value>) : Flow<'env, exn, 'value> =
@@ -322,7 +323,7 @@ module Flow =
                         let! value = factory cancellationToken
                         return Exit.Success value
                     with
-                    | :? OperationCanceledException ->
+                    | error when ForeignCancellation.isOurs cancellationToken error ->
                         return Exit.Failure Cause.Interrupt
                     | error ->
                         return Exit.Failure (Cause.Fail error)
@@ -344,7 +345,7 @@ module Flow =
         ValueTaskInterop.from Exit.fromResult factory
 
     /// <summary>Creates a flow from a cancellable value-task factory and treats thrown exceptions as recoverable typed errors.</summary>
-    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c>. Other exceptions return <c>Cause.Fail exn</c>.</remarks>
+    /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c> when the runtime token requested it. Other exceptions, including cancellation the operation raised for its own reasons, return <c>Cause.Fail exn</c>.</remarks>
     /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>
     /// <platforms>.NET only</platforms>
     let attemptValueTask (factory: CancellationToken -> ValueTask<'value>) : Flow<'env, exn, 'value> =
@@ -355,7 +356,7 @@ module Flow =
                         let! value = (factory cancellationToken).AsTask()
                         return Exit.Success value
                     with
-                    | :? OperationCanceledException ->
+                    | error when ForeignCancellation.isOurs cancellationToken error ->
                         return Exit.Failure Cause.Interrupt
                     | error ->
                         return Exit.Failure (Cause.Fail error)
@@ -417,7 +418,7 @@ module Flow =
     let ok (value: 'value) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofValue value)
 
-    /// <summary>Alias for <c>ok</c> that reads well in some call sites.</summary>
+    /// <summary>Same as <c>ok</c>; the name ZIO uses.</summary>
     /// <param name="value">The value to wrap in a successful flow.</param>
     /// <returns>A flow that always succeeds with the provided value.</returns>
     /// <example>
@@ -429,24 +430,13 @@ module Flow =
     let succeed (value: 'value) : Flow<'env, 'error, 'value> =
         ok value
 
-    /// <summary>Alias for <c>ok</c> that reads well in some call sites.</summary>
-    /// <param name="item">The value to wrap in a successful flow.</param>
-    /// <returns>A flow that always succeeds with the provided value.</returns>
-    /// <example>
-    /// <code>
-    /// Flow.value "constant" |> Flow.run ()
-    /// </code>
-    /// </example>
-    let value (item: 'value) : Flow<'env, 'error, 'value> =
-        succeed item
-
     /// <summary>Creates a failing synchronous flow.</summary>
     /// <param name="failure">The error value to wrap in a failing flow.</param>
     /// <returns>A flow that always fails with the provided error.</returns>
     let error (failure: 'error) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofError failure)
 
-    /// <summary>Alias for <c>error</c> that reads well in some call sites.</summary>
+    /// <summary>Same as <c>error</c>; the name ZIO uses.</summary>
     /// <param name="failure">The error value to wrap in a failing flow.</param>
     /// <returns>A flow that always fails with the provided error.</returns>
     /// <example>
@@ -599,221 +589,356 @@ module Flow =
     /// <param name="traceId">The trace identifier.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that runs with the supplied trace id in the ambient runtime context.</returns>
-    let traceId
+    let withTraceId
         (traceId: string)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         annotate "trace_id" traceId flow
 
-    /// <summary>Runtime helpers for execution-time concerns like cancellation, scope, timeout, retry, and cleanup.</summary>
-    [<RequireQualifiedAccess>]
-    module Runtime =
-        /// <summary>Reads the current runtime cancellation token.</summary>
-        /// <returns>A flow that succeeds with the token supplied at the workflow execution boundary.</returns>
-        let cancellationToken<'env, 'error> : Flow<'env, 'error, CancellationToken> =
-            Flow(fun _ cancellationToken -> Execution.ofValue cancellationToken)
+    /// <summary>Reads the current runtime cancellation token.</summary>
+    /// <remarks>Pass it to foreign APIs that take a token. To stop at a safe point, use <c>Flow.ensureNotCanceled</c>.</remarks>
+    /// <returns>A flow that succeeds with the token supplied at the workflow execution boundary.</returns>
+    let cancellationToken<'env, 'error> : Flow<'env, 'error, CancellationToken> =
+        Flow(fun _ cancellationToken -> Execution.ofValue cancellationToken)
 
-        /// <summary>Catches <see cref="OperationCanceledException" /> raised by a flow and converts it into a typed error.</summary>
-        /// <param name="handler">Maps the cancellation exception into the workflow error type.</param>
-        /// <param name="flow">The source flow.</param>
-        /// <returns>A flow that turns thrown cancellation into <c>Cause.Fail</c>.</returns>
-        /// <remarks>
-        /// This handles cancellation exceptions thrown during execution. A flow that has already returned
-        /// <c>Cause.Interrupt</c> remains interrupted.
-        /// </remarks>
-        let catchCancellation
-            (handler: OperationCanceledException -> 'error)
-            (flow: Flow<'env, 'error, 'value>)
-            : Flow<'env, 'error, 'value> =
-            Flow(fun environment cancellationToken ->
-                Platform.tryExecution
-                    (fun () -> invoke flow environment cancellationToken)
-                    (fun error ->
-                        match error with
-                        | :? OperationCanceledException as error -> Platform.ofExit (Exit.Failure(Cause.Fail(handler error)))
-                        | error -> raise error))
+    /// <summary>Stops with <c>Cause.Interrupt</c> if the runtime's cancellation token has been cancelled.</summary>
+    /// <remarks>
+    /// A checkpoint for long-running work that does not otherwise observe cancellation, such as a CPU-bound loop.
+    /// It never turns cancellation into a typed error: whoever requested the cancellation decides what it means,
+    /// by matching <c>Cause.Interrupt</c> on the <c>Exit</c> at the edge.
+    /// </remarks>
+    /// <returns>A flow that succeeds with unit when cancellation has not been requested.</returns>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     for chunk in chunks do
+    ///         do! Flow.ensureNotCanceled
+    ///         process chunk
+    /// }
+    /// </code>
+    /// </example>
+    let ensureNotCanceled<'env, 'error> : Flow<'env, 'error, unit> =
+        Flow(fun _ cancellationToken ->
+            if cancellationToken.IsCancellationRequested then
+                Execution.ofCause Cause.Interrupt
+            else
+                Execution.ofValue ())
 
-        /// <summary>Returns a typed error immediately when the runtime token is already canceled.</summary>
-        /// <param name="canceledError">The error to return when cancellation has been requested.</param>
-        /// <returns>A flow that succeeds with unit when cancellation has not been requested.</returns>
-        let ensureNotCanceled<'env, 'error> (canceledError: 'error) : Flow<'env, 'error, unit> =
-            Flow(fun _ cancellationToken ->
-                if cancellationToken.IsCancellationRequested then
-                    Execution.ofError canceledError
-                else
-                    Execution.ofValue ())
+    /// <summary>Turns cancellation that a flow raised for its own reasons into a typed error.</summary>
+    /// <param name="handler">Maps the cancellation exception into the workflow error type.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow whose self-inflicted cancellation becomes <c>Cause.Fail</c>.</returns>
+    /// <remarks>
+    /// Libraries sometimes throw <see cref="OperationCanceledException" /> while the runtime's token is still live,
+    /// for example <c>HttpClient</c>'s own timeout. That is a failure, and task interop records it as a defect;
+    /// this maps it into the error channel instead. Cancellation the runtime requested is left as
+    /// <c>Cause.Interrupt</c>.
+    /// </remarks>
+    let catchCancellation
+        (handler: OperationCanceledException -> 'error)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            let convert (error: exn) (otherwise: unit -> Execution<'value, 'error>) =
+                match error with
+                | :? OperationCanceledException as canceled when not cancellationToken.IsCancellationRequested ->
+                    Execution.ofError (handler canceled)
+                | _ -> otherwise ()
 
-        /// <summary>Suspends the flow for the specified duration, observing cancellation.</summary>
-        /// <param name="delay">The duration to sleep.</param>
-        /// <returns>A flow that completes after the specified delay.</returns>
-        let sleep (delay: TimeSpan) : Flow<'env, 'error, unit> =
-            Flow(fun _ cancellationToken -> Platform.sleepExecution delay cancellationToken)
-
-        /// <summary>Reads the current runtime scope.</summary>
-        /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
-        let scope<'env, 'error> : Flow<'env, 'error, Scope> =
-            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Scope))
-
-        /// <summary>Reads the current runtime annotations.</summary>
-        /// <returns>A flow that succeeds with the ambient annotation map.</returns>
-        let annotations<'env, 'error> : Flow<'env, 'error, Map<string, string>> =
-            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations))
-
-        /// <summary>Reads the current runtime trace id annotation if one is present.</summary>
-        /// <returns>A flow that succeeds with the ambient <c>trace_id</c> value, if present.</returns>
-        let traceId<'env, 'error> : Flow<'env, 'error, string option> =
-            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations |> Map.tryFind "trace_id"))
-
-        /// <summary>Reads the current fiber id from the ambient runtime context.</summary>
-        /// <remarks>
-        /// The root workflow runs on a fiber id of its own; every <c>Flow.fork</c> child gets a fresh id.
-        /// Telemetry integrations use this to correlate workflow spans with fiber lifecycle events.
-        /// </remarks>
-        /// <returns>A flow that succeeds with the current <see cref="T:Axial.FiberId" />.</returns>
-        let fiberId<'env, 'error> : Flow<'env, 'error, FiberId> =
-            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().FiberId))
-
-        /// <summary>Fails with the supplied typed error when the flow does not complete before the timeout.</summary>
-        /// <param name="after">The timeout duration.</param>
-        /// <param name="timeoutError">The typed error returned when the timeout wins.</param>
-        /// <param name="flow">The source flow.</param>
-        /// <returns>A flow that returns the source outcome or the timeout error.</returns>
-        let timeout
-            (after: TimeSpan)
-            (timeoutError: 'error)
-            (flow: Flow<'env, 'error, 'value>)
-            : Flow<'env, 'error, 'value> =
-            Flow(fun environment cancellationToken ->
-                Platform.timeoutExecution
-                    after
-                    (invoke flow environment)
-                    cancellationToken
-                    (reportDiscardedExit (RuntimeState.current().Observer))
-                    (fun () -> Platform.ofExit (Exit.Failure(Cause.Fail timeoutError))))
-
-        /// <summary>Returns the supplied success value when the flow does not complete before the timeout.</summary>
-        /// <param name="after">The timeout duration.</param>
-        /// <param name="value">The success value returned when the timeout wins.</param>
-        /// <param name="flow">The source flow.</param>
-        /// <returns>A flow that returns the source outcome or the supplied success value.</returns>
-        let timeoutToOk
-            (after: TimeSpan)
-            (value: 'value)
-            (flow: Flow<'env, 'error, 'value>)
-            : Flow<'env, 'error, 'value> =
-            Flow(fun environment cancellationToken ->
-                Platform.timeoutExecution
-                    after
-                    (invoke flow environment)
-                    cancellationToken
-                    (reportDiscardedExit (RuntimeState.current().Observer))
-                    (fun () -> Platform.ofExit (Exit.Success value)))
-
-        /// <summary>Alias for <c>timeout</c> that emphasizes typed failure on timeout.</summary>
-        let timeoutToError
-            (after: TimeSpan)
-            (error: 'error)
-            (flow: Flow<'env, 'error, 'value>)
-            : Flow<'env, 'error, 'value> =
-            timeout after error flow
-
-        /// <summary>Runs a fallback flow when the source flow does not complete before the timeout.</summary>
-        /// <param name="after">The timeout duration.</param>
-        /// <param name="fallback">Creates the fallback flow when the timeout wins.</param>
-        /// <param name="flow">The source flow.</param>
-        /// <returns>A flow that returns the source outcome or the fallback outcome.</returns>
-        let timeoutWith
-            (after: TimeSpan)
-            (fallback: unit -> Flow<'env, 'error, 'value>)
-            (flow: Flow<'env, 'error, 'value>)
-            : Flow<'env, 'error, 'value> =
-            Flow(fun environment cancellationToken ->
-                Platform.timeoutExecution
-                    after
-                    (invoke flow environment)
-                    cancellationToken
-                    (reportDiscardedExit (RuntimeState.current().Observer))
-                    (fun () -> invoke (fallback ()) environment cancellationToken))
-
-        /// <summary>Retries typed failures according to the specified policy.</summary>
-        /// <param name="policy">The retry policy.</param>
-        /// <param name="flow">The source flow.</param>
-        /// <returns>A flow that retries <c>Cause.Fail</c> outcomes when the policy allows it.</returns>
-        /// <remarks>Defects and interruptions are not retried.</remarks>
-        let retry
-            (policy: RetryPolicy<'error>)
-            (flow: Flow<'env, 'error, 'value>)
-            : Flow<'env, 'error, 'value> =
-            if policy.MaxAttempts < 1 then
-                invalidArg (nameof policy.MaxAttempts) "RetryPolicy.MaxAttempts must be at least 1."
-
-            Flow(fun environment cancellationToken ->
-                Execution.loop 1 (fun attempt ->
+            Platform.tryExecution
+                (fun () ->
                     invoke flow environment cancellationToken
                     |> Execution.fold
-                        (Platform.Break >> Execution.ofValue)
+                        Execution.ofValue
                         (fun cause ->
                             match cause with
-                            | Cause.Fail error when attempt < policy.MaxAttempts && policy.ShouldRetry error ->
-                                let delay = policy.Delay attempt
+                            | Cause.Die error -> convert error (fun () -> Execution.ofCause cause)
+                            | other -> Execution.ofCause other))
+                (fun error -> convert error (fun () -> raise error)))
 
-                                Platform.delayThenExecution delay cancellationToken (fun () ->
-                                    Execution.ofValue (Platform.Continue(attempt + 1)))
-                            | _ ->
-                                Execution.ofCause cause)))
+    /// <summary>Suspends the flow for the specified duration, observing cancellation.</summary>
+    /// <param name="delay">The duration to sleep.</param>
+    /// <returns>A flow that completes after the specified delay, or is interrupted if cancelled first.</returns>
+    let sleep (delay: TimeSpan) : Flow<'env, 'error, unit> =
+        Flow(fun _ cancellationToken -> Platform.sleepExecution delay cancellationToken)
 
-        /// <summary>Restarts a flow that terminates with an unexpected defect, according to the specified policy.</summary>
-        /// <remarks>
-        /// The defect-channel sibling of <c>retry</c>: <c>retry</c> re-runs typed <c>Cause.Fail</c> errors and
-        /// never touches defects, while <c>supervise</c> re-runs <c>Cause.Die</c> defects and never touches typed
-        /// errors or interruptions. Each attempt runs inside its own child scope that is closed before the next
-        /// attempt starts, so finalizers registered by a failed attempt are released instead of accumulating
-        /// until the enclosing scope closes. Re-evaluation only resets state that lives inside the flow itself;
-        /// mutable state in the environment is not restored. When attempts are exhausted, the final defect
-        /// propagates as the flow's exit.
-        /// </remarks>
-        /// <param name="policy">The supervision policy.</param>
-        /// <param name="flow">The source flow.</param>
-        /// <returns>A flow that re-evaluates <c>Cause.Die</c> outcomes when the policy allows it.</returns>
-        let supervise
-            (policy: SupervisePolicy)
-            (flow: Flow<'env, 'error, 'value>)
-            : Flow<'env, 'error, 'value> =
-            if policy.MaxAttempts < 1 then
-                invalidArg (nameof policy.MaxAttempts) "SupervisePolicy.MaxAttempts must be at least 1."
+    /// <summary>Reads the current runtime scope.</summary>
+    /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
+    let scope<'env, 'error> : Flow<'env, 'error, Scope> =
+        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Scope))
 
-            // Restart only pure defect outcomes: an interruption must stay an interruption, and a cause that
-            // also carries a typed failure must surface it rather than being silently re-run.
-            let shouldRestart (cause: Cause<'error>) =
-                match Cause.defects cause with
-                | [] -> false
-                | defects ->
-                    not (Cause.isInterrupted cause)
-                    && List.isEmpty (Cause.failures cause)
-                    && defects |> List.forall policy.ShouldRestart
+    /// <summary>Reads the current runtime annotations.</summary>
+    /// <returns>A flow that succeeds with the ambient annotation map.</returns>
+    let annotations<'env, 'error> : Flow<'env, 'error, Map<string, string>> =
+        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations))
 
-            Flow(fun environment cancellationToken ->
-                Execution.loop 1 (fun attempt ->
-                    let parentRuntime = RuntimeState.current()
-                    let attemptScope = parentRuntime.Scope.AddChild()
-                    let attemptRuntime = parentRuntime |> RuntimeContext.withScope attemptScope
+    /// <summary>Reads the current trace id annotation, if one is present.</summary>
+    /// <remarks>Set it with <c>Flow.withTraceId</c>.</remarks>
+    /// <returns>A flow that succeeds with the ambient <c>trace_id</c> value, if present.</returns>
+    let traceId<'env, 'error> : Flow<'env, 'error, string option> =
+        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations |> Map.tryFind "trace_id"))
 
-                    Platform.runScoped
-                        attemptScope.Close
-                        cancellationToken
-                        (fun () ->
-                            RuntimeState.withRuntime attemptRuntime (fun () ->
-                                invoke flow environment cancellationToken))
-                        (fun cleanupError executionError exit ->
-                            combineCleanup cleanupError executionError exit "Supervised flow execution produced no outcome.")
-                    |> Execution.fold
-                        (Platform.Break >> Execution.ofValue)
-                        (fun cause ->
-                            if attempt < policy.MaxAttempts && shouldRestart cause then
-                                Platform.delayThenExecution (policy.Delay attempt) cancellationToken (fun () ->
-                                    Execution.ofValue (Platform.Continue(attempt + 1)))
-                            else
-                                Execution.ofCause cause)))
+    /// <summary>Reads the current fiber id from the ambient runtime context.</summary>
+    /// <remarks>
+    /// The root workflow runs on a fiber id of its own; every <c>Flow.fork</c> child gets a fresh id.
+    /// Telemetry integrations use this to correlate workflow spans with fiber lifecycle events.
+    /// </remarks>
+    /// <returns>A flow that succeeds with the current <see cref="T:Axial.FiberId" />.</returns>
+    let fiberId<'env, 'error> : Flow<'env, 'error, FiberId> =
+        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().FiberId))
+
+    /// <summary>Fails with the supplied typed error when the flow does not complete before the timeout.</summary>
+    /// <remarks>The timed-out flow is interrupted. The timeout owns that interruption, so it may report it as a typed error.</remarks>
+    /// <param name="after">The timeout duration.</param>
+    /// <param name="timeoutError">The typed error returned when the timeout wins.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow that returns the source outcome or the timeout error.</returns>
+    let timeout
+        (after: TimeSpan)
+        (timeoutError: 'error)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            Platform.timeoutExecution
+                after
+                (invoke flow environment)
+                cancellationToken
+                (reportDiscardedExit (RuntimeState.current().Observer))
+                (fun () -> Platform.ofExit (Exit.Failure(Cause.Fail timeoutError))))
+
+    /// <summary>Returns the supplied success value when the flow does not complete before the timeout.</summary>
+    /// <param name="after">The timeout duration.</param>
+    /// <param name="value">The success value returned when the timeout wins.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow that returns the source outcome or the supplied success value.</returns>
+    let timeoutToOk
+        (after: TimeSpan)
+        (value: 'value)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            Platform.timeoutExecution
+                after
+                (invoke flow environment)
+                cancellationToken
+                (reportDiscardedExit (RuntimeState.current().Observer))
+                (fun () -> Platform.ofExit (Exit.Success value)))
+
+    /// <summary>Same as <c>timeout</c>; named to pair with <c>timeoutToOk</c>.</summary>
+    let timeoutToError
+        (after: TimeSpan)
+        (error: 'error)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        timeout after error flow
+
+    /// <summary>Runs a fallback flow when the source flow does not complete before the timeout.</summary>
+    /// <param name="after">The timeout duration.</param>
+    /// <param name="fallback">Creates the fallback flow when the timeout wins.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <returns>A flow that returns the source outcome or the fallback outcome.</returns>
+    let timeoutWith
+        (after: TimeSpan)
+        (fallback: unit -> Flow<'env, 'error, 'value>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            Platform.timeoutExecution
+                after
+                (invoke flow environment)
+                cancellationToken
+                (reportDiscardedExit (RuntimeState.current().Observer))
+                (fun () -> invoke (fallback ()) environment cancellationToken))
+
+    // Runs one attempt of a retried, repeated, or supervised flow in a child scope of its own, so that an attempt
+    // that is superseded by the next one can release what it acquired before that next attempt starts.
+    let private runAttempt
+        (flow: Flow<'env, 'error, 'value>)
+        (environment: 'env)
+        (cancellationToken: CancellationToken)
+        : Scope * Execution<'value, 'error> =
+        let parentRuntime = RuntimeState.current()
+        let attemptScope = parentRuntime.Scope.AddChild()
+        let attemptRuntime = parentRuntime |> RuntimeContext.withScope attemptScope
+
+        let execution =
+            Platform.tryExecution
+                (fun () -> RuntimeState.withRuntime attemptRuntime (fun () -> invoke flow environment cancellationToken))
+                (fun error -> Execution.ofCause (Execution.causeOfException error))
+
+        attemptScope, execution
+
+    // Closes the scope of an attempt that the next attempt supersedes. The final attempt's scope is left attached to
+    // the parent: a value it returns (a connection, a file handle) must outlive the retry, so it is released when the
+    // enclosing scope closes, exactly as if the flow had not been retried.
+    let private closeSuperseded
+        (attemptScope: Scope)
+        (onCleanupError: exn -> Cause<'error>)
+        (cancellationToken: CancellationToken)
+        : Execution<unit, 'error> =
+        Platform.runScoped
+            attemptScope.Close
+            cancellationToken
+            (fun () -> Execution.ofValue ())
+            (fun cleanupError _ _ ->
+                match cleanupError with
+                | Some error -> Exit.Failure(onCleanupError error)
+                | None -> Exit.Success())
+
+    let private scheduleContext attempt loopStarted executionStarted : ScheduleContext =
+        { Attempt = attempt
+          LoopStarted = loopStarted
+          ExecutionStarted = executionStarted
+          ExecutionEnded = Platform.monotonicNow () }
+
+    /// <summary>Retries a flow's typed failures according to a schedule.</summary>
+    /// <remarks>
+    /// The flow runs once, and after each <c>Cause.Fail</c> the schedule sees the error and decides whether to run
+    /// it again and how long to wait. Defects and interruptions are never retried. When the schedule stops, the flow
+    /// fails with the last error. Each attempt runs in its own child scope; a failed attempt's finalizers run before
+    /// the next attempt starts. For the common case, build the schedule from a <c>Retry</c> record.
+    /// </remarks>
+    /// <param name="schedule">Decides, from each typed error, whether to retry and after what delay.</param>
+    /// <param name="flow">The flow to retry.</param>
+    /// <returns>A flow that succeeds as soon as an attempt succeeds.</returns>
+    /// <example>
+    /// <code>
+    /// fetch |&gt; Flow.retry (Schedule.recurs 3)
+    ///
+    /// fetch |&gt; Flow.retry (Retry.schedule { Retry.defaults with When = HttpError.isTransient })
+    /// </code>
+    /// </example>
+    let retry
+        (schedule: Schedule<'env, 'error, 'output>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
+        Flow(fun environment cancellationToken ->
+            let loopStarted = Platform.monotonicNow ()
+
+            Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
+                let attemptScope, execution = runAttempt flow environment cancellationToken
+
+                execution
+                |> Execution.fold
+                    (Platform.Break >> Execution.ofValue)
+                    (fun cause ->
+                        match cause with
+                        | Cause.Fail error ->
+                            let context = scheduleContext attempt loopStarted executionStarted
+
+                            Schedule.decide schedule error context environment cancellationToken
+                            |> Execution.bind (fun (decision, delay) ->
+                                match decision with
+                                | Some _ ->
+                                    closeSuperseded
+                                        attemptScope
+                                        (fun cleanupError -> Cause.thenCause cause (Execution.causeOfException cleanupError))
+                                        cancellationToken
+                                    |> Execution.bind (fun () -> Platform.sleepExecution delay cancellationToken)
+                                    |> Execution.map (fun () -> Platform.Continue(attempt + 1, Platform.monotonicNow ()))
+                                | None -> Execution.ofCause cause)
+                        | _ -> Execution.ofCause cause)))
+
+    /// <summary>Repeats a successful flow according to a schedule.</summary>
+    /// <remarks>
+    /// The flow runs once, and after each success the schedule sees the value and decides whether to run it again
+    /// and how long to wait. Any failure stops the repetition immediately. When the schedule stops, the flow
+    /// succeeds with the last value. Each run has its own child scope, closed before the next run starts, so a
+    /// repetition that lasts the life of an application does not accumulate finalizers.
+    /// </remarks>
+    /// <param name="schedule">Decides, from each value, whether to repeat and after what delay.</param>
+    /// <param name="flow">The flow to repeat.</param>
+    /// <returns>A flow that succeeds with the value of the last run.</returns>
+    /// <example>
+    /// <code>
+    /// heartbeat |&gt; Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 5.0))
+    /// </code>
+    /// </example>
+    let repeat
+        (schedule: Schedule<'env, 'value, 'output>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        // A loop rather than recursion, so a schedule that repeats for the life of an application (a control
+        // scan, a heartbeat) runs in constant memory.
+        Flow(fun environment cancellationToken ->
+            let loopStarted = Platform.monotonicNow ()
+            let firstScope, first = runAttempt flow environment cancellationToken
+
+            first
+            |> Execution.bind (fun firstValue ->
+                Execution.loop (0, firstValue, firstScope, loopStarted) (fun (attempt, lastValue, lastScope, executionStarted) ->
+                    let context = scheduleContext attempt loopStarted executionStarted
+
+                    Schedule.decide schedule lastValue context environment cancellationToken
+                    |> Execution.bind (fun (decision, (delay: TimeSpan)) ->
+                        match decision with
+                        | Some _ ->
+                            closeSuperseded lastScope Execution.causeOfException cancellationToken
+                            |> Execution.bind (fun () -> Platform.sleepExecution delay cancellationToken)
+                            |> Execution.bind (fun () ->
+                                let started = Platform.monotonicNow ()
+                                let nextScope, next = runAttempt flow environment cancellationToken
+
+                                next
+                                |> Execution.map (fun nextValue ->
+                                    Platform.Continue(attempt + 1, nextValue, nextScope, started)))
+                        | None -> Execution.ofValue (Platform.Break lastValue)))))
+
+    /// <summary>Restarts a flow that terminates with an unexpected defect, according to a schedule.</summary>
+    /// <remarks>
+    /// The defect-channel sibling of <c>retry</c>: <c>retry</c> re-runs typed <c>Cause.Fail</c> errors and never
+    /// touches defects, while <c>supervise</c> re-runs <c>Cause.Die</c> defects and never touches typed errors or
+    /// interruptions. The schedule sees the first defect of each failed run. Each attempt runs in its own child
+    /// scope, closed before the next attempt starts, so finalizers registered by a failed attempt are released
+    /// instead of accumulating. Re-evaluation only resets state that lives inside the flow itself; mutable state in
+    /// the environment is not restored. When the schedule stops, the final defect propagates as the flow's exit.
+    /// </remarks>
+    /// <param name="schedule">Decides, from each defect, whether to restart and after what delay.</param>
+    /// <param name="flow">The flow to supervise.</param>
+    /// <returns>A flow that re-evaluates <c>Cause.Die</c> outcomes while the schedule allows it.</returns>
+    /// <example>
+    /// <code>
+    /// worker |&gt; Flow.supervise (Retry.schedule { Retry.defaults with Retries = 5 })
+    /// </code>
+    /// </example>
+    let supervise
+        (schedule: Schedule<'env, exn, 'output>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        // Restart only pure defect outcomes: an interruption must stay an interruption, and a cause that also
+        // carries a typed failure must surface it rather than being silently re-run.
+        let restartable (cause: Cause<'error>) =
+            match Cause.defects cause with
+            | first :: _ when not (Cause.isInterrupted cause) && List.isEmpty (Cause.failures cause) -> Some first
+            | _ -> None
+
+        Flow(fun environment cancellationToken ->
+            let loopStarted = Platform.monotonicNow ()
+
+            Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
+                let attemptScope, execution = runAttempt flow environment cancellationToken
+
+                execution
+                |> Execution.fold
+                    (Platform.Break >> Execution.ofValue)
+                    (fun cause ->
+                        match restartable cause with
+                        | Some defect ->
+                            let context = scheduleContext attempt loopStarted executionStarted
+
+                            Schedule.decide schedule defect context environment cancellationToken
+                            |> Execution.bind (fun (decision, delay) ->
+                                match decision with
+                                | Some _ ->
+                                    closeSuperseded
+                                        attemptScope
+                                        (fun cleanupError -> Cause.thenCause cause (Execution.causeOfException cleanupError))
+                                        cancellationToken
+                                    |> Execution.bind (fun () -> Platform.sleepExecution delay cancellationToken)
+                                    |> Execution.map (fun () -> Platform.Continue(attempt + 1, Platform.monotonicNow ()))
+                                | None -> Execution.ofCause cause)
+                        | None -> Execution.ofCause cause)))
 
     let private forkWith (name: string option) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
@@ -831,7 +956,6 @@ module Flow =
                     StartedAt = DateTimeOffset.UtcNow // axial-allow-effect: clock
                     SettledAt = None
                     Status = FiberStatus.Running
-                    Observed = false
                 }
 
             let tracker = FiberDefectTracker(metadata, observer)
@@ -845,6 +969,7 @@ module Flow =
             let registrationGate = obj()
             let registration = ref ValueNone
             let settledClean = ref false
+            let settled = ref None
 
             let releaseRegistration () =
                 match registration.Value with
@@ -855,6 +980,7 @@ module Flow =
                 Platform.startFiber
                     cancellationToken
                     (fun status exit ->
+                        settled.Value <- Some exit
                         // axial-allow-effect: clock
                         metadata.SettledAt <- Some DateTimeOffset.UtcNow
                         metadata.Status <- status
@@ -904,12 +1030,7 @@ module Flow =
                         releaseRegistration ())
             with _ -> ()
 
-            let fiber =
-                {
-                    Metadata = metadata
-                    ExitTask = exitTask
-                    InterruptSource = cts
-                }
+            let fiber = Fiber(metadata, exitTask, cts, tracker, settled)
 
 #if !FABLE_COMPILER
             // GC net: keep the tracker alive exactly as long as the fiber handle is reachable. When a
@@ -924,7 +1045,8 @@ module Flow =
     /// <remarks>
     /// Forking turns a cold flow description into hot child work and returns a handle
     /// that can later be joined or interrupted. Prefer <c>zipPar</c> or <c>race</c>
-    /// when the caller only needs a simple parallel composition.
+    /// when the caller only needs a simple parallel composition. Wait for the handle with <c>Fiber.join</c> or
+    /// <c>Fiber.await</c>, and stop it with <c>Fiber.interrupt</c>.
     /// </remarks>
     /// <param name="flow">The flow to fork.</param>
     /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
@@ -956,36 +1078,9 @@ module Flow =
             invoke (fork flow) environment cancellationToken
             |> Execution.fold
                 (fun (fiber: Fiber<'error, 'value>) ->
-                    fiber.Metadata.Observed <- true
+                    fiber.MarkObserved()
                     Execution.ofValue fiber)
                 Execution.ofCause)
-
-    /// <summary>Waits for a fiber to complete and returns its successful value or typed failure.</summary>
-    /// <remarks>
-    /// Joining preserves the child workflow's error channel. If the child failed with
-    /// <c>Cause.Fail</c>, the joined flow fails with the same typed error; interruption
-    /// and defects remain interruption and defects.
-    /// </remarks>
-    /// <param name="fiber">The fiber to join.</param>
-    /// <returns>A flow that completes with the fiber's outcome.</returns>
-    let join (fiber: Fiber<'error, 'value>) : Flow<'env, 'error, 'value> =
-        Flow(fun _ _ ->
-            fiber.Metadata.Observed <- true
-            Platform.joinExitTask fiber.ExitTask)
-
-    /// <summary>Signals a fiber to stop and waits for it to finish its cleanup.</summary>
-    /// <remarks>
-    /// Interruption requests cooperative cancellation through the fiber's cancellation
-    /// source and then waits for the child operation to report its final
-    /// <see cref="T:Axial.Exit`2" />.
-    /// </remarks>
-    /// <param name="fiber">The fiber to interrupt.</param>
-    /// <returns>A flow that completes with the fiber's final outcome after interruption.</returns>
-    let interrupt (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
-        Flow(fun _ _ ->
-            fiber.Metadata.Observed <- true
-            fiber.InterruptSource.Cancel()
-            Platform.awaitExitTaskAsSuccess fiber.ExitTask)
 
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
@@ -1073,40 +1168,6 @@ module Flow =
         value
         |> OptionFlow.toResultValueOption error
         |> fromResult
-
-    /// <summary>Attaches an environment-derived error to a result that failed without one.</summary>
-    /// <remarks>
-    /// <para>
-    /// The <c>unit</c> error is not an empty error type — it is the absence of a reason. <c>Result.okIf</c> and
-    /// <c>Result.failIf</c> report that a value failed a predicate and deliberately nothing else, leaving the reason
-    /// to a separate step. <c>Result.orError</c> is that step for a constant; this is that step when producing the
-    /// error needs the environment, as a localized message, a correlation id, or a configured code does.
-    /// </para>
-    /// <para>
-    /// Pinning the source to <c>unit</c> is what makes <paramref name="errorFlow" /> the only possible source of the
-    /// error. A result that already carries one keeps it: map it with <c>Result.mapError</c> and use
-    /// <c>Flow.fromResult</c>.
-    /// </para>
-    /// </remarks>
-    /// <param name="errorFlow">A flow that reads the environment to produce an error value.</param>
-    /// <param name="result">The pure result to bridge.</param>
-    /// <returns>A <see cref="T:Axial`3" /> that mirrors the success of the result or fails with the outcome of the error flow.</returns>
-    /// <example>
-    /// <code>
-    /// let result = Result.Error ()
-    /// let flow = Flow.orElseFlow (Flow.envWith (fun env -> "error")) result
-    /// </code>
-    /// </example>
-    let orElseFlow
-        (errorFlow: Flow<'env, 'error, 'error>)
-        (result: Result<'value, unit>)
-        : Flow<'env, 'error, 'value> =
-        Flow(fun environment cancellationToken ->
-            match result with
-            | Ok value -> Execution.ofValue value
-            | Error () ->
-                invoke errorFlow environment cancellationToken
-                |> Execution.fold Execution.ofError Execution.ofCause)
 
     /// <summary>Reads the current environment as the successful flow value.</summary>
     /// <remarks>
@@ -1339,7 +1400,8 @@ module Flow =
     /// <summary>Catches exceptions raised during execution and simple defect outcomes, then maps them to a typed error.</summary>
     /// <remarks>
     /// Thrown exceptions and simple <c>Cause.Die</c> outcomes are converted to <c>Cause.Fail</c>.
-    /// Existing typed failures and interruptions are preserved. Compound causes are preserved unchanged.
+    /// Existing typed failures and interruptions are preserved, and an <c>OperationCanceledException</c> thrown
+    /// because the runtime's token was cancelled stays an interruption. Compound causes are preserved unchanged.
     /// </remarks>
     /// <param name="handler">A function of type <c>exn -> 'error</c> to map the exception.</param>
     /// <param name="flow">The source flow of type <see cref="T:Axial`3" /> to monitor.</param>
@@ -1363,7 +1425,11 @@ module Flow =
                             match cause with
                             | Cause.Die error -> Execution.ofCause (Cause.Fail(handler error))
                             | other -> Execution.ofCause other))
-                (fun error -> Platform.ofExit (Exit.Failure(Cause.Fail(handler error)))))
+                (fun error ->
+                    if ForeignCancellation.isOurs cancellationToken error then
+                        Platform.ofExit (Exit.Failure Cause.Interrupt)
+                    else
+                        Platform.ofExit (Exit.Failure(Cause.Fail(handler error)))))
 
     /// <summary>Computes a fallback flow from the typed error when the source flow fails.</summary>
     /// <remarks>
@@ -1632,3 +1698,82 @@ module Flow =
     let run (environment: 'env) (flow: Flow<'env, 'error, 'value>) : Exit<'value, 'error> =
         flow.RunSynchronously(environment)
 #endif
+
+/// <summary>Operations on a running <see cref="T:Axial.Fiber`2" />, the handle returned by <c>Flow.fork</c>.</summary>
+/// <remarks>
+/// Every operation returns a flow; nothing waits or interrupts until that flow runs. Reading a fiber's outcome
+/// through <c>join</c>, <c>await</c>, or <c>interrupt</c> marks it observed, so a defect it died with is not also
+/// reported as unobserved.
+/// </remarks>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module Fiber =
+    /// <summary>Returns a snapshot of the fiber's diagnostic metadata.</summary>
+    /// <param name="fiber">The fiber to describe.</param>
+    let dump (fiber: Fiber<'error, 'value>) : FiberDump =
+        FiberDump.ofMetadata fiber.Metadata
+
+    /// <summary>Waits for a fiber and returns its value, failing the same way the fiber failed.</summary>
+    /// <remarks>
+    /// Joining preserves the child's error channel: a <c>Cause.Fail</c> becomes the same typed error, and
+    /// interruption and defects remain interruption and defects. Use <c>await</c> to inspect the outcome instead.
+    /// </remarks>
+    /// <param name="fiber">The fiber to join.</param>
+    /// <returns>A flow that completes with the fiber's value.</returns>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! fiber = Flow.fork loadProfile
+    ///     let! orders = loadOrders
+    ///     let! profile = Fiber.join fiber
+    ///     return profile, orders
+    /// }
+    /// </code>
+    /// </example>
+    let join (fiber: Fiber<'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun _ _ ->
+            fiber.MarkObserved()
+            Platform.joinExitTask fiber.ExitTask)
+
+    /// <summary>Waits for a fiber and returns its <see cref="T:Axial.Exit`2" />, never failing.</summary>
+    /// <remarks>
+    /// Use this when the caller decides what the fiber's outcome means, for example a cache that shares one
+    /// computation between callers, or a supervisor that restarts children. Unlike <c>Deferred.await</c>, which
+    /// returns the completed value, this returns the whole exit. Interrupting the awaiting flow stops the wait,
+    /// not the fiber.
+    /// </remarks>
+    /// <param name="fiber">The fiber to wait for.</param>
+    /// <returns>A flow that succeeds with the fiber's exit.</returns>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     match! Fiber.await fiber with
+    ///     | Exit.Success value -> return Some value
+    ///     | Exit.Failure _ -> return None
+    /// }
+    /// </code>
+    /// </example>
+    let await (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
+        Flow(fun _ _ ->
+            fiber.MarkObserved()
+            Platform.awaitExitTaskAsSuccess fiber.ExitTask)
+
+    /// <summary>Returns the fiber's exit if it has settled, without waiting.</summary>
+    /// <remarks>A settled fiber read this way is not marked observed; use <c>await</c> to consume its outcome.</remarks>
+    /// <param name="fiber">The fiber to check.</param>
+    /// <returns>A flow that succeeds with <c>Some exit</c> once the fiber has settled, otherwise <c>None</c>.</returns>
+    let poll (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error> option> =
+        Flow(fun _ _ -> Execution.ofValue fiber.Settled)
+
+    /// <summary>Signals a fiber to stop, waits for its cleanup, and returns its final exit.</summary>
+    /// <remarks>
+    /// Interruption requests cooperative cancellation through the fiber's cancellation source. A fiber that had
+    /// already settled keeps its original exit.
+    /// </remarks>
+    /// <param name="fiber">The fiber to interrupt.</param>
+    /// <returns>A flow that completes with the fiber's final outcome after interruption.</returns>
+    let interrupt (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
+        Flow(fun _ _ ->
+            fiber.MarkObserved()
+            fiber.InterruptSource.Cancel()
+            Platform.awaitExitTaskAsSuccess fiber.ExitTask)

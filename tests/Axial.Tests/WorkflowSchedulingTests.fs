@@ -23,7 +23,7 @@ module WorkflowSchedulingTests =
             }
 
         let retried : Flow<unit, string, string> =
-            workflow |> Schedule.retry (Schedule.recurs 5)
+            workflow |> Flow.retry (Schedule.recurs 5)
 
         let result = Flow.runSync () retried
         
@@ -40,7 +40,7 @@ module WorkflowSchedulingTests =
             }
 
         let repeated : Flow<unit, unit, int> =
-            workflow |> Schedule.repeat (Schedule.recurs 3)
+            workflow |> Flow.repeat (Schedule.recurs 3)
 
         let result = Flow.runSync () repeated
         
@@ -56,7 +56,7 @@ module WorkflowSchedulingTests =
                 return! Flow.fail "always fails"
             }
 
-        let retryResult = retryWorkflow |> Schedule.retry (Schedule.recurs 3) |> Flow.runSync ()
+        let retryResult = retryWorkflow |> Flow.retry (Schedule.recurs 3) |> Flow.runSync ()
 
         // recurs 3 permits the schedule to fire at attempt 0, 1, 2 (three retries), after the
         // one initial try that retry/repeat always perform for free: 1 + 3 = 4 executions.
@@ -70,7 +70,7 @@ module WorkflowSchedulingTests =
                 return repeatCount
             }
 
-        let repeatResult = repeatWorkflow |> Schedule.repeat (Schedule.recurs 3) |> Flow.runSync ()
+        let repeatResult = repeatWorkflow |> Flow.repeat (Schedule.recurs 3) |> Flow.runSync ()
 
         test <@ repeatCount = 4 @>
         test <@ repeatResult = Exit.Success 4 @>
@@ -82,7 +82,7 @@ module WorkflowSchedulingTests =
                 return! Flow.fail "fails"
             }
 
-        zeroRecursWorkflow |> Schedule.retry (Schedule.recurs 0) |> Flow.runSync () |> ignore
+        zeroRecursWorkflow |> Flow.retry (Schedule.recurs 0) |> Flow.runSync () |> ignore
 
         // recurs 0 permits no retries at all: only the one initial, unretried try runs.
         test <@ zeroRecursAttempts = 1 @>
@@ -99,7 +99,7 @@ module WorkflowSchedulingTests =
                     return! Flow.fail "always fails"
                 }
 
-            workflow |> Schedule.retry schedule |> Flow.runSync () |> ignore
+            workflow |> Flow.retry schedule |> Flow.runSync () |> ignore
             attempts
 
         // Reusing the same Schedule value across separate retry runs must not leak attempt
@@ -116,7 +116,7 @@ module WorkflowSchedulingTests =
                 defectAttempts <- defectAttempts + 1
                 return! Flow.die (InvalidOperationException "boom")
             }
-            |> Schedule.retry (Schedule.recurs 5)
+            |> Flow.retry (Schedule.recurs 5)
             |> Flow.runSync ()
 
         test <@ defectAttempts = 1 @>
@@ -130,7 +130,7 @@ module WorkflowSchedulingTests =
                 interruptAttempts <- interruptAttempts + 1
                 return! Flow.ofExit (Exit.Failure Cause.Interrupt)
             }
-            |> Schedule.retry (Schedule.recurs 5)
+            |> Flow.retry (Schedule.recurs 5)
             |> Flow.runSync ()
 
         test <@ interruptAttempts = 1 @>
@@ -143,7 +143,7 @@ module WorkflowSchedulingTests =
 
         let result : Exit<int, string> =
             Flow.ok 1
-            |> Schedule.repeat failingSchedule
+            |> Flow.repeat failingSchedule
             |> Flow.runSync ()
 
         match result with
@@ -157,7 +157,7 @@ module WorkflowSchedulingTests =
 
         let repeatResult : Exit<int, string> =
             Flow.ok 1
-            |> Schedule.repeat (Schedule.spaced (TimeSpan.FromSeconds 30.0))
+            |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 30.0))
             |> Flow.runSyncWithToken () cts.Token
 
         test <@ repeatResult = Exit.Failure Cause.Interrupt @>
@@ -167,7 +167,7 @@ module WorkflowSchedulingTests =
 
         let retryResult : Exit<int, string> =
             Flow.fail "transient"
-            |> Schedule.retry (Schedule.spaced (TimeSpan.FromSeconds 30.0))
+            |> Flow.retry (Schedule.spaced (TimeSpan.FromSeconds 30.0))
             |> Flow.runSyncWithToken () retryCts.Token
 
         test <@ retryResult = Exit.Failure Cause.Interrupt @>
@@ -231,17 +231,19 @@ module WorkflowSchedulingTests =
     [<Fact>]
     let ``Flow runtime helpers cover timeout and retry`` () =
         let timeoutResult =
-            Flow.Runtime.sleep (TimeSpan.FromMilliseconds 20.0)
-            |> Flow.Runtime.timeout (TimeSpan.FromMilliseconds 1.0) "timed out"
+            Flow.sleep (TimeSpan.FromMilliseconds 20.0)
+            |> Flow.timeout (TimeSpan.FromMilliseconds 1.0) "timed out"
             |> Flow.runSync ()
 
         let retryRuns = ref 0
 
         let retryWorkflow =
-            let policy : RetryPolicy<string> =
-                { MaxAttempts = 3
-                  Delay = fun _ -> TimeSpan.Zero
-                  ShouldRetry = fun error -> error = "transient" }
+            let policy =
+                Retry.schedule
+                    { Retry.defaults with
+                        Retries = 2
+                        Backoff = Backoff.NoDelay
+                        When = fun error -> error = "transient" }
 
             Flow.delay(fun () ->
                 retryRuns.Value <- retryRuns.Value + 1
@@ -250,7 +252,7 @@ module WorkflowSchedulingTests =
                     Flow.fail "transient"
                 else
                     Flow.succeed 42)
-            |> Flow.Runtime.retry policy
+            |> Flow.retry policy
 
         let retryResult =
             retryWorkflow
@@ -264,16 +266,13 @@ module WorkflowSchedulingTests =
     let ``Flow retry does not retry defects or interruptions`` () =
         let retryRuns = ref 0
 
-        let policy : RetryPolicy<string> =
-            { MaxAttempts = 3
-              Delay = fun _ -> TimeSpan.Zero
-              ShouldRetry = fun _ -> true }
+        let policy = Schedule.recurs 2
 
         let defectResult =
             Flow.delay(fun () ->
                 retryRuns.Value <- retryRuns.Value + 1
                 Flow.die (InvalidOperationException "boom"))
-            |> Flow.Runtime.retry policy
+            |> Flow.retry policy
             |> Flow.runSync ()
 
         test <@ retryRuns.Value = 1 @>
@@ -284,20 +283,20 @@ module WorkflowSchedulingTests =
     [<Fact>]
     let ``Flow timeout helpers work as expected`` () =
         let okResult = 
-            Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> Flow.Runtime.timeoutToOk (TimeSpan.FromMilliseconds 1.0) ()
+            Flow.sleep (TimeSpan.FromMilliseconds 50.0)
+            |> Flow.timeoutToOk (TimeSpan.FromMilliseconds 1.0) ()
             |> Flow.runSync ()
         test <@ okResult = Exit.Success () @>
 
         let errorResult =
-            Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> Flow.Runtime.timeoutToError (TimeSpan.FromMilliseconds 1.0) "timed out"
+            Flow.sleep (TimeSpan.FromMilliseconds 50.0)
+            |> Flow.timeoutToError (TimeSpan.FromMilliseconds 1.0) "timed out"
             |> Flow.runSync ()
         test <@ errorResult = Exit.Failure (Cause.Fail "timed out") @>
 
         let withResult =
-            Flow.Runtime.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> Flow.Runtime.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> Flow.succeed ())
+            Flow.sleep (TimeSpan.FromMilliseconds 50.0)
+            |> Flow.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> Flow.succeed ())
             |> Flow.runSync ()
         test <@ withResult = Exit.Success () @>
 
@@ -310,12 +309,12 @@ module WorkflowSchedulingTests =
                     do! Async.Sleep 10
                     cleanedUp.Value <- true
                 })
-                do! Flow.Runtime.sleep (TimeSpan.FromSeconds 30.0)
+                do! Flow.sleep (TimeSpan.FromSeconds 30.0)
             }
 
         let result =
             operation
-            |> Flow.Runtime.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
+            |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
             |> Flow.runSync ()
 
         test <@ result = Exit.Failure(Cause.Fail "timed out") @>
@@ -327,16 +326,19 @@ module WorkflowSchedulingTests =
         cts.Cancel()
 
         let tokenResult =
-            Flow.Runtime.cancellationToken
+            Flow.cancellationToken
             |> Flow.map (fun token -> token.IsCancellationRequested)
             |> Flow.runSyncWithToken () cts.Token
 
-        let ensureResult =
-            Flow.Runtime.ensureNotCanceled "canceled"
+        let ensureResult : Exit<unit, string> =
+            Flow.ensureNotCanceled
             |> Flow.runSyncWithToken () cts.Token
 
+        let liveResult : Exit<unit, string> = Flow.ensureNotCanceled |> Flow.runSync ()
+
         test <@ tokenResult = Exit.Success true @>
-        test <@ ensureResult = Exit.Failure (Cause.Fail "canceled") @>
+        test <@ ensureResult = Exit.Failure Cause.Interrupt @>
+        test <@ liveResult = Exit.Success () @>
 
     let private decide (Schedule op: Schedule<unit, int, 'output>) attempt =
         match Flow.runSync () (op 0 (ScheduleContext.ofAttempt attempt)) with
@@ -374,7 +376,7 @@ module WorkflowSchedulingTests =
             Flow.delay (fun () ->
                 executions.Value <- executions.Value + 1
                 Flow.fail "transient")
-            |> Schedule.retry (Schedule.recurs 10 |> Schedule.intersect (Schedule.exponential (TimeSpan.FromTicks 1L)))
+            |> Flow.retry (Schedule.recurs 10 |> Schedule.intersect (Schedule.exponential (TimeSpan.FromTicks 1L)))
             |> Flow.runSync ()
 
         test <@ result = Exit.Failure(Cause.Fail "transient") @>
@@ -424,9 +426,9 @@ module WorkflowSchedulingTests =
         let run : Flow<unit, Never, unit> =
             Flow.delay (fun () ->
                 starts.Add(Platform.monotonicNow ())
-                Flow.Runtime.sleep (ms 15.0))
+                Flow.sleep (ms 15.0))
 
-        let result = run |> Schedule.repeat (Schedule.fixedRate (ms 40.0) |> Schedule.intersect (Schedule.recurs 4)) |> Flow.runSync ()
+        let result = run |> Flow.repeat (Schedule.fixedRate (ms 40.0) |> Schedule.intersect (Schedule.recurs 4)) |> Flow.runSync ()
         test <@ result = Exit.Success () @>
         test <@ starts.Count = 5 @>
 
@@ -434,3 +436,116 @@ module WorkflowSchedulingTests =
         // time would put it at ~220 ms.
         let span = (starts[4] - starts[0]).TotalMilliseconds
         test <@ span >= 150.0 && span < 200.0 @>
+
+    [<Fact>]
+    let ``Schedule.whileInput retries only the errors it selects`` () =
+        let runs = ref 0
+
+        let result =
+            Flow.delay(fun () ->
+                runs.Value <- runs.Value + 1
+                Flow.fail (if runs.Value < 3 then "transient" else "permanent"))
+            |> Flow.retry (Schedule.recurs 10 |> Schedule.whileInput (fun error -> error = "transient"))
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure (Cause.Fail "permanent") @>
+        test <@ runs.Value = 3 @>
+
+    [<Fact>]
+    let ``Schedule.untilInput stops on the input it names`` () =
+        let runs = ref 0
+
+        let result =
+            Flow.delay(fun () ->
+                runs.Value <- runs.Value + 1
+                Flow.ok runs.Value)
+            |> Flow.repeat (Schedule.recurs 10 |> Schedule.untilInput (fun value -> value >= 4))
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success 4 @>
+
+    [<Fact>]
+    let ``Schedule.upTo caps retries while keeping the schedule's delays`` () =
+        let runs = ref 0
+
+        let result : Exit<unit, string> =
+            Flow.delay(fun () ->
+                runs.Value <- runs.Value + 1
+                Flow.fail "boom")
+            |> Flow.retry (Schedule.spaced TimeSpan.Zero |> Schedule.upTo 2)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure (Cause.Fail "boom") @>
+        test <@ runs.Value = 3 @>
+
+    [<Fact>]
+    let ``Retry record counts retries and filters with When`` () =
+        let runs = ref 0
+
+        let retried : Exit<unit, string> =
+            Flow.delay(fun () ->
+                runs.Value <- runs.Value + 1
+                Flow.fail "boom")
+            |> Flow.retry (Retry.schedule { Retry.defaults with Retries = 2; Backoff = Backoff.NoDelay })
+            |> Flow.runSync ()
+
+        test <@ retried = Exit.Failure (Cause.Fail "boom") @>
+        test <@ runs.Value = 3 @>
+
+        let filteredRuns = ref 0
+
+        let filtered : Exit<unit, string> =
+            Flow.delay(fun () ->
+                filteredRuns.Value <- filteredRuns.Value + 1
+                Flow.fail "fatal")
+            |> Flow.retry (Retry.schedule { Retry.defaults with Backoff = Backoff.NoDelay; When = fun error -> error <> "fatal" })
+            |> Flow.runSync ()
+
+        test <@ filtered = Exit.Failure (Cause.Fail "fatal") @>
+        test <@ filteredRuns.Value = 1 @>
+
+    [<Fact>]
+    let ``Retry record exponential backoff doubles and caps`` () =
+        let (Schedule op) =
+            Retry.schedule
+                { Retry.defaults with
+                    Retries = 10
+                    Backoff = Backoff.Exponential(TimeSpan.FromMilliseconds 100.0, TimeSpan.FromMilliseconds 350.0) }
+            : Schedule<unit, string, int>
+
+        let delayAt attempt =
+            match Flow.runSync () (op "e" (ScheduleContext.ofAttempt attempt)) with
+            | Exit.Success(_, delay) -> delay
+            | other -> failwithf "Expected a decision, got %A" other
+
+        test <@ [ 0; 1; 2; 3 ] |> List.map delayAt = [ TimeSpan.FromMilliseconds 100.0; TimeSpan.FromMilliseconds 200.0; TimeSpan.FromMilliseconds 350.0; TimeSpan.FromMilliseconds 350.0 ] @>
+
+    [<Fact>]
+    let ``Retry releases a failed attempt's resources before the next attempt and keeps the successful one`` () =
+        let released = ResizeArray<int>()
+        let runs = ref 0
+        let releasedWhenReturned = ref [||]
+
+        let result =
+            flow {
+                let! value =
+                    flow {
+                        runs.Value <- runs.Value + 1
+                        let attempt = runs.Value
+                        do! Flow.scopeAsyncFinalizer (fun _ -> async { lock released (fun () -> released.Add attempt) })
+
+                        if attempt < 3 then
+                            return! Flow.fail "transient"
+                        else
+                            return attempt
+                    }
+                    |> Flow.retry (Schedule.recurs 5)
+
+                releasedWhenReturned.Value <- lock released (fun () -> released.ToArray())
+                return value
+            }
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success 3 @>
+        test <@ releasedWhenReturned.Value = [| 1; 2 |] @>
+        test <@ lock released (fun () -> released.ToArray()) = [| 1; 2; 3 |] @>

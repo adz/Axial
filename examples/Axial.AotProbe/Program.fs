@@ -64,10 +64,10 @@ let main _ =
         let registry = FiberRegistry()
         let workflow: Flow<unit, ProbeError, string> =
             flow {
-                let! fiber = Flow.forkNamed "probe child" (Flow.Runtime.sleep (TimeSpan.FromMilliseconds 200.0))
+                let! fiber = Flow.forkNamed "probe child" (Flow.sleep (TimeSpan.FromMilliseconds 200.0))
                 let dump = registry.DumpAt(DateTimeOffset.UtcNow)
                 let snapshot = registry.Snapshot() |> List.map (fun dump -> dump.ToString()) |> String.concat "\n"
-                do! Flow.join fiber
+                do! Fiber.join fiber
                 return dump + "\n" + snapshot
             }
             |> Flow.withFiberRegistry registry

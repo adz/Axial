@@ -81,7 +81,7 @@ module MemoryRetentionTests =
                 |> Flow.map (fun () ->
                     observe counter.Value
                     counter.Value <- counter.Value + 1)
-                |> Schedule.repeat (Schedule.recurs 42_000))
+                |> Flow.repeat (Schedule.recurs 42_000))
 
         test <@ retained < bound () @>
 
@@ -102,7 +102,7 @@ module MemoryRetentionTests =
                         |> Flow.fork
 
                     do! queue |> FlowStream.fromDequeue |> FlowStream.runForEach observe
-                    do! Flow.join producer
+                    do! Fiber.join producer
                 })
 
         test <@ retained < bound () @>
@@ -125,13 +125,13 @@ module MemoryRetentionTests =
                 let rec untilWaiting remaining =
                     flow {
                         if STM.pendingRetries () = before && remaining > 0 then
-                            do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 1.0)
+                            do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
                             return! untilWaiting (remaining - 1)
                     }
 
                 do! untilWaiting 5000
                 let waiting = STM.pendingRetries () - before
-                let! _ = Flow.interrupt waiter
+                let! _ = Fiber.interrupt waiter
                 return waiting, STM.pendingRetries () - before
             }
 

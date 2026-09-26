@@ -47,7 +47,6 @@ Every operation fails with `FileSystemError`, a union that classifies what went 
 | `Unauthorized (path, message)` | The process lacks permission |
 | `InvalidPath (path, message)` | The path is malformed |
 | `PathTooLong (path, message)` | The platform rejected the path length |
-| `Canceled message` | The operation was interrupted |
 | `Io (path, message)` | A general I/O failure |
 | `Unsupported (path, message)` | The platform or path shape does not support the operation |
 | `Unexpected (path, message)` | Anything else that escaped the operation |

@@ -253,7 +253,7 @@ module internal Shared =
     let buildFlowCancellationChain () =
         let checkpoint index =
             flow {
-                let! cancellationToken = Flow.Runtime.cancellationToken
+                let! cancellationToken = Flow.cancellationToken
                 cancellationToken.ThrowIfCancellationRequested()
                 let (task: Task<int>) = Task.FromResult index
                 return! Flow.awaitStartedTask task

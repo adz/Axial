@@ -41,6 +41,7 @@
     <Compile Include="Foundation.fs" />
     <Compile Include="Runtime.fs" />
     <Compile Include="Policy.fs" />
+    <Compile Include="Schedule.fs" />
     <Compile Include="Flow.fs" />
     <Compile Include="App.fs" />
     <Compile Include="BindError.fs" />
@@ -51,7 +52,6 @@
     <Compile Include="State.fs" />
     <Compile Include="Stream.fs" />
     <Compile Include="SubscriptionRef.fs" />
-    <Compile Include="Schedule.fs" />
     <Compile Include="FlowBuilder.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Builders.fs" />

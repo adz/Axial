@@ -28,7 +28,7 @@ module AppTests =
                     finalized.Add token.IsCancellationRequested
                 })
                 started.TrySetResult() |> ignore
-                do! Flow.Runtime.sleep(TimeSpan.FromSeconds 30.0)
+                do! Flow.sleep(TimeSpan.FromSeconds 30.0)
             }
 
         let running = App.start () application
@@ -48,7 +48,7 @@ module AppTests =
         use cancellationSource = new CancellationTokenSource()
 
         let running =
-            (Flow.Runtime.sleep(TimeSpan.FromSeconds 30.0) : Flow<unit, string, unit>)
+            (Flow.sleep(TimeSpan.FromSeconds 30.0) : Flow<unit, string, unit>)
             |> App.startWithCancellation cancellationSource.Token ()
 
         cancellationSource.Cancel()

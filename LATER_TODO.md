@@ -74,7 +74,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Harden schedule semantics: deterministic jitter (`jitteredWith`), overflow capping, invalid-delay rejection, and pinned `recurs`/statelessness/retry/repeat behavior (see `dev-docs/current-ideas/schedule-expansion.md`).
 - [x] Add `Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate`.
 - [ ] Add `andThen`, `whileOutput`, `upTo`, elapsed outputs, and reset behavior when an application needs them.
-- [x] Remove `Unchecked.defaultof<'error>` from `Schedule.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error (sleep runs at the workflow's error type; schedule-evaluation failure becomes `Cause.Die`). Also hardened: `exponential` caps at the max delay instead of overflowing ticks, `spaced`/`exponential` reject negative delays, and `Schedule.jitteredWith` takes an injectable sample source for deterministic jitter.
+- [x] Remove `Unchecked.defaultof<'error>` from `Flow.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error (sleep runs at the workflow's error type; schedule-evaluation failure becomes `Cause.Die`). Also hardened: `exponential` caps at the max delay instead of overflowing ticks, `spaced`/`exponential` reject negative delays, and `Schedule.jitteredWith` takes an injectable sample source for deterministic jitter.
 - [ ] Add deterministic clock-driven tests for retry, repeat, timeout, and sleep.
 
 ## 7. v1.0 Observability
@@ -84,7 +84,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Integrate observability with `Axial.Telemetry` and `Microsoft.Extensions.Logging` (fiber-lifecycle wiring: `FiberTelemetry.observe` records fiber defect / unobserved-defect error spans; `Microsoft.Extensions.Logging` recipe documented in the supervision guide).
 - [x] Fix `Activity.trace` span lifetime: stop the activity when the execution settles instead of `use`-disposing when the workflow is started, so async work is measured by its span.
 - [x] Stamp exits onto spans with one canonical tag vocabulary: `ActivityStatusCode` from the exit, `axial.flow.outcome` (success/fail/die/interrupt), `axial.flow.error` for rendered typed errors (`Activity.traceWith` for custom renderers), OTel `exception.*` tags for defects, `axial.flow.interrupted` for cancellation, and `axial.flow.cause` (via `Cause.prettyPrint`) for composite causes.
-- [x] Expose the current fiber id through `Flow.Runtime` (`Flow.Runtime.fiberId`) and tag it on traced spans so workflow spans correlate with fiber telemetry.
+- [x] Expose the current fiber id through `Flow.Runtime` (`Flow.fiberId`) and tag it on traced spans so workflow spans correlate with fiber telemetry.
 - [x] Make annotation sinks composable (`Flow.addAnnotationSink` tees to the previous sink), swallow sink exceptions at the annotate call site, and switch `Activity.trace` to the composing form so nested traces and user sinks all receive annotations.
 - [x] Give forked fibers real spans: `FiberTelemetry.observeWithSpans` opens an `axial.flow.fiber` activity at the fork site (parented to the forking workflow span), closes it with exit conventions at settle, links unobserved-defect spans to it, and stays opt-in alongside the defect-only `FiberTelemetry.observe`.
 - [x] Add an extensible `IHasTelemetryTags` environment trait applied by `Activity.trace` alongside the existing `IHasRequestId`/`IHasCorrelationId`/`IHasTenantId` trio. (Fiber spans cannot apply environment traits — the observer deliberately never sees the environment.)
@@ -101,7 +101,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Expand `Axial.Console` into a near-complete console/terminal service package rather than only read/write-line helpers.
 - [x] Expand `Axial.HttpClient` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
 - [x] Expand `Axial.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
-- [x] Add explicit process timeout/deadline configuration and tests (`Process.timeout` / DSL `timeout` on `ProcessSpec`, enforced via `Flow.Runtime.timeout` with `ProcessError.TimedOut` and process-tree termination; live integration test in `ProcessServiceTests`).
+- [x] Add explicit process timeout/deadline configuration and tests (`Process.timeout` / DSL `timeout` on `ProcessSpec`, enforced via `Flow.timeout` with `ProcessError.TimedOut` and process-tree termination; live integration test in `ProcessServiceTests`).
 - [ ] Design `Axial.Network` after the core v1 service/layer surface is stable.
 - [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Telemetry` — see `dev-docs/decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
 - [x] Define telemetry-service composition with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries — not applicable; no telemetry service contracts are introduced per the decision above.
@@ -129,7 +129,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 - [ ] Add fiber-local state similar to FiberRef/FiberRefs, adapted to .NET/F#.
 - [x] Add supervision hooks for fiber start/end/failure/interruption (`FiberObserver` with `OnStart`/`OnEnd`/`OnUnobservedDefect`, installed via `Flow.withFiberObserver`; interruption is reported through `OnEnd` status; unobserved defects are detected at race/timeout discard sites, scope close, and a GC net).
-- [x] Add `Flow.Runtime.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget.
+- [x] Add `Flow.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget.
 - [ ] Add runtime flags and execution strategy where they materially affect .NET behavior.
 - [x] Add structured fiber dumps and richer runtime diagnostics: enriched `FiberDump` (name, annotations, settle time), `Flow.forkNamed`, `FiberRegistry` live-fiber tree dumps, `FiberMetrics` on the `Axial` meter, and `FiberDumpTelemetry.record` for dump events on traces.
 

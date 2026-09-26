@@ -24,7 +24,7 @@ module FiberDiagnosticsTests =
         let result =
             flow {
                 let! fiber = Flow.forkNamed "worker" (Flow.succeed 42)
-                let! value = Flow.join fiber
+                let! value = Fiber.join fiber
                 return value, Fiber.dump fiber
             }
             |> Flow.annotate "request_id" "req-9"
@@ -42,7 +42,7 @@ module FiberDiagnosticsTests =
         let result =
             flow {
                 let! fiber = Flow.fork (Flow.succeed 1)
-                let! _ = Flow.join fiber
+                let! _ = Fiber.join fiber
                 return Fiber.dump fiber
             }
             |> Flow.runSync ()
@@ -70,7 +70,7 @@ module FiberDiagnosticsTests =
                 let snapshot = registry.Snapshot()
                 let rendered = registry.Dump()
                 release.Release() |> ignore
-                let! _ = Flow.join fiber
+                let! _ = Fiber.join fiber
                 return snapshot, rendered
             }
             |> Flow.withFiberRegistry registry
@@ -96,7 +96,7 @@ module FiberDiagnosticsTests =
         let result =
             flow {
                 let! fiber = Flow.fork (Flow.succeed ())
-                return! Flow.join fiber
+                return! Fiber.join fiber
             }
             |> Flow.withFiberRegistry registry
             |> Flow.withFiberObserver recording

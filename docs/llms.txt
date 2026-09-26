@@ -36,7 +36,7 @@
 - Use `use` and `use!` for lexical disposal. Use `Flow.scoped` to create a runtime ownership boundary, then
   `Flow.scopeAcquireRelease`, `Flow.scopeResource`, `Flow.scopeDisposable`, or a finalizer operation to attach cleanup.
 - Use `Flow.fork`, `join`, and `interrupt` for owned fibers; `forkDetached` states intentional fire-and-forget.
-- Use `Schedule.retry` for typed failures, `Schedule.repeat` for successful repetition, `FlowStream` for effectful pull
+- Use `Flow.retry` for typed failures, `Flow.repeat` for successful repetition, `FlowStream` for effectful pull
   streams, and STM for composable transactional coordination.
 - Use `Queue` to hand values between fibers when there is exactly one logical consumer. `Queue.make` takes a
   `QueueStrategy` (`BackPressure n` suspends producers when full, `Dropping n` discards the newest value, `Sliding n`

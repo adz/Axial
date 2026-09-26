@@ -60,7 +60,7 @@ ends normally once the queue is shut down and drained.
 -         |> Flow.fork
 -     do! readings |> Queue.offerAll [ 1..5 ] |> Flow.ignore
 -     do! Dequeue.shutdown readings
--     return! Flow.join consumer
+-     return! Fiber.join consumer
 - } : Flow<unit, Never, int list list>)
 - |> Flow.run ();;
 val it: Exit<int list list,Never> = Success [[1; 2]; [3; 4]; [5]]

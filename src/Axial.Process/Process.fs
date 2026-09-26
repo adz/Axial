@@ -162,21 +162,18 @@ type ProcessStartFailure = { Command: string; Message: string }
 /// Diagnostic details for an elapsed process deadline.
 type ProcessTimeout = { Specification: string; Timeout: TimeSpan }
 
-/// Diagnostic details for caller-initiated process cancellation.
-type ProcessCancellation = { Message: string }
-
 /// Diagnostic details for an unsuccessful process stage.
 type StageFailure = { Stage: StageResult; Result: ProcessResult }
 
 /// Diagnostic details for a process I/O failure.
 type ProcessIoFailure = { Message: string }
 
-/// A recoverable process startup, cancellation, stage, or I/O failure.
+/// A recoverable process startup, timeout, stage, or I/O failure. Interrupting the workflow is not an error: it
+/// terminates the processes and surfaces as <c>Cause.Interrupt</c>.
 [<RequireQualifiedAccess>]
 type ProcessError =
     | StartFailed of ProcessStartFailure
     | TimedOut of ProcessTimeout
-    | Canceled of ProcessCancellation
     | StageFailed of StageFailure
     | IoFailed of ProcessIoFailure
 
@@ -185,7 +182,6 @@ type ProcessError =
         match this with
         | StartFailed failure -> $"Could not start '{failure.Command}': {failure.Message}"
         | TimedOut failure -> $"Process specification '{failure.Specification}' timed out after {failure.Timeout}."
-        | Canceled failure -> $"Process execution was canceled: {failure.Message}"
         | StageFailed failure ->
             let stage = failure.Stage
             let diagnostic = if stage.StdErrTail.Text = "" then "" else Environment.NewLine + stage.StdErrTail.Text
@@ -272,7 +268,6 @@ module ProcessError =
     let exitCode = function
         | ProcessError.StageFailed failure -> failure.Stage.ExitCode
         | ProcessError.TimedOut _ -> 124
-        | ProcessError.Canceled _ -> 130
         | ProcessError.StartFailed _
         | ProcessError.IoFailed _ -> 1
 
@@ -681,7 +676,7 @@ module Process =
         let execute observer (specification: ProcessSpec) =
             let execution =
                     flow {
-                      let! cancellationToken = Flow.Runtime.cancellationToken
+                      let! cancellationToken = Flow.cancellationToken
                       let! outcome = async {
                         return! task {
                             let processes = ResizeArray<Diagnostics.Process>()
@@ -884,7 +879,9 @@ module Process =
                                                 StdOut = outCapture.Text; StdErr = errCapture.Text; StdOutCapture = outCapture; StdErrCapture = errCapture
                                                 Stages = stages; StartedAt = startedAt; Duration = completed - startedAt }
                                 with
-                                | :? OperationCanceledException as error -> return Error(ProcessError.Canceled { Message = error.Message })
+                                | :? OperationCanceledException when cancellationToken.IsCancellationRequested ->
+                                    // The workflow was interrupted; surface that as Cause.Interrupt, not a typed error.
+                                    return! Task.FromCanceled<_>(cancellationToken)
                                 | error when processes.Count = 0 || processes.Count < specification.Commands.Length ->
                                     let command = specification.Commands[processes.Count] |> renderCommand
                                     return Error(ProcessError.StartFailed { Command = command; Message = error.Message })
@@ -899,7 +896,7 @@ module Process =
                       return! validate outcome
                     }
             match specification.Timeout with
-            | Some timeout -> execution |> Flow.Runtime.timeout timeout (ProcessError.TimedOut { Specification = render specification; Timeout = timeout })
+            | Some timeout -> execution |> Flow.timeout timeout (ProcessError.TimedOut { Specification = render specification; Timeout = timeout })
             | None -> execution
 
         let stream specification =

@@ -25,7 +25,7 @@ let handoff : Flow<unit, string, int> =
             |> Flow.fork
 
         let! completed = Deferred.succeed 42 deferred
-        let! value = Flow.join waiter
+        let! value = Fiber.join waiter
 
         if completed then
             return value

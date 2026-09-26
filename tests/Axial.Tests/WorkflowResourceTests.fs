@@ -312,13 +312,13 @@ module WorkflowResourceTests =
                         if index % 2 = 0 then Flow.succeed index else Flow.fail "expected"
                         |> Flow.fork
 
-                    let! _ = Flow.interrupt fiber
+                    let! _ = Fiber.interrupt fiber
                     ()
 
                 let! gate = Deferred.make<unit, string, unit> ()
                 let! running = Flow.fork (Deferred.await gate)
                 let! whileRunning = registeredInCurrentScope ()
-                let! _ = Flow.interrupt running
+                let! _ = Fiber.interrupt running
                 let! afterSettle = registeredInCurrentScope ()
                 return whileRunning, afterSettle
             }

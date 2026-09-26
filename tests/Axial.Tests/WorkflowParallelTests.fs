@@ -15,11 +15,11 @@ module WorkflowParallelTests =
         let workflow =
             Flow.zipPar
                 (flow { 
-                    do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 100.0)
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
                     return 1 
                 })
                 (flow { 
-                    do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 100.0)
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
                     return 2 
                 })
 
@@ -31,7 +31,7 @@ module WorkflowParallelTests =
         let workflow =
             Flow.zipPar
                 (flow { 
-                    do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 500.0)
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 500.0)
                     executed <- true
                     return 1 
                 })
@@ -47,11 +47,11 @@ module WorkflowParallelTests =
         let workflow =
             Flow.race
                 (flow { 
-                    do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 100.0)
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
                     return 1 
                 })
                 (flow { 
-                    do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 500.0)
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 500.0)
                     loserExecuted <- true
                     return 2 
                 })

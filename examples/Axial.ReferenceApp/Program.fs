@@ -385,11 +385,11 @@ input, select, button {{ padding: .35rem; }} code {{ background: #eee; padding: 
         let demonstration =
             flow {
                 do! Log.info "Starting the observability demonstration"
-                let! first = Flow.forkNamed "demo-fast" (Flow.Runtime.sleep(TimeSpan.FromMilliseconds 150.0))
-                let! second = Flow.forkNamed "demo-slow" (Flow.Runtime.sleep(TimeSpan.FromMilliseconds 350.0))
+                let! first = Flow.forkNamed "demo-fast" (Flow.sleep(TimeSpan.FromMilliseconds 150.0))
+                let! second = Flow.forkNamed "demo-slow" (Flow.sleep(TimeSpan.FromMilliseconds 350.0))
                 do FiberDumpTelemetry.record registry
-                do! Flow.join first
-                do! Flow.join second
+                do! Fiber.join first
+                do! Fiber.join second
                 do! Log.info "Finished the observability demonstration"
             }
             |> Flow.annotate "demo.kind" "concurrent-work"

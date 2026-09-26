@@ -18,7 +18,7 @@ module WorkflowSupervisionTests =
                     Flow.die (InvalidOperationException "boom")
                 else
                     Flow.succeed 42)
-            |> Flow.Runtime.supervise (SupervisePolicy.noDelay 5)
+            |> Flow.supervise (Schedule.recurs 4)
             |> Flow.runSync ()
 
         test <@ result = Exit.Success 42 @>
@@ -32,7 +32,7 @@ module WorkflowSupervisionTests =
             Flow.delay(fun () ->
                 runs.Value <- runs.Value + 1
                 Flow.die (InvalidOperationException "boom"))
-            |> Flow.Runtime.supervise (SupervisePolicy.noDelay 3)
+            |> Flow.supervise (Schedule.recurs 2)
             |> Flow.runSync ()
 
         test <@ runs.Value = 3 @>
@@ -48,7 +48,7 @@ module WorkflowSupervisionTests =
             Flow.delay(fun () ->
                 failRuns.Value <- failRuns.Value + 1
                 Flow.fail "domain error")
-            |> Flow.Runtime.supervise (SupervisePolicy.noDelay 3)
+            |> Flow.supervise (Schedule.recurs 2)
             |> Flow.runSync ()
 
         test <@ failResult = Exit.Failure (Cause.Fail "domain error") @>
@@ -60,26 +60,28 @@ module WorkflowSupervisionTests =
             Flow.delay(fun () ->
                 interruptRuns.Value <- interruptRuns.Value + 1
                 Flow.ofExit (Exit.Failure Cause.Interrupt))
-            |> Flow.Runtime.supervise (SupervisePolicy.noDelay 3)
+            |> Flow.supervise (Schedule.recurs 2)
             |> Flow.runSync ()
 
         test <@ interruptResult = Exit.Failure Cause.Interrupt @>
         test <@ interruptRuns.Value = 1 @>
 
     [<Fact>]
-    let ``Supervise consults ShouldRestart with the defect exception`` () =
+    let ``Supervise lets the schedule inspect the defect exception`` () =
         let runs = ref 0
 
         let policy =
-            { MaxAttempts = 5
-              Delay = fun _ -> TimeSpan.Zero
-              ShouldRestart = fun error -> error.Message = "restartable" }
+            Retry.schedule
+                { Retry.defaults with
+                    Retries = 4
+                    Backoff = Backoff.NoDelay
+                    When = fun (error: exn) -> error.Message = "restartable" }
 
         let result : Exit<int, string> =
             Flow.delay(fun () ->
                 runs.Value <- runs.Value + 1
                 Flow.die (InvalidOperationException "fatal"))
-            |> Flow.Runtime.supervise policy
+            |> Flow.supervise policy
             |> Flow.runSync ()
 
         test <@ runs.Value = 1 @>
@@ -107,7 +109,7 @@ module WorkflowSupervisionTests =
 
         let result =
             workflow
-            |> Flow.Runtime.supervise (SupervisePolicy.noDelay 5)
+            |> Flow.supervise (Schedule.recurs 4)
             |> Flow.runSync ()
 
         test <@ result = Exit.Success "success" @>
@@ -116,6 +118,24 @@ module WorkflowSupervisionTests =
         test <@ releases.Count = 3 @>
 
     [<Fact>]
-    let ``Supervise rejects a policy with no attempts`` () =
-        raises<ArgumentException>
-            <@ Flow.succeed 1 |> Flow.Runtime.supervise (SupervisePolicy.noDelay 0) @>
+    let ``Supervise keeps the successful attempt's scope open until the enclosing scope closes`` () =
+        let released = ref false
+        let observedBeforeClose = ref true
+
+        let result =
+            flow {
+                let! value =
+                    flow {
+                        do! Flow.scopeAsyncFinalizer (fun _ -> async { released.Value <- true })
+                        return "connection"
+                    }
+                    |> Flow.supervise (Schedule.recurs 2)
+
+                observedBeforeClose.Value <- released.Value
+                return value
+            }
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success "connection" @>
+        test <@ not observedBeforeClose.Value @>
+        test <@ released.Value @>

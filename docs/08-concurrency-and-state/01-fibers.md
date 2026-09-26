@@ -20,7 +20,7 @@ let loadBoth left right =
     flow {
         let! leftFiber = Flow.fork left
         let! rightValue = right
-        let! leftValue = Flow.join leftFiber
+        let! leftValue = Fiber.join leftFiber
         return leftValue, rightValue
     }
 ```
@@ -34,13 +34,13 @@ Fibers are the foundation of **Structured Concurrency** in Axial. Unlike "fire-a
 The primary operations for managing fibers are:
 
 - [**`Flow.fork`**](/api/): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
-- [**`Flow.join`**](/api/): waits for the fiber and resumes with its successful value or typed failure.
-- [**`Flow.interrupt`**](/api/): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
+- [**`Fiber.join`**](/api/): waits for the fiber and resumes with its successful value or typed failure.
+- [**`Fiber.interrupt`**](/api/): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
 - [**`Flow.forkDetached`**](/api/): starts deliberate fire-and-forget work whose defects are never reported as unobserved.
 - `Flow.forkNamed`: forks with a diagnostic name that carries into dumps and telemetry fiber spans, so long-lived background fibers are recognizable instead of bare ids.
 - `Fiber.dump`: returns a diagnostic snapshot of one fiber handle.
 
-Joining or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer](./supervision.html); use `Flow.forkDetached` when the silence is intentional, and [`Flow.Runtime.supervise`](./supervision.html) to restart background work that dies with defects.
+Joining or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer](./supervision.html); use `Flow.forkDetached` when the silence is intentional, and [`Flow.supervise`](./supervision.html) to restart background work that dies with defects.
 
 ## Why Fibers?
 
@@ -48,11 +48,11 @@ Fibers provide several advantages over raw `Task` or `Async` values:
 
 ### Interruption
 
-In ordinary .NET code, cancellation often depends on manually threading a `CancellationToken` through every layer. In Axial, interruption is part of the execution model. `Flow.interrupt` signals the child fiber and waits for it to finish, so callers can observe the final `Exit<'value, 'error>`.
+In ordinary .NET code, cancellation often depends on manually threading a `CancellationToken` through every layer. In Axial, interruption is part of the execution model. `Fiber.interrupt` signals the child fiber and waits for it to finish, so callers can observe the final `Exit<'value, 'error>`.
 
 ### Typed Outcomes
 
-A `Fiber<'error, 'value>` remembers the error type and success type of the workflow it is running. When you `Flow.join` a fiber, the joined flow has the same typed failure channel as the child.
+A `Fiber<'error, 'value>` remembers the error type and success type of the workflow it is running. When you `Fiber.join` a fiber, the joined flow has the same typed failure channel as the child.
 
 ### Clear Ownership
 
@@ -69,7 +69,7 @@ Every forked fiber carries metadata:
 - `StartedAt` / `SettledAt`: UTC timestamps for fork and settle.
 - `Status`: `Running`, `Succeeded`, `Failed`, or `Interrupted`.
 
-Use `Fiber.dump` when logging or debugging one fiber. The dump is a snapshot, so a running fiber can report `Running` before `Flow.join` and `Succeeded`, `Failed`, or `Interrupted` afterward. To see every live fiber at once as a parent/child tree, install a `FiberRegistry` with `Flow.withFiberRegistry` and call `registry.Dump()` — see [Observability](/observability/index.html).
+Use `Fiber.dump` when logging or debugging one fiber. The dump is a snapshot, so a running fiber can report `Running` before `Fiber.join` and `Succeeded`, `Failed`, or `Interrupted` afterward. To see every live fiber at once as a parent/child tree, install a `FiberRegistry` with `Flow.withFiberRegistry` and call `registry.Dump()` — see [Observability](/observability/index.html).
 
 ## Underlying Implementation
 

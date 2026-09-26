@@ -28,7 +28,7 @@ let application : Flow<AppEnv, AppError, unit> =
         // StopAsync waits for root finalizers, so host shutdown cannot overtake application cleanup.
         do! Flow.scopeAsyncFinalizer (fun _ -> async { environment.Logger.LogInformation("Root cleanup finished") })
         do! async { environment.Logger.LogInformation("{Message}", environment.Messages.Message) }
-        do! Flow.Runtime.sleep(TimeSpan.FromDays 1.0)
+        do! Flow.sleep(TimeSpan.FromDays 1.0)
     }
 
 [<EntryPoint>]

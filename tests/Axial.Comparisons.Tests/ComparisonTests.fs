@@ -416,8 +416,8 @@ module StmTests =
                 let! first = Flow.fork (WithFlow.reserve inventory)
                 let! second = Flow.fork (WithFlow.reserve inventory)
 
-                let! warehouseA = Flow.join first
-                let! warehouseB = Flow.join second
+                let! warehouseA = Fiber.join first
+                let! warehouseB = Fiber.join second
 
                 let! (localLeft, regionalLeft, reservations) = WithFlow.snapshot inventory
                 return warehouseA, warehouseB, localLeft, regionalLeft, reservations
@@ -437,10 +437,10 @@ module StmTests =
                 let! inventory = WithFlow.createInventory 0 0
 
                 let! waiting = Flow.fork (WithFlow.reserve inventory)
-                do! Flow.Runtime.sleep (System.TimeSpan.FromMilliseconds 50.0)
+                do! Flow.sleep (System.TimeSpan.FromMilliseconds 50.0)
                 do! WithFlow.replenish Regional 1 inventory
 
-                let! warehouse = Flow.join waiting
+                let! warehouse = Fiber.join waiting
                 let! (_, regionalLeft, reservations) = WithFlow.snapshot inventory
                 return warehouse, regionalLeft, reservations
             }

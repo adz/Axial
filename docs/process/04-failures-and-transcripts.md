@@ -13,13 +13,16 @@ Flow and match `Exit.Failure(Cause.Fail error)` when this boundary needs to deci
 | --- | --- | --- |
 | `StartFailed` | The executable cannot be started: it is missing, not executable, or the operating system rejects startup. A pipeline can also fail this way after earlier stages have started. | `ProcessStartFailure.Command` and `Message` |
 | `TimedOut` | The specification's configured timeout elapses before every stage completes. | Redacted specification and timeout duration |
-| `Canceled` | The caller cancels the enclosing Flow or ends stream consumption early. | Cancellation message |
 | `StageFailed` | A started command exits with a code outside its configured success-code set. This is the usual result for a command that reports failure with a nonzero exit code. | Failed `StageResult` and the complete `ProcessResult` |
 | `IoFailed` | Axial cannot read, write, or route one of the process streams or configured file targets. | I/O error message |
 
 For every timeout, cancellation, and partial pipeline startup, Axial terminates stages that did start before the Flow
 finishes. The typed error tells the caller what happened after cleanup, rather than leaving a child process running in
 the background.
+
+Cancellation is not a `ProcessError`. When the caller cancels the enclosing Flow or ends stream consumption early, the
+processes are terminated and the Flow ends with `Cause.Interrupt`. The caller that requested the cancellation decides
+what it means by matching the `Exit`.
 
 ## Match the error when the caller needs a policy
 

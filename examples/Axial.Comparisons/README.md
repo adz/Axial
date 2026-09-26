@@ -14,7 +14,7 @@ what is **still the application's responsibility**.
 | File | Scenario | Axial surface exercised |
 | --- | --- | --- |
 | `CheckoutCompensation.fs` | Reserve/charge/ship with compensation | `Flow.scoped`, `Flow.scopeAcquireRelease`, `Bind.mapError`, env records |
-| `RetryBudget.fs` | HTTP fetch with a selective retry budget | `Axial.HttpClient`, `RetryPolicy`, `Flow.Runtime.retry`/`timeout` |
+| `RetryBudget.fs` | HTTP fetch with a selective retry budget | `Axial.HttpClient`, `Retry`, `Flow.retry`/`timeout` |
 | `DashboardFanOut.fs` | Parallel fan-out with one optional branch | `Flow.zipPar`, `Flow.orElse`, `Flow.race`, `Axial.Telemetry` |
 | `ScopedWorkspace.fs` | Temp workspace released exactly once | `Axial.FileSystem`, acquire/release lifetime |
 | `ReportWiring.fs` | Wiring that cannot omit a capability | `IHas<>` env, `Layer.merge`, `Clock.fromValue`, `Axial.Console` |

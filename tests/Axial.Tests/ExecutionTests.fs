@@ -38,7 +38,7 @@ module ExecutionTests =
     [<Fact>]
     let ``Flow.toAsync observes ambient cancellation`` () =
         let cts = new CancellationTokenSource()
-        let flow = Flow.Runtime.sleep (TimeSpan.FromSeconds 10.0)
+        let flow = Flow.sleep (TimeSpan.FromSeconds 10.0)
         
         let operation = async {
             let! _ = flow.ToAsync(())

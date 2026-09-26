@@ -182,12 +182,6 @@ type FiberMetadata =
         mutable SettledAt: DateTimeOffset option
         /// <summary>The current fiber status.</summary>
         mutable Status: FiberStatus
-        /// <summary>
-        /// Whether the fiber's outcome was consumed (<c>Flow.join</c>, <c>Flow.interrupt</c>) or explicitly
-        /// detached at birth (<c>Flow.forkDetached</c>). A fiber that dies with a defect while unobserved is
-        /// reported through the runtime's fiber observer once no observation can happen anymore.
-        /// </summary>
-        mutable Observed: bool
     }
 
 /// <summary>Structured diagnostic snapshot of a fiber, taken at a single point in time.</summary>
@@ -423,10 +417,16 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
     let gate = obj()
     let mutable defect: exn option = None
     let mutable reported = false
+    let mutable observed = false
 
 #if !FABLE_COMPILER
     static let sentinels = System.Runtime.CompilerServices.ConditionalWeakTable<obj, FiberDefectTracker>()
 #endif
+
+    /// Records that the fiber's outcome was consumed (<c>Fiber.join</c>, <c>Fiber.await</c>, <c>Fiber.interrupt</c>)
+    /// or deliberately detached at birth (<c>Flow.forkDetached</c>), so its defect is never reported as unobserved.
+    member _.MarkObserved() =
+        lock gate (fun () -> observed <- true)
 
     /// Records the defect the fiber settled with, if any.
     member _.Settled(settledDefect: exn option) =
@@ -437,7 +437,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
     member _.TryReport() =
         let toReport =
             lock gate (fun () ->
-                if not reported && not metadata.Observed then
+                if not reported && not observed then
                     match defect with
                     | Some _ ->
                         reported <- true
@@ -465,29 +465,36 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
 /// Represents a handle to a workflow that has already been started.
 /// </summary>
 /// <remarks>
-/// A fiber is the hot counterpart to a cold <c>Flow</c>. It keeps the running
-/// work's typed failure and success channels available through <c>Flow.join</c>,
-/// and it carries an interruption source so parent workflows can ask the child
-/// to stop and then wait for cleanup to finish.
+/// A fiber is the hot counterpart to a cold <c>Flow</c>, returned by <c>Flow.fork</c>. Wait for it with
+/// <c>Fiber.join</c> (its value, re-raising its failure) or <c>Fiber.await</c> (its <c>Exit</c>), check it with
+/// <c>Fiber.poll</c>, and stop it with <c>Fiber.interrupt</c>.
 /// </remarks>
 /// <typeparam name="error">The failure type of the running workflow.</typeparam>
 /// <typeparam name="value">The success type of the running workflow.</typeparam>
-type Fiber<'error, 'value> =
-    {
-        /// <summary>Diagnostic metadata for the running fiber.</summary>
-        Metadata: FiberMetadata
-        /// <summary>The asynchronous operation that completes with the workflow's final exit outcome.</summary>
-        ExitTask: Platform.ExitTask<'value, 'error>
-        /// <summary>The cancellation source used by <c>Flow.interrupt</c> to signal interruption.</summary>
-        InterruptSource: CancellationTokenSource
-    }
+[<Sealed>]
+type Fiber<'error, 'value>
+    internal
+    (
+        metadata: FiberMetadata,
+        exitTask: Platform.ExitTask<'value, 'error>,
+        interruptSource: CancellationTokenSource,
+        tracker: FiberDefectTracker,
+        settled: Exit<'value, 'error> option ref
+    ) =
+    /// <summary>Diagnostic metadata for the running fiber.</summary>
+    member _.Metadata = metadata
 
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-[<RequireQualifiedAccess>]
-module Fiber =
-    /// <summary>Returns a snapshot of the current fiber metadata.</summary>
-    let dump (fiber: Fiber<'error, 'value>) : FiberDump =
-        FiberDump.ofMetadata fiber.Metadata
+    /// The asynchronous operation that completes with the workflow's final exit outcome.
+    member internal _.ExitTask = exitTask
+
+    /// The cancellation source that <c>Fiber.interrupt</c> uses to signal interruption.
+    member internal _.InterruptSource = interruptSource
+
+    /// Marks the fiber's outcome as consumed; see <c>FiberDefectTracker.MarkObserved</c>.
+    member internal _.MarkObserved() = tracker.MarkObserved()
+
+    /// The fiber's exit once it has settled.
+    member internal _.Settled = settled.Value
 
 #if !FABLE_COMPILER
 /// <summary>
@@ -893,40 +900,6 @@ type LogLevel =
         | Error -> "Error"
         | Critical -> "Critical"
 
-/// <summary>
-/// Defines how runtime retry helpers repeat typed failures in a controlled way.
-/// </summary>
-type RetryPolicy<'error> =
-    {
-      MaxAttempts: int
-      Delay: int -> TimeSpan
-      ShouldRetry: 'error -> bool
-    }
-
-/// <summary>
-/// Standard retry policies for runtime helpers.
-/// </summary>
-[<RequireQualifiedAccess>]
-module RetryPolicy =
-    let noDelay (maxAttempts: int) : RetryPolicy<'error> =
-        { MaxAttempts = maxAttempts
-          Delay = fun _ -> TimeSpan.Zero
-          ShouldRetry = fun _ -> true }
-
-/// <summary>
-/// Defines how <c>Flow.Runtime.supervise</c> restarts flows that terminate with unexpected defects.
-/// </summary>
-/// <remarks>
-/// The defect-channel sibling of <see cref="T:Axial.RetryPolicy`1" />: it decides restarts from the
-/// defect exception rather than the typed error, because defects are bugs that escaped the typed channel.
-/// </remarks>
-type SupervisePolicy =
-    {
-      MaxAttempts: int
-      Delay: int -> TimeSpan
-      ShouldRestart: exn -> bool
-    }
-
 /// <summary>Describes acquisition of a value together with registration of its release in the current Flow scope.</summary>
 /// <typeparam name="env">The environment required to acquire the value.</typeparam>
 /// <typeparam name="error">The typed acquisition failure.</typeparam>
@@ -936,16 +909,6 @@ type Resource<'env, 'error, 'value> =
     | Resource of
         acquire: Flow<'env, 'error, 'value> *
         register: ('value -> Scope -> unit)
-
-/// <summary>
-/// Standard supervision policies for runtime helpers.
-/// </summary>
-[<RequireQualifiedAccess>]
-module SupervisePolicy =
-    let noDelay (maxAttempts: int) : SupervisePolicy =
-        { MaxAttempts = maxAttempts
-          Delay = fun _ -> TimeSpan.Zero
-          ShouldRestart = fun _ -> true }
 
 /// <summary>
 /// Represents an error channel that cannot occur.

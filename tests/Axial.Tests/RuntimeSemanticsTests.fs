@@ -99,13 +99,13 @@ module RuntimeSemanticsTests =
             flow {
                 let! fiber =
                     flow {
-                        do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 20.0)
+                        do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
                         return 42
                     }
                     |> Flow.fork
 
                 let initial = Fiber.dump fiber
-                let! value = Flow.join fiber
+                let! value = Fiber.join fiber
                 let completed = Fiber.dump fiber
                 return initial, completed, value
             }
@@ -129,12 +129,12 @@ module RuntimeSemanticsTests =
             flow {
                 let! fiber =
                     flow {
-                        do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+                        do! Flow.sleep (TimeSpan.FromSeconds 5.0)
                         return 42
                     }
                     |> Flow.fork
 
-                let! interrupted = Flow.interrupt fiber
+                let! interrupted = Fiber.interrupt fiber
                 return Fiber.dump fiber, interrupted
             }
 
@@ -155,7 +155,7 @@ module RuntimeSemanticsTests =
                 let! fiber = Flow.fork (Flow.die defect)
 
                 let! joined =
-                    Flow.join fiber
+                    Fiber.join fiber
                     |> Flow.fold
                         (Exit.Success >> Flow.succeed)
                         (Exit.Failure >> Flow.succeed)
@@ -183,7 +183,7 @@ module RuntimeSemanticsTests =
                     |> Flow.fork
 
                 let grandchildDump = Fiber.dump grandchild
-                let! value = Flow.join grandchild
+                let! value = Fiber.join grandchild
                 return grandchildDump, value
             }
 
@@ -191,7 +191,7 @@ module RuntimeSemanticsTests =
             flow {
                 let! child = Flow.fork childWorkflow
                 let childDump = Fiber.dump child
-                let! grandchildDump, value = Flow.join child
+                let! grandchildDump, value = Fiber.join child
                 return childDump, grandchildDump, value
             }
 
@@ -211,15 +211,15 @@ module RuntimeSemanticsTests =
             flow {
                 let! fiber =
                     flow {
-                        do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+                        do! Flow.sleep (TimeSpan.FromSeconds 5.0)
                         return 42
                     }
                     |> Flow.fork
 
-                let! interrupted = Flow.interrupt fiber
+                let! interrupted = Fiber.interrupt fiber
 
                 let! joined =
-                    Flow.join fiber
+                    Fiber.join fiber
                     |> Flow.fold
                         (Exit.Success >> Flow.succeed)
                         (Exit.Failure >> Flow.succeed)
@@ -244,13 +244,13 @@ module RuntimeSemanticsTests =
             flow {
                 let! fiber =
                     flow {
-                        do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+                        do! Flow.sleep (TimeSpan.FromSeconds 5.0)
                         return 42
                     }
                     |> Flow.fork
 
                 capturedFiber <- Some fiber
-                do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+                do! Flow.sleep (TimeSpan.FromSeconds 5.0)
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
@@ -279,7 +279,7 @@ module RuntimeSemanticsTests =
                     calls.Add $"second:{token.IsCancellationRequested}"
                     Task.CompletedTask)
 
-                do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+                do! Flow.sleep (TimeSpan.FromSeconds 5.0)
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
@@ -296,7 +296,7 @@ module RuntimeSemanticsTests =
         let workflow : Flow<unit, string, unit> =
             flow {
                 do! Flow.scopeFinalizer(fun _ -> Task.FromException finalizerDefect)
-                do! Flow.Runtime.sleep (TimeSpan.FromSeconds 5.0)
+                do! Flow.sleep (TimeSpan.FromSeconds 5.0)
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)

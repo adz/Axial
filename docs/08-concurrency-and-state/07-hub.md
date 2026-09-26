@@ -20,7 +20,7 @@ the newest reading, and an alarm panel that keeps the first reading it has not y
 -     let! recording = historian |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.fork
 -     do! hub |> Hub.publishAll [ 1..5 ] |> Flow.ignore
 -     do! Hub.shutdown hub
--     let! history = Flow.join recording
+-     let! history = Fiber.join recording
 -     let! latest = Dequeue.takeAll display
 -     let! pending = Dequeue.takeAll alarms
 -     return [ history; latest; pending ]

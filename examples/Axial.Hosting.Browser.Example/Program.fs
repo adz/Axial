@@ -32,7 +32,7 @@ let application : Flow<obj, string, unit> =
         // The owner observes this cleanup before Completion settles after an abort.
         do! Flow.scopeAsyncFinalizer (fun _ -> async { setText statusElement "Cleanup finished." })
         do! async { setText statusElement "Application is running." }
-        do! Flow.Runtime.sleep(TimeSpan.FromDays 1.0)
+        do! Flow.sleep(TimeSpan.FromDays 1.0)
     }
 
 let controller = createAbortController ()

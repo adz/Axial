@@ -54,8 +54,8 @@ open System
 
 let checkoutOrder orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     checkout orderId
-    |> Flow.Runtime.retry (RetryPolicy.noDelay 3)
-    |> Flow.Runtime.timeout (TimeSpan.FromSeconds 5.0) (PaymentDeclined "checkout timed out")
+    |> Flow.retry (Schedule.recurs 2)
+    |> Flow.timeout (TimeSpan.FromSeconds 5.0) (PaymentDeclined "checkout timed out")
 ```
 
 Flow also carries concurrency, scheduling, streams, and structured child fibers through the same runtime.

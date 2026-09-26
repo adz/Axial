@@ -318,7 +318,7 @@ without conditional references; on .NET, use `Axial.Telemetry`.
 - [Telemetry](/observability/telemetry/index.html) — span tag vocabulary, `Activity.traceWith`,
   span-per-fiber details.
 - [Supervision and fiber observability](/concurrency-and-state/supervision.html) —
-  `FiberObserver`, `Flow.Runtime.supervise`, unobserved-defect semantics.
+  `FiberObserver`, `Flow.supervise`, unobserved-defect semantics.
 - [Hosting](/platforms-and-hosting/dotnet.html) — DI integration and the `ILog`/MEL bridge.
 - [Runtime operations tutorial](/platforms-and-hosting/runtime-operations.html) — annotations,
   timeout, retry, cancellation in practice.

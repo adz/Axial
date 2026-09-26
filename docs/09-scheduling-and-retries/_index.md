@@ -5,11 +5,11 @@ description: Retry failed workflows and repeat successful workflows with reusabl
 
 # Scheduling and Retries
 
-A `Schedule` decides whether a flow should run again and how long to wait. Creating a schedule doesn't run anything. Apply it with `Schedule.retry` or `Schedule.repeat`.
+A `Schedule` decides whether a flow should run again and how long to wait. Creating a schedule doesn't run anything. Apply it with `Flow.retry` or `Flow.repeat`.
 
 Use schedules for tasks such as retrying a request, adding exponential backoff, polling a service, or running a heartbeat.
 
-Schedules don't store attempt state. `Schedule.retry` and `Schedule.repeat` track attempts for each run, so you can reuse one schedule value across unrelated flows.
+Schedules don't store attempt state. `Flow.retry` and `Flow.repeat` track attempts for each run, so you can reuse one schedule value across unrelated flows.
 
 `Schedule` works on .NET and Fable's JavaScript target.
 
@@ -79,7 +79,7 @@ each takes.
 // Start a control scan every 50 ms without drifting.
 let scanLoop =
     scanOnce
-    |> Schedule.repeat (Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0))
+    |> Flow.repeat (Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0))
 ```
 
 If a run takes longer than a period, the next run starts immediately, once. The schedule then realigns to the next
@@ -113,9 +113,9 @@ Both pair the two schedules' outputs, with the piped-in schedule first. `interse
 
 ## Retry failed flows
 
-Use `Schedule.retry` to rerun a flow after an expected domain failure (`Cause.Fail`).
+Use `Flow.retry` to rerun a flow after an expected domain failure (`Cause.Fail`).
 
-`Schedule.retry` doesn't retry defects (`Cause.Die`) or interruptions (`Cause.Interrupt`). Axial passes them through without consulting the schedule.
+`Flow.retry` doesn't retry defects (`Cause.Die`) or interruptions (`Cause.Interrupt`). Axial passes them through without consulting the schedule.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let unstableCall =
@@ -126,14 +126,56 @@ let unstableCall =
 // Try up to 4 times: 1 initial attempt and 3 retries.
 let resilientCall =
     unstableCall
-    |> Schedule.retry (Schedule.recurs 3)
+    |> Flow.retry (Schedule.recurs 3)
 ```
 
 The retry stops when the flow succeeds or the schedule declines another run. If the schedule stops after a failure, the flow returns that failure.
 
+Each attempt runs in its own child scope. When an attempt fails and another is scheduled, the failed attempt's
+finalizers run before the retry starts. The successful attempt's scope stays open until the enclosing scope closes, so a
+connection or handle it returns is still usable.
+
+### Retry only some errors
+
+The schedule sees each typed error as its input. `Schedule.whileInput` continues only for errors that satisfy a
+predicate, and `Schedule.upTo` caps the number of retries of any schedule:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+let isTransient error =
+    match error with
+    | Unavailable
+    | RateLimited -> true
+    | NotFound -> false
+
+let resilientFetch =
+    fetch
+    |> Flow.retry (
+        Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
+        |> Schedule.upTo 3
+        |> Schedule.whileInput isTransient)
+```
+
+`Schedule.untilInput` is the negation: it stops on the first input that satisfies the predicate.
+
+### Describe a retry with a record
+
+A `Retry` record names the three choices most retries make, and `Retry.schedule` turns it into a schedule. Start
+from `Retry.defaults` (3 retries, exponential backoff from 100 ms capped at 10 s, every error retried) and change
+the fields you need:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+let resilientFetch =
+    fetch
+    |> Flow.retry (Retry.schedule { Retry.defaults with Retries = 5; When = isTransient })
+```
+
+`Retries` counts retries after the first attempt, the same as `Schedule.recurs`. `Backoff` is `Backoff.NoDelay`,
+`Backoff.Fixed delay`, or `Backoff.Exponential(initial, max)`. Write a `Schedule` pipeline when you need jitter,
+fixed-rate timing, or elapsed-time limits.
+
 ## Repeat successful flows
 
-Use `Schedule.repeat` to run a successful flow again. This is useful for polling, heartbeats, and recurring background work.
+Use `Flow.repeat` to run a successful flow again. This is useful for polling, heartbeats, and recurring background work.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let pollStatus =
@@ -144,10 +186,10 @@ let pollStatus =
 // Poll every 5 seconds until the flow fails or is interrupted.
 let recurringPoll =
     pollStatus
-    |> Schedule.repeat (Schedule.spaced (TimeSpan.FromSeconds 5.0))
+    |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 5.0))
 ```
 
-`Schedule.repeat` consults the schedule only after a successful run. A typed failure, defect, or interruption stops the repetition immediately.
+`Flow.repeat` consults the schedule only after a successful run. A typed failure, defect, or interruption stops the repetition immediately.
 
 ## Schedule API reference
 

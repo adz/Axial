@@ -17,7 +17,7 @@ module WorkflowConcurrencyTests =
                 let! deferred = Deferred.make<unit, string, int> ()
                 let! fiber = Deferred.await deferred |> Flow.fork
                 let! completed = Deferred.succeed 42 deferred
-                let! value = Flow.join fiber
+                let! value = Fiber.join fiber
                 return completed, value
             }
 
@@ -90,7 +90,7 @@ module WorkflowConcurrencyTests =
                     Flow.race
                         (Deferred.await deferred)
                         (flow {
-                            do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 100.0)
+                            do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
                             return 99
                         })
             }
@@ -119,14 +119,14 @@ module WorkflowConcurrencyTests =
                     Semaphore.withPermit semaphore (
                         flow {
                             enter ()
-                            do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 40.0)
+                            do! Flow.sleep (TimeSpan.FromMilliseconds 40.0)
                             leave ()
                         })
 
                 let! left = Flow.fork protectedFlow
                 let! right = Flow.fork protectedFlow
-                do! Flow.join left
-                do! Flow.join right
+                do! Fiber.join left
+                do! Fiber.join right
                 return maxActive
             }
 
@@ -171,7 +171,7 @@ module WorkflowConcurrencyTests =
         let workflow : Flow<unit, string, int> =
             flow {
                 let! (fiber: Fiber<string, int>) = Flow.ok 42 |> Flow.fork
-                let! result = fiber |> Flow.join
+                let! result = fiber |> Fiber.join
                 return result
             }
 
@@ -182,7 +182,7 @@ module WorkflowConcurrencyTests =
         let workflow : Flow<unit, string, int> =
             flow {
                 let! (fiber: Fiber<string, int>) = Flow.fail "boom" |> Flow.fork
-                let! result = fiber |> Flow.join
+                let! result = fiber |> Fiber.join
                 return result
             }
 
@@ -195,14 +195,14 @@ module WorkflowConcurrencyTests =
             flow {
                 let! (fiber: Fiber<string, int>) = 
                     flow {
-                        do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 500.0)
+                        do! Flow.sleep (TimeSpan.FromMilliseconds 500.0)
                         executed <- true
                         return 42
                     }
                     |> Flow.fork
                 
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 100.0)
-                let! exit = fiber |> Flow.interrupt
+                do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
+                let! exit = fiber |> Fiber.interrupt
                 return exit
             }
 
@@ -228,16 +228,16 @@ module WorkflowConcurrencyTests =
                 let rec untilQueued remaining =
                     flow {
                         if waitingCount semaphore () = 0 && remaining > 0 then
-                            do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 1.0)
+                            do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
                             return! untilQueued (remaining - 1)
                     }
 
                 do! untilQueued 5000
                 // Race the interruption against the release that would grant the waiter its permit.
-                let! _ = Flow.zipPar (Flow.interrupt waiter) (Deferred.succeed () release)
-                do! Flow.join holder
+                let! _ = Flow.zipPar (Fiber.interrupt waiter) (Deferred.succeed () release)
+                do! Fiber.join holder
                 // The permit must be available again whichever side of the race won.
-                return! Semaphore.withPermit semaphore (Flow.succeed true) |> Flow.Runtime.timeoutToOk (TimeSpan.FromSeconds 5.0) false
+                return! Semaphore.withPermit semaphore (Flow.succeed true) |> Flow.timeoutToOk (TimeSpan.FromSeconds 5.0) false
             }
 
         let workflow = List.init 200 (fun _ -> attempt ()) |> Flow.sequence
@@ -257,3 +257,58 @@ module WorkflowConcurrencyTests =
             }
 
         test <@ Flow.runSync () workflow = Exit.Success(true, true) @>
+
+    [<Fact>]
+    let ``Fiber.await returns the exit without failing`` () =
+        let workflow : Flow<unit, string, Exit<int, string> * Exit<int, string>> =
+            flow {
+                let! failing = Flow.fork (Flow.fail "boom")
+                let! succeeding = Flow.fork (Flow.ok 7)
+                let! failed = Fiber.await failing
+                let! succeeded = Fiber.await succeeding
+                return failed, succeeded
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure(Cause.Fail "boom"), Exit.Success 7) @>
+
+    [<Fact>]
+    let ``Fiber.poll reports None until the fiber settles`` () =
+        let workflow : Flow<unit, string, Exit<unit, string> option * Exit<unit, string> option> =
+            flow {
+                let! gate = Deferred.make<unit, string, unit> ()
+                let! fiber = Flow.fork (Deferred.await gate)
+                let! before = Fiber.poll fiber
+                let! _ = Deferred.succeed () gate
+                let! _ = Fiber.await fiber
+                let! after = Fiber.poll fiber
+                return before, after
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(None, Some(Exit.Success())) @>
+
+    [<Fact>]
+    let ``Fiber.interrupt returns the interrupted exit`` () =
+        let workflow : Flow<unit, string, Exit<unit, string>> =
+            flow {
+                let! fiber = Flow.fork (Flow.sleep (TimeSpan.FromMinutes 1.0))
+                return! Fiber.interrupt fiber
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt) @>
+
+    [<Fact>]
+    let ``catchCancellation converts only cancellation the runtime did not request`` () =
+        let selfCanceled : Exit<unit, string> =
+            Flow.fromTask (fun _ -> Task.FromCanceled<unit>(CancellationToken(true)))
+            |> Flow.catchCancellation (fun _ -> "library timeout")
+            |> Flow.runSync ()
+
+        use cts = new CancellationTokenSource(TimeSpan.FromMilliseconds 20.0)
+
+        let requested : Exit<unit, string> =
+            Flow.fromTask (fun token -> task { do! Task.Delay(Timeout.Infinite, token) })
+            |> Flow.catchCancellation (fun _ -> "library timeout")
+            |> Flow.runSyncWithToken () cts.Token
+
+        test <@ selfCanceled = Exit.Failure(Cause.Fail "library timeout") @>
+        test <@ requested = Exit.Failure Cause.Interrupt @>
