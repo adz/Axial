@@ -83,6 +83,10 @@ module App =
             async {
                 return!
                     Async.FromContinuations(fun (onSuccess, _, _) ->
+#if FABLE_COMPILER
+                        // Resumed from the app's settle callback, so reinstall the waiter's ambient runtime.
+                        let onSuccess = Platform.resumeWith (Platform.captureAmbient ()) onSuccess
+#endif
                         let immediate =
                             lock gate (fun () ->
                                 match settled with

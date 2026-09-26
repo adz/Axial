@@ -118,4 +118,4 @@ application
 
 ## Platform notes
 
-Supervision and the observer hooks are pure F# and behave identically under Fable. The detection mechanisms differ slightly by platform: the scope-close sweep works everywhere; the GC net is .NET-only; and Fable's timeout cancels its loser without surfacing an exit, so timeout-loser reporting is .NET-only as well.
+Supervision and the observer hooks are pure F# and behave identically under Fable. The detection mechanisms differ slightly by platform: the scope-close sweep and timeout-loser reporting work everywhere, and the GC net is .NET-only.

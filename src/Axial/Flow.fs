@@ -1188,20 +1188,39 @@ module Flow =
 #if FABLE_COMPILER
                 let key =
                     parentRuntime.Scope.Register(fun _ -> async {
+                        let stopFailure = ref None
+
                         match graceful with
                         | Some request ->
-                            let! _ = invoke request.Stop environment CancellationToken.None
+                            let! stopExit = invoke request.Stop environment CancellationToken.None
 
-                            try
-                                let! child = Async.StartChild(exitTask, int request.Grace.TotalMilliseconds)
-                                let! _ = child
-                                ()
-                            with :? TimeoutException -> ()
+                            match stopExit with
+                            | Exit.Failure cause -> stopFailure.Value <- Cause.defects cause |> List.tryHead
+                            | Exit.Success() -> ()
+
+                            // Wait for the fiber or the grace period, whichever ends first, on the runtime's time.
+                            let graceTimer = new CancellationTokenSource()
+
+                            Platform.preserveAmbient (fun () ->
+                                Async.StartImmediate(
+                                    async {
+                                        let! _ = exitTask
+                                        graceTimer.Cancel()
+                                    }
+                                ))
+
+                            let! _ = parentRuntime.Time.Sleep<unit>(request.Grace, graceTimer.Token)
+                            ()
                         | None -> ()
 
                         cts.Cancel()
                         let! _ = exitTask
                         tracker.TryReport()
+
+                        // A stop request that failed is a cleanup defect of the closing scope.
+                        match stopFailure.Value with
+                        | Some error -> raise error
+                        | None -> ()
                     })
 #else
                 let weakTracker = WeakReference<FiberDefectTracker>(tracker)

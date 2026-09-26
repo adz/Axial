@@ -158,8 +158,8 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   shut-down queue, which defeated draining shutdown. It is not linked to the forking flow's cancellation, so it also
   drains when the application is cancelled.
 - Runtime time is a replaceable `ITimeSource` in the runtime context, separate from the application's `IClock`. Timed
-  runtime behaviour is tested on `ManualTime` with exact assertions instead of wall-clock windows. Timeouts under Fable
-  still use the platform timer.
+  runtime behaviour is tested on `ManualTime` with exact assertions instead of wall-clock windows. Fable timeouts,
+  `race`, and the `forkGraceful` grace wait use the same time source.
 - `SubscriptionRef` gives late joiners the current value followed by every update; updates and new streams share the
   hub's publishing turn, so no update is missed or repeated.
 - Queue metrics are pulled: `Dequeue.stats` keeps counters, and `QueueMetrics.observe` in `Axial.Telemetry` exposes them
@@ -169,3 +169,20 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   an interrupted taker could return after a later value had already been taken, breaking FIFO order; the torture test
   in `docs/08-concurrency-and-state/09-torture-test.md` found it. `takeBetween` is one handover of the whole batch, so
   it never holds values outside the queue while it waits.
+- `Flow.ensuring`, `Flow.onExit`, and `Flow.onInterrupt` attach cleanup to one expression, and `Flow.never` waits
+  until interrupted. The names follow ZIO's and Cats Effect's, which users of those libraries guess first. Handlers run
+  without the flow's cancellation and cannot fail with a typed error; a handler defect is added to the outcome. They
+  sit beside scope finalizers: those live as long as a scope and do not see the `Exit`.
+
+## 2026-09-27: Runtime behaviour is tested under Fable
+
+- `tests/Axial.Fable.Tests` compiles with Fable and runs on Node through `scripts/run-fable-tests.sh`, in CI. xUnit does
+  not run under JavaScript, so the project has its own small harness. Its first run found three Fable-only defects
+  that a compile check could not: `Flow.race` failed outright, `Flow.zipPar` did not cancel the other branch on
+  failure, and forked fibers interfered with each other.
+- The fiber interference came from the ambient runtime being a plain global on JavaScript: a fiber that suspended left
+  its runtime installed for whatever ran next. Every resume and start point in `Platform.fs` now reinstalls the value
+  its continuation suspended under and restores the resumer's afterwards. Code that resumes or starts Flow work by
+  hand on Fable must use `Platform.resumeWith` and `Platform.preserveAmbient` the same way.
+- Fable's async runtime can start an awaiting async later than it was built, so `awaitSignal` checks the signal again
+  when it registers its waiter; without that, a wake-up in the gap was lost and a queue consumer stalled.

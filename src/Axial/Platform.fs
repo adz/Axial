@@ -272,6 +272,43 @@ let tryExecution
     }
     |> ofAwaitable
 
+#if FABLE_COMPILER
+// ---------------------------------------------------------------------------------------------
+// The ambient slot on JavaScript. There is one thread but many interleaved fibers: a fiber that suspends leaves
+// whatever value it installed in place for the code that runs next. So every point in this module that resumes a
+// suspended continuation reinstalls the value that continuation suspended under, and gives the resumer its own
+// value back afterwards; and every point that starts work synchronously restores the starter's value when the work
+// first suspends. Code outside this module must do the same when it resumes or starts Flow work by hand.
+// ---------------------------------------------------------------------------------------------
+
+let private ambientSlot: obj ref = ref null
+
+/// The ambient value current now, to hand to <c>resumeWith</c> when a continuation registered now is resumed.
+let captureAmbient () : obj = ambientSlot.Value
+
+/// Reinstalls an ambient value captured before an await, once the await has resumed.
+let restoreAmbient (captured: obj) : unit = ambientSlot.Value <- captured
+
+/// Resumes a continuation under the ambient value it suspended with, then gives the resumer its own value back.
+let resumeWith (captured: obj) (continuation: 'value -> unit) (value: 'value) : unit =
+    let resumer = ambientSlot.Value
+    ambientSlot.Value <- captured
+
+    try
+        continuation value
+    finally
+        ambientSlot.Value <- resumer
+
+/// Runs code that may start other work synchronously, then restores the caller's ambient value.
+let preserveAmbient (start: unit -> unit) : unit =
+    let saved = ambientSlot.Value
+
+    try
+        start ()
+    finally
+        ambientSlot.Value <- saved
+#endif
+
 /// Converts a raw async operation into an execution, mapping its produced value into an exit outcome. Thrown
 /// exceptions are not caught; they propagate as a faulted execution for the caller to handle (typically with
 /// <c>tryExecution</c>).
@@ -288,7 +325,10 @@ let executionOfAsyncUnguarded
     : Execution<'v, 'e> =
 #if FABLE_COMPILER
     async {
+        // A foreign async resumes from callbacks this module does not control.
+        let captured = captureAmbient ()
         let! value = operation
+        restoreAmbient captured
         return mapResult value
     }
 #else
@@ -314,7 +354,13 @@ let executionOfAsyncExit
     (operation: Async<Exit<'value, 'error>>)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
-    operation
+    async {
+        // A foreign async resumes from callbacks this module does not control.
+        let captured = captureAmbient ()
+        let! exit = operation
+        restoreAmbient captured
+        return exit
+    }
 #else
     ValueTask<Exit<'value, 'error>>(Async.StartAsTask(operation, cancellationToken = cancellationToken))
 #endif
@@ -462,12 +508,17 @@ let dieDescription (error: exn) : string =
 // ---------------------------------------------------------------------------------------------
 
 #if FABLE_COMPILER
-/// An ambient cell holding the current runtime context. [JS-only assumption] Fable's JavaScript target has no
-/// preemption within a single thread, so a plain mutable field suffices. A non-JS Fable target with real threads
-/// would need a thread-local (or equivalent per-strand) cell instead, and one with no shared state at all (e.g.
-/// Fable.Erlang) likely would not need this primitive in this shape in the first place.
-type RuntimeCell<'value> =
-    { mutable Current: 'value }
+/// An ambient cell holding the current runtime context. [JS-only assumption] It reads and writes the single ambient
+/// slot above, which the resume and start points in this module keep correct across interleaved fibers. A Fable target
+/// with real threads would need a per-strand cell instead.
+type RuntimeCell<'value>(initial: 'value) =
+    do
+        if isNull ambientSlot.Value then
+            ambientSlot.Value <- box initial
+
+    member _.Current
+        with get () = unbox<'value> ambientSlot.Value
+        and set (value: 'value) = ambientSlot.Value <- box value
 #else
 /// An ambient cell holding the current runtime context. .NET uses <see cref="T:System.Threading.AsyncLocal`1" />
 /// so the value flows correctly across async continuations without leaking between concurrent fibers.
@@ -478,7 +529,7 @@ type RuntimeCell<'value> =
 /// Creates a new ambient runtime cell seeded with the supplied default value.
 let newCell (initial: 'value) : RuntimeCell<'value> =
 #if FABLE_COMPILER
-    { Current = initial }
+    RuntimeCell initial
 #else
     let cell = AsyncLocal<'value>()
     cell.Value <- initial
@@ -595,6 +646,7 @@ let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Ex
             Async.FromContinuations(fun (onSuccess, onError, onCancel) ->
                 let settled = ref false
                 let registration: IDisposable option ref = ref None
+                let captured = captureAmbient ()
 
                 // Disposing the registration when the timer fires keeps a long-lived token from accumulating one
                 // callback per sleep, which a repeating schedule would otherwise do on every tick.
@@ -602,7 +654,7 @@ let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Ex
                     if not settled.Value then
                         settled.Value <- true
                         registration.Value |> Option.iter (fun disposable -> disposable.Dispose())
-                        onSuccess value
+                        resumeWith captured onSuccess value
 
                 if cancellationToken.IsCancellationRequested then
                     settle true
@@ -650,6 +702,69 @@ let systemTime : ITimeSource =
         member _.Sleep(delay, cancellationToken) = sleepExecution delay cancellationToken }
 
 
+#if FABLE_COMPILER
+/// A running branch of a concurrent combinator on Fable: its exit once settled, and a way to be told of it.
+/// JavaScript runs one callback at a time, so the shared state needs no lock.
+type private Branch<'value, 'error> =
+    { Settled: unit -> Exit<'value, 'error> option
+      OnSettled: (Exit<'value, 'error> -> unit) -> unit }
+
+/// Starts an execution at once. An exception it raises settles the branch as a defect.
+let private startBranch (operation: CancellationToken -> Execution<'value, 'error>) (token: CancellationToken) =
+    let finished: Exit<'value, 'error> option ref = ref None
+    let waiters: (Exit<'value, 'error> -> unit) list ref = ref []
+
+    preserveAmbient (fun () ->
+        Async.StartImmediate(
+            async {
+                let! exit =
+                    async {
+                        try
+                            return! operation token
+                        with error ->
+                            return Exit.Failure(Cause.Die error)
+                    }
+
+                finished.Value <- Some exit
+                let pending = List.rev waiters.Value
+                waiters.Value <- []
+
+                for waiter in pending do
+                    preserveAmbient (fun () -> waiter exit)
+            }
+        ))
+
+    { Settled = fun () -> finished.Value
+      OnSettled =
+        fun waiter ->
+            match finished.Value with
+            | Some exit -> waiter exit
+            | None -> waiters.Value <- waiter :: waiters.Value }
+
+let private awaitBranch (branch: Branch<'value, 'error>) : Async<Exit<'value, 'error>> =
+    Async.FromContinuations(fun (resolve, _, _) -> branch.OnSettled(resumeWith (captureAmbient ()) resolve))
+
+/// Waits for whichever of two branches settles first.
+let private awaitFirst (left: Branch<'left, 'error>) (right: Branch<'right, 'error>) =
+    Async.FromContinuations(fun (resolve, _, _) ->
+        let decided = ref false
+        let captured = captureAmbient ()
+
+        let decide choice =
+            if not decided.Value then
+                decided.Value <- true
+                resumeWith captured resolve choice
+
+        left.OnSettled(Choice1Of2 >> decide)
+        right.OnSettled(Choice2Of2 >> decide))
+
+/// A cancellation source for one branch, cancelled when the enclosing execution is.
+let private branchSource (parent: CancellationToken) =
+    let source = new CancellationTokenSource()
+    parent.Register(fun () -> source.Cancel()) |> ignore
+    source
+#endif
+
 /// Runs <paramref name="operation" />, racing it against a timeout of <paramref name="after" />. Falls back to
 /// <paramref name="onTimeout" /> if the timeout wins. This is the shared implementation behind
 /// <c>Flow.timeout</c>, <c>timeoutToOk</c>, <c>timeoutToError</c>, and <c>timeoutWith</c>, which differ
@@ -663,20 +778,29 @@ let timeoutExecution
     (onTimeout: unit -> Execution<'value, 'error>)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
-    // Fable's StartChild timeout cancels the child without surfacing its exit, so there is nothing to
-    // report to onDiscardedExit here. It uses the platform timer directly; a replaced time source applies to
-    // timeouts on .NET only.
-    ignore onDiscardedExit
-    ignore time
-
+    // The operation and the timer race on the runtime's time source; the loser of a timeout is interrupted and
+    // awaited, as on .NET.
     async {
-        try
-            let! child =
-                Async.StartChild(operation cancellationToken, millisecondsTimeout = int after.TotalMilliseconds)
+        let operationSource = branchSource cancellationToken
+        let timerSource = new CancellationTokenSource()
+        let operation = startBranch operation operationSource.Token
+        operation.OnSettled(fun _ -> timerSource.Cancel())
 
-            return! child
-        with :? TimeoutException ->
-            return! onTimeout ()
+        match operation.Settled() with
+        | Some exit -> return exit
+        | None ->
+            let! timer = time.Sleep<unit>(after, timerSource.Token)
+
+            match timer, operation.Settled() with
+            | _, Some exit -> return exit
+            | Exit.Success(), None ->
+                operationSource.Cancel()
+                // The losing operation's exit is dropped here and can never be observed by anyone else,
+                // so hand it to the caller for unobserved-defect reporting before discarding it.
+                let! discarded = awaitBranch operation
+                onDiscardedExit discarded
+                return! onTimeout ()
+            | Exit.Failure _, None -> return! awaitBranch operation
     }
 #else
     ValueTask<Exit<'value, 'error>>(
@@ -724,21 +848,39 @@ let zipParExecution
     (chooseParallel: Exit<'left, 'error> -> Exit<'right, 'error> -> Exit<'left * 'right, 'error>)
     : Execution<'left * 'right, 'error> =
 #if FABLE_COMPILER
+    // Fail-fast, as on .NET: the first failure cancels the other branch, which is awaited before combining.
     async {
-        let leftTask = async {
-            let! x = leftOp cancellationToken
-            return box x
-        }
+        let leftSource = branchSource cancellationToken
+        let rightSource = branchSource cancellationToken
+        let left = startBranch leftOp leftSource.Token
+        let right = startBranch rightOp rightSource.Token
+        let! first = awaitFirst left right
 
-        let rightTask = async {
-            let! x = rightOp cancellationToken
-            return box x
-        }
+        match first with
+        | Choice1Of2(Exit.Failure cause) ->
+            rightSource.Cancel()
+            let! rightExit = awaitBranch right
 
-        let! results = Async.Parallel [| leftTask; rightTask |]
-        let leftExit = unbox<Exit<'left, 'error>> results[0]
-        let rightExit = unbox<Exit<'right, 'error>> results[1]
-        return chooseParallel leftExit rightExit
+            return
+                match rightExit with
+                | Exit.Failure Cause.Interrupt -> Exit.Failure cause
+                | Exit.Failure otherCause -> Exit.Failure(Cause.Both(cause, otherCause))
+                | Exit.Success _ -> Exit.Failure cause
+        | Choice2Of2(Exit.Failure cause) ->
+            leftSource.Cancel()
+            let! leftExit = awaitBranch left
+
+            return
+                match leftExit with
+                | Exit.Failure Cause.Interrupt -> Exit.Failure cause
+                | Exit.Failure leftCause -> Exit.Failure(Cause.Both(leftCause, cause))
+                | Exit.Success _ -> Exit.Failure cause
+        | Choice1Of2 leftExit ->
+            let! rightExit = awaitBranch right
+            return chooseParallel leftExit rightExit
+        | Choice2Of2 rightExit ->
+            let! leftExit = awaitBranch left
+            return chooseParallel leftExit rightExit
     }
 #else
     ValueTask<Exit<'left * 'right, 'error>>(
@@ -845,7 +987,6 @@ let zipParAllExecution
 #endif
 
 /// Runs two operations concurrently and returns whichever settles first, cancelling the loser.
-/// <remarks>Not supported on Fable: there is no cooperative way to cancel a losing branch mid-flight there.</remarks>
 let raceExecution
     (leftOp: CancellationToken -> Execution<'value, 'error>)
     (rightOp: CancellationToken -> Execution<'value, 'error>)
@@ -853,11 +994,25 @@ let raceExecution
     (onDiscardedExit: Exit<'value, 'error> -> unit)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
-    ignore leftOp
-    ignore rightOp
-    ignore cancellationToken
-    ignore onDiscardedExit
-    async { return failwith "Flow.race is not supported on Fable." }
+    async {
+        let leftSource = branchSource cancellationToken
+        let rightSource = branchSource cancellationToken
+        let left = startBranch leftOp leftSource.Token
+        let right = startBranch rightOp rightSource.Token
+        let! first = awaitFirst left right
+
+        // The loser is cancelled and not awaited; its exit goes to the caller for unobserved-defect reporting once
+        // it settles.
+        match first with
+        | Choice1Of2 exit ->
+            rightSource.Cancel()
+            right.OnSettled onDiscardedExit
+            return exit
+        | Choice2Of2 exit ->
+            leftSource.Cancel()
+            left.OnSettled onDiscardedExit
+            return exit
+    }
 #else
     ValueTask<Exit<'value, 'error>>(
         task {
@@ -947,17 +1102,18 @@ let startFiber
             for waiter in toNotify do
                 waiter exit
 
-    Async.StartImmediate(
-        async {
-            try
-                let! exit = run cts.Token
-                onSettled (statusFromExit exit) exit
-                settle exit
-            with error ->
-                let exit = Exit.Failure(causeOfException error)
-                onSettled (statusFromExit exit) exit
-                settle exit
-        })
+    preserveAmbient (fun () ->
+        Async.StartImmediate(
+            async {
+                try
+                    let! exit = run cts.Token
+                    onSettled (statusFromExit exit) exit
+                    settle exit
+                with error ->
+                    let exit = Exit.Failure(causeOfException error)
+                    onSettled (statusFromExit exit) exit
+                    settle exit
+            }))
 
     ignore parentCancellationToken
 
@@ -965,7 +1121,10 @@ let startFiber
         async {
             match settled with
             | Some exit -> return exit
-            | None -> return! Async.FromContinuations(fun (resolve, _, _) -> waiters <- resolve :: waiters)
+            | None ->
+                return!
+                    Async.FromContinuations(fun (resolve, _, _) ->
+                        waiters <- resumeWith (captureAmbient ()) resolve :: waiters)
         }
 
     cts, exitTask
@@ -1074,6 +1233,7 @@ let awaitSignal (signal: Signal<'value>) (cancellationToken: CancellationToken) 
                     Async.FromContinuations(fun (resolveContinuation, _, _) ->
                         let settled = ref false
                         let registration: IDisposable option ref = ref None
+                        let captured = captureAmbient ()
 
                         // Disposing the cancellation registration at settle keeps a long-lived token from
                         // accumulating one callback per wait.
@@ -1081,9 +1241,14 @@ let awaitSignal (signal: Signal<'value>) (cancellationToken: CancellationToken) 
                             if not settled.Value then
                                 settled.Value <- true
                                 registration.Value |> Option.iter (fun disposable -> disposable.Dispose())
-                                resolveContinuation exit
+                                resumeWith captured resolveContinuation exit
 
-                        signal.Waiters <- (fun value -> settle (Exit.Success value)) :: signal.Waiters
+                        // The async can start later than it was built (Fable's async runtime trampolines deep
+                        // chains), so the signal may have resolved in between: check again before waiting, or the
+                        // wake-up is lost.
+                        match signal.Value with
+                        | Some value -> settle (Exit.Success value)
+                        | None -> signal.Waiters <- (fun value -> settle (Exit.Success value)) :: signal.Waiters
 
                         // Fable's registration is a plain `{ Dispose }` object; its F# type does not expose Dispose.
                         let disposable =
@@ -1120,10 +1285,11 @@ let awaitAnyExitTaskAsSuccess
     let signal = newSignal ()
     exitTasks
     |> List.iteri (fun index exitTask ->
-        Async.StartImmediate(async {
-            let! exit = exitTask
-            resolveSignal signal (index, exit) |> ignore
-        }, cancellationToken))
+        preserveAmbient (fun () ->
+            Async.StartImmediate(async {
+                let! exit = exitTask
+                resolveSignal signal (index, exit) |> ignore
+            }, cancellationToken)))
     awaitSignal signal cancellationToken
 #else
     ValueTask<Exit<int * Exit<'value, 'error>, 'none>>(task {

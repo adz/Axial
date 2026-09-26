@@ -74,6 +74,9 @@ jobs:
       - name: Compile Fable JavaScript surface
         run: bash scripts/check-fable-js-surface.sh
 
+      - name: Run Fable tests on Node
+        run: bash scripts/run-fable-tests.sh
+
   native-aot:
     runs-on: ubuntu-latest
 

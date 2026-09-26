@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compiled to JavaScript with Fable and run on Node by scripts/run-fable-tests.sh. It also builds on .NET so the
+       solution build type-checks it, but its tests only run under Fable. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Harness.fs" />
+    <Compile Include="TimingTests.fs" />
+    <Compile Include="FiberTests.fs" />
+    <Compile Include="QueueTests.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+</Project>

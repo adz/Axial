@@ -34,6 +34,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Axial.Comparisons.Tests/Axial.Comparisons.Tests.fsproj" />
+    <Project Path="tests/Axial.Fable.Tests/Axial.Fable.Tests.fsproj" />
     <Project Path="tests/Axial.FileSystem.Tests/Axial.FileSystem.Tests.fsproj" />
     <Project Path="tests/Axial.Hosting.Tests/Axial.Hosting.Tests.fsproj" />
     <Project Path="tests/Axial.HttpClient.Tests/Axial.HttpClient.Tests.fsproj" />

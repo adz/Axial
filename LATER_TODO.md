@@ -109,7 +109,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 ## 8. v1.0 Compatibility Tracks
 
 - [ ] Define the supported Fable subset explicitly.
-- [x] Add a runnable Fable JavaScript project/gate that references Axial, compiles the intended surface, executes a codec round trip under Node, and checks that .NET-only APIs do not leak into the output (`benchmarks/Axial.Benchmarks.Fable` via `scripts/check-fable-js-surface.sh`).
+- [x] Add a runnable Fable JavaScript project/gate that references Axial, compiles the intended surface, executes a codec round trip under Node, and checks that .NET-only APIs do not leak into the output (`examples/Axial.Hosting.Browser.Example` via `scripts/check-fable-js-surface.sh`; runtime behaviour under Node in `tests/Axial.Fable.Tests` via `scripts/run-fable-tests.sh`).
 - [ ] Audit remaining `#if FABLE_COMPILER` branches (now confined to `Platform.fs`, `Flow.fs`, `Core.fs`, `FlowBuilder.fs`, `BindError.fs`, `Interop.fs`, `Outcome.fs`, `App.fs`); `Ref`, `STM`, `Stream`, and `Schedule` are no longer guarded and compile in the Fable gate.
 - [x] Document unsupported modules per package and runtime (`docs/15-notes/01-packages-and-platforms.md`).
 - [ ] Add trimming analyzer warnings as build failures for the `net8.0` target.
@@ -154,7 +154,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [ ] Add pipelines for text encoding/decoding and compression with the transport packages (`dev-docs/current-ideas/flow-transport-packages.md`).
 - [ ] Add channel internals only when needed to support stream correctness and composition.
 - [x] Add stream tests for backpressure, interruption, finalizers, failures, and chunk boundaries.
-- [ ] Run stream behavior tests under Fable, not only a compile check.
+- [x] Run stream behavior tests under Fable, not only a compile check (`tests/Axial.Fable.Tests` via `scripts/run-fable-tests.sh`, in CI).
 
 ## 13. Post-v1.0 Collections and Internal Infrastructure
 
