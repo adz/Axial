@@ -1091,6 +1091,7 @@ module Flow =
                     cancellationToken
                     (fun status exit ->
                         settled.Value <- Some exit
+                        FiberInterrupts.remove metadata.Id
                         // axial-allow-effect: clock
                         metadata.SettledAt <- Some DateTimeOffset.UtcNow
                         metadata.Status <- status
@@ -1139,6 +1140,12 @@ module Flow =
                     if settledClean.Value then
                         releaseRegistration ())
             with _ -> ()
+
+            // A fiber that settled before this line removed nothing, so it is removed again after registering.
+            FiberInterrupts.register metadata.Id cts
+
+            if settled.Value.IsSome then
+                FiberInterrupts.remove metadata.Id
 
             let fiber = Fiber(metadata, exitTask, cts, tracker, settled)
 

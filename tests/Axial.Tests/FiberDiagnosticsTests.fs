@@ -130,3 +130,22 @@ module FiberDiagnosticsTests =
                 ]
 
         test <@ rendered = expected @>
+
+    [<Fact>]
+    let ``FiberRegistry interrupts live fibers by id and by name`` () =
+        let registry = FiberRegistry()
+
+        let workflow : Flow<unit, string, bool * int * Exit<unit, string> * Exit<unit, string> * bool> =
+            flow {
+                let! stuck = Flow.forkNamed "stuck" (Flow.sleep (TimeSpan.FromSeconds 30.0))
+                let! other = Flow.forkNamed "worker" (Flow.sleep (TimeSpan.FromSeconds 30.0))
+                let byId = registry.Interrupt (Fiber.dump other).Id
+                let byName = registry.InterruptByName "stuck"
+                let! stuckExit = Fiber.await stuck
+                let! otherExit = Fiber.await other
+                let again = registry.Interrupt (Fiber.dump other).Id
+                return byId, byName, stuckExit, otherExit, again
+            }
+            |> Flow.withFiberRegistry registry
+
+        test <@ Flow.runSync () workflow = Exit.Success(true, 1, Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, false) @>

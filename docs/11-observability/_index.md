@@ -221,6 +221,10 @@ ids. Each dump entry also carries the runtime annotations that were in scope at 
 settled fibers, the settle timestamp. `registry.Snapshot()` returns the same data as structured
 `FiberDump` values for programmatic checks; `Fiber.dump fiber` snapshots a single handle.
 
+A dump that shows a stuck fiber can also act on it: `registry.Interrupt id` signals one live fiber to stop, and
+`registry.InterruptByName "outbox-poller"` signals every live fiber with that name and returns how many it signalled.
+Neither waits; whoever joins or awaits the fiber sees `Cause.Interrupt`.
+
 To put a dump where your traces are, `FiberDumpTelemetry.record registry` attaches the live-fiber tree to
 the current activity as an `axial.flow.fiber.dump` event (or a standalone span when no activity is
 current) — useful just before a timeout fires or from a slow-request handler, so the trace that explains

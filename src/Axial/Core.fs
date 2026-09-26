@@ -362,6 +362,28 @@ module FiberObserver =
         : unit =
         try observer.OnUnobservedDefect metadata defect with _ -> ()
 
+/// The interrupt handle of every running forked fiber, keyed by fiber id. Filled by <c>Flow.fork</c> and emptied as
+/// fibers settle, so it holds only live fibers. It lets <c>FiberRegistry</c> interrupt a fiber it only knows by id.
+module internal FiberInterrupts =
+    let private gate = obj ()
+    let private sources = System.Collections.Generic.Dictionary<int64, CancellationTokenSource>()
+
+    let register (id: FiberId) (source: CancellationTokenSource) =
+        lock gate (fun () -> sources[id.Value] <- source)
+
+    let remove (id: FiberId) =
+        lock gate (fun () -> sources.Remove id.Value |> ignore)
+
+    /// Signals the fiber to stop; returns false when it is no longer running.
+    let signal (id: FiberId) : bool =
+        let source = lock gate (fun () -> match sources.TryGetValue id.Value with | true, source -> Some source | _ -> None)
+
+        match source with
+        | Some source ->
+            source.Cancel()
+            true
+        | None -> false
+
 /// <summary>
 /// Tracks every live forked fiber so the whole runtime can be dumped as a parent/child tree at any moment.
 /// </summary>
@@ -391,6 +413,23 @@ type FiberRegistry() =
     member _.Snapshot() : FiberDump list =
         lock gate (fun () -> live.Values |> Seq.map FiberDump.ofMetadata |> List.ofSeq)
         |> List.sortBy _.Id.Value
+
+    /// <summary>Signals the live fiber with <paramref name="id" /> to stop, without waiting for it.</summary>
+    /// <remarks>
+    /// For diagnostics screens and hang recovery. The fiber is interrupted as <c>Fiber.interrupt</c> would, and
+    /// whoever joins or awaits it sees <c>Cause.Interrupt</c>. Only fibers tracked by this registry can be
+    /// interrupted through it.
+    /// </remarks>
+    /// <returns><c>true</c> when the fiber was live and has been signalled.</returns>
+    member _.Interrupt(id: FiberId) : bool =
+        let tracked = lock gate (fun () -> live.ContainsKey id.Value)
+        tracked && FiberInterrupts.signal id
+
+    /// <summary>Signals every live fiber forked with <paramref name="name" /> to stop, without waiting for them.</summary>
+    /// <returns>The number of fibers signalled.</returns>
+    member this.InterruptByName(name: string) : int =
+        let ids = lock gate (fun () -> [ for metadata in live.Values do if metadata.Name = Some name then metadata.Id ])
+        ids |> List.filter this.Interrupt |> List.length
 
     /// <summary>Renders a snapshot of live fibers as a human-readable parent/child tree, timestamped at <paramref name="now" />.</summary>
     member this.DumpAt(now: DateTimeOffset) : string =
