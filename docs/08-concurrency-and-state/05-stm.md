@@ -113,8 +113,8 @@ lock-free model.
 - **Suspending retry**: When `STM.retry` is called, the transaction suspends without blocking a thread until another transaction commits, then reruns from the start. Every commit wakes every waiting transaction.
 - **Performance**: Because of the global lock, transactions are mutually exclusive. This is suitable for coordinating low-frequency state changes but may become a bottleneck under high contention.
 
-This design prioritizes correctness and simplicity for the initial release while providing the standard 
-STM programming model found in languages like Haskell or ZIO.
+This design prioritizes correctness and simplicity for the initial release while keeping the usual STM programming
+model: transactional references, composable transactions, `retry`, and `orElse`.
 ## API Reference: Module `TRef`
 
 | Function | Signature | Description |

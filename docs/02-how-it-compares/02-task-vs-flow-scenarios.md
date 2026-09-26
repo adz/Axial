@@ -17,7 +17,8 @@ with the operation instead of conventions each caller must reproduce.
 Every claim on this page has a test in the
 [comparison test file](https://github.com/adz/Axial/blob/main/tests/Axial.Comparisons.Tests/ComparisonTests.fs).
 Each scenario identifies what the type communicates, what the runtime guarantees, and what your application must
-still handle.
+still handle. For readers who know ZIO, the Scala effect library that uses the same model, each scenario also names the
+corresponding ZIO concepts.
 
 ## 1. Checkout orchestration with compensation
 

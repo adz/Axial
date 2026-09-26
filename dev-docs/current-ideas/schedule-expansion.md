@@ -14,8 +14,8 @@ aren't lost.
 
 ## 1. Composition surface
 
-`Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate` were added for AdaptMAC's capped reconnect back-off
-and drift-free control scan (see `dev-docs/decisions/README.md`, 2026-09-26). There is still no way to:
+`Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate` were added for capped reconnect back-off and a
+drift-free control scan, requested by an application built on Axial (see `dev-docs/decisions/README.md`, 2026-09-26). There is still no way to:
 
 - sequence schedules (e.g. three fast retries, then fall back to exponential backoff — `Schedule.andThen`);
 - gate recurrence on the flow's output or error value (`Schedule.whileOutput`, `Schedule.recurUntil`).

@@ -10,8 +10,9 @@
 ## Execution and dependencies
 
 - Pass a record environment and read it with `Flow.envWith`. This is the default and needs no other machinery.
-- `Flow.env` is the whole environment; `Flow.envWith f` projects one value out of it. These are ZIO's
-  `ZIO.environment` and `ZIO.environmentWith`; a package's `service` accessor is ZIO's `ZIO.service[A]`.
+- `Flow.env` is the whole environment; `Flow.envWith f` projects one value out of it. Readers who know ZIO, the Scala
+  effect library with the same environment model, can map them to `ZIO.environment` and `ZIO.environmentWith`; a
+  package's `service` accessor maps to `ZIO.service[A]`.
 - `Flow.envWith` takes a selector, not a type or a tag: `Flow.envWith _.Clock`. `'env` is an ordinary F# record,
   so there is no type-directed service lookup and no `Flow.service`.
 - Declare a per-service contract — an interface `IHasFoo` exposing one member `Foo` — only when a package must ask

@@ -7,7 +7,7 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 - `Reified.*` packages are now on NuGet (latest 0.8.2; `Directory.Build.props` pins `ReifiedVersion` 0.7.0). Restore and test `Axial.Hosting.AspNetCore`, `Axial.Hosting.GenHttp`, their examples/tests, and `examples/Axial.ReferenceApp` against package references.
 - Move the cross-product reference application and host examples to a separate integration/examples repository after both release trains are public.
 
-## Concurrency foundations after Queue and Hub (AdaptMAC)
+## Concurrency foundations after Queue and Hub
 
 Follow-up to the Queue/Hub/Schedule review. Work in order; each step is committed and validated on its own.
 

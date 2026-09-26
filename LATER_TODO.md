@@ -62,7 +62,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 ## 5. v1.0 Concurrency and State
 
 - [x] Add Promise/deferred result primitive.
-- [x] Add `Queue` (bounded, dropping, sliding, unbounded) with draining shutdown and lossless interruption, driven by AdaptMAC (`src/Axial/Queue.fs`).
+- [x] Add `Queue` (bounded, dropping, sliding, unbounded) with draining shutdown and lossless interruption (`src/Axial/Queue.fs`).
 - [x] Add semaphore primitive.
 - [x] Add a minimal atomic `Ref` implementation with `make`, `get`, `set`, `update`, and `modify`, backed by a lock and covered by state tests and public docs.
 - [x] Stabilize `Ref` for v1.0: `modify`, `getAndSet`, and `updateAndGet` are implemented, tested in `WorkflowStateTests.fs`, and documented in `docs/08-concurrency-and-state/03-ref.md`.
@@ -72,7 +72,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 - [x] Add a minimal schedule implementation with recurrence limits, fixed spacing, exponential backoff, fixed-range jitter, attempt/delay outputs, and retry/repeat integration.
 - [x] Harden schedule semantics: deterministic jitter (`jitteredWith`), overflow capping, invalid-delay rejection, and pinned `recurs`/statelessness/retry/repeat behavior (see `dev-docs/current-ideas/schedule-expansion.md`).
-- [x] Add `Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate` (AdaptMAC).
+- [x] Add `Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate`.
 - [ ] Add `andThen`, `whileOutput`, `upTo`, elapsed outputs, and reset behavior when an application needs them.
 - [x] Remove `Unchecked.defaultof<'error>` from `Schedule.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error (sleep runs at the workflow's error type; schedule-evaluation failure becomes `Cause.Die`). Also hardened: `exponential` caps at the max delay instead of overflowing ticks, `spaced`/`exponential` reject negative delays, and `Schedule.jitteredWith` takes an injectable sample source for deterministic jitter.
 - [ ] Add deterministic clock-driven tests for retry, repeat, timeout, and sleep.
