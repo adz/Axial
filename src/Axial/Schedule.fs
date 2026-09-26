@@ -238,7 +238,7 @@ module Schedule =
     /// The delay before the next run of a fixed-rate schedule. Runs belong to ticks at <c>LoopStarted + n * period</c>.
     /// A run that ended at or after the next tick overran it, so the next run starts immediately; its own start then
     /// realigns the schedule, so missed ticks never pile up. A start up to a tenth of a period before a tick counts as
-    /// that tick: timers wake early (Task.Delay truncates to whole milliseconds), and without the allowance an early
+    /// that tick: a timer can fire slightly before its due time, and without the allowance an early
     /// start would be assigned to the previous tick and trigger a spurious overrun.
     let internal fixedRateDelay (period: TimeSpan) (context: ScheduleContext) : TimeSpan =
         let tolerance = period.Ticks / 10L

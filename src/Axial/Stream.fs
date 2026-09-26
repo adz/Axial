@@ -331,7 +331,7 @@ module FlowStream =
         (env: 'env)
         (ct: CancellationToken)
         : Execution<Queue<Pumped<'value, 'error>>, 'error> =
-        let queue : Queue<Pumped<'value, 'error>> = QueueCore.create BackPressure (Some 1)
+        let queue = Queue<Pumped<'value, 'error>>(QueueStrategy.BackPressure 1)
 
         let offer item pct =
             Flow.invoke (Queue.offer item queue) env pct
@@ -349,14 +349,14 @@ module FlowStream =
         Flow.invoke (Flow.forkDetached producer) env ct |> Execution.map (fun _ -> queue)
 
     let private takePumped queue env ct : Execution<Pumped<'value, 'error>, 'error> =
-        Flow.invoke (Queue.take queue) env ct
+        Flow.invoke (Dequeue.take queue) env ct
 
     // The next pumped event, or None if none arrives within `timeout`. Interrupting the losing take never loses a value.
     let private takeWithin queue (timeout: TimeSpan) env ct : Execution<Pumped<'value, 'error> option, 'error> =
         if timeout <= TimeSpan.Zero then
-            Flow.invoke (Queue.poll queue) env ct
+            Flow.invoke (Dequeue.poll queue) env ct
         else
-            Flow.invoke (Flow.race (Queue.take queue |> Flow.map Some) (Flow.sleep timeout |> Flow.map (fun () -> None))) env ct
+            Flow.invoke (Flow.race (Dequeue.take queue |> Flow.map Some) (Flow.sleep timeout |> Flow.map (fun () -> None))) env ct
 
     let private finished () : Execution<StreamStep<'value, 'error>, 'error> = Execution.ofValue Done
 
@@ -490,7 +490,7 @@ module FlowStream =
 
                 and running fiber =
                     Execution.loop fiber (fun fiber ->
-                        let nextEvent = Queue.take queue |> Flow.map Choice1Of2
+                        let nextEvent = Dequeue.take queue |> Flow.map Choice1Of2
                         let completion = Fiber.await fiber |> Flow.map Choice2Of2
 
                         Flow.invoke (Flow.race nextEvent completion) env ct

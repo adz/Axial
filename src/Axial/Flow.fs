@@ -513,7 +513,7 @@ module Flow =
     let ok (value: 'value) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofValue value)
 
-    /// <summary>Same as <c>ok</c>; the name ZIO uses.</summary>
+    /// <summary>Same as <c>ok</c>.</summary>
     /// <param name="value">The value to wrap in a successful flow.</param>
     /// <returns>A flow that always succeeds with the provided value.</returns>
     /// <example>
@@ -531,7 +531,7 @@ module Flow =
     let error (failure: 'error) : Flow<'env, 'error, 'value> =
         Flow(fun _ _ -> Execution.ofError failure)
 
-    /// <summary>Same as <c>error</c>; the name ZIO uses.</summary>
+    /// <summary>Same as <c>error</c>.</summary>
     /// <param name="failure">The error value to wrap in a failing flow.</param>
     /// <returns>A flow that always fails with the provided error.</returns>
     /// <example>
