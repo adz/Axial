@@ -69,6 +69,48 @@ let policy =
 
 In application code, get the sample function from the `IRandom` service in `Axial.PlatformService`. In tests, replace it with a function that returns a fixed value.
 
+### Run at a fixed rate
+
+`Schedule.spaced` waits a fixed delay *after* each run, so a run that takes 15 ms on a 50 ms spacing starts every 65 ms.
+`Schedule.fixedRate` instead aligns runs to when the first run began: they start at `start + n * period`, however long
+each takes.
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+// Start a control scan every 50 ms without drifting.
+let scanLoop =
+    scanOnce
+    |> Schedule.repeat (Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0))
+```
+
+If a run takes longer than a period, the next run starts immediately, once. The schedule then realigns to the next
+boundary, so missed ticks are skipped rather than run in a burst.
+
+### Combine schedules
+
+`Schedule.union` continues while either schedule continues and waits for the shorter delay. Combining exponential
+backoff with a spaced schedule caps the backoff:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+// Exponential back-off capped at 30 s, retrying forever
+let reconnect =
+    Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
+    |> Schedule.union (Schedule.spaced (TimeSpan.FromSeconds 30.0))
+```
+
+`Schedule.intersect` continues only while both schedules continue and waits for the longer delay. Combining a
+recurrence limit with backoff bounds the number of attempts:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+// At most 10 retries, with exponential back-off
+let limitedBackoff =
+    Schedule.recurs 10
+    |> Schedule.intersect (Schedule.exponential (TimeSpan.FromMilliseconds 200.0))
+```
+
+Both pair the two schedules' outputs, with the piped-in schedule first. `intersect` emits `'output * 'otherOutput`.
+`union` emits `'output option * 'otherOutput option`, because a side that has stopped has no output; it contributes
+`None` while the other side continues.
+
 ## Retry failed flows
 
 Use `Schedule.retry` to rerun a flow after an expected domain failure (`Cause.Fail`).
@@ -115,5 +157,8 @@ let recurringPoll =
 | `spaced` | `TimeSpan -> Schedule<'env, 'input, int>` | Continues with a fixed delay and emits the zero-based recurrence index. |
 | `exponential` | `TimeSpan -> Schedule<'env, 'input, TimeSpan>` | Continues with a delay that doubles after each run. |
 | `jitteredWith` | `(unit -> float) -> Schedule<'env, 'input, 'output> -> Schedule<'env, 'input, 'output>` | Adjusts each delay by a sampled factor, normally from 0.5 to 1.5. |
+| `fixedRate` | `TimeSpan -> Schedule<'env, 'input, int>` | Starts runs at `start + n * period` and emits the zero-based recurrence index. |
+| `union` | `Schedule<'env, 'input, 'o2> -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, 'o1 option * 'o2 option>` | Continues while either continues, with the shorter delay. |
+| `intersect` | `Schedule<'env, 'input, 'o2> -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, 'o1 * 'o2>` | Continues while both continue, with the longer delay. |
 | `retry` | `Schedule<'env, 'error, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Retries the flow after `Cause.Fail`. |
 | `repeat` | `Schedule<'env, 'value, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Repeats the flow after success. |

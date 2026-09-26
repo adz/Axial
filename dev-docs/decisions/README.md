@@ -136,3 +136,9 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   stops. `FlowStream.fromQueue` treats shutdown plus drain as the normal end of a stream.
 - A hub's overflow strategy belongs to each subscription, not to the hub, because one publisher feeds both lossless and
   latest-value consumers.
+- Schedules gained `union` (continue while either continues, shorter delay) and `intersect` (continue while both
+  continue, longer delay) for capped back-off, and `fixedRate` for a drift-free scan. `union` emits
+  `'output option * 'otherOutput option` because schedules are stateless: a stopped side has no last output to carry.
+  `fixedRate` is not named `fixed` because `fixed` is an F# keyword. Schedule decisions receive an internal context
+  with monotonic timestamps (loop start, execution start and end) from `Platform.monotonicNow`, not a wall clock.
+  `andThen`, `whileOutput`, `upTo`, and elapsed outputs stay deferred in `dev-docs/current-ideas/schedule-expansion.md`.

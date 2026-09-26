@@ -2,12 +2,35 @@ namespace Axial
 
 open System
 
+/// What a schedule knows when it decides whether to recur. Timestamps come from <c>Platform.monotonicNow</c>, so
+/// only differences between them are meaningful.
+type internal ScheduleContext =
+    {
+        /// The number of decisions made before this one, starting at 0.
+        Attempt: int
+        /// When the first execution of the driven flow began.
+        LoopStarted: TimeSpan
+        /// When the execution that just finished began.
+        ExecutionStarted: TimeSpan
+        /// When the execution that just finished ended.
+        ExecutionEnded: TimeSpan
+    }
+
+module internal ScheduleContext =
+    /// A context with no timing information, for decisions that depend only on the attempt number.
+    let ofAttempt attempt =
+        { Attempt = attempt
+          LoopStarted = TimeSpan.Zero
+          ExecutionStarted = TimeSpan.Zero
+          ExecutionEnded = TimeSpan.Zero }
+
 /// <summary>
-/// Represents a stateful schedule that can decide whether to continue and how long to delay.
+/// Decides, after each execution of a flow, whether to run it again and how long to wait first.
 /// </summary>
+/// <remarks>A schedule value holds no state, so the same value can drive any number of independent runs.</remarks>
 type Schedule<'env, 'input, 'output> =
     internal
-    | Schedule of ('input -> int -> Flow<'env, unit, 'output option * TimeSpan>)
+    | Schedule of ('input -> ScheduleContext -> Flow<'env, unit, 'output option * TimeSpan>)
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -28,11 +51,11 @@ module Schedule =
 
     let private maxDelay = TimeSpan.FromTicks maxDelayTicks
 
-    let private invokeSchedule op input attempt env ct : Execution<'output option * TimeSpan, 'error> =
+    let private invokeSchedule op input context env ct : Execution<'output option * TimeSpan, 'error> =
         Execution.fold
             Execution.ofValue
             (dieOnScheduleFailure >> Execution.ofCause)
-            (FlowInternal.invoke (op input attempt) env ct)
+            (FlowInternal.invoke (op input context) env ct)
 
     /// <summary>Creates a schedule that recurs a fixed number of times.</summary>
     /// <remarks>
@@ -53,9 +76,9 @@ module Schedule =
     /// </code>
     /// </example>
     let recurs (n: int) : Schedule<'env, 'input, int> =
-        Schedule(fun _ attempt ->
-            if attempt < n then
-                Flow.ok (Some attempt, TimeSpan.Zero)
+        Schedule(fun _ context ->
+            if context.Attempt < n then
+                Flow.ok (Some context.Attempt, TimeSpan.Zero)
             else
                 Flow.ok (None, TimeSpan.Zero))
 
@@ -72,8 +95,8 @@ module Schedule =
         if delay < TimeSpan.Zero then
             invalidArg (nameof delay) "A spaced schedule requires a non-negative delay."
 
-        Schedule(fun _ attempt ->
-            Flow.ok (Some attempt, delay))
+        Schedule(fun _ context ->
+            Flow.ok (Some context.Attempt, delay))
 
     /// <summary>Creates a schedule that recurs with exponential backoff.</summary>
     /// <param name="baseDelay">The initial delay for the first retry.</param>
@@ -89,8 +112,8 @@ module Schedule =
         if baseDelay < TimeSpan.Zero then
             invalidArg (nameof baseDelay) "Exponential backoff requires a non-negative base delay."
 
-        Schedule(fun _ attempt ->
-            let scaledTicks = float baseDelay.Ticks * Math.Pow(2.0, float attempt)
+        Schedule(fun _ context ->
+            let scaledTicks = float baseDelay.Ticks * Math.Pow(2.0, float context.Attempt)
 
             let delay =
                 if scaledTicks >= float maxDelayTicks then
@@ -118,7 +141,7 @@ module Schedule =
     /// </code>
     /// </example>
     let jitteredWith (sample: unit -> float) (Schedule op) : Schedule<'env, 'input, 'output> =
-        Schedule(fun input attempt ->
+        Schedule(fun input context ->
             Flow.map (fun (out, (delay: TimeSpan)) ->
                 let jitter = sample () + 0.5
                 let scaledTicks = float delay.Ticks * jitter
@@ -130,7 +153,100 @@ module Schedule =
                         TimeSpan.FromTicks(max 0L (int64 scaledTicks))
 
                 out, jitteredDelay
-            ) (op input attempt))
+            ) (op input context))
+
+    /// <summary>Continues while either schedule continues, waiting for the shorter of their delays.</summary>
+    /// <remarks>
+    /// Both schedules are consulted at every decision. The output pairs their outputs; a side that has stopped
+    /// contributes <c>None</c>, and the delay is then the continuing side's delay. The combined schedule stops when
+    /// both have stopped.
+    /// </remarks>
+    /// <param name="other">The schedule combined with the piped-in schedule; its output is the second element.</param>
+    /// <param name="schedule">The piped-in schedule; its output is the first element.</param>
+    /// <example>
+    /// <code>
+    /// // Exponential back-off capped at 30 s, retrying forever
+    /// Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
+    /// |&gt; Schedule.union (Schedule.spaced (TimeSpan.FromSeconds 30.0))
+    /// </code>
+    /// </example>
+    let union
+        (other: Schedule<'env, 'input, 'otherOutput>)
+        (schedule: Schedule<'env, 'input, 'output>)
+        : Schedule<'env, 'input, 'output option * 'otherOutput option> =
+        let (Schedule left) = schedule
+        let (Schedule right) = other
+
+        Schedule(fun input context ->
+            left input context
+            |> Flow.bind (fun (leftOutput, (leftDelay: TimeSpan)) ->
+                right input context
+                |> Flow.map (fun (rightOutput, (rightDelay: TimeSpan)) ->
+                    match leftOutput, rightOutput with
+                    | None, None -> None, TimeSpan.Zero
+                    | Some _, None -> Some(leftOutput, None), leftDelay
+                    | None, Some _ -> Some(None, rightOutput), rightDelay
+                    | Some _, Some _ -> Some(leftOutput, rightOutput), min leftDelay rightDelay)))
+
+    /// <summary>Continues while both schedules continue, waiting for the longer of their delays.</summary>
+    /// <param name="other">The schedule combined with the piped-in schedule; its output is the second element.</param>
+    /// <param name="schedule">The piped-in schedule; its output is the first element.</param>
+    /// <example>
+    /// <code>
+    /// // At most 10 retries, with exponential back-off
+    /// Schedule.recurs 10
+    /// |&gt; Schedule.intersect (Schedule.exponential (TimeSpan.FromMilliseconds 200.0))
+    /// </code>
+    /// </example>
+    let intersect
+        (other: Schedule<'env, 'input, 'otherOutput>)
+        (schedule: Schedule<'env, 'input, 'output>)
+        : Schedule<'env, 'input, 'output * 'otherOutput> =
+        let (Schedule left) = schedule
+        let (Schedule right) = other
+
+        Schedule(fun input context ->
+            left input context
+            |> Flow.bind (fun (leftOutput, (leftDelay: TimeSpan)) ->
+                right input context
+                |> Flow.map (fun (rightOutput, (rightDelay: TimeSpan)) ->
+                    match leftOutput, rightOutput with
+                    | Some leftValue, Some rightValue -> Some(leftValue, rightValue), max leftDelay rightDelay
+                    | _ -> None, TimeSpan.Zero)))
+
+    /// The delay before the next run of a fixed-rate schedule. Runs belong to ticks at <c>LoopStarted + n * period</c>.
+    /// A run that ended at or after the next tick overran it, so the next run starts immediately; its own start then
+    /// realigns the schedule, so missed ticks never pile up. A start up to a tenth of a period before a tick counts as
+    /// that tick: timers wake early (Task.Delay truncates to whole milliseconds), and without the allowance an early
+    /// start would be assigned to the previous tick and trigger a spurious overrun.
+    let internal fixedRateDelay (period: TimeSpan) (context: ScheduleContext) : TimeSpan =
+        let tolerance = period.Ticks / 10L
+        let startOffset = (context.ExecutionStarted - context.LoopStarted).Ticks
+        let tick = (startOffset + tolerance) / period.Ticks
+        let nextTick = context.LoopStarted + TimeSpan.FromTicks((tick + 1L) * period.Ticks)
+
+        if context.ExecutionEnded >= nextTick then
+            TimeSpan.Zero
+        else
+            nextTick - context.ExecutionEnded
+
+    /// <summary>Recurs at a fixed rate aligned to when the first run began, emitting the recurrence count.</summary>
+    /// <remarks>
+    /// Runs start at <c>start + n * period</c>, so the time a run takes does not shift later runs. A run that takes
+    /// longer than a period is followed by one immediate run, after which the schedule realigns to the next
+    /// boundary; missed ticks are skipped rather than run in a burst.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentException">Thrown when <paramref name="period"/> is not positive.</exception>
+    /// <example>
+    /// <code>
+    /// scanOnce |&gt; Schedule.repeat (Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0))
+    /// </code>
+    /// </example>
+    let fixedRate (period: TimeSpan) : Schedule<'env, 'input, int> =
+        if period <= TimeSpan.Zero then
+            invalidArg (nameof period) "A fixed-rate schedule requires a positive period."
+
+        Schedule(fun _ context -> Flow.ok (Some context.Attempt, fixedRateDelay period context))
 
     /// <summary>Retries a failing flow according to the supplied schedule.</summary>
     /// <remarks>Only <c>Cause.Fail</c> is retried. Defects and interruptions propagate immediately without
@@ -152,21 +268,29 @@ module Schedule =
 
         // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
         Flow(fun env ct ->
-            Execution.loop 0 (fun attempt ->
+            let loopStarted = Platform.monotonicNow ()
+
+            Execution.loop (0, loopStarted) (fun (attempt, executionStarted) ->
                 Execution.fold
                     (fun v -> Execution.ofValue (Platform.Break v))
                     (fun cause ->
                         match cause with
                         | Cause.Fail e ->
+                            let context =
+                                { Attempt = attempt
+                                  LoopStarted = loopStarted
+                                  ExecutionStarted = executionStarted
+                                  ExecutionEnded = Platform.monotonicNow () }
+
                             Execution.bind
                                 (fun (decision, delay) ->
                                     match decision with
                                     | Some _ ->
                                         FlowInternal.invoke (Flow.Runtime.sleep delay) env ct
-                                        |> Execution.map (fun () -> Platform.Continue(attempt + 1))
+                                        |> Execution.map (fun () -> Platform.Continue(attempt + 1, Platform.monotonicNow ()))
                                     | None ->
                                         Execution.ofCause cause)
-                                (Execution.mapError (fun () -> e) (FlowInternal.invoke (op e attempt) env ct))
+                                (Execution.mapError (fun () -> e) (FlowInternal.invoke (op e context) env ct))
                         | _ ->
                             Execution.ofCause cause)
                     (FlowInternal.invoke flow env ct)))
@@ -192,16 +316,27 @@ module Schedule =
         // A loop rather than recursion, so a schedule that repeats for the life of an application (a control
         // scan, a heartbeat) runs in constant memory.
         Flow(fun env ct ->
+            let loopStarted = Platform.monotonicNow ()
+
             FlowInternal.invoke flow env ct
             |> Execution.bind (fun first ->
-                Execution.loop (0, first) (fun (attempt, lastValue) ->
+                Execution.loop (0, first, loopStarted) (fun (attempt, lastValue, executionStarted) ->
+                    let context =
+                        { Attempt = attempt
+                          LoopStarted = loopStarted
+                          ExecutionStarted = executionStarted
+                          ExecutionEnded = Platform.monotonicNow () }
+
                     Execution.bind
                         (fun (decision, (delay: TimeSpan)) ->
                             match decision with
                             | Some _ ->
                                 FlowInternal.invoke (Flow.Runtime.sleep delay) env ct
-                                |> Execution.bind (fun () -> FlowInternal.invoke flow env ct)
-                                |> Execution.map (fun nextValue -> Platform.Continue(attempt + 1, nextValue))
+                                |> Execution.bind (fun () ->
+                                    let started = Platform.monotonicNow ()
+
+                                    FlowInternal.invoke flow env ct
+                                    |> Execution.map (fun nextValue -> Platform.Continue(attempt + 1, nextValue, started)))
                             | None ->
                                 Execution.ofValue (Platform.Break lastValue))
-                        (invokeSchedule op lastValue attempt env ct))))
+                        (invokeSchedule op lastValue context env ct))))

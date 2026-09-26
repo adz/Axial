@@ -177,7 +177,7 @@ module WorkflowSchedulingTests =
         let (Schedule op) = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
 
         let delayAt attempt =
-            match Flow.runSync () (op 0 attempt) with
+            match Flow.runSync () (op 0 (ScheduleContext.ofAttempt attempt)) with
             | Exit.Success (_, delay) -> delay
             | other -> failwithf "Expected a delay decision, got %A" other
 
@@ -195,7 +195,7 @@ module WorkflowSchedulingTests =
             |> Schedule.jitteredWith (fun () -> 0.25)
 
         let delayAt attempt =
-            match Flow.runSync () (op 0 attempt) with
+            match Flow.runSync () (op 0 (ScheduleContext.ofAttempt attempt)) with
             | Exit.Success (_, delay) -> delay
             | other -> failwithf "Expected a delay decision, got %A" other
 
@@ -207,7 +207,7 @@ module WorkflowSchedulingTests =
             |> Schedule.jitteredWith (fun () -> 0.999)
 
         let cappedDelay =
-            match Flow.runSync () (cappedOp TimeSpan.Zero 100) with
+            match Flow.runSync () (cappedOp TimeSpan.Zero (ScheduleContext.ofAttempt 100)) with
             | Exit.Success (_, delay) -> delay
             | other -> failwithf "Expected a delay decision, got %A" other
 
@@ -221,7 +221,7 @@ module WorkflowSchedulingTests =
         let delayWithSample baseDelay sample =
             let (Schedule op) = Schedule.spaced baseDelay |> Schedule.jitteredWith sample
 
-            match Flow.runSync () (op 0 0) with
+            match Flow.runSync () (op 0 (ScheduleContext.ofAttempt 0)) with
             | Exit.Success(_, delay) -> delay
             | other -> failwithf "Expected a delay decision, got %A" other
 
@@ -337,3 +337,100 @@ module WorkflowSchedulingTests =
 
         test <@ tokenResult = Exit.Success true @>
         test <@ ensureResult = Exit.Failure (Cause.Fail "canceled") @>
+
+    let private decide (Schedule op: Schedule<unit, int, 'output>) attempt =
+        match Flow.runSync () (op 0 (ScheduleContext.ofAttempt attempt)) with
+        | Exit.Success decision -> decision
+        | other -> failwithf "Expected a decision, got %A" other
+
+    let private ms (value: float) = TimeSpan.FromMilliseconds value
+
+    [<Fact>]
+    let ``Scheduling: union continues while either side continues and waits the shorter delay`` () =
+        let schedule = Schedule.recurs 2 |> Schedule.union (Schedule.recurs 4)
+        test <@ decide schedule 0 = (Some(Some 0, Some 0), TimeSpan.Zero) @>
+        test <@ decide schedule 2 = (Some(None, Some 2), TimeSpan.Zero) @>
+        test <@ decide schedule 4 = (None, TimeSpan.Zero) @>
+
+        let shorter = Schedule.spaced (ms 1000.0) |> Schedule.union (Schedule.spaced (ms 3000.0))
+        test <@ snd (decide shorter 0) = ms 1000.0 @>
+
+        let capped = Schedule.exponential (ms 200.0) |> Schedule.union (Schedule.spaced (TimeSpan.FromSeconds 30.0))
+        test <@ snd (decide capped 0) = ms 200.0 @>
+        test <@ [ 0..40 ] |> List.forall (fun attempt -> snd (decide capped attempt) <= TimeSpan.FromSeconds 30.0) @>
+        test <@ snd (decide capped 40) = TimeSpan.FromSeconds 30.0 @>
+
+    [<Fact>]
+    let ``Scheduling: intersect stops when either side stops and waits the longer delay`` () =
+        let longer = Schedule.spaced (ms 1000.0) |> Schedule.intersect (Schedule.spaced (ms 3000.0))
+        test <@ decide longer 0 = (Some(0, 0), ms 3000.0) @>
+
+        let limited = Schedule.recurs 1 |> Schedule.intersect (Schedule.spaced (ms 10.0))
+        test <@ fst (decide limited 1) = None @>
+
+        let executions = ref 0
+
+        let result : Exit<int, string> =
+            Flow.delay (fun () ->
+                executions.Value <- executions.Value + 1
+                Flow.fail "transient")
+            |> Schedule.retry (Schedule.recurs 10 |> Schedule.intersect (Schedule.exponential (TimeSpan.FromTicks 1L)))
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Fail "transient") @>
+        test <@ executions.Value = 11 @>
+
+    [<Fact>]
+    let ``Scheduling: fixedRate aligns runs to the first run's start`` () =
+        let delay started ended =
+            Schedule.fixedRateDelay
+                (ms 50.0)
+                { Attempt = 0
+                  LoopStarted = TimeSpan.Zero
+                  ExecutionStarted = ms started
+                  ExecutionEnded = ms ended }
+
+        // A run's own duration does not push later runs back.
+        test <@ delay 0.0 20.0 = ms 30.0 @>
+        test <@ delay 50.0 70.0 = ms 30.0 @>
+        // A timer that fires late or slightly early still belongs to its tick.
+        test <@ delay 52.0 60.0 = ms 40.0 @>
+        test <@ delay 49.5 60.0 = ms 40.0 @>
+        test <@ delay 46.0 60.0 = ms 40.0 @>
+        // A run that takes no time waits a whole period instead of running again at once.
+        test <@ delay 50.0 50.0 = ms 50.0 @>
+
+    [<Fact>]
+    let ``Scheduling: fixedRate runs once immediately after an overrun, then realigns`` () =
+        let delay started ended =
+            Schedule.fixedRateDelay
+                (ms 50.0)
+                { Attempt = 0
+                  LoopStarted = TimeSpan.Zero
+                  ExecutionStarted = ms started
+                  ExecutionEnded = ms ended }
+
+        // The first run took more than two periods: run again at once...
+        test <@ delay 0.0 130.0 = TimeSpan.Zero @>
+        // ...and that immediate run realigns to the next boundary instead of catching up on missed ticks.
+        test <@ delay 130.0 135.0 = ms 15.0 @>
+
+        raises<ArgumentException> <@ Schedule.fixedRate TimeSpan.Zero @>
+
+    [<Fact>]
+    let ``Scheduling: repeat with fixedRate does not drift`` () =
+        let starts = ResizeArray<TimeSpan>()
+
+        let run : Flow<unit, Never, unit> =
+            Flow.delay (fun () ->
+                starts.Add(Platform.monotonicNow ())
+                Flow.Runtime.sleep (ms 15.0))
+
+        let result = run |> Schedule.repeat (Schedule.fixedRate (ms 40.0) |> Schedule.intersect (Schedule.recurs 4)) |> Flow.runSync ()
+        test <@ result = Exit.Success () @>
+        test <@ starts.Count = 5 @>
+
+        // Aligned runs start 40 ms apart, so the fifth starts ~160 ms after the first. Drifting by the 15 ms run
+        // time would put it at ~220 ms.
+        let span = (starts[4] - starts[0]).TotalMilliseconds
+        test <@ span >= 150.0 && span < 200.0 @>

@@ -14,9 +14,9 @@ aren't lost.
 
 ## 1. Composition surface
 
-The current surface is deliberately minimal: `recurs`, `spaced`, `exponential`, `jitteredWith`. There is no way to:
+`Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate` were added for AdaptMAC's capped reconnect back-off
+and drift-free control scan (see `dev-docs/decisions/README.md`, 2026-09-26). There is still no way to:
 
-- combine two schedules (e.g. stop when either one would stop — `Schedule.union`/`Schedule.both` in ZIO's terms);
 - sequence schedules (e.g. three fast retries, then fall back to exponential backoff — `Schedule.andThen`);
 - gate recurrence on the flow's output or error value (`Schedule.whileOutput`, `Schedule.recurUntil`).
 
@@ -27,10 +27,9 @@ additive and safe; do not add one speculatively.
 
 No built-in schedule currently exposes cumulative elapsed time. There's no way to express "retry with backoff, but
 give up after 5 minutes total" without hand-rolling it against `DateTimeOffset.UtcNow` inside the retried flow itself.
-A `Schedule.upTo (TimeSpan)` or an `elapsed` combinator would need to fit the existing `'input -> int -> Flow<'env,
-unit, 'output option * TimeSpan>` shape, which forwards individual attempt delays, not affinity to a wall-clock
-target — the current output slot (`'output`) or the schedule's internal closure would need to carry the running
-total.
+Schedule decisions now receive an internal `ScheduleContext` with monotonic timestamps for the loop start and the
+latest execution (added for `fixedRate`), so `Schedule.upTo (TimeSpan)` or an `elapsed` output could read elapsed time
+from `ExecutionEnded - LoopStarted` without any new state.
 
 Decide whether this is common enough in practice to justify the added surface, or better left to application code
 composing `Schedule.retry`/`Schedule.repeat` with an existing timeout combinator (`Flow.Runtime.timeout`).

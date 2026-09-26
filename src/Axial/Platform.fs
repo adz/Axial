@@ -571,6 +571,21 @@ let private scheduleTimer (_callback: unit -> unit) (_milliseconds: int) : obj =
 let private cancelTimer (_timer: obj) : unit = jsNative
 #endif
 
+#if FABLE_COMPILER
+[<Emit("performance.now()")>]
+let private performanceNow () : float = jsNative
+#endif
+
+/// A monotonic timestamp for measuring elapsed time within this process. It is executor mechanics like the sleep
+/// timer, not a wall clock: only differences between two readings are meaningful.
+let monotonicNow () : TimeSpan =
+#if FABLE_COMPILER
+    TimeSpan.FromMilliseconds(performanceNow ())
+#else
+    let timestamp = System.Diagnostics.Stopwatch.GetTimestamp()
+    TimeSpan.FromTicks(int64 (float timestamp * (float TimeSpan.TicksPerSecond / float System.Diagnostics.Stopwatch.Frequency)))
+#endif
+
 /// Suspends for the given delay, observing cancellation as an interruption.
 let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Execution<unit, 'error> =
 #if FABLE_COMPILER
