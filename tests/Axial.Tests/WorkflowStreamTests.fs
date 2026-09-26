@@ -236,6 +236,118 @@ module WorkflowStreamTests =
             gaps
 
     [<Fact>]
+    let ``fromHub subscribes for the life of the stream`` () =
+        let workflow : Flow<unit, Never, int list * int> =
+            flow {
+                let! (hub: Hub<int>) = Hub.make ()
+
+                let! consumer =
+                    hub
+                    |> FlowStream.fromHub QueueStrategy.Unbounded
+                    |> FlowStream.take 2
+                    |> FlowStream.runCollect
+                    |> Flow.fork
+
+                while Platform.lock hub.Gate (fun () -> hub.Subscriptions.Count) = 0 do
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+
+                do! hub |> Hub.publishAll [ 1; 2; 3 ] |> Flow.ignore
+                let! values = Fiber.join consumer
+                let! remaining = Hub.subscriberCount hub
+                return values, remaining
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success([ 1; 2 ], 0) @>
+
+    [<Fact>]
+    let ``fromSchedule ticks on the fixed-rate grid`` () =
+        let ticks =
+            flow {
+                let! started = runtimeNow ()
+
+                return!
+                    Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0)
+                    |> FlowStream.fromSchedule
+                    |> FlowStream.take 4
+                    |> FlowStream.mapFlow (fun tick -> runtimeNow () |> Flow.map (fun now -> tick, (now - started).TotalMilliseconds))
+                    |> FlowStream.runCollect
+            }
+            |> runOnManualTime
+
+        test <@ ticks = Exit.Success [ 0, 50.0; 1, 100.0; 2, 150.0; 3, 200.0 ] @>
+
+    [<Fact>]
+    let ``runIntoQueue and runIntoHub feed every value in order`` () =
+        let workflow : Flow<unit, Never, int list * int list> =
+            flow {
+                let! (queue: Queue<int>) = Queue.bounded 2
+                let! consumer = queue |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.fork
+                do! FlowStream.fromSeq [ 1..10 ] |> FlowStream.runIntoQueue queue
+                do! Dequeue.shutdown queue
+                let! fromQueue = Fiber.join consumer
+
+                let! (hub: Hub<int>) = Hub.make ()
+                let! subscription = hub |> Hub.subscribe QueueStrategy.Unbounded
+                do! FlowStream.fromSeq [ 1..5 ] |> FlowStream.runIntoHub hub
+                let! fromHub = Dequeue.takeAll subscription
+                return fromQueue, fromHub
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success([ 1..10 ], [ 1..5 ]) @>
+
+    [<Fact>]
+    let ``buffer keeps order, never drops the end, and delivers a failure after buffered values`` () =
+        let lossless = FlowStream.fromSeq [ 1..200 ] |> FlowStream.buffer (QueueStrategy.BackPressure 2) |> FlowStream.runCollect |> Flow.runSync ()
+        test <@ lossless = Exit.Success [ 1..200 ] @>
+
+        // A sliding buffer may skip values, but it always keeps the newest one, and the end still arrives.
+        match FlowStream.fromSeq [ 1..1000 ] |> FlowStream.buffer (QueueStrategy.Sliding 1) |> FlowStream.runCollect |> Flow.runSync () with
+        | Exit.Success values ->
+            test <@ List.last values = 1000 && values = List.sort values && values = List.distinct values @>
+        | other -> failwith $"Expected values, got {other}"
+
+        let seen = ResizeArray<int>()
+
+        let failing =
+            FlowStream.fromSeq [ 1; 2 ]
+            |> FlowStream.append (FlowStream.fromFlow (Flow.fail "boom"))
+            |> FlowStream.buffer (QueueStrategy.BackPressure 4)
+            |> FlowStream.runForEach seen.Add
+            |> Flow.runSync ()
+
+        test <@ failing = Exit.Failure(Cause.Fail "boom") && List.ofSeq seen = [ 1; 2 ] @>
+
+    [<Fact>]
+    let ``mergePar interleaves streams by arrival and ends when all end`` () =
+        let merged =
+            [ timed [ 1, 10; 4, 30 ]; timed [ 2, 20; 5, 30 ]; timed [ 3, 30 ] ]
+            |> FlowStream.mergePar
+            |> FlowStream.runCollect
+            |> runOnManualTime
+
+        test <@ merged = Exit.Success [ 1; 2; 3; 4; 5 ] @>
+
+    [<Fact>]
+    let ``mergePar fails with the first failure and stops the other streams`` () =
+        let endless = Schedule.spaced (TimeSpan.FromHours 1.0) |> FlowStream.fromSchedule |> FlowStream.map (fun _ -> 0)
+
+        let failed =
+            [ endless; FlowStream.fromFlow (Flow.fail "boom") ]
+            |> FlowStream.mergePar
+            |> FlowStream.runCollect
+            |> runOnManualTime
+
+        let stoppedEarly =
+            [ endless; endless ]
+            |> FlowStream.mergePar
+            |> FlowStream.take 3
+            |> FlowStream.runCollect
+            |> runOnManualTime
+
+        test <@ failed = Exit.Failure(Cause.Fail "boom") @>
+        test <@ stoppedEarly = Exit.Success [ 0; 0; 0 ] @>
+
+    [<Fact>]
     let ``groupedWithin emits on size, on window, and flushes the tail`` () =
         let groups =
             timed [ 1, 0; 2, 0; 3, 0; 4, 0; 5, 600; 6, 0 ]

@@ -50,6 +50,9 @@
   suspends `Hub.publish`, and while it waits no subscriber gets later values; `Hub.tryPublish` never waits.
 - Each forked fiber owns a child scope, closed when the fiber settles, so what a fiber acquires ends with it. Use
   `Flow.forkGraceful (Dequeue.shutdown queue) grace` for a consumer that must drain its queue when its scope closes.
+- Connect streams to queues and hubs with `FlowStream.fromDequeue`, `fromHub strategy` (subscribes for the life of the
+  stream), `runIntoQueue`, and `runIntoHub`. `FlowStream.mergePar` runs streams concurrently, `buffer strategy`
+  decouples a producer from its consumer, and `fromSchedule` turns a schedule into a tick stream.
 - Use `SubscriptionRef` (namespace `Axial.State`) for current state that consumers join late:
   `SubscriptionRef.changes strategy` streams the current value and then every update, with no gap or duplicate.
 - Cap backoff with `Schedule.exponential d |> Schedule.union (Schedule.spaced cap)`; bound attempts with

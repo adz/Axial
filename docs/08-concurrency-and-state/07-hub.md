@@ -105,6 +105,26 @@ also leave early with `Dequeue.shutdown`, which has the same effect.
 val it: Exit<string list,Never> = Success ["while subscribed"; "subscribers left: 0"]
 ```
 
+## Streams
+
+`FlowStream.fromHub strategy hub` subscribes when the stream starts and unsubscribes when it ends, so a stream consumer
+never leaves a subscription behind. `FlowStream.runIntoHub hub` publishes every value of a stream.
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+// A display that follows the latest reading for as long as it runs.
+let display =
+    readings
+    |> FlowStream.fromHub (QueueStrategy.Sliding 1)
+    |> FlowStream.runForEachFlow render
+
+// A sensor stream feeding the hub.
+let feed = sensorSamples |> FlowStream.runIntoHub readings
+```
+
+`fromHub` does not see values published before the stream starts. When you fork a consumer and publish straight
+afterwards, subscribe first with `Hub.subscribe` and consume the subscription with `FlowStream.fromDequeue`, as the
+first example on this page does.
+
 ## Ordering and late subscribers
 
 Publishes are serialized: every subscriber observes values in the same order, even when several fibers publish

@@ -87,6 +87,221 @@ module FlowStream =
 
         FlowStream(fun _ cancellationToken -> pull cancellationToken ())
 
+    /// <summary>Creates a stream of the values published to a hub, subscribing for the life of the stream.</summary>
+    /// <remarks>
+    /// <para>
+    /// The stream subscribes with <paramref name="strategy" /> when it starts and unsubscribes when it ends, so the
+    /// subscription can never outlive its consumer. It ends normally once the hub is shut down and the backlog is
+    /// drained.
+    /// </para>
+    /// <para>
+    /// Values published before the stream starts are not delivered. When a consumer is forked and must see values
+    /// published straight afterwards, subscribe first with <c>Hub.subscribe</c> and consume the subscription with
+    /// <c>FlowStream.fromDequeue</c>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// readings
+    /// |&gt; FlowStream.fromHub (QueueStrategy.Sliding 1)
+    /// |&gt; FlowStream.runForEach display
+    /// </code>
+    /// </example>
+    let fromHub (strategy: QueueStrategy) (hub: Hub<'value>) : FlowStream<'env, 'error, 'value> =
+        FlowStream(fun env cancellationToken ->
+            Flow.invoke (Hub.subscribe strategy hub) env cancellationToken
+            |> Execution.bind (fun subscription ->
+                let (FlowStream pull) = fromDequeue subscription
+                pull env cancellationToken))
+
+    /// <summary>Creates a stream that emits a schedule's outputs, each after the delay the schedule chooses.</summary>
+    /// <remarks>
+    /// The stream ends when the schedule stops. Delays are measured on the runtime's time, and a slow consumer does not
+    /// shift a fixed-rate schedule: <c>fromSchedule (Schedule.fixedRate period)</c> emits on the
+    /// <c>start + n * period</c> grid, skipping ticks the consumer was too busy to take instead of bursting.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // A tick every 50 ms, aligned to when the stream started.
+    /// Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0) |&gt; FlowStream.fromSchedule
+    /// </code>
+    /// </example>
+    let fromSchedule (schedule: Schedule<'env, unit, 'output>) : FlowStream<'env, 'error, 'output> =
+        FlowStream(fun env cancellationToken ->
+            let time = RuntimeState.current().Time
+            let started = time.Now()
+            let runState = ScheduleContext.newRunState ()
+
+            let rec pull attempt () : Execution<StreamStep<'output, 'error>, 'error> =
+                let now = time.Now()
+
+                let context =
+                    { Attempt = attempt
+                      LoopStarted = started
+                      ExecutionStarted = now
+                      ExecutionEnded = now
+                      RunState = runState }
+
+                Schedule.decide schedule () context env cancellationToken
+                |> Execution.bind (fun (decision, delay) ->
+                    match decision with
+                    | None -> Execution.ofValue Done
+                    | Some output ->
+                        time.Sleep(delay, cancellationToken)
+                        |> Execution.map (fun () -> Next(output, pull (attempt + 1))))
+
+            pull 0 ())
+
+    /// <summary>Runs a stream and offers every value to a queue, waiting while a bounded queue is full.</summary>
+    /// <remarks>
+    /// The queue is not shut down when the stream ends, so several streams can feed one queue; shut it down with
+    /// <c>Dequeue.shutdown</c> once every producer has finished. If the queue is shut down first, the flow is
+    /// interrupted.
+    /// </remarks>
+    /// <example><code>deviceReadings |&gt; FlowStream.runIntoQueue controlInputs</code></example>
+    let runIntoQueue (queue: Queue<'value>) (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, unit> =
+        let (FlowStream op) = stream
+
+        Flow(fun env cancellationToken ->
+            Execution.loop (fun () -> op env cancellationToken) (fun next ->
+                next ()
+                |> Execution.bind (function
+                    | Done -> Execution.ofValue (Platform.Break())
+                    | Next(value, tail) ->
+                        QueueCore.offer queue value cancellationToken |> Execution.map (fun _ -> Platform.Continue tail))))
+        |> Flow.scoped
+
+    /// <summary>Runs a stream and publishes every value to a hub.</summary>
+    /// <remarks>
+    /// Each value is published with <c>Hub.publish</c>, so a full <c>BackPressure</c> subscription slows the stream
+    /// down. If the hub is shut down first, the flow is interrupted.
+    /// </remarks>
+    /// <example><code>sensor |&gt; FlowStream.runIntoHub readings</code></example>
+    let runIntoHub (hub: Hub<'value>) (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, unit> =
+        let (FlowStream op) = stream
+
+        Flow(fun env cancellationToken ->
+            Execution.loop (fun () -> op env cancellationToken) (fun next ->
+                next ()
+                |> Execution.bind (function
+                    | Done -> Execution.ofValue (Platform.Break())
+                    | Next(value, tail) ->
+                        HubCore.publishAll hub [| value |] cancellationToken
+                        |> Execution.map (fun _ -> Platform.Continue tail))))
+        |> Flow.scoped
+
+    // Runs a stream in a fiber of the consumer's scope, offering its values into `queue`, then reports how it ended:
+    // None when it finished, Some cause when it failed or was interrupted. End and failure travel outside the queue,
+    // so a lossy strategy can never drop them. Closing the consumer's scope interrupts the fiber.
+    let private feed
+        (queue: Queue<'value>)
+        (stream: FlowStream<'env, 'error, 'value>)
+        (ended: Cause<'error> option -> unit)
+        env
+        cancellationToken
+        : Execution<unit, 'error> =
+        let (FlowStream op) = stream
+
+        let producer : Flow<'env, Never, unit> =
+            Flow(fun env producerToken ->
+                Execution.loop (fun () -> op env producerToken) (fun next ->
+                    next ()
+                    |> Execution.fold
+                        (function
+                            | Done ->
+                                ended None
+                                Execution.ofValue (Platform.Break())
+                            | Next(value, tail) ->
+                                QueueCore.offer queue value producerToken |> Execution.map (fun _ -> Platform.Continue tail))
+                        (fun cause ->
+                            ended (Some cause)
+                            Execution.ofValue (Platform.Break()))))
+
+        Flow.invoke (Flow.forkDetached producer) env cancellationToken |> Execution.map ignore
+
+    // Takes a fed queue until it is shut down and drained, then ends or fails with the recorded producer failure.
+    // The failure is recorded before the queue shuts down, and both sides meet under the queue's gate.
+    let private drainFed (queue: Queue<'value>) (failure: Cause<'error> option ref) cancellationToken =
+        let rec pull () : Execution<StreamStep<'value, 'error>, 'error> =
+            QueueCore.take
+                queue
+                (fun () ->
+                    match failure.Value with
+                    | Some cause -> Execution.ofCause cause
+                    | None -> Execution.ofValue Done)
+                (fun value -> Execution.ofValue (Next(value, pull)))
+                cancellationToken
+
+        pull ()
+
+    /// <summary>Runs the upstream ahead of its consumer in its own fiber, buffering values with <paramref name="strategy" />.</summary>
+    /// <remarks>
+    /// <para>
+    /// Use it to decouple a producer from a slower consumer. <c>QueueStrategy.BackPressure n</c> lets the producer run up
+    /// to <c>n</c> values ahead; <c>QueueStrategy.Sliding 1</c> keeps only the latest value for a consumer that only
+    /// needs the current state; <c>QueueStrategy.Dropping n</c> keeps the oldest values and drops newer ones while full.
+    /// </para>
+    /// <para>
+    /// The end of the upstream and its failure are never dropped: the consumer receives the buffered values, then the
+    /// stream ends or fails. When the consumer stops early, the producer fiber is interrupted.
+    /// </para>
+    /// </remarks>
+    /// <example><code>samples |&gt; FlowStream.buffer (QueueStrategy.Sliding 1) |&gt; FlowStream.runForEachFlow render</code></example>
+    let buffer (strategy: QueueStrategy) (stream: FlowStream<'env, 'error, 'value>) : FlowStream<'env, 'error, 'value> =
+        FlowStream(fun env cancellationToken ->
+            match QueueCore.validate strategy with
+            | Some error -> Execution.ofDie error
+            | None ->
+                let queue = Queue<'value>(strategy)
+                let failure = ref None
+
+                let ended outcome =
+                    failure.Value <- outcome
+                    QueueCore.shutdown queue
+
+                feed queue stream ended env cancellationToken
+                |> Execution.bind (fun () -> drainFed queue failure cancellationToken))
+
+    /// <summary>Runs several streams concurrently and emits their values as they arrive.</summary>
+    /// <remarks>
+    /// Each stream keeps its own order; values from different streams interleave in arrival order. The merged stream
+    /// ends when every stream has ended. The first failure is delivered after the values already buffered, and the
+    /// other streams are interrupted. When the consumer stops early, every stream is interrupted.
+    /// </remarks>
+    /// <example><code>[ readerA; readerB; readerC ] |&gt; FlowStream.mergePar |&gt; FlowStream.runIntoQueue controlInputs</code></example>
+    let mergePar (streams: FlowStream<'env, 'error, 'value> list) : FlowStream<'env, 'error, 'value> =
+        FlowStream(fun env cancellationToken ->
+            match streams with
+            | [] -> Execution.ofValue Done
+            | _ ->
+                let queue = Queue<'value>(QueueStrategy.BackPressure streams.Length)
+                let gate = obj ()
+                let remaining = ref streams.Length
+                let failure = ref None
+
+                let ended outcome =
+                    let finished =
+                        Platform.lock gate (fun () ->
+                            match outcome with
+                            | Some cause ->
+                                if failure.Value.IsNone then
+                                    failure.Value <- Some cause
+
+                                true
+                            | None ->
+                                remaining.Value <- remaining.Value - 1
+                                remaining.Value = 0)
+
+                    if finished then
+                        QueueCore.shutdown queue
+
+                Execution.loop streams (fun pending ->
+                    match pending with
+                    | [] -> Execution.ofValue (Platform.Break())
+                    | stream :: rest ->
+                        feed queue stream ended env cancellationToken |> Execution.map (fun () -> Platform.Continue rest))
+                |> Execution.bind (fun () -> drainFed queue failure cancellationToken))
+
     /// <summary>Creates a stream from a synchronous sequence of values.</summary>
     /// <param name="values">The sequence of values to be emitted by the stream.</param>
     /// <returns>A <see cref="T:AxialStream`3"/> that yields each value from the sequence.</returns>

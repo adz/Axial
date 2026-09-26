@@ -68,6 +68,36 @@ val it: Exit<int list list,Never> = Success [[1; 2]; [3; 4]; [5]]
 
 The producer offered five values into a queue that holds two, so it suspended until the consumer made room.
 
+## Feeding a queue from streams
+
+`FlowStream.runIntoQueue queue` offers every value of a stream, waiting while a bounded queue is full. It does not shut
+the queue down, so several producers can feed one queue. `FlowStream.mergePar` runs several streams concurrently and
+emits their values as they arrive, which fits device readers feeding one control loop.
+
+```fsharp transcript
+> (flow {
+-     let! (inputs: Queue<int>) = Queue.bounded 4
+-     let! loop = inputs |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.fork
+-     do!
+-         [ FlowStream.fromSeq [ 1; 2; 3 ]; FlowStream.fromSeq [ 10; 20 ] ]
+-         |> FlowStream.mergePar
+-         |> FlowStream.runIntoQueue inputs
+-     do! Dequeue.shutdown inputs
+-     let! received = Fiber.join loop
+-     return List.sort received
+- } : Flow<unit, Never, int list>)
+- |> Flow.run ();;
+val it: Exit<int list,Never> = Success [1; 2; 3; 10; 20]
+```
+
+Values from different streams interleave in arrival order, and each stream keeps its own order. The merged stream ends
+when every stream has ended; the first failure ends it after the values already buffered and interrupts the other
+streams.
+
+`FlowStream.buffer strategy` runs a stream ahead of its consumer in its own fiber, buffered by a `QueueStrategy`. With
+`QueueStrategy.Sliding 1`, a slow consumer only ever sees the latest value. The end of the stream and its failure travel
+outside the buffer, so a lossy strategy never drops them.
+
 ## Taking in batches
 
 A consumer that writes to a database wants to wait for work, then take everything that has piled up, with one write
