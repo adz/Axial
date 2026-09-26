@@ -132,7 +132,8 @@ module Activity =
                         settle (Exit.Failure(Execution.causeOfException error))
                         raise error))
 
-    /// <summary>Wraps a flow in an application-owned activity source and renders typed errors with <c>string</c>.</summary>
+    /// <summary>Wraps a flow in an application-owned activity source, rendering typed errors without reflection.</summary>
+    /// <remarks>Errors are rendered with their own <c>ToString</c>, or by type name when that ToString needs reflection NativeAOT removed. Use <c>traceWith</c> to supply a renderer.</remarks>
     /// <param name="activitySource">The application-owned activity source that emits the span.</param>
     /// <param name="name">The name of the activity.</param>
     /// <param name="sourceFlow">The flow to trace.</param>
@@ -142,7 +143,7 @@ module Activity =
         (name: string)
         (sourceFlow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
-        traceWithSource activitySource (fun error -> string (box error)) name sourceFlow
+        traceWithSource activitySource (fun error -> OutcomeText.plain (box error)) name sourceFlow
 
     /// <summary>
     /// Installs an application-owned <see cref="T:Axial.Telemetry.ActivityTracer" /> as the ambient tracer for the

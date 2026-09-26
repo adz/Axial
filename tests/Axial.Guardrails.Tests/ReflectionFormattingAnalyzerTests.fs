@@ -52,6 +52,19 @@ module ReflectionFormattingAnalyzerTests =
         }
 
     [<Fact>]
+    let ``looks through box to the formatted value`` () =
+        task {
+            let! found =
+                findings (
+                    "let render (value: 'T) = string (box value)\n"
+                    + "let u = B 1\n"
+                    + "let a = (box u).ToString()\n"
+                    + "let b = string (box 42)\n")
+
+            test <@ found = [ 1, "AXG006"; 3, "AXG006" ] @>
+        }
+
+    [<Fact>]
     let ``allows primitives, fields, own ToString overrides and suppressed lines`` () =
         task {
             let! found =

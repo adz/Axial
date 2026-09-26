@@ -161,22 +161,6 @@ module Flow =
         : Task<Exit<'value, 'error>> =
         (toExecution environment cancellationToken flow).AsTask()
 
-    let internal runSynchronouslyInternal
-        (environment: 'env)
-        (timeout: int option)
-        (cancellationToken: CancellationToken)
-        (flow: Flow<'env, 'error, 'value>)
-        : Exit<'value, 'error> =
-        let task = toTaskInternal environment cancellationToken flow
-
-        match timeout with
-        | None ->
-            task.GetAwaiter().GetResult()
-        | Some millisecondsTimeout ->
-            if task.Wait(millisecondsTimeout) then
-                task.GetAwaiter().GetResult()
-            else
-                raise (TimeoutException("The flow did not complete before the timeout."))
     #endif
 
 #if !FABLE_COMPILER

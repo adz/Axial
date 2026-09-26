@@ -277,13 +277,13 @@ module Otel =
 
     /// <summary>
     /// Wraps a flow in a new OpenTelemetry span covering the workflow's execution. Typed errors are
-    /// rendered with <c>string</c>; see <c>traceWith</c> for a custom renderer. JavaScript targets only.
+    /// rendered with their own <c>ToString</c>; see <c>traceWith</c> for a custom renderer. JavaScript targets only.
     /// </summary>
     /// <param name="name">The span name.</param>
     /// <param name="sourceFlow">The flow to trace.</param>
     /// <returns>A flow that executes within the span.</returns>
     let trace (name: string) (sourceFlow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        traceWith (fun error -> string (box error)) name sourceFlow
+        traceWith (fun error -> OutcomeText.plain (box error)) name sourceFlow
 
 /// <summary>
 /// Fiber-lifecycle observability on the installed OpenTelemetry tracer: the JavaScript counterpart of the

@@ -15,6 +15,10 @@ type ProbeError =
         match this with
         | Rejected code -> $"Rejected {code}"
 
+/// A user error type without its own rendering: its generated ToString needs reflection that AOT removes.
+type PlainError =
+    | Refused of int
+
 let mutable failures = 0
 
 let expect (name: string) (actual: string) (expected: string) =
@@ -48,7 +52,15 @@ let main _ =
         let failed: Exit<int, ProbeError> = Exit.Failure(Cause.Then(Cause.Fail(Rejected 7), Cause.Both(Cause.Interrupt, Cause.Traced(Cause.Die(InvalidOperationException "boom"), "trace"))))
         expect "Exit.ToString" (failed.ToString()) "Failure(Then(Fail(Rejected 7), Both(Interrupt, Traced(Die(InvalidOperationException: boom), trace))))"
         expectContains "Cause.prettyPrint" (Cause.prettyPrint (fun (error: ProbeError) -> error.ToString()) (Cause.Both(Cause.Fail(Rejected 1), Cause.Interrupt))) "Fail(Rejected 1)"
-        expect "Exit string payload" ((Exit<string, ProbeError>.Success "x").ToString()) "Success(\"x\")")
+        expect "Exit string payload" ((Exit<string, ProbeError>.Success "x").ToString()) "Success(\"x\")"
+        let plain: Exit<int, PlainError> = Exit.Failure(Cause.Fail(Refused 3))
+        let rendered = plain.ToString()
+        // Under the JIT the generated ToString works; under NativeAOT it falls back to the type name instead of throwing.
+        if rendered <> "Failure(Fail(<PlainError>))" && rendered <> "Failure(Fail(Refused 3))" then
+            failures <- failures + 1
+            eprintfn "FAIL Exit.ToString without own ToString: got <%s>" rendered
+        else
+            printfn "ok   Exit.ToString without own ToString")
 
     guarded "Exit.toResult composite" (fun () ->
         try

@@ -288,6 +288,6 @@ module FlowEndpoint =
                         | [] when Cause.isInterrupted cause ->
                             return raise (OperationCanceledException("Endpoint Flow was interrupted.", context.RequestAborted))
                         | [] ->
-                            let rendered = Cause.prettyPrint (fun error -> string error) cause
+                            let rendered = cause.ToString()
                             return raise (InvalidOperationException($"Endpoint Flow failed with an unsupported composite cause: {rendered}"))
             })

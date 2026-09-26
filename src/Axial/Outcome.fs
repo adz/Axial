@@ -1,13 +1,27 @@
 namespace Axial
 
-/// Reflection-free rendering of arbitrary payload values inside outcome types.
+/// Rendering of arbitrary payload values inside outcome types that stays safe under NativeAOT.
 module internal OutcomeText =
-    /// A payload's own ToString, with strings quoted and null spelled out.
-    let value (payload: obj) : string =
+    /// A payload's own ToString, with null spelled out.
+    ///
+    /// F# unions and records get a compiler-generated ToString that walks the value with reflection, which throws
+    /// under NativeAOT and full trimming. A hand-written ToString is safe, and so is every ToString under the JIT, so
+    /// the value's own rendering is tried first and only a failing one falls back to the type name:
+    /// <c>&lt;OrderError&gt;</c>. Callers that need the detail everywhere supply a renderer (<c>Cause.prettyPrint</c>).
+    let plain (payload: obj) : string =
         match payload with
         | null -> "null"
+        | other ->
+            try
+                other.ToString()
+            with _ ->
+                "<" + other.GetType().Name + ">"
+
+    /// Like <c>plain</c>, with strings quoted so they read as values inside a rendered cause or exit.
+    let value (payload: obj) : string =
+        match payload with
         | :? string as text -> "\"" + text + "\""
-        | other -> other.ToString()
+        | other -> plain other
 
 /// <summary>
 /// Represents the cause of a failed workflow.
@@ -30,8 +44,8 @@ type Cause<'error> =
 
     /// <summary>
     /// Renders the cause tree on one line. Written by hand: the compiler-generated rendering uses reflection that
-    /// NativeAOT and trimming remove. The error value is rendered with its own <c>ToString</c>; use
-    /// <c>Cause.prettyPrint</c> to supply a renderer.
+    /// NativeAOT and trimming remove. The error value is rendered with its own <c>ToString</c>, or by type name when
+    /// that ToString needs reflection the runtime removed; use <c>Cause.prettyPrint</c> to supply a renderer.
     /// </summary>
     override this.ToString() =
         match this with
@@ -59,7 +73,7 @@ type Exit<'value, 'error> =
     /// <summary>The workflow failed due to a specific cause.</summary>
     | Failure of Cause<'error>
 
-    /// <summary>Renders the exit without reflection (safe under NativeAOT); values use their own <c>ToString</c>.</summary>
+    /// <summary>Renders the exit without reflection. Values use their own <c>ToString</c>, or their type name when that ToString needs reflection the runtime removed.</summary>
     override this.ToString() =
         match this with
         | Success value -> $"Success({OutcomeText.value (box value)})"

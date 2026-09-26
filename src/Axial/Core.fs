@@ -841,27 +841,16 @@ type Flow<'env, 'error, 'value> =
         this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None).AsTask()
 
     /// <summary>Starts the workflow and blocks until the final exit is available.</summary>
+    /// <remarks>To bound how long the workflow may run, apply <c>Flow.timeout</c> to it: that interrupts the work
+    /// and waits for its cleanup, where abandoning a blocked wait would leave it running.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
-    /// <param name="timeout">The optional timeout in milliseconds.</param>
     /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
     /// <returns>The final workflow exit.</returns>
     /// <platforms>.NET only</platforms>
-    member this.RunSynchronously
-        (
-            environment: 'env,
-            ?timeout: int,
-            ?cancellationToken: CancellationToken
-        ) : Exit<'value, 'error> =
-        let task = this.StartAsTask(environment, cancellationToken = defaultArg cancellationToken CancellationToken.None)
-
-        match timeout with
-        | None ->
-            task.GetAwaiter().GetResult()
-        | Some millisecondsTimeout ->
-            if task.Wait(millisecondsTimeout) then
-                task.GetAwaiter().GetResult()
-            else
-                raise (TimeoutException("The flow did not complete before the timeout."))
+    member this.RunSynchronously(environment: 'env, ?cancellationToken: CancellationToken) : Exit<'value, 'error> =
+        this.StartAsTask(environment, cancellationToken = defaultArg cancellationToken CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()
 #endif
 
 [<EditorBrowsable(EditorBrowsableState.Never)>]

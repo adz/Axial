@@ -163,10 +163,12 @@ let private usesStructuredSpecifier (format: string) =
 let rec private findings (e: FSharpExpr) : (range * string) list =
     let here =
         match e with
+        // Boxing first does not help: `string (box error)` and `(box error).ToString()` still dispatch to the
+        // value's generated ToString, so the check looks through `box` to the value's own type.
         | Call(Some receiver, mfv, _, _, []) when mfv.CompiledName = "ToString" ->
-            reflectionFormatted receiver.Type |> Option.map (fun why -> e.Range, $"ToString() on {why}") |> Option.toList
+            reflectionFormatted (unboxed receiver).Type |> Option.map (fun why -> e.Range, $"ToString() on {why}") |> Option.toList
         | Call(None, mfv, _, _, [ argument ]) when isMember "Microsoft.FSharp.Core.Operators" [ "ToString" ] mfv ->
-            reflectionFormatted argument.Type |> Option.map (fun why -> e.Range, $"`string` on {why}") |> Option.toList
+            reflectionFormatted (unboxed argument).Type |> Option.map (fun why -> e.Range, $"`string` on {why}") |> Option.toList
         | Call(None, mfv, _, _, arguments) when isPrintfFunction mfv ->
             let structured = arguments |> List.exists (fun argument -> formatLiteral argument |> Option.exists usesStructuredSpecifier)
 
