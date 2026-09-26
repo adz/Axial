@@ -581,10 +581,15 @@ module internal FiberId =
 /// </remarks>
 type Scope() =
     let gate = obj()
-    let finalizers = ResizeArray<Platform.Finalizer>()
+    // Keys increase monotonically, so sorting them recovers registration order after removals.
+    let finalizers = System.Collections.Generic.Dictionary<int64, Platform.Finalizer>()
+    let mutable nextKey = 0L
     let mutable closed = false
+    let mutable detach: unit -> unit = ignore
 
-    member _.AddFinalizer(finalizer: Platform.Finalizer) =
+    /// Registers a finalizer and returns a key that <c>Unregister</c> accepts. Work that settles before the
+    /// scope closes unregisters itself, so a long-lived scope retains only what is still outstanding.
+    member internal _.Register(finalizer: Platform.Finalizer) : int64 =
         if isNull (box finalizer) then
             nullArg (nameof finalizer)
 
@@ -592,7 +597,22 @@ type Scope() =
             if closed then
                 raise (ObjectDisposedException(nameof Scope))
             else
-                finalizers.Add finalizer)
+                let key = nextKey
+                nextKey <- nextKey + 1L
+                finalizers[key] <- finalizer
+                key)
+
+    /// Removes a finalizer without running it. Has no effect once the scope has closed.
+    member internal _.Unregister(key: int64) : unit =
+        lock gate (fun () ->
+            if not closed then
+                finalizers.Remove key |> ignore)
+
+    member this.AddFinalizer(finalizer: Platform.Finalizer) =
+        this.Register finalizer |> ignore
+
+    /// The number of finalizers still registered; used by tests to prove that settled work is released.
+    member internal _.RegisteredCount = lock gate (fun () -> finalizers.Count)
 
     member this.AddDisposable(resource: IDisposable) =
         if isNull (box resource) then
@@ -610,10 +630,12 @@ type Scope() =
 
     member this.AddChild() =
         let child = new Scope()
-
-        this.AddFinalizer(fun cancellationToken -> child.Close(cancellationToken))
-
+        let key = this.Register(fun cancellationToken -> child.Close(cancellationToken))
+        child.Detach <- fun () -> this.Unregister key
         child
+
+    member internal _.Detach
+        with set (value: unit -> unit) = detach <- value
 
     member _.Close(cancellationToken: CancellationToken) : Platform.Deed =
         let snapshot =
@@ -622,7 +644,13 @@ type Scope() =
                     [||]
                 else
                     closed <- true
-                    finalizers.ToArray())
+                    let ordered = finalizers.Keys |> Seq.sort |> Seq.map (fun key -> finalizers[key]) |> Seq.toArray
+                    finalizers.Clear()
+                    ordered)
+
+        // A closed child no longer needs its parent to close it. Unregistering twice is harmless.
+        detach ()
+        detach <- ignore
 
         Platform.runFinalizers snapshot cancellationToken
 

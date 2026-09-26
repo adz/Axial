@@ -886,17 +886,25 @@ let startFiber
 
     cts, exitTask
 #else
-    let cts = CancellationTokenSource.CreateLinkedTokenSource(parentCancellationToken)
+    // Not CreateLinkedTokenSource: its link stays on the parent token until the source is disposed, and the source
+    // must outlive the fiber because interrupting a settled fiber is allowed. The explicit registration is
+    // disposed at settle, so a long-lived parent token does not retain every fiber forked under it.
+    let cts = new CancellationTokenSource()
+    let link = parentCancellationToken.Register(fun () -> cts.Cancel())
+
+    let settle status exit =
+        link.Dispose()
+        onSettled status exit
 
     let exitTask =
         task {
             try
                 let! exit = (run cts.Token).AsTask()
-                onSettled (statusFromExit exit) exit
+                settle (statusFromExit exit) exit
                 return exit
             with error ->
                 let exit = Exit.Failure(causeOfException error)
-                onSettled (statusFromExit exit) exit
+                settle (statusFromExit exit) exit
                 return exit
         }
 

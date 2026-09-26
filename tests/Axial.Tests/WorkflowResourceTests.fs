@@ -285,3 +285,43 @@ module WorkflowResourceTests =
     [<Fact>]
     let ``Layer pool rejects a non-positive size`` () =
         raises<ArgumentException> <@ Layer.pool 0 Layer.succeed @>
+
+    // Reads how many finalizers the running flow's scope still holds.
+    let private registeredInCurrentScope () : Flow<unit, 'error, int> =
+        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Scope.RegisteredCount))
+
+    [<Fact>]
+    let ``A closed child scope no longer occupies its parent scope`` () =
+        let workflow =
+            flow {
+                for _ in 1..1000 do
+                    do! Flow.scoped (Flow.succeed ())
+
+                return! registeredInCurrentScope ()
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync () workflow = Exit.Success 0 @>
+
+    [<Fact>]
+    let ``A settled fiber no longer occupies the scope that forked it`` () =
+        let workflow =
+            flow {
+                for index in 1..200 do
+                    let! fiber =
+                        if index % 2 = 0 then Flow.succeed index else Flow.fail "expected"
+                        |> Flow.fork
+
+                    let! _ = Flow.interrupt fiber
+                    ()
+
+                let! gate = Deferred.make<unit, string, unit> ()
+                let! running = Flow.fork (Deferred.await gate)
+                let! whileRunning = registeredInCurrentScope ()
+                let! _ = Flow.interrupt running
+                let! afterSettle = registeredInCurrentScope ()
+                return whileRunning, afterSettle
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync () workflow = Exit.Success(1, 0) @>

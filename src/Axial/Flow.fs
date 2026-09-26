@@ -843,6 +843,18 @@ module Flow =
 
             FiberObserver.notifyStart observer metadata
 
+            // A fiber that settles without a defect has nothing left for its scope to interrupt or report, so it
+            // drops its scope registration. Otherwise a long-lived scope would retain every fiber it ever forked.
+            // The fiber can settle before registration finishes, so both sides meet under a lock.
+            let registrationGate = obj()
+            let registration = ref ValueNone
+            let settledClean = ref false
+
+            let releaseRegistration () =
+                match registration.Value with
+                | ValueSome key -> parentRuntime.Scope.Unregister key
+                | ValueNone -> ()
+
             let cts, exitTask =
                 Platform.startFiber
                     cancellationToken
@@ -857,6 +869,12 @@ module Flow =
                             | Exit.Failure cause -> Cause.defects cause |> List.tryHead
 
                         tracker.Settled defect
+
+                        if defect.IsNone then
+                            Platform.lock registrationGate (fun () ->
+                                settledClean.Value <- true
+                                releaseRegistration ())
+
                         FiberObserver.notifyEnd observer metadata defect)
                     (fun childToken ->
                         RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment childToken))
@@ -865,22 +883,29 @@ module Flow =
             // waits for its cleanup, then reports an unobserved defect deterministically.
             try
 #if FABLE_COMPILER
-                parentRuntime.Scope.AddFinalizer(fun _ -> async {
-                    cts.Cancel()
-                    let! _ = exitTask
-                    tracker.TryReport()
-                })
+                let key =
+                    parentRuntime.Scope.Register(fun _ -> async {
+                        cts.Cancel()
+                        let! _ = exitTask
+                        tracker.TryReport()
+                    })
 #else
                 let weakTracker = WeakReference<FiberDefectTracker>(tracker)
 
-                parentRuntime.Scope.AddFinalizer(fun _ -> task {
-                    cts.Cancel()
-                    let! _ = exitTask
-                    match weakTracker.TryGetTarget() with
-                    | true, live -> live.TryReport()
-                    | _ -> ()
-                })
+                let key =
+                    parentRuntime.Scope.Register(fun _ -> task {
+                        cts.Cancel()
+                        let! _ = exitTask
+                        match weakTracker.TryGetTarget() with
+                        | true, live -> live.TryReport()
+                        | _ -> ()
+                    })
 #endif
+                Platform.lock registrationGate (fun () ->
+                    registration.Value <- ValueSome key
+
+                    if settledClean.Value then
+                        releaseRegistration ())
             with _ -> ()
 
             let fiber =
