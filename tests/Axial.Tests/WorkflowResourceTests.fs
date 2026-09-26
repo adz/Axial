@@ -411,11 +411,8 @@ module WorkflowResourceTests =
                 do!
                     flow {
                         let! _ =
-                            flow {
-                                // Runs when the fiber's own scope closes, which here only interruption causes.
-                                do! Flow.scopeFinalizer (fun _ -> task { interrupted.Value <- true })
-                                do! Flow.sleep (TimeSpan.FromMinutes 5.0)
-                            }
+                            Flow.sleep (TimeSpan.FromMinutes 5.0)
+                            |> Flow.onInterrupt (Flow.delay (fun () -> interrupted.Value <- true; Flow.ok ()))
                             |> Flow.forkGraceful (Flow.ok ()) (TimeSpan.FromMilliseconds 50.0)
 
                         ()
@@ -446,8 +443,7 @@ module WorkflowResourceTests =
 
                         do! samples |> Queue.offerAll [ 1..20 ] |> Flow.ignore
                         do! Deferred.succeed () ready |> Flow.ignore
-                        let! never = Deferred.make<unit, Never, unit> ()
-                        do! Deferred.await never
+                        do! Flow.never
                     }
                     |> Flow.scoped
                     |> Flow.fork
@@ -458,3 +454,73 @@ module WorkflowResourceTests =
             }
 
         test <@ Flow.runSync () workflow = Exit.Success 20 @>
+
+    [<Fact>]
+    let ``ensuring runs its finalizer after every kind of outcome and keeps the outcome`` () =
+        let runs = ref 0
+        let finalizer : Flow<unit, Never, unit> = Flow.delay (fun () -> runs.Value <- runs.Value + 1; Flow.ok ())
+        let boom = InvalidOperationException "boom"
+
+        let succeeded = Flow.ok 1 |> Flow.ensuring finalizer |> Flow.runSync ()
+        let failed : Exit<int, string> = Flow.fail "expected" |> Flow.ensuring finalizer |> Flow.runSync ()
+        let died : Exit<int, string> = Flow.die boom |> Flow.ensuring finalizer |> Flow.runSync ()
+
+        let interrupted : Exit<unit, string> =
+            flow {
+                let! fiber = Flow.never<unit, string, unit> |> Flow.ensuring finalizer |> Flow.fork
+                return! Fiber.interrupt fiber
+            }
+            |> Flow.runSync ()
+            |> Exit.bind id
+
+        test <@ succeeded = Exit.Success 1 && failed = Exit.Failure(Cause.Fail "expected") @>
+        test <@ died = Exit.Failure(Cause.Die boom) @>
+        test <@ (match interrupted with Exit.Failure cause -> Cause.isInterrupted cause | _ -> false) @>
+        test <@ runs.Value = 4 @>
+
+    [<Fact>]
+    let ``onExit sees the outcome, and a defect in the handler is added to it`` () =
+        let seen = ResizeArray<string>()
+
+        let record (exit: Exit<int, string>) : Flow<unit, Never, unit> =
+            Flow.delay (fun () ->
+                seen.Add(match exit with Exit.Success value -> $"success {value}" | Exit.Failure _ -> "failure")
+                Flow.ok ())
+
+        let succeeded = Flow.ok 2 |> Flow.onExit record |> Flow.runSync ()
+        let failed = Flow.fail "expected" |> Flow.onExit record |> Flow.runSync ()
+        let broken = InvalidOperationException "cleanup failed"
+        let brokenHandler : Flow<unit, Never, unit> = Flow.die broken
+        let successThenDefect : Exit<int, string> = Flow.ok 3 |> Flow.ensuring brokenHandler |> Flow.runSync ()
+        let failureThenDefect : Exit<int, string> = Flow.fail "expected" |> Flow.ensuring brokenHandler |> Flow.runSync ()
+
+        test <@ succeeded = Exit.Success 2 && failed = Exit.Failure(Cause.Fail "expected") @>
+        test <@ List.ofSeq seen = [ "success 2"; "failure" ] @>
+        test <@ successThenDefect = Exit.Failure(Cause.Die broken) @>
+        test <@ failureThenDefect = Exit.Failure(Cause.Then(Cause.Fail "expected", Cause.Die broken)) @>
+
+    [<Fact>]
+    let ``onInterrupt runs only on interruption, and runs to completion despite it`` () =
+        let cleaned = ref 0
+
+        // The handler itself waits; it must still finish, because it runs without the interrupted flow's cancellation.
+        let cleanup : Flow<unit, Never, unit> =
+            flow {
+                do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
+                cleaned.Value <- cleaned.Value + 1
+            }
+
+        let completed = Flow.ok "done" |> Flow.onInterrupt cleanup |> Flow.runSync ()
+        let failed : Exit<string, string> = Flow.fail "expected" |> Flow.onInterrupt cleanup |> Flow.runSync ()
+
+        let interrupted =
+            flow {
+                let! fiber = Flow.never<unit, Never, unit> |> Flow.onInterrupt cleanup |> Flow.fork
+                return! Fiber.interrupt fiber
+            }
+            |> Flow.runSync ()
+
+        test <@ completed = Exit.Success "done" && failed = Exit.Failure(Cause.Fail "expected") @>
+        test <@ (match interrupted with Exit.Success(Exit.Failure cause) -> Cause.isInterrupted cause | _ -> false) @>
+        test <@ cleaned.Value = 1 @>
+

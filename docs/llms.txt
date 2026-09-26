@@ -53,6 +53,8 @@
 - Connect streams to queues and hubs with `FlowStream.fromDequeue`, `fromHub strategy` (subscribes for the life of the
   stream), `runIntoQueue`, and `runIntoHub`. `FlowStream.mergePar` runs streams concurrently, `buffer strategy`
   decouples a producer from its consumer, and `fromSchedule` turns a schedule into a tick stream.
+- Attach cleanup to one flow with `Flow.ensuring` (always), `Flow.onExit` (sees the `Exit`), or `Flow.onInterrupt`;
+  handlers run without the flow's cancellation. `Flow.never` waits until interrupted.
 - Use `SubscriptionRef` (namespace `Axial.State`) for current state that consumers join late:
   `SubscriptionRef.changes strategy` streams the current value and then every update, with no gap or duplicate.
 - Cap backoff with `Schedule.exponential d |> Schedule.union (Schedule.spaced cap)`; bound attempts with

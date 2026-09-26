@@ -1871,6 +1871,117 @@ module Flow =
                 (fun value -> invoke (onSuccess value) environment cancellationToken)
                 (fun cause -> invoke (onFailure cause) environment cancellationToken))
 
+    // A Never-typed cause has no Fail case, so its defects and interruptions carry over to any error type.
+    let rec private widenCause (cause: Cause<Never>) : Cause<'error> =
+        match cause with
+        | Cause.Fail _ -> Cause.Die(InvalidOperationException "A Never-typed flow cannot fail with a typed error.")
+        | Cause.Die error -> Cause.Die error
+        | Cause.Interrupt -> Cause.Interrupt
+        | Cause.Then(left, right) -> Cause.Then(widenCause left, widenCause right)
+        | Cause.Both(left, right) -> Cause.Both(widenCause left, widenCause right)
+        | Cause.Traced(inner, trace) -> Cause.Traced(widenCause inner, trace)
+
+    /// <summary>Runs a handler with the flow's final outcome, whether it succeeded, failed, or was interrupted.</summary>
+    /// <remarks>
+    /// <para>
+    /// The handler runs after the flow finishes and before the result is returned. It runs without the flow's
+    /// cancellation, so the interruption that ended the flow cannot cut its cleanup short. The flow's outcome is kept:
+    /// a defect in the handler is added to a failure, and turns a success into that defect.
+    /// </para>
+    /// <para>
+    /// Use it for cleanup that belongs to one expression and needs to know how it ended, such as recording the
+    /// outcome or rolling back on failure. For cleanup tied to a resource's lifetime, use <c>Flow.scopeAcquireRelease</c>.
+    /// </para>
+    /// </remarks>
+    /// <param name="handler">Receives the flow's <c>Exit</c>; it cannot fail with a typed error.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <example>
+    /// <code>
+    /// transfer
+    /// |&gt; Flow.onExit (fun exit -&gt;
+    ///     match exit with
+    ///     | Exit.Success _ -&gt; audit "transfer committed"
+    ///     | Exit.Failure _ -&gt; audit "transfer rolled back")
+    /// </code>
+    /// </example>
+    let onExit
+        (handler: Exit<'value, 'error> -> Flow<'env, Never, unit>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            let finish (exit: Exit<'value, 'error>) : Execution<'value, 'error> =
+                Platform.tryExecution
+                    (fun () -> invoke (handler exit) environment CancellationToken.None)
+                    (fun error -> Platform.ofExit (Exit.Failure(Cause.Die error)))
+                |> Execution.fold
+                    (fun () -> Execution.ofExit exit)
+                    (fun handlerCause ->
+                        match exit with
+                        | Exit.Success _ -> Execution.ofCause (widenCause handlerCause)
+                        | Exit.Failure cause -> Execution.ofCause (Cause.thenCause cause (widenCause handlerCause)))
+
+            Platform.tryExecution
+                (fun () -> invoke flow environment cancellationToken)
+                (fun error ->
+                    if ForeignCancellation.isOurs cancellationToken error then
+                        Platform.ofExit (Exit.Failure Cause.Interrupt)
+                    else
+                        Platform.ofExit (Exit.Failure(Cause.Die error)))
+            |> Execution.fold (fun value -> finish (Exit.Success value)) (fun cause -> finish (Exit.Failure cause)))
+
+    /// <summary>Runs a finalizer after the flow, however it ends.</summary>
+    /// <remarks>
+    /// The finalizer runs after success, typed failure, defect, and interruption alike, without the flow's
+    /// cancellation, so it always finishes. The flow's outcome is kept; a defect in the finalizer is added to it.
+    /// </remarks>
+    /// <param name="finalizer">The cleanup to run; it cannot fail with a typed error.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <example>
+    /// <code>
+    /// render frame |&gt; Flow.ensuring (Flow.delay (fun () -&gt; canvas.Unlock(); Flow.ok ()))
+    /// </code>
+    /// </example>
+    let ensuring (finalizer: Flow<'env, Never, unit>) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        onExit (fun _ -> finalizer) flow
+
+    /// <summary>Runs a handler only if the flow is interrupted.</summary>
+    /// <remarks>
+    /// The handler runs when the flow's outcome includes an interruption, before the interruption propagates, and
+    /// without the flow's cancellation, so it always finishes. Success, typed failure, and defects skip it.
+    /// </remarks>
+    /// <param name="handler">The cleanup to run on interruption; it cannot fail with a typed error.</param>
+    /// <param name="flow">The source flow.</param>
+    /// <example>
+    /// <code>
+    /// upload |&gt; Flow.onInterrupt (deletePartialFile path)
+    /// </code>
+    /// </example>
+    let onInterrupt (handler: Flow<'env, Never, unit>) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        onExit
+            (fun exit ->
+                match exit with
+                | Exit.Failure cause when Cause.isInterrupted cause -> handler
+                | _ -> Flow(fun _ _ -> Execution.ofValue ()))
+            flow
+
+    /// <summary>A flow that never completes on its own; it ends only when it is interrupted.</summary>
+    /// <remarks>
+    /// Use it to keep a flow running until its fiber or scope is interrupted, such as a service's main loop that
+    /// only waits for shutdown. It holds no thread while it waits.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Runs the worker until the service is interrupted, then lets it drain its queue.
+    /// let serve (jobs: Queue&lt;string&gt;) (worker: Flow&lt;unit, Never, unit&gt;) : Flow&lt;unit, Never, unit&gt; =
+    ///     flow {
+    ///         let! _ = worker |&gt; Flow.forkGraceful (Dequeue.shutdown jobs) (TimeSpan.FromSeconds 5.0)
+    ///         return! Flow.never
+    ///     }
+    /// </code>
+    /// </example>
+    let never<'env, 'error, 'value> : Flow<'env, 'error, 'value> =
+        Flow(fun _ cancellationToken -> Platform.awaitSignal (Platform.newSignal<'value> ()) cancellationToken)
+
     /// <summary>Catches exceptions raised during execution and simple defect outcomes, then maps them to a typed error.</summary>
     /// <remarks>
     /// Thrown exceptions and simple <c>Cause.Die</c> outcomes are converted to <c>Cause.Fail</c>.
