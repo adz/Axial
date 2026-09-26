@@ -705,11 +705,14 @@ module Flow =
     /// <returns>A flow that succeeds with unit when cancellation has not been requested.</returns>
     /// <example>
     /// <code>
-    /// flow {
-    ///     for chunk in chunks do
-    ///         do! Flow.ensureNotCanceled
-    ///         process chunk
-    /// }
+    /// let sumSquares (values: int list) : Flow&lt;unit, string, int&gt; =
+    ///     flow {
+    ///         let mutable total = 0
+    ///         for value in values do
+    ///             do! Flow.ensureNotCanceled
+    ///             total &lt;- total + value * value
+    ///         return total
+    ///     }
     /// </code>
     /// </example>
     let ensureNotCanceled<'env, 'error> : Flow<'env, 'error, unit> =
@@ -1251,12 +1254,15 @@ module Flow =
     /// <returns>A flow that produces the memoized flow.</returns>
     /// <example>
     /// <code>
-    /// flow {
-    ///     let! loadConfig = Flow.memoize readConfigFromDisk
-    ///     let! a = loadConfig
-    ///     let! b = loadConfig // the same value; the file is read once
-    ///     return a = b
-    /// }
+    /// let readConfig : Flow&lt;unit, string, string&gt; = Flow.delay (fun () -&gt; Flow.ok "config")
+    ///
+    /// let sameConfig : Flow&lt;unit, string, bool&gt; =
+    ///     flow {
+    ///         let! loadConfig = Flow.memoize readConfig
+    ///         let! a = loadConfig
+    ///         let! b = loadConfig // readConfig ran once
+    ///         return a = b
+    ///     }
     /// </code>
     /// </example>
     let memoize (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Flow<'caller, 'error, 'value>> =
@@ -1490,9 +1496,6 @@ module Flow =
             | Error () ->
                 invoke errorFlow environment cancellationToken
                 |> Execution.fold Execution.ofError Execution.ofCause)
-
-    /// <summary>Reads the current environment as the successful flow value.</summary>
-    /// <remarks>
 
     /// <summary>Reads the current environment as the successful flow value.</summary>
     /// <remarks>
@@ -2124,12 +2127,16 @@ module Fiber =
     /// <returns>A flow that completes with the fiber's value.</returns>
     /// <example>
     /// <code>
-    /// flow {
-    ///     let! fiber = Flow.fork loadProfile
-    ///     let! orders = loadOrders
-    ///     let! profile = Fiber.join fiber
-    ///     return profile, orders
-    /// }
+    /// let loadProfile : Flow&lt;unit, string, string&gt; = Flow.ok "profile"
+    /// let loadOrders : Flow&lt;unit, string, int list&gt; = Flow.ok [ 1; 2 ]
+    ///
+    /// let page =
+    ///     flow {
+    ///         let! fiber = Flow.fork loadProfile
+    ///         let! orders = loadOrders
+    ///         let! profile = Fiber.join fiber
+    ///         return profile, orders
+    ///     }
     /// </code>
     /// </example>
     let join (fiber: Fiber<'error, 'value>) : Flow<'env, 'error, 'value> =

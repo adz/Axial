@@ -720,7 +720,7 @@ module FileSystem =
         withService (Some path) (fun fileSystem -> fileSystem.AppendText path)
 
     /// <summary>Gets the size of a file in bytes through an explicit file-system service.</summary>
-    /// <example><code>let! size = FileSystem.getFileLength "report.pdf"</code></example>
+    /// <example><code>let sizeOf path = FileSystem.getFileLength path</code></example>
     let getFileLength<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, int64> =
