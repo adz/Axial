@@ -69,14 +69,13 @@ the others missed.
 -     let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 1)
 -     let! first = hub |> Hub.tryPublish 1
 -     let! second = hub |> Hub.tryPublish 2
--     let! recorded = Dequeue.takeAll historian
--     return [ $"first published: {first.IsSome}"; $"second published: {second.IsSome}"; $"historian has: {recorded}" ]
-- } : Flow<unit, Never, string list>)
+-     return [ first.IsSome; second.IsSome ]
+- } : Flow<unit, Never, bool list>)
 - |> Flow.run ();;
-val it: Exit<string list,Never> =
-  Success
-    ["first published: True"; "second published: False"; "historian has: [1]"]
+val it: Exit<bool list,Never> = Success [true; false]
 ```
+
+The first value reached the historian. The second found its buffer full, so `tryPublish` delivered it nowhere.
 
 Do not bound `Hub.publish` with a timeout instead. An interrupted publish leaves the value with the subscribers it has
 already reached, so publishing it again delivers it to them twice.
@@ -84,7 +83,8 @@ already reached, so publishing it again delivers it to them twice.
 ## Subscriptions belong to a scope
 
 `Hub.subscribe` registers the subscription with the current scope. Closing that scope removes the subscription and
-releases a publisher waiting on it, so run `subscribe` inside `Flow.scoped` or an application root. A subscriber can
+releases a publisher waiting on it, so run `subscribe` inside `Flow.scoped`, a forked fiber, or an application root. A
+forked fiber has a scope of its own, so a consumer fiber's subscription ends when the consumer does. A subscriber can
 also leave early with `Dequeue.shutdown`, which has the same effect.
 
 ```fsharp transcript

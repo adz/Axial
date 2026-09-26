@@ -11,9 +11,6 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 Follow-up to the Queue/Hub/Schedule review. Work in order; each step is committed and validated on its own.
 
-3. Give every forked fiber its own child scope, closed when the fiber settles, so a fiber's acquisitions (including
-   hub subscriptions) end with it. Add `Flow.forkGraceful stop grace`: on scope close, run `stop`, wait up to
-   `grace` for the fiber to finish, then interrupt it, so a consumer can drain a shut-down queue on application stop.
 4. Move time into the runtime context as an internal replaceable time source (monotonic now plus delays) used by
    `Flow.Runtime.sleep`, timeouts, retry delays, `Schedule`, and the new timed stream operators; add a virtual time
    source for deterministic tests.

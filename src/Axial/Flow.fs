@@ -1058,7 +1058,14 @@ module Flow =
                                 | None -> Execution.ofCause cause)
                         | None -> Execution.ofCause cause)))
 
-    let private forkWith (name: string option) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
+    /// A graceful fiber's stop request and how long to wait after it before interrupting.
+    type private GracefulStop<'env> = { Stop: Flow<'env, Never, unit>; Grace: TimeSpan }
+
+    let private forkWith
+        (name: string option)
+        (graceful: GracefulStop<'env> option)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
             let parentRuntime = RuntimeState.current()
             let observer = parentRuntime.Observer
@@ -1077,7 +1084,22 @@ module Flow =
                 }
 
             let tracker = FiberDefectTracker(metadata, observer)
-            let childRuntime = parentRuntime |> RuntimeContext.withFiberId metadata.Id
+
+            // Everything the fiber acquires belongs to its own scope, which closes when the fiber settles, so a
+            // forked consumer's subscriptions and resources end with it. The scope is a child of the forking scope,
+            // registered before the fiber's interruption below: closing the parent interrupts the fiber first, then
+            // closes the fiber's scope if the fiber has not already done so. A parent that has already closed
+            // leaves the fiber a scope of its own.
+            let fiberScope =
+                try
+                    parentRuntime.Scope.AddChild()
+                with _ ->
+                    new Scope()
+
+            let childRuntime =
+                parentRuntime
+                |> RuntimeContext.withFiberId metadata.Id
+                |> RuntimeContext.withScope fiberScope
 
             FiberObserver.notifyStart observer metadata
 
@@ -1094,9 +1116,16 @@ module Flow =
                 | ValueSome key -> parentRuntime.Scope.Unregister key
                 | ValueNone -> ()
 
+            // A graceful fiber is not tied to the forking flow's cancellation: its stop runs when the forking scope
+            // closes, which also happens when the forking flow is interrupted.
+            let parentToken =
+                match graceful with
+                | Some _ -> CancellationToken.None
+                | None -> cancellationToken
+
             let cts, exitTask =
                 Platform.startFiber
-                    cancellationToken
+                    parentToken
                     (fun status exit ->
                         settled.Value <- Some exit
                         FiberInterrupts.remove metadata.Id
@@ -1127,14 +1156,31 @@ module Flow =
 
                         FiberObserver.notifyEnd observer metadata defect)
                     (fun childToken ->
-                        RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment childToken))
+                        Platform.runScoped
+                            fiberScope.Close
+                            childToken
+                            (fun () -> RuntimeState.withRuntime childRuntime (fun () -> invoke flow environment childToken))
+                            (fun cleanupError executionError exit ->
+                                combineCleanup cleanupError executionError exit "Forked flow execution produced no outcome."))
 
-            // A fiber belongs to the scope that forked it. Closing that scope interrupts the fiber,
-            // waits for its cleanup, then reports an unobserved defect deterministically.
+            // A fiber belongs to the scope that forked it. Closing that scope interrupts the fiber, or first asks a
+            // graceful fiber to stop and waits up to its grace period, then waits for its cleanup and reports an
+            // unobserved defect deterministically.
             try
 #if FABLE_COMPILER
                 let key =
                     parentRuntime.Scope.Register(fun _ -> async {
+                        match graceful with
+                        | Some request ->
+                            let! _ = invoke request.Stop environment CancellationToken.None
+
+                            try
+                                let! child = Async.StartChild(exitTask, int request.Grace.TotalMilliseconds)
+                                let! _ = child
+                                ()
+                            with :? TimeoutException -> ()
+                        | None -> ()
+
                         cts.Cancel()
                         let! _ = exitTask
                         tracker.TryReport()
@@ -1144,11 +1190,32 @@ module Flow =
 
                 let key =
                     parentRuntime.Scope.Register(fun _ -> task {
+                        let mutable stopFailure = None
+
+                        match graceful with
+                        | Some request ->
+                            let! stopExit = (invoke request.Stop environment CancellationToken.None).AsTask()
+
+                            match stopExit with
+                            | Exit.Failure cause ->
+                                stopFailure <- Cause.defects cause |> List.tryHead
+                            | Exit.Success () -> ()
+
+                            let! _ = Task.WhenAny(exitTask :> Task, Task.Delay request.Grace)
+                            ()
+                        | None -> ()
+
                         cts.Cancel()
                         let! _ = exitTask
+
                         match weakTracker.TryGetTarget() with
                         | true, live -> live.TryReport()
                         | _ -> ()
+
+                        // A stop request that failed is a cleanup defect of the closing scope.
+                        match stopFailure with
+                        | Some error -> raise error
+                        | None -> ()
                     })
 #endif
                 Platform.lock registrationGate (fun () ->
@@ -1185,7 +1252,7 @@ module Flow =
     /// <param name="flow">The flow to fork.</param>
     /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
     let fork (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
-        forkWith None flow
+        forkWith None None flow
 
     /// <summary>Starts a flow in a new fiber carrying a diagnostic name.</summary>
     /// <remarks>
@@ -1196,7 +1263,52 @@ module Flow =
     /// <param name="flow">The flow to fork.</param>
     /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
     let forkNamed (name: string) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
-        forkWith (Some name) flow
+        forkWith (Some name) None flow
+
+    /// <summary>
+    /// Starts a flow in a new fiber that, when its forking scope closes, is asked to stop and given time to finish
+    /// before it is interrupted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A plain <c>fork</c> is interrupted as soon as its scope closes. A consumer draining a queue needs the
+    /// opposite: stop taking new work, finish the backlog, then end. When the forking scope closes,
+    /// <c>forkGraceful</c> runs <paramref name="stop" />, waits up to <paramref name="grace" /> for the fiber to finish
+    /// on its own, and only then interrupts it. For a queue consumer, <c>stop</c> is usually <c>Dequeue.shutdown</c>:
+    /// the consumer's stream ends normally once it has drained the backlog.
+    /// </para>
+    /// <para>
+    /// The fiber is not interrupted when the forking flow is interrupted, only when its scope closes after the stop
+    /// and grace period. <c>Fiber.interrupt</c> still interrupts it immediately. A defect in <c>stop</c> is reported
+    /// as a cleanup defect of the closing scope.
+    /// </para>
+    /// </remarks>
+    /// <param name="stop">Asks the fiber to finish, for example by shutting down the queue it consumes.</param>
+    /// <param name="grace">How long to wait after <paramref name="stop" /> before interrupting the fiber.</param>
+    /// <param name="flow">The flow to fork.</param>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! (samples: Queue&lt;float&gt;) = Queue.bounded 1000
+    ///     let! _ =
+    ///         samples
+    ///         |&gt; FlowStream.fromDequeue
+    ///         |&gt; FlowStream.runForEachFlow writeSample
+    ///         |&gt; Flow.forkGraceful (Dequeue.shutdown samples) (TimeSpan.FromSeconds 5.0)
+    ///     do! samples |&gt; Queue.offer 21.5 |&gt; Flow.ignore
+    /// }
+    /// |&gt; Flow.scoped // closing the scope flushes every offered sample before returning
+    /// </code>
+    /// </example>
+    let forkGraceful
+        (stop: Flow<'env, Never, unit>)
+        (grace: TimeSpan)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'none, Fiber<'error, 'value>> =
+        if grace < TimeSpan.Zero then
+            invalidArg (nameof grace) "A grace period cannot be negative."
+
+        forkWith None (Some { Stop = stop; Grace = grace }) flow
 
     /// <summary>Starts a flow in a new fiber that is deliberately never awaited.</summary>
     /// <remarks>

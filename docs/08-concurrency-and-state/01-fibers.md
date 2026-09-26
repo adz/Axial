@@ -42,6 +42,9 @@ The primary operations for managing fibers are:
 - `Flow.forkNamed`: forks with a diagnostic name that carries into dumps and telemetry fiber spans, so long-lived background fibers are recognizable instead of bare ids.
 - `Fiber.dump`: returns a diagnostic snapshot of one fiber handle.
 
+- `Flow.forkGraceful stop grace`: forks a fiber that, when its scope closes, is asked to stop with `stop` and given
+  up to `grace` to finish before it is interrupted. See [stopping a consumer gracefully](#stopping-a-consumer-gracefully).
+
 Joining, awaiting, or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer](./supervision.html); use `Flow.forkDetached` when the silence is intentional, and [`Flow.supervise`](./supervision.html) to restart background work that dies with defects.
 
 ## Why Fibers?
@@ -125,3 +128,48 @@ let onQueryChanged query =
 one document replaces only that document's previous load. A key's entry is removed when its fiber settles.
 `FiberSlot.interrupt` and `FiberSlot.interruptAll` stop what is running and wait for its cleanup, for example on
 shutdown. For a stream of inputs, `FlowStream.switchMapFlow` applies the same rule inside the stream.
+
+## What a fiber owns
+
+Each forked fiber runs in its own scope, a child of the scope that forked it. Whatever the fiber acquires, such as a
+resource registered with `Flow.scopeAcquireRelease`, a [hub subscription](./hub.html), or a
+[scoped queue](./queue.html#tying-a-queue-to-a-scope), is released when the fiber settles, not when the parent scope
+eventually closes. A consumer fiber that ends therefore cannot leave a subscription behind that holds up a publisher.
+
+Closing the parent scope interrupts fibers that are still running, then releases what they acquired.
+
+## Stopping a consumer gracefully
+
+Interrupting a consumer the moment its scope closes throws away its backlog. `Flow.forkGraceful` changes what closing
+the scope does: it runs a stop request, waits up to a grace period for the fiber to finish, and interrupts it only if it
+is still running after that. For a queue consumer, the stop request is `Dequeue.shutdown`: the consumer's stream then
+ends normally once it has drained the queue.
+
+```fsharp transcript
+> (flow {
+-     let written = ResizeArray<int>()
+-     do!
+-         flow {
+-             let! (samples: Queue<int>) = Queue.bounded 100
+-             let! _ =
+-                 samples
+-                 |> FlowStream.fromDequeue
+-                 |> FlowStream.runForEach written.Add
+-                 |> Flow.forkGraceful (Dequeue.shutdown samples) (System.TimeSpan.FromSeconds 5.0)
+-             do! samples |> Queue.offerAll [ 1..5 ] |> Flow.ignore
+-         }
+-         |> Flow.scoped
+-     return List.ofSeq written
+- } : Flow<unit, Never, int list>)
+- |> Flow.run ();;
+val it: Exit<int list,Never> = Success [1; 2; 3; 4; 5]
+```
+
+The scope closed right after the offers, before the consumer had necessarily taken any of them. Closing it shut the
+queue down, and the consumer finished all five values before the scope finished closing. With a plain `Flow.fork`, the
+consumer would have been interrupted with part of the backlog still queued.
+
+A graceful fiber is also not interrupted when the flow that forked it is interrupted: its stop request runs when that
+flow's scope closes, so a consumer still flushes when the application is cancelled. `Fiber.interrupt` still interrupts
+it immediately.
+

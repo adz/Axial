@@ -99,8 +99,10 @@ the front of the queue, in order. After shutdown it returns whatever remains, ev
 - `poll`, `takeUpTo`, and `takeAll` return nothing once the queue is empty;
 - calling `shutdown` again has no effect.
 
-Draining after shutdown is what lets a consumer finish its work when an application stops. `Dequeue.isShutdown` reports
-the state, and `Dequeue.awaitShutdown` suspends until it happens.
+Draining after shutdown is what lets a consumer finish its work when an application stops. Fork the consumer with
+`Flow.forkGraceful (Dequeue.shutdown queue) grace`, and closing its scope shuts the queue down and waits for the consumer
+to drain it; see [stopping a consumer gracefully](fibers.html#stopping-a-consumer-gracefully). `Dequeue.isShutdown`
+reports the state, and `Dequeue.awaitShutdown` suspends until it happens.
 
 ## Tying a queue to a scope
 

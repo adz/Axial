@@ -324,4 +324,137 @@ module WorkflowResourceTests =
             }
             |> Flow.scoped
 
-        test <@ Flow.runSync () workflow = Exit.Success(1, 0) @>
+        // A running fiber holds two registrations, its interruption and its own scope; settling releases both.
+        test <@ Flow.runSync () workflow = Exit.Success(2, 0) @>
+
+    [<Fact>]
+    let ``A forked fiber releases what it acquired when it settles, not when its parent scope closes`` () =
+        let workflow =
+            flow {
+                let events = ResizeArray<string>()
+
+                let! fiber =
+                    flow {
+                        do! Flow.scopeFinalizer (fun _ -> task { lock events (fun () -> events.Add "released") })
+                        return "done"
+                    }
+                    |> Flow.fork
+
+                let! _ = Fiber.join fiber
+                let releasedBeforeParentCloses = lock events (fun () -> List.ofSeq events)
+                return releasedBeforeParentCloses
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync () workflow = Exit.Success [ "released" ] @>
+
+    [<Fact>]
+    let ``A forked consumer's hub subscription ends with the consumer`` () =
+        let workflow : Flow<unit, Never, int * PublishResult> =
+            flow {
+                let! (hub: Hub<int>) = Hub.make ()
+                let! subscribed = Deferred.make<unit, Never, unit> ()
+
+                let! consumer =
+                    flow {
+                        let! subscription = hub |> Hub.subscribe (QueueStrategy.BackPressure 1)
+                        do! Deferred.succeed () subscribed |> Flow.ignore
+                        return! Dequeue.take subscription
+                    }
+                    |> Flow.fork
+
+                do! Deferred.await subscribed
+                do! hub |> Hub.publish 1 |> Flow.ignore
+                let! _ = Fiber.join consumer
+                let! remaining = Hub.subscriberCount hub
+                // Without the fiber's own scope the ended consumer's full subscription would hold this publish forever.
+                let blocked = { PublishResult.empty with Delivered = -1 }
+                let! later = hub |> Hub.publishAll [ 2; 3; 4 ] |> Flow.timeoutToOk (TimeSpan.FromSeconds 5.0) blocked
+                return remaining, later
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(0, PublishResult.empty) @>
+
+    [<Fact>]
+    let ``forkGraceful lets a consumer drain its queue when the scope closes`` () =
+        let workflow : Flow<unit, Never, int> =
+            flow {
+                let flushed = ref 0
+
+                do!
+                    flow {
+                        let! (samples: Queue<int>) = Queue.bounded 100
+
+                        let! _ =
+                            samples
+                            |> FlowStream.fromDequeue
+                            |> FlowStream.tapFlow (fun _ -> Flow.sleep (TimeSpan.FromMilliseconds 1.0))
+                            |> FlowStream.runForEach (fun _ -> flushed.Value <- flushed.Value + 1)
+                            |> Flow.forkGraceful (Dequeue.shutdown samples) (TimeSpan.FromSeconds 10.0)
+
+                        do! samples |> Queue.offerAll [ 1..50 ] |> Flow.ignore
+                    }
+                    |> Flow.scoped
+
+                return flushed.Value
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success 50 @>
+
+    [<Fact>]
+    let ``forkGraceful interrupts a fiber that ignores its stop after the grace period`` () =
+        let workflow : Flow<unit, Never, bool * bool> =
+            flow {
+                let interrupted = ref false
+                let started = Diagnostics.Stopwatch.StartNew()
+
+                do!
+                    flow {
+                        let! _ =
+                            flow {
+                                // Runs when the fiber's own scope closes, which here only interruption causes.
+                                do! Flow.scopeFinalizer (fun _ -> task { interrupted.Value <- true })
+                                do! Flow.sleep (TimeSpan.FromMinutes 5.0)
+                            }
+                            |> Flow.forkGraceful (Flow.ok ()) (TimeSpan.FromMilliseconds 50.0)
+
+                        ()
+                    }
+                    |> Flow.scoped
+
+                return interrupted.Value, started.Elapsed < TimeSpan.FromSeconds 30.0
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(true, true) @>
+
+    [<Fact>]
+    let ``forkGraceful drains even when the forking flow is interrupted`` () =
+        let workflow : Flow<unit, Never, int> =
+            flow {
+                let flushed = ref 0
+                let! ready = Deferred.make<unit, Never, unit> ()
+
+                let! owner =
+                    flow {
+                        let! (samples: Queue<int>) = Queue.unbounded ()
+
+                        let! _ =
+                            samples
+                            |> FlowStream.fromDequeue
+                            |> FlowStream.runForEach (fun _ -> flushed.Value <- flushed.Value + 1)
+                            |> Flow.forkGraceful (Dequeue.shutdown samples) (TimeSpan.FromSeconds 10.0)
+
+                        do! samples |> Queue.offerAll [ 1..20 ] |> Flow.ignore
+                        do! Deferred.succeed () ready |> Flow.ignore
+                        let! never = Deferred.make<unit, Never, unit> ()
+                        do! Deferred.await never
+                    }
+                    |> Flow.scoped
+                    |> Flow.fork
+
+                do! Deferred.await ready
+                let! _ = Fiber.interrupt owner
+                return flushed.Value
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success 20 @>
