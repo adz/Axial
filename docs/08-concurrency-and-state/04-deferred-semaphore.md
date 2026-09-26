@@ -71,6 +71,5 @@ Zero permits are rejected because Axial does not expose an external raw release 
 
 ## Queues
 
-Axial does not currently expose a queue primitive. A useful Axial queue needs more than a thin wrapper over `Channel<T>`: bounded strategy, shutdown, blocked offerer/taker interruption, fairness, and resource cleanup all need explicit semantics.
-
-Until a v1 feature needs those semantics, use .NET channels directly at the edge of a workflow and convert operations into `Flow` where needed.
+To hand a stream of values between fibers, use [Queue](queue.html). It adds bounded, dropping, and sliding strategies,
+a shutdown that lets the consumer drain its backlog, and interruption that never loses or duplicates a value.

@@ -53,6 +53,23 @@ module FlowStream =
 
         FlowStream(fun environment cancellationToken -> pull environment cancellationToken initialState ())
 
+    /// <summary>Creates a stream that takes values from a queue until it is shut down and drained.</summary>
+    /// <remarks>
+    /// Shutdown is the normal end of the stream, not a failure: after <c>Queue.shutdown</c> the stream emits the
+    /// remaining backlog and then completes. Each pull suspends while the queue is empty. Interrupting a pull
+    /// leaves any value it would have received in the queue.
+    /// </remarks>
+    /// <example><code>jobs |&gt; FlowStream.fromQueue |&gt; FlowStream.runForEachFlow handle</code></example>
+    let fromQueue (queue: Queue<'value>) : FlowStream<'env, 'error, 'value> =
+        let rec pull cancellationToken () : Execution<StreamStep<'value, 'error>, 'error> =
+            QueueCore.take
+                queue
+                (fun () -> Execution.ofValue Done)
+                (fun value -> Execution.ofValue(Next(value, pull cancellationToken)))
+                cancellationToken
+
+        FlowStream(fun _ cancellationToken -> pull cancellationToken ())
+
     /// <summary>Creates a stream from a synchronous sequence of values.</summary>
     /// <param name="values">The sequence of values to be emitted by the stream.</param>
     /// <returns>A <see cref="T:AxialStream`3"/> that yields each value from the sequence.</returns>

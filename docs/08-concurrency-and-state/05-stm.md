@@ -106,11 +106,11 @@ exposing lock management in user code.
 
 ## Implementation Details
 
-It is important to note that Axial's current STM implementation is based on a **global synchronizing lock** 
-rather than an optimistic or lock-free model.
+Axial's current STM implementation runs each transaction under one **global lock** rather than an optimistic or
+lock-free model.
 
 - **Atomicity**: The entire `stm {}` block is executed while holding a global lock, ensuring no other transaction can interfere.
-- **Blocking Retry**: When `STM.retry` is called, the calling thread is suspended using `Monitor.Wait` until another transaction successfully commits a change.
+- **Suspending retry**: When `STM.retry` is called, the transaction suspends without blocking a thread until another transaction commits, then reruns from the start. Every commit wakes every waiting transaction.
 - **Performance**: Because of the global lock, transactions are mutually exclusive. This is suitable for coordinating low-frequency state changes but may become a bottleneck under high contention.
 
 This design prioritizes correctness and simplicity for the initial release while providing the standard 

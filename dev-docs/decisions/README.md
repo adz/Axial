@@ -121,3 +121,18 @@ regardless, and `GenerateProgramFile=false` only suppresses the generated `Progr
 
 Bind such values locally inside the test, or make them functions. Do not fix it by reordering files
 — the next file added moves the problem.
+
+## 2026-09-26: Queue, Hub, and schedule composition have concrete demand
+
+- AdaptMAC, an industrial monitoring and control application, is being rebuilt on Axial. It needs device-reader fibers
+  that feed a control loop, one publisher broadcasting samples to a lossless historian and lossy UIs, capped reconnect
+  back-off, and a drift-free fixed-rate scan. That is the concrete feature `LATER_TODO.md` required before Axial owns
+  queue back-pressure, shutdown, and interruption semantics.
+- `Queue<'a>` and `Hub<'a>` are built on `Platform.Signal` and `Platform.lock`, not `System.Threading.Channels`, so core
+  stays Fable-compatible. Types are monomorphic in the element; operations return `Flow` with free `'env` and `'error`.
+- Interruption is never lossy: a waiter's state changes only under the queue lock, an interrupted taker hands back a
+  value it was given, and an interrupted offer is withdrawn unless it was already accepted.
+- Shutdown interrupts suspended waiters but lets takers drain the backlog, so a consumer can flush when an application
+  stops. `FlowStream.fromQueue` treats shutdown plus drain as the normal end of a stream.
+- A hub's overflow strategy belongs to each subscription, not to the hub, because one publisher feeds both lossless and
+  latest-value consumers.

@@ -37,6 +37,9 @@
 - Use `Flow.fork`, `join`, and `interrupt` for owned fibers; `forkDetached` states intentional fire-and-forget.
 - Use `Schedule.retry` for typed failures, `Schedule.repeat` for successful repetition, `FlowStream` for effectful pull
   streams, and STM for composable transactional coordination.
+- Use `Queue` to hand values between fibers when there is exactly one logical consumer: `Queue.bounded` suspends
+  producers when full, `dropping` discards the newest value, `sliding` evicts the oldest. `Queue.shutdown` lets the
+  consumer drain its backlog, and `FlowStream.fromQueue` ends normally after shutdown and drain.
 
 ## Hosts
 

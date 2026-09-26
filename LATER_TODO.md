@@ -62,11 +62,11 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 ## 5. v1.0 Concurrency and State
 
 - [x] Add Promise/deferred result primitive.
-- [ ] Design bounded and unbounded queues only when a concrete v1 feature needs Axial-owned backpressure, shutdown, and interruption semantics.
+- [x] Add `Queue` (bounded, dropping, sliding, unbounded) with draining shutdown and lossless interruption, driven by AdaptMAC (`src/Axial/Queue.fs`).
 - [x] Add semaphore primitive.
 - [x] Add a minimal atomic `Ref` implementation with `make`, `get`, `set`, `update`, and `modify`, backed by a lock and covered by state tests and public docs.
 - [x] Stabilize `Ref` for v1.0: `modify`, `getAndSet`, and `updateAndGet` are implemented, tested in `WorkflowStateTests.fs`, and documented in `docs/08-concurrency-and-state/03-ref.md`.
-- [ ] Cover future queue shutdown/fairness semantics and remaining state/resource cleanup cases in tests.
+- [x] Cover queue shutdown, fairness, and interruption races in tests (`WorkflowQueueTests.fs`).
 
 ## 6. v1.0 Scheduling and Time
 
