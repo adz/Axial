@@ -356,3 +356,58 @@ module WorkflowConcurrencyTests =
     let ``Parallelism.ofProcessors is never below one`` () =
         test <@ Parallelism.value (Parallelism.ofProcessors (fun _ -> 0)) = 1 @>
         test <@ Parallelism.value (Parallelism.ofProcessors id) = Environment.ProcessorCount @>
+
+    [<Fact>]
+    let ``forkReplacing interrupts the previous fiber and keeps the latest`` () =
+        let workflow : Flow<unit, string, Exit<string, string> * Exit<string, string>> =
+            flow {
+                let! slot = FiberSlot.make ()
+                let! first = Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> "first") |> Flow.forkReplacing slot
+                let! second = Flow.ok "second" |> Flow.forkReplacing slot
+                let! firstExit = Fiber.await first
+                let! secondExit = Fiber.await second
+                return firstExit, secondExit
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt, Exit.Success "second") @>
+
+    [<Fact>]
+    let ``forkReplacingKey replaces per key and forgets settled keys`` () =
+        let workflow : Flow<unit, string, Exit<int, string> * Exit<int, string> * int * int> =
+            flow {
+                let! slots = FiberSlot.makeKeyed ()
+                let slowly value = Flow.sleep (TimeSpan.FromMilliseconds 50.0) |> Flow.map (fun () -> value)
+                let! a1 = Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> 1) |> Flow.forkReplacingKey "a" slots
+                let! a2 = slowly 2 |> Flow.forkReplacingKey "a" slots
+                let! _ = slowly 3 |> Flow.forkReplacingKey "b" slots
+                let! running = FiberSlot.count slots
+                let! a1Exit = Fiber.await a1
+                let! a2Exit = Fiber.await a2
+                do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
+                let! remaining = FiberSlot.count slots
+                return a1Exit, a2Exit, running, remaining
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt, Exit.Success 2, 2, 0) @>
+
+    [<Fact>]
+    let ``FiberSlot.interrupt stops the current fiber and waits for its cleanup`` () =
+        let cleaned = ref false
+
+        let workflow : Flow<unit, string, bool> =
+            flow {
+                let! slot = FiberSlot.make ()
+
+                let! _ =
+                    Flow.sleep (TimeSpan.FromSeconds 30.0)
+                    |> Flow.fold Flow.ok (fun cause ->
+                        cleaned.Value <- true
+                        Flow.ofExit (Exit.Failure cause))
+                    |> Flow.forkReplacing slot
+
+                do! Flow.sleep (TimeSpan.FromMilliseconds 10.0)
+                do! FiberSlot.interrupt slot
+                return cleaned.Value
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success true @>

@@ -40,6 +40,56 @@ module Resource =
     let asyncFinalizer (cleanup: CancellationToken -> Async<unit>) : Resource<'env, 'error, unit> =
         ofAsync (Flow(fun _ _ -> Execution.ofValue ())) (fun () cancellationToken -> cleanup cancellationToken)
 
+/// <summary>Holds at most one running fiber; forking into it with <c>Flow.forkReplacing</c> interrupts the previous one.</summary>
+/// <remarks>Create one with <c>FiberSlot.make</c>. Use it where only the newest request matters, such as a search box.</remarks>
+[<Sealed>]
+type FiberSlot<'error, 'value> internal () =
+    let gate = obj ()
+    let mutable current: Fiber<'error, 'value> option = None
+
+    member internal _.Replace(fiber: Fiber<'error, 'value>) =
+        Platform.lock gate (fun () ->
+            let previous = current
+            current <- Some fiber
+            previous)
+
+    member internal _.Take() =
+        Platform.lock gate (fun () ->
+            let previous = current
+            current <- None
+            previous)
+
+/// <summary>Holds at most one running fiber per key; forking into a key with <c>Flow.forkReplacingKey</c> interrupts that key's previous fiber.</summary>
+/// <remarks>Create one with <c>FiberSlot.makeKeyed</c>. A key's entry is removed when its fiber settles.</remarks>
+[<Sealed>]
+type KeyedFiberSlot<'key, 'error, 'value when 'key: equality> internal () =
+    let gate = obj ()
+    let entries = System.Collections.Generic.Dictionary<'key, obj * Fiber<'error, 'value>>(HashIdentity.Structural)
+
+    member internal _.Replace(key: 'key, marker: obj, fiber: Fiber<'error, 'value>) =
+        Platform.lock gate (fun () ->
+            let previous =
+                match entries.TryGetValue key with
+                | true, (_, previous) -> Some previous
+                | _ -> None
+
+            entries[key] <- (marker, fiber)
+            previous)
+
+    member internal _.Remove(key: 'key, marker: obj) =
+        Platform.lock gate (fun () ->
+            match entries.TryGetValue key with
+            | true, (owner, _) when obj.ReferenceEquals(owner, marker) -> entries.Remove key |> ignore
+            | _ -> ())
+
+    member internal _.TakeAll() =
+        Platform.lock gate (fun () ->
+            let fibers = [ for entry in entries.Values -> snd entry ]
+            entries.Clear()
+            fibers)
+
+    member internal _.Count = Platform.lock gate (fun () -> entries.Count)
+
 module Flow =
     let inline internal invoke
         (flow: Flow<'env, 'error, 'value>)
@@ -1239,6 +1289,80 @@ module Flow =
 
             Execution.ofValue shared)
 
+    // Signals a superseded fiber to stop without waiting for it: the newest request should not queue behind the
+    // cleanup of the one it replaced. The superseded outcome is marked observed because nobody will read it.
+    let private supersede (previous: Fiber<'error, 'value> option) =
+        match previous with
+        | Some fiber ->
+            fiber.MarkObserved()
+            fiber.InterruptSource.Cancel()
+        | None -> ()
+
+    /// <summary>Starts a flow in a new fiber held by <paramref name="slot" />, interrupting the fiber it replaces.</summary>
+    /// <remarks>
+    /// Latest wins: the previous fiber in the slot is signalled to stop and is not waited for, so the new request
+    /// starts at once. Its outcome is marked observed. Use this for UI requests where a result for stale input is
+    /// worthless, such as search-as-you-type.
+    /// </remarks>
+    /// <param name="slot">The slot that holds the current fiber.</param>
+    /// <param name="flow">The flow to run.</param>
+    /// <returns>A flow that produces the new fiber's handle.</returns>
+    /// <example>
+    /// <code>
+    /// let onQueryChanged slot query =
+    ///     search query |&gt; Flow.forkReplacing slot |&gt; Flow.ignore
+    /// </code>
+    /// </example>
+    let forkReplacing (slot: FiberSlot<'error, 'value>) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
+        Flow(fun environment cancellationToken ->
+            invoke (fork flow) environment cancellationToken
+            |> Execution.map (fun fiber ->
+                supersede (slot.Replace fiber)
+                fiber))
+
+    /// <summary>Starts a flow in a new fiber held under <paramref name="key" />, interrupting that key's previous fiber.</summary>
+    /// <remarks>
+    /// Like <c>forkReplacing</c>, per key: fibers for other keys keep running. A key's entry is removed when its
+    /// fiber settles, so the slot does not grow with every key ever used.
+    /// </remarks>
+    /// <param name="key">The key whose previous fiber is replaced.</param>
+    /// <param name="slots">The keyed slot that holds the current fibers.</param>
+    /// <param name="flow">The flow to run.</param>
+    /// <returns>A flow that produces the new fiber's handle.</returns>
+    /// <example>
+    /// <code>
+    /// loadPreview document |&gt; Flow.forkReplacingKey document.Id previews
+    /// </code>
+    /// </example>
+    let forkReplacingKey
+        (key: 'key)
+        (slots: KeyedFiberSlot<'key, 'error, 'value>)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'none, Fiber<'error, 'value>> =
+        Flow(fun environment cancellationToken ->
+            let marker = obj ()
+
+            let tracked =
+                Flow(fun environment cancellationToken ->
+                    invoke flow environment cancellationToken
+                    |> Execution.fold
+                        (fun value ->
+                            slots.Remove(key, marker)
+                            Execution.ofValue value)
+                        (fun cause ->
+                            slots.Remove(key, marker)
+                            Execution.ofCause cause))
+
+            invoke (fork tracked) environment cancellationToken
+            |> Execution.map (fun fiber ->
+                supersede (slots.Replace(key, marker, fiber))
+
+                // A fiber that settled before it was recorded could not remove itself.
+                if fiber.Settled.IsSome then
+                    slots.Remove(key, marker)
+
+                fiber))
+
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
     /// If either flow fails, the other is interrupted immediately.
@@ -2048,3 +2172,35 @@ module Fiber =
             fiber.MarkObserved()
             fiber.InterruptSource.Cancel()
             Platform.awaitExitTaskAsSuccess fiber.ExitTask)
+
+/// <summary>Creates and clears <see cref="T:Axial.FiberSlot`2" /> and <see cref="T:Axial.KeyedFiberSlot`3" /> values.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module FiberSlot =
+    /// <summary>Creates an empty slot for <c>Flow.forkReplacing</c>.</summary>
+    let make<'env, 'none, 'error, 'value> () : Flow<'env, 'none, FiberSlot<'error, 'value>> =
+        Flow(fun _ _ -> Execution.ofValue (FiberSlot()))
+
+    /// <summary>Creates an empty keyed slot for <c>Flow.forkReplacingKey</c>.</summary>
+    let makeKeyed<'env, 'none, 'key, 'error, 'value when 'key: equality> () : Flow<'env, 'none, KeyedFiberSlot<'key, 'error, 'value>> =
+        Flow(fun _ _ -> Execution.ofValue (KeyedFiberSlot()))
+
+    /// <summary>Interrupts the slot's fiber, if any, and waits for its cleanup.</summary>
+    /// <param name="slot">The slot to clear.</param>
+    let interrupt (slot: FiberSlot<'error, 'value>) : Flow<'env, 'none, unit> =
+        Flow(fun environment cancellationToken ->
+            match slot.Take() with
+            | Some fiber -> Flow.invoke (Fiber.interrupt fiber) environment cancellationToken |> Execution.map (fun _ -> ())
+            | None -> Execution.ofValue ())
+
+    /// <summary>Interrupts every fiber in a keyed slot and waits for their cleanup.</summary>
+    /// <param name="slots">The keyed slot to clear.</param>
+    let interruptAll (slots: KeyedFiberSlot<'key, 'error, 'value>) : Flow<'env, 'none, unit> =
+        Flow(fun environment cancellationToken ->
+            Flow.invoke (slots.TakeAll() |> List.map Fiber.interrupt |> Flow.sequence) environment cancellationToken
+            |> Execution.map (fun _ -> ()))
+
+    /// <summary>Returns the number of keys whose fiber is still running.</summary>
+    /// <param name="slots">The keyed slot.</param>
+    let count (slots: KeyedFiberSlot<'key, 'error, 'value>) : Flow<'env, 'none, int> =
+        Flow(fun _ _ -> Execution.ofValue slots.Count)

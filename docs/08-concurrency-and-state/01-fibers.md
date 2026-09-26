@@ -94,3 +94,21 @@ do! files |> Flow.forEachPar (Parallelism.ofProcessors id) indexFile
 At most the given number of flows run at once, and each worker starts the next value as soon as it finishes one. The first failure interrupts the flows still running and waits for their cleanup, so no sibling keeps running after the traversal has failed. Size CPU-bound work with `Parallelism.ofProcessors`, which clamps to at least 1.
 
 Use explicit fibers when the parent workflow needs to start child work, do something else, and decide later whether to join or interrupt it.
+
+## Latest Wins
+
+When only the newest request matters, such as a search box or autocomplete, hold the running fiber in a `FiberSlot` and
+fork with `Flow.forkReplacing`. Each fork signals the previous fiber in the slot to stop and does not wait for it, so
+the new request starts at once:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+let! slot = FiberSlot.make ()
+
+let onQueryChanged query =
+    search query |> Flow.forkReplacing slot |> Flow.ignore
+```
+
+`Flow.forkReplacingKey key slots` does the same per key, with a slot from `FiberSlot.makeKeyed`, so a new preview for
+one document replaces only that document's previous load. A key's entry is removed when its fiber settles.
+`FiberSlot.interrupt` and `FiberSlot.interruptAll` stop what is running and wait for its cleanup, for example on
+shutdown. For a stream of inputs, `FlowStream.switchMapFlow` applies the same rule inside the stream.
