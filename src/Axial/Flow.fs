@@ -1738,6 +1738,83 @@ module Flow =
                 (Execution.ofValue [])
             |> Execution.map List.rev)
 
+    // Runs `mapping` over `values` with at most `parallelism` workers. Each worker takes the next index from a shared
+    // counter, so a slow item delays only its own worker. Workers are combined with sequencePar, which interrupts the
+    // others as soon as one fails. `store` records each result; the counter and storage are allocated per run.
+    let private runWorkers
+        (parallelism: Parallelism)
+        (mapping: 'value -> Flow<'env, 'error, 'next>)
+        (items: 'value array)
+        (store: int -> 'next -> unit)
+        : Flow<'env, 'error, unit> =
+        let next = ref -1L
+
+        let worker =
+            Flow(fun environment cancellationToken ->
+                // A loop rather than recursion, so a worker that processes many items runs in constant memory.
+                Execution.loop () (fun () ->
+                    let index = int (Platform.nextId next)
+
+                    if index >= items.Length then
+                        Execution.ofValue (Platform.Break())
+                    else
+                        invoke (mapping items[index]) environment cancellationToken
+                        |> Execution.map (fun mapped ->
+                            store index mapped
+                            Platform.Continue())))
+
+        let workers = min (Parallelism.value parallelism) items.Length
+        let combined = sequencePar (List.replicate workers worker)
+
+        Flow(fun environment cancellationToken ->
+            invoke combined environment cancellationToken |> Execution.map (fun (_: unit list) -> ()))
+
+    /// <summary>Maps values to flows and runs them with bounded concurrency, returning results in input order.</summary>
+    /// <remarks>
+    /// At most <paramref name="parallelism" /> mappings run at once; as each finishes, its worker starts the next
+    /// value. The first failure interrupts the mappings still running and waits for their cleanup before the flow
+    /// fails, so no sibling is left running in the background. Size CPU-bound work with
+    /// <c>Parallelism.ofProcessors</c>.
+    /// </remarks>
+    /// <param name="parallelism">The maximum number of mappings running at once.</param>
+    /// <param name="mapping">Maps each value to a flow.</param>
+    /// <param name="values">The values to map.</param>
+    /// <returns>A flow containing the mapped values in the order of <paramref name="values" />.</returns>
+    /// <example>
+    /// <code>
+    /// let! pages = urls |&gt; Flow.traversePar (Parallelism.bounded 8) fetchPage
+    /// </code>
+    /// </example>
+    let traversePar
+        (parallelism: Parallelism)
+        (mapping: 'value -> Flow<'env, 'error, 'next>)
+        (values: seq<'value>)
+        : Flow<'env, 'error, 'next list> =
+        Flow(fun environment cancellationToken ->
+            let items = Array.ofSeq values
+            let results = Array.zeroCreate items.Length
+
+            invoke (runWorkers parallelism mapping items (fun index mapped -> results[index] <- mapped)) environment cancellationToken
+            |> Execution.map (fun () -> List.ofArray results))
+
+    /// <summary>Runs a flow for each value with bounded concurrency, discarding the results.</summary>
+    /// <remarks>Runs like <c>traversePar</c>: at most <paramref name="parallelism" /> at once, and the first failure interrupts the rest.</remarks>
+    /// <param name="parallelism">The maximum number of flows running at once.</param>
+    /// <param name="action">The flow to run for each value.</param>
+    /// <param name="values">The values to process.</param>
+    /// <example>
+    /// <code>
+    /// do! files |&gt; Flow.forEachPar (Parallelism.ofProcessors id) indexFile
+    /// </code>
+    /// </example>
+    let forEachPar
+        (parallelism: Parallelism)
+        (action: 'value -> Flow<'env, 'error, unit>)
+        (values: seq<'value>)
+        : Flow<'env, 'error, unit> =
+        Flow(fun environment cancellationToken ->
+            invoke (runWorkers parallelism action (Array.ofSeq values) (fun _ () -> ())) environment cancellationToken)
+
     /// <summary>Transforms a sequence of flows into a flow of a sequence and stops at the first failure.</summary>
     /// <param name="flows">The sequence of flows to run.</param>
     /// <returns>A flow containing a list of the successful values.</returns>

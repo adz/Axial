@@ -35,12 +35,14 @@ The primary operations for managing fibers are:
 
 - [**`Flow.fork`**](/api/): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
 - [**`Fiber.join`**](/api/): waits for the fiber and resumes with its successful value or typed failure.
+- [**`Fiber.await`**](/api/): waits for the fiber and returns its `Exit` without failing, for callers that decide what the outcome means.
+- `Fiber.poll`: returns the fiber's `Exit` if it has settled, without waiting.
 - [**`Fiber.interrupt`**](/api/): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
 - [**`Flow.forkDetached`**](/api/): starts deliberate fire-and-forget work whose defects are never reported as unobserved.
 - `Flow.forkNamed`: forks with a diagnostic name that carries into dumps and telemetry fiber spans, so long-lived background fibers are recognizable instead of bare ids.
 - `Fiber.dump`: returns a diagnostic snapshot of one fiber handle.
 
-Joining or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer](./supervision.html); use `Flow.forkDetached` when the silence is intentional, and [`Flow.supervise`](./supervision.html) to restart background work that dies with defects.
+Joining, awaiting, or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer](./supervision.html); use `Flow.forkDetached` when the silence is intentional, and [`Flow.supervise`](./supervision.html) to restart background work that dies with defects.
 
 ## Why Fibers?
 
@@ -73,18 +75,7 @@ Use `Fiber.dump` when logging or debugging one fiber. The dump is a snapshot, so
 
 ## Underlying Implementation
 
-On .NET, a fiber is a small record around a `Task<Exit<'value, 'error>>`, a `CancellationTokenSource`, and diagnostic metadata. On Fable, it wraps an `Async<Exit<'value, 'error>>` with the same public model.
-
-```fsharp
-type Fiber<'error, 'value> =
-    {
-        ExitTask: Task<Exit<'value, 'error>> // The running work
-        InterruptSource: CancellationTokenSource // The kill switch
-        Metadata: FiberMetadata // Diagnostic identity and lifecycle state
-    }
-```
-
-This keeps the public model the same while still using the platform's native execution primitive underneath.
+On .NET, a fiber wraps a `Task<Exit<'value, 'error>>`, a `CancellationTokenSource`, and diagnostic metadata. On Fable, it wraps an `Async<Exit<'value, 'error>>` with the same public model. Only `Metadata` is public; the task and cancellation source are reached through the `Fiber` functions, so observation and interruption always go through the runtime's bookkeeping.
 
 ## Concurrency Primitives
 
@@ -92,5 +83,14 @@ Most code should not manage fibers manually. Prefer high-level parallel combinat
 
 - `Flow.zipPar`: Runs two flows concurrently in separate fibers and waits for both.
 - `Flow.race`: Runs two flows concurrently and returns the result of the winner, interrupting the loser.
+- `Flow.traversePar`: Maps many values with bounded concurrency and returns the results in input order.
+- `Flow.forEachPar`: Runs a flow for each value with bounded concurrency, discarding the results.
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+let! pages = urls |> Flow.traversePar (Parallelism.bounded 8) fetchPage
+do! files |> Flow.forEachPar (Parallelism.ofProcessors id) indexFile
+```
+
+At most the given number of flows run at once, and each worker starts the next value as soon as it finishes one. The first failure interrupts the flows still running and waits for their cleanup, so no sibling keeps running after the traversal has failed. Size CPU-bound work with `Parallelism.ofProcessors`, which clamps to at least 1.
 
 Use explicit fibers when the parent workflow needs to start child work, do something else, and decide later whether to join or interrupt it.
