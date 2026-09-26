@@ -28,7 +28,7 @@ it would wait for the next reading with nothing to show.
 -     do! Deferred.await shown
 -     do! temperature |> Axial.State.SubscriptionRef.set 22.0
 -     do! temperature |> Axial.State.SubscriptionRef.update (fun value -> value + 0.5)
--     return! Flow.join display
+-     return! Fiber.join display
 - } : Flow<unit, Never, float list>)
 - |> Flow.run ();;
 val it: Exit<float list,Never> = Success [21.5; 22.0; 22.5]

@@ -353,7 +353,7 @@ module WorkflowQueueTests =
                 do! waitUntil (fun () -> suspendedOfferers bounded () = 1)
                 let! waiting = Dequeue.stats bounded
                 let! _ = Dequeue.take bounded
-                do! Flow.join blocked |> Flow.ignore
+                do! Fiber.join blocked |> Flow.ignore
                 do! Dequeue.shutdown bounded
                 let! settled = Dequeue.stats bounded
 

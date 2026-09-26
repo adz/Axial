@@ -238,8 +238,8 @@ module WorkflowStreamTests =
     [<Fact>]
     let ``groupedWithin emits on size, on window, and flushes the tail`` () =
         let groups =
-            timed [ 1, 0; 2, 0; 3, 0; 4, 0; 5, 200; 6, 0 ]
-            |> FlowStream.groupedWithin 3 (TimeSpan.FromMilliseconds 80.0)
+            timed [ 1, 0; 2, 0; 3, 0; 4, 0; 5, 600; 6, 0 ]
+            |> FlowStream.groupedWithin 3 (TimeSpan.FromMilliseconds 200.0)
             |> FlowStream.runCollect
             |> Flow.runSync ()
 
@@ -271,7 +271,7 @@ module WorkflowStreamTests =
 
         let search (query: int) : Flow<unit, string, string> =
             flow {
-                do! Flow.sleep (TimeSpan.FromMilliseconds 80.0)
+                do! Flow.sleep (TimeSpan.FromMilliseconds 400.0)
                 return $"result-{query}"
             }
             |> Flow.fold Flow.ok (fun cause ->
@@ -279,7 +279,8 @@ module WorkflowStreamTests =
                 Flow.ofExit (Exit.Failure cause))
 
         let results =
-            timed [ 1, 0; 2, 20; 3, 20; 4, 200 ]
+            // Values 2 and 3 arrive long before the 400 ms search finishes; 4 arrives long after 3's result.
+            timed [ 1, 0; 2, 30; 3, 30; 4, 900 ]
             |> FlowStream.switchMapFlow search
             |> FlowStream.runCollect
             |> Flow.runSync ()

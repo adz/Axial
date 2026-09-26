@@ -16,7 +16,7 @@ module WorkflowSubscriptionRefTests =
             let mutable remaining = 5000
 
             while subscribers reference () = 0 && remaining > 0 do
-                do! Flow.Runtime.sleep (TimeSpan.FromMilliseconds 1.0)
+                do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
                 remaining <- remaining - 1
         }
 
@@ -38,7 +38,7 @@ module WorkflowSubscriptionRefTests =
                 do! counter |> SubscriptionRef.update ((+) 1)
                 let! doubled = counter |> SubscriptionRef.modify (fun value -> value * 2, value * 2)
                 do! counter |> SubscriptionRef.set 0
-                let! values = Flow.join seen
+                let! values = Fiber.join seen
                 return values, doubled
             }
 
@@ -64,7 +64,7 @@ module WorkflowSubscriptionRefTests =
                     |> FlowStream.takeWhile (fun value -> value < 200)
                     |> FlowStream.runCollect
 
-                do! Flow.join updater
+                do! Fiber.join updater
                 let expected = [ (List.tryHead values |> Option.defaultValue 200) .. 199 ]
                 return values = expected
             }
@@ -101,7 +101,7 @@ module WorkflowSubscriptionRefTests =
                     do! reading |> SubscriptionRef.set value
 
                 do! Deferred.succeed () release |> Flow.ignore
-                return! Flow.join display
+                return! Fiber.join display
             }
 
         test <@ Flow.runSync () workflow = Exit.Success [ 0; 50 ] @>
