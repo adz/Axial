@@ -105,3 +105,23 @@ module CoreServiceTests =
             test <@ Flow.runSync runtime (EnvironmentVariable.get envName) = Exit.Success "live-value" @>
         finally
             Environment.SetEnvironmentVariable(envName, previous)
+
+    [<Fact>]
+    let ``Clock.timed measures a flow with the clock's monotonic timer`` () =
+        let readings = ref 0
+
+        let stepping =
+            { new IClock with
+                member _.UtcNow() = DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero)
+                member _.Elapsed() =
+                    readings.Value <- readings.Value + 1
+                    TimeSpan.FromMilliseconds(float (readings.Value * 250)) }
+
+        let runtime = makeRuntime stepping (Random.fromValue 1) (Guid.fromValue Guid.Empty) (EnvironmentVariables.fromPairs [])
+
+        let timed : Exit<string * TimeSpan, string> = Flow.ok "done" |> Clock.timed |> Flow.runSync runtime
+        let fixedClock = makeRuntime (Clock.fromValue DateTimeOffset.UnixEpoch) (Random.fromValue 1) (Guid.fromValue Guid.Empty) (EnvironmentVariables.fromPairs [])
+        let underFixedClock : Exit<int * TimeSpan, string> = Flow.ok 1 |> Clock.timed |> Flow.runSync fixedClock
+
+        test <@ timed = Exit.Success("done", TimeSpan.FromMilliseconds 250.0) @>
+        test <@ underFixedClock = Exit.Success(1, TimeSpan.Zero) @>

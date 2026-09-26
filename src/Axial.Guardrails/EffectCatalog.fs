@@ -64,6 +64,11 @@ let rules: EffectRule list =
         Message = "reads or writes ambient process/OS environment state directly"
         Replacement = "Axial.PlatformService.IEnvironment, or an explicit configuration value passed through 'env" }
 
+      { Category = "clock"
+        Match = AnyMemberOf "System.Diagnostics.Stopwatch"
+        Message = "measures time with System.Diagnostics.Stopwatch directly, which makes durations untestable"
+        Replacement = "Axial.PlatformService.IClock (Clock.timed / Clock.elapsed)" }
+
       { Category = "environment"
         Match = MembersOf("System.Environment", [ "get_ProcessorCount"; "ProcessorCount" ])
         Message = "reads Environment.ProcessorCount directly to size concurrency"

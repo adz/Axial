@@ -88,8 +88,11 @@ To allow one call, add a category-specific directive to the flagged line or the 
 
 ```fsharp
 let live : IClock =
+    let stopwatch = System.Diagnostics.Stopwatch.StartNew() // axial-allow-effect: clock
+
     { new IClock with
-        member _.UtcNow() = DateTimeOffset.UtcNow } // axial-allow-effect: clock
+        member _.UtcNow() = DateTimeOffset.UtcNow // axial-allow-effect: clock
+        member _.Elapsed() = stopwatch.Elapsed }
 ```
 
 To allow a category throughout a boundary implementation file, place a file directive in the leading comment block immediately before the `namespace` declaration:

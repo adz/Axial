@@ -28,9 +28,26 @@ Clock.unixTimeMilliseconds   // int64
 
 None of them produce a typed failure, so the error channel stays free for the workflow's own errors.
 
+## Measuring durations
+
+Wall-clock time can jump when the system clock is adjusted, so it is the wrong tool for measuring how long something
+took. `IClock.Elapsed` is a monotonic reading for that job, and `Clock.timed` wraps a flow with it:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+flow {
+    let! report, took = buildReport |> Clock.timed
+    do! Log.info $"report built in {took.TotalMilliseconds:F0} ms"
+    return report
+}
+```
+
+`Clock.elapsed` reads the timer directly; only the difference between two readings is meaningful. Measuring through
+the clock instead of `Stopwatch` keeps durations deterministic in tests: under `Clock.fromValue` every duration is
+zero.
+
 ## Supplying the service
 
-`Clock.live` reads `DateTimeOffset.UtcNow`. `Clock.layer` is the same value as a `Layer<unit, Never, IClock>`. Most
+`Clock.live` reads `DateTimeOffset.UtcNow` and a monotonic process timer. `Clock.layer` is the same value as a `Layer<unit, Never, IClock>`. Most
 applications get the clock as part of [the base runtime](index.html) rather than wiring it alone.
 
 ## Testing

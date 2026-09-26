@@ -4,10 +4,17 @@ open System
 open System.Collections.Generic
 open Axial
 
-/// <summary>Provides synchronous access to the current UTC clock.</summary>
+/// <summary>Provides the current UTC time and a monotonic timer for measuring durations.</summary>
 type IClock =
     /// <summary>Returns the current UTC timestamp.</summary>
     abstract UtcNow: unit -> DateTimeOffset
+
+    /// <summary>Returns a monotonic reading for measuring durations.</summary>
+    /// <remarks>
+    /// Only the difference between two readings is meaningful. Unlike <c>UtcNow</c>, it never jumps when the system
+    /// clock is adjusted, so use it to measure how long something took.
+    /// </remarks>
+    abstract Elapsed: unit -> TimeSpan
 
 /// <summary>Provides synchronous access to workflow logging as an explicit service.</summary>
 type ILog =

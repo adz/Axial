@@ -48,15 +48,42 @@ module Clock =
     let unixTimeMilliseconds<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, int64> =
         now |> Flow.map _.ToUnixTimeMilliseconds()
 
-    /// <summary>Creates a live clock backed by <see cref="P:System.DateTimeOffset.UtcNow" />.</summary>
+    /// <summary>Reads a monotonic timestamp from an explicit clock service.</summary>
+    /// <remarks>Only differences between readings are meaningful. Prefer <c>Clock.timed</c> to measure a flow.</remarks>
+    let elapsed<'env, 'error when 'env :> IHasClock> : Flow<'env, 'error, TimeSpan> =
+        service
+        |> Flow.map (fun clock -> clock.Elapsed())
+
+    /// <summary>Runs a flow and returns its value together with how long it took.</summary>
+    /// <remarks>
+    /// Measured with the clock's monotonic timer, so the duration is unaffected by system clock adjustments and is
+    /// deterministic under a test clock. Failures propagate unchanged and are not timed.
+    /// </remarks>
+    /// <param name="flow">The flow to measure.</param>
+    /// <example>
+    /// <code>
+    /// let! report, took = buildReport |&gt; Clock.timed
+    /// </code>
+    /// </example>
+    let timed<'env, 'error, 'value when 'env :> IHasClock>
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value * TimeSpan> =
+        service
+        |> Flow.bind (fun (clock: IClock) ->
+            let started = clock.Elapsed()
+            flow |> Flow.map (fun value -> value, clock.Elapsed() - started))
+
+    /// <summary>Creates a live clock backed by <see cref="P:System.DateTimeOffset.UtcNow" /> and a monotonic timer.</summary>
     let live : IClock =
         { new IClock with
-            member _.UtcNow() = DateTimeOffset.UtcNow }
+            member _.UtcNow() = DateTimeOffset.UtcNow
+            member _.Elapsed() = Platform.monotonicNow () }
 
-    /// <summary>Creates a deterministic clock that always returns the supplied instant.</summary>
+    /// <summary>Creates a deterministic clock that always returns the supplied instant; measured durations are zero.</summary>
     let fromValue (utcNow: DateTimeOffset) : IClock =
         { new IClock with
-            member _.UtcNow() = utcNow }
+            member _.UtcNow() = utcNow
+            member _.Elapsed() = TimeSpan.Zero }
 
     /// <summary>Builds the live clock as a layer.</summary>
     let layer : Layer<unit, Never, IClock> =

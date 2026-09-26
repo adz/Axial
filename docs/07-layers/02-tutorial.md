@@ -62,9 +62,12 @@ let ordersLayer : Layer<unit, string, IOrders> =
                 } }
 
 let clockLayer : Layer<unit, string, IClock> =
+    let stopwatch = System.Diagnostics.Stopwatch.StartNew()
+
     Layer.succeed
         { new IClock with
-            member _.UtcNow() = DateTimeOffset.UtcNow }
+            member _.UtcNow() = DateTimeOffset.UtcNow
+            member _.Elapsed() = stopwatch.Elapsed }
 ```
 
 ## 3. Merge Them Into An App Layer

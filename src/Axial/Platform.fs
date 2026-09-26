@@ -582,7 +582,8 @@ let monotonicNow () : TimeSpan =
 #if FABLE_COMPILER
     TimeSpan.FromMilliseconds(performanceNow ())
 #else
-    let timestamp = System.Diagnostics.Stopwatch.GetTimestamp()
+    // The runtime's own monotonic timer; applications measure durations through IClock.Elapsed.
+    let timestamp = System.Diagnostics.Stopwatch.GetTimestamp() // axial-allow-effect: clock
     TimeSpan.FromTicks(int64 (float timestamp * (float TimeSpan.TicksPerSecond / float System.Diagnostics.Stopwatch.Frequency)))
 #endif
 

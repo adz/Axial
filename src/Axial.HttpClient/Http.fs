@@ -585,6 +585,7 @@ module Http =
                     return! task {
                         let display = Request.render request
                         let startedAt = clock.UtcNow()
+                        let started = clock.Elapsed()
                         use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
                         request.Timeout |> Option.iter timeoutSource.CancelAfter
                         try
@@ -611,7 +612,7 @@ module Http =
                                       Text = decodeBody contentType body
                                       Request = display
                                       StartedAt = startedAt
-                                      Duration = clock.UtcNow() - startedAt }
+                                      Duration = clock.Elapsed() - started }
                         with
                         | :? OperationCanceledException as error when cancellationToken.IsCancellationRequested ->
                             // The workflow was interrupted: let the cancellation surface as Cause.Interrupt rather
