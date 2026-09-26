@@ -1463,7 +1463,7 @@ module Flow =
         |> OptionFlow.toResultValueOption error
         |> fromResult
 
-    /// <summary>Lifts a result that failed without a reason, taking the error from a flow that runs only on failure.</summary>
+    /// <summary>Attaches an environment-derived error to a result that failed without one; the error flow runs only on failure.</summary>
     /// <remarks>
     /// <para>
     /// The <c>unit</c> error is not an empty error type — it is the absence of a reason. <c>Result.okIf</c> and
@@ -1483,10 +1483,10 @@ module Flow =
     /// <example>
     /// <code>
     /// let result = Result.Error ()
-    /// let flow = Flow.fromResultOr (Flow.envWith (fun env -> "error")) result
+    /// let flow = Flow.orElseFlow (Flow.envWith (fun env -> "error")) result
     /// </code>
     /// </example>
-    let fromResultOr
+    let orElseFlow
         (errorFlow: Flow<'env, 'error, 'error>)
         (result: Result<'value, unit>)
         : Flow<'env, 'error, 'value> =
@@ -1969,12 +1969,14 @@ module Flow =
                 (Execution.ofValue [])
             |> Execution.map List.rev)
 
-    // Runs `mapping` over `values` with at most `parallelism` workers. Each worker takes the next index from a shared
-    // counter, so a slow item delays only its own worker. Workers are combined with sequencePar, which interrupts the
-    // others as soon as one fails. `store` records each result; the counter and storage are allocated per run.
+    // Runs a mapping over `items` with at most `parallelism` workers. Each worker runs in its own child scope, gets
+    // its mapping from `workerMapping` (which may acquire a resource into that scope), and takes the next index
+    // from a shared counter, so a slow item delays only its own worker. Workers are combined with sequencePar,
+    // which interrupts the others as soon as one fails. `store` records each result; the counter and storage are
+    // allocated per run.
     let private runWorkers
         (parallelism: Parallelism)
-        (mapping: 'value -> Flow<'env, 'error, 'next>)
+        (workerMapping: Flow<'env, 'error, 'value -> Flow<'env, 'error, 'next>>)
         (items: 'value array)
         (store: int -> 'next -> unit)
         : Flow<'env, 'error, unit> =
@@ -1982,17 +1984,20 @@ module Flow =
 
         let worker =
             Flow(fun environment cancellationToken ->
-                // A loop rather than recursion, so a worker that processes many items runs in constant memory.
-                Execution.loop () (fun () ->
-                    let index = int (Platform.nextId next)
+                invoke workerMapping environment cancellationToken
+                |> Execution.bind (fun mapping ->
+                    // A loop rather than recursion, so a worker that processes many items runs in constant memory.
+                    Execution.loop () (fun () ->
+                        let index = int (Platform.nextId next)
 
-                    if index >= items.Length then
-                        Execution.ofValue (Platform.Break())
-                    else
-                        invoke (mapping items[index]) environment cancellationToken
-                        |> Execution.map (fun mapped ->
-                            store index mapped
-                            Platform.Continue())))
+                        if index >= items.Length then
+                            Execution.ofValue (Platform.Break())
+                        else
+                            invoke (mapping items[index]) environment cancellationToken
+                            |> Execution.map (fun mapped ->
+                                store index mapped
+                                Platform.Continue()))))
+            |> scoped
 
         let workers = min (Parallelism.value parallelism) items.Length
         let combined = sequencePar (List.replicate workers worker)
@@ -2000,12 +2005,21 @@ module Flow =
         Flow(fun environment cancellationToken ->
             invoke combined environment cancellationToken |> Execution.map (fun (_: unit list) -> ()))
 
+    let private traverseWorkers parallelism workerMapping (values: seq<'value>) : Flow<'env, 'error, 'next list> =
+        Flow(fun environment cancellationToken ->
+            let items = Array.ofSeq values
+            let results = Array.zeroCreate items.Length
+
+            invoke (runWorkers parallelism workerMapping items (fun index mapped -> results[index] <- mapped)) environment cancellationToken
+            |> Execution.map (fun () -> List.ofArray results))
+
     /// <summary>Maps values to flows and runs them with bounded concurrency, returning results in input order.</summary>
     /// <remarks>
     /// At most <paramref name="parallelism" /> mappings run at once; as each finishes, its worker starts the next
     /// value. The first failure interrupts the mappings still running and waits for their cleanup before the flow
     /// fails, so no sibling is left running in the background. Size CPU-bound work with
-    /// <c>Parallelism.ofProcessors</c>.
+    /// <c>Parallelism.ofProcessors</c>. When each worker needs its own connection or handle, use
+    /// <c>traverseParUsing</c>.
     /// </remarks>
     /// <param name="parallelism">The maximum number of mappings running at once.</param>
     /// <param name="mapping">Maps each value to a flow.</param>
@@ -2021,12 +2035,32 @@ module Flow =
         (mapping: 'value -> Flow<'env, 'error, 'next>)
         (values: seq<'value>)
         : Flow<'env, 'error, 'next list> =
-        Flow(fun environment cancellationToken ->
-            let items = Array.ofSeq values
-            let results = Array.zeroCreate items.Length
+        traverseWorkers parallelism (ok mapping) values
 
-            invoke (runWorkers parallelism mapping items (fun index mapped -> results[index] <- mapped)) environment cancellationToken
-            |> Execution.map (fun () -> List.ofArray results))
+    /// <summary>Like <c>traversePar</c>, giving each worker its own resource, acquired once and reused for every value it maps.</summary>
+    /// <remarks>
+    /// Each worker acquires <paramref name="resource" /> when it starts and releases it when it has no values left,
+    /// or when the traversal fails or is interrupted. At most <paramref name="parallelism" /> resources exist at
+    /// once. Use it for work that needs an expensive handle per thread of work, such as a database connection or a
+    /// repository reader that is not safe to share.
+    /// </remarks>
+    /// <param name="parallelism">The maximum number of workers, and so of resources.</param>
+    /// <param name="resource">The resource each worker acquires.</param>
+    /// <param name="mapping">Maps a value to a flow, given the worker's resource.</param>
+    /// <param name="values">The values to map.</param>
+    /// <returns>A flow containing the mapped values in the order of <paramref name="values" />.</returns>
+    /// <example>
+    /// <code>
+    /// let! matches = commits |&gt; Flow.traverseParUsing (Parallelism.ofProcessors id) openReader (fun reader commit -&gt; search reader commit)
+    /// </code>
+    /// </example>
+    let traverseParUsing
+        (parallelism: Parallelism)
+        (resource: Resource<'env, 'error, 'resource>)
+        (mapping: 'resource -> 'value -> Flow<'env, 'error, 'next>)
+        (values: seq<'value>)
+        : Flow<'env, 'error, 'next list> =
+        traverseWorkers parallelism (scopeResource resource |> map mapping) values
 
     /// <summary>Runs a flow for each value with bounded concurrency, discarding the results.</summary>
     /// <remarks>Runs like <c>traversePar</c>: at most <paramref name="parallelism" /> at once, and the first failure interrupts the rest.</remarks>
@@ -2044,7 +2078,25 @@ module Flow =
         (values: seq<'value>)
         : Flow<'env, 'error, unit> =
         Flow(fun environment cancellationToken ->
-            invoke (runWorkers parallelism action (Array.ofSeq values) (fun _ () -> ())) environment cancellationToken)
+            invoke (runWorkers parallelism (ok action) (Array.ofSeq values) (fun _ () -> ())) environment cancellationToken)
+
+    /// <summary>Like <c>forEachPar</c>, giving each worker its own resource, acquired once and reused for every value it processes.</summary>
+    /// <remarks>Resources are acquired and released as in <c>traverseParUsing</c>.</remarks>
+    /// <param name="parallelism">The maximum number of workers, and so of resources.</param>
+    /// <param name="resource">The resource each worker acquires.</param>
+    /// <param name="action">The flow to run for each value, given the worker's resource.</param>
+    /// <param name="values">The values to process.</param>
+    let forEachParUsing
+        (parallelism: Parallelism)
+        (resource: Resource<'env, 'error, 'resource>)
+        (action: 'resource -> 'value -> Flow<'env, 'error, unit>)
+        (values: seq<'value>)
+        : Flow<'env, 'error, unit> =
+        Flow(fun environment cancellationToken ->
+            invoke
+                (runWorkers parallelism (scopeResource resource |> map action) (Array.ofSeq values) (fun _ () -> ()))
+                environment
+                cancellationToken)
 
     /// <summary>Transforms a sequence of flows into a flow of a sequence and stops at the first failure.</summary>
     /// <param name="flows">The sequence of flows to run.</param>

@@ -270,6 +270,59 @@ module FlowStream =
 
         FlowStream(fun env ct -> fill env ct bound false (fun () -> op env ct) [])
 
+    /// <summary>Like <c>mapFlowPar</c>, giving each running mapping a resource from a pool that holds at most <paramref name="parallelism" /> of them.</summary>
+    /// <remarks>
+    /// A mapping takes an idle resource from the pool, or acquires a new one when none is idle, and returns it when
+    /// it finishes. Because at most <paramref name="parallelism" /> mappings run at once, at most that many resources
+    /// are ever acquired, and each is reused across many values. The resources are released when the consuming Flow
+    /// ends. Use it for per-connection or per-handle work that is not safe to share between concurrent mappings.
+    /// </remarks>
+    /// <example><code>commits |&gt; FlowStream.mapFlowParUsing (Parallelism.bounded 4) openReader (fun reader commit -&gt; diff reader commit)</code></example>
+    let mapFlowParUsing
+        (parallelism: Parallelism)
+        (resource: Resource<'env, 'error, 'resource>)
+        (mapper: 'resource -> 'value -> Flow<'env, 'error, 'next>)
+        stream
+        : FlowStream<'env, 'error, 'next> =
+        FlowStream(fun env ct ->
+            // The pool belongs to this run. Resources are acquired into the consuming Flow's scope, which forked
+            // mappings share, so they are released when the consumer ends.
+            let gate = obj ()
+            let idle : 'resource list ref = ref []
+
+            let lease =
+                Flow(fun env ct ->
+                    let pooled =
+                        Platform.lock gate (fun () ->
+                            match idle.Value with
+                            | resource :: rest ->
+                                idle.Value <- rest
+                                Some resource
+                            | [] -> None)
+
+                    match pooled with
+                    | Some resource -> Execution.ofValue resource
+                    | None -> Flow.invoke (Flow.scopeResource resource) env ct)
+
+            let giveBack resource =
+                Platform.lock gate (fun () -> idle.Value <- resource :: idle.Value)
+
+            let pooledMapper value =
+                Flow(fun env ct ->
+                    Flow.invoke lease env ct
+                    |> Execution.bind (fun resource ->
+                        Flow.invoke (mapper resource value) env ct
+                        |> Execution.fold
+                            (fun mapped ->
+                                giveBack resource
+                                Execution.ofValue mapped)
+                            (fun cause ->
+                                giveBack resource
+                                Execution.ofCause cause)))
+
+            let (FlowStream op) = mapFlowPar parallelism pooledMapper stream
+            op env ct)
+
     // Moves upstream values into a one-slot queue from a producer fiber, so an operator can wait for "the next value
     // or a timer" instead of blocking on a pull. The producer is forked into the consumer's scope, so it stops when
     // the consumer finishes or stops early; a one-slot queue keeps upstream back-pressure.

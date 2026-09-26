@@ -313,8 +313,8 @@ module WorkflowErrorTests =
                 errorRuns.Value <- errorRuns.Value + 1
                 $"flow:{env}")
 
-        let failed = Error() |> Flow.fromResultOr errorFlow |> Flow.runSync "env"
-        let succeeded = Ok "value" |> Flow.fromResultOr errorFlow |> Flow.runSync "env"
+        let failed = Error() |> Flow.orElseFlow errorFlow |> Flow.runSync "env"
+        let succeeded = Ok "value" |> Flow.orElseFlow errorFlow |> Flow.runSync "env"
 
         test <@ failed = Exit.Failure (Cause.Fail "flow:env") @>
         test <@ succeeded = Exit.Success "value" @>

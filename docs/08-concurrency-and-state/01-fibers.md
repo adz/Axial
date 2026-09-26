@@ -93,6 +93,19 @@ do! files |> Flow.forEachPar (Parallelism.ofProcessors id) indexFile
 
 At most the given number of flows run at once, and each worker starts the next value as soon as it finishes one. The first failure interrupts the flows still running and waits for their cleanup, so no sibling keeps running after the traversal has failed. Size CPU-bound work with `Parallelism.ofProcessors`, which clamps to at least 1.
 
+When each worker needs its own connection or handle, use `Flow.traverseParUsing` or `Flow.forEachParUsing` with a
+`Resource`. Each worker acquires the resource once when it starts, reuses it for every value it takes, and releases it
+when it finishes or the traversal fails, so at most `parallelism` resources exist at once:
+
+```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+let openReader = Resource.create (Flow.fromBlocking (fun _ -> repository.OpenReader())) (fun reader _ -> reader.DisposeAsync().AsTask())
+
+let! matches = commits |> Flow.traverseParUsing (Parallelism.ofProcessors id) openReader searchCommit
+```
+
+`FlowStream.mapFlowParUsing` does the same for a stream, lending each running mapping a resource from a pool of at
+most `parallelism`.
+
 Use explicit fibers when the parent workflow needs to start child work, do something else, and decide later whether to join or interrupt it.
 
 ## Latest Wins

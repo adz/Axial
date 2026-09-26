@@ -133,3 +133,62 @@ module WorkflowParallelTests =
         test <@ seen |> Seq.sort |> List.ofSeq = [ 1..50 ] @>
         test <@ empty = Exit.Success () @>
         test <@ emptyTraversal = Exit.Success [] @>
+
+    let private countingResource (acquired: int ref) (released: int ref) : Resource<unit, string, int> =
+        Resource.ofAsync
+            (Flow.delay (fun () -> Flow.ok (Interlocked.Increment(&acquired.contents))))
+            (fun _ _ -> async { Interlocked.Increment(&released.contents) |> ignore })
+
+    [<Fact>]
+    let ``traverseParUsing gives each worker one resource and releases it`` () =
+        let acquired = ref 0
+        let released = ref 0
+        let usedBy = System.Collections.Concurrent.ConcurrentDictionary<int, int>()
+
+        let result =
+            [ 1..30 ]
+            |> Flow.traverseParUsing (Parallelism.bounded 3) (countingResource acquired released) (fun reader value ->
+                flow {
+                    usedBy.AddOrUpdate(reader, 1, (fun _ count -> count + 1)) |> ignore
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)
+                    return value * 2
+                })
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Success [ for value in 1..30 -> value * 2 ] @>
+        test <@ acquired.Value = 3 && released.Value = 3 @>
+        test <@ usedBy.Values |> Seq.sum = 30 @>
+
+    [<Fact>]
+    let ``forEachParUsing releases every resource when a value fails`` () =
+        let acquired = ref 0
+        let released = ref 0
+
+        let result =
+            [ 1..20 ]
+            |> Flow.forEachParUsing (Parallelism.bounded 4) (countingResource acquired released) (fun _ value ->
+                if value = 5 then Flow.fail "bad value" else Flow.sleep (TimeSpan.FromMilliseconds 5.0))
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Fail "bad value") @>
+        test <@ acquired.Value >= 1 && acquired.Value <= 4 @>
+        test <@ released.Value = acquired.Value @>
+
+    [<Fact>]
+    let ``mapFlowParUsing reuses at most the bound of resources`` () =
+        let acquired = ref 0
+        let released = ref 0
+
+        let result =
+            FlowStream.fromSeq [ 1..40 ]
+            |> FlowStream.mapFlowParUsing (Parallelism.bounded 3) (countingResource acquired released) (fun _ value ->
+                flow {
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)
+                    return value
+                })
+            |> FlowStream.runCollect
+            |> Flow.runSync ()
+
+        test <@ match result with Exit.Success values -> List.sort values = [ 1..40 ] | _ -> false @>
+        test <@ acquired.Value <= 3 && acquired.Value >= 1 @>
+        test <@ released.Value = acquired.Value @>
