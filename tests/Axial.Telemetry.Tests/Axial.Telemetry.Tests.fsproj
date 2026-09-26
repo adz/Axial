@@ -12,6 +12,7 @@
     <Compile Include="TestSupport.fs" />
     <Compile Include="TelemetryTests.fs" />
     <Compile Include="FiberMetricsTests.fs" />
+    <Compile Include="QueueMetricsTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

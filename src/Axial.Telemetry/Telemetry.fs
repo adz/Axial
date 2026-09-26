@@ -399,6 +399,81 @@ module FiberMetrics =
     let observe (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         Flow.addFiberObserver observer flow
 
+/// <summary>OpenTelemetry-compatible queue and hub-subscription metrics on the <c>Axial</c> meter.</summary>
+/// <remarks>
+/// <para>
+/// Register a queue, or a hub subscription, under a name with <c>QueueMetrics.observe</c>. Its figures are read only
+/// when the metrics pipeline collects, so observing a queue adds no cost to offers and takes. Every measurement is tagged
+/// with <c>axial.queue.name</c>. Instruments: <c>axial.queue.size</c>, <c>axial.queue.capacity</c> (bounded queues
+/// only), <c>axial.queue.waiting_takers</c>, and <c>axial.queue.waiting_offerers</c> (gauges); and
+/// <c>axial.queue.accepted</c>, <c>axial.queue.dropped</c>, and <c>axial.queue.evicted</c> (counters).
+/// </para>
+/// <para>
+/// Alert on <c>axial.queue.size</c> approaching <c>axial.queue.capacity</c> for a lossless subscriber, before it fills and
+/// holds up the publisher, and on the rate of <c>axial.queue.dropped</c> or <c>axial.queue.evicted</c> for a lossy one.
+/// </para>
+/// </remarks>
+[<RequireQualifiedAccess>]
+module QueueMetrics =
+    let private gate = obj ()
+    let private sources = ResizeArray<string * (unit -> QueueStats)>()
+
+    let private measure (select: QueueStats -> int64 option) () : System.Diagnostics.Metrics.Measurement<int64> seq =
+        let snapshot = lock gate (fun () -> sources.ToArray())
+
+        [ for name, read in snapshot do
+              match select (read ()) with
+              | Some value ->
+                  System.Diagnostics.Metrics.Measurement<int64>(
+                      value,
+                      System.Collections.Generic.KeyValuePair("axial.queue.name", box name)
+                  )
+              | None -> () ]
+
+    let private gauge name description select =
+        FiberMetrics.meter.CreateObservableGauge<int64>(name, (fun () -> measure select ()), description = description)
+        |> ignore
+
+    let private counter name description select =
+        FiberMetrics.meter.CreateObservableCounter<int64>(name, (fun () -> measure select ()), description = description)
+        |> ignore
+
+    do
+        gauge "axial.queue.size" "Values buffered in the queue." (fun stats -> Some(int64 stats.Size))
+        gauge "axial.queue.capacity" "The queue's capacity; not reported for unbounded queues." (fun stats -> stats.Capacity |> Option.map int64)
+        gauge "axial.queue.waiting_takers" "Fibers suspended waiting to take." (fun stats -> Some(int64 stats.WaitingTakers))
+        gauge "axial.queue.waiting_offerers" "Fibers suspended waiting to offer into a full queue." (fun stats -> Some(int64 stats.WaitingOfferers))
+        counter "axial.queue.accepted" "Values that entered the queue." (fun stats -> Some stats.Accepted)
+        counter "axial.queue.dropped" "Values a full dropping queue discarded." (fun stats -> Some stats.Dropped)
+        counter "axial.queue.evicted" "Values a full sliding queue evicted." (fun stats -> Some stats.Evicted)
+
+    /// <summary>Reports a queue's metrics under <paramref name="name" /> until the current scope closes.</summary>
+    /// <remarks>
+    /// Works for a <c>Queue</c> and for a hub subscription, which is a <c>Dequeue</c>. Run it in the scope that owns the
+    /// queue, such as the fiber that consumes a subscription, so the queue stops being reported when that scope ends.
+    /// </remarks>
+    /// <param name="name">The value of the <c>axial.queue.name</c> tag.</param>
+    /// <param name="queue">The queue or subscription to report.</param>
+    /// <example>
+    /// <code>
+    /// flow {
+    ///     let! history = readings |&gt; Hub.subscribe (QueueStrategy.BackPressure 10_000)
+    ///     do! history |&gt; QueueMetrics.observe "historian"
+    ///     do! history |&gt; FlowStream.fromDequeue |&gt; FlowStream.runForEachFlow record
+    /// }
+    /// </code>
+    /// </example>
+    let observe (name: string) (queue: Dequeue<'a>) : Flow<'env, 'error, unit> =
+        Flow(fun _ _ ->
+            let entry = name, (fun () -> QueueCore.stats queue)
+            lock gate (fun () -> sources.Add entry)
+
+            RuntimeState.current().Scope.AddFinalizer(fun _ ->
+                lock gate (fun () -> sources.Remove entry |> ignore)
+                Platform.completedDeed ())
+
+            Execution.ofValue ())
+
 /// <summary>Exports structured fiber dumps into traces.</summary>
 [<RequireQualifiedAccess>]
 module FiberDumpTelemetry =

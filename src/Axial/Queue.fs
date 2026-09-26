@@ -240,6 +240,18 @@ module internal QueueCore =
         if changed then
             queue.OnShutdown()
 
+    /// Reads the queue's backlog and counters in one consistent snapshot.
+    let stats (queue: Dequeue<'a>) : QueueStats =
+        Platform.lock queue.Gate (fun () ->
+            { Size = queue.Buffer.Count
+              Capacity = queue.Capacity
+              Accepted = queue.Accepted
+              Dropped = queue.Dropped
+              Evicted = queue.Evicted
+              WaitingTakers = queue.Takers.Count
+              WaitingOfferers = queue.Offerers.Count
+              IsShutdown = queue.IsShut })
+
     /// Waits for a suspended offer. An offer interrupted before a taker accepted its value is withdrawn and never
     /// enqueued; one accepted in the same instant as the interruption has already happened and reports success.
     let awaitOffer (queue: Dequeue<'a>) (offerer: Waiter<'a>) cancellationToken : Execution<unit, 'error> =
@@ -430,18 +442,7 @@ module Dequeue =
     /// </code>
     /// </example>
     let stats (queue: Dequeue<'a>) : Flow<'env, 'error, QueueStats> =
-        Flow(fun _ _ ->
-            Execution.ofValue (
-                Platform.lock queue.Gate (fun () ->
-                    { Size = queue.Buffer.Count
-                      Capacity = queue.Capacity
-                      Accepted = queue.Accepted
-                      Dropped = queue.Dropped
-                      Evicted = queue.Evicted
-                      WaitingTakers = queue.Takers.Count
-                      WaitingOfferers = queue.Offerers.Count
-                      IsShutdown = queue.IsShut })
-            ))
+        Flow(fun _ _ -> Execution.ofValue (QueueCore.stats queue))
 
     /// <summary>Returns the queue's capacity, or <c>None</c> for an unbounded queue.</summary>
     let capacity (queue: Dequeue<'a>) : int option = queue.Capacity

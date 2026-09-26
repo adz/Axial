@@ -240,6 +240,26 @@ application
 The `Axial` meter records starts, live fibers, settlements, duration, and unobserved defects. A rising live-fiber count
 without matching settlements indicates stuck or leaked work.
 
+## Watch queues and hub subscriptions
+
+Report a [queue](/concurrency-and-state/queue.html) or a [hub](/concurrency-and-state/hub.html) subscription under a
+name with `QueueMetrics.observe`. It is reported until the scope that registered it closes, so register a subscription
+in the fiber that consumes it:
+
+```fsharp no-check reason="The hub and the record function are application-specific"
+flow {
+    let! history = readings |> Hub.subscribe (QueueStrategy.BackPressure 10_000)
+    do! history |> QueueMetrics.observe "historian"
+    do! history |> FlowStream.fromDequeue |> FlowStream.runForEachFlow record
+}
+```
+
+The figures are read only when the metrics pipeline collects, so an observed queue costs nothing extra per value. Each
+measurement carries an `axial.queue.name` tag. `axial.queue.size`, `axial.queue.capacity`,
+`axial.queue.waiting_takers`, and `axial.queue.waiting_offerers` are gauges; `axial.queue.accepted`,
+`axial.queue.dropped`, and `axial.queue.evicted` are counters. Alert when a lossless subscriber's size approaches its
+capacity, before it fills and holds up the publisher, and on the rate of drops or evictions for a lossy one.
+
 ## Capture a fiber dump
 
 A trace explains completed and timed operations. A fiber dump shows the work that is live now.

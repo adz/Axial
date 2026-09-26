@@ -16,6 +16,7 @@ still chooses and configures its OpenTelemetry listeners, exporters, and samplin
 | `Activity` | `runtimeSource`, `traceOn`, `traceWithSource`, `withTracer`, `trace`, `traceWith` | Wrap a workflow in an Activity and stamp its final Exit |
 | `FiberTelemetry` | `observer`, `observe`, `observerWithSpans`, `observeWithSpans` | Report fiber defects or create one span per fiber |
 | `FiberMetrics` | `meter`, `observer`, `observe` | Record fiber starts, live counts, settlement, duration, and unobserved defects |
+| `QueueMetrics` | `observe` | Report a queue's or hub subscription's size, capacity, waiters, and accepted, dropped, and evicted counts |
 | `FiberDumpTelemetry` | `record` | Add a live-fiber tree to the current trace or a standalone span |
 
 Start with `Context.withAttributes` and `Activity.traceOn applicationActivitySource` for searchable application

@@ -13,7 +13,7 @@ OpenTelemetry. The fuller guides are linked from each section.
 | --- | --- | --- |
 | **Traces** (spans) | [`Axial.Telemetry`](/observability/telemetry/index.html) emitting on the `Axial` `ActivitySource`; `Axial.Telemetry.JavaScript` on Fable targets | any `ActivityListener` — in practice the OpenTelemetry SDK; OpenTelemetry JS under Fable |
 | **Logs** | the explicit `ILog` service, bridged to `Microsoft.Extensions.Logging` by [`Axial.Hosting`](/platforms-and-hosting/dotnet.html) | your host's logging pipeline |
-| **Metrics** | [`Axial.Telemetry`](/observability/telemetry/index.html) — `FiberMetrics` on the `Axial` `Meter` | OpenTelemetry's `.AddMeter("Axial")`, `dotnet-counters`, the Aspire dashboard |
+| **Metrics** | [`Axial.Telemetry`](/observability/telemetry/index.html) — `FiberMetrics` and `QueueMetrics` on the `Axial` `Meter` | OpenTelemetry's `.AddMeter("Axial")`, `dotnet-counters`, the Aspire dashboard |
 | **Fiber dumps** | core `Axial` — `FiberRegistry` live-fiber snapshots, no telemetry dependency | `registry.Dump()` on demand; `FiberDumpTelemetry.record` to put dumps on traces |
 
 Two general-purpose channels feed those signals and are part of core `Axial`, not the telemetry

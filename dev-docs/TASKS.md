@@ -11,8 +11,6 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 Follow-up to the Queue/Hub/Schedule review. Work in order; each step is committed and validated on its own.
 
-2. Expose `Dequeue.stats` (size, capacity, accepted/dropped/evicted counters, waiters) as OpenTelemetry observable
-   instruments from `Axial.Telemetry`, so queue and subscription depth and losses reach metrics without per-offer cost.
 3. Housekeeping: fix `LATER_TODO.md`, record decisions, update `docs/llms.txt`, delete `dev-docs/queues_and_hubs.md`.
 4. Add a docs page with a torture test that exercises every guarantee above under interruption, shutdown, overflow,
    and concurrent publishers.
