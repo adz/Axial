@@ -13,7 +13,6 @@ Follow-up to the Queue/Hub/Schedule review. Work in order; each step is committe
 
 1. Delete the untracked `dev-docs/queues_and_hubs.md` once its owner confirms; every part of it is implemented or
    recorded in `dev-docs/decisions/README.md`.
-2. Run the full validation list, including `run-aot-probe.sh` and `dotnet livedocs test --warn-as-error`.
 
 ## Product work
 
