@@ -1,6 +1,6 @@
 ---
 title: "Tutorial: Explicit Dependencies First"
-description: Start with plain function arguments and interfaces before introducing an environment.
+description: Pass plain function arguments and interfaces first, and introduce an environment when they stop scaling.
 ---
 
 # Tutorial: Explicit Dependencies First

@@ -5,7 +5,7 @@ description: Typed configuration reads with a failure channel instead of nulls.
 
 Configuration read from the environment is the classic source of a late, confusing startup failure: a missing
 variable surfaces as a `null`, and a malformed one as a parse exception somewhere further in. `Axial.PlatformService`
-splits this into two modules — one for raw access, one for typed reads with a failure channel.
+splits this into two modules: one for raw access, and one for typed reads with a failure channel.
 
 ```fsharp
 open System
@@ -25,7 +25,7 @@ EnvironmentVariables.clear name
 EnvironmentVariables.expand text    // expands %VAR% references
 ```
 
-These never fail — an absent variable is `None`.
+These never fail; an absent variable is `None`.
 
 ## Typed reads
 
@@ -37,7 +37,7 @@ let readPort : Flow<BaseRuntime, EnvironmentVariableError, int> =
 ```
 
 The environment is named concretely here rather than written as `#IHasEnvironmentVariables`, because a flow bound
-to a plain value hits F#'s value restriction while its environment is still generic — a value cannot be generalised
+to a plain value hits F#'s value restriction while its environment is still generic: a value cannot be generalised
 over a type variable.
 
 Adding a parameter removes the restriction, because a function can be. A `unit` parameter is enough, and the result
@@ -67,8 +67,8 @@ same everywhere.
 
 `EnvironmentVariableError` has two cases, and they carry enough to write a useful message:
 
-- `MissingVariable name` — the variable was not set.
-- `InvalidVariable (name, value, expected)` — it was set but did not parse, with what was expected.
+- `MissingVariable name`: the variable was not set.
+- `InvalidVariable (name, value, expected)`: it was set but did not parse, with what was expected.
 
 `EnvironmentVariableErrors.describe` formats either into a sentence such as `Environment variable 'PORT' had value
 'eighty' but expected an integer.`
@@ -89,7 +89,7 @@ let readSettings =
 ```
 
 This binds sequentially, so it stops at the first problem. Run it as a layer during startup and the application
-cannot reach its first request with unparsed configuration — see
+cannot reach its first request with unparsed configuration; see
 [layers](/layers/index.html) for provisioning failure.
 
 ## Supplying the service

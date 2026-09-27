@@ -5,7 +5,7 @@ description: Three complete shapes for using Axial.Process.
 
 # Worked examples
 
-These examples start with a command-line script and build up to an application Flow. Each command is a value until a
+These examples go from a command-line script to an application Flow. Each command is a value until a
 Flow runner reaches the host boundary.
 
 ## A command-line tool that shows progress

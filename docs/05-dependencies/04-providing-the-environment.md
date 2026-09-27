@@ -6,9 +6,9 @@ description: Building the environment value at a host boundary, and the three wa
 # Providing the Environment
 
 Everything so far has been about *reading* the environment. This page is about producing the value in the first
-place — the step that happens once, at startup, and again in each test.
+place, once at startup and again in each test.
 
-There are three ways, in the order you should reach for them.
+There are three ways. Prefer them in this order.
 
 ## 1. Construct it
 
@@ -23,8 +23,8 @@ let live =
 let exit = program |> Flow.run live
 ```
 
-This is the right answer far more often than it looks. It is also the fastest thing to read six months later, because
-the wiring is a value literal rather than a resolution process.
+Most applications need nothing more. The wiring is a value literal rather than a resolution process, so a reader can
+see where every service comes from.
 
 For the operational services, `Axial.PlatformService` ships a ready-made bundle so you do not have to name all five:
 
@@ -35,7 +35,7 @@ let result = Clock.now |> Flow.run BaseRuntime.liveValue
 `BaseRuntime` groups `IClock`, `ILog`, `IRandom`, `IGuid`, and `IEnvironmentVariables`, and implements one contract
 per service, so helpers like `Clock.now` and `EnvironmentVariable.get` work against it directly. Embedding it
 alongside your own services takes one interface member per service, delegating to wherever `BaseRuntime` ends up
-living in your record — see [Tutorial: Composing Built-in Services](/services/existing-services.html) for the full
+living in your record; see [Tutorial: Composing Built-in Services](/services/existing-services.html) for the full
 pattern.
 
 ## 2. Take it from a host container
@@ -59,10 +59,9 @@ channel exists to remove. Convert at the edge and let the rest of the applicatio
 
 ## 3. Provision it with a layer
 
-When building the environment is *itself* effectful — it can fail with a typed startup error, needs a resource
-released later, or must await something — construction becomes a workflow of its own. That is what
-[layers](/layers/index.html) are, and they live in a separate package because most applications never reach this
-case.
+When building the environment is itself effectful (it can fail with a typed startup error, needs a resource released
+later, or must await something), construction becomes a workflow of its own. [Layers](/layers/index.html) are those
+workflows. They live in a separate package because most applications never need them.
 
 The signal is in the type. `Layer<IServiceProvider, BaseRuntimeError, BaseRuntime>` says: consumes a provider, may
 fail with a typed startup error, produces a runtime. `Axial.PlatformService` ships exactly that as

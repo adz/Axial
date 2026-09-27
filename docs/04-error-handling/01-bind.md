@@ -129,7 +129,7 @@ let login user =
 ## Use a marker only at a bind site
 
 The value returned by `Bind.error` or `Bind.mapError` is a marker for the Flow computation expression. It is not a
-general-purpose `Result` or Flow transformation. Keep it directly on the right side of `let!`, `do!`, or `return!`:
+general-purpose `Result` or Flow transformation, so it only compiles directly on the right side of `let!`, `do!`, or `return!`:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 flow {

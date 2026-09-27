@@ -63,8 +63,8 @@ value until completion.
 
 ## The terminal consumer owns the stream scope
 
-You do not normally wrap stream consumption in `Flow.scoped`. Every terminal operation—`FlowStream.runFold`,
-`FlowStream.runForEach`, `FlowStream.runForEachFlow`, `FlowStream.runCollect`, and `FlowStream.runDrain`—automatically
+You do not normally wrap stream consumption in `Flow.scoped`. Every terminal operation (`FlowStream.runFold`,
+`FlowStream.runForEach`, `FlowStream.runForEachFlow`, `FlowStream.runCollect`, and `FlowStream.runDrain`) automatically
 creates a child scope when its returned Flow starts running.
 
 The lifecycle is:
@@ -84,7 +84,7 @@ interrupts and awaits those mappings before the terminal Flow completes.
 
 A Flow run by `FlowStream.mapFlow`, `FlowStream.tapFlow`, or `FlowStream.runForEachFlow` can use `Flow.scopeResource` or
 another `Flow.scope...` operation. That resource then belongs to the terminal stream scope and remains alive until the
-whole terminal operation finishes—not merely until that one mapping returns. Add `Flow.scoped` inside the mapping only
+whole terminal operation finishes, not only until that one mapping returns. Add `Flow.scoped` inside the mapping only
 when each mapped value needs a shorter, per-value cleanup boundary.
 
 An additional outer `Flow.scoped` is useful only when the application intentionally groups the terminal Flow with

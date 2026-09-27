@@ -32,12 +32,12 @@ let startup : Flow<BaseRuntime, EnvironmentVariableError, int> =
     }
 ```
 
-Nothing inside the block names a type. The two services come from different contracts —
-`IHasEnvironmentVariables` and `IHasLog` — and because those are distinct interfaces their constraints merge on
+Nothing inside the block names a type. The two services come from different contracts,
+`IHasEnvironmentVariables` and `IHasLog`, and because those are distinct interfaces their constraints merge on
 their own.
 
 Use `BaseRuntime.live` when the environment is composed from layers, and `BaseRuntime.fromServiceProvider` when the
-host already has an `IServiceProvider` — that variant reports missing registrations as typed `BaseRuntimeError`
+host already has an `IServiceProvider`; that variant reports missing registrations as typed `BaseRuntimeError`
 startup failures rather than resolution exceptions.
 
 Applications normally extend the bundle with their own services rather than using it bare; see
@@ -45,6 +45,6 @@ Applications normally extend the bundle with their own services rather than usin
 
 ## Go further
 
-Full documentation for each service — the operation surface, the deterministic test doubles, and the typed
-environment-variable error model — is in [platform services](/services/platform-services/index.html) under built-in
+Full documentation for each service (its operations, the deterministic test doubles, and the typed
+environment-variable error model) is in [platform services](/services/platform-services/index.html) under built-in
 services.

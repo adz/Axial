@@ -9,7 +9,7 @@ A record works because *you* own both sides: the workflow names `AppEnv`, and yo
 author cannot do that. `Axial.Console` is compiled long before your `AppEnv` exists, so `Console.writeLine` cannot
 mention it.
 
-A contract is how the package asks anyway. It is an ordinary interface — one named `IHasFoo`, exposing a single
+A contract is how the package asks anyway. It is an ordinary interface named `IHasFoo`, with a single
 member `Foo`:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
@@ -33,7 +33,7 @@ let save order : Flow<#IHasOrders, CheckoutError, unit> =
 ```
 
 Read `Flow<#IHasOrders, …>` as "any environment that can give me an `IOrderRepository`". This is still just
-[`Flow.envWith`](the-environment.html) — the interface only says which member it may read.
+[`Flow.envWith`](the-environment.html); the interface only says which member it may read.
 
 ## Supplying one
 
@@ -78,16 +78,16 @@ let submit order : Flow<#ICheckoutEnv, CheckoutError, unit> = ...
 
 `#IHasOrders` carries exactly one constraint, which is why the aggregate exists. Use the explicit
 `<'env when 'env :> … and 'env :> …>` form when you need several, or when the environment appears more than once in a
-signature — each occurrence of `#T` is a separate type variable.
+signature, because each occurrence of `#T` is a separate type variable.
 
 ## When to declare one
 
 For application code, don't. A record is simpler, needs no interface, and is what
 [the environment](the-environment.html) documents.
 
-Declare a contract when you are **publishing a helper whose callers you will never see** — a shared library, or a
-package like `Axial.FileSystem`. That is the case a record genuinely cannot cover, and it is the whole reason the
-mechanism exists.
+Declare a contract when you are **publishing a helper whose callers you will never see**, such as a shared library or a
+package like `Axial.FileSystem`. A record cannot cover that case, because the helper cannot know the caller's record
+type.
 
 Writing a package that ships services is covered in
 [providing services from a package](/advanced/reusable-packages.html).

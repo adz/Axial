@@ -39,7 +39,7 @@ let user : Flow<#IHasHttp, HttpError, User> =
     |> fetchJson (Json.deserializeResult userCodec)   // Reified.Schema.Json, Thoth, or hand-written
 ```
 
-A decoder failure becomes `HttpError.DecodeFailed(message, response)` — the full transcript rides along, so the
+A decoder failure becomes `HttpError.DecodeFailed(message, response)`. It carries the full transcript, so the
 error handler can log the offending payload without re-fetching it.
 
 To POST a value and decode the reply in one step:

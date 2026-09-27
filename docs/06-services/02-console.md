@@ -5,7 +5,7 @@ description: Standard streams, redirection state, and terminal control as an exp
 ---
 
 `Axial.Console` replaces `System.Console` with a service a workflow must declare. `IConsole` covers the three
-standard streams, the redirection and encoding state around them, and interactive terminal control — cursor, colour,
+standard streams, the redirection and encoding state around them, and interactive terminal control: cursor, colour,
 title, and key reads.
 
 ```fsharp
@@ -22,7 +22,7 @@ let confirm question : Flow<#IHasConsole, Never, bool> =
     }
 ```
 
-The environment constraint is the whole point: `confirm` cannot be called from a workflow that has not been given a
+Because of the environment constraint, `confirm` cannot be called from a workflow that has not been given a
 console, and it cannot reach the real terminal behind your back.
 
 ## Supplying the service
@@ -60,7 +60,7 @@ Console.readLine                 // next line
 you need to hand a stream to another API. `Console.openStandardInput`, `openStandardOutput`, and `openStandardError`
 return raw `Stream` values for binary work.
 
-These operations do not produce typed failures. A console write that throws — a closed pipe, for instance — is a
+These operations do not produce typed failures. A console write that throws, for instance on a closed pipe, is a
 defect, not an expected error. Handle it as described in [defects](/error-handling/defects.html) if the workflow
 should survive it.
 
@@ -89,7 +89,7 @@ let report line : Flow<#IHasConsole, Never, unit> =
 
 ## Terminal control
 
-For interactive programs the service exposes the terminal surface directly: `clear`, `beep`, `foregroundColor` /
+For interactive programs the service exposes terminal control directly: `clear`, `beep`, `foregroundColor` /
 `setForegroundColor`, `backgroundColor` / `setBackgroundColor`, `resetColor`, `cursorPosition` /
 `setCursorPosition`, `cursorVisible` / `setCursorVisible`, `title` / `setTitle`, and `keyAvailable` / `readKey`.
 
@@ -130,8 +130,8 @@ let! exit = report "ready" |> Flow.startTask { Console = testConsole }
 test <@ recorded.ToString().Trim() = "ready" @>
 ```
 
-`IConsole` is a wide interface, so implement it once in a test helper — an abstract base returning defaults, with the
-few members a suite exercises overridden — rather than in each test.
+`IConsole` is a wide interface, so implement it once in a test helper rather than in each test: an abstract base that
+returns defaults, with the few members a suite uses overridden.
 
 ## Fable
 
@@ -141,5 +141,5 @@ workflow that must run on both .NET and Fable should depend on its own narrow ou
 
 ## Related
 
-- [Service contracts](/dependencies/service-contracts.html) — why the dependency is in the type.
-- [Processes](/process/) — the process service uses a console for stream wiring.
+- [Service contracts](/dependencies/service-contracts.html): why the dependency is in the type.
+- [Processes](/process/): the process service uses a console for stream wiring.

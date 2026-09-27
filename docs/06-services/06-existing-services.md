@@ -6,14 +6,14 @@ description: Embed BaseRuntime and your own dependencies in one application envi
 # Tutorial: Composing Built-in Services
 
 Every page in this section shows one service in isolation, constrained by its own `IHasX` interface. A real
-application wants several of them at once, alongside its own dependencies — and it wants to build that combined
+application wants several of them at once, alongside its own dependencies, and it should build that combined
 environment without repeating itself. This tutorial builds that environment.
 
 ## The problem
 
 [`BaseRuntime`](platform-services/index.html) bundles the five platform services and already implements
 `IHasClock`, `IHasLog`, `IHasRandom`, `IHasGuid`, and `IHasEnvironmentVariables`. Embedding it as a field of your
-own record does not carry those interface implementations with it — F# has no mechanism for one type to forward
+own record does not carry those interface implementations with it: F# has no mechanism for one type to forward
 another type's interfaces automatically. Your own environment record has to state, once per service, where that
 service lives:
 
@@ -33,7 +33,7 @@ type AppEnv =
         member this.EnvironmentVariables = this.Runtime.EnvironmentVariables
 ```
 
-Each line is a delegation, not a computation — `member this.Clock = this.Runtime.Clock` just tells the compiler
+Each line is a delegation: `member this.Clock = this.Runtime.Clock` tells the compiler
 which field satisfies which contract. Declare an interface member for every service the application actually uses;
 skip the ones it does not, the same way you would skip a field it does not need. This is boilerplate, but it is
 boilerplate you write once, at the boundary, rather than something that spreads through the workflow code.
@@ -53,14 +53,14 @@ let loadMode : Flow<AppEnv, EnvironmentVariableError, string> =
     }
 ```
 
-`loadMode` does not know `Clock` and `Log` both come from the same `Runtime` field while `EnvironmentVariable`
-does too — it only knows the three interfaces. Swap `AppEnv` for any other type that implements them and the
+`loadMode` does not know that `Clock`, `Log`, and `EnvironmentVariable` all come from the same `Runtime` field; it
+only knows the three interfaces. Swap `AppEnv` for any other type that implements them and the
 workflow is unchanged.
 
 ## Add your own dependencies alongside it
 
 `AppEnv` is an ordinary record, so extending it with an application-specific dependency is the same pattern as
-[the app record tutorial](/dependencies/tutorials/app-record.html) — add a field, add an interface if other
+[the app record tutorial](/dependencies/tutorials/app-record.html): add a field, add an interface if other
 helpers should depend on the contract rather than the field name directly:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
@@ -79,7 +79,7 @@ type AppEnv =
 ```
 
 A workflow that reads `Orders` directly (`Flow.envWith _.Orders`) is coupled to this record's field name. If you
-want `Orders` reusable behind a named contract instead — the same way `Clock` and `Log` are — see
+want `Orders` reusable behind a named contract instead, the way `Clock` and `Log` are, see
 [Tutorial: Creating Reusable Services](/advanced/custom-services.html).
 
 ## Run it

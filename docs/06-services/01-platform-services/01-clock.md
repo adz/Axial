@@ -60,8 +60,8 @@ let exit = expiresWithin (TimeSpan.FromHours 1.0) deadline |> Flow.run { Clock =
 ```
 
 A clock that returns a fixed instant does not advance, which is usually what you want for assertions. When a test
-needs time to move, supply an `IClock` closing over a mutable field and step it explicitly — that keeps the
-progression in the test rather than in wall-clock timing.
+needs time to move, supply an `IClock` closing over a mutable field and step it explicitly, so the test controls
+how time moves instead of depending on wall-clock timing.
 
 Note that `IClock` reports the time; it does not schedule. Delays, timeouts, and retry policies are Flow runtime
-concerns — see [scheduling and retries](/scheduling-and-retries/index.html).
+concerns; see [scheduling and retries](/scheduling-and-retries/index.html).

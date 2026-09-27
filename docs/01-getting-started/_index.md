@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Start with a tiny Flow, then use one real application service without hiding its dependency or failure cases.
+description: Run a tiny Flow, then call one real application service with its dependency and failure cases in the type.
 ---
 
 # Get started
@@ -43,7 +43,7 @@ spelling for a Flow with no capabilities and no expected failure: `Flow<unit, Ne
 </div>
 
 Here, `unit` means no capabilities and `Never` means no expected failure. A capability is a value the workflow is
-allowed to use—usually a service dependency, but sometimes configuration or request context. Only `string` carries
+allowed to use: usually a service dependency, but sometimes configuration or request context. Only `string` carries
 information here, so the alias keeps the first signature uncluttered.
 
 You do not need to carry those two empty slots around until the workflow needs them. The next example does.
@@ -92,9 +92,8 @@ let quoteApp (services: IServiceProvider) : QuoteApp =
 let exit = quoteAud 80m |> Flow.run (quoteApp services)
 ```
 
-That is not a second dependency-injection system. It is the explicit value passed to the workflow boundary. In a
-test, supply an `IExchangeRates` test implementation; in production, resolve the application's registered
-implementation. The workflow remains exactly the same.
+The record does not replace your dependency-injection container. The host fills it from the container when it runs the
+workflow, and a test fills it with an `IExchangeRates` test implementation. The workflow code is the same in both.
 
 ## What's next
 
@@ -103,6 +102,6 @@ implementation. The workflow remains exactly the same.
 2. [Installation and packages](installation.html) covers the package map.
 3. [Add Axial to an existing Task application](existing-task-application.html) shows the one-module adoption path.
 4. [Your first application](first-application.html) runs a Flow as an application root.
-5. [Creating and running flows](../the-flow-type/index.html) covers the full construction and execution surface.
+5. [Creating and running flows](../the-flow-type/index.html) covers every way to create and run a flow.
 6. [Expected errors and defects](../error-handling/index.html) explains the error channel and defects.
 7. [Dependencies, services, and layers](../dependencies/index.html) scales the environment record up.

@@ -87,7 +87,7 @@ also interrupts and awaits requests that are still running.
 ## Discover and pull linked pages
 
 A crawler does not know every URL up front. Each response discovers more work. Here the unfold state is the private
-crawl frontier—pending URLs plus the URLs already seen—while each emitted value is a fetched page:
+crawl frontier (pending URLs plus the URLs already seen), while each emitted value is a fetched page:
 
 ```fsharp no-check reason="fetchHtml, extractLinks, and HtmlPage are application HTTP abstractions described in the surrounding prose"
 type CrawlState =

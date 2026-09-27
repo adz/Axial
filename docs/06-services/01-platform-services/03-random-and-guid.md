@@ -23,8 +23,7 @@ Random.nextBytes buffer           // fills an existing buffer
 Random.bytes count                // allocates and fills a new array
 ```
 
-`Random.bytes` is the one to prefer when you want a fresh array — it allocates the buffer, fills it, and returns it
-in one step.
+Use `Random.bytes` for a fresh array: it allocates the buffer, fills it, and returns it in one step.
 
 `Random.live` is backed by the platform generator. Two doubles cover most tests: `Random.fromValue` returns the same
 integer from every method, and `Random.fromFixed integer double byte` pins the three value kinds separately when a
@@ -50,7 +49,7 @@ let guid = Guid.fromValue (System.Guid.Parse "11111111-1111-1111-1111-1111111111
 ```
 
 A fixed `IGuid` returns the *same* value every call. When a test needs distinct-but-predictable identifiers,
-implement `IGuid` over a counter — the point is that the sequence lives in the test, not in the workflow.
+implement `IGuid` over a counter, so the sequence is defined in the test, not in the workflow.
 
 Both services are part of [the base runtime](index.html), so applications usually receive them as one bundle rather
 than wiring each.

@@ -68,7 +68,7 @@ returns `404 order 7 not found`.
 Three properties of that match matter:
 
 - The compiler lists the `Cause.Fail` cases for you. Adding a case to `CheckoutError` makes every boundary that maps
-  it incomplete, which is the point of putting failures in the type.
+  it incomplete, so the compiler shows every place that has to handle the new case.
 - The final case covers `Cause.Die` and `Cause.Interrupt`: defects and interruption, not expected failures. Re-raise
   or log them the way your host already handles unhandled exceptions.
 - The host's cancellation token flows in, so cancelling the request cancels every inner call and closes the

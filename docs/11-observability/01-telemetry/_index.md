@@ -109,8 +109,8 @@ checkout order
 ```
 
 For a workflow tree that traces from many places, install the tracer once near the composition root instead, and call
-the ambient `Activity.trace`/`Activity.traceWith` from anywhere underneath it — no source to pass or capture at the
-call site at all:
+the ambient `Activity.trace`/`Activity.traceWith` from anywhere underneath it, with no source to pass or capture at the
+call site:
 
 ```fsharp no-check reason="The application composition root and inner workflows are illustrative"
 application
@@ -226,7 +226,7 @@ application
 |> FiberTelemetry.observeWithSpans
 ```
 
-Span-per-fiber mode provides more detail and more data. Start with defect-only observation, then enable span-per-fiber
+Span-per-fiber mode provides more detail and more data. Use defect-only observation by default, and enable span-per-fiber
 when you need fork-to-settle timing or a complete concurrency tree.
 
 Add runtime metrics independently:
@@ -321,7 +321,7 @@ Run the application and open the dashboard:
 5. Trigger `FiberDumpTelemetry.record` and inspect the `axial.flow.fiber.dump` event on the active span.
 6. Open **Metrics** and chart `axial.flow.fibers.live` and `axial.flow.fibers.unobserved_defects`.
 
-This is the intended feedback loop: traces identify the slow or failed operation, attributes identify its application
+Used together, traces identify the slow or failed operation, attributes identify its application
 context, metrics show whether the runtime is degrading, and a fiber dump shows the work still in flight.
 
 ## Choose attributes, annotations, or logs

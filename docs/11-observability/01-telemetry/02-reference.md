@@ -19,9 +19,9 @@ still chooses and configures its OpenTelemetry listeners, exporters, and samplin
 | `QueueMetrics` | `observe` | Report a queue's or hub subscription's size, capacity, waiters, and accepted, dropped, and evicted counts |
 | `FiberDumpTelemetry` | `record` | Add a live-fiber tree to the current trace or a standalone span |
 
-Start with `Context.withAttributes` and `Activity.traceOn applicationActivitySource` for searchable application
+Use `Context.withAttributes` and `Activity.traceOn applicationActivitySource` for searchable application
 workflow spans. Register that source name and `"Axial"` with OpenTelemetry. The application source owns user operation
-spans; Axial's `runtimeSource` owns automatic runtime and fiber spans — trace application workflows through your own
+spans; Axial's `runtimeSource` owns automatic runtime and fiber spans, so trace application workflows through your own
 source, not Axial's. When many call sites share one application source, capture it once with `ActivityTracer.create`
 and either call `.Trace` on the tracer directly, or install it ambiently for a whole workflow tree with
 `Activity.withTracer` and call the ambient `Activity.trace`/`Activity.traceWith` underneath it. Install

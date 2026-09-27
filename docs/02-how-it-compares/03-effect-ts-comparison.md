@@ -62,5 +62,5 @@ Do not choose between the libraries from a generic feature checklist. Compare th
 - which concurrency and stream operators the application actually uses
 - which telemetry backend and hosting lifecycle own execution
 
-For an F#-owned application, start with Axial on every supported target. Introduce an Effect-TS boundary only when the
+For an F#-owned application, use Axial on every supported target. Introduce an Effect-TS boundary only when the
 application must participate in TypeScript code that already uses Effect-TS.

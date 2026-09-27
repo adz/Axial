@@ -15,7 +15,7 @@
   package's `service` accessor maps to `ZIO.service[A]`.
 - `Flow.envWith` takes a selector, not a type or a tag: `Flow.envWith _.Clock`. `'env` is an ordinary F# record,
   so there is no type-directed service lookup and no `Flow.service`.
-- Declare a per-service contract — an interface `IHasFoo` exposing one member `Foo` — only when a package must ask
+- Declare a per-service contract (an interface `IHasFoo` exposing one member `Foo`) only when a package must ask
   for a service without knowing the caller's record type. Read it through the package's `service` accessor.
 - Run with `Flow.run`, `Flow.startTask`, or `Flow.toAsync`; `to*` starts nothing, `start*` begins immediately.
 - Use `Layer` plus `Layer.provide` from the separate `Axial.Layers` package only when building the environment is

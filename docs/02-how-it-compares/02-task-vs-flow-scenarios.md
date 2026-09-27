@@ -28,7 +28,7 @@ Read the [checkout comparison source](https://github.com/adz/Axial/blob/main/exa
 
 The ordinary version is a `Task<CheckoutReceipt>` whose expected failures leave the signature as exceptions, and
 whose compensation lives in a catch block someone must remember. The comparison includes `checkoutBuggy`, the common
-real-world edit — a failure branch added outside the `try` — and a test proving the reservation leaks.
+real-world edit (a failure branch added outside the `try`) and a test proving the reservation leaks.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 // Flow<CheckoutEnv, CheckoutError, CheckoutReceipt>
@@ -47,7 +47,7 @@ adapter), and interruption. ZIO correspondence: environment services, typed erro
 
 - **Made visible by the type**: the required services (`CheckoutEnv`) and the complete failure set (`CheckoutError`).
 - **Enforced by the runtime**: release runs on every exit shape, including defects the catch-based version can miss.
-- **Still the application's responsibility**: remote compensation is not transactional — idempotency keys and
+- **Still the application's responsibility**: remote compensation is not transactional; idempotency keys and
   reconciliation are still required.
 
 ## 2. Resilient HTTP call with a retry budget
@@ -59,7 +59,7 @@ transport failures, back off exponentially, stop after three attempts, and turn 
 Read the [retry-budget comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/RetryBudget.fs).
 
 The ordinary version interleaves a retry loop, `CancellationTokenSource.CancelAfter`, `Task.Delay`, and exception
-classification in one function — and one overly broad `with _ ->` away from retrying a `NullReferenceException`.
+classification in one function, and one overly broad `with _ ->` would make it retry a `NullReferenceException`.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 request                                          // Flow<'env, RateError, Rate>, cold
@@ -68,7 +68,7 @@ request                                          // Flow<'env, RateError, Rate>,
 ```
 
 Retry and timeout are policies applied to a cold workflow from outside. The retry predicate selects typed failures;
-defects and interruption are structurally out of its reach — `Flow.retry` re-runs `Cause.Fail` only. The
+defects and interruption are never retried, because `Flow.retry` re-runs `Cause.Fail` only. The
 tests pin all four behaviors: recovery within the budget, budget exhaustion, no retry of `Malformed`, and the
 timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed `Schedule`, `retry`.
 
@@ -95,17 +95,17 @@ Flow.zipPar (Flow.zipPar account recent) recommended
 ```
 
 The ordinary `Task.WhenAll` version must cancel siblings by hand through a linked token source, and two simultaneous
-failures surface as whichever exception `WhenAll` publishes first. With `zipPar` the interruption is the runtime's
-job — the test's slow sibling awaits `Task.Delay` on its runtime token and asserts the resulting
-`OperationCanceledException` was observed — and concurrent failures merge as `Cause.Both`. First-success semantics
+failures surface as whichever exception `WhenAll` publishes first. With `zipPar` the runtime does the interruption:
+the test's slow sibling awaits `Task.Delay` on its runtime token and asserts that it observed the resulting
+`OperationCanceledException`. Concurrent failures merge as `Cause.Both`. First-success semantics
 are a different contract, so they appear as a separate `Flow.race` example rather than a subtle change to this one.
 ZIO correspondence: `zipPar`, typed `catchAll` (here `orElse`), `race`.
 
-- **Made visible by the type**: which branch may fail silently (none — the fallback is explicit at the composition).
+- **Made visible by the type**: which branch may fail silently (none: the fallback is explicit at the composition).
 - **Enforced by the runtime**: loser interruption and cause merging.
 - **Still the application's responsibility**: Flow cannot prove an arbitrary adapter honours cancellation, and an
-  adapter that registers its own extra observer on the runtime token — instead of catching the cancellation the
-  operation it's already awaiting throws — can silently miss the interrupt; see
+  adapter that registers its own extra observer on the runtime token, instead of catching the cancellation that the
+  operation it awaits throws, can miss the interrupt; see
   [Task and Async Interop](../the-flow-type/task-async-interop.html#pitfall-dont-register-a-second-cancellation-observer-on-the-same-token).
 
 ## 4. Scoped temporary workspace
@@ -117,7 +117,7 @@ Read the [workspace comparison source](https://github.com/adz/Axial/blob/main/ex
 
 The ordinary comparison includes `importBatchLeaky`, the classic leak: construction succeeds, then a setup check
 throws *before* ownership transfers into `try/finally`. The test proves the directory survives. In the Flow version
-there is no such gap — `Flow.scopeAcquireRelease` owns the resource from the instant acquisition succeeds, and
+there is no such gap: `Flow.scopeAcquireRelease` owns the resource from the instant acquisition succeeds, and
 `Flow.scoped` keeps the failing gate inside the resource's lifetime:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
@@ -168,11 +168,11 @@ Layer.merge (Layer.merge Clock.layer (Layer.succeed FileSystem.live)) (Layer.suc
 ```
 
 The test builds the same record from `Clock.fromValue` and in-memory doubles and asserts a deterministic report
-name — no time mocking framework, no service locator. Reading the clock without declaring it does not compile.
+name, with no time-mocking framework or service locator. Reading the clock without declaring it does not compile.
 ZIO correspondence: environment requirements and `ZLayer`.
 
 - **Made visible by the type**: the full capability set; a missing capability is a compile error at the edge.
-- **Enforced by the runtime**: nothing at runtime needs to fail — the proof happened at compilation.
+- **Enforced by the runtime**: nothing, because the compiler already checked it.
 - **Still the application's responsibility**: the type proves presence and shape, not configuration quality.
 
 ## 6. Producer/consumer pipeline with backpressure and interruption
@@ -183,12 +183,12 @@ consumer fails.
 Read the [output-pipeline comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/OutputPipeline.fs).
 
 The ordinary version combines a bounded `Channel`, a background producer task, a linked token source, and manual
-observation of the producer's exception — and its classic bug (returning after a consumer failure while the
-producer keeps writing) is one forgotten `linked.Cancel()` away.
+observation of the producer's exception. Forgetting one `linked.Cancel()` produces its usual bug: returning after a
+consumer failure while the producer keeps writing.
 
 A `FlowStream` is cold and pull-based: when persistence fails, the stream is simply never pulled again. The test
 streams from an instrumented infinite sequence and asserts almost nothing was produced past the failing element.
-The process variant uses [`Process.stream`](/process/) — typed `ProcessEvent`s from a live
+The process variant uses [`Process.stream`](/process/), which streams typed `ProcessEvent`s from a live
 process through the same pipeline shape:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
@@ -213,7 +213,7 @@ Where a producer must genuinely run ahead, `Flow.fork` returns a `Fiber` the cal
 ## 7. Atomic inventory reservation under contention
 
 Two checkouts race for the last unit; a reservation waits for replenishment or falls back to an alternative
-warehouse — without locks leaking into business logic.
+warehouse, with no locks in the business logic.
 
 Read the [inventory STM comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/InventoryStm.fs).
 
@@ -235,7 +235,7 @@ park a reservation on empty stock until a replenishment commits. ZIO corresponde
 
 - **Made visible by the type**: `STM<'value>` is a transaction value, separate from effects, composed before commit.
 - **Enforced by the runtime**: all-or-nothing commit; coherent-snapshot retry.
-- **Still the application's responsibility**: the guarantee covers STM-managed memory only — payment, database,
+- **Still the application's responsibility**: the guarantee covers STM-managed memory only; payment, database,
   HTTP, and logging effects stay outside the transaction. Axial's current STM serializes transactions through one
   lock; it favours correctness over throughput under high contention.
 

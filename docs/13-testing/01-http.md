@@ -9,7 +9,7 @@ This page shows how the single `IHttp.Send` boundary makes HTTP workflows testab
 
 ## A Complete Fake In A Few Lines
 
-The whole service surface is one method, and `Response.create` builds synthetic transcripts from an explicit timestamp:
+The service has one method, and `Response.create` builds synthetic transcripts from an explicit timestamp:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type TestEnv =
@@ -30,7 +30,7 @@ let ``decodes the user payload`` () =
     test <@ result = Exit.Success { Id = 1; Name = "Ada" } @>
 ```
 
-Because the fake receives the full `HttpRequest`, tests can also assert on what was sent — method, URL, query,
+Because the fake receives the full `HttpRequest`, tests can also assert on what was sent: method, URL, query,
 headers, and body are all plain data. Returning `Error(HttpError.TimedOut(...))` from a fake exercises retry and
 fallback paths deterministically, with no network and no clock.
 
@@ -60,7 +60,7 @@ and proxy settings stay standard `HttpClient` concerns. Axial adds the typed req
 without hiding the client or the clock used for transcript timestamps and durations. Tests can pass `Clock.fromValue`
 or another `IClock` fake for deterministic time.
 
-Base addresses configured on the client work as usual — relative request URLs resolve against
+Base addresses configured on the client work as usual: relative request URLs resolve against
 `client.BaseAddress`:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
@@ -91,6 +91,6 @@ platform's fetch primitive and provide it through the same environment record.
 
 ## When Not To Fake
 
-Fakes verify workflow logic, not server behavior. Keep a small number of tests against a real endpoint (a
-loopback listener works well) to cover the live service's encoding, header, timeout, and error mapping — the
-package's own test suite does exactly this.
+Fakes verify workflow logic, not server behavior. A small number of tests against a real endpoint (a
+loopback listener works well) cover the live service's encoding, header, timeout, and error mapping; the
+package's own test suite does this.

@@ -71,9 +71,9 @@ let appLayer =
 Plain `let!` is sequential and dependent. Sibling `and!` bindings are independent and use `Layer.merge`, which provisions
 branches in parallel through child scopes.
 
-## Layer Surface
+## Layer functions
 
-The core layer surface is:
+The core layer functions are:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
 Layer.succeed value
@@ -176,7 +176,7 @@ let combined =
 ```
 
 `Layer.merge` does not automatically merge service contracts or synthesize a new environment type. It only
-provisions both sides and returns their outputs. Keep the final environment explicit:
+provisions both sides and returns their outputs, so build the final environment yourself:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type AppEnv =

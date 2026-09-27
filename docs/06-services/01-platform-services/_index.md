@@ -32,7 +32,7 @@ let isExpired (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
 
 ## The base runtime
 
-Applications rarely want one of these — they want all five. `BaseRuntime` is the record that bundles them, and it
+Applications usually need all five. `BaseRuntime` is the record that bundles them, and it
 implements one contract per service, so a workflow requiring any combination is satisfied by the single value:
 
 ```fsharp
@@ -43,7 +43,7 @@ let liveRuntime : BaseRuntime = BaseRuntime.liveValue
 `BaseRuntime.fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime>` builds it from a host
 container, turning missing registrations into typed startup errors.
 
-Most applications extend `BaseRuntime` rather than replacing it — see
+Most applications extend `BaseRuntime` rather than replacing it; see
 [Tutorial: Composing Built-in Services](/services/existing-services.html) for the composition, and
 [platform services getting started](/platforms-and-hosting/platform-services.html) for the shortest path to a
 running host.
@@ -66,7 +66,7 @@ let fixedRuntime : BaseRuntime =
 
 ## In this section
 
-1. [Clock](clock.html) — the current instant, and why it belongs in the environment.
-2. [Logging](logging.html) — `ILog` levels, sinks, and its relationship to telemetry.
-3. [Randomness and GUIDs](random-and-guid.html) — non-determinism you can pin in a test.
-4. [Environment variables](environment-variables.html) — typed reads with `EnvironmentVariableError`.
+1. [Clock](clock.html): the current instant, and why it belongs in the environment.
+2. [Logging](logging.html): `ILog` levels, sinks, and its relationship to telemetry.
+3. [Randomness and GUIDs](random-and-guid.html): non-determinism you can pin in a test.
+4. [Environment variables](environment-variables.html): typed reads with `EnvironmentVariableError`.

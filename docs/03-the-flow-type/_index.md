@@ -18,7 +18,7 @@ let workflow : Flow<AppEnv, LoadUserError, User> =
 let completed = workflow |> Flow.startTask live
 ```
 
-The three type parameters state the whole contract — what the workflow needs, how it can fail, and what it produces:
+The three type parameters say what the workflow needs, how it can fail, and what it produces:
 
 | Parameter | Meaning |
 | --- | --- |
@@ -30,11 +30,11 @@ Aliases such as `Flow<'value>` and `EnvFlow<'env, 'value>` abbreviate the same t
 
 ## In this section
 
-1. [Reading the type](flow-type.html) — the three channels, the aliases, and what each alias expands to.
-2. [Creating flows](creating-flows.html) — constructors for values, failures, and interop sources.
-3. [Running flows](running-flows.html) — executions, outcomes, and boundary conversions.
-4. [The flow builder](flow-ce.html) — `flow { }` binding rules for flows, tasks, and results.
-5. [Combining flows](combining-flows.html) — sequencing, mapping, and channel transformations.
-6. [Task and async interop](task-async-interop.html) — moving between Flow, `Task`, and `Async`.
-7. [Troubleshooting types](troubleshooting-types.html) — the compiler errors produced when channels do not line up.
-8. [Resources](resources.html) — acquiring something that must be released.
+1. [Reading the type](flow-type.html): the three channels, the aliases, and what each alias expands to.
+2. [Creating flows](creating-flows.html): constructors for values, failures, and interop sources.
+3. [Running flows](running-flows.html): executions, outcomes, and boundary conversions.
+4. [The flow builder](flow-ce.html): `flow { }` binding rules for flows, tasks, and results.
+5. [Combining flows](combining-flows.html): sequencing, mapping, and channel transformations.
+6. [Task and async interop](task-async-interop.html): moving between Flow, `Task`, and `Async`.
+7. [Troubleshooting types](troubleshooting-types.html): the compiler errors produced when channels do not line up.
+8. [Resources](resources.html): acquiring something that must be released.

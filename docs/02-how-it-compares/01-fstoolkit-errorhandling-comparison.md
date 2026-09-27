@@ -71,9 +71,9 @@ Flow also classifies outcomes for concurrency. An `Error` remains an expected `C
 interrupt a sibling after either an expected failure or defect, and preserve concurrent failures in the resulting
 `Cause`, rather than flattening every non-success outcome into the task exception channel.
 
-Prefer FsToolkit.ErrorHandling when `Task<Result<_, _>>` is the honest contract and no larger runtime model is needed.
-It is often the smaller choice for leaf functions and request handlers. Prefer the environment-free Flow form when
-that local pipeline also needs Flow's execution, resource, or composition semantics.
+FsToolkit.ErrorHandling fits synchronous `Result` pipelines and small functions that compose `Task<Result<_, _>>` calls
+without starting concurrent work or owning resources. Once a pipeline needs cancellation, a timeout, parallel work, or
+cleanup, the environment-free Flow form handles them by the same rules as the rest of the application.
 
 ## Prefer Flow for application orchestration
 
@@ -133,7 +133,6 @@ let prepareOrder customerId : Flow<OrderEnv, CustomerError, Order> =
     }
 ```
 
-This broader bind surface lets Flow serve as the orchestration boundary without forcing leaf functions onto one
-asynchronous carrier. Keep FsToolkit.ErrorHandling where it improves local `Result`, `Async<Result<_, _>>`, or
-`Task<Result<_, _>>` pipelines. Introduce Flow where the application needs explicit dependencies or runtime
-composition policy. If a pipeline needs neither, the FsToolkit.ErrorHandling carrier remains the smaller choice.
+Because `flow { }` binds all of these directly, leaf functions can keep returning `Result`, `Async<Result<_, _>>`, or
+`Task<Result<_, _>>`, and FsToolkit.ErrorHandling can keep building them. Flow takes over where operations are
+composed: where dependencies, cancellation, timeouts, retries, and parallel work come in.

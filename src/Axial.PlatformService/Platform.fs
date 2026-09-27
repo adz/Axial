@@ -11,7 +11,7 @@ open System.Threading.Tasks
 open Axial
 open Axial.Layers
 
-/// Runtime-specific implementations for the otherwise portable service surface.
+/// Runtime-specific implementations of the otherwise portable services.
 module internal Platform =
     let random () : IRandom =
         let rng = Random()

@@ -40,7 +40,7 @@ fiber to interrupt, which strategy a subscriber uses, how long an operation wait
 with the seeds it failed on, so the same choices can be run again. The interleaving of fibers still differs from run to
 run, which is what the rounds are for.
 
-The runner below is the whole program around the scenarios:
+The runner around the scenarios:
 
 {{< snippet id="torture-runner" mode="no-check" reason="Compiled and run as part of examples/Axial.TortureTest, which also defines the Round and Check helpers it uses" >}}
 

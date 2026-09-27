@@ -8,7 +8,7 @@ description: Start external commands from an Axial workflow.
 `Axial.Process` lets a command-line program start an external command without giving up typed failures, cancellation,
 or cleanup. You describe the command first, choose what happens to its input and output, then run it.
 
-## Start with a script
+## A script
 
 For a small command-line program, describe commands, connect them, choose where output goes, then call `run`:
 

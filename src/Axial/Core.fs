@@ -350,7 +350,7 @@ module FiberObserver =
         }
 
     /// <summary>Combines two observers so every hook runs both, each guarded independently.</summary>
-    /// <remarks>Use this to stack integrations — for example telemetry spans plus logging — from one edge-level install.</remarks>
+    /// <remarks>Use this to stack integrations, for example telemetry spans plus logging, from one edge-level install.</remarks>
     let compose (first: FiberObserver) (second: FiberObserver) : FiberObserver =
         {
             OnStart =
@@ -640,7 +640,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
 #if !FABLE_COMPILER
     /// Keeps <paramref name="tracker" /> alive exactly as long as <paramref name="fiberHandle" /> is
     /// reachable. When a discarded handle is collected, the tracker becomes collectable and its finalizer
-    /// reports any unobserved defect — the same mechanism as <c>TaskScheduler.UnobservedTaskException</c>.
+    /// reports any unobserved defect, the same mechanism as <c>TaskScheduler.UnobservedTaskException</c>.
     static member Attach(fiberHandle: obj, tracker: FiberDefectTracker) =
         sentinels.Add(fiberHandle, tracker)
 
@@ -1123,7 +1123,7 @@ type ExnEnvFlow<'env, 'value> = Flow<'env, exn, 'value>
 /// This is the host boundary. Use it in glue and adapters where dynamic container lookup is the
 /// intended behaviour; application workflows should declare what they need instead. Missing
 /// registrations are configuration defects and fail through <c>Cause.Die</c> rather than the typed
-/// error channel — build the environment with a layer when a missing registration should be a typed
+/// error channel. Build the environment with a layer when a missing registration should be a typed
 /// startup error.
 /// </remarks>
 type ServiceProvider =

@@ -102,7 +102,7 @@ let placeOrder (order: Order) : Flow<AppEnv, PlaceOrderError, OrderId> =
     }
 ```
 
-This is the main win of an app record:
+With an app record:
 
 - helper functions stop carrying dependency parameters
 - helper functions still say exactly which fields they read

@@ -49,7 +49,7 @@ type ActivityTracer internal (source: ActivitySource) =
 module Activity =
     /// <summary>The activity source for Axial's own runtime spans (fiber lifecycle, defects, and metrics).</summary>
     /// <remarks>Application workflows should trace through an <c>ActivityTracer</c> built from their own
-    /// <c>ActivitySource</c>, not this one — see <c>ActivityTracer.create</c>.</remarks>
+    /// <c>ActivitySource</c>, not this one; see <c>ActivityTracer.create</c>.</remarks>
     let runtimeSource = new ActivitySource("Axial")
 
     /// <summary>
@@ -390,7 +390,7 @@ module FiberMetrics =
         }
 
     /// <summary>
-    /// Installs the metrics fiber observer on a flow, composing with any observer already installed —
+    /// Installs the metrics fiber observer on a flow, composing with any observer already installed,
     /// typically once at the application edge, stacked with <c>FiberTelemetry.observe</c> or a
     /// <c>FiberRegistry</c>.
     /// </summary>

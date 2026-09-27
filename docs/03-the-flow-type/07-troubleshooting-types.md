@@ -118,7 +118,7 @@ let optionWorkflow : Flow<unit, string, int> =
 Raw `Task<'value>` and `ValueTask<'value>` values do not bind directly in `flow { }`. A task is already running, while
 Flow is a cold description that may run more than once.
 
-Wrap work that should start with the Flow in `ColdTask`:
+Wrap work that should start when the Flow runs in `ColdTask`:
 
 ```fsharp no-check reason="The application service is described in the surrounding prose"
 let load : ColdTask<int> =

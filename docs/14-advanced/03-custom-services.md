@@ -7,11 +7,11 @@ description: Define your own named service contracts and consume them through IH
 
 The built-in services all follow one shape: a narrow interface (`IClock`, `IFileSystem`), an `IHasX` marker the
 environment implements, and a module of helpers constrained by that marker rather than by any particular field
-name. Nothing about that shape is special to the library — it is an ordinary pattern, and this tutorial builds one
+name. The library gives that shape no special treatment, so this tutorial builds one
 for a service Axial does not ship: a currency conversion rate.
 
-Reach for it when several workflows should depend on the same named contract without being tied to one concrete
-app record field name — the same reason [built-in services](/services/index.html) are declared as `IHasX` instead
+Use it when several workflows should depend on the same named contract without being tied to one concrete
+app record field name, for the same reason [built-in services](/services/index.html) are declared as `IHasX` instead
 of read from a fixed field. A dependency used by exactly one workflow usually does not need this; see
 [choosing an approach](/dependencies/choosing-an-approach.html).
 
@@ -24,8 +24,8 @@ type IExchangeRates =
     abstract GetUsdToAud : unit -> Task<decimal>
 ```
 
-Keep it as narrow as the built-in ones are. `IExchangeRates` exposes one conversion, not a general-purpose pricing
-client — a workflow that needs more asks for more, the same way `IHasClock` does not also expose scheduling.
+Make it as narrow as the built-in ones. `IExchangeRates` exposes one conversion, not a general-purpose pricing
+client; a workflow that needs more asks for more, the same way `IHasClock` does not also expose scheduling.
 
 ## Write a reusable helper
 
@@ -49,13 +49,13 @@ let priceInAud<'env, 'error when 'env :> IHasExchangeRates>
 ```
 
 This helper no longer cares whether the caller stores the service in `Rates`, `Runtime.ExchangeRates`, or any other
-field. It only needs `IHasExchangeRates` — the same generic-constraint pattern `Clock.now` and
+field. It only needs `IHasExchangeRates`, the same generic-constraint pattern `Clock.now` and
 `FileSystem.readAllText` use.
 
 ## Give it a typed failure
 
 `priceInAud` above lets a failed lookup surface as an unhandled `Task` exception, which is a defect, not something
-a caller can react to. Most services worth naming this way are worth failing this way too — compare
+a caller can react to. Most services worth naming this way are worth failing this way too; compare
 [`FileSystemError`](/services/filesystem.html#typed-errors) or `HttpError`:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
@@ -90,7 +90,7 @@ type AppEnv =
 
 ## Combine it with the built-in services
 
-A custom service composes into the same environment as `BaseRuntime` exactly the way two built-in services do —
+A custom service composes into the same environment as `BaseRuntime` exactly the way two built-in services do:
 each gets its own interface member, delegating to wherever the value actually lives. See
 [Tutorial: Composing Built-in Services](/services/existing-services.html) for the `BaseRuntime` half of this:
 
@@ -122,8 +122,8 @@ whether it is running alone or as part of the full `AppEnv` above.
 ## Publish it from a package
 
 Everything on this page lives in the application. When the contract, the helper module, and a `live`
-implementation should ship to callers you will never see — the same relationship `Axial.FileSystem` has to
-`Axial.Core` — see [providing services from a package](reusable-packages.html) for the composable shape that
+implementation should ship to callers you will never see (the same relationship `Axial.FileSystem` has to
+`Axial.Core`), see [providing services from a package](reusable-packages.html) for the composable shape that
 requires.
 
-This is the main step from "an app record for one workflow" to "reusable helpers shared across workflows."
+With the contract in place, helpers written for one workflow can be shared across workflows.

@@ -109,7 +109,7 @@ let connectionLayer : Layer<unit, string, FakeConnection> =
         (fun connection _ct -> connection.DisposeAsync().AsTask())
 ```
 
-This is another main reason to use layers: acquired resources belong to the provisioning scope and are released when the provided workflow completes, fails, or is interrupted.
+Layers also own what they acquire: acquired resources belong to the provisioning scope and are released when the provided workflow completes, fails, or is interrupted.
 
 ## 6. Run Through `Layer.provide`
 
@@ -132,4 +132,4 @@ The call site stays small:
 - provide it once
 - run the workflow
 
-That is much cleaner than manually opening and closing startup resources around every feature entry point.
+Feature entry points no longer open and close startup resources themselves.

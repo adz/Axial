@@ -13,9 +13,7 @@ open Axial.State
 Software Transactional Memory (STM) is a concurrency primitive that lets you compose multiple
 atomic operations into a single **transaction**.
 
-While `Ref` is perfect for updating a single variable, `STM` is designed for scenarios where you
-need to update **multiple** variables consistently. Axial ensures that the entire transaction is
-executed atomically, and supports `retry` / `orElse` style coordination for transactions
+`Ref` updates one variable atomically. `STM` updates **several** variables in one atomic transaction, and supports `retry` / `orElse` style coordination for transactions
 that need to wait on state changes or fall back to alternate branches.
 
 ## Core Concepts
@@ -81,7 +79,7 @@ let processTransfer fromAcc toAcc amount =
 
 ## Composition
 
-STM transactions are first-class values. You can compose multiple small transactions into a larger one using `stm {}` before ever calling `atomically`. This is the "Software" in STM—it allows for modular, composable concurrency.
+STM transactions are first-class values. You can compose multiple small transactions into a larger one using `stm {}` before ever calling `atomically`. Transactions built in separate functions combine into one atomic transaction.
 
 ```fsharp
 let deposit (acc: TRef<decimal>) (amount: decimal) =

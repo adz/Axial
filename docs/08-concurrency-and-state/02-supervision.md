@@ -7,13 +7,13 @@ description: Restarting background work that dies with defects and observing fib
 
 A forked fiber whose handle is discarded can die silently.
 
-`Flow.fork` returns a `Fiber` handle, and nothing stops a caller writing `|> Flow.map ignore` or `let! _ = ...` and dropping it. When such a fiber hits an unhandled exception, the runtime contains it as `Exit.Failure (Cause.Die _)` — but nobody is awaiting that exit. Because Axial converts every exception into an `Exit` *value*, the underlying task never faults, so even .NET's `TaskScheduler.UnobservedTaskException` net never fires. Without help, that is a production failure with no log line.
+`Flow.fork` returns a `Fiber` handle, and nothing stops a caller writing `|> Flow.map ignore` or `let! _ = ...` and dropping it. When such a fiber hits an unhandled exception, the runtime contains it as `Exit.Failure (Cause.Die _)`, but nobody is awaiting that exit. Because Axial converts every exception into an `Exit` *value*, the underlying task never faults, so even .NET's `TaskScheduler.UnobservedTaskException` net never fires. Without help, that is a production failure with no log line.
 
 Axial answers this with two pieces: **`Flow.supervise`** restarts background work that dies with defects, and the **fiber observer** reports the defects that still escape.
 
 Both stay inside Axial's error model:
 
-- **Typed errors (`Cause.Fail`) are untouched.** They are domain values in your `Flow<'env, 'error, 'value>` signature, not diagnostics. Supervision and observation apply only to *defects* (`Cause.Die`) — bugs that escaped the typed channel.
+- **Typed errors (`Cause.Fail`) are untouched.** They are domain values in your `Flow<'env, 'error, 'value>` signature, not diagnostics. Supervision and observation apply only to *defects* (`Cause.Die`): bugs that escaped the typed channel.
 - **Joining is the opt-out.** A fiber whose outcome someone consumed (`Fiber.join`, `Fiber.interrupt`) belongs to that caller; the runtime says nothing about it.
 
 ## Restarting defects: `Flow.supervise`
@@ -70,18 +70,18 @@ application
 
 The hooks:
 
-- `OnStart` — a fiber was forked; receives the child's `FiberMetadata`.
-- `OnEnd` — a fiber settled; `FiberMetadata.Status` distinguishes `Succeeded`/`Failed`/`Interrupted`, and the defect exception (if the fiber died of one) is passed alongside. This fires for *every* fiber, observed or not — use it for metrics.
-- `OnUnobservedDefect` — a defect became **unobservable**: a forked fiber died and nobody ever consumed its outcome, or the runtime itself discarded a `Flow.race` / timeout loser's exit (those never had a handle at all, so their metadata is `None`).
+- `OnStart`: a fiber was forked; receives the child's `FiberMetadata`.
+- `OnEnd`: a fiber settled; `FiberMetadata.Status` distinguishes `Succeeded`/`Failed`/`Interrupted`, and the defect exception (if the fiber died of one) is passed alongside. This fires for *every* fiber, observed or not, so use it for metrics.
+- `OnUnobservedDefect`: a defect became **unobservable**: a forked fiber died and nobody ever consumed its outcome, or the runtime itself discarded a `Flow.race` / timeout loser's exit (those never had a handle at all, so their metadata is `None`).
 
-All hooks default to no-ops, receive diagnostic data only, and cannot alter any fiber's outcome — exceptions they throw are swallowed.
+All hooks default to no-ops, receive diagnostic data only, and cannot alter any fiber's outcome; exceptions they throw are swallowed.
 
 ### When does "unobserved" fire?
 
 Whether a fiber will ever be joined is only knowable retroactively, so the runtime reports at three moments:
 
-1. **Immediately**, for race/timeout losers — the runtime knows at the discard site that no one can ever see that exit.
-2. **When the forking scope closes**, for fibers that settled with a defect and were never observed — the deterministic, structured-concurrency boundary.
+1. **Immediately**, for race/timeout losers: the runtime knows at the discard site that no one can ever see that exit.
+2. **When the forking scope closes**, for fibers that settled with a defect and were never observed. Scope close is a fixed point in the program, so the report arrives at a predictable time.
 3. **When a discarded handle is garbage-collected**, as a best-effort net for forks made inside long-lived scopes (the same mechanism family as `UnobservedTaskException`; timing depends on GC).
 
 Each defect is reported at most once, whichever mechanism gets there first.

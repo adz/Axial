@@ -51,8 +51,8 @@ logging framework, implement `ILog` directly and forward both members.
 
 ## Logging against telemetry
 
-`ILog` is the service a workflow depends on to say something. It is not the tracing and metrics story — spans,
-metrics, and OpenTelemetry export are covered in [observability](/observability/index.html). The two meet at the
+`ILog` is the service a workflow depends on to say something. Spans,
+metrics, and OpenTelemetry export are covered separately, in [observability](/observability/index.html). The two meet at the
 host: an `ILog` implementation can forward into the same backend the telemetry exporter writes to.
 
 Choose `ILog` when the workflow itself should emit a message. Choose telemetry when you want the runtime's own

@@ -1630,7 +1630,7 @@ module Flow =
     /// <summary>Attaches an environment-derived error to a result that failed without one; the error flow runs only on failure.</summary>
     /// <remarks>
     /// <para>
-    /// The <c>unit</c> error is not an empty error type — it is the absence of a reason. <c>Result.okIf</c> and
+    /// The <c>unit</c> error means the absence of a reason. <c>Result.okIf</c> and
     /// <c>Result.failIf</c> report that a value failed a predicate and deliberately nothing else, leaving the reason
     /// to a separate step. <c>Result.orError</c> is that step for a constant; this is that step when producing the
     /// error needs the environment, as a localized message, a correlation id, or a configured code does.
@@ -1837,7 +1837,7 @@ module Flow =
     /// On failure the cause is wrapped in <c>Cause.Traced</c>, so retries, parallel composition, and
     /// telemetry (<c>Cause.prettyPrint</c>, the <c>axial.flow.cause</c> span tag) can show where in the
     /// workflow the failure passed through. Successful values are untouched, and the typed error is not
-    /// changed — only the cause tree grows a trace node.
+    /// changed; only the cause tree gains a trace node.
     /// </remarks>
     /// <param name="trace">The diagnostic trace text, typically an operation or boundary name.</param>
     /// <param name="flow">The source flow.</param>

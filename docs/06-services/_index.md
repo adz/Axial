@@ -34,9 +34,9 @@ The host supplies the live implementation at the edge. Tests supply a recording 
 
 ## In this section
 
-1. [Platform-service bundle](platform-services/index.html) — clock, logging, randomness, GUIDs, and environment variables.
-2. [Console](console.html) — standard streams, redirection, and terminal control.
-3. [File system](filesystem.html) — files, directories, paths, and typed failures.
-4. [Using existing services](existing-services.html) — compose `BaseRuntime` with application dependencies.
+1. [Platform-service bundle](platform-services/index.html): clock, logging, randomness, GUIDs, and environment variables.
+2. [Console](console.html): standard streams, redirection, and terminal control.
+3. [File system](filesystem.html): files, directories, paths, and typed failures.
+4. [Using existing services](existing-services.html): compose `BaseRuntime` with application dependencies.
 
 [Telemetry](/observability/telemetry/index.html) instruments the runtime rather than defining a workflow dependency. [Hosting](/platforms-and-hosting/index.html) supplies environments and application lifecycle integration.

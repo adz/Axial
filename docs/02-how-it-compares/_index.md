@@ -24,6 +24,6 @@ focused library is enough.
   can keep using Axial when they target Node or the browser through Fable. Effect-TS remains a natural integration
   boundary when TypeScript owns the surrounding application.
 
-Start with **Task vs Flow** when deciding whether Flow earns its cost in an application. Read the
+Read **Task vs Flow** first when deciding whether Flow earns its cost in an application. Read the
 **FsToolkit.ErrorHandling** comparison when typed errors are already your main concern. The **Effect-TS** comparison
 is for readers evaluating Axial as part of the broader typed-effect design family.

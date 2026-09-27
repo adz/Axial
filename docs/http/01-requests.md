@@ -92,7 +92,7 @@ any other JSON library without coupling this package to one.
 
 ## Plans Show What Would Be Sent
 
-`Request.plan` returns a redacted, serializable description without performing any I/O — useful for logging,
+`Request.plan` returns a redacted, serializable description without performing any I/O, for logging,
 dry runs, and approval flows:
 
 ```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"

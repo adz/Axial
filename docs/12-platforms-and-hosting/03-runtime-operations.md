@@ -159,7 +159,7 @@ let guardedCheckout =
                     | _ -> false })
 ```
 
-Keep the mental split clear:
+Each concern has its own place:
 
 - domain validation decides whether the operation should happen at all
 - runtime helpers decide how the host should run that operation

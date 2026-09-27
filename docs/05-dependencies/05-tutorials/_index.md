@@ -5,7 +5,7 @@ description: Build Axial environments from explicit dependencies through reusabl
 
 # Dependency Tutorials
 
-These tutorials build the same dependency model in stages. Start with explicit dependencies, then choose the
+These tutorials build the same dependency model in stages: explicit dependencies first, then the
 environment and composition style that fits the application.
 
 - [Explicit dependencies](explicit-dependencies.html)

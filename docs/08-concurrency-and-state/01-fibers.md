@@ -61,7 +61,7 @@ A `Fiber<'error, 'value>` remembers the error type and success type of the workf
 
 ### Clear Ownership
 
-Fibers make background work visible in the workflow that started it. If the parent needs the result, it joins. If the parent no longer needs the result, it interrupts. That is different from launching an untracked task and hoping some other layer notices when it fails.
+Fibers make background work visible in the workflow that started it. If the parent needs the result, it joins. If the parent no longer needs the result, it interrupts. An untracked task, by contrast, fails unnoticed unless some other layer checks it.
 
 ### Diagnostics
 
@@ -74,7 +74,7 @@ Every forked fiber carries metadata:
 - `StartedAt` / `SettledAt`: UTC timestamps for fork and settle.
 - `Status`: `Running`, `Succeeded`, `Failed`, or `Interrupted`.
 
-Use `Fiber.dump` when logging or debugging one fiber. The dump is a snapshot, so a running fiber can report `Running` before `Fiber.join` and `Succeeded`, `Failed`, or `Interrupted` afterward. To see every live fiber at once as a parent/child tree, install a `FiberRegistry` with `Flow.withFiberRegistry` and call `registry.Dump()` — see [Observability](/observability/index.html).
+Use `Fiber.dump` when logging or debugging one fiber. The dump is a snapshot, so a running fiber can report `Running` before `Fiber.join` and `Succeeded`, `Failed`, or `Interrupted` afterward. To see every live fiber at once as a parent/child tree, install a `FiberRegistry` with `Flow.withFiberRegistry` and call `registry.Dump()`; see [Observability](/observability/index.html).
 
 ## Underlying Implementation
 

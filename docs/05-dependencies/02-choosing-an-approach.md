@@ -5,7 +5,7 @@ description: How Axial models records, services, layers, scopes, and host-provid
 
 # Choosing an Approach
 
-Keep dependencies explicit. Axial has one dependency model for v1: workflows read an explicit environment, reusable
+Axial has one dependency model: workflows read an explicit environment, reusable
 helpers name service contracts, and layers build the environment at the boundary.
 
 Use this order:
@@ -29,7 +29,7 @@ let workflow : Flow<ApiDeps, string, unit> =
     }
 ```
 
-Keep the boundary concrete unless a named abstraction clearly pays for itself.
+Use a concrete record for the boundary. Add a named abstraction only when more than one implementation or caller needs it.
 
 ## Service Contracts
 

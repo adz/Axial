@@ -34,8 +34,8 @@ immediately and hands back a handle, and `run` executes to completion:
 | Entry point | Starts work? |
 | --- | --- |
 | `Flow.run` / `RunSynchronously` | Yes, and blocks until the Exit is available |
-| `Flow.startTask` / `StartAsTask` / `StartAsValueTask` | Yes — the work is already in flight when it returns |
-| `Flow.toAsync` / `ToAsync` | No — nothing runs until the returned async is started |
+| `Flow.startTask` / `StartAsTask` / `StartAsValueTask` | Yes: the work is already running when it returns |
+| `Flow.toAsync` / `ToAsync` | No: nothing runs until the returned async is started |
 
 This matters when you build a handle without awaiting it. `StartAsTask` has already begun the work at that point;
 `ToAsync` has not, and discarding the async discards the work.

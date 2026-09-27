@@ -19,7 +19,7 @@ also fails because the Node `process` object is required.
 
 ## Root Application
 
-Keep Node mechanics outside the application workflow:
+The Node entry point handles the process; the application workflow stays platform-neutral:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 type StartupInputs =

@@ -97,7 +97,7 @@ module Schedule =
     /// <remarks>
     /// <paramref name="n"/> counts the schedule's own decisions, not the total number of flow executions:
     /// <c>Flow.retry</c> and <c>Flow.repeat</c> always run the source flow once before consulting the
-    /// schedule at all, so <c>recurs 3</c> means 3 additional retries/repeats on top of that one free attempt —
+    /// schedule at all, so <c>recurs 3</c> means 3 additional retries/repeats on top of that one free attempt:
     /// 4 executions in total, not 3. A <c>Schedule</c> value carries no state of its own (the attempt count lives
     /// in the <c>retry</c>/<c>repeat</c> call), so the same schedule value is safe to reuse across independent runs.
     /// </remarks>
@@ -163,7 +163,7 @@ module Schedule =
     /// <remarks>
     /// <paramref name="sample"/> is not validated: a value outside [0.0, 1.0) is not rejected, it just produces a
     /// jitter factor outside the documented 0.5–1.5 range. The result is still always a valid, non-negative
-    /// <c>TimeSpan</c> — negative factors clamp to <see cref="P:System.TimeSpan.Zero"/> and overflowing ones clamp
+    /// <c>TimeSpan</c>: negative factors clamp to <see cref="P:System.TimeSpan.Zero"/> and overflowing ones clamp
     /// to <see cref="P:System.TimeSpan.MaxValue"/>, the same as the base schedule's own overflow handling. This is
     /// deliberate: <c>jitteredWith</c> never throws for a badly-behaved sample source.
     /// </remarks>

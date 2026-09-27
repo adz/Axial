@@ -68,6 +68,6 @@ returning. This keeps parallel work bounded in both count and lifetime.
 
 ## Which should you choose?
 
-Choose strict batches when order and batch barriers are part of the contract—for example, checkpointing one page group
+Choose strict batches when order and batch barriers are part of the contract, for example checkpointing one page group
 before fetching the next. Choose `FlowStream.mapFlowPar` for worker-pool behavior where throughput matters and completion order is
 acceptable.

@@ -17,8 +17,8 @@ let doubled : Flow<int, Never, int> =
 let result = doubled |> Flow.run 21    // Success 42
 ```
 
-The environment here is an `int`. Nothing about `Flow` requires a record, an interface, or a service — it hands your
-function whatever value you passed to `Flow.run`, and that is the entire mechanism.
+The environment here is an `int`. `Flow` does not require a record, an interface, or a service. It hands your function
+whatever value you passed to `Flow.run`.
 
 ## What the functions do
 
@@ -31,7 +31,7 @@ Flow.envWith (fun environment -> environment.Users)   // 'env -> 'a, giving Flow
 `_.Users` is F# shorthand for `fun environment -> environment.Users`, so `Flow.envWith _.Users` is the same thing
 written shorter.
 
-The rest of the environment surface is equally small:
+The other environment functions:
 
 | Function | What it does |
 | --- | --- |
@@ -68,7 +68,7 @@ let loadUser id : EnvFlow<AppEnv, User> =
 You construct that record in exactly two places:
 
 - **At boot**, with the live implementations.
-- **In tests**, with fakes — the same record type, different values.
+- **In tests**, with fakes: the same record type with different values.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let live = { Users = SqlUserStore(connection); Audit = FileAuditLog(path) }
@@ -84,10 +84,10 @@ field, and that is enforced by the compiler rather than by convention.
 
 ## Where the rest of the section goes
 
-That is the whole model. Everything after this page exists for cases the plain record does not cover:
+The rest of this section covers the cases a plain record does not:
 
-- [Choosing an approach](choosing-an-approach.html) — when arguments beat a record, and when a record stops being
+- [Choosing an approach](choosing-an-approach.html): when arguments beat a record, and when a record stops being
   enough.
-- [Service contracts](service-contracts.html) — how a *package* asks for a dependency without knowing your record
+- [Service contracts](service-contracts.html): how a *package* asks for a dependency without knowing your record
   type.
-- [Providing the environment](providing-the-environment.html) — building the value at a host boundary.
+- [Providing the environment](providing-the-environment.html): building the value at a host boundary.

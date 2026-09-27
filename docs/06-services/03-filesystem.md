@@ -7,7 +7,7 @@ project: src/Axial.FileSystem/Axial.FileSystem.fsproj
 
 `Axial.FileSystem` turns file access into a declared dependency with a typed failure channel. Where
 `File.ReadAllText` throws one of a dozen exception types, `FileSystem.readAllText` returns
-`Flow<'env, FileSystemError, string>` — the ways it can fail are part of the signature.
+`Flow<'env, FileSystemError, string>`, so the ways it can fail are part of the signature.
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 open Axial.FileSystem
@@ -85,9 +85,9 @@ FileSystem.appendAllText path contents
 The `Async` variants pass the flow's cancellation token to the underlying call, so an interrupted workflow stops a
 large read in progress rather than after it. Prefer them for anything that is not small.
 
-`fileExists`, `exists`, `deleteFile`, `copyFile`, and `moveFile` cover the rest of the common surface.
+`fileExists`, `exists`, `deleteFile`, `copyFile`, and `moveFile` cover the other common operations.
 `getFileLength` returns a file's size in bytes, and file metadata has getters and setters for attributes and the creation, last-access, and last-write times in both local and
-UTC forms — `getFileLastWriteTimeUtc`, `setFileAttributes`, and so on.
+UTC forms, such as `getFileLastWriteTimeUtc`, `setFileAttributes`, and so on.
 
 Symbolic links are first class: `createFileSymbolicLink`, `createDirectorySymbolicLink`, `getSymbolicLinkTarget`
 (which returns `None` when the path is not a link), and `resolveSymbolicLinkTarget`, whose boolean argument decides
@@ -124,7 +124,7 @@ let fsharpSources root =
     FileSystem.enumerateFiles root "*.fs" SearchOption.AllDirectories
 ```
 
-Path manipulation is also on the service — `combine`, `getFullPath`, `getFileName`, `getExtension`, `getRelativePath`,
+Path manipulation is also on the service: `combine`, `getFullPath`, `getFileName`, `getExtension`, `getRelativePath`,
 `getTempPath`, `getRandomFileName`, and the rest. These are pure string operations on .NET, but routing them through
 the service keeps platform-specific separator and rooting behaviour substitutable in tests.
 
@@ -148,7 +148,7 @@ finally
 ```
 
 **Wrap `FileSystem.live` to inject one failure.** When the point of the test is error handling, delegate every member
-to the live service and override the one that should fail — that keeps the fake honest about everything else.
+to the live service and override the one that should fail, so every other member behaves as in production.
 
 ## Fable
 
@@ -157,6 +157,6 @@ See [packages and platforms](/notes/packages-and-platforms.html).
 
 ## Related
 
-- [Service contracts](/dependencies/service-contracts.html) — how a package declares the service it needs.
-- [Scopes and resources](/scopes/index.html) — deterministic cleanup for open handles.
-- [Error handling](/error-handling/index.html) — expected failures against defects.
+- [Service contracts](/dependencies/service-contracts.html): how a package declares the service it needs.
+- [Scopes and resources](/scopes/index.html): deterministic cleanup for open handles.
+- [Error handling](/error-handling/index.html): expected failures against defects.

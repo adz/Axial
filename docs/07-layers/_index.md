@@ -3,12 +3,12 @@ title: Layers
 description: Reusable provisioning for environments that need flow capabilities to build.
 ---
 
-A layer builds an environment, and building it may itself need flow capabilities — awaiting a
+A layer builds an environment, and building it may itself need flow capabilities: awaiting a
 connection, reading configuration, failing with a typed startup error, or acquiring something that
 must be released again. `Axial.Layers` is a separate package because most applications never need
 that.
 
-**Start with a record.** Construct the environment directly and hand it to the workflow:
+**Use a record when you can.** Construct the environment directly and hand it to the workflow:
 
 ```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
 let env = { Clock = Clock.live; Log = Log.live; FileSystem = FileSystem.live }
@@ -62,7 +62,7 @@ let servicesFromServiceProvider
 ```
 
 Read the error channel: `BaseRuntimeError`, not `Never`. **Construction itself can fail**, and it fails with a typed
-error naming the missing service. A record cannot express that — you would throw, or return an option and push the
+error naming the missing service. A record cannot express that; you would throw, or return an option and push the
 problem onto every caller. `Layer.provide` surfaces it as a typed startup failure before any workflow runs.
 
 **A service built from another service.** `Axial.Hosting` turns what the host container has into what workflows
@@ -75,7 +75,7 @@ let layer (categoryName: string) : Layer<ILoggerFactory, Never, ILog> =
 ```
 
 The type says it: consumes an `ILoggerFactory`, produces an `ILog`. The factory does not exist until the host starts,
-so there is no record field to put it in — the layer is the conversion.
+so there is no record field to put it in. The layer does the conversion.
 
 Compare with the case that does **not** need a layer. Wrapping a value that is already built and cannot fail is
 `Layer.succeed`, which provisions nothing:
@@ -93,5 +93,5 @@ Scopes and `acquireRelease` are core, and work without layers. See
 
 ## In this section
 
-1. [Layers](layers.html) — construction, composition, and provisioning failure.
-2. [Tutorial](tutorial.html) — the same material worked end to end.
+1. [Layers](layers.html): construction, composition, and provisioning failure.
+2. [Tutorial](tutorial.html): the same material worked end to end.

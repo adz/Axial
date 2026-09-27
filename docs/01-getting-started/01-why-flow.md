@@ -237,9 +237,10 @@ build warning. Review can then focus on the business logic.
 
 ## When to use something else
 
-Keep validation and other pure transformations in ordinary functions and `Result`. Return `Flow` from application
+Validation and other pure transformations need none of this: write them as ordinary functions returning `Result`.
+Return `Flow` from application
 operations: the ones that call services, can be cancelled, need a timeout or retry, own a resource, or start
-background work. A `Task`-based service can be called from a flow directly, so adoption can start with one module; see
+background work. A `Task`-based service can be called from a flow directly, so you can adopt Axial one module at a time; see
 [Add Axial to an existing Task application](existing-task-application.html).
 
 ## Related guides
