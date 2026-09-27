@@ -35,7 +35,9 @@ let users =
 
 `retryTransient 3` makes up to 3 retries after the first attempt, with exponential backoff (200ms, 400ms, 800ms).
 A permanent failure such as `HttpError.Status 404` or `HttpError.DecodeFailed` fails immediately on the first
-attempt. The DSL shorthand `withRetries 3` applies the same schedule with a 200ms base delay.
+attempt. The DSL shorthand `withRetries 3` applies the same schedule with a 200ms base delay. To combine it with other
+schedules, take the schedule itself: `HttpError.transientRetry 3 (TimeSpan.FromMilliseconds 200.0)` is the
+`Schedule` that `retryTransient` passes to `Flow.retry`.
 
 For full control, describe the retry yourself and pass it to `Flow.retry`. A `Retry` record names each choice:
 
@@ -75,7 +77,8 @@ let page =
 
 The live service fails with `HttpError.ResponseTooLarge` before reading when `Content-Length` declares a larger body,
 and stops reading a streamed body once it passes the limit, so the client never buffers more than the limit.
-`Http.send` applies the same check to responses from any `IHttp`, including test doubles.
+`Http.send` applies the same check to responses from any `IHttp`, including test doubles. `Request.tryMaxResponseBytes` reads a
+request's limit back, for example in a test double that enforces it.
 
 ## Expected Statuses Are Part Of The Request
 

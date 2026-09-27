@@ -53,7 +53,8 @@ a `Dequeue`, so a subscriber consumes it with the `Dequeue` functions or `FlowSt
 
 `Hub.publish` returns a `PublishResult` that counts the subscriptions that accepted the value, the `Dropping`
 subscriptions that discarded it, and the `Sliding` subscriptions that evicted an older value to take it, so the
-publisher can report losses without inspecting its subscribers.
+publisher can report losses without inspecting its subscribers. `PublishResult.add` sums two results and
+`PublishResult.empty` is the starting point, for totalling a run of `tryPublish` calls.
 
 Use a hub when there can be zero or many consumers. Use a [queue](queue.html) when there is exactly one logical consumer.
 
@@ -136,5 +137,5 @@ stream with the current value.
 
 `Hub.shutdown` shuts every subscription down with the same semantics as `Dequeue.shutdown`. Subscribers can still take
 their backlog, `FlowStream.fromDequeue` streams end normally once drained, and later publishes are interrupted.
-`Hub.makeScoped` creates a hub that is shut down when the current scope closes, and `Hub.awaitShutdown` suspends until
-the hub is shut down.
+`Hub.makeScoped` creates a hub that is shut down when the current scope closes. `Hub.isShutdown` reports the state, and
+`Hub.awaitShutdown` suspends until the hub is shut down.

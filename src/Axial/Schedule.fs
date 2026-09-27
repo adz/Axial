@@ -41,6 +41,12 @@ type Schedule<'env, 'input, 'output> =
     internal
     | Schedule of ('input -> ScheduleContext -> Flow<'env, unit, 'output option * TimeSpan>)
 
+/// <summary>Builds and combines schedules that decide whether, and after what delay, a flow runs again.</summary>
+/// <remarks>
+/// Drive a schedule with <c>Flow.retry</c> (after typed failures), <c>Flow.repeat</c> (after successes), or
+/// <c>FlowStream.fromSchedule</c> (as a stream of its outputs). A schedule holds no state, so one value can drive any
+/// number of independent runs.
+/// </remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Schedule =

@@ -127,7 +127,8 @@ let onQueryChanged query =
 `Flow.forkReplacingKey key slots` does the same per key, with a slot from `FiberSlot.makeKeyed`, so a new preview for
 one document replaces only that document's previous load. A key's entry is removed when its fiber settles.
 `FiberSlot.interrupt` and `FiberSlot.interruptAll` stop what is running and wait for its cleanup, for example on
-shutdown. For a stream of inputs, `FlowStream.switchMapFlow` applies the same rule inside the stream.
+shutdown. `FiberSlot.count` returns how many keyed fibers are running. For a stream of inputs,
+`FlowStream.switchMapFlow` applies the same rule inside the stream.
 
 ## What a fiber owns
 

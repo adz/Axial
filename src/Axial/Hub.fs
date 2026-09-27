@@ -13,6 +13,7 @@ type PublishResult =
         Evicted: int
     }
 
+/// <summary>Combines <see cref="T:Axial.PublishResult" /> values, for totalling several publishes.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module PublishResult =

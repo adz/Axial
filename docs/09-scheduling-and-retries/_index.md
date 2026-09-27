@@ -239,6 +239,22 @@ let recurringPoll =
 
 `Flow.repeat` consults the schedule only after a successful run. A typed failure, defect, or interruption stops the repetition immediately.
 
+## Drive a stream from a schedule
+
+`FlowStream.fromSchedule` turns a schedule into a stream of its outputs, each emitted after the delay the schedule
+chooses. It ends when the schedule stops. With `Schedule.fixedRate` it is a tick stream that keeps to its grid even
+when the consumer is slow: ticks the consumer was too busy to take are skipped, not delivered in a burst.
+
+```fsharp transcript
+> (Schedule.fixedRate (System.TimeSpan.FromMilliseconds 20.0)
+-  |> FlowStream.fromSchedule
+-  |> FlowStream.take 3
+-  |> FlowStream.runCollect
+-  : Flow<unit, Never, int list>)
+- |> Flow.run ();;
+val it: Exit<int list,Never> = Success [0; 1; 2]
+```
+
 ## Schedule API reference
 
 | Function | Signature | Behavior |
@@ -260,3 +276,4 @@ let recurringPoll =
 | `map` | `('o1 -> 'o2) -> Schedule<'env, 'input, 'o1> -> Schedule<'env, 'input, 'o2>` | Transforms the schedule's output. |
 | `Flow.retry` | `Schedule<'env, 'error, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Retries the flow after `Cause.Fail`. |
 | `Flow.repeat` | `Schedule<'env, 'value, 'output> -> Flow<'env, 'error, 'value> -> Flow<'env, 'error, 'value>` | Repeats the flow after success. |
+| `FlowStream.fromSchedule` | `Schedule<'env, unit, 'output> -> FlowStream<'env, 'error, 'output>` | Emits each output after its delay; ends when the schedule stops. |

@@ -167,7 +167,7 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 - Waiting takers are served one batch at a time: the next is served only after the previous taker has resumed with its
   batch or given it back, and non-suspending takes do not overtake waiting takers. Without this, a value given back by
   an interrupted taker could return after a later value had already been taken, breaking FIFO order; the torture test
-  in `docs/08-concurrency-and-state/09-torture-test.md` found it. `takeBetween` is one handover of the whole batch, so
+  in `docs/08-concurrency-and-state/10-torture-test.md` found it. `takeBetween` is one handover of the whole batch, so
   it never holds values outside the queue while it waits.
 - `Flow.ensuring`, `Flow.onExit`, and `Flow.onInterrupt` attach cleanup to one expression, and `Flow.never` waits
   until interrupted. The names follow ZIO's and Cats Effect's, which users of those libraries guess first. Handlers run

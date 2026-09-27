@@ -135,6 +135,26 @@ Draining after shutdown is what lets a consumer finish its work when an applicat
 to drain it; see [stopping a consumer gracefully](fibers.html#stopping-a-consumer-gracefully). `Dequeue.isShutdown`
 reports the state, and `Dequeue.awaitShutdown` suspends until it happens.
 
+## Monitoring a queue
+
+`Dequeue.stats` reads a queue's size, capacity, waiting takers and offerers, and how many values it has accepted,
+dropped, and evicted since it was created, all in one consistent snapshot. The counters only grow, so the difference
+between two snapshots is a rate. `Dequeue.capacity` returns the capacity alone, or `None` for an unbounded queue.
+
+```fsharp transcript
+> (flow {
+-     let! (display: Queue<int>) = Queue.sliding 2
+-     do! display |> Queue.offerAll [ 1..5 ] |> Flow.ignore
+-     let! stats = Dequeue.stats display
+-     return $"size {stats.Size}, accepted {stats.Accepted}, evicted {stats.Evicted}"
+- } : Flow<unit, Never, string>)
+- |> Flow.run ();;
+val it: Exit<string,Never> = Success "size 2, accepted 5, evicted 3"
+```
+
+To export these figures as metrics, register the queue with `QueueMetrics.observe`; see
+[watching queues and hub subscriptions](/observability/telemetry/index.html#watch-queues-and-hub-subscriptions).
+
 ## Tying a queue to a scope
 
 `Queue.makeScoped` creates a queue that is shut down when the current scope closes. Use it inside `Flow.scoped`, a forked

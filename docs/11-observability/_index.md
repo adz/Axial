@@ -143,7 +143,8 @@ OTLP receiver and provides an endpoint that generates every Axial observability 
 - **Annotations → every observer.** `Flow.annotate "payment.attempt" attemptId` is scoped runtime metadata,
   not a tracing call: any active trace (`Activity.traceOn`, `Activity.trace`, or a tracer's `.Trace`) tees
   annotations onto the active span as `axial.flow.annotation.*` tags, and custom sinks
-  (`Flow.addAnnotationSink`) can route the same values into log scopes or anywhere else. See the
+  (`Flow.addAnnotationSink`) can route the same values into log scopes or anywhere else. `Flow.withTraceId id` sets
+  the standard `trace_id` annotation for a flow, and `Flow.traceId` reads it back. See the
   [runtime operations tutorial](/platforms-and-hosting/runtime-operations.html).
 - **Fiber ids link spans.** Workflow spans and fiber spans both carry `axial.flow.fiber.id`
   (and fiber spans `axial.flow.fiber.parent_id`), so fiber-lifecycle spans correlate with the workflows that

@@ -6,22 +6,29 @@ environment, typed failure channel, cancellation, and runtime scopes as `Flow`.
 Choose `FlowStream` when values should be handled incrementally instead of collected before work begins. Typical
 sources include process output, paginated APIs, subscriptions, and host-specific file or network adapters.
 
-A stream does nothing until a terminal operation such as [`runFold`](#Axial.FlowStreamModule.runFold),
-[`runForEachFlow`](#Axial.FlowStreamModule.runForEachFlow), or
-[`runCollect`](#Axial.FlowStreamModule.runCollect) produces a Flow and that Flow is run. Pulling provides backpressure: downstream requests each next value, so upstream cannot run ahead
+A stream does nothing until a terminal operation such as [`runFold`](#Axial.FlowStream.runFold),
+[`runForEachFlow`](#Axial.FlowStream.runForEachFlow), or
+[`runCollect`](#Axial.FlowStream.runCollect) produces a Flow and that Flow is run. Pulling provides backpressure: downstream requests each next value, so upstream cannot run ahead
 without an operator explicitly introducing bounded concurrency. The time-based operators (`groupedWithin`, `throttle`,
 `debounce`, `switchMapFlow`) and `buffer` are such operators: they read ahead into a queue so they can react to
 time or to a newer value.
 
-A stream that reads a file, socket, or cursor should own it with [`using`](#Axial.FlowStreamModule.using), which releases
+A stream that reads a file, socket, or cursor should own it with [`using`](#Axial.FlowStream.using), which releases
 the resource however consumption ends. To take a single result without draining the stream, use
-[`runTryHead`](#Axial.FlowStreamModule.runTryHead).
+[`runTryHead`](#Axial.FlowStream.runTryHead).
+
+Streams connect to the concurrency types in both directions. [`fromDequeue`](#Axial.FlowStream.fromDequeue) reads a
+queue or hub subscription until it is shut down and drained, and [`fromHub`](#Axial.FlowStream.fromHub) subscribes for
+the life of the stream. [`runIntoQueue`](#Axial.FlowStream.runIntoQueue) and [`runIntoHub`](#Axial.FlowStream.runIntoHub)
+feed a stream into them. [`mergePar`](#Axial.FlowStream.mergePar) runs several streams concurrently, and
+[`fromSchedule`](#Axial.FlowStream.fromSchedule) turns a schedule into a tick stream. See the [Queue](/concurrency-and-state/queue.html)
+and [Hub](/concurrency-and-state/hub.html) guides.
 
 ## Start here
 
 The [Streams guide](/streams/index.html) introduces the model. [Getting started](/streams/getting-started.html) builds a
 complete pipeline, while [Batching and parallelism](/streams/batching-and-parallelism.html) explains the scheduling
-difference between strict batches and [`mapFlowPar`](#Axial.FlowStreamModule.mapFlowPar).
+difference between strict batches and [`mapFlowPar`](#Axial.FlowStream.mapFlowPar).
 
-Use incremental terminal operations for large or unbounded streams. [`runCollect`](#Axial.FlowStreamModule.runCollect) deliberately retains every emitted
+Use incremental terminal operations for large or unbounded streams. [`runCollect`](#Axial.FlowStream.runCollect) deliberately retains every emitted
 value and should be reserved for known finite inputs.

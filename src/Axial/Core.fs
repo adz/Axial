@@ -436,6 +436,8 @@ module internal FiberInterrupts =
 /// <c>SettledAt</c>). Root workflow executions are not forked fibers and do not appear; forked fibers whose
 /// parent is the root render as top-level nodes.
 /// </remarks>
+/// <param name="historyCapacity">How many settled fibers and unobserved defects the registry remembers; totals per
+/// fiber name are kept for every fiber.</param>
 type FiberRegistry(historyCapacity: int) =
     do
         if historyCapacity < 0 then

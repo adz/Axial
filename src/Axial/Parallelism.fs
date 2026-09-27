@@ -5,6 +5,7 @@ open System
 /// <summary>A validated upper bound for concurrent Flow operations.</summary>
 type Parallelism = private Parallelism of int
 
+/// <summary>Creates <see cref="T:Axial.Parallelism" /> bounds for parallel Flow and stream operators.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Parallelism =
