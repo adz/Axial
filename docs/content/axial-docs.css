@@ -742,3 +742,181 @@ body:has(.axial-landing) #search-ui {
     min-width: 42rem;
   }
 }
+
+/* Homepage: the Flow type at the centre of the diagram, without the logo. */
+.coord-hub > span:only-child {
+  margin-top: 0;
+  padding: 0.6rem 1rem;
+  border: 2px solid #0b55d9;
+  border-radius: 0.75rem;
+  color: var(--axial-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.axial-landing .btn-secondary {
+  border: 1px solid var(--axial-border);
+  background: var(--axial-surface);
+  color: var(--axial-heading);
+}
+
+.axial-landing .btn-secondary:hover {
+  border-color: #0b55d9;
+}
+
+/* Homepage: the numbered reasons, each with Task and Flow side by side. */
+.why-panels {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 64rem;
+  margin: 3rem auto;
+}
+
+.why-panel {
+  padding: 1.5rem;
+  border: 1px solid var(--axial-border);
+  border-radius: 0.75rem;
+  background: var(--axial-surface);
+}
+
+.why-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.why-panel-head h2 {
+  margin: 0;
+  border: 0;
+  color: var(--axial-heading);
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.why-number {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: #0b55d9;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.why-panel > p {
+  color: var(--axial-muted);
+  line-height: 1.6;
+}
+
+.why-compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.why-side {
+  min-width: 0;
+  border-top: 3px solid var(--axial-border);
+  padding-top: 0.5rem;
+}
+
+.why-side--after {
+  border-top-color: #0b55d9;
+}
+
+.why-side-label {
+  display: inline-block;
+  margin-bottom: 0.4rem;
+  color: var(--axial-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.why-side--after .why-side-label {
+  color: #0b55d9;
+}
+
+.why-side pre {
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.8rem;
+}
+
+.why-outcomes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.why-outcome {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.why-outcome--value {
+  border-color: #1f8a4c;
+  color: #1f8a4c;
+}
+
+.why-outcome--error {
+  border-color: #b7791f;
+  color: #b7791f;
+}
+
+.why-outcome--defect {
+  border-color: #c53030;
+  color: #c53030;
+}
+
+.why-rules {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--axial-muted);
+  line-height: 1.7;
+}
+
+@media (max-width: 760px) {
+  .why-compare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .why-panel {
+    padding: 1rem;
+  }
+}
+
+/* Code blocks inside a comparison column stay within the column. */
+.why-side .livedocs-code {
+  margin: 0 !important;
+}
+
+.why-side .livedocs-code pre.code-frame {
+  margin: 0;
+  padding: 0.75rem 0.9rem !important;
+  border-radius: 0.5rem;
+}
+
+/* The hero lockup is drawn on the surface colour, so it sits in a panel like the ones below it. */
+.docs-home-hero-visual {
+  box-sizing: border-box;
+  padding: 0.25rem 1.5rem;
+  border: 1px solid var(--axial-border);
+  border-radius: 0.75rem;
+  background: var(--axial-surface);
+}
+
+/* The repository F# setup disclosure is not useful on the landing page. */
+main:has(.axial-landing) .livedocs-repository-setup {
+  display: none;
+}
