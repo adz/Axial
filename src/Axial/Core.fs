@@ -32,6 +32,24 @@ module Cause =
     let traced (trace: string) (cause: Cause<'error>) : Cause<'error> =
         Cause.Traced(cause, trace)
 
+    /// <summary>Removes trace text from the top of a cause, returning the cause it annotates.</summary>
+    /// <remarks>
+    /// A trace describes where a cause passed; it does not change what happened. Match on the result to recognise a
+    /// typed failure or a defect whether or not it was traced, as the recovery combinators such as
+    /// <c>Flow.orElseWith</c> and <c>Flow.catch</c> do.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// match Cause.untraced cause with
+    /// | Cause.Fail error -&gt; Some error
+    /// | _ -&gt; None
+    /// </code>
+    /// </example>
+    let rec untraced (cause: Cause<'error>) : Cause<'error> =
+        match cause with
+        | Cause.Traced(inner, _) -> untraced inner
+        | other -> other
+
     /// <summary>Returns every typed failure value contained in a cause tree.</summary>
     let rec failures (cause: Cause<'error>) : 'error list =
         match cause with

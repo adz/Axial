@@ -938,7 +938,8 @@ module Process =
             member _.Run specification = execute None specification
             member _.Stream specification = stream specification }
 
-    let private describeCause = function
+    let private describeCause cause =
+        match Cause.untraced cause with
         | Cause.Fail error -> ProcessError.describe error
         | Cause.Die error -> error.ToString()
         | Cause.Interrupt -> "Interrupted."

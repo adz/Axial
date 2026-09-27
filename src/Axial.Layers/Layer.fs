@@ -23,14 +23,14 @@ type Layer<'input, 'error, 'output> =
 /// </remarks>
 [<Sealed>]
 type Pool<'resource> internal (instances: 'resource array) =
-    let mutable cursor = -1
+    let cursor = ref -1
 
     /// <summary>The number of instances in the pool.</summary>
     member _.Count = instances.Length
 
     /// <summary>Returns the next instance, distributing calls round-robin across every instance.</summary>
     member _.Next() : 'resource =
-        let index = System.Threading.Interlocked.Increment(&cursor)
+        let index = Platform.nextIndex cursor
         instances.[(index &&& System.Int32.MaxValue) % instances.Length]
 
     /// <summary>Every instance in the pool, e.g. to release or inspect them directly.</summary>

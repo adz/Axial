@@ -759,9 +759,9 @@ module Flow =
                     |> Execution.fold
                         Execution.ofValue
                         (fun cause ->
-                            match cause with
+                            match Cause.untraced cause with
                             | Cause.Die error -> convert error (fun () -> Execution.ofCause cause)
-                            | other -> Execution.ofCause other))
+                            | _ -> Execution.ofCause cause))
                 (fun error -> convert error (fun () -> raise error)))
 
     /// <summary>Suspends the flow for the specified duration, observing cancellation.</summary>
@@ -954,7 +954,7 @@ module Flow =
                 |> Execution.fold
                     (Platform.Break >> Execution.ofValue)
                     (fun cause ->
-                        match cause with
+                        match Cause.untraced cause with
                         | Cause.Fail error ->
                             let context = scheduleContext time runState attempt loopStarted executionStarted
 
@@ -1201,13 +1201,12 @@ module Flow =
                             // Wait for the fiber or the grace period, whichever ends first, on the runtime's time.
                             let graceTimer = new CancellationTokenSource()
 
-                            Platform.preserveAmbient (fun () ->
-                                Async.StartImmediate(
-                                    async {
-                                        let! _ = exitTask
-                                        graceTimer.Cancel()
-                                    }
-                                ))
+                            Platform.startImmediate
+                                (async {
+                                    let! _ = exitTask
+                                    graceTimer.Cancel()
+                                })
+                                None
 
                             let! _ = parentRuntime.Time.Sleep<unit>(request.Grace, graceTimer.Token)
                             ()
@@ -1804,7 +1803,7 @@ module Flow =
             |> Execution.fold
                 Execution.ofValue
                 (fun cause ->
-                    match cause with
+                    match Cause.untraced cause with
                     | Cause.Fail error ->
                         invoke (binder error) environment cancellationToken
                         |> Execution.fold
@@ -2026,9 +2025,9 @@ module Flow =
                     |> Execution.fold
                         (fun value -> Execution.ofValue value)
                         (fun cause ->
-                            match cause with
+                            match Cause.untraced cause with
                             | Cause.Die error -> Execution.ofCause (Cause.Fail(handler error))
-                            | other -> Execution.ofCause other))
+                            | _ -> Execution.ofCause cause))
                 (fun error ->
                     if ForeignCancellation.isOurs cancellationToken error then
                         Platform.ofExit (Exit.Failure Cause.Interrupt)
@@ -2058,7 +2057,7 @@ module Flow =
             |> Execution.fold
                 Execution.ofValue
                 (fun cause ->
-                    match cause with
+                    match Cause.untraced cause with
                     | Cause.Fail error -> invoke (fallback error) environment cancellationToken
                     | _ -> Execution.ofCause cause))
 

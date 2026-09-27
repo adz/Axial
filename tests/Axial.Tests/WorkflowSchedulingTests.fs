@@ -739,3 +739,15 @@ module WorkflowSchedulingTests =
         test <@ match result with Exit.Failure(Cause.Die _) -> true | _ -> false @>
         // Without the reset the budget of 2 restarts ends after run 3; the healthy hour earns two more.
         test <@ runs.Value = 5 @>
+
+    [<Fact>]
+    let ``Flow.sleep never ends before its delay, even for fractions of a millisecond`` () =
+        // Platform timers take whole milliseconds; rounding down would end a 1.5 ms sleep after 1 ms.
+        let shortest =
+            [ for _ in 1..40 ->
+                  let stopwatch = Diagnostics.Stopwatch.StartNew()
+                  Flow.sleep (TimeSpan.FromMilliseconds 1.5) |> Flow.runSync () |> ignore
+                  stopwatch.Elapsed.TotalMilliseconds ]
+            |> List.min
+
+        test <@ shortest >= 1.5 @>

@@ -307,6 +307,41 @@ let preserveAmbient (start: unit -> unit) : unit =
         start ()
     finally
         ambientSlot.Value <- saved
+
+/// Replaces Fable's <c>Async</c> trampoline. After a few thousand synchronous steps, that trampoline continues the
+/// computation on a fresh stack through <c>setTimeout</c>: a resume this module does not otherwise see, which
+/// would run the rest of the computation under whatever ambient value is current when the timer fires. This one
+/// carries the value across the hop. The member names and shape are the ones fable-library's <c>Async</c> calls.
+[<AttachMembers>]
+type AmbientTrampoline() =
+    let mutable calls = 0
+
+    member _.carriesAmbient = true
+
+    member _.incrementAndCheck() : bool =
+        calls <- calls + 1
+        calls > 2000
+
+    member _.hijack(resume: unit -> unit) : unit =
+        calls <- 0
+        let captured = captureAmbient ()
+        JS.setTimeout (fun () -> resumeWith captured resume ()) 0 |> ignore
+
+// A Fable Async is a function of its context; every step it binds inherits the context's trampoline.
+[<Emit("(ctx) => $1(ctx.trampoline.carriesAmbient ? ctx : { onSuccess: ctx.onSuccess, onError: ctx.onError, onCancel: ctx.onCancel, cancelToken: ctx.cancelToken, trampoline: $0() })")>]
+let private withTrampoline (_create: unit -> AmbientTrampoline) (_computation: Async<'value>) : Async<'value> = jsNative
+
+/// Runs <paramref name="computation" /> on a trampoline that carries the ambient value across its stack hops, unless
+/// it already runs on one.
+let carryAmbient (computation: Async<'value>) : Async<'value> =
+    withTrampoline (fun () -> AmbientTrampoline()) computation
+
+/// Starts work at once, on a trampoline that carries the ambient value, then restores the caller's ambient value.
+let startImmediate (computation: Async<unit>) (cancellationToken: CancellationToken option) : unit =
+    preserveAmbient (fun () ->
+        match cancellationToken with
+        | Some token -> Async.StartImmediate(carryAmbient computation, token)
+        | None -> Async.StartImmediate(carryAmbient computation))
 #endif
 
 /// Converts a raw async operation into an execution, mapping its produced value into an exit outcome. Thrown
@@ -490,6 +525,15 @@ let nextId (counter: int64 ref) : int64 =
     Interlocked.Increment(&counter.contents)
 #endif
 
+/// Advances a shared cursor and returns its new value, with the same single-thread assumption as <c>nextId</c>.
+let nextIndex (counter: int ref) : int =
+#if FABLE_COMPILER
+    counter.Value <- counter.Value + 1
+    counter.Value
+#else
+    Interlocked.Increment(&counter.contents)
+#endif
+
 // ---------------------------------------------------------------------------------------------
 // Defect description.
 // ---------------------------------------------------------------------------------------------
@@ -564,6 +608,7 @@ let withCell
         finally
             cell.Current <- previous
     }
+    |> carryAmbient
 #else
 let withCell (cell: RuntimeCell<'value>) (value: 'value) (operation: unit -> 'result) : 'result =
     let previous = cell.Current.Value
@@ -638,7 +683,15 @@ let monotonicNow () : TimeSpan =
     TimeSpan.FromTicks(int64 (float timestamp * (float TimeSpan.TicksPerSecond / float System.Diagnostics.Stopwatch.Frequency)))
 #endif
 
-/// Suspends for the given delay, observing cancellation as an interruption.
+/// A delay as whole milliseconds, rounded up: both platform timers take whole milliseconds, and rounding down would
+/// let a sleep end before its delay, which a fixed-rate schedule would take for a run belonging to the previous tick.
+let private timerMilliseconds (delay: TimeSpan) : float =
+    if delay <= TimeSpan.Zero then 0.0 else Math.Ceiling delay.TotalMilliseconds
+
+/// The longest single timer either platform accepts (about 24.8 days); longer sleeps wait in pieces of this size.
+let private longestTimer = float Int32.MaxValue
+
+/// Suspends for at least the given delay, observing cancellation as an interruption.
 let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Execution<unit, 'error> =
 #if FABLE_COMPILER
     async {
@@ -659,7 +712,20 @@ let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Ex
                 if cancellationToken.IsCancellationRequested then
                     settle true
                 else
-                    let timer = scheduleTimer (fun () -> settle false) (int delay.TotalMilliseconds)
+                    let timer: obj ref = ref null
+                    let deadline = monotonicNow () + delay
+
+                    // Wait until the deadline itself, not for a number of timer callbacks: a timer can fire a little
+                    // early, and a long sleep needs several timers.
+                    let rec wait () =
+                        let remaining = timerMilliseconds (deadline - monotonicNow ())
+
+                        if remaining <= 0.0 then
+                            settle false
+                        else
+                            timer.Value <- scheduleTimer wait (int (Math.Min(remaining, longestTimer)))
+
+                    wait ()
 
                     // Fable's registration is a plain `{ Dispose }` object; its F# type does not expose Dispose.
                     registration.Value <-
@@ -667,7 +733,7 @@ let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Ex
                             unbox<IDisposable> (
                                 box (
                                     cancellationToken.Register(fun () ->
-                                        cancelTimer timer
+                                        cancelTimer timer.Value
                                         settle true)
                                 )
                             )
@@ -679,8 +745,19 @@ let sleepExecution (delay: TimeSpan) (cancellationToken: CancellationToken) : Ex
     ValueTask<Exit<unit, 'error>>(
         task {
             try
-                do! Task.Delay(delay, cancellationToken)
-                return Exit.Success()
+                // Wait until the deadline itself, not for a number of timer callbacks: Task.Delay can return up to a
+                // millisecond early, and a long sleep needs several delays.
+                let deadline = monotonicNow () + delay
+                let mutable remaining = timerMilliseconds (deadline - monotonicNow ())
+
+                while remaining > 0.0 do
+                    do! Task.Delay(int (Math.Min(remaining, longestTimer)), cancellationToken)
+                    remaining <- timerMilliseconds (deadline - monotonicNow ())
+
+                if cancellationToken.IsCancellationRequested then
+                    return Exit.Failure Cause.Interrupt
+                else
+                    return Exit.Success()
             with :? OperationCanceledException ->
                 return Exit.Failure Cause.Interrupt
         })
@@ -714,25 +791,24 @@ let private startBranch (operation: CancellationToken -> Execution<'value, 'erro
     let finished: Exit<'value, 'error> option ref = ref None
     let waiters: (Exit<'value, 'error> -> unit) list ref = ref []
 
-    preserveAmbient (fun () ->
-        Async.StartImmediate(
-            async {
-                let! exit =
-                    async {
-                        try
-                            return! operation token
-                        with error ->
-                            return Exit.Failure(Cause.Die error)
-                    }
+    startImmediate
+        (async {
+            let! exit =
+                async {
+                    try
+                        return! operation token
+                    with error ->
+                        return Exit.Failure(Cause.Die error)
+                }
 
-                finished.Value <- Some exit
-                let pending = List.rev waiters.Value
-                waiters.Value <- []
+            finished.Value <- Some exit
+            let pending = List.rev waiters.Value
+            waiters.Value <- []
 
-                for waiter in pending do
-                    preserveAmbient (fun () -> waiter exit)
-            }
-        ))
+            for waiter in pending do
+                preserveAmbient (fun () -> waiter exit)
+        })
+        None
 
     { Settled = fun () -> finished.Value
       OnSettled =
@@ -1102,18 +1178,18 @@ let startFiber
             for waiter in toNotify do
                 waiter exit
 
-    preserveAmbient (fun () ->
-        Async.StartImmediate(
-            async {
-                try
-                    let! exit = run cts.Token
-                    onSettled (statusFromExit exit) exit
-                    settle exit
-                with error ->
-                    let exit = Exit.Failure(causeOfException error)
-                    onSettled (statusFromExit exit) exit
-                    settle exit
-            }))
+    startImmediate
+        (async {
+            try
+                let! exit = run cts.Token
+                onSettled (statusFromExit exit) exit
+                settle exit
+            with error ->
+                let exit = Exit.Failure(causeOfException error)
+                onSettled (statusFromExit exit) exit
+                settle exit
+        })
+        None
 
     ignore parentCancellationToken
 
@@ -1139,17 +1215,20 @@ let startFiber
         link.Dispose()
         onSettled status exit
 
+    // The fiber starts on the thread pool, so a fiber that never suspends (a CPU-bound loop) cannot hold its parent
+    // inside fork: fork always returns as soon as the fiber is started.
     let exitTask =
-        task {
-            try
-                let! exit = (run cts.Token).AsTask()
-                settle (statusFromExit exit) exit
-                return exit
-            with error ->
-                let exit = Exit.Failure(causeOfException error)
-                settle (statusFromExit exit) exit
-                return exit
-        }
+        Task.Run<Exit<'value, 'error>>(fun () ->
+            task {
+                try
+                    let! exit = (run cts.Token).AsTask()
+                    settle (statusFromExit exit) exit
+                    return exit
+                with error ->
+                    let exit = Exit.Failure(causeOfException error)
+                    settle (statusFromExit exit) exit
+                    return exit
+            })
 
     cts, exitTask
 #endif
@@ -1285,11 +1364,12 @@ let awaitAnyExitTaskAsSuccess
     let signal = newSignal ()
     exitTasks
     |> List.iteri (fun index exitTask ->
-        preserveAmbient (fun () ->
-            Async.StartImmediate(async {
+        startImmediate
+            (async {
                 let! exit = exitTask
                 resolveSignal signal (index, exit) |> ignore
-            }, cancellationToken)))
+            })
+            (Some cancellationToken))
     awaitSignal signal cancellationToken
 #else
     ValueTask<Exit<int * Exit<'value, 'error>, 'none>>(task {
@@ -1299,6 +1379,62 @@ let awaitAnyExitTaskAsSuccess
         let! exit = completed
         return Exit.Success(index, exit)
     })
+#endif
+
+// ---------------------------------------------------------------------------------------------
+// Cancellation wiring for operations that must stop on an event without racing a consuming operation.
+// ---------------------------------------------------------------------------------------------
+
+/// Cancels <paramref name="target" /> when <paramref name="parent" /> is cancelled. Returns a function that detaches
+/// the link once it is no longer needed, so a long-lived parent does not accumulate one callback per call.
+let linkTo (parent: CancellationToken) (target: CancellationTokenSource) : unit -> unit =
+#if FABLE_COMPILER
+    // Fable's registration is a plain `{ Dispose }` object; its F# type does not expose Dispose.
+    let registration = unbox<IDisposable> (box (parent.Register(fun () -> target.Cancel())))
+    fun () -> registration.Dispose()
+#else
+    let registration = parent.Register(fun () -> target.Cancel())
+    fun () -> registration.Dispose()
+#endif
+
+/// Cancels <paramref name="target" /> once <paramref name="delay" /> has passed on the runtime's time source, unless the
+/// returned function is called first.
+let cancelAfter (time: ITimeSource) (delay: TimeSpan) (target: CancellationTokenSource) : unit -> unit =
+    let timer = new CancellationTokenSource()
+
+    let fire (exit: Exit<unit, unit>) =
+        match exit with
+        | Exit.Success() -> target.Cancel()
+        | Exit.Failure _ -> ()
+
+#if FABLE_COMPILER
+    startImmediate
+        (async {
+            let! exit = time.Sleep<unit>(delay, timer.Token)
+            fire exit
+        })
+        None
+#else
+    (time.Sleep<unit>(delay, timer.Token))
+        .AsTask()
+        .ContinueWith((fun (settled: Task<Exit<unit, unit>>) -> fire settled.Result), TaskContinuationOptions.ExecuteSynchronously)
+    |> ignore
+#endif
+
+    fun () -> timer.Cancel()
+
+/// Runs <paramref name="action" /> once a fiber's exit task has settled.
+let whenSettled (exitTask: ExitTask<'value, 'error>) (action: unit -> unit) : unit =
+#if FABLE_COMPILER
+    startImmediate
+        (async {
+            let! _ = exitTask
+            action ()
+        })
+        None
+#else
+    exitTask.ContinueWith((fun (_: Task<Exit<'value, 'error>>) -> action ()), TaskContinuationOptions.ExecuteSynchronously)
+    |> ignore
 #endif
 
 // ---------------------------------------------------------------------------------------------

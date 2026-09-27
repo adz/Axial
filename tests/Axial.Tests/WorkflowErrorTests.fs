@@ -567,3 +567,23 @@ module WorkflowErrorTests =
         match exit with
         | Exit.Failure (Cause.Die ex) -> test <@ obj.ReferenceEquals(ex, defect) @>
         | other -> failwithf "Expected defect cause, got %A" other
+
+    [<Fact>]
+    let ``Recovery combinators see a typed failure or defect through its trace`` () =
+        let traced : Flow<unit, string, int> = Flow.fail "boom" |> Flow.tracedError "while loading"
+        let tracedDefect : Flow<unit, string, int> = Flow.die (InvalidOperationException "defect") |> Flow.tracedError "while loading"
+        let tapped = ref None
+        let attempts = ref 0
+
+        let retried : Flow<unit, string, int> =
+            Flow.delay (fun () ->
+                attempts.Value <- attempts.Value + 1
+                if attempts.Value < 3 then Flow.fail "transient" |> Flow.tracedError "attempt" else Flow.ok attempts.Value)
+            |> Flow.retry (Schedule.recurs 5)
+
+        test <@ traced |> Flow.orElseWith (fun error -> Flow.ok error.Length) |> Flow.runSync () = Exit.Success 4 @>
+        test <@ traced |> Flow.orElse (Flow.ok 0) |> Flow.runSync () = Exit.Success 0 @>
+        test <@ tracedDefect |> Flow.catch (fun error -> error.Message) |> Flow.orElseWith (fun error -> Flow.ok error.Length) |> Flow.runSync () = Exit.Success 6 @>
+        test <@ traced |> Flow.tapError (fun error -> Flow.delay (fun () -> tapped.Value <- Some error; Flow.ok ())) |> Flow.runSync () |> Exit.map ignore <> Exit.Success () && tapped.Value = Some "boom" @>
+        test <@ retried |> Flow.runSync () = Exit.Success 3 @>
+        test <@ Cause.untraced (Cause.traced "a" (Cause.traced "b" (Cause.Fail 1))) = Cause.Fail 1 @>

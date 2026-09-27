@@ -100,4 +100,26 @@ let tests : Test list =
           let! fiber = Flow.never<unit, Never, unit> |> Flow.onInterrupt cleanup |> Flow.fork
           let! _ = Fiber.interrupt fiber
           return [ equal "cleanups" 1 cleaned.Value ]
+      })
+
+      // Fable's Async continues on a fresh stack through setTimeout after a few thousand synchronous steps; the fiber
+      // must still see its own runtime (annotations, fiber id, scope) when it resumes there.
+      test "A fiber keeps its own runtime across a long synchronous stretch" (flow {
+          let worker (name: string) =
+              flow {
+                  let! before = Flow.fiberId
+                  let! _ = [ 1..20000 ] |> Flow.traverse Flow.ok
+                  let! annotations = Flow.annotations
+                  let! after = Flow.fiberId
+                  // Opening a scope registers it with the fiber's own scope, which must still be open.
+                  do! Flow.scoped (Flow.ok ())
+                  return annotations |> Map.tryFind "worker" = Some name && before = after
+              }
+              |> Flow.annotate "worker" name
+
+          let! fibers = [ "a"; "b"; "c" ] |> Flow.traverse (worker >> Flow.fork)
+          do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+          let! kept = fibers |> Flow.traverse Fiber.join
+          let! rootAnnotations = Flow.annotations
+          return [ equal "each fiber kept its runtime" [ true; true; true ] kept; isTrue "the root kept its runtime" (not (rootAnnotations.ContainsKey "worker")) ]
       }) ]

@@ -566,12 +566,39 @@ module FlowStream =
     let private takePumped queue env ct : Execution<Pumped<'value, 'error>, 'error> =
         Flow.invoke (Dequeue.take queue) env ct
 
-    // The next pumped event, or None if none arrives within `timeout`. Interrupting the losing take never loses a value.
+    // The next pumped event, or None once `arm`'s trigger fires. The take runs on its own cancellation instead of racing
+    // the trigger: a value handed over in the same instant as the trigger goes back to the queue, where a race would
+    // discard the losing take's value. `arm` connects a trigger to the source and returns a function that disarms it.
+    let private takeUnless
+        (queue: Queue<Pumped<'value, 'error>>)
+        (arm: CancellationTokenSource -> (unit -> unit))
+        (ct: CancellationToken)
+        : Execution<Pumped<'value, 'error> option, 'error> =
+        let source = new CancellationTokenSource()
+        let unlink = Platform.linkTo ct source
+        let disarm = arm source
+
+        QueueCore.take queue (fun () -> Execution.ofCause Cause.Interrupt) (Some >> Execution.ofValue) source.Token
+        |> Execution.fold
+            (fun event ->
+                disarm ()
+                unlink ()
+                Execution.ofValue event)
+            (fun cause ->
+                disarm ()
+                unlink ()
+
+                if ct.IsCancellationRequested || not (Cause.isInterrupted cause) then
+                    Execution.ofCause cause
+                else
+                    Execution.ofValue None)
+
+    // The next pumped event, or None if none arrives within `timeout`.
     let private takeWithin queue (timeout: TimeSpan) env ct : Execution<Pumped<'value, 'error> option, 'error> =
         if timeout <= TimeSpan.Zero then
             Flow.invoke (Dequeue.poll queue) env ct
         else
-            Flow.invoke (Flow.race (Dequeue.take queue |> Flow.map Some) (Flow.sleep timeout |> Flow.map (fun () -> None))) env ct
+            takeUnless queue (Platform.cancelAfter (RuntimeState.current().Time) timeout) ct
 
     let private finished () : Execution<StreamStep<'value, 'error>, 'error> = Execution.ofValue Done
 
@@ -707,12 +734,18 @@ module FlowStream =
                         | Pumped.Failed cause -> Execution.ofCause cause
                         | Pumped.Item value -> start value |> Execution.bind running)
 
-                and running fiber =
+                and running (fiber: Fiber<'error, 'next>) =
                     Execution.loop fiber (fun fiber ->
-                        let nextEvent = Dequeue.take queue |> Flow.map Choice1Of2
-                        let completion = Fiber.await fiber |> Flow.map Choice2Of2
+                        // Wait for the next value unless the running flow settles first; see takeUnless.
+                        let settling (source: CancellationTokenSource) =
+                            Platform.whenSettled fiber.ExitTask (fun () -> source.Cancel())
+                            ignore
 
-                        Flow.invoke (Flow.race nextEvent completion) env ct
+                        takeUnless queue settling ct
+                        |> Execution.bind (fun event ->
+                            match event with
+                            | Some item -> Execution.ofValue (Choice1Of2 item)
+                            | None -> Flow.invoke (Fiber.await fiber) env ct |> Execution.map Choice2Of2)
                         |> Execution.bind (function
                             | Choice1Of2(Pumped.Item value) ->
                                 Flow.invoke (Fiber.interrupt fiber) env ct
