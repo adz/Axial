@@ -14,6 +14,7 @@ output/
 tmp/
 site/
 BenchmarkDotNet.Artifacts/
+TestResults/
 examples/Axial.ReferenceApp/.axial-reference-data/
 
 # FsLiveDocs renders API reference and guide output during validation and release.
