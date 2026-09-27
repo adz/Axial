@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The torture test shown on the docs page docs/08-concurrency-and-state/10-torture-test.md. Pass a round count
+       after the double dash of dotnet run; tests/Axial.Tests runs the same pipeline on every build. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Pipeline.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+  </ItemGroup>
+</Project>

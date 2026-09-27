@@ -182,7 +182,9 @@ Without the shutdown, the consumer would have waited for more values forever.
 
 Suspended takers are served in the order they began waiting, and so are suspended offerers of a bounded queue.
 
-Values leave in FIFO order even when takers are interrupted. A taker interrupted at the same moment a value is handed to
-it gives the value back to the front of the queue. Takers are served one at a time, the next only after the previous
-one has resumed with its value or given it back, so nothing later can have been taken ahead of a value that comes back. An offer interrupted before its value was accepted is withdrawn. An offer accepted in the same
-moment as its interruption has already taken effect and reports `true`.
+Values leave in FIFO order even when takers are interrupted, which the [torture test](torture-test.html) checks under
+constant interruption. A taker interrupted at the same moment a value is handed to it gives the value back to the front
+of the queue. Takers are served one at a time, the next only after the previous one has resumed with its value or given
+it back, so nothing later can have been taken ahead of a value that comes back. An offer interrupted before its value
+was accepted is withdrawn. An offer accepted in the same moment as its interruption has already taken effect and reports
+`true`.

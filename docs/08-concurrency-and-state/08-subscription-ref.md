@@ -52,3 +52,5 @@ same order as `Ref.modify`.
 
 A `changes` stream subscribes when it starts and unsubscribes when it ends. It does not end on its own: stop it with
 `FlowStream.take` or `FlowStream.takeWhile`, by interrupting its consumer, or by closing the consumer's scope.
+
+The [torture test](torture-test.html) checks that a late view sees no gap and no duplicate while updates race with it.

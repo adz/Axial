@@ -10,9 +10,21 @@ state a guarantee about a race: an interrupted take never loses a value, a lossl
 order, a late joiner sees no gap, a consumer drains its backlog when its scope closes. Each guarantee is easy to state
 and easy to break by accident, and a race that breaks it only rarely does not show up in a small example.
 
-This page runs all of them at once in one small monitoring pipeline, then checks every invariant. Because the program
-reports the invariants it found violated, and the interleaving differs on every run, the only correct answer is an empty
-list. The same program runs 20 times in every build of Axial's test suite, in `tests/Axial.Tests/TortureTests.fs`.
+This page runs all of them at once in one small monitoring pipeline, then checks every invariant. The interleaving
+differs on every run, so a correct runtime must keep every invariant on every run. The program is a runnable example
+in [`examples/Axial.TortureTest`](https://github.com/adz/Axial/tree/main/examples/Axial.TortureTest), and Axial's test
+suite runs it 20 times on every build.
+
+## Run it yourself
+
+From a clone of the repository, pass the number of rounds to run:
+
+```bash
+dotnet run --project examples/Axial.TortureTest -- 100
+```
+
+It prints each invariant with a check mark and the number of rounds it held on, and exits with a non-zero code if any
+invariant was ever violated, so it can gate a CI job or a soak test on your own hardware.
 
 ## The pipeline
 
@@ -33,102 +45,13 @@ list. The same program runs 20 times in every build of Axial's test suite, in `t
 
 ## The program
 
-```fsharp transcript
-> (flow {
--     let readers = 4
--     let samplesPerReader = 500
--     let everySample = [ for reader in 1..readers do for sample in 1..samplesPerReader -> reader, sample ]
--     let recorded = ResizeArray<int * int>()
--     let stolen = ResizeArray<int * int>()
--     let published = ResizeArray<int * int>()
--     let lateView = ResizeArray<int * int>()
--     let! latest = Axial.State.SubscriptionRef.make (0, 0)
--     let! inputs, display, alarms =
--         flow {
--             let! (inputs: Queue<int * int>) = Queue.bounded 8
--             let! (feed: Hub<int * int>) = Hub.make ()
--             let! historian = feed |> Hub.subscribe (QueueStrategy.BackPressure 32)
--             let! display = feed |> Hub.subscribe (QueueStrategy.Sliding 1)
--             let! alarms = feed |> Hub.subscribe (QueueStrategy.Dropping 4)
--             // The historian must record everything, including what is still queued when the scope closes.
--             let! _ =
--                 historian
--                 |> FlowStream.fromDequeue
--                 |> FlowStream.runForEach recorded.Add
--                 |> Flow.forkGraceful (Hub.shutdown feed) (System.TimeSpan.FromSeconds 30.0)
--             // A view that joins the latest-sample reference and follows 200 changes of it.
--             let! _ =
--                 latest
--                 |> Axial.State.SubscriptionRef.changes QueueStrategy.Unbounded
--                 |> FlowStream.take 200
--                 |> FlowStream.runForEach lateView.Add
--                 |> Flow.forkGraceful (Flow.ok ()) (System.TimeSpan.FromSeconds 30.0)
--             // The control loop publishes every input and keeps the latest sample current.
--             let! _ =
--                 inputs
--                 |> FlowStream.fromDequeue
--                 |> FlowStream.runForEachFlow (fun sample ->
--                     flow {
--                         do! feed |> Hub.publish sample |> Flow.ignore
--                         published.Add sample
--                         do! latest |> Axial.State.SubscriptionRef.set sample
--                     })
--                 |> Flow.forkGraceful (Dequeue.shutdown inputs) (System.TimeSpan.FromSeconds 30.0)
--             // Device readers feed the control loop concurrently, while a saboteur keeps starting takes on the
--             // same queue and interrupting them at once. A take that wins a sample before its interruption keeps
--             // it; every other sample it was handed must go back to the queue.
--             let readersFeed =
--                 [ for reader in 1..readers -> FlowStream.fromSeq [ for sample in 1..samplesPerReader -> reader, sample ] ]
--                 |> FlowStream.mergePar
--                 |> FlowStream.runIntoQueue inputs
--             let saboteur =
--                 flow {
--                     for _ in 1..300 do
--                         let! taker = inputs |> Dequeue.take |> Flow.fork
--                         let! exit = Fiber.interrupt taker
--                         match exit with
--                         | Exit.Success sample -> stolen.Add sample
--                         | Exit.Failure _ -> ()
--                 }
--             do! Flow.zipPar readersFeed saboteur |> Flow.ignore
--             return inputs, display, alarms
--         }
--         |> Flow.scoped
--     // The scope has closed: the control loop drained its queue, then the historian drained the hub.
--     let! inputStats = Dequeue.stats inputs
--     let! displayStats = Dequeue.stats display
--     let! shown = Dequeue.takeAll display
--     let! alarmStats = Dequeue.stats alarms
--     let! raised = Dequeue.takeAll alarms
--     let violations = ResizeArray<string>()
--     let check name holds = if not holds then violations.Add name
--     let history = List.ofSeq recorded
--     let order = List.ofSeq published
--     let view = List.ofSeq lateView
--     check "every sample is recorded or was won by a take, exactly once" (List.sort (history @ List.ofSeq stolen) = everySample)
--     check "the historian recorded every published sample, in publish order" (history = order)
--     check
--         "each reader's samples stay in order"
--         ([ 1..readers ] |> List.forall (fun reader -> history |> List.filter (fst >> (=) reader) |> List.pairwise |> List.forall (fun (a, b) -> snd a < snd b)))
--     check "the input queue is shut down and empty" (inputStats.IsShutdown && inputStats.Size = 0)
--     check "the sliding display ends on the newest sample" (shown = [ List.last history ])
--     check
--         "the sliding display accepted every sample and evicted all but one"
--         (displayStats.Accepted = int64 history.Length && displayStats.Evicted = int64 history.Length - 1L)
--     check "the dropping alarms kept the first four samples" (raised = List.truncate 4 history)
--     check "the dropping alarms counted every other sample as dropped" (alarmStats.Dropped = int64 history.Length - 4L)
--     // The view starts with whatever was current when it joined, then follows every later update.
--     let start = List.tryFindIndex ((=) (List.head view)) order
--     let expected =
--         match start with
--         | Some index -> order |> List.skip index |> List.truncate view.Length
--         | None -> (0, 0) :: (order |> List.truncate (view.Length - 1))
--     check "the late view saw the current sample, then every update without a gap or duplicate" (view = expected)
--     return List.ofSeq violations
-- } : Flow<unit, Never, string list>)
-- |> Flow.run ();;
-val it: Exit<string list,Never> = Success []
-```
+The pipeline runs once per round and returns each invariant with whether it held:
+
+{{< snippet id="torture-pipeline" >}}
+
+The runner repeats it and reports each invariant across all rounds:
+
+{{< snippet id="torture-runner" >}}
 
 ## What each check proves
 

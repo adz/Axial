@@ -170,6 +170,8 @@ The scope closed right after the offers, before the consumer had necessarily tak
 queue down, and the consumer finished all five values before the scope finished closing. With a plain `Flow.fork`, the
 consumer would have been interrupted with part of the backlog still queued.
 
+The [torture test](torture-test.html) stops a control loop and a historian this way and checks that no sample is lost.
+
 A graceful fiber is also not interrupted when the flow that forked it is interrupted: its stop request runs when that
 flow's scope closes, so a consumer still flushes when the application is cancelled. `Fiber.interrupt` still interrupts
 it immediately.

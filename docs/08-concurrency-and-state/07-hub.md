@@ -139,3 +139,6 @@ stream with the current value.
 their backlog, `FlowStream.fromDequeue` streams end normally once drained, and later publishes are interrupted.
 `Hub.makeScoped` creates a hub that is shut down when the current scope closes. `Hub.isShutdown` reports the state, and
 `Hub.awaitShutdown` suspends until the hub is shut down.
+
+The [torture test](torture-test.html) runs a hub with lossless, sliding, and dropping subscribers under interruption
+and graceful shutdown, and checks every guarantee on this page.

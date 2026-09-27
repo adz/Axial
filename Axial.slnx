@@ -16,6 +16,7 @@
     <Project Path="examples/Axial.PlatformService.Examples/Axial.PlatformService.Examples.fsproj" />
     <Project Path="examples/Axial.Playground/Axial.Playground.fsproj" />
     <Project Path="examples/Axial.ReadmeExample/Axial.ReadmeExample.fsproj" />
+    <Project Path="examples/Axial.TortureTest/Axial.TortureTest.fsproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Axial.Console/Axial.Console.fsproj" />

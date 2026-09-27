@@ -283,3 +283,17 @@ Policy examples
   result: Success "no unobserved-defect report for detached work"
 ```
 
+## Concurrency torture test
+
+Run it, passing the number of rounds:
+
+```bash
+dotnet run --project examples/Axial.TortureTest -- 100
+```
+
+Source: [Pipeline.fs](https://github.com/adz/Axial/blob/main/examples/Axial.TortureTest/Pipeline.fs) and
+[Program.fs](https://github.com/adz/Axial/blob/main/examples/Axial.TortureTest/Program.fs)
+
+It runs a pipeline of queues, a hub, a `SubscriptionRef`, and gracefully stopped fibers under constant interruption,
+then reports each invariant it checks and exits with a non-zero code if any was violated. The
+[torture test](/concurrency-and-state/torture-test.html) page walks through the program and what each check proves.
