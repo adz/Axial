@@ -1,13 +1,13 @@
 ---
 title: Why Flow?
-description: Five things that change when application work returns Flow instead of Task, shown side by side with the Task version.
+description: Eight things that change when application work returns Flow instead of Task, shown in code.
 ---
 
 # Why Flow?
 
 `Flow<'env, 'error, 'value>` is a type for application work that runs asynchronously, can fail in expected ways, can
-be cancelled, and uses services. Five things change when that work returns `Flow` instead of `Task`. The first four
-sections show the same code both ways; the fifth is what they add up to.
+be cancelled, and uses services. Eight things change when that work returns `Flow` instead of `Task`. Each section
+shows the difference in code; the last one is what they add up to.
 
 The examples share these types:
 
@@ -211,9 +211,83 @@ This is what keeps a workflow pure in the useful sense: everything it depends on
 the same environment gives the same result. With [Axial.Guardrails](../notes/guardrails.html) installed, the build
 also warns when code reads the clock, randomness, or environment variables directly instead of through a service.
 
-## 5. Fewer states to reason about
+## 5. Resources belong to the flow that acquired them
 
-The first four points shrink what a reader, a reviewer, or a test has to consider.
+With `Task`, `use` releases a resource when the function that opened it returns. A helper that opens a connection
+cannot hand it to its caller and still guarantee it is closed, and a resource opened by background work has no owner.
+
+A flow registers each resource with its scope. A helper can acquire one and return it, and the resource stays open
+until the scope that ran the helper closes:
+
+```fsharp
+type Connection = { Name: string }
+
+let closed = ResizeArray<string>()
+
+let connect (name: string) : Flow<Connection> =
+    Flow.scopeAcquireRelease (Flow.ok { Name = name }) (fun connection _ ->
+        closed.Add connection.Name
+        Task.CompletedTask)
+
+let report : Flow<string> =
+    flow {
+        let! orders = connect "orders"
+        let! billing = connect "billing"
+        return $"{orders.Name} and {billing.Name} are open"
+    }
+    |> Flow.scoped
+```
+
+`Flow.scoped` closes both connections when `report` ends, in reverse order, whether it succeeds, fails, or is
+interrupted. Work forked inside the scope is interrupted and awaited before its resources are released. The
+[scopes guide](../scopes/index.html) compares this with `use` in more detail.
+
+## 6. Streams keep the same rules
+
+`FlowStream` is a stream of values produced by flows. Its operators run under the same cancellation and scope rules,
+so a pipeline with parallel workers stops all of them, and releases what they acquired, as soon as the consumer has
+enough:
+
+```fsharp
+let fetchPage (id: int) : Flow<string> =
+    Flow.sleep (TimeSpan.FromMilliseconds 5.0) |> Flow.map (fun () -> $"page {id}")
+
+let firstTen : Flow<string list> =
+    FlowStream.fromSeq [ 1..1000 ]
+    |> FlowStream.mapFlowPar (Parallelism.bounded 4) fetchPage
+    |> FlowStream.take 10
+    |> FlowStream.runCollect
+```
+
+At most four pages are fetched at a time, and once ten have arrived the remaining fetches are interrupted. The same
+pipeline written with `IAsyncEnumerable` and `SemaphoreSlim` has to cancel and await its own workers. The
+[streams guide](../streams/index.html) covers batching, time-based operators, and connecting streams to queues.
+
+## 7. You can see what is running
+
+A `Task` does not know which operation started it, and .NET cannot list the tasks that are still running. Every forked
+flow is a fiber with an id, a parent, and an optional name. A `FiberRegistry` lists the live ones as a tree, and
+annotations travel to every fiber the flow starts:
+
+```fsharp
+let registry = FiberRegistry(100)
+
+let poller : Flow<unit> =
+    flow {
+        let! _ = Flow.sleep (TimeSpan.FromMinutes 1.0) |> Flow.forkNamed "outbox-poller"
+        return ()
+    }
+    |> Flow.annotate "tenant" "acme"
+    |> Flow.withFiberRegistry registry
+```
+
+`registry.Dump()` prints each live fiber with its name, status, age, and annotations, which is what a diagnostics
+endpoint or a stuck shutdown needs. `Axial.Telemetry` turns the same information into OpenTelemetry spans and metrics,
+including a count of failures in background work that nothing awaited. See [observability](../observability/index.html).
+
+## 8. Fewer states to reason about
+
+The first seven points shrink what a reader, a reviewer, or a test has to consider.
 
 A flow ends in one of three ways: its value, one of the errors named in its type, or an unexpected outcome (a defect or
 an interruption). There is no fourth case such as an exception that escapes past a `Result`, or a task still running

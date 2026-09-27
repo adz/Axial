@@ -35,7 +35,8 @@ Success "The application is ready."
 ```
 
 `ready` describes work; it has not started. `Flow.run ()` is the edge that starts it. `Flow<string>` is the short
-spelling for a Flow with no capabilities and no expected failure: `Flow<unit, Never, string>`.
+spelling for a Flow with no capabilities and no expected failure: `Flow<unit, Never, string>`. The
+[aliases table](../the-flow-type/flow-type.html#aliases) lists every short form and what it expands to.
 
 <div class="flow-type-diagram">
 <img class="flow-type-diagram--light" data-theme-variant="light" src="../content/img/flow-type-light.svg" alt="Flow env error value: environment is the services it needs, error is expected failure, and value is the successful result." />
@@ -83,17 +84,25 @@ The type reads as a contract: `quoteAud` needs `QuoteApp`, can fail with `QuoteE
 The caller does not pass a cancellation token; `ColdTask` receives the one owned by the Flow runtime and gives it to
 the service.
 
-At the host edge, build the small capability record from services the application already owns:
+Where the workflow runs, build the `QuoteApp` record. You can construct its services directly:
 
-```fsharp no-check reason="The host application owns the DI container and exchange-rate implementation."
+```fsharp no-check reason="LiveExchangeRates is the application's own implementation."
+let exit = quoteAud 80m |> Flow.run { ExchangeRates = LiveExchangeRates(httpClient) }
+```
+
+If the application already registers its services with a dependency-injection container (an `IServiceProvider`),
+fill the record from it instead:
+
+```fsharp no-check reason="The host application owns the service provider and exchange-rate implementation."
 let quoteApp (services: IServiceProvider) : QuoteApp =
     { ExchangeRates = services.GetRequiredService<IExchangeRates>() }
 
 let exit = quoteAud 80m |> Flow.run (quoteApp services)
 ```
 
-The record does not replace your dependency-injection container. The host fills it from the container when it runs the
-workflow, and a test fills it with an `IExchangeRates` test implementation. The workflow code is the same in both.
+Either way, each area of the application gets a record holding only the services it uses. `quoteAud` sees `QuoteApp`
+and nothing else, even when the host registers dozens of services, so the record marks the edge of that area. A test
+builds the same record with an `IExchangeRates` test implementation, and the workflow code does not change.
 
 ## What's next
 

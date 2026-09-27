@@ -145,8 +145,55 @@ flow {
 </div>
 </section>
 
+<div class="why-minis">
+
+<section class="why-panel why-mini">
+<div class="why-panel-head"><span class="why-number">5</span><h2>Resources belong to their scope</h2></div>
+<p>A helper can open a connection and return it. It closes when the caller's scope ends, in reverse order, however the scope ends.</p>
+
+```fsharp no-check reason="Shortened from the checked examples on the Why Flow page"
+flow {
+    let! orders = connect "orders"
+    let! billing = connect "billing"
+    return summarise orders billing
+}
+|> Flow.scoped
+```
+
+</section>
+
+<section class="why-panel why-mini">
+<div class="why-panel-head"><span class="why-number">6</span><h2>Streams keep the same rules</h2></div>
+<p>Four workers at a time; once ten pages arrive, the rest are interrupted and their resources released.</p>
+
+```fsharp no-check reason="Shortened from the checked examples on the Why Flow page"
+FlowStream.fromSeq pageIds
+|> FlowStream.mapFlowPar
+    (Parallelism.bounded 4) fetchPage
+|> FlowStream.take 10
+|> FlowStream.runCollect
+```
+
+</section>
+
+<section class="why-panel why-mini">
+<div class="why-panel-head"><span class="why-number">7</span><h2>You can see what is running</h2></div>
+<p>Every fiber has an id, a parent, and a name. A registry lists the live ones; telemetry turns them into spans and metrics.</p>
+
+```fsharp no-check reason="Shortened from the checked examples on the Why Flow page"
+poll
+|> Flow.forkNamed "outbox-poller"
+|> Flow.annotate "tenant" "acme"
+|> Flow.withFiberRegistry registry
+// registry.Dump() lists live fibers
+```
+
+</section>
+
+</div>
+
 <section class="why-panel">
-<div class="why-panel-head"><span class="why-number">5</span><h2>Fewer states to reason about, for people and for LLMs</h2></div>
+<div class="why-panel-head"><span class="why-number">8</span><h2>Fewer states to reason about, for people and for LLMs</h2></div>
 <p>Every flow ends in one of three ways. Concurrency follows fixed rules instead of per-call-site choices, and the build reports the shortcuts the types cannot rule out. A reviewer, or an LLM coding assistant, has fewer cases to consider and gets told about the usual mistakes.</p>
 <div class="why-outcomes" aria-label="The three ways a flow ends">
 <span class="why-outcome why-outcome--value">Value</span>

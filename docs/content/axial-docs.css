@@ -894,6 +894,10 @@ body:has(.axial-landing) #search-ui {
   .why-panel {
     padding: 1rem;
   }
+
+  .why-side pre {
+    font-size: 0.72rem;
+  }
 }
 
 /* Code blocks inside a comparison column stay within the column. */
@@ -919,4 +923,47 @@ body:has(.axial-landing) #search-ui {
 /* The repository F# setup disclosure is not useful on the landing page. */
 main:has(.axial-landing) .livedocs-repository-setup {
   display: none;
+}
+
+/* Homepage: three smaller reasons side by side. */
+.why-minis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.why-mini .why-panel-head h2 {
+  font-size: 1.1rem;
+}
+
+.why-mini .livedocs-code {
+  margin: 0.75rem 0 0 !important;
+}
+
+.why-mini .livedocs-code pre.code-frame {
+  margin: 0;
+  padding: 0.75rem 0.9rem !important;
+  border-radius: 0.5rem;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 960px) {
+  .why-minis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The theme sizes the inner code element, so size it there. */
+.why-side pre.code-frame code {
+  font-size: 0.8rem !important;
+}
+
+.why-mini pre.code-frame code {
+  font-size: 0.72rem !important;
+}
+
+@media (max-width: 760px) {
+  .why-side pre.code-frame code {
+    font-size: 0.72rem !important;
+  }
 }

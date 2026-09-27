@@ -28,6 +28,8 @@ let loadUser (id: UserId) : Flow<AppEnv, LoadUserError, User> = ...
 The type does not mean that work has started. A Flow is an immutable, cold description. Each execution interprets the
 description with an environment and produces an outcome.
 
+## Aliases
+
 Short aliases are abbreviations for the same three-parameter type. Each one fixes the channels it leaves out:
 
 | Alias | Expands to | Meaning |
@@ -51,7 +53,7 @@ let render : Flow<string> = Flow.succeed "ok"
 let renderExpanded : Flow<unit, Never, string> = render
 ```
 
-Start by reading the full shape. Use an alias when it makes a real signature shorter without hiding information.
+Read the full shape first. Use an alias when it makes a real signature shorter without hiding information.
 
 ## Go Further
 
