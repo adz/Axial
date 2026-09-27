@@ -48,3 +48,6 @@ flow {
 - **The owner's scope bounds the lookups.** Closing the scope where the cache was made interrupts any lookup still
   running. Make the cache where it should live, typically in a service's layer.
 - **Values are kept until invalidated.** There is no expiry; invalidate keys when their source changes.
+
+The [cache torture test](torture-tests/caches.html) interrupts callers, fails lookups, and invalidates keys while
+hundreds of callers share one cache, and checks each rule above.

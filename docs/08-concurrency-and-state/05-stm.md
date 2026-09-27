@@ -131,3 +131,6 @@ model: transactional references, composable transactions, `retry`, and `orElse`.
 | `retry` | `STM<'T>` | Requests that the current branch waits and reruns after a committed change. |
 | `orElse` | `STM<'T> -> STM<'T> -> STM<'T>` | Falls back to a second branch when the first branch retries. |
 | `atomically` | `STM<'T> -> Flow<'env, 'none, 'T>` | Executes a composed transaction as an atomic flow. |
+
+The [STM torture test](torture-tests/stm.html) runs hundreds of interrupted transfers against an auditor and checks that
+every audit sees a consistent total.

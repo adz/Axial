@@ -1,15 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- The torture test shown on the docs page docs/08-concurrency-and-state/10-torture-test.md. Pass a round count
-       after the double dash of dotnet run; tests/Axial.Tests runs the same pipeline on every build. -->
+  <!-- The torture scenarios shown in docs/08-concurrency-and-state/10-torture-tests. Pass a scenario name and a round
+       count after the double dash of dotnet run; tests/Axial.Tests and tests/Axial.Fable.Tests run the same scenarios. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <!-- For the JavaScript clock in Scenario.fs: tests/Axial.Fable.Tests also compiles these files to JavaScript. -->
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Scenario.fs" />
     <Compile Include="Pipeline.fs" />
+    <Compile Include="Queues.fs" />
+    <Compile Include="Hubs.fs" />
+    <Compile Include="Coordination.fs" />
+    <Compile Include="Stm.fs" />
+    <Compile Include="Fibers.fs" />
+    <Compile Include="Caches.fs" />
+    <Compile Include="Schedules.fs" />
+    <Compile Include="Parallel.fs" />
+    <Compile Include="Errors.fs" />
+    <Compile Include="Scopes.fs" />
+    <Compile Include="Layers.fs" />
+    <Compile Include="Streams.fs" />
+    <Compile Include="Interop.fs" />
+    <Compile Include="Scenarios.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
   </ItemGroup>
 </Project>

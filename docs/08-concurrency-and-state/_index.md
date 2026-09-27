@@ -7,5 +7,5 @@ description: Fibers, atomic references, coordination primitives, scheduling, STM
 
 Structured concurrency with fibers, shared state with Ref and STM, coordination with Deferred and Semaphore, retry and repeat with Schedule, and incremental data with FlowStream.
 
-Queues, hubs, and `SubscriptionRef` hand values between fibers. The [torture test](torture-test.html) runs them together
-under interruption and shutdown and checks every guarantee they make.
+The [torture tests](torture-tests/index.html) run every construct in this section under interruption, failure, and
+shutdown, and check every guarantee it makes.

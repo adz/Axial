@@ -73,3 +73,6 @@ Zero permits are rejected because Axial does not expose an external raw release 
 
 To hand a stream of values between fibers, use [Queue](queue.html). It adds bounded, dropping, and sliding strategies,
 a shutdown that lets the consumer drain its backlog, and interruption that never loses or duplicates a value.
+
+The [semaphore](torture-tests/semaphores.html) and [deferred](torture-tests/deferreds.html) torture tests interrupt
+waiters and holders at random and check that no permit is lost and exactly one completion wins.

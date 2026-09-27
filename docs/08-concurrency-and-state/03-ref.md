@@ -108,3 +108,6 @@ let trackProgress (total: int) =
 | `getAndSet` | `'T -> Ref<'T> -> Flow<'env, 'none, 'T>` | Sets the value and returns the value it held before the update. |
 | `getAndUpdate` | `('T -> 'T) -> Ref<'T> -> Flow<'env, 'none, 'T>` | Updates the value and returns the value it held before the update. |
 | `updateAndGet` | `('T -> 'T) -> Ref<'T> -> Flow<'env, 'none, 'T>` | Updates the value and returns the value after the update. |
+
+The [refs torture test](torture-tests/refs.html) runs every update operation from eight fibers at once and checks that
+no update is lost and no two see the same value.

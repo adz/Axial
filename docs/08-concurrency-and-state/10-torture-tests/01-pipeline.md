@@ -1,30 +1,16 @@
 ---
-title: Torture test
-description: Run queues, hubs, SubscriptionRef, and graceful fibers together under interruption and shutdown, and check every guarantee at once.
+title: Pipeline
+description: "Queues, a hub, SubscriptionRef, and graceful fibers run together in one monitoring pipeline, stopped by closing its scope."
 ---
 
-# Torture test
+# Pipeline
 
-The [queue](queue.html), [hub](hub.html), [SubscriptionRef](subscription-ref.html), and [fiber](fibers.html) pages each
-state a guarantee about a race: an interrupted take never loses a value, a lossless subscriber sees every value in
-order, a late joiner sees no gap, a consumer drains its backlog when its scope closes. Each guarantee is easy to state
-and easy to break by accident, and a race that breaks it only rarely does not show up in a small example.
+The [queue](../queue.html), [hub](../hub.html), [SubscriptionRef](../subscription-ref.html), and
+[fiber](../fibers.html) pages each state a guarantee about a race. This scenario runs all of them at once in one small
+monitoring pipeline, with a saboteur interrupting takes the whole time, then shuts the pipeline down by closing its
+scope and checks every guarantee.
 
-This page runs all of them at once in one small monitoring pipeline, then checks every invariant. The interleaving
-differs on every run, so a correct runtime must keep every invariant on every run. The program is a runnable example
-in [`examples/Axial.TortureTest`](https://github.com/adz/Axial/tree/main/examples/Axial.TortureTest), and Axial's test
-suite runs it 20 times on every build.
-
-## Run it yourself
-
-From a clone of the repository, pass the number of rounds to run:
-
-```bash
-dotnet run --project examples/Axial.TortureTest -- 100
-```
-
-It prints each invariant with a check mark and the number of rounds it held on, and exits with a non-zero code if any
-invariant was ever violated, so it can gate a CI job or a soak test on your own hardware.
+Run it with `dotnet run --project examples/Axial.TortureTest -- pipeline 100`.
 
 ## The pipeline
 
@@ -45,13 +31,7 @@ invariant was ever violated, so it can gate a CI job or a soak test on your own 
 
 ## The program
 
-The pipeline runs once per round and returns each invariant with whether it held:
-
-{{< snippet id="torture-pipeline" >}}
-
-The runner repeats it and reports each invariant across all rounds:
-
-{{< snippet id="torture-runner" >}}
+{{< snippet id="torture-pipeline" mode="no-check" reason="Compiled and run as part of examples/Axial.TortureTest, which also defines the Round and Check helpers it uses" >}}
 
 ## What each check proves
 

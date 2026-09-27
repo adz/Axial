@@ -13,4 +13,4 @@ waits while a `BackPressure` subscription is full, and no later value reaches an
 
 A subscriber that joins late sees only later values; for a current value followed by every change, use a
 [`SubscriptionRef`](/api/Axial.State.SubscriptionRefModule.html). Read the [Hub guide](/concurrency-and-state/hub.html),
-and the [torture test](/concurrency-and-state/torture-test.html) for every guarantee checked together.
+and the [hub torture test](/concurrency-and-state/torture-tests/hubs.html) for every guarantee checked together.

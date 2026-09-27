@@ -9,12 +9,31 @@
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Harness.fs" />
     <Compile Include="TimingTests.fs" />
     <Compile Include="FiberTests.fs" />
     <Compile Include="QueueTests.fs" />
+    <!-- The torture scenarios from examples/Axial.TortureTest, run at a reduced size on Node. -->
+    <Compile Include="../../examples/Axial.TortureTest/Scenario.fs" Link="TortureTest/Scenario.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Pipeline.fs" Link="TortureTest/Pipeline.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Queues.fs" Link="TortureTest/Queues.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Hubs.fs" Link="TortureTest/Hubs.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Coordination.fs" Link="TortureTest/Coordination.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Stm.fs" Link="TortureTest/Stm.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Fibers.fs" Link="TortureTest/Fibers.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Caches.fs" Link="TortureTest/Caches.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Schedules.fs" Link="TortureTest/Schedules.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Parallel.fs" Link="TortureTest/Parallel.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Errors.fs" Link="TortureTest/Errors.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Scopes.fs" Link="TortureTest/Scopes.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Layers.fs" Link="TortureTest/Layers.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Streams.fs" Link="TortureTest/Streams.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Interop.fs" Link="TortureTest/Interop.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Scenarios.fs" Link="TortureTest/Scenarios.fs" />
+    <Compile Include="TortureTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>

@@ -37,7 +37,8 @@ while IFS= read -r project; do
           printf '%s\n' "$project_dir/$include_path"
         fi
       done
-done < "$tmp_dir/projects.actual" | sort -u > "$tmp_dir/sources.expected"
+done < "$tmp_dir/projects.actual" | grep -E '^(src|tests)/' | sort -u > "$tmp_dir/sources.expected"
+# Files a project links from outside src/tests (the torture scenarios under examples/) are not inventoried here.
 
 if ! diff -u "$tmp_dir/projects.expected" "$tmp_dir/projects.actual"; then
   echo "Source project inventory mismatch: update Axial.slnx or remove stale src/tests project files." >&2

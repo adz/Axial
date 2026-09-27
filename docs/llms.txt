@@ -60,6 +60,9 @@
 - Cap backoff with `Schedule.exponential d |> Schedule.union (Schedule.spaced cap)`; bound attempts with
   `Schedule.recurs n |> Schedule.intersect (Schedule.exponential d)`. Use `Schedule.fixedRate period` for drift-free
   periodic work; `Schedule.spaced` waits after each run instead.
+- The torture tests (`/concurrency-and-state/torture-tests/index.html`, runnable from `examples/Axial.TortureTest`)
+  are worked examples of every concurrency construct under interruption, failure, and shutdown. Each page lists the
+  invariants the construct guarantees.
 
 ## Hosts
 

@@ -167,7 +167,7 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 - Waiting takers are served one batch at a time: the next is served only after the previous taker has resumed with its
   batch or given it back, and non-suspending takes do not overtake waiting takers. Without this, a value given back by
   an interrupted taker could return after a later value had already been taken, breaking FIFO order; the torture test
-  in `docs/08-concurrency-and-state/10-torture-test.md` found it. `takeBetween` is one handover of the whole batch, so
+  in `examples/Axial.TortureTest` found it. `takeBetween` is one handover of the whole batch, so
   it never holds values outside the queue while it waits.
 - `Flow.ensuring`, `Flow.onExit`, and `Flow.onInterrupt` attach cleanup to one expression, and `Flow.never` waits
   until interrupted. The names follow ZIO's and Cats Effect's, which users of those libraries guess first. Handlers run
@@ -183,6 +183,29 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 - The fiber interference came from the ambient runtime being a plain global on JavaScript: a fiber that suspended left
   its runtime installed for whatever ran next. Every resume and start point in `Platform.fs` now reinstalls the value
   its continuation suspended under and restores the resumer's afterwards. Code that resumes or starts Flow work by
-  hand on Fable must use `Platform.resumeWith` and `Platform.preserveAmbient` the same way.
+  hand on Fable must use `Platform.resumeWith` and `Platform.startImmediate` the same way.
+- Fable's `Async` has one more resume point: after about 2000 synchronous steps its trampoline continues on a fresh
+  stack through `setTimeout`, which ran the rest of the fiber under another fiber's runtime (often a closed scope).
+  `Platform.carryAmbient` replaces the trampoline in the async context with one that carries the ambient value
+  across the hop; `withRuntime` and `Platform.startImmediate` apply it, and nested computations inherit it. It relies
+  on fable-library's `Async` context shape (`trampoline.incrementAndCheck`/`hijack`), so a Fable upgrade that
+  changes it is caught by the Fable tests rather than the compiler.
 - Fable's async runtime can start an awaiting async later than it was built, so `awaitSignal` checks the signal again
   when it registers its waiter; without that, a wake-up in the gap was lost and a queue consumer stalled.
+
+## 2026-09-27: The torture scenarios cover the concurrency API
+
+- `examples/Axial.TortureTest` holds one scenario per concurrency area (queues, hubs, semaphores, deferreds, refs, STM,
+  fibers, caches, schedules, parallel combinators, errors, scopes, layers, streams, interop, and a pipeline combining
+  them). Each round draws its random choices from a seed and checks only timing-independent invariants, so a failure
+  is a defect, not a slow machine. `tests/Axial.Tests/TortureTests.fs` runs every scenario for 10 seeds on .NET, and
+  `tests/Axial.Fable.Tests` runs the same files on Node at a fifth of the size.
+- `tests/Axial.Tests/TortureCoverageTests.fs` fails when a public member of the runtime and concurrency modules is
+  used by no scenario. A new API there needs a scenario that exercises it, or an entry in the test's exclusions with
+  the reason.
+- Defects the scenarios found: `Flow.sleep` could return before its delay (timer rounding), so it now sleeps to a
+  monotonic deadline; recovery combinators did not see failures wrapped by `Flow.tracedError`, so they match on
+  `Cause.untraced`; timed stream operators lost a value taken in the same instant their timer fired, because the take
+  lost a race, so they cancel the take instead; on .NET `Flow.fork` ran a child that never suspends to completion
+  before returning; on Fable `Layer.pool` did not compile and fibers lost their runtime across trampoline hops.
+

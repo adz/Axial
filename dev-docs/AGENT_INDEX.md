@@ -31,5 +31,8 @@ Axial is the workflow product. Core is `src/Axial`; focused operational and host
 - `bash scripts/check-fable-js-surface.sh`
 - `bash scripts/run-fable-tests.sh` (`tests/Axial.Fable.Tests`, compiled with Fable and run on Node; pass a test-name
   fragment to run a subset)
+- `dotnet run --project examples/Axial.TortureTest -- [scenario|all] [rounds]` for a soak run of the torture scenarios.
+  A new public member of a runtime or concurrency module needs a scenario that uses it, or
+  `tests/Axial.Tests/TortureCoverageTests.fs` fails.
 - `bash scripts/check-docs-conventions.sh`
 - `dotnet livedocs test --warn-as-error`

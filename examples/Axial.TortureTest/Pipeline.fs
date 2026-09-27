@@ -1,20 +1,17 @@
-/// The monitoring pipeline from the "Torture test" docs page, and the invariants it must keep.
+/// A monitoring pipeline: device readers, a bounded input queue, a hub with lossless, sliding, and dropping
+/// subscribers, a SubscriptionRef late view, graceful shutdown, and a saboteur interrupting competing takes.
 module Axial.TortureTest.Pipeline
 
 open System
 open Axial
 open Axial.State
+open Axial.TortureTest.Scenario
 
 // <snippet:torture-pipeline>
-/// One invariant and whether it held on a run.
-type Check = { Invariant: string; Held: bool }
+let run (round: Round) : Flow<unit, Never, Check list> =
+    let readers = 4
+    let samplesPerReader = round.Size 500
 
-let readers = 4
-let samplesPerReader = 500
-
-/// Runs the pipeline once and returns every invariant with whether it held. Interleavings differ on every run, so a
-/// correct runtime must hold every invariant on every run.
-let run () : Flow<unit, Never, Check list> =
     flow {
         let everySample = [ for reader in 1..readers do for sample in 1..samplesPerReader -> reader, sample ]
         let recorded = ResizeArray<int * int>()
@@ -38,13 +35,19 @@ let run () : Flow<unit, Never, Check list> =
                     |> FlowStream.runForEach recorded.Add
                     |> Flow.forkGraceful (Hub.shutdown feed) (TimeSpan.FromSeconds 30.0)
 
-                // A view that joins the latest-sample reference and follows 200 changes of it.
+                // A view that joins the latest-sample reference and follows 200 changes of it. Waiting for its first
+                // value means it is subscribed before the readers start, so 200 changes always follow.
+                let! viewing = Deferred.make<unit, Never, unit> ()
+
                 let! _ =
                     latest
                     |> SubscriptionRef.changes QueueStrategy.Unbounded
-                    |> FlowStream.take 200
+                    |> FlowStream.tapFlow (fun _ -> Deferred.succeed () viewing |> Flow.ignore)
+                    |> FlowStream.take (round.Size 200)
                     |> FlowStream.runForEach lateView.Add
                     |> Flow.forkGraceful (Flow.ok ()) (TimeSpan.FromSeconds 30.0)
+
+                do! Deferred.await viewing
 
                 // The control loop publishes every input and keeps the latest sample current.
                 let! _ =
@@ -68,7 +71,7 @@ let run () : Flow<unit, Never, Check list> =
 
                 let saboteur =
                     flow {
-                        for _ in 1..300 do
+                        for _ in 1 .. round.Size 300 do
                             let! taker = inputs |> Dequeue.take |> Flow.fork
                             let! exit = Fiber.interrupt taker
 
@@ -100,8 +103,6 @@ let run () : Flow<unit, Never, Check list> =
             | Some index -> order |> List.skip index |> List.truncate view.Length
             | None -> (0, 0) :: (order |> List.truncate (view.Length - 1))
 
-        let check invariant held = { Invariant = invariant; Held = held }
-
         return
             [ check "every sample is recorded or was won by a take, exactly once" (List.sort (history @ List.ofSeq stolen) = everySample)
               check "the historian recorded every published sample, in publish order" (history = order)
@@ -116,3 +117,8 @@ let run () : Flow<unit, Never, Check list> =
               check "the late view saw the current sample, then every update without a gap or duplicate" (view = expectedView) ]
     }
 // </snippet:torture-pipeline>
+
+let scenario : Scenario =
+    { Name = "pipeline"
+      Title = "Monitoring pipeline: queues, a hub, SubscriptionRef, and graceful shutdown"
+      Run = run }
