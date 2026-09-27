@@ -80,7 +80,7 @@ body:has(.axial-landing) #search-ui {
 
 .docs-home-hero {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   gap: 1.5rem;
   padding: 2rem 0 0;
@@ -203,6 +203,16 @@ body:has(.axial-landing) #search-ui {
 @media (max-width: 996px) {
   .docs-home-copy h1 {
     font-size: 2.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .docs-home-container {
+    padding: 0 1rem;
+  }
+
+  .docs-home-copy h1 {
+    font-size: 2.2rem;
   }
 }
 
@@ -358,8 +368,9 @@ body:has(.axial-landing) #search-ui {
 
 @media (max-width: 720px) {
   .axial-coord {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.25rem;
+    padding: 0;
   }
 
   .axial-coord-mid {
