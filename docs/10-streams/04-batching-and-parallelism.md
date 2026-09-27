@@ -9,58 +9,56 @@ separate rather than hiding both behaviors behind one operator.
 
 ## Strict batches
 
-Use `chunkBySize` with `Flow.sequencePar` when each complete batch must finish before the next starts:
+Use `FlowStream.chunkBySize` with `Flow.sequencePar` when each complete batch must finish before the next starts:
 
-```fsharp no-check reason="completeAfter is an illustrative timed Flow used to make scheduling visible"
-FlowStream.fromSeq [ "A"; "B"; "C"; "D" ]
-|> FlowStream.chunkBySize 2
-|> FlowStream.mapFlow (List.map completeAfter >> Flow.sequencePar)
-|> FlowStream.runForEach (printfn "%A")
+```fsharp transcript
+> let completeAfter (label, milliseconds: int) =
+-     Flow.fromTask (fun cancellationToken -> task {
+-         do! System.Threading.Tasks.Task.Delay(milliseconds, cancellationToken)
+-         return label })
+- in
+- (FlowStream.fromSeq [ ("A", 80); ("B", 10); ("C", 80); ("D", 10) ]
+-  : FlowStream<string * int>)
+- |> FlowStream.chunkBySize 2
+- |> FlowStream.mapFlow (List.map completeAfter >> Flow.sequencePar)
+- |> FlowStream.runCollect
+- |> Flow.run ();;
+val it: Exit<string list list,Never> = Success [["A"; "B"]; ["C"; "D"]]
 ```
 
-Even if B finishes first, the observable batches retain input order and the second batch waits:
-
-```text
-start A, B
-finish B
-finish A
-emit ["A"; "B"]
-start C, D
-finish D
-finish C
-emit ["C"; "D"]
-```
+B and D complete first inside their respective batches, but `Flow.sequencePar` restores input order. The resulting
+nested list also exposes the batch barrier: C and D belong to the second result only after the first batch completes.
 
 This pipeline:
 
-- pulls at most eight source values for the batch;
-- runs those eight mappings concurrently;
+- pulls at most two source values for each batch in this example;
+- runs those two mappings concurrently;
 - returns results in input order;
 - does not begin the next batch until the current result list is consumed;
 - interrupts sibling mappings when one fails.
 
-`Flow.sequencePar` runs every Flow in the supplied list, so `chunkBySize` supplies the bound.
+`Flow.sequencePar` runs every Flow in the supplied list, so `FlowStream.chunkBySize` supplies the bound.
 
 ## Continuously replenished work
 
-Use `mapFlowPar` when a completed mapping should immediately open capacity for another input:
+Use `FlowStream.mapFlowPar` when a completed mapping should immediately open capacity for another input:
 
-```fsharp no-check reason="completeAfter is an illustrative timed Flow used to make scheduling visible"
-FlowStream.fromSeq [ "slow A"; "fast B"; "fast C" ]
-|> FlowStream.mapFlowPar (Parallelism.bounded 2) completeAfter
-|> FlowStream.runForEach (printfn "%s")
+```fsharp transcript
+> let completeAfter (label, milliseconds: int) =
+-     Flow.fromTask (fun cancellationToken -> task {
+-         do! System.Threading.Tasks.Task.Delay(milliseconds, cancellationToken)
+-         return label })
+- in
+- (FlowStream.fromSeq [ ("A", 150); ("B", 10); ("C", 10) ]
+-  : FlowStream<string * int>)
+- |> FlowStream.mapFlowPar (Parallelism.bounded 2) completeAfter
+- |> FlowStream.runCollect
+- |> Flow.run ();;
+val it: Exit<string list,Never> = Success ["B"; "C"; "A"]
 ```
 
-With two slots, completion of B starts C without waiting for A:
-
-```text
-start slow A
-start fast B
-emit fast B
-start fast C
-emit fast C
-emit slow A
-```
+With two slots, completion of B starts C without waiting for A. The returned list makes completion-order emission
+visible: B and C are emitted before the earlier but slower A.
 
 At most two mappings are active or retained in this example. Results are emitted in completion order, so a slow earlier input does
 not block later results or failures. Consuming a result opens one slot and starts the next upstream mapping.
@@ -71,5 +69,5 @@ returning. This keeps parallel work bounded in both count and lifetime.
 ## Which should you choose?
 
 Choose strict batches when order and batch barriers are part of the contract—for example, checkpointing one page group
-before fetching the next. Choose `mapFlowPar` for worker-pool behavior where throughput matters and completion order is
+before fetching the next. Choose `FlowStream.mapFlowPar` for worker-pool behavior where throughput matters and completion order is
 acceptable.

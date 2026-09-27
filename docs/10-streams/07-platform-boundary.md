@@ -14,7 +14,7 @@ Platform-specific packages provide sources:
 - A Node adapter can connect child-process or socket callbacks.
 - Application adapters can expose database cursors, queues, or paginated clients.
 
-Those adapters keep acquisition and callbacks at the host boundary. They expose values through `unfoldFlow` or another
+Those adapters keep acquisition and callbacks at the host boundary. They expose values through `FlowStream.unfoldFlow` or another
 resource-aware source and register owned handles with the active Flow scope.
 
 Consumers remain portable because they receive an ordinary `FlowStream` and do not need to know which adapter produced

@@ -9,19 +9,13 @@ A `Flow` produces one result. A `FlowStream` produces values over time without f
 Use it when the input may be large, slow, or unbounded: paginated APIs, message subscriptions, and incremental file
 or network adapters.
 
-```fsharp
-FlowStream.fromSeq [ 1..6 ]
-|> FlowStream.filter (fun number -> number % 2 = 0)
-|> FlowStream.map (fun number -> number * 10)
-|> FlowStream.runForEach (printfn "%d")
-|> Flow.run ()
-|> ignore
-```
-
-```text
-20
-40
-60
+```fsharp transcript
+> (FlowStream.fromSeq [ 1..6 ] : FlowStream<int>)
+- |> FlowStream.filter (fun number -> number % 2 = 0)
+- |> FlowStream.map (fun number -> number * 10)
+- |> FlowStream.runCollect
+- |> Flow.run ();;
+val it: Exit<int list,Never> = Success [20; 40; 60]
 ```
 
 The stream is **cold**: constructing it starts nothing. It is **pull-based**: downstream asks for each next value, so
