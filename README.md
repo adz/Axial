@@ -68,9 +68,9 @@ dotnet add package Axial
 
 ## Package family
 
-- [`Axial`](https://www.nuget.org/packages/Axial) — the core workflow model: typed failures, dependencies, concurrency, resources, schedules, streams, and layers.
-- [`Axial.Process`](https://www.nuget.org/packages/Axial.Process) — external process composition, pipelines, streaming output, typed failures, cancellation, and cleanup.
-- [`Axial.HttpClient`](https://www.nuget.org/packages/Axial.HttpClient) — typed HTTP requests, response handling, and reliability policies.
+- [`Axial`](https://www.nuget.org/packages/Axial): the core workflow model: typed failures, dependencies, concurrency, resources, schedules, streams, and layers.
+- [`Axial.Process`](https://www.nuget.org/packages/Axial.Process): external process composition, pipelines, streaming output, typed failures, cancellation, and cleanup.
+- [`Axial.HttpClient`](https://www.nuget.org/packages/Axial.HttpClient): typed HTTP requests, response handling, and reliability policies.
 
 Supporting packages provide platform services, console and file-system access, hosting, and telemetry. The [package catalogue](https://adz.github.io/Axial/packages/) links the first-class libraries and the complete compatibility matrix.
 
