@@ -14,13 +14,28 @@ open Axial.PlatformService
 
 ## Randomness
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-Random.next                       // non-negative int
-Random.nextMax exclusiveMax       // 0 <= value < exclusiveMax
-Random.nextInt minimum maximum    // minimum <= value < maximum
-Random.nextDouble                 // 0.0 <= value < 1.0
-Random.nextBytes buffer           // fills an existing buffer
-Random.bytes count                // allocates and fills a new array
+| Function | Result |
+| --- | --- |
+| `Random.next` | A non-negative `int` |
+| `Random.nextMax exclusiveMax` | `0 <= value < exclusiveMax` |
+| `Random.nextInt minimum maximum` | `minimum <= value < maximum` |
+| `Random.nextDouble` | `0.0 <= value < 1.0` |
+| `Random.nextBytes buffer` | Fills an existing buffer |
+| `Random.bytes count` | Allocates and fills a new array |
+
+With the base runtime's generator replaced by a fixed one, every call is predictable:
+
+```fsharp transcript
+> open Axial.PlatformService;;
+> let runtime () = { BaseRuntime.liveValue with Random = Random.fromFixed 7 0.25 9uy };;
+> (Random.nextInt 1 10 : Flow<BaseRuntime, Never, int>) |> Flow.run (runtime ());;
+val it: Exit<int,Never> = Success 7
+
+> (Random.nextDouble : Flow<BaseRuntime, Never, float>) |> Flow.run (runtime ());;
+val it: Exit<float,Never> = Success 0.25
+
+> (Random.bytes 3 : Flow<BaseRuntime, Never, byte array>) |> Flow.run (runtime ());;
+val it: Exit<Byte[],Never> = Success [|9uy; 9uy; 9uy|]
 ```
 
 Use `Random.bytes` for a fresh array: it allocates the buffer, fills it, and returns it in one step.
@@ -44,8 +59,13 @@ let tagged name : Flow<#IHasGuid, Never, string> =
 `Guid.live` calls `System.Guid.NewGuid()`. `Guid.fromValue` returns a fixed identifier, which makes generated
 identifiers assertable:
 
-```fsharp
-let guid = Guid.fromValue (System.Guid.Parse "11111111-1111-1111-1111-111111111111")
+```fsharp transcript
+> open System;;
+> open Axial.PlatformService;;
+> let runtime () = { BaseRuntime.liveValue with Guid = Guid.fromValue (Guid.Parse "11111111-1111-1111-1111-111111111111") };;
+> let tagged name : Flow<BaseRuntime, Never, string> = Guid.newGuid |> Flow.map (fun id -> $"{name}-{id}");;
+> tagged "order" |> Flow.run (runtime ());;
+val it: Exit<string,Never> = Success "order-11111111-1111-1111-1111-111111111111"
 ```
 
 A fixed `IGuid` returns the *same* value every call. When a test needs distinct-but-predictable identifiers,

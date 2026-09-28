@@ -29,6 +29,29 @@ This usually happens when the compiler cannot tell which wrapper shape a `let!` 
 
 Example:
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 let nested : Async<Async<Result<int, string>>> =
     async {
@@ -47,13 +70,17 @@ The second `let!` is ambiguous.
 
 Fix it with a type annotation:
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-let workflow : Flow<unit, string, int> =
+```fsharp
+let annotated : Flow<unit, string, int> =
     flow {
         let! next = nested
         let! (value: int) = next
         return value
     }
+```
+
+```fsharp run
+annotated |> Flow.run () |> shouldEqual (Exit.Success 42)
 ```
 
 ## Error: The Flow Requires A Different Environment Type
@@ -77,11 +104,17 @@ let greetInBigEnv : Flow<BigEnv, string, string> =
     greet |> Flow.localEnv _.App
 ```
 
+```fsharp run
+greetInBigEnv
+|> Flow.run { App = { Prefix = "hello" }; RequestId = "r-1" }
+|> shouldEqual (Exit.Success "hello world")
+```
+
 Example 2: Services
 
 If a helper requires `IHasDatabase` but you are running it in an environment that doesn't implement it, the compiler will error.
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp no-check reason="Does not compile when AppEnv lacks IHasDatabase; that is the error this section explains"
 let helper : Flow<#IHasDatabase, _, _> = ...
 
 // This fails if AppEnv doesn't implement IHasDatabase
@@ -97,7 +130,7 @@ Implicit option binding only works when the workflow error type is `unit`.
 
 This fails:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Does not compile; that is the error this section explains"
 let workflow : Flow<unit, string, int> =
     flow {
         let! value = Some 42
@@ -113,6 +146,11 @@ let optionWorkflow : Flow<unit, string, int> =
     |> Flow.fromOption "missing value"
 ```
 
+```fsharp run
+optionWorkflow |> Flow.run () |> shouldEqual (Exit.Success 42)
+(None |> Flow.fromOption "missing value" : Flow<unit, string, int>) |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail "missing value"))
+```
+
 ## Error: Task is not a Flow builder source
 
 Raw `Task<'value>` and `ValueTask<'value>` values do not bind directly in `flow { }`. A task is already running, while
@@ -120,27 +158,42 @@ Flow is a cold description that may run more than once.
 
 Wrap work that should start when the Flow runs in `ColdTask`:
 
-```fsharp no-check reason="The application service is described in the surrounding prose"
-let load : ColdTask<int> =
-    ColdTask(fun cancellationToken -> service.loadAsync cancellationToken)
+```fsharp
+let loadAsync (cancellationToken: CancellationToken) : Task<int> =
+    task {
+        do! Task.Delay(1, cancellationToken)
+        return 42
+    }
 
-let workflow =
+let load : ColdTask<int> = ColdTask loadAsync
+
+let coldWorkflow : Flow<int> =
     flow {
         let! value = load
         return value
     }
 ```
 
+```fsharp run
+coldWorkflow |> Flow.run () |> shouldEqual (Exit.Success 42)
+```
+
 If the cold task returns `Result<'value,'error>`, `let!` and `return!` place `Error` in Flow's typed error channel.
 
 When work has already started, name that lifecycle explicitly:
 
-```fsharp no-check reason="The already-running application task is described in the surrounding prose"
-let workflow =
+```fsharp
+let runningTask : Task<int> = loadAsync CancellationToken.None
+
+let startedWorkflow : Flow<int> =
     flow {
         let! value = Flow.awaitStartedTask runningTask
         return value
     }
+```
+
+```fsharp run
+startedWorkflow |> Flow.run () |> shouldEqual (Exit.Success 42)
 ```
 
 Use `Flow.awaitStartedTaskResult` when the started task returns `Result`.

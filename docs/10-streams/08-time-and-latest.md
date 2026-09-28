@@ -16,10 +16,42 @@ when the consumer finishes, fails, or stops early with `take`.
 `FlowStream.groupedWithin size window` emits a list when it holds `size` values or when `window` has passed since the
 list's first value, whichever comes first. A slow trickle is not held back waiting for a full batch:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-events
-|> FlowStream.groupedWithin 100 (TimeSpan.FromSeconds 1.0)
-|> FlowStream.runForEachFlow writeBatch
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+let batchSizes (events: FlowStream<int>) : Flow<int list> =
+    events
+    |> FlowStream.groupedWithin 100 (TimeSpan.FromSeconds 1.0)
+    |> FlowStream.map List.length
+    |> FlowStream.runCollect
+```
+
+A burst of 250 events arrives well within a second, so the batches fill by size and the remainder is emitted when the
+stream ends:
+
+```fsharp run
+batchSizes (FlowStream.fromSeq [ 1..250 ]) |> Flow.run () |> shouldEqual (Exit.Success [ 100; 100; 50 ])
 ```
 
 No empty list is emitted, and the partial list is emitted when upstream ends or before a failure is propagated.
@@ -29,10 +61,17 @@ No empty list is emitted, and the partial list is emitted when upstream ends or 
 `FlowStream.throttle interval` emits at most one value per interval. The first value is emitted immediately; values
 arriving faster replace each other, and the latest is emitted when the interval ends:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-progress
-|> FlowStream.throttle (TimeSpan.FromMilliseconds 100.0)
-|> FlowStream.runForEachFlow render
+```fsharp
+let rendered (progress: FlowStream<int>) : Flow<int list> =
+    progress
+    |> FlowStream.throttle (TimeSpan.FromMilliseconds 100.0)
+    |> FlowStream.runCollect
+```
+
+A hundred progress updates in a burst render as the first and the last:
+
+```fsharp run
+rendered (FlowStream.fromSeq [ 1..100 ]) |> Flow.run () |> shouldEqual (Exit.Success [ 1; 100 ])
 ```
 
 ## Wait for input to settle
@@ -46,11 +85,21 @@ last value. The pending value is emitted when upstream ends.
 arrives. Results for stale input are never emitted, and the superseded request's cleanup finishes before the next
 one starts:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-keystrokes
-|> FlowStream.debounce (TimeSpan.FromMilliseconds 200.0)
-|> FlowStream.switchMapFlow search
-|> FlowStream.runForEachFlow showResults
+```fsharp
+let search (query: string) : Flow<string> =
+    Flow.sleep (TimeSpan.FromMilliseconds 5.0) |> Flow.map (fun () -> $"results for {query}")
+
+let shownResults (keystrokes: FlowStream<string>) : Flow<string list> =
+    keystrokes
+    |> FlowStream.debounce (TimeSpan.FromMilliseconds 200.0)
+    |> FlowStream.switchMapFlow search
+    |> FlowStream.runCollect
+```
+
+Typing "a", "ax", "axi" quickly searches only once, for the settled input:
+
+```fsharp run
+shownResults (FlowStream.fromSeq [ "a"; "ax"; "axi" ]) |> Flow.run () |> shouldEqual (Exit.Success [ "results for axi" ])
 ```
 
 When upstream ends, the running flow is allowed to finish. The first failure stops the stream.

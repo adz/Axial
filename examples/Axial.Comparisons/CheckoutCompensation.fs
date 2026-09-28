@@ -117,6 +117,7 @@ module WithFlow =
     /// The signature carries both the required capabilities and the complete failure set. The
     /// reservation has lexical ownership, so acquire/release form one construct: release runs on
     /// typed failure, defect, and interruption without any hand-written catch.
+    // <snippet:compare-checkout>
     let checkout (sku: string) (amount: decimal) : Flow<CheckoutEnv, CheckoutError, CheckoutReceipt> =
         let reserve: Flow<CheckoutEnv, CheckoutError, ReservationId * IInventory> =
             flow {
@@ -141,3 +142,4 @@ module WithFlow =
                 reserve
                 (fun (reservation, inventory) _ -> inventory.Release reservation)
             |> Flow.bind (fun (reservation, _) -> fulfil reservation))
+    // </snippet:compare-checkout>

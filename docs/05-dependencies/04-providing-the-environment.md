@@ -14,13 +14,53 @@ There are three ways. Prefer them in this order.
 
 Build the record and hand it over. Nothing else is involved:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let live =
-    { Users = SqlUserStore(connectionString)
-      Audit = FileAuditLog(logPath)
-      Clock = Clock.live }
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
 
-let exit = program |> Flow.run live
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type IUserStore =
+    abstract Count: unit -> int
+
+type AppEnv = { Users: IUserStore; Clock: IClock }
+
+let summary : Flow<AppEnv, Never, string> =
+    flow {
+        let! users = Flow.envWith _.Users
+        let! clock = Flow.envWith _.Clock
+        let today = clock.UtcNow().ToString "yyyy-MM-dd"
+        return $"{users.Count()} users on {today}"
+    }
+```
+
+Production builds the record from the live services, for example `{ Users = SqlUserStore(connectionString); Clock =
+Clock.live }`. A test builds it from fixed ones:
+
+```fsharp run
+let fixedEnv =
+    { Users = { new IUserStore with member _.Count() = 3 }
+      Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) }
+
+summary |> Flow.run fixedEnv |> shouldEqual (Exit.Success "3 users on 2026-01-01")
 ```
 
 Most applications need nothing more. The wiring is a value literal rather than a resolution process, so a reader can
@@ -28,8 +68,12 @@ see where every service comes from.
 
 For the operational services, `Axial.PlatformService` ships a ready-made bundle so you do not have to name all five:
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-let result = Clock.now |> Flow.run BaseRuntime.liveValue
+```fsharp transcript
+> open System;;
+> open Axial.PlatformService;;
+> let runtime () = { BaseRuntime.liveValue with Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) };;
+> (Clock.now : Flow<BaseRuntime, Never, DateTimeOffset>) |> Flow.map _.Year |> Flow.run (runtime ());;
+val it: Exit<int,Never> = Success 2026
 ```
 
 `BaseRuntime` groups `IClock`, `ILog`, `IRandom`, `IGuid`, and `IEnvironmentVariables`, and implements one contract
@@ -42,12 +86,34 @@ pattern.
 
 .NET hosts already have an `IServiceProvider`. Use it to *build* the environment, then leave it behind:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let handler : Flow<IServiceProvider, unit, unit> =
+```fsharp
+type IOrderQueue =
+    abstract Flush: unit -> int
+
+let flushOrders : Flow<IServiceProvider, unit, int> =
     flow {
-        let! orders = ServiceProvider.get<IOrderRepository, _, _>()
-        do! orders.Flush()
+        let! orders = ServiceProvider.get<IOrderQueue, _, _> ()
+        return orders.Flush()
     }
+```
+
+A host's container supplies the `IServiceProvider`. The examples use a small stand-in:
+
+```fsharp
+let provider (services: (Type * obj) list) =
+    { new IServiceProvider with
+        member _.GetService serviceType =
+            services |> List.tryFind (fst >> (=) serviceType) |> Option.map snd |> Option.defaultValue null }
+```
+
+```fsharp run
+let withQueue = provider [ typeof<IOrderQueue>, box { new IOrderQueue with member _.Flush() = 5 } ]
+
+flushOrders |> Flow.run withQueue |> shouldEqual (Exit.Success 5)
+
+match flushOrders |> Flow.run (provider []) with
+| Exit.Failure(Cause.Die _) -> ()
+| other -> failwithf "expected a defect, got %A" other
 ```
 
 `ServiceProvider.get` treats a missing registration as a **defect**, not a typed error, because an unregistered
@@ -68,8 +134,17 @@ fail with a typed startup error, produces a runtime. `Axial.PlatformService` shi
 `BaseRuntime.fromServiceProvider`, which turns dynamic registrations into an explicit `BaseRuntime` and reports
 anything missing as `BaseRuntimeError.MissingService` **before** the first workflow runs.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let runnable = workflow |> Layer.provide BaseRuntime.fromServiceProvider
+```fsharp
+let currentYear : Flow<BaseRuntime, BaseRuntimeError, int> = Clock.now |> Flow.map _.Year
+
+let fromHost : Flow<IServiceProvider, BaseRuntimeError, int> =
+    currentYear |> Layer.provide BaseRuntime.fromServiceProvider
+```
+
+An empty provider fails before `currentYear` runs, with the first service it could not find:
+
+```fsharp run
+fromHost |> Flow.run (provider []) |> shouldEqual (Exit.Failure(Cause.Fail(BaseRuntimeError.MissingService "IClock")))
 ```
 
 ## Choosing

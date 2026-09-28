@@ -49,7 +49,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             Layer.map3
                 (fun (primary, secondary) workers region -> { Primary = primary; Secondary = secondary; Workers = workers; Region = region })
                 (Layer.zip (resource "primary") (resource "secondary"))
-                (Layer.zipPar pool (Layer.succeed ()) |> Layer.map fst)
+                (Layer.zipPar pool (Layer.widenError (Layer.succeed () : Layer<string, Never, unit>)) |> Layer.map fst)
                 (Layer.merge (Layer.envWith id) (Layer.addFinalizer (finalizer ignore)) |> Layer.map fst)
             |> Layer.mapError id
 

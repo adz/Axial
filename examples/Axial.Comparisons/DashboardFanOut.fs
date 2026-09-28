@@ -139,6 +139,7 @@ module WithFlow =
                 return loaded
             }
 
+        // <snippet:compare-dashboard>
         let recommended: Flow<DashboardEnv, PageError, Recommendation list> =
             flow {
                 let! recommendations = Flow.envWith _.Recommendations
@@ -152,6 +153,7 @@ module WithFlow =
         |> Flow.map (fun ((account, recent), recommended) ->
             { Account = account; Orders = recent; Recommendations = recommended })
         |> Activity.traceOn activitySource "dashboard.load"
+        // </snippet:compare-dashboard>
 
     /// First-success semantics are a different contract, so they get a different composition:
     /// race two equivalent sources and take whichever answers first; the loser is interrupted.

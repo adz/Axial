@@ -94,6 +94,7 @@ module WithFlow =
                 return rate
             }
 
+        // <snippet:compare-retry>
         let transientOnly =
             Retry.schedule
                 { Retries = 2
@@ -107,3 +108,4 @@ module WithFlow =
         request
         |> Flow.retry transientOnly
         |> Flow.timeout (TimeSpan.FromSeconds 2.0) TimedOut
+        // </snippet:compare-retry>

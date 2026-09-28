@@ -8,6 +8,29 @@ description: Choose lexical or runtime-owned resource lifetimes.
 .NET already has resources, and F# already has `use` and `use!`. Axial's `flow { }` computation expression supports
 both directly:
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 let readFirstLine path =
     flow {
@@ -60,16 +83,43 @@ resource.
 
 ## Create a local runtime scope
 
-```fsharp no-check reason="Application-specific connection operations are described in the surrounding prose"
-Flow.scoped (
-    flow {
-        let! connection =
-            Flow.scopeAcquireRelease
-                openConnection
-                closeConnection
+```fsharp
+/// A stand-in connection that records when it is opened and closed.
+let lifecycle = ResizeArray<string>()
 
-        return! runApplicationWork connection
-    })
+type Connection(name: string) =
+    member _.Name = name
+
+let openConnection : Flow<string, Connection> =
+    Flow.delay (fun () ->
+        lifecycle.Add "open"
+        Flow.ok (Connection "orders"))
+
+let closeConnection (connection: Connection) (_: CancellationToken) : Task =
+    lifecycle.Add $"close {connection.Name}"
+    Task.CompletedTask
+
+let runApplicationWork (connection: Connection) : Flow<string, string> =
+    Flow.delay (fun () ->
+        lifecycle.Add "work"
+        Flow.ok $"used {connection.Name}")
+
+let application : Flow<string, string> =
+    Flow.scoped (
+        flow {
+            let! connection =
+                Flow.scopeAcquireRelease
+                    openConnection
+                    closeConnection
+
+            return! runApplicationWork connection
+        })
+```
+
+```fsharp run
+lifecycle.Clear()
+application |> Flow.run () |> shouldEqual (Exit.Success "used orders")
+List.ofSeq lifecycle |> shouldEqual [ "open"; "work"; "close orders" ]
 ```
 
 Everything registered inside `Flow.scoped` remains available across calls made inside that block. Cleanup finishes
@@ -79,13 +129,26 @@ before the resulting Flow returns.
 
 The `scope` prefix means “attach this value or cleanup action to the current Flow scope”:
 
-```fsharp no-check reason="Application-specific resources are described in the surrounding prose"
-flow {
-    do! Flow.scopeDisposable stream
-    do! Flow.scopeAsyncDisposable response
-    do! Flow.scopeFinalizer flushTelemetry
-    do! Flow.scopeAsyncFinalizer saveState
-}
+```fsharp
+let registerEverything (stream: IDisposable) (response: IAsyncDisposable) : Flow<string, unit> =
+    flow {
+        do! Flow.scopeDisposable stream
+        do! Flow.scopeAsyncDisposable response
+        do! Flow.scopeFinalizer (fun _ -> lifecycle.Add "flush telemetry"; Task.CompletedTask)
+        do! Flow.scopeAsyncFinalizer (fun _ -> async { lifecycle.Add "save state" })
+    }
+```
+
+Finalizers run in the reverse of their registration order when the scope closes:
+
+```fsharp run
+lifecycle.Clear()
+
+let stream = { new IDisposable with member _.Dispose() = lifecycle.Add "dispose stream" }
+let response = { new IAsyncDisposable with member _.DisposeAsync() = lifecycle.Add "dispose response"; ValueTask() }
+
+registerEverything stream response |> Flow.scoped |> Flow.run () |> shouldEqual (Exit.Success())
+List.ofSeq lifecycle |> shouldEqual [ "save state"; "flush telemetry"; "dispose response"; "dispose stream" ]
 ```
 
 Use `Flow.scopeDisposable` and `Flow.scopeAsyncDisposable` for resources that already exist. Use
@@ -93,12 +156,18 @@ Use `Flow.scopeDisposable` and `Flow.scopeAsyncDisposable` for resources that al
 
 `Flow.scopeAcquireRelease` combines acquisition and registration without an interruption point between them:
 
-```fsharp no-check reason="Application-specific cache type is described in the surrounding prose"
-let acquireRequestCache =
+```fsharp
+type RequestCache() =
+    member _.Entries = Collections.Generic.Dictionary<string, string>()
+
+    interface IDisposable with
+        member _.Dispose() = lifecycle.Add "cache disposed"
+
+let acquireRequestCache : Flow<string, RequestCache> =
     Flow.scopeAcquireRelease
         (Flow.succeed (new RequestCache()))
         (fun cache _ ->
-            cache.Dispose()
+            (cache :> IDisposable).Dispose()
             Task.CompletedTask)
 ```
 
@@ -108,11 +177,12 @@ The returned value remains available to later subflows in the same scope.
 
 `Resource` separates a reusable acquisition description from the scope that eventually owns it:
 
-```fsharp no-check reason="Application-specific connection operations are described in the surrounding prose"
-let connectionResource =
-    Resource.create openConnection closeConnection
+```fsharp
+let connectionResource = Resource.create openConnection closeConnection
 
-let program =
+let query (connection: Connection) : Flow<string, int> = Flow.ok connection.Name.Length
+
+let program : Flow<string, int> =
     Flow.scoped (
         flow {
             let! connection =
@@ -121,6 +191,12 @@ let program =
 
             return! query connection
         })
+```
+
+```fsharp run
+lifecycle.Clear()
+program |> Flow.run () |> shouldEqual (Exit.Success 6)
+List.ofSeq lifecycle |> shouldEqual [ "open"; "close orders" ]
 ```
 
 Use `Resource.finalizer` for task-based cleanup and `Resource.asyncFinalizer` for F# async cleanup.

@@ -5,32 +5,22 @@ description: Transform and combine Flow descriptions with ordinary F# pipelines.
 
 # Combining Flows
 
-Use `Flow.map` when only the successful value changes:
+`Flow.map` changes the successful value, `Flow.mapError` changes the expected error, and `Flow.bind` runs dependent
+work (it is the function form of `let!`). `Flow.zip` runs two descriptions one after the other and keeps both values:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-loadUser userId
-|> Flow.map _.DisplayName
-```
+```fsharp transcript
+> let loadUser (id: int) : Flow<string, string> = if id = 1 then Flow.ok "ada" else Flow.fail $"no user {id}";;
+> loadUser 1 |> Flow.map (fun name -> name.ToUpperInvariant()) |> Flow.run ();;
+val it: Exit<string,string> = Success "ADA"
 
-Use `Flow.mapError` when the caller needs a different expected error type:
+> loadUser 2 |> Flow.mapError (fun message -> message.Length) |> Flow.run ();;
+val it: Exit<string,int> = Failure (Fail 9)
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-loadUser userId
-|> Flow.mapError UserLoadFailed
-```
+> loadUser 1 |> Flow.bind (fun name -> Flow.ok $"Hello, {name}") |> Flow.run ();;
+val it: Exit<string,string> = Success "Hello, ada"
 
-Use `Flow.bind` for dependent work. It is the function form of `let!`:
-
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-loadUser userId
-|> Flow.bind sendGreeting
-```
-
-Use `Flow.zip` when two descriptions should run sequentially and both values are needed:
-
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-Flow.zip loadProfile loadPreferences
-// Flow<AppEnv, AppError, Profile * Preferences>
+> Flow.zip (loadUser 1) (Flow.ok 42) |> Flow.run ();;
+val it: Exit<Tuple<string,int>,string> = Success ("ada", 42)
 ```
 
 `Flow.map2` and `Flow.map3` combine the successful values directly. Concurrent composition is a separate choice;

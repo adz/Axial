@@ -7,7 +7,7 @@ description: Read the success, expected failure, and environment channels of Flo
 
 The full Flow type has three parameters:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="A type on its own, not an expression"
 Flow<'env, 'error, 'value>
 ```
 
@@ -21,7 +21,7 @@ Read them from left to right:
 
 For example:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp no-check reason="A signature on its own; the body is not the point"
 let loadUser (id: UserId) : Flow<AppEnv, LoadUserError, User> = ...
 ```
 

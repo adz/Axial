@@ -178,8 +178,9 @@ Use `return! Flow.fail error` for an expected failure. Use `Flow.die` when the f
 
 If a nearby `try/with` catches and translates the exception, add `axial-allow-raise` to the flagged line or the line immediately above it:
 
-```fsharp no-check reason="Illustrative fragment; proc is defined by the surrounding application"
-if not (proc.Start()) then raise (Exception "Process did not start") // axial-allow-raise
+```fsharp
+let start (proc: System.Diagnostics.Process) =
+    if not (proc.Start()) then raise (Exception "Process did not start") // axial-allow-raise
 ```
 
 Use this directive only when the same local boundary catches and translates the exception.
@@ -208,7 +209,10 @@ Use the cancellation-aware overload of the wrapped operation and pass the token 
 
 If a legacy API has no cancellation-aware overload, add `axial-allow-discarded-cancellation` to the flagged line or the line immediately above it:
 
-```fsharp no-check reason="Illustrative fragment; legacyCall represents an API without cancellation support"
+```fsharp
+/// An API with no cancellation support.
+let legacyCall () : Task<int> = Task.FromResult 42
+
 let legacy = ColdTask(fun _ -> legacyCall ()) // axial-allow-discarded-cancellation
 ```
 
@@ -233,7 +237,7 @@ wrong text, and the build gives no specific warning because the reflection happe
 Render the value explicitly instead. Match on the cases, call a `describe` function, or give the type a hand-written
 override:
 
-```fsharp no-check reason="Illustrative fragment"
+```fsharp
 type OrderError =
     | OutOfStock of sku: string
     | InvalidQuantity of int
@@ -254,8 +258,9 @@ explicit error renderer.
 If code never runs trimmed, such as a script or a test helper, add `axial-allow-reflection-format` to the flagged line
 or the line immediately above it:
 
-```fsharp no-check reason="Illustrative fragment"
-printfn "%A" diagnostics // axial-allow-reflection-format
+```fsharp
+let printDiagnostics (diagnostics: Map<string, int list>) =
+    printfn "%A" diagnostics // axial-allow-reflection-format
 ```
 
 `scripts/run-aot-probe.sh` publishes a NativeAOT probe that renders these types and dumps a fiber registry, so the

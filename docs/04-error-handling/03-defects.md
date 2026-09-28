@@ -23,6 +23,29 @@ Choose the function that matches your intent:
 ### Bridging Exceptions
 Use `Flow.attemptAsync`, `Flow.attemptTask`, or `Flow.attemptValueTask` when exceptions from an interop boundary are expected and should enter the typed error channel. These constructors return `Cause.Fail exn` for non-cancellation exceptions and `Cause.Interrupt` for cancellation.
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 let loadConfig : ExnFlow<string> =
     Flow.attemptTask (fun token -> File.ReadAllTextAsync("appsettings.json", token))
@@ -30,15 +53,22 @@ let loadConfig : ExnFlow<string> =
 
 Use `Flow.catch` to convert simple defects into domain errors after a flow has already produced `Cause.Die`. Existing typed failures and interruptions are preserved. Compound causes such as `Cause.Then` and `Cause.Both` are left unchanged.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let safeParse id =
-    flow {
-        let! json = Http.get id
-        return Json.parse json
-    }
+```fsharp
+type ParseError = InvalidNumber of string
+
+let parseCount (text: string) : Flow<ParseError, int> =
+    Flow.delay (fun () -> Flow.ok (Int32.Parse text))
     |> Flow.catch (function
-        | :? JsonException as ex -> DomainError.InvalidFormat ex.Message
-        | ex -> raise ex)
+        | :? FormatException -> InvalidNumber text
+        | error -> raise error)
+```
+
+`Int32.Parse` throws, so the flow first ends with `Cause.Die`; `Flow.catch` then turns a `FormatException` into the
+typed error:
+
+```fsharp run
+parseCount "42" |> Flow.run () |> shouldEqual (Exit.Success 42)
+parseCount "forty" |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail(InvalidNumber "forty")))
 ```
 
 ---

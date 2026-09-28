@@ -10,7 +10,7 @@ This page shows the shortest path from `HttpClient` boilerplate to a typed, test
 
 A direct `HttpClient` call mixes four failure channels into exceptions and manual status checks:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="The plain HttpClient code being replaced; client, userId, and parseUser stand for application code"
 // Untracked: exceptions for transport, manual status checks, unchecked parsing.
 let! response = client.GetAsync($"https://api.example.com/users/{userId}") |> Async.AwaitTask
 response.EnsureSuccessStatusCode() |> ignore
@@ -20,11 +20,20 @@ let user = parseUser body // throws on bad payloads
 
 The same call as an Axial workflow:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp
 open Axial.HttpClient
 open Axial.HttpClient.DSL
 
-let user =
+type User = { Id: int; Name: string }
+
+/// A hand-written decoder for {"id":1,"name":"Ada"}; a JSON library's decoder fits the same signature.
+let decodeUser (json: string) : Result<User, string> =
+    let found = Text.RegularExpressions.Regex.Match(json, """^\{"id":(\d+),"name":"([^"]*)"\}$""")
+
+    if found.Success then Ok { Id = int found.Groups[1].Value; Name = found.Groups[2].Value }
+    else Error $"not a user: {json}"
+
+let user (token: string) (userId: int) : Flow<#IHasHttp, HttpError, User> =
     GET $"https://api.example.com/users/{userId}"
     |> bearer token
     |> fetchJson decodeUser
@@ -61,4 +70,4 @@ Because the service boundary is one `IHttp.Send` method, a complete test fake is
 - [Requests](requests.html): safe interpolated URLs, query parameters, headers, bodies, and secret redaction.
 - [Responses and errors](responses-and-errors.html): response transcripts, typed JSON decoding, and the `HttpError` model.
 - [Reliability](reliability.html): per-request timeouts, expected statuses, and transient-failure retries.
-- [Testing HTTP](/testing/http.html): fakes, the live `HttpClient` service, and layer composition.
+- [Testing HTTP](testing.html): fakes, the live `HttpClient` service, and layer composition.

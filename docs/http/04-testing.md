@@ -11,7 +11,31 @@ This page shows how the single `IHttp.Send` boundary makes HTTP workflows testab
 
 The service has one method, and `Response.create` builds synthetic transcripts from an explicit timestamp:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.Net.Http
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.HttpClient
+open Axial.PlatformService
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type User = { Id: int; Name: string }
+
+/// A hand-written decoder for {"id":1,"name":"Ada"}; a JSON library's decoder fits the same signature.
+let decodeUser (json: string) : Result<User, string> =
+    let found = Text.RegularExpressions.Regex.Match(json, """^\{"id":(\d+),"name":"([^"]*)"\}$""")
+
+    if found.Success then Ok { Id = int found.Groups[1].Value; Name = found.Groups[2].Value }
+    else Error $"not a user: {json}"
+
 type TestEnv =
     { Http: IHttp }
     interface IHasHttp with
@@ -22,12 +46,15 @@ let stub status body =
     { Http =
         { new IHttp with
             member _.Send(_, _) = async { return Ok(Response.create startedAt status body) } } }
+```
 
-[<Fact>]
-let ``decodes the user payload`` () =
-    let env = stub 200 """{"id":1,"name":"Ada"}"""
-    let result = Http.getJson decodeUser "https://api.example.test/users/1" |> Flow.runSync env
-    test <@ result = Exit.Success { Id = 1; Name = "Ada" } @>
+A test runs the workflow against the stub and checks the result, here with `shouldEqual`; an xUnit test would use its
+own assertion:
+
+```fsharp run
+Http.getJson decodeUser "https://api.example.test/users/1"
+|> Flow.run (stub 200 """{"id":1,"name":"Ada"}""")
+|> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
 ```
 
 Because the fake receives the full `HttpRequest`, tests can also assert on what was sent: method, URL, query,
@@ -38,21 +65,24 @@ fallback paths deterministically, with no network and no clock.
 
 `Http.live` adapts an explicit `IClock` and one `HttpClient`; `Layer.succeed (Http.live …)` exposes them as a layer:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
+open Axial.Layers
+
 type AppEnv =
     { Http: IHttp }
     interface IHasHttp with
         member this.Http = this.Http
 
-let appLayer (clock: IClock) (client: HttpClient) : Layer<unit, Never, AppEnv> =
+let appLayer (clock: IClock) (client: HttpClient) : Layer<unit, HttpError, AppEnv> =
     layer {
         let! http = Layer.succeed (Http.live clock client)
         return { Http = http }
     }
 
-workflow
-|> Layer.provide (appLayer Clock.live client)
-|> Flow.runSync ()
+let runUserLookup (client: HttpClient) =
+    Http.getJson decodeUser "users/1"
+    |> Layer.provide (appLayer Clock.live client)
+    |> Flow.run ()
 ```
 
 Reuse one `HttpClient` per application, exactly as .NET recommends: connection pooling, DNS rotation handlers,
@@ -63,22 +93,24 @@ or another `IClock` fake for deterministic time.
 Base addresses configured on the client work as usual: relative request URLs resolve against
 `client.BaseAddress`:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let client = new HttpClient(BaseAddress = Uri "https://api.example.com/")
-// Http.get "users/1" now resolves to https://api.example.com/users/1
+```fsharp
+let apiClient () = new HttpClient(BaseAddress = Uri "https://api.example.com/")
+// Http.getJson decodeUser "users/1" now resolves to https://api.example.com/users/1
 ```
 
 ## Composing With Other Services
 
 Service records compose the same way as the other platform packages:
 
-```fsharp no-check reason="The cross-package service fixtures are described in the surrounding prose"
+```fsharp
 type WorkerEnv =
     { HttpService: IHttp
-      ProcessService: IProcess }
+      ClockService: IClock }
     interface IHasHttp with member this.Http = this.HttpService
-    interface IHasProcess with member this.Process = this.ProcessService
+    interface IHasClock with member this.Clock = this.ClockService
 ```
+
+The same pattern adds `IHasProcess` for `Axial.Process`, or any other package's contract.
 
 A workflow that needs both declares `Flow<WorkerEnv, ...>` (or stays polymorphic with
 `'env :> IHasHttp` constraints) and runs against one environment value.

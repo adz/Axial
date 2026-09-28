@@ -17,6 +17,29 @@ own record does not carry those interface implementations with it: F# has no mec
 another type's interfaces automatically. Your own environment record has to state, once per service, where that
 service lives:
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open Axial.PlatformService
 
@@ -63,8 +86,11 @@ workflow is unchanged.
 [the app record tutorial](/dependencies/tutorials/app-record.html): add a field, add an interface if other
 helpers should depend on the contract rather than the field name directly:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-type AppEnv =
+```fsharp
+type IOrderRepository =
+    abstract Count: unit -> int
+
+type ShopEnv =
     { Runtime: BaseRuntime
       Orders: IOrderRepository }
 
@@ -84,12 +110,11 @@ want `Orders` reusable behind a named contract instead, the way `Clock` and `Log
 
 ## Run it
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-let run () = task {
-    let env = { Runtime = BaseRuntime.liveValue; Orders = SqlOrderRepository() }
-    let! exit = loadMode |> Flow.startTask env
-    printfn "%A" exit
-}
+In production the environment holds the live services:
+
+```fsharp
+let runLive () : Task<Exit<string, EnvironmentVariableError>> =
+    loadMode |> Flow.startTask { Runtime = BaseRuntime.liveValue }
 ```
 
 ## Test it
@@ -98,15 +123,19 @@ Nothing changes about substituting test doubles either. `BaseRuntime`'s fields e
 [deterministic implementations](platform-services/index.html#deterministic-implementations), so a test builds the
 whole environment as one value literal, with no interface to reimplement:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp run
+let logged = ResizeArray<string>()
+
 let testEnv =
     { Runtime =
-        { Clock = Clock.fromValue (DateTimeOffset.Parse "2026-01-01T00:00:00Z")
-          Log = Log.live
+        { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
+          Log = Log.fromSink (fun _ message -> logged.Add message)
           Random = Random.fromValue 7
           Guid = Guid.fromValue (Guid.Parse "00000000-0000-0000-0000-000000000001")
-          EnvironmentVariables = EnvironmentVariables.fromPairs [ "APP_MODE", "diagnostic" ] }
-      Orders = RecordingOrders(ResizeArray()) }
+          EnvironmentVariables = EnvironmentVariables.fromPairs [ "APP_MODE", "diagnostic" ] } }
+
+loadMode |> Flow.run testEnv |> shouldEqual (Exit.Success "diagnostic")
+List.ofSeq logged |> shouldEqual [ "[2026-01-01T00:00:00.0000000Z] starting in mode diagnostic" ]
 ```
 
 If you already have several standard services in play, wrapping them once in an app environment like this is

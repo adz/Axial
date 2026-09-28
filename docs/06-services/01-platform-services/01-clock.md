@@ -6,6 +6,29 @@ description: Read the current instant through an explicit service.
 `IClock` has one member, `UtcNow()`, and always reports UTC. Reading it through the service is what lets a test
 choose the instant:
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open System
 open Axial
@@ -17,13 +40,24 @@ let expiresWithin (window: TimeSpan) (expiry: DateTimeOffset) : Flow<#IHasClock,
     Clock.now |> Flow.map (fun now -> expiry - now <= window)
 ```
 
-`Clock.now` returns a `DateTimeOffset`. The other readers derive from it:
+`Clock.now` returns a `DateTimeOffset`. The other readers derive from it. Here they run against the base runtime
+with its clock fixed at noon UTC on 1 January 2026:
 
-```fsharp
-Clock.now                    // DateTimeOffset
-Clock.utcDateTime            // DateTime, Kind = Utc
-Clock.unixTimeSeconds        // int64
-Clock.unixTimeMilliseconds   // int64
+```fsharp transcript
+> open System;;
+> open Axial.PlatformService;;
+> let runtime () = { BaseRuntime.liveValue with Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero)) };;
+> (Clock.now : Flow<BaseRuntime, Never, DateTimeOffset>) |> Flow.map _.Hour |> Flow.run (runtime ());;
+val it: Exit<int,Never> = Success 12
+
+> (Clock.utcDateTime : Flow<BaseRuntime, Never, DateTime>) |> Flow.map _.Kind |> Flow.run (runtime ());;
+val it: Exit<DateTimeKind,Never> = Success Utc
+
+> (Clock.unixTimeSeconds : Flow<BaseRuntime, Never, int64>) |> Flow.run (runtime ());;
+val it: Exit<int64,Never> = Success 1767268800L
+
+> (Clock.unixTimeMilliseconds : Flow<BaseRuntime, Never, int64>) |> Flow.run (runtime ());;
+val it: Exit<int64,Never> = Success 1767268800000L
 ```
 
 None of them produce a typed failure, so the error channel stays free for the workflow's own errors.
@@ -33,17 +67,32 @@ None of them produce a typed failure, so the error channel stays free for the wo
 Wall-clock time can jump when the system clock is adjusted, so it is the wrong tool for measuring how long something
 took. `IClock.Elapsed` is a monotonic reading for that job, and `Clock.timed` wraps a flow with it:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-flow {
-    let! report, took = buildReport |> Clock.timed
-    do! Log.info $"report built in {took.TotalMilliseconds:F0} ms"
-    return report
-}
+```fsharp
+let buildReport : Flow<BaseRuntime, Never, string> = Flow.ok "report"
+
+let timedReport : Flow<BaseRuntime, Never, string> =
+    flow {
+        let! report, took = buildReport |> Clock.timed
+        do! Log.info $"report built in {took.TotalMilliseconds:F0} ms"
+        return report
+    }
 ```
 
 `Clock.elapsed` reads the timer directly; only the difference between two readings is meaningful. Measuring through
 the clock instead of `Stopwatch` keeps durations deterministic in tests: under `Clock.fromValue` every duration is
-zero.
+zero:
+
+```fsharp run
+let logged = ResizeArray<string>()
+
+let testRuntime =
+    { BaseRuntime.liveValue with
+        Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero))
+        Log = Log.fromSink (fun _ message -> logged.Add message) }
+
+timedReport |> Flow.run testRuntime |> shouldEqual (Exit.Success "report")
+List.ofSeq logged |> shouldEqual [ "report built in 0 ms" ]
+```
 
 ## Supplying the service
 
@@ -54,9 +103,23 @@ applications get the clock as part of [the base runtime](index.html) rather than
 
 `Clock.fromValue` pins the instant, which turns a time-dependent assertion into an ordinary one:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let clock = Clock.fromValue (DateTimeOffset.Parse "2026-01-01T12:00:00Z")
-let exit = expiresWithin (TimeSpan.FromHours 1.0) deadline |> Flow.run { Clock = clock }
+```fsharp
+type ClockEnv =
+    { Clock: IClock }
+    interface IHasClock with
+        member this.Clock = this.Clock
+
+let atNoon = { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero)) }
+```
+
+```fsharp run
+expiresWithin (TimeSpan.FromHours 1.0) (DateTimeOffset(2026, 1, 1, 12, 30, 0, TimeSpan.Zero))
+|> Flow.run atNoon
+|> shouldEqual (Exit.Success true)
+
+expiresWithin (TimeSpan.FromHours 1.0) (DateTimeOffset(2026, 1, 1, 15, 0, 0, TimeSpan.Zero))
+|> Flow.run atNoon
+|> shouldEqual (Exit.Success false)
 ```
 
 A clock that returns a fixed instant does not advance, which is usually what you want for assertions. When a test

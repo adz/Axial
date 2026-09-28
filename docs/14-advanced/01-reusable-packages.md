@@ -18,6 +18,29 @@ Three declarations per service, and the third is the only one with any subtlety.
 
 **The service**: an ordinary interface describing the capability:
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 type IExchangeRates =
     abstract GetUsdToAud : unit -> Task<decimal>
@@ -47,13 +70,28 @@ and every caller binds it with no annotation at all.
 
 Everything the package publishes then builds on the accessor:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let priceInAud (usdAmount: decimal) : Flow<#IHasExchangeRates, RateError, decimal> =
+```fsharp
+let priceInAud<'env, 'error when 'env :> IHasExchangeRates> (usdAmount: decimal) : Flow<'env, 'error, decimal> =
     flow {
         let! rates = ExchangeRates.service
-        let! rate = rates.GetUsdToAud()
+        let! rate = ColdTask(fun _ -> rates.GetUsdToAud())
         return usdAmount * rate
     }
+```
+
+Any environment that implements the contract can run it:
+
+```fsharp
+type RatesEnv =
+    { Rates: IExchangeRates }
+    interface IHasExchangeRates with
+        member this.ExchangeRates = this.Rates
+```
+
+```fsharp run
+priceInAud 10m
+|> Flow.run { Rates = { new IExchangeRates with member _.GetUsdToAud() = Task.FromResult 1.5m } }
+|> shouldEqual (Exit.Success 15.0m : Exit<decimal, string>)
 ```
 
 ## Rules that keep contracts composable
@@ -65,7 +103,7 @@ predictable and keeps a consumer's composition root readable when it implements 
 generic interface, so a generic parent makes your contract impossible to combine with any other, including one from
 a different package. A contract inherits nothing, or inherits other plain contracts.
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp no-check reason="Shows the definition to avoid beside the one to use; both have the same name"
 type IHasRates = inherit IServiceContract<IExchangeRates>   // do not do this
 type IHasRates = abstract ExchangeRates : IExchangeRates    // do this
 ```
@@ -79,7 +117,7 @@ not need to coordinate names.
 The reason to publish operations rather than just the interface is that you can wrap the failure model once. Compare
 the raw interface call with what `Axial.FileSystem` publishes:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp no-check reason="Two calls side by side for their result types"
 fileSystem.ReadAllText path                 // string, throws
 FileSystem.readAllText path                 // Flow<'env, FileSystemError, string>
 ```

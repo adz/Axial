@@ -12,17 +12,53 @@ or cleanup. You describe the command first, choose what happens to its input and
 
 For a small command-line program, describe commands, connect them, choose where output goes, then call `run`:
 
-```fsharp no-check reason="Runs the locally installed dotnet command through live services"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Console
+open Axial.FileSystem
+open Axial.PlatformService
 open Axial.Process
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+// The examples on this page start real processes with the live service.
+let host : ProcessHostEnvironment =
+    { Process = Process.live Clock.live FileSystem.live Console.live
+      Console = Console.live }
+
+let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult>) : string =
+    match Flow.run host workflow with
+    | Exit.Success result -> result.StdOut
+    | Exit.Failure cause -> failwithf "%A" cause
+```
+
+```fsharp
 open Axial.Process.DSL // Short pipeline helpers: cwd, env, timeout, =>, capture, run
 
-cmd $"git log --oneline -20"
-|> cwd repository
-|> env "NO_COLOR" "1"
-|> timeout (TimeSpan.FromSeconds 5)
-=> cmd $"head -5"
-|> capture
-|> run
+let recentCommits (repository: string) =
+    cmd $"git log --oneline -20"
+    |> cwd repository
+    |> env "NO_COLOR" "1"
+    |> timeout (TimeSpan.FromSeconds 5.0)
+    => cmd $"head -5"
+    |> capture
+
+// In a script, finish with `|> run`: it runs the workflow with live services and returns an exit code.
+let script () = recentCommits "." |> run
+```
+
+```fsharp run
+let lines = stdoutOf (recentCommits ".") |> _.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+(lines.Length >= 1 && lines.Length <= 5) |> shouldEqual true
 ```
 
 [`Process.command`](xref:M:Axial.Process.Process.command) (and DSL [`cmd`](xref:M:Axial.Process.DSL.cmd)) preserves each interpolation hole as one native argument. [`cwd`](xref:M:Axial.Process.DSL.cwd), [`env`](xref:M:Axial.Process.DSL.env), and

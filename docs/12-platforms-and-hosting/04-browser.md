@@ -21,7 +21,7 @@ JavaScript fails immediately.
 
 Mount the application when the UI root or feature is created:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 open Axial.Hosting.Browser
 
 let running =
@@ -30,7 +30,7 @@ let running =
 
 When the owner unmounts, request stop and allow cleanup to finish:
 
-```fsharp no-check reason="Requires Fable compiler validation; FsLiveDocs currently checks .NET contexts only"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
     let! _ = running.Stop()
     return ()
 }
@@ -43,7 +43,7 @@ package does not depend on one framework.
 
 Use `startWithSignal` when the owner already exposes an `AbortSignal`:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 open Fable.Core.JsInterop
 
 let controller: obj = emitJsExpr () "new AbortController()"
@@ -78,7 +78,7 @@ browser's persistence or delivery mechanisms rather than relying on Flow finaliz
 Browsers have no process exit code. Observe `running.Completion` and translate the structured `Exit` into application
 state, a fatal-error screen, or an error-reporting adapter:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 async {
     let! exit = running.Completion
 

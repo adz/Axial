@@ -9,34 +9,69 @@ Use `flow {}` when later work depends on earlier success.
 
 Suppose the block calls these functions:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-let loadUser (id: UserId) : Flow<AppEnv, AppError, User> = ...
-let auditUser (user: User) : Flow<AppEnv, AppError, unit> = ...
-let greetUser (user: User) : Flow<AppEnv, AppError, string> = ...
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type User = { Id: int; Name: string }
+type AppError = UserNotFound of int
+type AppEnv = { Users: Map<int, User>; Audit: ResizeArray<string> }
+
+let loadUser (id: int) : Flow<AppEnv, AppError, User> =
+    flow {
+        let! users = Flow.envWith _.Users
+
+        match Map.tryFind id users with
+        | Some user -> return user
+        | None -> return! Flow.fail (UserNotFound id)
+    }
+
+let auditUser (user: User) : Flow<AppEnv, AppError, unit> =
+    Flow.envWith (fun env -> env.Audit.Add $"read {user.Id}")
+
+let greetUser (user: User) : Flow<AppEnv, AppError, string> = Flow.ok $"Hello, {user.Name}"
 ```
 
 `let!` binds a successful value to the name on its left. `do!` binds a step whose success value is `unit`.
-`return!` uses another complete Flow as the result of the block.
+`return!` uses another complete Flow as the result of the block:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-flow {
-    let! user = loadUser userId
-    do! auditUser user
-    return! greetUser user
-}
+```fsharp
+let greet (userId: int) : Flow<AppEnv, AppError, string> =
+    flow {
+        let! user = loadUser userId
+        do! auditUser user
+        return! greetUser user
+    }
 ```
 
-Here is the same block with the important left- and right-hand types shown:
+The first failure stops the block. `do!` and `return!` do not run for a missing user:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-flow {
-    let! (user: User) =
-        (loadUser userId: Flow<AppEnv, AppError, User>)
+```fsharp run
+let env = { Users = Map [ 1, { Id = 1; Name = "Ada" } ]; Audit = ResizeArray() }
 
-    do! (auditUser user: Flow<AppEnv, AppError, unit>)
-    return! (greetUser user: Flow<AppEnv, AppError, string>)
-}
-// Flow<AppEnv, AppError, string>
+greet 1 |> Flow.run env |> shouldEqual (Exit.Success "Hello, Ada")
+greet 2 |> Flow.run env |> shouldEqual (Exit.Failure(Cause.Fail(UserNotFound 2)))
+List.ofSeq env.Audit |> shouldEqual [ "read 1" ]
 ```
 
 `flow {}` also binds `Result`, `Option`, `ValueOption`, `Async`, and `ColdTask`. An outer `Result.Error` enters the

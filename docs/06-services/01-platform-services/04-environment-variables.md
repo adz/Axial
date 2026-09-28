@@ -7,6 +7,29 @@ Configuration read from the environment is the classic source of a late, confusi
 variable surfaces as a `null`, and a malformed one as a parse exception somewhere further in. `Axial.PlatformService`
 splits this into two modules: one for raw access, and one for typed reads with a failure channel.
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open System
 open Axial
@@ -17,12 +40,24 @@ open Axial.PlatformService
 
 `EnvironmentVariables` returns what is there, with no opinion about what is required:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-EnvironmentVariables.tryGet name    // string option
-EnvironmentVariables.getAll         // IReadOnlyDictionary<string, string>
-EnvironmentVariables.set name value
-EnvironmentVariables.clear name
-EnvironmentVariables.expand text    // expands %VAR% references
+| Function | Result |
+| --- | --- |
+| `EnvironmentVariables.tryGet name` | `string option` |
+| `EnvironmentVariables.getAll` | `IReadOnlyDictionary<string, string>` |
+| `EnvironmentVariables.set name value` | Sets a variable |
+| `EnvironmentVariables.clear name` | Removes a variable |
+| `EnvironmentVariables.expand text` | Expands `%VAR%` references |
+
+`EnvironmentVariables.fromPairs` builds an in-memory set for tests:
+
+```fsharp transcript
+> open Axial.PlatformService;;
+> let runtime () = { BaseRuntime.liveValue with EnvironmentVariables = EnvironmentVariables.fromPairs [ "REGION", "eu" ] };;
+> (EnvironmentVariables.tryGet "REGION" : Flow<BaseRuntime, Never, string option>) |> Flow.run (runtime ());;
+val it: Exit<string option,Never> = Success (Some "eu")
+
+> (EnvironmentVariables.tryGet "MISSING" : Flow<BaseRuntime, Never, string option>) |> Flow.run (runtime ());;
+val it: Exit<string option,Never> = Success None
 ```
 
 These never fail; an absent variable is `None`.
@@ -78,14 +113,29 @@ same everywhere.
 Because the reads are flows with a typed error, configuration validation composes into one workflow that either
 produces the settings record or reports what is wrong:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let readSettings =
+```fsharp
+type Settings = { Port: int; Endpoint: Uri; Timeout: TimeSpan }
+
+let readSettings : Flow<BaseRuntime, EnvironmentVariableError, Settings> =
     flow {
         let! port = EnvironmentVariable.getInt "PORT"
         let! endpoint = EnvironmentVariable.getUri "API_ENDPOINT"
         let! timeout = EnvironmentVariable.getTimeSpan "API_TIMEOUT"
         return { Port = port; Endpoint = endpoint; Timeout = timeout }
     }
+
+let withVariables pairs =
+    { BaseRuntime.liveValue with EnvironmentVariables = EnvironmentVariables.fromPairs pairs }
+```
+
+```fsharp run
+readSettings
+|> Flow.run (withVariables [ "PORT", "8080"; "API_ENDPOINT", "https://api.example.com"; "API_TIMEOUT", "00:00:30" ])
+|> shouldEqual (Exit.Success { Port = 8080; Endpoint = Uri "https://api.example.com"; Timeout = TimeSpan.FromSeconds 30.0 })
+
+readSettings
+|> Flow.run (withVariables [ "PORT", "eighty" ])
+|> shouldEqual (Exit.Failure(Cause.Fail(EnvironmentVariableError.InvalidVariable("PORT", "eighty", "an integer"))))
 ```
 
 This binds sequentially, so it stops at the first problem. Run it as a layer during startup and the application

@@ -30,7 +30,8 @@ let greet name : Flow<#IHasConsole, Never, unit> =
     Console.writeLine $"Hello, {name}."
 ```
 
-The host supplies the live implementation at the edge. Tests supply a recording or in-memory implementation of the same contract.
+The host supplies the live implementation at the edge, `Console.live`. Tests supply a recording or in-memory
+implementation of the same contract; the [console page](console.html#testing) builds one.
 
 ## In this section
 

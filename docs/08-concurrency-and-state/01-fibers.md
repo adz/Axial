@@ -15,6 +15,29 @@ While a `Flow` is **cold** (a description of work that hasn't started yet), a **
 
 When you fork a flow, you are saying: start this work now, give me a typed handle to it, and let the current workflow continue. That handle is the fiber.
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 let loadBoth left right =
     flow {
@@ -23,6 +46,10 @@ let loadBoth left right =
         let! leftValue = Fiber.join leftFiber
         return leftValue, rightValue
     }
+```
+
+```fsharp run
+loadBoth (Flow.ok 1 : Flow<string, int>) (Flow.ok "two") |> Flow.run () |> shouldEqual (Exit.Success(1, "two"))
 ```
 
 The example starts `left` in the background, runs `right` in the current workflow, then joins the child fiber before returning.
@@ -89,10 +116,30 @@ Most code should not manage fibers manually. Prefer high-level parallel combinat
 - `Flow.traversePar`: Maps many values with bounded concurrency and returns the results in input order.
 - `Flow.forEachPar`: Runs a flow for each value with bounded concurrency, discarding the results.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let! pages = urls |> Flow.traversePar (Parallelism.bounded 8) fetchPage
-do! files |> Flow.forEachPar (Parallelism.ofProcessors id) indexFile
+```fsharp
+let fetchPage (url: string) : Flow<string, int> =
+    Flow.sleep (TimeSpan.FromMilliseconds 1.0) |> Flow.map (fun () -> url.Length)
+
+let pageSizes (urls: string list) : Flow<string, int list> =
+    urls |> Flow.traversePar (Parallelism.bounded 8) fetchPage
+
+let indexed = ResizeArray<string>()
+
+let indexFile (file: string) : Flow<string, unit> =
+    Flow.delay (fun () -> lock indexed (fun () -> indexed.Add file); Flow.ok ())
+
+let indexAll (files: string list) : Flow<string, unit> =
+    files |> Flow.forEachPar (Parallelism.ofProcessors id) indexFile
 ```
+
+```fsharp run
+pageSizes [ "a"; "bb"; "ccc" ] |> Flow.run () |> shouldEqual (Exit.Success [ 1; 2; 3 ])
+
+indexAll [ "b.fs"; "a.fs"; "c.fs" ] |> Flow.run () |> shouldEqual (Exit.Success())
+indexed |> Seq.sort |> List.ofSeq |> shouldEqual [ "a.fs"; "b.fs"; "c.fs" ]
+```
+
+`traversePar` returns results in input order, whatever order the work finishes in.
 
 At most the given number of flows run at once, and each worker starts the next value as soon as it finishes one. The first failure interrupts the flows still running and waits for their cleanup, so no sibling keeps running after the traversal has failed. Size CPU-bound work with `Parallelism.ofProcessors`, which clamps to at least 1.
 
@@ -100,10 +147,27 @@ When each worker needs its own connection or handle, use `Flow.traverseParUsing`
 `Resource`. Each worker acquires the resource once when it starts, reuses it for every value it takes, and releases it
 when it finishes or the traversal fails, so at most `parallelism` resources exist at once:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let openReader = Resource.create (Flow.fromBlocking (fun _ -> repository.OpenReader())) (fun reader _ -> reader.DisposeAsync().AsTask())
+```fsharp
+let readersOpened = ref 0
+let readersClosed = ref 0
 
-let! matches = commits |> Flow.traverseParUsing (Parallelism.ofProcessors id) openReader searchCommit
+let openReader : Resource<unit, string, int> =
+    Resource.create
+        (Flow.delay (fun () -> Flow.ok (Interlocked.Increment &readersOpened.contents)))
+        (fun _ _ ->
+            Interlocked.Increment &readersClosed.contents |> ignore
+            Task.CompletedTask)
+
+let searchCommit (reader: int) (commit: int) : Flow<string, bool> = Flow.ok (commit % 2 = 0)
+
+let evenCommits (commits: int list) : Flow<string, bool list> =
+    commits |> Flow.traverseParUsing (Parallelism.bounded 2) openReader searchCommit
+```
+
+```fsharp run
+evenCommits [ 1..6 ] |> Flow.run () |> shouldEqual (Exit.Success [ false; true; false; true; false; true ])
+readersOpened.Value <= 2 |> shouldEqual true
+readersClosed.Value |> shouldEqual readersOpened.Value
 ```
 
 `FlowStream.mapFlowParUsing` does the same for a stream, lending each running mapping a resource from a pool of at
@@ -117,11 +181,23 @@ When only the newest request matters, such as a search box or autocomplete, hold
 fork with `Flow.forkReplacing`. Each fork signals the previous fiber in the slot to stop and does not wait for it, so
 the new request starts at once:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let! slot = FiberSlot.make ()
+```fsharp
+let search (query: string) : Flow<string, string> =
+    Flow.sleep (TimeSpan.FromMilliseconds 50.0) |> Flow.map (fun () -> $"results for {query}")
 
-let onQueryChanged query =
-    search query |> Flow.forkReplacing slot |> Flow.ignore
+/// Forks a search per keystroke into one slot, and reports the last result and whether each earlier search stopped.
+let typeAhead (queries: string list) : Flow<string, string * bool list> =
+    flow {
+        let! slot = FiberSlot.make ()
+        let! searches = queries |> Flow.traverse (fun query -> search query |> Flow.forkReplacing slot)
+        let! last = searches |> List.last |> Fiber.join
+        let! earlier = searches |> List.take (searches.Length - 1) |> Flow.traverse Fiber.await
+        return last, earlier |> List.map (fun exit -> match exit with Exit.Failure cause -> Cause.isInterrupted cause | _ -> false)
+    }
+```
+
+```fsharp run
+typeAhead [ "a"; "ax"; "axi" ] |> Flow.run () |> shouldEqual (Exit.Success("results for axi", [ true; true ]))
 ```
 
 `Flow.forkReplacingKey key slots` does the same per key, with a slot from `FiberSlot.makeKeyed`, so a new preview for

@@ -11,6 +11,29 @@ one publisher can feed a consumer that must see every value alongside consumers 
 Here one sensor feed goes to three subscribers: a historian that must record every reading, a display that only needs
 the newest reading, and an alarm panel that keeps the first reading it has not yet handled.
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp transcript
 > (flow {
 -     let! (hub: Hub<int>) = Hub.make ()
@@ -111,16 +134,47 @@ val it: Exit<string list,Never> = Success ["while subscribed"; "subscribers left
 `FlowStream.fromHub strategy hub` subscribes when the stream starts and unsubscribes when it ends, so a stream consumer
 never leaves a subscription behind. `FlowStream.runIntoHub hub` publishes every value of a stream.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
+let shown = ResizeArray<float>()
+let render (reading: float) : Flow<unit, Never, unit> = Flow.delay (fun () -> shown.Add reading; Flow.ok ())
+
 // A display that follows the latest reading for as long as it runs.
-let display =
+let display (readings: Hub<float>) : Flow<unit, Never, unit> =
     readings
     |> FlowStream.fromHub (QueueStrategy.Sliding 1)
     |> FlowStream.runForEachFlow render
 
 // A sensor stream feeding the hub.
-let feed = sensorSamples |> FlowStream.runIntoHub readings
+let feed (readings: Hub<float>) : Flow<unit, Never, unit> =
+    FlowStream.fromSeq [ 20.5; 20.7; 21.0 ] |> FlowStream.runIntoHub readings
 ```
+
+```fsharp run
+flow {
+    let! (readings: Hub<float>) = Hub.make ()
+    let! displaying = display readings |> Flow.fork
+
+    // Wait until the display has subscribed, then publish and shut down.
+    let mutable subscribers = 0
+
+    while subscribers = 0 do
+        let! count = Hub.subscriberCount readings
+        subscribers <- count
+
+        if subscribers = 0 then
+            do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+
+    do! feed readings
+    do! Hub.shutdown readings
+    do! Fiber.join displaying
+}
+|> Flow.run ()
+|> shouldEqual (Exit.Success())
+
+shown |> Seq.last |> shouldEqual 21.0
+```
+
+A `Sliding 1` display may skip readings, but it always ends on the newest one.
 
 `fromHub` does not see values published before the stream starts. When you fork a consumer and publish straight
 afterwards, subscribe first with `Hub.subscribe` and consume the subscription with `FlowStream.fromDequeue`, as the

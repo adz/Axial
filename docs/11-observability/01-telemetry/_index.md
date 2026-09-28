@@ -1,6 +1,7 @@
 ---
 title: Axial.Telemetry
 linkTitle: Telemetry
+project: src/Axial.Telemetry/Axial.Telemetry.fsproj
 ---
 
 # Trace workflows and inspect them in Aspire
@@ -40,7 +41,30 @@ exporters, launches a local Aspire dashboard, and generates traces, metrics, log
 Create an application-owned `ActivitySource`, then subscribe to both that source and Axial's runtime source at the host
 boundary:
 
-```fsharp no-check reason="Host builder and OpenTelemetry package setup are application-specific"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
 open System.Diagnostics
 
 let applicationActivitySource = new ActivitySource("Checkout.Api")
@@ -81,19 +105,65 @@ used by `Activity.traceOn`, `Activity.traceWithSource`, or captured in an `Activ
 Wrap a workflow at a boundary that has an operational meaning. Pass the application source because this span describes
 user code; Axial supplies the Flow-aware tracing behavior around it:
 
-```fsharp no-check reason="The checkout workflow and domain error are application-specific"
-open Axial.Telemetry
+The examples below use this checkout workflow, and a listener that records each finished span with its tags, as the
+OpenTelemetry SDK would export them:
 
-checkout order
-|> Activity.traceWithSource applicationActivitySource CheckoutError.describe "checkout.submit"
+```fsharp
+open System.Diagnostics
+
+type Order = { OrderId: int; Total: decimal }
+
+type CheckoutError =
+    | CardDeclined
+
+    static member describe(error: CheckoutError) =
+        match error with
+        | CardDeclined -> "card declined"
+
+let applicationActivitySource = new ActivitySource("Checkout.Api")
+
+let checkout (order: Order) : Flow<unit, CheckoutError, int> =
+    if order.Total > 0m then Flow.ok order.OrderId else Flow.fail CardDeclined
+
+let order = { OrderId = 42; Total = 19.95m }
+let userId = "user-7"
+let tenantId = "acme"
+
+/// Runs a flow and returns the spans that finished on the application source, with their tags.
+let spansOf (workflow: Flow<unit, CheckoutError, int>) : (string * Map<string, string>) list =
+    let spans = ResizeArray<string * Map<string, string>>()
+
+    use listener =
+        new ActivityListener(
+            ShouldListenTo = (fun source -> source.Name = "Checkout.Api"),
+            Sample = SampleActivity<ActivityContext>(fun _ -> ActivitySamplingResult.AllData),
+            ActivityStopped =
+                (fun activity ->
+                    let tags = activity.TagObjects |> Seq.map (fun tag -> tag.Key, string tag.Value) |> Map.ofSeq
+                    lock spans (fun () -> spans.Add(activity.DisplayName, tags))))
+
+    ActivitySource.AddActivityListener listener
+    workflow |> Flow.run () |> ignore
+    List.ofSeq spans
+```
+
+```fsharp
+let submitted =
+    checkout order
+    |> Activity.traceWithSource applicationActivitySource CheckoutError.describe "checkout.submit"
+```
+
+```fsharp run
+spansOf submitted |> List.map fst |> shouldEqual [ "checkout.submit" ]
 ```
 
 `Activity.traceWithSource` accepts the source and a renderer for the workflow's typed error. Use `Activity.traceOn` when
 `string` is an acceptable representation:
 
-```fsharp no-check reason="The checkout workflow is application-specific"
-checkout order
-|> Activity.traceOn applicationActivitySource "checkout.submit"
+```fsharp
+let submittedOn =
+    checkout order
+    |> Activity.traceOn applicationActivitySource "checkout.submit"
 ```
 
 ### Trace without repeating the source at every call site
@@ -101,23 +171,27 @@ checkout order
 Passing `applicationActivitySource` into every `traceOn` call gets repetitive once tracing spreads across a codebase.
 Capture the source once as an `ActivityTracer`, and call `.Trace` on it wherever you need a span:
 
-```fsharp no-check reason="The checkout workflow is application-specific"
+```fsharp
 let checkoutTracer = ActivityTracer.create applicationActivitySource
 
-checkout order
-|> checkoutTracer.Trace "checkout.submit"
+let submittedWithTracer =
+    checkout order
+    |> checkoutTracer.Trace "checkout.submit"
 ```
 
 For a workflow tree that traces from many places, install the tracer once near the composition root instead, and call
 the ambient `Activity.trace`/`Activity.traceWith` from anywhere underneath it, with no source to pass or capture at the
 call site:
 
-```fsharp no-check reason="The application composition root and inner workflows are illustrative"
-application
-|> Activity.withTracer checkoutTracer
-
+```fsharp
 // deep inside the workflow tree, in code that has no reference to checkoutTracer:
-checkout order |> Activity.trace "checkout.submit"
+let innerStep = checkout order |> Activity.trace "checkout.submit"
+
+let application = innerStep |> Activity.withTracer checkoutTracer
+```
+
+```fsharp run
+spansOf application |> List.map fst |> shouldEqual [ "checkout.submit" ]
 ```
 
 `Activity.trace` and `Activity.traceWith` read the tracer installed by the nearest enclosing `Activity.withTracer`;
@@ -147,10 +221,15 @@ Nested scopes restore the previous value when they finish, and forked fibers inh
 
 Use a curated OpenTelemetry helper for a common semantic attribute:
 
-```fsharp no-check reason="The checkout workflow and user value are application-specific"
-checkout order
-|> Context.withEndUserId user.Id
-|> Activity.traceWithSource applicationActivitySource CheckoutError.describe "checkout.submit"
+```fsharp
+let submittedByUser =
+    checkout order
+    |> Context.withEndUserId userId
+    |> Activity.traceWithSource applicationActivitySource CheckoutError.describe "checkout.submit"
+```
+
+```fsharp run
+spansOf submittedByUser |> List.map (fun (_, tags) -> Map.tryFind "enduser.id" tags) |> shouldEqual [ Some "user-7" ]
 ```
 
 `enduser.id` is an OpenTelemetry semantic-convention attribute, currently marked **development** by OpenTelemetry. It
@@ -168,13 +247,20 @@ module CheckoutAttributes =
 
 Attach values without boxing or runtime conversion:
 
-```fsharp no-check reason="The checkout workflow and application values are defined elsewhere"
-checkout order
-|> Context.withAttributes [
-    Context.attribute CheckoutAttributes.tenantId tenantId
-    Context.attribute CheckoutAttributes.retryCount 2L
-]
-|> Activity.traceWithSource applicationActivitySource CheckoutError.describe "checkout.submit"
+```fsharp
+let submittedForTenant =
+    checkout order
+    |> Context.withAttributes [
+        Context.attribute CheckoutAttributes.tenantId tenantId
+        Context.attribute CheckoutAttributes.retryCount 2L
+    ]
+    |> Activity.traceWithSource applicationActivitySource CheckoutError.describe "checkout.submit"
+```
+
+```fsharp run
+spansOf submittedForTenant
+|> List.map (fun (_, tags) -> Map.tryFind "example.tenant.id" tags, Map.tryFind "example.checkout.retry_count" tags)
+|> shouldEqual [ Some "acme", Some "2" ]
 ```
 
 A typed key prevents attaching an integer to a string attribute. Supported values are strings, Booleans, 64-bit
@@ -182,23 +268,30 @@ integers, floating-point values, and homogeneous lists of those types.
 
 Build a context once when several workflows share the same metadata:
 
-```fsharp no-check reason="Request values are supplied by the application boundary"
+```fsharp
 let requestContext =
     Context.empty
-    |> Context.addEndUserId user.Id
+    |> Context.addEndUserId userId
     |> Context.add (Context.attribute CheckoutAttributes.tenantId tenantId)
 
-application
-|> Context.withContext requestContext
+let inRequest = application |> Context.withContext requestContext
 ```
 
 Read the currently scoped context from a workflow when an integration needs to inspect it:
 
-```fsharp no-check reason="The integration-specific export function is defined elsewhere"
-flow {
-    let! telemetryContext = Context.current
-    return exportContext telemetryContext
-}
+```fsharp
+let exportContext (context: TelemetryContext) = Context.tryFind CheckoutAttributes.tenantId context
+
+let exportedTenant : Flow<unit, CheckoutError, string option> =
+    flow {
+        let! telemetryContext = Context.current
+        return exportContext telemetryContext
+    }
+    |> Context.withContext requestContext
+```
+
+```fsharp run
+exportedTenant |> Flow.run () |> shouldEqual (Exit.Success(Some "acme"))
 ```
 
 Most workflows should scope attributes rather than read the whole context. Adapters use `Context.current` at integration
@@ -213,17 +306,15 @@ identity itself belongs in trace and span context, not in a duplicate attribute.
 
 A successful root workflow can still have failed background work. Install fiber telemetry once around the application:
 
-```fsharp no-check reason="The application workflow is defined elsewhere"
-application
-|> FiberTelemetry.observe
+```fsharp
+let withDefectSpans = application |> FiberTelemetry.observe
 ```
 
 This records defect spans for failed fibers and for defects that no code can observe. To create a span for every forked
 fiber, use `FiberTelemetry.observeWithSpans`:
 
-```fsharp no-check reason="The application workflow is defined elsewhere"
-application
-|> FiberTelemetry.observeWithSpans
+```fsharp
+let withFiberSpans = application |> FiberTelemetry.observeWithSpans
 ```
 
 Span-per-fiber mode provides more detail and more data. Use defect-only observation by default, and enable span-per-fiber
@@ -231,10 +322,11 @@ when you need fork-to-settle timing or a complete concurrency tree.
 
 Add runtime metrics independently:
 
-```fsharp no-check reason="The application workflow is defined elsewhere"
-application
-|> FiberMetrics.observe
-|> FiberTelemetry.observe
+```fsharp
+let withMetrics =
+    application
+    |> FiberMetrics.observe
+    |> FiberTelemetry.observe
 ```
 
 The `Axial` meter records starts, live fibers, settlements, duration, and unobserved defects. A rising live-fiber count
@@ -246,12 +338,13 @@ Report a [queue](/concurrency-and-state/queue.html) or a [hub](/concurrency-and-
 name with `QueueMetrics.observe`. It is reported until the scope that registered it closes, so register a subscription
 in the fiber that consumes it:
 
-```fsharp no-check reason="The hub and the record function are application-specific"
-flow {
-    let! history = readings |> Hub.subscribe (QueueStrategy.BackPressure 10_000)
-    do! history |> QueueMetrics.observe "historian"
-    do! history |> FlowStream.fromDequeue |> FlowStream.runForEachFlow record
-}
+```fsharp
+let historian (readings: Hub<float>) (record: float -> Flow<unit, Never, unit>) : Flow<unit, Never, unit> =
+    flow {
+        let! history = readings |> Hub.subscribe (QueueStrategy.BackPressure 10_000)
+        do! history |> QueueMetrics.observe "historian"
+        do! history |> FlowStream.fromDequeue |> FlowStream.runForEachFlow record
+    }
 ```
 
 The figures are read only when the metrics pipeline collects, so an observed queue costs nothing extra per value. Each
@@ -266,7 +359,7 @@ A trace explains completed and timed operations. A fiber dump shows the work tha
 
 Install a registry at the application edge:
 
-```fsharp no-check reason="The application workflow is defined elsewhere"
+```fsharp
 let registry = FiberRegistry()
 
 let observedApplication =
@@ -278,15 +371,17 @@ let observedApplication =
 
 Name long-lived work so the dump is readable:
 
-```fsharp no-check reason="The worker workflow is application-specific"
-Flow.forkNamed "outbox-poller" pollOutbox
+```fsharp
+let pollOutbox : Flow<unit, CheckoutError, unit> = Flow.sleep (TimeSpan.FromSeconds 5.0)
+
+let startPoller : Flow<unit, CheckoutError, Fiber<CheckoutError, unit>> = Flow.forkNamed "outbox-poller" pollOutbox
 ```
 
 Return `registry.Dump()` from a protected diagnostics endpoint, write it during a stuck shutdown, or attach it to the
 current trace:
 
-```fsharp no-check reason="The registry is installed at the application edge"
-FiberDumpTelemetry.record registry
+```fsharp
+let recordDump () = FiberDumpTelemetry.record registry
 ```
 
 `FiberDumpTelemetry.record` adds an `axial.flow.fiber.dump` event to the current activity. If no activity is current, it
@@ -303,7 +398,7 @@ example README.
 If your Aspire service uses `AddServiceDefaults()`, keep that setup and add the application source, Axial's runtime
 source, and Axial's meter:
 
-```fsharp no-check reason="Aspire service-default wiring is application-specific"
+```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
 builder.Services
     .AddOpenTelemetry()
     .WithTracing(fun tracing ->

@@ -1832,6 +1832,18 @@ module Flow =
             invoke flow environment cancellationToken
             |> Execution.mapError mapper)
 
+    /// <summary>Gives a flow that cannot fail with a typed error any error type.</summary>
+    /// <remarks>
+    /// A <c>Flow&lt;'env, Never, 'value&gt;</c> has no typed failures, so it can stand wherever a flow with a real error
+    /// type is expected. Defects and interruption pass through unchanged.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// let ready : Flow&lt;unit, string, int&gt; = Flow.succeed 1 |> Flow.widenError
+    /// </code>
+    /// </example>
+    let widenError (flow: Flow<'env, Never, 'value>) : Flow<'env, 'error, 'value> = mapError Never.absurd flow
+
     /// <summary>Attaches diagnostic trace text to any failure cause of the flow.</summary>
     /// <remarks>
     /// On failure the cause is wrapped in <c>Cause.Traced</c>, so retries, parallel composition, and

@@ -11,13 +11,36 @@ workflow with `Flow.verify`.
 
 A policy has this shape:
 
-```fsharp no-check reason="Type signature shown without a declaration"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp no-check reason="A type on its own, not an expression"
 Policy<'env, 'error, 'input, 'output>
 ```
 
 It is an alias for a function:
 
-```fsharp no-check reason="Function type shown without a declaration"
+```fsharp no-check reason="A function type on its own, not an expression"
 'env -> 'input -> Result<'output, 'error>
 ```
 
@@ -58,6 +81,11 @@ let placeOrder count =
     }
 ```
 
+```fsharp run
+placeOrder 3 |> Flow.run { EnforceLimit = true; Limit = 5 } |> shouldEqual (Exit.Success 3)
+placeOrder 9 |> Flow.run { EnforceLimit = true; Limit = 5 } |> shouldEqual (Exit.Failure(Cause.Fail TooLarge))
+```
+
 `Flow.verify` is pipe-friendly because it takes the policy first and the input second. The example is equivalent to
 `Flow.verify withinLimit count`.
 
@@ -73,19 +101,25 @@ Use a `Policy` constructor when you already have a function that returns `Result
 
 For example, `Policy.withError` assigns a workflow error to a validation function whose error is `unit`:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let requireNonBlank value =
-    if System.String.IsNullOrWhiteSpace value then Error ()
-    else Ok value
+```fsharp
+type RegistrationError = NameRequired
 
-let requireName =
+let requireNonBlank (value: string) =
+    if String.IsNullOrWhiteSpace value then Error() else Ok value
+
+let requireName : Policy<unit, RegistrationError, string, string> =
     Policy.withError requireNonBlank NameRequired
 
-let register name =
+let register (name: string) : Flow<RegistrationError, string> =
     flow {
         let! checkedName = name |> Flow.verify requireName
         return checkedName
     }
+```
+
+```fsharp run
+register "Ada" |> Flow.run () |> shouldEqual (Exit.Success "Ada")
+register "  " |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail NameRequired))
 ```
 
 ## Compose policies
@@ -93,9 +127,16 @@ let register name =
 Use `Policy.compose first second` to run two policies from left to right. The second policy receives the successful
 output of the first. The first error stops the composition.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let normalizedName =
-    Policy.compose requireName normalizeName
+```fsharp
+let normalizeName : Policy<unit, RegistrationError, string, string> =
+    Policy.lift (fun (name: string) -> Ok(name.Trim())) id
+
+let normalizedName = Policy.compose requireName normalizeName
+```
+
+```fsharp run
+" Ada " |> Flow.verify normalizedName |> Flow.run () |> shouldEqual (Exit.Success "Ada")
+" " |> Flow.verify normalizedName |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail NameRequired))
 ```
 
 Both policies must use the same environment and error types. The first policy's output type must match the second
@@ -111,6 +152,11 @@ Use `Policy.optional enabled policy` when the environment decides whether a poli
 let orderLimit =
     withinLimit
     |> Policy.optional _.EnforceLimit
+```
+
+```fsharp run
+9 |> Flow.verify orderLimit |> Flow.run { EnforceLimit = false; Limit = 5 } |> shouldEqual (Exit.Success 9)
+9 |> Flow.verify orderLimit |> Flow.run { EnforceLimit = true; Limit = 5 } |> shouldEqual (Exit.Failure(Cause.Fail TooLarge))
 ```
 
 When `enabled env` is `true`, the policy runs. When it is `false`, the policy returns the input unchanged. For this

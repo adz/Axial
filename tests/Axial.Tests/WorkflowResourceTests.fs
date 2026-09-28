@@ -524,3 +524,13 @@ module WorkflowResourceTests =
         test <@ (match interrupted with Exit.Success(Exit.Failure cause) -> Cause.isInterrupted cause | _ -> false) @>
         test <@ cleaned.Value = 1 @>
 
+    [<Fact>]
+    let ``A layer that cannot fail combines with a layer that can`` () =
+        let cannotFail : Layer<unit, Never, int> = Layer.succeed 20
+        let canFail : Layer<unit, string, int> = Layer.succeed 22
+        let combined = Layer.map2 (+) (Layer.widenError cannotFail) canFail
+        let failing = Layer.map2 (+) (Layer.widenError cannotFail) (Layer.fromAsync (fun _ _ -> async { return Exit.Failure(Cause.Fail "down") }))
+
+        test <@ Flow.envWith id |> Layer.provide combined |> Flow.runSync () = Exit.Success 42 @>
+        test <@ (Flow.envWith id : Flow<int, string, int>) |> Layer.provide failing |> Flow.runSync () = Exit.Failure(Cause.Fail "down") @>
+

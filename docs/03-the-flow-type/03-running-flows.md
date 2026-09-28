@@ -5,27 +5,34 @@ description: Start a cold Flow and observe its Exit.
 
 # Running Flows
 
-Creating a Flow does not execute it. Start it explicitly at a boundary:
+Creating a Flow does not execute it. Start it explicitly at a boundary, and read the outcome from the
+`Exit<'value, 'error>` it returns:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let workflow = Flow.succeed "Hello"
-let exit = workflow |> Flow.run ()
+```fsharp transcript
+> let workflow () : Flow<string> = Flow.succeed "Hello";;
+> Flow.run () (workflow ());;
+val it: Exit<string,Never> = Success "Hello"
+
+> match Flow.run () (workflow ()) with Exit.Success value -> value | Exit.Failure cause -> Cause.prettyPrint string cause;;
+val it: string = "Hello"
 ```
 
-Execution completes with `Exit<'value, 'error>`:
+`Flow.run` blocks until the Exit is available. `Flow.startTask` starts the work at once and returns a task to await,
+and `Flow.toAsync` returns an async that starts nothing until it is run:
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-match exit with
-| Exit.Success value -> printfn "%s" value
-| Exit.Failure cause -> printfn "%s" (Cause.prettyPrint string cause)
-```
+```fsharp transcript
+> let mutable started = 0;;
+val started: int = 0
 
-In a pipeline, use the module functions:
+> let counted () : Flow<int> = Flow.delay (fun () -> started <- started + 1; Flow.ok started);;
+> let cold = Flow.toAsync () (counted ()) in started;;
+val it: int = 0
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let exit = workflow |> Flow.run ()               // executes, blocks
-let running = workflow |> Flow.startTask ()      // executes now, returns a handle
-let cold = workflow |> Flow.toAsync ()           // executes nothing yet
+> (Flow.startTask () (counted ())).Result;;
+val it: Exit<int,Never> = Success 1
+
+> Flow.toAsync () (counted ()) |> Async.RunSynchronously;;
+val it: Exit<int,Never> = Success 2
 ```
 
 The name states when work begins. `to*` builds a description and starts nothing, `start*` begins execution
@@ -40,8 +47,8 @@ immediately and hands back a handle, and `run` executes to completion:
 This matters when you build a handle without awaiting it. `StartAsTask` has already begun the work at that point;
 `ToAsync` has not, and discarding the async discards the work.
 
-The members carry optional `cancellationToken` and `timeout` arguments for interop callers; the module functions
-take none, which keeps the common path short. On Fable, use `ToAsync`.
+The members take an optional `cancellationToken` for interop callers; the module functions take none, which keeps the
+common path short. Use `Flow.timeout` to bound how long a workflow may run. On Fable, use `ToAsync`.
 
 Every call starts a fresh execution with its own root scope. Await the returned handle to receive the final Exit.
 

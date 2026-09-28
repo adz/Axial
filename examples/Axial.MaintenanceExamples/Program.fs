@@ -1,3 +1,4 @@
+// <snippet:maintenance-examples>
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -47,3 +48,4 @@ let main _ =
     // Async: Ok 42
     // Task: Ok 25
     0
+// </snippet:maintenance-examples>

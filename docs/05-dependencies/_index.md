@@ -11,18 +11,50 @@ through unrelated callers becomes noise. Then use an environment.
 **Then pass Flow a record.** A workflow states what it needs in its environment channel; you build that record and
 hand it over when the workflow runs:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-type AppEnv =
-    { Users: IUserStore
-      Audit: IAuditLog }
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
 
-let loadUser id : EnvFlow<AppEnv, User> =
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type User = { Id: int; Name: string }
+
+type IUserStore =
+    abstract Load: int -> Result<User, string>
+
+type AppEnv = { Users: IUserStore }
+
+let loadUser (id: int) : Flow<AppEnv, string, User> =
     flow {
         let! users = Flow.envWith _.Users
         return! users.Load id
     }
+```
 
-let exit = loadUser userId |> Flow.run { Users = liveUsers; Audit = liveAudit }
+```fsharp run
+let users =
+    { new IUserStore with
+        member _.Load id = if id = 1 then Ok { Id = 1; Name = "Ada" } else Error $"no user {id}" }
+
+loadUser 1 |> Flow.run { Users = users } |> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
 ```
 
 Most applications need nothing more. There is no container, registration, or resolution step: a test supplies a

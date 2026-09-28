@@ -77,6 +77,7 @@ module WithFlow =
     /// scopeAcquireRelease owns the directory from the instant acquisition succeeds. Flow.scoped
     /// closes that ownership boundary before this operation returns.
     let importBatch (records: string list) : Flow<WorkspaceEnv, ImportError, int> =
+        // <snippet:compare-workspace>
         let acquire: Flow<WorkspaceEnv, ImportError, string> =
             flow {
                 let workspace = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString "N")
@@ -100,3 +101,4 @@ module WithFlow =
 
                     return records.Length
                 }))
+        // </snippet:compare-workspace>

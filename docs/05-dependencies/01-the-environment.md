@@ -8,13 +8,32 @@ description: What the 'env parameter actually is, and the handful of functions t
 There is no container and no registration step. `'env` is an ordinary type parameter, and the value you supply is an
 ordinary value.
 
-```fsharp
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
 open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
 
-let doubled : Flow<int, Never, int> =
-    Flow.envWith (fun environment -> environment * 2)
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
 
-let result = doubled |> Flow.run 21    // Success 42
+```fsharp transcript
+> (Flow.envWith (fun environment -> environment * 2) : Flow<int, Never, int>) |> Flow.run 21;;
+val it: Exit<int,Never> = Success 42
 ```
 
 The environment here is an `int`. `Flow` does not require a record, an interface, or a service. It hands your function
@@ -22,30 +41,30 @@ whatever value you passed to `Flow.run`.
 
 ## What the functions do
 
-`Flow.envWith` **runs a function against the environment** and continues with the result:
+`Flow.envWith` **runs a function against the environment** and continues with the result. `_.Name` is F# shorthand
+for `fun environment -> environment.Name`, so `Flow.envWith _.Name` is the same thing written shorter:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-Flow.envWith (fun environment -> environment.Users)   // 'env -> 'a, giving Flow<'env, _, 'a>
+```fsharp transcript
+> type Person = { Name: string; Age: int };;
+> (Flow.envWith _.Name : Flow<Person, Never, string>) |> Flow.run { Name = "Ada"; Age = 36 };;
+val it: Exit<string,Never> = Success "Ada"
 ```
-
-`_.Users` is F# shorthand for `fun environment -> environment.Users`, so `Flow.envWith _.Users` is the same thing
-written shorter.
 
 The other environment functions:
 
 | Function | What it does |
 | --- | --- |
 | `Flow.envWith projection` | Runs `projection` against the environment, continues with its result |
-| `Flow.envWith id` | Continues with the environment value itself |
+| `Flow.env` | Continues with the environment value itself |
 | `Flow.localEnv change` | Runs a flow against a *different* environment computed by `change` |
 
 `Flow.localEnv` is how a workflow needing a small environment runs inside one that has more:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let usersOnly : Flow<IUserStore, AppError, User> = ...
-
-let inTheApp : Flow<AppEnv, AppError, User> =
-    usersOnly |> Flow.localEnv (fun app -> app.Users)
+```fsharp transcript
+> type Person = { Name: string; Age: int };;
+> let nameLength () : Flow<string, Never, int> = Flow.envWith (fun name -> name.Length);;
+> nameLength () |> Flow.localEnv (fun (person: Person) -> person.Name) |> Flow.run { Name = "Ada"; Age = 36 };;
+val it: Exit<int,Never> = Success 3
 ```
 
 ## What you will actually use
@@ -53,29 +72,57 @@ let inTheApp : Flow<AppEnv, AppError, User> =
 An `int` proves the point but is not the shape you want. In practice the environment is **a record you define**,
 holding one field per dependency:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
+type User = { Id: int; Name: string }
+
+type IUserStore =
+    abstract Load: int -> Result<User, string>
+
+type IAuditLog =
+    abstract Record: string -> unit
+
 type AppEnv =
     { Users: IUserStore
       Audit: IAuditLog }
 
-let loadUser id : EnvFlow<AppEnv, User> =
+let loadUser (id: int) : Flow<AppEnv, string, User> =
     flow {
         let! users = Flow.envWith _.Users
-        return! users.Load id
+        let! audit = Flow.envWith _.Audit
+        let! user = users.Load id
+        audit.Record $"loaded {id}"
+        return user
     }
 ```
 
 You construct that record in exactly two places:
 
-- **At boot**, with the live implementations.
+- **At boot**, with the live implementations, for example `{ Users = SqlUserStore(connection); Audit = FileAuditLog(path) }`.
 - **In tests**, with fakes: the same record type with different values.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let live = { Users = SqlUserStore(connection); Audit = FileAuditLog(path) }
-let underTest = { Users = InMemoryUserStore(); Audit = NullAuditLog() }
+```fsharp
+type InMemoryUsers(users: User list) =
+    interface IUserStore with
+        member _.Load id =
+            match users |> List.tryFind (fun user -> user.Id = id) with
+            | Some user -> Ok user
+            | None -> Error $"no user {id}"
 
-loadUser 42 |> Flow.run live
-loadUser 42 |> Flow.run underTest
+type ListAudit() =
+    let entries = ResizeArray<string>()
+    member _.Entries = List.ofSeq entries
+
+    interface IAuditLog with
+        member _.Record entry = entries.Add entry
+```
+
+```fsharp run
+let audit = ListAudit()
+let underTest = { Users = InMemoryUsers [ { Id = 42; Name = "Ada" } ]; Audit = audit }
+
+loadUser 42 |> Flow.run underTest |> shouldEqual (Exit.Success { Id = 42; Name = "Ada" })
+loadUser 7 |> Flow.run underTest |> shouldEqual (Exit.Failure(Cause.Fail "no user 7"))
+audit.Entries |> shouldEqual [ "loaded 42" ]
 ```
 
 Larger systems often define one record per architectural boundary rather than a single application-wide one, and use

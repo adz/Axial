@@ -17,6 +17,29 @@ of read from a fixed field. A dependency used by exactly one workflow usually do
 
 ## Define the contract
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open System.Threading.Tasks
 
@@ -58,14 +81,14 @@ field. It only needs `IHasExchangeRates`, the same generic-constraint pattern `C
 a caller can react to. Most services worth naming this way are worth failing this way too; compare
 [`FileSystemError`](/services/filesystem.html#typed-errors) or `HttpError`:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp
 type ExchangeRateError =
     | RateUnavailable of pair: string
     | ProviderTimedOut
 
-let priceInAud<'env>
+let priceInAudOrFail<'env when 'env :> IHasExchangeRates>
     (usdAmount: decimal)
-    : Flow<'env, ExchangeRateError, decimal> when 'env :> IHasExchangeRates =
+    : Flow<'env, ExchangeRateError, decimal> =
     flow {
         let! rates = ExchangeRates.service
         let! rate =
@@ -88,16 +111,22 @@ type AppEnv =
         member this.ExchangeRates = this.Rates
 ```
 
+```fsharp run
+let fixedRate = { new IExchangeRates with member _.GetUsdToAud() = Task.FromResult 1.5m }
+let failing = { new IExchangeRates with member _.GetUsdToAud() = Task.FromException<decimal>(TimeoutException()) }
+
+priceInAud 10m |> Flow.run { Rates = fixedRate; Region = "au" } |> shouldEqual (Exit.Success 15.0m : Exit<decimal, string>)
+priceInAudOrFail 10m |> Flow.run { Rates = failing; Region = "au" } |> shouldEqual (Exit.Failure(Cause.Fail ProviderTimedOut))
+```
+
 ## Combine it with the built-in services
 
 A custom service composes into the same environment as `BaseRuntime` exactly the way two built-in services do:
 each gets its own interface member, delegating to wherever the value actually lives. See
 [Tutorial: Composing Built-in Services](/services/existing-services.html) for the `BaseRuntime` half of this:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-open Axial.PlatformService
-
-type AppEnv =
+```fsharp
+type FullAppEnv =
     { Runtime: BaseRuntime
       Rates: IExchangeRates }
 

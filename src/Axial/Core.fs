@@ -1103,6 +1103,26 @@ type Resource<'env, 'error, 'value> =
 /// </summary>
 type Never = private Never of unit
 
+/// <summary>Uses the fact that a <see cref="T:Axial.Never" /> value cannot exist.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module Never =
+    /// <summary>Converts a <c>Never</c> to any type.</summary>
+    /// <remarks>
+    /// No <c>Never</c> value exists, so this function is never called with one. Pass it where a mapping from the
+    /// error channel is required, to widen a flow, layer, cause, or exit that cannot fail into one with a real error
+    /// type: <c>Exit.mapError Never.absurd</c>. <c>Flow.widenError</c> and <c>Layer.widenError</c> cover the common
+    /// cases.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// let exit : Exit&lt;int, string&gt; = Exit.Success 1 |> Exit.mapError Never.absurd
+    /// </code>
+    /// </example>
+    let absurd (never: Never) : 'a =
+        match never with
+        | Never() -> invalidOp "A Never value cannot exist."
+
 /// <summary>A flow that requires no environment and cannot fail with a typed error.</summary>
 type Flow<'value> = Flow<unit, Never, 'value>
 

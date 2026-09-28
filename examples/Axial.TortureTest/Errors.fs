@@ -150,6 +150,9 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 | Exit.Failure(Cause.Fail large) -> kind % 2 = 0 && kind >= 8 && large = $"large {kind}"
                 | Exit.Failure _ -> false)
 
+        // A flow that cannot fail stands where a typed error is expected.
+        let! widened = (Flow.ok 5 : Flow<unit, Never, int>) |> Flow.widenError |> Flow.orElse (Flow.ok 0) |> exitOf
+
         let! foundResult =
             Flow.orElseFlow (Flow.ok "fallback") (Error())
             |> exitOf
@@ -162,6 +165,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
               check "Exit conversions kept values and failures" exitRoundTrips
               check "combinators over forks agree with arithmetic" (sum3 = 9 && sum2 = 5 && pair = (2, 4) && applied = 30 && chained = 3 && listed = [ 2; 3 ] && traversed = [ 1; 4; 9 ] && ignored = () && operators = 6 && appliedOperator = 3)
               check "Bind adapted each Result error at its bind site" boundAsExpected
+              check "a flow that cannot fail widened to a typed error unchanged" (widened = Exit.Success 5)
               check "orElseFlow fails with the error its flow produced" (foundResult = Exit.Failure(Cause.Fail "fallback")) ]
     }
 // </snippet:torture-errors>

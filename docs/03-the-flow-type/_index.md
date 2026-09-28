@@ -8,14 +8,48 @@ description: Create, combine, and run Flow values.
 A Flow is an immutable, cold description of work. Nothing runs until an execution interprets the description with an
 environment:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let workflow : Flow<AppEnv, LoadUserError, User> =
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type LoadUserError = UserNotFound of int
+type AppEnv = { LoadUser: int -> Result<string, LoadUserError> }
+
+let workflow : Flow<AppEnv, LoadUserError, string> =
     flow {
         let! loadUser = Flow.envWith _.LoadUser
         return! loadUser 42
     }
+```
 
-let completed = workflow |> Flow.startTask live
+Building `workflow` ran nothing. Each execution supplies an environment and returns an outcome:
+
+```fsharp run
+let live = { LoadUser = fun id -> Ok $"user {id}" }
+let empty = { LoadUser = fun id -> Error(UserNotFound id) }
+
+workflow |> Flow.run live |> shouldEqual (Exit.Success "user 42")
+workflow |> Flow.run empty |> shouldEqual (Exit.Failure(Cause.Fail(UserNotFound 42)))
 ```
 
 The three type parameters say what the workflow needs, how it can fail, and what it produces:

@@ -15,6 +15,29 @@ Use this approach first when:
 
 ## 1. Define The Contract
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open System
 open System.Threading.Tasks
@@ -132,30 +155,43 @@ These test doubles are boring on purpose. If this shape is awkward to test, the 
 
 ## 5. Run The Flow
 
+In production, `placeOrder` gets `SqlOrderRepository()` and `SmtpEmailSender()`. A test gives it the recording
+doubles and checks both the outcome and what each dependency saw:
+
+```fsharp run
+let saved = ResizeArray<Order>()
+let sent = ResizeArray<string>()
+let orders = RecordingOrderRepository(saved)
+let email = RecordingEmailSender(sent)
+
+let order =
+    { Id = OrderId(Guid.Parse "7d3c2e1a-0000-4000-8000-000000000001")
+      Email = "ada@example.com"
+      Total = 99.95m }
+
+placeOrder orders email order |> Flow.run () |> shouldEqual (Exit.Success order.Id)
+List.ofSeq sent |> shouldEqual [ "ada@example.com" ]
+
+placeOrder orders email { order with Email = " " } |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail InvalidEmail))
+saved.Count |> shouldEqual 1
+```
+
+The invalid order failed validation before either dependency was called: one order was saved and one email sent.
+
+At the application edge, turn the `Exit` into whatever the caller needs:
+
 ```fsharp
-let runExample () = task {
-    let orders = SqlOrderRepository() :> IOrderRepository
-    let email = SmtpEmailSender() :> IEmailSender
-
-    let order =
-        { Id = OrderId(Guid.NewGuid())
-          Email = "ada@example.com"
-          Total = 99.95m }
-
-    let! exit = placeOrder orders email order |> Flow.startTask ()
-
+let describe (exit: Exit<OrderId, PlaceOrderError>) =
     match exit with
-    | Exit.Success orderId ->
-        printfn "Placed %A" orderId
-    | Exit.Failure (Cause.Fail InvalidEmail) ->
-        printfn "The order was rejected before any dependency was called."
-    | Exit.Failure (Cause.Fail (OrderRejected reason)) ->
-        printfn "The repository rejected the order: %s" reason
-    | Exit.Failure Cause.Interrupt ->
-        printfn "The workflow was interrupted."
-    | Exit.Failure cause ->
-        printfn "Unexpected failure: %s" (Cause.prettyPrint (function OrderRejected r -> r | _ -> "domain error") cause)
-}
+    | Exit.Success _ -> "placed"
+    | Exit.Failure(Cause.Fail InvalidEmail) -> "rejected before any dependency was called"
+    | Exit.Failure(Cause.Fail(OrderRejected reason)) -> $"the repository rejected the order: {reason}"
+    | Exit.Failure cause when Cause.isInterrupted cause -> "interrupted"
+    | Exit.Failure _ -> "unexpected failure"
+```
+
+```fsharp run
+Exit.Failure(Cause.Fail(OrderRejected "duplicate")) |> describe |> shouldEqual "the repository rejected the order: duplicate"
 ```
 
 ## 6. Why This Stops Scaling

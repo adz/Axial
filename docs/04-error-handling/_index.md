@@ -7,18 +7,22 @@ description: Distinguish expected failures, unexpected defects, and interruption
 
 A Flow has a typed channel for failures the caller is expected to handle:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-type PaymentError = CardDeclined | AccountClosed
-
-let charge : Flow<PaymentError, Receipt> =
-    Flow.fail CardDeclined
+```fsharp transcript
+> type PaymentError = CardDeclined | AccountClosed;;
+> let charge () : Flow<PaymentError, decimal> = Flow.fail CardDeclined;;
+> Flow.run () (charge ());;
+val it: Exit<decimal,PaymentError> = Failure (Fail CardDeclined)
 ```
 
 Unexpected exceptions are defects. They are retained in the execution outcome rather than being added silently to
 the workflow's typed error:
 
-```fsharp
-Flow.die (InvalidOperationException "broken invariant")
+```fsharp transcript
+> open System;;
+> type PaymentError = CardDeclined | AccountClosed;;
+> let broken () : Flow<PaymentError, decimal> = Flow.die (InvalidOperationException "broken invariant");;
+> match Flow.run () (broken ()) with Exit.Failure (Cause.Die error) -> error.Message | _ -> "";;
+val it: string = "broken invariant"
 ```
 
 An Exit distinguishes the cases:

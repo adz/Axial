@@ -26,6 +26,29 @@ converting a leaf function first gives you the costs of Flow and none of its can
 `StartAsTask` supplies the environment, accepts the caller's cancellation token, and returns a
 `Task<Exit<'value, 'error>>`. Match on the exit to turn typed failures into whatever your host already returns:
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open System.Threading
 open System.Threading.Tasks
@@ -62,8 +85,17 @@ let handleCheckout (env: CheckoutEnv) (orderId: int) (cancellationToken: Cancell
     }
 ```
 
-Calling `handleCheckout live 42 CancellationToken.None` returns `200 ch_1a2b3c`, and `handleCheckout live 7`
-returns `404 order 7 not found`.
+With an environment whose order 42 exists and whose payments succeed, the handler returns the host's usual
+responses:
+
+```fsharp run
+let sample =
+    { FindTotal = fun orderId _ -> Task.FromResult(if orderId = 42 then Ok 19.95m else Error(OrderNotFound orderId))
+      Charge = fun _ _ -> Task.FromResult(Ok "ch_1a2b3c") }
+
+(handleCheckout sample 42 CancellationToken.None).Result |> shouldEqual "200 ch_1a2b3c"
+(handleCheckout sample 7 CancellationToken.None).Result |> shouldEqual "404 order 7 not found"
+```
 
 Three properties of that match matter:
 
@@ -79,10 +111,17 @@ Three properties of that match matter:
 
 The environment is a record, so build it once from whatever your host already resolves:
 
-```fsharp no-check reason="The service provider and repositories belong to the reader's existing application"
-let checkoutEnv (provider: IServiceProvider) : CheckoutEnv =
-    let orders = provider.GetRequiredService<IOrderRepository>()
-    let payments = provider.GetRequiredService<IPaymentGateway>()
+```fsharp
+type IOrderRepository =
+    abstract FindTotalAsync: orderId: int * cancellationToken: CancellationToken -> Task<Result<decimal, CheckoutError>>
+
+type IPaymentGateway =
+    abstract ChargeAsync: total: decimal * cancellationToken: CancellationToken -> Task<Result<string, CheckoutError>>
+
+let checkoutEnv (provider: System.IServiceProvider) : CheckoutEnv =
+    // With Microsoft.Extensions.DependencyInjection opened, provider.GetRequiredService<IOrderRepository>() reads better.
+    let orders = provider.GetService typeof<IOrderRepository> :?> IOrderRepository
+    let payments = provider.GetService typeof<IPaymentGateway> :?> IPaymentGateway
 
     { FindTotal = fun orderId cancellationToken -> orders.FindTotalAsync(orderId, cancellationToken)
       Charge = fun total cancellationToken -> payments.ChargeAsync(total, cancellationToken) }

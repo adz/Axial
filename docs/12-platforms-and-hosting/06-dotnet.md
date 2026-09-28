@@ -23,7 +23,30 @@ Microsoft.Extensions.Hosting or a dependency-injection container.
 
 Use `DotNetApp.run` when the application owns a console process but does not use Generic Host:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
 open Axial
 open Axial.Hosting
 
@@ -39,11 +62,14 @@ let application : Flow<string array, AppError, unit> =
             return! Flow.fail (InvalidArguments "Supply at least one argument.")
     }
 
-[<EntryPoint>]
+// In a program, mark this [<EntryPoint>].
 let main args =
-    DotNetApp.run describeError args application
-        .GetAwaiter()
-        .GetResult()
+    (DotNetApp.run describeError args application).GetAwaiter().GetResult()
+```
+
+```fsharp run
+main [| "orders.csv" |] |> shouldEqual 0
+main [||] |> shouldEqual 1
 ```
 
 `DotNetApp.run` installs a temporary `Console.CancelKeyPress` handler. Ctrl+C requests `App.Stop()`, waits for root
@@ -66,7 +92,7 @@ skipped.
 Build the application as a `Flow` whose input is either `IServiceProvider` or an explicit environment constructed
 from it:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Needs the Microsoft.Extensions.Hosting package, which the documentation build does not reference"
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Axial
@@ -111,15 +137,15 @@ domain workflows run. See [Providing the environment](/dependencies/providing-th
 
 Create the explicit Axial logging service from an existing logger:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let axialLog : ILog =
+```fsharp
+let axialLogFor (logger: Microsoft.Extensions.Logging.ILogger) : ILog =
     MicrosoftLogging.create logger
 ```
 
 Or choose a category through a factory:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let axialLog : ILog =
+```fsharp
+let axialLogFrom (loggerFactory: Microsoft.Extensions.Logging.ILoggerFactory) : ILog =
     MicrosoftLogging.fromFactory "MyApp" loggerFactory
 ```
 
@@ -130,8 +156,8 @@ exception objects are preserved. The adapter never silently substitutes a no-op 
 
 Install the observer once around the root application:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let observed =
+```fsharp
+let observed (logger: Microsoft.Extensions.Logging.ILogger) (application: Flow<unit, string, unit>) =
     application
     |> FiberLogging.observe logger
 ```
@@ -139,12 +165,13 @@ let observed =
 Fiber defects are errors; unobserved fiber defects are critical entries. Compose it with telemetry when both are
 required:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-application
-|> Flow.withFiberObserver
-    (FiberObserver.compose
-        FiberTelemetry.observerWithSpans
-        (FiberLogging.observer logger))
+```fsharp no-check reason="Needs Axial.Telemetry as well as Axial.Hosting; this page checks against Axial.Hosting"
+let observedWithSpans (logger: Microsoft.Extensions.Logging.ILogger) (application: Flow<unit, string, unit>) =
+    application
+    |> Flow.withFiberObserver
+        (FiberObserver.compose
+            FiberTelemetry.observerWithSpans
+            (FiberLogging.observer logger))
 ```
 
 Logging is an explicit application dependency; telemetry remains runtime instrumentation. See
@@ -155,13 +182,16 @@ Logging is an explicit application dependency; telemetry remains runtime instrum
 Desktop frameworks already own application lifetime. Start `App` after startup and await stop from the framework's
 closing path:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let running = App.start environment application
+```fsharp
+let startDesktop (requestExit: unit -> unit) (application: Flow<unit, string, unit>) =
+    let running = App.start () application
 
-let closeApplication () = async {
-    let! _ = running.Stop()
-    dispatcher.RequestExit()
-}
+    let closeApplication () = async {
+        let! _ = running.Stop()
+        requestExit ()
+    }
+
+    closeApplication
 ```
 
 Do not block the UI thread on `Completion`. Framework-specific packages are unnecessary unless an integration can

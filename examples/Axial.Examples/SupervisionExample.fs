@@ -1,3 +1,4 @@
+// <snippet:supervision-example>
 module SupervisionExample
 
 open System
@@ -79,3 +80,4 @@ let run () =
     supervisedRecovery ()
     unobservedDefectReporting ()
     intentionalFireAndForget ()
+// </snippet:supervision-example>

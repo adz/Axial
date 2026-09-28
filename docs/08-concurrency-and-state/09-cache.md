@@ -13,13 +13,47 @@ This is often called single-flight.
 
 `Flow.memoize` turns a flow into a shared version of itself:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-flow {
-    let! loadConfig = Flow.memoize readConfigFromDisk
-    let! a = loadConfig
-    let! b = loadConfig // the same value; the file is read once
-    return a = b
-}
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+let reads = ref 0
+
+let readConfigFromDisk : Flow<string, string> =
+    Flow.delay (fun () -> Flow.ok $"config read {Interlocked.Increment &reads.contents} time(s)")
+
+let sameConfig : Flow<string, bool> =
+    flow {
+        let! loadConfig = Flow.memoize readConfigFromDisk
+        let! a = loadConfig
+        let! b = loadConfig // the same value; the file is read once
+        return a = b
+    }
+```
+
+```fsharp run
+sameConfig |> Flow.run () |> shouldEqual (Exit.Success true)
+reads.Value |> shouldEqual 1
 ```
 
 ## Cache by key
@@ -27,13 +61,29 @@ flow {
 `Cache.make` takes a lookup function and returns a cache. `Cache.get` returns the value for a key, running the lookup
 only when no success is cached and no lookup for that key is already running:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-flow {
-    let! users = Cache.make loadUser
-    let! pages = userIds |> Flow.traversePar (Parallelism.bounded 8) (fun id -> users |> Cache.get id)
-    return pages
-}
+```fsharp
+let lookups = ref 0
+
+let loadUser (id: int) : Flow<string, string> =
+    Flow.sleep (TimeSpan.FromMilliseconds 5.0)
+    |> Flow.map (fun () ->
+        Interlocked.Increment &lookups.contents |> ignore
+        $"user {id}")
+
+let loadPages (userIds: int list) : Flow<string, string list> =
+    flow {
+        let! users = Cache.make loadUser
+        let! pages = userIds |> Flow.traversePar (Parallelism.bounded 8) (fun id -> users |> Cache.get id)
+        return pages
+    }
 ```
+
+```fsharp run
+loadPages [ 1; 2; 1; 1; 2 ] |> Flow.run () |> shouldEqual (Exit.Success [ "user 1"; "user 2"; "user 1"; "user 1"; "user 2" ])
+lookups.Value |> shouldEqual 2
+```
+
+Five concurrent requests for two users ran the lookup twice.
 
 `Cache.invalidate` forgets one key and `Cache.invalidateAll` forgets every key, so the next `get` looks up again.
 `Cache.count` reports how many keys are cached or loading.

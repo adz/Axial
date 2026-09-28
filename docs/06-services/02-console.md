@@ -8,6 +8,29 @@ description: Standard streams, redirection state, and terminal control as an exp
 standard streams, the redirection and encoding state around them, and interactive terminal control: cursor, colour,
 title, and key reads.
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open Axial
 open Axial.Console
@@ -29,14 +52,15 @@ console, and it cannot reach the real terminal behind your back.
 
 Implement `IHasConsole` on the application environment and supply `Console.live` at the host edge:
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
+```fsharp
 type AppEnv =
     { Console: IConsole }
 
     interface IHasConsole with
         member this.Console = this.Console
 
-let! exit = confirm "Continue?" |> Flow.startTask { Console = Console.live }
+let askToContinue () : Task<Exit<bool, Never>> =
+    confirm "Continue?" |> Flow.startTask { Console = Console.live }
 ```
 
 For a runtime assembled with [layers](/layers/index.html), wrap it: `Layer.succeed Console.live`. See
@@ -99,8 +123,8 @@ a full-screen terminal application wants.
 Every one of these is mutable terminal state that outlives the workflow that set it. Restore what you change through
 a finalizer, so an interrupted or failed workflow cannot leave the user with an invisible cursor or a green prompt:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let withHiddenCursor (console: IConsole) body =
+```fsharp
+let withHiddenCursor (console: IConsole) (body: Flow<AppEnv, Never, 'value>) : Flow<AppEnv, Never, 'value> =
     flow {
         do! Flow.scopeFinalizer(fun _ ->
             console.CursorVisible <- true
@@ -109,6 +133,7 @@ let withHiddenCursor (console: IConsole) body =
         do! Console.setCursorVisible false
         return! body
     }
+    |> Flow.scoped
 ```
 
 ## Testing
@@ -116,22 +141,76 @@ let withHiddenCursor (console: IConsole) body =
 Substitute any `IConsole` implementation. A recording console over `StringWriter` is usually enough, and it makes
 assertions ordinary value comparisons:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let recorded = StringWriter()
+`IConsole` is a wide interface, so implement it once in a test helper rather than in each test. This one reads its
+input from a string, records what is written, and keeps terminal state in fields:
 
-let testConsole =
-    { new IConsole with
-        member _.Out = recorded
-        member _.WriteLine(value) = recorded.WriteLine value
-        // remaining members raise or return defaults
-        }
+```fsharp
+type RecordingConsole(input: string) =
+    let reader = new StringReader(input)
+    let output = new StringWriter()
+    let error = new StringWriter()
+    let mutable inputEncoding = Text.Encoding.UTF8
+    let mutable outputEncoding = Text.Encoding.UTF8
+    let mutable foreground = ConsoleColor.Gray
+    let mutable background = ConsoleColor.Black
+    let mutable cursorLeft = 0
+    let mutable cursorTop = 0
+    let mutable cursorVisible = true
+    let mutable title = ""
+    let mutable treatControlC = false
 
-let! exit = report "ready" |> Flow.startTask { Console = testConsole }
-test <@ recorded.ToString().Trim() = "ready" @>
+    member _.Written = output.ToString()
+    member _.IsCursorVisible = cursorVisible
+
+    interface IConsole with
+        member _.In = reader
+        member _.Out = output
+        member _.Error = error
+        member _.InputEncoding with get () = inputEncoding and set value = inputEncoding <- value
+        member _.OutputEncoding with get () = outputEncoding and set value = outputEncoding <- value
+        member _.IsInputRedirected = true
+        member _.IsOutputRedirected = true
+        member _.IsErrorRedirected = true
+        member _.KeyAvailable = false
+        member _.Read() = reader.Read()
+        member _.ReadLine() = reader.ReadLine()
+        member _.ReadKey _ = ConsoleKeyInfo()
+        member _.Write value = output.Write value
+        member _.WriteLine value = output.WriteLine value
+        member _.WriteError value = error.Write value
+        member _.WriteErrorLine value = error.WriteLine value
+        member _.OpenStandardInput() = Stream.Null
+        member _.OpenStandardOutput() = Stream.Null
+        member _.OpenStandardError() = Stream.Null
+        member _.Clear() = ()
+        member _.Beep() = ()
+        member _.ResetColor() = ()
+        member _.ForegroundColor with get () = foreground and set value = foreground <- value
+        member _.BackgroundColor with get () = background and set value = background <- value
+        member _.CursorLeft with get () = cursorLeft and set value = cursorLeft <- value
+        member _.CursorTop with get () = cursorTop and set value = cursorTop <- value
+        member _.CursorVisible with get () = cursorVisible and set value = cursorVisible <- value
+        member _.SetCursorPosition(left, top) = cursorLeft <- left; cursorTop <- top
+        member _.Title with get () = title and set value = title <- value
+        member _.TreatControlCAsInput with get () = treatControlC and set value = treatControlC <- value
 ```
 
-`IConsole` is a wide interface, so implement it once in a test helper rather than in each test: an abstract base that
-returns defaults, with the few members a suite uses overridden.
+With it, assertions are ordinary value comparisons:
+
+```fsharp run
+let answeredYes = RecordingConsole "y\n"
+confirm "Continue?" |> Flow.run { Console = answeredYes } |> shouldEqual (Exit.Success true)
+answeredYes.Written |> shouldEqual "Continue? [y/N] "
+
+let answeredBlank = RecordingConsole "\n"
+confirm "Continue?" |> Flow.run { Console = answeredBlank } |> shouldEqual (Exit.Success false)
+
+let terminal = RecordingConsole ""
+withHiddenCursor terminal (Console.writeLine "working") |> Flow.run { Console = terminal } |> shouldEqual (Exit.Success())
+terminal.IsCursorVisible |> shouldEqual true
+```
+
+The cursor is visible again afterwards: the finalizer ran when the scope closed.
 
 ## Fable
 

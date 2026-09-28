@@ -109,11 +109,13 @@ module WithFlow =
     /// Prefer Local; orElse falls back to Regional in the same transaction; if both retry, the
     /// whole transaction suspends until any participating TRef changes, then re-runs from a
     /// coherent snapshot.
+    // <snippet:compare-inventory>
     let reserve (inventory: Inventory) : Flow<'env, 'error, Warehouse> =
         STM.atomically (
             STM.orElse
                 (reserveFrom inventory.LocalStock Local inventory)
                 (reserveFrom inventory.RegionalStock Regional inventory)
+    // </snippet:compare-inventory>
         )
 
     let replenish (warehouse: Warehouse) (units: int) (inventory: Inventory) : Flow<'env, 'error, unit> =

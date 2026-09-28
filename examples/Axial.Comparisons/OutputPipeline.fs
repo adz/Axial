@@ -116,6 +116,7 @@ module WithFlow =
 
     /// The process-output variant: `Process.stream` emits typed events from a live process, and
     /// the same pipeline shape consumes them. Requires IHasProcess in the environment.
+    // <snippet:compare-process-output>
     let streamProcessOutput<'env when 'env :> IHasProcess>
         (specification: ProcessSpec)
         (persist: string -> Result<unit, RecordError>)
@@ -129,6 +130,7 @@ module WithFlow =
                 | _ -> None)
 
         processLines lines persist
+    // </snippet:compare-process-output>
 
     /// Explicit coordination when the producer must run ahead: fork it, keep the Fiber, and
     /// always join or interrupt it. Detached fibers are how work leaks.

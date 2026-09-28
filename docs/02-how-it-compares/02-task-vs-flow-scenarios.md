@@ -30,14 +30,7 @@ The ordinary version is a `Task<CheckoutReceipt>` whose expected failures leave 
 whose compensation lives in a catch block someone must remember. The comparison includes `checkoutBuggy`, the common
 real-world edit (a failure branch added outside the `try`) and a test proving the reservation leaks.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-// Flow<CheckoutEnv, CheckoutError, CheckoutReceipt>
-Flow.scoped (
-    Flow.scopeAcquireRelease
-        reserve                                                  // acquire: typed InventoryError -> CheckoutError
-        (fun (reservation, inventory) _ -> inventory.Release reservation)
-    |> Flow.bind (fun (reservation, _) -> fulfil reservation))   // charge + ship, each error mapped at its bind
-```
+{{< snippet id="compare-checkout" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
 Failures enter `CheckoutError` at each bind site with
 [`Bind.mapError`](/error-handling/bind.html). The Bind guide explains why the same mapping syntax works for
@@ -61,11 +54,7 @@ Read the [retry-budget comparison source](https://github.com/adz/Axial/blob/main
 The ordinary version interleaves a retry loop, `CancellationTokenSource.CancelAfter`, `Task.Delay`, and exception
 classification in one function, and one overly broad `with _ ->` would make it retry a `NullReferenceException`.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-request                                          // Flow<'env, RateError, Rate>, cold
-|> Flow.retry transientOnly              // Retry.schedule { ...; When = Transport only }
-|> Flow.timeout (TimeSpan.FromSeconds 2.0) TimedOut
-```
+{{< snippet id="compare-retry" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
 Retry and timeout are policies applied to a cold workflow from outside. The retry predicate selects typed failures;
 defects and interruption are never retried, because `Flow.retry` re-runs `Cause.Fail` only. The
@@ -85,14 +74,7 @@ to an empty list on their typed failure; a mandatory failure interrupts the stil
 
 Read the [dashboard comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/DashboardFanOut.fs).
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let applicationActivitySource = new System.Diagnostics.ActivitySource("Dashboard.Application")
-let recommended = loadRecommendations |> Flow.orElse (Flow.succeed [])  // recover ONLY this branch
-
-Flow.zipPar (Flow.zipPar account recent) recommended
-|> Flow.map (fun ((account, recent), recommended) -> { ... })
-|> Activity.traceOn applicationActivitySource "dashboard.load"           // application-owned span
-```
+{{< snippet id="compare-dashboard" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
 The ordinary `Task.WhenAll` version must cancel siblings by hand through a linked token source, and two simultaneous
 failures surface as whichever exception `WhenAll` publishes first. With `zipPar` the runtime does the interruption:
@@ -120,18 +102,7 @@ throws *before* ownership transfers into `try/finally`. The test proves the dire
 there is no such gap: `Flow.scopeAcquireRelease` owns the resource from the instant acquisition succeeds, and
 `Flow.scoped` keeps the failing gate inside the resource's lifetime:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-Flow.scoped (
-    Flow.scopeAcquireRelease
-        acquire                                                     // FileSystem.createDirectory, typed errors
-        (fun workspace _ -> Task.Run(fun () -> Directory.Delete(workspace, recursive = true)))
-    |> Flow.bind (fun workspace -> flow {
-        do! if List.isEmpty records then Flow.fail NoRecords else Flow.succeed ()
-        do! FileSystem.writeAllLines (Path.Combine(workspace, "batch.csv")) records
-            |> Flow.mapError (FileSystemError.describe >> UnreadableBatch)
-        return records.Length
-    }))
-```
+{{< snippet id="compare-workspace" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
 ZIO correspondence: `Scope` and `ZIO.acquireRelease`; for resources that should live as long as a provided layer,
 Axial has `Flow.scopeAcquireRelease` and `Layer.acquireRelease`.
@@ -154,18 +125,7 @@ capability, and business code names only what it uses through the package operat
 ([`Clock.now`](/services/platform-services/clock.html), [`FileSystem.readAllText`](/services/filesystem.html),
 [`Console.writeLine`](/services/console.html)):
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let writeDailyReport (sourcePath: string) : Flow<ReportEnv, ReportError, string> =
-    flow {
-        let! now = Clock.now
-        let! body = FileSystem.readAllText sourcePath |> Flow.mapError (FileSystemError.describe >> StoreRejected)
-        ...
-    }
-
-// Production edge: live services merged into the record once.
-Layer.merge (Layer.merge Clock.layer (Layer.succeed FileSystem.live)) (Layer.succeed Console.live)
-|> Layer.map (fun ((clock, fileSystem), console) -> { Clock = clock; FileSystem = fileSystem; Console = console; Store = store })
-```
+{{< snippet id="compare-report" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
 The test builds the same record from `Clock.fromValue` and in-memory doubles and asserts a deterministic report
 name, with no time-mocking framework or service locator. Reading the clock without declaring it does not compile.
@@ -191,14 +151,7 @@ streams from an instrumented infinite sequence and asserts almost nothing was pr
 The process variant uses [`Process.stream`](/process/), which streams typed `ProcessEvent`s from a live
 process through the same pipeline shape:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-Process.stream specification
-|> FlowStream.mapError (ProcessError.describe >> BadRecord)
-|> FlowStream.choose (function
-    | ProcessEvent.Output output when output.Channel = OutputChannel.StdOut -> Some(output.Text.TrimEnd('\r', '\n'))
-    | _ -> None)
-|> ...  // same consumer as the in-memory variant
-```
+{{< snippet id="compare-process-output" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
 Where a producer must genuinely run ahead, `Flow.fork` returns a `Fiber` the caller owns and must `join` or
 `interrupt`. ZIO correspondence: `ZStream`, scoped fibers, interruption.
@@ -221,12 +174,7 @@ The ordinary version is a lock, a counting semaphore for wakeups, and a hand-mai
 reservation counts change together; the comment in the example marks exactly where swapping the semaphore for a
 `Monitor` pulse introduces a missed wakeup.
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-STM.atomically (
-    STM.orElse
-        (reserveFrom inventory.LocalStock Local inventory)      // STM.retry when empty
-        (reserveFrom inventory.RegionalStock Regional inventory))
-```
+{{< snippet id="compare-inventory" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
 The transaction either commits both `TRef` changes or neither; `STM.retry` suspends without blocking a thread and
 re-runs from a coherent snapshot when any participating `TRef` changes; `orElse` chooses the alternative warehouse

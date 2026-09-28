@@ -11,6 +11,29 @@ Use these helpers at the application boundary. They are not substitutes for doma
 
 ## A Small Workflow To Wrap
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open System
 open System.Threading
@@ -18,25 +41,24 @@ open System.Threading
 type CheckoutError =
     | GatewayUnavailable
     | CheckoutTimedOut
-    | CheckoutCancelled
     | ReceiptStoreFailed
     | UnexpectedGatewayFailure of string
 
 let authorizeCard : Flow<unit, CheckoutError, string> =
     flow {
-        do! Flow.sleep (TimeSpan.FromMilliseconds 50)
+        do! Flow.sleep (TimeSpan.FromMilliseconds 50.0)
         return "receipt-123"
     }
 
 let storeReceipt (receiptId: string) : Flow<unit, CheckoutError, unit> =
     flow {
-        do! Flow.sleep (TimeSpan.FromMilliseconds 20)
+        do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
         return ()
     }
 
 let notifyCustomer (receiptId: string) : Flow<unit, CheckoutError, unit> =
     flow {
-        do! Flow.sleep (TimeSpan.FromMilliseconds 20)
+        do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
         return ()
     }
 
@@ -56,14 +78,20 @@ Even in this tiny example there are already several composed steps. Runtime help
 ```fsharp
 let checkoutWithTimeout =
     checkout
-    |> Flow.timeoutToError (TimeSpan.FromMilliseconds 10) CheckoutTimedOut
+    |> Flow.timeoutToError (TimeSpan.FromMilliseconds 10.0) CheckoutTimedOut
+```
+
+Authorizing the card takes 50 ms, so the 10 ms limit fails the checkout:
+
+```fsharp run
+checkoutWithTimeout |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail CheckoutTimedOut))
 ```
 
 `timeout`, `timeoutToError`, `timeoutToOk`, and `timeoutWith` are boundary tools. They answer "what should this workflow do if it takes too long?"
 
 ## Retry
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let retryingCheckout =
     checkout
     |> Flow.retry (
@@ -75,6 +103,10 @@ let retryingCheckout =
             | _ -> false))
 ```
 
+```fsharp run
+retryingCheckout |> Flow.run () |> shouldEqual (Exit.Success "receipt-123")
+```
+
 `Flow.retry` takes a `Schedule`, which sees each typed error: `Schedule.whileInput` selects the errors worth retrying,
 and `Schedule.recursAtMost` bounds the attempts. For the common case, `Retry.schedule` builds the same schedule from a record
 with named fields.
@@ -82,17 +114,24 @@ with named fields.
 ## Exceptions
 
 ```fsharp
-let rawGatewayCall : Flow<unit, CheckoutError, string> =
+let rawGatewayCall (clientExplodes: bool) : Flow<unit, CheckoutError, string> =
     flow {
-        if DateTime.UtcNow.Second % 2 = 0 then
+        if clientExplodes then
             return raise (InvalidOperationException "gateway client exploded")
 
         return "receipt-123"
     }
 
 let safeGatewayCall =
-    rawGatewayCall
+    rawGatewayCall false
     |> Flow.catch (fun ex -> UnexpectedGatewayFailure ex.Message)
+```
+
+```fsharp run
+rawGatewayCall true
+|> Flow.catch (fun ex -> UnexpectedGatewayFailure ex.Message)
+|> Flow.run ()
+|> shouldEqual (Exit.Failure(Cause.Fail(UnexpectedGatewayFailure "gateway client exploded")))
 ```
 
 Use `Flow.catch` when you are deliberately translating technical exceptions into your typed error channel. If you do not catch them, they surface as `Cause.Die` in the final `Exit`.
@@ -102,13 +141,18 @@ Use `Flow.catch` when you are deliberately translating technical exceptions into
 ```fsharp
 let runCancellable (cancellationToken: CancellationToken) =
     task {
-        let! exit = checkoutWithTimeout.StartAsTask((), cancellationToken = cancellationToken)
+        let! exit = checkout.StartAsTask((), cancellationToken = cancellationToken)
 
         match exit with
-        | Exit.Success receipt -> printfn "Receipt %s" receipt
-        | Exit.Failure Cause.Interrupt -> printfn "Cancelled"
-        | Exit.Failure cause -> printfn "%s" (Cause.prettyPrint string cause)
+        | Exit.Success receipt -> return $"Receipt {receipt}"
+        | Exit.Failure Cause.Interrupt -> return "Cancelled"
+        | Exit.Failure cause -> return Cause.prettyPrint string cause
     }
+```
+
+```fsharp run
+runCancellable CancellationToken.None |> _.Result |> shouldEqual "Receipt receipt-123"
+runCancellable (new CancellationToken(true)) |> _.Result |> shouldEqual "Cancelled"
 ```
 
 If the host cancels the token, the flow finishes with `Exit.Failure Cause.Interrupt`.
@@ -126,8 +170,8 @@ Two helpers cover the edges:
 
 ## Annotations
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-let annotatedCharge =
+```fsharp
+let annotatedCharge : Flow<unit, CheckoutError, Map<string, string> * string option> =
     flow {
         let! annotations = Flow.annotations
         let! traceId = Flow.traceId
@@ -135,11 +179,19 @@ let annotatedCharge =
     }
 ```
 
+```fsharp run
+annotatedCharge
+|> Flow.annotate "order_id" "o-7"
+|> Flow.withTraceId "trace-1"
+|> Flow.run ()
+|> shouldEqual (Exit.Success(Map [ "order_id", "o-7"; "trace_id", "trace-1" ], Some "trace-1"))
+```
+
 Annotations are useful for observability and correlation. They belong to runtime mechanics, not to your domain model.
 
 ## Pulling It Together
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let guardedCheckout =
     safeGatewayCall
     |> Flow.bind (fun receiptId ->
@@ -148,7 +200,7 @@ let guardedCheckout =
             do! notifyCustomer receiptId
             return receiptId
         })
-    |> Flow.timeoutToError (TimeSpan.FromSeconds 2) CheckoutTimedOut
+    |> Flow.timeoutToError (TimeSpan.FromSeconds 2.0) CheckoutTimedOut
     |> Flow.retry (
         Retry.schedule
             { Retry.defaults with
@@ -157,6 +209,10 @@ let guardedCheckout =
                     | GatewayUnavailable
                     | ReceiptStoreFailed -> true
                     | _ -> false })
+```
+
+```fsharp run
+guardedCheckout |> Flow.run () |> shouldEqual (Exit.Success "receipt-123")
 ```
 
 Each concern has its own place:

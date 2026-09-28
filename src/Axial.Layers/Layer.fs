@@ -164,6 +164,18 @@ module Layer =
             invoke layer input scope cancellationToken
             |> Execution.mapError mapper)
 
+    /// <summary>Gives a layer that cannot fail with a typed error any error type.</summary>
+    /// <remarks>
+    /// <c>Layer.provide</c> and the layer combinators require one error type. Widen a layer that cannot fail, such
+    /// as <c>BaseRuntime.live</c>, to combine it with layers or workflows that can.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// let runtime : Layer&lt;unit, string, int&gt; = Layer.succeed 1 |> Layer.widenError
+    /// </code>
+    /// </example>
+    let widenError (layer: Layer<'input, Never, 'output>) : Layer<'input, 'error, 'output> = mapError Never.absurd layer
+
     /// <summary>Sequences layer provisioning with a dependent follow-up layer.</summary>
     let bind
         (binder: 'output -> Layer<'input, 'error, 'next>)

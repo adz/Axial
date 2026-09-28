@@ -25,121 +25,169 @@ channel.
 `ValueTask` has the corresponding `fromValueTask`, `fromValueTaskResult`, `awaitStartedValueTask`, and
 `awaitStartedValueTaskResult` functions.
 
+## The examples on this page
+
+The examples use a stand-in for a data-access class. Its `LoadUserAsync` method starts work as soon as it is called,
+like most .NET APIs that return a `Task`, and it counts how often it was called:
+
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type User = { Id: int; Name: string }
+type LoadUserError = UserNotFound of int
+
+type UserRepository() =
+    let mutable calls = 0
+    member _.Calls = calls
+
+    member _.LoadUserAsync(id: int, cancellationToken: CancellationToken) : Task<Result<User, LoadUserError>> =
+        calls <- calls + 1
+
+        task {
+            do! Task.Delay(1, cancellationToken)
+            return if id = 1 then Ok { Id = 1; Name = "Ada" } else Error(UserNotFound id)
+        }
+
+    member this.LoadUser(id: int) : Async<Result<User, LoadUserError>> =
+        async {
+            let! cancellationToken = Async.CancellationToken
+            return! this.LoadUserAsync(id, cancellationToken) |> Async.AwaitTask
+        }
+```
+
 ## Bind Async values
 
 `Async` is already a cold F# computation. Bind it directly:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let loadCount : Async<int> =
-    async { return 42 }
+```fsharp
+let loadCount : Async<int> = async { return 42 }
 
-let workflow =
+let plusOne : Flow<int> =
     flow {
         let! count = loadCount
         return count + 1
     }
 ```
 
-An outer `Result` is part of the Flow contract, not a nested success value:
+An outer `Result` is part of the Flow contract, not a nested success value: `Ok` continues the block and `Error` enters
+the typed error channel. The same applies to `return!`:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let loadUser : Async<Result<User, LoadUserError>> =
-    repository.loadUser userId
+```fsharp
+let repository = UserRepository()
 
-let workflow : Flow<unit, LoadUserError, string> =
+let userName (id: int) : Flow<LoadUserError, string> =
     flow {
-        let! user = loadUser
+        let! user = repository.LoadUser id
         return user.Name
     }
+
+let loadUser (id: int) : Flow<LoadUserError, User> = flow { return! repository.LoadUser id }
 ```
 
-The same lifting applies to `return!`:
-
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let workflow : Flow<unit, LoadUserError, User> =
-    flow {
-        return! loadUser
-    }
+```fsharp run
+plusOne |> Flow.run () |> shouldEqual (Exit.Success 43)
+userName 1 |> Flow.run () |> shouldEqual (Exit.Success "Ada")
+userName 2 |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail(UserNotFound 2)))
+loadUser 1 |> Flow.run () |> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
 ```
 
 Use `Flow.fromAsync` or `Flow.fromAsyncResult` when composing without `flow { }`.
 
 ## Bind cold Task work
 
-A `Task` starts when the method that returns it runs. Wrap the factory in `ColdTask` so the method runs only when the
-Flow runs:
+A `Task` starts when the method that returns it runs. Wrap the call in `ColdTask` so the method runs only when the Flow
+runs. `ColdTask<Result<_,_>>` lifts its outer `Result` for both `let!` and `return!`:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let loadUser : ColdTask<Result<User, LoadUserError>> =
-    ColdTask(fun cancellationToken ->
-        repository.loadUserAsync(userId, cancellationToken))
+```fsharp
+let loadUserCold (id: int) : ColdTask<Result<User, LoadUserError>> =
+    ColdTask(fun cancellationToken -> repository.LoadUserAsync(id, cancellationToken))
 
-let workflow : Flow<unit, LoadUserError, string> =
+let coldName (id: int) : Flow<LoadUserError, string> =
     flow {
-        let! user = loadUser
+        let! user = loadUserCold id
         return user.Name
     }
 ```
 
-`ColdTask<Result<_,_>>` lifts its outer `Result` for both `let!` and `return!`:
+Building the flow calls nothing. Each execution calls the method again and passes that execution's cancellation token,
+so retry, repeat, timeout, race, and interruption operate on newly started work:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let workflow : Flow<unit, LoadUserError, User> =
-    flow {
-        return! loadUser
-    }
+```fsharp run
+let before = repository.Calls
+let described = coldName 1
+repository.Calls |> shouldEqual before
+
+described |> Flow.run () |> shouldEqual (Exit.Success "Ada")
+described |> Flow.run () |> shouldEqual (Exit.Success "Ada")
+repository.Calls |> shouldEqual (before + 2)
 ```
-
-Each execution invokes the factory again and supplies that execution's cancellation token. Retry, repeat, timeout, race,
-and interruption therefore operate on newly started work.
 
 ## Convert a Task factory without a builder
 
-Use `Flow.fromTask` when the task returns an ordinary value:
+`Flow.fromTask` takes a function from the cancellation token to a task that returns an ordinary value.
+`Flow.fromTaskResult` takes one whose task returns a `Result`, and sends `Error` to the typed error channel:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let download : Flow<unit, Never, byte array> =
-    Flow.fromTask(fun cancellationToken ->
-        client.GetByteArrayAsync(uri, cancellationToken))
+```fsharp
+let measure (text: string) : Flow<int> =
+    Flow.fromTask (fun cancellationToken ->
+        task {
+            do! Task.Delay(1, cancellationToken)
+            return text.Length
+        })
+
+let loadFirstUser : Flow<LoadUserError, User> =
+    Flow.fromTaskResult (fun cancellationToken -> repository.LoadUserAsync(1, cancellationToken))
 ```
 
-Use `Flow.fromTaskResult` when the task returns an expected application failure:
-
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let loadUser : Flow<unit, LoadUserError, User> =
-    Flow.fromTaskResult(fun cancellationToken ->
-        repository.loadUserAsync(userId, cancellationToken))
+```fsharp run
+measure "four" |> Flow.run () |> shouldEqual (Exit.Success 4)
+loadFirstUser |> Flow.run () |> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
 ```
 
-Both functions invoke their factory on every execution. Thrown exceptions are defects; cancellation is interruption.
-The `Result` variant changes only how the returned value is interpreted.
+Both functions call their factory on every execution. Thrown exceptions are defects; cancellation is interruption.
 
 ## Await work that already started
 
-Sometimes an API gives you a Task that is already running:
+Sometimes an API gives you a Task that is already running. `Flow.awaitStartedTask` awaits it, and
+`Flow.awaitStartedTaskResult` also lifts an `Error`:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let runningTask = repository.beginRefresh()
+```fsharp run
+let callsBefore = repository.Calls
+let runningTask = repository.LoadUserAsync(1, CancellationToken.None)
+let refresh : Flow<LoadUserError, User> = Flow.awaitStartedTaskResult runningTask
 
-let refresh : Flow<unit, Never, RefreshSummary> =
-    Flow.awaitStartedTask runningTask
+refresh |> Flow.run () |> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
+refresh |> Flow.run () |> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
+repository.Calls |> shouldEqual (callsBefore + 1)
 ```
 
-If it returns `Result`, use the typed-error form:
-
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let runningTask : Task<Result<RefreshSummary, RefreshError>> =
-    repository.beginRefresh()
-
-let refresh : Flow<unit, RefreshError, RefreshSummary> =
-    Flow.awaitStartedTaskResult runningTask
-```
-
-An already-running task has different lifecycle semantics:
+The repository was called once, when `runningTask` was created. An already-running task has different lifecycle
+semantics:
 
 - It started before the Flow.
 - Reusing the Flow awaits the same operation.
-- Flow cannot inject its cancellation token into work that already started.
+- Flow cannot pass its cancellation token into work that already started.
 - Prefer a cold factory when you control task creation.
 
 Raw `Task` and `ValueTask` values do not bind directly in `flow { }`. This prevents an already-running operation from
@@ -150,10 +198,18 @@ looking like a cold workflow description.
 The `from*`, `ColdTask`, and `awaitStarted*` paths treat thrown exceptions as defects. Use an `attempt*` function when
 an exception is an expected failure that callers should handle:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let read : Flow<unit, exn, string> =
-    Flow.attemptTask(fun cancellationToken ->
-        File.ReadAllTextAsync(path, cancellationToken))
+```fsharp
+let readFile (path: string) : ExnFlow<string> =
+    Flow.attemptTask (fun cancellationToken -> File.ReadAllTextAsync(path, cancellationToken))
+
+let failureName (exit: Exit<'value, exn>) =
+    match exit with
+    | Exit.Failure(Cause.Fail error) -> error.GetType().Name
+    | _ -> "no typed failure"
+```
+
+```fsharp run
+readFile "/no/such/file.txt" |> Flow.run () |> failureName |> shouldEqual "DirectoryNotFoundException"
 ```
 
 Available functions include:
@@ -175,9 +231,15 @@ failure like any other exception: `Cause.Fail exn` from `attempt*`, a defect fro
 Some libraries only offer synchronous, blocking calls: database drivers, LibGit2Sharp, image codecs. Wrap them with
 `Flow.fromBlocking` so the call runs on the thread pool instead of stalling the workflow's thread:
 
-```fsharp no-check reason="Application-specific library calls are described in the surrounding prose"
-let recentCommits : Flow<unit, GitError, Commit list> =
-    Flow.fromBlocking (fun _ -> repository.Commits |> Seq.truncate 50 |> List.ofSeq)
+```fsharp
+let slowLookup (key: string) : Flow<string> =
+    Flow.fromBlocking (fun _ ->
+        Thread.Sleep 5 // stands in for a synchronous driver call
+        key.ToUpperInvariant())
+```
+
+```fsharp run
+slowLookup "axial" |> Flow.run () |> shouldEqual (Exit.Success "AXIAL")
 ```
 
 Once started, blocking work runs to completion even if the workflow is interrupted, because it cannot be abandoned
@@ -190,18 +252,19 @@ exceptions as `Cause.Fail exn`. On JavaScript the operation runs inline.
 The builder interprets one outer `Result` as Flow's error channel. Add another successful layer when a nested Result is
 the value you intentionally need:
 
-```fsharp no-check reason="Application-specific asynchronous APIs and domain types are described in the surrounding prose"
-let inspect : ColdTask<Result<Result<User, LoadUserError>, Never>> =
+```fsharp
+let inspect (id: int) : ColdTask<Result<Result<User, LoadUserError>, Never>> =
     ColdTask(fun cancellationToken ->
         task {
-            let! result = repository.loadUserAsync(userId, cancellationToken)
-            return (Ok result : Result<_, Never>)
+            let! result = repository.LoadUserAsync(id, cancellationToken)
+            return (Ok result: Result<_, Never>)
         })
 
-let workflow : Flow<unit, Never, Result<User, LoadUserError>> =
-    flow {
-        return! inspect
-    }
+let lookup (id: int) : Flow<Result<User, LoadUserError>> = flow { return! inspect id }
+```
+
+```fsharp run
+lookup 2 |> Flow.run () |> shouldEqual (Exit.Success(Error(UserNotFound 2)))
 ```
 
 The builder lifts the outer `Result<_,Never>` and leaves the inner `Result<User,LoadUserError>` as the successful value.

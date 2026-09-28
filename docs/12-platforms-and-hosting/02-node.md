@@ -21,7 +21,7 @@ also fails because the Node `process` object is required.
 
 The Node entry point handles the process; the application workflow stays platform-neutral:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 type StartupInputs =
     { Arguments: string list
       EnvironmentVariables: IEnvironmentVariables }
@@ -42,7 +42,7 @@ live Node object. `Expand` expands `$NAME` and `${NAME}` forms.
 
 At the Fable entry point:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 open Axial.Hosting.Node
 
 NodeApp.run AppError.describe inputs application
@@ -65,7 +65,7 @@ not caused by an installed signal uses `130`. A cleanup defect takes precedence 
 
 Use `NodeApp.start` when another Node module needs the `AppHandle`:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 let running = NodeApp.start AppError.describe inputs application
 
 async {

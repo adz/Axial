@@ -23,16 +23,54 @@ Both stay inside Axial's error model:
 - `retry` re-runs typed `Cause.Fail` errors and never touches defects.
 - `supervise` re-runs `Cause.Die` defects and never touches typed errors or interruptions.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let reliableWorker =
-    pollQueueForever
-    |> Flow.supervise (
-        Retry.schedule
-            { Retry.defaults with
-                Retries = 4
-                Backoff = Backoff.Exponential(TimeSpan.FromSeconds 1.0, TimeSpan.FromSeconds 30.0) })
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
 
-let! fiber = Flow.fork reliableWorker
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+let polls = ref 0
+
+/// Crashes on its first two runs, as a worker does on a poison message, then succeeds.
+let pollQueue : Flow<string, int> =
+    Flow.delay (fun () ->
+        let run = Interlocked.Increment &polls.contents
+        if run <= 2 then Flow.die (InvalidOperationException "poison message") else Flow.ok run)
+
+let restartPolicy =
+    Retry.schedule
+        { Retry.defaults with
+            Retries = 4
+            Backoff = Backoff.Exponential(TimeSpan.FromMilliseconds 1.0, TimeSpan.FromMilliseconds 10.0) }
+
+let reliableWorker : Flow<string, int> = pollQueue |> Flow.supervise restartPolicy
+```
+
+```fsharp run
+flow {
+    let! fiber = Flow.fork reliableWorker
+    return! Fiber.join fiber
+}
+|> Flow.run ()
+|> shouldEqual (Exit.Success 3)
 ```
 
 `supervise` takes the same `Schedule` as `retry`, but its input is the defect exception, so `Schedule.whileInput` or a `Retry` record's `When` can decide which crashes are worth a restart. Bound the restarts with `Retries` or `Schedule.recursAtMost` (or a time budget with `Schedule.upTo`) so a crash loop eventually surfaces. When the schedule stops, the final defect propagates as the flow's exit.
@@ -46,8 +84,14 @@ Two semantics worth knowing:
 
 If a background fiber's outcome genuinely does not matter, say so at the call site:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let! _fiber = Flow.forkDetached bestEffortCacheWarmup
+```fsharp
+let bestEffortCacheWarmup : Flow<string, unit> = Flow.die (InvalidOperationException "cache warmup failed")
+
+let startWarmup : Flow<string, unit> =
+    flow {
+        let! _fiber = Flow.forkDetached bestEffortCacheWarmup
+        return ()
+    }
 ```
 
 A detached fiber counts as observed from birth, so a defect it dies with is never reported as unobserved. Use it instead of discarding a `Flow.fork` handle: a discarded `fork` handle whose fiber dies of a defect *is* reported.
@@ -56,17 +100,29 @@ A detached fiber counts as observed from birth, so a defect it dies with is neve
 
 `FiberObserver` is a record of lifecycle hooks installed once at the application edge and carried implicitly to every descendant fork:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
+let unobserved = ResizeArray<string>()
+
 let observer =
     { FiberObserver.none with
-        OnUnobservedDefect = fun metadata defect ->
-            logger.LogError(defect, "Unobserved fiber defect (fiber {FiberId})",
-                metadata |> Option.map (fun m -> m.Id.Value)) }
+        OnUnobservedDefect = fun _ defect -> lock unobserved (fun () -> unobserved.Add defect.Message) }
 
-application
-|> Flow.withFiberObserver observer
-|> fun workflow -> workflow |> Flow.run env
+/// Detaches one failing fiber and discards the handle of another.
+let application : Flow<string, unit> =
+    flow {
+        do! startWarmup
+        let! _ = Flow.fork (Flow.die (InvalidOperationException "lost order") : Flow<string, unit>)
+        do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
+    }
+    |> Flow.scoped
 ```
+
+```fsharp run
+application |> Flow.withFiberObserver observer |> Flow.run () |> shouldEqual (Exit.Success())
+List.ofSeq unobserved |> shouldEqual [ "lost order" ]
+```
+
+The discarded fork's defect was reported when its scope closed. The detached warmup's was not.
 
 The hooks:
 
@@ -92,11 +148,9 @@ Note the interaction with `supervise`: a supervised flow that exhausts its resta
 
 `Axial.Telemetry` ships a ready-made observer that records defects on the `Axial` activity source:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-open Axial.Telemetry
-
-application
-|> FiberTelemetry.observe   // = Flow.withFiberObserver FiberTelemetry.observer
+```fsharp
+let tracedApplication : Flow<string, unit> =
+    application |> FiberTelemetry.observe // = Flow.withFiberObserver FiberTelemetry.observer
 ```
 
 Every fiber that settles with a defect produces an `axial.flow.fiber.defect` error span, and every unobservable defect produces an `axial.flow.fiber.unobserved_defect` error span, tagged with fiber id, parent id, status, and OpenTelemetry-convention exception tags.
@@ -107,13 +161,10 @@ Every fiber that settles with a defect produces an `axial.flow.fiber.defect` err
 fiber defects as errors and unobserved defects as critical entries, with the exception attached. Observers
 compose, so telemetry and logging stack from one edge install:
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
-open Axial.Hosting
-open Axial.Telemetry
-
-application
-|> Flow.withFiberObserver
-    (FiberObserver.compose FiberTelemetry.observer (FiberLogging.observer logger))
+```fsharp no-check reason="Needs Axial.Hosting for Microsoft.Extensions.Logging as well as Axial.Telemetry; this page checks against Axial.Telemetry"
+let observeWithLogging (logger: Microsoft.Extensions.Logging.ILogger) (workflow: Flow<unit, string, unit>) =
+    workflow
+    |> Flow.withFiberObserver (FiberObserver.compose FiberTelemetry.observer (FiberLogging.observer logger))
 ```
 
 ## Platform notes

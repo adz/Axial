@@ -17,6 +17,29 @@ An app record solves that by bundling dependencies once at the boundary while ke
 
 ## 1. Reuse The Same Interfaces
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open System
 open System.Threading.Tasks
@@ -164,30 +187,30 @@ type RecordingAudit(entries: ResizeArray<string>) =
 
 ## 6. Run The Workflow
 
-```fsharp
-let run () = task {
-    let env =
-        { Orders = SqlOrderRepository() :> IOrderRepository
-          Email = SmtpEmailSender() :> IEmailSender
-          Audit = FileAuditLog() :> IAuditLog }
+Production builds `AppEnv` from `SqlOrderRepository()`, `SmtpEmailSender()`, and `FileAuditLog()`. A test builds the
+same record from the recording doubles:
 
-    let order =
-        { Id = OrderId(Guid.NewGuid())
-          Email = "ada@example.com"
-          Total = 125m }
+```fsharp run
+let saved = ResizeArray<Order>()
+let sent = ResizeArray<string>()
+let entries = ResizeArray<string>()
 
-    let! exit = placeOrder order |> Flow.startTask env
+let env =
+    { Orders = RecordingOrders(saved)
+      Email = RecordingEmails(sent)
+      Audit = RecordingAudit(entries) }
 
-    match exit with
-    | Exit.Success orderId ->
-        printfn "Placed %A" orderId
-    | Exit.Failure cause ->
-        printfn "%s" (Cause.prettyPrint (function
-            | InvalidEmail -> "invalid email"
-            | OrderRejected reason -> reason
-            | AuditWriteFailed -> "audit write failed") cause)
-}
+let order =
+    { Id = OrderId(Guid.Parse "7d3c2e1a-0000-4000-8000-000000000002")
+      Email = "ada@example.com"
+      Total = 125m }
+
+placeOrder order |> Flow.run env |> shouldEqual (Exit.Success order.Id)
+List.ofSeq sent |> shouldEqual [ "ada@example.com" ]
+List.ofSeq entries |> shouldEqual [ "Placed ada@example.com for 125" ]
 ```
+
+Only `Flow.run env` names the record. Every helper reads the fields it needs with `Flow.envWith`.
 
 ## When To Stop Here
 

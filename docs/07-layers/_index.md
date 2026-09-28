@@ -10,29 +10,88 @@ that.
 
 **Use a record when you can.** Construct the environment directly and hand it to the workflow:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let env = { Clock = Clock.live; Log = Log.live; FileSystem = FileSystem.live }
-let exit = workflow |> Flow.run env
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type RegionEnv = { Clock: IClock; Region: string }
+
+let describeRegion : Flow<RegionEnv, Never, string> =
+    flow {
+        let! clock = Flow.envWith _.Clock
+        let! region = Flow.envWith _.Region
+        return $"{region} at {clock.UtcNow().Year}"
+    }
+```
+
+```fsharp run
+let env = { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)); Region = "eu" }
+describeRegion |> Flow.run env |> shouldEqual (Exit.Success "eu at 2026")
 ```
 
 That covers most applications, needs no package beyond the services themselves, and is what
 [dependencies](/dependencies/index.html) documents.
 
-Reach for a layer when construction is itself effectful:
+Use a layer when construction is itself effectful:
 
 - provisioning can fail, and the failure should be a typed startup error rather than an exception
 - a service must be acquired and released, and its lifetime is the runtime's
 - independent parts of the environment should be built in parallel
 - a service needs another service in order to be constructed
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-open Axial.Layers
+```fsharp
+type Connection(name: string, closed: ResizeArray<string>) =
+    member _.Name = name
+    member _.Close() = closed.Add name
 
-let runtime : Layer<unit, Never, AppEnv> =
-    Layer.merge clockLayer connectionLayer
+type AppEnv = { Clock: IClock; Connection: Connection }
+type AppError = QueryFailed of string
+
+let connectionLayer (closed: ResizeArray<string>) : Layer<unit, Never, Connection> =
+    Layer.acquireRelease
+        (Layer.succeed (Connection("orders-db", closed)))
+        (fun connection _ ->
+            connection.Close()
+            Task.CompletedTask)
+
+let runtime (closed: ResizeArray<string>) : Layer<unit, Never, AppEnv> =
+    Layer.merge Clock.layer (connectionLayer closed)
     |> Layer.map (fun (clock, connection) -> { Clock = clock; Connection = connection })
 
-let program : Flow<unit, AppError, unit> = Layer.provide runtime workflow
+let query : Flow<AppEnv, AppError, string> =
+    Flow.envWith (fun env -> env.Connection.Name)
+
+let program (closed: ResizeArray<string>) : Flow<unit, AppError, string> =
+    Layer.provide (Layer.widenError (runtime closed)) query
+```
+
+`runtime` cannot fail, so its error type is `Never`; `Layer.widenError` lets it provide a workflow that fails with
+`AppError`. The connection is closed when `program` ends:
+
+```fsharp run
+let closed = ResizeArray<string>()
+program closed |> Flow.run () |> shouldEqual (Exit.Success "orders-db")
+List.ofSeq closed |> shouldEqual [ "orders-db" ]
 ```
 
 `Layer.provide` is the boundary: it opens a scope, builds the layer inside it, runs the downstream

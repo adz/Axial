@@ -2,17 +2,41 @@
 title: FileSystem
 linkTitle: FileSystem
 description: Files, directories, paths, and typed file-system errors as an explicit service.
-project: src/Axial.FileSystem/Axial.FileSystem.fsproj
 ---
 
 `Axial.FileSystem` turns file access into a declared dependency with a typed failure channel. Where
 `File.ReadAllText` throws one of a dozen exception types, `FileSystem.readAllText` returns
 `Flow<'env, FileSystemError, string>`, so the ways it can fail are part of the signature.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
 open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
 
-let loadConfig path : Flow<#IHasFileSystem, FileSystemError, Config> =
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type Config = { Name: string }
+
+let parseConfig (text: string) = { Name = text.Trim() }
+
+let loadConfig (path: string) : Flow<#IHasFileSystem, FileSystemError, Config> =
     flow {
         let! text = FileSystem.readAllText path
         return parseConfig text
@@ -23,14 +47,26 @@ let loadConfig path : Flow<#IHasFileSystem, FileSystemError, Config> =
 
 `IFileSystem` is supplied the same way as any other explicit service:
 
-```fsharp no-check reason="Shown independently; surrounding application context is intentionally omitted"
+```fsharp
 type AppEnv =
     { FileSystem: IFileSystem }
 
     interface IHasFileSystem with
         member this.FileSystem = this.FileSystem
 
-let! exit = loadConfig "app.json" |> Flow.startTask { FileSystem = FileSystem.live }
+let live = { FileSystem = FileSystem.live }
+```
+
+The examples on this page work in a fresh temporary directory:
+
+```fsharp
+let root = Path.Combine(Path.GetTempPath(), "axial-docs-filesystem", Guid.NewGuid().ToString "N")
+Directory.CreateDirectory root |> ignore
+```
+
+```fsharp run
+File.WriteAllText(Path.Combine(root, "app.json"), "orders ")
+loadConfig (Path.Combine(root, "app.json")) |> Flow.run live |> shouldEqual (Exit.Success { Name = "orders" })
 ```
 
 For a runtime assembled with [layers](/layers/index.html), wrap it: `Layer.succeed FileSystem.live`.
@@ -53,12 +89,18 @@ Every operation fails with `FileSystemError`, a union that classifies what went 
 
 Because failures are typed, recovery is a match rather than an exception filter:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let loadOrDefault path =
+```fsharp
+let defaults = { Name = "default" }
+
+let loadOrDefault (path: string) : Flow<AppEnv, FileSystemError, Config> =
     loadConfig path
     |> Flow.orElseWith (function
-        | FileSystemError.FileNotFound _ -> Flow.succeed Config.defaults
+        | FileSystemError.FileNotFound _ -> Flow.succeed defaults
         | error -> Flow.fail error)
+```
+
+```fsharp run
+loadOrDefault (Path.Combine(root, "missing.json")) |> Flow.run live |> shouldEqual (Exit.Success defaults)
 ```
 
 `FileSystemError.describe` formats a case for logs and messages. `FileSystemError.fromException` performs the
@@ -69,18 +111,25 @@ classification itself, which is useful when adapting a third-party API into the 
 Whole-file reads and writes come in text, line, and byte forms, each with an encoding-explicit and an asynchronous
 variant:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-FileSystem.readAllText path
-FileSystem.readAllTextWithEncoding Encoding.UTF8 path
-FileSystem.readAllTextAsync path
-FileSystem.readAllLines path
-FileSystem.readAllBytes path
-
-FileSystem.writeAllText path contents
-FileSystem.writeAllLines path lines
-FileSystem.writeAllBytes path bytes
-FileSystem.appendAllText path contents
+```fsharp
+let notes (path: string) : Flow<AppEnv, FileSystemError, string array * int64> =
+    flow {
+        do! FileSystem.writeAllLines path [ "one"; "two" ]
+        do! FileSystem.appendAllText path "three"
+        let! lines = FileSystem.readAllLines path
+        let! length = FileSystem.getFileLength path
+        return lines, length
+    }
 ```
+
+```fsharp run
+let lines, length = notes (Path.Combine(root, "notes.txt")) |> Flow.run live |> Exit.toResult |> Result.defaultWith (failwithf "%A")
+lines |> shouldEqual [| "one"; "two"; "three" |]
+length |> shouldEqual (int64 ("one" + Environment.NewLine + "two" + Environment.NewLine + "three").Length)
+```
+
+The same family has `readAllTextWithEncoding`, `readAllTextAsync`, `readAllBytes`, `writeAllBytes`, and the other
+encoding-explicit and asynchronous forms.
 
 The `Async` variants pass the flow's cancellation token to the underlying call, so an interrupted workflow stops a
 large read in progress rather than after it. Prefer them for anything that is not small.
@@ -98,16 +147,21 @@ whether to follow the whole chain or stop at the immediate target.
 `openRead`, `openText`, `openWrite`, `createFile`, `createText`, `appendText`, and the `openFile` family return open
 handles. An open handle is a resource, so acquire it inside a scope rather than trusting a later `Dispose`:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-let copyThrough source destination =
-    Flow.scoped (
-        Flow.scopeAcquireRelease
-            (FileSystem.openRead source)
-            (fun stream _ ->
-                stream.Dispose()
-                Task.CompletedTask)
-        |> Flow.bind (fun stream -> readAndTransform stream destination))
+```fsharp
+let readAndTransform (stream: Stream) (destination: string) : Flow<AppEnv, FileSystemError, unit> =
+    use reader = new StreamReader(stream)
+    FileSystem.writeAllText destination (reader.ReadToEnd().ToUpperInvariant())
+
+let copyThrough (source: string) (destination: string) : Flow<AppEnv, FileSystemError, unit> =
+    Flow.scopeAcquireRelease
+        (FileSystem.openRead source)
+        (fun stream _ ->
+            stream.Dispose()
+            Task.CompletedTask)
+    |> Flow.bind (fun stream -> readAndTransform stream destination)
+    |> Flow.scoped
 ```
+
 
 Cleanup then runs whether the workflow succeeds, fails, defects, or is interrupted. See
 [scopes and resources](/scopes/index.html).
@@ -120,8 +174,20 @@ recursive delete is visible at the call site. Listing comes in eager (`getFiles`
 taking a search pattern and a `SearchOption`:
 
 ```fsharp
-let fsharpSources root =
-    FileSystem.enumerateFiles root "*.fs" SearchOption.AllDirectories
+let fsharpSources (directory: string) : Flow<AppEnv, FileSystemError, string list> =
+    flow {
+        let! files = FileSystem.enumerateFiles directory "*.fs" SearchOption.AllDirectories
+        return files |> Seq.map Path.GetFileName |> Seq.sort |> List.ofSeq
+    }
+```
+
+```fsharp run
+Directory.CreateDirectory(Path.Combine(root, "src", "nested")) |> ignore
+File.WriteAllText(Path.Combine(root, "src", "Program.fs"), "")
+File.WriteAllText(Path.Combine(root, "src", "nested", "Library.fs"), "")
+File.WriteAllText(Path.Combine(root, "src", "notes.md"), "")
+
+fsharpSources (Path.Combine(root, "src")) |> Flow.run live |> shouldEqual (Exit.Success [ "Library.fs"; "Program.fs" ])
 ```
 
 Path manipulation is also on the service: `combine`, `getFullPath`, `getFileName`, `getExtension`, `getRelativePath`,
@@ -133,16 +199,13 @@ the service keeps platform-specific separator and rooting behaviour substitutabl
 `IFileSystem` is a wide interface, and implementing it in full to fake three calls is rarely worth it. Two approaches
 work better:
 
-**Use `FileSystem.live` against a temporary directory.** This is what Axial's own tests do. The workflow exercises
-real I/O, and the test owns cleanup:
+**Use `FileSystem.live` against a temporary directory.** This is what Axial's own tests do, and what the examples on
+this page do. The workflow exercises real I/O, and the test owns cleanup:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-let root = Path.Combine(Path.GetTempPath(), "my-tests", Guid.NewGuid().ToString "N")
-Directory.CreateDirectory root |> ignore
-
+```fsharp run
 try
-    let exit = workflow root |> Flow.run { FileSystem = FileSystem.live }
-    test <@ exit = Exit.Success expected @>
+    File.WriteAllText(Path.Combine(root, "app.json"), "orders")
+    loadOrDefault (Path.Combine(root, "app.json")) |> Flow.run live |> shouldEqual (Exit.Success { Name = "orders" })
 finally
     Directory.Delete(root, true)
 ```

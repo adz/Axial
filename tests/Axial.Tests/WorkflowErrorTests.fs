@@ -587,3 +587,13 @@ module WorkflowErrorTests =
         test <@ traced |> Flow.tapError (fun error -> Flow.delay (fun () -> tapped.Value <- Some error; Flow.ok ())) |> Flow.runSync () |> Exit.map ignore <> Exit.Success () && tapped.Value = Some "boom" @>
         test <@ retried |> Flow.runSync () = Exit.Success 3 @>
         test <@ Cause.untraced (Cause.traced "a" (Cause.traced "b" (Cause.Fail 1))) = Cause.Fail 1 @>
+
+    [<Fact>]
+    let ``A flow that cannot fail widens to any error type and keeps defects`` () =
+        let succeeds : Flow<unit, string, int> = Flow.ok 1 |> Flow.widenError
+        let dies : Flow<unit, string, int> = Flow.die (InvalidOperationException "defect") |> Flow.widenError
+
+        test <@ succeeds |> Flow.orElse (Flow.ok 0) |> Flow.runSync () = Exit.Success 1 @>
+        test <@ match Flow.runSync () dies with Exit.Failure(Cause.Die error) -> error.Message = "defect" | _ -> false @>
+        test <@ Exit.Success 2 |> Exit.mapError Never.absurd = (Exit.Success 2 : Exit<int, string>) @>
+

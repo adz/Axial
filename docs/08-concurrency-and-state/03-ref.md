@@ -22,13 +22,22 @@ In a functional program, state is usually passed as parameters or through the en
 
 Use `Ref.make` to create a new reference with an initial value. Like all things in Axial, creating a `Ref` is an effectful operation that returns a `Flow`.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let counterWorkflow =
-    flow {
-        let! counter = Ref.make 0
-        return counter
-    }
+```fsharp transcript
+> open Axial.State;;
+> let counted () : Flow<int> =
+-     flow {
+-         let! counter = Ref.make 0
+-         do! Ref.update ((+) 1) counter
+-         return! Ref.get counter
+-     };;
+> Flow.run () (counted ());;
+val it: Exit<int,Never> = Success 1
+
+> Flow.run () (counted ());;
+val it: Exit<int,Never> = Success 1
 ```
+
+Each run makes a fresh `Ref`, so running `counted` twice gives 1 both times.
 
 ## Reading and Writing
 

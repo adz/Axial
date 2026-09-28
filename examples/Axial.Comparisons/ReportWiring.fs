@@ -79,6 +79,7 @@ module WithFlow =
             member this.ReportStore = this.Store
 
     /// Flow<ReportEnv, ReportError, string>
+    // <snippet:compare-report>
     let writeDailyReport (sourcePath: string) : Flow<ReportEnv, ReportError, string> =
         flow {
             let! now = Clock.now
@@ -104,3 +105,4 @@ module WithFlow =
               FileSystem = fileSystem
               Console = console
               Store = store })
+    // </snippet:compare-report>

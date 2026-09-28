@@ -1,6 +1,7 @@
 ---
 title: Observability
 description: How tracing, logging, and metrics fit together across Axial packages, and how to plug in OpenTelemetry.
+project: src/Axial.Telemetry/Axial.Telemetry.fsproj
 ---
 
 # Observability
@@ -43,15 +44,57 @@ once, at the edge, whether anything listens and where spans go; workflows never 
 Tracing is **explicit at workflow granularity**. Axial does not span every `flow { }` or operator; a span
 exists where you put one:
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open System.Diagnostics
 open Axial.Telemetry
 
 let applicationActivitySource = new ActivitySource("Orders.Application")
 
-let placeOrder order =
-    flow { (* validate, charge, persist *) }
+let placeOrder (order: int) : Flow<unit, string, int> =
+    flow { return order (* validate, charge, persist *) }
     |> Activity.traceOn applicationActivitySource "orders.place"
+```
+
+Any `ActivityListener` sees the span; the OpenTelemetry SDK is one. This one records the names of finished spans:
+
+```fsharp run
+open System.Diagnostics
+
+let finished = ResizeArray<string>()
+
+let listener =
+    new ActivityListener(
+        ShouldListenTo = (fun source -> source.Name = "Orders.Application"),
+        Sample = SampleActivity<ActivityContext>(fun _ -> ActivitySamplingResult.AllData),
+        ActivityStopped = (fun activity -> finished.Add activity.DisplayName))
+
+ActivitySource.AddActivityListener listener
+placeOrder 7 |> Flow.run () |> shouldEqual (Exit.Success 7)
+List.ofSeq finished |> shouldEqual [ "orders.place" ]
+listener.Dispose()
 ```
 
 `Activity.traceOn` stamps the span with the ambient typed attributes attached through `Axial.Telemetry.Context`, the
@@ -77,7 +120,7 @@ for automatic runtime and fiber spans.
 
 In an ASP.NET Core or Generic Host application:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
 // dotnet add package OpenTelemetry.Extensions.Hosting
 // dotnet add package OpenTelemetry.Exporter.OpenTelemetryProtocol
 // dotnet add package OpenTelemetry.Instrumentation.AspNetCore
@@ -98,7 +141,7 @@ builder.Services
 
 In a console application or script, build the provider directly and keep it alive for the process lifetime:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
 open System.Diagnostics
 open OpenTelemetry
 open OpenTelemetry.Resources
@@ -117,13 +160,11 @@ use tracerProvider =
 Then install the edge observers on your application workflow. They are worth having with or without an exporter
 attached:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-open Axial.Hosting
-open Axial.Telemetry
-
-application
-|> Flow.withFiberObserver
-    (FiberObserver.compose FiberTelemetry.observerWithSpans (FiberLogging.observer logger))
+```fsharp no-check reason="Needs Axial.Hosting for Microsoft.Extensions.Logging as well as Axial.Telemetry; this page checks against Axial.Telemetry"
+let observeApplication (logger: Microsoft.Extensions.Logging.ILogger) (application: Flow<unit, string, int>) =
+    application
+    |> Flow.withFiberObserver
+        (FiberObserver.compose FiberTelemetry.observerWithSpans (FiberLogging.observer logger))
 ```
 
 Sampling is the host's knob: the SDK samples everything by default, and something like
@@ -178,10 +219,15 @@ runtime health onto it:
 | `axial.flow.fiber.duration` | histogram (seconds), tagged with status | fork-to-settle lifetime |
 | `axial.flow.fibers.unobserved_defects` | counter | defects the runtime proved no code could observe |
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-application
-|> FiberMetrics.observe        // fiber runtime metrics
-|> FiberTelemetry.observe      // fiber defect spans; installs compose
+```fsharp
+let observed (application: Flow<unit, string, int>) =
+    application
+    |> FiberMetrics.observe        // fiber runtime metrics
+    |> FiberTelemetry.observe      // fiber defect spans; installs compose
+```
+
+```fsharp run
+observed (placeOrder 3) |> Flow.run () |> shouldEqual (Exit.Success 3)
 ```
 
 Subscribe with `.AddMeter("Axial")` in `.WithMetrics(...)` and the instruments land in any OTLP
@@ -198,14 +244,24 @@ hooks remain available for app-specific counters on your own meter.
 A `FiberRegistry` (core `Axial`, no telemetry dependency) tracks every live fiber below one edge
 install and answers "what is my runtime doing right now?" with a structured snapshot or a rendered tree:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp
 let registry = FiberRegistry()
 
-application
-|> Flow.withFiberRegistry registry   // composes with observers installed elsewhere
+let withPoller : Flow<unit, string, string> =
+    flow {
+        let! poller = Flow.sleep (TimeSpan.FromMinutes 1.0) |> Flow.forkNamed "outbox-poller"
+        // later, from a diagnostics endpoint, a SIGQUIT-style handler, or a stuck-shutdown log:
+        let dump = registry.Dump()
+        let! _ = Fiber.interrupt poller
+        return dump
+    }
+    |> Flow.withFiberRegistry registry // composes with observers installed elsewhere
+```
 
-// later, from a diagnostics endpoint, a SIGQUIT-style handler, or a stuck-shutdown log:
-printfn "%s" (registry.Dump())
+```fsharp
+match withPoller |> Flow.run () with
+| Exit.Success dump -> dump.Contains "\"outbox-poller\"" |> shouldEqual true
+| other -> failwithf "unexpected %A" other
 ```
 
 ```text
@@ -250,7 +306,7 @@ Nothing Aspire-specific is required: Aspire's dashboard is an OTLP backend, and 
 Aspire service project already wires the OpenTelemetry SDK. Add your application source, Axial's runtime source, and
 Axial's meter to the pipeline:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
 builder.Services
     .AddOpenTelemetry()
     .WithTracing(fun tracing -> tracing.AddSource(applicationActivitySource.Name, "Axial") |> ignore)
@@ -311,7 +367,7 @@ itself: the application registers the OpenTelemetry JS SDK (exporter and context
 `@opentelemetry/api` object to `Otel.installNamed` once at the edge, the same host/library split as registering an
 application `ActivitySource` on .NET:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 open Fable.Core.JsInterop
 open Axial.Telemetry.JavaScript
 

@@ -39,7 +39,30 @@ same operation in each computation expression.
 
 ### FsToolkit.ErrorHandling
 
-```fsharp no-check reason="Application-specific repository and domain types are omitted"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp no-check reason="Uses FsToolkit.ErrorHandling, which the documentation build does not reference"
 let loadCustomer repository customerId : Task<Result<Customer * Address, CustomerError>> =
     taskResult {
         let! customer = repository.Find customerId
@@ -50,14 +73,34 @@ let loadCustomer repository customerId : Task<Result<Customer * Address, Custome
 
 ### Axial
 
-```fsharp no-check reason="Application-specific repository and domain types are omitted"
-let loadCustomerFlow repository customerId : Flow<CustomerError, Customer * Address> =
+```fsharp
+type Customer = { Id: int; AddressId: int }
+type Address = { Street: string }
+type CustomerError = CustomerNotFound of int
+
+type CustomerRepository =
+    { Find: int -> Task<Result<Customer, CustomerError>>
+      LoadAddress: int -> Task<Result<Address, CustomerError>> }
+
+let loadCustomerFlow (repository: CustomerRepository) customerId : Flow<CustomerError, Customer * Address> =
     flow {
-        let! customer = repository.Find customerId
-        let! address = repository.LoadAddress customer.AddressId
+        let! customer = ColdTask(fun _ -> repository.Find customerId)
+        let! address = ColdTask(fun _ -> repository.LoadAddress customer.AddressId)
         return customer, address
     }
 ```
+
+```fsharp run
+let repository =
+    { Find = fun id -> Task.FromResult(if id = 1 then Ok { Id = 1; AddressId = 10 } else Error(CustomerNotFound id))
+      LoadAddress = fun _ -> Task.FromResult(Ok { Street = "1 Main St" }) }
+
+loadCustomerFlow repository 1 |> Flow.run () |> shouldEqual (Exit.Success({ Id = 1; AddressId = 10 }, { Street = "1 Main St" }))
+loadCustomerFlow repository 2 |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail(CustomerNotFound 2)))
+```
+
+A `Task` starts when the method that returns it runs, so the Flow version wraps each call in `ColdTask`: the call then
+happens when the Flow runs, and every run makes it again.
 
 The similar source hides an execution difference. Calling `loadCustomer` starts and returns a `Task`; calling
 `loadCustomerFlow` returns a cold workflow description that starts when a Flow runtime runs it. The runtime passes its
@@ -82,16 +125,21 @@ or a distinction between expected failures and defects. The `flow { }` computati
 `use!` for resources owned by one lexical block. `Flow.scoped` and `Flow.scopeAcquireRelease` cover lifetimes that
 need an explicit runtime ownership boundary or extend beyond that block.
 
-```fsharp no-check reason="Application-specific services and domain types are omitted"
+```fsharp
+type Receipt = { CustomerId: int; Reference: string }
+
+type PaymentGateway =
+    { Charge: Customer -> Async<Result<Receipt, CustomerError>> }
+
 type CheckoutEnv =
     { Customers: CustomerRepository
       Payments: PaymentGateway }
 
-let checkout customerId : Flow<CheckoutEnv, CheckoutError, Receipt> =
+let checkout customerId : Flow<CheckoutEnv, CustomerError, Receipt> =
     flow {
         let! customers = Flow.envWith _.Customers
         let! payments = Flow.envWith _.Payments
-        let! customer = customers.Find customerId
+        let! customer = ColdTask(fun _ -> customers.Find customerId)
         let! receipt = payments.Charge customer
         return receipt
     }
@@ -103,13 +151,13 @@ instead of sharing the task's exception channel.
 
 ## Use them together
 
-Adoption does not require rewriting FsToolkit.ErrorHandling functions. The Flow computation expression binds its
-common carriers directly: `Result<'value, 'error>`, `Async<Result<'value, 'error>>`, and
-`Task<Result<'value, 'error>>` all continue on `Ok` and short-circuit the Flow on `Error`.
+Adoption does not require rewriting FsToolkit.ErrorHandling functions. The Flow computation expression binds
+`Result<'value, 'error>` and `Async<Result<'value, 'error>>` directly, and `Task<Result<'value, 'error>>` through
+`ColdTask`. All of them continue on `Ok` and short-circuit the Flow on `Error`.
 
 For example, an existing eligibility check can remain an `asyncResult` function:
 
-```fsharp no-check reason="Application-specific customer rules are omitted"
+```fsharp no-check reason="Uses FsToolkit.ErrorHandling, which the documentation build does not reference"
 let verifyCustomer customer : Async<Result<unit, CustomerError>> =
     asyncResult {
         do! verifyEmail customer.Email
@@ -120,7 +168,7 @@ let verifyCustomer customer : Async<Result<unit, CustomerError>> =
 A Flow can then bind the `taskResult`-based `loadCustomer` function through `ColdTask` and bind this `asyncResult`
 function directly in the same block:
 
-```fsharp no-check reason="Uses the application-specific FsToolkit.ErrorHandling functions from the preceding examples"
+```fsharp no-check reason="Uses FsToolkit.ErrorHandling, which the documentation build does not reference"
 let prepareOrder customerId : Flow<OrderEnv, CustomerError, Order> =
     flow {
         let! repository = Flow.envWith _.Customers
@@ -133,6 +181,6 @@ let prepareOrder customerId : Flow<OrderEnv, CustomerError, Order> =
     }
 ```
 
-Because `flow { }` binds all of these directly, leaf functions can keep returning `Result`, `Async<Result<_, _>>`, or
-`Task<Result<_, _>>`, and FsToolkit.ErrorHandling can keep building them. Flow takes over where operations are
+Because `flow { }` binds all of these (tasks through `ColdTask`), leaf functions can keep returning `Result`,
+`Async<Result<_, _>>`, or `Task<Result<_, _>>`, and FsToolkit.ErrorHandling can keep building them. Flow takes over where operations are
 composed: where dependencies, cancellation, timeouts, retries, and parallel work come in.

@@ -13,14 +13,51 @@ Use `Bind.error` and `Bind.mapError` to give different bind sources the same err
 Without `Bind`, you must adapt the right-hand side before `flow { }` can bind it. The required transformation depends
 on that source's shape. For example, mapping an `Async<Result<_,_>>` error requires another `async { }` block:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let authorizeForLogin user =
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type AuthError = Denied of string
+type TokenError = Expired of string
+
+type SessionError =
+    | Unauthorized of AuthError
+    | TokenFailed of TokenError
+    | ProfileNotFound
+
+let authorize (user: string) : Async<Result<unit, AuthError>> =
+    async { return if user = "ada" then Ok() else Error(Denied user) }
+
+let createToken (user: string) : Result<string, TokenError> =
+    if user = "ada" then Ok $"token-{user}" else Error(Expired user)
+
+let authorizeForLogin (user: string) : Async<Result<unit, SessionError>> =
     async {
         let! result = authorize user
         return result |> Result.mapError Unauthorized
     }
 
-let login user =
+let signIn (user: string) : Flow<SessionError, string> =
     flow {
         do! authorizeForLogin user
         return user
@@ -33,12 +70,19 @@ an error to `Option` or `Async<Option<_>>` requires another shape-specific conve
 `Bind` gives these supported bind sources one bind-site syntax. You choose whether to assign or map the error; the
 Flow computation expression handles the source shape:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-flow {
-    let! profile = maybeProfile |> Bind.error ProfileNotFound
-    do! authorize user |> Bind.mapError Unauthorized
-    return! createToken user |> Bind.mapError TokenFailed
-}
+```fsharp
+let startSession (maybeProfile: string option) : Flow<SessionError, string> =
+    flow {
+        let! profile = maybeProfile |> Bind.error ProfileNotFound
+        do! authorize profile |> Bind.mapError Unauthorized
+        return! createToken profile |> Bind.mapError TokenFailed
+    }
+```
+
+```fsharp run
+startSession (Some "ada") |> Flow.run () |> shouldEqual (Exit.Success "token-ada")
+startSession None |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail ProfileNotFound))
+startSession (Some "bob") |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail(Unauthorized(Denied "bob"))))
 ```
 
 Here, `maybeProfile` can be an `Option` or an asynchronous option source. Similarly, error mapping has the same form
@@ -77,6 +121,12 @@ let login username password =
     }
 ```
 
+```fsharp run
+login "ada" "secret" |> Flow.run () |> shouldEqual (Exit.Success { Name = "ada" })
+login "bob" "secret" |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail UserNotFound))
+login "ada" " " |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail InvalidPassword))
+```
+
 `Bind.error` accepts these source types:
 
 - `Option<'value>`
@@ -95,18 +145,10 @@ if it already uses the workflow error type, or apply `Bind.error` if it uses `un
 Use `Bind.mapError` when the source has a meaningful error that must be translated to the surrounding workflow's
 error type.
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-type AuthError = Denied of string
-type TokenError = Expired of string
-type LoginError = Unauthorized of AuthError | TokenFailed of TokenError
+With `authorize` and `createToken` from the start of this page:
 
-let authorize user : Async<Result<unit, AuthError>> =
-    async { return Error (Denied user) }
-
-let createToken user : Result<string, TokenError> =
-    Error (Expired user)
-
-let login user =
+```fsharp
+let issueToken (user: string) : Flow<SessionError, string> =
     flow {
         do!
             authorize user
@@ -116,6 +158,11 @@ let login user =
             createToken user
             |> Bind.mapError TokenFailed
     }
+```
+
+```fsharp run
+issueToken "ada" |> Flow.run () |> shouldEqual (Exit.Success "token-ada")
+issueToken "bob" |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail(Unauthorized(Denied "bob"))))
 ```
 
 `Bind.mapError` accepts these source types:
@@ -131,11 +178,12 @@ let login user =
 The value returned by `Bind.error` or `Bind.mapError` is a marker for the Flow computation expression. It is not a
 general-purpose `Result` or Flow transformation, so it only compiles directly on the right side of `let!`, `do!`, or `return!`:
 
-```fsharp no-check reason="Illustrative fragment is intentionally abbreviated"
-flow {
-    let! user = maybeUser |> Bind.error UserNotFound
-    return! createToken user |> Bind.mapError TokenFailed
-}
+```fsharp
+let atBindSites (maybeUser: string option) : Flow<SessionError, string> =
+    flow {
+        let! user = maybeUser |> Bind.error ProfileNotFound
+        return! createToken user |> Bind.mapError TokenFailed
+    }
 ```
 
 Outside `flow { }`, use functions for the source type, such as `Result.mapError`, `Option.toResult`, or

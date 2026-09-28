@@ -10,14 +10,47 @@ desktop process, browser mount, Node process, worker, or another application rat
 
 Application code remains an ordinary Flow value. Provision its environment before handing it to `App`:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type AppError =
+    | ConfigurationError of string
+    | OrderError of string
+
+    static member describe(error: AppError) =
+        match error with
+        | ConfigurationError message
+        | OrderError message -> message
+
+type IOrderRepository =
+    abstract ProcessPending: unit -> Result<unit, AppError>
+
 type AppEnv =
     { Orders: IOrderRepository
       Log: ILog }
 
-type AppError =
-    | ConfigurationError of string
-    | OrderError of string
+type StartupInputs = { PendingOrders: int }
 
 let program : Flow<AppEnv, AppError, unit> =
     flow {
@@ -25,9 +58,17 @@ let program : Flow<AppEnv, AppError, unit> =
         return! orders.ProcessPending()
     }
 
+let appLayer : Layer<StartupInputs, AppError, AppEnv> =
+    Layer.envWith (fun inputs ->
+        { Orders =
+            { new IOrderRepository with
+                member _.ProcessPending() =
+                    if inputs.PendingOrders >= 0 then Ok() else Error(OrderError "negative backlog") }
+          Log = Log.live })
+
 let root : Flow<StartupInputs, AppError, unit> =
     program
-    |> Layer.provide Live.appLayer
+    |> Layer.provide appLayer
 ```
 
 `root` is the complete application description: startup inputs in, typed application failures out, and all resources
@@ -37,7 +78,7 @@ acquired by `Live.appLayer` scoped to the root execution.
 
 Use `App.run` when the caller only needs the final outcome:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
+```fsharp
 let run inputs = async {
     let! exit = App.run inputs root
 
@@ -49,6 +90,11 @@ let run inputs = async {
 }
 ```
 
+```fsharp run
+run { PendingOrders = 3 } |> Async.RunSynchronously |> shouldEqual 0
+run { PendingOrders = -1 } |> Async.RunSynchronously |> shouldEqual 1
+```
+
 `App.run` uses the caller's F# async cancellation token. It waits until the root scope closes, so layer and Flow
 finalizers have finished when the returned `Exit` becomes available.
 
@@ -56,16 +102,19 @@ finalizers have finished when the returned `Exit` becomes available.
 
 Use `App.start` when another module controls when the application stops:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let running = App.start inputs root
+```fsharp
+let service : Flow<StartupInputs, AppError, unit> = Flow.never
+```
 
-printfn "State: %A" running.Status
+```fsharp run
+let running = App.start { PendingOrders = 0 } service
+running.Status |> shouldEqual AppStatus.Running
 
 // Called later by a signal handler, window close event, or UI unmount:
-let stop = async {
-    let! exit = running.Stop()
-    printfn "Final exit: %A" exit
-}
+let finalExit = running.Stop() |> Async.RunSynchronously
+
+(match finalExit with Exit.Failure cause -> Cause.isInterrupted cause | _ -> false) |> shouldEqual true
+running.Status |> shouldEqual AppStatus.Completed
 ```
 
 An `AppHandle<'error,'value>` exposes:
@@ -82,9 +131,9 @@ but cannot await asynchronous finalizers; application shutdown code should await
 Use `App.startWithCancellation` or `App.runWithCancellation` when an existing owner already supplies a
 `CancellationToken`:
 
-```fsharp no-check reason="Application-specific fixtures are described in the surrounding prose"
-let running =
-    App.startWithCancellation hostStopping inputs root
+```fsharp
+let startWithHost (hostStopping: CancellationToken) =
+    App.startWithCancellation hostStopping { PendingOrders = 0 } service
 ```
 
 Cancellation is administrative interruption. It becomes `Cause.Interrupt`; it is not mapped into the application's

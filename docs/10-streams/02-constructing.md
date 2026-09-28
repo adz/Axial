@@ -10,6 +10,29 @@ failure, cancellation, backpressure, and cleanup model.
 
 Use `FlowStream.fromSeq`, `FlowStream.singleton`, and `FlowStream.empty` for those existing values:
 
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp transcript
 > (FlowStream.fromSeq [ 1..100 ] : FlowStream<int>)
 - |> FlowStream.take 3
@@ -68,8 +91,26 @@ Suppose `fetchHtml` performs one HTTP request as a Flow, while `extractLinks` is
 to the links it contains. When the URLs are already known, construct a stream from the list and overlap requests with
 `FlowStream.mapFlowPar`:
 
-```fsharp no-check reason="fetchHtml and HtmlPage are application HTTP abstractions described in the surrounding prose"
-let fetchKnownPages urls =
+The examples stand in for HTTP with a small in-memory site, where each page lists the pages it links to:
+
+```fsharp
+type HtmlPage = { Url: string; Html: string }
+
+let site =
+    Map [ "/", "links: /docs /blog"
+          "/docs", "links: /docs/flow /"
+          "/blog", "links: /"
+          "/docs/flow", "links:" ]
+
+let fetchHtml (url: string) : Flow<string> =
+    Flow.sleep (TimeSpan.FromMilliseconds 1.0) |> Flow.map (fun () -> Map.find url site)
+
+let extractLinks (html: string) : string list =
+    html.Split(' ', StringSplitOptions.RemoveEmptyEntries) |> Array.skip 1 |> List.ofArray
+```
+
+```fsharp
+let fetchKnownPages (urls: string list) : FlowStream<HtmlPage> =
     urls
     |> FlowStream.fromSeq
     |> FlowStream.mapFlowPar
@@ -81,6 +122,17 @@ let fetchKnownPages urls =
                   Html = html }))
 ```
 
+`mapFlowPar` emits pages in completion order, so sort before comparing:
+
+```fsharp run
+fetchKnownPages [ "/"; "/docs"; "/blog" ]
+|> FlowStream.map _.Url
+|> FlowStream.runCollect
+|> Flow.map List.sort
+|> Flow.run ()
+|> shouldEqual (Exit.Success [ "/"; "/blog"; "/docs" ])
+```
+
 This keeps at most four requests active or waiting to be emitted. Pages arrive in completion order. Stopping downstream
 also interrupts and awaits requests that are still running.
 
@@ -89,12 +141,12 @@ also interrupts and awaits requests that are still running.
 A crawler does not know every URL up front. Each response discovers more work. Here the unfold state is the private
 crawl frontier (pending URLs plus the URLs already seen), while each emitted value is a fetched page:
 
-```fsharp no-check reason="fetchHtml, extractLinks, and HtmlPage are application HTTP abstractions described in the surrounding prose"
+```fsharp
 type CrawlState =
     { Pending: string list
       Seen: Set<string> }
 
-let fetchPagesAndDiscoverLinks seen urls =
+let fetchPagesAndDiscoverLinks (seen: Set<string>) (urls: string list) : Flow<HtmlPage list * string list> =
     urls
     |> List.map (fun url ->
         fetchHtml url
@@ -110,7 +162,7 @@ let fetchPagesAndDiscoverLinks seen urls =
 
         pages, discovered)
 
-let crawl seeds =
+let crawl (seeds: string list) : FlowStream<HtmlPage> =
     { Pending = seeds
       Seen = Set.empty }
     |> FlowStream.unfoldFlow (fun state ->
@@ -137,6 +189,13 @@ let crawl seeds =
                           Seen = seen })
             })
     |> FlowStream.collect FlowStream.fromSeq
+```
+
+Starting from the home page, the crawl finds every page once, a frontier batch at a time:
+
+```fsharp run
+crawl [ "/" ] |> FlowStream.map _.Url |> FlowStream.runCollect |> Flow.run ()
+|> shouldEqual (Exit.Success [ "/"; "/docs"; "/blog"; "/docs/flow" ])
 ```
 
 One downstream pull fetches one frontier batch. `Flow.sequencePar` fetches the batch concurrently and preserves its URL

@@ -29,6 +29,39 @@ Do not commit generated API pages. Update source comments or `docs/api/` enrichm
 - Name APIs and behavior directly. Prefer short executable examples to restating signatures.
 - Fence F# examples with `fsharp`.
 
+## Examples that run
+
+Every example should run and show or check its result. Prefer, in order:
+
+- A `fsharp transcript` for a short example. Each transcript is its own FSI session: it sees the project's namespace
+  but not the repository prelude or other blocks on the page, so open what it needs (`> open System;;`). Evaluated
+  expressions print `val it: ...`; `printfn` output is not captured. A `let` bound to a value echoes
+  `val name: ...`, often with an unstable rendering (`Flow <fun:ok@514>`), so bind functions (`let name () = ...`) or
+  evaluate expressions directly. Type definitions do not echo. FSI prints tuples as `Tuple<string,int>` and
+  `byte array` as `Byte[]`; copy expected output from a failing run rather than guessing.
+- Compiled `fsharp` blocks for longer code, split into small functions, followed by a `fsharp run` block that checks
+  the result with `shouldEqual expected actual`. A run block executes after the page's earlier `prepare`, ordinary,
+  and `run` blocks, so a failing run also fails every later run on the page.
+- `no-check` only with a specific reason: Fable-only code, packages the docs build does not reference (the
+  OpenTelemetry SDK, Microsoft.Extensions.Hosting), code shown because it does not compile, or excerpts transcluded
+  from a project that compiles and tests them (`{{< snippet ... mode="no-check" >}}`).
+
+FsLiveDocs 0.9.0 compiles `run` blocks with the repository prelude but executes them without it. Each page with a
+`run` block therefore starts with a `fsharp prepare` block holding the prelude's opens and `shouldEqual`.
+
+The FsLiveDocs transcript worker ships its own `Axial` 0.9.1 assemblies. On a page whose `project:` is a package
+other than core `Axial`, the worker can resolve `Axial` to that bundled copy, so a run fails with `FS0039` or
+`FS1093` ("union cases or fields of the type 'Flow' are not accessible") wherever the page uses an API newer than
+0.9.1, such as `Retry`, `Flow.scoped`, or `Flow.supervise`. Prefer leaving `project:` unset in the core docs set: every
+docs-set project is referenced anyway. The HTTP set can only select `Axial.HttpClient`, so its runs after the
+`Retry` example in `http/03-reliability.md` are compiled blocks until FsLiveDocs isolates its own dependencies.
+
+FsLiveDocs runs examples against the most recently written build of each project, across configurations and target
+frameworks. After `run-aot-probe.sh` or any Release build, the packages can resolve to `release_net8.0` while core
+resolves to `debug_netstandard2.1`, and unrelated runs fail with errors such as "did not contain the namespace,
+module or type 'Encoding'". Delete `artifacts/bin/*/release_net8.0` or rebuild the `netstandard2.1` targets before
+`dotnet livedocs test`.
+
 ## Commands
 
 ```bash

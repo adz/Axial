@@ -15,23 +15,35 @@ dotnet add package Axial
 
 ## The smallest Flow
 
-Put this in a project that references `Axial`, or save it as `first-flow.fsx` with `#r "nuget: Axial"` as the first
-line and run `dotnet fsi first-flow.fsx`:
+Try it in F# Interactive (`dotnet fsi`, after `#r "nuget: Axial";;` and `open Axial;;`):
 
-```fsharp
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
 open Axial
+open Axial.Layers
+open Axial.Console
+open Axial.FileSystem
+open Axial.Hosting
+open Axial.Hosting.Browser
+open Axial.Hosting.Node
+open Axial.PlatformService
+open Axial.State
+open Axial.Telemetry
+open Axial.Telemetry.JavaScript
 
-let ready : Flow<string> =
-    Flow.succeed "The application is ready."
-
-let result = Flow.run () ready
-printfn "%A" result
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
-The output is:
-
-```text
-Success "The application is ready."
+```fsharp transcript
+> let ready () : Flow<string> = Flow.succeed "The application is ready.";;
+> Flow.run () (ready ());;
+val it: Exit<string,Never> = Success "The application is ready."
 ```
 
 `ready` describes work; it has not started. `Flow.run ()` is the edge that starts it. `Flow<string>` is the short
@@ -58,19 +70,14 @@ not need to know how it works.
 The workflow names the one service it needs and turns the service's cancellable `Task<Result<_, _>>` operation into a
 Flow:
 
-```fsharp no-check reason="IExchangeRates is an application service implemented and registered by the host."
-open System
-open System.Threading
-open System.Threading.Tasks
-
+```fsharp
 type QuoteError =
     | RateUnavailable
 
 type IExchangeRates =
-    abstract UsdToAud : CancellationToken -> Task<Result<decimal, QuoteError>>
+    abstract UsdToAud: CancellationToken -> Task<Result<decimal, QuoteError>>
 
-type QuoteApp =
-    { ExchangeRates: IExchangeRates }
+type QuoteApp = { ExchangeRates: IExchangeRates }
 
 let quoteAud (usd: decimal) : Flow<QuoteApp, QuoteError, decimal> =
     flow {
@@ -84,25 +91,50 @@ The type reads as a contract: `quoteAud` needs `QuoteApp`, can fail with `QuoteE
 The caller does not pass a cancellation token; `ColdTask` receives the one owned by the Flow runtime and gives it to
 the service.
 
-Where the workflow runs, build the `QuoteApp` record. You can construct its services directly:
+Where the workflow runs, build the `QuoteApp` record. Here the service is a small implementation with a fixed rate,
+constructed directly:
 
-```fsharp no-check reason="LiveExchangeRates is the application's own implementation."
-let exit = quoteAud 80m |> Flow.run { ExchangeRates = LiveExchangeRates(httpClient) }
+```fsharp
+type FixedRate(rate: Result<decimal, QuoteError>) =
+    interface IExchangeRates with
+        member _.UsdToAud _ = Task.FromResult rate
+```
+
+```fsharp run
+quoteAud 80m
+|> Flow.run { ExchangeRates = FixedRate(Ok 1.52m) }
+|> shouldEqual (Exit.Success 121.60m)
+
+quoteAud 80m
+|> Flow.run { ExchangeRates = FixedRate(Error RateUnavailable) }
+|> shouldEqual (Exit.Failure(Cause.Fail RateUnavailable))
 ```
 
 If the application already registers its services with a dependency-injection container (an `IServiceProvider`),
 fill the record from it instead:
 
-```fsharp no-check reason="The host application owns the service provider and exchange-rate implementation."
+```fsharp
 let quoteApp (services: IServiceProvider) : QuoteApp =
-    { ExchangeRates = services.GetRequiredService<IExchangeRates>() }
+    { ExchangeRates = services.GetService typeof<IExchangeRates> :?> IExchangeRates }
+```
 
-let exit = quoteAud 80m |> Flow.run (quoteApp services)
+With `Microsoft.Extensions.DependencyInjection` opened, `services.GetRequiredService<IExchangeRates>()` does the same
+and reports a missing registration clearly.
+
+The host's container supplies the `IServiceProvider`. For this example, a one-service provider stands in for it:
+
+```fsharp run
+let services =
+    { new IServiceProvider with
+        member _.GetService serviceType =
+            if serviceType = typeof<IExchangeRates> then box (FixedRate(Ok 1.52m)) else null }
+
+quoteAud 80m |> Flow.run (quoteApp services) |> shouldEqual (Exit.Success 121.60m)
 ```
 
 Either way, each area of the application gets a record holding only the services it uses. `quoteAud` sees `QuoteApp`
 and nothing else, even when the host registers dozens of services, so the record marks the edge of that area. A test
-builds the same record with an `IExchangeRates` test implementation, and the workflow code does not change.
+builds the same record with its own `IExchangeRates`, as `FixedRate` does here, and the workflow code does not change.
 
 ## What's next
 

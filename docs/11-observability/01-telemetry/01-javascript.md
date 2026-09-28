@@ -25,7 +25,7 @@ object; it does not import or configure an SDK for you.
 After the host has registered its OpenTelemetry provider and context manager, pass the API object and the application's
 instrumentation scope name to Axial:
 
-```fsharp no-check reason="Fable import and host SDK registration require the application's JavaScript build"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 open Fable.Core.JsInterop
 open Axial.Telemetry.JavaScript
 
@@ -44,7 +44,7 @@ context manager. Without a context manager, a span can lose its active parent af
 
 The context API is the same on .NET and JavaScript:
 
-```fsharp no-check reason="The workflow and domain values are application-specific"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
 
@@ -77,7 +77,7 @@ not manually copy correlation identifiers; the OpenTelemetry SDKs propagate trac
 
 Install defect-only observation at the application edge:
 
-```fsharp no-check reason="The application workflow is defined elsewhere"
+```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 application
 |> FiberTelemetry.observe
 ```

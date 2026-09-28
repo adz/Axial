@@ -16,7 +16,24 @@ returns the result the test needs. The application code that builds the command 
 [`Process.live`](xref:M:Axial.Process.Process.live) builds the real service. It is a function because it combines the
 services it needs. [`Clock.live`](xref:M:Axial.PlatformService.Clock.live), [`FileSystem.live`](xref:M:Axial.FileSystem.FileSystem.live), and [`Console.live`](xref:M:Axial.Console.Console.live) are already-created service values, so they are its arguments.
 
-```fsharp no-check reason="The surrounding application owns its environment record"
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.IO
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Console
+open Axial.FileSystem
+open Axial.PlatformService
+open Axial.Process
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
 open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
@@ -38,7 +55,7 @@ console output. The live process builder combines them into the `Processes` valu
 [`Process.toFlow`](xref:M:Axial.Process.Process.toFlow) makes the command one lazy step in the application workflow. [`Flow.run`](xref:M:Axial.Flow.run) starts the complete
 application Flow with its environment.
 
-```fsharp no-check reason="Runs the locally installed git command through the application's live process capability"
+```fsharp
 let readRevision : Flow<AppEnvironment, ProcessError, string> =
     flow {
         let! result =
@@ -48,7 +65,12 @@ let readRevision : Flow<AppEnvironment, ProcessError, string> =
         return result.StdOut.Trim()
     }
 
-let outcome = Flow.run appEnvironment readRevision
+```
+
+```fsharp run
+match Flow.run appEnvironment readRevision with
+| Exit.Success revision -> (revision.Length >= 7) |> shouldEqual true
+| other -> failwithf "unexpected %A" other
 ```
 
 [`Process.capture`](xref:M:Axial.Process.Process.capture) and [`Process.console`](xref:M:Axial.Process.Process.console) are convenient forms that configure output and then create a Flow.
@@ -60,7 +82,18 @@ The latter preserves the output policy already carried by a `ProcessSpec`.
 and `Stream` returns output events. A focused test usually needs only `Run`; return a prepared `ProcessResult` and
 inspect the received specification when the test cares about command construction.
 
-```fsharp no-check reason="The result values are application test fixtures"
+```fsharp
+let expectedResult : ProcessResult =
+    { ExitCode = 0
+      ExitCodes = [ 0 ]
+      StdOut = "abc1234\n"
+      StdErr = ""
+      StdOutCapture = { Text = "abc1234\n"; Bytes = [||]; Truncated = false }
+      StdErrCapture = { Text = ""; Bytes = [||]; Truncated = false }
+      Stages = []
+      StartedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+      Duration = TimeSpan.Zero }
+
 let mutable requested = None
 
 let fakeProcess =
@@ -73,7 +106,11 @@ let fakeProcess =
             FlowStream.singleton (ProcessEvent.Completed expectedResult) }
 
 let testEnvironment = { Processes = fakeProcess }
-let outcome = Flow.run testEnvironment readRevision
+```
+
+```fsharp run
+Flow.run testEnvironment readRevision |> shouldEqual (Exit.Success "abc1234")
+requested |> Option.map Process.render |> shouldEqual (Some "git rev-parse --short HEAD")
 ```
 
 This keeps a unit test deterministic: it starts no native child process, and it can assert the executable, arguments,
