@@ -111,7 +111,7 @@ let patientUser : Flow<TestEnv, HttpError, User> =
 
 A `429` is transient, but this policy leaves it to the caller, so it is not retried:
 
-```fsharp
+```fsharp run
 let limited = ScriptedHttp([ 429, "" ])
 
 match patientUser |> Flow.run limited.Env with
@@ -164,7 +164,7 @@ let deleteUser (userId: int) : Flow<TestEnv, HttpError, HttpResponse> =
     |> fetch
 ```
 
-```fsharp
+```fsharp run
 deleteUser 7 |> Flow.run (ScriptedHttp([ 404, "" ]).Env) |> Exit.map _.StatusCode |> shouldEqual (Exit.Success 404)
 ```
 
@@ -194,7 +194,7 @@ let pay (payment: Payment) : Flow<TestEnv, HttpError, string> =
 The key is created once when the request is built, so the retry resends the same key and the server can recognise
 the repeat:
 
-```fsharp
+```fsharp run
 let payments = ScriptedHttp([ 503, ""; 200, "receipt-1" ])
 pay { Amount = 9.5m } |> Flow.run payments.Env |> shouldEqual (Exit.Success "receipt-1")
 

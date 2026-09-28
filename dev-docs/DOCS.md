@@ -46,21 +46,8 @@ Every example should run and show or check its result. Prefer, in order:
   OpenTelemetry SDK, Microsoft.Extensions.Hosting), code shown because it does not compile, or excerpts transcluded
   from a project that compiles and tests them (`{{< snippet ... mode="no-check" >}}`).
 
-FsLiveDocs 0.9.0 compiles `run` blocks with the repository prelude but executes them without it. Each page with a
-`run` block therefore starts with a `fsharp prepare` block holding the prelude's opens and `shouldEqual`.
-
-The FsLiveDocs transcript worker ships its own `Axial` 0.9.1 assemblies. On a page whose `project:` is a package
-other than core `Axial`, the worker can resolve `Axial` to that bundled copy, so a run fails with `FS0039` or
-`FS1093` ("union cases or fields of the type 'Flow' are not accessible") wherever the page uses an API newer than
-0.9.1, such as `Retry`, `Flow.scoped`, or `Flow.supervise`. Prefer leaving `project:` unset in the core docs set: every
-docs-set project is referenced anyway. The HTTP set can only select `Axial.HttpClient`, so its runs after the
-`Retry` example in `http/03-reliability.md` are compiled blocks until FsLiveDocs isolates its own dependencies.
-
-FsLiveDocs runs examples against the most recently written build of each project, across configurations and target
-frameworks. After `run-aot-probe.sh` or any Release build, the packages can resolve to `release_net8.0` while core
-resolves to `debug_netstandard2.1`, and unrelated runs fail with errors such as "did not contain the namespace,
-module or type 'Encoding'". Delete `artifacts/bin/*/release_net8.0` or rebuild the `netstandard2.1` targets before
-`dotnet livedocs test`.
+FsLiveDocs compiles `run` blocks with the repository prelude but executes them without it. Each page with a `run`
+block therefore starts with a `fsharp prepare` block holding the prelude's opens and `shouldEqual`.
 
 ## Commands
 

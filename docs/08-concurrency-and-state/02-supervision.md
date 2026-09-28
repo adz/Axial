@@ -1,6 +1,7 @@
 ---
 title: Supervision and Fiber Observability
 description: Restarting background work that dies with defects and observing fibers nobody awaits.
+project: src/Axial.Telemetry/Axial.Telemetry.fsproj
 ---
 
 # Supervision and Fiber Observability

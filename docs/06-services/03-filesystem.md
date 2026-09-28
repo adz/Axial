@@ -2,6 +2,7 @@
 title: FileSystem
 linkTitle: FileSystem
 description: Files, directories, paths, and typed file-system errors as an explicit service.
+project: src/Axial.FileSystem/Axial.FileSystem.fsproj
 ---
 
 `Axial.FileSystem` turns file access into a declared dependency with a typed failure channel. Where

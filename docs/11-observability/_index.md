@@ -258,7 +258,7 @@ let withPoller : Flow<unit, string, string> =
     |> Flow.withFiberRegistry registry // composes with observers installed elsewhere
 ```
 
-```fsharp
+```fsharp run
 match withPoller |> Flow.run () with
 | Exit.Success dump -> dump.Contains "\"outbox-poller\"" |> shouldEqual true
 | other -> failwithf "unexpected %A" other
