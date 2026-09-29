@@ -22,6 +22,15 @@ type QueueStrategy =
     /// <summary>Lossless and never suspends the producer; memory grows with the backlog.</summary>
     | Unbounded
 
+/// The immediate outcome of Queue.tryOffer. Only Accepted and Evicted put the new value in the queue.
+[<RequireQualifiedAccess>]
+type QueueTryOfferResult =
+    | Accepted
+    | Full
+    | Dropped
+    | Evicted
+    | Shutdown
+
 /// <summary>A snapshot of a queue's backlog and of what it has done with offered values since it was created.</summary>
 /// <remarks>
 /// The counters only grow, so a monitor can report rates from the difference between two snapshots. Read them with
@@ -383,6 +392,38 @@ module internal QueueCore =
         | OfferSuspended offerer -> awaitOffer queue offerer cancellationToken |> Execution.map (fun () -> Accepted)
         | outcome -> Execution.ofValue outcome
 
+    let tryOffer (queue: Dequeue<'a>) (value: 'a) : QueueTryOfferResult =
+        let wake = ResizeArray()
+
+        let result =
+            Platform.lock queue.Gate (fun () ->
+                if queue.IsShut then
+                    QueueTryOfferResult.Shutdown
+                elif queue.Offerers.Count > 0 then
+                    // An immediate offer must not pass a producer already waiting for capacity.
+                    QueueTryOfferResult.Full
+                elif canAcceptLocked queue then
+                    deliverLocked queue value wake
+                    QueueTryOfferResult.Accepted
+                else
+                    match queue.Strategy with
+                    | QueueStrategy.BackPressure _ -> QueueTryOfferResult.Full
+                    | QueueStrategy.Dropping _ ->
+                        queue.Dropped <- queue.Dropped + 1L
+                        QueueTryOfferResult.Dropped
+                    | QueueStrategy.Sliding _ ->
+                        queue.Buffer.PopFront() |> ignore
+                        queue.Buffer.PushBack value
+                        queue.Accepted <- queue.Accepted + 1L
+                        queue.Evicted <- queue.Evicted + 1L
+                        serveLocked queue wake
+                        QueueTryOfferResult.Evicted
+                    | QueueStrategy.Unbounded ->
+                        invalidOp "An open unbounded queue must be able to accept a value.")
+
+        wakeAll wake
+        result
+
 /// <summary>Takes values from a <see cref="T:Axial.Dequeue`1" />, inspects it, and shuts it down.</summary>
 /// <remarks>Every function here also accepts a <see cref="T:Axial.Queue`1" />.</remarks>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -578,6 +619,15 @@ module Queue =
         Flow(fun _ cancellationToken ->
             QueueCore.offer queue value cancellationToken
             |> Execution.map (fun outcome -> outcome <> Discarded))
+
+    /// <summary>Tries to add a value immediately, without starting a Flow or suspending the caller.</summary>
+    /// <remarks>
+    /// Safe to call from a synchronous producer. A full back-pressure queue returns Full without storing the
+    /// value. Dropping and sliding queues report loss explicitly. Shutdown also leaves the value untouched.
+    /// The check and any change to the queue are atomic, and an immediate offer never passes a waiting producer.
+    /// </remarks>
+    let tryOffer (value: 'a) (queue: Queue<'a>) : QueueTryOfferResult =
+        QueueCore.tryOffer queue value
 
     /// <summary>Adds values in order according to the queue's strategy.</summary>
     /// <returns>

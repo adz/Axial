@@ -89,6 +89,43 @@ module WorkflowQueueTests =
         test <@ Flow.runSync () workflow = Exit.Success(false, [ 1; 2 ], true, [ 2; 3 ], 2) @>
 
     [<Fact>]
+    let ``Queue: tryOffer reports acceptance, overflow, and shutdown without waiting`` () =
+        let workflow =
+            flow {
+                let! (bounded: Queue<int>) = Queue.bounded 1
+                let first = bounded |> Queue.tryOffer 1
+                let full = bounded |> Queue.tryOffer 2
+                let! boundedValues = Dequeue.takeAll bounded
+                do! Dequeue.shutdown bounded
+                let shut = bounded |> Queue.tryOffer 3
+
+                let! (dropping: Queue<int>) = Queue.dropping 1
+                let _ = dropping |> Queue.tryOffer 1
+                let dropped = dropping |> Queue.tryOffer 2
+                let! droppedValues = Dequeue.takeAll dropping
+
+                let! (sliding: Queue<int>) = Queue.sliding 1
+                let _ = sliding |> Queue.tryOffer 1
+                let evicted = sliding |> Queue.tryOffer 2
+                let! slidingValues = Dequeue.takeAll sliding
+
+                return first, full, boundedValues, shut, dropped, droppedValues, evicted, slidingValues
+            }
+
+        test
+            <@ Flow.runSync () workflow =
+                Exit.Success(
+                    QueueTryOfferResult.Accepted,
+                    QueueTryOfferResult.Full,
+                    [ 1 ],
+                    QueueTryOfferResult.Shutdown,
+                    QueueTryOfferResult.Dropped,
+                    [ 1 ],
+                    QueueTryOfferResult.Evicted,
+                    [ 2 ]
+                ) @>
+
+    [<Fact>]
     let ``Queue: suspended take resumes on offer and suspended offer resumes on take`` () =
         let workflow =
             flow {

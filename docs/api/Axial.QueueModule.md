@@ -12,4 +12,8 @@ value, [`sliding`](#Axial.Queue.sliding) evicts the oldest, and [`unbounded`](#A
 Interrupting a suspended [`offer`](#Axial.Queue.offer) never enqueues its value, and interrupting a suspended take never
 loses one. When zero or many consumers must each see every value, use a [`Hub`](/api/Axial.HubModule.html) instead.
 
+[`tryOffer`](#Axial.Queue.tryOffer) returns immediately and can be called from a synchronous callback. Its
+`QueueTryOfferResult` distinguishes acceptance, a full back-pressure queue, discard, eviction, and shutdown. A `Full`
+or `Shutdown` result leaves the offered value outside the queue.
+
 Read the [Queue guide](/concurrency-and-state/queue.html) for strategies, batching, shutdown, and draining on stop.

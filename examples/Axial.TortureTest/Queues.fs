@@ -154,6 +154,12 @@ let runLossy (round: Round) : Flow<unit, Never, Check list> =
         let! (unbounded: Queue<int>) = Queue.unbounded ()
         do! unbounded |> Queue.offerAll [ 1..1000 ] |> Flow.ignore
         let! unboundedAll = Dequeue.takeAll unbounded
+        let! (callbackInbox: Queue<int>) = Queue.bounded 1
+        let first = callbackInbox |> Queue.tryOffer 7
+        let full = callbackInbox |> Queue.tryOffer 8
+        let! accepted = Dequeue.take callbackInbox
+        do! Dequeue.shutdown callbackInbox
+        let shut = callbackInbox |> Queue.tryOffer 9
 
         return
             [ check "a dropping queue accounts for every offer as accepted or dropped" (int64 dropAccepted + dropStats.Dropped = int64 offered)
@@ -161,6 +167,9 @@ let runLossy (round: Round) : Flow<unit, Never, Check list> =
               check "a sliding queue accepts every offer" (slideAccepted = offered)
               check "a sliding queue delivers or evicts every value, in each producer's order" (int64 slideSeen.Length + slideStats.Evicted = int64 offered && inOrderPerProducer slideSeen)
               check "a scoped queue is shut down with its scope" scopedShut
+              check "a synchronous callback sees acceptance, full, and shutdown without losing the accepted value"
+                  (first = QueueTryOfferResult.Accepted && full = QueueTryOfferResult.Full && accepted = 7
+                   && shut = QueueTryOfferResult.Shutdown)
               check "an unbounded queue never refuses" (unboundedAll = [ 1..1000 ]) ]
     }
 // </snippet:torture-queues>

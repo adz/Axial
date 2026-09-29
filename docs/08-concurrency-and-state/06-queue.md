@@ -31,6 +31,12 @@ A `QueueStrategy` decides what `Queue.offer` does when the queue is full.
 `BackPressure` is the lossless choice: a slow consumer slows its producers down. `Sliding` suits a latest-value feed
 such as a display, where old readings are worth less than new ones.
 
+`Queue.tryOffer` is a synchronous, immediate attempt for a callback that cannot wait. It returns
+`QueueTryOfferResult.Accepted`, `Full`, `Dropped`, `Evicted`, or `Shutdown`. `Full` means a back-pressure queue did not
+store the value. `Dropped` means a dropping queue discarded it. `Evicted` means a sliding queue stored the new value
+but removed its oldest value. Only `Accepted` stores the value without loss. A controller ingress adapter can treat
+`Full` or `Shutdown` as an explicit fault or retry condition; `Queue.tryOffer` does not choose that policy.
+
 ```fsharp transcript
 > (flow {
 -     let! (display: Queue<int>) = Queue.make (QueueStrategy.Sliding 3)
