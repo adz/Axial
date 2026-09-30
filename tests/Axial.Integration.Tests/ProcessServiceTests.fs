@@ -368,6 +368,18 @@ module ProcessServiceTests =
         test <@ result.StdOut = "" @>
 
     [<Fact>]
+    let ``inherited stdin gives the root process the host stdin handle`` () =
+        let hostStdin = IO.File.ResolveLinkTarget("/proc/self/fd/0", false).FullName
+        let inherited =
+            shText "readlink /proc/self/fd/0"
+            |> Process.stdin Input.inheritHandles
+            |> Process.toFlow
+            |> run
+        let redirected = shText "readlink /proc/self/fd/0" |> capture |> run
+        test <@ inherited.StdOut.Trim() = hostStdin @>
+        test <@ redirected.StdOut.Trim() <> hostStdin @>
+
+    [<Fact>]
     let ``merge stderr routes final stderr through stdout targets`` () =
         let result =
             shText "printf out; printf err >&2"

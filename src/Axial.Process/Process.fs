@@ -28,6 +28,7 @@ type InputSource =
     | Text of string
     | Bytes of byte array
     | File of path: string
+    | Inherit
     | Read of read: (unit -> Async<byte array>)
     | Produce of produce: ((byte array -> Async<unit>) -> Async<unit>)
 
@@ -38,6 +39,7 @@ type InputSource =
         | Text text -> $"Text ({text.Length} chars)"
         | Bytes bytes -> $"Bytes ({bytes.Length} bytes)"
         | File path -> $"File {path}"
+        | Inherit -> "Inherit"
         | Read _ -> "Read"
         | Produce _ -> "Produce"
 
@@ -546,6 +548,7 @@ module Process =
             | InputSource.Text text -> $"text ({text.Length} characters)"
             | InputSource.Bytes bytes -> $"bytes ({bytes.Length} bytes)"
             | InputSource.File path -> $"file: {path}"
+            | InputSource.Inherit -> "inherited handle"
             | InputSource.Read _ -> "asynchronous read"
             | InputSource.Produce _ -> "asynchronous producer"
         let rec target = function
@@ -612,12 +615,12 @@ module Process =
 #if !FABLE_COMPILER
     let private isInherit = function OutputTarget.Inherit -> true | _ -> false
 
-    let private startInfo redirectOutput redirectError command =
+    let private startInfo redirectInput redirectOutput redirectError command =
         let info = ProcessStartInfo(command.FileName)
         command.Arguments |> List.iter info.ArgumentList.Add
         command.WorkingDirectory |> Option.iter (fun path -> info.WorkingDirectory <- path)
         command.Environment |> Map.iter (fun name value -> match value with Some v -> info.Environment[name] <- v | None -> info.Environment.Remove name |> ignore)
-        info.RedirectStandardInput <- true; info.RedirectStandardOutput <- redirectOutput; info.RedirectStandardError <- redirectError
+        info.RedirectStandardInput <- redirectInput; info.RedirectStandardOutput <- redirectOutput; info.RedirectStandardError <- redirectError
         info.UseShellExecute <- false; info.CreateNoWindow <- true
         info
 
@@ -707,7 +710,9 @@ module Process =
                                         let redirectOutput = hasOutputConnection || not (isFinal && isInherit specification.StdOut)
                                         let inheritError = isInherit specification.StdErr && not (isFinal && specification.MergeStdErr)
                                         let redirectError = hasErrorConnection || not inheritError
-                                        let proc = new Diagnostics.Process(StartInfo = startInfo redirectOutput redirectError command)
+                                        let isRoot = specification.Connections |> List.forall (fun (_, target, _) -> target <> index)
+                                        let redirectInput = not (isRoot && (match specification.StdIn with InputSource.Inherit -> true | _ -> false))
+                                        let proc = new Diagnostics.Process(StartInfo = startInfo redirectInput redirectOutput redirectError command)
                                         // This is Axial.Process's own live IProcess implementation: it is the explicit,
                                         // mockable boundary around OS process creation.
                                         // The surrounding try/with (below) catches this and every other exception in this
@@ -768,13 +773,14 @@ module Process =
                                         | InputSource.Empty, roots ->
                                             roots |> List.iter (fun index -> processes[index].StandardInput.Close())
                                             Array.empty
+                                        | InputSource.Inherit, _ -> Array.empty
                                         | _, _ :: _ :: _ -> invalidArg "specification" "A primary input source requires exactly one root command." // axial-allow-raise
                                         | source, [ root ] ->
                                             [| task {
                                                 let target = processes[root].StandardInput.BaseStream
                                                 let write bytes = target.WriteAsync(bytes, 0, bytes.Length, cancellationToken) |> Async.AwaitTask
                                                 match source with
-                                                | InputSource.Empty -> ()
+                                                | InputSource.Empty | InputSource.Inherit -> ()
                                                 | InputSource.Text text -> do! write (specification.Commands[root].Encoding.GetBytes text) |> Async.StartAsTask
                                                 | InputSource.Bytes bytes -> do! write bytes |> Async.StartAsTask
                                                 | InputSource.File path ->
@@ -1125,6 +1131,10 @@ module DSL =
         let bytes value = InputSource.Bytes value
         /// Streams bytes from a file when execution begins.
         let file path = InputSource.File path
+        /// Gives the root process the host's stdin handle directly, so programs that prompt on the console
+        /// (such as `ssh` asking for a password) can read it. Stdin is not redirected, so the child, not Axial,
+        /// decides when it ends. Pipe-connected stages still receive redirected stdin.
+        let inheritHandles = InputSource.Inherit
         /// Reads one asynchronous byte block when execution begins.
         let read producer = InputSource.Read producer
         /// Produces asynchronous byte blocks with backpressure.
