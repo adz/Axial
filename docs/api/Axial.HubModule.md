@@ -9,6 +9,8 @@ the current scope; to subscribe for the life of a stream, use
 [`FlowStream.fromHub`](/api/Axial.FlowStreamModule.html#Axial.FlowStream.fromHub). [`publish`](#Axial.Hub.publish)
 waits while a `BackPressure` subscription is full, and no later value reaches any subscriber meanwhile;
 [`tryPublish`](#Axial.Hub.tryPublish) publishes only when no waiting is needed, to every subscription or to none.
+[`tryPublishNow`](#Axial.Hub.tryPublishNow) provides that immediate attempt to a synchronous callback and reports
+whether it published, found another publisher busy, found a full subscription, or found the hub shut down.
 [`shutdown`](#Axial.Hub.shutdown) lets every subscriber drain its backlog.
 
 A subscriber that joins late sees only later values; for a current value followed by every change, use a

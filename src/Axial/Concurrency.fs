@@ -215,13 +215,34 @@ module Deferred =
         Flow(fun _ cancellationToken ->
             Execution.fold Execution.ofExit Execution.ofCause (Platform.awaitSignal signal cancellationToken))
 
+    /// <summary>Tries to complete a deferred directly from a synchronous callback.</summary>
+    /// <returns>True if this call won the completion race; false if it was already completed.</returns>
+    let completeNow (exit: Exit<'value, 'error>) (deferred: Deferred<'error, 'value>) : bool =
+        let (Deferred signal) = deferred
+        Platform.resolveSignal signal exit
+
+    /// <summary>Tries to complete a deferred successfully from a synchronous callback.</summary>
+    let succeedNow (value: 'value) (deferred: Deferred<'error, 'value>) : bool =
+        completeNow (Exit.Success value) deferred
+
+    /// <summary>Tries to complete a deferred with a typed failure from a synchronous callback.</summary>
+    let failNow (error: 'error) (deferred: Deferred<'error, 'value>) : bool =
+        completeNow (Exit.Failure(Cause.Fail error)) deferred
+
+    /// <summary>Tries to complete a deferred with a defect from a synchronous callback.</summary>
+    let dieNow (error: exn) (deferred: Deferred<'error, 'value>) : bool =
+        completeNow (Exit.Failure(Cause.Die error)) deferred
+
+    /// <summary>Tries to complete a deferred as interrupted from a synchronous callback.</summary>
+    let interruptNow (deferred: Deferred<'error, 'value>) : bool =
+        completeNow (Exit.Failure Cause.Interrupt) deferred
+
     /// <summary>Attempts to complete the deferred value with a full outcome.</summary>
     let complete
         (exit: Exit<'value, 'error>)
         (deferred: Deferred<'error, 'value>)
         : Flow<'env, 'workflowError, bool> =
-        let (Deferred signal) = deferred
-        Flow.envWith (fun _ -> Platform.resolveSignal signal exit)
+        Flow.envWith (fun _ -> completeNow exit deferred)
 
     /// <summary>Attempts to complete the deferred value successfully.</summary>
     let succeed

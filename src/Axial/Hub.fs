@@ -26,6 +26,14 @@ module PublishResult =
           Dropped = left.Dropped + right.Dropped
           Evicted = left.Evicted + right.Evicted }
 
+/// The immediate outcome of publishing from a synchronous callback.
+[<RequireQualifiedAccess>]
+type HubTryPublishResult =
+    | Published of PublishResult
+    | Busy
+    | Full
+    | Shutdown
+
 /// <summary>Broadcasts every published value to every current subscription.</summary>
 /// <remarks>Create one with <c>Hub.make</c>. Use a hub when there can be zero or many consumers.</remarks>
 /// <typeparam name="a">The type of the published values.</typeparam>
@@ -116,27 +124,45 @@ module internal HubCore =
                         deliver hub values[index] cancellationToken
                         |> Execution.map (fun result -> Platform.Continue(index + 1, PublishResult.add total result)))))
 
-    /// Publishes only if it can finish without waiting: the publishing turn is free and no back-pressure
-    /// subscription is full. Holding the turn means no other publisher can fill a subscription between the check
-    /// and the delivery, and consumers only make room.
-    let tryPublish (hub: Hub<'a>) (value: 'a) : Execution<PublishResult option, 'error> =
+    /// A direct, all-or-none publish. The hub gate fixes the subscription set and excludes shutdown while the
+    /// capacity check and delivery run; the publish turn excludes other publishers.
+    let tryPublishNow (hub: Hub<'a>) (value: 'a) : HubTryPublishResult =
         if not (PermitQueue.tryAcquireNow hub.PublishTurn) then
-            Execution.ofValue None
+            HubTryPublishResult.Busy
         else
-            withTurn hub (fun () ->
-                match targets hub with
-                | None -> Execution.ofCause Cause.Interrupt
-                | Some targets ->
-                    let full (queue: Dequeue<'a>) =
-                        Platform.lock queue.Gate (fun () ->
-                            match queue.Strategy with
-                            | QueueStrategy.BackPressure _ -> not queue.IsShut && not (QueueCore.canAcceptLocked queue)
-                            | _ -> false)
+            try
+                let wake = ResizeArray()
 
-                    if targets |> Array.exists full then
-                        Execution.ofValue None
-                    else
-                        deliver hub value Threading.CancellationToken.None |> Execution.map Some)
+                let result =
+                    Platform.lock hub.Gate (fun () ->
+                        if hub.IsShut then
+                            HubTryPublishResult.Shutdown
+                        else
+                            let targets = hub.Subscriptions.ToArray()
+
+                            let full (queue: Dequeue<'a>) =
+                                Platform.lock queue.Gate (fun () ->
+                                    match queue.Strategy with
+                                    | QueueStrategy.BackPressure _ ->
+                                        not queue.IsShut
+                                        && (queue.Offerers.Count > 0 || not (QueueCore.canAcceptLocked queue))
+                                    | _ -> false)
+
+                            if targets |> Array.exists full then
+                                HubTryPublishResult.Full
+                            else
+                                let mutable total = PublishResult.empty
+
+                                for queue in targets do
+                                    let outcome = Platform.lock queue.Gate (fun () -> QueueCore.offerLocked queue value wake)
+                                    total <- count outcome total
+
+                                HubTryPublishResult.Published total)
+
+                QueueCore.wakeAll wake
+                result
+            finally
+                PermitQueue.release hub.PublishTurn
 
     let shutdown (hub: Hub<'a>) =
         let subscriptions =
@@ -223,7 +249,21 @@ module Hub =
     /// that must never stall uses it and decides what to do with a value the historian cannot take yet.
     /// </remarks>
     let tryPublish (value: 'a) (hub: Hub<'a>) : Flow<'env, 'error, PublishResult option> =
-        Flow(fun _ _ -> HubCore.tryPublish hub value)
+        Flow(fun _ _ ->
+            match HubCore.tryPublishNow hub value with
+            | HubTryPublishResult.Published result -> Execution.ofValue (Some result)
+            | HubTryPublishResult.Busy
+            | HubTryPublishResult.Full -> Execution.ofValue None
+            | HubTryPublishResult.Shutdown -> Execution.ofCause Cause.Interrupt)
+
+    /// <summary>Tries to publish immediately from a synchronous callback.</summary>
+    /// <remarks>
+    /// Publishes to every current subscription or none. Busy means another publish owns the turn; Full means a
+    /// back-pressure subscription has no room; Shutdown means the hub has ended. A Published result counts any
+    /// dropping or sliding loss. The caller chooses what to do when no publication occurred.
+    /// </remarks>
+    let tryPublishNow (value: 'a) (hub: Hub<'a>) : HubTryPublishResult =
+        HubCore.tryPublishNow hub value
 
     /// <summary>Subscribes to the hub with a buffering strategy. The subscription ends when the current scope closes.</summary>
     /// <remarks>

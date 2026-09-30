@@ -37,6 +37,44 @@ module WorkflowConcurrencyTests =
         test <@ Flow.runSync () workflow = Exit.Success(true, false, 1) @>
 
     [<Fact>]
+    let ``Deferred: direct completion reports the winner to a synchronous callback`` () =
+        let workflow : Flow<unit, string, bool * bool * int> =
+            flow {
+                let! deferred = Deferred.make<unit, string, int> ()
+                let first = Deferred.succeedNow 42 deferred
+                let late = Deferred.failNow "late" deferred
+                let! value = Deferred.await deferred
+                return first, late, value
+            }
+
+        test <@ Flow.runSync () workflow = Exit.Success(true, false, 42) @>
+
+    [<Fact>]
+    let ``Deferred: direct completion preserves every Exit shape`` () =
+        let defect = InvalidOperationException("defect")
+
+        let setup : Flow<unit, string, Deferred<string, int> list> =
+            flow {
+                let! completed = Deferred.make<unit, string, int> ()
+                let! failed = Deferred.make<unit, string, int> ()
+                let! died = Deferred.make<unit, string, int> ()
+                let! interrupted = Deferred.make<unit, string, int> ()
+                return [ completed; failed; died; interrupted ]
+            }
+
+        match Flow.runSync () setup with
+        | Exit.Success [ completed; failed; died; interrupted ] ->
+            test <@ Deferred.completeNow (Exit.Success 1) completed @>
+            test <@ Deferred.failNow "failure" failed @>
+            test <@ Deferred.dieNow defect died @>
+            test <@ Deferred.interruptNow interrupted @>
+            test <@ Flow.runSync () (Deferred.await completed) = Exit.Success 1 @>
+            test <@ Flow.runSync () (Deferred.await failed) = Exit.Failure(Cause.Fail "failure") @>
+            test <@ Flow.runSync () (Deferred.await died) = Exit.Failure(Cause.Die defect) @>
+            test <@ Flow.runSync () (Deferred.await interrupted) = Exit.Failure Cause.Interrupt @>
+        | other -> failwith $"Expected four deferreds, got {other}"
+
+    [<Fact>]
     let ``Deferred: await preserves typed failure defect and interruption`` () =
         let typedFailure : Flow<unit, string, int> =
             flow {

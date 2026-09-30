@@ -101,6 +101,11 @@ val it: Exit<bool list,Never> = Success [true; false]
 
 The first value reached the historian. The second found its buffer full, so `tryPublish` delivered it nowhere.
 
+For a synchronous host callback, `Hub.tryPublishNow` makes the same immediate attempt without starting a Flow. Its
+result distinguishes `Published result`, `Busy` (another publisher has the turn), `Full` (a back-pressure subscriber
+has no room), and `Shutdown`. `Published result` still reports any drops or evictions in lossy subscriptions. The
+callback decides what to do with a value that was not published.
+
 Do not bound `Hub.publish` with a timeout instead. An interrupted publish leaves the value with the subscribers it has
 already reached, so publishing it again delivers it to them twice.
 

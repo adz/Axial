@@ -79,7 +79,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 let mutable next = 1
 
                 while next <= values do
-                    match round.Next 3 with
+                    match round.Next 4 with
                     | 0 ->
                         let! result = feed |> Hub.publish next
                         add result
@@ -89,7 +89,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                         let! result = feed |> Hub.publishAll batch
                         add result
                         next <- next + batch.Length
-                    | _ ->
+                    | 2 ->
                         // tryPublish delivers to every subscription or to none; publish anyway if it refused.
                         let! attempt = feed |> Hub.tryPublish next
 
@@ -100,6 +100,18 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                             add result
 
                         next <- next + 1
+                    | 3 ->
+                        match feed |> Hub.tryPublishNow next with
+                        | HubTryPublishResult.Published result -> add result
+                        | HubTryPublishResult.Busy
+                        | HubTryPublishResult.Full ->
+                            let! result = feed |> Hub.publish next
+                            add result
+                        | HubTryPublishResult.Shutdown ->
+                            return! Flow.die (InvalidOperationException "Publisher found hub shut down early")
+
+                        next <- next + 1
+                    | _ -> return! Flow.die (InvalidOperationException "Invalid publisher choice")
             }
 
         // Visitors still waiting when the publisher finishes are released by the shutdown and drain what they have.

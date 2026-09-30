@@ -93,12 +93,23 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
                   | _ -> Interrupt ]
 
         let attempt kind =
-            match kind with
-            | Succeed id -> deferred |> Deferred.succeed id
-            | Fail id -> deferred |> Deferred.fail id
-            | Die id -> deferred |> Deferred.die (InvalidOperationException(string id))
-            | Complete id -> deferred |> Deferred.complete (Exit.Success(id * 100))
-            | Interrupt -> deferred |> Deferred.interrupt
+            if round.Chance 50 then
+                let won =
+                    match kind with
+                    | Succeed id -> deferred |> Deferred.succeedNow id
+                    | Fail id -> deferred |> Deferred.failNow id
+                    | Die id -> deferred |> Deferred.dieNow (InvalidOperationException(string id))
+                    | Complete id -> deferred |> Deferred.completeNow (Exit.Success(id * 100))
+                    | Interrupt -> deferred |> Deferred.interruptNow
+
+                Flow.ok won
+            else
+                match kind with
+                | Succeed id -> deferred |> Deferred.succeed id
+                | Fail id -> deferred |> Deferred.fail id
+                | Die id -> deferred |> Deferred.die (InvalidOperationException(string id))
+                | Complete id -> deferred |> Deferred.complete (Exit.Success(id * 100))
+                | Interrupt -> deferred |> Deferred.interrupt
 
         // Interrupt a random half of the early awaiters while the completers race.
         let interrupter =

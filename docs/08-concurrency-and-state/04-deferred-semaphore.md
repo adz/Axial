@@ -63,6 +63,11 @@ Use `Deferred` when a fiber needs to wait for a typed outcome produced elsewhere
 - `Deferred.complete` completes with a full `Exit`.
 - `Deferred.succeed`, `Deferred.fail`, `Deferred.die`, and `Deferred.interrupt` complete common outcomes directly.
 
+For a synchronous host callback, `Deferred.completeNow` returns `bool` immediately, without starting a Flow. The
+`succeedNow`, `failNow`, `dieNow`, and `interruptNow` forms build the corresponding `Exit` for you. Only one caller
+receives `true`; the callback that receives `false` did not replace the outcome already stored. The waiting fiber
+still uses `Deferred.await`.
+
 Awaiting respects runtime cancellation. If the waiting workflow is interrupted before the deferred value is completed, the await returns `Cause.Interrupt`.
 
 ## Semaphore
