@@ -10,6 +10,7 @@ artifacts/*
 .livedocs/models/
 .livedocs/cache/
 .livedocs/releases/
+.livedocs/timings.json
 output/
 tmp/
 site/
