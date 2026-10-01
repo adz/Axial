@@ -8,7 +8,6 @@ open Xunit
 module ReflectionFormattingAnalyzerTests =
     let private findings (body: string) =
         task {
-            let! options = mkOptionsFromProject "net10.0" []
             let source =
                 "module M\n"
                 + "type U = A | B of int\n"
@@ -16,7 +15,7 @@ module ReflectionFormattingAnalyzerTests =
                 + "type Shown = C | D\n"
                 + "    with override this.ToString() = match this with C -> \"c\" | D -> \"d\"\n"
                 + body
-            let! ctx = AnalyzerTestContext.create options source
+            let! ctx = AnalyzerTestContext.create source
             return ReflectionFormattingAnalyzer.analyze ctx |> List.map (fun message -> message.Range.StartLine - 5, message.Code)
         }
 
