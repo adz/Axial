@@ -75,11 +75,11 @@ jobs:
       - name: Build
         run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal -p:Version="${{ steps.version.outputs.value }}"
 
-      - name: Validate documentation
-        run: |
-          bash scripts/check-docs-conventions.sh
-          dotnet livedocs test --warn-as-error
+      - name: Check documentation conventions
+        run: bash scripts/check-docs-conventions.sh
 
+      # Capture audits and executes the documentation examples once and writes the capsule from
+      # that result. A separate `livedocs test` here would execute every example a second time.
       - name: Capture immutable documentation
         id: docs
         shell: bash

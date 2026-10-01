@@ -29,11 +29,16 @@ jobs:
       - run: dotnet tool restore
       - run: dotnet restore
       - name: Build
+        if: github.event_name != 'workflow_dispatch'
         run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
       - name: Check documentation conventions
+        if: github.event_name != 'workflow_dispatch'
         run: bash scripts/check-docs-conventions.sh
       - name: Verify documentation
+        if: github.event_name != 'workflow_dispatch'
         run: dotnet livedocs test --warn-as-error
+      # A workflow_dispatch from the release job is history-only: it renders and verifies the
+      # committed capsules, so it neither builds the solution nor re-executes source examples.
       - name: Render and verify release history
         run: |
           dotnet livedocs build-history .livedocs/history.json --retry 3 --interactive false --banner false
