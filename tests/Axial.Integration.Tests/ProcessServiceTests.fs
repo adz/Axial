@@ -369,7 +369,7 @@ module ProcessServiceTests =
 
     [<Fact>]
     let ``inherited stdin gives the root process the host stdin handle`` () =
-        let hostStdin = IO.File.ResolveLinkTarget("/proc/self/fd/0", false).FullName
+        let hostStdin = IO.FileInfo("/proc/self/fd/0").LinkTarget
         let inherited =
             shText "readlink /proc/self/fd/0"
             |> Process.stdin Input.inheritHandles

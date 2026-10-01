@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="AnalyzerTestContext.fs" />
     <Compile Include="ReflectionFormattingAnalyzerTests.fs" />
     <Compile Include="GuardrailConfigTests.fs" />
   </ItemGroup>

@@ -20,7 +20,7 @@ module GuardrailConfigTests =
                 + "    member _.Delay f = f ()\n"
                 + "let flow = FlowBuilder()\n"
 
-            let ctx = getContext options (prelude + source)
+            let! ctx = AnalyzerTestContext.create options (prelude + source)
             let! messages = EffectBoundaryAnalyzer.effectBoundaryAnalyzer ctx |> Async.StartAsTask
             return messages |> List.map (fun message -> message.Range.StartLine - 6) |> List.sort
         }
