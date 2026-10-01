@@ -12,7 +12,7 @@ type private Kind =
     | Thrown
 
 // <snippet:torture-interop>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let calls = round.Size 120
 
     flow {
@@ -44,7 +44,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             }
 
         // Each call adapts a random kind of foreign operation, and is interrupted a third of the time.
-        let adapted index : Flow<unit, string, int> =
+        let adapted index : Flow<Axial.ClockEnvironment, string, int> =
             let kind = [| Value; Failure; Thrown |].[round.Next 3]
 
             let result value : Result<int, string> =
@@ -96,15 +96,15 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 | Exit.Failure cause -> not (Cause.failures cause).IsEmpty || not (Cause.defects cause).IsEmpty)
 
         // A flow run as a task or an async gives the same exit as running it inside a flow.
-        let sample : Flow<unit, string, int> = Flow.ok 5 |> Flow.bind (fun value -> if value > 3 then Flow.fail "big" else Flow.ok value)
+        let sample : Flow<Axial.ClockEnvironment, string, int> = Flow.ok 5 |> Flow.bind (fun value -> if value > 3 then Flow.fail "big" else Flow.ok value)
         let! direct = sample |> exitOf
-        let! viaAsync = Flow.fromAsync (Flow.toAsync () sample)
+        let! viaAsync = Flow.fromAsync (Flow.toAsync clockEnvironment sample)
 #if FABLE_COMPILER
         let viaTask = viaAsync
         let viaRun = direct
         let coldAsExpected = true
 #else
-        let viaRun = sample |> Flow.run ()
+        let viaRun = sample |> Flow.run clockEnvironment
 
         // Cold tasks start only when a flow binds them, and bind directly in flow { }.
         let startedCold = ref 0
@@ -124,14 +124,14 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let coldAsExpected = startedBeforeBinding = 0 && coldValues = [ 1..6 ] && runValue = 1 && startedCold.Value = 5
 
         // startTask runs the flow to completion by itself, so there is no token to pass on.
-        let! viaTask = Flow.fromTask (fun _ -> Flow.startTask () sample) // axial-allow-discarded-cancellation
+        let! viaTask = Flow.fromTask (fun _ -> Flow.startTask clockEnvironment sample) // axial-allow-discarded-cancellation
 #endif
 
         // A flow that checks the runtime's token stops when interrupted, even while it never suspends.
         let spins = ref 0
         let spinnerToken = ref CancellationToken.None
 
-        let spinner : Flow<unit, Never, unit> =
+        let spinner : Flow<Axial.ClockEnvironment, Never, unit> =
             flow {
                 let! token = Flow.cancellationToken
                 spinnerToken.Value <- token

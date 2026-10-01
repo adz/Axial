@@ -2,6 +2,7 @@ module Axial.Hosting.Node.Example
 
 open System
 open Axial
+open Axial.PlatformService
 open Axial.Hosting.Node
 
 type AppError =
@@ -12,7 +13,9 @@ let describeError = function
 
 type AppEnv =
     { Arguments: string list
-      Greeting: string }
+      Greeting: string
+      Clock: IClock }
+    interface IHasClock with member this.Clock = this.Clock
 
 let application : Flow<AppEnv, AppError, unit> =
     flow {
@@ -26,7 +29,8 @@ let application : Flow<AppEnv, AppError, unit> =
 
 let environment =
     { Arguments = NodeApp.arguments()
-      Greeting = NodeEnvironment.live.TryGet("AXIAL_GREETING") |> Option.defaultValue "Hello from Node." }
+      Greeting = NodeEnvironment.live.TryGet("AXIAL_GREETING") |> Option.defaultValue "Hello from Node."
+      Clock = Clock.live }
 
 // NodeApp owns SIGINT/SIGTERM subscriptions and delays process.exitCode until Completion settles.
 let running = NodeApp.start describeError environment application

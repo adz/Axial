@@ -446,15 +446,13 @@ module RuntimeFoundationTests =
         test <@ result = Exit.Failure (Cause.Fail (BaseRuntimeError.MissingService "ILog")) @>
 
     [<Fact>]
-    let ``base runtime remains a plain record of explicit services`` () =
+    let ``base runtime remains a record of explicit services`` () =
         let runtime =
-            {
-                Clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero))
-                Log = Log.live
-                Random = Random.fromValue 7
-                Guid = Guid.fromValue (Guid.Parse "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
-                EnvironmentVariables = EnvironmentVariables.fromPairs [ "AXIAL_RUNTIME", "ok" ]
-            }
+            { Clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero))
+              Log = Log.live
+              Random = Random.fromValue 7
+              Guid = Guid.fromValue (Guid.Parse "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+              EnvironmentVariables = EnvironmentVariables.fromPairs [ "AXIAL_RUNTIME", "ok" ] }
 
         test <@ runtime.Clock.UtcNow() = DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero) @>
         test <@ runtime.Random.Next() = 7 @>

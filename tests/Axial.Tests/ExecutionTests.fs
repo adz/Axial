@@ -41,7 +41,7 @@ module ExecutionTests =
         let flow = Flow.sleep (TimeSpan.FromSeconds 10.0)
         
         let operation = async {
-            let! _ = flow.ToAsync(())
+            let! _ = flow.ToAsync(TestSupport.clockEnv ())
             return ()
         }
         

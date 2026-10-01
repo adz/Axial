@@ -20,7 +20,7 @@ let private isSubsequence (part: 'a list) (whole: 'a list) =
     go part whole
 
 // <snippet:torture-streams>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let input = [ for _ in 1 .. round.Size 300 -> round.Next 20 ]
     let source () = FlowStream.fromSeq input
 
@@ -40,11 +40,15 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let! flowMapped = source () |> FlowStream.mapFlow (fun value -> Flow.ok (value + 1)) |> FlowStream.runCollect
         let! unfolded = FlowStream.unfoldFlow (fun state -> Flow.ok (if state < 10 then Some(state, state + 1) else None)) 0 |> FlowStream.runCollect
         let! single = FlowStream.fromFlow (Flow.ok 42) |> FlowStream.runCollect
+        let! localized =
+            (FlowStream.fromSeq input : FlowStream<unit, Never, int>)
+            |> FlowStream.localEnv (fun (_: ClockEnvironment) -> ())
+            |> FlowStream.runCollect
         let! folded = source () |> FlowStream.runFold (+) 0
         let! counted = source () |> FlowStream.runCount
         let! head = source () |> FlowStream.runTryHead
         let! last = source () |> FlowStream.runTryLast
-        let! nothing = FlowStream.empty<unit, Never, int> |> FlowStream.runTryHead
+        let! nothing = FlowStream.empty<Axial.ClockEnvironment, Never, int> |> FlowStream.runTryHead
         let seen = ResizeArray<int>()
         do! source () |> FlowStream.tapFlow (fun value -> Flow.delay (fun () -> seen.Add value; Flow.ok ())) |> FlowStream.runDrain
         do! source () |> FlowStream.runForEach seen.Add
@@ -65,6 +69,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             && flowMapped = List.map ((+) 1) input
             && unfolded = [ 0..9 ]
             && single = [ 42 ]
+            && localized = input
             && folded = List.sum input
             && counted = input.Length
             && head = List.tryHead input

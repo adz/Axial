@@ -11,7 +11,7 @@ module CacheTests =
     let ``Cache runs one lookup for concurrent callers of the same key`` () =
         let lookups = ref 0
 
-        let load (key: int) : Flow<unit, string, string> =
+        let load (key: int) : Flow<ClockEnvironment, string, string> =
             flow {
                 Interlocked.Increment(&lookups.contents) |> ignore
                 do! Flow.sleep (TimeSpan.FromMilliseconds 30.0)
@@ -27,14 +27,14 @@ module CacheTests =
                 return values, again, count
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([ "value-1"; "value-1"; "value-1"; "value-2" ], "value-1", 2) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ "value-1"; "value-1"; "value-1"; "value-2" ], "value-1", 2) @>
         test <@ lookups.Value = 2 @>
 
     [<Fact>]
     let ``Cache does not keep failures`` () =
         let attempts = ref 0
 
-        let load (_: string) : Flow<unit, string, int> =
+        let load (_: string) : Flow<ClockEnvironment, string, int> =
             Flow.delay (fun () ->
                 attempts.Value <- attempts.Value + 1
                 if attempts.Value = 1 then Flow.fail "unavailable" else Flow.ok attempts.Value)
@@ -48,13 +48,13 @@ module CacheTests =
                 return first, second, third
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(Error "failed", 2, 2) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Error "failed", 2, 2) @>
 
     [<Fact>]
     let ``Interrupting one caller does not cancel the lookup others wait for`` () =
         let completed = ref false
 
-        let load (_: int) : Flow<unit, string, string> =
+        let load (_: int) : Flow<ClockEnvironment, string, string> =
             flow {
                 do! Flow.sleep (TimeSpan.FromMilliseconds 60.0)
                 completed.Value <- true
@@ -72,7 +72,7 @@ module CacheTests =
                 return interrupted, value
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt, "shared") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, "shared") @>
         test <@ completed.Value @>
 
     [<Fact>]
@@ -90,13 +90,13 @@ module CacheTests =
                 return first, second, count
             }
 
-        test <@ (Flow.runSync () workflow : Exit<int * int * int, string>) = Exit.Success(1, 2, 0) @>
+        test <@ (Flow.runSync (TestSupport.clockEnv ()) workflow : Exit<int * int * int, string>) = Exit.Success(1, 2, 0) @>
 
     [<Fact>]
     let ``memoize shares one run and retries after failure`` () =
         let runs = ref 0
 
-        let source : Flow<unit, string, int> =
+        let source : Flow<ClockEnvironment, string, int> =
             Flow.delay (fun () ->
                 runs.Value <- runs.Value + 1
                 if runs.Value = 1 then Flow.fail "cold" else Flow.ok runs.Value)
@@ -110,5 +110,5 @@ module CacheTests =
                 return first, second, third
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(Error "failed", 2, 2) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Error "failed", 2, 2) @>
         test <@ runs.Value = 2 @>

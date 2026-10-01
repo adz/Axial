@@ -50,21 +50,21 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let runsUntilStopped (schedule: Schedule<unit, string, 'output>) : int =
+let runsUntilStopped (schedule: Schedule<ClockEnvironment, string, 'output>) : int =
     let runs = ref 0
 
     (Flow.delay (fun () ->
         runs.Value <- runs.Value + 1
         Flow.fail "always")
-     : Flow<string, unit>)
+     : Flow<ClockEnvironment, string, unit>)
     |> Flow.retry schedule
-    |> Flow.run ()
+    |> Flow.run (ClockEnvironment Clock.live)
     |> ignore
 
     runs.Value
 
-let firstOutputs (count: int) (schedule: Schedule<unit, unit, 'output>) : 'output list =
-    match schedule |> FlowStream.fromSchedule |> FlowStream.take count |> FlowStream.runCollect |> Flow.run () with
+let firstOutputs (count: int) (schedule: Schedule<ClockEnvironment, unit, 'output>) : 'output list =
+    match schedule |> FlowStream.fromSchedule |> FlowStream.take count |> FlowStream.runCollect |> Flow.run (ClockEnvironment Clock.live) with
     | Exit.Success outputs -> outputs
     | Exit.Failure _ -> []
 
@@ -94,7 +94,7 @@ Use `Schedule.spaced` to keep running with the same delay between runs.
 
 ```fsharp
 // Wait 1 second between runs.
-let everySecond : Schedule<unit, string, _> = Schedule.spaced (TimeSpan.FromSeconds 1.0)
+let everySecond : Schedule<ClockEnvironment, string, _> = Schedule.spaced (TimeSpan.FromSeconds 1.0)
 ```
 
 `spaced` never stops on its own, and its output counts the runs so far:
@@ -111,7 +111,7 @@ Use `Schedule.exponential` when repeated attempts should wait progressively long
 
 ```fsharp
 // Wait 100 ms, 200 ms, 400 ms, 800 ms, and so on.
-let backoff : Schedule<unit, string, _> = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+let backoff : Schedule<ClockEnvironment, string, _> = Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
 ```
 
 Its output is the delay it chose:
@@ -127,7 +127,7 @@ If many clients retry at the same time, they can place another burst of load on 
 `Schedule.jitteredWith` multiplies each delay by a sampled factor from 0.5 to 1.5. You provide the sample function, which keeps randomness explicit and replaceable in tests.
 
 ```fsharp
-let policy : Schedule<unit, string, _> =
+let policy : Schedule<ClockEnvironment, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
     |> Schedule.jitteredWith (System.Random().NextDouble)
 ```
@@ -142,7 +142,7 @@ each takes.
 
 ```fsharp
 // Start a control scan every 50 ms without drifting.
-let scanOnce : Flow<unit> = Flow.ok ()
+let scanOnce : Flow<ClockEnvironment, Never, unit> = Flow.ok ()
 
 let scanLoop =
     scanOnce
@@ -159,7 +159,7 @@ backoff with a spaced schedule caps the backoff:
 
 ```fsharp
 // Exponential back-off capped at 30 s, retrying forever
-let reconnect : Schedule<unit, string, _> =
+let reconnect : Schedule<ClockEnvironment, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
     |> Schedule.union (Schedule.spaced (TimeSpan.FromSeconds 30.0))
 ```
@@ -176,7 +176,7 @@ recurrence limit with backoff bounds the number of attempts:
 
 ```fsharp
 // At most 10 retries, with exponential back-off
-let limitedBackoff : Schedule<unit, string, _> =
+let limitedBackoff : Schedule<ClockEnvironment, string, _> =
     Schedule.recurs 10
     |> Schedule.intersect (Schedule.exponential (TimeSpan.FromMilliseconds 200.0))
 ```
@@ -194,7 +194,7 @@ when it takes over, so its delays start from the beginning:
 
 ```fsharp
 // Three quick retries, then up to five slower ones with backoff
-let patient : Schedule<unit, string, _> =
+let patient : Schedule<ClockEnvironment, string, _> =
     Schedule.spaced (TimeSpan.FromMilliseconds 100.0)
     |> Schedule.recursAtMost 3
     |> Schedule.andThen (Schedule.exponential (TimeSpan.FromSeconds 1.0) |> Schedule.recursAtMost 5)
@@ -220,7 +220,7 @@ while less than the budget has passed; it never cuts a run short. To cap the num
 
 ```fsharp
 // Retry with backoff, but give up after two minutes in total
-let bounded : Schedule<unit, string, _> =
+let bounded : Schedule<ClockEnvironment, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
     |> Schedule.upTo (TimeSpan.FromMinutes 2.0)
 ```
@@ -236,7 +236,7 @@ let budgeted = runsUntilStopped (Schedule.exponential (ms 1.0) |> Schedule.upTo 
 at the error or value being retried. For example, stop once exponential backoff reaches 30 seconds:
 
 ```fsharp
-let untilSlow : Schedule<unit, string, _> =
+let untilSlow : Schedule<ClockEnvironment, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
     |> Schedule.whileOutput (fun delay -> delay < TimeSpan.FromSeconds 30.0)
 ```
@@ -255,7 +255,7 @@ least the given time, the wrapped schedule starts counting from zero again, so `
 
 ```fsharp
 // Five restarts for a crash loop, but a crash after ten healthy minutes gets the full budget back
-let worker : Flow<unit> = Flow.ok ()
+let worker : Flow<ClockEnvironment, Never, unit> = Flow.ok ()
 
 let supervisedWorker =
     worker |> Flow.supervise (Schedule.recurs 5 |> Schedule.resetAfter (TimeSpan.FromMinutes 10.0))
@@ -270,7 +270,7 @@ Use `Flow.retry` to rerun a flow after an expected domain failure (`Cause.Fail`)
 ```fsharp
 let callsMade = ref 0
 
-let unstableCall : Flow<string, unit> =
+let unstableCall : Flow<ClockEnvironment, string, unit> =
     flow {
         callsMade.Value <- callsMade.Value + 1
         return! Flow.fail "temporary-error"
@@ -283,7 +283,7 @@ let resilientCall =
 ```
 
 ```fsharp run
-resilientCall |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail "temporary-error"))
+resilientCall |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail "temporary-error"))
 callsMade.Value |> shouldEqual 4
 ```
 
@@ -305,7 +305,7 @@ type FetchError =
     | NotFound
 
 /// A fetch that fails with each error in turn, then succeeds.
-let fetchFailing (errors: FetchError list) : Flow<FetchError, string> =
+let fetchFailing (errors: FetchError list) : Flow<ClockEnvironment, FetchError, string> =
     let remaining = ref errors
 
     Flow.delay (fun () ->
@@ -321,7 +321,7 @@ let isTransient error =
     | RateLimited -> true
     | NotFound -> false
 
-let resilientFetch (fetch: Flow<FetchError, string>) =
+let resilientFetch (fetch: Flow<ClockEnvironment, FetchError, string>) =
     fetch
     |> Flow.retry (
         Schedule.exponential (TimeSpan.FromMilliseconds 200.0)
@@ -330,8 +330,8 @@ let resilientFetch (fetch: Flow<FetchError, string>) =
 ```
 
 ```fsharp run
-fetchFailing [ Unavailable; RateLimited ] |> resilientFetch |> Flow.run () |> shouldEqual (Exit.Success "payload")
-fetchFailing [ Unavailable; NotFound ] |> resilientFetch |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail NotFound))
+fetchFailing [ Unavailable; RateLimited ] |> resilientFetch |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success "payload")
+fetchFailing [ Unavailable; NotFound ] |> resilientFetch |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail NotFound))
 ```
 
 `NotFound` is not transient, so the retry stops there even though retries remain.
@@ -345,13 +345,13 @@ from `Retry.defaults` (3 retries, exponential backoff from 100 ms capped at 10 s
 the fields you need:
 
 ```fsharp
-let resilientFetchWithRecord (fetch: Flow<FetchError, string>) =
+let resilientFetchWithRecord (fetch: Flow<ClockEnvironment, FetchError, string>) =
     fetch
     |> Flow.retry (Retry.schedule { Retry.defaults with Retries = 5; When = isTransient; Backoff = Backoff.NoDelay })
 ```
 
 ```fsharp run
-fetchFailing [ RateLimited; RateLimited; Unavailable ] |> resilientFetchWithRecord |> Flow.run () |> shouldEqual (Exit.Success "payload")
+fetchFailing [ RateLimited; RateLimited; Unavailable ] |> resilientFetchWithRecord |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success "payload")
 ```
 
 `Retries` counts retries after the first attempt, the same as `Schedule.recurs`. `Backoff` is `Backoff.NoDelay`,
@@ -363,7 +363,7 @@ fixed-rate timing, or elapsed-time limits.
 Use `Flow.repeat` to run a successful flow again. This is useful for polling, heartbeats, and recurring background work.
 
 ```fsharp
-let pollStatus : Flow<string> =
+let pollStatus : Flow<ClockEnvironment, Never, string> =
     flow {
         return "Still working"
     }
@@ -383,12 +383,13 @@ chooses. It ends when the schedule stops. With `Schedule.fixedRate` it is a tick
 when the consumer is slow: ticks the consumer was too busy to take are skipped, not delivered in a burst.
 
 ```fsharp transcript
+> open Axial.PlatformService;;
 > (Schedule.fixedRate (System.TimeSpan.FromMilliseconds 20.0)
 -  |> FlowStream.fromSchedule
 -  |> FlowStream.take 3
 -  |> FlowStream.runCollect
--  : Flow<unit, Never, int list>)
-- |> Flow.run ();;
+-  : Flow<ClockEnvironment, Never, int list>)
+- |> Flow.run (ClockEnvironment Clock.live);;
 val it: Exit<int list,Never> = Success [0; 1; 2]
 ```
 

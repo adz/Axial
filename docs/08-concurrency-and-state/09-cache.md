@@ -39,10 +39,10 @@ let shouldEqual expected actual =
 ```fsharp
 let reads = ref 0
 
-let readConfigFromDisk : Flow<string, string> =
+let readConfigFromDisk : Flow<ClockEnvironment, string, string> =
     Flow.delay (fun () -> Flow.ok $"config read {Interlocked.Increment &reads.contents} time(s)")
 
-let sameConfig : Flow<string, bool> =
+let sameConfig : Flow<ClockEnvironment, string, bool> =
     flow {
         let! loadConfig = Flow.memoize readConfigFromDisk
         let! a = loadConfig
@@ -52,7 +52,7 @@ let sameConfig : Flow<string, bool> =
 ```
 
 ```fsharp run
-sameConfig |> Flow.run () |> shouldEqual (Exit.Success true)
+sameConfig |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success true)
 reads.Value |> shouldEqual 1
 ```
 
@@ -64,13 +64,13 @@ only when no success is cached and no lookup for that key is already running:
 ```fsharp
 let lookups = ref 0
 
-let loadUser (id: int) : Flow<string, string> =
+let loadUser (id: int) : Flow<ClockEnvironment, string, string> =
     Flow.sleep (TimeSpan.FromMilliseconds 5.0)
     |> Flow.map (fun () ->
         Interlocked.Increment &lookups.contents |> ignore
         $"user {id}")
 
-let loadPages (userIds: int list) : Flow<string, string list> =
+let loadPages (userIds: int list) : Flow<ClockEnvironment, string, string list> =
     flow {
         let! users = Cache.make loadUser
         let! pages = userIds |> Flow.traversePar (Parallelism.bounded 8) (fun id -> users |> Cache.get id)
@@ -79,7 +79,7 @@ let loadPages (userIds: int list) : Flow<string, string list> =
 ```
 
 ```fsharp run
-loadPages [ 1; 2; 1; 1; 2 ] |> Flow.run () |> shouldEqual (Exit.Success [ "user 1"; "user 2"; "user 1"; "user 1"; "user 2" ])
+loadPages [ 1; 2; 1; 1; 2 ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ "user 1"; "user 2"; "user 1"; "user 1"; "user 2" ])
 lookups.Value |> shouldEqual 2
 ```
 

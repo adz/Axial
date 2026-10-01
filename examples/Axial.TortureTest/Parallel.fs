@@ -10,7 +10,7 @@ open Axial.TortureTest.Scenario
 let private ms (value: float) = TimeSpan.FromMilliseconds value
 
 // <snippet:torture-parallel>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let items = [ 1 .. round.Size 200 ]
     let bound = round.Next 6 + 1
 
@@ -80,7 +80,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         // Races: the winner's value comes back, and both sides always finish: the winner completes, and the loser
         // completes or is interrupted, running its exit handler either way.
         let races = round.Size 50
-        let! finishes = [ for _ in 1 .. 2 * races -> Deferred.make<unit, Never, unit> () ] |> Flow.sequence
+        let! finishes = [ for _ in 1 .. 2 * races -> Deferred.make<Axial.ClockEnvironment, Never, unit> () ] |> Flow.sequence
 
         let! winners =
             finishes

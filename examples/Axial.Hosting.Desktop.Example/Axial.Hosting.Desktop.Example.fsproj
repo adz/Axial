@@ -8,5 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 </Project>

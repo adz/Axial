@@ -12,11 +12,11 @@ type private Outcome =
     | Died
     | Interrupted
 
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let branches = round.Size 120
 
     // Every way a flow can produce each outcome.
-    let produce kind : Flow<unit, string, int> =
+    let produce kind : Flow<Axial.ClockEnvironment, string, int> =
         match kind with
         | 0 -> Flow.ok 1
         | 1 -> Flow.succeed 2 |> Flow.map ((+) 1)
@@ -31,7 +31,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         | 10 -> Flow.never |> Flow.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> Flow.ok 4)
         | 11 -> Flow.verify (Policy.compose Policy.pass (Policy.withError (fun input -> if input > 0 then Ok input else Error()) "policy")) 5
         | 12 -> Flow.verify (Policy.lift (fun (input: int) -> Error input) string) 6
-        | 13 -> Flow.verify (Policy.optional (fun () -> true) (Policy.context (fun () input -> if input > 0 then Ok input else Error input) string)) 7
+        | 13 -> Flow.verify (Policy.optional (fun (_: ClockEnvironment) -> true) (Policy.context (fun (_: ClockEnvironment) input -> if input > 0 then Ok input else Error input) string)) 7
         | _ -> Flow.fromResult (Ok 8)
 
     let expected kind =
@@ -132,7 +132,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let! appliedOperator = Flow.(<*>) (Flow.ok (fun x -> x - 1)) (Fiber.join c)
 
         // Bind adapts a Result's error at the bind site; the first Error stops the flow with the adapted error.
-        let bindStep kind : Flow<unit, string, int> =
+        let bindStep kind : Flow<Axial.ClockEnvironment, string, int> =
             flow {
                 let! even = (if kind % 2 = 0 then Ok kind else Error()) |> Bind.error "odd"
                 let! small = (if even < 8 then Ok even else Error even) |> Bind.mapError (fun large -> $"large {large}")
@@ -151,7 +151,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 | Exit.Failure _ -> false)
 
         // A flow that cannot fail stands where a typed error is expected.
-        let! widened = (Flow.ok 5 : Flow<unit, Never, int>) |> Flow.widenError |> Flow.orElse (Flow.ok 0) |> exitOf
+        let! widened = (Flow.ok 5 : Flow<Axial.ClockEnvironment, Never, int>) |> Flow.widenError |> Flow.orElse (Flow.ok 0) |> exitOf
 
         let! foundResult =
             Flow.orElseFlow (Flow.ok "fallback") (Error())

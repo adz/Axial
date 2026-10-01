@@ -51,7 +51,7 @@ let shouldEqual expected actual =
 let polls = ref 0
 
 /// Crashes on its first two runs, as a worker does on a poison message, then succeeds.
-let pollQueue : Flow<string, int> =
+let pollQueue : Flow<ClockEnvironment, string, int> =
     Flow.delay (fun () ->
         let run = Interlocked.Increment &polls.contents
         if run <= 2 then Flow.die (InvalidOperationException "poison message") else Flow.ok run)
@@ -62,7 +62,7 @@ let restartPolicy =
             Retries = 4
             Backoff = Backoff.Exponential(TimeSpan.FromMilliseconds 1.0, TimeSpan.FromMilliseconds 10.0) }
 
-let reliableWorker : Flow<string, int> = pollQueue |> Flow.supervise restartPolicy
+let reliableWorker : Flow<ClockEnvironment, string, int> = pollQueue |> Flow.supervise restartPolicy
 ```
 
 ```fsharp run
@@ -70,7 +70,7 @@ flow {
     let! fiber = Flow.fork reliableWorker
     return! Fiber.join fiber
 }
-|> Flow.run ()
+|> Flow.run (ClockEnvironment Clock.live)
 |> shouldEqual (Exit.Success 3)
 ```
 
@@ -86,9 +86,9 @@ Two semantics worth knowing:
 If a background fiber's outcome genuinely does not matter, say so at the call site:
 
 ```fsharp
-let bestEffortCacheWarmup : Flow<string, unit> = Flow.die (InvalidOperationException "cache warmup failed")
+let bestEffortCacheWarmup : Flow<ClockEnvironment, string, unit> = Flow.die (InvalidOperationException "cache warmup failed")
 
-let startWarmup : Flow<string, unit> =
+let startWarmup : Flow<ClockEnvironment, string, unit> =
     flow {
         let! _fiber = Flow.forkDetached bestEffortCacheWarmup
         return ()
@@ -109,17 +109,17 @@ let observer =
         OnUnobservedDefect = fun _ defect -> lock unobserved (fun () -> unobserved.Add defect.Message) }
 
 /// Detaches one failing fiber and discards the handle of another.
-let application : Flow<string, unit> =
+let application : Flow<ClockEnvironment, string, unit> =
     flow {
         do! startWarmup
-        let! _ = Flow.fork (Flow.die (InvalidOperationException "lost order") : Flow<string, unit>)
+        let! _ = Flow.fork (Flow.die (InvalidOperationException "lost order") : Flow<ClockEnvironment, string, unit>)
         do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
     }
     |> Flow.scoped
 ```
 
 ```fsharp run
-application |> Flow.withFiberObserver observer |> Flow.run () |> shouldEqual (Exit.Success())
+application |> Flow.withFiberObserver observer |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success())
 List.ofSeq unobserved |> shouldEqual [ "lost order" ]
 ```
 
@@ -150,7 +150,7 @@ Note the interaction with `supervise`: a supervised flow that exhausts its resta
 `Axial.Telemetry` ships a ready-made observer that records defects on the `Axial` activity source:
 
 ```fsharp
-let tracedApplication : Flow<string, unit> =
+let tracedApplication : Flow<ClockEnvironment, string, unit> =
     application |> FiberTelemetry.observe // = Flow.withFiberObserver FiberTelemetry.observer
 ```
 
@@ -163,7 +163,7 @@ fiber defects as errors and unobserved defects as critical entries, with the exc
 compose, so telemetry and logging stack from one edge install:
 
 ```fsharp no-check reason="Needs Axial.Hosting for Microsoft.Extensions.Logging as well as Axial.Telemetry; this page checks against Axial.Telemetry"
-let observeWithLogging (logger: Microsoft.Extensions.Logging.ILogger) (workflow: Flow<unit, string, unit>) =
+let observeWithLogging (logger: Microsoft.Extensions.Logging.ILogger) (workflow: Flow<ClockEnvironment, string, unit>) =
     workflow
     |> Flow.withFiberObserver (FiberObserver.compose FiberTelemetry.observer (FiberLogging.observer logger))
 ```

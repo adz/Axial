@@ -11,7 +11,7 @@ module WorkflowSubscriptionRefTests =
         Platform.lock reference.Hub.Gate (fun () -> reference.Hub.Subscriptions.Count)
 
     /// Polls until a stream has subscribed, so a test can update the reference knowing the stream will see it.
-    let private waitForSubscriber (reference: SubscriptionRef<'a>) : Flow<unit, 'error, unit> =
+    let private waitForSubscriber (reference: SubscriptionRef<'a>) : Flow<ClockEnvironment, 'error, unit> =
         flow {
             let mutable remaining = 5000
 
@@ -22,7 +22,7 @@ module WorkflowSubscriptionRefTests =
 
     [<Fact>]
     let ``SubscriptionRef: changes starts with the current value and then every update`` () =
-        let workflow : Flow<unit, Never, int list * int> =
+        let workflow : Flow<ClockEnvironment, Never, int list * int> =
             flow {
                 let! counter = SubscriptionRef.make 10
                 do! counter |> SubscriptionRef.set 11
@@ -42,11 +42,11 @@ module WorkflowSubscriptionRefTests =
                 return values, doubled
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([ 11; 12; 24; 0 ], 24) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 11; 12; 24; 0 ], 24) @>
 
     [<Fact>]
     let ``SubscriptionRef: a stream joining during concurrent updates sees no gap and no duplicate`` () =
-        let attempt () : Flow<unit, Never, bool> =
+        let attempt () : Flow<ClockEnvironment, Never, bool> =
             flow {
                 let! counter = SubscriptionRef.make 0
 
@@ -70,15 +70,15 @@ module WorkflowSubscriptionRefTests =
             }
 
         let workflow = List.init 200 (fun _ -> attempt ()) |> Flow.sequence
-        test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow |> Exit.map (List.forall id) = Exit.Success true @>
 
     [<Fact>]
     let ``SubscriptionRef: a sliding stream keeps only the latest value and never delays updates`` () =
-        let workflow : Flow<unit, Never, int list> =
+        let workflow : Flow<ClockEnvironment, Never, int list> =
             flow {
                 let! reading = SubscriptionRef.make 0
-                let! tookFirst = Deferred.make<unit, Never, unit> ()
-                let! release = Deferred.make<unit, Never, unit> ()
+                let! tookFirst = Deferred.make<ClockEnvironment, Never, unit> ()
+                let! release = Deferred.make<ClockEnvironment, Never, unit> ()
 
                 // The display takes the current value, then stalls until every update below has been made.
                 let! display =
@@ -104,15 +104,15 @@ module WorkflowSubscriptionRefTests =
                 return! Fiber.join display
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success [ 0; 50 ] @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ 0; 50 ] @>
 
     [<Fact>]
     let ``SubscriptionRef: a stream unsubscribes when it ends`` () =
-        let workflow : Flow<unit, Never, int list * int> =
+        let workflow : Flow<ClockEnvironment, Never, int list * int> =
             flow {
                 let! reading = SubscriptionRef.make 7
                 let! first = reading |> SubscriptionRef.changes QueueStrategy.Unbounded |> FlowStream.take 1 |> FlowStream.runCollect
                 return first, subscribers reading ()
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([ 7 ], 0) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 7 ], 0) @>

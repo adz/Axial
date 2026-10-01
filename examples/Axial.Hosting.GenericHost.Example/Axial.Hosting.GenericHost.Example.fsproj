@@ -9,5 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <ProjectReference Include="..\..\src\Axial.Hosting\Axial.Hosting.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 </Project>

@@ -13,10 +13,12 @@ open Swensen.Unquote
 open Xunit
 
 type HttpTestEnv =
-    { Http: IHttp }
+    { Http: IHttp; Clock: IClock }
 
     interface IHasHttp with
         member this.Http = this.Http
+    interface IHasClock with
+        member this.Clock = this.Clock
 
 module HttpServiceTests =
     let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-fixture
@@ -44,7 +46,7 @@ module HttpServiceTests =
                         sent.Add request
                         return if queue.Count > 1 then queue.Dequeue() else queue.Peek()
                     } }
-        sent, { Http = service }
+        sent, { Http = service; Clock = Clock.live }
 
     let private okResponse status body = Ok(Response.create syntheticTime status body)
 
@@ -238,7 +240,7 @@ module HttpServiceTests =
 
     let private liveEnv () =
         let client = new HttpClient()
-        { Http = Http.live Clock.live client }
+        { Http = Http.live Clock.live client; Clock = Clock.live }
 
     [<Fact>]
     let ``live service performs a real GET with query and headers`` () =
@@ -268,7 +270,8 @@ module HttpServiceTests =
             (fun context -> context.Response.StatusCode <- 200)
             (fun root ->
                 use client = new HttpClient()
-                let env = { Http = Http.live (Clock.fromValue fixedTime) client }
+                let fixedClock = Clock.fromValue fixedTime
+                let env = { Http = Http.live fixedClock client; Clock = fixedClock }
                 let response = Http.get root |> Http.send |> runSync env |> requireSuccess
                 test <@ response.StartedAt = fixedTime @>
                 test <@ response.Duration = TimeSpan.Zero @>)

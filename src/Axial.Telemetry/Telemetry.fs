@@ -382,9 +382,9 @@ module FiberMetrics =
                     live.Add -1L
                     settled.Add(1L, statusTag metadata)
 
-                    match metadata.SettledAt with
-                    | Some settledAt ->
-                        duration.Record((settledAt - metadata.StartedAt).TotalSeconds, statusTag metadata)
+                    match metadata.SettledTick with
+                    | Some settledTick ->
+                        duration.Record(max 0.0 (settledTick - metadata.StartedTick).TotalSeconds, statusTag metadata)
                     | None -> ()
             OnUnobservedDefect = fun _ _ -> unobservedDefects.Add 1L
         }
@@ -485,10 +485,10 @@ module FiberDumpTelemetry =
     /// backend, including the Aspire dashboard.
     /// </summary>
     /// <param name="registry">The registry to snapshot.</param>
-    let record (registry: FiberRegistry) : unit =
+    let record (clock: IClock) (registry: FiberRegistry) : unit =
         let tags = ActivityTagsCollection()
         tags["axial.flow.fibers.live"] <- registry.LiveFiberCount
-        tags["axial.flow.fiber.dump.tree"] <- registry.Dump()
+        tags["axial.flow.fiber.dump.tree"] <- registry.DumpAt(clock)
 
         match System.Diagnostics.Activity.Current with
         | null ->

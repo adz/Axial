@@ -10,6 +10,7 @@
     <PackageReference Include="Fable.Core" Version="4.3.0" />
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Harness.fs" />

@@ -359,6 +359,9 @@ type IFileSystem =
 /// Implement this on the environment supplied at the host edge. A workflow that touches the file
 /// system constrains its environment with <c>'env :&gt; IHasFileSystem</c>.
 /// </remarks>
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
 type IHasFileSystem =
     /// The file-system service supplied by this environment.
     abstract FileSystem : IFileSystem

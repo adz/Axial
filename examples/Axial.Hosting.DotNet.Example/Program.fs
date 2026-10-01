@@ -1,6 +1,11 @@
 open System
 open Axial
+open Axial.PlatformService
 open Axial.Hosting
+
+type AppEnvironment =
+    { Arguments: string array; Clock: IClock }
+    interface IHasClock with member this.Clock = this.Clock
 
 type AppError =
     | InvalidDelay of string
@@ -10,9 +15,9 @@ let describeError = function
     | InvalidDelay value -> $"'{value}' is not a number of seconds."
     | NonPositiveDelay value -> $"'{value}' is not a positive number of seconds."
 
-let application : Flow<string array, AppError, unit> =
+let application : Flow<AppEnvironment, AppError, unit> =
     flow {
-        let! (arguments: string array) = Flow.env
+        let! arguments = Flow.envWith (fun environment -> environment.Arguments)
 
         let! seconds =
             arguments
@@ -36,6 +41,6 @@ let application : Flow<string array, AppError, unit> =
 [<EntryPoint>]
 let main arguments =
     // DotNetApp translates Ctrl+C and the structured Exit; F# entry points still require a synchronous int.
-    DotNetApp.run describeError arguments application
+    DotNetApp.run describeError { Arguments = arguments; Clock = Clock.live } application
     |> Async.AwaitTask
     |> Async.RunSynchronously

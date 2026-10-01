@@ -8,7 +8,7 @@ open Axial.State
 open Axial.TortureTest.Scenario
 
 // <snippet:torture-pipeline>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let readers = 4
     let samplesPerReader = round.Size 500
 
@@ -37,7 +37,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
 
                 // A view that joins the latest-sample reference and follows 200 changes of it. Waiting for its first
                 // value means it is subscribed before the readers start, so 200 changes always follow.
-                let! viewing = Deferred.make<unit, Never, unit> ()
+                let! viewing = Deferred.make<Axial.ClockEnvironment, Never, unit> ()
 
                 let! _ =
                     latest

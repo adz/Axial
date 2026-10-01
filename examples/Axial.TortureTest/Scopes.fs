@@ -23,7 +23,7 @@ type private Disposable(onDispose: unit -> unit) =
 #endif
 
 // <snippet:torture-scopes>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     flow {
         let events = ResizeArray<Event>()
         let nextId = ref 0
@@ -34,7 +34,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let interrupted = ref 0
 
         // Acquires one resource in the current scope, in one of the ways Axial offers, and logs its release.
-        let acquire (scope: int) : Flow<unit, string, unit> =
+        let acquire (scope: int) : Flow<Axial.ClockEnvironment, string, unit> =
             let id = fresh ()
             let release () = record (Released(scope, id))
             let acquired value = Flow.delay (fun () -> record (Acquired(scope, id)); Flow.ok value)
@@ -59,7 +59,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
 
         // A scope acquires a few resources, then may open child scopes, fork children (joined, interrupted, or left
         // running for the scope to interrupt), fail, or die. Every level counts itself in and out.
-        let rec nest depth : Flow<unit, string, unit> =
+        let rec nest depth : Flow<Axial.ClockEnvironment, string, unit> =
             flow {
                 let scope = fresh ()
 

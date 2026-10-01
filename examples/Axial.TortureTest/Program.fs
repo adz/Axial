@@ -7,7 +7,7 @@ open Axial.TortureTest.Scenario
 // <snippet:torture-runner>
 /// Runs one round, turning a round that fails outright into a violated check.
 let runRound (scenario: Scenario) (seed: int) : Check list =
-    match (scenario.Run(Round(seed, 100))).RunSynchronously(()) with
+    match (scenario.Run(Round(seed, 100))).RunSynchronously(clockEnvironment) with
     | Exit.Success checks -> checks
     | Exit.Failure cause ->
         let reason = Cause.prettyPrint (fun (_: Never) -> "") cause

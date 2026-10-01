@@ -26,7 +26,7 @@ module FiberObserverTests =
 
     /// A flow that waits for runtime cancellation and then settles with a defect, so a race or
     /// timeout loser has a genuine Cause.Die exit for the runtime to discard.
-    let private dieOnCancel (message: string) : Flow<unit, string, unit> =
+    let private dieOnCancel (message: string) : Flow<ClockEnvironment, string, unit> =
         Flow(fun _ (token: CancellationToken) ->
             Platform.ofAwaitable (task {
                 try
@@ -46,7 +46,7 @@ module FiberObserverTests =
 
     /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
     /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
-    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<ClockEnvironment, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
                 do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
@@ -63,7 +63,7 @@ module FiberObserverTests =
                 return! Fiber.join fiber
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success 42 @>
         test <@ recording.Starts |> List.length = 1 @>
@@ -76,12 +76,12 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<unit, string, int>)
+                let! fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<ClockEnvironment, string, int>)
                 do! waitForSettled fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success "done" @>
 
@@ -97,11 +97,11 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.die (InvalidOperationException "handled crash") : Flow<unit, string, int>)
+                let! fiber = Flow.fork (Flow.die (InvalidOperationException "handled crash") : Flow<ClockEnvironment, string, int>)
                 return! Fiber.join fiber
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         match result with
         | Exit.Failure (Cause.Die error) -> test <@ error.Message = "handled crash" @>
@@ -117,12 +117,12 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.forkDetached (Flow.die (InvalidOperationException "intentional") : Flow<unit, string, int>)
+                let! fiber = Flow.forkDetached (Flow.die (InvalidOperationException "intentional") : Flow<ClockEnvironment, string, int>)
                 do! waitForSettled fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success "done" @>
         // OnEnd still fires for diagnostics; the defect is just never unobserved.
@@ -135,12 +135,12 @@ module FiberObserverTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.sleep (TimeSpan.FromSeconds 30.0) : Flow<unit, string, unit>)
+                let! fiber = Flow.fork (Flow.sleep (TimeSpan.FromSeconds 30.0) : Flow<ClockEnvironment, string, unit>)
                 let! _exit = Fiber.interrupt fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success "done" @>
         test <@ recording.Ends |> List.map (fun (metadata, defect) -> metadata.Status, defect) = [ FiberStatus.Interrupted, None ] @>
@@ -154,7 +154,7 @@ module FiberObserverTests =
             dieOnCancel "timeout loser"
             |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Failure(Cause.Fail "timed out") @>
 
@@ -169,7 +169,7 @@ module FiberObserverTests =
         let result =
             Flow.race (Flow.succeed ()) (dieOnCancel "race loser" |> Flow.map ignore)
             |> Flow.withFiberObserver recording.Observer
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success () @>
 
@@ -195,7 +195,7 @@ module FiberObserverTests =
                 return! Fiber.join fiber
             }
             |> Flow.withFiberObserver throwing
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success 42 @>
 
@@ -210,7 +210,9 @@ module FiberObserverTests =
                     ParentId = None
                     Annotations = Map.empty
                     StartedAt = DateTimeOffset.UtcNow
+                    StartedTick = TimeSpan.Zero
                     SettledAt = None
+                    SettledTick = None
                     Status = FiberStatus.Failed
                 },
                 recording.Observer)
@@ -232,7 +234,9 @@ module FiberObserverTests =
                 ParentId = None
                 Annotations = Map.empty
                 StartedAt = DateTimeOffset.UtcNow
+                StartedTick = TimeSpan.Zero
                 SettledAt = None
+                SettledTick = None
                 Status = FiberStatus.Failed
             }
 
@@ -254,7 +258,9 @@ module FiberObserverTests =
                     ParentId = None
                     Annotations = Map.empty
                     StartedAt = DateTimeOffset.UtcNow
+                    StartedTick = TimeSpan.Zero
                     SettledAt = None
+                    SettledTick = None
                     Status = FiberStatus.Failed
                 },
                 recording.Observer)

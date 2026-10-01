@@ -32,13 +32,13 @@ module WorkflowBasicTests =
     let ``Flow delay reruns from scratch`` () =
         let runs = ref 0
 
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             Flow.delay(fun () ->
                 runs.Value <- runs.Value + 1
                 Flow.succeed runs.Value)
 
-        test <@ Flow.runSync () workflow = Exit.Success 1 @>
-        test <@ Flow.runSync () workflow = Exit.Success 2 @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 1 @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 2 @>
 
     [<Fact>]
     let ``shared combinators preserve sync and async environment semantics`` () =
@@ -64,30 +64,30 @@ module WorkflowBasicTests =
 
         let syncMapped =
             Flow.(<!>) ((+) 1) syncOk
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         let syncApplied =
             Flow.(<*>) (Flow.ok ((+) 1)) syncOk
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         let syncMapped3 =
             Flow.map3 (fun left middle right -> left + middle + right) (Flow.ok 1) (Flow.ok 2) (Flow.ok 3)
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         let syncIgnored =
             Flow.ignore syncOk
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         let syncBound =
             Flow.(>>=) syncOk (fun value -> Flow.ok (value + 1))
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         let syncRecovered =
             Flow.orElseWith (fun (error: string) -> Flow.ok error.Length) syncError
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
-        test <@ Flow.runSync () syncOk = Flow.runSync () syncAlias @>
-        test <@ Flow.runSync () syncError = Flow.runSync () syncErrorAlias @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) syncOk = Flow.runSync (TestSupport.clockEnv ()) syncAlias @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) syncError = Flow.runSync (TestSupport.clockEnv ()) syncErrorAlias @>
         test <@ syncMapped = Exit.Success 42 @>
         test <@ syncApplied = Exit.Success 42 @>
         test <@ syncMapped3 = Exit.Success 6 @>
@@ -99,14 +99,14 @@ module WorkflowBasicTests =
     let ``Flow delay reruns from scratch even for async work`` () =
         let runs = ref 0
 
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             Flow.delay(fun () ->
                 runs.Value <- runs.Value + 1
                 Flow.succeed runs.Value)
 
         let runOnce () =
             workflow
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ runOnce () = Exit.Success 1 @>
         test <@ runOnce () = Exit.Success 2 @>
@@ -124,65 +124,65 @@ module WorkflowBasicTests =
                     return runs.Value
                 })
 
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
                 let! value = load
                 return value * 2
             }
 
-        let returned : Flow<unit, string, int> =
+        let returned : Flow<ClockEnvironment, string, int> =
             flow {
                 return! load
             }
 
         use cts = new CancellationTokenSource()
 
-        let first = Flow.runSyncWithToken () cts.Token workflow
-        let second = Flow.runSyncWithToken () cts.Token workflow
+        let first = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
+        let second = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
 
         test <@ first = Exit.Success 2 @>
         test <@ second = Exit.Success 4 @>
-        test <@ Flow.runSyncWithToken () cts.Token returned = Exit.Success 3 @>
+        test <@ Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token returned = Exit.Success 3 @>
         test <@ List.ofSeq observedCancellation = [ true; true; true ] @>
 
     [<Fact>]
     let ``flow lifts ColdTask Result through let and return`` () =
-        let succeeds : Flow<unit, string, int> =
+        let succeeds : Flow<ClockEnvironment, string, int> =
             flow {
                 let! value = ColdTask(fun _ -> Task.FromResult(Ok 41))
                 return value + 1
             }
 
-        let fails : Flow<unit, string, int> =
+        let fails : Flow<ClockEnvironment, string, int> =
             flow {
                 return! ColdTask(fun _ -> Task.FromResult(Error "unavailable"))
             }
 
-        test <@ Flow.runSync () succeeds = Exit.Success 42 @>
-        test <@ Flow.runSync () fails = Exit.Failure(Cause.Fail "unavailable") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) succeeds = Exit.Success 42 @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) fails = Exit.Failure(Cause.Fail "unavailable") @>
 
     [<Fact>]
     let ``async interop Result constructors lift the typed error channel`` () =
-        let taskFlow : Flow<unit, string, int> =
+        let taskFlow : Flow<ClockEnvironment, string, int> =
             Flow.fromTaskResult(fun _ -> Task.FromResult(Error "task"))
 
-        let valueTaskFlow : Flow<unit, string, int> =
+        let valueTaskFlow : Flow<ClockEnvironment, string, int> =
             Flow.fromValueTaskResult(fun _ -> ValueTask.FromResult(Error "value-task"))
 
-        let asyncFlow : Flow<unit, string, int> =
+        let asyncFlow : Flow<ClockEnvironment, string, int> =
             Flow.fromAsyncResult(async { return Error "async" })
 
-        let startedTaskFlow : Flow<unit, string, int> =
+        let startedTaskFlow : Flow<ClockEnvironment, string, int> =
             Flow.awaitStartedTaskResult(Task.FromResult(Error "started-task"))
 
-        let startedValueTaskFlow : Flow<unit, string, int> =
+        let startedValueTaskFlow : Flow<ClockEnvironment, string, int> =
             Flow.awaitStartedValueTaskResult(ValueTask.FromResult(Error "started-value-task"))
 
-        test <@ Flow.runSync () taskFlow = Exit.Failure(Cause.Fail "task") @>
-        test <@ Flow.runSync () valueTaskFlow = Exit.Failure(Cause.Fail "value-task") @>
-        test <@ Flow.runSync () asyncFlow = Exit.Failure(Cause.Fail "async") @>
-        test <@ Flow.runSync () startedTaskFlow = Exit.Failure(Cause.Fail "started-task") @>
-        test <@ Flow.runSync () startedValueTaskFlow = Exit.Failure(Cause.Fail "started-value-task") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) taskFlow = Exit.Failure(Cause.Fail "task") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) valueTaskFlow = Exit.Failure(Cause.Fail "value-task") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) asyncFlow = Exit.Failure(Cause.Fail "async") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) startedTaskFlow = Exit.Failure(Cause.Fail "started-task") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) startedValueTaskFlow = Exit.Failure(Cause.Fail "started-value-task") @>
 
     [<Fact>]
     let ``shared combinators preserve environment and error semantics`` () =
@@ -277,7 +277,7 @@ module WorkflowBasicTests =
         let flowLayerResult =
             flowLayerWorkflow
             |> Layer.provide (Layer.succeed app)
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ composedResult = Exit.Success "provider-client:10" @>
         test <@ providerResult = Exit.Success app.DeviceClient @>
@@ -293,15 +293,15 @@ module WorkflowBasicTests =
     let ``Flow traverse and sequence work as expected`` () =
         let values = [ 1; 2; 3 ]
         let workflow = values |> Flow.traverse (fun v -> Flow.succeed (v * 2))
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
         test <@ result = Exit.Success [ 2; 4; 6 ] @>
 
         let flows = [ Flow.succeed 1; Flow.succeed 2 ]
-        let sequenceResult = Flow.runSync () (Flow.sequence flows)
+        let sequenceResult = Flow.runSync (TestSupport.clockEnv ()) (Flow.sequence flows)
         test <@ sequenceResult = Exit.Success [ 1; 2 ] @>
 
         let failWorkflow = [ 1; 2 ] |> Flow.traverse (fun v -> if v = 1 then Flow.fail "error" else Flow.succeed v)
-        test <@ Flow.runSync () failWorkflow = Exit.Failure (Cause.Fail "error") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) failWorkflow = Exit.Failure (Cause.Fail "error") @>
 
     [<Fact>]
     let ``flow builder overloads stay aligned with the Fable 5 mapping`` () =

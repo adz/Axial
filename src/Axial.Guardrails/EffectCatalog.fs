@@ -54,19 +54,19 @@ let builtInRules: EffectRule list =
           "calls Guid.NewGuid() directly, which makes generated identifiers untestable"
           "Axial.PlatformService.IGuid (Guid.service / Guid.newGuid)"
 
-      rule "clock.datetime" "Axial.PlatformService" "clock"
+      rule "clock.datetime" CoreGuardrail "clock"
           (MembersOf("System.DateTime", [ "get_Now"; "Now"; "get_UtcNow"; "UtcNow"; "get_Today"; "Today" ]))
           "reads the ambient system clock through System.DateTime, which makes timing untestable"
-          "Axial.PlatformService.IClock (Clock.service / Clock.utcNow)"
+          "Axial.IClock (Axial.PlatformService.Clock.now)"
 
-      rule "clock.datetimeoffset" "Axial.PlatformService" "clock"
+      rule "clock.datetimeoffset" CoreGuardrail "clock"
           (MembersOf("System.DateTimeOffset", [ "get_Now"; "Now"; "get_UtcNow"; "UtcNow" ]))
           "reads the ambient system clock through System.DateTimeOffset, which makes timing untestable"
-          "Axial.PlatformService.IClock (Clock.service / Clock.utcNow)"
+          "Axial.IClock (Axial.PlatformService.Clock.now)"
 
-      rule "clock.stopwatch" "Axial.PlatformService" "clock" (AnyMemberOf "System.Diagnostics.Stopwatch")
+      rule "clock.stopwatch" CoreGuardrail "clock" (AnyMemberOf "System.Diagnostics.Stopwatch")
           "measures time with System.Diagnostics.Stopwatch directly, which makes durations untestable"
-          "Axial.PlatformService.IClock (Clock.timed / Clock.elapsed)"
+          "Axial.IClock (Axial.PlatformService.Clock.timed / Clock.elapsed)"
 
       rule "environment.state" "Axial.PlatformService" "environment"
           (MembersOf(
@@ -93,7 +93,7 @@ let builtInRules: EffectRule list =
 
       rule "clock.task-delay" CoreGuardrail "clock" (MembersOf("System.Threading.Tasks.Task", [ "Delay" ]))
           "calls Task.Delay directly, which makes scheduled waits untestable and bypasses fiber interruption"
-          "Flow.sleep / Schedule, or Axial.PlatformService.IClock for a raw delay"
+          "Flow.sleep / Schedule, or Axial.IClock.Sleep for a raw delay"
 
       rule "sleep.thread" CoreGuardrail "sleep" (MembersOf("System.Threading.Thread", [ "Sleep" ]))
           "blocks a thread with Thread.Sleep, an ambient and untestable delay outside the fiber scheduler"

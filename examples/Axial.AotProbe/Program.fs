@@ -74,16 +74,17 @@ let main _ =
         expect "FiberStatus" (FiberStatus.Interrupted.ToString()) "Interrupted"
         expect "FiberId" ((FiberId 5L).ToString()) "#5"
         let registry = FiberRegistry()
-        let workflow: Flow<unit, ProbeError, string> =
+        let workflow: Flow<ClockEnvironment, ProbeError, string> =
             flow {
+                let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
                 let! fiber = Flow.forkNamed "probe child" (Flow.sleep (TimeSpan.FromMilliseconds 200.0))
-                let dump = registry.DumpAt(DateTimeOffset.UtcNow)
+                let dump = registry.DumpAt(clock)
                 let snapshot = registry.Snapshot() |> List.map (fun dump -> dump.ToString()) |> String.concat "\n"
                 do! Fiber.join fiber
                 return dump + "\n" + snapshot
             }
             |> Flow.withFiberRegistry registry
-        match workflow.StartAsTask(()).GetAwaiter().GetResult() with
+        match workflow.StartAsTask(ClockEnvironment(Clock.live)).GetAwaiter().GetResult() with
         | Exit.Success text ->
             expectContains "FiberRegistry.DumpAt" text "\"probe child\" Running"
         | other -> expect "fiber diagnostics exit" (other.ToString()) "Success")

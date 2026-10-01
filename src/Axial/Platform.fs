@@ -11,10 +11,9 @@
 /// module's purpose (isolating genuine platform variance) they are left as `#if !FABLE_COMPILER` guarded
 /// declarations in their original files.
 ///
-/// This file also implements the scheduler's own delay/timeout mechanics (Flow.sleep, timeout, and the
-/// retry/repeat delay loop), which is the "ambient runtime for executor mechanics only" carve-out named in
-/// AGENTS.md's effect-boundary invariant: these `Task.Delay` calls are the scheduler itself, not a
-/// core API silently reaching for ambient time on an application's behalf.
+/// This file also implements the executor mechanics behind timed flows. Timed operations receive the caller's
+/// IClock through their environment; this module adapts that clock to internal execution outcomes. The platform
+/// timer below is used by the named live clock implementation, not selected implicitly by a Flow.
 // axial-allow-effect-file: clock
 ///
 /// <remarks>
@@ -661,10 +660,10 @@ let inline runScoped
 
 #if FABLE_COMPILER
 [<Emit("setTimeout($0, $1)")>]
-let private scheduleTimer (_callback: unit -> unit) (_milliseconds: int) : obj = jsNative
+let scheduleTimer (_callback: unit -> unit) (_milliseconds: int) : obj = jsNative
 
 [<Emit("clearTimeout($0)")>]
-let private cancelTimer (_timer: obj) : unit = jsNative
+let cancelTimer (_timer: obj) : unit = jsNative
 #endif
 
 #if FABLE_COMPILER
@@ -772,11 +771,39 @@ type ITimeSource =
     /// Suspends for <paramref name="delay" />, observing cancellation as an interruption.
     abstract Sleep<'error> : delay: TimeSpan * cancellationToken: CancellationToken -> Execution<unit, 'error>
 
-/// Real time: <c>monotonicNow</c> and platform timers.
-let systemTime : ITimeSource =
+/// Adapts the environment's one clock to the executor's outcome representation.
+let timeOfClock (clock: IClock) : ITimeSource =
     { new ITimeSource with
-        member _.Now() = monotonicNow ()
-        member _.Sleep(delay, cancellationToken) = sleepExecution delay cancellationToken }
+        member _.Now() = clock.Elapsed()
+        member _.Sleep(delay, cancellationToken) =
+#if FABLE_COMPILER
+            async {
+                let captured = captureAmbient ()
+                try
+                    do! clock.Sleep(delay, cancellationToken) |> Async.AwaitTask
+                    restoreAmbient captured
+                    return Exit.Success()
+                with
+                // Fable's Promise bridge may surface a cancelled task as a generic Exception. The token is the
+                // authority for interruption; a failure while it is live remains a defect.
+                | _ when cancellationToken.IsCancellationRequested ->
+                    restoreAmbient captured
+                    return Exit.Failure Cause.Interrupt
+                | error ->
+                    restoreAmbient captured
+                    return raise error
+            }
+#else
+            ValueTask<Exit<unit, 'error>>(task {
+                try
+                    do! clock.Sleep(delay, cancellationToken)
+                    return Exit.Success()
+                with
+                | :? OperationCanceledException when cancellationToken.IsCancellationRequested ->
+                    return Exit.Failure Cause.Interrupt
+            })
+#endif
+    }
 
 
 #if FABLE_COMPILER
@@ -854,7 +881,7 @@ let timeoutExecution
     (onTimeout: unit -> Execution<'value, 'error>)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
-    // The operation and the timer race on the runtime's time source; the loser of a timeout is interrupted and
+    // The operation and the timer race on the supplied clock; the loser of a timeout is interrupted and
     // awaited, as on .NET.
     async {
         let operationSource = branchSource cancellationToken
@@ -1397,7 +1424,7 @@ let linkTo (parent: CancellationToken) (target: CancellationTokenSource) : unit 
     fun () -> registration.Dispose()
 #endif
 
-/// Cancels <paramref name="target" /> once <paramref name="delay" /> has passed on the runtime's time source, unless the
+/// Cancels <paramref name="target" /> once <paramref name="delay" /> has passed on the supplied clock, unless the
 /// returned function is called first.
 let cancelAfter (time: ITimeSource) (delay: TimeSpan) (target: CancellationTokenSource) : unit -> unit =
     let timer = new CancellationTokenSource()

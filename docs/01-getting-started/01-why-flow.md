@@ -118,13 +118,13 @@ let dashboardTask (user: int) (token: CancellationToken) : Task<Profile * Order 
 A flow takes no token. The runtime passes cancellation to all the work it starts:
 
 ```fsharp
-let loadProfile (user: int) : Flow<DashboardError, Profile> =
+let loadProfile (user: int) : Flow<ClockEnvironment, DashboardError, Profile> =
     Flow.sleep (TimeSpan.FromMilliseconds 10.0) |> Flow.map (fun () -> { Name = "Ada" })
 
-let loadOrders (user: int) : Flow<DashboardError, Order list> =
+let loadOrders (user: int) : Flow<ClockEnvironment, DashboardError, Order list> =
     Flow.sleep (TimeSpan.FromMilliseconds 10.0) |> Flow.map (fun () -> [ { Number = 1 } ])
 
-let dashboard (user: int) : Flow<DashboardError, Profile * Order list> =
+let dashboard (user: int) : Flow<ClockEnvironment, DashboardError, Profile * Order list> =
     Flow.zipPar (loadProfile user) (loadOrders user)
     |> Flow.timeout (TimeSpan.FromSeconds 2.0) DashboardTimedOut
 ```
@@ -249,10 +249,10 @@ so a pipeline with parallel workers stops all of them, and releases what they ac
 enough:
 
 ```fsharp
-let fetchPage (id: int) : Flow<string> =
+let fetchPage (id: int) : Flow<ClockEnvironment, Never, string> =
     Flow.sleep (TimeSpan.FromMilliseconds 5.0) |> Flow.map (fun () -> $"page {id}")
 
-let firstTen : Flow<string list> =
+let firstTen : Flow<ClockEnvironment, Never, string list> =
     FlowStream.fromSeq [ 1..1000 ]
     |> FlowStream.mapFlowPar (Parallelism.bounded 4) fetchPage
     |> FlowStream.take 10
@@ -272,7 +272,7 @@ annotations travel to every fiber the flow starts:
 ```fsharp
 let registry = FiberRegistry(100)
 
-let poller : Flow<unit> =
+let poller : Flow<ClockEnvironment, Never, unit> =
     flow {
         let! _ = Flow.sleep (TimeSpan.FromMinutes 1.0) |> Flow.forkNamed "outbox-poller"
         return ()
@@ -281,7 +281,7 @@ let poller : Flow<unit> =
     |> Flow.withFiberRegistry registry
 ```
 
-`registry.Dump()` prints each live fiber with its name, status, age, and annotations, which is what a diagnostics
+`registry.DumpAt(clock)` prints each live fiber with its name, status, age, and annotations, which is what a diagnostics
 endpoint or a stuck shutdown needs. `Axial.Telemetry` turns the same information into OpenTelemetry spans and metrics,
 including a count of failures in background work that nothing awaited. See [observability](../observability/index.html).
 

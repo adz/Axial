@@ -50,6 +50,7 @@
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
     <ProjectReference Include="..\..\examples\Axial.TortureTest\Axial.TortureTest.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 
 </Project>

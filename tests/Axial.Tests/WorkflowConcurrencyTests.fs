@@ -12,116 +12,116 @@ open Xunit
 module WorkflowConcurrencyTests =
     [<Fact>]
     let ``Deferred: await receives successful completion`` () =
-        let workflow : Flow<unit, string, bool * int> =
+        let workflow : Flow<ClockEnvironment, string, bool * int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<ClockEnvironment, string, int> ()
                 let! fiber = Deferred.await deferred |> Flow.fork
                 let! completed = Deferred.succeed 42 deferred
                 let! value = Fiber.join fiber
                 return completed, value
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(true, 42) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, 42) @>
 
     [<Fact>]
     let ``Deferred: completion is idempotent`` () =
-        let workflow : Flow<unit, string, bool * bool * int> =
+        let workflow : Flow<ClockEnvironment, string, bool * bool * int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<ClockEnvironment, string, int> ()
                 let! first = Deferred.succeed 1 deferred
                 let! second = Deferred.fail "late" deferred
                 let! value = Deferred.await deferred
                 return first, second, value
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(true, false, 1) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, false, 1) @>
 
     [<Fact>]
     let ``Deferred: direct completion reports the winner to a synchronous callback`` () =
-        let workflow : Flow<unit, string, bool * bool * int> =
+        let workflow : Flow<ClockEnvironment, string, bool * bool * int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<ClockEnvironment, string, int> ()
                 let first = Deferred.succeedNow 42 deferred
                 let late = Deferred.failNow "late" deferred
                 let! value = Deferred.await deferred
                 return first, late, value
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(true, false, 42) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, false, 42) @>
 
     [<Fact>]
     let ``Deferred: direct completion preserves every Exit shape`` () =
         let defect = InvalidOperationException("defect")
 
-        let setup : Flow<unit, string, Deferred<string, int> list> =
+        let setup : Flow<ClockEnvironment, string, Deferred<string, int> list> =
             flow {
-                let! completed = Deferred.make<unit, string, int> ()
-                let! failed = Deferred.make<unit, string, int> ()
-                let! died = Deferred.make<unit, string, int> ()
-                let! interrupted = Deferred.make<unit, string, int> ()
+                let! completed = Deferred.make<ClockEnvironment, string, int> ()
+                let! failed = Deferred.make<ClockEnvironment, string, int> ()
+                let! died = Deferred.make<ClockEnvironment, string, int> ()
+                let! interrupted = Deferred.make<ClockEnvironment, string, int> ()
                 return [ completed; failed; died; interrupted ]
             }
 
-        match Flow.runSync () setup with
+        match Flow.runSync (TestSupport.clockEnv ()) setup with
         | Exit.Success [ completed; failed; died; interrupted ] ->
             test <@ Deferred.completeNow (Exit.Success 1) completed @>
             test <@ Deferred.failNow "failure" failed @>
             test <@ Deferred.dieNow defect died @>
             test <@ Deferred.interruptNow interrupted @>
-            test <@ Flow.runSync () (Deferred.await completed) = Exit.Success 1 @>
-            test <@ Flow.runSync () (Deferred.await failed) = Exit.Failure(Cause.Fail "failure") @>
-            test <@ Flow.runSync () (Deferred.await died) = Exit.Failure(Cause.Die defect) @>
-            test <@ Flow.runSync () (Deferred.await interrupted) = Exit.Failure Cause.Interrupt @>
+            test <@ Flow.runSync (TestSupport.clockEnv ()) (Deferred.await completed) = Exit.Success 1 @>
+            test <@ Flow.runSync (TestSupport.clockEnv ()) (Deferred.await failed) = Exit.Failure(Cause.Fail "failure") @>
+            test <@ Flow.runSync (TestSupport.clockEnv ()) (Deferred.await died) = Exit.Failure(Cause.Die defect) @>
+            test <@ Flow.runSync (TestSupport.clockEnv ()) (Deferred.await interrupted) = Exit.Failure Cause.Interrupt @>
         | other -> failwith $"Expected four deferreds, got {other}"
 
     [<Fact>]
     let ``Deferred: await preserves typed failure defect and interruption`` () =
-        let typedFailure : Flow<unit, string, int> =
+        let typedFailure : Flow<ClockEnvironment, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<ClockEnvironment, string, int> ()
                 let! _ = Deferred.fail "boom" deferred
                 return! Deferred.await deferred
             }
 
         let defect = InvalidOperationException("defect")
 
-        let defective : Flow<unit, string, int> =
+        let defective : Flow<ClockEnvironment, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<ClockEnvironment, string, int> ()
                 let! _ = Deferred.die defect deferred
                 return! Deferred.await deferred
             }
 
-        let interrupted : Flow<unit, string, int> =
+        let interrupted : Flow<ClockEnvironment, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<ClockEnvironment, string, int> ()
                 let! _ = Deferred.interrupt deferred
                 return! Deferred.await deferred
             }
 
-        test <@ Flow.runSync () typedFailure = Exit.Failure(Cause.Fail "boom") @>
-        test <@ Flow.runSync () defective = Exit.Failure(Cause.Die defect) @>
-        test <@ Flow.runSync () interrupted = Exit.Failure Cause.Interrupt @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) typedFailure = Exit.Failure(Cause.Fail "boom") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) defective = Exit.Failure(Cause.Die defect) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) interrupted = Exit.Failure Cause.Interrupt @>
 
     [<Fact>]
     let ``Deferred: await respects runtime cancellation`` () =
         use cts = new CancellationTokenSource()
 
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<ClockEnvironment, string, int> ()
                 return! Deferred.await deferred
             }
 
         cts.Cancel()
 
-        test <@ Flow.runSyncWithToken () cts.Token workflow = Exit.Failure Cause.Interrupt @>
+        test <@ Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow = Exit.Failure Cause.Interrupt @>
 
     [<Fact>]
     let ``Deferred: await composes with race`` () =
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
-                let! deferred = Deferred.make<unit, string, int> ()
+                let! deferred = Deferred.make<ClockEnvironment, string, int> ()
                 let! _ = Deferred.succeed 7 deferred
 
                 return!
@@ -133,7 +133,7 @@ module WorkflowConcurrencyTests =
                         })
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success 7 @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 7 @>
 
     [<Fact>]
     let ``Semaphore: withPermit serializes concurrent sections`` () =
@@ -149,7 +149,7 @@ module WorkflowConcurrencyTests =
         let leave () =
             lock gate (fun () -> active <- active - 1)
 
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
                 let! semaphore = Semaphore.make 1
 
@@ -168,16 +168,16 @@ module WorkflowConcurrencyTests =
                 return maxActive
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success 1 @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 1 @>
 
     [<Fact>]
     let ``Semaphore: withPermit releases after typed failure and defect`` () =
         let semaphore =
-            match Flow.runSync () (Semaphore.make 1) with
+            match Flow.runSync (TestSupport.clockEnv ()) (Semaphore.make 1) with
             | Exit.Success semaphore -> semaphore
             | other -> failwithf "Expected semaphore creation, got %A" other
 
-        let afterTypedFailure : Flow<unit, string, string> =
+        let afterTypedFailure : Flow<ClockEnvironment, string, string> =
             Semaphore.withPermit semaphore (Flow.fail "boom")
             |> Flow.orElseWith (fun error ->
                 flow {
@@ -189,14 +189,14 @@ module WorkflowConcurrencyTests =
         let afterDefect = Semaphore.withPermit semaphore (Flow.die defect)
         let afterDefectRelease = Semaphore.withPermit semaphore (Flow.succeed "released")
 
-        test <@ Flow.runSync () afterTypedFailure = Exit.Success "boom:next" @>
-        test <@ Flow.runSync () afterDefect = Exit.Failure(Cause.Die defect) @>
-        test <@ Flow.runSync () afterDefectRelease = Exit.Success "released" @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) afterTypedFailure = Exit.Success "boom:next" @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) afterDefect = Exit.Failure(Cause.Die defect) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) afterDefectRelease = Exit.Success "released" @>
 
     [<Fact>]
     let ``Semaphore: make rejects non-positive permit counts`` () =
         let result : Exit<FlowSemaphore, string> =
-            Flow.runSync () (Semaphore.make 0)
+            Flow.runSync (TestSupport.clockEnv ()) (Semaphore.make 0)
 
         match result with
         | Exit.Failure(Cause.Die(:? ArgumentOutOfRangeException as error)) ->
@@ -206,25 +206,25 @@ module WorkflowConcurrencyTests =
 
     [<Fact>]
     let ``Fiber: fork and join success`` () =
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
                 let! (fiber: Fiber<string, int>) = Flow.ok 42 |> Flow.fork
                 let! result = fiber |> Fiber.join
                 return result
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success 42 @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 42 @>
 
     [<Fact>]
     let ``Fiber: fork and join failure`` () =
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
                 let! (fiber: Fiber<string, int>) = Flow.fail "boom" |> Flow.fork
                 let! result = fiber |> Fiber.join
                 return result
             }
 
-        test <@ Flow.runSync () workflow = Exit.Failure (Cause.Fail "boom") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Failure (Cause.Fail "boom") @>
 
     [<Fact>]
     let ``Fiber: interrupt stops execution`` () =
@@ -244,7 +244,7 @@ module WorkflowConcurrencyTests =
                 return exit
             }
 
-        let outcome = Flow.runSync () workflow
+        let outcome = Flow.runSync (TestSupport.clockEnv ()) workflow
         
         match outcome with
         | Exit.Success (Exit.Failure Cause.Interrupt) -> 
@@ -256,10 +256,10 @@ module WorkflowConcurrencyTests =
         let waitingCount (FlowSemaphore queue) () =
             Platform.lock queue.Gate (fun () -> queue.Waiters.Count)
 
-        let attempt () : Flow<unit, string, bool> =
+        let attempt () : Flow<ClockEnvironment, string, bool> =
             flow {
                 let! semaphore = Semaphore.make 1
-                let! release = Deferred.make<unit, string, unit> ()
+                let! release = Deferred.make<ClockEnvironment, string, unit> ()
                 let! holder = Semaphore.withPermit semaphore (Deferred.await release) |> Flow.fork
                 let! waiter = Semaphore.withPermit semaphore (Flow.succeed ()) |> Flow.fork
 
@@ -279,13 +279,13 @@ module WorkflowConcurrencyTests =
             }
 
         let workflow = List.init 200 (fun _ -> attempt ()) |> Flow.sequence
-        test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow |> Exit.map (List.forall id) = Exit.Success true @>
 
     [<Fact>]
     let ``Deferred: each run of make creates a new deferred`` () =
-        let make = Deferred.make<unit, string, int> ()
+        let make = Deferred.make<ClockEnvironment, string, int> ()
 
-        let workflow : Flow<unit, string, bool * bool> =
+        let workflow : Flow<ClockEnvironment, string, bool * bool> =
             flow {
                 let! first = make
                 let! second = make
@@ -294,11 +294,11 @@ module WorkflowConcurrencyTests =
                 return completedFirst, completedSecond
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(true, true) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, true) @>
 
     [<Fact>]
     let ``Fiber.await returns the exit without failing`` () =
-        let workflow : Flow<unit, string, Exit<int, string> * Exit<int, string>> =
+        let workflow : Flow<ClockEnvironment, string, Exit<int, string> * Exit<int, string>> =
             flow {
                 let! failing = Flow.fork (Flow.fail "boom")
                 let! succeeding = Flow.fork (Flow.ok 7)
@@ -307,13 +307,13 @@ module WorkflowConcurrencyTests =
                 return failed, succeeded
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure(Cause.Fail "boom"), Exit.Success 7) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure(Cause.Fail "boom"), Exit.Success 7) @>
 
     [<Fact>]
     let ``Fiber.poll reports None until the fiber settles`` () =
-        let workflow : Flow<unit, string, Exit<unit, string> option * Exit<unit, string> option> =
+        let workflow : Flow<ClockEnvironment, string, Exit<unit, string> option * Exit<unit, string> option> =
             flow {
-                let! gate = Deferred.make<unit, string, unit> ()
+                let! gate = Deferred.make<ClockEnvironment, string, unit> ()
                 let! fiber = Flow.fork (Deferred.await gate)
                 let! before = Fiber.poll fiber
                 let! _ = Deferred.succeed () gate
@@ -322,31 +322,31 @@ module WorkflowConcurrencyTests =
                 return before, after
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(None, Some(Exit.Success())) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(None, Some(Exit.Success())) @>
 
     [<Fact>]
     let ``Fiber.interrupt returns the interrupted exit`` () =
-        let workflow : Flow<unit, string, Exit<unit, string>> =
+        let workflow : Flow<ClockEnvironment, string, Exit<unit, string>> =
             flow {
                 let! fiber = Flow.fork (Flow.sleep (TimeSpan.FromMinutes 1.0))
                 return! Fiber.interrupt fiber
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt) @>
 
     [<Fact>]
     let ``catchCancellation converts only cancellation the runtime did not request`` () =
         let selfCanceled : Exit<unit, string> =
             Flow.fromTask (fun _ -> Task.FromCanceled<unit>(CancellationToken(true)))
             |> Flow.catchCancellation (fun _ -> "library timeout")
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         use cts = new CancellationTokenSource(TimeSpan.FromMilliseconds 20.0)
 
         let requested : Exit<unit, string> =
             Flow.fromTask (fun token -> task { do! Task.Delay(Timeout.Infinite, token) })
             |> Flow.catchCancellation (fun _ -> "library timeout")
-            |> Flow.runSyncWithToken () cts.Token
+            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token
 
         test <@ selfCanceled = Exit.Failure(Cause.Fail "library timeout") @>
         test <@ requested = Exit.Failure Cause.Interrupt @>
@@ -361,11 +361,11 @@ module WorkflowConcurrencyTests =
                 blockingThread.Value <- Thread.CurrentThread.ManagedThreadId
                 Thread.Sleep 10
                 42)
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
-        let result : Exit<int, string> = Flow.fromBlockingResult (fun _ -> Error "rejected") |> Flow.runSync ()
-        let defect : Exit<int, string> = Flow.fromBlocking (fun _ -> failwith "boom") |> Flow.runSync ()
-        let attempted = Flow.attemptBlocking (fun _ -> failwith "boom") |> Flow.runSync ()
+        let result : Exit<int, string> = Flow.fromBlockingResult (fun _ -> Error "rejected") |> Flow.runSync (TestSupport.clockEnv ())
+        let defect : Exit<int, string> = Flow.fromBlocking (fun _ -> failwith "boom") |> Flow.runSync (TestSupport.clockEnv ())
+        let attempted = Flow.attemptBlocking (fun _ -> failwith "boom") |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ value = Exit.Success 42 @>
         test <@ blockingThread.Value <> callerThread @>
@@ -385,7 +385,7 @@ module WorkflowConcurrencyTests =
 
                 finished.Value <- true
                 token.ThrowIfCancellationRequested())
-            |> Flow.runSyncWithToken () cts.Token
+            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token
 
         test <@ exit = Exit.Failure Cause.Interrupt @>
         test <@ finished.Value @>
@@ -397,7 +397,7 @@ module WorkflowConcurrencyTests =
 
     [<Fact>]
     let ``forkReplacing interrupts the previous fiber and keeps the latest`` () =
-        let workflow : Flow<unit, string, Exit<string, string> * Exit<string, string>> =
+        let workflow : Flow<ClockEnvironment, string, Exit<string, string> * Exit<string, string>> =
             flow {
                 let! slot = FiberSlot.make ()
                 let! first = Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> "first") |> Flow.forkReplacing slot
@@ -407,11 +407,11 @@ module WorkflowConcurrencyTests =
                 return firstExit, secondExit
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt, Exit.Success "second") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, Exit.Success "second") @>
 
     [<Fact>]
     let ``forkReplacingKey replaces per key and forgets settled keys`` () =
-        let workflow : Flow<unit, string, Exit<int, string> * Exit<int, string> * int * int> =
+        let workflow : Flow<ClockEnvironment, string, Exit<int, string> * Exit<int, string> * int * int> =
             flow {
                 let! slots = FiberSlot.makeKeyed ()
                 let slowly value = Flow.sleep (TimeSpan.FromMilliseconds 50.0) |> Flow.map (fun () -> value)
@@ -426,13 +426,13 @@ module WorkflowConcurrencyTests =
                 return a1Exit, a2Exit, running, remaining
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(Exit.Failure Cause.Interrupt, Exit.Success 2, 2, 0) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, Exit.Success 2, 2, 0) @>
 
     [<Fact>]
     let ``FiberSlot.interrupt stops the current fiber and waits for its cleanup`` () =
         let cleaned = ref false
 
-        let workflow : Flow<unit, string, bool> =
+        let workflow : Flow<ClockEnvironment, string, bool> =
             flow {
                 let! slot = FiberSlot.make ()
 
@@ -448,4 +448,4 @@ module WorkflowConcurrencyTests =
                 return cleaned.Value
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success true @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success true @>

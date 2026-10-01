@@ -13,7 +13,7 @@ module WorkflowHubTests =
         Platform.lock subscription.Gate (fun () -> subscription.Takers.Count)
 
     /// Polls a condition on internals so a test can act once a fiber is known to be suspended.
-    let private waitUntil (condition: unit -> bool) : Flow<unit, 'error, unit> =
+    let private waitUntil (condition: unit -> bool) : Flow<ClockEnvironment, 'error, unit> =
         flow {
             let mutable remaining = 5000
 
@@ -28,10 +28,10 @@ module WorkflowHubTests =
         | Exit.Success _ -> false
 
     /// Subscribes in a scope owned by a forked fiber. Returns the subscription and a flow that closes that scope.
-    let private subscribeInOwnScope strategy (hub: Hub<'a>) : Flow<unit, 'error, Dequeue<'a> * Flow<unit, 'error, unit>> =
+    let private subscribeInOwnScope strategy (hub: Hub<'a>) : Flow<ClockEnvironment, 'error, Dequeue<'a> * Flow<ClockEnvironment, 'error, unit>> =
         flow {
-            let! handedOut = Deferred.make<unit, 'error, Dequeue<'a>> ()
-            let! close = Deferred.make<unit, 'error, unit> ()
+            let! handedOut = Deferred.make<ClockEnvironment, 'error, Dequeue<'a>> ()
+            let! close = Deferred.make<ClockEnvironment, 'error, unit> ()
 
             let! owner =
                 flow {
@@ -55,7 +55,7 @@ module WorkflowHubTests =
 
     [<Fact>]
     let ``Hub: every subscriber sees every value in the same order`` () =
-        let workflow : Flow<unit, Never, (int * int) list list> =
+        let workflow : Flow<ClockEnvironment, Never, (int * int) list list> =
             flow {
                 let! (hub: Hub<int * int>) = Hub.make ()
                 let! subscriptions = [ 1..8 ] |> Flow.traverse (fun _ -> hub |> Hub.subscribe QueueStrategy.Unbounded)
@@ -72,7 +72,7 @@ module WorkflowHubTests =
                 return! subscriptions |> Flow.traverse Dequeue.takeAll
             }
 
-        match Flow.runSync () workflow with
+        match Flow.runSync (TestSupport.clockEnv ()) workflow with
         | Exit.Success(first :: others) ->
             test <@ first.Length = 2000 && others |> List.forall ((=) first) @>
 
@@ -83,7 +83,7 @@ module WorkflowHubTests =
 
     [<Fact>]
     let ``Hub: a slow sliding subscriber keeps the newest values without delaying the publisher`` () =
-        let workflow : Flow<unit, Never, PublishResult * int list> =
+        let workflow : Flow<ClockEnvironment, Never, PublishResult * int list> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! display = hub |> Hub.subscribe (QueueStrategy.Sliding 2)
@@ -92,11 +92,11 @@ module WorkflowHubTests =
                 return result, kept
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success({ Delivered = 10; Dropped = 0; Evicted = 8 }, [ 9; 10 ]) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success({ Delivered = 10; Dropped = 0; Evicted = 8 }, [ 9; 10 ]) @>
 
     [<Fact>]
     let ``Hub: a slow dropping subscriber counts its drops without delaying the publisher`` () =
-        let workflow : Flow<unit, Never, PublishResult * int list> =
+        let workflow : Flow<ClockEnvironment, Never, PublishResult * int list> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! display = hub |> Hub.subscribe (QueueStrategy.Dropping 2)
@@ -105,11 +105,11 @@ module WorkflowHubTests =
                 return result, kept
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success({ Delivered = 2; Dropped = 3; Evicted = 0 }, [ 1; 2 ]) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success({ Delivered = 2; Dropped = 3; Evicted = 0 }, [ 1; 2 ]) @>
 
     [<Fact>]
     let ``Hub: a full back-pressure subscriber suspends publish until drained or closed`` () =
-        let workflow : Flow<unit, Never, PublishResult * PublishResult * int> =
+        let workflow : Flow<ClockEnvironment, Never, PublishResult * PublishResult * int> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! (historian: Dequeue<int>), closeHistorian = hub |> subscribeInOwnScope (QueueStrategy.BackPressure 1)
@@ -128,11 +128,11 @@ module WorkflowHubTests =
                 return afterDrain, afterClose, remaining
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success({ Delivered = 1; Dropped = 0; Evicted = 0 }, { Delivered = 0; Dropped = 0; Evicted = 0 }, 0) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success({ Delivered = 1; Dropped = 0; Evicted = 0 }, { Delivered = 0; Dropped = 0; Evicted = 0 }, 0) @>
 
     [<Fact>]
     let ``Hub: a lossless historian gets everything while lossy displays never block the publisher`` () =
-        let workflow : Flow<unit, Never, int list * int list * int list * PublishResult * bool> =
+        let workflow : Flow<ClockEnvironment, Never, int list * int list * int list * PublishResult * bool> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 128)
@@ -153,13 +153,13 @@ module WorkflowHubTests =
             }
 
         test <@
-            Flow.runSync () workflow =
+            Flow.runSync (TestSupport.clockEnv ()) workflow =
                 Exit.Success([ 1..100 ], [ 100 ], [ 1 ], { Delivered = 201; Dropped = 99; Evicted = 99 }, true)
         @>
 
     [<Fact>]
     let ``Hub: tryPublish refuses instead of waiting on a full back-pressure subscriber`` () =
-        let workflow : Flow<unit, Never, PublishResult option * PublishResult option * int list * int list> =
+        let workflow : Flow<ClockEnvironment, Never, PublishResult option * PublishResult option * int list * int list> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 1)
@@ -173,13 +173,13 @@ module WorkflowHubTests =
 
         // A refused value reaches no subscriber, so nobody sees a value the others missed.
         test <@
-            Flow.runSync () workflow =
+            Flow.runSync (TestSupport.clockEnv ()) workflow =
                 Exit.Success(Some { Delivered = 2; Dropped = 0; Evicted = 0 }, None, [ 1 ], [ 1 ])
         @>
 
     [<Fact>]
     let ``Hub: direct tryPublish distinguishes published, full, and shutdown`` () =
-        let workflow : Flow<unit, Never, HubTryPublishResult * HubTryPublishResult * HubTryPublishResult * int list * int list> =
+        let workflow : Flow<ClockEnvironment, Never, HubTryPublishResult * HubTryPublishResult * HubTryPublishResult * int list * int list> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 1)
@@ -194,7 +194,7 @@ module WorkflowHubTests =
             }
 
         test <@
-            Flow.runSync () workflow =
+            Flow.runSync (TestSupport.clockEnv ()) workflow =
                 Exit.Success(
                     HubTryPublishResult.Published { Delivered = 2; Dropped = 0; Evicted = 0 },
                     HubTryPublishResult.Full,
@@ -206,7 +206,7 @@ module WorkflowHubTests =
 
     [<Fact>]
     let ``Hub: direct tryPublish reports busy while another publisher waits`` () =
-        let workflow : Flow<unit, Never, HubTryPublishResult * int list> =
+        let workflow : Flow<ClockEnvironment, Never, HubTryPublishResult * int list> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 1)
@@ -220,11 +220,11 @@ module WorkflowHubTests =
                 return busy, first :: rest
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(HubTryPublishResult.Busy, [ 1; 2 ]) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(HubTryPublishResult.Busy, [ 1; 2 ]) @>
 
     [<Fact>]
     let ``Hub: shutting a subscription down unsubscribes it and releases a waiting publisher`` () =
-        let workflow : Flow<unit, Never, int * PublishResult * int * bool> =
+        let workflow : Flow<ClockEnvironment, Never, int * PublishResult * int * bool> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 1)
@@ -239,11 +239,11 @@ module WorkflowHubTests =
                 return before - after, released, after, finished
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(1, PublishResult.empty, 0, true) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, PublishResult.empty, 0, true) @>
 
     [<Fact>]
     let ``Hub: a scoped hub shuts down with its scope and wakes awaitShutdown`` () =
-        let workflow : Flow<unit, Never, int list * bool> =
+        let workflow : Flow<ClockEnvironment, Never, int list * bool> =
             flow {
                 let! hub, subscription =
                     flow {
@@ -260,11 +260,11 @@ module WorkflowHubTests =
                 return drained, isShut
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([ 1; 2 ], true) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 1; 2 ], true) @>
 
     [<Fact>]
     let ``Hub: closing a subscriber's scope unsubscribes it`` () =
-        let workflow : Flow<unit, Never, int * int> =
+        let workflow : Flow<ClockEnvironment, Never, int * int> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! _, closeFirst = hub |> subscribeInOwnScope QueueStrategy.Unbounded
@@ -276,11 +276,11 @@ module WorkflowHubTests =
                 return both, one
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(2, 1) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(2, 1) @>
 
     [<Fact>]
     let ``Hub: a late subscriber does not receive earlier values`` () =
-        let workflow : Flow<unit, Never, int list> =
+        let workflow : Flow<ClockEnvironment, Never, int list> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! _ = hub |> Hub.subscribe QueueStrategy.Unbounded
@@ -290,11 +290,11 @@ module WorkflowHubTests =
                 return! Dequeue.takeAll late
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success [ 3 ] @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ 3 ] @>
 
     [<Fact>]
     let ``Hub: shutdown drains backlogs, ends streams, and interrupts later publishes`` () =
-        let workflow : Flow<unit, Never, int list * int list * bool * bool * bool> =
+        let workflow : Flow<ClockEnvironment, Never, int list * int list * bool * bool * bool> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! backlog = hub |> Hub.subscribe QueueStrategy.Unbounded
@@ -312,11 +312,11 @@ module WorkflowHubTests =
                 return drained, streamedValues, isShut, isInterrupted latePublish, isInterrupted lateTake
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([ 1; 2; 3 ], [ 1; 2; 3 ], true, true, true) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 1; 2; 3 ], [ 1; 2; 3 ], true, true, true) @>
 
     [<Fact>]
     let ``Hub: an interrupted subscription take never loses an element`` () =
-        let attempt () : Flow<unit, Never, bool> =
+        let attempt () : Flow<ClockEnvironment, Never, bool> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 let! subscription = hub |> Hub.subscribe QueueStrategy.Unbounded
@@ -333,16 +333,16 @@ module WorkflowHubTests =
             }
 
         let workflow = List.init 1000 (fun _ -> attempt ()) |> Flow.sequence
-        test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow |> Exit.map (List.forall id) = Exit.Success true @>
 
     [<Fact>]
     let ``Hub: a non-positive subscription capacity is a defect`` () =
-        let workflow : Flow<unit, Never, Dequeue<int>> =
+        let workflow : Flow<ClockEnvironment, Never, Dequeue<int>> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
                 return! hub |> Hub.subscribe (QueueStrategy.BackPressure 0)
             }
 
-        match Flow.runSync () workflow with
+        match Flow.runSync (TestSupport.clockEnv ()) workflow with
         | Exit.Failure(Cause.Die error) -> test <@ error :? ArgumentOutOfRangeException @>
         | other -> failwith $"Expected a defect, got {other}"

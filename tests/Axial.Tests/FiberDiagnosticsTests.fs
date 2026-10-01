@@ -15,7 +15,9 @@ module FiberDiagnosticsTests =
             ParentId = parentId |> Option.map FiberId
             Annotations = annotations |> Map.ofList
             StartedAt = DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero)
+            StartedTick = TimeSpan.Zero
             SettledAt = settledAt
+            SettledTick = settledAt |> Option.map (fun instant -> instant - DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
             Status = status
         }
 
@@ -28,7 +30,7 @@ module FiberDiagnosticsTests =
                 return value, Fiber.dump fiber
             }
             |> Flow.annotate "request_id" "req-9"
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         match result with
         | Exit.Success(value, dump) ->
@@ -45,7 +47,7 @@ module FiberDiagnosticsTests =
                 let! _ = Fiber.join fiber
                 return Fiber.dump fiber
             }
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         match result with
         | Exit.Success dump ->
@@ -61,20 +63,21 @@ module FiberDiagnosticsTests =
         let registry = FiberRegistry()
         use release = new SemaphoreSlim(0)
 
-        let blocked : Flow<unit, string, unit> =
+        let blocked : Flow<ClockEnvironment, string, unit> =
             Flow.fromTask (fun _ -> task { do! release.WaitAsync() })
 
         let result =
             flow {
+                let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
                 let! fiber = Flow.forkNamed "blocked-worker" blocked
                 let snapshot = registry.Snapshot()
-                let rendered = registry.Dump()
+                let rendered = registry.DumpAt(clock)
                 release.Release() |> ignore
                 let! _ = Fiber.join fiber
                 return snapshot, rendered
             }
             |> Flow.withFiberRegistry registry
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         match result with
         | Exit.Success(snapshot, rendered) ->
@@ -100,7 +103,7 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
             |> Flow.withFiberObserver recording
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success() @>
         test <@ started.Count = 1 @>
@@ -108,6 +111,8 @@ module FiberDiagnosticsTests =
     [<Fact>]
     let ``renderTree draws parents, children, and orphans with names, lifetimes, and annotations`` () =
         let now = DateTimeOffset(2026, 7, 16, 10, 0, 12, 500, TimeSpan.Zero)
+        let clock = ManualClock(DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
+        clock.AdvanceBy(now - (clock :> IClock).UtcNow())
 
         let dumps =
             [
@@ -117,7 +122,7 @@ module FiberDiagnosticsTests =
                 dumpOf 9L None (Some 99L) [] FiberStatus.Running None
             ]
 
-        let rendered = FiberDump.renderTreeAt now dumps
+        let rendered = FiberDump.renderTreeAt (clock :> IClock) dumps
 
         let expected =
             String.concat
@@ -132,10 +137,29 @@ module FiberDiagnosticsTests =
         test <@ rendered = expected @>
 
     [<Fact>]
+    let ``renderTree uses one clock reading for every live fiber`` () =
+        let elapsedReads = ref 0
+        let clock =
+            { new IClock with
+                member _.UtcNow() = DateTimeOffset.UnixEpoch
+                member _.Elapsed() =
+                    elapsedReads.Value <- elapsedReads.Value + 1
+                    TimeSpan.FromSeconds 4.0
+                member _.Sleep(_, _) = Task.CompletedTask }
+        let dumps =
+            [ dumpOf 1L (Some "one") None [] FiberStatus.Running None
+              dumpOf 2L (Some "two") None [] FiberStatus.Running None ]
+
+        let rendered = FiberDump.renderTreeAt clock dumps
+        test <@ elapsedReads.Value = 1 @>
+        test <@ rendered.Contains("#1 \"one\" Running 4.0s") @>
+        test <@ rendered.Contains("#2 \"two\" Running 4.0s") @>
+
+    [<Fact>]
     let ``FiberRegistry interrupts live fibers by id and by name`` () =
         let registry = FiberRegistry()
 
-        let workflow : Flow<unit, string, bool * int * Exit<unit, string> * Exit<unit, string> * bool> =
+        let workflow : Flow<ClockEnvironment, string, bool * int * Exit<unit, string> * Exit<unit, string> * bool> =
             flow {
                 let! stuck = Flow.forkNamed "stuck" (Flow.sleep (TimeSpan.FromSeconds 30.0))
                 let! other = Flow.forkNamed "worker" (Flow.sleep (TimeSpan.FromSeconds 30.0))
@@ -148,18 +172,18 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
 
-        test <@ Flow.runSync () workflow = Exit.Success(true, 1, Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, false) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, 1, Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, false) @>
 
     [<Fact>]
     let ``FiberRegistry keeps settled history, failures, and per-name totals`` () =
         let registry = FiberRegistry()
 
-        let workflow : Flow<unit, string, unit> =
+        let workflow : Flow<ClockEnvironment, string, unit> =
             flow {
                 let! ok1 = Flow.forkNamed "load" (Flow.ok 1)
                 let! ok2 = Flow.forkNamed "load" (Flow.sleep (TimeSpan.FromMilliseconds 20.0) |> Flow.map (fun () -> 2))
-                let! failed = Flow.forkNamed "load" (Flow.fail "not found" : Flow<unit, string, int>)
-                let! died = Flow.forkNamed "save" (Flow.die (InvalidOperationException "disk full") : Flow<unit, string, int>)
+                let! failed = Flow.forkNamed "load" (Flow.fail "not found" : Flow<ClockEnvironment, string, int>)
+                let! died = Flow.forkNamed "save" (Flow.die (InvalidOperationException "disk full") : Flow<ClockEnvironment, string, int>)
                 let! stuck = Flow.forkNamed "save" (Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> 0))
                 let! _ = Fiber.await ok1
                 let! _ = Fiber.await ok2
@@ -170,7 +194,7 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
 
-        test <@ Flow.runSync () workflow = Exit.Success () @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success () @>
 
         let settled = registry.Settled()
         let failureOf name = settled |> List.filter (fun fiber -> fiber.Fiber.Name = Some name) |> List.choose _.Failure
@@ -189,10 +213,39 @@ module FiberDiagnosticsTests =
         test <@ load.MaxDuration >= TimeSpan.FromMilliseconds 15.0 && load.TotalDuration >= load.MaxDuration @>
 
     [<Fact>]
+    let ``fiber duration follows monotonic time when UTC moves backward`` () =
+        let registry = FiberRegistry()
+        let utcReads = ref 0
+        let elapsedReads = ref 0
+        let clock =
+            { new IClock with
+                member _.UtcNow() =
+                    utcReads.Value <- utcReads.Value + 1
+                    DateTimeOffset(2026, 7, 16, 12 - utcReads.Value, 0, 0, TimeSpan.Zero)
+                member _.Elapsed() =
+                    let reading = TimeSpan.FromSeconds(float elapsedReads.Value)
+                    elapsedReads.Value <- elapsedReads.Value + 1
+                    reading
+                member _.Sleep(_, _) = Task.CompletedTask }
+
+        let workflow : Flow<ClockEnvironment, Never, unit> =
+            flow {
+                let! fiber = Flow.forkNamed "clock-jump" (Flow.ok ())
+                let! _ = Fiber.await fiber
+                return ()
+            }
+            |> Flow.withFiberRegistry registry
+
+        test <@ Flow.runSync (ClockEnvironment clock) workflow = Exit.Success () @>
+        let settled = registry.Settled() |> List.exactlyOne
+        test <@ settled.Fiber.SettledAt.Value < settled.Fiber.StartedAt @>
+        test <@ settled.Duration > TimeSpan.Zero @>
+
+    [<Fact>]
     let ``FiberRegistry history is bounded`` () =
         let registry = FiberRegistry(3)
 
-        let workflow : Flow<unit, string, unit> =
+        let workflow : Flow<ClockEnvironment, string, unit> =
             flow {
                 for index in 1..10 do
                     let! fiber = Flow.forkNamed $"job-{index}" (Flow.ok index)
@@ -201,6 +254,6 @@ module FiberDiagnosticsTests =
             }
             |> Flow.withFiberRegistry registry
 
-        test <@ Flow.runSync () workflow = Exit.Success () @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success () @>
         test <@ registry.Settled() |> List.map (fun fiber -> fiber.Fiber.Name) = [ Some "job-8"; Some "job-9"; Some "job-10" ] @>
         test <@ registry.Stats().Length = 10 @>

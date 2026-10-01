@@ -45,6 +45,13 @@ type internal Pumped<'value, 'error> =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module FlowStream =
+    /// <summary>Runs a stream with an environment derived from its caller's environment.</summary>
+    let localEnv
+        (mapping: 'outerEnvironment -> 'innerEnvironment)
+        (FlowStream operation: FlowStream<'innerEnvironment, 'error, 'value>)
+        : FlowStream<'outerEnvironment, 'error, 'value> =
+        FlowStream(fun environment cancellationToken -> operation (mapping environment) cancellationToken)
+
     /// <summary>Creates a cold stream by repeatedly running an effectful state transition.</summary>
     /// <param name="step">Returns <c>Some(value, nextState)</c> or <c>None</c> when the stream is complete.</param>
     /// <param name="initialState">The state used for the first pull.</param>
@@ -126,9 +133,9 @@ module FlowStream =
     /// Schedule.fixedRate (TimeSpan.FromMilliseconds 50.0) |&gt; FlowStream.fromSchedule
     /// </code>
     /// </example>
-    let fromSchedule (schedule: Schedule<'env, unit, 'output>) : FlowStream<'env, 'error, 'output> =
+    let fromSchedule<'env, 'error, 'output when 'env :> IHasClock> (schedule: Schedule<'env, unit, 'output>) : FlowStream<'env, 'error, 'output> =
         FlowStream(fun env cancellationToken ->
-            let time = RuntimeState.current().Time
+            let time = Platform.timeOfClock env.Clock
             let started = time.Now()
             let runState = ScheduleContext.newRunState ()
 
@@ -594,11 +601,11 @@ module FlowStream =
                     Execution.ofValue None)
 
     // The next pumped event, or None if none arrives within `timeout`.
-    let private takeWithin queue (timeout: TimeSpan) env ct : Execution<Pumped<'value, 'error> option, 'error> =
+    let private takeWithin<'env, 'value, 'error when 'env :> IHasClock> queue (timeout: TimeSpan) (env: 'env) ct : Execution<Pumped<'value, 'error> option, 'error> =
         if timeout <= TimeSpan.Zero then
             Flow.invoke (Dequeue.poll queue) env ct
         else
-            takeUnless queue (Platform.cancelAfter (RuntimeState.current().Time) timeout) ct
+            takeUnless queue (Platform.cancelAfter (Platform.timeOfClock env.Clock) timeout) ct
 
     let private finished () : Execution<StreamStep<'value, 'error>, 'error> = Execution.ofValue Done
 
@@ -610,13 +617,13 @@ module FlowStream =
     /// without waiting indefinitely for a full batch.
     /// </remarks>
     /// <example><code>events |&gt; FlowStream.groupedWithin 100 (TimeSpan.FromSeconds 1.0)</code></example>
-    let groupedWithin (size: int) (window: TimeSpan) stream : FlowStream<'env, 'error, 'value list> =
+    let groupedWithin<'env, 'error, 'value when 'env :> IHasClock> (size: int) (window: TimeSpan) stream : FlowStream<'env, 'error, 'value list> =
         if size <= 0 then invalidArg (nameof size) "Group size must be positive."
         if window <= TimeSpan.Zero then invalidArg (nameof window) "The window must be positive."
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
-            let time = RuntimeState.current().Time
+            let time = Platform.timeOfClock env.Clock
 
             pump op env ct
             |> Execution.bind (fun queue ->
@@ -679,12 +686,12 @@ module FlowStream =
     /// current state matters.
     /// </remarks>
     /// <example><code>progress |&gt; FlowStream.throttle (TimeSpan.FromMilliseconds 100.0)</code></example>
-    let throttle (interval: TimeSpan) stream : FlowStream<'env, 'error, 'value> =
+    let throttle<'env, 'error, 'value when 'env :> IHasClock> (interval: TimeSpan) stream : FlowStream<'env, 'error, 'value> =
         if interval <= TimeSpan.Zero then invalidArg (nameof interval) "The interval must be positive."
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
-            let time = RuntimeState.current().Time
+            let time = Platform.timeOfClock env.Clock
 
             pump op env ct
             |> Execution.bind (fun queue ->

@@ -24,7 +24,7 @@ module StackSafetyTests =
 
     [<Fact>]
     let ``flow for loop with synchronous steps is stack safe`` () =
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
                 let mutable total = 0
                 for value in Seq.init iterations id do
@@ -33,11 +33,11 @@ module StackSafetyTests =
                 return total
             }
 
-        test <@ onSmallStack (fun () -> Flow.runSync () workflow) = Exit.Success(iterations / 2) @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) workflow) = Exit.Success(iterations / 2) @>
 
     [<Fact>]
     let ``flow while loop with synchronous steps is stack safe`` () =
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
                 let mutable count = 0
                 while count < iterations do
@@ -46,96 +46,96 @@ module StackSafetyTests =
                 return count
             }
 
-        test <@ onSmallStack (fun () -> Flow.runSync () workflow) = Exit.Success iterations @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) workflow) = Exit.Success iterations @>
 
     [<Fact>]
     let ``flow for loop stops at the first failure`` () =
         let visited = ref 0
-        let workflow : Flow<unit, string, unit> =
+        let workflow : Flow<ClockEnvironment, string, unit> =
             flow {
                 for value in Seq.init iterations id do
                     visited.Value <- visited.Value + 1
                     if value = 150_000 then return! Flow.fail "stop"
             }
 
-        test <@ onSmallStack (fun () -> Flow.runSync () workflow) = Exit.Failure(Cause.Fail "stop") @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) workflow) = Exit.Failure(Cause.Fail "stop") @>
         test <@ visited.Value = 150_001 @>
 
     [<Fact>]
     let ``Flow traverse with synchronous steps is stack safe`` () =
-        let workflow : Flow<unit, string, int list> = Flow.traverse Flow.succeed (Seq.init iterations id)
+        let workflow : Flow<ClockEnvironment, string, int list> = Flow.traverse Flow.succeed (Seq.init iterations id)
 
-        let exit = onSmallStack (fun () -> Flow.runSync () workflow)
+        let exit = onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) workflow)
         test <@ (match exit with Exit.Success values -> values.Length = iterations && List.last values = iterations - 1 | _ -> false) @>
 
     [<Fact>]
     let ``left-nested bind chains are stack safe`` () =
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             Seq.init iterations id
             |> Seq.fold (fun acc _ -> acc |> Flow.bind (fun total -> Flow.succeed (total + 1))) (Flow.succeed 0)
 
-        test <@ onSmallStack (fun () -> Flow.runSync () workflow) = Exit.Success iterations @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) workflow) = Exit.Success iterations @>
 
     [<Fact>]
     let ``long map and catch chains are stack safe`` () =
-        let mapped : Flow<unit, string, int> =
+        let mapped : Flow<ClockEnvironment, string, int> =
             Seq.init iterations id |> Seq.fold (fun acc _ -> acc |> Flow.map (fun total -> total + 1)) (Flow.succeed 0)
-        let recovered : Flow<unit, string, int> =
+        let recovered : Flow<ClockEnvironment, string, int> =
             Seq.init iterations id |> Seq.fold (fun acc _ -> acc |> Flow.orElse (Flow.succeed 1)) (Flow.fail "boom")
 
-        test <@ onSmallStack (fun () -> Flow.runSync () mapped) = Exit.Success iterations @>
-        test <@ onSmallStack (fun () -> Flow.runSync () recovered) = Exit.Success 1 @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) mapped) = Exit.Success iterations @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) recovered) = Exit.Success 1 @>
 
     [<Fact>]
     let ``deeply recursive flows are stack safe`` () =
         // Recursion is deferred with Flow.delay (the builder defers implicitly); an eager
         // `countDown (n - 1) |> Flow.map` recurses in plain F# while building the value, before Axial runs.
-        let rec countDown n : Flow<unit, string, int> =
+        let rec countDown n : Flow<ClockEnvironment, string, int> =
             if n = 0 then Flow.succeed 0
             else Flow.delay (fun () -> countDown (n - 1)) |> Flow.map (fun total -> total + 1)
 
-        let rec tailCountDown n : Flow<unit, string, int> =
+        let rec tailCountDown n : Flow<ClockEnvironment, string, int> =
             flow {
                 if n = 0 then return 0
                 else return! tailCountDown (n - 1)
             }
 
-        test <@ onSmallStack (fun () -> Flow.runSync () (countDown iterations)) = Exit.Success iterations @>
-        test <@ onSmallStack (fun () -> Flow.runSync () (tailCountDown iterations)) = Exit.Success 0 @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) (countDown iterations)) = Exit.Success iterations @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) (tailCountDown iterations)) = Exit.Success 0 @>
 
     [<Fact>]
     let ``Flow sequence of synchronous flows is stack safe`` () =
-        let workflow : Flow<unit, string, int list> = Flow.sequence (Seq.init iterations Flow.succeed)
-        let exit = onSmallStack (fun () -> Flow.runSync () workflow)
+        let workflow : Flow<ClockEnvironment, string, int list> = Flow.sequence (Seq.init iterations Flow.succeed)
+        let exit = onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) workflow)
         test <@ (match exit with Exit.Success values -> values.Length = iterations | _ -> false) @>
 
     [<Fact>]
     let ``large synchronous streams are stack safe`` () =
-        let total : Flow<unit, string, int> =
+        let total : Flow<ClockEnvironment, string, int> =
             FlowStream.fromSeq (Seq.init iterations id)
             |> FlowStream.filter (fun value -> value = iterations - 1)
             |> FlowStream.map (fun value -> value + 1)
             |> FlowStream.runFold (fun state value -> state + value) 0
-        let counted : Flow<unit, string, int> =
+        let counted : Flow<ClockEnvironment, string, int> =
             FlowStream.unfoldFlow (fun n -> Flow.succeed (if n < iterations then Some(n, n + 1) else None)) 0
             |> FlowStream.runFold (fun state _ -> state + 1) 0
 
-        test <@ onSmallStack (fun () -> Flow.runSync () total) = Exit.Success iterations @>
-        test <@ onSmallStack (fun () -> Flow.runSync () counted) = Exit.Success iterations @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) total) = Exit.Success iterations @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) counted) = Exit.Success iterations @>
 
     [<Fact>]
     let ``schedule repeat with many recurrences is stack safe`` () =
         let counter = ref 0
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             Flow.delay (fun () -> counter.Value <- counter.Value + 1; Flow.succeed counter.Value)
             |> Flow.repeat (Schedule.recurs 50_000)
 
-        test <@ onSmallStack (fun () -> Flow.runSync () workflow) = Exit.Success 50_001 @>
+        test <@ onSmallStack (fun () -> Flow.runSync (TestSupport.clockEnv ()) workflow) = Exit.Success 50_001 @>
 
     [<Fact>]
     let ``loops stay stack safe when a flow blocks on a synchronization context`` () =
         // A hop off a deep stack must not post back to a context the blocked caller owns.
-        let workflow : Flow<unit, string, int> =
+        let workflow : Flow<ClockEnvironment, string, int> =
             flow {
                 let mutable count = 0
                 while count < iterations do
@@ -147,6 +147,6 @@ module StackSafetyTests =
         let exit =
             onSmallStack (fun () ->
                 SynchronizationContext.SetSynchronizationContext(SynchronizationContext())
-                Flow.runSync () workflow)
+                Flow.runSync (TestSupport.clockEnv ()) workflow)
 
         test <@ exit = Exit.Success iterations @>

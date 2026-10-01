@@ -5,7 +5,7 @@
 ///
 /// This exists because Axial's architecture invariant — "operational effects are explicit,
 /// mockable dependencies visible in a signature" — was violated in practice (`Schedule.jittered`
-/// building its own `System.Random`; `FiberRegistry.Dump()` reading `DateTimeOffset.UtcNow`)
+/// building its own `System.Random`; a fiber diagnostic reading `DateTimeOffset.UtcNow` directly)
 /// without any tooling catching it. See dev-docs/current-ideas/api-review.md.
 module Axial.Guardrails.EffectBoundaryAnalyzer
 

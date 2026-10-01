@@ -19,7 +19,7 @@ module WorkflowStreamTests =
             |> FlowStream.map (fun v -> v * 2)
             |> FlowStream.runForEach (fun v -> sum <- sum + v)
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
         test <@ result = Exit.Success () @>
         test <@ sum = 30 @>
 
@@ -32,7 +32,7 @@ module WorkflowStreamTests =
             |> FlowStream.skip 1
             |> FlowStream.take 2
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success [ 40; 60 ] @>
 
@@ -44,7 +44,7 @@ module WorkflowStreamTests =
             |> FlowStream.mapFlow (fun value -> Flow.ok (value * 2))
             |> FlowStream.tapFlow (fun value -> flow { seen.Add value })
 
-        let result = stream |> FlowStream.runFold (+) 0 |> Flow.runSync ()
+        let result = stream |> FlowStream.runFold (+) 0 |> Flow.runSync (TestSupport.clockEnv ())
         test <@ result = Exit.Success 12 @>
         test <@ seen |> Seq.toList = [ 2; 4; 6 ] @>
 
@@ -54,7 +54,7 @@ module WorkflowStreamTests =
             FlowStream.fromSeq [ 1..7 ]
             |> FlowStream.chunkBySize 3
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success [ [ 1; 2; 3 ]; [ 4; 5; 6 ]; [ 7 ] ] @>
         raises<ArgumentException> <@ FlowStream.fromSeq [ 1 ] |> FlowStream.chunkBySize 0 |> ignore @>
@@ -83,7 +83,7 @@ module WorkflowStreamTests =
             |> FlowStream.mapFlow (List.map mapper >> Flow.sequencePar)
             |> FlowStream.collect FlowStream.fromSeq
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success [ for value in 1..12 -> value * 10 ] @>
         test <@ maximum = 3 @>
@@ -104,7 +104,7 @@ module WorkflowStreamTests =
             |> FlowStream.mapFlow (List.map mapper >> Flow.sequencePar)
             |> FlowStream.collect FlowStream.fromSeq
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Failure(Cause.Fail "failed") @>
         test <@ started |> Seq.forall (fun value -> value <= 3) @>
@@ -133,7 +133,7 @@ module WorkflowStreamTests =
             FlowStream.fromSeq [ 1..12 ]
             |> FlowStream.mapFlowPar (Parallelism.bounded 3) mapper
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         match result with
         | Exit.Success values -> test <@ List.sort values = [ for value in 1..12 -> value * 10 ] @>
@@ -160,7 +160,7 @@ module WorkflowStreamTests =
             FlowStream.fromSeq [ 1; 2 ]
             |> FlowStream.mapFlowPar (Parallelism.bounded 2) mapper
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Failure(Cause.Fail "failed") @>
         test <@ active = 0 @>
@@ -178,7 +178,7 @@ module WorkflowStreamTests =
                 do! resource |> FlowStream.fromFlow |> FlowStream.runDrain
                 return released
             }
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success true @>
 
@@ -202,7 +202,7 @@ module WorkflowStreamTests =
             |> FlowStream.mapFlowPar (Parallelism.bounded 4) mapper
             |> FlowStream.take 1
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success [ 1 ] @>
         test <@ active = 0 @>
@@ -218,12 +218,12 @@ module WorkflowStreamTests =
             expanded
             |> FlowStream.zip (FlowStream.fromSeq [ "a"; "b"; "c"; "d"; "e"; "f" ])
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success [ (1, "a"); (10, "b"); (2, "c"); (20, "d"); (3, "e"); (30, "f") ] @>
 
     // Emits `values`, waiting `gap` before each one after the first.
-    let private timed (gaps: (int * int) list) : FlowStream<unit, string, int> =
+    let private timed (gaps: (int * int) list) : FlowStream<ClockEnvironment, string, int> =
         FlowStream.unfoldFlow
             (fun remaining ->
                 flow {
@@ -237,7 +237,7 @@ module WorkflowStreamTests =
 
     [<Fact>]
     let ``fromHub subscribes for the life of the stream`` () =
-        let workflow : Flow<unit, Never, int list * int> =
+        let workflow : Flow<ClockEnvironment, Never, int list * int> =
             flow {
                 let! (hub: Hub<int>) = Hub.make ()
 
@@ -257,7 +257,7 @@ module WorkflowStreamTests =
                 return values, remaining
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([ 1; 2 ], 0) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 1; 2 ], 0) @>
 
     [<Fact>]
     let ``fromSchedule ticks on the fixed-rate grid`` () =
@@ -278,7 +278,7 @@ module WorkflowStreamTests =
 
     [<Fact>]
     let ``runIntoQueue and runIntoHub feed every value in order`` () =
-        let workflow : Flow<unit, Never, int list * int list> =
+        let workflow : Flow<ClockEnvironment, Never, int list * int list> =
             flow {
                 let! (queue: Queue<int>) = Queue.bounded 2
                 let! consumer = queue |> FlowStream.fromDequeue |> FlowStream.runCollect |> Flow.fork
@@ -293,15 +293,15 @@ module WorkflowStreamTests =
                 return fromQueue, fromHub
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([ 1..10 ], [ 1..5 ]) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 1..10 ], [ 1..5 ]) @>
 
     [<Fact>]
     let ``buffer keeps order, never drops the end, and delivers a failure after buffered values`` () =
-        let lossless = FlowStream.fromSeq [ 1..200 ] |> FlowStream.buffer (QueueStrategy.BackPressure 2) |> FlowStream.runCollect |> Flow.runSync ()
+        let lossless = FlowStream.fromSeq [ 1..200 ] |> FlowStream.buffer (QueueStrategy.BackPressure 2) |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ())
         test <@ lossless = Exit.Success [ 1..200 ] @>
 
         // A sliding buffer may skip values, but it always keeps the newest one, and the end still arrives.
-        match FlowStream.fromSeq [ 1..1000 ] |> FlowStream.buffer (QueueStrategy.Sliding 1) |> FlowStream.runCollect |> Flow.runSync () with
+        match FlowStream.fromSeq [ 1..1000 ] |> FlowStream.buffer (QueueStrategy.Sliding 1) |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ()) with
         | Exit.Success values ->
             test <@ List.last values = 1000 && values = List.sort values && values = List.distinct values @>
         | other -> failwith $"Expected values, got {other}"
@@ -313,7 +313,7 @@ module WorkflowStreamTests =
             |> FlowStream.append (FlowStream.fromFlow (Flow.fail "boom"))
             |> FlowStream.buffer (QueueStrategy.BackPressure 4)
             |> FlowStream.runForEach seen.Add
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ failing = Exit.Failure(Cause.Fail "boom") && List.ofSeq seen = [ 1; 2 ] @>
 
@@ -381,7 +381,7 @@ module WorkflowStreamTests =
     let ``switchMapFlow interrupts the flow for a superseded value`` () =
         let interrupted = ref 0
 
-        let search (query: int) : Flow<unit, string, string> =
+        let search (query: int) : Flow<ClockEnvironment, string, string> =
             flow {
                 do! Flow.sleep (TimeSpan.FromMilliseconds 400.0)
                 return $"result-{query}"
@@ -404,7 +404,7 @@ module WorkflowStreamTests =
     let ``time operators stop their producer when the consumer stops early`` () =
         let pulled = ref 0
 
-        let endless : FlowStream<unit, string, int> =
+        let endless : FlowStream<ClockEnvironment, string, int> =
             FlowStream.unfoldFlow
                 (fun n ->
                     flow {
@@ -430,9 +430,9 @@ module WorkflowStreamTests =
     [<Fact>]
     let ``repeatFlow runs its flow once per pull`` () =
         let runs = ref 0
-        let next : Flow<unit, string, int> = Flow.delay (fun () -> runs.Value <- runs.Value + 1; Flow.ok runs.Value)
+        let next : Flow<ClockEnvironment, string, int> = Flow.delay (fun () -> runs.Value <- runs.Value + 1; Flow.ok runs.Value)
 
-        let values = FlowStream.repeatFlow next |> FlowStream.take 3 |> FlowStream.runCollect |> Flow.runSync ()
+        let values = FlowStream.repeatFlow next |> FlowStream.take 3 |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ values = Exit.Success [ 1; 2; 3 ] @>
         test <@ runs.Value = 3 @>
@@ -442,22 +442,22 @@ module WorkflowStreamTests =
         let acquired = ref 0
         let released = ref 0
 
-        let resource : Resource<unit, string, int> =
+        let resource : Resource<ClockEnvironment, string, int> =
             Resource.ofAsync
                 (Flow.delay (fun () -> acquired.Value <- acquired.Value + 1; Flow.ok 10))
                 (fun _ _ -> async { released.Value <- released.Value + 1 })
 
         let numbers = FlowStream.using resource (fun start -> FlowStream.fromSeq [ start .. start + 4 ])
 
-        let all = numbers |> FlowStream.runCollect |> Flow.runSync ()
+        let all = numbers |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ())
         let releasedAfterAll = released.Value
-        let first = numbers |> FlowStream.take 2 |> FlowStream.runCollect |> Flow.runSync ()
+        let first = numbers |> FlowStream.take 2 |> FlowStream.runCollect |> Flow.runSync (TestSupport.clockEnv ())
         let releasedAfterTake = released.Value
 
         let failing =
-            FlowStream.using resource (fun _ -> FlowStream.fromFlow (Flow.fail "boom" : Flow<unit, string, int>))
+            FlowStream.using resource (fun _ -> FlowStream.fromFlow (Flow.fail "boom" : Flow<ClockEnvironment, string, int>))
             |> FlowStream.runDrain
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ all = Exit.Success [ 10..14 ] @>
         test <@ first = Exit.Success [ 10; 11 ] @>
@@ -469,14 +469,14 @@ module WorkflowStreamTests =
     let ``runTryHead pulls one value, runTryLast and runCount consume everything`` () =
         let pulled = ref 0
 
-        let counted : FlowStream<unit, string, int> =
+        let counted : FlowStream<ClockEnvironment, string, int> =
             FlowStream.repeatFlow (Flow.delay (fun () -> pulled.Value <- pulled.Value + 1; Flow.ok pulled.Value))
 
-        let head = counted |> FlowStream.runTryHead |> Flow.runSync ()
-        let emptyHead : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryHead |> Flow.runSync ()
-        let last = FlowStream.fromSeq [ 1..5 ] |> FlowStream.runTryLast |> Flow.runSync ()
-        let emptyLast : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryLast |> Flow.runSync ()
-        let count : Exit<int64, string> = FlowStream.fromSeq [ 1..7 ] |> FlowStream.runCount |> Flow.runSync ()
+        let head = counted |> FlowStream.runTryHead |> Flow.runSync (TestSupport.clockEnv ())
+        let emptyHead : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryHead |> Flow.runSync (TestSupport.clockEnv ())
+        let last = FlowStream.fromSeq [ 1..5 ] |> FlowStream.runTryLast |> Flow.runSync (TestSupport.clockEnv ())
+        let emptyLast : Exit<int option, string> = FlowStream.empty |> FlowStream.runTryLast |> Flow.runSync (TestSupport.clockEnv ())
+        let count : Exit<int64, string> = FlowStream.fromSeq [ 1..7 ] |> FlowStream.runCount |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ head = Exit.Success(Some 1) && pulled.Value = 1 @>
         test <@ emptyHead = Exit.Success None @>
@@ -490,7 +490,7 @@ module WorkflowStreamTests =
         let consumed = ref 0
         let lead = ref 0
 
-        let source : FlowStream<unit, string, int> =
+        let source : FlowStream<ClockEnvironment, string, int> =
             FlowStream.repeatFlow (Flow.delay (fun () -> Flow.ok (Interlocked.Increment(&produced.contents))))
             |> FlowStream.take 20
 

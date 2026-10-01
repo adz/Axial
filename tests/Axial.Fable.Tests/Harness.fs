@@ -4,13 +4,16 @@ module Axial.Fable.Tests.Harness
 
 open System
 open Axial
+open Axial.PlatformService
 open Fable.Core
 
 /// One named expectation inside a test.
 type Check = { Label: string; Passed: bool; Detail: string }
 
 /// A named test: a flow that returns its checks. A typed failure, defect, or interruption fails the test.
-type Test = { Name: string; Body: Flow<unit, Never, Check list> }
+type Test = { Name: string; Body: Flow<Axial.ClockEnvironment, Never, Check list> }
+
+let clockEnvironment = ClockEnvironment(Clock.live)
 
 let equal (label: string) (expected: 'value) (actual: 'value) : Check =
     let passed = (actual = expected)
@@ -27,7 +30,7 @@ let isTrue (label: string) (condition: bool) : Check =
       Passed = condition
       Detail = "expected true" }
 
-let test (name: string) (body: Flow<unit, Never, Check list>) : Test = { Name = name; Body = body }
+let test (name: string) (body: Flow<Axial.ClockEnvironment, Never, Check list>) : Test = { Name = name; Body = body }
 
 /// Runs a flow and returns its outcome as a value, so a test can check failures and interruptions.
 let exitOf (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
@@ -60,7 +63,7 @@ let run (allTests: Test list) : unit =
         let failures = ref 0
 
         for current in tests do
-            let! exit = current.Body |> Flow.timeoutToOk testTimeout timedOut |> Flow.toAsync ()
+            let! exit = current.Body |> Flow.timeoutToOk testTimeout timedOut |> Flow.toAsync clockEnvironment
 
             match exit with
             | Exit.Success checks when checks |> List.forall _.Passed -> printfn "  pass %s" current.Name
@@ -74,6 +77,8 @@ let run (allTests: Test list) : unit =
                 failures.Value <- failures.Value + 1
                 printfn "  FAIL %s" current.Name
                 printfn "       ended with %s" (Cause.prettyPrint (fun (_: Never) -> "") cause)
+                for defect in Cause.defects cause do
+                    printfn "       defect: %s %s" (defect.ToString()) defect.StackTrace
 
         printfn "%d tests, %d failed" tests.Length failures.Value
         setExitCode (if failures.Value = 0 then 0 else 1)

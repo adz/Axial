@@ -92,7 +92,7 @@ let tests : Test list =
       test "SubscriptionRef.changes starts with the current value then follows every update" (flow {
           let! reading = SubscriptionRef.make 0
           do! reading |> SubscriptionRef.set 1
-          let! shown = Deferred.make<unit, Never, unit> ()
+          let! shown = Deferred.make<Axial.ClockEnvironment, Never, unit> ()
 
           let! view =
               reading

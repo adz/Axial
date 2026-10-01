@@ -19,7 +19,7 @@ module WorkflowSupervisionTests =
                 else
                     Flow.succeed 42)
             |> Flow.supervise (Schedule.recurs 4)
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success 42 @>
         test <@ runs.Value = 3 @>
@@ -33,7 +33,7 @@ module WorkflowSupervisionTests =
                 runs.Value <- runs.Value + 1
                 Flow.die (InvalidOperationException "boom"))
             |> Flow.supervise (Schedule.recurs 2)
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ runs.Value = 3 @>
         match result with
@@ -49,7 +49,7 @@ module WorkflowSupervisionTests =
                 failRuns.Value <- failRuns.Value + 1
                 Flow.fail "domain error")
             |> Flow.supervise (Schedule.recurs 2)
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ failResult = Exit.Failure (Cause.Fail "domain error") @>
         test <@ failRuns.Value = 1 @>
@@ -61,7 +61,7 @@ module WorkflowSupervisionTests =
                 interruptRuns.Value <- interruptRuns.Value + 1
                 Flow.ofExit (Exit.Failure Cause.Interrupt))
             |> Flow.supervise (Schedule.recurs 2)
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ interruptResult = Exit.Failure Cause.Interrupt @>
         test <@ interruptRuns.Value = 1 @>
@@ -82,7 +82,7 @@ module WorkflowSupervisionTests =
                 runs.Value <- runs.Value + 1
                 Flow.die (InvalidOperationException "fatal"))
             |> Flow.supervise policy
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ runs.Value = 1 @>
         match result with
@@ -94,7 +94,7 @@ module WorkflowSupervisionTests =
         let releases = ResizeArray<int>()
         let runs = ref 0
 
-        let workflow : Flow<unit, string, string> =
+        let workflow : Flow<ClockEnvironment, string, string> =
             flow {
                 runs.Value <- runs.Value + 1
                 let attempt = runs.Value
@@ -110,7 +110,7 @@ module WorkflowSupervisionTests =
         let result =
             workflow
             |> Flow.supervise (Schedule.recurs 4)
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success "success" @>
         // The failed attempts' finalizers ran before the next attempt started, not at the end.
@@ -134,7 +134,7 @@ module WorkflowSupervisionTests =
                 observedBeforeClose.Value <- released.Value
                 return value
             }
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success "connection" @>
         test <@ not observedBeforeClose.Value @>

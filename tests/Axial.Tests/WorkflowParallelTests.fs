@@ -23,7 +23,7 @@ module WorkflowParallelTests =
                     return 2 
                 })
 
-        test <@ Flow.runSync () workflow = Exit.Success (1, 2) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success (1, 2) @>
 
     [<Fact>]
     let ``Flow: zipPar interrupts on failure`` () =
@@ -37,7 +37,7 @@ module WorkflowParallelTests =
                 })
                 (Flow.fail "boom")
 
-        let outcome = Flow.runSync () workflow
+        let outcome = Flow.runSync (TestSupport.clockEnv ()) workflow
         test <@ outcome = Exit.Failure (Cause.Fail "boom") @>
         test <@ executed = false @>
 
@@ -56,7 +56,7 @@ module WorkflowParallelTests =
                     return 2 
                 })
 
-        test <@ Flow.runSync () workflow = Exit.Success 1 @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 1 @>
         // Give it a bit more time to potentially execute (though it shouldn't)
         Thread.Sleep(500)
         test <@ loserExecuted = false @>
@@ -67,7 +67,7 @@ module WorkflowParallelTests =
         let peak = ref 0
         let gate = obj ()
 
-        let work (value: int) : Flow<unit, string, int> =
+        let work (value: int) : Flow<ClockEnvironment, string, int> =
             flow {
                 lock gate (fun () ->
                     active.Value <- active.Value + 1
@@ -80,17 +80,17 @@ module WorkflowParallelTests =
 
         let traversal = [ 1..20 ] |> Flow.traversePar (Parallelism.bounded 3) work
 
-        test <@ Flow.runSync () traversal = Exit.Success [ for value in 1..20 -> value * 10 ] @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) traversal = Exit.Success [ for value in 1..20 -> value * 10 ] @>
         test <@ peak.Value <= 3 && peak.Value >= 2 @>
         // The flow value is a description: running it again starts from the first item.
-        test <@ Flow.runSync () traversal = Exit.Success [ for value in 1..20 -> value * 10 ] @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) traversal = Exit.Success [ for value in 1..20 -> value * 10 ] @>
 
     [<Fact>]
     let ``traversePar fails fast and interrupts running siblings`` () =
         let interrupted = ref 0
         let started = ref 0
 
-        let work (value: int) : Flow<unit, string, int> =
+        let work (value: int) : Flow<ClockEnvironment, string, int> =
             flow {
                 System.Threading.Interlocked.Increment(&started.contents) |> ignore
 
@@ -110,7 +110,7 @@ module WorkflowParallelTests =
             }
 
         let stopwatch = Diagnostics.Stopwatch.StartNew()
-        let result = [ 1..10 ] |> Flow.traversePar (Parallelism.bounded 3) work |> Flow.runSync ()
+        let result = [ 1..10 ] |> Flow.traversePar (Parallelism.bounded 3) work |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Failure(Cause.Fail "boom") @>
         test <@ stopwatch.Elapsed < TimeSpan.FromSeconds 10.0 @>
@@ -124,17 +124,17 @@ module WorkflowParallelTests =
         let result =
             [ 1..50 ]
             |> Flow.forEachPar (Parallelism.bounded 4) (fun value -> Flow.delay (fun () -> seen.Add value; Flow.ok ()))
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
-        let empty : Exit<unit, string> = [] |> Flow.forEachPar (Parallelism.bounded 4) (fun (_: int) -> Flow.ok ()) |> Flow.runSync ()
-        let emptyTraversal : Exit<int list, string> = [] |> Flow.traversePar (Parallelism.bounded 4) Flow.ok |> Flow.runSync ()
+        let empty : Exit<unit, string> = [] |> Flow.forEachPar (Parallelism.bounded 4) (fun (_: int) -> Flow.ok ()) |> Flow.runSync (TestSupport.clockEnv ())
+        let emptyTraversal : Exit<int list, string> = [] |> Flow.traversePar (Parallelism.bounded 4) Flow.ok |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success () @>
         test <@ seen |> Seq.sort |> List.ofSeq = [ 1..50 ] @>
         test <@ empty = Exit.Success () @>
         test <@ emptyTraversal = Exit.Success [] @>
 
-    let private countingResource (acquired: int ref) (released: int ref) : Resource<unit, string, int> =
+    let private countingResource (acquired: int ref) (released: int ref) : Resource<ClockEnvironment, string, int> =
         Resource.ofAsync
             (Flow.delay (fun () -> Flow.ok (Interlocked.Increment(&acquired.contents))))
             (fun _ _ -> async { Interlocked.Increment(&released.contents) |> ignore })
@@ -153,7 +153,7 @@ module WorkflowParallelTests =
                     do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)
                     return value * 2
                 })
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Success [ for value in 1..30 -> value * 2 ] @>
         test <@ acquired.Value = 3 && released.Value = 3 @>
@@ -168,7 +168,7 @@ module WorkflowParallelTests =
             [ 1..20 ]
             |> Flow.forEachParUsing (Parallelism.bounded 4) (countingResource acquired released) (fun _ value ->
                 if value = 5 then Flow.fail "bad value" else Flow.sleep (TimeSpan.FromMilliseconds 5.0))
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ result = Exit.Failure(Cause.Fail "bad value") @>
         test <@ acquired.Value >= 1 && acquired.Value <= 4 @>
@@ -187,7 +187,7 @@ module WorkflowParallelTests =
                     return value
                 })
             |> FlowStream.runCollect
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ match result with Exit.Success values -> List.sort values = [ 1..40 ] | _ -> false @>
         test <@ acquired.Value <= 3 && acquired.Value >= 1 @>

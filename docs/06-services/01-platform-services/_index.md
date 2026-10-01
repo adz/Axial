@@ -32,7 +32,7 @@ let isExpired (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
 
 ## The base runtime
 
-Applications usually need all five. `BaseRuntime` is the record that bundles them, and it
+Applications usually need all five. `BaseRuntime` bundles them, and it
 implements one contract per service, so a workflow requiring any combination is satisfied by the single value:
 
 ```fsharp

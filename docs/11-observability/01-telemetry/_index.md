@@ -372,16 +372,16 @@ let observedApplication =
 Name long-lived work so the dump is readable:
 
 ```fsharp
-let pollOutbox : Flow<unit, CheckoutError, unit> = Flow.sleep (TimeSpan.FromSeconds 5.0)
+let pollOutbox : Flow<ClockEnvironment, CheckoutError, unit> = Flow.sleep (TimeSpan.FromSeconds 5.0)
 
-let startPoller : Flow<unit, CheckoutError, Fiber<CheckoutError, unit>> = Flow.forkNamed "outbox-poller" pollOutbox
+let startPoller : Flow<ClockEnvironment, CheckoutError, Fiber<CheckoutError, unit>> = Flow.forkNamed "outbox-poller" pollOutbox
 ```
 
-Return `registry.Dump()` from a protected diagnostics endpoint, write it during a stuck shutdown, or attach it to the
+Return `registry.DumpAt(Clock.live)` from a protected diagnostics endpoint, write it during a stuck shutdown, or attach it to the
 current trace:
 
 ```fsharp
-let recordDump () = FiberDumpTelemetry.record registry
+let recordDump () = FiberDumpTelemetry.record Clock.live registry
 ```
 
 `FiberDumpTelemetry.record` adds an `axial.flow.fiber.dump` event to the current activity. If no activity is current, it

@@ -46,6 +46,9 @@ type IConsole =
 /// Implement this on the environment supplied at the host edge. A workflow that reads or writes
 /// the console constrains its environment with <c>'env :&gt; IHasConsole</c>.
 /// </remarks>
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
 type IHasConsole =
     /// The console service supplied by this environment.
     abstract Console : IConsole

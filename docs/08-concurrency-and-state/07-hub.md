@@ -35,6 +35,7 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp transcript
+> open Axial.PlatformService;;
 > (flow {
 -     let! (hub: Hub<int>) = Hub.make ()
 -     let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 2)
@@ -47,8 +48,8 @@ let shouldEqual expected actual =
 -     let! latest = Dequeue.takeAll display
 -     let! pending = Dequeue.takeAll alarms
 -     return [ history; latest; pending ]
-- } : Flow<unit, Never, int list list>)
-- |> Flow.run ();;
+- } : Flow<ClockEnvironment, Never, int list list>)
+- |> Flow.run (ClockEnvironment Clock.live);;
 val it: Exit<int list list,Never> = Success [[1; 2; 3; 4; 5]; [5]; [1]]
 ```
 
@@ -88,6 +89,7 @@ finish without waiting, and returns `None` without delivering anything otherwise
 the others missed.
 
 ```fsharp transcript
+> open Axial.PlatformService;;
 > (flow {
 -     let! (hub: Hub<int>) = Hub.make ()
 -     let! historian = hub |> Hub.subscribe (QueueStrategy.BackPressure 1)
@@ -117,6 +119,7 @@ forked fiber has a scope of its own, so a consumer fiber's subscription ends whe
 also leave early with `Dequeue.shutdown`, which has the same effect.
 
 ```fsharp transcript
+> open Axial.PlatformService;;
 > (flow {
 -     let! (hub: Hub<string>) = Hub.make ()
 -     let! received =
@@ -141,16 +144,16 @@ never leaves a subscription behind. `FlowStream.runIntoHub hub` publishes every 
 
 ```fsharp
 let shown = ResizeArray<float>()
-let render (reading: float) : Flow<unit, Never, unit> = Flow.delay (fun () -> shown.Add reading; Flow.ok ())
+let render (reading: float) : Flow<ClockEnvironment, Never, unit> = Flow.delay (fun () -> shown.Add reading; Flow.ok ())
 
 // A display that follows the latest reading for as long as it runs.
-let display (readings: Hub<float>) : Flow<unit, Never, unit> =
+let display (readings: Hub<float>) : Flow<ClockEnvironment, Never, unit> =
     readings
     |> FlowStream.fromHub (QueueStrategy.Sliding 1)
     |> FlowStream.runForEachFlow render
 
 // A sensor stream feeding the hub.
-let feed (readings: Hub<float>) : Flow<unit, Never, unit> =
+let feed (readings: Hub<float>) : Flow<ClockEnvironment, Never, unit> =
     FlowStream.fromSeq [ 20.5; 20.7; 21.0 ] |> FlowStream.runIntoHub readings
 ```
 
@@ -173,7 +176,7 @@ flow {
     do! Hub.shutdown readings
     do! Fiber.join displaying
 }
-|> Flow.run ()
+|> Flow.run (ClockEnvironment Clock.live)
 |> shouldEqual (Exit.Success())
 
 shown |> Seq.last |> shouldEqual 21.0

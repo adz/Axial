@@ -1,5 +1,28 @@
 namespace Axial
 
+open System
+open System.Threading
+open System.Threading.Tasks
+
+/// <summary>Supplies wall time, monotonic time, and cancellable delays from one source.</summary>
+/// <remarks>Wall time is for timestamps. Use differences between <c>Elapsed</c> readings for durations.</remarks>
+type IClock =
+    abstract UtcNow: unit -> DateTimeOffset
+    abstract Elapsed: unit -> TimeSpan
+    abstract Sleep: delay: TimeSpan * cancellationToken: CancellationToken -> Task
+
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
+/// <summary>Declares the clock required by timed workflows and fiber diagnostics.</summary>
+type IHasClock =
+    abstract Clock: IClock
+
+/// <summary>An environment containing only a clock, for timed flows with no other services.</summary>
+type ClockEnvironment(clock: IClock) =
+    member _.Clock = clock
+    interface IHasClock with member _.Clock = clock
+
 /// Rendering of arbitrary payload values inside outcome types that stays safe under NativeAOT.
 module internal OutcomeText =
     /// A payload's own ToString, with null spelled out.

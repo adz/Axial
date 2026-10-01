@@ -6,7 +6,7 @@ open Axial
 open Axial.TortureTest.Scenario
 
 // <snippet:torture-caches>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let keys = 8
     let callersPerKey = round.Size 25
 
@@ -17,7 +17,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         let invalidations = Array.zeroCreate<int> keys
 
         // Odd keys fail on their first run: a failure must not be cached, so a later caller runs the lookup again.
-        let lookup key : Flow<unit, string, int * int> =
+        let lookup key : Flow<Axial.ClockEnvironment, string, int * int> =
             flow {
                 let attempt = lock gate (fun () -> runs[key] <- runs[key] + 1; runs[key])
                 do! Flow.sleep (TimeSpan.FromMilliseconds(float (round.Next 3)))
@@ -75,13 +75,13 @@ let run (round: Round) : Flow<unit, Never, Check list> =
     }
 
 /// A memoized flow shared by concurrent callers: one success runs once, a failure is retried by the next caller.
-let memoized (round: Round) : Flow<unit, Never, Check list> =
+let memoized (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let callers = round.Size 50
 
     flow {
         let runs = ref 0
 
-        let expensive : Flow<unit, string, int> =
+        let expensive : Flow<Axial.ClockEnvironment, string, int> =
             flow {
                 let attempt = increment runs
                 do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)

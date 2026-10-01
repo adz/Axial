@@ -185,7 +185,7 @@ poll
 |> Flow.forkNamed "outbox-poller"
 |> Flow.annotate "tenant" "acme"
 |> Flow.withFiberRegistry registry
-// registry.Dump() lists live fibers
+// registry.DumpAt(clock) lists live fibers
 ```
 
 </section>

@@ -7,7 +7,7 @@ open Axial.State
 open Axial.TortureTest.Scenario
 
 // <snippet:torture-semaphores>
-let semaphores (round: Round) : Flow<unit, Never, Check list> =
+let semaphores (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let permits = 3
     let workers = round.Size 60
 
@@ -39,7 +39,7 @@ let semaphores (round: Round) : Flow<unit, Never, Check list> =
         let! mostAtOnce = Ref.get busiest
 
         // If an interrupted waiter had lost a permit, these three could not all hold one at the same time.
-        let! barrier = Deferred.make<unit, Never, unit> ()
+        let! barrier = Deferred.make<Axial.ClockEnvironment, Never, unit> ()
         let! arrived = Ref.make 0
 
         let holdTogether =
@@ -74,12 +74,12 @@ type private Attempt =
     | Complete of int
     | Interrupt
 
-let deferreds (round: Round) : Flow<unit, Never, Check list> =
+let deferreds (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let awaiters = round.Size 40
 
     flow {
         // Deferred.make's flow fails with the deferred's own error type; creating one never actually fails.
-        let! deferred = Deferred.make<unit, int, int> () |> Flow.fold Flow.ok (fun _ -> Flow.die (InvalidOperationException "unreachable"))
+        let! deferred = Deferred.make<Axial.ClockEnvironment, int, int> () |> Flow.fold Flow.ok (fun _ -> Flow.die (InvalidOperationException "unreachable"))
         let! early = [ 1..awaiters ] |> Flow.traverse (fun _ -> deferred |> Deferred.await |> Flow.fork)
 
         // Several completers race, each with a different kind of completion; exactly one may win.
@@ -143,7 +143,7 @@ let deferreds (round: Round) : Flow<unit, Never, Check list> =
 // </snippet:torture-deferreds>
 
 // <snippet:torture-refs>
-let refs (round: Round) : Flow<unit, Never, Check list> =
+let refs (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let fibers = 8
     let perFiber = round.Size 250
 
@@ -190,7 +190,7 @@ let refs (round: Round) : Flow<unit, Never, Check list> =
         // A SubscriptionRef updated concurrently: a stream that started first sees every value in turn.
         // The stream subscribes when it starts; waiting for its first value means it is subscribed before any update.
         let! level = SubscriptionRef.make 0
-        let! subscribed = Deferred.make<unit, Never, unit> ()
+        let! subscribed = Deferred.make<Axial.ClockEnvironment, Never, unit> ()
 
         let! history =
             level

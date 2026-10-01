@@ -39,9 +39,9 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let handoff : Flow<unit, string, int> =
+let handoff : Flow<ClockEnvironment, string, int> =
     flow {
-        let! deferred = Deferred.make<unit, string, int> ()
+        let! deferred = Deferred.make<ClockEnvironment, string, int> ()
 
         let! waiter =
             Deferred.await deferred
@@ -78,7 +78,7 @@ Awaiting respects runtime cancellation. If the waiting workflow is interrupted b
 let active = ref 0
 let busiest = ref 0
 
-let runRequest (request: int) : Flow<string, int> =
+let runRequest (request: int) : Flow<ClockEnvironment, string, int> =
     flow {
         let now = Interlocked.Increment &active.contents
         lock busiest (fun () -> busiest.Value <- max busiest.Value now)
@@ -87,7 +87,7 @@ let runRequest (request: int) : Flow<string, int> =
         return request * 10
     }
 
-let limitedFetch (semaphore: FlowSemaphore) (request: int) : Flow<string, int> =
+let limitedFetch (semaphore: FlowSemaphore) (request: int) : Flow<ClockEnvironment, string, int> =
     Semaphore.withPermit semaphore (
         flow {
             // Only one workflow per permit can run this section.
@@ -100,7 +100,7 @@ let limitedFetch (semaphore: FlowSemaphore) (request: int) : Flow<string, int> =
 Create semaphores with a positive permit count:
 
 ```fsharp
-let program : Flow<unit, string, int list> =
+let program : Flow<ClockEnvironment, string, int list> =
     flow {
         let! semaphore = Semaphore.make 2
         return! [ 1..8 ] |> Flow.traversePar (Parallelism.bounded 8) (limitedFetch semaphore)
@@ -108,7 +108,7 @@ let program : Flow<unit, string, int list> =
 ```
 
 ```fsharp run
-program |> Flow.run () |> shouldEqual (Exit.Success [ 10; 20; 30; 40; 50; 60; 70; 80 ])
+program |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ 10; 20; 30; 40; 50; 60; 70; 80 ])
 busiest.Value <= 2 |> shouldEqual true
 ```
 

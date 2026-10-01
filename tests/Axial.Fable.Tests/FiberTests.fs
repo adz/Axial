@@ -64,7 +64,7 @@ let tests : Test list =
       test "Flow.ensuring and Flow.onExit run after every kind of outcome" (flow {
           let seen = ResizeArray<string>()
 
-          let record (exit: Exit<int, string>) : Flow<unit, Never, unit> =
+          let record (exit: Exit<int, string>) : Flow<Axial.ClockEnvironment, Never, unit> =
               Flow.delay (fun () ->
                   seen.Add(
                       match exit with
@@ -77,7 +77,7 @@ let tests : Test list =
 
           let! succeeded = Flow.ok 1 |> Flow.onExit record |> exitOf
           let! failed = Flow.fail "expected" |> Flow.onExit record |> exitOf
-          let! fiber = Flow.never<unit, string, int> |> Flow.onExit record |> Flow.fork
+          let! fiber = Flow.never<Axial.ClockEnvironment, string, int> |> Flow.onExit record |> Flow.fork
           let! interrupted = Fiber.interrupt fiber
 
           return
@@ -90,14 +90,14 @@ let tests : Test list =
       test "Flow.onInterrupt runs only on interruption and finishes despite it" (flow {
           let cleaned = ref 0
 
-          let cleanup : Flow<unit, Never, unit> =
+          let cleanup : Flow<Axial.ClockEnvironment, Never, unit> =
               flow {
                   do! Flow.sleep (TimeSpan.FromMilliseconds 10.0)
                   cleaned.Value <- cleaned.Value + 1
               }
 
           let! _ = Flow.ok () |> Flow.onInterrupt cleanup |> exitOf
-          let! fiber = Flow.never<unit, Never, unit> |> Flow.onInterrupt cleanup |> Flow.fork
+          let! fiber = Flow.never<Axial.ClockEnvironment, Never, unit> |> Flow.onInterrupt cleanup |> Flow.fork
           let! _ = Fiber.interrupt fiber
           return [ equal "cleanups" 1 cleaned.Value ]
       })

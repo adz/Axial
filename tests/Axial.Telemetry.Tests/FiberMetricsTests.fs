@@ -4,11 +4,13 @@ open System.Collections.Generic
 open System.Diagnostics
 open System.Diagnostics.Metrics
 open Axial
+open Axial.PlatformService
 open Axial.Telemetry
 open Swensen.Unquote
 open Xunit
 
 module FiberMetricsTests =
+    let private clockEnv () = ClockEnvironment(Clock.live)
     /// Collects measurements from the Axial meter for the duration of a test.
     type private MetricCapture() =
         let gate = obj()
@@ -48,7 +50,7 @@ module FiberMetricsTests =
         interface System.IDisposable with
             member _.Dispose() = listener.Dispose()
 
-    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<ClockEnvironment, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
                 do! Flow.sleep (System.TimeSpan.FromMilliseconds 5.0)
@@ -69,7 +71,7 @@ module FiberMetricsTests =
         let result =
             flow {
                 let! succeeding = Flow.fork (Flow.succeed 1)
-                let! failing = Flow.forkDetached (Flow.fail "boom" : Flow<unit, string, int>)
+                let! failing = Flow.forkDetached (Flow.fail "boom" : Flow<ClockEnvironment, string, int>)
                 let! sleeper = Flow.fork (Flow.sleep (System.TimeSpan.FromSeconds 30.0))
                 let! _ = Fiber.join succeeding
                 do! waitForSettled failing
@@ -77,7 +79,7 @@ module FiberMetricsTests =
                 return ()
             }
             |> FiberMetrics.observe
-            |> Flow.runSync ()
+            |> Flow.runSync (clockEnv ())
 
         test <@ result = Exit.Success() @>
         waitUntil (fun () -> capture.Total "axial.flow.fibers.settled" = 3L)
@@ -105,7 +107,7 @@ module FiberMetricsTests =
         use activity = source.StartActivity("request")
 
         let registry = FiberRegistry()
-        FiberDumpTelemetry.record registry
+        FiberDumpTelemetry.record Clock.live registry
 
         let events = activity.Events |> List.ofSeq
         test <@ events |> List.map _.Name = [ "axial.flow.fiber.dump" ] @>

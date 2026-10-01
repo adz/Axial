@@ -7,6 +7,7 @@ open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Sources
 open Axial
+open Axial.PlatformService
 
 [<AutoOpen>]
 module TestExtensions =
@@ -18,6 +19,7 @@ module TestExtensions =
             flow.RunSynchronously(environment, cancellationToken = cancellationToken)
 
 module TestSupport =
+    let clockEnv () = ClockEnvironment(Clock.live)
     type Address =
         { City: string }
 
@@ -178,9 +180,9 @@ module TestSupport =
 
     /// Runs a flow on manual time. Whenever the fibers have all settled into waiting on time, time jumps to the next
     /// deadline, so timed behaviour is exact and the sleeps take no wall-clock time.
-    let runOnManualTime (workflow: Flow<unit, 'error, 'value>) : Exit<'value, 'error> =
-        let time = Platform.ManualTime()
-        let running = Task.Run(fun () -> Flow.runSync () (Flow.withTimeSource time workflow))
+    let runOnManualTime (workflow: Flow<ClockEnvironment, 'error, 'value>) : Exit<'value, 'error> =
+        let time = ManualClock(DateTimeOffset.UnixEpoch)
+        let running = Task.Run(fun () -> Flow.runSync (ClockEnvironment(time :> IClock)) workflow)
         let mutable lastCount = -1
         let mutable stablePolls = 0
 
@@ -207,8 +209,8 @@ module TestSupport =
         running.Result
 
     /// The runtime's current time, for tests that record when things happen on manual time.
-    let runtimeNow () : Flow<unit, 'error, TimeSpan> =
-        Flow.delay (fun () -> Flow.ok (RuntimeState.current().Time.Now()))
+    let runtimeNow () : Flow<ClockEnvironment, 'error, TimeSpan> =
+        Flow.envWith (fun (env: ClockEnvironment) -> env.Clock.Elapsed())
 
     let runBashScript (scriptPath: string) (environment: (string * string) list) =
         runBashScriptWithArguments scriptPath [] environment

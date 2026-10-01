@@ -44,25 +44,25 @@ type CheckoutError =
     | ReceiptStoreFailed
     | UnexpectedGatewayFailure of string
 
-let authorizeCard : Flow<unit, CheckoutError, string> =
+let authorizeCard : Flow<ClockEnvironment, CheckoutError, string> =
     flow {
         do! Flow.sleep (TimeSpan.FromMilliseconds 50.0)
         return "receipt-123"
     }
 
-let storeReceipt (receiptId: string) : Flow<unit, CheckoutError, unit> =
+let storeReceipt (receiptId: string) : Flow<ClockEnvironment, CheckoutError, unit> =
     flow {
         do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
         return ()
     }
 
-let notifyCustomer (receiptId: string) : Flow<unit, CheckoutError, unit> =
+let notifyCustomer (receiptId: string) : Flow<ClockEnvironment, CheckoutError, unit> =
     flow {
         do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
         return ()
     }
 
-let checkout : Flow<unit, CheckoutError, string> =
+let checkout : Flow<ClockEnvironment, CheckoutError, string> =
     flow {
         let! receiptId = authorizeCard
         do! storeReceipt receiptId
@@ -84,7 +84,7 @@ let checkoutWithTimeout =
 Authorizing the card takes 50 ms, so the 10 ms limit fails the checkout:
 
 ```fsharp run
-checkoutWithTimeout |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail CheckoutTimedOut))
+checkoutWithTimeout |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail CheckoutTimedOut))
 ```
 
 `timeout`, `timeoutToError`, `timeoutToOk`, and `timeoutWith` are boundary tools. They answer "what should this workflow do if it takes too long?"
@@ -104,7 +104,7 @@ let retryingCheckout =
 ```
 
 ```fsharp run
-retryingCheckout |> Flow.run () |> shouldEqual (Exit.Success "receipt-123")
+retryingCheckout |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success "receipt-123")
 ```
 
 `Flow.retry` takes a `Schedule`, which sees each typed error: `Schedule.whileInput` selects the errors worth retrying,
@@ -114,7 +114,7 @@ with named fields.
 ## Exceptions
 
 ```fsharp
-let rawGatewayCall (clientExplodes: bool) : Flow<unit, CheckoutError, string> =
+let rawGatewayCall (clientExplodes: bool) : Flow<ClockEnvironment, CheckoutError, string> =
     flow {
         if clientExplodes then
             return raise (InvalidOperationException "gateway client exploded")
@@ -130,7 +130,7 @@ let safeGatewayCall =
 ```fsharp run
 rawGatewayCall true
 |> Flow.catch (fun ex -> UnexpectedGatewayFailure ex.Message)
-|> Flow.run ()
+|> Flow.run (ClockEnvironment Clock.live)
 |> shouldEqual (Exit.Failure(Cause.Fail(UnexpectedGatewayFailure "gateway client exploded")))
 ```
 
@@ -141,7 +141,7 @@ Use `Flow.catch` when you are deliberately translating technical exceptions into
 ```fsharp
 let runCancellable (cancellationToken: CancellationToken) =
     task {
-        let! exit = checkout.StartAsTask((), cancellationToken = cancellationToken)
+        let! exit = checkout.StartAsTask(ClockEnvironment Clock.live, cancellationToken = cancellationToken)
 
         match exit with
         | Exit.Success receipt -> return $"Receipt {receipt}"
@@ -171,7 +171,7 @@ Two helpers cover the edges:
 ## Annotations
 
 ```fsharp
-let annotatedCharge : Flow<unit, CheckoutError, Map<string, string> * string option> =
+let annotatedCharge : Flow<ClockEnvironment, CheckoutError, Map<string, string> * string option> =
     flow {
         let! annotations = Flow.annotations
         let! traceId = Flow.traceId
@@ -183,7 +183,7 @@ let annotatedCharge : Flow<unit, CheckoutError, Map<string, string> * string opt
 annotatedCharge
 |> Flow.annotate "order_id" "o-7"
 |> Flow.withTraceId "trace-1"
-|> Flow.run ()
+|> Flow.run (ClockEnvironment Clock.live)
 |> shouldEqual (Exit.Success(Map [ "order_id", "o-7"; "trace_id", "trace-1" ], Some "trace-1"))
 ```
 
@@ -212,7 +212,7 @@ let guardedCheckout =
 ```
 
 ```fsharp run
-guardedCheckout |> Flow.run () |> shouldEqual (Exit.Success "receipt-123")
+guardedCheckout |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success "receipt-123")
 ```
 
 Each concern has its own place:

@@ -7,7 +7,7 @@ open Axial.State
 open Axial.TortureTest.Scenario
 
 // <snippet:torture-stm>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let accounts = 6
     let opening = 100
     let transfers = round.Size 400

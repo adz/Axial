@@ -49,7 +49,7 @@ let loadBoth left right =
 ```
 
 ```fsharp run
-loadBoth (Flow.ok 1 : Flow<string, int>) (Flow.ok "two") |> Flow.run () |> shouldEqual (Exit.Success(1, "two"))
+loadBoth (Flow.ok 1 : Flow<ClockEnvironment, string, int>) (Flow.ok "two") |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(1, "two"))
 ```
 
 The example starts `left` in the background, runs `right` in the current workflow, then joins the child fiber before returning.
@@ -101,7 +101,7 @@ Every forked fiber carries metadata:
 - `StartedAt` / `SettledAt`: UTC timestamps for fork and settle.
 - `Status`: `Running`, `Succeeded`, `Failed`, or `Interrupted`.
 
-Use `Fiber.dump` when logging or debugging one fiber. The dump is a snapshot, so a running fiber can report `Running` before `Fiber.join` and `Succeeded`, `Failed`, or `Interrupted` afterward. To see every live fiber at once as a parent/child tree, install a `FiberRegistry` with `Flow.withFiberRegistry` and call `registry.Dump()`; see [Observability](/observability/index.html).
+Use `Fiber.dump` when logging or debugging one fiber. The dump is a snapshot, so a running fiber can report `Running` before `Fiber.join` and `Succeeded`, `Failed`, or `Interrupted` afterward. To see every live fiber at once as a parent/child tree, install a `FiberRegistry` with `Flow.withFiberRegistry` and call `registry.DumpAt(clock)`; see [Observability](/observability/index.html).
 
 ## Underlying Implementation
 
@@ -117,25 +117,25 @@ Most code should not manage fibers manually. Prefer high-level parallel combinat
 - `Flow.forEachPar`: Runs a flow for each value with bounded concurrency, discarding the results.
 
 ```fsharp
-let fetchPage (url: string) : Flow<string, int> =
+let fetchPage (url: string) : Flow<ClockEnvironment, string, int> =
     Flow.sleep (TimeSpan.FromMilliseconds 1.0) |> Flow.map (fun () -> url.Length)
 
-let pageSizes (urls: string list) : Flow<string, int list> =
+let pageSizes (urls: string list) : Flow<ClockEnvironment, string, int list> =
     urls |> Flow.traversePar (Parallelism.bounded 8) fetchPage
 
 let indexed = ResizeArray<string>()
 
-let indexFile (file: string) : Flow<string, unit> =
+let indexFile (file: string) : Flow<ClockEnvironment, string, unit> =
     Flow.delay (fun () -> lock indexed (fun () -> indexed.Add file); Flow.ok ())
 
-let indexAll (files: string list) : Flow<string, unit> =
+let indexAll (files: string list) : Flow<ClockEnvironment, string, unit> =
     files |> Flow.forEachPar (Parallelism.ofProcessors id) indexFile
 ```
 
 ```fsharp run
-pageSizes [ "a"; "bb"; "ccc" ] |> Flow.run () |> shouldEqual (Exit.Success [ 1; 2; 3 ])
+pageSizes [ "a"; "bb"; "ccc" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ 1; 2; 3 ])
 
-indexAll [ "b.fs"; "a.fs"; "c.fs" ] |> Flow.run () |> shouldEqual (Exit.Success())
+indexAll [ "b.fs"; "a.fs"; "c.fs" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success())
 indexed |> Seq.sort |> List.ofSeq |> shouldEqual [ "a.fs"; "b.fs"; "c.fs" ]
 ```
 
@@ -151,21 +151,21 @@ when it finishes or the traversal fails, so at most `parallelism` resources exis
 let readersOpened = ref 0
 let readersClosed = ref 0
 
-let openReader : Resource<unit, string, int> =
+let openReader : Resource<ClockEnvironment, string, int> =
     Resource.create
         (Flow.delay (fun () -> Flow.ok (Interlocked.Increment &readersOpened.contents)))
         (fun _ _ ->
             Interlocked.Increment &readersClosed.contents |> ignore
             Task.CompletedTask)
 
-let searchCommit (reader: int) (commit: int) : Flow<string, bool> = Flow.ok (commit % 2 = 0)
+let searchCommit (reader: int) (commit: int) : Flow<ClockEnvironment, string, bool> = Flow.ok (commit % 2 = 0)
 
-let evenCommits (commits: int list) : Flow<string, bool list> =
+let evenCommits (commits: int list) : Flow<ClockEnvironment, string, bool list> =
     commits |> Flow.traverseParUsing (Parallelism.bounded 2) openReader searchCommit
 ```
 
 ```fsharp run
-evenCommits [ 1..6 ] |> Flow.run () |> shouldEqual (Exit.Success [ false; true; false; true; false; true ])
+evenCommits [ 1..6 ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ false; true; false; true; false; true ])
 readersOpened.Value <= 2 |> shouldEqual true
 readersClosed.Value |> shouldEqual readersOpened.Value
 ```
@@ -182,11 +182,11 @@ fork with `Flow.forkReplacing`. Each fork signals the previous fiber in the slot
 the new request starts at once:
 
 ```fsharp
-let search (query: string) : Flow<string, string> =
+let search (query: string) : Flow<ClockEnvironment, string, string> =
     Flow.sleep (TimeSpan.FromMilliseconds 50.0) |> Flow.map (fun () -> $"results for {query}")
 
 /// Forks a search per keystroke into one slot, and reports the last result and whether each earlier search stopped.
-let typeAhead (queries: string list) : Flow<string, string * bool list> =
+let typeAhead (queries: string list) : Flow<ClockEnvironment, string, string * bool list> =
     flow {
         let! slot = FiberSlot.make ()
         let! searches = queries |> Flow.traverse (fun query -> search query |> Flow.forkReplacing slot)
@@ -197,7 +197,7 @@ let typeAhead (queries: string list) : Flow<string, string * bool list> =
 ```
 
 ```fsharp run
-typeAhead [ "a"; "ax"; "axi" ] |> Flow.run () |> shouldEqual (Exit.Success("results for axi", [ true; true ]))
+typeAhead [ "a"; "ax"; "axi" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success("results for axi", [ true; true ]))
 ```
 
 `Flow.forkReplacingKey key slots` does the same per key, with a slot from `FiberSlot.makeKeyed`, so a new preview for
@@ -223,6 +223,7 @@ is still running after that. For a queue consumer, the stop request is `Dequeue.
 ends normally once it has drained the queue.
 
 ```fsharp transcript
+> open Axial.PlatformService;;
 > (flow {
 -     let written = ResizeArray<int>()
 -     do!
@@ -237,8 +238,8 @@ ends normally once it has drained the queue.
 -         }
 -         |> Flow.scoped
 -     return List.ofSeq written
-- } : Flow<unit, Never, int list>)
-- |> Flow.run ();;
+- } : Flow<ClockEnvironment, Never, int list>)
+- |> Flow.run (ClockEnvironment Clock.live);;
 val it: Exit<int list,Never> = Success [1; 2; 3; 4; 5]
 ```
 
@@ -251,4 +252,3 @@ The [pipeline torture test](torture-tests/pipeline.html) stops a control loop an
 A graceful fiber is also not interrupted when the flow that forked it is interrupted: its stop request runs when that
 flow's scope closes, so a consumer still flushes when the application is cancelled. `Fiber.interrupt` still interrupts
 it immediately.
-

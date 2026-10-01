@@ -75,7 +75,7 @@ module RuntimeSemanticsTests =
             |> Flow.bind (fun _ -> Flow.fail "use failed")
             |> Flow.scoped
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         test <@ result = Exit.Failure(Cause.Then(Cause.Fail "use failed", Cause.Die releaseDefect)) @>
 
@@ -89,7 +89,7 @@ module RuntimeSemanticsTests =
                 return! Flow.fail "workflow failed"
             }
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         test <@ result = Exit.Failure(Cause.Then(Cause.Fail "workflow failed", Cause.Die finalizerDefect)) @>
 
@@ -110,7 +110,7 @@ module RuntimeSemanticsTests =
                 return initial, completed, value
             }
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         match result with
         | Exit.Success(initial, completed, value) ->
@@ -138,7 +138,7 @@ module RuntimeSemanticsTests =
                 return Fiber.dump fiber, interrupted
             }
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         match result with
         | Exit.Success(dump, Exit.Failure Cause.Interrupt) ->
@@ -163,7 +163,7 @@ module RuntimeSemanticsTests =
                 return Fiber.dump fiber, joined
             }
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         match result with
         | Exit.Success(dump, Exit.Failure(Cause.Die error)) ->
@@ -195,7 +195,7 @@ module RuntimeSemanticsTests =
                 return childDump, grandchildDump, value
             }
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         match result with
         | Exit.Success(childDump, grandchildDump, value) ->
@@ -227,7 +227,7 @@ module RuntimeSemanticsTests =
                 return interrupted, joined, Fiber.dump fiber
             }
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         match result with
         | Exit.Success(Exit.Failure Cause.Interrupt, Exit.Failure Cause.Interrupt, dump) ->
@@ -240,7 +240,7 @@ module RuntimeSemanticsTests =
         use cts = new CancellationTokenSource()
         let mutable capturedFiber : Fiber<string, int> option = None
 
-        let workflow : Flow<unit, string, unit> =
+        let workflow : Flow<ClockEnvironment, string, unit> =
             flow {
                 let! fiber =
                     flow {
@@ -254,7 +254,7 @@ module RuntimeSemanticsTests =
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runSyncWithToken () cts.Token workflow
+        let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
 
         match result, capturedFiber with
         | Exit.Failure Cause.Interrupt, Some fiber ->
@@ -269,7 +269,7 @@ module RuntimeSemanticsTests =
         use cts = new CancellationTokenSource()
         let calls = ResizeArray<string>()
 
-        let workflow : Flow<unit, string, unit> =
+        let workflow : Flow<ClockEnvironment, string, unit> =
             flow {
                 do! Flow.scopeFinalizer(fun token ->
                     calls.Add $"first:{token.IsCancellationRequested}"
@@ -283,7 +283,7 @@ module RuntimeSemanticsTests =
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runSyncWithToken () cts.Token workflow
+        let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
 
         test <@ result = Exit.Failure Cause.Interrupt @>
         test <@ List.ofSeq calls = [ "second:True"; "first:True" ] @>
@@ -293,13 +293,13 @@ module RuntimeSemanticsTests =
         use cts = new CancellationTokenSource()
         let finalizerDefect = InvalidOperationException "cleanup failed"
 
-        let workflow : Flow<unit, string, unit> =
+        let workflow : Flow<ClockEnvironment, string, unit> =
             flow {
                 do! Flow.scopeFinalizer(fun _ -> Task.FromException finalizerDefect)
                 do! Flow.sleep (TimeSpan.FromSeconds 5.0)
             }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
-        let result = Flow.runSyncWithToken () cts.Token workflow
+        let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
 
         test <@ result = Exit.Failure(Cause.Then(Cause.Interrupt, Cause.Die finalizerDefect)) @>

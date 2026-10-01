@@ -3,6 +3,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial
+open Axial.PlatformService
 open Axial.Hosting
 
 type IMessageSource =
@@ -14,7 +15,9 @@ type MessageSource() =
 
 type AppEnv =
     { Messages: IMessageSource
-      Logger: ILogger }
+      Logger: ILogger
+      Clock: IClock }
+    interface IHasClock with member this.Clock = this.Clock
 
 type AppError =
     | ApplicationFailure of string
@@ -41,7 +44,8 @@ let main arguments =
     |> Hosting.addApp
         (fun services ->
             { Messages = services.GetRequiredService<IMessageSource>()
-              Logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Example.Application") })
+              Logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Example.Application")
+              Clock = Clock.live })
         describeError
         application
     |> ignore

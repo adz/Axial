@@ -3,13 +3,14 @@ module SupervisionExample
 
 open System
 open Axial
+open Axial.PlatformService
 
 // Demonstrates defect supervision and fiber observability:
 // 1. Flow.supervise restarts background work that dies with a defect.
 // 2. A FiberObserver installed once at the edge reports defects from fibers nobody awaited.
 // 3. Flow.forkDetached states intentional fire-and-forget at the call site, silencing the report.
 
-let private flakyWorker (attempts: int ref) : Flow<unit, string, string> =
+let private flakyWorker (attempts: int ref) : Flow<ClockEnvironment, string, string> =
     Flow.delay(fun () ->
         attempts.Value <- attempts.Value + 1
 
@@ -42,7 +43,7 @@ let private supervisedRecovery () =
     let result =
         flakyWorker attempts
         |> Flow.supervise policy
-        |> fun workflow -> workflow.RunSynchronously(())
+        |> fun workflow -> workflow.RunSynchronously(ClockEnvironment(Clock.live))
 
     printfn $"  result after {attempts.Value} attempts: %A{result}"
 
@@ -52,13 +53,13 @@ let private unobservedDefectReporting () =
     let workflow =
         flow {
             // The handle is deliberately discarded: without an observer this crash is silent.
-            let! _fiber = Flow.fork (Flow.die (InvalidOperationException "background job blew up") : Flow<unit, string, int>)
+            let! _fiber = Flow.fork (Flow.die (InvalidOperationException "background job blew up") : Flow<ClockEnvironment, string, int>)
             do! Flow.sleep (TimeSpan.FromMilliseconds 50.0)
             return "main workflow finished fine"
         }
         |> Flow.withFiberObserver consoleObserver
 
-    let result = workflow.RunSynchronously(())
+    let result = workflow.RunSynchronously(ClockEnvironment(Clock.live))
     printfn $"  result: %A{result}"
 
 let private intentionalFireAndForget () =
@@ -66,13 +67,13 @@ let private intentionalFireAndForget () =
 
     let workflow =
         flow {
-            let! _fiber = Flow.forkDetached (Flow.die (InvalidOperationException "best-effort work failed") : Flow<unit, string, int>)
+            let! _fiber = Flow.forkDetached (Flow.die (InvalidOperationException "best-effort work failed") : Flow<ClockEnvironment, string, int>)
             do! Flow.sleep (TimeSpan.FromMilliseconds 50.0)
             return "no unobserved-defect report for detached work"
         }
         |> Flow.withFiberObserver consoleObserver
 
-    let result = workflow.RunSynchronously(())
+    let result = workflow.RunSynchronously(ClockEnvironment(Clock.live))
     printfn $"  result: %A{result}"
 
 let run () =

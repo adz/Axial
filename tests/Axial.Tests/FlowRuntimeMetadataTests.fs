@@ -20,7 +20,7 @@ module FlowRuntimeMetadataTests =
             |> Context.withEndUserId "user-42"
             |> Context.withAttribute (Context.attribute retryCount 3L)
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         test <@ result = Exit.Success (Some "user-42", Some 3L) @>
 
@@ -39,7 +39,7 @@ module FlowRuntimeMetadataTests =
             }
             |> Context.withAttribute (Context.attribute scope "outer")
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         test <@ result = Exit.Success (Some "outer", Some "inner", Some "outer") @>
 
@@ -54,7 +54,7 @@ module FlowRuntimeMetadataTests =
             }
             |> Context.withAttribute (Context.attribute tenantId "tenant-7")
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         match result with
         | Exit.Success context -> test <@ Context.tryFind tenantId context = Some "tenant-7" @>
@@ -70,7 +70,7 @@ module FlowRuntimeMetadataTests =
             |> Flow.annotate "deviceId" "device-1"
             |> Flow.withTraceId "trace-1"
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         test <@ result = Exit.Success ("device-1", Some "trace-1") @>
 
@@ -89,7 +89,7 @@ module FlowRuntimeMetadataTests =
                     return before, during, after
                 })
 
-        let result = Flow.runSync () outer
+        let result = Flow.runSync (TestSupport.clockEnv ()) outer
 
         test <@ result = Exit.Success (Some "outer", Some "inner", Some "outer") @>
 
@@ -109,7 +109,7 @@ module FlowRuntimeMetadataTests =
                     return before, during, after
                 })
 
-        let result = Flow.runSync () outer
+        let result = Flow.runSync (TestSupport.clockEnv ()) outer
 
         test <@ result = Exit.Success ("outer", "inner", "outer") @>
 
@@ -126,7 +126,7 @@ module FlowRuntimeMetadataTests =
             |> Flow.addAnnotationSink (fun name value -> inner.Add(name, value))
             |> Flow.addAnnotationSink (fun name value -> outer.Add(name, value))
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         test <@ result = Exit.Success 42 @>
         test <@ List.ofSeq outer = [ "step", "one" ] @>
@@ -144,7 +144,7 @@ module FlowRuntimeMetadataTests =
             |> Flow.addAnnotationSink (fun _ _ -> failwith "sink bug")
             |> Flow.addAnnotationSink (fun name _ -> surviving.Add name)
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         test <@ result = Exit.Success "done" @>
         test <@ List.ofSeq surviving = [ "step" ] @>
@@ -152,15 +152,15 @@ module FlowRuntimeMetadataTests =
     [<Fact>]
     let ``tracedError wraps failure causes in Cause.Traced and leaves successes untouched`` () =
         let failing =
-            (Flow.fail "domain error" : Flow<unit, string, int>)
+            (Flow.fail "domain error" : Flow<ClockEnvironment, string, int>)
             |> Flow.tracedError "billing.load-user"
 
         let succeeding =
-            (Flow.succeed 42 : Flow<unit, string, int>)
+            (Flow.succeed 42 : Flow<ClockEnvironment, string, int>)
             |> Flow.tracedError "billing.load-user"
 
-        let failResult = Flow.runSync () failing
-        let okResult = Flow.runSync () succeeding
+        let failResult = Flow.runSync (TestSupport.clockEnv ()) failing
+        let okResult = Flow.runSync (TestSupport.clockEnv ()) succeeding
 
         test <@ failResult = Exit.Failure(Cause.Traced(Cause.Fail "domain error", "billing.load-user")) @>
         test <@ okResult = Exit.Success 42 @>
@@ -168,9 +168,9 @@ module FlowRuntimeMetadataTests =
     [<Fact>]
     let ``tracedError traces defects and renders through prettyPrint`` () =
         let result =
-            (Flow.die (System.InvalidOperationException "boom") : Flow<unit, string, int>)
+            (Flow.die (System.InvalidOperationException "boom") : Flow<ClockEnvironment, string, int>)
             |> Flow.tracedError "outer-boundary"
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         match result with
         | Exit.Failure(Cause.Traced(Cause.Die error, trace)) ->
@@ -198,7 +198,7 @@ module FlowRuntimeMetadataTests =
             |> Flow.annotate "request" "req-1"
             |> Flow.addAnnotationSink (fun name value -> lock sunk (fun () -> sunk.Add(name, value)))
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
 
         test <@ result = Exit.Success (Some "req-1") @>
         test <@ lock sunk (fun () -> List.ofSeq sunk) |> List.contains ("child", "child-value") @>
@@ -233,8 +233,8 @@ module FlowRuntimeMetadataTests =
             |> Flow.supervise (Schedule.recurs 4)
             |> Flow.addAnnotationSink sink
 
-        test <@ Flow.runSync () retried = Exit.Success () @>
-        test <@ Flow.runSync () supervised = Exit.Success () @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) retried = Exit.Success () @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) supervised = Exit.Success () @>
 
         let entries = lock sunk (fun () -> List.ofSeq sunk)
         test <@ entries |> List.filter (fun (name, _) -> name = "retry-attempt") |> List.map snd = [ "1"; "2"; "3" ] @>
@@ -264,7 +264,7 @@ module FlowRuntimeMetadataTests =
             |> Layer.provide layer
             |> Flow.addAnnotationSink (fun name value -> lock sunk (fun () -> sunk.Add(name, value)))
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
         let entries = lock sunk (fun () -> List.ofSeq sunk)
 
         test <@ result = Exit.Success "service" @>

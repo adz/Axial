@@ -1,6 +1,8 @@
 /// What every torture scenario shares: the checks it reports, and the seeded chaos that drives its random choices.
 module Axial.TortureTest.Scenario
 
+let clockEnvironment = Axial.ClockEnvironment(Axial.PlatformService.Clock.live)
+
 /// One invariant and whether it held on a run.
 type Check = { Invariant: string; Held: bool }
 
@@ -97,4 +99,4 @@ let inOrderPerProducer (values: (int * int) list) : bool =
 type Scenario =
     { Name: string
       Title: string
-      Run: Round -> Axial.Flow<unit, Axial.Never, Check list> }
+      Run: Round -> Axial.Flow<Axial.ClockEnvironment, Axial.Never, Check list> }

@@ -3,8 +3,7 @@ title: Clock
 description: Read the current instant through an explicit service.
 ---
 
-`IClock` has one member, `UtcNow()`, and always reports UTC. Reading it through the service is what lets a test
-choose the instant:
+`IClock` provides `UtcNow()` for timestamps, `Elapsed()` for monotonic durations, and `Sleep()` for cancellable delays. Timed flows require `IHasClock` in their environment, so a host or test supplies one source for all three operations.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -101,7 +100,24 @@ applications get the clock as part of [the base runtime](index.html) rather than
 
 ## Testing
 
-`Clock.fromValue` pins the instant, which turns a time-dependent assertion into an ordinary one:
+`Clock.fromValue` pins the instant for read-only tests. It deliberately rejects `Sleep`; use `ManualClock` for a workflow that sleeps, times out, retries, or forks fibers. Advance it after the expected sleeper has registered:
+
+```fsharp
+let clock = ManualClock(DateTimeOffset.Parse "2026-01-01T00:00:00Z")
+let env = ClockEnvironment(clock :> IClock)
+let sleeping : Flow<ClockEnvironment, Never, unit> = Flow.sleep (TimeSpan.FromSeconds 5.0)
+let pending = sleeping |> Flow.toAsync env |> Async.StartAsTask
+// Wait until clock.Sleepers reports one waiting operation.
+clock.AdvanceBy(TimeSpan.FromSeconds 5.0)
+```
+
+`ManualClock` is currently available on .NET. `Clock.live` supports .NET and Fable. A fixed clock is enough for a time-read assertion:
+
+On Fable, an F# record may use a field named `Clock` and implement `IHasClock.Clock`. Axial marks the interface for
+Fable name mangling so the generated JavaScript does not confuse the record field with the interface getter. If
+handwritten JavaScript supplies an environment, construct an Axial environment in F# (or use the generated
+`ClockEnvironment` constructor) rather than passing a plain `{ Clock: clock }` object. The latter lacks the interface
+method the compiled Flow calls. This rule also applies to the other `IHas*` service interfaces.
 
 ```fsharp
 type ClockEnv =

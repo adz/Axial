@@ -202,6 +202,9 @@ type IProcess =
 /// Implement this on the environment record supplied at the host edge. A workflow that runs
 /// processes constrains its environment with <c>'env :&gt; IHasProcess</c>.
 /// </remarks>
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
 type IHasProcess =
     /// The process service supplied by this environment.
     abstract Process : IProcess
@@ -901,9 +904,11 @@ module Process =
                       }
                       return! validate outcome
                     }
-            match specification.Timeout with
-            | Some timeout -> execution |> Flow.timeout timeout (ProcessError.TimedOut { Specification = render specification; Timeout = timeout })
-            | None -> execution
+            let timed =
+                match specification.Timeout with
+                | Some timeout -> execution |> Flow.timeout timeout (ProcessError.TimedOut { Specification = render specification; Timeout = timeout })
+                | None -> execution
+            timed |> Flow.localEnv (fun () -> ClockEnvironment(clock))
 
         let stream specification =
             let step state =
@@ -922,7 +927,7 @@ module Process =
                         let observer output = events.Put(Ok(ProcessEvent.Output output))
                         let producer =
                             flow {
-                                let! result = execute (Some observer) specification
+                                let! result = execute (Some observer) specification |> Flow.localEnv (fun (_: ClockEnvironment) -> ())
                                 do! events.Put(Ok(ProcessEvent.Completed result))
                                 return result
                             }
@@ -939,6 +944,7 @@ module Process =
                         | event -> return Some(event, Running session)
                     }
             FlowStream.unfoldFlow step NotStarted
+            |> FlowStream.localEnv (fun () -> ClockEnvironment(clock))
 
         { new IProcess with
             member _.Run specification = execute None specification

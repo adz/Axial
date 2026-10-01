@@ -2,6 +2,7 @@ module Axial.Hosting.Browser.Example
 
 open System
 open Axial
+open Axial.PlatformService
 open Axial.Hosting.Browser
 open Fable.Core
 
@@ -26,9 +27,13 @@ let abort (_controller: obj) : unit = jsNative
 let status = elementById "status"
 let stopButton = elementById "stop"
 
-let application : Flow<obj, string, unit> =
+type BrowserEnvironment =
+    { Status: obj; Clock: IClock }
+    interface IHasClock with member this.Clock = this.Clock
+
+let application : Flow<BrowserEnvironment, string, unit> =
     flow {
-        let! statusElement = Flow.env
+        let! statusElement = Flow.envWith (fun environment -> environment.Status)
         // The owner observes this cleanup before Completion settles after an abort.
         do! Flow.scopeAsyncFinalizer (fun _ -> async { setText statusElement "Cleanup finished." })
         do! async { setText statusElement "Application is running." }
@@ -37,7 +42,7 @@ let application : Flow<obj, string, unit> =
 
 let controller = createAbortController ()
 // The page owns this controller; abort is an ownership event, not an unload heuristic.
-let running = BrowserApp.startWithSignal (signal controller) status application
+let running = BrowserApp.startWithSignal (signal controller) { Status = status; Clock = Clock.live } application
 
 onClick stopButton (fun () ->
     setText status "Stop requested; waiting for cleanup..."

@@ -22,7 +22,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 ### EFFECT BOUNDARY — DO NOT HIDE AMBIENT EFFECTS IN SERVICE ADAPTERS
 
 - `Axial.Process` and `Axial.HttpClient` may perform only the effect named by their core, mockable service type (`IProcess` or `IHttp`). Any additional effect must be an explicit, mockable dependency visible in the implementation signature.
-- In particular, never call `DateTimeOffset.UtcNow`, `DateTime.Now`, or another ambient clock from Process or Http. Inject `Axial.PlatformService.IClock` into live implementations and use `clock.UtcNow()`.
+- In particular, never call `DateTimeOffset.UtcNow`, `DateTime.Now`, or another ambient clock from Process or Http. Inject `Axial.IClock` into live implementations and use `clock.UtcNow()`.
 - Apply the same rule to randomness, GUID generation, environment variables, filesystem, console, and other operational effects: use the appropriate explicit service from `Axial.PlatformService` or another package whose core type is present in the signature.
 - `src/Axial.Guardrails` is an FSharp.Analyzers.SDK analyzer package. `Directory.Build.targets` wires it into every project in this repo the same way a consumer's `dotnet add package Axial.Guardrails` would, so `dotnet build`/`dotnet test` run it automatically — no separate script. Run `dotnet build Axial.slnx` before treating an effect-boundary change as done, and see `docs/15-notes/03-guardrails.md`. A finding at a genuine boundary (a `live` service implementation, a process entry point) is marked with `// axial-allow-effect: <category>` or a file-header `// axial-allow-effect-file: <category>`, never silenced by disabling the analyzer. Set `AXIAL_GUARDRAILS_SEVERITY=warning` in the environment to downgrade findings to non-failing during a migration, or `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` in a project to opt it out entirely; neither is a substitute for reviewing the finding.
 - Rules are grouped into guardrails named after the package whose service replaces the effect (`Axial.HttpClient` flags `new HttpClient`). Axial's own rules live in `src/Axial.Guardrails/EffectCatalog.fs`, tagged with their guardrail; each package's `buildTransitive/<Package>.props` turns its guardrail on for consumers, and `Directory.Build.props` turns all of them on in this repository. Add a rule to the catalog under the guardrail of the package that provides the replacement.
@@ -34,7 +34,7 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 
 - `Flow<'env, 'error, 'value>` is the public workflow model. Do not reintroduce public `Effect`, `EffectFlow`, `AsyncFlow`, `TaskFlow`, or carrier-specific workflow concepts.
 - Core `Axial` and its operational packages must not depend on Reified. Only the explicit HTTP host adapters may reference Reified packages.
-- Model application and operational dependencies explicitly in `'env`; keep the ambient runtime for executor mechanics only.
+- Model application and operational dependencies explicitly in `'env`. Timed flows require `IHasClock`; the executor adapts that supplied clock for its own scheduling. Ambient timers belong only inside named live implementations.
 - Use `BindError` only at a `flow { }` bind site when a source error must be assigned or mapped immediately before binding.
 - Prefer AOT- and trimming-safe designs. Do not introduce runtime reflection as the foundation for workflow or service-access APIs.
 

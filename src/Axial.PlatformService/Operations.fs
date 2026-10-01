@@ -10,6 +10,9 @@ open System.Globalization
 open System.Threading.Tasks
 open Axial
 open Axial.Layers
+#if FABLE_COMPILER
+open Fable.Core
+#endif
 
 /// <summary>Groups the standard operational services commonly used by workflow hosts.</summary>
 type BaseRuntime =
@@ -18,11 +21,16 @@ type BaseRuntime =
       Random: IRandom
       Guid: IGuid
       EnvironmentVariables: IEnvironmentVariables }
-    interface IHasClock with member this.Clock = this.Clock
-    interface IHasLog with member this.Log = this.Log
-    interface IHasRandom with member this.Random = this.Random
-    interface IHasGuid with member this.Guid = this.Guid
-    interface IHasEnvironmentVariables with member this.EnvironmentVariables = this.EnvironmentVariables
+    interface IHasClock with
+        member this.Clock = this.Clock
+    interface IHasLog with
+        member this.Log = this.Log
+    interface IHasRandom with
+        member this.Random = this.Random
+    interface IHasGuid with
+        member this.Guid = this.Guid
+    interface IHasEnvironmentVariables with
+        member this.EnvironmentVariables = this.EnvironmentVariables
 
 /// <summary>Helpers for the clock service.</summary>
 [<RequireQualifiedAccess>]
@@ -77,13 +85,59 @@ module Clock =
     let live : IClock =
         { new IClock with
             member _.UtcNow() = DateTimeOffset.UtcNow
-            member _.Elapsed() = Platform.monotonicNow () }
+            member _.Elapsed() = Platform.monotonicNow ()
+            member _.Sleep(delay, cancellationToken) =
+#if FABLE_COMPILER
+                let pending =
+                    JS.Promise.Create<unit>(fun resolve reject ->
+                        let deadline = Platform.monotonicNow () + delay
+                        let settled = ref false
+                        let timer: obj ref = ref null
+                        let registration: IDisposable option ref = ref None
+
+                        let finish (outcome: Result<unit, exn>) =
+                            if not settled.Value then
+                                settled.Value <- true
+                                Platform.cancelTimer timer.Value
+                                registration.Value |> Option.iter _.Dispose()
+                                match outcome with
+                                | Ok () -> resolve (box ())
+                                | Error error -> reject (box error)
+
+                        let rec wait () =
+                            let remaining = deadline - Platform.monotonicNow ()
+                            if remaining <= TimeSpan.Zero then
+                                finish (Ok ())
+                            else
+                                timer.Value <- Platform.scheduleTimer wait (int (min 2147483647.0 (Math.Ceiling remaining.TotalMilliseconds)))
+
+                        if cancellationToken.IsCancellationRequested then
+                            finish (Error(OperationCanceledException()))
+                        else
+                            if not (isNull (box cancellationToken)) then
+                                let registered = unbox<IDisposable> (box (cancellationToken.Register(fun () -> finish (Error(OperationCanceledException())))))
+                                registration.Value <- Some registered
+                                if settled.Value then registered.Dispose()
+                            if not settled.Value then wait ())
+                unbox<Task> pending
+#else
+                task {
+                    let! exit = (Platform.sleepExecution delay cancellationToken : Platform.Execution<unit, Never>).AsTask()
+                    match exit with
+                    | Exit.Success() -> ()
+                    | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException(cancellationToken))
+                    | Exit.Failure cause -> failwith $"Clock sleep failed: {cause}"
+                } :> Task
+#endif
+            }
 
     /// <summary>Creates a deterministic clock that always returns the supplied instant; measured durations are zero.</summary>
     let fromValue (utcNow: DateTimeOffset) : IClock =
         { new IClock with
             member _.UtcNow() = utcNow
-            member _.Elapsed() = TimeSpan.Zero }
+            member _.Elapsed() = TimeSpan.Zero
+            member _.Sleep(_, _) = raise (InvalidOperationException("A fixed clock cannot sleep; use a manual clock for timed flows."))
+        }
 
     /// <summary>Builds the live clock as a layer.</summary>
     let layer : Layer<unit, Never, IClock> =
@@ -450,13 +504,7 @@ module EnvironmentVariableErrors =
 module BaseRuntime =
     /// <summary>Creates the standard live base runtime as an explicit service bundle.</summary>
     let liveValue : BaseRuntime =
-        {
-            Clock = Clock.live
-            Log = Log.live
-            Random = Random.live
-            Guid = Guid.live
-            EnvironmentVariables = EnvironmentVariables.live
-        }
+        { Clock = Clock.live; Log = Log.live; Random = Random.live; Guid = Guid.live; EnvironmentVariables = EnvironmentVariables.live }
 
     /// <summary>Builds the standard live base runtime as an explicit service bundle.</summary>
     let live : Layer<unit, Never, BaseRuntime> =
@@ -466,5 +514,4 @@ module BaseRuntime =
     let fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime> =
         Platform.servicesFromServiceProvider
         |> Layer.map (fun (clock, log, random, guid, environmentVariables) ->
-            { Clock = clock; Log = log; Random = random; Guid = guid
-              EnvironmentVariables = environmentVariables })
+            { Clock = clock; Log = log; Random = random; Guid = guid; EnvironmentVariables = environmentVariables })

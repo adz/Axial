@@ -54,19 +54,20 @@ The flow's own outcome is kept. The handler cannot fail with a typed error, and 
 outcome.
 
 ```fsharp transcript
+> open Axial.PlatformService;;
 > (flow {
 -     let log = ResizeArray<string>()
--     let note text : Flow<unit, Never, unit> = Flow.delay (fun () -> log.Add text; Flow.ok ())
+-     let note text : Flow<ClockEnvironment, Never, unit> = Flow.delay (fun () -> log.Add text; Flow.ok ())
 -     let! worker =
--         Flow.never<unit, Never, unit>
+-         Flow.never<ClockEnvironment, Never, unit>
 -         |> Flow.onInterrupt (note "interrupted")
 -         |> Flow.ensuring (note "closed")
 -         |> Flow.fork
 -     let! _ = Fiber.interrupt worker
 -     let! _ = Flow.ok 1 |> Flow.onInterrupt (note "not logged") |> Flow.ensuring (note "closed")
 -     return List.ofSeq log
-- } : Flow<unit, Never, string list>)
-- |> Flow.run ();;
+- } : Flow<ClockEnvironment, Never, string list>)
+- |> Flow.run (ClockEnvironment Clock.live);;
 val it: Exit<string list,Never> = Success ["interrupted"; "closed"; "closed"]
 ```
 

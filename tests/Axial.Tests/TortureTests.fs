@@ -18,7 +18,7 @@ module TortureTests =
 
         for seed in 1..10 do
             let violated =
-                match (scenario.Run(Round(seed, 100))) |> Flow.runSync () with
+                match (scenario.Run(Round(seed, 100))) |> Flow.runSync (TestSupport.clockEnv ()) with
                 | Exit.Success checks -> checks |> List.filter (fun check -> not check.Held) |> List.map _.Invariant
                 | Exit.Failure cause -> [ $"the round completed (it ended with {cause})" ]
 

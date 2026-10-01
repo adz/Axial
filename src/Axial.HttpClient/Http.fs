@@ -194,6 +194,9 @@ type IHttp =
 /// Implement this on the environment supplied at the host edge. A workflow that sends requests
 /// constrains its environment with <c>'env :&gt; IHasHttp</c>.
 /// </remarks>
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
 type IHasHttp =
     /// The HTTP service supplied by this environment.
     abstract Http : IHttp

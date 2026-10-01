@@ -8,17 +8,11 @@ open Xunit
 
 module CoreServiceTests =
     let private makeRuntime clock random guid envVars : BaseRuntime =
-        {
-            Clock = clock
-            Log = Log.live
-            Random = random
-            Guid = guid
-            EnvironmentVariables = envVars
-        }
+        { Clock = clock; Log = Log.live; Random = random; Guid = guid; EnvironmentVariables = envVars }
 
     [<Fact>]
     let ``operational service contracts belong to the optional platform-service package`` () =
-        test <@ typeof<IClock>.Assembly.GetName().Name = "Axial.PlatformService" @>
+        test <@ typeof<IClock>.Assembly.GetName().Name = "Axial" @>
         test <@ typeof<IRandom>.Assembly.GetName().Name = "Axial.PlatformService" @>
         test <@ typeof<IEnvironmentVariables>.Assembly.GetName().Name = "Axial.PlatformService" @>
 
@@ -80,14 +74,7 @@ module CoreServiceTests =
 
     [<Fact>]
     let ``live services work correctly with a live base runtime`` () =
-        let runtime =
-            {
-                Clock = Clock.live
-                Log = Log.live
-                Random = Random.live
-                Guid = Guid.live
-                EnvironmentVariables = EnvironmentVariables.live
-            }
+        let runtime = BaseRuntime.liveValue
 
         let timestamp = Flow.runSync runtime Clock.now |> function Exit.Success t -> t | _ -> failwith "Failed"
         let randomValue = Flow.runSync runtime (Random.nextInt 0 10) |> function Exit.Success v -> v | _ -> failwith "Failed"
@@ -115,7 +102,8 @@ module CoreServiceTests =
                 member _.UtcNow() = DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero)
                 member _.Elapsed() =
                     readings.Value <- readings.Value + 1
-                    TimeSpan.FromMilliseconds(float (readings.Value * 250)) }
+                    TimeSpan.FromMilliseconds(float (readings.Value * 250))
+                member _.Sleep(_, _) = System.Threading.Tasks.Task.CompletedTask }
 
         let runtime = makeRuntime stepping (Random.fromValue 1) (Guid.fromValue Guid.Empty) (EnvironmentVariables.fromPairs [])
 

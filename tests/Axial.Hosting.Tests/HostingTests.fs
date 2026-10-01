@@ -108,7 +108,7 @@ module HostingTests =
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let finalized = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-        let application : Flow<unit, string, unit> =
+        let application : Flow<ClockEnvironment, string, unit> =
             flow {
                 do! Flow.scopeFinalizer(fun _ -> finalized.TrySetResult() |> ignore; Task.CompletedTask)
                 started.TrySetResult() |> ignore
@@ -116,12 +116,12 @@ module HostingTests =
             }
 
         let hosted =
-            new FlowHostedService<unit, string>(
+            new FlowHostedService<ClockEnvironment, string>(
                 null,
-                (fun _ -> ()),
+                (fun _ -> ClockEnvironment(Clock.live)),
                 id,
                 application,
-                TypedLogger<FlowHostedService<unit, string>>(logger) :> ILogger<_>,
+                TypedLogger<FlowHostedService<ClockEnvironment, string>>(logger) :> ILogger<_>,
                 lifetime,
                 { StopHostOnCompletion = false })
             :> IHostedService
@@ -151,7 +151,9 @@ module FiberLoggingTests =
               ParentId = None
               Annotations = Map.empty
               StartedAt = DateTimeOffset.UtcNow
+              StartedTick = TimeSpan.Zero
               SettledAt = None
+              SettledTick = None
               Status = FiberStatus.Failed }
 
         observer.OnEnd metadata (Some defect)

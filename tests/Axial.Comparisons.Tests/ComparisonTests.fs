@@ -6,6 +6,7 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
+open Axial.PlatformService
 open Axial.Comparisons
 open Swensen.Unquote
 open Xunit
@@ -101,15 +102,17 @@ module RetryTests =
                 }
 
     type private HttpEnv =
-        { Http: IHttp }
+        { Http: IHttp; Clock: IClock }
 
         interface IHasHttp with
             member this.Http = this.Http
+        interface IHasClock with
+            member this.Clock = this.Clock
 
     [<Fact>]
     let ``transient transport failures are retried within the budget`` () =
         let http = FlakyHttp(2, "1.2345")
-        let exit = Flow.runSync { Http = http } (WithFlow.fetchRate "https://rates.example/gbp-usd" "GBP/USD")
+        let exit = Flow.runSync { Http = http; Clock = Clock.live } (WithFlow.fetchRate "https://rates.example/gbp-usd" "GBP/USD")
 
         test <@ exit = Exit.Success { Pair = "GBP/USD"; Value = 1.2345m } @>
         test <@ http.Attempts = 3 @>
@@ -117,7 +120,7 @@ module RetryTests =
     [<Fact>]
     let ``the budget is finite: a fourth transient failure surfaces as Transport`` () =
         let http = FlakyHttp(99, "1.2345")
-        let exit = Flow.runSync { Http = http } (WithFlow.fetchRate "https://rates.example/gbp-usd" "GBP/USD")
+        let exit = Flow.runSync { Http = http; Clock = Clock.live } (WithFlow.fetchRate "https://rates.example/gbp-usd" "GBP/USD")
 
         test <@ (match exit with Exit.Failure(Cause.Fail(Transport _)) -> true | _ -> false) @>
         test <@ http.Attempts = 3 @>
@@ -125,7 +128,7 @@ module RetryTests =
     [<Fact>]
     let ``a malformed successful response is never retried`` () =
         let http = FlakyHttp(0, "not-a-rate")
-        let exit = Flow.runSync { Http = http } (WithFlow.fetchRate "https://rates.example/gbp-usd" "GBP/USD")
+        let exit = Flow.runSync { Http = http; Clock = Clock.live } (WithFlow.fetchRate "https://rates.example/gbp-usd" "GBP/USD")
 
         test <@ exit = Exit.Failure(Cause.Fail(Malformed "not-a-rate")) @>
         test <@ http.Attempts = 1 @>
@@ -142,7 +145,7 @@ module RetryTests =
 
         // Shrink the wall-clock cost: the two-second policy timeout is the guarantee under test,
         // so run it for real but assert it fires (the request would otherwise take 30 s).
-        let exit = Flow.runSync { Http = hangingHttp } (WithFlow.fetchRate "https://rates.example/gbp-usd" "GBP/USD")
+        let exit = Flow.runSync { Http = hangingHttp; Clock = Clock.live } (WithFlow.fetchRate "https://rates.example/gbp-usd" "GBP/USD")
 
         test <@ exit = Exit.Failure(Cause.Fail TimedOut) @>
 
@@ -423,7 +426,7 @@ module StmTests =
                 return warehouseA, warehouseB, localLeft, regionalLeft, reservations
             }
 
-        match Flow.runSync () program with
+        match Flow.runSync (ClockEnvironment(Clock.live)) program with
         | Exit.Success(warehouseA, warehouseB, localLeft, regionalLeft, reservations) ->
             // One reservation takes Local, the other falls back to Regional — never both Local.
             test <@ List.sort [ warehouseA; warehouseB ] = [ Local; Regional ] @>
@@ -445,7 +448,7 @@ module StmTests =
                 return warehouse, regionalLeft, reservations
             }
 
-        test <@ Flow.runSync () program = Exit.Success(Regional, 0, 1) @>
+        test <@ Flow.runSync (ClockEnvironment(Clock.live)) program = Exit.Success(Regional, 0, 1) @>
 
     [<Fact>]
     let ``ordinary lock-based inventory also works but each guarantee is hand-maintained`` () =

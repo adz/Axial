@@ -5,7 +5,7 @@ open Axial
 open Axial.TortureTest.Scenario
 
 // <snippet:torture-queues>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let producers = 4
     let perProducer = round.Size 300
     let consumers = 3
@@ -105,10 +105,10 @@ let run (round: Round) : Flow<unit, Never, Check list> =
     }
 
 /// Lossy strategies under concurrent producers: a dropping queue and a sliding queue each read by a slow consumer.
-let runLossy (round: Round) : Flow<unit, Never, Check list> =
+let runLossy (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let perProducer = round.Size 500
 
-    let exercise (make: Flow<unit, Never, Queue<int * int>>) =
+    let exercise (make: Flow<Axial.ClockEnvironment, Never, Queue<int * int>>) =
         flow {
             let! queue = make
             let seen = ResizeArray<int * int>()

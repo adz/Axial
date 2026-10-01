@@ -7,7 +7,9 @@ open Axial
 open Axial.State
 open Axial.TortureTest.Scenario
 
-type private Tenant = { Tenant: string }
+type private Tenant =
+    { Tenant: string; Clock: IClock }
+    interface IHasClock with member this.Clock = this.Clock
 
 let private settledOk (exit: Exit<'value, 'error> option) =
     match exit with
@@ -16,7 +18,7 @@ let private settledOk (exit: Exit<'value, 'error> option) =
     | None -> false
 
 // <snippet:torture-fibers>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let requests = round.Size 60
 
     flow {
@@ -75,7 +77,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
             // addAnnotationSink composes with the sink installed outside it; withAnnotationSink replaces it.
             |> Flow.addAnnotationSink (fun _ _ -> increment sinkCount |> ignore)
             |> Flow.withAnnotationSink (fun _ _ -> ())
-            |> Flow.localEnv (fun () -> { Tenant = "acme" })
+            |> Flow.localEnv (fun (env: ClockEnvironment) -> { Tenant = "acme"; Clock = env.Clock })
 
         let annotationsHeld =
             inherited
@@ -99,10 +101,11 @@ let run (round: Round) : Flow<unit, Never, Check list> =
     }
 
 /// The fiber registry and observers under a burst of named fibers that succeed, fail, and are interrupted.
-let diagnostics (round: Round) : Flow<unit, Never, Check list> =
+let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let workers = round.Size 40
 
     flow {
+        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
         let registry = FiberRegistry(10)
         let starts = ref 0
         let ends = ref 0
@@ -122,7 +125,7 @@ let diagnostics (round: Round) : Flow<unit, Never, Check list> =
                     [ for index in 1..workers ->
                           match index % 3 with
                           | 0 -> Flow.sleep (TimeSpan.FromMinutes 5.0) |> Flow.forkNamed "sleeper" |> Flow.map Choice1Of2
-                          | 1 -> (Flow.fail "expected" : Flow<unit, string, unit>) |> Flow.forkNamed "failer" |> Flow.map Choice2Of2
+                          | 1 -> (Flow.fail "expected" : Flow<Axial.ClockEnvironment, string, unit>) |> Flow.forkNamed "failer" |> Flow.map Choice2Of2
                           | _ -> Flow.ok () |> Flow.forkNamed "worker" |> Flow.map Choice1Of2 ]
                     |> Flow.sequence
 
@@ -153,18 +156,17 @@ let diagnostics (round: Round) : Flow<unit, Never, Check list> =
         let stats = registry.Stats() |> List.map (fun stats -> stats.Name, stats) |> Map.ofList
         let sleepers = workers / 3
         let started, ended = starts.Value, ends.Value
-        let renderedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-        let dump = registry.DumpAt renderedAt
+        let dump = registry.DumpAt clock
         let observedDumps = lock startDumps (fun () -> List.ofSeq startDumps)
-        let tree = FiberDump.renderTreeAt renderedAt observedDumps
-        let lines = observedDumps |> List.map (FiberDump.renderAt renderedAt)
+        let tree = FiberDump.renderTreeAt clock observedDumps
+        let lines = observedDumps |> List.map (FiberDump.renderAt clock)
 
         return
             // The fiber interrupted by id may not have settled yet when InterruptByName runs, so it can be counted twice.
             [ check "interrupting by id and by name reached every sleeper" (interruptedOne && interruptedByName >= sleepers - 1)
               check "the registry counted every named fiber and how each ended" (stats["sleeper"].Interrupted = sleepers && stats["failer"].Failed = stats["failer"].Count && settled = workers)
               check "nothing is live afterwards, and history stays within its capacity" (registry.LiveFiberCount = 0 && registry.Snapshot().IsEmpty && registry.Settled().Length <= registry.HistoryCapacity)
-              check "the registry saw every fork, and dumps render" (registry.StartedCount >= int64 workers && not (isNull dump) && not (isNull (registry.Dump())))
+              check "the registry saw every fork, and dumps render" (registry.StartedCount >= int64 workers && not (isNull dump))
               check "the observer saw a dump of every start, and each renders" (observedDumps.Length = started && lines |> List.forall (fun line -> tree.Contains line) && lines |> List.exists (fun line -> line.Contains "\"sleeper\""))
               check "a discarded fiber's defect was reported, a detached one's was not" (registry.UnobservedDefects() |> List.map _.Defect |> List.exists (fun text -> text.Contains "lost") && not (registry.UnobservedDefects() |> List.exists (fun defect -> defect.Defect.Contains "deliberate")))
               check "the observer saw every fiber start and end" (started = ended && started >= workers) ]

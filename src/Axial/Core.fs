@@ -5,6 +5,39 @@ open System.ComponentModel
 open System.Threading
 open System.Threading.Tasks
 
+#if !FABLE_COMPILER
+/// <summary>A clock that advances only when a test or simulator asks it to.</summary>
+/// <remarks>Both UTC timestamps and timed workflow operations use the same advance.</remarks>
+type ManualClock(initialUtc: DateTimeOffset) =
+    let time = Platform.ManualTime()
+
+    /// <summary>The number of delays waiting for the clock.</summary>
+    member _.Sleepers = time.Sleepers
+
+    /// <summary>The next monotonic deadline, when a delay is waiting.</summary>
+    member _.NextDeadline = time.NextDeadline
+
+    /// <summary>Advances wall and monotonic time together and wakes due delays.</summary>
+    member _.AdvanceBy(duration: TimeSpan) =
+        if duration < TimeSpan.Zero then invalidArg (nameof duration) "Clock cannot move backwards."
+        time.Advance duration
+
+    /// <summary>Advances to the next waiting deadline; returns false when no delay is waiting.</summary>
+    member _.AdvanceToNextDeadline() = time.AdvanceToNextDeadline()
+
+    interface IClock with
+        member _.UtcNow() = initialUtc + (time :> Platform.ITimeSource).Now()
+        member _.Elapsed() = (time :> Platform.ITimeSource).Now()
+        member _.Sleep(delay, cancellationToken) =
+            task {
+                let! exit = ((time :> Platform.ITimeSource).Sleep<unit>(delay, cancellationToken)).AsTask()
+                match exit with
+                | Exit.Success() -> ()
+                | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException(cancellationToken))
+                | Exit.Failure cause -> failwith $"Manual clock sleep failed: {cause}"
+            } :> Task
+#endif
+
 [<RequireQualifiedAccess>]
 module Cause =
     /// <summary>Transforms the error value of a failure cause using the provided function.</summary>
@@ -196,8 +229,12 @@ type FiberMetadata =
         Annotations: Map<string, string>
         /// <summary>The UTC timestamp when the fiber started.</summary>
         StartedAt: DateTimeOffset
+        /// <summary>The monotonic reading when the fiber started.</summary>
+        StartedTick: TimeSpan
         /// <summary>The UTC timestamp when the fiber settled, if it has.</summary>
         mutable SettledAt: DateTimeOffset option
+        /// <summary>The monotonic reading when the fiber settled.</summary>
+        mutable SettledTick: TimeSpan option
         /// <summary>The current fiber status.</summary>
         mutable Status: FiberStatus
     }
@@ -215,22 +252,26 @@ type FiberDump =
         Annotations: Map<string, string>
         /// <summary>The UTC timestamp when the fiber started.</summary>
         StartedAt: DateTimeOffset
+        /// <summary>The monotonic reading when the fiber started.</summary>
+        StartedTick: TimeSpan
         /// <summary>The UTC timestamp when the fiber settled, if it had settled when the snapshot was taken.</summary>
         SettledAt: DateTimeOffset option
+        /// <summary>The monotonic reading when the fiber settled.</summary>
+        SettledTick: TimeSpan option
         /// <summary>The fiber status when the snapshot was taken.</summary>
         Status: FiberStatus
     }
 
-    /// <summary>Renders the dump as a single line, measuring lifetime against <paramref name="now" /> for live fibers.</summary>
-    member dump.RenderAt(now: DateTimeOffset) : string =
+    /// <summary>Renders the dump as a single line against one monotonic reading.</summary>
+    member internal dump.RenderAtTick(nowTick: TimeSpan) : string =
         let name =
             match dump.Name with
             | Some name -> $" \"{name}\""
             | None -> ""
 
         let lifetime =
-            let settled = dump.SettledAt |> Option.defaultValue now
-            let elapsed = settled - dump.StartedAt
+            let settled = dump.SettledTick |> Option.defaultValue nowTick
+            let elapsed = settled - dump.StartedTick
             $"%.1f{max elapsed.TotalSeconds 0.0}s"
 
         let annotations =
@@ -244,8 +285,22 @@ type FiberDump =
 
         $"#{dump.Id.Value}{name} {dump.Status} {lifetime} (started {dump.StartedAt:o}){annotations}"
 
+    /// <summary>Renders the dump as a single line, measuring lifetime against <paramref name="clock" /> for live fibers.</summary>
+    member dump.RenderAt(clock: IClock) : string =
+        dump.RenderAtTick(dump.SettledTick |> Option.defaultWith clock.Elapsed)
+
     /// <summary>Renders the dump without reflection (safe under NativeAOT), measuring lifetime to when it settled.</summary>
-    override dump.ToString() = dump.RenderAt(dump.SettledAt |> Option.defaultValue dump.StartedAt)
+    override dump.ToString() =
+        let name = dump.Name |> Option.map (fun value -> $" \"{value}\"") |> Option.defaultValue ""
+        let lifetime = (dump.SettledTick |> Option.defaultValue dump.StartedTick) - dump.StartedTick
+        let annotations =
+            if Map.isEmpty dump.Annotations then ""
+            else
+                dump.Annotations
+                |> Seq.map (fun (KeyValue(key, value)) -> $"{key}={value}")
+                |> String.concat " "
+                |> sprintf " [%s]"
+        $"#{dump.Id.Value}{name} {dump.Status} {max lifetime.TotalSeconds 0.0:F1}s (started {dump.StartedAt:o}){annotations}"
 
 /// <summary>Snapshot conversion and rendering for fiber dumps.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -259,18 +314,21 @@ module FiberDump =
             ParentId = metadata.ParentId
             Annotations = metadata.Annotations
             StartedAt = metadata.StartedAt
+            StartedTick = metadata.StartedTick
             SettledAt = metadata.SettledAt
+            SettledTick = metadata.SettledTick
             Status = metadata.Status
         }
 
     /// <summary>Renders one dump as a single line, measuring lifetime against <paramref name="now" /> for live fibers.</summary>
-    let renderAt (now: DateTimeOffset) (dump: FiberDump) : string = dump.RenderAt now
+    let renderAt (clock: IClock) (dump: FiberDump) : string = dump.RenderAt clock
 
     /// <summary>
     /// Renders a set of dumps as an indented parent/child tree. Fibers whose parent is absent from
     /// <paramref name="dumps" /> (including root fibers) become top-level nodes.
     /// </summary>
-    let renderTreeAt (now: DateTimeOffset) (dumps: FiberDump list) : string =
+    let renderTreeAt (clock: IClock) (dumps: FiberDump list) : string =
+        let nowTick = clock.Elapsed()
         let ids = dumps |> List.map (fun dump -> dump.Id) |> Set.ofList
 
         let childrenOf =
@@ -294,7 +352,7 @@ module FiberDump =
         let lines = ResizeArray<string>()
 
         let rec renderNode (prefix: string) (childPrefix: string) (dump: FiberDump) =
-            lines.Add(prefix + renderAt now dump)
+            lines.Add(prefix + dump.RenderAtTick nowTick)
 
             let children = childrenOf |> Map.tryFind dump.Id |> Option.defaultValue []
 
@@ -394,7 +452,7 @@ type SettledFiber =
 
     /// <summary>How long the fiber ran.</summary>
     member this.Duration =
-        (this.Fiber.SettledAt |> Option.defaultValue this.Fiber.StartedAt) - this.Fiber.StartedAt
+        (this.Fiber.SettledTick |> Option.defaultValue this.Fiber.StartedTick) - this.Fiber.StartedTick
 
 /// <summary>Totals for every settled fiber that shared a name, as recorded by a <see cref="T:Axial.FiberRegistry" />.</summary>
 type FiberStats =
@@ -580,21 +638,14 @@ type FiberRegistry(historyCapacity: int) =
         ids |> List.filter this.Interrupt |> List.length
 
     /// <summary>Renders a snapshot of live fibers as a human-readable parent/child tree, timestamped at <paramref name="now" />.</summary>
-    member this.DumpAt(now: DateTimeOffset) : string =
+    member this.DumpAt(clock: IClock) : string =
         let snapshot = this.Snapshot()
+        let now = clock.UtcNow()
         let header = $"Fiber dump @ {now:o} — {snapshot.Length} live fiber(s)"
 
         match snapshot with
         | [] -> header
-        | dumps -> header + "\n" + FiberDump.renderTreeAt now dumps
-
-    /// <summary>
-    /// Renders the current live fibers as a human-readable parent/child tree, timestamped with the current UTC
-    /// time. This is a debugger/console convenience over a diagnostic render, not part of workflow execution or
-    /// any deterministic behavior a test would assert on; use <c>DumpAt</c> when the timestamp itself matters
-    /// to a caller (for example, a test asserting on the rendered header).
-    /// </summary>
-    member this.Dump() : string = this.DumpAt(DateTimeOffset.UtcNow) // axial-allow-effect: clock
+        | dumps -> header + "\n" + FiberDump.renderTreeAt clock dumps
 
 /// <summary>
 /// Tracks a forked fiber's settled defect so it can be reported as unobserved exactly once, by whichever
@@ -869,8 +920,6 @@ type internal RuntimeContext =
         Observer: FiberObserver
         /// Registries installed with Flow.withFiberRegistry; a failed fiber hands each its rendered cause.
         Registries: FiberRegistry list
-        /// The runtime's monotonic clock and sleeps. Forked fibers inherit it; tests replace it with manual time.
-        Time: Platform.ITimeSource
         /// Opaque ambient tracer slot. `Axial` has no dependency on `System.Diagnostics.DiagnosticSource`, so this
         /// is untyped here; `Axial.Telemetry` is the only package that boxes/unboxes it (as `ActivitySource`).
         Tracer: obj option
@@ -889,7 +938,6 @@ module internal RuntimeContext =
             FiberId = FiberId.next ()
             Observer = FiberObserver.none
             Registries = []
-            Time = Platform.systemTime
             Tracer = None
         }
 
@@ -898,9 +946,6 @@ module internal RuntimeContext =
 
     let withScope (scope: Scope) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Scope = scope }
-
-    let withTime (time: Platform.ITimeSource) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with Time = time }
 
     let withAnnotation (name: string) (value: string) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Annotations = runtime.Annotations |> Map.add name value }

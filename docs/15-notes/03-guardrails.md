@@ -71,8 +71,8 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 
 | Guardrail | Rules |
 | --- | --- |
-| `Axial` | `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking task waits inside `flow { }`, and `AXG002`–`AXG006` |
-| `Axial.PlatformService` | Clock, `Stopwatch`, randomness, GUIDs, and environment state |
+| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking task waits inside `flow { }`, and `AXG002`–`AXG006` |
+| `Axial.PlatformService` | Randomness, GUIDs, and environment state |
 | `Axial.Console` | `System.Console` |
 | `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
 | `Axial.Process` | `Process.Start` |
@@ -144,7 +144,8 @@ let live : IClock =
 
     { new IClock with
         member _.UtcNow() = DateTimeOffset.UtcNow // axial-allow-effect: clock
-        member _.Elapsed() = stopwatch.Elapsed }
+        member _.Elapsed() = stopwatch.Elapsed
+        member _.Sleep(delay, token) = Task.Delay(delay, token) }
 ```
 
 To allow a category throughout a boundary implementation file, place a file directive in the leading comment block immediately before the `namespace` declaration:

@@ -2,11 +2,13 @@ namespace Axial.Tests
 
 open System.Diagnostics
 open Axial
+open Axial.PlatformService
 open Axial.Telemetry
 open Swensen.Unquote
 open Xunit
 
 module TelemetryTests =
+    let private clockEnv () = ClockEnvironment(Clock.live)
     // The name of the application source used to exercise the ambient Activity.trace/Activity.traceWith, which now
     // require a tracer installed via Activity.withTracer rather than defaulting to Axial's own source. Each test
     // creates its own ActivitySource/ActivityTracer instance from this name so construction cannot race other
@@ -16,7 +18,7 @@ module TelemetryTests =
 
     /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
     /// Deterministic replacement for fixed sleeps, which race the thread pool under load.
-    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<unit, 'testError, unit> =
+    let rec private waitForSettled (fiber: Fiber<'error, 'value>) : Flow<ClockEnvironment, 'testError, unit> =
         flow {
             if fiber.Metadata.Status = FiberStatus.Running then
                 do! Flow.sleep (System.TimeSpan.FromMilliseconds 5.0)
@@ -54,7 +56,7 @@ module TelemetryTests =
                 Context.attribute correlationId "corr-456"
             ]
 
-        let result = Flow.runSync () workflow
+        let result = Flow.runSync (clockEnv ()) workflow
 
         test <@ result = Exit.Success 42 @>
         test <@ capturedTags["app.request.id"] = "req-123" @>
@@ -70,7 +72,7 @@ module TelemetryTests =
     let ``Activity.trace: throws when no ambient tracer is installed`` () =
         let workflow = Flow.succeed 1 |> Activity.trace "untracered-op"
 
-        match Flow.runSync () workflow with
+        match Flow.runSync (clockEnv ()) workflow with
         | Exit.Failure(Cause.Die exn) -> test <@ exn :? System.InvalidOperationException @>
         | other -> failwithf "Expected a Die failure from the missing-tracer guard, got %A" other
 
@@ -89,7 +91,7 @@ module TelemetryTests =
 
         Flow.succeed 42
         |> tracer.Trace "refund.issue"
-        |> Flow.runSync ()
+        |> Flow.runSync (clockEnv ())
         |> ignore
 
         test <@ capturedSource = Some "Example.Refunds" @>
@@ -107,7 +109,7 @@ module TelemetryTests =
 
         Flow.succeed 42
         |> Activity.traceOn applicationSource "checkout.submit"
-        |> Flow.runSync ()
+        |> Flow.runSync (clockEnv ())
         |> ignore
 
         test <@ capturedSource = Some "Example.Checkout" @>
@@ -140,7 +142,7 @@ module TelemetryTests =
                 Flow.sleep (System.TimeSpan.FromMilliseconds 80.0)
                 |> Activity.trace "async-op"
                 |> Activity.withTracer appTracer
-                |> Flow.runSync ()
+                |> Flow.runSync (clockEnv ())
                 |> ignore)
 
         match spans |> List.filter (fun (name, _, _, _) -> name = "async-op") with
@@ -158,22 +160,22 @@ module TelemetryTests =
 
         let spans =
             captureSpans (fun () ->
-                (Flow.fail "domain error" : Flow<unit, string, int>)
+                (Flow.fail "domain error" : Flow<ClockEnvironment, string, int>)
                 |> Activity.trace "fail-op"
                 |> Activity.withTracer appTracer
-                |> Flow.runSync ()
+                |> Flow.runSync (clockEnv ())
                 |> ignore
 
-                (Flow.die (System.InvalidOperationException "defect") : Flow<unit, string, int>)
+                (Flow.die (System.InvalidOperationException "defect") : Flow<ClockEnvironment, string, int>)
                 |> Activity.trace "die-op"
                 |> Activity.withTracer appTracer
-                |> Flow.runSync ()
+                |> Flow.runSync (clockEnv ())
                 |> ignore
 
-                (Flow.ofExit (Exit.Failure Cause.Interrupt) : Flow<unit, string, int>)
+                (Flow.ofExit (Exit.Failure Cause.Interrupt) : Flow<ClockEnvironment, string, int>)
                 |> Activity.trace "interrupt-op"
                 |> Activity.withTracer appTracer
-                |> Flow.runSync ()
+                |> Flow.runSync (clockEnv ())
                 |> ignore)
 
         let find name =
@@ -203,10 +205,10 @@ module TelemetryTests =
 
         let spans =
             captureSpans (fun () ->
-                (Flow.ofExit composite : Flow<unit, string, int>)
+                (Flow.ofExit composite : Flow<ClockEnvironment, string, int>)
                 |> Activity.trace "composite-op"
                 |> Activity.withTracer appTracer
-                |> Flow.runSync ()
+                |> Flow.runSync (clockEnv ())
                 |> ignore)
 
         match spans |> List.filter (fun (name, _, _, _) -> name = "composite-op") with
@@ -234,11 +236,11 @@ module TelemetryTests =
                 |> Seq.tryPick (fun pair -> if pair.Key = "app.retry.count" then Some pair.Value else None))
         ActivitySource.AddActivityListener(listener)
 
-        (Flow.succeed 1 : Flow<unit, string, int>)
+        (Flow.succeed 1 : Flow<ClockEnvironment, string, int>)
         |> Context.withAttribute (Context.attribute retryCount 3L)
         |> Activity.trace "tagged-op"
         |> Activity.withTracer appTracer
-        |> Flow.runSync ()
+        |> Flow.runSync (clockEnv ())
         |> ignore
 
         test <@ capturedValue = Some(box 3L) @>
@@ -257,7 +259,7 @@ module TelemetryTests =
                 |> Activity.trace "inner-op"
                 |> Activity.trace "outer-op"
                 |> Activity.withTracer appTracer
-                |> Flow.runSync ()
+                |> Flow.runSync (clockEnv ())
                 |> ignore)
 
         let tagsOf name =
@@ -298,14 +300,14 @@ module TelemetryTests =
         let spans =
             captureSpansWithIds (fun () ->
                 flow {
-                    let! fiber = Flow.fork (Flow.sleep (System.TimeSpan.FromMilliseconds 80.0) : Flow<unit, string, unit>)
+                    let! fiber = Flow.fork (Flow.sleep (System.TimeSpan.FromMilliseconds 80.0) : Flow<ClockEnvironment, string, unit>)
                     do! Fiber.join fiber
                     return "done"
                 }
                 |> FiberTelemetry.observeWithSpans
                 |> Activity.trace "workflow-op"
                 |> Activity.withTracer appTracer
-                |> Flow.runSync ()
+                |> Flow.runSync (clockEnv ())
                 |> ignore)
 
         let workflowSpanId =
@@ -324,7 +326,7 @@ module TelemetryTests =
         let spans =
             captureSpansWithIds (fun () ->
                 flow {
-                    let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "fiber defect") : Flow<unit, string, int>)
+                    let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "fiber defect") : Flow<ClockEnvironment, string, int>)
                     // Wait for the fiber to settle without letting the defect fail this workflow;
                     // interrupting before it dies would flip the outcome to interrupt.
                     do! waitForSettled fiber
@@ -332,7 +334,7 @@ module TelemetryTests =
                     return "done"
                 }
                 |> FiberTelemetry.observeWithSpans
-                |> Flow.runSync ()
+                |> Flow.runSync (clockEnv ())
                 |> ignore)
 
         match spans |> List.filter (fun (name, _, _, _, _) -> name = "axial.flow.fiber") with
@@ -360,12 +362,12 @@ module TelemetryTests =
 
         let result =
             flow {
-                let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "background crash") : Flow<unit, string, int>)
+                let! fiber = Flow.fork (Flow.die (System.InvalidOperationException "background crash") : Flow<ClockEnvironment, string, int>)
                 do! waitForSettled fiber
                 return "done"
             }
             |> FiberTelemetry.observe
-            |> Flow.runSync ()
+            |> Flow.runSync (clockEnv ())
 
         test <@ result = Exit.Success "done" @>
 

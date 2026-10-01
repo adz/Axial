@@ -6,7 +6,7 @@ open Axial
 open Axial.TortureTest.Scenario
 
 // <snippet:torture-hubs>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let values = round.Size 2000
     let churners = round.Size 40
 
@@ -159,7 +159,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
     }
 
 /// A hub created under a scope is shut down when the scope closes, and its subscribers drain what is left.
-let runScoped (round: Round) : Flow<unit, Never, Check list> =
+let runScoped (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     flow {
         let values = round.Size 200
 

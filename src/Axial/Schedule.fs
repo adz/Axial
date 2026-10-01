@@ -2,7 +2,7 @@ namespace Axial
 
 open System
 
-/// What a schedule knows when it decides whether to recur. Timestamps come from the runtime's time source, so
+/// What a schedule knows when it decides whether to recur. Timestamps come from the environment's clock, so
 /// only differences between them are meaningful.
 type internal ScheduleContext =
     {

@@ -14,7 +14,7 @@ you opt into, and the one-time wiring that sends it to a backend such as OpenTel
 | **Traces** (spans) | [`Axial.Telemetry`](/observability/telemetry/index.html) emitting on the `Axial` `ActivitySource`; `Axial.Telemetry.JavaScript` on Fable targets | any `ActivityListener`, in practice the OpenTelemetry SDK; OpenTelemetry JS under Fable |
 | **Logs** | the explicit `ILog` service, bridged to `Microsoft.Extensions.Logging` by [`Axial.Hosting`](/platforms-and-hosting/dotnet.html) | your host's logging pipeline |
 | **Metrics** | [`Axial.Telemetry`](/observability/telemetry/index.html): `FiberMetrics` and `QueueMetrics` on the `Axial` `Meter` | OpenTelemetry's `.AddMeter("Axial")`, `dotnet-counters`, the Aspire dashboard |
-| **Fiber dumps** | core `Axial`: `FiberRegistry` live-fiber snapshots, no telemetry dependency | `registry.Dump()` on demand; `FiberDumpTelemetry.record` to put dumps on traces |
+| **Fiber dumps** | core `Axial`: `FiberRegistry` live-fiber snapshots, no telemetry dependency | `registry.DumpAt(Clock.live)` on demand; `FiberDumpTelemetry.record` to put dumps on traces |
 
 Two general-purpose channels feed those signals and are part of core `Axial`, not the telemetry
 package: **runtime annotations** (`Flow.annotate`, ambient key–value diagnostics metadata) and **fiber
@@ -247,11 +247,12 @@ install and answers "what is my runtime doing right now?" with a structured snap
 ```fsharp
 let registry = FiberRegistry()
 
-let withPoller : Flow<unit, string, string> =
+let withPoller : Flow<ClockEnvironment, string, string> =
     flow {
+        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
         let! poller = Flow.sleep (TimeSpan.FromMinutes 1.0) |> Flow.forkNamed "outbox-poller"
         // later, from a diagnostics endpoint, a SIGQUIT-style handler, or a stuck-shutdown log:
-        let dump = registry.Dump()
+        let dump = registry.DumpAt(clock)
         let! _ = Fiber.interrupt poller
         return dump
     }
@@ -259,7 +260,7 @@ let withPoller : Flow<unit, string, string> =
 ```
 
 ```fsharp run
-match withPoller |> Flow.run () with
+match withPoller |> Flow.run (ClockEnvironment Clock.live) with
 | Exit.Success dump -> dump.Contains "\"outbox-poller\"" |> shouldEqual true
 | other -> failwithf "unexpected %A" other
 ```

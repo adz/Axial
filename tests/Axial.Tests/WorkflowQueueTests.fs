@@ -13,7 +13,7 @@ module WorkflowQueueTests =
         Platform.lock queue.Gate (fun () -> queue.Offerers.Count)
 
     /// Polls a condition on queue internals so a test can act once a fiber is known to be suspended.
-    let private waitUntil (condition: unit -> bool) : Flow<unit, 'error, unit> =
+    let private waitUntil (condition: unit -> bool) : Flow<ClockEnvironment, 'error, unit> =
         let rec loop remaining =
             flow {
                 if not (condition ()) && remaining > 0 then
@@ -37,7 +37,7 @@ module WorkflowQueueTests =
                 return! queue |> Dequeue.takeAll
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success [ 1..5 ] @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ 1..5 ] @>
 
     [<Fact>]
     let ``Queue: concurrent producers keep their own order`` () =
@@ -57,7 +57,7 @@ module WorkflowQueueTests =
                 return received
             }
 
-        match Flow.runSync () workflow with
+        match Flow.runSync (TestSupport.clockEnv ()) workflow with
         | Exit.Success received ->
             for id in 1..3 do
                 let fromProducer = received |> List.filter (fst >> (=) id) |> List.map snd
@@ -86,7 +86,7 @@ module WorkflowQueueTests =
                 return droppedAccepted, droppingContents, slidingAccepted, slidingContents, stillFull
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(false, [ 1; 2 ], true, [ 2; 3 ], 2) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(false, [ 1; 2 ], true, [ 2; 3 ], 2) @>
 
     [<Fact>]
     let ``Queue: tryOffer reports acceptance, overflow, and shutdown without waiting`` () =
@@ -113,7 +113,7 @@ module WorkflowQueueTests =
             }
 
         test
-            <@ Flow.runSync () workflow =
+            <@ Flow.runSync (TestSupport.clockEnv ()) workflow =
                 Exit.Success(
                     QueueTryOfferResult.Accepted,
                     QueueTryOfferResult.Full,
@@ -144,7 +144,7 @@ module WorkflowQueueTests =
                 return taken, first, accepted, second
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success("handed", "first", true, "second") @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success("handed", "first", true, "second") @>
 
     [<Fact>]
     let ``Queue: an interrupted take never loses an element`` () =
@@ -165,7 +165,7 @@ module WorkflowQueueTests =
             }
 
         let workflow = List.init 1000 (fun _ -> attempt ()) |> Flow.sequence
-        test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow |> Exit.map (List.forall id) = Exit.Success true @>
 
     [<Fact>]
     let ``Queue: an interrupted take hands its element to the next suspended taker`` () =
@@ -192,7 +192,7 @@ module WorkflowQueueTests =
             }
 
         let workflow = List.init 1000 (fun _ -> attempt ()) |> Flow.sequence
-        test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow |> Exit.map (List.forall id) = Exit.Success true @>
 
     [<Fact>]
     let ``Queue: an interrupted offer never enqueues its value`` () =
@@ -214,7 +214,7 @@ module WorkflowQueueTests =
             }
 
         let workflow = List.init 1000 (fun _ -> attempt ()) |> Flow.sequence
-        test <@ Flow.runSync () workflow |> Exit.map (List.forall id) = Exit.Success true @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow |> Exit.map (List.forall id) = Exit.Success true @>
 
     [<Fact>]
     let ``Queue: suspended takers and offerers are served first come first served`` () =
@@ -250,7 +250,7 @@ module WorkflowQueueTests =
                 return taken, drained
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([ 10; 20; 30 ], [ 0; 100; 200; 300 ]) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 10; 20; 30 ], [ 0; 100; 200; 300 ]) @>
 
     [<Fact>]
     let ``Queue: shutdown interrupts waiters and lets the backlog drain`` () =
@@ -288,7 +288,7 @@ module WorkflowQueueTests =
                     isInterrupted lateOffer
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(true, true, true, [ 1; 2 ], None, true, true) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, true, true, [ 1; 2 ], None, true, true) @>
 
     [<Fact>]
     let ``Queue: a stream from a queue ends normally after shutdown and drain`` () =
@@ -301,7 +301,7 @@ module WorkflowQueueTests =
                 return! Fiber.join consumer
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success [ 1..5 ] @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ 1..5 ] @>
 
     [<Fact>]
     let ``Queue: takeUpTo and takeAll return what is available without suspending`` () =
@@ -316,7 +316,7 @@ module WorkflowQueueTests =
                 return none, firstBatch, rest, afterwards
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success([], [ 1; 2; 3 ], [ 4; 5 ], []) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([], [ 1; 2; 3 ], [ 4; 5 ], []) @>
 
     [<Fact>]
     let ``Queue: takeBetween waits for the minimum and takes up to the maximum`` () =
@@ -337,7 +337,7 @@ module WorkflowQueueTests =
             }
 
         // The first batch had 1 and waited for 2; 3 arrived in the same offerAll and fits under the maximum.
-        match Flow.runSync () workflow with
+        match Flow.runSync (TestSupport.clockEnv ()) workflow with
         | Exit.Success(first, second, remainder, interrupted) ->
             test <@ first @ second = [ 1; 2; 3; 4 ] && first.Length >= 2 && first.Length <= 3 @>
             test <@ remainder = [ 5 ] && interrupted @>
@@ -357,7 +357,7 @@ module WorkflowQueueTests =
                 return isInterrupted exit, remaining
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(true, [ 1; 2; 3 ]) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, [ 1; 2; 3 ]) @>
 
     [<Fact>]
     let ``Queue: takeBetween rejects an empty or inverted range`` () =
@@ -366,7 +366,7 @@ module WorkflowQueueTests =
                 let! (queue: Queue<int>) = Queue.unbounded ()
                 return! queue |> Dequeue.takeBetween 0 1
             }
-            |> Flow.runSync ()
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         match exit with
         | Exit.Failure(Cause.Die error) -> test <@ error :? ArgumentOutOfRangeException @>
@@ -397,7 +397,7 @@ module WorkflowQueueTests =
                 return droppingStats, slidingStats, waiting, settled
             }
 
-        match Flow.runSync () workflow with
+        match Flow.runSync (TestSupport.clockEnv ()) workflow with
         | Exit.Success(dropping, sliding, waiting, settled) ->
             test <@ (dropping.Accepted, dropping.Dropped, dropping.Evicted, dropping.Size) = (2L, 3L, 0L, 2) @>
             test <@ (sliding.Accepted, sliding.Dropped, sliding.Evicted, sliding.Size) = (5L, 0L, 3L, 2) @>
@@ -423,11 +423,11 @@ module WorkflowQueueTests =
                 return isShut, consumer
             }
 
-        test <@ Flow.runSync () workflow = Exit.Success(true, [ 1; 2 ]) @>
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, [ 1; 2 ]) @>
 
     [<Fact>]
     let ``Queue: a non-positive capacity is a defect`` () =
-        let exit = (Queue.bounded 0 : Flow<unit, unit, Queue<int>>) |> Flow.runSync ()
+        let exit = (Queue.bounded 0 : Flow<ClockEnvironment, unit, Queue<int>>) |> Flow.runSync (TestSupport.clockEnv ())
 
         match exit with
         | Exit.Failure(Cause.Die error) -> test <@ error :? ArgumentOutOfRangeException @>

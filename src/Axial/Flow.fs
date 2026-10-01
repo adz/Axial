@@ -587,11 +587,6 @@ module Flow =
 
             RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
 
-    /// Runs a flow, and every fiber it forks, on a replaced runtime time source. Tests use it with
-    /// <c>Platform.ManualTime</c> to drive sleeps, timeouts, schedules, and timed stream operators deterministically.
-    let internal withTimeSource (time: Platform.ITimeSource) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        withRuntime (RuntimeContext.withTime time) flow
-
     /// <summary>Installs runtime fiber-lifecycle hooks for diagnostics and telemetry.</summary>
     /// <remarks>
     /// The observer is carried implicitly to every fiber forked inside <paramref name="flow" />, so installing
@@ -629,7 +624,7 @@ module Flow =
     /// <remarks>
     /// The registry's observer is composed with any observer already installed, so telemetry hooks and the
     /// registry can coexist from separate installs. Install once at the application edge, keep the registry,
-    /// and call <c>registry.Dump()</c> (or <c>registry.Snapshot()</c>) whenever a live fiber tree is needed.
+    /// and call <c>registry.DumpAt(clock)</c> (or <c>registry.Snapshot()</c>) whenever a live fiber tree is needed.
     /// </remarks>
     /// <param name="registry">The registry that receives fiber lifecycle events.</param>
     /// <param name="flow">The source flow.</param>
@@ -767,8 +762,8 @@ module Flow =
     /// <summary>Suspends the flow for the specified duration, observing cancellation.</summary>
     /// <param name="delay">The duration to sleep.</param>
     /// <returns>A flow that completes after the specified delay, or is interrupted if cancelled first.</returns>
-    let sleep (delay: TimeSpan) : Flow<'env, 'error, unit> =
-        Flow(fun _ cancellationToken -> RuntimeState.current().Time.Sleep(delay, cancellationToken))
+    let sleep<'env, 'error when 'env :> IHasClock> (delay: TimeSpan) : Flow<'env, 'error, unit> =
+        Flow(fun environment cancellationToken -> Platform.timeOfClock environment.Clock |> fun time -> time.Sleep(delay, cancellationToken))
 
     /// <summary>Reads the current runtime scope.</summary>
     /// <returns>A flow that succeeds with the scope owned by the current execution boundary.</returns>
@@ -801,14 +796,14 @@ module Flow =
     /// <param name="timeoutError">The typed error returned when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that returns the source outcome or the timeout error.</returns>
-    let timeout
+    let timeout<'env, 'error, 'value when 'env :> IHasClock>
         (after: TimeSpan)
         (timeoutError: 'error)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             Platform.timeoutExecution
-                (RuntimeState.current().Time)
+                (Platform.timeOfClock environment.Clock)
                 after
                 (invoke flow environment)
                 cancellationToken
@@ -820,14 +815,14 @@ module Flow =
     /// <param name="value">The success value returned when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that returns the source outcome or the supplied success value.</returns>
-    let timeoutToOk
+    let timeoutToOk<'env, 'error, 'value when 'env :> IHasClock>
         (after: TimeSpan)
         (value: 'value)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             Platform.timeoutExecution
-                (RuntimeState.current().Time)
+                (Platform.timeOfClock environment.Clock)
                 after
                 (invoke flow environment)
                 cancellationToken
@@ -847,14 +842,14 @@ module Flow =
     /// <param name="fallback">Creates the fallback flow when the timeout wins.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that returns the source outcome or the fallback outcome.</returns>
-    let timeoutWith
+    let timeoutWith<'env, 'error, 'value when 'env :> IHasClock>
         (after: TimeSpan)
         (fallback: unit -> Flow<'env, 'error, 'value>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             Platform.timeoutExecution
-                (RuntimeState.current().Time)
+                (Platform.timeOfClock environment.Clock)
                 after
                 (invoke flow environment)
                 cancellationToken
@@ -937,13 +932,13 @@ module Flow =
     /// fetch |&gt; Flow.retry (Retry.schedule { Retry.defaults with When = HttpError.isTransient })
     /// </code>
     /// </example>
-    let retry
+    let retry<'env, 'error, 'value, 'output when 'env :> IHasClock>
         (schedule: Schedule<'env, 'error, 'output>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         // A loop rather than recursion, so retrying for the life of an application runs in constant memory.
         Flow(fun environment cancellationToken ->
-            let time = RuntimeState.current().Time
+            let time = Platform.timeOfClock environment.Clock
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
 
@@ -987,14 +982,14 @@ module Flow =
     /// heartbeat |&gt; Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 5.0))
     /// </code>
     /// </example>
-    let repeat
+    let repeat<'env, 'error, 'value, 'output when 'env :> IHasClock>
         (schedule: Schedule<'env, 'value, 'output>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
         // A loop rather than recursion, so a schedule that repeats for the life of an application (a control
         // scan, a heartbeat) runs in constant memory.
         Flow(fun environment cancellationToken ->
-            let time = RuntimeState.current().Time
+            let time = Platform.timeOfClock environment.Clock
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
             let firstScope, first = runAttempt flow environment cancellationToken
@@ -1035,7 +1030,7 @@ module Flow =
     /// worker |&gt; Flow.supervise (Retry.schedule { Retry.defaults with Retries = 5 })
     /// </code>
     /// </example>
-    let supervise
+    let supervise<'env, 'error, 'value, 'output when 'env :> IHasClock>
         (schedule: Schedule<'env, exn, 'output>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'value> =
@@ -1047,7 +1042,7 @@ module Flow =
             | _ -> None
 
         Flow(fun environment cancellationToken ->
-            let time = RuntimeState.current().Time
+            let time = Platform.timeOfClock environment.Clock
             let runState = ScheduleContext.newRunState ()
             let loopStarted = time.Now()
 
@@ -1079,7 +1074,7 @@ module Flow =
     /// A graceful fiber's stop request and how long to wait after it before interrupting.
     type private GracefulStop<'env> = { Stop: Flow<'env, Never, unit>; Grace: TimeSpan }
 
-    let private forkWith
+    let private forkWith<'env, 'error, 'value, 'none when 'env :> IHasClock>
         (name: string option)
         (graceful: GracefulStop<'env> option)
         (flow: Flow<'env, 'error, 'value>)
@@ -1087,6 +1082,8 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let parentRuntime = RuntimeState.current()
             let observer = parentRuntime.Observer
+            let clock = environment.Clock
+            let time = Platform.timeOfClock clock
 
             let metadata: FiberMetadata =
                 {
@@ -1096,8 +1093,10 @@ module Flow =
                     Annotations = parentRuntime.Annotations
                     // Fiber lifecycle bookkeeping is scheduler mechanics, not application behavior — the
                     // AGENTS.md effect-boundary invariant carves out "ambient runtime for executor mechanics".
-                    StartedAt = DateTimeOffset.UtcNow // axial-allow-effect: clock
+                    StartedAt = clock.UtcNow()
+                    StartedTick = clock.Elapsed()
                     SettledAt = None
+                    SettledTick = None
                     Status = FiberStatus.Running
                 }
 
@@ -1147,8 +1146,8 @@ module Flow =
                     (fun status exit ->
                         settled.Value <- Some exit
                         FiberInterrupts.remove metadata.Id
-                        // axial-allow-effect: clock
-                        metadata.SettledAt <- Some DateTimeOffset.UtcNow
+                        metadata.SettledAt <- Some(clock.UtcNow())
+                        metadata.SettledTick <- Some(clock.Elapsed())
                         metadata.Status <- status
 
                         let defect =
@@ -1208,7 +1207,7 @@ module Flow =
                                 })
                                 None
 
-                            let! _ = parentRuntime.Time.Sleep<unit>(request.Grace, graceTimer.Token)
+                            let! _ = time.Sleep<unit>(request.Grace, graceTimer.Token)
                             ()
                         | None -> ()
 
@@ -1238,7 +1237,7 @@ module Flow =
                             | Exit.Success () -> ()
 
                             use graceTimer = new CancellationTokenSource()
-                            let graceElapsed = (parentRuntime.Time.Sleep<unit>(request.Grace, graceTimer.Token)).AsTask()
+                            let graceElapsed = (time.Sleep<unit>(request.Grace, graceTimer.Token)).AsTask()
                             let! _ = Task.WhenAny(exitTask :> Task, graceElapsed :> Task)
                             graceTimer.Cancel()
                         | None -> ()

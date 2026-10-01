@@ -104,10 +104,10 @@ Service records compose the same way as the other platform packages:
 
 ```fsharp
 type WorkerEnv =
-    { HttpService: IHttp
-      ClockService: IClock }
-    interface IHasHttp with member this.Http = this.HttpService
-    interface IHasClock with member this.Clock = this.ClockService
+    { Http: IHttp
+      Clock: IClock }
+    interface IHasHttp with member this.Http = this.Http
+    interface IHasClock with member this.Clock = this.Clock
 ```
 
 The same pattern adds `IHasProcess` for `Axial.Process`, or any other package's contract.

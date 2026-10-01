@@ -12,11 +12,14 @@ type private Services =
     { Primary: string
       Secondary: string
       Workers: Pool<int>
-      Region: string }
+      Region: string
+      Clock: IClock }
+    interface IHasClock with member this.Clock = this.Clock
 
 // <snippet:torture-layers>
-let run (round: Round) : Flow<unit, Never, Check list> =
+let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     flow {
+        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
         let gate = obj ()
         let acquired = ResizeArray<string>()
         let released = ResizeArray<string>()
@@ -47,7 +50,7 @@ let run (round: Round) : Flow<unit, Never, Check list> =
         // Two resources provisioned in sequence and one pool in parallel with them, plus a plain finalizer.
         let services : Layer<string, string, Services> =
             Layer.map3
-                (fun (primary, secondary) workers region -> { Primary = primary; Secondary = secondary; Workers = workers; Region = region })
+                (fun (primary, secondary) workers region -> { Primary = primary; Secondary = secondary; Workers = workers; Region = region; Clock = clock })
                 (Layer.zip (resource "primary") (resource "secondary"))
                 (Layer.zipPar pool (Layer.widenError (Layer.succeed () : Layer<string, Never, unit>)) |> Layer.map fst)
                 (Layer.merge (Layer.envWith id) (Layer.addFinalizer (finalizer ignore)) |> Layer.map fst)
@@ -68,10 +71,10 @@ let run (round: Round) : Flow<unit, Never, Check list> =
                 return $"{services.Primary},{services.Secondary},{region}", first + second + services.Workers.Count + Seq.length services.Workers.Instances
             }
 
-        let! runner = work |> Layer.provide services |> Flow.localEnv (fun () -> "eu") |> Flow.fork
+        let! runner = work |> Layer.provide services |> Flow.localEnv (fun (_: ClockEnvironment) -> "eu") |> Flow.fork
         if round.Chance 30 then do! Flow.sleep (TimeSpan.FromMilliseconds(float (round.Next 3)))
         let! outcome = if round.Chance 30 then Fiber.interrupt runner else Fiber.await runner
-        let! length = Flow.ok () |> Flow.map (fun () -> 0) |> Layer.provide (applied |> Layer.map id) |> Flow.localEnv (fun () -> "eu") |> exitOf
+        let! length = Flow.ok () |> Flow.map (fun () -> 0) |> Layer.provide (applied |> Layer.map id) |> Flow.localEnv (fun (_: ClockEnvironment) -> "eu") |> exitOf
 
         let acquiredNames, releasedNames = lock gate (fun () -> List.ofSeq acquired, List.ofSeq released)
 

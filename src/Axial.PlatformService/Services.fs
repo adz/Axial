@@ -4,18 +4,6 @@ open System
 open System.Collections.Generic
 open Axial
 
-/// <summary>Provides the current UTC time and a monotonic timer for measuring durations.</summary>
-type IClock =
-    /// <summary>Returns the current UTC timestamp.</summary>
-    abstract UtcNow: unit -> DateTimeOffset
-
-    /// <summary>Returns a monotonic reading for measuring durations.</summary>
-    /// <remarks>
-    /// Only the difference between two readings is meaningful. Unlike <c>UtcNow</c>, it never jumps when the system
-    /// clock is adjusted, so use it to measure how long something took.
-    /// </remarks>
-    abstract Elapsed: unit -> TimeSpan
-
 /// <summary>Provides synchronous access to workflow logging as an explicit service.</summary>
 type ILog =
     /// <summary>Writes a log message at the requested level.</summary>
@@ -42,27 +30,34 @@ type IEnvironmentVariables =
     abstract Expand: text: string -> string
     abstract GetAll: unit -> IReadOnlyDictionary<string, string>
 
-/// <summary>Declares that an environment supplies the clock service.</summary>
-type IHasClock =
-    /// The clock service supplied by this environment.
-    abstract Clock : IClock
-
 /// <summary>Declares that an environment supplies the logging service.</summary>
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
 type IHasLog =
     /// The logging service supplied by this environment.
     abstract Log : ILog
 
 /// <summary>Declares that an environment supplies the random-number service.</summary>
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
 type IHasRandom =
     /// The random-number service supplied by this environment.
     abstract Random : IRandom
 
 /// <summary>Declares that an environment supplies the GUID service.</summary>
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
 type IHasGuid =
     /// The GUID service supplied by this environment.
     abstract Guid : IGuid
 
 /// <summary>Declares that an environment supplies the environment-variable service.</summary>
+#if FABLE_COMPILER
+[<Fable.Core.Mangle>]
+#endif
 type IHasEnvironmentVariables =
     /// The environment-variable service supplied by this environment.
     abstract EnvironmentVariables : IEnvironmentVariables
