@@ -11,10 +11,10 @@ type IClock =
     abstract Elapsed: unit -> TimeSpan
     abstract Sleep: delay: TimeSpan * cancellationToken: CancellationToken -> Task
 
+/// <summary>Declares the clock required by timed workflows and fiber diagnostics.</summary>
 #if FABLE_COMPILER
 [<Fable.Core.Mangle>]
 #endif
-/// <summary>Declares the clock required by timed workflows and fiber diagnostics.</summary>
 type IHasClock =
     abstract Clock: IClock
 

@@ -3,6 +3,7 @@ module Axial.Fable.Tests.TimingTests
 
 open System
 open Axial
+open Axial.PlatformService
 open Axial.Fable.Tests.Harness
 
 let private ms (value: float) = TimeSpan.FromMilliseconds value
@@ -10,7 +11,33 @@ let private ms (value: float) = TimeSpan.FromMilliseconds value
 let private elapsedSince started = nowMilliseconds () - started
 
 let tests : Test list =
-    [ test "Flow.sleep waits at least its delay" (flow {
+    [ test "BaseRuntime record dispatches same-named services" (flow {
+          let logged = ResizeArray<string>()
+          let runtime =
+              { BaseRuntime.liveValue with
+                  Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
+                  Log = Log.fromSink (fun _ message -> logged.Add message)
+                  Random = Random.fromValue 7
+                  Guid = Guid.fromValue global.System.Guid.Empty
+                  EnvironmentVariables = EnvironmentVariables.fromPairs [ "REGION", "eu" ] }
+
+          let services : Flow<BaseRuntime, Never, int * int * global.System.Guid * string option> =
+              flow {
+                  let! now = Clock.now
+                  let! number = Random.next
+                  let! id = Guid.newGuid
+                  let! region = EnvironmentVariables.tryGet "REGION"
+                  do! Log.info "seen"
+                  return now.Year, number, id, region
+              }
+
+          let! actual = services |> Flow.localEnv (fun (_: ClockEnvironment) -> runtime)
+          return
+              [ equal "services" (2026, 7, global.System.Guid.Empty, Some "eu") actual
+                equal "log" [ "seen" ] (List.ofSeq logged) ]
+      })
+
+      test "Flow.sleep waits at least its delay" (flow {
           let started = nowMilliseconds ()
           do! Flow.sleep (ms 50.0)
           let elapsed = elapsedSince started

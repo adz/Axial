@@ -119,8 +119,8 @@ then takes up to `max`.
 -     let! first = samples |> Dequeue.takeBetween 1 5
 -     let! second = samples |> Dequeue.takeBetween 1 5
 -     return [ first; second ]
-- } : Flow<ClockEnvironment, Never, int list list>)
-- |> Flow.run (ClockEnvironment Clock.live);;
+- } : Flow<unit, Never, int list list>)
+- |> Flow.run ();;
 val it: Exit<int list list,Never> = Success [[1; 2; 3; 4; 5]; [6; 7]]
 ```
 
