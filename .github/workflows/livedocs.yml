@@ -12,7 +12,9 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages
+  # Scope by ref so a push to main cancels only earlier main runs, not an in-flight pull_request
+  # verification with a different ref. Only main deploys Pages, and its runs still cancel each other.
+  group: github-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
