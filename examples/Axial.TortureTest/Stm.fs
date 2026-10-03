@@ -56,6 +56,17 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         do! [ for _ in 1..patient -> STM.atomically (reserve |> TRef.update ((+) 5)) ] |> Flow.sequencePar |> Flow.ignore
         let! withdrawn = waiting |> Flow.traverse Fiber.await |> Flow.timeoutToOk (TimeSpan.FromSeconds 10.0) []
 
+        // The atomic read-and-write helpers on a scratch ledger.
+        let! ledger = STM.atomically (TRef.make 0)
+        let! (produced, previous, beforeUpdate, afterUpdate) =
+            STM.atomically (stm {
+                let! produced = TRef.modify (fun value -> value * 10, value + 1) ledger
+                let! previous = TRef.getAndSet 5 ledger
+                let! beforeUpdate = TRef.getAndUpdate (fun value -> value + 1) ledger
+                let! afterUpdate = TRef.updateAndGet (fun value -> value + 2) ledger
+                return produced, previous, beforeUpdate, afterUpdate
+            })
+
         let! final = STM.atomically (total ())
         let! finalBalances = balances |> List.map (TRef.get >> STM.atomically) |> Flow.sequence
         let! left = STM.atomically (TRef.get reserve)
@@ -65,6 +76,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             [ check "every audit saw the whole amount, never a transfer half done" (audits |> List.forall ((=) (accounts * opening)))
               check "the total is unchanged after every transfer" (final = accounts * opening)
               check "no account ever went negative" (finalBalances |> List.forall (fun balance -> balance >= 0))
+              check "the atomic read-and-write helpers returned the documented values" (produced = 0 && previous = 1 && beforeUpdate = 5 && afterUpdate = 8)
               check "every patient withdrawal completed once the reserve was funded" (withdrawn.Length = patient && withdrawn |> List.forall (function Exit.Success () -> true | _ -> false) && left = 0)
               check "some transfers went through" (completed > 0) ]
     }

@@ -126,6 +126,32 @@ module TRef =
             context.Journal[tref.Id] <- (box (f current), tref :> ITRef)
             Done ())
 
+    /// <summary>Atomically applies <paramref name="f" />, writes the new state, and returns the value it produced.</summary>
+    let modify (f: 'T -> 'v * 'T) (tref: TRef<'T>) : STM<'v> =
+        STM(fun context ->
+            context.Reads.Add tref.Id |> ignore
+
+            let current =
+                match context.Journal.TryGetValue tref.Id with
+                | true, (v, _) -> unbox<'T> v
+                | false, _ -> tref.Value
+
+            let result, next = f current
+            context.Journal[tref.Id] <- (box next, tref :> ITRef)
+            Done result)
+
+    /// <summary>Sets the value and returns the previous value.</summary>
+    let getAndSet (value: 'T) (tref: TRef<'T>) : STM<'T> =
+        modify (fun previous -> previous, value) tref
+
+    /// <summary>Updates the value and returns the previous value.</summary>
+    let getAndUpdate (f: 'T -> 'T) (tref: TRef<'T>) : STM<'T> =
+        modify (fun previous -> previous, f previous) tref
+
+    /// <summary>Updates the value and returns the new value.</summary>
+    let updateAndGet (f: 'T -> 'T) (tref: TRef<'T>) : STM<'T> =
+        modify (fun previous -> let next = f previous in next, next) tref
+
 /// <summary>
 /// Computation expression builder for STM transactions.
 /// </summary>
@@ -308,3 +334,160 @@ module STM =
 
         // A loop rather than recursion, so a transaction that retries many times runs in constant memory.
         Flow(fun _ cancellationToken -> Execution.loop () (fun () -> attempt cancellationToken))
+
+/// <summary>Immutable state held by a transactional queue.</summary>
+type internal TQueueState<'a> =
+    { Items: 'a list
+      Capacity: int option }
+
+/// <summary>A transactional FIFO queue, built from a transactional reference.</summary>
+type TQueue<'a> internal (state: TRef<TQueueState<'a>>) =
+    member internal _.State = state
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module TQueue =
+    /// <summary>Creates a transactional queue with the supplied capacity, or unbounded when <c>None</c>.</summary>
+    let make (capacity: int option) : STM<TQueue<'a>> =
+        stm {
+            let! state = TRef.make { Items = []; Capacity = capacity }
+            return TQueue(state)
+        }
+
+    /// <summary>Creates an unbounded transactional queue.</summary>
+    let unbounded<'a> : STM<TQueue<'a>> = make None
+
+    /// <summary>Creates a bounded transactional queue.</summary>
+    let bounded<'a> (capacity: int) : STM<TQueue<'a>> = make (Some capacity)
+
+    /// <summary>Adds an item, retrying when the queue is at capacity.</summary>
+    let offer (item: 'a) (queue: TQueue<'a>) : STM<unit> =
+        stm {
+            let! state = TRef.get queue.State
+            if state.Capacity |> Option.exists (fun capacity -> state.Items.Length >= capacity) then
+                do! STM.retry
+            do! TRef.set { state with Items = state.Items @ [ item ] } queue.State
+        }
+
+    /// <summary>Removes and returns the oldest item, retrying when the queue is empty.</summary>
+    let take (queue: TQueue<'a>) : STM<'a> =
+        stm {
+            let! state = TRef.get queue.State
+            match state.Items with
+            | [] -> return! STM.retry
+            | head :: tail ->
+                do! TRef.set { state with Items = tail } queue.State
+                return head
+        }
+
+    /// <summary>Returns the number of items currently in the queue.</summary>
+    let size (queue: TQueue<'a>) : STM<int> =
+        stm {
+            let! state = TRef.get queue.State
+            return state.Items.Length
+        }
+
+    /// <summary>Returns whether the queue is empty.</summary>
+    let isEmpty (queue: TQueue<'a>) : STM<bool> =
+        stm {
+            let! state = TRef.get queue.State
+            return state.Items.IsEmpty
+        }
+
+    /// <summary>Returns whether the queue is at its capacity.</summary>
+    let isFull (queue: TQueue<'a>) : STM<bool> =
+        stm {
+            let! state = TRef.get queue.State
+            return (state.Capacity |> Option.exists (fun capacity -> state.Items.Length >= capacity))
+        }
+
+/// <summary>A transactional semaphore, built from a transactional reference.</summary>
+type TSemaphore internal (permits: TRef<int>) =
+    member internal _.Permits = permits
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module TSemaphore =
+    /// <summary>Creates a transactional semaphore with the supplied initial permits.</summary>
+    let make (permits: int) : STM<TSemaphore> =
+        stm {
+            let! cell = TRef.make permits
+            return TSemaphore(cell)
+        }
+
+    /// <summary>Acquires a permit, retrying until one is available.</summary>
+    let acquire (semaphore: TSemaphore) : STM<unit> =
+        stm {
+            let! available = TRef.get semaphore.Permits
+            if available <= 0 then do! STM.retry
+            do! TRef.set (available - 1) semaphore.Permits
+        }
+
+    /// <summary>Releases a permit.</summary>
+    let release (semaphore: TSemaphore) : STM<unit> =
+        stm {
+            let! available = TRef.get semaphore.Permits
+            do! TRef.set (available + 1) semaphore.Permits
+        }
+
+    /// <summary>Returns the number of available permits.</summary>
+    let available (semaphore: TSemaphore) : STM<int> = TRef.get semaphore.Permits
+
+/// <summary>Immutable state held by a transactional promise.</summary>
+type internal TPromiseState<'error, 'value> =
+    | Pending
+    | Completed of Result<'value, 'error>
+
+/// <summary>A transactional promise that blocks readers until it is completed.</summary>
+type TPromise<'error, 'value> internal (cell: TRef<TPromiseState<'error, 'value>>) =
+    member internal _.Cell = cell
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module TPromise =
+    /// <summary>Creates a pending transactional promise.</summary>
+    let make<'error, 'value> : STM<TPromise<'error, 'value>> =
+        stm {
+            let! cell = TRef.make Pending
+            return TPromise(cell)
+        }
+
+    /// <summary>Completes the promise with a value; returns <c>false</c> when it was already completed.</summary>
+    let succeed (value: 'value) (promise: TPromise<'error, 'value>) : STM<bool> =
+        stm {
+            let! state = TRef.get promise.Cell
+            match state with
+            | Pending ->
+                do! TRef.set (Completed(Ok value)) promise.Cell
+                return true
+            | Completed _ -> return false
+        }
+
+    /// <summary>Completes the promise with a typed error; returns <c>false</c> when it was already completed.</summary>
+    let fail (error: 'error) (promise: TPromise<'error, 'value>) : STM<bool> =
+        stm {
+            let! state = TRef.get promise.Cell
+            match state with
+            | Pending ->
+                do! TRef.set (Completed(Error error)) promise.Cell
+                return true
+            | Completed _ -> return false
+        }
+
+    /// <summary>Returns the completed value, retrying until the promise is completed.</summary>
+    let await (promise: TPromise<'error, 'value>) : STM<Result<'value, 'error>> =
+        stm {
+            let! state = TRef.get promise.Cell
+            match state with
+            | Pending -> return! STM.retry
+            | Completed result -> return result
+        }
+
+    /// <summary>Returns the completed value without retrying, or <c>None</c> when still pending.</summary>
+    let poll (promise: TPromise<'error, 'value>) : STM<Result<'value, 'error> option> =
+        stm {
+            let! state = TRef.get promise.Cell
+            match state with
+            | Pending -> return None
+            | Completed result -> return Some result
+        }

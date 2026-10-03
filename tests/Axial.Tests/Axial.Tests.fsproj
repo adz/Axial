@@ -26,6 +26,7 @@
     <Compile Include="FiberDiagnosticsTests.fs" />
     <Compile Include="WorkflowResourceTests.fs" />
     <Compile Include="WorkflowStateTests.fs" />
+    <Compile Include="StmPrimitivesTests.fs" />
     <Compile Include="WorkflowQueueTests.fs" />
     <Compile Include="WorkflowHubTests.fs" />
     <Compile Include="WorkflowSubscriptionRefTests.fs" />
