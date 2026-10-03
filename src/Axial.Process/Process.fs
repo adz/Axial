@@ -310,6 +310,54 @@ type private CaptureBuffer(limit: int option, tail: bool) =
             { Text = encoding.GetString bytes; Bytes = bytes; Truncated = truncated })
 #endif
 
+#if !FABLE_COMPILER
+/// <summary>A scriptable process service test double.</summary>
+/// <remarks>Set <c>RunHandler</c> (or <c>StreamHandler</c>) to control results; <c>RunSpecs</c> records the specifications.</remarks>
+type TestProcess() =
+    let runSpecs = ResizeArray<ProcessSpec>()
+
+    let mutable runHandler : ProcessSpec -> ProcessResult =
+        fun _ -> invalidOp "No process result configured; set TestProcess.RunHandler."
+
+    let mutable streamHandler : ProcessSpec -> FlowStream<unit, ProcessError, ProcessEvent> =
+        fun _ -> FlowStream.empty
+
+    /// <summary>The specifications passed to <c>Run</c>, in order.</summary>
+    member _.RunSpecs : System.Collections.Generic.IReadOnlyList<ProcessSpec> = runSpecs
+
+    /// <summary>Produces a result for each <c>Run</c> call.</summary>
+    member _.RunHandler with get () = runHandler and set value = runHandler <- value
+
+    /// <summary>Produces the stream for each <c>Stream</c> call; the default is empty.</summary>
+    member _.StreamHandler with get () = streamHandler and set value = streamHandler <- value
+
+    /// <summary>Removes all recorded specifications.</summary>
+    member _.Clear() = runSpecs.Clear()
+
+    /// <summary>Builds a minimal successful <c>ProcessResult</c> for scripted replies.</summary>
+    static member Result(exitCode: int, stdOut: string, ?stdErr: string) : ProcessResult =
+        let stdErr = defaultArg stdErr ""
+        let bytes (text: string) = Encoding.UTF8.GetBytes text
+
+        { ExitCode = exitCode
+          ExitCodes = [ exitCode ]
+          StdOut = stdOut
+          StdErr = stdErr
+          StdOutCapture = { Text = stdOut; Bytes = bytes stdOut; Truncated = false }
+          StdErrCapture = { Text = stdErr; Bytes = bytes stdErr; Truncated = false }
+          Stages = []
+          StartedAt = DateTimeOffset.UnixEpoch
+          Duration = TimeSpan.Zero }
+
+    interface IProcess with
+        member _.Run specification =
+            Flow.delay (fun () ->
+                runSpecs.Add specification
+                Flow.succeed (runHandler specification))
+
+        member _.Stream specification = streamHandler specification
+#endif
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Process =
@@ -976,6 +1024,9 @@ module Process =
             { Process = live Clock.live FileSystem.live console
               Console = console }
         runWith environment workflow
+
+    /// <summary>Creates a scriptable process service test double.</summary>
+    let test () : TestProcess = TestProcess()
 
 #endif
 

@@ -13,6 +13,7 @@
     <Compile Include="UnifiedServiceTests.fs" />
     <Compile Include="ProcessServiceTests.fs" />
     <Compile Include="DependencyInjectionIntegrationTests.fs" />
+    <Compile Include="TestDoubleTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
