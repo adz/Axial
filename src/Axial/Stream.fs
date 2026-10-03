@@ -1000,3 +1000,42 @@ module FlowStream =
     /// <example><code>stream |&gt; FlowStream.runCount</code></example>
     let runCount (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, int64> =
         runFold (fun count _ -> count + 1L) 0L stream
+
+#if !FABLE_COMPILER
+    /// <summary>Creates a stream that pulls values from an async enumerable until it is exhausted.</summary>
+    /// <remarks>
+    /// <c>System.Threading.Channels.ChannelReader</c> plugs in through <c>ReadAllAsync</c>:
+    /// <c>channel.Reader.ReadAllAsync() |&gt; FlowStream.ofAsyncEnumerable</c>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// source |&gt; FlowStream.ofAsyncEnumerable |&gt; FlowStream.runCollect
+    /// </code>
+    /// </example>
+    let ofAsyncEnumerable
+        (source: System.Collections.Generic.IAsyncEnumerable<'value>)
+        : FlowStream<'env, 'error, 'value> =
+        let mutable enumerator : System.Collections.Generic.IAsyncEnumerator<'value> option = None
+
+        let read () : Flow<'env, 'error, ('value * unit) option> =
+            Flow.fromTask (fun cancellationToken ->
+                task {
+                    let current =
+                        match enumerator with
+                        | Some existing -> existing
+                        | None ->
+                            let created = source.GetAsyncEnumerator(cancellationToken)
+                            enumerator <- Some created
+                            created
+
+                    let! moved = current.MoveNextAsync()
+
+                    if moved then
+                        return Some(current.Current, ())
+                    else
+                        do! current.DisposeAsync()
+                        return None
+                })
+
+        unfoldFlow read ()
+#endif

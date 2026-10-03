@@ -34,6 +34,7 @@
     <Compile Include="TortureCoverageTests.fs" />
     <Compile Include="MemoryRetentionTests.fs" />
     <Compile Include="WorkflowStreamTests.fs" />
+    <Compile Include="StreamInteropTests.fs" />
     <Compile Include="PolicyTests.fs" />
   </ItemGroup>
 
