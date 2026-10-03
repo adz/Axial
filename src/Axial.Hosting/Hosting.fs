@@ -3,10 +3,12 @@ namespace Axial.Hosting
 open System
 open System.Threading
 open System.Threading.Tasks
+open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial
+open Axial.HttpClient
 open Axial.Layers
 open Axial.PlatformService
 
@@ -230,3 +232,58 @@ module DotNetApp =
             finally
                 Console.CancelKeyPress.RemoveHandler handler // axial-allow-effect: console
         }
+
+/// <summary>Adapts Microsoft configuration to Axial's explicit environment-variable service.</summary>
+[<RequireQualifiedAccess>]
+module Configuration =
+    let private flatten (configuration: IConfiguration) : (string * string) list =
+        let rec walk (prefix: string) (section: IConfiguration) =
+            [ for child in section.GetChildren() do
+                  let key = if prefix = "" then child.Key else prefix + ":" + child.Key
+                  let children = child.GetChildren()
+
+                  if Seq.isEmpty children then
+                      yield key, (if isNull child.Value then "" else child.Value)
+                  else
+                      yield! walk key child ]
+
+        walk "" configuration
+
+    /// <summary>Creates an explicit environment-variable service backed by a Microsoft configuration.</summary>
+    let environmentVariables (configuration: IConfiguration) : IEnvironmentVariables =
+        if isNull configuration then nullArg (nameof configuration)
+
+        let lookup =
+            let dictionary = System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+
+            for key, value in flatten configuration do
+                dictionary[key] <- value
+
+            dictionary
+
+        { new IEnvironmentVariables with
+            member _.TryGet name = configuration[name] |> Option.ofObj
+
+            member _.Set(_, _) =
+                raise (NotSupportedException("Configuration is read-only; provide environment variables explicitly."))
+
+            member _.Expand text =
+                lookup
+                |> Seq.fold (fun (result: string) pair -> result.Replace("%" + pair.Key + "%", pair.Value)) text
+
+            member _.GetAll() = lookup :> System.Collections.Generic.IReadOnlyDictionary<string, string> }
+
+    /// <summary>Builds the environment-variable service from a Microsoft configuration supplied at composition.</summary>
+    let layer (configuration: IConfiguration) : Layer<unit, Never, IEnvironmentVariables> =
+        Layer.succeed (environmentVariables configuration)
+
+/// <summary>Adapts <see cref="T:Microsoft.Extensions.Http.IHttpClientFactory" /> to Axial's HTTP service.</summary>
+[<RequireQualifiedAccess>]
+module HttpFactory =
+    /// <summary>Creates an Axial HTTP service that obtains a client per send from the factory.</summary>
+    let live (clock: IClock) (factory: System.Net.Http.IHttpClientFactory) : IHttp =
+        if isNull factory then nullArg (nameof factory)
+
+        { new IHttp with
+            member _.Send(request, cancellationToken) =
+                (Axial.HttpClient.Http.live clock (factory.CreateClient(""))).Send(request, cancellationToken) }

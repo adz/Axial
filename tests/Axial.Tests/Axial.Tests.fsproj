@@ -27,6 +27,7 @@
     <Compile Include="WorkflowResourceTests.fs" />
     <Compile Include="WorkflowStateTests.fs" />
     <Compile Include="StmPrimitivesTests.fs" />
+    <Compile Include="BclInteropTests.fs" />
     <Compile Include="WorkflowQueueTests.fs" />
     <Compile Include="WorkflowHubTests.fs" />
     <Compile Include="WorkflowSubscriptionRefTests.fs" />

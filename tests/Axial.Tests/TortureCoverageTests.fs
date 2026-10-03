@@ -23,7 +23,10 @@ module TortureCoverageTests =
           "Axial.Layers.LayerModule" ]
 
     /// Members deliberately left out, each with the reason.
-    let private excluded () : Map<string, string> = Map.empty
+    let private excluded () : Map<string, string> =
+        [ "Deferred.fromTask", "BCL interop bridge, covered by BclInteropTests."
+          "Deferred.toTask", "BCL interop bridge, covered by BclInteropTests." ]
+        |> Map.ofList
 
     let private sourceText () =
         let directory = Path.Combine(__SOURCE_DIRECTORY__, "..", "..", "examples", "Axial.TortureTest")

@@ -139,6 +139,82 @@ module Clock =
             member _.Sleep(_, _) = raise (InvalidOperationException("A fixed clock cannot sleep; use a manual clock for timed flows."))
         }
 
+#if !FABLE_COMPILER && !NETSTANDARD2_1
+    /// <summary>Creates an Axial clock backed by a .NET <see cref="T:System.TimeProvider" />.</summary>
+    let fromTimeProvider (provider: TimeProvider) : IClock =
+        if isNull provider then nullArg (nameof provider)
+
+        let startedAt = provider.GetTimestamp()
+
+        { new IClock with
+            member _.UtcNow() = provider.GetUtcNow()
+            member _.Elapsed() = provider.GetElapsedTime(startedAt)
+            member _.Sleep(delay, cancellationToken) = System.Threading.Tasks.Task.Delay(delay, provider, cancellationToken) }
+
+    /// <summary>Wraps an Axial clock as a .NET <see cref="T:System.TimeProvider" />.</summary>
+    let toTimeProvider (clock: IClock) : TimeProvider =
+        { new TimeProvider() with
+            member _.GetUtcNow() = clock.UtcNow()
+            member _.GetTimestamp() = clock.Elapsed().Ticks
+            override _.TimestampFrequency = TimeSpan.TicksPerSecond
+
+            member _.CreateTimer(callback, state, dueTime, period) =
+                let mutable disposed = 0
+                let mutable current = new System.Threading.CancellationTokenSource()
+                let mutable currentDue = dueTime
+                let mutable currentPeriod = period
+
+                let run () =
+                    let token = current.Token
+
+                    task {
+                        try
+                            if currentDue <> System.Threading.Timeout.InfiniteTimeSpan then
+                                if currentDue > TimeSpan.Zero then
+                                    do! clock.Sleep(currentDue, token)
+
+                                callback.Invoke state
+
+                                if currentPeriod <> System.Threading.Timeout.InfiniteTimeSpan && currentPeriod > TimeSpan.Zero then
+                                    while not token.IsCancellationRequested do
+                                        do! clock.Sleep(currentPeriod, token)
+                                        callback.Invoke state
+                        with :? OperationCanceledException ->
+                            ()
+                    }
+
+                let restart () =
+                    let previous = current
+                    current <- new System.Threading.CancellationTokenSource()
+                    previous.Cancel()
+                    previous.Dispose()
+                    run () |> ignore
+
+                run () |> ignore
+
+                { new System.Threading.ITimer with
+                    member _.Change(newDueTime, newPeriod) =
+                        if disposed = 1 then
+                            false
+                        else
+                            currentDue <- newDueTime
+                            currentPeriod <- newPeriod
+                            restart ()
+                            true
+
+                    member _.Dispose() =
+                        if System.Threading.Interlocked.Exchange(&disposed, 1) = 0 then
+                            current.Cancel()
+                            current.Dispose()
+
+                    member _.DisposeAsync() =
+                        if System.Threading.Interlocked.Exchange(&disposed, 1) = 0 then
+                            current.Cancel()
+                            current.Dispose()
+
+                        System.Threading.Tasks.ValueTask.CompletedTask } }
+#endif
+
     /// <summary>Builds the live clock as a layer.</summary>
     let layer : Layer<unit, Never, IClock> =
         Layer.succeed live
@@ -300,6 +376,10 @@ module Random =
         Platform.random ()
 
     /// <summary>Creates a deterministic random generator that always returns the supplied value.</summary>
+    /// <remarks>
+    /// <c>NextDouble</c> returns the value as a <c>float</c> and <c>NextBytes</c> truncates it to a <c>byte</c>;
+    /// use <c>Random.fromFixed</c> when a test needs distinct integer, double, and byte values.
+    /// </remarks>
     let fromValue (value: int) : IRandom =
         { new IRandom with
             member _.Next() = value
@@ -326,6 +406,11 @@ module Random =
                     buffer[index] <- byteValue }
 
     /// <summary>Creates a deterministic random generator that returns the supplied values in order, then throws.</summary>
+    /// <remarks>
+    /// Each scripted integer is returned directly by <c>Next</c>, <c>NextMax</c>, and <c>NextInt</c>.
+    /// <c>NextDouble</c> returns it as a <c>float</c> and <c>NextBytes</c> truncates it to a <c>byte</c>;
+    /// use <c>Random.fromFixed</c> when a test needs distinct integer, double, and byte values.
+    /// </remarks>
     let fromSequence (values: seq<int>) : IRandom =
         let values = Seq.toArray values
         let mutable index = 0

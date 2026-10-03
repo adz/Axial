@@ -269,6 +269,57 @@ module Deferred =
     let interrupt (deferred: Deferred<'error, 'value>) : Flow<'env, 'workflowError, bool> =
         complete (Exit.Failure Cause.Interrupt) deferred
 
+#if !FABLE_COMPILER
+    /// <summary>Completes a deferred from a .NET task: success on completion, defect on fault, interruption on cancellation.</summary>
+    let fromTask (task: System.Threading.Tasks.Task<'value>) : Flow<'env, 'error, Deferred<exn, 'value>> =
+        Flow(fun _ _ ->
+            let deferred = Deferred(Platform.newSignal ())
+
+            task.ContinueWith(fun (completed: System.Threading.Tasks.Task<'value>) ->
+                if completed.IsCanceled then
+                    interruptNow deferred |> ignore
+                elif completed.IsFaulted then
+                    dieNow (completed.Exception.GetBaseException()) deferred |> ignore
+                else
+                    succeedNow completed.Result deferred |> ignore)
+            |> ignore
+
+            Execution.ofValue deferred)
+
+    /// <summary>Exposes a deferred as a .NET task, rendering typed failures through the supplied function.</summary>
+    let toTask (describeError: 'error -> string) (deferred: Deferred<'error, 'value>) : System.Threading.Tasks.Task<'value> =
+        let (Deferred signal) = deferred
+
+        let tcs =
+            System.Threading.Tasks.TaskCompletionSource<'value>(
+                System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let complete (exit: Exit<'value, 'error>) =
+            match exit with
+            | Exit.Success value -> tcs.SetResult value
+            | Exit.Failure cause ->
+                if Cause.isInterrupted cause then
+                    tcs.SetCanceled()
+                else
+                    match Cause.defects cause with
+                    | defect :: _ -> tcs.SetException defect
+                    | [] ->
+                        match Cause.failures cause with
+                        | error :: _ -> tcs.SetException(Exception(describeError error))
+                        | [] -> tcs.SetException(Exception("Deferred failed."))
+
+        task {
+            let! outer = (Platform.awaitSignal signal System.Threading.CancellationToken.None).AsTask()
+
+            match outer with
+            | Exit.Success exit -> complete exit
+            | Exit.Failure _ -> tcs.SetCanceled()
+        }
+        |> ignore
+
+        tcs.Task
+#endif
+
 /// <summary>A Flow-native semaphore handle used to limit concurrent workflow sections.</summary>
 type FlowSemaphore =
     internal
@@ -361,3 +412,29 @@ module Semaphore =
                         PermitQueue.release queue
                         Execution.ofCause cause)
                     (FlowInternal.invoke flow environment cancellationToken)))
+
+#if !FABLE_COMPILER
+/// <summary>Flow-native bridges to <see cref="T:System.Threading.SemaphoreSlim" />.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module SemaphoreSlim =
+    /// <summary>Acquires a permit from a .NET semaphore, waiting asynchronously.</summary>
+    let acquire (semaphore: System.Threading.SemaphoreSlim) : Flow<'env, 'error, unit> =
+        Flow.fromTask (fun cancellationToken -> task { do! semaphore.WaitAsync(cancellationToken) })
+
+    /// <summary>Releases one permit back to a .NET semaphore.</summary>
+    let release (semaphore: System.Threading.SemaphoreSlim) : Flow<'env, 'error, unit> =
+        Flow.delay (fun () ->
+            semaphore.Release() |> ignore
+            Flow.succeed ())
+
+    /// <summary>Runs a workflow while holding one permit and always releases it afterward.</summary>
+    let withPermit
+        (semaphore: System.Threading.SemaphoreSlim)
+        (workflow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'error, 'value> =
+        acquire semaphore
+        |> Flow.bind (fun () ->
+            workflow
+            |> Flow.ensuring (Flow.delay (fun () -> semaphore.Release() |> ignore; Flow.succeed ()) : Flow<'env, Never, unit>))
+#endif
