@@ -143,6 +143,34 @@ module Clock =
     let layer : Layer<unit, Never, IClock> =
         Layer.succeed live
 
+/// <summary>A single entry recorded by a <see cref="T:Axial.PlatformService.TestLog" />.</summary>
+type LogEntry =
+    { Level: LogLevel
+      Message: string
+      Error: exn option }
+
+/// <summary>A test double for <see cref="T:Axial.PlatformService.ILog" /> that records entries for assertions.</summary>
+type TestLog() =
+    let entries = ResizeArray<LogEntry>()
+
+    /// <summary>Records a message at the supplied level.</summary>
+    member _.Log(level: LogLevel, message: string) =
+        entries.Add { Level = level; Message = message; Error = None }
+
+    /// <summary>Records a message carrying an exception at the supplied level.</summary>
+    member _.LogException(level: LogLevel, error: exn, message: string) =
+        entries.Add { Level = level; Message = message; Error = Some error }
+
+    /// <summary>The recorded entries, in the order they were written.</summary>
+    member _.Entries : IReadOnlyList<LogEntry> = entries
+
+    /// <summary>Removes all recorded entries.</summary>
+    member _.Clear() = entries.Clear()
+
+    interface ILog with
+        member this.Log level message = this.Log(level, message)
+        member this.LogException level error message = this.LogException(level, error, message)
+
 /// <summary>Helpers for the logging service.</summary>
 [<RequireQualifiedAccess>]
 module Log =
@@ -210,6 +238,9 @@ module Log =
         { new ILog with
             member _.Log level message = sink level message
             member _.LogException level error message = sink level $"{message}{Environment.NewLine}{error}" }
+
+    /// <summary>Creates a recording logger whose entries are exposed for assertions.</summary>
+    let capturing () : TestLog = TestLog()
 
     /// <summary>Builds the live logger as a layer.</summary>
     let layer : Layer<unit, Never, ILog> =
@@ -294,6 +325,28 @@ module Random =
                 for index in 0 .. buffer.Length - 1 do
                     buffer[index] <- byteValue }
 
+    /// <summary>Creates a deterministic random generator that returns the supplied values in order, then throws.</summary>
+    let fromSequence (values: seq<int>) : IRandom =
+        let values = Seq.toArray values
+        let mutable index = 0
+
+        let next () =
+            if index >= values.Length then
+                invalidOp "Scripted random exhausted; supply more values with Random.fromSequence."
+
+            let value = values[index]
+            index <- index + 1
+            value
+
+        { new IRandom with
+            member _.Next() = next ()
+            member _.NextMax _ = next ()
+            member _.NextInt _ _ = next ()
+            member _.NextDouble() = float (next ())
+            member _.NextBytes buffer =
+                for index in 0 .. buffer.Length - 1 do
+                    buffer[index] <- byte (next ()) }
+
     /// <summary>Builds the live random-number generator as a layer.</summary>
     let layer : Layer<unit, Never, IRandom> =
         Layer.succeed live
@@ -319,6 +372,20 @@ module Guid =
     let fromValue (value: global.System.Guid) : IGuid =
         { new IGuid with
             member _.NewGuid() = value }
+
+    /// <summary>Creates a deterministic GUID service that returns the supplied values in order, then throws.</summary>
+    let fromSequence (values: seq<global.System.Guid>) : IGuid =
+        let values = Seq.toArray values
+        let mutable index = 0
+
+        { new IGuid with
+            member _.NewGuid() =
+                if index >= values.Length then
+                    invalidOp "Scripted GUID exhausted; supply more values with Guid.fromSequence."
+
+                let value = values[index]
+                index <- index + 1
+                value }
 
     /// <summary>Builds the live GUID service as a layer.</summary>
     let layer : Layer<unit, Never, IGuid> =
@@ -515,3 +582,45 @@ module BaseRuntime =
         Platform.servicesFromServiceProvider
         |> Layer.map (fun (clock, log, random, guid, environmentVariables) ->
             { Clock = clock; Log = log; Random = random; Guid = guid; EnvironmentVariables = environmentVariables })
+
+#if !FABLE_COMPILER
+/// <summary>A deterministic test environment: a manual clock, a recording log, and scripted random, GUID, and
+/// environment-variable services. Replace the random, GUID, and environment-variable services with scripted values
+/// before running a test that depends on them.</summary>
+type TestRuntime(startUtc: DateTimeOffset) =
+    /// <summary>The manual clock; advance it with <c>AdvanceBy</c> or <c>AdvanceToNextDeadline</c>.</summary>
+    member val Clock = ManualClock(startUtc)
+
+    /// <summary>The recording logger; inspect <c>Entries</c> after a run.</summary>
+    member val Log = TestLog()
+
+    /// <summary>The random service; assign a scripted generator such as <c>Random.fromSequence</c>.</summary>
+    member val Random : IRandom = Random.fromSequence Seq.empty with get, set
+
+    /// <summary>The GUID service; assign a scripted generator such as <c>Guid.fromSequence</c>.</summary>
+    member val Guid : IGuid = Guid.fromSequence Seq.empty with get, set
+
+    /// <summary>The environment-variable service; assign an in-memory provider such as <c>EnvironmentVariables.fromPairs</c>.</summary>
+    member val EnvironmentVariables : IEnvironmentVariables = EnvironmentVariables.fromPairs Seq.empty with get, set
+
+    interface IHasClock with
+        member this.Clock = this.Clock
+    interface IHasLog with
+        member this.Log = this.Log
+    interface IHasRandom with
+        member this.Random = this.Random
+    interface IHasGuid with
+        member this.Guid = this.Guid
+    interface IHasEnvironmentVariables with
+        member this.EnvironmentVariables = this.EnvironmentVariables
+
+/// <summary>Helpers for constructing deterministic test environments.</summary>
+[<RequireQualifiedAccess>]
+module TestRuntime =
+    /// <summary>Creates a deterministic test environment whose clock starts at the supplied instant.</summary>
+    let create (startUtc: DateTimeOffset) : TestRuntime = TestRuntime(startUtc)
+
+    /// <summary>Builds a deterministic test environment as a layer.</summary>
+    let layer (startUtc: DateTimeOffset) : Layer<unit, Never, TestRuntime> =
+        Layer.succeed (create startUtc)
+#endif

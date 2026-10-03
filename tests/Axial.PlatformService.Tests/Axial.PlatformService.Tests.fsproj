@@ -13,6 +13,7 @@
     <Compile Include="CoreServiceTests.fs" />
     <Compile Include="RuntimeFoundationTests.fs" />
     <Compile Include="ServiceRuntimePatternTests.fs" />
+    <Compile Include="TestRuntimeTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
