@@ -11,23 +11,14 @@ helpers execute commands directly. Both approaches retain typed failures, cancel
 
 ## Run one command
 
-For a script that checks a Git repository, start with `git status --short`. Open `Axial.Process.DSL` to
-construct the command with `cmd`, then execute it directly with `run`.
-You can start with a single command without writing a `flow { }` workflow or configuring an application.
-`cmd` returns a `ProcessCommand`; `run` returns an `Exit` containing the captured output or failure.
-`Exit.Success` holds a `ProcessResult` with `StdOut`, `StdErr`, and exit codes.
-`Exit.Failure` holds a `Cause<ProcessError>`: an expected process error, a defect, or interruption.
+`Axial.Process` runs external commands — `git`, a compiler, a media tool — and returns their output, exit
+code, and failures as ordinary Axial values. `Axial.Process.DSL` builds a command with `cmd`, and `run`
+executes it:
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
 open System
-open System.IO
-open System.Threading
-open System.Threading.Tasks
 open Axial
-open Axial.Console
-open Axial.FileSystem
-open Axial.PlatformService
 open Axial.Process
 open Axial.Process.DSL
 
@@ -37,8 +28,6 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-open Axial
-open Axial.Process
 open Axial.Process.DSL
 
 let status : ProcessCommand = cmd $"git status --short"
@@ -50,6 +39,14 @@ match outcome with
 | Exit.Success result -> shouldEqual 0 result.ExitCode
 | other -> failwithf "Expected repository status, got %A" other
 ```
+
+A single command is a complete program here — no `flow { }` workflow, no application to configure. `run`
+hands back an `Exit`: on success a `ProcessResult` with `StdOut`, `StdErr`, and the exit code, on failure a
+`Cause<ProcessError>`.
+
+`run` is a shortcut that executes now, not a separate scripting mode. The same `ProcessCommand` becomes one
+step in an application with `toFlow`, bound with `let!` inside `flow { }` and run with the enclosing `Flow`.
+A one-command script grows into a workflow without being rebuilt.
 
 ## When the command needs settings
 
