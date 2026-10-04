@@ -93,44 +93,49 @@ let countChangedPaths (repository: string) : ProcessSpec =
 ### Inspect the pipeline before running it
 
 `Process.plan` returns a `ProcessPlan` without starting either command. Its `Stages` contain a
-`ProcessStagePlan` for each command, including resolved settings and the input/output connections. Here are
-the commands, connections, routes, capture policies, and Git settings from the pipeline above:
+`ProcessStagePlan` for each command, including resolved settings and the input/output connections. Print the
+plan and check the parts that matter:
 
-```fsharp transcript
-> open System;;
-> open Axial.Process;;
-> open Axial.Process.DSL;;
-> let planned () : ProcessPlan =
--     cmd $"git status --short"
--     |> cwd "/work/repository"
--     |> env "GIT_OPTIONAL_LOCKS" "0"
--     |> timeout (TimeSpan.FromSeconds 5.)
--     => cmd $"wc -l"
--     |> Process.plan;;
+```fsharp
+let planned () : ProcessPlan =
+    cmd $"git status --short"
+    |> cwd "/work/repository"
+    |> env "GIT_OPTIONAL_LOCKS" "0"
+    |> timeout (TimeSpan.FromSeconds 5.)
+    => cmd $"wc -l"
+    |> Process.plan
 
-> (planned ()).Commands;;
-val it: string list = ["git status --short"; "wc -l"]
+let describePlan (plan: ProcessPlan) : string =
+    let commands = String.concat " | " plan.Commands
 
-> (planned ()).Connections;;
-val it: Tuple<int,int,bool> list = [(0, 1, false)]
+    let stages =
+        plan.Stages
+        |> List.map (fun stage ->
+            $"stage {stage.Stage}: {stage.Command} | stdin {stage.StdIn} | stdout {stage.StdOut} | capture {stage.StdOutCapture}")
 
-> (planned ()).Stages |> List.map (fun stage -> stage.Stage, stage.StdIn, stage.StdOut, stage.StdOutCapture);;
-val it: Tuple<int,string,string,OutputRetention> list = [(0, "empty", "pipe to stages 1", Nothing);
- (1, "pipe from stages 0", "discard", All)]
+    String.concat
+        "\n"
+        [ yield $"commands: {commands}"
+          yield! stages
+          yield $"working directory: {plan.Stages[0].WorkingDirectory}"
+          yield $"environment: {plan.Stages[0].Environment}"
+          yield $"timeout: {plan.Stages[0].Timeout}" ]
+```
 
-> (planned ()).Stages[0].WorkingDirectory;;
-val it: string option = Some "/work/repository"
-
-> (planned ()).Stages[0].Environment;;
-val it: Map<string,string option> = map [("GIT_OPTIONAL_LOCKS", Some "0")]
-
-> (planned ()).Stages[0].Timeout |> Option.map (fun after -> after.TotalSeconds);;
-val it: float option = Some 5.0
+```fsharp run
+let plan = planned ()
+printfn "%s" (describePlan plan)
+shouldEqual [ "git status --short"; "wc -l" ] plan.Commands
+shouldEqual [ (0, 1, false) ] plan.Connections
+shouldEqual (Some "/work/repository") plan.Stages[0].WorkingDirectory
+shouldEqual (Map.ofList [ "GIT_OPTIONAL_LOCKS", Some "0" ]) plan.Stages[0].Environment
+shouldEqual (Some 5.0) (plan.Stages[0].Timeout |> Option.map _.TotalSeconds)
 ```
 
 `(0, 1, false)` connects stage 0's stdout to stage 1; the boolean records whether stderr is also piped.
 Git's stdout feeds the pipe, so it has no separate capture. `wc` receives that pipe; its `discard` route
-keeps the console silent, while `All` retains its final stdout. The repository path is just part of the plan; inspecting it does not access that directory.
+keeps the console silent, while `All` retains its final stdout. The repository path is just part of the plan;
+inspecting it does not access that directory.
 
 When you're ready to execute the pipeline, call `run`:
 
