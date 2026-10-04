@@ -29,7 +29,7 @@ let stdoutOf (outcome: Exit<ProcessResult, ProcessError>) =
     | Exit.Failure cause -> failwithf "%A" cause
 ```
 
-Start with one command; `run` supplies the execution services:
+Start with one command and execute it directly with `run`:
 
 ```fsharp run
 match cmd $"printf hello" |> run with

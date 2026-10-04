@@ -5,13 +5,15 @@ description: Start external commands from an Axial workflow.
 
 # Processes
 
-`Axial.Process` lets a command-line program start an external command without giving up typed failures, cancellation,
-or cleanup. You describe the command first, choose what happens to its input and output, then run it.
+`Axial.Process` describes external commands and connects them to Axial workflows. Use `toFlow` to make a command
+one step in a larger `Flow`, alongside other application work. For short scripts, the `run` and `runExitCode`
+helpers execute commands directly. Both approaches retain typed failures, cancellation, and process cleanup.
 
 ## Run one command
 
-Open `Axial.Process.DSL` and call `run`. It supplies the live services and returns an `Exit` containing the
-captured output or failure. `cmd` constructs a `ProcessCommand`; `run` executes it.
+Open `Axial.Process.DSL` to construct a command with `cmd`, then execute it directly with `run`.
+You can start with a single command without writing a `flow { }` workflow or configuring an application.
+`cmd` returns a `ProcessCommand`; `run` returns an `Exit` containing the captured output or failure.
 `Exit.Success` holds a `ProcessResult` with `StdOut`, `StdErr`, and exit codes.
 `Exit.Failure` holds a `Cause<ProcessError>`: an expected process error, a defect, or interruption.
 
@@ -111,7 +113,7 @@ match loudGreetingWithFunctions (Path.GetTempPath()) |> Process.run with
 as one native argument. Configure command settings before connecting stages with `=>` or `Process.pipe`, which
 returns a `ProcessSpec`. Construction starts no child process. `toFlow` makes the topology one lazy workflow step.
 
-`run` supplies live services and returns the complete `Exit`; direct command execution captures full stdout.
+`run` executes directly and returns the complete `Exit`; direct command execution captures full stdout.
 `runExitCode` returns an integer for an entry point and defaults to visible console output without stdout capture.
 Both accept commands, specs, or an already constructed Flow. Explicit capture and routing settings win.
 
@@ -128,9 +130,10 @@ Both accept commands, specs, or an already constructed Flow. Explicit capture an
 | `ProcessStream<'env, ProcessOutput>` | Lazy output observations with stage and channel metadata | `streamStdout`, `streamStderr`, `streamOutputs` |
 | `ProcessCompletion` | `Completed result` after natural completion, or `StoppedEarly` after owned prefix cleanup | A `ProcessStream` terminal |
 
-`'env` is the application's dependency record; it becomes relevant when composing a Flow or supplying services.
-Direct `run` supplies that environment. `toFlow` and stream constructors stay lazy. A stream terminal produces
-a Flow; `run` executes that Flow and returns an `Exit` containing its consumed value and completion.
+`'env` describes the dependencies required by an application Flow. Short scripts can use `run` without
+constructing that record themselves. `toFlow` and stream constructors describe work without starting it.
+A stream terminal produces a Flow; `run` executes that Flow and returns its outcome. Collection and fold
+terminals include the consumed value together with `ProcessCompletion`.
 
 For a server, worker, or application Flow, see [run a process in an application Flow](running-in-an-application-flow.html).
 

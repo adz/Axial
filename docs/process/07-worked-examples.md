@@ -10,7 +10,7 @@ Flow runner reaches the host boundary.
 
 ## A command-line tool that shows progress
 
-Use `runExitCode` for a command-line entry point. It supplies live services, forwards output to the console,
+Use `runExitCode` to run a command directly from a command-line entry point. It forwards output to the console
 and returns the integer program status. Configure routes explicitly when other destinations are needed.
 
 ```fsharp prepare
