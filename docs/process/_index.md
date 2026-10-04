@@ -25,6 +25,12 @@ open Axial.Process.DSL
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
+
+/// Unwraps a successful process outcome, failing the example on an expected process error.
+let succeeded (outcome: Exit<ProcessResult, ProcessError>) =
+    match outcome with
+    | Exit.Success result -> result
+    | Exit.Failure cause -> failwithf "%A" cause
 ```
 
 ```fsharp
@@ -35,9 +41,7 @@ let outcome : Exit<ProcessResult, ProcessError> = status |> run
 ```
 
 ```fsharp run
-match outcome with
-| Exit.Success result -> shouldEqual 0 result.ExitCode
-| other -> failwithf "Expected repository status, got %A" other
+outcome |> succeeded |> _.ExitCode |> shouldEqual 0
 ```
 
 A single command is a complete program here — no `flow { }` workflow, no application to configure. `run`
@@ -64,9 +68,7 @@ let configuredStatus (repository: string) : ProcessCommand =
 ```
 
 ```fsharp run
-match configuredStatus "." |> run with
-| Exit.Success result -> shouldEqual 0 result.ExitCode
-| other -> failwithf "Expected configured status, got %A" other
+configuredStatus "." |> run |> succeeded |> _.ExitCode |> shouldEqual 0
 ```
 
 ## Count status lines with a pipe
@@ -93,43 +95,33 @@ let countChangedPaths (repository: string) : ProcessSpec =
 ### Inspect the pipeline before running it
 
 `Process.plan` returns a `ProcessPlan` without starting either command. Its `Stages` contain a
-`ProcessStagePlan` for each command, including resolved settings and the input/output connections. Print the
-plan and check the parts that matter:
+`ProcessStagePlan` for each command, including resolved settings and the input/output connections. The first
+interaction builds the plan; each expression after it renders a part:
 
-```fsharp
-let planned () : ProcessPlan =
-    cmd $"git status --short"
-    |> cwd "/work/repository"
-    |> env "GIT_OPTIONAL_LOCKS" "0"
-    |> timeout (TimeSpan.FromSeconds 5.)
-    => cmd $"wc -l"
-    |> Process.plan
-
-let describePlan (plan: ProcessPlan) : string =
-    let commands = String.concat " | " plan.Commands
-
-    let stages =
-        plan.Stages
-        |> List.map (fun stage ->
-            $"stage {stage.Stage}: {stage.Command} | stdin {stage.StdIn} | stdout {stage.StdOut} | capture {stage.StdOutCapture}")
-
-    String.concat
-        "\n"
-        [ yield $"commands: {commands}"
-          yield! stages
-          yield $"working directory: {plan.Stages[0].WorkingDirectory}"
-          yield $"environment: {plan.Stages[0].Environment}"
-          yield $"timeout: {plan.Stages[0].Timeout}" ]
-```
-
-```fsharp run
-let plan = planned ()
-printfn "%s" (describePlan plan)
-shouldEqual [ "git status --short"; "wc -l" ] plan.Commands
-shouldEqual [ (0, 1, false) ] plan.Connections
-shouldEqual (Some "/work/repository") plan.Stages[0].WorkingDirectory
-shouldEqual (Map.ofList [ "GIT_OPTIONAL_LOCKS", Some "0" ]) plan.Stages[0].Environment
-shouldEqual (Some 5.0) (plan.Stages[0].Timeout |> Option.map _.TotalSeconds)
+```fsharp transcript
+> open System;;
+> open Axial.Process;;
+> open Axial.Process.DSL;;
+> let planned () : ProcessPlan =
+-     cmd $"git status --short"
+-     |> cwd "/work/repository"
+-     |> env "GIT_OPTIONAL_LOCKS" "0"
+-     |> timeout (TimeSpan.FromSeconds 5.)
+-     => cmd $"wc -l"
+-     |> Process.plan;;
+> planned () |> fun plan -> plan.Commands;;
+val it: string list = ["git status --short"; "wc -l"]
+> planned () |> fun plan -> plan.Connections |> List.map (fun (from, target, both) -> $"stage {from} -> {target}, stderr piped: {both.ToString().ToLowerInvariant()}");;
+val it: string list = ["stage 0 -> 1, stderr piped: false"]
+> planned () |> fun plan -> plan.Stages |> List.map (fun stage -> $"stage {stage.Stage}: {stage.StdIn} -> {stage.StdOut}, {stage.StdOutCapture}");;
+val it: string list = ["stage 0: empty -> pipe to stages 1, Nothing";
+ "stage 1: pipe from stages 0 -> discard, All"]
+> planned () |> fun plan -> plan.Stages[0].WorkingDirectory;;
+val it: string option = Some "/work/repository"
+> planned () |> fun plan -> plan.Stages[0].Environment;;
+val it: Map<string,string option> = map [("GIT_OPTIONAL_LOCKS", Some "0")]
+> planned () |> fun plan -> plan.Stages[0].Timeout |> Option.map (fun after -> after.TotalSeconds);;
+val it: float option = Some 5.0
 ```
 
 `(0, 1, false)` connects stage 0's stdout to stage 1; the boolean records whether stderr is also piped.
@@ -140,9 +132,8 @@ inspecting it does not access that directory.
 When you're ready to execute the pipeline, call `run`:
 
 ```fsharp run
-match countChangedPaths "." |> run with
-| Exit.Success result -> (Int32.Parse(result.StdOut.Trim()) >= 0) |> shouldEqual true
-| other -> failwithf "Expected status count, got %A" other
+let count = countChangedPaths "." |> run |> succeeded |> _.StdOut |> _.Trim() |> Int32.Parse
+shouldEqual true (count >= 0)
 ```
 
 ## The same pipeline with qualified functions
@@ -160,9 +151,9 @@ let countChangedPathsWithFunctions (repository: string) : ProcessSpec =
 ```
 
 ```fsharp run
-match countChangedPathsWithFunctions "." |> Process.run with
-| Exit.Success result -> (Int32.Parse(result.StdOut.Trim()) >= 0) |> shouldEqual true
-| other -> failwithf "Expected equivalent pipeline, got %A" other
+let viaDsl = countChangedPaths "." |> run |> succeeded |> _.StdOut
+let viaFunctions = countChangedPathsWithFunctions "." |> Process.run |> succeeded |> _.StdOut
+shouldEqual viaDsl viaFunctions
 ```
 
 ## Pass values as arguments
@@ -178,9 +169,7 @@ let echoMessage (message: string) : ProcessCommand =
 
 ```fsharp run
 let message = "hello world; $HOME | 'quoted'"
-match echoMessage message |> run with
-| Exit.Success result -> shouldEqual message result.StdOut
-| other -> failwithf "Expected unchanged argument, got %A" other
+echoMessage message |> run |> succeeded |> _.StdOut |> shouldEqual message
 ```
 
 Here `printf` receives two arguments: the format `%s` and the complete message. `%%` writes a literal `%` in an
