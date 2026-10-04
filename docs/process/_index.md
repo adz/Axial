@@ -11,7 +11,8 @@ helpers execute commands directly. Both approaches retain typed failures, cancel
 
 ## Run one command
 
-Open `Axial.Process.DSL` to construct a command with `cmd`, then execute it directly with `run`.
+For a script that checks a Git repository, start with `git status --short`. Open `Axial.Process.DSL` to
+construct the command with `cmd`, then execute it directly with `run`.
 You can start with a single command without writing a `flow { }` workflow or configuring an application.
 `cmd` returns a `ProcessCommand`; `run` returns an `Exit` containing the captured output or failure.
 `Exit.Success` holds a `ProcessResult` with `StdOut`, `StdErr`, and exit codes.
@@ -40,53 +41,106 @@ open Axial
 open Axial.Process
 open Axial.Process.DSL
 
-let greeting : ProcessCommand = cmd $"printf hello"
-let outcome : Exit<ProcessResult, ProcessError> = greeting |> run
+let status : ProcessCommand = cmd $"git status --short"
+let outcome : Exit<ProcessResult, ProcessError> = status |> run
 ```
 
 ```fsharp run
 match outcome with
-| Exit.Success result -> shouldEqual "hello" result.StdOut
-| other -> failwithf "Expected greeting, got %A" other
+| Exit.Success result -> shouldEqual 0 result.ExitCode
+| other -> failwithf "Expected repository status, got %A" other
 ```
 
-## Adjust that command
+## When the command needs settings
 
-Add the working directory, an environment variable, and a per-command timeout before running it.
-Each setting returns another `ProcessCommand`; applying settings starts no process:
+The defaults are enough for many commands. To check a different repository, `cwd` tells Git where to run.
+For a status check in a script, `env "GIT_OPTIONAL_LOCKS" "0"` prevents Git from taking optional locks or
+refreshing the index on disk. `timeout` gives the command a deadline so the script cannot wait indefinitely.
+Use whichever settings your command needs; each returns a `ProcessCommand` and starts no process:
 
 ```fsharp
-let configuredGreeting (directory: string) : ProcessCommand =
-    cmd $"printf hello"
-    |> cwd directory
-    |> env "GREETING_MODE" "plain"
+let configuredStatus (repository: string) : ProcessCommand =
+    cmd $"git status --short"
+    |> cwd repository
+    |> env "GIT_OPTIONAL_LOCKS" "0"
     |> timeout (TimeSpan.FromSeconds 5.)
 ```
 
 ```fsharp run
-match configuredGreeting (Path.GetTempPath()) |> run with
-| Exit.Success result -> shouldEqual "hello" result.StdOut
-| other -> failwithf "Expected configured greeting, got %A" other
+match configuredStatus "." |> run with
+| Exit.Success result -> shouldEqual 0 result.ExitCode
+| other -> failwithf "Expected configured status, got %A" other
 ```
 
-## Connect a second command
+## Count status lines with a pipe
 
-`=>` connects the first command's stdout to the second command's stdin. Keep each command's settings before
-its connection. Joining two commands produces a `ProcessSpec`, which describes the connected topology:
+In Bash, `|` sends Git's output to `wc -l`, which counts its lines:
+
+```bash
+git status --short | wc -l
+```
+
+The DSL uses `=>` for that same pipe: Git's stdout becomes `wc`'s stdin. The example below also keeps the
+repository, environment, and timeout settings from the previous command. Joining the two `ProcessCommand`
+values produces a `ProcessSpec`; configure each command before its connection:
 
 ```fsharp
-let loudGreeting (directory: string) : ProcessSpec =
-    cmd $"printf hello"
-    |> cwd directory
-    |> env "GREETING_MODE" "plain"
+let countChangedPaths (repository: string) : ProcessSpec =
+    cmd $"git status --short"
+    |> cwd repository
+    |> env "GIT_OPTIONAL_LOCKS" "0"
     |> timeout (TimeSpan.FromSeconds 5.)
-    => cmd $"tr '[:lower:]' '[:upper:]'"
+    => cmd $"wc -l"
 ```
 
+### Inspect the pipeline before running it
+
+`Process.plan` returns a `ProcessPlan` without starting either command. Its `Stages` contain a
+`ProcessStagePlan` for each command, including resolved settings and the input/output connections. Here are
+the commands, connections, routes, capture policies, and Git settings from the pipeline above:
+
+```fsharp transcript
+> open System;;
+> open Axial.Process;;
+> open Axial.Process.DSL;;
+> let planned () : ProcessPlan =
+-     cmd $"git status --short"
+-     |> cwd "/work/repository"
+-     |> env "GIT_OPTIONAL_LOCKS" "0"
+-     |> timeout (TimeSpan.FromSeconds 5.)
+-     => cmd $"wc -l"
+-     |> Process.plan;;
+
+> (planned ()).Commands;;
+val it: string list = ["git status --short"; "wc -l"]
+
+> (planned ()).Connections;;
+val it: Tuple<int,int,bool> list = [(0, 1, false)]
+
+> (planned ()).Stages |> List.map (fun stage -> stage.Stage, stage.StdIn, stage.StdOut, stage.StdOutCapture);;
+val it: Tuple<int,string,string,OutputRetention> list = [(0, "empty", "pipe to stages 1", Nothing);
+ (1, "pipe from stages 0", "discard", All)]
+
+> (planned ()).Stages[0].WorkingDirectory;;
+val it: string option = Some "/work/repository"
+
+> (planned ()).Stages[0].Environment;;
+val it: Map<string,string option> = map [("GIT_OPTIONAL_LOCKS", Some "0")]
+
+> (planned ()).Stages[0].Timeout |> Option.map (fun after -> after.TotalSeconds);;
+val it: float option = Some 5.0
+```
+
+`(0, 1, false)` connects stage 0's stdout to stage 1; the boolean records whether stderr is also piped.
+Git's stdout feeds the pipe, so it has no separate capture. `wc` receives that pipe; its `discard` route
+keeps the console silent, while `All` retains its final stdout. The repository path is just part of the plan; inspecting it does not access that directory.
+
+When you're ready to execute the pipeline, call `run`:
+
 ```fsharp run
-match loudGreeting (Path.GetTempPath()) |> run with
-| Exit.Success result -> shouldEqual "HELLO" result.StdOut
-| other -> failwithf "Expected piped greeting, got %A" other
+match countChangedPaths "." |> run with
+| Exit.Success result -> (Int32.Parse(result.StdOut.Trim()) >= 0) |> shouldEqual true
+| other -> failwithf "Expected status count, got %A" other
 ```
 
 ## The same pipeline with qualified functions
@@ -95,45 +149,66 @@ The DSL is a shorter way to construct the same commands and connections. This ve
 functions throughout and needs no DSL names or operators:
 
 ```fsharp
-let loudGreetingWithFunctions (directory: string) : ProcessSpec =
-    Process.command $"printf hello"
-    |> Process.workingDirectory directory
-    |> Process.environment "GREETING_MODE" "plain"
+let countChangedPathsWithFunctions (repository: string) : ProcessSpec =
+    Process.command $"git status --short"
+    |> Process.workingDirectory repository
+    |> Process.environment "GIT_OPTIONAL_LOCKS" "0"
     |> Process.timeout (TimeSpan.FromSeconds 5.)
-    |> Process.pipe (Process.command $"tr '[:lower:]' '[:upper:]'")
+    |> Process.pipe (Process.command $"wc -l")
 ```
 
 ```fsharp run
-match loudGreetingWithFunctions (Path.GetTempPath()) |> Process.run with
-| Exit.Success result -> shouldEqual "HELLO" result.StdOut
+match countChangedPathsWithFunctions "." |> Process.run with
+| Exit.Success result -> (Int32.Parse(result.StdOut.Trim()) >= 0) |> shouldEqual true
 | other -> failwithf "Expected equivalent pipeline, got %A" other
 ```
 
-`Process.command` (DSL `cmd`) returns an immutable `ProcessCommand` and preserves each interpolation hole
-as one native argument. Configure command settings before connecting stages with `=>` or `Process.pipe`, which
-returns a `ProcessSpec`. Construction starts no child process. `toFlow` makes the topology one lazy workflow step.
+## Pass values as arguments
+
+When a filename, search term, or message comes from your program, put it in an interpolation hole: `{value}`.
+`cmd` and `Process.command` pass the whole value as **one native argument**. Spaces stay inside that argument;
+characters such as `;`, `|`, and `$HOME` stay literal. You do not need to build shell quoting around the value.
+
+```fsharp
+let echoMessage (message: string) : ProcessCommand =
+    cmd $"printf %%s {message}"
+```
+
+```fsharp run
+let message = "hello world; $HOME | 'quoted'"
+match echoMessage message |> run with
+| Exit.Success result -> shouldEqual message result.StdOut
+| other -> failwithf "Expected unchanged argument, got %A" other
+```
+
+Here `printf` receives two arguments: the format `%s` and the complete message. `%%` writes a literal `%` in an
+F# interpolated string. The message's `$HOME` is not expanded, and its `|` does not create another process.
+
+`cmd` does not invoke a shell. When you need shell syntax in the command template, choose `bash`, `sh`, or
+`pwsh` explicitly; their interpolation holes still pass values separately. Use `secret value` for sensitive
+arguments so plans and diagnostics show `***`. See [scripts and shell syntax](scripts.html) for checked examples.
+
+Construction starts no child process. `toFlow` makes a command or topology one lazy workflow step.
 
 `run` executes directly and returns the complete `Exit`; direct command execution captures full stdout.
 `runExitCode` returns an integer for an entry point and defaults to visible console output without stdout capture.
 Both accept commands, specs, or an already constructed Flow. Explicit capture and routing settings win.
 
-## The types at each step
+## From command to outcome
 
-| Type | What it represents | Typical construction |
-| --- | --- | --- |
-| `ProcessCommand` | One immutable command, arguments, and per-command settings | `cmd`, `cwd`, `env`, routing helpers |
-| `ProcessSpec` | Connected commands and topology policies | `=>`, `pipeTo`, `mergeStdout`, `stageDefaults` |
-| `ProcessResult` | Exit codes, retained output, capture metadata, and stage results | Successful execution |
-| `Exit<ProcessResult, ProcessError>` | The finished outcome, including a failure cause | `commandOrSpec |> run` |
-| `Flow<'env, ProcessError, ProcessResult>` | A lazy process step inside an application workflow | `commandOrSpec |> toFlow` |
-| `ProcessStream<'env, string>` | Lazy decoded lines with completion tracking | `streamStdoutLines`, `streamStderrLines` |
-| `ProcessStream<'env, ProcessOutput>` | Lazy output observations with stage and channel metadata | `streamStdout`, `streamStderr`, `streamOutputs` |
-| `ProcessCompletion` | `Completed result` after natural completion, or `StoppedEarly` after owned prefix cleanup | A `ProcessStream` terminal |
+Each box is a type of value; each arrow names the function that produces the next value.
 
-`'env` describes the dependencies required by an application Flow. Short scripts can use `run` without
-constructing that record themselves. `toFlow` and stream constructors describe work without starting it.
-A stream terminal produces a Flow; `run` executes that Flow and returns its outcome. Collection and fold
-terminals include the consumed value together with `ProcessCompletion`.
+<div class="flow-type-diagram">
+<img class="flow-type-diagram--light" data-theme-variant="light" src="../content/img/process-types-light.svg" alt="ProcessCommand connects to ProcessSpec with =>. Run returns Exit directly. ToFlow returns a lazy Flow. StreamStdoutLines returns ProcessStream, whose runCollect terminal returns a Flow; run executes it and returns Exit." />
+<img class="flow-type-diagram--dark" data-theme-variant="dark" src="../content/img/process-types-dark.svg" alt="ProcessCommand connects to ProcessSpec with =>. Run returns Exit directly. ToFlow returns a lazy Flow. StreamStdoutLines returns ProcessStream, whose runCollect terminal returns a Flow; run executes it and returns Exit." />
+</div>
+
+For one command, skip the connection: a `ProcessCommand` also supports `run`, `toFlow`, and the stream
+constructors. `toFlow` and stream constructors describe work; `run` executes it. A successful direct run
+contains a `ProcessResult`; a successful stream collection contains the collected values and `ProcessCompletion`.
+
+`Flow` and `ProcessStream` are both types and modules. The modules hold their functions, such as `Flow.map`
+and `ProcessStream.map`; calling a transformation produces another value of the corresponding type.
 
 For a server, worker, or application Flow, see [run a process in an application Flow](running-in-an-application-flow.html).
 

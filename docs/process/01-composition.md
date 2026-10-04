@@ -37,13 +37,15 @@ match cmd $"printf hello" |> run with
 | other -> failwithf "Expected greeting, got %A" other
 ```
 
-Then add settings to the command before running or connecting it:
+When checking another repository, use `cwd` to run Git there. `env "GIT_OPTIONAL_LOCKS" "0"` avoids optional
+locks and index refreshes for this status check; `timeout` bounds how long the script waits. These settings are
+optional, and each returns a `ProcessCommand`:
 
 ```fsharp
 let status (repository: string) : ProcessCommand =
     cmd $"git status --short"
     |> cwd repository
-    |> env "CI" "true"
+    |> env "GIT_OPTIONAL_LOCKS" "0"
     |> timeout (TimeSpan.FromSeconds 15.0)
 ```
 
@@ -53,8 +55,16 @@ Apply `cwd`, `env`, `timeout`, and per-command routes before connecting stages. 
 [`Process.encoding`](xref:M:Axial.Process.Process.encoding), and
 [`Process.successCodes`](xref:M:Axial.Process.Process.successCodes) also take a `ProcessCommand`.
 
-Connect stdout to the next stage with `=>` (or the pipeline helper `pipeTo`). Two `ProcessCommand` values
-become a `ProcessSpec`; command setters then require configuring a command before joining, or `mapFinalCommand`:
+## Count lines with a pipe
+
+In Bash, pipe the text into `wc -l` to count its lines:
+
+```bash
+printf 'error one\nerror two\n' | wc -l
+```
+
+In the DSL, `=>` connects stdout to the next command's stdin (`pipeTo` is the pipeline form). Two
+`ProcessCommand` values become a `ProcessSpec`; configure each command before joining, or use `mapFinalCommand`:
 
 ```fsharp
 let countLines : ProcessSpec =
@@ -96,7 +106,16 @@ let shoutWithFunctions (value: string) : ProcessSpec =
 shoutWithFunctions "hello; world" |> Process.run |> stdoutOf |> shouldEqual "HELLO; WORLD"
 ```
 
-Each interpolation hole becomes one argument. Use [`secret`](xref:M:Axial.Process.DSL.secret) when plans, failures, and transcripts must show `***` instead of the real value. Use [`cmdText`](xref:M:Axial.Process.DSL.cmdText) only for fixed command text.
+## Interpolation keeps each value in one argument
+
+Use interpolation holes for values supplied by your program. `cmd` and `Process.command` pass each whole value
+as one native argument, including spaces and characters such as `;`, `|`, and `$`. They do not run a shell or
+interpret those characters as shell syntax. The `shout` example above therefore passes `"hello; world"` to
+`printf` unchanged before piping its output into `tr`.
+
+Use [`secret`](xref:M:Axial.Process.DSL.secret) when plans and diagnostics must show `***` instead of the real
+argument. Use [`cmdText`](xref:M:Axial.Process.DSL.cmdText) for fixed command text, or `Process.commandArgs`
+when arguments already exist as separate values. For shell syntax, see [scripts and shell syntax](scripts.html).
 
 Use [`Process.commandArgs`](xref:M:Axial.Process.Process.commandArgs) when arguments already exist as a list. It has the same immutable
 specification result, without command-line parsing.

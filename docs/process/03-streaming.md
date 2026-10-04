@@ -9,6 +9,10 @@ Use `streamStdoutLines` for decoded stdout lines as they arrive. It returns a `P
 its terminal returns the consumed value together with process completion. Stderr stays separate unless you
 explicitly apply `mergeStderr`.
 
+`ProcessStream<'env, 'value>` is the stream **type**. The `ProcessStream` **module** contains the functions
+that operate on it: `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. This is the same F# naming
+pattern as the `Flow` type and its `Flow` module. A stream terminal returns a Flow; `run` executes that Flow.
+
 ```fsharp prepare
 // Setup for the checked examples on this page.
 open System
