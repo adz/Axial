@@ -268,6 +268,7 @@ module ProcessServiceTests =
         test <@ rendered = "printf \"%s\" ***" @>
         let plan = command |> Process.plan
         test <@ plan.Commands = [ "printf \"%s\" ***" ] @>
+        test <@ Process.renderPlan plan = [ "commands: printf \"%s\" ***"; "stage 0: in empty, out discard, err discard" ] @>
         let result = command |> toFlow |> run
         test <@ result.Stages.Head.Command = "printf \"%s\" ***" @>
         test <@ result.Stages.Head.Command.Contains("super-secret-token") = false @>

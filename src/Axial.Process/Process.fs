@@ -824,6 +824,14 @@ module Process =
           MergeStdErr = specification.MergeStdErr; Framing = specification.Framing; MaxLineLength = specification.MaxLineLength
           OverallTimeout = specification.OverallTimeout; DrainTimeout = specification.DrainTimeout }
     let inline plan source = planSpecification (toSpecification source)
+    /// <summary>Renders a plan as short lines: the command pipeline, then one line per stage.</summary>
+    /// <param name="plan">A plan produced by <c>plan</c>.</param>
+    /// <returns>The command pipeline followed by each stage's input, output, and error routes.</returns>
+    let renderPlan (plan: ProcessPlan) : string list =
+        let commands = String.concat " | " plan.Commands
+        [ yield $"commands: {commands}"
+          for stage in plan.Stages do
+              yield $"stage {stage.Stage}: in {stage.StdIn}, out {stage.StdOut}, err {stage.StdErr}" ]
     let service<'env,'error when 'env :> IHasProcess>: Flow<'env,'error,IProcess> = Flow.envWith _.Process
     let private prepare mode (specification: ProcessSpec) =
         if specification.Leaves.Count <> 1 then invalidArg "specification" "Connect fan-in producers to a final command before execution."
