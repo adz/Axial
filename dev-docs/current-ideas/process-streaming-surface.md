@@ -25,6 +25,9 @@ completion results available without mixing them in one stream element type.
   connecting it. Shared fallback configuration is a typed `StageDefaults` value.
 - Final-stage `mergeStderr` changes the effective channel to stdout, while retaining the original
   channel separately. Intermediate stderr is not merged by this operation.
+- Outcome runners return values and causes; integer host runners have explicit runExitCode names.
+  Implement the complete revised surface in this work, rather than deferring capabilities to a
+  later release. Incremental implementation commits do not change that scope.
 
 ## Commands, topologies, and configuration
 
@@ -39,8 +42,8 @@ module Process =
     val commandArgs : string -> string list -> ProcessCommand
     val ofCommand : ProcessCommand -> ProcessSpec
     val pipe : next: ProcessSpec -> source: ProcessSpec -> ProcessSpec
-    val pipeBoth : next: ProcessSpec -> source: ProcessSpec -> ProcessSpec
-    val merge : ProcessSpec seq -> ProcessSpec
+    val pipeStdoutAndStderr : next: ProcessSpec -> source: ProcessSpec -> ProcessSpec
+    val mergeStdout : ProcessSpec seq -> ProcessSpec
 
     val stdinFrom : InputSource -> ProcessCommand -> ProcessCommand
     val stdoutTo : OutputTarget -> ProcessCommand -> ProcessCommand
@@ -59,11 +62,11 @@ overloads: `pipeline |> stdoutTo target` is a compile-time error. Configure comm
 or transform the final command explicitly:
 
 ```fsharp
-pipeline |> Process.finalCommand Process.stdoutToConsole
-pipeline |> Process.finalCommand (Process.stdoutToFile "build.log")
+pipeline |> Process.mapFinalCommand Process.stdoutToConsole
+pipeline |> Process.mapFinalCommand (Process.stdoutToFile "build.log")
 ```
 
-`finalCommand : (ProcessCommand -> ProcessCommand) -> ProcessSpec -> ProcessSpec` requires exactly
+`mapFinalCommand : (ProcessCommand -> ProcessCommand) -> ProcessSpec -> ProcessSpec` requires exactly
 one final command. Reject ambiguous topologies with invalidArg and validate connection conflicts
 again after transformation. The transform changes settings, not command identity or graph shape.
 
@@ -76,24 +79,49 @@ Process.command $"build-tool" |> Process.streamStdoutLines
 ```
 
 `ofCommand` remains the explicit conversion for callers who need a ProcessSpec value. No API converts
-a connected topology back into one command. `pipe`/`pipeBoth` accept either input shape as well;
-merge accepts a homogeneous sequence of either shape. All adaptation is static, reflection-free,
+a connected topology back into one command. `pipe`/`pipeStdoutAndStderr` accept either input shape as well;
+mergeStdout accepts a homogeneous sequence of either shape. All adaptation is static, reflection-free,
 AOT-safe, and available under Fable. Signatures below use ProcessSpec to show the common underlying
 shape; public inline facades also accept ProcessCommand without requiring extra aliases.
 
-`pipe`, `pipeBoth`, `merge`, `mergeStderr`, `framing`, `maxLineLength`, `stageDefaults`,
+`pipe`, `pipeStdoutAndStderr`, `mergeStdout`, `mergeStderr`, `framing`, `maxLineLength`, `stageDefaults`,
 `overallTimeout`, `drainTimeout`, `plan`, and `render` operate on topologies. Existing fan-in validation
 still applies. `plan` and `render` inspect either shape without execution or dynamic lookup.
 
+### Command parsing and topology names
+
+command/cmd parse a command template without invoking a shell; each interpolation hole is one native
+argument. commandText/cmdText parse a fixed literal executable-plus-arguments string, also without
+shell expansion. commandArgs accepts an executable and an already-separated argument list. Shell
+syntax requires bash/sh/pwsh explicitly. Their interpolated forms pass values out of band as shell
+arguments rather than inserting raw source; *Text forms accept raw shell programs. secret/secretArg
+redact arguments in plans and diagnostics, not child output or captured secrets.
+
+pipe/pipeTo connect stdout. pipeStdoutAndStderr/pipeStdoutAndStderrTo name both connected channels
+explicitly; remove pipeBoth/pipeBothTo instead of keeping renamed aliases. mergeStdout replaces merge:
+it constructs concurrent stdout producers for fan-in, never merges stderr into stdout and never
+executes during construction. All producers must feed one downstream command before execution in
+this revision; reject an unconnected multi-final topology before launching anything. Producers default
+to line-framed fan-in to avoid mixing partial lines; explicit chunk framing permits nondeterministic
+chunk interleaving. The DSL mergeBytes helper becomes mergeStdoutBytes. Any unsuccessful producer
+fails the run under its configured successCodes, terminating and awaiting the remaining topology.
+
+Repeated command settings replace prior scalar settings. arg appends; successCodes replaces the
+accepted set, which defaults to { 0 } and must be nonempty. Repeated routes replace prior routes;
+Output.tee explicitly requests fan-out. A default timeout is disabled by withoutTimeout, not merely
+removed from the command's local settings. Shared defaults resolve per field/key as described below.
+
 Every command records explicit settings separately from resolved values. An explicit setting equal
-to the built-in default still overrides a shared default. Unset stdin resolves to empty for a root;
-unset stdout/stderr resolve to discard for externally readable channels. A pipe connection supplies
-the connected channel instead. Observation and retention still read discarded channels.
+to the built-in default still overrides a shared default. Unset stdin resolves to empty for a root.
+Unset external stdout/stderr routes resolve to discard in batch and streaming modes and Console in
+direct runExitCode host mode. A pipe connection supplies the connected channel instead. Resolve
+execution-mode defaults only after checking explicit settings and topology defaults. Observation
+and capture still read discarded channels.
 
 Reject a connection if it consumes a channel with an explicit conflicting route:
 
 - Piped stdout cannot also have an explicit stdout target, including explicit discard.
-- `pipeBoth` cannot also consume explicitly targeted stderr.
+- `pipeStdoutAndStderr` cannot also consume explicitly targeted stderr.
 - A pipe-fed command cannot have an explicit stdin source.
 - Final mergeStderr conflicts with an explicit final stderr destination: configure stdout instead.
 - Implicit built-in routes do not conflict. Validate all fan-in edges as well as ordinary pipes.
@@ -184,6 +212,13 @@ near-synonyms; migrate to the channel-prefixed names. Output/Input remain the ta
 
 ### Capture defaults and explicit settings
 
+Teach this sentence before the helper list: **captureAll/captureTail/captureNothing configure stdout;
+stderr is separate unless mergeStderr is requested.** Both cold reviewers initially interpreted
+captureAll as both channels. Keep the agreed short stdout-first family, but put its scope in the
+first sentence of every helper's XML comment and completion description. Show captureAll followed
+by captureStderrAll whenever the example asks for a complete two-channel transcript. Do not silently
+broaden captureAll to both channels or couple capture to routing.
+
 ```fsharp
 [<RequireQualifiedAccess>]
 type OutputRetention = Nothing | Tail of maxBytes: int | All
@@ -212,7 +247,8 @@ and stderrCapture policies for shared fallback configuration; the public helpers
 
 | Execution | Implicit stdout capture | Implicit unmerged stderr capture |
 | --- | --- | --- |
-| toFlow | All final stdout | 64 KiB diagnostic tail per readable stage |
+| toFlow and direct command/spec run/runWith | All final stdout | 64 KiB diagnostic tail per readable stage |
+| Direct command/spec runExitCode/runExitCodeWith | Nothing; unset route forwards to console | 64 KiB diagnostic tail per readable stage; unset route forwards to console |
 | Process.stream* and every ProcessStream terminal/conversion | 64 KiB final stdout tail | 64 KiB diagnostic tail per readable stage |
 | Explicit command/topology/default policy | Selected policy | Selected policy |
 
@@ -233,9 +269,15 @@ needed to override streaming's bounded default. captureTail opts a large batch r
 capture. captureNothing is useful when routing/consumption and exit status suffice; it does not
 remove the separate stderr diagnostic tail. Use captureStderrNothing to opt out of that too.
 
-Connected intermediate stdout and stderr consumed by pipeBoth cannot independently be observed or
+Connected intermediate stdout and stderr consumed by pipeStdoutAndStderr cannot independently be observed or
 captured. Capturing all stdout does not add intermediate tee nodes. Negative tail sizes are invalid;
 zero captures no bytes. Diagnostic stderr tails share captured storage instead of duplicating it.
+
+ProcessResult.ExitCode is the final command's exit code; ExitCodes gives every stage's code in plan
+order. The default success policy is pipefail: any stage outside successCodes fails the Flow, even
+if the final stage exits zero. On failure StageFailed carries the failing stage and available result.
+The singular code is never an invented aggregate code. Retain this typed-failure policy rather than
+turning unsuccessful exits into implicit successful values.
 
 ProcessResult retains exit codes, timings, and stages. StdOut and StdOutCapture describe final
 effective stdout. StdErr and StdErrCapture are explicitly separate diagnostic/captured stderr,
@@ -245,6 +287,14 @@ has explicit All capture it is complete, and mixed policies produce a partial ag
 truncated. Keep aggregate buffering bounded when stage policies are bounded. Decode per stage before
 combining text; do not decode mixed encodings with the final command encoding.
 
+StdOutCapture/StdErrCapture are CapturedOutput records containing Text, exact Bytes, and Truncated,
+not capture-mode settings. StdOut/StdErr are convenience views of those records, not duplicate
+buffers. Capture policies are visible in plan. Inherited capture is explicitly unavailable in result
+metadata; an empty string alone must not imply that an inherited channel produced no output. Add
+StdOutCaptureAvailable/StdErrCaptureAvailable derived properties, with aggregate stderr unavailable
+if any contributing stderr channel was inherited. Nothing remains an available, deliberately
+empty capture policy, with truncation indicating omitted output.
+
 Truncation must be prominent in result documentation and inspection: pair the convenience text fields
 with StdOutTruncated/StdErrTruncated properties and existing capture metadata. Nothing with nonempty
 output is truncated. A byte tail may start midway through a Unicode code point; use replacement
@@ -252,8 +302,24 @@ fallback for its text while preserving exact retained Bytes. Plan exposes resolv
 
 Inherited channels resolve implicit capture to Nothing. Explicit non-Nothing capture on an inherited
 channel is invalid. Explicit streamStdout*/streamStderr* of an inherited requested channel fails with
-ObservationUnavailable; streamOutputs includes readable channels only. Never silently redirect
-inherited handles. Tee cannot contain Inherit.
+ObservationUnavailable before launching any stage; streamOutputs includes readable channels only.
+Never silently redirect inherited handles. Tee cannot contain Inherit.
+
+### Input/output adapter contracts
+
+Input.readOnce (InputSource.ReadOnce) invokes a callback once at execution to obtain one byte block,
+then closes stdin; it is not a pull-until-EOF reader. Input.produce invokes a push producer with an
+awaited write callback, and closes stdin when the producer returns. Input.stream adapts a caller-owned
+.NET Stream into repeated backpressured reads. Empty means close stdin without bytes; inheritHandles
+leaves input under child control. Text uses the resolved command encoding; bytes remain exact.
+
+Output.callback receives exact byte chunks, not ProcessOutput or framed lines. Await writes in order
+per source channel, with the execution token available through Async.CancellationToken. Output.stream
+and textWriter do not dispose caller-owned resources; finish/flush on successful completion and
+observe cancellation during shutdown. Create fresh incremental decoder state per execution for
+textWriter adapters, so reuse of the command does not share a mutable decoder between runs. Files
+opened by Axial are owned/disposed by Axial. Routing callback effects are explicit in their supplied
+callbacks; live adapters still obey the service effect boundary.
 
 ### Framing and memory bounds
 
@@ -336,9 +402,20 @@ stderr and final stdout; streamStderr selects effective stderr. Accepted success
 successful exits, including explicitly accepted nonzero values. Process failures remain typed errors,
 not completion values or elements. ProcessCompletion is returned only by successful terminals.
 
-ProcessOutput.Channel is effective; SourceChannel is original; Stage identifies the originating
-command. Final mergeStderr changes stderr to effective stdout, so stdout streams include it and
-stderr streams exclude it. Preserve original provenance. Serialize observation and preserve order
+```fsharp
+type ProcessOutput =
+    { Stage: int
+      ObservedChannel: OutputChannel
+      OriginalChannel: OutputChannel
+      Text: string
+      Timestamp: DateTimeOffset }
+```
+
+ObservedChannel is effective; OriginalChannel is the originating stdout/stderr channel. Stage is a
+zero-based index into the executed plan, not a stable identity across topology edits. Replace the
+previous Channel field with ObservedChannel. Final mergeStderr changes stderr to effective stdout,
+so stdout streams include it and stderr streams exclude it. Preserve original provenance. Serialize
+observation and preserve order
 within each source channel. Cross-channel/stage order is observed delivery order, not OS write order.
 
 ### One pipeline for transformations and completion
@@ -390,18 +467,21 @@ or caller cancellation; cancellation cannot produce Completed.
 
 ```fsharp
 type IProcess =
-    abstract Run :
+    abstract Execute :
         specification: ProcessSpec * observe: (ProcessOutput -> Async<unit>) ->
         Flow<unit, ProcessError, ProcessResult>
 ```
 
-One mockable member. It awaits observers serially using the execution cancellation token. `toFlow`
-passes `(fun _ -> async.Return ())`, not `ignore` (which has the wrong return type). A private optional
-observer optimization is acceptable if measurements justify it; do not restore the union.
+One mockable Execute member. It awaits observers serially using the execution cancellation token.
+toFlow passes `(fun _ -> async.Return ())`, not ignore (which has the wrong return type). Observer
+exceptions are defects unless cancellation was requested by the execution token, classified with
+ForeignCancellation.isOurs. Do not convert arbitrary callback exceptions into IoFailed; classify
+actual process I/O separately. A private optional observer optimization is acceptable if measurements
+justify it; do not restore the union.
 Additional operational effects remain explicit dependencies of `Process.live`, including the clock,
 filesystem, and console. Ambient cancellation is runtime mechanics, not an additional service.
 
-Streams fork Run and publish into a bounded rendezvous. Success and failure are private protocol
+Streams fork Execute and publish into a bounded rendezvous. Success and failure are private protocol
 messages, never public stream elements. ProcessStream terminals use the same lifecycle with a consumer
 whose callbacks run in the caller's application environment.
 
@@ -439,7 +519,8 @@ whose callbacks run in the caller's application environment.
 ```fsharp
 module ProcessHostEnvironment =
     val live : ProcessHostEnvironment
-    val create : IConsole -> ProcessHostEnvironment
+    // Builds live clock/filesystem/process services using the supplied console.
+    val liveWithConsole : IConsole -> ProcessHostEnvironment
     val ofParts : IProcess -> IConsole -> ProcessHostEnvironment
     val test : unit -> TestProcessHostEnvironment
 
@@ -449,7 +530,7 @@ type TestProcessHostEnvironment =
     member Console : TestConsole
 ```
 
-`create` wires one console into both process routing and workflow console operations. `live` uses the
+`liveWithConsole` wires one console into both process routing and workflow console operations. `live` uses the
 same construction. `ofParts` trusts supplied services; it cannot verify an opaque IProcess's internal
 console. `test` exposes configurable concrete doubles and their composed environment. This is a
 local package design, not a new mandatory rule for every host package in AGENTS.md.
@@ -462,55 +543,94 @@ await observers and follow the same completion ordering as the live service.
 
 ## DSL and shell comparisons
 
-### Host runners adapt commands and specifications
+### Run returns the outcome; runExitCode is the script boundary
 
-`Process.run` and DSL `run` accept ProcessCommand, ProcessSpec, or an existing
-`Flow<ProcessHostEnvironment, ProcessError, 'value>`. Commands and specs are adapted through toFlow
-and executed once with ProcessHostEnvironment.live. Existing Flows are executed directly, without
-changing their workflow, capture settings, or completion behavior. Every form returns an integer
-host exit code; it does not return ProcessResult or the Flow's successful value.
+`Process.run` and DSL `run` mean execute and return the complete Exit. Never infer an integer return
+from run, and never change its return shape when capture settings change:
 
-`Process.runWith environment` and DSL `runWith environment` provide the same static adaptation.
-A command/spec requires an environment implementing IHasProcess and IHasConsole; an existing
-`Flow<'env, ProcessError, 'value>` requires IHasConsole for failure reporting, plus whatever services
-its own environment type requires. Never substitute live services into the supplied environment.
-Use the existing static connector approach, with no reflection or runtime type dispatch.
+- ProcessCommand or ProcessSpec -> Exit<ProcessResult, ProcessError>.
+- Flow<ProcessHostEnvironment, 'error, 'value> -> Exit<'value, 'error>.
+
+Commands/specs adapt through toFlow and use batch defaults: full final effective stdout and separate
+bounded stderr diagnostic tails. Run does not print or replace routes. Explicit stdoutToConsole
+forwards live output as configured while the captured result remains accessible. Existing Flows
+execute directly, preserving their error/value types, routes, capture policy, and lifetime behavior.
+Success, typed failure, defects, and caller interruption remain visible through Exit/Cause.
+
+`Process.runWith environment` and DSL `runWith environment` return the same Exit shapes using only
+the supplied environment. Command/spec inputs require IHasProcess. Existing Flow inputs require
+exactly their own environment type, with no extra IHasConsole requirement: returning an Exit needs
+no error-reporting console. Run supplies ProcessHostEnvironment.live for its supported live Flow
+shape. Other application environments use runWith. Both use static adaptation without reflection.
 
 ```fsharp
-// A script can execute a configured command directly.
-cmd $"dotnet --info"
-|> stdoutToConsole
-|> stderrToConsole
-|> run
+let captured = cmd $"git status" |> run
+match captured with
+| Exit.Success result -> result.StdOut
+| Exit.Failure cause -> failwithf "%A" cause
 
-// A connected pipeline is accepted too.
-cmd $"printf 'one\ntwo\n'" => cmd $"wc -l"
-|> runWith appEnvironment
+// An explicit capture request always has a readable result; no hidden discarded transcript.
+let complete = cmd $"build-tool" |> captureAll |> captureStderrAll |> run
 
-// Application composition still explicitly creates a lazy Flow.
+// Routes and capture are independent: show stdout live and also return the batch result.
+let shownAndCaptured = cmd $"build-tool" |> stdoutToConsole |> run
+
+let supplied = cmd $"git status" |> runWith appEnvironment
+```
+
+`Process.runExitCode` and DSL `runExitCode` are the command-line boundary and return int. Their
+`runExitCodeWith environment` variants use supplied services. All accept command/spec or an existing
+Flow whose typed error is ProcessError. For direct commands/specs, fill unset externally readable
+stdout/stderr routes with Console and unset stdout capture with Nothing; retain the separate 64 KiB
+stderr diagnostic tail. Explicit routes, capture settings, stage defaults, and pipe connections win.
+This host mode does not adapt blindly through batch toFlow. Existing Flows are never reconfigured;
+the runner reports their failure and maps their outcome to an exit code, discarding success values.
+
+```fsharp
+// In a program, mark this EntryPoint. Output is visible without full stdout buffering.
+let main _ = cmd $"build-tool" |> runExitCode
+
+// A file route stays a file route, and explicit capture still takes priority.
+let writeLog () = cmd $"build-tool" |> stdoutToFile "build.log" |> runExitCode
+
+// Application composition still explicitly constructs a lazy Flow.
 let status =
     flow {
         let! result = cmd $"git status" |> toFlow
         return result.StdOut
     }
 
-status |> runWith appEnvironment
+let result = status |> runWith appEnvironment
 ```
 
-Running a command/spec directly uses batch defaults exactly as toFlow does: full final effective
-stdout capture and separate bounded stderr diagnostic tails, unless explicitly configured otherwise.
-Running an existing Flow built from a process stream preserves that stream's bounded defaults;
-the runner does not reinterpret it as batch execution. Routing and capture helpers remain lazy
-configuration, and toFlow remains lazy conversion; only the host runner starts execution.
+Command/spec runExitCodeWith inputs require IHasProcess and IHasConsole; existing ProcessError Flows
+require IHasConsole for reporting in addition to their own environment requirements. ProcessError
+exit mapping remains: accepted completion 0, failed stage's code, timeout 124, other failure 1.
+Never duplicate forwarded stderr tails in error reporting; print a redacted summary without replaying
+already-forwarded diagnostics. Explicit Nothing capture does not disable failure status reporting.
+Explicit All capture with runExitCode is honored even though the host discards that transcript;
+users wanting to read it should use run instead.
 
-ProcessStream is not an implicit runner input. Select a ProcessStream terminal first. Flows whose
-typed errors are ProcessStreamError or other application errors need an explicit host error policy
-or the ordinary Flow runner; do not silently erase consumer errors to fit the ProcessError runner.
-Retain the existing ProcessError.describe/exitCode failure reporting and mapping, including timeout
-exit code 124 and interruption/defect exit code 1.
+ProcessStream is not an implicit runner input: choose a terminal first. Generic consumer errors are
+supported by outcome runners, without lossy mapping into ProcessError:
+
+```fsharp
+let liveWarnings =
+    cmd $"build-tool"
+    |> streamStdoutLines
+    |> ProcessStream.runForEachFlow Console.writeLine
+
+let outcome = liveWarnings |> runWith appEnvironment
+// Exit<ProcessCompletion, ProcessStreamError<the console operation's error type>>.
+// The host explicitly handles ProcessFailed/ConsumerFailed if it needs a program exit code.
+```
+
+Running a Flow built from a process stream preserves streaming defaults, including with runExitCode
+where the Flow has a compatible error type. Routing/capture helpers remain lazy configuration;
+toFlow is lazy conversion. Run and runExitCode are the immediate host execution boundaries.
 
 `cmd`/`cmdText` return ProcessCommand. Command setters retain their qualified names, with existing
-`cwd`/`env` shorthand. `=>`, `pipeTo`, and `pipeBothTo` adapt either command or spec operands into
+`cwd`/`env` shorthand. `=>`, `pipeTo`, and `pipeStdoutAndStderrTo` adapt either command or spec operands into
 specs. `toFlow` and stream constructors adapt commands or specs. ProcessStream terminals take process
 streams. Mirror constructor/configuration names exactly, including capture helpers, routing shortcuts,
 stageDefaults, and overallTimeout; qualify stream terminals with ProcessStream. Implement adaptation
@@ -519,7 +639,7 @@ with the existing static connector pattern; no reflection or dynamic service loo
 Connecting to an OutputTarget must no longer execute implicitly. A command-to-target connection
 returns a configured command. A connected topology-to-target connection is unsupported: configure
 its final command explicitly. Remove writeTo/appendTo in favor of stdoutToFile/stdoutToAppendFile,
-with an explicit execution terminal required. Assembled pipelines can use finalCommand. Update their
+with an explicit execution terminal required. Assembled pipelines can use mapFinalCommand. Update their
 documentation and all copied examples together.
 
 The table compares useful patterns, not exact POSIX shell semantics. Shell status selection,
@@ -529,7 +649,7 @@ handler and path values are supplied by the containing example.
 | Shell pattern | Axial |
 | --- | --- |
 | a \| b \| c | `cmd $"a" => cmd $"b" => cmd $"c" \|> toFlow` |
-| a 2>&1 \| b | `cmd $"a" \|> pipeBothTo (cmd $"b") \|> toFlow` |
+| a 2>&1 \| b | `cmd $"a" \|> pipeStdoutAndStderrTo (cmd $"b") \|> toFlow` |
 | a < f | `cmd $"a" \|> stdinFromFile "f" \|> toFlow` |
 | feed text / here-doc | `cmd $"a" \|> stdinFromText text \|> toFlow` |
 | a > f | `cmd $"a" \|> stdoutToFile "f" \|> toFlow` |
@@ -576,22 +696,66 @@ lifetime semantics have been designed. Detach remains unsupported: Axial owns th
 Spawn-per-line composes streams with effectful consumers and bounded workflow concurrency; avoid
 runCollect for unbounded input. Independent stdin writers require one coordinating Input.produce.
 
+## Cold API inference review
+
+The baseline is commit 56c3de0d. Two fresh subagents reviewed the remaining API from names/signatures
+alone, without repository access or conversation history. Their predictions are qualitative design
+feedback, not evidence of universal model behavior. A follow-up comparison against Flow, FlowStream,
+and platform services confirmed run returning Exit, mapFinalCommand, Execute, liveWithConsole, and
+the exact FlowStream terminal spellings align with Axial. Keep typed test bundle service names
+Process/Console consistent with TestRuntime rather than renaming them to mocks. Both correctly inferred commands, topology,
+line streams, route/capture independence, early-stop cleanup, and most settings; their runner defaults
+differed from the earlier isolated runner review. Give each runner a distinct return contract rather
+than relying on an assumed universal meaning of run.
+
+| Family | Decision after review |
+| --- | --- |
+| Command builders and shell DSL | Keep names; explicitly distinguish parsed commands from shell source and argument redaction from output redaction. |
+| Pipe/fan-in | Name both channels and stdout fan-in; reject unconnected fan-in before launch. |
+| Command settings and defaults | Keep three-level precedence, per-key removals, scalar replacement, and explicit timeout disabling. |
+| Routing shortcuts | Keep canonical autocomplete names; repeated assignments replace; tee is explicit. |
+| Capture | Preserve agreed stdout-first short names despite reviewers' both-channel guess; make scope explicit in signatures' comments and examples. |
+| Final command transformation | mapFinalCommand makes editing rather than lookup apparent. |
+| Framing and limits | Keep line constructors and configured limits; specify units, terminators, and overflow failure. |
+| Input/output callbacks and adapters | readOnce distinguishes one block from a producer; specify byte shape, ownership, reuse, backpressure, and exception classification. |
+| ProcessStream transformations | Keep completion-preserving wrappers; conversion explicitly loses successful completion. |
+| StoppedEarly | Keep the bare case and awaited cleanup; defer a partial-stage result type rather than inventing exit status for stopped processes. |
+| Result fields and exit codes | Explain capture records, availability/truncation, final versus per-stage codes, and typed unsuccessful exits. |
+| Channel provenance | ObservedChannel/OriginalChannel explicitly distinguish merged from originating channels; Stage is a plan index. |
+| Service/environment/test helpers | Execute names the service effect; liveWithConsole exposes live composition; test bundle keeps typed doubles visible. |
+| Runners | run/runWith return Exit with values and errors intact; runExitCode variants implement console host policy and integer exit mapping. |
+
+Both reviewers expected batch capture to include stderr and stream capture to be absent. Keep the
+user-agreed batch-full-stdout/stream-tail defaults and separate stderr tails; teach the mode table
+prominently and require assertions for truncation. Do not hide those choices behind a generic
+claim that all defaults are guessable. Retain existing runWith naming consistent with Axial's
+explicit environment convention, rather than expanding only this package to runWithEnvironment.
+
 ## Migration and acceptance
 
-- Introduce ProcessCommand and update command construction, DSL connectors, static adaptation, finalCommand, plan/render, piping,
+- Introduce ProcessCommand and update command construction, DSL connectors, static adaptation, mapFinalCommand, plan/render, piping,
   fan-in, examples, service fakes, and both .NET/Fable interpreters.
 - Move per-command routing and explicit settings onto commands. Add StageDefaults resolution.
+- Rename finalCommand to mapFinalCommand; pipeBoth/pipeBothTo to
+  pipeStdoutAndStderr/pipeStdoutAndStderrTo; merge/mergeBytes to mergeStdout/mergeStdoutBytes.
+  Remove renamed spellings instead of retaining aliases. Keep commandText/cmdText, but document
+  their no-shell parsing explicitly.
 - Split capture from OutputTarget; add stdout-first captureAll/captureTail/captureNothing and
   explicit stderr counterparts, mode defaults, and routing shortcuts; migrate removed helpers.
 - State the breaking change: `toFlow` now captures unmerged stderr as a 64 KiB diagnostic tail per
   readable stage (previously full capture). `captureStderrAll` restores full stderr transcripts.
 - Delete ProcessEvent/Process.stream. Add Process.stream* constructors and the completion-aware
   ProcessStream type, combinators, terminals, conversion, and combined consumer errors above.
-- Add SourceChannel, framing limits, observation errors, and StageTimedOut/OverallTimedOut,
+- Rename ProcessOutput.Channel to ObservedChannel and add OriginalChannel. Add framing limits,
+  observation errors, capture-availability metadata, and StageTimedOut/OverallTimedOut,
   which replace and remove ProcessError.TimedOut.
-- Add host helpers and configurable test bundles. Preserve explicit live service dependencies.
-- Adapt run/runWith to commands, specs, and existing process-error Flows in both qualified and DSL
-  APIs. Simplify script examples to omit toFlow before a host runner; retain it in application Flows.
+- Replace IProcess.Run with IProcess.Execute and ProcessHostEnvironment.create with liveWithConsole.
+  Rename Input.read/InputSource.Read to readOnce/ReadOnce. Add host helpers and configurable test
+  bundles. Preserve explicit live service dependencies.
+- Change run/runWith to return Exit and support command/spec and generic-error Flows. Add
+  runExitCode/runExitCodeWith for integer script boundaries; migrate EntryPoints and existing
+  integer-run callers to those names. Keep toFlow in application composition and generic consumer
+  errors intact in outcome runners. Direct integer runners use console/no-stdout-capture defaults.
 - Update docs/process/{01-composition,02-output-capture,03-streaming,04-failures-and-transcripts,
   05-scripts,06-fable,07-worked-examples,08-running-in-an-application-flow,_index}.md and
   docs/02-how-it-compares/02-task-vs-flow-scenarios.md, source comments, and reference enrichment.
@@ -604,10 +768,14 @@ composition and later connection, mode-dependent capture defaults and explicit o
 inherited-channel observation, accepted nonzero exit codes, failures after output,
 slow/failing final callbacks, both sibling cancellation directions, early successful take, caller
 cancellation, foreign cancellation, stage/overall/drain timeout boundaries, and re-execution. Verify transformed streams retain completion, StoppedEarly/take 0,
-consumer error wrapping, conversion cleanup, capture helper scope, and finalCommand validation.
-Verify direct command/spec run and runWith execute exactly once, preserve batch defaults and
-explicit capture/routes, preserve streaming policies for existing Flows, use the supplied runWith
-services, and retain host failure/exit-code behavior. Compile all three input forms in both APIs.
+consumer error wrapping, conversion cleanup, capture helper scope, and mapFinalCommand validation.
+Verify run/runWith return full Exits, execute exactly once, preserve batch defaults/explicit
+settings, support consumer error types, and require no reporting console for supplied outcome runs.
+Verify runExitCode/runExitCodeWith console/capture defaults, explicit-route precedence, supplied
+services, no duplicate diagnostics, streaming-Flow policies, and failure/exit-code mapping. Compile
+all three input forms in both qualified and DSL APIs, including minimal environments.
+Verify renamed helpers, pre-launch observation/fan-in validation, observer defect classification,
+caller-owned adapter lifetime, fresh text decoders, and capture-availability result metadata.
 Add compile-time API probes showing that topology-to-command setters are rejected. Add torture
 scenarios for each new public runtime/concurrency operation required by the coverage rules.
 
