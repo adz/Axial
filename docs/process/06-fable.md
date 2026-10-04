@@ -9,13 +9,15 @@ platform: fable
 Fable applications can construct specifications and run them against an `IProcess` implementation that delegates execution to a worker or another host:
 
 ```fsharp no-check reason="Requires Fable compiler validation; FsLiveDocs currently checks .NET contexts only"
+open Axial.Process.DSL
+
 type AppEnvironment =
     { Process: IProcess }
     interface IHasProcess with member this.Process = this.Process
 
 let workflow =
-    Process.command $"device-tool inspect"
-    |> Process.toFlow
+    cmd $"device-tool inspect"
+    |> toFlow
 ```
 
 An interpreter implements `IProcess.Execute`, returning a lazy `Flow<unit, ProcessError, ProcessResult>` and

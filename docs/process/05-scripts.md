@@ -16,6 +16,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =

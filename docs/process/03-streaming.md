@@ -5,7 +5,7 @@ description: Consume process output while a command is still running.
 
 # Streaming output
 
-Use `Process.streamStdoutLines` for decoded stdout lines as they arrive. It returns a `ProcessStream`;
+Use `streamStdoutLines` for decoded stdout lines as they arrive. It returns a `ProcessStream`;
 its terminal returns the consumed value together with process completion. Stderr stays separate unless you
 explicitly apply `mergeStderr`.
 
@@ -20,6 +20,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -32,8 +33,8 @@ let host = ProcessHostEnvironment.live
 
 ```fsharp
 let lines =
-    Process.command $"printf 'ready\nsample 1\n'"
-    |> Process.streamStdoutLines
+    cmd $"printf 'ready\nsample 1\n'"
+    |> streamStdoutLines
 
 let reports = lines |> ProcessStream.map _.ToUpperInvariant() |> ProcessStream.runCollect
 ```
@@ -75,8 +76,8 @@ match Flow.run host printLines with
 
 ```fsharp
 let firstLine =
-    Process.command $"sh -c 'echo ready; sleep 30'"
-    |> Process.streamStdoutLines
+    cmd $"sh -c 'echo ready; sleep 30'"
+    |> streamStdoutLines
     |> ProcessStream.take 1
     |> ProcessStream.runCollect
 ```
@@ -94,9 +95,9 @@ keeping observations and the separate stderr diagnostic tail.
 
 ```fsharp
 let retainedTail =
-    Process.command $"printf 'first\nlast\n'"
-    |> Process.captureTail 5
-    |> Process.streamStdoutLines
+    cmd $"printf 'first\nlast\n'"
+    |> captureTail 5
+    |> streamStdoutLines
     |> ProcessStream.runDrain
 ```
 
@@ -116,3 +117,94 @@ can be discarded. The converted stream retains typed process failures, backpress
 For completion-aware processing, keep transformations and terminals in `ProcessStream`. After conversion,
 application callback deadlines belong to the enclosing Flow; use `Flow.timeout` to bound them.
 `ProcessStream` terminals include callbacks in the process overall timeout.
+
+## Transform and fold without collecting every item
+
+Keep `ProcessStream.map` and `filter` on the process stream when completion matters. `runFold` reduces output
+in memory; `runFoldFlow` lets each step use application services or fail with an application error.
+
+```fsharp run
+let numbers () = cmd $"printf '1\n2\n3\n4\n'" |> streamStdoutLines
+let evenTotal =
+    numbers () |> ProcessStream.map int |> ProcessStream.filter (fun value -> value % 2 = 0)
+    |> ProcessStream.runFold (+) 0
+match evenTotal |> runWith host with
+| Exit.Success (total, ProcessCompletion.Completed _) -> shouldEqual 6 total
+| other -> failwithf "Expected completed fold, got %A" other
+
+let checkedTotal =
+    numbers () |> ProcessStream.runFoldFlow (fun total text -> (Flow.ok (total + int text) : Flow<ProcessHostEnvironment, string, int>)) 0
+match checkedTotal |> runWith host with
+| Exit.Success (total, ProcessCompletion.Completed _) -> shouldEqual 10 total
+| other -> failwithf "Expected effectful fold, got %A" other
+
+let observed = ResizeArray<string>()
+match numbers () |> ProcessStream.runForEach observed.Add |> runWith host with
+| Exit.Success (ProcessCompletion.Completed _) -> shouldEqual ["1"; "2"; "3"; "4"] (List.ofSeq observed)
+| other -> failwithf "Expected synchronous consumption, got %A" other
+```
+
+A synchronous callback is for ordinary in-memory work. Use `runForEachFlow` or `runFoldFlow` for dependencies
+such as `IConsole`; those effects remain explicit in the environment. Typed consumer errors become
+`ProcessStreamError.ConsumerFailed`, while process failures become `ProcessFailed`.
+
+```fsharp run
+let rejected =
+    cmd $"printf 'ready\n'" |> streamStdoutLines
+    |> ProcessStream.runForEachFlow (fun _ -> Flow.fail "rejected record")
+match rejected |> runWith host with
+| Exit.Failure(Cause.Fail(ProcessStreamError.ConsumerFailed message)) -> shouldEqual "rejected record" message
+| other -> failwithf "Expected consumer failure, got %A" other
+
+let prefix =
+    cmd $"printf 'ready\nstop\nlater\n'" |> streamStdoutLines
+    |> ProcessStream.takeWhile (fun line -> line <> "stop") |> ProcessStream.runCollect
+prefix |> runWith host |> shouldEqual (Exit.Success (["ready"], ProcessCompletion.StoppedEarly))
+```
+
+## Observe stderr and channel provenance
+
+Use `streamStderrLines` for stderr alone. With `streamOutputs`, keep the metadata to distinguish stage and
+original channel even after merging. Chunk boundaries depend on native reads; reconstruct text per channel
+rather than assuming one event per write.
+
+```fsharp run
+let errors = sh $"printf data; printf 'warning\n' >&2" |> streamStderrLines |> ProcessStream.runCollect
+match errors |> runWith host with
+| Exit.Success (values, ProcessCompletion.Completed result) ->
+    shouldEqual ["warning"] values
+    shouldEqual "data" result.StdOut
+| other -> failwithf "Expected stderr lines, got %A" other
+
+let outputs =
+    sh $"printf data; printf warning >&2" |> mergeStderr |> streamOutputs |> ProcessStream.runCollect
+match outputs |> runWith host with
+| Exit.Success (values, ProcessCompletion.Completed _) ->
+    shouldEqual true (values |> List.forall (fun item -> item.ObservedChannel = OutputChannel.StdOut))
+    let original channel = values |> List.filter (fun item -> item.OriginalChannel = channel) |> List.map _.Text |> String.concat ""
+    shouldEqual "data" (original OutputChannel.StdOut)
+    shouldEqual "warning" (original OutputChannel.StdErr)
+| other -> failwithf "Expected original channels, got %A" other
+```
+
+## Limit lines and choose ordinary stream APIs explicitly
+
+The limit counts decoded UTF-16 code units, excluding line delimiters. `maxLineLength` is independent of
+byte-tail capture: limiting retained output does not make an oversized observed line acceptable.
+
+```fsharp run
+let oversized = cmd $"printf abcde" |> maxLineLength 4 |> streamStdoutLines |> ProcessStream.runDrain
+match oversized |> runWith host with
+| Exit.Failure(Cause.Fail(ProcessError.LineTooLong _)) -> ()
+| other -> failwithf "Expected line limit failure, got %A" other
+
+let ordinary =
+    cmd $"printf 'a\nb\n'" |> streamStdoutLines |> ProcessStream.toFlowStream
+    |> FlowStream.map _.ToUpperInvariant() |> FlowStream.runCollect
+ordinary |> runWith host |> shouldEqual (Exit.Success ["A"; "B"])
+```
+
+`streamStdout` and `streamStderr` provide metadata-bearing decoded chunks when line framing is inappropriate.
+`framing OutputFraming.Lines` selects line framing for metadata-bearing observations, while the explicit
+`stream*Lines` constructors select it for you. `overallTimeout` covers completion-aware callbacks; `timeout`
+on a command ends at that stage's native exit. Use `drainTimeout` for lingering redirected I/O after all stages exit.

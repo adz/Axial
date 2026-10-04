@@ -3,7 +3,7 @@ title: Commands and composition
 description: Build immutable process specifications and connect native streams.
 ---
 
-[`Process.command`](xref:M:Axial.Process.Process.command) safely tokenizes an interpolated command template and returns an immutable `ProcessCommand`. Each
+[`cmd`](xref:M:Axial.Process.DSL.cmd) safely tokenizes an interpolated command template and returns an immutable `ProcessCommand`. Each
 interpolation hole becomes one native argument:
 
 ```fsharp prepare
@@ -17,6 +17,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -38,28 +39,32 @@ let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult
 
 ```fsharp
 let status (repository: string) =
-    Process.command $"git status --short"
-    |> Process.workingDirectory repository
-    |> Process.environment "CI" "true"
-    |> Process.timeout (TimeSpan.FromSeconds 15.0)
+    cmd $"git status --short"
+    |> cwd repository
+    |> env "CI" "true"
+    |> timeout (TimeSpan.FromSeconds 15.0)
 ```
 
-Apply command-specific configuration before connecting stages. [`Process.arg`](xref:M:Axial.Process.Process.arg), [`Process.secretArg`](xref:M:Axial.Process.Process.secretArg), [`Process.workingDirectory`](xref:M:Axial.Process.Process.workingDirectory), [`Process.environment`](xref:M:Axial.Process.Process.environment), [`Process.removeEnvironment`](xref:M:Axial.Process.Process.removeEnvironment), [`Process.encoding`](xref:M:Axial.Process.Process.encoding), and [`Process.successCodes`](xref:M:Axial.Process.Process.successCodes) take a `ProcessCommand`.
+Apply `cwd`, `env`, `timeout`, and per-command routes before connecting stages. Qualified helpers such as
+[`Process.arg`](xref:M:Axial.Process.Process.arg), [`Process.secretArg`](xref:M:Axial.Process.Process.secretArg),
+[`Process.removeEnvironment`](xref:M:Axial.Process.Process.removeEnvironment),
+[`Process.encoding`](xref:M:Axial.Process.Process.encoding), and
+[`Process.successCodes`](xref:M:Axial.Process.Process.successCodes) also take a `ProcessCommand`.
 
-Connect stdout to the next stage with [`Process.pipe`](xref:M:Axial.Process.Process.pipe):
+Connect stdout to the next stage with `=>` (or the pipeline helper `pipeTo`):
 
 ```fsharp
 let countLines : Flow<ProcessHostEnvironment, ProcessError, ProcessResult> =
-    Process.command $"printf 'error one\nerror two\n'"
-    |> Process.pipe (Process.command $"wc -l")
-    |> Process.toFlow
+    cmd $"printf 'error one\nerror two\n'"
+    => cmd $"wc -l"
+    |> toFlow
 ```
 
 ```fsharp run
 stdoutOf countLines |> _.Trim() |> shouldEqual "2"
 ```
 
-The DSL offers the same model with shorter names:
+Configure downstream stages inside parentheses before connecting them:
 
 ```fsharp
 open Axial.Process.DSL
@@ -94,15 +99,30 @@ let defaults =
     |> StageDefaults.timeout (TimeSpan.FromSeconds 15.)
 
 let sharedPipeline =
-    Process.command $"printf ready"
-    |> Process.stageDefaults defaults
-    |> Process.pipe (Process.command $"cat" |> Process.withoutTimeout)
+    cmd $"printf ready"
+    |> stageDefaults defaults
+    |> pipeTo (cmd $"cat" |> withoutTimeout)
 ```
 
 ```fsharp run
-sharedPipeline |> Process.toFlow |> stdoutOf |> shouldEqual "ready"
+sharedPipeline |> toFlow |> stdoutOf |> shouldEqual "ready"
 ```
 
-Use `Process.mapFinalCommand` to change settings on the final command of an existing topology. It requires one
+Use `mapFinalCommand` to change settings on the final command of an existing topology. It requires one
 final command and rejects executable or argument replacement. An explicitly routed stdout cannot also feed a pipe;
 configure the downstream command's route, or use a tee at a readable external channel.
+
+For checked examples of stdin, file routes, tee, fan-in, parallel capture, and recovery, see [DSL recipes](dsl-recipes.html).
+
+## Build from fixed text or argument lists
+
+`cmdText` parses fixed text without invoking a shell; shell operators are ordinary arguments. `pipe` accepts a
+list of interpolated command templates when a pipeline is assembled dynamically. Use `Process.commandArgs`
+when arguments already exist as individual values.
+
+```fsharp run
+cmdText "printf fixed" |> toFlow |> stdoutOf |> shouldEqual "fixed"
+pipe [ $"printf 'one\ntwo\n'"; $"wc -l" ] |> toFlow |> stdoutOf |> _.Trim() |> shouldEqual "2"
+Process.commandArgs "printf" ["%s"; "space and ; characters"]
+|> toFlow |> stdoutOf |> shouldEqual "space and ; characters"
+```

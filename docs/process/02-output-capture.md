@@ -6,6 +6,14 @@ description: Capture exact output, bound it, forward it, or write it elsewhere.
 `Process.toFlow` captures all stdout and a separate 64 KiB stderr diagnostic tail by default. Streaming defaults
 to bounded 64 KiB tails on both channels. Neither mode forwards output to the console unless you configure a route.
 
+| Execution boundary | Default forwarding | Stdout retention | Unmerged stderr retention |
+| --- | --- | --- | --- |
+| `toFlow`, direct `run` / `runWith` | None | All | 64 KiB tail |
+| `stream*` constructors | None | 64 KiB tail | 64 KiB tail |
+| Direct `runExitCode` / `runExitCodeWith` | Console | Nothing | 64 KiB tail |
+
+Explicit settings override these defaults. Runners applied to an existing Flow preserve its configured policies.
+
 ```fsharp prepare
 // Setup for the checked examples on this page.
 open System
@@ -17,6 +25,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -30,7 +39,7 @@ let host = ProcessHostEnvironment.liveWithConsole (Console.test())
 ```fsharp
 let inspect =
     flow {
-        let! result = Process.command $"printf 'status: ok'" |> Process.toFlow
+        let! result = cmd $"printf 'status: ok'" |> toFlow
         return result.StdOut, result.StdOutCapture.Bytes.Length
     }
 ```
@@ -51,10 +60,10 @@ callbacks, sinks, and `OutputTarget.Tee`. A file or console destination does not
 
 ```fsharp
 let diagnose =
-    Process.command $"printf diagnostics"
-    |> Process.stdoutToConsole
-    |> Process.captureTail 5
-    |> Process.toFlow
+    cmd $"printf diagnostics"
+    |> stdoutToConsole
+    |> captureTail 5
+    |> toFlow
 ```
 
 ```fsharp run

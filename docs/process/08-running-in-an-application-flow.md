@@ -27,6 +27,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -38,6 +39,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 type AppEnvironment =
     { Processes: IProcess }
@@ -59,8 +61,8 @@ application Flow with its environment.
 let readRevision : Flow<AppEnvironment, ProcessError, string> =
     flow {
         let! result =
-            Process.command $"git rev-parse --short HEAD"
-            |> Process.toFlow
+            cmd $"git rev-parse --short HEAD"
+            |> toFlow
 
         return result.StdOut.Trim()
     }

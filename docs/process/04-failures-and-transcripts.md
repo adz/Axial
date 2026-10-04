@@ -43,6 +43,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -70,8 +71,8 @@ let explain (exit: Exit<ProcessResult, ProcessError>) =
 ```
 
 ```fsharp run
-Process.command $"sh -c 'exit 3'" |> Process.toFlow |> Flow.run host |> explain |> shouldEqual "stage 0 exited 3"
-Process.command $"no-such-command-axial-docs" |> Process.toFlow |> Flow.run host |> explain |> shouldEqual "could not start no-such-command-axial-docs"
+cmd $"sh -c 'exit 3'" |> toFlow |> Flow.run host |> explain |> shouldEqual "stage 0 exited 3"
+cmd $"no-such-command-axial-docs" |> toFlow |> Flow.run host |> explain |> shouldEqual "could not start no-such-command-axial-docs"
 ```
 
 [`ProcessError.describe`](xref:M:Axial.Process.ProcessError.describe) formats a redacted diagnostic.
@@ -90,13 +91,13 @@ output drain and awaited callbacks. A failure result contains the capture availa
 ```fsharp
 let stageSummary (specification: ProcessSpec) : Flow<ProcessHostEnvironment, ProcessError, string list> =
     flow {
-        let! result = specification |> Process.toFlow
+        let! result = specification |> toFlow
         return [ for stage in result.Stages -> $"[{stage.Stage}] {stage.Command} => {stage.ExitCode}" ]
     }
 ```
 
 ```fsharp run
-Process.command $"printf 'a\nb\n'" |> Process.pipe (Process.command $"wc -l")
+cmd $"printf 'a\nb\n'" |> pipeTo (cmd $"wc -l")
 |> stageSummary
 |> Flow.run host
 |> shouldEqual (Exit.Success [ "[0] printf \"a\nb\n\" => 0"; "[1] wc -l => 0" ])
@@ -110,9 +111,9 @@ indefinitely is unsuitable:
 
 ```fsharp
 let boundedDrain : Flow<ProcessHostEnvironment, ProcessError, ProcessResult> =
-    Process.command $"printf ready"
-    |> Process.drainTimeout (TimeSpan.FromSeconds 2.0)
-    |> Process.toFlow
+    cmd $"printf ready"
+    |> drainTimeout (TimeSpan.FromSeconds 2.0)
+    |> toFlow
 ```
 
 ```fsharp run
@@ -130,3 +131,21 @@ If a downstream stage is still waiting for EOF, the drain deadline has not start
 the complete execution, including running stages, callbacks, and draining. `Process.timeout` limits one command
 from successful launch to its native exit. The DSL also exposes `drainTimeout`. Both policies
 are opt-in and appear in `Process.plan`.
+
+
+## Choose stage and overall deadlines
+
+Apply `timeout` before connecting a command; it measures that stage through native exit. `overallTimeout`
+applies to the whole topology, including draining and completion-aware callbacks. Both remain typed failures.
+
+```fsharp run
+let slowStage = sh $"sleep 30" |> timeout (TimeSpan.FromMilliseconds 100.) |> toFlow
+match slowStage |> runWith host with
+| Exit.Failure(Cause.Fail(ProcessError.StageTimedOut failure)) -> shouldEqual 0 failure.Stage
+| other -> failwithf "Expected stage timeout, got %A" other
+
+let slowTopology = sh $"sleep 30" => cmd $"cat" |> overallTimeout (TimeSpan.FromMilliseconds 100.) |> toFlow
+match slowTopology |> runWith host with
+| Exit.Failure(Cause.Fail(ProcessError.OverallTimedOut _)) -> ()
+| other -> failwithf "Expected overall timeout, got %A" other
+```

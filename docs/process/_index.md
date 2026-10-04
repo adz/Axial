@@ -23,6 +23,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -97,6 +98,7 @@ The process service starts the native topology; Axial owns its lifetime. A timeo
 - [Streaming output](streaming.html)
 - [Failures and transcripts](failures-and-transcripts.html)
 - [Scripts and shell syntax](scripts.html)
+- [DSL recipes: input, routing, fan-in, and parallel commands](dsl-recipes.html)
 - [Worked examples](worked-examples.html)
 - [Run a process in an application Flow](running-in-an-application-flow.html)
 - [Fable](fable.html)

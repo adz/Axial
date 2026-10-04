@@ -24,6 +24,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -58,8 +59,8 @@ service and decides how to use the result.
 let gitRevision : Flow<#IHasProcess, ProcessError, string> =
     flow {
         let! result =
-            Process.command $"git rev-parse --short HEAD"
-            |> Process.toFlow
+            cmd $"git rev-parse --short HEAD"
+            |> toFlow
 
         return result.StdOut.Trim()
     }
@@ -88,8 +89,8 @@ environment.
 
 ```fsharp
 let collectEvents =
-    Process.command $"printf '{{\"event\":\"ready\"}}\n{{\"event\":\"done\"}}\n'"
-    |> Process.streamStdoutLines
+    cmd $"printf '{{\"event\":\"ready\"}}\n{{\"event\":\"done\"}}\n'"
+    |> streamStdoutLines
     |> ProcessStream.runCollect
     |> Flow.map fst
 
@@ -101,6 +102,8 @@ Flow.run appEnvironment collectEvents |> shouldEqual (Exit.Success [ """{"event"
 
 The consumer pulls the stream. If the enclosing Flow is interrupted or the consumer stops early, Axial interrupts the
 native process topology and waits for its cleanup.
+
+For more checked command-line patterns, see [DSL recipes](dsl-recipes.html).
 
 For command construction and pipelines, continue with [commands, input, and pipelines](composition.html). For output
 destinations and bounded capture, see [output capture and destinations](output-capture.html).

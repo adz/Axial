@@ -64,6 +64,25 @@
   are worked examples of every concurrency construct under interruption, failure, and shutdown. Each page lists the
   invariants the construct guarantees.
 
+## Processes
+
+- Open `Axial.Process.DSL` for `cmd`, `cwd`, `env`, routing/capture helpers, and `=>`. Interpolation holes are
+  individual native arguments; `bash`, `sh`, and `pwsh` explicitly opt into shell syntax with values passed separately.
+- Configure a `ProcessCommand` before connecting it. `=>` connects native streams; `pipeTo` is its pipeline form.
+  Use `mapFinalCommand` for the final command of a connected spec, and `stageDefaults` for overridable fallbacks.
+- Routing and capture are independent. `toFlow` captures full stdout and separate 64 KiB stderr tails; stream
+  constructors default to 64 KiB tails. `captureAll`/`captureTail`/`captureNothing` affect stdout only; stderr has
+  explicit `captureStderr*` helpers. Stderr joins stdout only through `mergeStderr` or a combined-channel pipe.
+- `streamStdoutLines` produces a completion-aware `ProcessStream`. Keep `ProcessStream` transformations and
+  terminals to retain `Completed result` or awaited `StoppedEarly`; `toFlowStream` deliberately drops completion.
+  Effectful consumers use `runForEachFlow` or `runFoldFlow`, with process and consumer errors kept distinct.
+- `run`/`runWith` return a full `Exit`; direct commands retain batch output. `runExitCode` variants return integers
+  at program boundaries, defaulting direct commands to console routes and no stdout retention. Existing Flows keep
+  their policies. `toFlow` needs `IHasProcess`; streaming additionally needs `IHasClock`.
+- `mergeStdout` fans in producer lines; `captureParallel` captures independent commands with bounded workflow
+  concurrency and ordered results. Use `flow { }` for sequencing and `Flow.orElseWith` for typed recovery.
+- Guides: `/process/index.html`, `/process/scripts.html`, `/process/streaming.html`, and `/process/dsl-recipes.html`.
+
 ## Hosts
 
 - `Axial.Hosting` is .NET-only.
