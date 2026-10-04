@@ -2,6 +2,7 @@ namespace Axial.Process
 
 open System
 open System.Collections.Generic
+open System.ComponentModel
 open System.Diagnostics
 open System.IO
 open System.Globalization
@@ -258,7 +259,7 @@ type ProcessStreamError<'error> = ProcessFailed of ProcessError | ConsumerFailed
 
 /// Cold output plus completion. Each terminal executes a fresh run.
 type ProcessStream<'env,'value> =
-    internal ProcessStream of (unit -> FlowStream<'env,ProcessError,'value> * (unit -> ProcessCompletion) * Flow<'env,ProcessError,unit>)
+    internal ProcessStream of (unit -> FlowStream<'env,ProcessError,'value> * (unit -> ProcessCompletion) * Flow<'env,ProcessError,unit> * (unit -> Cause<ProcessError> option))
 
 [<RequireQualifiedAccess>]
 module ProcessError =
@@ -294,6 +295,7 @@ module StageDefaults =
         { settings with StdErrCapture = Some policy }
 
 /// Static conversion used by public inline APIs, without reflection.
+[<EditorBrowsable(EditorBrowsableState.Never)>]
 type ProcessInput =
     static member ToSpecification(specification: ProcessSpec) = specification
     static member ToSpecification(ProcessCommand command) = {
@@ -390,32 +392,53 @@ type internal AsyncCell<'value>() =
             waiters.Clear()
             callbacks)
         for callback in callbacks do callback item
-    member _.Wait(): Async<'value> = async {
-        let! token = Async.CancellationToken
-        return! Async.FromContinuations(fun (success,_,cancel) ->
-            let mutable registration = Unchecked.defaultof<CancellationTokenRegistration>
+    member _.Wait(token: CancellationToken): Async<'value> = async {
+        return! Async.FromContinuations(fun (success,error,cancel) ->
+            let completionGate = obj()
+            let mutable registration: IDisposable option = None
+            let mutable settled = false
+            let finish callback =
+                let invoke,disposable = lock completionGate (fun () ->
+                    if settled then false,None
+                    else
+                        settled <- true
+                        true,registration)
+                disposable |> Option.iter _.Dispose()
+                if invoke then callback()
             let id,existing = lock gate (fun () ->
                 next <- next + 1
                 next,value)
-            let finish item = registration.Dispose(); success item
+            let deliver item = finish(fun () -> success item)
             match existing with
-            | Some item -> success item
+            | Some item -> deliver item
             | None ->
-                lock gate (fun () -> waiters[id] <- finish)
-                registration <- token.Register(fun () ->
+                lock gate (fun () -> waiters[id] <- deliver)
+                let canceled () =
                     let removed = lock gate (fun () -> waiters.Remove id)
-                    if removed then cancel (OperationCanceledException token))
+                    if removed then
+                        finish(fun () ->
+#if FABLE_COMPILER
+                            error (OperationCanceledException())
+#else
+                            cancel (OperationCanceledException token)
+#endif
+                        )
+                let created = token.Register canceled |> box |> unbox<IDisposable>
+                let disposeNow = lock completionGate (fun () ->
+                    registration <- Some created
+                    settled)
+                if disposeNow then created.Dispose()
                 let completed = lock gate (fun () -> value)
                 completed |> Option.iter (fun item ->
                     let removed = lock gate (fun () -> waiters.Remove id)
-                    if removed then finish item))
+                    if removed then deliver item))
     }
 
 type private AsyncRendezvous<'value>() =
     let gate = obj()
     let mutable pending: ('value * AsyncCell<unit>) option = None
     let mutable waiter: AsyncCell<'value * AsyncCell<unit>> option = None
-    member _.Put(value): Async<unit> = async {
+    member _.Put(value,token: CancellationToken): Async<unit> = async {
         let acknowledged = AsyncCell<unit>()
         let waiting = lock gate (fun () ->
             match waiter,pending with
@@ -423,9 +446,9 @@ type private AsyncRendezvous<'value>() =
             | None,None -> pending <- Some(value,acknowledged); None
             | _ -> invalidOp "Only one serialized producer may publish output.")
         waiting |> Option.iter (fun consumer -> consumer.Set(value,acknowledged))
-        return! acknowledged.Wait()
+        return! acknowledged.Wait token
     } with
-    member _.Take(): Async<'value * AsyncCell<unit>> = async {
+    member _.Take(token: CancellationToken): Async<'value * AsyncCell<unit>> = async {
         let waiting = AsyncCell<'value * AsyncCell<unit>>()
         let buffered = lock gate (fun () ->
             match pending,waiter with
@@ -434,7 +457,7 @@ type private AsyncRendezvous<'value>() =
             | _ -> invalidOp "Only one process consumer may pull output.")
         match buffered with
         | Some item -> return item
-        | None -> return! waiting.Wait()
+        | None -> return! waiting.Wait token
     }
 
 #if !FABLE_COMPILER
@@ -471,6 +494,7 @@ type TestProcessHostEnvironment = {
     Console: TestConsole
     Clock: ManualClock }
 
+#if !FABLE_COMPILER
 type private ProcessFailureException(error: ProcessError) =
     inherit Exception(error.ToString())
     member _.Error = error
@@ -505,8 +529,11 @@ type private CaptureBuffer(policy: OutputRetention, available: bool) =
     interface IDisposable with member _.Dispose() = stream.Dispose()
 #endif
 
+#endif
+
 [<RequireQualifiedAccess>]
 module Process =
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let inline toSpecification (source: ^source): ProcessSpec =
         ((^source or ProcessInput): (static member ToSpecification: ^source -> ProcessSpec) source)
     let ofCommand (command: ProcessCommand) = ProcessInput.ToSpecification command
@@ -631,19 +658,23 @@ module Process =
         let codes = Set.ofSeq values
         if Set.isEmpty codes then invalidArg (nameof values) "At least one success code is required."
         mapSingle (fun c -> { c with SuccessCodes = Some codes }) command
+    /// Bounds one stage from successful native launch to direct exit; use overallTimeout to include drainage.
     let timeout after command =
         if after <= TimeSpan.Zero then invalidArg (nameof after) "Timeout must be positive."
         mapSingle (fun c -> { c with Timeout = Some(Some after) }) command
     let withoutTimeout command = mapSingle (fun c -> { c with Timeout = Some None }) command
+    /// Configures root input; an explicit source conflicts with a pipe feeding this command.
     let stdinFrom source command = mapSingle (fun c -> { c with StdIn = Some source }) command
     let rec private checkTarget = function
         | OutputTarget.Tee targets ->
             if targets |> List.exists (function OutputTarget.Inherit -> true | _ -> false) then invalidArg "target" "Tee cannot contain inherited handles."
             List.iter checkTarget targets
         | _ -> ()
+    /// Configures a destination independently of capture; explicit destinations conflict with piping this channel.
     let stdoutTo target command =
         checkTarget target
         mapSingle (fun c -> { c with StdOut = Some target }) command
+    /// Configures separate stderr routing; merged stderr uses the final stdout destination.
     let stderrTo target command =
         checkTarget target
         mapSingle (fun c -> { c with StdErr = Some target }) command
@@ -661,6 +692,7 @@ module Process =
     let stdinFromBytes bytes command = stdinFrom (InputSource.Bytes bytes) command
     let stdinFromFile path command = stdinFrom (InputSource.File path) command
     let stdinFromInheritHandles command = stdinFrom InputSource.Inherit command
+    /// Changes settings on the unique final command; executable and arguments must remain unchanged.
     let mapFinalCommand transform (specification: ProcessSpec) =
         if specification.Leaves.Count <> 1 then invalidArg "specification" "Exactly one final command is required."
         let final = Set.minElement specification.Leaves
@@ -669,6 +701,7 @@ module Process =
         if updated.FileName <> prior.FileName || updated.Arguments <> prior.Arguments then invalidArg "transform" "The final command's executable and arguments cannot be replaced."
         { specification with Commands = specification.Commands |> List.mapi (fun i c -> if i = final then updated else c) }
         |> Configuration.validate
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let connect both (next: ProcessSpec) (source: ProcessSpec) =
         let roots = [for i in 0..next.Commands.Length-1 do if next.Connections |> List.forall (fun (_,target,_) -> target <> i) then yield i]
         if roots.Length <> 1 then invalidArg "next" "The destination topology must have one root."
@@ -685,6 +718,7 @@ module Process =
         |> Configuration.validate
     let inline pipe next source = connect false (toSpecification next) (toSpecification source)
     let inline pipeStdoutAndStderr next source = connect true (toSpecification next) (toSpecification source)
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let mergeSpecifications (specifications: ProcessSpec list) =
         match specifications with
         | [] -> invalidArg "sources" "Fan-in requires at least one producer."
@@ -701,9 +735,13 @@ module Process =
     let inline mergeStderr source = ProcessInput.MergeStderr(toSpecification source)
     let inline framing value source = ProcessInput.Framing(value,toSpecification source)
     let inline maxLineLength value source = ProcessInput.MaxLineLength(value,toSpecification source)
+    /// Supplies topology-wide fallbacks, including future stages. Explicit command settings always win.
     let inline stageDefaults defaults source = ProcessInput.Defaults(defaults,toSpecification source)
+    /// Bounds the topology from launch through drain and completion-aware consumer callbacks.
     let inline overallTimeout after source = ProcessInput.OverallTimeout(after,toSpecification source)
+    /// Bounds remaining I/O and sink completion after every managed stage exits.
     let inline drainTimeout after source = ProcessInput.DrainTimeout(after,toSpecification source)
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let setCapture stderr policy (specification: ProcessSpec) =
         StageDefaults.checkRetention policy
         if not stderr && specification.Leaves.Count <> 1 then invalidArg "specification" "Capturing stdout requires one final command."
@@ -713,31 +751,45 @@ module Process =
                 elif not stderr && specification.Leaves.Contains i then { c with StdOutCapture = Some policy }
                 else c)
         { specification with Commands = commands }
+    /// Retains all final stdout bytes; stderr and destinations are unchanged. Streaming can then use unbounded memory.
     let inline captureAll source = ((^source or ProcessInput): (static member Map: (ProcessSpec -> ProcessSpec) * ^source -> ^result) (setCapture false OutputRetention.All,source))
+    /// Retains the last size bytes of final stdout. Byte boundaries may split encoded characters.
     let inline captureTail size source = ((^source or ProcessInput): (static member Map: (ProcessSpec -> ProcessSpec) * ^source -> ^result) (setCapture false (OutputRetention.Tail size),source))
+    /// Omits the stdout transcript while retaining live routing, observation and stderr diagnostics.
     let inline captureNothing source = ((^source or ProcessInput): (static member Map: (ProcessSpec -> ProcessSpec) * ^source -> ^result) (setCapture false OutputRetention.Nothing,source))
+    /// Retains complete readable unmerged stderr for every stage.
     let inline captureStderrAll source = ((^source or ProcessInput): (static member Map: (ProcessSpec -> ProcessSpec) * ^source -> ^result) (setCapture true OutputRetention.All,source))
+    /// Bounds each readable unmerged stderr transcript in bytes.
     let inline captureStderrTail size source = ((^source or ProcessInput): (static member Map: (ProcessSpec -> ProcessSpec) * ^source -> ^result) (setCapture true (OutputRetention.Tail size),source))
+    /// Omits readable unmerged stderr transcripts, including diagnostic tails.
     let inline captureStderrNothing source = ((^source or ProcessInput): (static member Map: (ProcessSpec -> ProcessSpec) * ^source -> ^result) (setCapture true OutputRetention.Nothing,source))
     let inline render source = ProcessInput.Render(toSpecification source)
-    let describeInput = function
+    let private describeInput = function
         | InputSource.Empty -> "empty" | InputSource.Inherit -> "inherited handle"
         | InputSource.Text value -> $"text ({value.Length} characters)"
         | InputSource.Bytes value -> $"bytes ({value.Length} bytes)"
         | InputSource.File path -> $"file: {path}"
         | InputSource.ReadOnce _ -> "asynchronous read once" | InputSource.Produce _ -> "asynchronous producer"
-    let rec describeTarget = function
+    let rec private describeTarget = function
         | OutputTarget.Console -> "console" | OutputTarget.Inherit -> "inherited handle" | OutputTarget.Discard -> "discard"
         | OutputTarget.File path -> $"file: {path}" | OutputTarget.AppendFile path -> $"append file: {path}"
         | OutputTarget.Callback _ -> "callback" | OutputTarget.Sink _ | OutputTarget.SinkFactory _ -> "sink"
         | OutputTarget.Tee targets -> "tee (" + (targets |> List.map describeTarget |> String.concat ", ") + ")"
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let planSpecification (specification: ProcessSpec): ProcessPlan =
         let stages = specification.Commands |> List.mapi (fun i original ->
             let resolved = Configuration.resolve specification original
             let provenance name explicit defaults = name, if explicit then "command" elif defaults then "stageDefaults" else "execution default"
             { Stage = i; Command = Configuration.renderCommand original
               WorkingDirectory = resolved.WorkingDirectory; Environment = resolved.Environment
-              Encoding = resolved.Encoding.Value.WebName; SuccessCodes = resolved.SuccessCodes.Value; Timeout = resolved.Timeout.Value
+              Encoding =
+#if FABLE_COMPILER
+                  let sample = resolved.Encoding.Value.GetBytes "A"
+                  if sample.Length=2 then (if sample[0]=65uy then "utf-16" else "utf-16BE") else "utf-8"
+#else
+                  resolved.Encoding.Value.WebName
+#endif
+              ; SuccessCodes = resolved.SuccessCodes.Value; Timeout = resolved.Timeout.Value
               StdIn = describeInput resolved.StdIn.Value; StdOut = describeTarget resolved.StdOut.Value; StdErr = describeTarget resolved.StdErr.Value
               StdOutCapture = resolved.StdOutCapture.Value; StdErrCapture = resolved.StdErrCapture.Value
               Provenance = Map.ofList ([provenance "stdin" original.StdIn.IsSome false;
@@ -760,6 +812,7 @@ module Process =
         if specification.Leaves.Count <> 1 then invalidArg "specification" "Connect fan-in producers to a final command before execution."
         let configured = { specification with Mode = mode } |> Configuration.validate
         { configured with Commands = configured.Commands |> List.map (Configuration.resolve configured); Defaults = StageDefaults.empty }
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let toFlowSpecification<'env when 'env :> IHasProcess> (specification: ProcessSpec): Flow<'env,ProcessError,ProcessResult> =
         Flow.delay (fun () ->
             let configured = prepare specification.Mode specification
@@ -769,6 +822,7 @@ module Process =
             })
     let inline toFlow source = toFlowSpecification (toSpecification source)
 
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let createOutputStream<'env when 'env :> IHasProcess and 'env :> IHasClock> requestedChannel (specification: ProcessSpec): ProcessStream<'env,ProcessOutput> =
         ProcessStream(fun () ->
             let configured = prepare ExecutionMode.Streaming specification
@@ -781,6 +835,7 @@ module Process =
             let events = AsyncRendezvous<Choice<ProcessOutput,Exit<ProcessResult,ProcessError>>>()
             let deadline = AsyncCell<Cause<ProcessError>>()
             let mutable completion = ProcessCompletion.StoppedEarly
+            let mutable pendingFailure: Cause<ProcessError> option = None
             let mutable previous: AsyncCell<unit> option = None
             let mutable started = false
             let step finished = flow {
@@ -794,28 +849,53 @@ module Process =
                         | Some failure -> return! Flow.fail (ProcessError.ObservationUnavailable failure)
                         | None -> ()
                         let! processes = service
+                        let publish outcome = flow {
+                            let! token = Flow.cancellationToken
+                            do! events.Put(Choice2Of2 outcome,token)
+                        }
                         let producer =
-                            processes.Execute(configured,fun output -> events.Put(Choice1Of2 output))
-                            |> Flow.localEnv(fun (_:'env) -> ())
+                            flow {
+                                let! token = Flow.cancellationToken
+                                return! processes.Execute(configured,fun output -> async {
+#if FABLE_COMPILER
+                                    return! events.Put(Choice1Of2 output,token)
+#else
+                                    let! observationToken = Async.CancellationToken
+                                    return! events.Put(Choice1Of2 output,observationToken)
+#endif
+                                })
+                                        |> Flow.localEnv(fun (_:'env) -> ())
+                            }
                             |> Flow.fold
-                                (fun result -> events.Put(Choice2Of2(Exit.Success result)) |> Flow.fromAsync)
+                                (Exit.Success >> publish)
                                 (fun cause ->
+                                    match Cause.untraced cause with
+                                    | Cause.Interrupt -> ()
+                                    | _ -> pendingFailure <- Some cause
                                     match Cause.untraced cause with
                                     | Cause.Fail(ProcessError.OverallTimedOut _) -> deadline.Set cause
                                     | _ -> ()
-                                    events.Put(Choice2Of2(Exit.Failure cause)) |> Flow.fromAsync)
+                                    match Cause.untraced cause with
+                                    | Cause.Interrupt -> Flow.succeed()
+                                    | _ -> publish(Exit.Failure cause))
                         let! fiber = Flow.fork producer
                         do! Flow.scopeAsyncFinalizer(fun _ -> async {
                             fiber.InterruptSource.Cancel()
+#if FABLE_COMPILER
+                            let! _ = fiber.ExitTask
+#else
                             let! _ = fiber.ExitTask |> Async.AwaitTask
+#endif
                             return () })
-                    let! item,acknowledgment = events.Take()
+                    let! token = Flow.cancellationToken
+                    let! item,acknowledgment = events.Take token
                     match item with
                     | Choice1Of2 output ->
                         previous <- Some acknowledgment
                         return Some(output,false)
                     | Choice2Of2 outcome ->
                         acknowledgment.Set()
+                        pendingFailure <- None
                         let! result = Flow.ofExit outcome
                         completion <- ProcessCompletion.Completed result
                         return None
@@ -824,19 +904,27 @@ module Process =
             let selected = match requestedChannel with None -> observed | Some channel -> observed |> FlowStream.filter(fun output -> output.ObservedChannel=channel)
             let guard =
                 flow {
-                    let! cause = deadline.Wait()
+                    let! token = Flow.cancellationToken
+                    let! cause = deadline.Wait token
+                    pendingFailure <- None
                     return! Flow.ofExit(Exit.Failure cause)
                 }
-            selected,(fun () -> completion),guard)
+            selected,(fun () -> completion),guard,(fun () -> pendingFailure))
+    /// Observes all readable unconnected output channels, preserving originating channel metadata.
     let inline streamOutputs source = createOutputStream None (toSpecification source)
+    /// Observes final effective stdout chunks; explicitly merged stderr is included.
     let inline streamStdout source = createOutputStream (Some OutputChannel.StdOut) (toSpecification source)
+    /// Observes readable unmerged stderr chunks from every stage.
     let inline streamStderr source = createOutputStream (Some OutputChannel.StdErr) (toSpecification source)
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let lineStream requested source =
         let (ProcessStream factory) = createOutputStream requested {source with Framing=OutputFraming.Lines}
         ProcessStream(fun () ->
-            let stream,completion,guard = factory()
-            stream |> FlowStream.map (fun output -> output.Text),completion,guard)
+            let stream,completion,guard,failure = factory()
+            stream |> FlowStream.map (fun output -> output.Text),completion,guard,failure)
+    /// Observes final stdout lines without LF or CRLF terminators; stderr stays separate by default.
     let inline streamStdoutLines source = lineStream (Some OutputChannel.StdOut) (toSpecification source)
+    /// Observes readable unmerged stderr lines from every stage.
     let inline streamStderrLines source = lineStream (Some OutputChannel.StdErr) (toSpecification source)
 #if !FABLE_COMPILER
     let private inherited = function OutputTarget.Inherit -> true | _ -> false
@@ -913,6 +1001,7 @@ module Process =
                         let commands = specification.Commands |> List.toArray
                         let processes = ResizeArray<Diagnostics.Process>()
                         let starts = ResizeArray<DateTimeOffset>()
+                        let elapsedStarts = ResizeArray<TimeSpan>()
                         let ends = Array.create commands.Length None
                         let errorGate = obj()
                         let mutable firstFailure: exn option = None
@@ -922,8 +1011,12 @@ module Process =
                         use observerGate = new SemaphoreSlim(1,1)
                         let stdoutTargets = commands |> Array.map(fun c -> instantiate c.StdOut.Value)
                         let stderrTargets = commands |> Array.map(fun c -> instantiate c.StdErr.Value)
-                        let stdout = commands |> Array.map(fun c -> new CaptureBuffer(c.StdOutCapture.Value,not(inherited c.StdOut.Value)))
-                        let stderr = commands |> Array.map(fun c -> new CaptureBuffer(c.StdErrCapture.Value,not(inherited c.StdErr.Value)))
+                        let stdout = commands |> Array.mapi(fun i c ->
+                            let available = not(inherited c.StdOut.Value) && not(specification.Connections |> List.exists(fun (source,_,_)->source=i))
+                            new CaptureBuffer((if available then c.StdOutCapture.Value else OutputRetention.Nothing),available))
+                        let stderr = commands |> Array.mapi(fun i c ->
+                            let available = not(inherited c.StdErr.Value) && not(specification.Connections |> List.exists(fun (source,_,both)->source=i && both)) && not(specification.MergeStdErr && specification.Leaves.Contains i)
+                            new CaptureBuffer((if available then c.StdErrCapture.Value else OutputRetention.Nothing),available))
                         let startedAt = clock.UtcNow()
                         let terminate () =
                             for proc in lock processes (fun () -> processes.ToArray()) do
@@ -1003,6 +1096,7 @@ module Process =
                                         raise error // axial-allow-raise
                                     lock processes (fun () -> processes.Add proc)
                                     starts.Add(clock.UtcNow())
+                                    elapsedStarts.Add(clock.Elapsed())
                                 let copies = specification.Connections |> List.groupBy(fun (_,target,_)->target) |> List.map(fun (target,connections)->
                                     (task {
                                         use gate = new SemaphoreSlim(1,1)
@@ -1017,20 +1111,40 @@ module Process =
                                                 let buffer = Array.zeroCreate<byte> 4096
                                                 use pending = new MemoryStream()
                                                 let lineMode = connections.Length>1 && specification.Framing=OutputFraming.Lines
+                                                let encoding = commands[source].Encoding.Value
+                                                let decoder = encoding.GetDecoder()
+                                                let decoded = Array.zeroCreate<char>(encoding.GetMaxCharCount 1)
+                                                let singleByte = Array.zeroCreate<byte> 1
+                                                let mutable lineLength = 0
+                                                let mutable lastWasCR = false
+                                                let checkLength () =
+                                                    if lineLength>specification.MaxLineLength && not(lineLength=specification.MaxLineLength+1 && lastWasCR) then
+                                                        raise(ProcessFailureException(ProcessError.LineTooLong {Stage=source;OriginalChannel=channel;Limit=specification.MaxLineLength})) // axial-allow-raise
                                                 let mutable reading = true
                                                 while reading do
                                                     let! count = stream.ReadAsync(buffer,0,buffer.Length,token)
                                                     if count=0 then
                                                         reading <- false
+                                                        if lineMode then
+                                                            lineLength <- lineLength+decoder.GetChars([||],0,0,decoded,0,true)
+                                                            if lineLength>specification.MaxLineLength then
+                                                                raise(ProcessFailureException(ProcessError.LineTooLong {Stage=source;OriginalChannel=channel;Limit=specification.MaxLineLength})) // axial-allow-raise
                                                         if pending.Length>0 then do! write(pending.ToArray())
                                                     elif lineMode then
                                                         for b in buffer[..count-1] do
                                                             pending.WriteByte b
-                                                            if b=byte '\n' then
-                                                                do! write(pending.ToArray())
-                                                                pending.SetLength 0L
-                                                            elif pending.Length>int64(specification.MaxLineLength*4) then
-                                                                raise(ProcessFailureException(ProcessError.LineTooLong {Stage=source;OriginalChannel=channel;Limit=specification.MaxLineLength})) // axial-allow-raise
+                                                            singleByte[0] <- b
+                                                            let length = decoder.GetChars(singleByte,0,1,decoded,0,false)
+                                                            for index in 0..length-1 do
+                                                                if decoded[index]='\n' then
+                                                                    do! write(pending.ToArray())
+                                                                    pending.SetLength 0L
+                                                                    lineLength <- 0
+                                                                    lastWasCR <- false
+                                                                else
+                                                                    lineLength <- lineLength+1
+                                                                    lastWasCR <- decoded[index]='\r'
+                                                                    checkLength()
                                                     else do! write buffer[..count-1]
                                             }) |> supervise
                                         let pumps = [|for source,_,both in connections do
@@ -1123,7 +1237,8 @@ module Process =
                                         match command.Timeout.Value with
                                         | Some after ->
                                             use timerCancellation = CancellationTokenSource.CreateLinkedTokenSource(token)
-                                            let timer = clock.Sleep(after,timerCancellation.Token)
+                                            let remaining = max TimeSpan.Zero (after-(clock.Elapsed()-elapsedStarts[i]))
+                                            let timer = clock.Sleep(remaining,timerCancellation.Token)
                                             try
                                                 let! winner = Task.WhenAny(wait,timer)
                                                 if obj.ReferenceEquals(winner,timer) && not wait.IsCompleted then
@@ -1207,9 +1322,12 @@ module Process =
         {new IProcess with member _.Execute(specification,observe) = execute specification observe}
 #endif
 #if !FABLE_COMPILER
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let createHost (console: IConsole): ProcessHostEnvironment =
         {Process=live Clock.live FileSystem.live console;Console=console;Clock=Clock.live}
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let liveHost = lazy(createHost Console.live)
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     let hostCode (environment: #IHasConsole) outcome =
         match outcome with
         | Exit.Success _ -> 0
@@ -1223,6 +1341,7 @@ module Process =
         | Exit.Failure cause ->
             environment.Console.WriteErrorLine(string cause)
             1
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
     type Runner =
         static member Run(specification: ProcessSpec) = toFlowSpecification specification |> Flow.run liveHost.Value
         static member Run(command: ProcessCommand) = Runner.Run(ProcessInput.ToSpecification command)
@@ -1256,8 +1375,8 @@ module Process =
 [<RequireQualifiedAccess>]
 module ProcessStream =
     let private transform operation (ProcessStream factory) = ProcessStream(fun () ->
-        let stream,completion,guard = factory()
-        operation stream,completion,guard)
+        let stream,completion,guard,failure = factory()
+        operation stream,completion,guard,failure)
     /// Transforms values while preserving process completion.
     let map mapping source = transform (FlowStream.map mapping) source
     /// Selects values without losing process completion or skipping drainage of other channels.
@@ -1266,33 +1385,44 @@ module ProcessStream =
     let take count source =
         if count<0 then invalidArg "count" "Count cannot be negative."
         transform (FlowStream.take count) source
+    /// Stops before the first nonmatching value, awaits owned cleanup, and reports StoppedEarly.
     let takeWhile predicate source = transform (FlowStream.takeWhile predicate) source
     /// Converts to ordinary FlowStream, discarding successful process completion.
     let toFlowStream (ProcessStream factory) = FlowStream(fun env token ->
-        let (FlowStream stream),_,_ = factory()
+        let (FlowStream stream),_,_,_ = factory()
         stream env token)
     let private terminal consume (ProcessStream factory) =
         Flow.delay(fun () ->
-            let stream,completion,guard = factory()
+            let stream,completion,guard,failure = factory()
             let consumer = consume stream |> Flow.map(fun value -> value,completion())
             let watcher = guard |> Flow.bind(fun () -> Flow.never)
-            Flow.race consumer watcher)
-        |> Flow.scoped
+            Flow.race consumer watcher
+            |> Flow.scoped
+            |> Flow.fold Flow.succeed (fun cause ->
+                let combined = failure() |> Option.map(fun producer -> Cause.Both(cause,producer)) |> Option.defaultValue cause
+                Flow.ofExit(Exit.Failure combined)))
+    /// Folds selected values and returns the state together with completion; capture policy is independent.
     let runFold folder initial source = terminal (FlowStream.runFold folder initial) source
+    /// Collects every selected value plus completion. The collected list can grow without bound.
     let runCollect source = terminal FlowStream.runCollect source
+    /// Consumes selected output without accumulating values and returns completion.
     let runDrain source = terminal FlowStream.runDrain source |> Flow.map snd
     /// Synchronous callback; use runForEachFlow for explicit service operations.
     let runForEach action source = terminal (FlowStream.runForEach action) source |> Flow.map snd
     let private effectfulTerminal consume (ProcessStream factory) =
         Flow.delay(fun () ->
-            let stream,completion,guard = factory()
+            let stream,completion,guard,failure = factory()
             let consumer = consume (FlowStream.mapError ProcessStreamError.ProcessFailed stream) |> Flow.map(fun value -> value,completion())
             let watcher = guard |> Flow.mapError ProcessStreamError.ProcessFailed |> Flow.bind(fun () -> Flow.never)
-            Flow.race consumer watcher)
-        |> Flow.scoped
+            Flow.race consumer watcher
+            |> Flow.scoped
+            |> Flow.fold Flow.succeed (fun cause ->
+                let combined = failure() |> Option.map(fun producer -> Cause.Both(cause,Cause.map ProcessStreamError.ProcessFailed producer)) |> Option.defaultValue cause
+                Flow.ofExit(Exit.Failure combined)))
     /// Runs each callback in the application environment; preserves consumer errors separately.
     let runForEachFlow action source =
         effectfulTerminal (FlowStream.runForEachFlow(fun value -> action value |> Flow.mapError ProcessStreamError.ConsumerFailed)) source |> Flow.map snd
+    /// Folds with application workflows; typed consumer failures use ConsumerFailed.
     let runFoldFlow folder initial source =
         Flow.delay(fun () ->
             let state = ref initial
@@ -1382,9 +1512,9 @@ module DSL =
         Process.commandArgs executable arguments |> Process.withRedactedArguments redacted
 
     /// Builds a Bash program with interpolation values passed as positional arguments.
-    let bash program = shellCommand "bash" (fun script -> [ "-o"; "pipefail"; "-c"; script; "axial" ]) (fun index -> $"\"${{{index + 1}}}\"") program
+    let bash program = shellCommand "bash" (fun script -> [ "-o"; "pipefail"; "-c"; script; "axial" ]) (fun index -> "\"${" + string(index+1) + "}\"") program
     /// Builds a POSIX shell program with interpolation values passed as positional arguments.
-    let sh program = shellCommand "sh" (fun script -> [ "-c"; script; "axial" ]) (fun index -> $"\"${{{index + 1}}}\"") program
+    let sh program = shellCommand "sh" (fun script -> [ "-c"; script; "axial" ]) (fun index -> "\"${" + string(index+1) + "}\"") program
     /// Builds a PowerShell 7 program with interpolation values passed through <c>$args</c>.
     let pwsh program = shellCommand "pwsh" (fun script -> [ "-NoProfile"; "-NonInteractive"; "-Command"; script ]) (fun index -> $"$args[{index}]") program
 
@@ -1423,9 +1553,13 @@ module DSL =
     let inline stageDefaults value source = Process.stageDefaults value source
     let inline overallTimeout value source = Process.overallTimeout value source
     let inline drainTimeout value source = Process.drainTimeout value source
+    /// Same as Process.captureAll. Retains final stdout completely.
     let inline captureAll source = Process.captureAll source
+    /// Same as Process.captureNothing. Omits stdout retention; stderr diagnostics remain.
     let inline captureNothing source = Process.captureNothing source
+    /// Same as Process.captureStderrAll. Retains readable unmerged stderr completely.
     let inline captureStderrAll source = Process.captureStderrAll source
+    /// Same as Process.captureStderrNothing. Omits stderr diagnostic retention.
     let inline captureStderrNothing source = Process.captureStderrNothing source
     let inline toFlow source = Process.toFlow source
     let inline streamOutputs source = Process.streamOutputs source
@@ -1434,7 +1568,9 @@ module DSL =
     let inline streamStdoutLines source = Process.streamStdoutLines source
     let inline streamStderrLines source = Process.streamStderrLines source
     let inline mergeStderr source = Process.mergeStderr source
+    /// Same as Process.captureTail. Bounds final stdout retention in bytes.
     let inline captureTail value source = Process.captureTail value source
+    /// Same as Process.captureStderrTail. Bounds each readable unmerged stderr channel.
     let inline captureStderrTail value source = Process.captureStderrTail value source
     let mapFinalCommand transform source = Process.mapFinalCommand transform source
     let inline pipeTo next source = Process.pipe next source

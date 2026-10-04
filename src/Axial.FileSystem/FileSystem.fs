@@ -371,8 +371,10 @@ module FileSystemError =
     /// <summary>Classifies an exception raised by a file-system operation.</summary>
     let fromException (path: string option) (error: exn) : FileSystemError =
         match error with
+#if !FABLE_COMPILER
         | :? FileNotFoundException as fileNotFound ->
             FileSystemError.FileNotFound(defaultArg (Option.ofObj fileNotFound.FileName) (defaultArg path ""))
+#endif
         | :? DirectoryNotFoundException ->
             FileSystemError.DirectoryNotFound(defaultArg path "")
         | :? UnauthorizedAccessException ->
@@ -609,7 +611,11 @@ module FileSystem =
         Flow.envWith _.FileSystem
 
     let private directorySeparators =
+        #if FABLE_COMPILER
+        [| '/'; '\\' |]
+#else
         [| Path.DirectorySeparatorChar; Path.AltDirectorySeparatorChar |]
+#endif
 
     let private endsInDirectorySeparatorRaw (path: string) =
         not (String.IsNullOrEmpty path)
@@ -642,7 +648,12 @@ module FileSystem =
         when 'env :> IHasFileSystem =
         flow {
             let! fileSystem = service
+#if FABLE_COMPILER
+            let! cancellationToken = Flow.cancellationToken
+            return! operation fileSystem cancellationToken |> Async.AwaitTask
+#else
             return! ColdTask(fun cancellationToken -> operation fileSystem cancellationToken)
+#endif
         }
         |> protect path
 
@@ -653,12 +664,17 @@ module FileSystem =
         when 'env :> IHasFileSystem =
         flow {
             let! fileSystem = service
+#if FABLE_COMPILER
+            let! cancellationToken = Flow.cancellationToken
+            do! operation fileSystem cancellationToken |> Async.AwaitTask
+#else
             do!
                 ColdTask(fun cancellationToken ->
                     task {
                         do! operation fileSystem cancellationToken
                         return ()
                     })
+#endif
         }
         |> protect path
 

@@ -25,6 +25,7 @@
     <Compile Include="Layers.fs" />
     <Compile Include="Streams.fs" />
     <Compile Include="Interop.fs" />
+    <Compile Include="Processes.fs" />
     <Compile Include="Scenarios.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -32,5 +33,6 @@
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
     <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
   </ItemGroup>
 </Project>

@@ -142,3 +142,129 @@ module ProcessStreamingTests =
         Assert.Equal("console",hostPlan.Stages[0].StdOut)
         Assert.Equal(OutputRetention.Nothing,hostPlan.Stages[0].StdOutCapture)
         Assert.Equal(OutputRetention.Tail 65536,hostPlan.Stages[0].StdErrCapture)
+
+    [<Fact>]
+    let ``overall deadline interrupts a slow final consumer and awaits cleanup`` () = task {
+        use rescue = new System.Threading.CancellationTokenSource()
+        let entered = System.Threading.Tasks.TaskCompletionSource<unit>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
+        let stopped = System.Threading.Tasks.TaskCompletionSource<unit>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
+        let action _ = Flow.fromAsync(async {
+            entered.TrySetResult() |> ignore
+            try do! Async.Sleep 30000
+            finally stopped.TrySetResult() |> ignore
+        })
+        let running =
+            shText "echo ready"
+            |> overallTimeout(TimeSpan.FromMilliseconds 250.)
+            |> streamStdoutLines
+            |> ProcessStream.runForEachFlow action
+            |> fun workflow -> workflow.StartAsTask(ProcessHostEnvironment.live,rescue.Token)
+        try
+            do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.)
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.)
+            match outcome with
+            | Exit.Failure(Cause.Fail(ProcessStreamError.ProcessFailed(ProcessError.OverallTimedOut _))) -> ()
+            | other -> failwithf "Expected overall timeout, got %A" other
+            Assert.True(stopped.Task.IsCompleted)
+        finally rescue.Cancel()
+    }
+
+    [<Fact>]
+    let ``per-stage timeout ends at native exit while callback remains active`` () =
+        let values,finish =
+            shText "echo ready"
+            |> timeout(TimeSpan.FromMilliseconds 150.)
+            |> streamStdoutLines
+            |> ProcessStream.runFoldFlow(fun values item -> Flow.fromAsync(async {
+                do! Async.Sleep 250
+                return item::values
+            })) []
+            |> Process.run
+            |> succeeded
+        Assert.Equal<string list>(["ready"],values)
+        Assert.Equal(0,(completed finish).ExitCode)
+
+    [<Fact>]
+    let ``byte tails decode split Unicode and aggregate stderr remains bounded`` () =
+        let unicode = Process.commandArgs "printf" ["€"] |> captureTail 2 |> Process.run |> succeeded
+        Assert.Equal<byte array>([|0x82uy;0xacuy|],unicode.StdOutCapture.Bytes)
+        Assert.True(unicode.StdOutTruncated)
+        Assert.Contains("�",unicode.StdOut)
+        let producer = shText "head -c 70000 /dev/zero >&2; printf ready"
+        let second = shText "cat >/dev/null; head -c 70000 /dev/zero >&2; printf ready"
+        let result = producer => second => cmd $"cat" |> Process.run |> succeeded
+        Assert.Equal(65536,result.StdErrCapture.Bytes.Length)
+        Assert.True(result.StdErrTruncated)
+        Assert.False(result.Stages[0].StdOutCapture.Available)
+        Assert.Empty(result.Stages[0].StdOutCapture.Bytes)
+
+    [<Fact>]
+    let ``fan in line limits apply to UTF16 characters instead of encoded bytes`` () =
+        let outcome = mergeStdout [shText "printf abcd"; cmd $"true"] |> maxLineLength 3 => cmd $"cat" |> Process.run
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessError.LineTooLong error)) -> Assert.Equal(0,error.Stage)
+        | other -> failwithf "Expected producer line limit, got %A" other
+
+    [<Fact>]
+    let ``map final command validates identity and fresh writer decoders work across runs`` () =
+        let specification = cmd $"printf hello" => cmd $"cat"
+        Assert.Throws<ArgumentException>(fun () -> specification |> Process.mapFinalCommand(Process.arg "replacement") |> ignore) |> ignore
+        let configured = specification |> Process.mapFinalCommand(Process.captureTail 2)
+        let result = configured |> Process.run |> succeeded
+        Assert.Equal("lo",result.StdOut)
+        use writer = new System.IO.StringWriter()
+        let command = Process.commandArgs "printf" ["€"] |> stdoutTo(Output.textWriter Encoding.UTF8 writer)
+        for _ in 1..2 do command |> Process.run |> succeeded |> ignore
+        Assert.Equal("€€",writer.ToString())
+        writer.Write("!")
+        Assert.Equal("€€!",writer.ToString())
+
+    [<Fact>]
+    let ``producer and consumer failures during the same published callback both survive`` () =
+        let outcome =
+            shText "echo ready; sleep 0.05; exit 7"
+            |> streamStdoutLines
+            |> ProcessStream.runForEachFlow(fun _ -> flow {
+                do! Flow.fromAsync(async {do! Async.Sleep 200})
+                return! Flow.fail "consumer"
+            })
+            |> Process.run
+        match outcome with
+        | Exit.Failure(Cause.Both(Cause.Fail(ProcessStreamError.ConsumerFailed "consumer"), Cause.Fail(ProcessStreamError.ProcessFailed(ProcessError.StageFailed _)))) -> ()
+        | other -> failwithf "Expected both observed failures, got %A" other
+
+    [<Fact>]
+    let ``shell patterns route per-stage stderr append files tee and generated input`` () =
+        let path = System.IO.Path.GetTempFileName()
+        let diagnosticPath = System.IO.Path.GetTempFileName()
+        try
+            let first = shText "printf first; printf stage-error >&2" |> stderrToFile diagnosticPath
+            let final = cmd $"cat" |> stdoutToFile path
+            first => final |> Process.run |> succeeded |> ignore
+            Assert.Equal("first",System.IO.File.ReadAllText path)
+            Assert.Equal("stage-error",System.IO.File.ReadAllText diagnosticPath)
+            cmd $"printf second" |> stdoutToAppendFile path |> Process.run |> succeeded |> ignore
+            Assert.Equal("firstsecond",System.IO.File.ReadAllText path)
+            shText "printf out; printf err >&2" |> stdoutToFile path |> mergeStderr |> Process.run |> succeeded |> ignore
+            let merged = System.IO.File.ReadAllText path
+            Assert.Contains("out",merged)
+            Assert.Contains("err",merged)
+            cmd $"printf tee" |> stdoutTo(Output.tee [Output.file path; Output.discard]) |> Process.run |> succeeded |> ignore
+            Assert.Equal("tee",System.IO.File.ReadAllText path)
+            let generated =
+                cmd $"cat"
+                |> stdinFrom(Input.produce(fun emit -> async {
+                    do! emit (Encoding.UTF8.GetBytes "one")
+                    do! emit (Encoding.UTF8.GetBytes "two")
+                }))
+                |> Process.run
+                |> succeeded
+            Assert.Equal("onetwo",generated.StdOut)
+            let sequential = flow {
+                do! shText "exit 7" |> toFlow |> Flow.map ignore |> Flow.orElseWith(function ProcessError.StageFailed _ -> Flow.succeed() | error -> Flow.fail error)
+                return! cmd $"printf continued" |> toFlow
+            }
+            Assert.Equal("continued",(sequential |> Process.run |> succeeded).StdOut)
+        finally
+            System.IO.File.Delete path
+            System.IO.File.Delete diagnosticPath

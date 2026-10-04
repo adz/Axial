@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
     <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
     <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Process\Axial.Process.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Harness.fs" />
@@ -33,6 +34,7 @@
     <Compile Include="../../examples/Axial.TortureTest/Layers.fs" Link="TortureTest/Layers.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Streams.fs" Link="TortureTest/Streams.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Interop.fs" Link="TortureTest/Interop.fs" />
+    <Compile Include="../../examples/Axial.TortureTest/Processes.fs" Link="TortureTest/Processes.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Scenarios.fs" Link="TortureTest/Scenarios.fs" />
     <Compile Include="TortureTests.fs" />
     <Compile Include="Program.fs" />

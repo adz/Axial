@@ -52,7 +52,7 @@ module Process =
     val environment : string -> string -> ProcessCommand -> ProcessCommand
     val removeEnvironment : string -> ProcessCommand -> ProcessCommand
     val encoding : Encoding -> ProcessCommand -> ProcessCommand
-    val successCodes : Set<int> -> ProcessCommand -> ProcessCommand
+    val successCodes : seq<int> -> ProcessCommand -> ProcessCommand
     val timeout : TimeSpan -> ProcessCommand -> ProcessCommand
     val withoutTimeout : ProcessCommand -> ProcessCommand
 ```
@@ -140,7 +140,7 @@ module StageDefaults =
     val environment : string -> string -> StageDefaults -> StageDefaults
     val removeEnvironment : string -> StageDefaults -> StageDefaults
     val encoding : Encoding -> StageDefaults -> StageDefaults
-    val successCodes : Set<int> -> StageDefaults -> StageDefaults
+    val successCodes : seq<int> -> StageDefaults -> StageDefaults
     val timeout : TimeSpan -> StageDefaults -> StageDefaults
     val stdoutCapture : OutputRetention -> StageDefaults -> StageDefaults
     val stderrCapture : OutputRetention -> StageDefaults -> StageDefaults
@@ -369,12 +369,12 @@ module ProcessStream =
     val filter : ('a -> bool) -> ProcessStream<'env, 'a> -> ProcessStream<'env, 'a>
     val take : int -> ProcessStream<'env, 'a> -> ProcessStream<'env, 'a>
     val takeWhile : ('a -> bool) -> ProcessStream<'env, 'a> -> ProcessStream<'env, 'a>
-    val runFold : ('state -> 'a -> 'state) -> 'state -> ProcessStream<'env, 'a> -> Flow<'env, ProcessError, 'state * ProcessCompletion>
-    val runCollect : ProcessStream<'env, 'a> -> Flow<'env, ProcessError, 'a list * ProcessCompletion>
-    val runDrain : ProcessStream<'env, 'a> -> Flow<'env, ProcessError, ProcessCompletion>
-    val runForEach : ('a -> unit) -> ProcessStream<'env, 'a> -> Flow<'env, ProcessError, ProcessCompletion>
-    val runFoldFlow : ('state -> 'a -> Flow<'env, 'error, 'state>) -> 'state -> ProcessStream<'env, 'a> -> Flow<'env, ProcessStreamError<'error>, 'state * ProcessCompletion>
-    val runForEachFlow : ('a -> Flow<'env, 'error, unit>) -> ProcessStream<'env, 'a> -> Flow<'env, ProcessStreamError<'error>, ProcessCompletion>
+    val runFold : ('state -> 'a -> 'state) -> 'state -> ProcessStream<'env, 'a> -> Flow<'env, ProcessError, 'state * ProcessCompletion> when 'env :> IHasClock
+    val runCollect : ProcessStream<'env, 'a> -> Flow<'env, ProcessError, 'a list * ProcessCompletion> when 'env :> IHasClock
+    val runDrain : ProcessStream<'env, 'a> -> Flow<'env, ProcessError, ProcessCompletion> when 'env :> IHasClock
+    val runForEach : ('a -> unit) -> ProcessStream<'env, 'a> -> Flow<'env, ProcessError, ProcessCompletion> when 'env :> IHasClock
+    val runFoldFlow : ('state -> 'a -> Flow<'env, 'error, 'state>) -> 'state -> ProcessStream<'env, 'a> -> Flow<'env, ProcessStreamError<'error>, 'state * ProcessCompletion> when 'env :> IHasClock
+    val runForEachFlow : ('a -> Flow<'env, 'error, unit>) -> ProcessStream<'env, 'a> -> Flow<'env, ProcessStreamError<'error>, ProcessCompletion> when 'env :> IHasClock
     val toFlowStream : ProcessStream<'env, 'a> -> FlowStream<'env, ProcessError, 'a>
 ```
 
@@ -459,7 +459,9 @@ cmd $"build-tool"
 ```
 
 The conversion preserves bounded capture, backpressure, failures, and cleanup but discards the
-successful completion value. Each execution starts one fresh run. Running a stream and then toFlow
+successful completion value. After conversion, application callback deadlines belong to the enclosing
+Flow; use Flow.timeout to bound them. ProcessStream terminals include callbacks in the process overall
+timeout. Each execution starts one fresh run. Running a stream and then toFlow
 starts two processes, never retrieves the first result. Infinite streams require owned early stopping
 or caller cancellation; cancellation cannot produce Completed.
 
@@ -683,7 +685,7 @@ let sequential =
     flow {
         do! toFlow (cmd $"a")
             |> Flow.map ignore
-            |> Flow.catchAll (function
+            |> Flow.orElseWith (function
                 | ProcessError.StageFailed _ -> Flow.ok ()
                 | error -> Flow.fail error)
         return! toFlow (cmd $"b")
