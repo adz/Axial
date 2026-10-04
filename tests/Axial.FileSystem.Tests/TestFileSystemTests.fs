@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open System
 open System.IO
 open Axial
 open Axial.FileSystem
@@ -42,3 +43,13 @@ module TestFileSystemTests =
 
         test <@ not (fs.DirectoryExists "/tmp/sub") @>
         test <@ not (fs.FileExists "/tmp/sub/f.txt") @>
+
+    [<Fact>]
+    let ``in-memory file system appends lines like System.IO`` () =
+        let fs = FileSystem.test () :> IFileSystem
+
+        fs.AppendAllLines("/tmp/lines.txt", [ "one"; "two" ])
+        test <@ fs.ReadAllText "/tmp/lines.txt" = "one" + Environment.NewLine + "two" + Environment.NewLine @>
+
+        fs.AppendAllLines("/tmp/lines.txt", [ "three" ])
+        test <@ fs.ReadAllText "/tmp/lines.txt" = "one" + Environment.NewLine + "two" + Environment.NewLine + "three" + Environment.NewLine @>

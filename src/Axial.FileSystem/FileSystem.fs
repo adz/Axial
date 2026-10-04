@@ -482,13 +482,13 @@ type TestFileSystem(?initial: seq<string * string>) =
             let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
             write path (Array.append existing (Encoding.UTF8.GetBytes contents)) }
         member _.AppendAllLines(path, contents) =
+            let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
             let text = contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine
-            let existing = if files.ContainsKey(normalize path) then requireFile path |> Encoding.UTF8.GetString else ""
-            write path (Encoding.UTF8.GetBytes(if existing = "" then text else existing + Environment.NewLine + text))
+            write path (Array.append existing (Encoding.UTF8.GetBytes(text + Environment.NewLine)))
         member _.AppendAllLines(path, contents, encoding) =
+            let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
             let text = contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine
-            let existing = if files.ContainsKey(normalize path) then requireFile path |> encoding.GetString else ""
-            write path (encoding.GetBytes(if existing = "" then text else existing + Environment.NewLine + text))
+            write path (Array.append existing (encoding.GetBytes(text + Environment.NewLine)))
         member _.FileExists(path) = files.ContainsKey(normalize path)
         member _.DeleteFile(path) = files.Remove(normalize path) |> ignore
         member _.CopyFile(sourcePath, destinationPath, overwrite) =
