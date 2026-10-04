@@ -27,7 +27,7 @@ module TestDoubleTests =
         let p = processService :> IProcess
         processService.RunHandler <- fun _ -> TestProcess.Result(0, "done")
 
-        let result = Flow.runSync () (p.Run (Process.commandText "echo hi"))
+        let result = Flow.runSync () (p.Execute(Process.commandText "echo hi" |> Process.ofCommand, fun _ -> async.Return()))
 
         test <@ result = Exit.Success (TestProcess.Result(0, "done")) @>
         test <@ processService.RunSpecs.Count = 1 @>

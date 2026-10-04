@@ -16,12 +16,14 @@ open Swensen.Unquote
 open Xunit
 
 type ProcessTestEnv =
-    { Process: IProcess }
+    { Process: IProcess; Clock: IClock }
     interface IHasProcess with
         member this.Process = this.Process
+    interface IHasClock with
+        member this.Clock = this.Clock
 
 module ProcessServiceTests =
-    let private env () = { Process = Process.live Clock.live FileSystem.live Console.live }
+    let private env () = { Process = Process.live Clock.live FileSystem.live Console.live; Clock = Clock.live }
 
     let private waitUntil timeout predicate =
         let deadline = DateTime.UtcNow + timeout
@@ -43,8 +45,8 @@ module ProcessServiceTests =
     [<Fact>]
     let ``live process timestamps transcripts through the supplied clock`` () =
         let fixedTime = DateTimeOffset(2030, 4, 5, 6, 7, 8, TimeSpan.Zero)
-        let fixedEnv = { Process = Process.live (Clock.fromValue fixedTime) FileSystem.live Console.live }
-        let workflow = cmd $"true" |> capture
+        let fixedEnv = { Process = Process.live (Clock.fromValue fixedTime) FileSystem.live Console.live; Clock = Clock.fromValue fixedTime }
+        let workflow = cmd $"true" |> toFlow
 
         match Flow.runSync fixedEnv workflow with
         | Exit.Success result ->
@@ -59,7 +61,7 @@ module ProcessServiceTests =
         let workflow =
             cmd $"printf %%s {value}"
             => cmd $"tr '[:lower:]' '[:upper:]'"
-            |> capture
+            |> toFlow
 
         match Flow.runSync (env ()) workflow with
         | Exit.Success result ->
@@ -76,7 +78,7 @@ module ProcessServiceTests =
         try
             let first = Process.commandArgs "sh" [ "-c"; $"echo $$ > '{pidPath}'; sleep 30" ]
             let missing = Process.command $"axial-missing-{Guid.NewGuid():N}"
-            let outcome = first => missing |> capture |> Flow.runSync (env ())
+            let outcome = first => missing |> toFlow |> Flow.runSync (env ())
 
             match outcome with
             | Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
@@ -106,8 +108,8 @@ module ProcessServiceTests =
                 |> Process.toFlow
 
             match Flow.runSync (env ()) workflow with
-            | Exit.Failure(Cause.Fail(ProcessError.TimedOut failure)) ->
-                test <@ failure.Specification.Contains "sleep 30" @>
+            | Exit.Failure(Cause.Fail(ProcessError.StageTimedOut failure)) ->
+                test <@ failure.Command.Contains "sleep 30" @>
                 test <@ failure.Timeout = timeout @>
             | other -> failwithf "Expected process timeout, got %A" other
 
@@ -129,7 +131,7 @@ module ProcessServiceTests =
         use cancellation = new CancellationTokenSource()
         try
             let specification = shText $"sleep 30 & echo $! > '{childPidPath}'; wait"
-            let running = Process.toFlow<ProcessTestEnv> specification |> fun workflow -> workflow.StartAsTask((env ()), cancellation.Token)
+            let running = Process.toFlow specification |> fun workflow -> workflow.StartAsTask((env ()), cancellation.Token)
             test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> File.Exists childPidPath) @>
             let childPid = File.ReadAllText(childPidPath).Trim() |> Int32.Parse
             let nativeChild = System.Diagnostics.Process.GetProcessById childPid
@@ -185,13 +187,13 @@ module ProcessServiceTests =
     let ``streaming emits stdout and stderr before the complete result`` () =
         let stream =
             Process.commandArgs "sh" [ "-c"; "printf out; printf err >&2" ]
-            |> Process.stream
+            |> Process.streamOutputs
 
-        match stream |> FlowStream.runCollect |> Flow.runSync (env ()) with
-        | Exit.Success events ->
-            test <@ events |> List.exists (function ProcessEvent.Output output -> output.Channel = OutputChannel.StdOut && output.Text = "out" | _ -> false) @>
-            test <@ events |> List.exists (function ProcessEvent.Output output -> output.Channel = OutputChannel.StdErr && output.Stage = 0 && output.Text = "err" | _ -> false) @>
-            test <@ events |> List.exists (function ProcessEvent.Completed result -> result.StdOut = "out" && result.StdErr = "err" | _ -> false) @>
+        match stream |> ProcessStream.runCollect |> Flow.runSync (env ()) with
+        | Exit.Success (outputs, ProcessCompletion.Completed result) ->
+            test <@ outputs |> List.exists (fun output -> output.ObservedChannel = OutputChannel.StdOut && output.Text = "out") @>
+            test <@ outputs |> List.exists (fun output -> output.ObservedChannel = OutputChannel.StdErr && output.Stage = 0 && output.Text = "err") @>
+            test <@ result.StdOut = "out" && result.StdErr = "err" @>
         | failure -> failwithf "Expected success, got %A" failure
 
     [<Fact>]
@@ -199,7 +201,7 @@ module ProcessServiceTests =
         let workflow =
             Process.commandArgs "sh" [ "-c"; "exit 7" ]
             => Process.command $"cat"
-            |> capture
+            |> toFlow
 
         match Flow.runSync (env ()) workflow with
         | Exit.Failure(Cause.Fail(ProcessError.StageFailed failure)) ->
@@ -211,7 +213,7 @@ module ProcessServiceTests =
     let ``tail capture is bounded and reports truncation`` () =
         let result =
             cmd $"printf %%s 0123456789"
-            |> Process.stdout (OutputTarget.CaptureTail 4)
+            |> Process.captureTail 4
             |> Process.toFlow
             |> run
 
@@ -225,7 +227,8 @@ module ProcessServiceTests =
         try
             let result =
                 cmd $"printf %%s artifact-output"
-                |> Process.stdout (OutputTarget.Tee [ OutputTarget.File path; OutputTarget.CaptureTail 6 ])
+                |> Process.stdoutToFile path
+                |> captureTail 6
                 |> Process.toFlow
                 |> run
 
@@ -261,10 +264,11 @@ module ProcessServiceTests =
         let token = secret "super-secret-token"
         let command = cmd $"printf %%s {token}"
 
-        test <@ Process.render command = "printf \"%s\" ***" @>
+        let rendered = Process.render command
+        test <@ rendered = "printf \"%s\" ***" @>
         let plan = command |> Process.plan
         test <@ plan.Commands = [ "printf \"%s\" ***" ] @>
-        let result = command |> capture |> run
+        let result = command |> toFlow |> run
         test <@ result.Stages.Head.Command = "printf \"%s\" ***" @>
         test <@ result.Stages.Head.Command.Contains("super-secret-token") = false @>
 
@@ -273,11 +277,11 @@ module ProcessServiceTests =
         let stream =
             cmd $"printf %%s streamed"
             |> Process.framing OutputFraming.Lines
-            |> Process.stream
+            |> Process.streamOutputs
 
-        let events = stream |> FlowStream.runCollect |> Flow.runSync (env ())
+        let events = stream |> ProcessStream.runCollect |> Flow.runSync (env ())
         match events with
-        | Exit.Success [ ProcessEvent.Output output; ProcessEvent.Completed result ] ->
+        | Exit.Success ([output], ProcessCompletion.Completed result) ->
             test <@ output.Text = "streamed" @>
             test <@ result.StdOut = "streamed" @>
             test <@ result.Duration >= TimeSpan.Zero @>
@@ -291,13 +295,13 @@ module ProcessServiceTests =
             let events =
                 shText $"echo $$ > '{pidPath}'; printf 'ready\n'; sleep 30"
                 |> Process.framing OutputFraming.Lines
-                |> Process.stream
-                |> FlowStream.take 1
-                |> FlowStream.runCollect
+                |> Process.streamOutputs
+                |> ProcessStream.take 1
+                |> ProcessStream.runCollect
                 |> Flow.runSync (env ())
 
             match events with
-            | Exit.Success [ ProcessEvent.Output output ] -> test <@ output.Text = "ready\n" @>
+            | Exit.Success ([output], ProcessCompletion.StoppedEarly) -> test <@ output.Text = "ready" @>
             | other -> failwithf "Expected one output event, got %A" other
             test <@ File.Exists pidPath @>
             let pid = File.ReadAllText(pidPath).Trim() |> Int32.Parse
@@ -313,7 +317,7 @@ module ProcessServiceTests =
                 $"rev"
                 $"tr '[:lower:]' '[:upper:]'"
             ]
-            |> capture
+            |> toFlow
             |> run
 
         test <@ result.StdOut = "ABC" @>
@@ -324,9 +328,9 @@ module ProcessServiceTests =
         let path = Path.GetTempFileName()
         try
             File.WriteAllText(path, "from-file")
-            let text = Input.text "from-text" => cmd $"cat" |> capture |> run
-            let bytes = Input.bytes [| 0uy; 1uy; 255uy |] => cmd $"cat" |> capture |> run
-            let file = Input.file path => cmd $"cat" |> capture |> run
+            let text = Input.text "from-text" => cmd $"cat" |> toFlow |> run
+            let bytes = Input.bytes [| 0uy; 1uy; 255uy |] => cmd $"cat" |> toFlow |> run
+            let file = Input.file path => cmd $"cat" |> toFlow |> run
             test <@ text.StdOut = "from-text" @>
             test <@ bytes.StdOutCapture.Bytes = [| 0uy; 1uy; 255uy |] @>
             test <@ file.StdOut = "from-file" @>
@@ -335,14 +339,14 @@ module ProcessServiceTests =
     [<Fact>]
     let ``large input and output are pumped concurrently without deadlock`` () =
         let payload = Array.init (1024 * 1024) (fun index -> byte (index % 251))
-        let result = Input.bytes payload => cmd $"cat" |> capture |> run
+        let result = Input.bytes payload => cmd $"cat" |> toFlow |> run
         test <@ result.StdOutCapture.Bytes = payload @>
 
     [<Fact>]
     let ``output file endpoint closes a topology into a flow`` () =
         let path = Path.GetTempFileName()
         try
-            let result = cmd $"printf %%s written" => Output.file path |> run
+            let result = cmd $"printf %%s written" |> captureNothing => Output.file path |> toFlow |> run
             test <@ File.ReadAllText path = "written" @>
             test <@ result.StdOut = "" @>
         finally File.Delete path
@@ -352,7 +356,7 @@ module ProcessServiceTests =
         let payload = [| 0uy; 7uy; 255uy; 10uy |]
         use source = new MemoryStream(payload)
         use target = new MemoryStream()
-        let result = Input.stream source => cmd $"cat" => Output.stream target |> run
+        let result = Input.stream source => (cmd $"cat" |> captureNothing) => Output.stream target |> toFlow |> run
         test <@ target.ToArray() = payload @>
         test <@ result.StdOut = "" @>
 
@@ -360,8 +364,8 @@ module ProcessServiceTests =
     let ``true inherited handles execute without redirected capture`` () =
         let result =
             cmd $"true"
-            |> Process.stdout Output.inheritHandles
-            |> Process.stderr Output.inheritHandles
+            |> Process.stdoutTo Output.inheritHandles
+            |> Process.stderrTo Output.inheritHandles
             |> Process.toFlow
             |> run
         test <@ result.ExitCode = 0 @>
@@ -372,10 +376,10 @@ module ProcessServiceTests =
         let hostStdin = IO.FileInfo("/proc/self/fd/0").LinkTarget
         let inherited =
             shText "readlink /proc/self/fd/0"
-            |> Process.stdin Input.inheritHandles
+            |> Process.stdinFrom Input.inheritHandles
             |> Process.toFlow
             |> run
-        let redirected = shText "readlink /proc/self/fd/0" |> capture |> run
+        let redirected = shText "readlink /proc/self/fd/0" |> toFlow |> run
         test <@ inherited.StdOut.Trim() = hostStdin @>
         test <@ redirected.StdOut.Trim() <> hostStdin @>
 
@@ -384,7 +388,7 @@ module ProcessServiceTests =
         let result =
             shText "printf out; printf err >&2"
             |> mergeStderr
-            |> capture
+            |> toFlow
             |> run
 
         test <@ result.StdOut.Contains "out" @>
@@ -395,8 +399,8 @@ module ProcessServiceTests =
     let ``pipe both connects stdout and stderr to the next command`` () =
         let result =
             shText "printf out; printf err >&2"
-            |> pipeBothTo (cmd $"cat")
-            |> capture
+            |> pipeStdoutAndStderrTo (cmd $"cat")
+            |> toFlow
             |> run
 
         test <@ result.StdOut.Contains "out" @>
@@ -406,14 +410,15 @@ module ProcessServiceTests =
     let ``shell interpolation is passed out of band and cannot inject syntax`` () =
         let value = "safe; printf injected"
         let command = bash $"printf %%s {value}"
-        let result = command |> capture |> run
+        let result = command |> toFlow |> run
         test <@ result.StdOut = value @>
-        test <@ Process.render command |> fun rendered -> rendered.Contains value @>
+        let rendered = Process.render command
+        test <@ rendered.Contains value @>
 
     [<Fact>]
     let ``parallel capture preserves command order`` () =
         let results =
-            [ cmd $"printf %%s first"; cmd $"printf %%s second"; cmd $"printf %%s third" ]
+            [ cmd $"printf %%s first" |> Process.ofCommand; cmd $"printf %%s second" |> Process.ofCommand; cmd $"printf %%s third" |> Process.ofCommand ]
             |> captureParallel 2
             |> run
 
@@ -422,9 +427,9 @@ module ProcessServiceTests =
     [<Fact>]
     let ``line framed fan in connects concurrent producers to one consumer`` () =
         let result =
-            merge [ shText "printf 'alpha\\n'"; shText "printf 'beta\\n'" ]
+            mergeStdout [ shText "printf 'alpha\\n'"; shText "printf 'beta\\n'" ]
             => cmd $"sort"
-            |> capture
+            |> toFlow
             |> run
 
         test <@ result.StdOut = "alpha\nbeta\n" @>
@@ -434,5 +439,263 @@ module ProcessServiceTests =
     let ``true inheritance cannot be combined with tee`` () =
         raises<ArgumentException> <@
             cmd $"printf inherited"
-            |> Process.stdout (OutputTarget.Tee [ Output.inheritHandles; Output.capture ])
+            |> Process.stdoutTo (OutputTarget.Tee [ Output.inheritHandles; Output.discard ])
             |> ignore @>
+
+    [<Fact>]
+    let ``failed output callback cancels other pumps and preserves the original failure`` () = task {
+        use rescue = new CancellationTokenSource()
+        let pid = TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let callback (bytes: byte array) = async {
+            pid.TrySetResult(Encoding.UTF8.GetString(bytes) |> Int32.Parse) |> ignore
+            return raise (IOException "output destination failed")
+        }
+        let running =
+            shText "printf '%s' $$; exec sleep 30"
+            |> stdoutTo (Output.callback callback)
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+        try
+            let! childPid = pid.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure(Cause.Die failure) ->
+                test <@ failure.GetBaseException().Message = "output destination failed" @>
+            | other -> failwithf "Expected destination failure, got %A" other
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> processHasExited childPid) @>
+        finally
+            rescue.Cancel()
+    }
+
+    [<Fact>]
+    let ``caller cancellation reaches an asynchronous output callback`` () = task {
+        use cancellation = new CancellationTokenSource()
+        let entered = TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let stopped = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let callback (bytes: byte array) = async {
+            entered.TrySetResult(Encoding.UTF8.GetString(bytes) |> Int32.Parse) |> ignore
+            try do! Async.Sleep 30000
+            finally stopped.TrySetResult(()) |> ignore
+        }
+        let running =
+            shText "printf '%s' $$; exec sleep 30"
+            |> stdoutTo (Output.callback callback)
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
+        try
+            let! childPid = entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            cancellation.Cancel()
+            do! stopped.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure Cause.Interrupt -> ()
+            | other -> failwithf "Expected interruption, got %A" other
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> processHasExited childPid) @>
+        finally
+            cancellation.Cancel()
+    }
+
+    [<Fact>]
+    let ``early consumer exit stops an unbounded producer`` () = task {
+        use rescue = new CancellationTokenSource()
+        let running =
+            shText "while :; do printf 'abcdefghijklmnopqrstuvwxyz'; done"
+            => cmd $"head -c 1"
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+        try
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure(Cause.Fail(ProcessError.IoFailed _)) -> ()
+            | other -> failwithf "Expected broken-pipe failure, got %A" other
+        finally
+            rescue.Cancel()
+    }
+
+    [<Fact>]
+    let ``foreign callback cancellation is a defect rather than caller interruption`` () = task {
+        use rescue = new CancellationTokenSource()
+        let running =
+            shText "printf ready; exec sleep 30"
+            |> stdoutTo (Output.callback (fun _ -> async { return raise (OperationCanceledException "foreign cancellation") }))
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+        try
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure(Cause.Die _) -> ()
+            | other -> failwithf "Expected foreign cancellation defect, got %A" other
+        finally
+            rescue.Cancel()
+    }
+
+    [<Fact>]
+    let ``stream adapters pass process cancellation to native stream operations`` () = task {
+        for operation in [ "input"; "output"; "flush" ] do
+            use cancellation = new CancellationTokenSource()
+            let entered = TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let stopped = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let block token = task {
+                entered.TrySetResult token |> ignore
+                try
+                    let! _ = Task.WhenAny(release.Task, Task.Delay(Timeout.Infinite, token))
+                    token.ThrowIfCancellationRequested()
+                finally stopped.TrySetResult(()) |> ignore
+            }
+            use target =
+                { new MemoryStream() with
+                    override _.ReadAsync(_, _, _, token) = task {
+                        do! block token
+                        return 0
+                    }
+                    override _.WriteAsync(_, _, _, token) =
+                        if operation = "output" then block token :> Task else Task.CompletedTask
+                    override _.FlushAsync(token) = block token :> Task }
+            let specification =
+                match operation with
+                | "input" -> shText "exec sleep 30" |> stdinFrom (Input.stream target)
+                | "output" -> shText "printf ready; exec sleep 30" |> stdoutTo (Output.stream target)
+                | _ -> cmd $"printf ready" |> stdoutTo (Output.stream target)
+            let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
+            try
+                let! token = entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+                let canBeCanceled = token.CanBeCanceled
+                test <@ canBeCanceled @>
+                cancellation.Cancel()
+                do! stopped.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+                let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+                match outcome with
+                | Exit.Failure Cause.Interrupt -> ()
+                | other -> failwithf "Expected %s interruption, got %A" operation other
+            finally
+                cancellation.Cancel()
+                release.TrySetResult(()) |> ignore
+    }
+
+    [<Fact>]
+    let ``drain timeout reports inherited output pipes without claiming successful capture`` () = task {
+        let childPidPath = Path.GetTempFileName()
+        use rescue = new CancellationTokenSource()
+        try
+            let specification =
+                shText $"sleep 30 & echo $! > '{childPidPath}'; printf ready"
+                |> drainTimeout (TimeSpan.FromMilliseconds 100.0)
+            let plan = specification |> Process.plan
+            test <@ plan.DrainTimeout = Some(TimeSpan.FromMilliseconds 100.0) @>
+            let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure(Cause.Fail(ProcessError.IoFailed failure)) ->
+                test <@ failure.Message.Contains "after all process stages exited" @>
+            | other -> failwithf "Expected drain failure, got %A" other
+        finally
+            rescue.Cancel()
+            let text = File.ReadAllText(childPidPath).Trim()
+            if text <> "" then
+                let childPid = Int32.Parse text
+                try
+                    use child = System.Diagnostics.Process.GetProcessById childPid
+                    if not child.HasExited then child.Kill()
+                with :? ArgumentException -> ()
+            File.Delete childPidPath
+    }
+
+    [<Fact>]
+    let ``default draining preserves output written by descendants after their parent exits`` () =
+        let result =
+            shText "(sleep 0.1; printf late) & printf early"
+            |> toFlow
+            |> run
+        test <@ result.StdOut = "earlylate" @>
+        let plan = cmd $"true" |> Process.plan
+        test <@ plan.DrainTimeout = None @>
+
+    [<Fact>]
+    let ``drain timeout rejects nonpositive durations`` () =
+        for duration in [ TimeSpan.Zero; TimeSpan.FromSeconds -1.0 ] do
+            Assert.Throws<ArgumentException>(fun () -> cmd $"true" |> drainTimeout duration |> ignore) |> ignore
+
+    [<Fact>]
+    let ``process stream reports a failed destination instead of waiting for another event`` () = task {
+        use rescue = new CancellationTokenSource()
+        let running =
+            shText "printf ready; exec sleep 30"
+            |> stdoutTo (Output.callback (fun _ -> async { return raise (IOException "stream destination failed") }))
+            |> streamOutputs
+            |> ProcessStream.runCollect
+            |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+        try
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure(Cause.Die failure) ->
+                test <@ failure.GetBaseException().Message = "stream destination failed" @>
+            | other -> failwithf "Expected stream failure, got %A" other
+        finally
+            rescue.Cancel()
+    }
+
+    [<Fact>]
+    let ``drain timeout also cancels sink completion after process exit`` () = task {
+        use rescue = new CancellationTokenSource()
+        let stopped = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finishing = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let sleeping = TaskCompletionSource<TimeSpan>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let advance = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let clock =
+            { new IClock with
+                member _.UtcNow() = DateTimeOffset.UnixEpoch
+                member _.Elapsed() = TimeSpan.Zero
+                member _.Sleep(delay, token) =
+                    sleeping.TrySetResult delay |> ignore
+                    advance.Task.WaitAsync(token) :> Task }
+        let host = { Process = Process.live clock FileSystem.live Console.live; Clock = clock }
+        let finish () = async {
+            finishing.TrySetResult(()) |> ignore
+            try do! Async.Sleep 30000
+            finally stopped.TrySetResult(()) |> ignore
+        }
+        let running =
+            cmd $"printf ready"
+            |> stdoutTo (OutputTarget.Sink((fun _ -> async.Return()), finish))
+            |> drainTimeout (TimeSpan.FromMilliseconds 100.0)
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(host, rescue.Token)
+        try
+            let! requestedDelay = sleeping.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            test <@ requestedDelay = TimeSpan.FromMilliseconds 100.0 @>
+            test <@ not running.IsCompleted @>
+            do! finishing.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            advance.TrySetResult(()) |> ignore
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure(Cause.Fail(ProcessError.IoFailed failure)) ->
+                test <@ failure.Message.Contains "after all process stages exited" @>
+            | other -> failwithf "Expected sink drain failure, got %A" other
+            do! stopped.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        finally
+            rescue.Cancel()
+    }
+
+    [<Theory>]
+    [<InlineData("startup")>]
+    [<InlineData("stage")>]
+    [<InlineData("timeout")>]
+    let ``process stream forwards startup stage and timeout failures`` kind = task {
+        use rescue = new CancellationTokenSource()
+        let specification =
+            match kind with
+            | "startup" -> cmd $"axial-missing-stream-command"
+            | "stage" -> shText "exit 7"
+            | _ -> shText "exec sleep 30" |> timeout (TimeSpan.FromMilliseconds 100.0)
+        let running = specification |> streamOutputs |> ProcessStream.runCollect |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+        try
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match kind, outcome with
+            | "startup", Exit.Failure(Cause.Fail(ProcessError.StartFailed _))
+            | "stage", Exit.Failure(Cause.Fail(ProcessError.StageFailed _))
+            | "timeout", Exit.Failure(Cause.Fail(ProcessError.StageTimedOut _)) -> ()
+            | _, other -> failwithf "Expected %s stream failure, got %A" kind other
+        finally
+            rescue.Cancel()
+    }

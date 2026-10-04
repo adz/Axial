@@ -206,7 +206,7 @@ module UnifiedServiceTests =
 
     [<Fact>]
     let ``Process: execute`` () =
-        let captured = { Text = ""; Bytes = Array.empty; Truncated = false }
+        let captured = { Text = ""; Bytes = Array.empty; Truncated = false; Available = true }
         let now = DateTimeOffset.UtcNow
         let processResult =
             { ExitCode = 0; StdOut = "out"; StdErr = ""; ExitCodes = [ 0 ]
@@ -215,9 +215,9 @@ module UnifiedServiceTests =
         let services = { 
             Process = 
                 { new IProcess with 
-                    member _.Run _ = Flow.succeed processResult
-                    member _.Stream _ = FlowStream.singleton(ProcessEvent.Completed processResult) }
+                    member _.Execute(_, _) = Flow.succeed processResult }
             Console = Unchecked.defaultof<_>; FS = Unchecked.defaultof<_>; Http = Unchecked.defaultof<_>
         }
         
-        test <@ Flow.runSync services (Process.command $"echo hi" |> Process.toFlow<UnifiedServices>) = Exit.Success processResult @>
+        let outcome = Process.command $"echo hi" |> Process.toFlow |> Flow.runSync services
+        test <@ outcome = Exit.Success processResult @>

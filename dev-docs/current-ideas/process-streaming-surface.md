@@ -357,11 +357,11 @@ type ProcessStreamError<'error> =
     | ConsumerFailed of 'error
 
 module Process =
-    val streamOutputs : ProcessSpec -> ProcessStream<'env, ProcessOutput> when 'env :> IHasProcess
-    val streamStdout : ProcessSpec -> ProcessStream<'env, ProcessOutput> when 'env :> IHasProcess
-    val streamStderr : ProcessSpec -> ProcessStream<'env, ProcessOutput> when 'env :> IHasProcess
-    val streamStdoutLines : ProcessSpec -> ProcessStream<'env, string> when 'env :> IHasProcess
-    val streamStderrLines : ProcessSpec -> ProcessStream<'env, string> when 'env :> IHasProcess
+    val streamOutputs : ProcessSpec -> ProcessStream<'env, ProcessOutput> when 'env :> IHasProcess and 'env :> IHasClock
+    val streamStdout : ProcessSpec -> ProcessStream<'env, ProcessOutput> when 'env :> IHasProcess and 'env :> IHasClock
+    val streamStderr : ProcessSpec -> ProcessStream<'env, ProcessOutput> when 'env :> IHasProcess and 'env :> IHasClock
+    val streamStdoutLines : ProcessSpec -> ProcessStream<'env, string> when 'env :> IHasProcess and 'env :> IHasClock
+    val streamStderrLines : ProcessSpec -> ProcessStream<'env, string> when 'env :> IHasProcess and 'env :> IHasClock
     val toFlow : ProcessSpec -> Flow<'env, ProcessError, ProcessResult> when 'env :> IHasProcess
 
 module ProcessStream =
@@ -521,14 +521,20 @@ module ProcessHostEnvironment =
     val live : ProcessHostEnvironment
     // Builds live clock/filesystem/process services using the supplied console.
     val liveWithConsole : IConsole -> ProcessHostEnvironment
-    val ofParts : IProcess -> IConsole -> ProcessHostEnvironment
+    val ofParts : IProcess -> IConsole -> IClock -> ProcessHostEnvironment
     val test : unit -> TestProcessHostEnvironment
 
 type TestProcessHostEnvironment =
     member Environment : ProcessHostEnvironment
     member Process : TestProcess
     member Console : TestConsole
+    member Clock : ManualClock
 ```
+
+Streaming requires `IHasClock` as well as `IHasProcess`: Axial supervises the producer
+with clock-aware fibers, and stream terminals race the consumer against the overall deadline.
+`ProcessHostEnvironment` supplies both services. `ofParts` takes the scheduling clock explicitly;
+use the same clock that was injected into the process implementation.
 
 `liveWithConsole` wires one console into both process routing and workflow console operations. `live` uses the
 same construction. `ofParts` trusts supplied services; it cannot verify an opaque IProcess's internal
