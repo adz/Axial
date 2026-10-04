@@ -24,7 +24,7 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let host = ProcessHostEnvironment.live
+let host = ProcessHostEnvironment.liveWithConsole (Console.test())
 ```
 
 ```fsharp

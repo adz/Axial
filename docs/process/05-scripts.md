@@ -90,7 +90,7 @@ Use `runExitCode` at a command-line entry point. It returns an integer; direct c
 routing and no stdout retention. Explicit routes and capture policies override those defaults.
 
 ```fsharp run
-cmd $"dotnet --version" |> runExitCode |> shouldEqual 0
+cmd $"true" |> runExitCode |> shouldEqual 0
 ```
 
 `runWith` accepts an existing application environment and preserves the full outcome; command inputs need
@@ -104,9 +104,10 @@ type AppEnvironment =
     interface IHasProcess with member this.Process = this.Process
     interface IHasConsole with member this.Console = this.Console
 
+let reportingConsole = Console.test()
 let appEnvironment =
-    { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live
+    { Process = Process.live Clock.live FileSystem.live reportingConsole
+      Console = reportingConsole
       Region = "eu" }
 ```
 
