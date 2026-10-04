@@ -82,7 +82,9 @@ same mapping automatically.
 ## What a successful result contains
 
 A `ProcessResult` is returned only when every stage satisfies its success policy. It contains the final stdout and
-stderr text, exact captured bytes, every stage's exit code, start times, durations, and bounded stderr tails. Change
+stderr text, exact captured bytes, every stage's exit code, start times, durations, and bounded stderr tails.
+Durations use the injected monotonic clock: stage durations stop at native exit, while the result duration includes
+output drain and awaited callbacks. A failure result contains the capture available before cleanup. Change
 [`Process.successCodes`](xref:M:Axial.Process.Process.successCodes) when a command treats other exit codes as successful.
 
 ```fsharp
