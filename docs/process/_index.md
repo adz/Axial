@@ -199,13 +199,30 @@ Both accept commands, specs, or an already constructed Flow. Explicit capture an
 Each box is a type of value; each arrow names the function that produces the next value.
 
 <div class="flow-type-diagram">
-<img class="flow-type-diagram--light" data-theme-variant="light" src="../content/img/process-types-light.svg" alt="ProcessCommand connects to ProcessSpec with =>. Run returns Exit directly. ToFlow returns a lazy Flow. StreamStdoutLines returns ProcessStream, whose runCollect terminal returns a Flow; run executes it and returns Exit." />
-<img class="flow-type-diagram--dark" data-theme-variant="dark" src="../content/img/process-types-dark.svg" alt="ProcessCommand connects to ProcessSpec with =>. Run returns Exit directly. ToFlow returns a lazy Flow. StreamStdoutLines returns ProcessStream, whose runCollect terminal returns a Flow; run executes it and returns Exit." />
+<img class="flow-type-diagram--light" data-theme-variant="light" src="../content/img/process-types-light.svg" alt="ProcessCommand connects to ProcessSpec with =>. Run returns Exit directly. ToFlow returns a lazy Flow step, composed into an application Flow with let!. StreamStdoutLines returns ProcessStream, whose runCollect terminal returns a Flow; the Process.run script helper can execute that Flow and return Exit. ToFlowStream converts ProcessStream to FlowStream for merging or publishing to a queue or hub." />
+<img class="flow-type-diagram--dark" data-theme-variant="dark" src="../content/img/process-types-dark.svg" alt="ProcessCommand connects to ProcessSpec with =>. Run returns Exit directly. ToFlow returns a lazy Flow step, composed into an application Flow with let!. StreamStdoutLines returns ProcessStream, whose runCollect terminal returns a Flow; the Process.run script helper can execute that Flow and return Exit. ToFlowStream converts ProcessStream to FlowStream for merging or publishing to a queue or hub." />
 </div>
 
 For one command, skip the connection: a `ProcessCommand` also supports `run`, `toFlow`, and the stream
-constructors. `toFlow` and stream constructors describe work; `run` executes it. A successful direct run
-contains a `ProcessResult`; a successful stream collection contains the collected values and `ProcessCompletion`.
+constructors. `toFlow` and stream constructors describe work. In scripts, `run` is the DSL name for
+`Process.run`. **`Process.run` accepts a `ProcessCommand`, `ProcessSpec`, or
+`Flow<ProcessHostEnvironment, 'error, 'value>` and returns `Exit`.**
+The Flow overload supplies the default process host environment; for your own
+application environment, use `Flow.run environment` (or `Process.runWith environment`).
+
+A `ProcessStream` cannot be passed directly to `run`. Choose a terminal first: `ProcessStream.runCollect`
+returns a Flow that collects values and completion, while `runDrain` returns a Flow that consumes output and
+keeps completion. That Flow can be executed with the script helper or composed into an application.
+
+Use `ProcessStream.toFlowStream` to combine process output with other streams using `FlowStream.mergePar`
+or `zip`, or send values through `FlowStream.runIntoQueue` / `runIntoHub`. Conversion keeps process failures
+and cleanup but discards successful `ProcessCompletion`. To publish values while keeping completion,
+use `ProcessStream.runForEachFlow` with `Queue.offer` or `Hub.publish`.
+
+In an application, bind `toFlow` or a stream terminal with `let!` inside `flow { }`. The enclosing workflow
+runs at the application's outer boundary, using Axial's normal runner—for example, `Flow.run environment`.
+A successful direct process run contains a `ProcessResult`; a successful stream collection contains the
+collected values and `ProcessCompletion`.
 
 `Flow` and `ProcessStream` are both types and modules. The modules hold their functions, such as `Flow.map`
 and `ProcessStream.map`; calling a transformation produces another value of the corresponding type.

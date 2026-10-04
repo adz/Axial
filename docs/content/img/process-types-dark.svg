@@ -1,54 +1,54 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 590" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 770" role="img" aria-labelledby="title description">
 <title id="title">Process types and the functions connecting them</title>
-<desc id="description">For scripts, ProcessCommand connects to ProcessSpec with another command, and run returns Exit. For applications, toFlow converts a ProcessSpec to a lazy Flow, and run returns Exit. For streaming, streamStdoutLines produces ProcessStream, ProcessStream.runCollect returns Flow, and run returns Exit. Single commands also support all three execution paths.</desc>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10" fill="#94a3b8"/></marker></defs>
-<rect width="1440" height="590" rx="22" fill="#0a1020"/>
+<desc id="description">For scripts, ProcessCommand connects to ProcessSpec with another command, and run returns Exit. For applications, toFlow converts a ProcessSpec to a lazy Flow, and let! composes that step inside a larger Flow. For streaming, streamStdoutLines produces ProcessStream, ProcessStream.runCollect returns Flow, and the Process.run script helper returns Exit. Single commands also support all three execution paths. ProcessStream.toFlowStream converts to FlowStream for merging, zipping, and publishing into queues or hubs; stream terminals return a lazy Flow.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10" fill="#94a3b8" /></marker></defs>
+<rect width="1440" height="770" rx="22" fill="#0a1020" />
 <g font-family="Inter, ui-sans-serif, system-ui, sans-serif">
 <text x="35" y="45" font-size="25" font-weight="700" fill="#f8fafc">Short scripts</text>
-<rect x="35" y="88" width="250" height="84" rx="13" fill="#10192b" stroke="#31d0af" stroke-width="2"/>
+<rect x="35" y="88" width="250" height="84" rx="13" fill="#10192b" stroke="#31d0af" stroke-width="2" />
 <text x="160" y="123" text-anchor="middle" font-size="25" font-weight="700" fill="#31d0af">ProcessCommand</text>
 <text x="160" y="151" text-anchor="middle" font-size="21" fill="#b6c2d4">one command</text>
-<rect x="415" y="88" width="250" height="84" rx="13" fill="#10192b" stroke="#31d0af" stroke-width="2"/>
+<rect x="415" y="88" width="250" height="84" rx="13" fill="#10192b" stroke="#31d0af" stroke-width="2" />
 <text x="540" y="123" text-anchor="middle" font-size="25" font-weight="700" fill="#31d0af">ProcessSpec</text>
 <text x="540" y="151" text-anchor="middle" font-size="21" fill="#b6c2d4">connected commands</text>
-<rect x="1170" y="88" width="250" height="84" rx="13" fill="#10192b" stroke="#f5bc65" stroke-width="2"/>
+<rect x="1170" y="88" width="250" height="84" rx="13" fill="#10192b" stroke="#f5bc65" stroke-width="2" />
 <text x="1295" y="123" text-anchor="middle" font-size="25" font-weight="700" fill="#f5bc65">Exit</text>
 <text x="1295" y="151" text-anchor="middle" font-size="21" fill="#b6c2d4">finished outcome</text>
-<path d="M295 130 H405" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M295 130 H405" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
 <text x="350.0" y="70" text-anchor="middle" font-size="19" fill="#f8fafc">=&gt; another command</text>
-<path d="M675 130 H1160" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-<text x="917.5" y="70" text-anchor="middle" font-size="19" fill="#f8fafc">run</text>
+<path d="M675 130 H1160" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
+<text x="917.5" y="70" text-anchor="middle" font-size="19" fill="#f8fafc">Process.run</text>
 <text x="35" y="225" font-size="25" font-weight="700" fill="#f8fafc">Application workflows</text>
-<rect x="35" y="268" width="250" height="84" rx="13" fill="#10192b" stroke="#31d0af" stroke-width="2"/>
+<rect x="35" y="268" width="250" height="84" rx="13" fill="#10192b" stroke="#31d0af" stroke-width="2" />
 <text x="160" y="303" text-anchor="middle" font-size="25" font-weight="700" fill="#31d0af">ProcessSpec</text>
 <text x="160" y="331" text-anchor="middle" font-size="21" fill="#b6c2d4">command description</text>
-<rect x="795" y="268" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2"/>
+<rect x="795" y="268" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2" />
 <text x="920" y="303" text-anchor="middle" font-size="25" font-weight="700" fill="#b28af0">Flow</text>
 <text x="920" y="331" text-anchor="middle" font-size="21" fill="#b6c2d4">lazy workflow step</text>
-<rect x="1170" y="268" width="250" height="84" rx="13" fill="#10192b" stroke="#f5bc65" stroke-width="2"/>
-<text x="1295" y="303" text-anchor="middle" font-size="25" font-weight="700" fill="#f5bc65">Exit</text>
-<text x="1295" y="331" text-anchor="middle" font-size="21" fill="#b6c2d4">finished outcome</text>
-<path d="M295 310 H785" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1170" y="268" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2" />
+<text x="1295" y="303" text-anchor="middle" font-size="25" font-weight="700" fill="#b28af0">Flow</text>
+<text x="1295" y="331" text-anchor="middle" font-size="21" fill="#b6c2d4">larger application</text>
+<path d="M295 310 H785" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
 <text x="540.0" y="250" text-anchor="middle" font-size="19" fill="#f8fafc">toFlow</text>
-<path d="M1055 310 H1160" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-<text x="1107.5" y="250" text-anchor="middle" font-size="19" fill="#f8fafc">run</text>
+<path d="M1055 310 H1160" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
+<text x="1107.5" y="250" text-anchor="middle" font-size="19" fill="#f8fafc">let! in flow { }</text>
 <text x="35" y="405" font-size="25" font-weight="700" fill="#f8fafc">Streaming output</text>
-<rect x="35" y="448" width="250" height="84" rx="13" fill="#10192b" stroke="#31d0af" stroke-width="2"/>
+<rect x="35" y="448" width="250" height="84" rx="13" fill="#10192b" stroke="#31d0af" stroke-width="2" />
 <text x="160" y="483" text-anchor="middle" font-size="25" font-weight="700" fill="#31d0af">ProcessSpec</text>
 <text x="160" y="511" text-anchor="middle" font-size="21" fill="#b6c2d4">command description</text>
-<rect x="415" y="448" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2"/>
+<rect x="415" y="448" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2" />
 <text x="540" y="483" text-anchor="middle" font-size="25" font-weight="700" fill="#b28af0">ProcessStream</text>
 <text x="540" y="511" text-anchor="middle" font-size="21" fill="#b6c2d4">output as it arrives</text>
-<rect x="795" y="448" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2"/>
+<rect x="795" y="448" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2" />
 <text x="920" y="483" text-anchor="middle" font-size="25" font-weight="700" fill="#b28af0">Flow</text>
-<text x="920" y="511" text-anchor="middle" font-size="21" fill="#b6c2d4">consume + completion</text>
-<rect x="1170" y="448" width="250" height="84" rx="13" fill="#10192b" stroke="#f5bc65" stroke-width="2"/>
+<text x="920" y="511" text-anchor="middle" font-size="21" fill="#b6c2d4">lazy consumer</text>
+<rect x="1170" y="448" width="250" height="84" rx="13" fill="#10192b" stroke="#f5bc65" stroke-width="2" />
 <text x="1295" y="483" text-anchor="middle" font-size="25" font-weight="700" fill="#f5bc65">Exit</text>
 <text x="1295" y="511" text-anchor="middle" font-size="21" fill="#b6c2d4">finished outcome</text>
-<path d="M295 490 H405" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M295 490 H405" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
 <text x="350.0" y="430" text-anchor="middle" font-size="19" fill="#f8fafc">streamStdoutLines</text>
-<path d="M675 490 H785" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M675 490 H785" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
 <text x="730.0" y="430" text-anchor="middle" font-size="19" fill="#f8fafc">ProcessStream.runCollect</text>
-<path d="M1055 490 H1160" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-<text x="1107.5" y="430" text-anchor="middle" font-size="19" fill="#f8fafc">run</text>
-</g></svg>
+<path d="M1055 490 H1160" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
+<text x="1107.5" y="430" text-anchor="middle" font-size="19" fill="#f8fafc">Process.run</text>
+<text x="35" y="585" font-size="25" fill="#f8fafc">Combine streams or publish values</text><rect x="35" y="628" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2" /><text x="160" y="663" font-size="25" fill="#b28af0" text-anchor="middle">ProcessStream</text><text x="160" y="691" font-size="21" fill="#b6c2d4" text-anchor="middle">process output</text><rect x="415" y="628" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2" /><text x="540" y="663" font-size="25" fill="#b28af0" text-anchor="middle">FlowStream</text><text x="540" y="691" font-size="21" fill="#b6c2d4" text-anchor="middle">general stream</text><rect x="1170" y="628" width="250" height="84" rx="13" fill="#10192b" stroke="#b28af0" stroke-width="2" /><text x="1295" y="663" font-size="25" fill="#b28af0" text-anchor="middle">Flow</text><text x="1295" y="691" font-size="21" fill="#b6c2d4" text-anchor="middle">lazy consumer</text><path d="M295 670 H405" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" /><text x="350.0" y="610" font-size="19" fill="#f8fafc" text-anchor="middle">toFlowStream</text><path d="M675 670 H1160" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" /><text x="917.5" y="610" font-size="19" fill="#f8fafc" text-anchor="middle">mergePar / zip → runIntoQueue / runIntoHub</text></g></svg>

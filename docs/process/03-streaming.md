@@ -11,7 +11,9 @@ explicitly apply `mergeStderr`.
 
 `ProcessStream<'env, 'value>` is the stream **type**. The `ProcessStream` **module** contains the functions
 that operate on it: `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. This is the same F# naming
-pattern as the `Flow` type and its `Flow` module. A stream terminal returns a Flow; `run` executes that Flow.
+pattern as the `Flow` type and its `Flow` module. A stream terminal returns a Flow. In a script, execute it
+with the DSL `run` helper; in an application, bind it with `let!` inside the enclosing Flow.
+Passing a `ProcessStream` directly to `run` is not supported.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -124,6 +126,70 @@ can be discarded. The converted stream retains typed process failures, backpress
 For completion-aware processing, keep transformations and terminals in `ProcessStream`. After conversion,
 application callback deadlines belong to the enclosing Flow; use `Flow.timeout` to bound them.
 `ProcessStream` terminals include callbacks in the process overall timeout.
+
+## Combine streams or feed a queue or hub
+
+Convert with `ProcessStream.toFlowStream` when process output becomes one source in a larger stream.
+`FlowStream.mergePar` interleaves sources as values arrive; `zip` pairs their values. The sources must have
+compatible environment, error, and value types; use `FlowStream.mapError` to align different error types.
+
+```fsharp run
+let processLines =
+    cmd $"printf 'process 1\nprocess 2\n'" |> streamStdoutLines |> ProcessStream.toFlowStream
+let applicationLines = FlowStream.fromSeq ["application 1"; "application 2"]
+let combined = [processLines; applicationLines] |> FlowStream.mergePar |> FlowStream.runCollect
+match combined |> run with
+| Exit.Success values ->
+    shouldEqual ["application 1"; "application 2"; "process 1"; "process 2"] (List.sort values)
+| other -> failwithf "Expected both sources, got %A" other
+```
+
+`FlowStream.runIntoQueue` offers each value to a queue; `runIntoHub` publishes it to the hub's current
+subscribers. Both return a lazy Flow to bind in your application. A bounded queue or a hub subscription
+using `BackPressure` slows the producer when full. Start the consumer concurrently for a bounded buffer;
+hub subscriptions must exist before publishing. These terminals leave the queue or hub open so other
+producers can keep using it.
+
+```fsharp run
+let queued = flow {
+    let! queue = Queue.unbounded ()
+    do! cmd $"printf 'first\nsecond\n'"
+        |> streamStdoutLines |> ProcessStream.toFlowStream |> FlowStream.runIntoQueue queue
+    return! Dequeue.takeAll queue
+}
+queued |> run |> shouldEqual (Exit.Success ["first"; "second"])
+
+let published =
+    flow {
+        let! hub = Hub.make ()
+        let! subscription = hub |> Hub.subscribe QueueStrategy.Unbounded
+        do! cmd $"printf 'first\nsecond\n'"
+            |> streamStdoutLines |> ProcessStream.toFlowStream |> FlowStream.runIntoHub hub
+        return! Dequeue.takeAll subscription
+    } |> Flow.scoped
+published |> run |> shouldEqual (Exit.Success ["first"; "second"])
+```
+
+If you need the final exit details as well as the published values, keep the `ProcessStream` and send
+values with `runForEachFlow`. The resulting Flow returns `ProcessCompletion` and keeps process and
+consumer failures distinct. The same pattern works with `Hub.publish line hub |> Flow.ignore`.
+
+```fsharp run
+let queuedWithCompletion = flow {
+    let! queue = Queue.unbounded ()
+    let! completion =
+        cmd $"printf 'first\nsecond\n'" |> streamStdoutLines
+        |> ProcessStream.runForEachFlow (fun line ->
+            Queue.offer line queue |> Flow.ignore : Flow<_, Never, unit>)
+    let! values = Dequeue.takeAll queue
+    return values, completion
+}
+match queuedWithCompletion |> run with
+| Exit.Success (values, ProcessCompletion.Completed result) ->
+    shouldEqual ["first"; "second"] values
+    shouldEqual 0 result.ExitCode
+| other -> failwithf "Expected queued output and completion, got %A" other
+```
 
 ## Transform and fold without collecting every item
 
