@@ -60,7 +60,7 @@ let readRevision : Flow<AppEnvironment, ProcessError, string> =
     flow {
         let! result =
             Process.command $"git rev-parse --short HEAD"
-            |> Process.capture
+            |> Process.toFlow
 
         return result.StdOut.Trim()
     }
@@ -73,14 +73,13 @@ match Flow.run appEnvironment readRevision with
 | other -> failwithf "unexpected %A" other
 ```
 
-[`Process.capture`](xref:M:Axial.Process.Process.capture) and [`Process.console`](xref:M:Axial.Process.Process.console) are convenient forms that configure output and then create a Flow.
-The latter preserves the output policy already carried by a `ProcessSpec`.
+`Process.toFlow` preserves routing and capture policies. Batch execution captures all stdout and a separate
+64 KiB stderr tail by default. Streaming constructors require `IHasClock` in the application environment as well.
 
 ## Put a fake in the record for a unit test
 
-`IProcess` is the interface used by the `Processes` field. It has two operations: `Run` returns the completed result,
-and `Stream` returns output events. A focused test usually needs only `Run`; return a prepared `ProcessResult` and
-inspect the received specification when the test cares about command construction.
+`IProcess.Execute` is the single service operation. It returns a lazy completion Flow and awaits each supplied
+observer with backpressure. A focused batch test can return a prepared result without emitting output.
 
 ```fsharp
 let expectedResult : ProcessResult =
@@ -88,8 +87,8 @@ let expectedResult : ProcessResult =
       ExitCodes = [ 0 ]
       StdOut = "abc1234\n"
       StdErr = ""
-      StdOutCapture = { Text = "abc1234\n"; Bytes = [||]; Truncated = false }
-      StdErrCapture = { Text = ""; Bytes = [||]; Truncated = false }
+      StdOutCapture = { Text = "abc1234\n"; Bytes = [||]; Truncated = false; Available = true }
+      StdErrCapture = { Text = ""; Bytes = [||]; Truncated = false; Available = true }
       Stages = []
       StartedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
       Duration = TimeSpan.Zero }
@@ -98,12 +97,10 @@ let mutable requested = None
 
 let fakeProcess =
     { new IProcess with
-        member _.Run specification =
-            requested <- Some specification
-            Flow.succeed expectedResult
-
-        member _.Stream _ =
-            FlowStream.singleton (ProcessEvent.Completed expectedResult) }
+        member _.Execute(specification, _) =
+            Flow.delay (fun () ->
+                requested <- Some specification
+                Flow.succeed expectedResult) }
 
 let testEnvironment = { Processes = fakeProcess }
 ```
@@ -119,7 +116,7 @@ contract with the operating system matters.
 
 ## Use an existing application environment at a host boundary
 
-[`Process.runWith`](xref:M:Axial.Process.Process.runWith) is for a command-line host that already owns a larger environment. It runs a
-`ProcessError` workflow with that record and converts failure to a process exit code. The environment must also supply
-`IConsole`, used for error reporting. Most applications instead call [`Flow.run`](xref:M:Axial.Flow.run) themselves and handle the resulting
-`Exit` according to their own boundary policy.
+`Process.runWith` runs commands, specs, or an application Flow with the supplied environment and returns the
+complete `Exit`. Command execution needs only `IHasProcess`; it does not require a reporting console.
+`Process.runExitCodeWith` is the integer runner for a command-line entry point and requires `IHasConsole` for
+failure reporting. Direct commands default to console routing there; explicit routes still win.

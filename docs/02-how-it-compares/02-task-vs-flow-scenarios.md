@@ -148,7 +148,7 @@ consumer failure while the producer keeps writing.
 
 A `FlowStream` is cold and pull-based: when persistence fails, the stream is simply never pulled again. The test
 streams from an instrumented infinite sequence and asserts almost nothing was produced past the failing element.
-The process variant uses [`Process.stream`](/process/), which streams typed `ProcessEvent`s from a live
+The process variant uses [`Process.streamStdoutLines`](/process/), which streams decoded stdout lines from a live
 process through the same pipeline shape:
 
 {{< snippet id="compare-process-output" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
@@ -160,7 +160,7 @@ Where a producer must genuinely run ahead, `Flow.fork` returns a `Fiber` the cal
   forked producer is a value someone must own.
 - **Enforced by the runtime**: pull-based evaluation stops the producer with the consumer; fiber interruption
   reaches sleeps.
-- **Still the application's responsibility**: the buffering policy (`Process.stream` delivery is bounded;
+- **Still the application's responsibility**: the buffering policy (`Process.streamStdoutLines` delivery is bounded;
   document your own), and never detaching a fiber without an owner.
 
 ## 7. Atomic inventory reservation under contention

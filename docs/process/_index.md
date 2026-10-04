@@ -33,7 +33,8 @@ let shouldEqual expected actual =
 // The examples on this page start real processes with the live service.
 let host : ProcessHostEnvironment =
     { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live }
+      Console = Console.live
+      Clock = Clock.live }
 
 let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult>) : string =
     match Flow.run host workflow with
@@ -42,7 +43,7 @@ let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult
 ```
 
 ```fsharp
-open Axial.Process.DSL // Short pipeline helpers: cwd, env, timeout, =>, capture, run
+open Axial.Process.DSL // Short pipeline helpers: cwd, env, timeout, =>, toFlow, run
 
 let recentCommits (repository: string) =
     cmd $"git log --oneline -20"
@@ -50,9 +51,9 @@ let recentCommits (repository: string) =
     |> env "NO_COLOR" "1"
     |> timeout (TimeSpan.FromSeconds 5.0)
     => cmd $"head -5"
-    |> capture
+    |> toFlow
 
-// In a script, finish with `|> run`: it runs the workflow with live services and returns an exit code.
+// The outcome runner returns Exit<ProcessResult, ProcessError>.
 let script () = recentCommits "." |> run
 ```
 
@@ -61,26 +62,29 @@ let lines = stdoutOf (recentCommits ".") |> _.Split('\n', StringSplitOptions.Rem
 (lines.Length >= 1 && lines.Length <= 5) |> shouldEqual true
 ```
 
-[`Process.command`](xref:M:Axial.Process.Process.command) (and DSL [`cmd`](xref:M:Axial.Process.DSL.cmd)) preserves each interpolation hole as one native argument. [`cwd`](xref:M:Axial.Process.DSL.cwd), [`env`](xref:M:Axial.Process.DSL.env), and
-[`timeout`](xref:M:Axial.Process.DSL.timeout) return updated command specifications. [`=>`](xref:M:Axial.Process.DSL.(=>)) connects stdout to the next command's stdin. [`capture`](xref:M:Axial.Process.DSL.capture) creates
-a `Flow` that retains stdout and stderr; none of those steps starts a child process. The final [`run`](xref:M:Axial.Process.DSL.run) starts the Flow
-with live clock, filesystem, console, and process services. It returns `0` on success, or writes a redacted error and
-returns an appropriate nonzero exit code. Use it at a .NET command-line application's outermost boundary.
+`Process.command` (DSL `cmd`) returns an immutable `ProcessCommand` and preserves each interpolation hole
+as one native argument. Configure command settings before connecting stages with `=>` or `Process.pipe`, which
+returns a `ProcessSpec`. Construction starts no child process. `toFlow` makes the topology one lazy workflow step.
+
+`run` supplies live services and returns the complete `Exit`; direct command execution captures full stdout.
+`runExitCode` returns an integer for an entry point and defaults to visible console output without stdout capture.
+Both accept commands, specs, or an already constructed Flow. Explicit capture and routing settings win.
 
 For a server, worker, or application Flow, see [run a process in an application Flow](running-in-an-application-flow.html).
-That guide explains the explicit process capability, live wiring, test fakes, and the difference between [`Process.toFlow`](xref:M:Axial.Process.Process.toFlow)
-and [`Flow.run`](xref:M:Axial.Flow.run).
 
 ## Choose how the command communicates
 
-| Need | DSL | Full API | What you receive |
-| --- | --- | --- | --- |
-| Inspect output after the command exits | [`capture`](xref:M:Axial.Process.DSL.capture) | [`Process.capture`](xref:M:Axial.Process.Process.capture) | `ProcessResult`: stdout, stderr, bytes, exit codes, and timing |
-| Show output as it arrives | [`console`](xref:M:Axial.Process.DSL.console) | [`Process.console`](xref:M:Axial.Process.Process.console) | Structured completion data |
-| React to output before completion | [`stream`](xref:M:Axial.Process.DSL.stream) | [`Process.stream`](xref:M:Axial.Process.Process.stream) | A backpressured stream of output and completion events |
-| Send final output elsewhere | [`writeTo`](xref:M:Axial.Process.DSL.writeTo) / [`appendTo`](xref:M:Axial.Process.DSL.appendTo) | [`Process.stdout`](xref:M:Axial.Process.Process.stdout) / [`Process.stderr`](xref:M:Axial.Process.Process.stderr) | A configured command |
+| Need | API | Result |
+| --- | --- | --- |
+| Inspect output after completion | `toFlow` or direct `run` | `ProcessResult` inside a Flow or Exit |
+| Show output as it arrives | `stdoutToConsole` / `stderrToConsole` | Configured command; capture stays independent |
+| React to lines before completion | `streamStdoutLines` | `ProcessStream` with completion-aware terminals |
+| Send output to a file | `stdoutToFile` / `stdoutToAppendFile` | Configured command |
+| Return a command-line status | `runExitCode` | Integer exit code |
 
-New process specifications capture stdout and stderr by default. [`capture`](xref:M:Axial.Process.DSL.capture) makes that choice explicit and replaces a prior output policy. [Output capture and destinations](output-capture.html) explains bounded capture, files, console forwarding, and tees. [Streaming output](streaming.html) covers long-running commands and incremental handling.
+Batch execution captures full stdout and a separate 64 KiB stderr tail. Streaming retains bounded 64 KiB tails.
+`captureAll`, `captureTail`, and `captureNothing` affect stdout only; stderr has explicit matching helpers.
+See [output capture and destinations](output-capture.html) and [streaming output](streaming.html).
 
 ## What Axial owns
 

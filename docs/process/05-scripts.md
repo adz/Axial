@@ -26,7 +26,8 @@ let shouldEqual expected actual =
 // The examples on this page start real processes with the live service.
 let host : ProcessHostEnvironment =
     { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live }
+      Console = Console.live
+      Clock = Clock.live }
 
 let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult>) : string =
     match Flow.run host workflow with
@@ -42,7 +43,7 @@ let connect (deviceId: string) (workspace: string) =
     |> cwd workspace
     |> env "DEVICE_MODE" "service"
     |> timeout (TimeSpan.FromSeconds 30.0)
-    |> capture
+    |> toFlow
 ```
 
 ```fsharp run
@@ -57,8 +58,8 @@ let authenticate (token: string) =
 ```
 
 ```fsharp run
-authenticate "s3cret" |> Process.render |> shouldEqual "printf %s ***"
-stdoutOf (authenticate "s3cret" |> capture) |> shouldEqual "s3cret"
+authenticate "s3cret" |> Process.render |> shouldEqual "printf \"%s\" ***"
+stdoutOf (authenticate "s3cret" |> toFlow) |> shouldEqual "s3cret"
 ```
 
 The real value reaches the process; renders, plans, and errors show `***`.
@@ -68,25 +69,32 @@ Use [`bash`](xref:M:Axial.Process.DSL.bash), [`sh`](xref:M:Axial.Process.DSL.sh)
 ```fsharp
 let shout (value: string) =
     bash $"printf '%%s' {value} | tr '[:lower:]' '[:upper:]'"
-    |> capture
+    |> toFlow
 ```
 
 ```fsharp run
 stdoutOf (shout "it's $HOME") |> shouldEqual "IT'S $HOME"
 ```
 
-[`capture`](xref:M:Axial.Process.DSL.capture), [`console`](xref:M:Axial.Process.DSL.console), and [`stream`](xref:M:Axial.Process.DSL.stream) are lazy: they turn the specification into a `Flow` or `FlowStream`. Capture selects complete stdout and stderr capture. Console forwards both channels while retaining structured completion data. Stream yields `ProcessEvent` values and must be consumed by a Flow before a host can run it.
-
-[`run`](xref:M:Axial.Process.DSL.run) is the host execution verb: it starts a process Flow with live services and returns a command-line exit code. This keeps it distinct from [`Flow.run`](xref:M:Axial.Flow.run), which runs an application Flow with its explicit environment.
+`toFlow` and the stream constructors are lazy. Capture helpers configure retention without executing;
+routing helpers choose destinations independently. `run` starts a command, spec, or Flow and returns its full
+`Exit`. A direct command uses batch capture defaults, so output is available to the caller.
 
 ```fsharp run
-cmd $"dotnet --version"
-|> console
-|> run
-|> shouldEqual 0
+match cmd $"printf hello" |> run with
+| Exit.Success result -> shouldEqual "hello" result.StdOut
+| other -> failwithf "Expected captured output, got %A" other
 ```
 
-Use [`runWith`](xref:M:Axial.Process.DSL.runWith) when an application already owns its environment. The environment must provide `IConsole` for reporting a typed process failure; it can carry any additional application services. The Flow's own type states whether it also needs `IProcess`.
+Use `runExitCode` at a command-line entry point. It returns an integer; direct commands default to console
+routing and no stdout retention. Explicit routes and capture policies override those defaults.
+
+```fsharp run
+cmd $"dotnet --version" |> runExitCode |> shouldEqual 0
+```
+
+`runWith` accepts an existing application environment and preserves the full outcome; command inputs need
+`IHasProcess`. `runExitCodeWith` additionally requires `IHasConsole` to report failures.
 
 ```fsharp
 type AppEnvironment =
@@ -105,10 +113,12 @@ let appEnvironment =
 ```fsharp run
 let exit =
     cmd $"dotnet --version"
-    |> console
-    |> runWith appEnvironment
+    |> runExitCodeWith appEnvironment
 
 exit |> shouldEqual 0
 ```
 
-For application composition, use [`Process.toFlow`](xref:M:Axial.Process.Process.toFlow) (or the DSL's [`capture`](xref:M:Axial.Process.DSL.capture) or [`console`](xref:M:Axial.Process.DSL.console)) and start the enclosing workflow with [`Flow.run`](xref:M:Axial.Flow.run).
+For application composition, use `Process.toFlow` and run the enclosing workflow with `Flow.run`.
+`ProcessStream.runCollect` returns values plus completion; a stream must have a terminal before a host runner
+can execute it. Effectful terminals may have `ProcessStreamError` errors, which `run` supports; use the ordinary
+Flow runner when the application wants its own exit-code policy.

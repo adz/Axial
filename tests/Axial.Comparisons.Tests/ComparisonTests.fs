@@ -394,13 +394,7 @@ module PipelineTests =
             Axial.Process.Process.commandArgs "/bin/sh" [ "-c"; "printf 'one\\ntwo\\n'" ]
             |> Axial.Process.Process.framing Axial.Process.OutputFraming.Lines
 
-        let environment =
-            { new Axial.Process.IHasProcess with
-                member _.Process =
-                    Axial.Process.Process.live
-                        (Axial.PlatformService.Clock.live)
-                        (Axial.FileSystem.FileSystem.live)
-                        (Axial.Console.Console.live) }
+        let environment = Axial.Process.ProcessHostEnvironment.live
 
         let exit = Flow.runSync environment (WithFlow.streamProcessOutput specification persist)
 

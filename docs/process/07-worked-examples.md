@@ -10,8 +10,8 @@ Flow runner reaches the host boundary.
 
 ## A command-line tool that shows progress
 
-Use [`console`](xref:M:Axial.Process.DSL.console) when the command's output is for the person running the program. [`run`](xref:M:Axial.Process.DSL.run) supplies live services and turns
-the Flow outcome into the program's exit code.
+Use `runExitCode` for a command-line entry point. It supplies live services, forwards output to the console,
+and returns the integer program status. Configure routes explicitly when other destinations are needed.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -34,7 +34,8 @@ let shouldEqual expected actual =
 // The examples on this page start real processes with the live service.
 let host : ProcessHostEnvironment =
     { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live }
+      Console = Console.live
+      Clock = Clock.live }
 ```
 
 ```fsharp
@@ -43,8 +44,7 @@ open Axial.Process.DSL
 // In a program, mark this [<EntryPoint>].
 let main _ =
     cmd $"dotnet --info"
-    |> console
-    |> run
+    |> runExitCode
 ```
 
 There is no separate process runtime to construct. Console forwarding is lazy; the final runner starts the command.
@@ -59,7 +59,7 @@ let gitRevision : Flow<#IHasProcess, ProcessError, string> =
     flow {
         let! result =
             Process.command $"git rev-parse --short HEAD"
-            |> Process.capture
+            |> Process.toFlow
 
         return result.StdOut.Trim()
     }
@@ -79,24 +79,19 @@ match Flow.run appEnvironment buildLabel with
 | other -> failwithf "unexpected %A" other
 ```
 
-[`capture`](xref:M:Axial.Process.DSL.capture) gives this command explicit complete-output policy. [`Flow.run`](xref:M:Axial.Flow.run) runs the enclosing application Flow; it does
-not create or replace the application's environment.
+`toFlow` uses batch capture defaults. `Flow.run` executes the enclosing application workflow with its explicit
+environment.
 
 ## Stream lines into workflow decisions
 
-Use [`stream`](xref:M:Axial.Process.DSL.stream) when each line should affect the workflow before the command exits. Here a producer reports JSON-like
-events; the workflow selects only stdout lines and collects them under Flow's cancellation and cleanup scope.
+`streamStdoutLines` yields only stdout lines. Its terminal returns values and completion separately.
 
 ```fsharp
 let collectEvents =
     Process.command $"printf '{{\"event\":\"ready\"}}\n{{\"event\":\"done\"}}\n'"
-    |> Process.framing OutputFraming.Lines
-    |> Process.stream
-    |> FlowStream.choose (function
-        | ProcessEvent.Output output when output.Channel = OutputChannel.StdOut ->
-            Some output.Text
-        | _ -> None)
-    |> FlowStream.runCollect
+    |> Process.streamStdoutLines
+    |> ProcessStream.runCollect
+    |> Flow.map fst
 
 ```
 
