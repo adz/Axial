@@ -1015,27 +1015,29 @@ module FlowStream =
     let ofAsyncEnumerable
         (source: System.Collections.Generic.IAsyncEnumerable<'value>)
         : FlowStream<'env, 'error, 'value> =
-        let mutable enumerator : System.Collections.Generic.IAsyncEnumerator<'value> option = None
+        let rec pull
+            (enumerator: System.Collections.Generic.IAsyncEnumerator<'value>)
+            (environment: 'env)
+            (cancellationToken: CancellationToken)
+            ()
+            : Execution<StreamStep<'value, 'error>, 'error> =
+            Flow.invoke
+                // axial-allow-discarded-cancellation: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
+                (Flow.fromTask (fun _ ->
+                    task {
+                        let! moved = enumerator.MoveNextAsync()
 
-        let read () : Flow<'env, 'error, ('value * unit) option> =
-            Flow.fromTask (fun cancellationToken ->
-                task {
-                    let current =
-                        match enumerator with
-                        | Some existing -> existing
-                        | None ->
-                            let created = source.GetAsyncEnumerator(cancellationToken)
-                            enumerator <- Some created
-                            created
+                        if moved then
+                            return Next(enumerator.Current, pull enumerator environment cancellationToken)
+                        else
+                            do! enumerator.DisposeAsync()
+                            return Done
+                    }))
+                environment
+                cancellationToken
 
-                    let! moved = current.MoveNextAsync()
-
-                    if moved then
-                        return Some(current.Current, ())
-                    else
-                        do! current.DisposeAsync()
-                        return None
-                })
-
-        unfoldFlow read ()
+        FlowStream(fun environment cancellationToken ->
+            let enumerator = source.GetAsyncEnumerator(cancellationToken)
+            RuntimeState.current().Scope.AddAsyncDisposable enumerator
+            pull enumerator environment cancellationToken ())
 #endif
