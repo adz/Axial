@@ -64,7 +64,10 @@ let explain (exit: Exit<ProcessResult, ProcessError>) =
 
 ```fsharp run
 cmd $"sh -c 'exit 3'" |> run |> explain |> shouldEqual "stage 0 exited 3"
-cmd $"no-such-command-axial-docs" |> run |> explain |> shouldEqual "could not start no-such-command-axial-docs"
+cmd $"no-such-command-axial-docs"
+|> run
+|> explain
+|> shouldEqual "could not start no-such-command-axial-docs"
 ```
 
 [`ProcessError.describe`](xref:M:Axial.Process.ProcessError.describe) formats a redacted diagnostic.
@@ -84,7 +87,9 @@ output drain and awaited callbacks. A failure result contains the capture availa
 let stageSummary (specification: ProcessSpec) =
     flow {
         let! result = specification |> toFlow
-        return [ for stage in result.Stages -> $"[{stage.Stage}] {stage.Command} => {stage.ExitCode}" ]
+        return
+            [ for stage in result.Stages ->
+                  $"[{stage.Stage}] {stage.Command} => {stage.ExitCode}" ]
     }
 ```
 
@@ -135,7 +140,11 @@ match slowStage |> run with
 | Exit.Failure(Cause.Fail(ProcessError.StageTimedOut failure)) -> shouldEqual 0 failure.Stage
 | other -> failwithf "Expected stage timeout, got %A" other
 
-let slowTopology = sh $"sleep 30" => cmd $"cat" |> overallTimeout (TimeSpan.FromMilliseconds 100.) |> toFlow
+let slowTopology =
+    sh $"sleep 30"
+    => cmd $"cat"
+    |> overallTimeout (TimeSpan.FromMilliseconds 100.)
+    |> toFlow
 match slowTopology |> run with
 | Exit.Failure(Cause.Fail(ProcessError.OverallTimedOut _)) -> ()
 | other -> failwithf "Expected overall timeout, got %A" other

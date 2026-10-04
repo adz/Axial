@@ -95,7 +95,8 @@ try
 
     use writer = new StringWriter()
     let teed =
-        cmd $"printf duplicated" => Output.tee [Output.file outputPath; Output.textWriter Encoding.UTF8 writer]
+        cmd $"printf duplicated"
+        => Output.tee [ Output.file outputPath; Output.textWriter Encoding.UTF8 writer ]
         |> captureTail 4 |> run |> resultOf
     shouldEqual "duplicated" (File.ReadAllText outputPath)
     shouldEqual "duplicated" (writer.ToString())
@@ -119,7 +120,8 @@ do
     shouldEqual true destination.CanWrite
 
     let chunks = ResizeArray<byte>()
-    cmd $"printf callback" |> stdoutTo (Output.callback (fun bytes -> async { chunks.AddRange bytes }))
+    cmd $"printf callback"
+    |> stdoutTo (Output.callback (fun bytes -> async { chunks.AddRange bytes }))
     |> captureNothing |> run |> resultOf |> ignore
     shouldEqual "callback" (Encoding.UTF8.GetString(chunks.ToArray()))
 ```
@@ -147,7 +149,11 @@ shouldEqual "data" separated.StdOut
 shouldEqual "warning" separated.StdErr
 
 let merged = sh $"printf 'data\n'; printf 'warning\n' >&2" |> mergeStderr |> run |> resultOf
-shouldEqual ["data"; "warning"] (merged.StdOut.Split('\n', StringSplitOptions.RemoveEmptyEntries) |> Array.sort |> Array.toList)
+let words =
+    merged.StdOut.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+    |> Array.sort
+    |> Array.toList
+shouldEqual ["data"; "warning"] words
 shouldEqual "" merged.StdErr
 
 sh $"printf 'data\n'; printf 'warning\n' >&2"

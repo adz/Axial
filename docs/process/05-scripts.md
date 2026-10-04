@@ -39,7 +39,10 @@ let connect (deviceId: string) (workspace: string) =
 ```
 
 ```fsharp run
-connect "sensor 7; rm -rf /" (IO.Path.GetTempPath()) |> run |> stdoutOf |> shouldEqual "sensor 7; rm -rf /"
+connect "sensor 7; rm -rf /" (IO.Path.GetTempPath())
+|> run
+|> stdoutOf
+|> shouldEqual "sensor 7; rm -rf /"
 ```
 
 Interpolation holes remain individual native arguments. They are not concatenated into shell source. Mark sensitive values explicitly:

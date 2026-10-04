@@ -89,7 +89,8 @@ let collectEvents =
 ```
 
 ```fsharp run
-Flow.run appEnvironment collectEvents |> shouldEqual (Exit.Success [ """{"event":"ready"}"""; """{"event":"done"}""" ])
+Flow.run appEnvironment collectEvents
+|> shouldEqual (Exit.Success [ """{"event":"ready"}"""; """{"event":"done"}""" ])
 ```
 
 The consumer pulls the stream. If the enclosing Flow is interrupted or the consumer stops early, Axial interrupts the

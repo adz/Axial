@@ -205,14 +205,18 @@ match evenTotal |> run with
 | other -> failwithf "Expected completed fold, got %A" other
 
 let checkedTotal =
-    numbers () |> ProcessStream.runFoldFlow (fun total text -> (Flow.ok (total + int text) : Flow<_, string, int>)) 0
+    numbers ()
+    |> ProcessStream.runFoldFlow
+        (fun total text -> (Flow.ok (total + int text) : Flow<_, string, int>))
+        0
 match checkedTotal |> run with
 | Exit.Success (total, ProcessCompletion.Completed _) -> shouldEqual 10 total
 | other -> failwithf "Expected effectful fold, got %A" other
 
 let observed = ResizeArray<string>()
 match numbers () |> ProcessStream.runForEach observed.Add |> run with
-| Exit.Success (ProcessCompletion.Completed _) -> shouldEqual ["1"; "2"; "3"; "4"] (List.ofSeq observed)
+| Exit.Success (ProcessCompletion.Completed _) ->
+    shouldEqual ["1"; "2"; "3"; "4"] (List.ofSeq observed)
 | other -> failwithf "Expected synchronous consumption, got %A" other
 ```
 
@@ -225,7 +229,8 @@ let rejected =
     cmd $"printf 'ready\n'" |> streamStdoutLines
     |> ProcessStream.runForEachFlow (fun _ -> Flow.fail "rejected record")
 match rejected |> run with
-| Exit.Failure(Cause.Fail(ProcessStreamError.ConsumerFailed message)) -> shouldEqual "rejected record" message
+| Exit.Failure(Cause.Fail(ProcessStreamError.ConsumerFailed message)) ->
+    shouldEqual "rejected record" message
 | other -> failwithf "Expected consumer failure, got %A" other
 
 let prefix =
@@ -241,7 +246,8 @@ original channel even after merging. Chunk boundaries depend on native reads; re
 rather than assuming one event per write.
 
 ```fsharp run
-let errors = sh $"printf data; printf 'warning\n' >&2" |> streamStderrLines |> ProcessStream.runCollect
+let errors =
+    sh $"printf data; printf 'warning\n' >&2" |> streamStderrLines |> ProcessStream.runCollect
 match errors |> run with
 | Exit.Success (values, ProcessCompletion.Completed result) ->
     shouldEqual ["warning"] values
@@ -249,11 +255,19 @@ match errors |> run with
 | other -> failwithf "Expected stderr lines, got %A" other
 
 let outputs =
-    sh $"printf data; printf warning >&2" |> mergeStderr |> streamOutputs |> ProcessStream.runCollect
+    sh $"printf data; printf warning >&2"
+    |> mergeStderr
+    |> streamOutputs
+    |> ProcessStream.runCollect
 match outputs |> run with
 | Exit.Success (values, ProcessCompletion.Completed _) ->
-    shouldEqual true (values |> List.forall (fun item -> item.ObservedChannel = OutputChannel.StdOut))
-    let original channel = values |> List.filter (fun item -> item.OriginalChannel = channel) |> List.map _.Text |> String.concat ""
+    let allStdout = values |> List.forall (fun item -> item.ObservedChannel = OutputChannel.StdOut)
+    shouldEqual true allStdout
+    let original channel =
+        values
+        |> List.filter (fun item -> item.OriginalChannel = channel)
+        |> List.map _.Text
+        |> String.concat ""
     shouldEqual "data" (original OutputChannel.StdOut)
     shouldEqual "warning" (original OutputChannel.StdErr)
 | other -> failwithf "Expected original channels, got %A" other
@@ -265,7 +279,8 @@ The limit counts decoded UTF-16 code units, excluding line delimiters. `maxLineL
 byte-tail capture: limiting retained output does not make an oversized observed line acceptable.
 
 ```fsharp run
-let oversized = cmd $"printf abcde" |> maxLineLength 4 |> streamStdoutLines |> ProcessStream.runDrain
+let oversized =
+    cmd $"printf abcde" |> maxLineLength 4 |> streamStdoutLines |> ProcessStream.runDrain
 match oversized |> run with
 | Exit.Failure(Cause.Fail(ProcessError.LineTooLong _)) -> ()
 | other -> failwithf "Expected line limit failure, got %A" other
