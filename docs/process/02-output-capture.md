@@ -33,20 +33,20 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let host = ProcessHostEnvironment.liveWithConsole (Console.test())
-```
-
-```fsharp
-let inspect =
-    flow {
-        let! result = cmd $"printf 'status: ok'" |> toFlow
-        return result.StdOut, result.StdOutCapture.Bytes.Length
-    }
+let inspect () : Exit<ProcessResult, ProcessError> =
+    cmd $"printf 'status: ok'" |> run
 ```
 
 ```fsharp run
-inspect |> Flow.run host |> shouldEqual (Exit.Success("status: ok", 10))
+match inspect () with
+| Exit.Success result ->
+    shouldEqual "status: ok" result.StdOut
+    shouldEqual 10 result.StdOutCapture.Bytes.Length
+| other -> failwithf "Expected captured output, got %A" other
 ```
+
+`run` returns `Exit<ProcessResult, ProcessError>`. Within a successful `ProcessResult`, `StdOutCapture` and
+`StdErrCapture` are `CapturedOutput` values: retained `Bytes`, decoded `Text`, `Truncated`, and `Available`.
 
 ## Choose retention independently of routing
 
@@ -63,11 +63,13 @@ let diagnose =
     cmd $"printf diagnostics"
     |> stdoutToConsole
     |> captureTail 5
-    |> toFlow
 ```
 
+To check console routing without writing to the terminal, supply a test console for this execution:
+
 ```fsharp run
-match Flow.run host diagnose with
+let consoleEnvironment = ProcessHostEnvironment.liveWithConsole (Console.test())
+match diagnose |> runWith consoleEnvironment with
 | Exit.Success result ->
     shouldEqual "stics" result.StdOut
     shouldEqual true result.StdOutTruncated

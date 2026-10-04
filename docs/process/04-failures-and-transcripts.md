@@ -51,14 +51,6 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-// The examples on this page start real processes with the live service.
-let host : ProcessHostEnvironment =
-    { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live
-      Clock = Clock.live }
-```
-
-```fsharp
 let explain (exit: Exit<ProcessResult, ProcessError>) =
     match exit with
     | Exit.Failure(Cause.Fail(ProcessError.StartFailed failure)) ->
@@ -71,8 +63,8 @@ let explain (exit: Exit<ProcessResult, ProcessError>) =
 ```
 
 ```fsharp run
-cmd $"sh -c 'exit 3'" |> toFlow |> Flow.run host |> explain |> shouldEqual "stage 0 exited 3"
-cmd $"no-such-command-axial-docs" |> toFlow |> Flow.run host |> explain |> shouldEqual "could not start no-such-command-axial-docs"
+cmd $"sh -c 'exit 3'" |> run |> explain |> shouldEqual "stage 0 exited 3"
+cmd $"no-such-command-axial-docs" |> run |> explain |> shouldEqual "could not start no-such-command-axial-docs"
 ```
 
 [`ProcessError.describe`](xref:M:Axial.Process.ProcessError.describe) formats a redacted diagnostic.
@@ -89,7 +81,7 @@ output drain and awaited callbacks. A failure result contains the capture availa
 [`Process.successCodes`](xref:M:Axial.Process.Process.successCodes) when a command treats other exit codes as successful.
 
 ```fsharp
-let stageSummary (specification: ProcessSpec) : Flow<ProcessHostEnvironment, ProcessError, string list> =
+let stageSummary (specification: ProcessSpec) =
     flow {
         let! result = specification |> toFlow
         return [ for stage in result.Stages -> $"[{stage.Stage}] {stage.Command} => {stage.ExitCode}" ]
@@ -99,7 +91,7 @@ let stageSummary (specification: ProcessSpec) : Flow<ProcessHostEnvironment, Pro
 ```fsharp run
 cmd $"printf 'a\nb\n'" |> pipeTo (cmd $"wc -l")
 |> stageSummary
-|> Flow.run host
+|> run
 |> shouldEqual (Exit.Success [ "[0] printf \"a\nb\n\" => 0"; "[1] wc -l => 0" ])
 ```
 
@@ -110,14 +102,14 @@ late output is preserved. Configure [`Process.drainTimeout`](xref:M:Axial.Proces
 indefinitely is unsuitable:
 
 ```fsharp
-let boundedDrain : Flow<ProcessHostEnvironment, ProcessError, ProcessResult> =
+let boundedDrain =
     cmd $"printf ready"
     |> drainTimeout (TimeSpan.FromSeconds 2.0)
     |> toFlow
 ```
 
 ```fsharp run
-boundedDrain |> Flow.run host |> function
+boundedDrain |> run |> function
 | Exit.Success result -> shouldEqual "ready" result.StdOut
 | other -> failwithf "Expected successful drain, got %A" other
 ```
@@ -132,7 +124,6 @@ the complete execution, including running stages, callbacks, and draining. `Proc
 from successful launch to its native exit. The DSL also exposes `drainTimeout`. Both policies
 are opt-in and appear in `Process.plan`.
 
-
 ## Choose stage and overall deadlines
 
 Apply `timeout` before connecting a command; it measures that stage through native exit. `overallTimeout`
@@ -140,12 +131,12 @@ applies to the whole topology, including draining and completion-aware callbacks
 
 ```fsharp run
 let slowStage = sh $"sleep 30" |> timeout (TimeSpan.FromMilliseconds 100.) |> toFlow
-match slowStage |> runWith host with
+match slowStage |> run with
 | Exit.Failure(Cause.Fail(ProcessError.StageTimedOut failure)) -> shouldEqual 0 failure.Stage
 | other -> failwithf "Expected stage timeout, got %A" other
 
 let slowTopology = sh $"sleep 30" => cmd $"cat" |> overallTimeout (TimeSpan.FromMilliseconds 100.) |> toFlow
-match slowTopology |> runWith host with
+match slowTopology |> run with
 | Exit.Failure(Cause.Fail(ProcessError.OverallTimedOut _)) -> ()
 | other -> failwithf "Expected overall timeout, got %A" other
 ```

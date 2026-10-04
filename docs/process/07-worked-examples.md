@@ -32,14 +32,6 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-// The examples on this page start real processes with the live service.
-let host : ProcessHostEnvironment =
-    { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live
-      Clock = Clock.live }
-```
-
-```fsharp
 open Axial.Process.DSL
 
 // In a program, mark this [<EntryPoint>].
@@ -71,7 +63,7 @@ let buildLabel =
         return $"build-{revision}"
     }
 
-let appEnvironment = host
+let appEnvironment = ProcessHostEnvironment.live
 ```
 
 ```fsharp run

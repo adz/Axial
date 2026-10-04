@@ -21,17 +21,9 @@ open Axial.Process.DSL
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
-```
 
-```fsharp
-// The examples on this page start real processes with the live service.
-let host : ProcessHostEnvironment =
-    { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live
-      Clock = Clock.live }
-
-let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult>) : string =
-    match Flow.run host workflow with
+let stdoutOf (outcome: Exit<ProcessResult, ProcessError>) =
+    match outcome with
     | Exit.Success result -> result.StdOut
     | Exit.Failure cause -> failwithf "%A" cause
 ```
@@ -44,11 +36,10 @@ let connect (deviceId: string) (workspace: string) =
     |> cwd workspace
     |> env "DEVICE_MODE" "service"
     |> timeout (TimeSpan.FromSeconds 30.0)
-    |> toFlow
 ```
 
 ```fsharp run
-stdoutOf (connect "sensor 7; rm -rf /" (IO.Path.GetTempPath())) |> shouldEqual "sensor 7; rm -rf /"
+connect "sensor 7; rm -rf /" (IO.Path.GetTempPath()) |> run |> stdoutOf |> shouldEqual "sensor 7; rm -rf /"
 ```
 
 Interpolation holes remain individual native arguments. They are not concatenated into shell source. Mark sensitive values explicitly:
@@ -60,7 +51,7 @@ let authenticate (token: string) =
 
 ```fsharp run
 authenticate "s3cret" |> Process.render |> shouldEqual "printf \"%s\" ***"
-stdoutOf (authenticate "s3cret" |> toFlow) |> shouldEqual "s3cret"
+authenticate "s3cret" |> run |> stdoutOf |> shouldEqual "s3cret"
 ```
 
 The real value reaches the process; renders, plans, and errors show `***`.
@@ -70,11 +61,10 @@ Use [`bash`](xref:M:Axial.Process.DSL.bash), [`sh`](xref:M:Axial.Process.DSL.sh)
 ```fsharp
 let shout (value: string) =
     bash $"printf '%%s' {value} | tr '[:lower:]' '[:upper:]'"
-    |> toFlow
 ```
 
 ```fsharp run
-stdoutOf (shout "it's $HOME") |> shouldEqual "IT'S $HOME"
+shout "it's $HOME" |> run |> stdoutOf |> shouldEqual "IT'S $HOME"
 ```
 
 `toFlow` and the stream constructors are lazy. Capture helpers configure retention without executing;

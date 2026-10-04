@@ -22,23 +22,25 @@ open Axial.Process.DSL
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
-```
 
-```fsharp
-// The examples on this page start real processes with the live service.
-let host : ProcessHostEnvironment =
-    { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live
-      Clock = Clock.live }
-
-let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult>) : string =
-    match Flow.run host workflow with
+let stdoutOf (outcome: Exit<ProcessResult, ProcessError>) =
+    match outcome with
     | Exit.Success result -> result.StdOut
     | Exit.Failure cause -> failwithf "%A" cause
 ```
 
+Start with one command; `run` supplies the execution services:
+
+```fsharp run
+match cmd $"printf hello" |> run with
+| Exit.Success result -> shouldEqual "hello" result.StdOut
+| other -> failwithf "Expected greeting, got %A" other
+```
+
+Then add settings to the command before running or connecting it:
+
 ```fsharp
-let status (repository: string) =
+let status (repository: string) : ProcessCommand =
     cmd $"git status --short"
     |> cwd repository
     |> env "CI" "true"
@@ -51,17 +53,17 @@ Apply `cwd`, `env`, `timeout`, and per-command routes before connecting stages. 
 [`Process.encoding`](xref:M:Axial.Process.Process.encoding), and
 [`Process.successCodes`](xref:M:Axial.Process.Process.successCodes) also take a `ProcessCommand`.
 
-Connect stdout to the next stage with `=>` (or the pipeline helper `pipeTo`):
+Connect stdout to the next stage with `=>` (or the pipeline helper `pipeTo`). Two `ProcessCommand` values
+become a `ProcessSpec`; command setters then require configuring a command before joining, or `mapFinalCommand`:
 
 ```fsharp
-let countLines : Flow<ProcessHostEnvironment, ProcessError, ProcessResult> =
+let countLines : ProcessSpec =
     cmd $"printf 'error one\nerror two\n'"
     => cmd $"wc -l"
-    |> toFlow
 ```
 
 ```fsharp run
-stdoutOf countLines |> _.Trim() |> shouldEqual "2"
+countLines |> run |> stdoutOf |> _.Trim() |> shouldEqual "2"
 ```
 
 Configure downstream stages inside parentheses before connecting them:
@@ -69,17 +71,29 @@ Configure downstream stages inside parentheses before connecting them:
 ```fsharp
 open Axial.Process.DSL
 
-let shout (value: string) =
+let shout (value: string) : ProcessSpec =
     cmd $"printf %%s {value}"
     => (cmd $"tr '[:lower:]' '[:upper:]'"
         |> timeout (TimeSpan.FromSeconds 5.0))
-    |> toFlow
 ```
 
 The interpolated value is one argument, even with spaces or shell characters in it:
 
 ```fsharp run
-stdoutOf (shout "hello; world") |> shouldEqual "HELLO; WORLD"
+shout "hello; world" |> run |> stdoutOf |> shouldEqual "HELLO; WORLD"
+```
+
+The same configured pipeline can use qualified functions throughout:
+
+```fsharp
+let shoutWithFunctions (value: string) : ProcessSpec =
+    Process.command $"printf %%s {value}"
+    |> Process.pipe (Process.command $"tr '[:lower:]' '[:upper:]'"
+                     |> Process.timeout (TimeSpan.FromSeconds 5.))
+```
+
+```fsharp run
+shoutWithFunctions "hello; world" |> Process.run |> stdoutOf |> shouldEqual "HELLO; WORLD"
 ```
 
 Each interpolation hole becomes one argument. Use [`secret`](xref:M:Axial.Process.DSL.secret) when plans, failures, and transcripts must show `***` instead of the real value. Use [`cmdText`](xref:M:Axial.Process.DSL.cmdText) only for fixed command text.
@@ -98,14 +112,14 @@ let defaults =
     |> StageDefaults.environment "CI" "true"
     |> StageDefaults.timeout (TimeSpan.FromSeconds 15.)
 
-let sharedPipeline =
+let sharedPipeline : ProcessSpec =
     cmd $"printf ready"
     |> stageDefaults defaults
     |> pipeTo (cmd $"cat" |> withoutTimeout)
 ```
 
 ```fsharp run
-sharedPipeline |> toFlow |> stdoutOf |> shouldEqual "ready"
+sharedPipeline |> run |> stdoutOf |> shouldEqual "ready"
 ```
 
 Use `mapFinalCommand` to change settings on the final command of an existing topology. It requires one
@@ -121,8 +135,8 @@ list of interpolated command templates when a pipeline is assembled dynamically.
 when arguments already exist as individual values.
 
 ```fsharp run
-cmdText "printf fixed" |> toFlow |> stdoutOf |> shouldEqual "fixed"
-pipe [ $"printf 'one\ntwo\n'"; $"wc -l" ] |> toFlow |> stdoutOf |> _.Trim() |> shouldEqual "2"
+cmdText "printf fixed" |> run |> stdoutOf |> shouldEqual "fixed"
+pipe [ $"printf 'one\ntwo\n'"; $"wc -l" ] |> run |> stdoutOf |> _.Trim() |> shouldEqual "2"
 Process.commandArgs "printf" ["%s"; "space and ; characters"]
-|> toFlow |> stdoutOf |> shouldEqual "space and ; characters"
+|> run |> stdoutOf |> shouldEqual "space and ; characters"
 ```

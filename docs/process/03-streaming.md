@@ -28,10 +28,6 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let host = ProcessHostEnvironment.live
-```
-
-```fsharp
 let lines =
     cmd $"printf 'ready\nsample 1\n'"
     |> streamStdoutLines
@@ -40,12 +36,18 @@ let reports = lines |> ProcessStream.map _.ToUpperInvariant() |> ProcessStream.r
 ```
 
 ```fsharp run
-match Flow.run host reports with
+match reports |> run with
 | Exit.Success (values, ProcessCompletion.Completed result) ->
     shouldEqual ["READY"; "SAMPLE 1"] values
     shouldEqual 0 result.ExitCode
 | other -> failwithf "Expected completed output, got %A" other
 ```
+
+`lines` is a `ProcessStream<'env, string>`: the value parameter is one decoded line, and `'env` supplies
+process and clock services when it runs. `runCollect` produces
+`Flow<'env, ProcessError, string list * ProcessCompletion>`; `run` returns
+`Exit<string list * ProcessCompletion, ProcessError>`. `Completed result` includes the final `ProcessResult`;
+`StoppedEarly` reports successful prefix stopping after cleanup.
 
 `map` and `filter` preserve completion. `streamStdout` and `streamStderr` emit decoded chunks with stage,
 timestamp, `ObservedChannel`, and `OriginalChannel` metadata. `streamOutputs` includes all readable,
@@ -55,16 +57,17 @@ unconnected channels. A merged stderr value has observed channel stdout and orig
 
 Use `runForEachFlow` for console, filesystem, or other application services. `runForEach` takes a synchronous
 callback and is appropriate for ordinary in-memory processing. Effectful terminals distinguish `ProcessFailed`
-from `ConsumerFailed` errors; defects and interruption retain their Axial cause.
+from `ConsumerFailed` errors; defects and interruption retain their Axial cause. Their Flow error type is
+`ProcessStreamError<'consumerError>`, and `run` preserves it inside the returned `Exit`.
 
 ```fsharp
 let printLines =
     lines
-    |> ProcessStream.runForEachFlow (Console.writeLine<ProcessHostEnvironment, string>)
+    |> ProcessStream.runForEachFlow (Console.writeLine<_, string>)
 ```
 
 ```fsharp run
-match Flow.run host printLines with
+match printLines |> run with
 | Exit.Success (ProcessCompletion.Completed result) -> shouldEqual 0 result.ExitCode
 | other -> failwithf "Expected printed output, got %A" other
 ```
@@ -83,7 +86,7 @@ let firstLine =
 ```
 
 ```fsharp run
-Flow.run host firstLine |> shouldEqual (Exit.Success (["ready"], ProcessCompletion.StoppedEarly))
+firstLine |> run |> shouldEqual (Exit.Success (["ready"], ProcessCompletion.StoppedEarly))
 ```
 
 ## Bound retained output
@@ -102,7 +105,7 @@ let retainedTail =
 ```
 
 ```fsharp run
-match Flow.run host retainedTail with
+match retainedTail |> run with
 | Exit.Success (ProcessCompletion.Completed result) ->
     shouldEqual "last\n" result.StdOut
     shouldEqual true result.StdOutTruncated
@@ -128,18 +131,18 @@ let numbers () = cmd $"printf '1\n2\n3\n4\n'" |> streamStdoutLines
 let evenTotal =
     numbers () |> ProcessStream.map int |> ProcessStream.filter (fun value -> value % 2 = 0)
     |> ProcessStream.runFold (+) 0
-match evenTotal |> runWith host with
+match evenTotal |> run with
 | Exit.Success (total, ProcessCompletion.Completed _) -> shouldEqual 6 total
 | other -> failwithf "Expected completed fold, got %A" other
 
 let checkedTotal =
-    numbers () |> ProcessStream.runFoldFlow (fun total text -> (Flow.ok (total + int text) : Flow<ProcessHostEnvironment, string, int>)) 0
-match checkedTotal |> runWith host with
+    numbers () |> ProcessStream.runFoldFlow (fun total text -> (Flow.ok (total + int text) : Flow<_, string, int>)) 0
+match checkedTotal |> run with
 | Exit.Success (total, ProcessCompletion.Completed _) -> shouldEqual 10 total
 | other -> failwithf "Expected effectful fold, got %A" other
 
 let observed = ResizeArray<string>()
-match numbers () |> ProcessStream.runForEach observed.Add |> runWith host with
+match numbers () |> ProcessStream.runForEach observed.Add |> run with
 | Exit.Success (ProcessCompletion.Completed _) -> shouldEqual ["1"; "2"; "3"; "4"] (List.ofSeq observed)
 | other -> failwithf "Expected synchronous consumption, got %A" other
 ```
@@ -152,14 +155,14 @@ such as `IConsole`; those effects remain explicit in the environment. Typed cons
 let rejected =
     cmd $"printf 'ready\n'" |> streamStdoutLines
     |> ProcessStream.runForEachFlow (fun _ -> Flow.fail "rejected record")
-match rejected |> runWith host with
+match rejected |> run with
 | Exit.Failure(Cause.Fail(ProcessStreamError.ConsumerFailed message)) -> shouldEqual "rejected record" message
 | other -> failwithf "Expected consumer failure, got %A" other
 
 let prefix =
     cmd $"printf 'ready\nstop\nlater\n'" |> streamStdoutLines
     |> ProcessStream.takeWhile (fun line -> line <> "stop") |> ProcessStream.runCollect
-prefix |> runWith host |> shouldEqual (Exit.Success (["ready"], ProcessCompletion.StoppedEarly))
+prefix |> run |> shouldEqual (Exit.Success (["ready"], ProcessCompletion.StoppedEarly))
 ```
 
 ## Observe stderr and channel provenance
@@ -170,7 +173,7 @@ rather than assuming one event per write.
 
 ```fsharp run
 let errors = sh $"printf data; printf 'warning\n' >&2" |> streamStderrLines |> ProcessStream.runCollect
-match errors |> runWith host with
+match errors |> run with
 | Exit.Success (values, ProcessCompletion.Completed result) ->
     shouldEqual ["warning"] values
     shouldEqual "data" result.StdOut
@@ -178,7 +181,7 @@ match errors |> runWith host with
 
 let outputs =
     sh $"printf data; printf warning >&2" |> mergeStderr |> streamOutputs |> ProcessStream.runCollect
-match outputs |> runWith host with
+match outputs |> run with
 | Exit.Success (values, ProcessCompletion.Completed _) ->
     shouldEqual true (values |> List.forall (fun item -> item.ObservedChannel = OutputChannel.StdOut))
     let original channel = values |> List.filter (fun item -> item.OriginalChannel = channel) |> List.map _.Text |> String.concat ""
@@ -194,14 +197,14 @@ byte-tail capture: limiting retained output does not make an oversized observed 
 
 ```fsharp run
 let oversized = cmd $"printf abcde" |> maxLineLength 4 |> streamStdoutLines |> ProcessStream.runDrain
-match oversized |> runWith host with
+match oversized |> run with
 | Exit.Failure(Cause.Fail(ProcessError.LineTooLong _)) -> ()
 | other -> failwithf "Expected line limit failure, got %A" other
 
 let ordinary =
     cmd $"printf 'a\nb\n'" |> streamStdoutLines |> ProcessStream.toFlowStream
     |> FlowStream.map _.ToUpperInvariant() |> FlowStream.runCollect
-ordinary |> runWith host |> shouldEqual (Exit.Success ["A"; "B"])
+ordinary |> run |> shouldEqual (Exit.Success ["A"; "B"])
 ```
 
 `streamStdout` and `streamStderr` provide metadata-bearing decoded chunks when line framing is inappropriate.

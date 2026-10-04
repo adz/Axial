@@ -8,9 +8,12 @@ description: Start external commands from an Axial workflow.
 `Axial.Process` lets a command-line program start an external command without giving up typed failures, cancellation,
 or cleanup. You describe the command first, choose what happens to its input and output, then run it.
 
-## A script
+## Run one command
 
-For a small command-line program, describe commands, connect them, choose where output goes, then call `run`:
+Open `Axial.Process.DSL` and call `run`. It supplies the live services and returns an `Exit` containing the
+captured output or failure. `cmd` constructs a `ProcessCommand`; `run` executes it.
+`Exit.Success` holds a `ProcessResult` with `StdOut`, `StdErr`, and exit codes.
+`Exit.Failure` holds a `Cause<ProcessError>`: an expected process error, a defect, or interruption.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -31,36 +34,77 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-// The examples on this page start real processes with the live service.
-let host : ProcessHostEnvironment =
-    { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live
-      Clock = Clock.live }
+open Axial
+open Axial.Process
+open Axial.Process.DSL
 
-let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult>) : string =
-    match Flow.run host workflow with
-    | Exit.Success result -> result.StdOut
-    | Exit.Failure cause -> failwithf "%A" cause
-```
-
-```fsharp
-open Axial.Process.DSL // Short pipeline helpers: cwd, env, timeout, =>, toFlow, run
-
-let recentCommits (repository: string) =
-    cmd $"git log --oneline -20"
-    |> cwd repository
-    |> env "NO_COLOR" "1"
-    |> timeout (TimeSpan.FromSeconds 5.0)
-    => cmd $"head -5"
-    |> toFlow
-
-// The outcome runner returns Exit<ProcessResult, ProcessError>.
-let script () = recentCommits "." |> run
+let greeting : ProcessCommand = cmd $"printf hello"
+let outcome : Exit<ProcessResult, ProcessError> = greeting |> run
 ```
 
 ```fsharp run
-let lines = stdoutOf (recentCommits ".") |> _.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-(lines.Length >= 1 && lines.Length <= 5) |> shouldEqual true
+match outcome with
+| Exit.Success result -> shouldEqual "hello" result.StdOut
+| other -> failwithf "Expected greeting, got %A" other
+```
+
+## Adjust that command
+
+Add the working directory, an environment variable, and a per-command timeout before running it.
+Each setting returns another `ProcessCommand`; applying settings starts no process:
+
+```fsharp
+let configuredGreeting (directory: string) : ProcessCommand =
+    cmd $"printf hello"
+    |> cwd directory
+    |> env "GREETING_MODE" "plain"
+    |> timeout (TimeSpan.FromSeconds 5.)
+```
+
+```fsharp run
+match configuredGreeting (Path.GetTempPath()) |> run with
+| Exit.Success result -> shouldEqual "hello" result.StdOut
+| other -> failwithf "Expected configured greeting, got %A" other
+```
+
+## Connect a second command
+
+`=>` connects the first command's stdout to the second command's stdin. Keep each command's settings before
+its connection. Joining two commands produces a `ProcessSpec`, which describes the connected topology:
+
+```fsharp
+let loudGreeting (directory: string) : ProcessSpec =
+    cmd $"printf hello"
+    |> cwd directory
+    |> env "GREETING_MODE" "plain"
+    |> timeout (TimeSpan.FromSeconds 5.)
+    => cmd $"tr '[:lower:]' '[:upper:]'"
+```
+
+```fsharp run
+match loudGreeting (Path.GetTempPath()) |> run with
+| Exit.Success result -> shouldEqual "HELLO" result.StdOut
+| other -> failwithf "Expected piped greeting, got %A" other
+```
+
+## The same pipeline with qualified functions
+
+The DSL is a shorter way to construct the same commands and connections. This version uses the `Process`
+functions throughout and needs no DSL names or operators:
+
+```fsharp
+let loudGreetingWithFunctions (directory: string) : ProcessSpec =
+    Process.command $"printf hello"
+    |> Process.workingDirectory directory
+    |> Process.environment "GREETING_MODE" "plain"
+    |> Process.timeout (TimeSpan.FromSeconds 5.)
+    |> Process.pipe (Process.command $"tr '[:lower:]' '[:upper:]'")
+```
+
+```fsharp run
+match loudGreetingWithFunctions (Path.GetTempPath()) |> Process.run with
+| Exit.Success result -> shouldEqual "HELLO" result.StdOut
+| other -> failwithf "Expected equivalent pipeline, got %A" other
 ```
 
 `Process.command` (DSL `cmd`) returns an immutable `ProcessCommand` and preserves each interpolation hole
@@ -70,6 +114,23 @@ returns a `ProcessSpec`. Construction starts no child process. `toFlow` makes th
 `run` supplies live services and returns the complete `Exit`; direct command execution captures full stdout.
 `runExitCode` returns an integer for an entry point and defaults to visible console output without stdout capture.
 Both accept commands, specs, or an already constructed Flow. Explicit capture and routing settings win.
+
+## The types at each step
+
+| Type | What it represents | Typical construction |
+| --- | --- | --- |
+| `ProcessCommand` | One immutable command, arguments, and per-command settings | `cmd`, `cwd`, `env`, routing helpers |
+| `ProcessSpec` | Connected commands and topology policies | `=>`, `pipeTo`, `mergeStdout`, `stageDefaults` |
+| `ProcessResult` | Exit codes, retained output, capture metadata, and stage results | Successful execution |
+| `Exit<ProcessResult, ProcessError>` | The finished outcome, including a failure cause | `commandOrSpec |> run` |
+| `Flow<'env, ProcessError, ProcessResult>` | A lazy process step inside an application workflow | `commandOrSpec |> toFlow` |
+| `ProcessStream<'env, string>` | Lazy decoded lines with completion tracking | `streamStdoutLines`, `streamStderrLines` |
+| `ProcessStream<'env, ProcessOutput>` | Lazy output observations with stage and channel metadata | `streamStdout`, `streamStderr`, `streamOutputs` |
+| `ProcessCompletion` | `Completed result` after natural completion, or `StoppedEarly` after owned prefix cleanup | A `ProcessStream` terminal |
+
+`'env` is the application's dependency record; it becomes relevant when composing a Flow or supplying services.
+Direct `run` supplies that environment. `toFlow` and stream constructors stay lazy. A stream terminal produces
+a Flow; `run` executes that Flow and returns an `Exit` containing its consumed value and completion.
 
 For a server, worker, or application Flow, see [run a process in an application Flow](running-in-an-application-flow.html).
 
