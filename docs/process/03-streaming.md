@@ -5,15 +5,14 @@ description: Consume process output while a command is still running.
 
 # Streaming output
 
-Use `streamStdoutLines` for decoded stdout lines as they arrive. It returns a `ProcessStream`;
-its terminal returns the consumed value together with process completion. Stderr stays separate unless you
-explicitly apply `mergeStderr`.
+Some commands produce useful output long before they finish — a build, a log tail, a long-running server.
+`streamStdoutLines` yields decoded stdout lines as they arrive. It returns a `ProcessStream`, and its terminal
+returns the consumed value together with process completion. Stderr stays separate unless you apply `mergeStderr`.
 
-`ProcessStream<'env, 'value>` is the stream **type**. The `ProcessStream` **module** contains the functions
-that operate on it: `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. This is the same F# naming
-pattern as the `Flow` type and its `Flow` module. A stream terminal returns a Flow. In a script, execute it
-with the DSL `run` helper; in an application, bind it with `let!` inside the enclosing Flow.
-Passing a `ProcessStream` directly to `run` is not supported.
+`ProcessStream<'env, 'value>` is the stream **type**; the `ProcessStream` **module** holds the functions that
+operate on it: `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. This mirrors the `Flow` type and
+its `Flow` module. A stream terminal returns a Flow, which a script executes with the DSL `run` helper or an
+application binds with `let!` inside the enclosing Flow. A `ProcessStream` cannot be passed to `run` directly.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -61,9 +60,9 @@ unconnected channels. A merged stderr value has observed channel stdout and orig
 
 ## Handle output with application effects
 
-Use `runForEachFlow` for console, filesystem, or other application services. `runForEach` takes a synchronous
-callback and is appropriate for ordinary in-memory processing. Effectful terminals distinguish `ProcessFailed`
-from `ConsumerFailed` errors; defects and interruption retain their Axial cause. Their Flow error type is
+Use `runForEachFlow` when a line needs a console, filesystem, or other application service. `runForEach` takes a
+synchronous callback and suits ordinary in-memory work. Effectful terminals keep `ProcessFailed` and
+`ConsumerFailed` distinct; defects and interruption retain their Axial cause. Their Flow error type is
 `ProcessStreamError<'consumerError>`, and `run` preserves it inside the returned `Exit`.
 
 ```fsharp
@@ -80,8 +79,8 @@ match printLines |> run with
 
 ## Stop after a prefix
 
-`take` and `takeWhile` stop and await the owned native process before returning successful `StoppedEarly`.
-`take 0` never launches it. Caller cancellation still interrupts the Flow.
+`take` and `takeWhile` stop and wait for the owned native process to clean up before returning a successful
+`StoppedEarly`. `take 0` never launches it. Caller cancellation still interrupts the Flow.
 
 ```fsharp
 let firstLine =
@@ -97,10 +96,10 @@ firstLine |> run |> shouldEqual (Exit.Success (["ready"], ProcessCompletion.Stop
 
 ## Bound retained output
 
-Streams default to a 64 KiB stdout tail and separate 64 KiB stderr tails. Backpressure bounds pending output;
-`runCollect` still retains every value it collects, so consume unbounded output incrementally with `runForEachFlow`
-or `runFoldFlow`. `captureAll` opts into full stdout retention. `captureNothing` removes stdout retention while
-keeping observations and the separate stderr diagnostic tail.
+Streams keep a 64 KiB stdout tail and separate 64 KiB stderr tails by default. Backpressure bounds pending
+output, but `runCollect` still retains every value it collects, so consume unbounded output incrementally with
+`runForEachFlow` or `runFoldFlow`. `captureAll` opts into full stdout retention; `captureNothing` removes stdout
+retention while keeping observations and the separate stderr diagnostic tail.
 
 ```fsharp
 let retainedTail =

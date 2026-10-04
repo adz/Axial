@@ -3,8 +3,9 @@ title: Output capture and destinations
 description: Capture exact output, bound it, forward it, or write it elsewhere.
 ---
 
-`Process.toFlow` captures all stdout and a separate 64 KiB stderr diagnostic tail by default. Streaming defaults
-to bounded 64 KiB tails on both channels. Neither mode forwards output to the console unless you configure a route.
+Process output goes nowhere it isn't sent. By default, `Process.toFlow` retains all stdout and a 64 KiB
+diagnostic tail of stderr; streaming retains 64 KiB tails on both channels. Neither forwards anything to the
+console — that takes an explicit route.
 
 | Execution boundary | Default forwarding | Stdout retention | Unmerged stderr retention |
 | --- | --- | --- | --- |
@@ -50,9 +51,9 @@ match inspect () with
 
 ## Choose retention independently of routing
 
-`captureAll`, `captureTail bytes`, and `captureNothing` affect final effective stdout only.
-`captureStderrAll`, `captureStderrTail bytes`, and `captureStderrNothing` affect readable unmerged stderr.
-Explicit capture settings override the execution mode and topology defaults.
+Retention and routing are separate choices. `captureAll`, `captureTail bytes`, and `captureNothing` affect final
+effective stdout only; `captureStderrAll`, `captureStderrTail bytes`, and `captureStderrNothing` affect readable
+unmerged stderr. Explicit capture settings override the execution mode and topology defaults.
 
 `stdoutToConsole`, `stdoutToFile`, `stdoutToAppendFile`, `stdoutToDiscard`, and `stdoutToInheritHandles`
 configure routes. Stderr has matching shortcuts. `stdoutTo` and `stderrTo` accept arbitrary targets, including
@@ -76,14 +77,16 @@ match diagnose |> runWith consoleEnvironment with
 | other -> failwithf "Expected captured console output, got %A" other
 ```
 
-Use `captureNothing` when routed or consumed output and the exit status suffice. It does not remove the stderr
-diagnostic tail; apply `captureStderrNothing` to opt out of that too. Full capture can use unbounded memory.
+When the exit status is all you need, `captureNothing` drops stdout retention. It does not drop the stderr
+diagnostic tail; apply `captureStderrNothing` for that too. Full capture holds the whole stream in memory, so a
+tail or `captureNothing` is safer when output can be large.
 
 ## Exact bytes and availability
 
-`CapturedOutput.Bytes` contains exact retained bytes; `Text` decodes them with the command's encoding.
-A byte tail can split a multibyte character, producing replacement characters in the text view.
-`Truncated` reports omitted bytes. `Available` reports whether Axial could read the channel at all.
+Capture is byte-based, and the text view is derived from those bytes. `CapturedOutput.Bytes` holds the exact
+retained bytes; `Text` decodes them with the command's encoding. A byte tail can split a multibyte character,
+producing replacement characters in the text view. `Truncated` reports omitted bytes. `Available` reports whether
+Axial could read the channel at all.
 
 Inherited handles go directly to the child and cannot be observed, captured, or included in a tee.
 Piped intermediate channels cannot be independently captured or observed. Final stdout capture includes merged

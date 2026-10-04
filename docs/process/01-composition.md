@@ -3,8 +3,9 @@ title: Commands and composition
 description: Build immutable process specifications and connect native streams.
 ---
 
-[`cmd`](xref:M:Axial.Process.DSL.cmd) safely tokenizes an interpolated command template and returns an immutable `ProcessCommand`. Each
-interpolation hole becomes one native argument:
+A `ProcessCommand` describes a native process; it does not start one. [`cmd`](xref:M:Axial.Process.DSL.cmd) builds it from an
+interpolated template and tokenizes that template safely: each interpolation hole becomes exactly one native
+argument:
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -29,7 +30,7 @@ let stdoutOf (outcome: Exit<ProcessResult, ProcessError>) =
     | Exit.Failure cause -> failwithf "%A" cause
 ```
 
-Start with one command and execute it directly with `run`:
+`run` executes a single command directly:
 
 ```fsharp run
 match cmd $"printf hello" |> run with
@@ -37,9 +38,9 @@ match cmd $"printf hello" |> run with
 | other -> failwithf "Expected greeting, got %A" other
 ```
 
-When checking another repository, use `cwd` to run Git there. `env "GIT_OPTIONAL_LOCKS" "0"` avoids optional
-locks and index refreshes for this status check; `timeout` bounds how long the script waits. These settings are
-optional, and each returns a `ProcessCommand`:
+To check another repository, `cwd` runs Git there. `env "GIT_OPTIONAL_LOCKS" "0"` skips optional locks and index
+refreshes for a status check, and `timeout` bounds the wait. None of the settings start a process; each returns
+another `ProcessCommand`:
 
 ```fsharp
 let status (repository: string) : ProcessCommand =
@@ -49,7 +50,8 @@ let status (repository: string) : ProcessCommand =
     |> timeout (TimeSpan.FromSeconds 15.0)
 ```
 
-Apply `cwd`, `env`, `timeout`, and per-command routes before connecting stages. Qualified helpers such as
+These functions take a `ProcessCommand`, so set them before the stage is joined into a `ProcessSpec`;
+`mapFinalCommand` is the exception for the final stage. Qualified helpers such as
 [`Process.arg`](xref:M:Axial.Process.Process.arg), [`Process.secretArg`](xref:M:Axial.Process.Process.secretArg),
 [`Process.removeEnvironment`](xref:M:Axial.Process.Process.removeEnvironment),
 [`Process.encoding`](xref:M:Axial.Process.Process.encoding), and
@@ -63,8 +65,9 @@ In Bash, pipe the text into `wc -l` to count its lines:
 printf 'error one\nerror two\n' | wc -l
 ```
 
-In the DSL, `=>` connects stdout to the next command's stdin (`pipeTo` is the pipeline form). Two
-`ProcessCommand` values become a `ProcessSpec`; configure each command before joining, or use `mapFinalCommand`:
+In the DSL, `=>` is that pipe: the left command's stdout becomes the right command's stdin. Joining two
+`ProcessCommand` values produces a `ProcessSpec`. Configure each command before joining, or adjust the final one
+with `mapFinalCommand`:
 
 ```fsharp
 let countLines : ProcessSpec =
@@ -76,7 +79,7 @@ let countLines : ProcessSpec =
 countLines |> run |> stdoutOf |> _.Trim() |> shouldEqual "2"
 ```
 
-Configure downstream stages inside parentheses before connecting them:
+Parentheses let a downstream stage carry its own settings before it is connected:
 
 ```fsharp
 open Axial.Process.DSL
@@ -108,22 +111,22 @@ shoutWithFunctions "hello; world" |> Process.run |> stdoutOf |> shouldEqual "HEL
 
 ## Interpolation keeps each value in one argument
 
-Use interpolation holes for values supplied by your program. `cmd` and `Process.command` pass each whole value
-as one native argument, including spaces and characters such as `;`, `|`, and `$`. They do not run a shell or
-interpret those characters as shell syntax. The `shout` example above therefore passes `"hello; world"` to
-`printf` unchanged before piping its output into `tr`.
+Values from your program belong in interpolation holes. `cmd` and `Process.command` pass each whole value as one
+native argument, so spaces and characters such as `;`, `|`, and `$` stay literal — neither runs a shell. The
+`shout` example above passes `"hello; world"` to `printf` unchanged before piping it into `tr`.
 
 Use [`secret`](xref:M:Axial.Process.DSL.secret) when plans and diagnostics must show `***` instead of the real
-argument. Use [`cmdText`](xref:M:Axial.Process.DSL.cmdText) for fixed command text, or `Process.commandArgs`
-when arguments already exist as separate values. For shell syntax, see [scripts and shell syntax](scripts.html).
+argument. Use [`cmdText`](xref:M:Axial.Process.DSL.cmdText) for fixed command text that should not be parsed.
+For shell syntax, see [scripts and shell syntax](scripts.html).
 
-Use [`Process.commandArgs`](xref:M:Axial.Process.Process.commandArgs) when arguments already exist as a list. It has the same immutable
-specification result, without command-line parsing.
+Use [`Process.commandArgs`](xref:M:Axial.Process.Process.commandArgs) when arguments already exist as separate
+values. It skips command-line parsing and produces the same immutable command.
 
-[`Process.plan`](xref:M:Axial.Process.Process.plan) returns a redacted, serializable description without executing anything. [`Process.render`](xref:M:Axial.Process.Process.render) returns a redacted shell-like diagnostic string; it is not a shell command generator.
+[`Process.plan`](xref:M:Axial.Process.Process.plan) returns a redacted, serializable description without executing anything. [`Process.render`](xref:M:Axial.Process.Process.render) returns a redacted, shell-like diagnostic string for humans; it is not a shell command generator.
 
-Shared fallback settings belong on the topology. Explicit command settings override them; defaults also apply to
-stages connected later. `Process.plan` includes the resolved settings and their provenance.
+Settings shared by a whole pipeline belong on the topology rather than repeated per command. Explicit command
+settings override them, and defaults reach stages connected later. `Process.plan` shows the resolved settings
+and where each came from.
 
 ```fsharp
 let defaults =
@@ -141,17 +144,16 @@ let sharedPipeline : ProcessSpec =
 sharedPipeline |> run |> stdoutOf |> shouldEqual "ready"
 ```
 
-Use `mapFinalCommand` to change settings on the final command of an existing topology. It requires one
-final command and rejects executable or argument replacement. An explicitly routed stdout cannot also feed a pipe;
-configure the downstream command's route, or use a tee at a readable external channel.
+`mapFinalCommand` changes settings on the final command of an existing topology. It requires one final command and
+rejects replacing the executable or its arguments. A stdout route and a pipe are mutually exclusive: configure
+the downstream command's route, or tee to a readable external channel.
 
 For checked examples of stdin, file routes, tee, fan-in, parallel capture, and recovery, see [DSL recipes](dsl-recipes.html).
 
 ## Build from fixed text or argument lists
 
-`cmdText` parses fixed text without invoking a shell; shell operators are ordinary arguments. `pipe` accepts a
-list of interpolated command templates when a pipeline is assembled dynamically. Use `Process.commandArgs`
-when arguments already exist as individual values.
+`cmdText` parses fixed text without invoking a shell, so shell operators become ordinary arguments. `pipe` builds
+a pipeline from a list of interpolated templates when the stages are assembled dynamically.
 
 ```fsharp run
 cmdText "printf fixed" |> run |> stdoutOf |> shouldEqual "fixed"
