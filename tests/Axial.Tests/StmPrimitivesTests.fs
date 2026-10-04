@@ -1,5 +1,6 @@
 namespace Axial.Tests
 
+open System
 open Axial
 open Axial.State
 open Swensen.Unquote
@@ -52,6 +53,19 @@ module StmPrimitivesTests =
             |> Flow.runSync ()
 
         test <@ result = Exit.Success(2, 1, 2, true) @>
+
+    [<Fact>]
+    let ``TQueue rejects a non-positive capacity`` () =
+        Assert.Throws<ArgumentOutOfRangeException>(fun () -> TQueue.bounded 0 |> ignore)
+        |> ignore
+
+        Assert.Throws<ArgumentOutOfRangeException>(fun () -> TQueue.bounded -1 |> ignore)
+        |> ignore
+
+    [<Fact>]
+    let ``TSemaphore rejects negative permits`` () =
+        Assert.Throws<ArgumentOutOfRangeException>(fun () -> TSemaphore.make -1 |> ignore)
+        |> ignore
 
     [<Fact>]
     let ``bounded TQueue offer retries when full`` () =

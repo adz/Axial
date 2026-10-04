@@ -348,11 +348,16 @@ type TQueue<'a> internal (state: TRef<TQueueState<'a>>) =
 [<RequireQualifiedAccess>]
 module TQueue =
     /// <summary>Creates a transactional queue with the supplied capacity, or unbounded when <c>None</c>.</summary>
+    /// <remarks>A non-positive capacity throws <see cref="T:System.ArgumentOutOfRangeException" />.</remarks>
     let make (capacity: int option) : STM<TQueue<'a>> =
-        stm {
-            let! state = TRef.make { Items = []; Capacity = capacity }
-            return TQueue(state)
-        }
+        match capacity with
+        | Some capacity when capacity <= 0 ->
+            raise (ArgumentOutOfRangeException(nameof capacity, "Queue capacity must be positive."))
+        | _ ->
+            stm {
+                let! state = TRef.make { Items = []; Capacity = capacity }
+                return TQueue(state)
+            }
 
     /// <summary>Creates an unbounded transactional queue.</summary>
     let unbounded<'a> : STM<TQueue<'a>> = make None
@@ -409,7 +414,11 @@ type TSemaphore internal (permits: TRef<int>) =
 [<RequireQualifiedAccess>]
 module TSemaphore =
     /// <summary>Creates a transactional semaphore with the supplied initial permits.</summary>
+    /// <remarks>A negative permit count throws <see cref="T:System.ArgumentOutOfRangeException" />.</remarks>
     let make (permits: int) : STM<TSemaphore> =
+        if permits < 0 then
+            raise (ArgumentOutOfRangeException(nameof permits, "Semaphore permits must be non-negative."))
+
         stm {
             let! cell = TRef.make permits
             return TSemaphore(cell)
