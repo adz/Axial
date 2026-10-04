@@ -967,3 +967,14 @@ main:has(.axial-landing) .livedocs-repository-setup {
     font-size: 0.72rem !important;
   }
 }
+
+/* Code and transcripts wrap inside the column instead of scrolling horizontally. */
+.livedocs-code pre.code-frame,
+.livedocs-code pre.code-frame code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.livedocs-code pre.code-frame {
+  overflow-x: hidden;
+}
