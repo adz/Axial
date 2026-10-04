@@ -30,6 +30,7 @@ let dsl (env: ProcessHostEnvironment) =
     let workflow = command |> toFlow
     runWith env command, runWith env spec, runWith env workflow,
     runExitCodeWith env command, runExitCodeWith env spec, runExitCodeWith env workflow
+let pureOutcome () = Flow.succeed 42 |> Process.runWith ()
 let consumerErrors (env: ProcessHostEnvironment) =
     cmd $"true" |> streamStdoutLines |> ProcessStream.runForEachFlow(fun _ -> Flow.fail "consumer") |> runWith env
 FSHARP

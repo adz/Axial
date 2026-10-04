@@ -343,7 +343,7 @@ module ProcessServiceTests =
         test <@ result.StdOutCapture.Bytes = payload @>
 
     [<Fact>]
-    let ``output file endpoint closes a topology into a flow`` () =
+    let ``output file endpoint configures a command before explicit execution`` () =
         let path = Path.GetTempFileName()
         try
             let result = cmd $"printf %%s written" |> captureNothing => Output.file path |> toFlow |> run
@@ -418,7 +418,7 @@ module ProcessServiceTests =
     [<Fact>]
     let ``parallel capture preserves command order`` () =
         let results =
-            [ cmd $"printf %%s first" |> Process.ofCommand; cmd $"printf %%s second" |> Process.ofCommand; cmd $"printf %%s third" |> Process.ofCommand ]
+            [ cmd $"printf %%s first"; cmd $"printf %%s second"; cmd $"printf %%s third" ]
             |> captureParallel 2
             |> run
 

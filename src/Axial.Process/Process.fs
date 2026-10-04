@@ -55,7 +55,7 @@ type OutputTarget =
     | Callback of write: (byte array -> Async<unit>)
     | Sink of write: (byte array -> Async<unit>) * complete: (unit -> Async<unit>)
     | Tee of OutputTarget list
-    | SinkFactory of create: (unit -> OutputTarget)
+    | SinkFactory of create: (unit -> (byte array -> Async<unit>) * (unit -> Async<unit>))
 
     /// The target kind, rendered without reflection so it stays safe under NativeAOT.
     override this.ToString() =
@@ -699,7 +699,7 @@ module Process =
         let prior = specification.Commands[final]
         let (ProcessCommand updated) = transform (ProcessCommand prior)
         if updated.FileName <> prior.FileName || updated.Arguments <> prior.Arguments then invalidArg "transform" "The final command's executable and arguments cannot be replaced."
-        { specification with Commands = specification.Commands |> List.mapi (fun i c -> if i = final then updated else c) }
+        { specification with Commands = specification.Commands |> List.mapi (fun i c -> if i = final then {updated with RedactedArguments=Map.fold (fun state key value -> Map.add key value state) updated.RedactedArguments prior.RedactedArguments} else c) }
         |> Configuration.validate
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let connect both (next: ProcessSpec) (source: ProcessSpec) =
@@ -779,6 +779,13 @@ module Process =
     let planSpecification (specification: ProcessSpec): ProcessPlan =
         let stages = specification.Commands |> List.mapi (fun i original ->
             let resolved = Configuration.resolve specification original
+            let outgoing = specification.Connections |> List.filter(fun (source,_,_) -> source=i)
+            let incoming = specification.Connections |> List.filter(fun (_,target,_) -> target=i)
+            let pipedOutput = not outgoing.IsEmpty
+            let pipedError = outgoing |> List.exists(fun (_,_,both)->both)
+            let mergedError = specification.MergeStdErr && specification.Leaves.Contains i
+            let destinations = outgoing |> List.map(fun (_,target,_)->string target) |> String.concat ","
+            let sources = incoming |> List.map(fun (source,_,_)->string source) |> String.concat ","
             let provenance name explicit defaults = name, if explicit then "command" elif defaults then "stageDefaults" else "execution default"
             { Stage = i; Command = Configuration.renderCommand original
               WorkingDirectory = resolved.WorkingDirectory; Environment = resolved.Environment
@@ -790,8 +797,11 @@ module Process =
                   resolved.Encoding.Value.WebName
 #endif
               ; SuccessCodes = resolved.SuccessCodes.Value; Timeout = resolved.Timeout.Value
-              StdIn = describeInput resolved.StdIn.Value; StdOut = describeTarget resolved.StdOut.Value; StdErr = describeTarget resolved.StdErr.Value
-              StdOutCapture = resolved.StdOutCapture.Value; StdErrCapture = resolved.StdErrCapture.Value
+              StdIn = if incoming.IsEmpty then describeInput resolved.StdIn.Value else "pipe from stages " + sources
+              StdOut = if pipedOutput then "pipe to stages " + destinations else describeTarget resolved.StdOut.Value
+              StdErr = if pipedError then "pipe to stages " + destinations elif mergedError then "merged into stdout" else describeTarget resolved.StdErr.Value
+              StdOutCapture = if pipedOutput then OutputRetention.Nothing else resolved.StdOutCapture.Value
+              StdErrCapture = if pipedError || mergedError then OutputRetention.Nothing else resolved.StdErrCapture.Value
               Provenance = Map.ofList ([provenance "stdin" original.StdIn.IsSome false;
                                         provenance "stdout" original.StdOut.IsSome false;
                                         provenance "stderr" original.StdErr.IsSome false;
@@ -802,7 +812,14 @@ module Process =
                                        provenance "stdoutCapture" original.StdOutCapture.IsSome specification.Defaults.StdOutCapture.IsSome;
                                        provenance "stderrCapture" original.StdErrCapture.IsSome specification.Defaults.StdErrCapture.IsSome]
                                        @ [for KeyValue(key,_) in resolved.Environment do
-                                            yield provenance ("environment."+key) (original.Environment.ContainsKey key) (specification.Defaults.Environment.ContainsKey key)]) })
+                                            yield provenance ("environment."+key) (original.Environment.ContainsKey key) (specification.Defaults.Environment.ContainsKey key)]
+                                       @ [if not incoming.IsEmpty then yield "stdin","pipe"
+                                          if pipedOutput then
+                                              yield "stdout","pipe"
+                                              yield "stdoutCapture","unavailable: pipe"
+                                          if pipedError || mergedError then
+                                              yield "stderr",(if pipedError then "pipe" else "mergeStderr")
+                                              yield "stderrCapture","unavailable: connected channel"]) })
         { Commands = stages |> List.map _.Command; Stages = stages; Connections = specification.Connections
           MergeStdErr = specification.MergeStdErr; Framing = specification.Framing; MaxLineLength = specification.MaxLineLength
           OverallTimeout = specification.OverallTimeout; DrainTimeout = specification.DrainTimeout }
@@ -946,7 +963,9 @@ module Process =
         proc.WaitForExitAsync(token)
 #endif
     let rec private instantiate = function
-        | OutputTarget.SinkFactory create -> instantiate (create())
+        | OutputTarget.SinkFactory create ->
+            let write,finish = create()
+            OutputTarget.Sink(write,finish)
         | OutputTarget.Tee targets -> OutputTarget.Tee(List.map instantiate targets)
         | target -> target
 
@@ -1002,7 +1021,10 @@ module Process =
                         let processes = ResizeArray<Diagnostics.Process>()
                         let starts = ResizeArray<DateTimeOffset>()
                         let elapsedStarts = ResizeArray<TimeSpan>()
-                        let ends = Array.create commands.Length None
+                        let exitTasks = ResizeArray<Task<unit>>()
+                        let launchComplete = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                        use launchRegistration = token.Register(fun () -> launchComplete.TrySetCanceled(token) |> ignore)
+                        let elapsedEnds = Array.create commands.Length None
                         let errorGate = obj()
                         let mutable firstFailure: exn option = None
                         let files = Dictionary<string * bool,FileStream>()
@@ -1018,6 +1040,7 @@ module Process =
                             let available = not(inherited c.StdErr.Value) && not(specification.Connections |> List.exists(fun (source,_,both)->source=i && both)) && not(specification.MergeStdErr && specification.Leaves.Contains i)
                             new CaptureBuffer((if available then c.StdErrCapture.Value else OutputRetention.Nothing),available))
                         let startedAt = clock.UtcNow()
+                        let startedElapsed = clock.Elapsed()
                         let terminate () =
                             for proc in lock processes (fun () -> processes.ToArray()) do
                                 try
@@ -1038,18 +1061,39 @@ module Process =
                             (task {
                                 try return! work
                                 with error ->
-                                    if not cancellationToken.IsCancellationRequested then recordFailure error
+                                    if not token.IsCancellationRequested then recordFailure error
                                     return raise error // axial-allow-raise
                             })
+                        let monitor i (command: CommandDefinition) =
+                            (task {
+                                let wait = waitForExit processes[i] token
+                                match command.Timeout.Value with
+                                | Some after ->
+                                    use timerCancellation = CancellationTokenSource.CreateLinkedTokenSource(token)
+                                    let remaining = max TimeSpan.Zero (after-(clock.Elapsed()-elapsedStarts[i]))
+                                    let timer = clock.Sleep(remaining,timerCancellation.Token)
+                                    try
+                                        let! winner = Task.WhenAny(wait,timer)
+                                        if obj.ReferenceEquals(winner,timer) && not wait.IsCompleted then
+                                            do! timer
+                                            raise(ProcessFailureException(ProcessError.StageTimedOut {Stage=i;Command=Configuration.renderCommand command;Timeout=after})) // axial-allow-raise
+                                        do! wait
+                                    finally timerCancellation.Cancel()
+                                | None -> do! wait
+                                elapsedEnds[i] <- Some(clock.Elapsed())
+                                if not(command.SuccessCodes.Value.Contains processes[i].ExitCode) then
+                                    do! launchComplete.Task
+                                    recordFailure(StageExitException i)
+                                return ()
+                            }) |> supervise
                         let buildResult () =
                             let final = Set.minElement specification.Leaves
                             let stages = commands |> Array.mapi(fun i command ->
-                                let ended = ends[i] |> Option.defaultValue(clock.UtcNow())
                                 let exitCode = if i < processes.Count && processes[i].HasExited then processes[i].ExitCode else -1
                                 {Stage=i; Command=Configuration.renderCommand command; ExitCode=exitCode
                                  Succeeded=command.SuccessCodes.Value.Contains exitCode
                                  StartedAt=(if i<starts.Count then starts[i] else startedAt)
-                                 Duration=(if i<starts.Count then ended-starts[i] else TimeSpan.Zero)
+                                 Duration=(if i<elapsedStarts.Count then (defaultArg elapsedEnds[i] (clock.Elapsed()))-elapsedStarts[i] else TimeSpan.Zero)
                                  StdOutCapture=stdout[i].Finish command.Encoding.Value
                                  StdErrCapture=stderr[i].Finish command.Encoding.Value}) |> Array.toList
                             let contributors = stages |> List.filter(fun stage ->
@@ -1069,11 +1113,10 @@ module Process =
                                 Truncated=(not full && allBytes>65536) || (contributors |> List.exists(fun stage->stage.StdErrCapture.Truncated))
                                 Available=contributors |> List.forall(fun stage->stage.StdErrCapture.Available) }
                             let outputCapture = stages[final].StdOutCapture
-                            let ended = ends |> Array.choose id |> fun times -> if times.Length=0 then clock.UtcNow() else Array.max times
                             {ExitCode=stages[final].ExitCode; ExitCodes=stages |> List.map _.ExitCode
                              StdOut=outputCapture.Text; StdErr=errorCapture.Text
                              StdOutCapture=outputCapture; StdErrCapture=errorCapture; Stages=stages
-                             StartedAt=startedAt; Duration=ended-startedAt}
+                             StartedAt=startedAt; Duration=clock.Elapsed()-startedElapsed}
                         try
                             try
                                 Array.iter (openTargets fileSystem files) stdoutTargets
@@ -1088,15 +1131,19 @@ module Process =
                                     let redirectInput = not(isRoot && (match command.StdIn.Value with InputSource.Inherit -> true | _ -> false))
                                     let redirectOutput = pipedOut || not(inherited stdoutTargets[i])
                                     let redirectError = pipedError || not(inherited(if merged then stdoutTargets[i] else stderrTargets[i]))
-                                    let proc = new Diagnostics.Process(StartInfo=startInfo redirectInput redirectOutput redirectError command)
+                                    let proc =
+                                        try new Diagnostics.Process(StartInfo=startInfo redirectInput redirectOutput redirectError command)
+                                        with error ->
+                                            raise(ProcessFailureException(ProcessError.StartFailed {Command=Configuration.renderCommand command;Message=error.Message})) // axial-allow-raise
                                     try
                                         if not(proc.Start()) then raise(Exception $"Could not start {command.FileName}.") // axial-allow-effect: process // axial-allow-raise
                                     with error ->
                                         proc.Dispose()
-                                        raise error // axial-allow-raise
+                                        raise(ProcessFailureException(ProcessError.StartFailed {Command=Configuration.renderCommand command;Message=error.Message})) // axial-allow-raise
                                     lock processes (fun () -> processes.Add proc)
                                     starts.Add(clock.UtcNow())
                                     elapsedStarts.Add(clock.Elapsed())
+                                    exitTasks.Add(monitor i command)
                                 let copies = specification.Connections |> List.groupBy(fun (_,target,_)->target) |> List.map(fun (target,connections)->
                                     (task {
                                         use gate = new SemaphoreSlim(1,1)
@@ -1231,27 +1278,8 @@ module Process =
                                         let merged = specification.MergeStdErr && i=final
                                         let target = if merged then stdoutTargets[i] else stderrTargets[i]
                                         if not(inherited target) then reads.Add(read i OutputChannel.StdErr (if merged then OutputChannel.StdOut else OutputChannel.StdErr) target (if merged then stdout[i] else stderr[i]) processes[i].StandardError.BaseStream)
-                                let exits = commands |> Array.mapi(fun i (command: CommandDefinition) ->
-                                    (task {
-                                        let wait = waitForExit processes[i] token
-                                        match command.Timeout.Value with
-                                        | Some after ->
-                                            use timerCancellation = CancellationTokenSource.CreateLinkedTokenSource(token)
-                                            let remaining = max TimeSpan.Zero (after-(clock.Elapsed()-elapsedStarts[i]))
-                                            let timer = clock.Sleep(remaining,timerCancellation.Token)
-                                            try
-                                                let! winner = Task.WhenAny(wait,timer)
-                                                if obj.ReferenceEquals(winner,timer) && not wait.IsCompleted then
-                                                    do! timer
-                                                    raise(ProcessFailureException(ProcessError.StageTimedOut {Stage=i;Command=Configuration.renderCommand command;Timeout=after})) // axial-allow-raise
-                                                do! wait
-                                            finally timerCancellation.Cancel()
-                                        | None -> do! wait
-                                        ends[i] <- Some(clock.UtcNow())
-                                        if not(command.SuccessCodes.Value.Contains processes[i].ExitCode) then
-                                            recordFailure(StageExitException i)
-                                        return ()
-                                    }) |> supervise)
+                                launchComplete.TrySetResult() |> ignore
+                                let exits = exitTasks.ToArray()
                                 let io =
                                     (task {
                                         do! Task.WhenAll(Array.concat [copies;inputs;reads.ToArray()])
@@ -1266,7 +1294,9 @@ module Process =
                                         match specification.DrainTimeout with
                                         | Some after when not io.IsCompleted ->
                                             use timerCancellation = CancellationTokenSource.CreateLinkedTokenSource(token)
-                                            let timer = clock.Sleep(after,timerCancellation.Token)
+                                            let allEnded = elapsedEnds |> Array.choose id |> Array.max
+                                            let remaining = max TimeSpan.Zero (after-(clock.Elapsed()-allEnded))
+                                            let timer = clock.Sleep(remaining,timerCancellation.Token)
                                             try
                                                 let! winner = Task.WhenAny(io :> Task,timer)
                                                 if obj.ReferenceEquals(winner,timer) && not io.IsCompleted then
@@ -1280,23 +1310,27 @@ module Process =
                                 | Some error -> return raise error // axial-allow-raise
                                 | None -> return Choice1Of3(buildResult())
                             with
-                            | :? OperationCanceledException when cancellationToken.IsCancellationRequested -> return! Task.FromCanceled<_>(cancellationToken)
                             | error ->
+                                let original = lock errorGate (fun () -> defaultArg firstFailure error)
+                                ioCancellation.Cancel()
                                 terminate()
                                 for proc in processes do
                                     try proc.WaitForExit() with _ -> ()
-                                let original = lock errorGate (fun () -> defaultArg firstFailure error)
+                                try
+                                    let! _ = Task.WhenAll(exitTasks.ToArray())
+                                    ()
+                                with _ -> ()
                                 match original with
+                                | :? OperationCanceledException when cancellationToken.IsCancellationRequested -> return! Task.FromCanceled<_>(cancellationToken)
                                 | :? ObserverDefectException as defect -> return Choice3Of3 defect.InnerException
                                 | :? ProcessFailureException as failure -> return Choice2Of3 failure.Error
                                 | :? StageExitException as failure ->
                                     let result = buildResult()
                                     return Choice2Of3(ProcessError.StageFailed {Stage=result.Stages[failure.Stage];Result=result})
-                                | _ when processes.Count<commands.Length ->
-                                    return Choice2Of3(ProcessError.StartFailed {Command=Configuration.renderCommand commands[processes.Count];Message=original.Message})
                                 | :? OperationCanceledException -> return Choice3Of3 original
                                 | _ -> return Choice2Of3(ProcessError.IoFailed {Message=original.Message})
                         finally
+                            ioCancellation.Cancel()
                             terminate()
                             for proc in processes do
                                 try proc.WaitForExit() with _ -> ()
@@ -1581,7 +1615,8 @@ module DSL =
     let inline runExitCode source = Process.runExitCode source
     let inline runExitCodeWith environment source = Process.runExitCodeWith environment source
 #endif
-    let captureParallel maximumConcurrency commands =
+    [<EditorBrowsable(EditorBrowsableState.Never)>]
+    let captureParallelSpecifications maximumConcurrency commands =
         if maximumConcurrency<=0 then invalidArg "maximumConcurrency" "Concurrency must be positive."
         let runBatch batch =
             batch |> List.map(fun specification -> Process.toFlowSpecification specification |> Flow.map List.singleton)
@@ -1589,6 +1624,9 @@ module DSL =
                 | [] -> Flow.ok []
                 | first::rest -> rest |> List.fold(fun prior next -> Flow.zipPar prior next |> Flow.map(fun (left,right)->left@right)) first
         commands |> Seq.toList |> List.chunkBySize maximumConcurrency |> List.map runBatch |> Flow.sequence |> Flow.map List.concat
+    /// Captures independent commands or specs with bounded workflow concurrency, preserving input order.
+    let inline captureParallel maximumConcurrency commands =
+        commands |> Seq.map Process.toSpecification |> captureParallelSpecifications maximumConcurrency
     [<RequireQualifiedAccess>]
     module Input =
         /// Supplies no bytes and closes stdin.
@@ -1653,7 +1691,7 @@ module DSL =
         let textWriter (encoding: Encoding) (target: TextWriter) =
             OutputTarget.SinkFactory(fun () ->
               let decoder = encoding.GetDecoder()
-              OutputTarget.Sink(
+              (
                 (fun bytes -> async {
                     let chars = Array.zeroCreate<char> (encoding.GetMaxCharCount bytes.Length)
                     let count = decoder.GetChars(bytes, 0, bytes.Length, chars, 0, false)

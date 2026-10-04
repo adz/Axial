@@ -193,6 +193,9 @@ module ProcessStreamingTests =
         let producer = shText "head -c 70000 /dev/zero >&2; printf ready"
         let second = shText "cat >/dev/null; head -c 70000 /dev/zero >&2; printf ready"
         let result = producer => second => cmd $"cat" |> Process.run |> succeeded
+        let plan = producer => second => cmd $"cat" |> Process.plan
+        Assert.Equal(OutputRetention.Nothing,plan.Stages[0].StdOutCapture)
+        Assert.Equal("pipe",plan.Stages[0].Provenance["stdout"])
         Assert.Equal(65536,result.StdErrCapture.Bytes.Length)
         Assert.True(result.StdErrTruncated)
         Assert.False(result.Stages[0].StdOutCapture.Available)
@@ -212,6 +215,12 @@ module ProcessStreamingTests =
         let configured = specification |> Process.mapFinalCommand(Process.captureTail 2)
         let result = configured |> Process.run |> succeeded
         Assert.Equal("lo",result.StdOut)
+        let token = secret "token"
+        let sensitive = cmd $"true" => cmd $"printf %%s {token}"
+        let reconstructed = sensitive |> Process.mapFinalCommand(fun _ -> Process.commandArgs "printf" ["%s";"token"])
+        let rendered = Process.render reconstructed
+        Assert.DoesNotContain("token",rendered)
+        Assert.Contains("***",rendered)
         use writer = new System.IO.StringWriter()
         let command = Process.commandArgs "printf" ["€"] |> stdoutTo(Output.textWriter Encoding.UTF8 writer)
         for _ in 1..2 do command |> Process.run |> succeeded |> ignore
@@ -268,3 +277,41 @@ module ProcessStreamingTests =
         finally
             System.IO.File.Delete path
             System.IO.File.Delete diagnosticPath
+
+    [<Fact>]
+    let ``stage deadline is registered immediately after its own launch`` () = task {
+        use cancellation = new System.Threading.CancellationTokenSource()
+        let registered = System.Threading.Tasks.TaskCompletionSource<int>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
+        let mutable utcReads = 0
+        let clock =
+            {new IClock with
+                member _.UtcNow() =
+                    System.Threading.Interlocked.Increment(&utcReads) |> ignore
+                    DateTimeOffset.UnixEpoch
+                member _.Elapsed() = TimeSpan.Zero
+                member _.Sleep(_,token) =
+                    registered.TrySetResult(utcReads) |> ignore
+                    System.Threading.Tasks.Task.Delay(System.Threading.Timeout.Infinite,token)}
+        let processService = Process.live clock Axial.FileSystem.FileSystem.live Axial.Console.Console.live
+        let host = ProcessHostEnvironment.ofParts processService Axial.Console.Console.live clock
+        let running =
+            (cmd $"sleep 30" |> timeout(TimeSpan.FromSeconds 5.)) => cmd $"cat"
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(host,cancellation.Token)
+        try
+            let! readsAtRegistration = registered.Task.WaitAsync(TimeSpan.FromSeconds 3.)
+            Assert.Equal(2,readsAtRegistration)
+        finally cancellation.Cancel()
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.)
+        match outcome with
+        | Exit.Failure Cause.Interrupt -> ()
+        | other -> failwithf "Expected caller cancellation, got %A" other
+    }
+
+    [<Fact>]
+    let ``file routing failures before launch stay in the IO error channel`` () =
+        let missing = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "axial-missing-"+System.Guid.NewGuid().ToString("N"), "output")
+        let outcome = cmd $"true" |> stdoutToFile missing |> Process.run
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessError.IoFailed _)) -> ()
+        | other -> failwithf "Expected route IO failure, got %A" other

@@ -68,7 +68,8 @@ pipeline |> Process.mapFinalCommand (Process.stdoutToFile "build.log")
 
 `mapFinalCommand : (ProcessCommand -> ProcessCommand) -> ProcessSpec -> ProcessSpec` requires exactly
 one final command. Reject ambiguous topologies with invalidArg and validate connection conflicts
-again after transformation. The transform changes settings, not command identity or graph shape.
+again after transformation. The transform changes settings, not command identity or graph shape. Preserve existing argument
+redaction metadata even if the transform reconstructs an equivalent command.
 
 Execution, streaming, inspection, capture helpers, and applicable topology-setting boundaries accept
 either ProcessCommand or ProcessSpec through static adaptation, in both qualified and DSL APIs.
@@ -279,7 +280,8 @@ if the final stage exits zero. On failure StageFailed carries the failing stage 
 The singular code is never an invented aggregate code. Retain this typed-failure policy rather than
 turning unsuccessful exits into implicit successful values.
 
-ProcessResult retains exit codes, timings, and stages. StdOut and StdOutCapture describe final
+ProcessResult retains exit codes, timings, and stages. Durations use the injected monotonic clock:
+stage durations end at native exit, and the result duration includes drain and awaited callbacks. StdOut and StdOutCapture describe final
 effective stdout. StdErr and StdErrCapture are explicitly separate diagnostic/captured stderr,
 never concatenated into StdOut without mergeStderr. Stage results expose per-channel capture and
 truncation. Aggregate stderr is a separate 64 KiB tail by default; when every contributing channel

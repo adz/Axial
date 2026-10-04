@@ -108,7 +108,23 @@ let main _ =
         expect "HttpError" ((HttpError.InvalidRequest "bad").ToString()) "Invalid HTTP request: bad"
         expect "FileSystemError" ((FileSystemError.FileNotFound "/x").ToString()) "File not found: /x"
         expect "EnvironmentVariableError" ((EnvironmentVariableError.MissingVariable "HOME").ToString()) "Missing required environment variable 'HOME'."
-        expect "OutputTarget" ((OutputTarget.Tee [ OutputTarget.Capture; OutputTarget.File "log" ]).ToString()) "Tee(Capture, File log)")
+        expect "OutputTarget" ((OutputTarget.Tee [ OutputTarget.Discard; OutputTarget.File "log" ]).ToString()) "Tee(Discard, File log)")
+
+    guarded "process capture and streaming" (fun () ->
+        let command = Process.commandArgs "printf" ["first\nsecond\n"]
+        let checkResult (outcome: Exit<ProcessResult,ProcessError>) =
+            match outcome with
+            | Exit.Success result -> expect "process stdout" result.StdOut "first\nsecond\n"
+            | Exit.Failure cause -> failwith(cause.ToString())
+        Process.run command |> checkResult
+        command |> Process.pipe (Process.commandArgs "cat" []) |> Process.run |> checkResult
+        command |> Process.toFlow |> Process.run |> checkResult
+        let completion = command |> Process.streamStdoutLines |> ProcessStream.runCollect |> Process.run
+        match completion with
+        | Exit.Success (["first";"second"],ProcessCompletion.Completed result) -> expect "stream exit" (string result.ExitCode) "0"
+        | _ -> failwith "Process stream did not complete"
+        let integer = Process.commandArgs "true" [] |> Process.runExitCode
+        expect "integer runner" (string integer) "0")
 
     if failures = 0 then
         printfn "AOT probe passed."
