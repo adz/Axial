@@ -31,7 +31,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="ProcessTypes.fs" />
+    <Compile Include="ProcessInfrastructure.fs" />
+    <Compile Include="ProcessLive.fs" />
     <Compile Include="Process.fs" />
+    <Compile Include="ProcessStream.fs" />
+    <Compile Include="ProcessDsl.fs" />
   </ItemGroup>
 
 </Project>

@@ -11,13 +11,13 @@ open Axial.HttpClient
 /// A user error type with its own rendering, as AOT-safe applications write them.
 type ProbeError =
     | Rejected of int
+
     override this.ToString() =
         match this with
         | Rejected code -> $"Rejected {code}"
 
 /// A user error type without its own rendering: its generated ToString needs reflection that AOT removes.
-type PlainError =
-    | Refused of int
+type PlainError = Refused of int
 
 let mutable failures = 0
 
@@ -45,18 +45,40 @@ let guarded (name: string) (check: unit -> unit) =
 [<EntryPoint>]
 let main _ =
     guarded "flow result" (fun () ->
-        let exit = (Flow.succeed 21 |> Flow.map ((*) 2)).StartAsTask(()).GetAwaiter().GetResult()
+        let exit =
+            (Flow.succeed 21 |> Flow.map ((*) 2)).StartAsTask(()).GetAwaiter().GetResult()
+
         expect "flow result" (exit.ToString()) "Success(42)")
 
     guarded "outcome rendering" (fun () ->
-        let failed: Exit<int, ProbeError> = Exit.Failure(Cause.Then(Cause.Fail(Rejected 7), Cause.Both(Cause.Interrupt, Cause.Traced(Cause.Die(InvalidOperationException "boom"), "trace"))))
-        expect "Exit.ToString" (failed.ToString()) "Failure(Then(Fail(Rejected 7), Both(Interrupt, Traced(Die(InvalidOperationException: boom), trace))))"
-        expectContains "Cause.prettyPrint" (Cause.prettyPrint (fun (error: ProbeError) -> error.ToString()) (Cause.Both(Cause.Fail(Rejected 1), Cause.Interrupt))) "Fail(Rejected 1)"
+        let failed: Exit<int, ProbeError> =
+            Exit.Failure(
+                Cause.Then(
+                    Cause.Fail(Rejected 7),
+                    Cause.Both(Cause.Interrupt, Cause.Traced(Cause.Die(InvalidOperationException "boom"), "trace"))
+                )
+            )
+
+        expect
+            "Exit.ToString"
+            (failed.ToString())
+            "Failure(Then(Fail(Rejected 7), Both(Interrupt, Traced(Die(InvalidOperationException: boom), trace))))"
+
+        expectContains
+            "Cause.prettyPrint"
+            (Cause.prettyPrint
+                (fun (error: ProbeError) -> error.ToString())
+                (Cause.Both(Cause.Fail(Rejected 1), Cause.Interrupt)))
+            "Fail(Rejected 1)"
+
         expect "Exit string payload" ((Exit<string, ProbeError>.Success "x").ToString()) "Success(\"x\")"
         let plain: Exit<int, PlainError> = Exit.Failure(Cause.Fail(Refused 3))
         let rendered = plain.ToString()
         // Under the JIT the generated ToString works; under NativeAOT it falls back to the type name instead of throwing.
-        if rendered <> "Failure(Fail(<PlainError>))" && rendered <> "Failure(Fail(Refused 3))" then
+        if
+            rendered <> "Failure(Fail(<PlainError>))"
+            && rendered <> "Failure(Fail(Refused 3))"
+        then
             failures <- failures + 1
             eprintfn "FAIL Exit.ToString without own ToString: got <%s>" rendered
         else
@@ -64,7 +86,9 @@ let main _ =
 
     guarded "Exit.toResult composite" (fun () ->
         try
-            Exit.toResult (Exit<int, ProbeError>.Failure(Cause.Then(Cause.Fail(Rejected 1), Cause.Fail(Rejected 2)))) |> ignore
+            Exit.toResult (Exit<int, ProbeError>.Failure(Cause.Then(Cause.Fail(Rejected 1), Cause.Fail(Rejected 2))))
+            |> ignore
+
             failures <- failures + 1
             eprintfn "FAIL Exit.toResult composite: expected an exception"
         with :? InvalidOperationException as error ->
@@ -74,57 +98,100 @@ let main _ =
         expect "FiberStatus" (FiberStatus.Interrupted.ToString()) "Interrupted"
         expect "FiberId" ((FiberId 5L).ToString()) "#5"
         let registry = FiberRegistry()
+
         let workflow: Flow<ClockEnvironment, ProbeError, string> =
             flow {
                 let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
-                let! fiber = Flow.forkNamed "probe child" (Flow.sleep (TimeSpan.FromMilliseconds 200.0))
+
+                let! fiber =
+                    Flow.forkNamed "probe child" (Flow.sleep (TimeSpan.FromMilliseconds 200.0))
+
                 let dump = registry.DumpAt(clock)
-                let snapshot = registry.Snapshot() |> List.map (fun dump -> dump.ToString()) |> String.concat "\n"
+
+                let snapshot =
+                    registry.Snapshot()
+                    |> List.map (fun dump -> dump.ToString())
+                    |> String.concat "\n"
+
                 do! Fiber.join fiber
                 return dump + "\n" + snapshot
             }
             |> Flow.withFiberRegistry registry
+
         match workflow.StartAsTask(ClockEnvironment(Clock.live)).GetAwaiter().GetResult() with
-        | Exit.Success text ->
-            expectContains "FiberRegistry.DumpAt" text "\"probe child\" Running"
+        | Exit.Success text -> expectContains "FiberRegistry.DumpAt" text "\"probe child\" Running"
         | other -> expect "fiber diagnostics exit" (other.ToString()) "Success")
 
     guarded "stack safety" (fun () ->
         let workflow: Flow<unit, ProbeError, int> =
             flow {
                 let mutable count = 0
+
                 while count < 200_000 do
                     do! Flow.succeed ()
                     count <- count + 1
+
                 return count
             }
-        expect "200k synchronous loop" ((workflow.StartAsTask(()).GetAwaiter().GetResult()).ToString()) "Success(200000)")
+
+        expect
+            "200k synchronous loop"
+            ((workflow.StartAsTask(()).GetAwaiter().GetResult()).ToString())
+            "Success(200000)")
 
     guarded "library type rendering" (fun () ->
         expect "LogLevel" (LogLevel.Warning.ToString()) "Warning"
         expect "StreamStep" ((StreamStep<int, ProbeError>.Done).ToString()) "Done"
         expect "AttributeValue" ((Axial.Telemetry.AttributeValue.IntegerValues [ 1L; 2L ]).ToString()) "[1; 2]"
-        expect "ProcessError" ((ProcessError.StartFailed { Command = "git"; Message = "missing" }).ToString()) "Could not start 'git': missing"
+
+        expect
+            "ProcessError"
+            ((ProcessError.StartFailed { Command = "git"; Message = "missing" }).ToString())
+            "Could not start 'git': missing"
+
         expect "HttpError" ((HttpError.InvalidRequest "bad").ToString()) "Invalid HTTP request: bad"
         expect "FileSystemError" ((FileSystemError.FileNotFound "/x").ToString()) "File not found: /x"
-        expect "EnvironmentVariableError" ((EnvironmentVariableError.MissingVariable "HOME").ToString()) "Missing required environment variable 'HOME'."
-        expect "OutputTarget" ((OutputTarget.Tee [ OutputTarget.Discard; OutputTarget.File "log" ]).ToString()) "Tee(Discard, File log)")
+
+        expect
+            "EnvironmentVariableError"
+            ((EnvironmentVariableError.MissingVariable "HOME").ToString())
+            "Missing required environment variable 'HOME'."
+
+        expect
+            "OutputTarget"
+            ((OutputTarget.Tee [ OutputTarget.Discard; OutputTarget.File "log" ]).ToString())
+            "Tee(Discard, File log)")
 
     guarded "process capture and streaming" (fun () ->
-        let command = Process.commandArgs "printf" ["first\nsecond\n"]
-        let checkResult (outcome: Exit<ProcessResult,ProcessError>) =
+        let command = Process.commandArgs "printf" [ "first\nsecond\n" ]
+
+        let checkResult (outcome: Exit<ProcessResult, ProcessError>) =
             match outcome with
             | Exit.Success result -> expect "process stdout" result.StdOut "first\nsecond\n"
-            | Exit.Failure cause -> failwith(cause.ToString())
-        Process.run command |> checkResult
-        command |> Process.pipe (Process.commandArgs "cat" []) |> Process.run |> checkResult
-        command |> Process.toFlow |> Process.run |> checkResult
-        let completion = command |> Process.streamStdoutLines |> ProcessStream.runCollect |> Process.run
+            | Exit.Failure cause -> failwith (cause.ToString())
+
+        Process.tryRun command |> checkResult
+
+        command
+        |> Process.pipe (Process.commandArgs "cat" [])
+        |> Process.tryRun
+        |> checkResult
+
+        command |> Process.toFlow |> Process.tryRun |> checkResult
+
+        let completion =
+            command
+            |> Process.streamStdoutLines
+            |> ProcessStream.runCollect
+            |> Process.tryRun
+
         match completion with
-        | Exit.Success (["first";"second"],ProcessCompletion.Completed result) -> expect "stream exit" (string result.ExitCode) "0"
+        | Exit.Success([ "first"; "second" ], ProcessCompletion.Completed result) ->
+            expect "stream exit" (string result.ExitCode) "0"
         | _ -> failwith "Process stream did not complete"
-        let integer = Process.commandArgs "true" [] |> Process.runExitCode
-        expect "integer runner" (string integer) "0")
+
+        let result = Process.commandArgs "true" [] |> Process.run
+        expect "value runner" (string result.ExitCode) "0")
 
     if failures = 0 then
         printfn "AOT probe passed."
