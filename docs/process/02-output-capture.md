@@ -9,9 +9,8 @@ console — that takes an explicit route.
 
 | Execution boundary | Default forwarding | Stdout retention | Unmerged stderr retention |
 | --- | --- | --- | --- |
-| `toFlow`, direct `run` / `runWith` | None | All | 64 KiB tail |
+| `toFlow`, direct `Process.tryRun` / `Process.run` | None | All | 64 KiB tail |
 | `stream*` constructors | None | 64 KiB tail | 64 KiB tail |
-| Direct `runExitCode` / `runExitCodeWith` | Console | Nothing | 64 KiB tail |
 
 Explicit settings override these defaults. Runners applied to an existing Flow preserve its configured policies.
 
@@ -34,19 +33,17 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let inspect () : Exit<ProcessResult, ProcessError> =
-    cmd $"printf 'status: ok'" |> run
+let inspect () : ProcessResult =
+    cmd $"printf 'status: ok'" |> Process.run
 ```
 
 ```fsharp run
-match inspect () with
-| Exit.Success result ->
-    shouldEqual "status: ok" result.StdOut
-    shouldEqual 10 result.StdOutCapture.Bytes.Length
-| other -> failwithf "Expected captured output, got %A" other
+let result = inspect ()
+shouldEqual "status: ok" result.StdOut
+shouldEqual 10 result.StdOutCapture.Bytes.Length
 ```
 
-`run` returns `Exit<ProcessResult, ProcessError>`. Within a successful `ProcessResult`, `StdOutCapture` and
+`Process.run` returns `ProcessResult`. In that result, `StdOutCapture` and
 `StdErrCapture` are `CapturedOutput` values: retained `Bytes`, decoded `Text`, `Truncated`, and `Available`.
 
 ## Choose retention independently of routing
@@ -70,11 +67,9 @@ To check console routing without writing to the terminal, supply a test console 
 
 ```fsharp run
 let consoleEnvironment = ProcessHostEnvironment.liveWithConsole (Console.test())
-match diagnose |> runWith consoleEnvironment with
-| Exit.Success result ->
-    shouldEqual "stics" result.StdOut
-    shouldEqual true result.StdOutTruncated
-| other -> failwithf "Expected captured console output, got %A" other
+let diagnosed = diagnose |> Process.runWith consoleEnvironment
+shouldEqual "stics" diagnosed.StdOut
+shouldEqual true diagnosed.StdOutTruncated
 ```
 
 When the exit status is all you need, `captureNothing` drops stdout retention. It does not drop the stderr

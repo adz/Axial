@@ -11,8 +11,8 @@ returns the consumed value together with process completion. Stderr stays separa
 
 `ProcessStream<'env, 'value>` is the stream **type**; the `ProcessStream` **module** holds the functions that
 operate on it: `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. This mirrors the `Flow` type and
-its `Flow` module. A stream terminal returns a Flow, which a script executes with the DSL `run` helper or an
-application binds with `let!` inside the enclosing Flow. A `ProcessStream` cannot be passed to `run` directly.
+its `Flow` module. A stream terminal returns a Flow, which a script executes with `Process.run` or an
+application binds with `let!` inside the enclosing Flow. A `ProcessStream` cannot be passed to `Process.run` directly.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -41,17 +41,17 @@ let reports = lines |> ProcessStream.map _.ToUpperInvariant() |> ProcessStream.r
 ```
 
 ```fsharp run
-match reports |> run with
-| Exit.Success (values, ProcessCompletion.Completed result) ->
-    shouldEqual ["READY"; "SAMPLE 1"] values
-    shouldEqual 0 result.ExitCode
-| other -> failwithf "Expected completed output, got %A" other
+let values, completion = reports |> Process.run
+shouldEqual ["READY"; "SAMPLE 1"] values
+match completion with
+| ProcessCompletion.Completed result -> shouldEqual 0 result.ExitCode
+| ProcessCompletion.StoppedEarly -> failwith "Expected completed output"
 ```
 
 `lines` is a `ProcessStream<'env, string>`: the value parameter is one decoded line, and `'env` supplies
 process and clock services when it runs. `runCollect` produces
-`Flow<'env, ProcessError, string list * ProcessCompletion>`; `run` returns
-`Exit<string list * ProcessCompletion, ProcessError>`. `Completed result` includes the final `ProcessResult`;
+`Flow<'env, ProcessError, string list * ProcessCompletion>`; `Process.run` returns
+the values and completion directly. `Completed result` includes the final `ProcessResult`;
 `StoppedEarly` reports successful prefix stopping after cleanup.
 
 `map` and `filter` preserve completion. `streamStdout` and `streamStderr` emit decoded chunks with stage,
@@ -63,7 +63,7 @@ unconnected channels. A merged stderr value has observed channel stdout and orig
 Use `runForEachFlow` when a line needs a console, filesystem, or other application service. `runForEach` takes a
 synchronous callback and suits ordinary in-memory work. Effectful terminals keep `ProcessFailed` and
 `ConsumerFailed` distinct; defects and interruption retain their Axial cause. Their Flow error type is
-`ProcessStreamError<'consumerError>`, and `run` preserves it inside the returned `Exit`.
+`ProcessStreamError<'consumerError>`; use `Process.tryRun` to inspect one inside `Exit`.
 
 ```fsharp
 let printLines =
@@ -72,9 +72,9 @@ let printLines =
 ```
 
 ```fsharp run
-match printLines |> run with
-| Exit.Success (ProcessCompletion.Completed result) -> shouldEqual 0 result.ExitCode
-| other -> failwithf "Expected printed output, got %A" other
+match printLines |> Process.run with
+| ProcessCompletion.Completed result -> shouldEqual 0 result.ExitCode
+| ProcessCompletion.StoppedEarly -> failwith "Expected completed output"
 ```
 
 ## Stop after a prefix
@@ -91,7 +91,9 @@ let firstLine =
 ```
 
 ```fsharp run
-firstLine |> run |> shouldEqual (Exit.Success (["ready"], ProcessCompletion.StoppedEarly))
+firstLine
+|> Process.run
+|> shouldEqual (["ready"], ProcessCompletion.StoppedEarly)
 ```
 
 ## Bound retained output
@@ -110,11 +112,11 @@ let retainedTail =
 ```
 
 ```fsharp run
-match retainedTail |> run with
-| Exit.Success (ProcessCompletion.Completed result) ->
+match retainedTail |> Process.run with
+| ProcessCompletion.Completed result ->
     shouldEqual "last\n" result.StdOut
     shouldEqual true result.StdOutTruncated
-| other -> failwithf "Expected bounded completion, got %A" other
+| ProcessCompletion.StoppedEarly -> failwith "Expected completed output"
 ```
 
 Lines exclude LF and one preceding CR, preserve blank lines and bare CR, and emit final unterminated text.
@@ -137,10 +139,8 @@ let processLines =
     cmd $"printf 'process 1\nprocess 2\n'" |> streamStdoutLines |> ProcessStream.toFlowStream
 let applicationLines = FlowStream.fromSeq ["application 1"; "application 2"]
 let combined = [processLines; applicationLines] |> FlowStream.mergePar |> FlowStream.runCollect
-match combined |> run with
-| Exit.Success values ->
-    shouldEqual ["application 1"; "application 2"; "process 1"; "process 2"] (List.sort values)
-| other -> failwithf "Expected both sources, got %A" other
+combined |> Process.run |> List.sort
+|> shouldEqual ["application 1"; "application 2"; "process 1"; "process 2"]
 ```
 
 `FlowStream.runIntoQueue` offers each value to a queue; `runIntoHub` publishes it to the hub's current
@@ -156,7 +156,7 @@ let queued = flow {
         |> streamStdoutLines |> ProcessStream.toFlowStream |> FlowStream.runIntoQueue queue
     return! Dequeue.takeAll queue
 }
-queued |> run |> shouldEqual (Exit.Success ["first"; "second"])
+queued |> Process.run |> shouldEqual ["first"; "second"]
 
 let published =
     flow {
@@ -166,7 +166,7 @@ let published =
             |> streamStdoutLines |> ProcessStream.toFlowStream |> FlowStream.runIntoHub hub
         return! Dequeue.takeAll subscription
     } |> Flow.scoped
-published |> run |> shouldEqual (Exit.Success ["first"; "second"])
+published |> Process.run |> shouldEqual ["first"; "second"]
 ```
 
 If you need the final exit details as well as the published values, keep the `ProcessStream` and send
@@ -183,11 +183,11 @@ let queuedWithCompletion = flow {
     let! values = Dequeue.takeAll queue
     return values, completion
 }
-match queuedWithCompletion |> run with
-| Exit.Success (values, ProcessCompletion.Completed result) ->
-    shouldEqual ["first"; "second"] values
-    shouldEqual 0 result.ExitCode
-| other -> failwithf "Expected queued output and completion, got %A" other
+let queuedValues, queuedCompletion = queuedWithCompletion |> Process.run
+shouldEqual ["first"; "second"] queuedValues
+match queuedCompletion with
+| ProcessCompletion.Completed result -> shouldEqual 0 result.ExitCode
+| ProcessCompletion.StoppedEarly -> failwith "Expected completed output"
 ```
 
 ## Transform and fold without collecting every item
@@ -200,24 +200,20 @@ let numbers () = cmd $"printf '1\n2\n3\n4\n'" |> streamStdoutLines
 let evenTotal =
     numbers () |> ProcessStream.map int |> ProcessStream.filter (fun value -> value % 2 = 0)
     |> ProcessStream.runFold (+) 0
-match evenTotal |> run with
-| Exit.Success (total, ProcessCompletion.Completed _) -> shouldEqual 6 total
-| other -> failwithf "Expected completed fold, got %A" other
+let total, _ = evenTotal |> Process.run
+shouldEqual 6 total
 
 let checkedTotal =
     numbers ()
     |> ProcessStream.runFoldFlow
         (fun total text -> (Flow.ok (total + int text) : Flow<_, string, int>))
         0
-match checkedTotal |> run with
-| Exit.Success (total, ProcessCompletion.Completed _) -> shouldEqual 10 total
-| other -> failwithf "Expected effectful fold, got %A" other
+let checkedSum, _ = checkedTotal |> Process.run
+shouldEqual 10 checkedSum
 
 let observed = ResizeArray<string>()
-match numbers () |> ProcessStream.runForEach observed.Add |> run with
-| Exit.Success (ProcessCompletion.Completed _) ->
-    shouldEqual ["1"; "2"; "3"; "4"] (List.ofSeq observed)
-| other -> failwithf "Expected synchronous consumption, got %A" other
+numbers () |> ProcessStream.runForEach observed.Add |> Process.run |> ignore
+shouldEqual ["1"; "2"; "3"; "4"] (List.ofSeq observed)
 ```
 
 A synchronous callback is for ordinary in-memory work. Use `runForEachFlow` or `runFoldFlow` for dependencies
@@ -228,7 +224,7 @@ such as `IConsole`; those effects remain explicit in the environment. Typed cons
 let rejected =
     cmd $"printf 'ready\n'" |> streamStdoutLines
     |> ProcessStream.runForEachFlow (fun _ -> Flow.fail "rejected record")
-match rejected |> run with
+match rejected |> Process.tryRun with
 | Exit.Failure(Cause.Fail(ProcessStreamError.ConsumerFailed message)) ->
     shouldEqual "rejected record" message
 | other -> failwithf "Expected consumer failure, got %A" other
@@ -236,7 +232,7 @@ match rejected |> run with
 let prefix =
     cmd $"printf 'ready\nstop\nlater\n'" |> streamStdoutLines
     |> ProcessStream.takeWhile (fun line -> line <> "stop") |> ProcessStream.runCollect
-prefix |> run |> shouldEqual (Exit.Success (["ready"], ProcessCompletion.StoppedEarly))
+prefix |> Process.run |> shouldEqual (["ready"], ProcessCompletion.StoppedEarly)
 ```
 
 ## Observe stderr and channel provenance
@@ -248,29 +244,27 @@ rather than assuming one event per write.
 ```fsharp run
 let errors =
     sh $"printf data; printf 'warning\n' >&2" |> streamStderrLines |> ProcessStream.runCollect
-match errors |> run with
-| Exit.Success (values, ProcessCompletion.Completed result) ->
-    shouldEqual ["warning"] values
-    shouldEqual "data" result.StdOut
-| other -> failwithf "Expected stderr lines, got %A" other
+let errorLines, errorCompletion = errors |> Process.run
+shouldEqual ["warning"] errorLines
+match errorCompletion with
+| ProcessCompletion.Completed result -> shouldEqual "data" result.StdOut
+| ProcessCompletion.StoppedEarly -> failwith "Expected completed output"
 
 let outputs =
     sh $"printf data; printf warning >&2"
     |> mergeStderr
     |> streamOutputs
     |> ProcessStream.runCollect
-match outputs |> run with
-| Exit.Success (values, ProcessCompletion.Completed _) ->
-    let allStdout = values |> List.forall (fun item -> item.ObservedChannel = OutputChannel.StdOut)
-    shouldEqual true allStdout
-    let original channel =
-        values
-        |> List.filter (fun item -> item.OriginalChannel = channel)
-        |> List.map _.Text
-        |> String.concat ""
-    shouldEqual "data" (original OutputChannel.StdOut)
-    shouldEqual "warning" (original OutputChannel.StdErr)
-| other -> failwithf "Expected original channels, got %A" other
+let events, _ = outputs |> Process.run
+let allStdout = events |> List.forall (fun item -> item.ObservedChannel = OutputChannel.StdOut)
+shouldEqual true allStdout
+let original channel =
+    events
+    |> List.filter (fun item -> item.OriginalChannel = channel)
+    |> List.map _.Text
+    |> String.concat ""
+shouldEqual "data" (original OutputChannel.StdOut)
+shouldEqual "warning" (original OutputChannel.StdErr)
 ```
 
 ## Limit lines and choose ordinary stream APIs explicitly
@@ -281,14 +275,14 @@ byte-tail capture: limiting retained output does not make an oversized observed 
 ```fsharp run
 let oversized =
     cmd $"printf abcde" |> maxLineLength 4 |> streamStdoutLines |> ProcessStream.runDrain
-match oversized |> run with
+match oversized |> Process.tryRun with
 | Exit.Failure(Cause.Fail(ProcessError.LineTooLong _)) -> ()
 | other -> failwithf "Expected line limit failure, got %A" other
 
 let ordinary =
     cmd $"printf 'a\nb\n'" |> streamStdoutLines |> ProcessStream.toFlowStream
     |> FlowStream.map _.ToUpperInvariant() |> FlowStream.runCollect
-ordinary |> run |> shouldEqual (Exit.Success ["A"; "B"])
+ordinary |> Process.run |> shouldEqual ["A"; "B"]
 ```
 
 `streamStdout` and `streamStderr` provide metadata-bearing decoded chunks when line framing is inappropriate.

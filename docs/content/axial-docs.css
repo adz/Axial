@@ -764,7 +764,67 @@ body:has(.axial-landing) #search-ui {
   border-color: #0b55d9;
 }
 
-/* Homepage: the numbered reasons, each with Task and Flow side by side. */
+/* Homepage: the numbered reasons, each with Task and Flow side by side.
+   Hidden until the "Why Flow?" label toggles the checkbox. */
+.why-toggle {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.why-toggle-label {
+  cursor: pointer;
+}
+
+.why-toggle:checked ~ .docs-home-hero .why-toggle-label {
+  border-color: #0b55d9;
+}
+
+.why-panels {
+  scroll-margin-top: 1rem;
+}
+
+.why-toggle:checked ~ .why-panels {
+  animation: why-reveal 320ms ease-out both;
+}
+
+@keyframes why-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .why-toggle:checked ~ .why-panels {
+    animation: none;
+  }
+}
+
+.why-toggle:focus-visible ~ .docs-home-hero .why-toggle-label {
+  outline: 2px solid #0b55d9;
+  outline-offset: 2px;
+}
+
+.why-toggle:not(:checked) ~ .why-panels {
+  display: none;
+}
+
+.why-link {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+}
+
+.why-more {
+  margin: 0;
+  text-align: center;
+}
+
 .why-panels {
   display: grid;
   gap: 1.5rem;

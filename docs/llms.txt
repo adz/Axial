@@ -76,9 +76,10 @@
 - `streamStdoutLines` produces a completion-aware `ProcessStream`. Keep `ProcessStream` transformations and
   terminals to retain `Completed result` or awaited `StoppedEarly`; `toFlowStream` deliberately drops completion.
   Effectful consumers use `runForEachFlow` or `runFoldFlow`, with process and consumer errors kept distinct.
-- `run`/`runWith` return a full `Exit`; direct commands retain batch output. `runExitCode` variants return integers
-  at program boundaries, defaulting direct commands to console routes and no stdout retention. Existing Flows keep
-  their policies. `toFlow` needs `IHasProcess`; streaming additionally needs `IHasClock`.
+- `Process.tryRun`/`Process.tryRunWith` return `Exit` for commands, specs, or Flows; `Process.run`/`Process.runWith`
+  return the successful value and raise `ProcessRunException` on failure. These boundary helpers are not DSL aliases.
+  Direct commands retain batch output; existing Flows keep their policies. `toFlow` needs `IHasProcess`;
+  streaming additionally needs `IHasClock`.
 - `mergeStdout` fans in producer lines; `captureParallel` captures independent commands with bounded workflow
   concurrency and ordered results. Use `flow { }` for sequencing and `Flow.orElseWith` for typed recovery.
 - Guides: `/process/index.html`, `/process/scripts.html`, `/process/streaming.html`, and `/process/dsl-recipes.html`.

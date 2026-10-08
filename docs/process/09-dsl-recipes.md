@@ -22,13 +22,6 @@ let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
-```fsharp
-let resultOf (outcome: Exit<ProcessResult, ProcessError>) =
-    match outcome with
-    | Exit.Success result -> result
-    | other -> failwithf "Expected process success, got %A" other
-```
-
 ## Supply stdin and connect stages
 
 Text, bytes, and file shortcuts configure one command's stdin. `Input.text`, `Input.bytes`, and `Input.file`
@@ -39,13 +32,13 @@ have an explicit stdin source.
 let upper =
     Input.text "hello\n" => cmd $"tr '[:lower:]' '[:upper:]'"
     => cmd $"cat"
-    |> run |> resultOf
+    |> Process.run
 shouldEqual "HELLO\n" upper.StdOut
 
-cmd $"cat" |> stdinFromBytes [| 65uy; 66uy |] |> run |> resultOf
+cmd $"cat" |> stdinFromBytes [| 65uy; 66uy |] |> Process.run
 |> _.StdOut |> shouldEqual "AB"
 
-cmd $"cat" |> stdinFromText "inline" |> run |> resultOf
+cmd $"cat" |> stdinFromText "inline" |> Process.run
 |> _.StdOut |> shouldEqual "inline"
 ```
 
@@ -55,20 +48,21 @@ with backpressure. The producer runs during execution and must cooperate with ca
 ```fsharp run
 cmd $"cat"
 |> stdinFrom (Input.readOnce (fun () -> async { return Encoding.UTF8.GetBytes "once" }))
-|> run |> resultOf |> _.StdOut |> shouldEqual "once"
+|> Process.run |> _.StdOut |> shouldEqual "once"
 
 let generated = Input.produce (fun write -> async {
     do! write (Encoding.UTF8.GetBytes "first\n")
     do! write (Encoding.UTF8.GetBytes "second\n")
 })
-generated => cmd $"cat" |> run |> resultOf |> _.StdOut
+generated => cmd $"cat" |> Process.run |> _.StdOut
 |> shouldEqual "first\nsecond\n"
 ```
 
 ## Write files, append, and tee
 
 Routing and capture are independent: `stdoutToFile` still captures stdout unless you choose `captureNothing`.
-Configure a final command's route before connecting it, or use `mapFinalCommand` on an existing topology.
+Configure a final command's route before connecting it, or use
+[`Process.mapFinalCommand`](xref:M:Axial.Process.Process.mapFinalCommand) to adjust the final command on an existing topology.
 An `OutputTarget` endpoint built by `Output.*` with `=>` configures a single command; it does not execute it.
 
 ```fsharp run
@@ -79,25 +73,25 @@ try
     File.WriteAllText(inputPath, "source\n")
     let copied =
         cmd $"cat" |> stdinFromFile inputPath |> stdoutToFile outputPath
-        |> run |> resultOf
+        |> Process.run
     shouldEqual "source\n" copied.StdOut
     shouldEqual "source\n" (File.ReadAllText outputPath)
 
     cmd $"printf appended" |> stdoutToAppendFile outputPath |> captureNothing
-    |> run |> resultOf |> _.StdOut |> shouldEqual ""
+    |> Process.run |> _.StdOut |> shouldEqual ""
     shouldEqual "source\nappended" (File.ReadAllText outputPath)
 
     sh $"printf warning >&2" |> stderrToFile errorPath |> captureStderrAll
-    |> run |> resultOf |> _.StdErr |> shouldEqual "warning"
+    |> Process.run |> _.StdErr |> shouldEqual "warning"
     sh $"printf again >&2" |> stderrToAppendFile errorPath
-    |> run |> resultOf |> ignore
+    |> Process.run |> ignore
     shouldEqual "warningagain" (File.ReadAllText errorPath)
 
     use writer = new StringWriter()
     let teed =
         cmd $"printf duplicated"
         => Output.tee [ Output.file outputPath; Output.textWriter Encoding.UTF8 writer ]
-        |> captureTail 4 |> run |> resultOf
+        |> captureTail 4 |> Process.run
     shouldEqual "duplicated" (File.ReadAllText outputPath)
     shouldEqual "duplicated" (writer.ToString())
     shouldEqual "ated" teed.StdOut
@@ -115,14 +109,14 @@ do
     use source = new MemoryStream(Encoding.UTF8.GetBytes "streamed")
     use destination = new MemoryStream()
     cmd $"cat" |> stdinFrom (Input.stream source) |> stdoutTo (Output.stream destination)
-    |> captureNothing |> run |> resultOf |> ignore
+    |> captureNothing |> Process.run |> ignore
     shouldEqual "streamed" (Encoding.UTF8.GetString(destination.ToArray()))
     shouldEqual true destination.CanWrite
 
     let chunks = ResizeArray<byte>()
     cmd $"printf callback"
     |> stdoutTo (Output.callback (fun bytes -> async { chunks.AddRange bytes }))
-    |> captureNothing |> run |> resultOf |> ignore
+    |> captureNothing |> Process.run |> ignore
     shouldEqual "callback" (Encoding.UTF8.GetString(chunks.ToArray()))
 ```
 
@@ -131,9 +125,11 @@ do
 observed, or teed. `stdoutToDiscard` and `stderrToDiscard` drain without forwarding; capture remains independent.
 
 ```fsharp run
-let captured = cmd $"printf retained" |> stdoutToDiscard |> run |> resultOf
+let captured = cmd $"printf retained" |> stdoutToDiscard |> Process.run
 shouldEqual "retained" captured.StdOut
-let quiet = sh $"printf warning >&2" |> stderrToDiscard |> captureStderrNothing |> run |> resultOf
+let quiet =
+    sh $"printf warning >&2" |> stderrToDiscard |> captureStderrNothing
+    |> Process.run
 shouldEqual "" quiet.StdErr
 ```
 
@@ -144,11 +140,13 @@ observed stdout channel. `pipeStdoutAndStderrTo` instead feeds both native chann
 Order between independently written channels is not guaranteed.
 
 ```fsharp run
-let separated = sh $"printf data; printf warning >&2" |> run |> resultOf
+let separated = sh $"printf data; printf warning >&2" |> Process.run
 shouldEqual "data" separated.StdOut
 shouldEqual "warning" separated.StdErr
 
-let merged = sh $"printf 'data\n'; printf 'warning\n' >&2" |> mergeStderr |> run |> resultOf
+let merged =
+    sh $"printf 'data\n'; printf 'warning\n' >&2" |> mergeStderr
+    |> Process.run
 let words =
     merged.StdOut.Split('\n', StringSplitOptions.RemoveEmptyEntries)
     |> Array.sort
@@ -157,7 +155,7 @@ shouldEqual ["data"; "warning"] words
 shouldEqual "" merged.StdErr
 
 sh $"printf 'data\n'; printf 'warning\n' >&2"
-|> pipeStdoutAndStderrTo (cmd $"sort") |> run |> resultOf |> _.StdOut
+|> pipeStdoutAndStderrTo (cmd $"sort") |> Process.run |> _.StdOut
 |> shouldEqual "data\nwarning\n"
 ```
 
@@ -170,18 +168,17 @@ line framing; use it when line preservation is unnecessary, rather than for inde
 ```fsharp run
 let ordered =
     [cmd $"printf 'beta\n'"; cmd $"printf 'alpha\n'"]
-    |> mergeStdout |> pipeTo (cmd $"sort") |> run |> resultOf
+    |> mergeStdout |> pipeTo (cmd $"sort") |> Process.run
 shouldEqual "alpha\nbeta\n" ordered.StdOut
 
 let bytes =
     [cmd $"printf A"; cmd $"printf B"]
-    |> mergeStdoutBytes |> pipeTo (cmd $"cat") |> run |> resultOf
+    |> mergeStdoutBytes |> pipeTo (cmd $"cat") |> Process.run
 shouldEqual [65uy; 66uy] (bytes.StdOutCapture.Bytes |> Array.sort |> Array.toList)
 
 let concurrentCaptures = [cmd $"printf first"; cmd $"printf second"] |> captureParallel 2
-match concurrentCaptures |> run with
-| Exit.Success results -> shouldEqual ["first"; "second"] (results |> List.map _.StdOut)
-| other -> failwithf "Expected parallel capture, got %A" other
+let results = concurrentCaptures |> Process.run
+shouldEqual ["first"; "second"] (results |> List.map _.StdOut)
 ```
 
 `captureParallel` limits concurrent workflows and preserves the input order of results. It does not connect
@@ -200,19 +197,19 @@ let defaults = StageDefaults.empty |> StageDefaults.timeout (TimeSpan.FromSecond
 let pipeline =
     cmd $"printf ready" |> stageDefaults defaults
     |> pipeTo (cmd $"cat" |> withoutTimeout)
-    |> mapFinalCommand (captureTail 3)
+    |> Process.mapFinalCommand (Process.captureTail 3)
 let plan = Process.plan pipeline
 shouldEqual (Some(TimeSpan.FromSeconds 5.)) plan.Stages[0].Timeout
 shouldEqual None plan.Stages[1].Timeout
 shouldEqual "command" plan.Stages[1].Provenance["timeout"]
-pipeline |> run |> resultOf |> _.StdOut |> shouldEqual "ady"
+pipeline |> Process.run |> _.StdOut |> shouldEqual "ady"
 ```
 
 Use qualified command helpers where the DSL has no shortcut, such as `Process.successCodes`,
 `Process.removeEnvironment`, `Process.encoding`, and `Process.commandArgs`.
 
 ```fsharp run
-let accepted = sh $"exit 3" |> Process.successCodes [0; 3] |> run |> resultOf
+let accepted = sh $"exit 3" |> Process.successCodes [0; 3] |> Process.run
 shouldEqual 3 accepted.ExitCode
 ```
 
@@ -228,13 +225,13 @@ let sequential = flow {
     let! second = cmd $"printf second" |> toFlow
     return first.StdOut + ":" + second.StdOut
 }
-sequential |> run |> shouldEqual (Exit.Success "first:second")
+sequential |> Process.run |> shouldEqual "first:second"
 
 let recovered =
     sh $"exit 7" |> toFlow
     |> Flow.orElseWith (fun _ -> cmd $"printf fallback" |> toFlow)
-recovered |> run |> resultOf |> _.StdOut |> shouldEqual "fallback"
+recovered |> Process.run |> _.StdOut |> shouldEqual "fallback"
 ```
 
 Use [`streaming output`](streaming.html) for completion-aware transformations and effectful consumers,
-and [`scripts`](scripts.html) for safe shell interpolation and the `run` / `runExitCode` boundary.
+and [`scripts`](scripts.html) for safe shell interpolation and the `Process.run` boundary.

@@ -118,7 +118,7 @@ contract with the operating system matters.
 
 ## Use an existing application environment at a host boundary
 
-`Process.runWith` runs commands, specs, or an application Flow with the supplied environment and returns the
+`Process.tryRunWith` runs commands, specs, or an application Flow with the supplied environment and returns the
 complete `Exit`. Command execution needs only `IHasProcess`; it does not require a reporting console.
-`Process.runExitCodeWith` is the integer runner for a command-line entry point and requires `IHasConsole` for
-failure reporting. Direct commands default to console routing there; explicit routes still win.
+`Process.runWith` returns the successful value but raises `ProcessRunException` on failure. In an application,
+prefer `Flow.run environment` for the enclosing workflow; both Process runners are boundary conveniences.

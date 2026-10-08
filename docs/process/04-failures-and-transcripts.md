@@ -63,17 +63,17 @@ let explain (exit: Exit<ProcessResult, ProcessError>) =
 ```
 
 ```fsharp run
-cmd $"sh -c 'exit 3'" |> run |> explain |> shouldEqual "stage 0 exited 3"
+cmd $"sh -c 'exit 3'" |> Process.tryRun |> explain |> shouldEqual "stage 0 exited 3"
 cmd $"no-such-command-axial-docs"
-|> run
+|> Process.tryRun
 |> explain
 |> shouldEqual "could not start no-such-command-axial-docs"
 ```
 
 [`ProcessError.describe`](xref:M:Axial.Process.ProcessError.describe) formats a redacted diagnostic.
 [`ProcessError.exitCode`](xref:M:Axial.Process.ProcessError.exitCode) maps a failed stage to its native exit code, timeout
-to 124, and startup or I/O failure to 1. Cancellation is an interruption and the host runner returns 1 for it. The host [`runExitCode`](xref:M:Axial.Process.DSL.runExitCode) applies the
-same mapping automatically.
+to 124, and startup or I/O failure to 1. Cancellation remains `Cause.Interrupt`; an entry point
+can match that cause and return 1. `Process.tryRun` leaves this policy with the caller.
 
 ## What a successful result contains
 
@@ -96,8 +96,8 @@ let stageSummary (specification: ProcessSpec) =
 ```fsharp run
 cmd $"printf 'a\nb\n'" |> pipeTo (cmd $"wc -l")
 |> stageSummary
-|> run
-|> shouldEqual (Exit.Success [ "[0] printf \"a\nb\n\" => 0"; "[1] wc -l => 0" ])
+|> Process.run
+|> shouldEqual [ "[0] printf \"a\nb\n\" => 0"; "[1] wc -l => 0" ]
 ```
 
 ## Limit draining after process exit
@@ -114,7 +114,7 @@ let boundedDrain =
 ```
 
 ```fsharp run
-boundedDrain |> run |> function
+boundedDrain |> Process.tryRun |> function
 | Exit.Success result -> shouldEqual "ready" result.StdOut
 | other -> failwithf "Expected successful drain, got %A" other
 ```
@@ -136,7 +136,7 @@ applies to the whole topology, including draining and completion-aware callbacks
 
 ```fsharp run
 let slowStage = sh $"sleep 30" |> timeout (TimeSpan.FromMilliseconds 100.) |> toFlow
-match slowStage |> run with
+match slowStage |> Process.tryRun with
 | Exit.Failure(Cause.Fail(ProcessError.StageTimedOut failure)) -> shouldEqual 0 failure.Stage
 | other -> failwithf "Expected stage timeout, got %A" other
 
@@ -145,7 +145,7 @@ let slowTopology =
     => cmd $"cat"
     |> overallTimeout (TimeSpan.FromMilliseconds 100.)
     |> toFlow
-match slowTopology |> run with
+match slowTopology |> Process.tryRun with
 | Exit.Failure(Cause.Fail(ProcessError.OverallTimedOut _)) -> ()
 | other -> failwithf "Expected overall timeout, got %A" other
 ```

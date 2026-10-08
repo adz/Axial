@@ -24,18 +24,12 @@ open Axial.Process.DSL
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 
-let stdoutOf (outcome: Exit<ProcessResult, ProcessError>) =
-    match outcome with
-    | Exit.Success result -> result.StdOut
-    | Exit.Failure cause -> failwithf "%A" cause
 ```
 
-`run` executes a single command directly:
+`Process.run` executes a single command and returns its result:
 
 ```fsharp run
-match cmd $"printf hello" |> run with
-| Exit.Success result -> shouldEqual "hello" result.StdOut
-| other -> failwithf "Expected greeting, got %A" other
+cmd $"printf hello" |> Process.run |> _.StdOut |> shouldEqual "hello"
 ```
 
 To check another repository, `cwd` runs Git there. `env "GIT_OPTIONAL_LOCKS" "0"` skips optional locks and index
@@ -50,33 +44,43 @@ let status (repository: string) : ProcessCommand =
     |> timeout (TimeSpan.FromSeconds 15.0)
 ```
 
-These functions take a `ProcessCommand`, so set them before the stage is joined into a `ProcessSpec`;
-`mapFinalCommand` is the exception for the final stage. Qualified helpers such as
-[`Process.arg`](xref:M:Axial.Process.Process.arg), [`Process.secretArg`](xref:M:Axial.Process.Process.secretArg),
+These functions take a `ProcessCommand`, so set them before joining the stage into a `ProcessSpec`. When a reusable
+function has already returned a complete topology, [`Process.mapFinalCommand`](xref:M:Axial.Process.Process.mapFinalCommand)
+lets a caller adjust settings on its final command without rebuilding the pipeline. It preserves that command's
+executable and arguments; use it for caller-specific settings such as a deadline, not to change what program runs.
+Qualified helpers such as [`Process.arg`](xref:M:Axial.Process.Process.arg), [`Process.secretArg`](xref:M:Axial.Process.Process.secretArg),
 [`Process.removeEnvironment`](xref:M:Axial.Process.Process.removeEnvironment),
 [`Process.encoding`](xref:M:Axial.Process.Process.encoding), and
 [`Process.successCodes`](xref:M:Axial.Process.Process.successCodes) also take a `ProcessCommand`.
 
-## Count lines with a pipe
+## Connect native process stages
 
-In Bash, pipe the text into `wc -l` to count its lines:
+A shell can run this pipeline as one Bash program:
 
-```bash
-printf 'error one\nerror two\n' | wc -l
+```fsharp
+let countLinesInShell =
+    bash $"printf 'error one\\nerror two\\n' | wc -l"
 ```
 
-In the DSL, `=>` is that pipe: the left command's stdout becomes the right command's stdin. Joining two
-`ProcessCommand` values produces a `ProcessSpec`. Configure each command before joining, or adjust the final one
-with `mapFinalCommand`:
+The `=>` operator builds the same topology from two command descriptions: the left command's stdout becomes the
+right command's stdin. Each stage remains a separate value in the `ProcessSpec`; no shell parses the pipeline.
+That means each command can have its own working directory, environment, timeout, and success-code policy, and
+`Process.plan` can show the connected stages before execution. Use `bash` when shell syntax itself is what you need;
+use `=>` when you want Axial to compose and manage native process stages.
 
 ```fsharp
 let countLines : ProcessSpec =
-    cmd $"printf 'error one\nerror two\n'"
+    cmd $"printf 'error one\\nerror two\\n'"
     => cmd $"wc -l"
 ```
 
+Both forms count the same two lines:
+
 ```fsharp run
-countLines |> run |> stdoutOf |> _.Trim() |> shouldEqual "2"
+let shellCount = countLinesInShell |> Process.run |> _.StdOut.Trim()
+let composedCount = countLines |> Process.run |> _.StdOut.Trim()
+shouldEqual "2" shellCount
+shouldEqual shellCount composedCount
 ```
 
 Parentheses let a downstream stage carry its own settings before it is connected:
@@ -93,7 +97,7 @@ let shout (value: string) : ProcessSpec =
 The interpolated value is one argument, even with spaces or shell characters in it:
 
 ```fsharp run
-shout "hello; world" |> run |> stdoutOf |> shouldEqual "HELLO; WORLD"
+shout "hello; world" |> Process.run |> _.StdOut |> shouldEqual "HELLO; WORLD"
 ```
 
 The same configured pipeline can use qualified functions throughout:
@@ -106,7 +110,7 @@ let shoutWithFunctions (value: string) : ProcessSpec =
 ```
 
 ```fsharp run
-shoutWithFunctions "hello; world" |> Process.run |> stdoutOf |> shouldEqual "HELLO; WORLD"
+shoutWithFunctions "hello; world" |> Process.run |> _.StdOut |> shouldEqual "HELLO; WORLD"
 ```
 
 ## Interpolation keeps each value in one argument
@@ -141,12 +145,26 @@ let sharedPipeline : ProcessSpec =
 ```
 
 ```fsharp run
-sharedPipeline |> run |> stdoutOf |> shouldEqual "ready"
+sharedPipeline |> Process.run |> _.StdOut |> shouldEqual "ready"
 ```
 
-`mapFinalCommand` changes settings on the final command of an existing topology. It requires one final command and
-rejects replacing the executable or its arguments. A stdout route and a pipe are mutually exclusive: configure
-the downstream command's route, or tee to a readable external channel.
+`mapFinalCommand` is useful when the pipeline is reusable but a caller owns the policy for its final stage. For
+example, add a deadline after the topology has been assembled:
+
+```fsharp
+let countLinesWithDeadline =
+    countLines
+    |> Process.mapFinalCommand (Process.timeout (TimeSpan.FromSeconds 5.0))
+```
+
+```fsharp run
+countLinesWithDeadline |> Process.run |> _.StdOut.Trim() |> shouldEqual "2"
+```
+
+This transforms the unique final command's settings. It rejects changing its executable or arguments, and cannot
+apply to a topology with multiple final commands. Prefer configuring a stage before connecting it when the setting is
+intrinsic to that stage. A stdout route and a pipe are mutually exclusive: configure the downstream command's route,
+or tee to a readable external channel.
 
 For checked examples of stdin, file routes, tee, fan-in, parallel capture, and recovery, see [DSL recipes](dsl-recipes.html).
 
@@ -156,8 +174,9 @@ For checked examples of stdin, file routes, tee, fan-in, parallel capture, and r
 a pipeline from a list of interpolated templates when the stages are assembled dynamically.
 
 ```fsharp run
-cmdText "printf fixed" |> run |> stdoutOf |> shouldEqual "fixed"
-pipe [ $"printf 'one\ntwo\n'"; $"wc -l" ] |> run |> stdoutOf |> _.Trim() |> shouldEqual "2"
+cmdText "printf fixed" |> Process.run |> _.StdOut |> shouldEqual "fixed"
+pipe [ $"printf 'one\ntwo\n'"; $"wc -l" ]
+|> Process.run |> _.StdOut.Trim() |> shouldEqual "2"
 Process.commandArgs "printf" ["%s"; "space and ; characters"]
-|> run |> stdoutOf |> shouldEqual "space and ; characters"
+|> Process.run |> _.StdOut |> shouldEqual "space and ; characters"
 ```

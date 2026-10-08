@@ -22,10 +22,6 @@ open Axial.Process.DSL
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 
-let stdoutOf (outcome: Exit<ProcessResult, ProcessError>) =
-    match outcome with
-    | Exit.Success result -> result.StdOut
-    | Exit.Failure cause -> failwithf "%A" cause
 ```
 
 ```fsharp
@@ -39,13 +35,14 @@ let connect (deviceId: string) (workspace: string) =
 ```
 
 ```fsharp run
-connect "sensor 7; rm -rf /" (IO.Path.GetTempPath())
-|> run
-|> stdoutOf
-|> shouldEqual "sensor 7; rm -rf /"
+connect "sensor 7; date" (IO.Path.GetTempPath())
+|> Process.run
+|> _.StdOut
+|> shouldEqual "sensor 7; date"
 ```
 
-Interpolation holes remain individual native arguments. They are not concatenated into shell source. Mark sensitive values explicitly:
+Interpolation holes remain individual native arguments. Here `; date` is returned as text; it does not start another
+command. No shell parses the value. Mark sensitive values explicitly:
 
 ```fsharp
 let authenticate (token: string) =
@@ -54,7 +51,7 @@ let authenticate (token: string) =
 
 ```fsharp run
 authenticate "s3cret" |> Process.render |> shouldEqual "printf \"%s\" ***"
-authenticate "s3cret" |> run |> stdoutOf |> shouldEqual "s3cret"
+authenticate "s3cret" |> Process.run |> _.StdOut |> shouldEqual "s3cret"
 ```
 
 The real value reaches the process; renders, plans, and errors show `***`.
@@ -67,28 +64,50 @@ let shout (value: string) =
 ```
 
 ```fsharp run
-shout "it's $HOME" |> run |> stdoutOf |> shouldEqual "IT'S $HOME"
+shout "it's $HOME" |> Process.run |> _.StdOut |> shouldEqual "IT'S $HOME"
 ```
 
 `toFlow` and the stream constructors are lazy. Capture helpers configure retention without executing;
-routing helpers choose destinations independently. `run` starts a command, spec, or Flow and returns its full
-`Exit`. A direct command uses batch capture defaults, so output is available to the caller.
+routing helpers choose destinations independently. `Process.run` starts a command, spec, or Flow
+and returns its value. A direct command captures stdout for the caller:
 
 ```fsharp run
-match cmd $"printf hello" |> run with
-| Exit.Success result -> shouldEqual "hello" result.StdOut
-| other -> failwithf "Expected captured output, got %A" other
+cmd $"printf hello" |> Process.run |> _.StdOut |> shouldEqual "hello"
 ```
 
-Use `runExitCode` at a command-line entry point. It returns an integer; direct commands default to console
-routing and no stdout retention. Explicit routes and capture policies override those defaults.
+`Process.run` raises `ProcessRunException` on failure. A successful command exposes its exit code:
 
 ```fsharp run
-cmd $"true" |> runExitCode |> shouldEqual 0
+cmd $"true" |> Process.run |> _.ExitCode |> shouldEqual 0
 ```
 
-`runWith` accepts an existing application environment and preserves the full outcome; command inputs need
-`IHasProcess`. `runExitCodeWith` additionally requires `IHasConsole` to report failures.
+For a longer script, compose commands inside `flow { }` and run the whole script once.
+Each command becomes a lazy step with `toFlow`:
+
+```fsharp
+let script : Flow<ProcessHostEnvironment, ProcessError, string> =
+    flow {
+        let! first = cmd $"printf first" |> toFlow
+        let! second = cmd $"printf second" |> toFlow
+        return first.StdOut + second.StdOut
+    }
+```
+
+```fsharp run
+script |> Process.run |> shouldEqual "firstsecond"
+```
+
+If a script needs to inspect a process failure rather than raise, `Process.tryRun` returns `Exit`.
+For example, an entry point can distinguish a failed stage from a startup error:
+
+```fsharp run
+match shText "exit 3" |> Process.tryRun with
+| Exit.Failure(Cause.Fail(ProcessError.StageFailed failure)) ->
+    shouldEqual 3 failure.Stage.ExitCode
+| other -> failwithf "Expected stage failure, got %A" other
+```
+
+The `With` variants accept an existing environment instead of supplying live services.
 
 ```fsharp
 type AppEnvironment =
@@ -106,14 +125,13 @@ let appEnvironment =
 ```
 
 ```fsharp run
-let exit =
-    cmd $"dotnet --version"
-    |> runExitCodeWith appEnvironment
-
-exit |> shouldEqual 0
+cmd $"dotnet --version"
+|> Process.runWith appEnvironment
+|> _.ExitCode
+|> shouldEqual 0
 ```
 
 For application composition, use `Process.toFlow` and run the enclosing workflow with `Flow.run`.
 `ProcessStream.runCollect` returns values plus completion; a stream must have a terminal before a host runner
-can execute it. Effectful terminals may have `ProcessStreamError` errors, which `run` supports; use the ordinary
+can execute it. Effectful terminals may have `ProcessStreamError` errors, which `Process.tryRun` supports; use the ordinary
 Flow runner when the application wants its own exit-code policy.

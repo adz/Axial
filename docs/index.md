@@ -3,6 +3,7 @@ title: Axial
 ---
 
 <div class="docs-home-container axial-landing">
+<input type="checkbox" id="why-toggle" class="why-toggle" aria-controls="why-panels" />
 <div class="docs-home-hero">
 <div class="docs-home-copy">
 <span class="eyebrow">Typed asynchronous workflows for F#</span>
@@ -12,17 +13,17 @@ title: Axial
 </div>
 <h1>Make the safe path the easy path.</h1>
 <div class="lede">
-<p><code>Flow</code> is one type for application work that runs asynchronously, can fail, can be cancelled, and uses services. Axial's runtime cancels, cleans up, and retries that work by the same rules everywhere, and the type says what the work needs.</p>
+<p><code>Flow</code> is one type for work that is async, can fail, can be cancelled, and uses services. One runtime cancels, cleans up, and retries it by the same rules everywhere.</p>
 </div>
-<p><a class="btn btn-primary" href="getting-started/index.html">Run your first workflow</a> <a class="btn btn-secondary" href="getting-started/why-flow.html">Why Flow?</a></p>
+<p><a class="btn btn-primary" href="getting-started/index.html">Run your first workflow</a> <label class="btn btn-secondary why-toggle-label" for="why-toggle">Why Flow?</label></p>
 </div>
 </div>
 
-<div class="why-panels">
+<div class="why-panels" id="why-panels">
 
 <section class="why-panel">
 <div class="why-panel-head"><span class="why-number">1</span><h2>Async work and expected errors in one type</h2></div>
-<p>With <code>Task&lt;Result&lt;_, _&gt;&gt;</code>, every step matches the result before the next can run. In <code>flow { }</code>, <code>let!</code> stops at the first expected error, and an exception becomes a defect in the outcome instead of escaping. FsToolkit.ErrorHandling's <code>taskResult { }</code> removes the same nesting, but the result is still <code>Task</code> code, with cancellation and cleanup handled by hand. The next points cover those.</p>
+<p><code>let!</code> stops at the first expected error. An exception becomes a defect in the outcome instead of escaping.</p>
 <div class="why-compare">
 <div class="why-side why-side--before"><span class="why-side-label">Task</span>
 
@@ -51,11 +52,12 @@ flow {
 
 </div>
 </div>
+<p class="why-link"><a href="error-handling/">Error handling →</a></p>
 </section>
 
 <section class="why-panel">
 <div class="why-panel-head"><span class="why-number">2</span><h2>Cancellation is handled the same way everywhere</h2></div>
-<p>A flow takes no cancellation token. When one of two parallel loads fails, the other is interrupted. When the time limit passes, both are, and what they acquired is released before the timeout returns. Forked work belongs to the flow that started it, so nothing outlives a cancelled request.</p>
+<p>No cancellation token to pass. If one parallel load fails, the other is interrupted. On timeout, both are, and their resources are released first.</p>
 <div class="why-compare">
 <div class="why-side why-side--before"><span class="why-side-label">Task</span>
 
@@ -84,11 +86,12 @@ Flow.zipPar
 
 </div>
 </div>
+<p class="why-link"><a href="concurrency-and-state/fibers.html">Fibers and cancellation →</a></p>
 </section>
 
 <section class="why-panel">
 <div class="why-panel-head"><span class="why-number">3</span><h2>Dependencies in the signature mark the boundaries</h2></div>
-<p>A flow's first type parameter names the services it uses. <code>reserveStock</code> can reach inventory and nothing else, so the compiler shows where one area of the application calls into another, and a test supplies only what the flow names.</p>
+<p>The first type parameter names the services a flow uses. <code>reserveStock</code> reaches inventory and nothing else, and a test supplies only what the flow names.</p>
 <div class="why-compare">
 <div class="why-side why-side--before"><span class="why-side-label">Task</span>
 
@@ -114,11 +117,12 @@ val placeOrder: Cart ->
 
 </div>
 </div>
+<p class="why-link"><a href="dependencies/the-environment.html">The environment →</a></p>
 </section>
 
 <section class="why-panel">
 <div class="why-panel-head"><span class="why-number">4</span><h2>Time, randomness, and IDs are services too</h2></div>
-<p>Reading the clock or making a GUID adds that service to the flow's type, and the requirement carries up to every caller. The application supplies the live services; a test supplies fixed ones and gets the same result every run.</p>
+<p>Reading the clock or making a GUID adds that service to the type. Production supplies live ones; a test supplies fixed ones and gets the same result every run.</p>
 <div class="why-compare">
 <div class="why-side why-side--before"><span class="why-side-label">Task</span>
 
@@ -143,13 +147,20 @@ flow {
 
 </div>
 </div>
+<p class="why-link"><a href="services/">Services →</a></p>
+</section>
+
+<section class="why-panel">
+<div class="why-panel-head"><span class="why-number">5</span><h2>Fast underneath</h2></div>
+<p>A running flow is a <code>ValueTask</code> on .NET, so work that completes synchronously avoids a heap allocation. On Fable JS it is an <code>Async</code>.</p>
+<p class="why-link"><a href="the-flow-type/flow-type.html#what-runs-underneath">What runs underneath →</a></p>
 </section>
 
 <div class="why-minis">
 
 <section class="why-panel why-mini">
-<div class="why-panel-head"><span class="why-number">5</span><h2>Resources belong to their scope</h2></div>
-<p>A helper can open a connection and return it. It closes when the caller's scope ends, in reverse order, however the scope ends.</p>
+<div class="why-panel-head"><span class="why-number">6</span><h2>Resources belong to their scope</h2></div>
+<p>A helper opens a connection and returns it. It closes when the caller's scope ends.</p>
 
 ```fsharp no-check reason="Shortened from the checked examples on the Why Flow page"
 flow {
@@ -160,11 +171,12 @@ flow {
 |> Flow.scoped
 ```
 
+<p class="why-link"><a href="the-flow-type/resources.html">Resources →</a></p>
 </section>
 
 <section class="why-panel why-mini">
-<div class="why-panel-head"><span class="why-number">6</span><h2>Streams keep the same rules</h2></div>
-<p>Four workers at a time; once ten pages arrive, the rest are interrupted and their resources released.</p>
+<div class="why-panel-head"><span class="why-number">7</span><h2>Streams keep the same rules</h2></div>
+<p>Four workers at a time. After ten pages, the rest are interrupted and released.</p>
 
 ```fsharp no-check reason="Shortened from the checked examples on the Why Flow page"
 FlowStream.fromSeq pageIds
@@ -174,11 +186,12 @@ FlowStream.fromSeq pageIds
 |> FlowStream.runCollect
 ```
 
+<p class="why-link"><a href="streams/">Streams →</a></p>
 </section>
 
 <section class="why-panel why-mini">
-<div class="why-panel-head"><span class="why-number">7</span><h2>You can see what is running</h2></div>
-<p>Every fiber has an id, a parent, and a name. A registry lists the live ones; telemetry turns them into spans and metrics.</p>
+<div class="why-panel-head"><span class="why-number">8</span><h2>You can see what is running</h2></div>
+<p>Every fiber has an id, a parent, and a name. A registry lists the live ones.</p>
 
 ```fsharp no-check reason="Shortened from the checked examples on the Why Flow page"
 poll
@@ -188,13 +201,14 @@ poll
 // registry.DumpAt(clock) lists live fibers
 ```
 
+<p class="why-link"><a href="observability/">Observability →</a></p>
 </section>
 
 </div>
 
 <section class="why-panel">
-<div class="why-panel-head"><span class="why-number">8</span><h2>Fewer states to reason about, for people and for LLMs</h2></div>
-<p>Every flow ends in one of three ways. Concurrency follows fixed rules instead of per-call-site choices, and the build reports the shortcuts the types cannot rule out. A reviewer, or an LLM coding assistant, has fewer cases to consider and gets told about the usual mistakes.</p>
+<div class="why-panel-head"><span class="why-number">9</span><h2>Fewer states to reason about, for people and for LLMs</h2></div>
+<p>Every flow ends one of three ways, and concurrency follows fixed rules. Reviewers and LLM assistants have fewer cases to consider.</p>
 <div class="why-outcomes" aria-label="The three ways a flow ends">
 <span class="why-outcome why-outcome--value">Value</span>
 <span class="why-outcome why-outcome--error">Expected error, named in the type</span>
@@ -204,9 +218,12 @@ poll
 <li>Forked work belongs to the scope that started it.</li>
 <li>Cancellation always arrives as an interruption.</li>
 <li>Resources are released in reverse order, however the scope ends.</li>
-<li>Axial.Guardrails reports direct clock and randomness calls, exceptions raised in <code>flow { }</code>, and dropped cancellation tokens.</li>
+<li>Axial.Guardrails flags direct clock and randomness calls, exceptions in <code>flow { }</code>, and dropped cancellation tokens.</li>
 </ul>
+<p class="why-link"><a href="notes/guardrails.html">Guardrails →</a></p>
 </section>
+
+<p class="why-more"><a href="getting-started/why-flow.html">Read the full Why Flow page →</a></p>
 
 </div>
 
@@ -236,22 +253,14 @@ poll
 <div class="coord-row"><span class="coord-line"></span><span class="coord-pill">Node</span></div>
 </div>
 </div>
-<p class="axial-coord-caption">A workflow names the environment it needs. The caller supplies the implementation when it runs the workflow.</p>
+<p class="axial-coord-caption">A flow names the environment it needs. The caller supplies it at run time.</p>
 </div>
 
-## Built on Axial
+## Packages
 
-### Process
-
-Compose external commands and pipelines, stream output, and handle cancellation and failures through `Flow`.
-
-[Read the Process documentation →](/process/)
-
-### HTTP
-
-Build typed requests, handle responses, and apply reliability policies through the same workflow model.
-
-[Read the HTTP documentation →](/http/)
+- **[Axial](/getting-started/)**: typed async workflows with explicit dependencies, concurrency, resources, and streams.
+- **[Axial.Process](/process/)**: run external commands and pipelines as flows, with streamed output and cancellation.
+- **[Axial.HttpClient](/http/)**: an HTTP client with typed requests, responses, and retry policies.
 
 [View all packages →](/packages/)
 
@@ -261,3 +270,22 @@ Build typed requests, handle responses, and apply reliability policies through t
 <a class="docs-chip" href="https://github.com/adz/Reified">Reified</a>
 </div>
 </div>
+
+<script>
+(() => {
+  const toggle = document.getElementById("why-toggle");
+  const panels = document.getElementById("why-panels");
+  if (!toggle || !panels) return;
+
+  toggle.addEventListener("change", () => {
+    if (!toggle.checked) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => {
+      panels.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start"
+      });
+    });
+  });
+})();
+</script>

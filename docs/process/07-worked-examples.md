@@ -10,8 +10,8 @@ Flow runner reaches the host boundary.
 
 ## A command-line tool that shows progress
 
-Use `runExitCode` to run a command directly from a command-line entry point. It forwards output to the console
-and returns the integer program status. Configure routes explicitly when other destinations are needed.
+A command-line entry point can forward output through the console and choose its status from `Exit`.
+`Process.tryRun` preserves the cause so the entry point can report startup failures and interruptions.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -36,11 +36,21 @@ open Axial.Process.DSL
 
 // In a program, mark this [<EntryPoint>].
 let main _ =
-    cmd $"dotnet --info"
-    |> runExitCode
+    let outcome =
+        cmd $"dotnet --info"
+        |> stdoutToConsole
+        |> Process.tryRun
+    match outcome with
+    | Exit.Success result -> result.ExitCode
+    | Exit.Failure(Cause.Fail error) ->
+        eprintfn "%s" (ProcessError.describe error)
+        ProcessError.exitCode error
+    | Exit.Failure cause ->
+        eprintfn "%A" cause
+        1
 ```
 
-There is no separate process runtime to construct. Console forwarding is lazy; the final runner starts the command.
+There is no separate process runtime to construct. Console forwarding is configured lazily; `Process.tryRun` starts the command.
 
 ## Use a command as one step in an application
 
