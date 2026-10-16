@@ -47,9 +47,9 @@
   `Flow.forkResource resource` and `Fiber.join` it later. To acquire several in parallel, use `zipPar` or
   `sequencePar` of `Flow.scopeResource`.
 - Coming from ZIO 2: a forked fiber there shares the parent's `Scope`; in Axial it owns its own, like
-  `ZIO.scoped(effect).fork`. Translate `ZIO.acquireRelease(...).fork` then `join` to `Flow.forkResource`.
-  `zipPar`, `race`, and parallel traversals match ZIO for values you receive, and additionally release what losers
-  and failed branches acquired.
+  `ZIO.scoped(effect).fork`. Translate `ZIO.acquireRelease(...).fork` then `join` to `Flow.forkResource`;
+  `Axial.Guardrails` reports the ZIO form as `AXG007`. `zipPar`, `race`, and parallel traversals match ZIO for values
+  you receive, and additionally release what losers and failed branches acquired.
 - Use `Flow.retry` for typed failures, `Flow.repeat` for successful repetition, `FlowStream` for effectful pull
   streams, and STM for composable transactional coordination.
 - Use `Queue` to hand values between fibers when there is exactly one logical consumer. `Queue.make` takes a
