@@ -209,3 +209,22 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   lost a race, so they cancel the take instead; on .NET `Flow.fork` ran a child that never suspends to completion
   before returning; on Fable `Layer.pool` did not compile and fibers lost their runtime across trampoline hops.
 
+
+## 2026-10-11: Scoped resources follow the value in concurrent code
+
+- One rule decides who owns a scoped resource acquired by concurrent work: if the caller receives a concurrent flow's
+  value, it also receives that flow's scoped resources; if not, they are released. Concurrent work runs in a branch
+  scope, a child of the caller's: one shared by all the flows of `zipPar`, `sequencePar`, or a parallel traversal
+  (the caller receives all their values or none), one per `race` branch, and one per timed flow. A branch whose value
+  the caller receives keeps that scope registered with the caller's scope (an empty one is closed so long-lived scopes
+  do not accumulate them); a race loser, a failed `zipPar` or traversal, and a timed-out flow have it closed at once.
+  A branch scope attaches to the caller's only when something first registers with it, so a branch that acquires
+  nothing costs no registration.
+- `fork` keeps per-fiber ownership from 0.10: it returns a handle, the fiber cannot know whether it will be joined, and
+  keeping its scope open "in case" would bring back the stalled-publisher bug. `Flow.forkResource` covers "acquire in
+  the background, join later": only the acquisition runs in the fiber, and the release is registered with the caller's
+  scope through a holder scope, so it is never lost if that scope closes first.
+- This diverges from ZIO 2, where a forked fiber shares the parent's `Scope`. Scope stays ambient rather than moving
+  into `'env`: F# cannot subtract a requirement the way `ZIO.scoped` removes `Scope` from `R`, and building an
+  intersection-typed environment needs runtime proxies. The divergence is instead stated in `llms.txt` and the scopes
+  guide.

@@ -61,6 +61,8 @@ Fibers are the foundation of **Structured Concurrency** in Axial. Unlike "fire-a
 The primary operations for managing fibers are:
 
 - [**`Flow.fork`**](/api/): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
+- `Flow.forkResource`: starts acquiring a `Resource` in the background; joining the fiber returns the resource, still
+  open and owned by the caller's scope.
 - [**`Fiber.join`**](/api/): waits for the fiber and resumes with its successful value or typed failure.
 - [**`Fiber.await`**](/api/): waits for the fiber and returns its `Exit` without failing, for callers that decide what the outcome means.
 - `Fiber.poll`: returns the fiber's `Exit` if it has settled, without waiting.
@@ -71,6 +73,33 @@ The primary operations for managing fibers are:
 
 - `Flow.forkGraceful stop grace`: forks a fiber that, when its scope closes, is asked to stop with `stop` and given
   up to `grace` to finish before it is interrupted. See [stopping a consumer gracefully](#stopping-a-consumer-gracefully).
+
+### A fiber owns its scoped resources
+
+A forked fiber runs in its own [scope](/scopes/index.html). The [scoped resources](/scopes/index.html#scoped-resources)
+it acquires, such as a value from `Flow.scopeResource` or a hub subscription, are released when the fiber settles,
+whether or not anything joins it. `Fiber.join` gives you the fiber's value, not its resources, so a resource the fiber
+returns has already been released:
+
+```fsharp
+/// Wrong: the fiber releases the connection when it settles, before join returns it.
+let joinForkedConnection (connection: Resource<ClockEnvironment, string, string>) =
+    flow {
+        let! fiber = Flow.scopeResource connection |> Flow.fork
+        return! Fiber.join fiber // already released
+    }
+
+/// Right: only the acquisition runs in the fiber, and the caller's scope owns the connection.
+let joinKeptConnection (connection: Resource<ClockEnvironment, string, string>) =
+    flow {
+        let! connecting = Flow.forkResource connection
+        return! Fiber.join connecting // still open
+    }
+```
+
+To acquire several resources in parallel, use `Flow.zipPar` or `Flow.sequencePar`; see
+[Concurrency and scoped resources](/scopes/index.html#concurrency-and-scoped-resources) for the rule every concurrent
+combinator follows.
 
 Joining, awaiting, or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer](./supervision.html); use `Flow.forkDetached` when the silence is intentional, and [`Flow.supervise`](./supervision.html) to restart background work that dies with defects.
 
@@ -111,10 +140,15 @@ On .NET, a fiber wraps a `Task<Exit<'value, 'error>>`, a `CancellationTokenSourc
 
 Most code should not manage fibers manually. Prefer high-level parallel combinators when they express the whole relationship:
 
-- `Flow.zipPar`: Runs two flows concurrently in separate fibers and waits for both.
+- `Flow.zipPar`: Runs two flows concurrently and waits for both.
 - `Flow.race`: Runs two flows concurrently and returns the result of the winner, interrupting the loser.
 - `Flow.traversePar`: Maps many values with bounded concurrency and returns the results in input order.
 - `Flow.forEachPar`: Runs a flow for each value with bounded concurrency, discarding the results.
+
+Unlike `Flow.fork`, these return values, and scoped resources come with the values: what a flow acquires moves to the
+caller's scope when you receive its value, and is released when you don't (a race loser, or every branch of a
+`zipPar` or traversal that failed). So `Flow.zipPar (Flow.scopeResource a) (Flow.scopeResource b)` opens two resources
+in parallel and both stay open until the caller's scope closes.
 
 ```fsharp
 let fetchPage (url: string) : Flow<ClockEnvironment, string, int> =
@@ -214,6 +248,10 @@ resource registered with `Flow.scopeAcquireRelease`, a [hub subscription](./hub.
 eventually closes. A consumer fiber that ends therefore cannot leave a subscription behind that holds up a publisher.
 
 Closing the parent scope interrupts fibers that are still running, then releases what they acquired.
+
+`Flow.forkResource` is the exception by design: only the acquisition runs in the fiber, and the resource's release is
+registered with the caller's scope. If that scope closes before the acquisition finishes, the fiber is interrupted and
+a resource acquired anyway is released at once.
 
 ## Stopping a consumer gracefully
 
