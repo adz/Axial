@@ -935,6 +935,73 @@ let timeoutExecution
 // Parallel composition: zipPar (fail-fast, cancels the loser) and race.
 // ---------------------------------------------------------------------------------------------
 
+#if !FABLE_COMPILER
+/// Starts <paramref name="operation" />, returning a synchronous exception instead of raising it.
+let private startOperation
+    (operation: CancellationToken -> Execution<'value, 'error>)
+    (cancellationToken: CancellationToken)
+    : Result<Execution<'value, 'error>, exn> =
+    try
+        Ok(operation cancellationToken)
+    with error ->
+        Error error
+
+let private faultedExecution (error: exn) : Execution<'value, 'error> =
+    ValueTask<Exit<'value, 'error>>(Task.FromException<Exit<'value, 'error>> error)
+
+/// The asynchronous half of <c>zipParExecution</c>: waits for the first branch to settle, cancels the other on
+/// failure, and combines the exits.
+let private awaitBoth
+    (cts: CancellationTokenSource)
+    (leftRun: Execution<'left, 'error>)
+    (rightRun: Execution<'right, 'error>)
+    : Execution<'left * 'right, 'error> =
+    ValueTask<Exit<'left * 'right, 'error>>(
+        task {
+            let leftFiberTask = leftRun.AsTask()
+            let rightFiberTask = rightRun.AsTask()
+
+            let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
+
+            if obj.ReferenceEquals(completed, leftFiberTask) then
+                match leftFiberTask.GetAwaiter().GetResult() with
+                | Exit.Failure cause ->
+                    cts.Cancel()
+                    let! rightExit = rightFiberTask
+
+                    return
+                        match rightExit with
+                        | Exit.Failure Cause.Interrupt -> Exit.Failure cause
+                        | Exit.Failure otherCause -> Exit.Failure(Cause.Both(cause, otherCause))
+                        | Exit.Success _ -> Exit.Failure cause
+                | Exit.Success leftValue ->
+                    let! rightExit = rightFiberTask
+
+                    return
+                        match rightExit with
+                        | Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
+                        | Exit.Failure cause -> Exit.Failure cause
+            else
+                match rightFiberTask.GetAwaiter().GetResult() with
+                | Exit.Failure cause ->
+                    cts.Cancel()
+                    let! leftExit = leftFiberTask
+
+                    return
+                        match leftExit with
+                        | Exit.Failure Cause.Interrupt -> Exit.Failure cause
+                        | Exit.Failure leftCause -> Exit.Failure(Cause.Both(leftCause, cause))
+                        | Exit.Success _ -> Exit.Failure cause
+                | Exit.Success rightValue ->
+                    let! leftExit = leftFiberTask
+
+                    return
+                        match leftExit with
+                        | Exit.Success leftValue -> Exit.Success(leftValue, rightValue)
+                        | Exit.Failure cause -> Exit.Failure cause
+        })
+
+#endif
 /// Runs two operations concurrently, cancelling the other as soon as one of them fails, and folds their exits
 /// with <paramref name="chooseParallel" /> (both settled) or <paramref name="chooseAfterCancel" /> (one failed
 /// and cancelled the other).
@@ -986,52 +1053,32 @@ let zipParExecution
             return chooseParallel leftExit rightExit
     }
 #else
-    ValueTask<Exit<'left * 'right, 'error>>(
-        task {
-            let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+    let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
 
-            let leftFiberTask = (leftOp cts.Token).AsTask()
-            let rightFiberTask = (rightOp cts.Token).AsTask()
-
-            let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
-
-            if obj.ReferenceEquals(completed, leftFiberTask) then
-                match leftFiberTask.GetAwaiter().GetResult() with
-                | Exit.Failure cause ->
+    // The operations start outside the task builder so that branches which complete synchronously are combined
+    // without allocating one. A throwing operation faults the result, and a throwing left operation leaves the
+    // right one unstarted, as when both started inside the builder.
+    match startOperation leftOp cts.Token with
+    | Error error -> faultedExecution error
+    | Ok leftRun ->
+        match startOperation rightOp cts.Token with
+        | Error error -> faultedExecution error
+        | Ok rightRun when leftRun.IsCompletedSuccessfully && rightRun.IsCompletedSuccessfully ->
+            // Both settled: the left exit counts as the first, as Task.WhenAny would report it.
+            let exit =
+                match leftRun.Result, rightRun.Result with
+                | Exit.Failure cause, rightExit ->
                     cts.Cancel()
-                    let! rightExit = rightFiberTask
 
-                    return
-                        match rightExit with
-                        | Exit.Failure Cause.Interrupt -> Exit.Failure cause
-                        | Exit.Failure otherCause -> Exit.Failure(Cause.Both(cause, otherCause))
-                        | Exit.Success _ -> Exit.Failure cause
-                | Exit.Success leftValue ->
-                    let! rightExit = rightFiberTask
+                    match rightExit with
+                    | Exit.Failure Cause.Interrupt -> Exit.Failure cause
+                    | Exit.Failure otherCause -> Exit.Failure(Cause.Both(cause, otherCause))
+                    | Exit.Success _ -> Exit.Failure cause
+                | Exit.Success leftValue, Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
+                | Exit.Success _, Exit.Failure cause -> Exit.Failure cause
 
-                    return
-                        match rightExit with
-                        | Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
-                        | Exit.Failure cause -> Exit.Failure cause
-            else
-                match rightFiberTask.GetAwaiter().GetResult() with
-                | Exit.Failure cause ->
-                    cts.Cancel()
-                    let! leftExit = leftFiberTask
-
-                    return
-                        match leftExit with
-                        | Exit.Failure Cause.Interrupt -> Exit.Failure cause
-                        | Exit.Failure leftCause -> Exit.Failure(Cause.Both(leftCause, cause))
-                        | Exit.Success _ -> Exit.Failure cause
-                | Exit.Success rightValue ->
-                    let! leftExit = leftFiberTask
-
-                    return
-                        match leftExit with
-                        | Exit.Success leftValue -> Exit.Success(leftValue, rightValue)
-                        | Exit.Failure cause -> Exit.Failure cause
-        })
+            ValueTask<Exit<'left * 'right, 'error>>(exit)
+        | Ok rightRun -> awaitBoth cts leftRun rightRun
 #endif
 
 /// Runs two operations concurrently, waits for both regardless of failure (catching any exception either one
@@ -1089,12 +1136,77 @@ let zipParAllExecution
         })
 #endif
 
+#if !FABLE_COMPILER
+/// Hands the race loser's exit to <paramref name="onLoserSettled" /> once it settles, or <c>None</c> when it faulted
+/// or was cancelled without producing one.
+let private reportLoser
+    (losing: Task<Exit<'value, 'error>>)
+    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    : unit =
+    losing.ContinueWith(
+        (fun (settled: Task<Exit<'value, 'error>>) ->
+            if settled.IsCompletedSuccessfully then
+                onLoserSettled (Some settled.Result)
+            else
+                onLoserSettled None),
+        TaskContinuationOptions.ExecuteSynchronously)
+    |> ignore
+
+/// Settles a race whose winner has already completed: cancels the loser and returns the winner's exit.
+let private decideRace
+    (cts: CancellationTokenSource)
+    (leftWon: bool)
+    (winner: Execution<'value, 'error>)
+    (loser: Execution<'value, 'error>)
+    (onDecided: bool -> unit)
+    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    : Execution<'value, 'error> =
+    cts.Cancel()
+    onDecided leftWon
+
+    if loser.IsCompletedSuccessfully then
+        onLoserSettled (Some loser.Result)
+    else
+        reportLoser (loser.AsTask()) onLoserSettled
+
+    ValueTask<Exit<'value, 'error>>(winner.Result)
+
+/// The asynchronous half of <c>raceExecution</c>: waits for the first operation to settle, then cancels the other.
+let private awaitRace
+    (cts: CancellationTokenSource)
+    (leftRun: Execution<'value, 'error>)
+    (rightRun: Execution<'value, 'error>)
+    (onDecided: bool -> unit)
+    (onLoserSettled: Exit<'value, 'error> option -> unit)
+    : Execution<'value, 'error> =
+    ValueTask<Exit<'value, 'error>>(
+        task {
+            let leftFiberTask = leftRun.AsTask()
+            let rightFiberTask = rightRun.AsTask()
+
+            let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
+            cts.Cancel()
+
+            // The loser's exit is dropped without ever being awaited, so hand it to the caller once the loser
+            // settles.
+            let leftWon = obj.ReferenceEquals(completed, leftFiberTask)
+            onDecided leftWon
+            reportLoser (if leftWon then rightFiberTask else leftFiberTask) onLoserSettled
+
+            return completed.GetAwaiter().GetResult()
+        })
+
+#endif
 /// Runs two operations concurrently and returns whichever settles first, cancelling the loser.
+/// <paramref name="onDecided" /> is told whether the left operation won before the winner's exit is returned.
+/// <paramref name="onLoserSettled" /> is called once the loser settles, which may be after the race has returned,
+/// with its exit, or with <c>None</c> when the loser faulted or was cancelled without producing one.
 let raceExecution
     (leftOp: CancellationToken -> Execution<'value, 'error>)
     (rightOp: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
-    (onDiscardedExit: Exit<'value, 'error> -> unit)
+    (onDecided: bool -> unit)
+    (onLoserSettled: Exit<'value, 'error> option -> unit)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
     async {
@@ -1104,43 +1216,35 @@ let raceExecution
         let right = startBranch rightOp rightSource.Token
         let! first = awaitFirst left right
 
-        // The loser is cancelled and not awaited; its exit goes to the caller for unobserved-defect reporting once
-        // it settles.
+        // The loser is cancelled and not awaited; its exit goes to the caller once it settles.
         match first with
         | Choice1Of2 exit ->
             rightSource.Cancel()
-            right.OnSettled onDiscardedExit
+            onDecided true
+            right.OnSettled(Some >> onLoserSettled)
             return exit
         | Choice2Of2 exit ->
             leftSource.Cancel()
-            left.OnSettled onDiscardedExit
+            onDecided false
+            left.OnSettled(Some >> onLoserSettled)
             return exit
     }
 #else
-    ValueTask<Exit<'value, 'error>>(
-        task {
-            let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+    let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
 
-            let leftFiberTask = (leftOp cts.Token).AsTask()
-            let rightFiberTask = (rightOp cts.Token).AsTask()
-
-            let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
-            cts.Cancel()
-
-            // The loser's exit is dropped without ever being awaited, so hand it to the caller for
-            // unobserved-defect reporting once the loser settles.
-            let losing =
-                if obj.ReferenceEquals(completed, leftFiberTask) then rightFiberTask else leftFiberTask
-
-            losing.ContinueWith(
-                (fun (settled: Task<Exit<'value, 'error>>) ->
-                    if settled.IsCompletedSuccessfully then
-                        onDiscardedExit settled.Result),
-                TaskContinuationOptions.ExecuteSynchronously)
-            |> ignore
-
-            return completed.GetAwaiter().GetResult()
-        })
+    // As in zipParExecution, the operations start outside the task builder so that a winner that has already
+    // settled is returned without allocating one. Task.WhenAny reports the left operation first when both have
+    // settled, so the right one wins synchronously only while the left one is still running.
+    match startOperation leftOp cts.Token with
+    | Error error -> faultedExecution error
+    | Ok leftRun ->
+        match startOperation rightOp cts.Token with
+        | Error error -> faultedExecution error
+        | Ok rightRun when leftRun.IsCompletedSuccessfully ->
+            decideRace cts true leftRun rightRun onDecided onLoserSettled
+        | Ok rightRun when not leftRun.IsCompleted && rightRun.IsCompletedSuccessfully ->
+            decideRace cts false rightRun leftRun onDecided onLoserSettled
+        | Ok rightRun -> awaitRace cts leftRun rightRun onDecided onLoserSettled
 #endif
 
 // ---------------------------------------------------------------------------------------------
@@ -1462,6 +1566,40 @@ let whenSettled (exitTask: ExitTask<'value, 'error>) (action: unit -> unit) : un
 #else
     exitTask.ContinueWith((fun (_: Task<Exit<'value, 'error>>) -> action ()), TaskContinuationOptions.ExecuteSynchronously)
     |> ignore
+#endif
+
+/// Starts <paramref name="deed" /> without awaiting it, passing any exception it raises to <paramref name="onError" />.
+let startDeed (deed: unit -> Deed) (onError: exn -> unit) : unit =
+#if FABLE_COMPILER
+    startImmediate
+        (async {
+            try
+                do! deed ()
+            with error ->
+                onError error
+        })
+        None
+#else
+    let started =
+        try
+            deed ()
+        with error ->
+            Task.FromException error
+
+    if not started.IsCompletedSuccessfully then
+        started.ContinueWith(
+            (fun (settled: Task) ->
+                if settled.IsFaulted then
+                    let failure = settled.Exception
+
+                    onError (
+                        if failure.InnerExceptions.Count = 1 then
+                            failure.InnerExceptions[0]
+                        else
+                            failure :> exn
+                    )),
+            TaskContinuationOptions.ExecuteSynchronously)
+        |> ignore
 #endif
 
 // ---------------------------------------------------------------------------------------------

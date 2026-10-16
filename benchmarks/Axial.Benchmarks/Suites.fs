@@ -211,3 +211,51 @@ type SynchronousCompletionBenchmarks() =
     member _.PlyValueTask() =
         plyValueTask
         |> Shared.runValueTaskResult
+
+/// The cost of parallel composition itself: each branch and each traversal item runs in a child scope of the caller.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type ParallelCompositionBenchmarks() =
+    let items = [ 1..10_000 ]
+
+    let traverse: Flow<unit, string, int> =
+        items
+        |> Flow.traversePar (Parallelism.bounded 8) (fun value -> Flow.succeed (value + 1))
+        |> Flow.map List.length
+
+    let zipPars: Flow<unit, string, int> =
+        flow {
+            let total = ref 0
+
+            for value in 1..1_000 do
+                let! left, right = Flow.zipPar (Flow.succeed value) (Flow.succeed 1)
+                total.Value <- total.Value + left + right
+
+            return total.Value
+        }
+
+    let races: Flow<unit, string, int> =
+        flow {
+            let total = ref 0
+
+            for value in 1..1_000 do
+                let! won = Flow.race (Flow.succeed value) (Flow.succeed 0)
+                total.Value <- total.Value + won
+
+            return total.Value
+        }
+
+    [<Benchmark(Description = "traversePar 10k items, parallelism 8")>]
+    member _.TraversePar() =
+        traverse.RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "zipPar x1000")>]
+    member _.ZipPar() =
+        zipPars.RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "race x1000")>]
+    member _.Race() =
+        races.RunSynchronously(()) |> Shared.consumeExit

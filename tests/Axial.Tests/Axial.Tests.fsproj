@@ -25,6 +25,8 @@
     <Compile Include="FiberObserverTests.fs" />
     <Compile Include="FiberDiagnosticsTests.fs" />
     <Compile Include="WorkflowResourceTests.fs" />
+    <Compile Include="ScopedResourceOwnershipTests.fs" />
+    <Compile Include="ParallelSettlementTests.fs" />
     <Compile Include="WorkflowStateTests.fs" />
     <Compile Include="StmPrimitivesTests.fs" />
     <Compile Include="BclInteropTests.fs" />

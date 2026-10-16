@@ -826,38 +826,74 @@ module internal FiberId =
 /// </remarks>
 type Scope() =
     let gate = obj()
-    // Keys increase monotonically, so sorting them recovers registration order after removals.
-    let finalizers = System.Collections.Generic.Dictionary<int64, Platform.Finalizer>()
+    // Keys increase monotonically, so sorting them recovers registration order after removals. Allocated on the
+    // first registration: most parallel branch scopes never hold anything.
+    let mutable finalizers: System.Collections.Generic.Dictionary<int64, Platform.Finalizer> = null
     let mutable nextKey = 0L
     let mutable closed = false
     let mutable detach: unit -> unit = ignore
+    // A branch scope's parent, until the branch first registers something and attaches to it; null otherwise.
+    let mutable pendingParent: Scope = Unchecked.defaultof<Scope>
+
+    /// A child of <paramref name="parent" /> that registers with it only when something first registers with the
+    /// child, so a parallel branch that acquires nothing costs its parent no registration. Once the parent has
+    /// closed, registering with the child fails as registering with the parent would.
+    static member internal Branch(parent: Scope) : Scope =
+        let branch = new Scope()
+        branch.PendingParent <- parent
+        branch
+
+    member internal _.PendingParent
+        with set (value: Scope) = pendingParent <- value
 
     /// Registers a finalizer and returns a key that <c>Unregister</c> accepts. Work that settles before the
     /// scope closes unregisters itself, so a long-lived scope retains only what is still outstanding.
-    member internal _.Register(finalizer: Platform.Finalizer) : int64 =
+    member internal this.Register(finalizer: Platform.Finalizer) : int64 =
+        match this.TryRegister finalizer with
+        | ValueSome key -> key
+        | ValueNone -> raise (ObjectDisposedException(nameof Scope))
+
+    /// Same as <c>Register</c>, but returns <c>ValueNone</c> instead of throwing once the scope has closed. Internal
+    /// callers that fall back on a closed scope use this: Fable cannot tell <c>ObjectDisposedException</c> apart from
+    /// other exceptions, so catching it there would catch everything.
+    member internal this.TryRegister(finalizer: Platform.Finalizer) : int64 voption =
         if isNull (box finalizer) then
             nullArg (nameof finalizer)
 
         lock gate (fun () ->
+            // Attaching takes the parent's lock while holding this one. Locks are only ever nested child-to-parent
+            // (closing runs finalizers outside the lock), so this cannot deadlock.
+            if not closed && not (isNull (box pendingParent)) then
+                let parent = pendingParent
+                pendingParent <- Unchecked.defaultof<Scope>
+
+                match parent.TryRegister(fun cancellationToken -> this.Close cancellationToken) with
+                | ValueSome key -> detach <- fun () -> parent.Unregister key
+                | ValueNone -> closed <- true
+
             if closed then
-                raise (ObjectDisposedException(nameof Scope))
+                ValueNone
             else
+                if isNull finalizers then
+                    finalizers <- System.Collections.Generic.Dictionary<int64, Platform.Finalizer>()
+
                 let key = nextKey
                 nextKey <- nextKey + 1L
                 finalizers[key] <- finalizer
-                key)
+                ValueSome key)
 
     /// Removes a finalizer without running it. Has no effect once the scope has closed.
     member internal _.Unregister(key: int64) : unit =
         lock gate (fun () ->
-            if not closed then
+            if not closed && not (isNull finalizers) then
                 finalizers.Remove key |> ignore)
 
     member this.AddFinalizer(finalizer: Platform.Finalizer) =
         this.Register finalizer |> ignore
 
     /// The number of finalizers still registered; used by tests to prove that settled work is released.
-    member internal _.RegisteredCount = lock gate (fun () -> finalizers.Count)
+    member internal _.RegisteredCount =
+        lock gate (fun () -> if isNull finalizers then 0 else finalizers.Count)
 
     member this.AddDisposable(resource: IDisposable) =
         if isNull (box resource) then
@@ -874,13 +910,39 @@ type Scope() =
         this.AddFinalizer(fun _ -> Platform.disposeAsyncDeed resource)
 
     member this.AddChild() =
+        match this.TryAddChild() with
+        | ValueSome child -> child
+        | ValueNone -> raise (ObjectDisposedException(nameof Scope))
+
+    /// Same as <c>AddChild</c>, but returns <c>ValueNone</c> once the scope has closed.
+    member internal this.TryAddChild() : Scope voption =
         let child = new Scope()
-        let key = this.Register(fun cancellationToken -> child.Close(cancellationToken))
-        child.Detach <- fun () -> this.Unregister key
-        child
+
+        match this.TryRegister(fun cancellationToken -> child.Close(cancellationToken)) with
+        | ValueSome key ->
+            child.Detach <- fun () -> this.Unregister key
+            ValueSome child
+        | ValueNone -> ValueNone
 
     member internal _.Detach
         with set (value: unit -> unit) = detach <- value
+
+    /// Closes the scope when nothing is registered with it, so a parallel branch whose scope the caller keeps does
+    /// not leave an empty child behind in a long-lived scope. A scope that still holds registrations stays open and
+    /// closes with its parent.
+    member internal _.CloseIfEmpty() : unit =
+        let emptied =
+            lock gate (fun () ->
+                if not closed && (isNull finalizers || finalizers.Count = 0) then
+                    closed <- true
+                    pendingParent <- Unchecked.defaultof<Scope>
+                    true
+                else
+                    false)
+
+        if emptied then
+            detach ()
+            detach <- ignore
 
     member _.Close(cancellationToken: CancellationToken) : Platform.Deed =
         let snapshot =
@@ -889,9 +951,16 @@ type Scope() =
                     [||]
                 else
                     closed <- true
-                    let ordered = finalizers.Keys |> Seq.sort |> Seq.map (fun key -> finalizers[key]) |> Seq.toArray
-                    finalizers.Clear()
-                    ordered)
+                    pendingParent <- Unchecked.defaultof<Scope>
+
+                    if isNull finalizers then
+                        [||]
+                    else
+                        let ordered =
+                            finalizers.Keys |> Seq.sort |> Seq.map (fun key -> finalizers[key]) |> Seq.toArray
+
+                        finalizers.Clear()
+                        ordered)
 
         // A closed child no longer needs its parent to close it. Unregistering twice is harmless.
         detach ()
@@ -1141,7 +1210,7 @@ type Resource<'env, 'error, 'value> =
     internal
     | Resource of
         acquire: Flow<'env, 'error, 'value> *
-        register: ('value -> Scope -> unit)
+        release: ('value -> Platform.Finalizer)
 
 /// <summary>
 /// Represents an error channel that cannot occur.

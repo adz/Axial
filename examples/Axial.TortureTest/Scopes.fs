@@ -40,7 +40,14 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             let acquired value = Flow.delay (fun () -> record (Acquired(scope, id)); Flow.ok value)
 
             match round.Next 8 with
-            | 0 -> Flow.scopeResource (Resource.ofAsync (acquired id) (fun _ _ -> async { release () })) |> Flow.ignore
+            | 0 ->
+                let resource = Resource.ofAsync (acquired id) (fun _ _ -> async { release () })
+
+                // Acquired here or by a fiber; either way the release belongs to this scope.
+                if round.Chance 50 then
+                    Flow.scopeResource resource |> Flow.ignore
+                else
+                    Flow.forkResource resource |> Flow.bind Fiber.join |> Flow.ignore
             | 1 -> acquired () |> Flow.bind (fun () -> Flow.scopeAsyncFinalizer (fun _ -> async { release () }))
             | 2 -> acquired () |> Flow.bind (fun () -> Flow.scopeResource (Resource.asyncFinalizer (fun _ -> async { release () })))
             | 3 -> Flow.scope |> Flow.bind (fun current -> acquired () |> Flow.map (fun () -> current.AddFinalizer(finalizer release)))

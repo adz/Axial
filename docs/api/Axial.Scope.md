@@ -10,6 +10,12 @@ Most application code should not construct or mutate `Scope` directly. Use the F
 - [`Flow.scopeResource`](/api/Axial.Flow.html#Axial.Flow.scopeResource) acquires a reusable [`Resource`](/api/Axial.ResourceModule.html) description.
 - [`Flow.scopeDisposable`](/api/Axial.Flow.html#Axial.Flow.scopeDisposable) and [`Flow.scopeAsyncDisposable`](/api/Axial.Flow.html#Axial.Flow.scopeAsyncDisposable) register existing .NET resources.
 - [`Flow.scopeFinalizer`](/api/Axial.Flow.html#Axial.Flow.scopeFinalizer) and [`Flow.scopeAsyncFinalizer`](/api/Axial.Flow.html#Axial.Flow.scopeAsyncFinalizer) register custom cleanup.
+- [`Flow.forkResource`](/api/Axial.Flow.html#Axial.Flow.forkResource) acquires a `Resource` in a fiber and registers its release with the current scope.
+
+Anything registered this way is a scoped resource. A forked fiber has its own scope and releases its scoped resources
+when it settles. The flows of `Flow.zipPar`, `Flow.sequencePar`, or `Flow.traversePar` share a scope, and each branch
+of `Flow.race` and each timed flow has one. That scope moves to the caller's scope when the caller receives the value
+and closes otherwise.
 
 This runtime lifetime differs from F# `use` and `use!`, which dispose when their lexical computation-expression body
 exits. A Flow scope can intentionally span functions, subflows, stream pulls, and child fibers.

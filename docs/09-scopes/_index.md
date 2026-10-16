@@ -46,6 +46,20 @@ another function or later workflow to use.
 A Flow scope is a runtime ownership boundary. It lets resources and child fibers live across function and subflow calls,
 then closes all of them together after success, failure, interruption, or defect.
 
+## Scoped resources
+
+A **scoped resource** is anything whose cleanup is registered with a Flow scope instead of a lexical `use`:
+
+- a value acquired with `Flow.scopeResource` or `Flow.scopeAcquireRelease`
+- cleanup registered with `Flow.scopeFinalizer`, `Flow.scopeAsyncFinalizer`, `Flow.scopeDisposable`, or
+  `Flow.scopeAsyncDisposable`
+- what Axial registers for you: a [hub subscription](/concurrency-and-state/hub.html), a queue from
+  `Queue.makeScoped`, and a fiber from `Flow.fork`, which the scope interrupts if it is still running
+
+A scoped resource is released when the scope it was registered with closes. This page is about which scope that is:
+the current one, a child created with `Flow.scoped`, or, in concurrent code, the scope of a branch or fiber (see
+[Concurrency and scoped resources](#concurrency-and-scoped-resources)).
+
 ## Lifetime maps
 
 The diagrams use containment literally: Flow B is a subflow inside Flow A, and a resource bar sits inside the boundary
@@ -201,11 +215,118 @@ List.ofSeq lifecycle |> shouldEqual [ "open"; "close orders" ]
 
 Use `Resource.finalizer` for task-based cleanup and `Resource.asyncFinalizer` for F# async cleanup.
 
-## Fibers and nested work
+## Concurrency and scoped resources
 
-A fiber created with `Flow.fork` belongs to the current scope. Closing the scope interrupts and awaits an unfinished
-fiber. A nested `Flow.scoped` therefore gives a group of resources and fibers a lifetime shorter than the surrounding
-application without requiring every function to pass cleanup handles manually.
+Concurrent flows run in scopes of their own: the flows of one `Flow.zipPar`, `Flow.sequencePar`, or parallel
+traversal share a scope, each branch of `Flow.race` has one, and so does each fiber from `Flow.fork`.
+
+- When you receive a concurrent flow's value, its scoped resources move to your scope as if you had acquired them:
+  they stay open for your later steps and are released when your scope closes.
+- When you don't receive the value, its scoped resources are released.
+
+| Combinator | What happens to its scoped resources |
+| --- | --- |
+| `Flow.zipPar`, `Flow.sequencePar`, `Flow.traversePar`, `Flow.forEachPar` | Move to the caller's scope when every flow succeeds. Released before it returns when any flow fails. |
+| `Flow.race` | The winner's move to the caller's scope if it succeeds. The loser's are released once it has been interrupted. |
+| `Flow.timeout`, `Flow.timeoutToOk`, `Flow.timeoutWith` | Move to the caller's scope when the flow succeeds in time. Released when it fails or times out. |
+| `Flow.fork` and its variants | Stay with the fiber and are released when it settles. `Fiber.join` gives you the value, not the resources. |
+| `Flow.forkResource` | The resource is acquired in a fiber and its release goes to the caller's scope. |
+| The per-worker resource of `Flow.traverseParUsing` and `Flow.forEachParUsing` | Released when that worker finishes. |
+
+`Flow.fork` is the combinator that returns a handle instead of a value. Nothing tells the fiber whether anyone will
+join it, so it releases its scoped resources when it settles. That is what stops a finished consumer from holding a hub
+subscription open and stalling the publisher.
+
+### Acquire in parallel
+
+Acquire several scoped resources at once with `Flow.zipPar` or `Flow.sequencePar`. Both stay open after the
+combinator returns:
+
+```fsharp
+/// Records each open and close; the lock is there because the two opens run in parallel.
+let connectionLog = ResizeArray<string>()
+let log entry = lock connectionLog (fun () -> connectionLog.Add entry)
+
+let connectionTo (name: string) : Resource<ClockEnvironment, string, string> =
+    Resource.create
+        (Flow.delay (fun () -> log $"open {name}"; Flow.ok name))
+        (fun _ _ -> log $"close {name}"; Task.CompletedTask)
+
+let closedCount () = lock connectionLog (fun () -> connectionLog |> Seq.filter (fun entry -> entry.StartsWith "close") |> Seq.length)
+
+/// Opens two connections in parallel and reports how many were closed while they were in use.
+let openBoth : Flow<ClockEnvironment, string, int> =
+    flow {
+        let! orders, customers =
+            Flow.zipPar (Flow.scopeResource (connectionTo "orders")) (Flow.scopeResource (connectionTo "customers"))
+
+        return closedCount ()
+    }
+    |> Flow.scoped
+```
+
+```fsharp run
+connectionLog.Clear()
+openBoth |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success 0)
+closedCount () |> shouldEqual 2
+```
+
+No connection closed while `openBoth` used them; both closed when its scope did.
+
+### Acquire in the background and keep it
+
+To start acquiring one resource, do other work, and use the resource later, use `Flow.forkResource`. The acquisition
+runs in a fiber, but the release belongs to the caller's scope, so `Fiber.join` returns a live resource. A plain
+`Flow.fork` of the same acquisition returns a resource that the fiber has already released:
+
+```fsharp
+/// A plain fork: the fiber owns the connection and releases it when it settles, before join returns it.
+let forkedConnectionClosedOnJoin : Flow<ClockEnvironment, string, bool> =
+    flow {
+        let! fiber = Flow.scopeResource (connectionTo "audit") |> Flow.fork
+        let! _ = Fiber.join fiber
+        return lock connectionLog (fun () -> connectionLog.Contains "close audit")
+    }
+    |> Flow.scoped
+
+/// forkResource: the caller's scope owns the connection, so it is still open after join.
+let keptConnectionClosedOnJoin : Flow<ClockEnvironment, string, bool> =
+    flow {
+        let! connecting = Flow.forkResource (connectionTo "audit")
+        let! _ = Fiber.join connecting
+        return lock connectionLog (fun () -> connectionLog.Contains "close audit")
+    }
+    |> Flow.scoped
+```
+
+```fsharp run
+connectionLog.Clear()
+forkedConnectionClosedOnJoin |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success true)
+
+connectionLog.Clear()
+keptConnectionClosedOnJoin |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success false)
+List.ofSeq connectionLog |> shouldEqual [ "open audit"; "close audit" ]
+```
+
+If the caller's scope closes before the acquisition finishes, the fiber is interrupted, and a resource acquired anyway
+is released straight away.
+
+### Coming from ZIO or Effect
+
+In ZIO 2 and Effect, a forked fiber shares its parent's `Scope`, so forking an `acquireRelease` and joining the fiber
+returns a live resource. In Axial a forked fiber owns its scope, like `ZIO.scoped(effect).fork`; write
+`Flow.forkResource` for that pattern.
+
+`zipPar`, `race`, and the parallel traversals behave as in ZIO and Effect for values you receive. What a race loser or
+a failed branch acquired is released as soon as Axial discards that flow, not when the scope closes. If the flow
+stored the resource somewhere else first, such as in a `Ref`, that reference points at a released resource.
+
+### Nested scopes
+
+A fiber created with `Flow.fork` is itself registered with the current scope. Closing the scope interrupts and awaits an
+unfinished fiber, then releases what the fiber acquired. A nested `Flow.scoped` therefore gives a group of resources and
+fibers a lifetime shorter than the surrounding application without requiring every function to pass cleanup handles
+manually.
 
 Child scopes are also owned by their parent. If the root execution is interrupted, it closes every remaining child in
 reverse registration order.
@@ -222,6 +343,9 @@ mapping fibers close on completion, failure, interruption, or early termination.
 - Use `Flow.scoped` when ownership spans functions, subflows, fibers, or stream pulls.
 - `scope...` functions attach cleanup to the current scope; they do not clean up immediately.
 - Ordinary `Flow.bind` and `flow { }` nesting share the current scope.
+- In concurrent code, you receive a flow's scoped resources when you receive its value; otherwise they are released.
+- A forked fiber releases its scoped resources when it settles. Use `Flow.forkResource` to acquire in the background
+  and keep the resource, and `Flow.zipPar` or `Flow.sequencePar` to acquire several in parallel.
 - Nested scopes close before their parent.
 - Finalizers run in reverse registration order and at most once.
 - Cleanup failures are defects and combine with the failure that caused closure.

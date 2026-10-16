@@ -20,6 +20,69 @@ let tests : Test list =
           return [ equal "value" 42 value; isTrue "released before the parent scope closed" released.Value ]
       })
 
+      test "Flow.forkResource keeps the resource in the caller's scope" (flow {
+          let events = ResizeArray<string>()
+
+          let connection =
+              Resource.ofAsync
+                  (Flow.delay (fun () -> events.Add "acquired"; Flow.ok "db"))
+                  (fun _ _ -> async { events.Add "released" })
+
+          let! whileOpen =
+              flow {
+                  let! connecting = Flow.forkResource connection
+                  let! name = Fiber.join connecting
+                  return name, List.ofSeq events
+              }
+              |> Flow.scoped
+
+          return
+              [ equal "joined while open" ("db", [ "acquired" ]) whileOpen
+                equal "released with the scope" [ "acquired"; "released" ] (List.ofSeq events) ]
+      })
+
+      test "Flow.zipPar and Flow.race hand over the scoped resources of values the caller receives" (flow {
+          let events = ResizeArray<string>()
+
+          let acquire (name: string) =
+              Flow.scopeResource (
+                  Resource.ofAsync
+                      (Flow.delay (fun () -> events.Add $"{name}:acquired"; Flow.ok name))
+                      (fun _ _ -> async { events.Add $"{name}:released" }))
+
+          let releasedNow () = events |> Seq.filter (fun event -> event.EndsWith ":released") |> List.ofSeq |> List.sort
+
+          let! insideScope =
+              flow {
+                  let! _ = Flow.zipPar (acquire "left") (acquire "right")
+                  let afterZip = releasedNow ()
+
+                  let loser =
+                      flow {
+                          let! _ = acquire "loser"
+                          do! Flow.never
+                          return "loser"
+                      }
+
+                  let winner = Flow.sleep (TimeSpan.FromMilliseconds 20.0) |> Flow.bind (fun () -> acquire "winner")
+                  let! won = Flow.race loser winner
+                  do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
+                  return afterZip, won, releasedNow ()
+              }
+              |> Flow.scoped
+
+          let afterZip, won, afterRace = insideScope
+
+          return
+              [ equal "nothing released after zipPar" [] afterZip
+                equal "winner" "winner" won
+                equal "only the loser released after race" [ "loser:released" ] afterRace
+                equal
+                    "the rest released with the scope"
+                    [ "left:released"; "loser:released"; "right:released"; "winner:released" ]
+                    (releasedNow ()) ]
+      })
+
       test "Flow.forkGraceful lets a consumer drain its queue when the scope closes" (flow {
           let written = ResizeArray<int>()
 
