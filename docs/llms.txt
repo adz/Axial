@@ -35,7 +35,21 @@
   randomness, GUID, environment-variable, filesystem, console, and other operational effects explicitly.
 - Use `use` and `use!` for lexical disposal. Use `Flow.scoped` to create a runtime ownership boundary, then
   `Flow.scopeAcquireRelease`, `Flow.scopeResource`, `Flow.scopeDisposable`, or a finalizer operation to attach cleanup.
+  A **scoped resource** is anything registered this way, plus what Axial registers for you (a hub subscription, a
+  `Queue.makeScoped` queue, a forked fiber); it is released when the scope it was registered with closes.
+- Scoped resources in concurrent code follow one rule: if you receive a concurrent flow's value, you also receive its
+  scoped resources; if you don't, they are released. `zipPar`, `sequencePar`, `traversePar`, and `forEachPar` move
+  them to the caller's scope when every flow succeeds and release them when any fails. `race` keeps the winner's and
+  releases the loser's. `timeout` keeps them only when the flow succeeds in time.
 - Use `Flow.fork`, `join`, and `interrupt` for owned fibers; `forkDetached` states intentional fire-and-forget.
+  `fork` returns a handle, not a value, so the fiber releases its scoped resources when it settles: a resource
+  returned through `Fiber.join` is already released. To acquire one resource in the background and keep it, use
+  `Flow.forkResource resource` and `Fiber.join` it later. To acquire several in parallel, use `zipPar` or
+  `sequencePar` of `Flow.scopeResource`.
+- Coming from ZIO 2: a forked fiber there shares the parent's `Scope`; in Axial it owns its own, like
+  `ZIO.scoped(effect).fork`. Translate `ZIO.acquireRelease(...).fork` then `join` to `Flow.forkResource`.
+  `zipPar`, `race`, and parallel traversals match ZIO for values you receive, and additionally release what losers
+  and failed branches acquired.
 - Use `Flow.retry` for typed failures, `Flow.repeat` for successful repetition, `FlowStream` for effectful pull
   streams, and STM for composable transactional coordination.
 - Use `Queue` to hand values between fibers when there is exactly one logical consumer. `Queue.make` takes a
@@ -48,8 +62,8 @@
   `Hub.subscribe` chooses its own `QueueStrategy`, returns a `Dequeue`, and belongs to the current scope (a forked
   fiber's subscription ends with the fiber); `Dequeue.shutdown` unsubscribes. Only a full `BackPressure` subscription
   suspends `Hub.publish`, and while it waits no subscriber gets later values; `Hub.tryPublish` never waits.
-- Each forked fiber owns a child scope, closed when the fiber settles, so what a fiber acquires ends with it. Use
-  `Flow.forkGraceful (Dequeue.shutdown queue) grace` for a consumer that must drain its queue when its scope closes.
+- Use `Flow.forkGraceful (Dequeue.shutdown queue) grace` for a consumer that must drain its queue when its scope
+  closes.
 - Connect streams to queues and hubs with `FlowStream.fromDequeue`, `fromHub strategy` (subscribes for the life of the
   stream), `runIntoQueue`, and `runIntoHub`. `FlowStream.mergePar` runs streams concurrently, `buffer strategy`
   decouples a producer from its consumer, and `fromSchedule` turns a schedule into a tick stream.

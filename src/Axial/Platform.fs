@@ -1090,11 +1090,15 @@ let zipParAllExecution
 #endif
 
 /// Runs two operations concurrently and returns whichever settles first, cancelling the loser.
+/// <paramref name="onDecided" /> is told whether the left operation won before the winner's exit is returned.
+/// <paramref name="onLoserSettled" /> is called once the loser settles, which may be after the race has returned,
+/// with its exit, or with <c>None</c> when the loser faulted or was cancelled without producing one.
 let raceExecution
     (leftOp: CancellationToken -> Execution<'value, 'error>)
     (rightOp: CancellationToken -> Execution<'value, 'error>)
     (cancellationToken: CancellationToken)
-    (onDiscardedExit: Exit<'value, 'error> -> unit)
+    (onDecided: bool -> unit)
+    (onLoserSettled: Exit<'value, 'error> option -> unit)
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
     async {
@@ -1104,16 +1108,17 @@ let raceExecution
         let right = startBranch rightOp rightSource.Token
         let! first = awaitFirst left right
 
-        // The loser is cancelled and not awaited; its exit goes to the caller for unobserved-defect reporting once
-        // it settles.
+        // The loser is cancelled and not awaited; its exit goes to the caller once it settles.
         match first with
         | Choice1Of2 exit ->
             rightSource.Cancel()
-            right.OnSettled onDiscardedExit
+            onDecided true
+            right.OnSettled(Some >> onLoserSettled)
             return exit
         | Choice2Of2 exit ->
             leftSource.Cancel()
-            left.OnSettled onDiscardedExit
+            onDecided false
+            left.OnSettled(Some >> onLoserSettled)
             return exit
     }
 #else
@@ -1127,15 +1132,18 @@ let raceExecution
             let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
             cts.Cancel()
 
-            // The loser's exit is dropped without ever being awaited, so hand it to the caller for
-            // unobserved-defect reporting once the loser settles.
-            let losing =
-                if obj.ReferenceEquals(completed, leftFiberTask) then rightFiberTask else leftFiberTask
+            // The loser's exit is dropped without ever being awaited, so hand it to the caller once the loser
+            // settles.
+            let leftWon = obj.ReferenceEquals(completed, leftFiberTask)
+            onDecided leftWon
+            let losing = if leftWon then rightFiberTask else leftFiberTask
 
             losing.ContinueWith(
                 (fun (settled: Task<Exit<'value, 'error>>) ->
                     if settled.IsCompletedSuccessfully then
-                        onDiscardedExit settled.Result),
+                        onLoserSettled (Some settled.Result)
+                    else
+                        onLoserSettled None),
                 TaskContinuationOptions.ExecuteSynchronously)
             |> ignore
 
@@ -1461,6 +1469,39 @@ let whenSettled (exitTask: ExitTask<'value, 'error>) (action: unit -> unit) : un
         None
 #else
     exitTask.ContinueWith((fun (_: Task<Exit<'value, 'error>>) -> action ()), TaskContinuationOptions.ExecuteSynchronously)
+    |> ignore
+#endif
+
+/// Starts <paramref name="deed" /> without awaiting it, passing any exception it raises to <paramref name="onError" />.
+let startDeed (deed: unit -> Deed) (onError: exn -> unit) : unit =
+#if FABLE_COMPILER
+    startImmediate
+        (async {
+            try
+                do! deed ()
+            with error ->
+                onError error
+        })
+        None
+#else
+    let started =
+        try
+            deed ()
+        with error ->
+            Task.FromException error
+
+    started.ContinueWith(
+        (fun (settled: Task) ->
+            if settled.IsFaulted then
+                let failure = settled.Exception
+
+                onError (
+                    if failure.InnerExceptions.Count = 1 then
+                        failure.InnerExceptions[0]
+                    else
+                        failure :> exn
+                )),
+        TaskContinuationOptions.ExecuteSynchronously)
     |> ignore
 #endif
 

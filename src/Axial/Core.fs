@@ -834,18 +834,26 @@ type Scope() =
 
     /// Registers a finalizer and returns a key that <c>Unregister</c> accepts. Work that settles before the
     /// scope closes unregisters itself, so a long-lived scope retains only what is still outstanding.
-    member internal _.Register(finalizer: Platform.Finalizer) : int64 =
+    member internal this.Register(finalizer: Platform.Finalizer) : int64 =
+        match this.TryRegister finalizer with
+        | ValueSome key -> key
+        | ValueNone -> raise (ObjectDisposedException(nameof Scope))
+
+    /// Same as <c>Register</c>, but returns <c>ValueNone</c> instead of throwing once the scope has closed. Internal
+    /// callers that fall back on a closed scope use this: Fable cannot tell <c>ObjectDisposedException</c> apart from
+    /// other exceptions, so catching it there would catch everything.
+    member internal _.TryRegister(finalizer: Platform.Finalizer) : int64 voption =
         if isNull (box finalizer) then
             nullArg (nameof finalizer)
 
         lock gate (fun () ->
             if closed then
-                raise (ObjectDisposedException(nameof Scope))
+                ValueNone
             else
                 let key = nextKey
                 nextKey <- nextKey + 1L
                 finalizers[key] <- finalizer
-                key)
+                ValueSome key)
 
     /// Removes a finalizer without running it. Has no effect once the scope has closed.
     member internal _.Unregister(key: int64) : unit =
@@ -874,13 +882,38 @@ type Scope() =
         this.AddFinalizer(fun _ -> Platform.disposeAsyncDeed resource)
 
     member this.AddChild() =
+        match this.TryAddChild() with
+        | ValueSome child -> child
+        | ValueNone -> raise (ObjectDisposedException(nameof Scope))
+
+    /// Same as <c>AddChild</c>, but returns <c>ValueNone</c> once the scope has closed.
+    member internal this.TryAddChild() : Scope voption =
         let child = new Scope()
-        let key = this.Register(fun cancellationToken -> child.Close(cancellationToken))
-        child.Detach <- fun () -> this.Unregister key
-        child
+
+        match this.TryRegister(fun cancellationToken -> child.Close(cancellationToken)) with
+        | ValueSome key ->
+            child.Detach <- fun () -> this.Unregister key
+            ValueSome child
+        | ValueNone -> ValueNone
 
     member internal _.Detach
         with set (value: unit -> unit) = detach <- value
+
+    /// Closes the scope when nothing is registered with it, so a parallel branch whose scope the caller keeps does
+    /// not leave an empty child behind in a long-lived scope. A scope that still holds registrations stays open and
+    /// closes with its parent.
+    member internal _.CloseIfEmpty() : unit =
+        let emptied =
+            lock gate (fun () ->
+                if not closed && finalizers.Count = 0 then
+                    closed <- true
+                    true
+                else
+                    false)
+
+        if emptied then
+            detach ()
+            detach <- ignore
 
     member _.Close(cancellationToken: CancellationToken) : Platform.Deed =
         let snapshot =
