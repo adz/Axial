@@ -239,5 +239,5 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   scope through a holder scope, so it is never lost if that scope closes first.
 - This diverges from ZIO 2, where a forked fiber shares the parent's `Scope`. Scope stays ambient rather than moving
   into `'env`: F# cannot subtract a requirement the way `ZIO.scoped` removes `Scope` from `R`, and building an
-  intersection-typed environment needs runtime proxies. The divergence is instead stated in `llms.txt` and the scopes
-  guide.
+  intersection-typed environment needs runtime proxies. `llms.txt` and the scopes guide state the divergence instead,
+  and `Axial.Guardrails` reports the ZIO form (a forked flow returning its own acquisition) as `AXG007`.

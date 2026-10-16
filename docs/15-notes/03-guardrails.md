@@ -1,7 +1,7 @@
 ---
 title: Effect-boundary guardrails
 linkTitle: Effect-boundary guardrails
-description: Use Axial.Guardrails to detect ambient effects, exceptions in workflows, shared test fixtures, and discarded cancellation tokens.
+description: Use Axial.Guardrails to detect ambient effects, exceptions in workflows, shared test fixtures, discarded cancellation tokens, and resources returned from fibers.
 ---
 
 # Effect-boundary guardrails
@@ -51,8 +51,9 @@ For adoption guidance, see [Installation](/getting-started/installation.html#add
 | `AXG004` | `Fixture` | Shared module-level values in xUnit test modules |
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
 | `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
+| `AXG007` | `ResourceFromFiber` | A forked flow that returns a scoped resource it acquired, which the fiber releases before `Fiber.join` returns it |
 
-`AXG001`, `AXG002`, `AXG003`, `AXG005`, and `AXG006` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
+`AXG001`, `AXG002`, `AXG003`, `AXG005`, `AXG006`, and `AXG007` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
 
 `AXG004` runs only in projects where MSBuild sets `IsTestProject`. It checks a test-specific risk and does not apply to application or library projects.
 
@@ -63,7 +64,7 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 
 | Guardrail | Rules |
 | --- | --- |
-| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking task waits inside `flow { }`, and `AXG002`–`AXG006` |
+| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking task waits inside `flow { }`, and `AXG002`–`AXG007` |
 | `Axial.PlatformService` | Randomness, GUIDs, and environment state |
 | `Axial.Console` | `System.Console` |
 | `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
@@ -258,3 +259,42 @@ let printDiagnostics (diagnostics: Map<string, int list>) =
 
 `scripts/run-aot-probe.sh` publishes a NativeAOT probe that renders these types and dumps a fiber registry, so the
 release checks catch a regression that the analyzer cannot see.
+
+## AXG007: Keep resources acquired by a fiber
+
+A forked fiber owns the [scoped resources](/scopes/index.html#scoped-resources) it acquires and releases them when it
+settles. `Fiber.join` returns the fiber's value after that, so a resource the fiber returns is already released:
+
+```fsharp
+let connection : Resource<ClockEnvironment, string, string> =
+    Resource.create (Flow.ok "orders") (fun _ _ -> Task.CompletedTask)
+
+/// Reported: the connection is released before join returns it.
+let releasedBeforeUse =
+    flow {
+        let! fiber = Flow.scopeResource connection |> Flow.fork
+        return! Fiber.join fiber
+    }
+```
+
+The code compiles and matches ZIO, where a forked fiber shares its parent's `Scope`, so it is easy to write. It fails
+only at runtime, usually as `ObjectDisposedException` on first use.
+
+`AXG007` reports a `Flow.fork`, `forkNamed`, `forkGraceful`, `forkDetached`, `forkReplacing`, or `forkReplacingKey` of
+a flow that is a `Flow.scopeResource` or `Flow.scopeAcquireRelease` call, or a `flow { }` that returns what it acquired
+with one of them. Acquire the resource with `Flow.forkResource` to keep it in the caller's scope, or with `Flow.zipPar`
+or `Flow.sequencePar` to acquire several in parallel:
+
+```fsharp
+let keptForUse =
+    flow {
+        let! connecting = Flow.forkResource connection
+        return! Fiber.join connecting
+    }
+```
+
+[Concurrency and scoped resources](/scopes/index.html#concurrency-and-scoped-resources) explains which scope owns a
+resource in each concurrent combinator.
+
+If the fiber's value is never used after the fiber settles, add `axial-allow-resource-from-fiber` to the flagged line
+or the line immediately above it.
