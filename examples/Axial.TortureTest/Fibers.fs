@@ -52,6 +52,8 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! lastPreviews = lastPerKey |> Flow.traverse Fiber.await
         do! FiberSlot.interruptAll keyed
         let! remaining = FiberSlot.count keyed
+        // A replaced preview is signalled to stop but not waited for, so wait for every one before polling.
+        let! _ = previews |> Flow.traverse Fiber.await
         let! previewPolls = previews |> Flow.traverse Fiber.poll
 
         // Annotations, the trace id, and the environment are inherited by forked fibers, and siblings do not see
@@ -158,8 +160,18 @@ let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list>
         let started, ended = starts.Value, ends.Value
         let dump = registry.DumpAt clock
         let observedDumps = lock startDumps (fun () -> List.ofSeq startDumps)
-        let tree = FiberDump.renderTreeAt clock observedDumps
-        let lines = observedDumps |> List.map (FiberDump.renderAt clock)
+
+        // The tree and the lines must measure a running fiber's lifetime at the same instant to render alike.
+        let frozen =
+            let now, elapsed = clock.UtcNow(), clock.Elapsed()
+
+            { new IClock with
+                member _.UtcNow() = now
+                member _.Elapsed() = elapsed
+                member _.Sleep(delay, cancellationToken) = clock.Sleep(delay, cancellationToken) }
+
+        let tree = FiberDump.renderTreeAt frozen observedDumps
+        let lines = observedDumps |> List.map (FiberDump.renderAt frozen)
 
         return
             // The fiber interrupted by id may not have settled yet when InterruptByName runs, so it can be counted twice.
