@@ -1947,9 +1947,28 @@ module Flow =
         (binder: 'value -> Flow<'env, 'error, 'next>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'error, 'next> =
+#if FABLE_COMPILER
         Flow(fun environment cancellationToken ->
             invoke flow environment cancellationToken
             |> Execution.bind (fun value -> invoke (binder value) environment cancellationToken))
+#else
+        FlowContinue(fun environment cancellationToken ->
+            let finish exit =
+                match exit with
+                | Exit.Success value -> binder value
+                | Exit.Failure cause -> Flow(fun _ _ -> Execution.ofCause cause)
+
+            let execution = invoke flow environment cancellationToken
+
+            if execution.IsCompletedSuccessfully then
+                ValueTask<Flow<'env, 'error, 'next>>(finish execution.Result)
+            else
+                ValueTask<Flow<'env, 'error, 'next>>(
+                    task {
+                        let! exit = execution
+                        return finish exit
+                    }))
+#endif
 
     /// <summary>Sequences a synchronous continuation after a successful value.</summary>
     let (>>=)
@@ -2432,7 +2451,11 @@ module Flow =
     /// </code>
     /// </example>
     let delay (factory: unit -> Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+#if FABLE_COMPILER
         Flow(fun environment ct -> invoke (factory ()) environment ct)
+#else
+        FlowDelay factory
+#endif
 
     /// <summary>Transforms a sequence of values into a flow and stops at the first failure.</summary>
     /// <param name="mapping">A function that maps each value to a flow.</param>

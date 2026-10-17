@@ -274,3 +274,55 @@ type ParallelCompositionBenchmarks() =
     [<Benchmark(Description = "race x1000")>]
     member _.Race() =
         races.RunSynchronously(()) |> Shared.consumeExit
+
+/// Exercises tail recursion separately from prebuilt left-nested composition chains.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type RecursiveLoopBenchmarks() =
+    let pause : Flow<unit, string, unit> =
+        Flow.fromTask (fun _ -> task { do! System.Threading.Tasks.Task.Yield() })
+
+    let rec synchronous remaining : Flow<unit, string, unit> =
+        flow {
+            if remaining > 0 then
+                do! Flow.ok ()
+                return! synchronous (remaining - 1)
+        }
+
+    let rec suspending remaining : Flow<unit, string, unit> =
+        flow {
+            if remaining > 0 then
+                do! pause
+                return! suspending (remaining - 1)
+        }
+
+    let synchronousWhile : Flow<unit, string, unit> =
+        flow {
+            let mutable remaining = 1000
+            while remaining > 0 do
+                do! Flow.ok ()
+                remaining <- remaining - 1
+        }
+
+    let suspendingWhile : Flow<unit, string, unit> =
+        flow {
+            let mutable remaining = 1000
+            while remaining > 0 do
+                do! pause
+                remaining <- remaining - 1
+        }
+
+    [<Benchmark(Description = "Recursive synchronous loop x1000")>]
+    member _.RecursiveSynchronous() = synchronous 1000 |> Flow.runSync ()
+
+    [<Benchmark(Description = "While synchronous loop x1000")>]
+    member _.WhileSynchronous() = synchronousWhile |> Flow.runSync ()
+
+    [<Benchmark(Description = "Recursive suspending loop x1000")>]
+    member _.RecursiveSuspending() = suspending 1000 |> Flow.runSync ()
+
+    [<Benchmark(Description = "While suspending loop x1000")>]
+    member _.WhileSuspending() = suspendingWhile |> Flow.runSync ()

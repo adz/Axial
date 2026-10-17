@@ -56,7 +56,7 @@ module Context =
     let private merge (TelemetryContext outer) (TelemetryContext inner) =
         TelemetryContext(Map.fold (fun state name value -> Map.add name value state) outer inner)
 
-    let private scope (context: TelemetryContext) (Flow operation: Flow<'env, 'error, 'value>) =
+    let private scope (context: TelemetryContext) (source: Flow<'env, 'error, 'value>) =
         Flow(fun environment cancellationToken ->
             let current = RuntimeState.current ()
             let combined = merge current.TelemetryContext context
@@ -65,7 +65,7 @@ module Context =
                 current.TelemetrySink item
 
             let runtime = current |> RuntimeContext.withTelemetryContext combined
-            RuntimeState.withRuntime runtime (fun () -> Platform.guardStack (fun () -> operation environment cancellationToken)))
+            RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke source environment cancellationToken))
 
     /// <summary>Scopes a telemetry context around a workflow.</summary>
     let withContext context flow =
@@ -90,18 +90,16 @@ module Context =
     /// <exclude/>
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let withSink sink (flow: Flow<'env, 'error, 'value>) =
-        let (Flow operation) = flow
         Flow(fun environment cancellationToken ->
             let runtime = RuntimeState.current() |> RuntimeContext.withTelemetrySink sink
-            RuntimeState.withRuntime runtime (fun () -> Platform.guardStack (fun () -> operation environment cancellationToken)))
+            RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke flow environment cancellationToken))
 
     /// <exclude/>
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let addSink sink (flow: Flow<'env, 'error, 'value>) =
-        let (Flow operation) = flow
         Flow(fun environment cancellationToken ->
             let runtime = RuntimeState.current() |> RuntimeContext.withComposedTelemetrySink sink
-            RuntimeState.withRuntime runtime (fun () -> Platform.guardStack (fun () -> operation environment cancellationToken)))
+            RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke flow environment cancellationToken))
 
     let internal iter writer (TelemetryContext values) =
         for KeyValue(name, value) in values do
