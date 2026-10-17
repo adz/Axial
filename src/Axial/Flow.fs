@@ -1650,27 +1650,12 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
-            let marker = obj ()
-
-            let tracked =
-                Flow(fun environment cancellationToken ->
-                    invoke flow environment cancellationToken
-                    |> Execution.fold
-                        (fun value ->
-                            slots.Remove(key, marker)
-                            Execution.ofValue value)
-                        (fun cause ->
-                            slots.Remove(key, marker)
-                            Execution.ofCause cause))
-
-            invoke (fork tracked) environment cancellationToken
+            invoke (fork flow) environment cancellationToken
             |> Execution.map (fun fiber ->
+                let marker = obj ()
                 supersede (slots.Replace(key, marker, fiber))
-
-                // A fiber that settled before it was recorded could not remove itself.
-                if fiber.Settled.IsSome then
-                    slots.Remove(key, marker)
-
+                // Registered only after the fiber is recorded, so a fiber that settles at once still removes itself.
+                Platform.whenSettled fiber.ExitTask (fun () -> slots.Remove(key, marker))
                 fiber))
 
     // zipPar without a branch scope of its own, for combinators that already run all their flows in one branch.
