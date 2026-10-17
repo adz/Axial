@@ -1,6 +1,7 @@
 # Flow as data: one description, many runtimes
 
-Status: unaccepted sketch. Nothing here is implemented.
+Status: unaccepted backend proposal. The separate .NET tail-continuation trampoline is implemented; the typed-node
+representation and multiple backends below are not. They are not prerequisites for fixing recursive-loop retention.
 
 ## Goal
 
@@ -11,40 +12,44 @@ BEAM — without changing the user-facing type or API.
 Two constraints are not negotiable:
 
 - **The user-facing surface does not change.** `Flow<'env, 'error, 'value>`, the `flow { }` builder, the `Flow` module
-  and the execution members (`ToTask`, `ToAsync`, `RunSynchronously`) keep their shapes. No carrier type parameter.
+  and the execution members (`StartAsTask`, `StartAsValueTask`, `ToAsync`, `RunSynchronously`) keep their shapes. No carrier type parameter.
 - **It must be faster than today, not merely acceptable.** A data representation that costs throughput is a failed
   experiment, however clean it is.
 
 ## What Flow is today
 
-`Flow` is a single-case union over a closure (`src/Axial/Core.fs:739`):
+`Flow` still uses opaque closures for primitive operations. On .NET its internal sequencing cases expose only a
+factory or a continuation (`src/Axial/Core.fs`):
 
 ```fsharp
 type Flow<'env, 'error, 'value> =
     internal
     | Flow of ('env -> CancellationToken -> Execution<'value, 'error>)
+    | FlowDelay of (unit -> Flow<'env, 'error, 'value>)
+    | FlowContinue of ('env -> CancellationToken -> ValueTask<Flow<'env, 'error, 'value>>)
 ```
 
-`Execution` is `ValueTask<Exit<..>>` on .NET and `Async<Exit<..>>` under Fable (`src/Axial/Platform.fs:50-54`). The
-carrier is fixed per platform at compile time, and a flow cannot be inspected — only called.
+`Execution` is `ValueTask<Exit<..>>` on .NET and `Async<Exit<..>>` under Fable (`src/Axial/Platform.fs`). The carrier
+is fixed per platform at compile time. Fable keeps just the closure case and its existing `Async` sequencing.
 
-`Flow.bind` (`src/Axial/Flow.fs:1170`) wraps the previous flow in a new closure and chains through `Execution.bind`.
-.NET already has a synchronous fast path: `Platform.fold` checks `IsCompletedSuccessfully` and continues inline
-without a task state machine. So the per-step cost on .NET is not async machinery; it is everything around it:
+On .NET, `Flow.bind` evaluates its source and hands the successor to an iterative executor. `Flow.delay` hands over
+its factory. The executor consumes these tail continuations without retaining awaiting tasks for earlier iterations.
+Synchronous completion still avoids an async state machine. This is an execution fix, not a fully inspectable tree.
 
 | Per `let!`, today | .NET | Fable |
 |---|---|---|
-| Closure for the bound flow, closure for the continuation | yes | yes |
-| `Exit.Success` allocated for every intermediate value | yes | yes |
-| `env` and `CancellationToken` threaded through every call | yes | yes |
-| `guardStack`: thread-static depth read/write plus `try/finally` | yes | no |
-| `Task.Run` stack hop every 96 nested synchronous steps (`MaxSynchronousDepth`) | yes | no |
+| Flow wrapper and continuation closures | yes | yes |
+| `Exit.Success` allocated for intermediate values | yes | yes |
+| `env` and `CancellationToken` threaded through calls | yes | yes |
+| `guardStack`: thread-static depth read/write plus `try/finally` at source boundaries | yes | no |
+| `Task.Run` stack hops for deeply nested synchronous sources and opaque wrappers | yes | no |
 | An F# `Async` bind, even when every step is synchronous | no | yes |
 
-Stack safety on .NET is bought with depth tracking and periodic thread-pool hops. On Fable (Node and Erlang), every
-bind pays for `Async` regardless of whether anything is asynchronous.
+Tail sequencing on .NET runs in a loop. Nested non-tail sources and opaque combinators still use depth tracking and
+periodic thread-pool hops. On Fable, every bind pays for `Async` regardless of whether anything is asynchronous.
 
-None of this can be optimised ahead of time, because a closure cannot be looked at.
+The executor can inspect tail sequencing, but primitive operations remain opaque. Full operation inspection,
+build-time fusion, and backend preparation are the separate opportunities this proposal explores.
 
 ## Prior attempt: carrier-indexed Flow (rejected)
 
