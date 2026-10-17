@@ -13,11 +13,11 @@ module Resource =
         (acquire: Flow<'env, 'error, 'value>)
         (release: 'value -> CancellationToken -> Task)
         : Resource<'env, 'error, 'value> =
-        Resource(acquire, fun value scope -> scope.AddFinalizer(fun cancellationToken -> release value cancellationToken))
+        Resource(acquire, fun value cancellationToken -> release value cancellationToken)
 
     /// <summary>Describes a task-based finalizer as a unit-valued resource.</summary>
     let finalizer (cleanup: CancellationToken -> Task) : Resource<'env, 'error, unit> =
-        Resource(Flow(fun _ _ -> Execution.ofValue ()), fun () scope -> scope.AddFinalizer cleanup)
+        Resource(Flow(fun _ _ -> Execution.ofValue ()), fun () -> cleanup)
 #endif
 
     /// <summary>Describes acquisition together with an F# async release registered in the current Flow scope.</summary>
@@ -27,14 +27,13 @@ module Resource =
         : Resource<'env, 'error, 'value> =
         Resource(
             acquire,
-            fun value scope ->
-                scope.AddFinalizer(fun cancellationToken ->
+            fun value cancellationToken ->
 #if FABLE_COMPILER
-                    release value cancellationToken
+                release value cancellationToken
 #else
-                    Async.StartAsTask(release value cancellationToken) :> Task
+                Async.StartAsTask(release value cancellationToken) :> Task
 #endif
-                ))
+        )
 
     /// <summary>Describes an F# async finalizer as a unit-valued resource.</summary>
     let asyncFinalizer (cleanup: CancellationToken -> Async<unit>) : Resource<'env, 'error, unit> =
@@ -156,20 +155,57 @@ module Flow =
             (fun cleanupError executionError exit ->
                 combineCleanup cleanupError executionError exit "Flow execution produced no outcome.")
 
+    // Closes scopes in order and waits for their cleanup, folding a cleanup failure into the exit as a defect.
+    let private closeScopes
+        (cancellationToken: CancellationToken)
+        (scopes: Scope list)
+        (exit: Exit<'value, 'error>)
+        : Execution<'value, 'error> =
+        Platform.execution {
+            let result = ref exit
+
+            for scope in scopes do
+                try
+                    do! scope.Close cancellationToken
+                with error ->
+                    result.Value <-
+                        combineCleanup (Some error) None (Some result.Value) "Branch cleanup produced no outcome."
+
+            return result.Value
+        }
+        |> Platform.ofAwaitable
+
+    // Registers a finalizer with `scope` and succeeds with `value`. A scope that has closed can no longer run the
+    // finalizer, and whoever owned it has finished (a race loser that acquires after the race returned), so the
+    // finalizer runs now and the flow is interrupted.
+    let private registerOrRelease
+        (scope: Scope)
+        (finalizer: Platform.Finalizer)
+        (value: 'value)
+        : Execution<'value, 'error> =
+        match scope.TryRegister finalizer with
+        | ValueSome _ -> Execution.ofValue value
+        | ValueNone ->
+            let releasing = new Scope()
+            releasing.AddFinalizer finalizer
+            closeScopes CancellationToken.None [ releasing ] (Exit.Failure Cause.Interrupt)
+
     /// <summary>Registers a F# async finalizer with the current runtime scope on .NET or Fable.</summary>
     /// <example><code>Flow.scopeAsyncFinalizer (fun _ -&gt; async { resource.Close() })</code></example>
     let scopeAsyncFinalizer
         (finalizer: CancellationToken -> Async<unit>)
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
-            RuntimeState.current().Scope.AddFinalizer(fun cancellationToken ->
+            registerOrRelease
+                (RuntimeState.current().Scope)
+                (fun cancellationToken ->
 #if FABLE_COMPILER
-                finalizer cancellationToken
+                    finalizer cancellationToken
 #else
-                Async.StartAsTask(finalizer cancellationToken) :> Task
+                    Async.StartAsTask(finalizer cancellationToken) :> Task
 #endif
-            )
-            Execution.ofValue ())
+                )
+                ())
 
     /// <summary>Creates a flow from an execution outcome.</summary>
     let ofExit (exit: Exit<'value, 'error>) : Flow<'env, 'error, 'value> =
@@ -224,9 +260,7 @@ module Flow =
     let scopeFinalizer
         (finalizer: CancellationToken -> Task)
         : Flow<'env, 'error, unit> =
-        Flow(fun _ _ ->
-            RuntimeState.current().Scope.AddFinalizer finalizer
-            Execution.ofValue ())
+        Flow(fun _ _ -> registerOrRelease (RuntimeState.current().Scope) finalizer ())
 
     /// <summary>Registers a disposable resource with the current runtime scope.</summary>
     /// <param name="resource">The disposable resource to close when the current scope closes.</param>
@@ -235,8 +269,15 @@ module Flow =
         (resource: IDisposable)
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
-            RuntimeState.current().Scope.AddDisposable resource
-            Execution.ofValue ())
+            if isNull (box resource) then
+                nullArg (nameof resource)
+
+            registerOrRelease
+                (RuntimeState.current().Scope)
+                (fun _ ->
+                    resource.Dispose()
+                    Platform.completedDeed ())
+                ())
 
     /// <summary>Registers an asynchronously disposable resource with the current runtime scope.</summary>
     /// <param name="resource">The async disposable resource to close when the current scope closes.</param>
@@ -245,8 +286,10 @@ module Flow =
         (resource: IAsyncDisposable)
         : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
-            RuntimeState.current().Scope.AddAsyncDisposable resource
-            Execution.ofValue ())
+            if isNull (box resource) then
+                nullArg (nameof resource)
+
+            registerOrRelease (RuntimeState.current().Scope) (fun _ -> Platform.disposeAsyncDeed resource) ())
 
 #endif
 
@@ -255,16 +298,16 @@ module Flow =
     /// The resource is a scoped resource: it stays open until the current scope closes. Inside a forked fiber that is
     /// the fiber's own scope, which closes when the fiber settles; inside a branch of <c>zipPar</c>, <c>race</c>,
     /// <c>sequencePar</c>, or <c>traversePar</c>, the resource moves to the caller's scope if the caller receives the
-    /// branch's value. Use <c>forkResource</c> to acquire it in the background and keep it.
+    /// branch's value. Use <c>forkResource</c> to acquire it in the background and keep it. A flow that finishes
+    /// acquiring after its scope has closed, such as a <c>race</c> loser, releases the resource at once and is
+    /// interrupted.
     /// </remarks>
     /// <param name="resource">The acquisition and release description.</param>
     /// <returns>A flow that succeeds with the acquired value.</returns>
-    let scopeResource (Resource(acquire, register)) : Flow<'env, 'error, 'value> =
+    let scopeResource (Resource(acquire, release)) : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             invoke acquire environment cancellationToken
-            |> Execution.bind (fun value ->
-                register value (RuntimeState.current().Scope)
-                Execution.ofValue value))
+            |> Execution.bind (fun value -> registerOrRelease (RuntimeState.current().Scope) (release value) value))
 
 #if !FABLE_COMPILER
     /// <summary>Acquires a value and registers its release with the current runtime scope.</summary>
@@ -312,26 +355,6 @@ module Flow =
     // The caller receives this branch's value, so its scope stays with the caller's scope. An empty scope is closed
     // so that a long-lived caller does not retain one child per parallel call.
     let private keepBranch (branchScope: Scope) : unit = branchScope.CloseIfEmpty()
-
-    // Closes scopes in order and waits for their cleanup, folding a cleanup failure into the exit as a defect.
-    let private closeScopes
-        (cancellationToken: CancellationToken)
-        (scopes: Scope list)
-        (exit: Exit<'value, 'error>)
-        : Execution<'value, 'error> =
-        Platform.execution {
-            let result = ref exit
-
-            for scope in scopes do
-                try
-                    do! scope.Close cancellationToken
-                with error ->
-                    result.Value <-
-                        combineCleanup (Some error) None (Some result.Value) "Branch cleanup produced no outcome."
-
-            return result.Value
-        }
-        |> Platform.ofAwaitable
 
     // Runs a flow as one branch of the caller: its scoped resources move to the caller's scope when it succeeds and
     // are released before it returns when it fails.
@@ -1479,23 +1502,14 @@ module Flow =
     /// |&gt; Flow.scoped // the connection is released here
     /// </code>
     /// </example>
-    let forkResource (Resource(acquire, register)) : Flow<'env, 'none, Fiber<'error, 'value>> =
+    let forkResource (Resource(acquire, release)) : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
             let ownerScope = RuntimeState.current().Scope
 
             let acquireForOwner =
                 Flow(fun environment cancellationToken ->
                     invoke acquire environment cancellationToken
-                    |> Execution.bind (fun value ->
-                        // The release is registered with a holder first, so it is never lost: the holder moves to the
-                        // owner's scope, or is closed at once if that scope has closed and nobody can receive the value.
-                        let holder = new Scope()
-                        register value holder
-
-                        match ownerScope.TryRegister(fun token -> holder.Close token) with
-                        | ValueSome _ -> Execution.ofValue value
-                        | ValueNone ->
-                            closeScopes CancellationToken.None [ holder ] (Exit.Failure Cause.Interrupt)))
+                    |> Execution.bind (fun value -> registerOrRelease ownerScope (release value) value))
 
             invoke (fork acquireForOwner) environment cancellationToken)
 

@@ -265,7 +265,9 @@ module ScopedResourceOwnershipTests =
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 2, 3, 4) @>
 
     [<Fact>]
-    let ``A branch that registers after the caller's scope closed fails as the caller would`` () =
+    let ``A resource acquired after its scope closed is released at once and the flow is interrupted`` () =
+        // A race loser can finish acquiring after the race has returned and closed its scope. Nobody can receive the
+        // resource then, so it is released instead of leaking, here or in a branch.
         let underClosedScope (inner: Flow<ClockEnvironment, string, 'value>) : Flow<ClockEnvironment, string, 'value> =
             Flow(fun environment cancellationToken ->
                 let closed = new Scope()
@@ -273,23 +275,20 @@ module ScopedResourceOwnershipTests =
                 let runtime = RuntimeState.current () |> RuntimeContext.withScope closed
                 RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke inner environment cancellationToken))
 
-        let registers = Flow.scopeFinalizer (fun _ -> Task.CompletedTask)
+        let events = ResizeArray<string>()
+        let finalized = ref 0
+        let finalizer = Flow.scopeFinalizer (fun _ -> finalized.Value <- finalized.Value + 1; Task.CompletedTask)
 
-        let direct = Flow.runSync (TestSupport.clockEnv ()) (underClosedScope registers)
-        let inBranch = Flow.runSync (TestSupport.clockEnv ()) (underClosedScope (Flow.zipPar registers (Flow.ok 1)))
+        let run inner = Flow.runSync (TestSupport.clockEnv ()) (underClosedScope inner)
+        let direct = run (acquire events "direct")
+        let inBranch = run (Flow.zipPar (acquire events "branch") (Flow.ok 1))
+        let registered = run finalizer
 
-        let directDisposed =
-            match direct with
-            | Exit.Failure(Cause.Die(:? ObjectDisposedException)) -> true
-            | _ -> false
-
-        let inBranchDisposed =
-            match inBranch with
-            | Exit.Failure(Cause.Die(:? ObjectDisposedException)) -> true
-            | _ -> false
-
-        test <@ directDisposed @>
-        test <@ inBranchDisposed @>
+        test <@ direct = Exit.Failure Cause.Interrupt @>
+        test <@ inBranch = Exit.Failure Cause.Interrupt @>
+        test <@ registered = Exit.Failure Cause.Interrupt @>
+        test <@ snapshot events = [ "direct:acquired"; "direct:released"; "branch:acquired"; "branch:released" ] @>
+        test <@ finalized.Value = 1 @>
 
     [<Fact>]
     let ``Nested parallel branches hand their scoped resources up to the outermost caller`` () =

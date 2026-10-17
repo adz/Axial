@@ -1210,7 +1210,7 @@ type Resource<'env, 'error, 'value> =
     internal
     | Resource of
         acquire: Flow<'env, 'error, 'value> *
-        register: ('value -> Scope -> unit)
+        release: ('value -> Platform.Finalizer)
 
 /// <summary>
 /// Represents an error channel that cannot occur.
