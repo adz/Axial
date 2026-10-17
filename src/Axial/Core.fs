@@ -1139,6 +1139,10 @@ type Flow<'env, 'error, 'value> =
                 | FlowStep.Await awaiter ->
                     pending <- awaiter
                     searching <- false
+                | FlowStep.Failed cause ->
+                    terminal <- ValueTask<Exit<'value, 'error>>(Exit.Failure cause)
+                    finished <- true
+                    searching <- false
             | Flow operation ->
                 terminal <- operation environment cancellationToken
                 finished <- true
@@ -1159,8 +1163,12 @@ type Flow<'env, 'error, 'value> =
 
                     while running do
                         do! next.Pending
-                        let successor = next.Resume()
-                        let struct (finished, terminal, pending) = successor.Advance(environment, cancellationToken)
+                        let struct (finished, terminal, pending) =
+                            match next.Resume() with
+                            | FlowStep.Next successor -> successor.Advance(environment, cancellationToken)
+                            | FlowStep.Failed cause ->
+                                struct (true, ValueTask<Exit<'value, 'error>>(Exit.Failure cause), Unchecked.defaultof<_>)
+                            | FlowStep.Await awaiter -> struct (false, Unchecked.defaultof<_>, awaiter)
 
                         if finished then
                             let! exit = terminal
@@ -1272,10 +1280,11 @@ type Flow<'env, 'error, 'value> =
 and [<Struct; NoEquality; NoComparison>] internal FlowStep<'env, 'error, 'value> =
     | Next of successor: Flow<'env, 'error, 'value>
     | Await of pending: IFlowAwaiter<'env, 'error, 'value>
+    | Failed of cause: Cause<'error>
 
 and internal IFlowAwaiter<'env, 'error, 'value> =
     abstract Pending: Task
-    abstract Resume: unit -> Flow<'env, 'error, 'value>
+    abstract Resume: unit -> FlowStep<'env, 'error, 'value>
 #endif
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

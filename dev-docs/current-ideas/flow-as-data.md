@@ -34,8 +34,9 @@ is fixed per platform at compile time. Fable keeps just the closure case and its
 
 On .NET, `Flow.bind` evaluates its source and hands the successor to an iterative executor. `Flow.delay` hands over
 its factory. The executor consumes these tail continuations without retaining awaiting tasks for earlier iterations.
-A `FlowStep` is either the successor or a typed frame holding a pending source Task and its continuation. The
-executor awaits that Task directly, then consumes the frame. Synchronous completion still avoids an async state
+A `FlowStep` is a successor, a failure cause, or a typed frame holding a pending source Task and its continuation.
+The executor awaits that Task directly, then consumes the frame. Failures terminate sequencing without building
+another Flow. Synchronous completion still avoids an async state
 machine. This is an execution fix, not a fully inspectable tree.
 
 | Per `let!`, today | .NET | Fable |
