@@ -107,7 +107,7 @@ module Activity =
                         activity.SetTag($"axial.flow.annotation.{name}", value) |> ignore)
                     |> Context.addSink (Tags.setAttribute activity)
 
-            let (Flow operation) = tracedFlow
+            let operation = FlowInternal.invoke tracedFlow
 
             if isNull activity then
                 operation env cancellationToken
@@ -152,10 +152,10 @@ module Activity =
     /// </summary>
     /// <param name="tracer">The application-owned tracer to install.</param>
     /// <param name="sourceFlow">The flow to run with the tracer installed.</param>
-    let withTracer (tracer: ActivityTracer) (Flow operation: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+    let withTracer (tracer: ActivityTracer) (sourceFlow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             let runtime = RuntimeState.current() |> RuntimeContext.withTracer (box tracer.Source)
-            RuntimeState.withRuntime runtime (fun () -> operation environment cancellationToken))
+            RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke sourceFlow environment cancellationToken))
 
     let private ambientSource () : ActivitySource =
         match RuntimeState.current().Tracer with
@@ -178,7 +178,7 @@ module Activity =
         // The ambient tracer is only known once the flow actually runs (withTracer installs it during
         // execution), so it must be read lazily inside this wrapper, not eagerly when composing the flow.
         Flow(fun env cancellationToken ->
-            let (Flow operation) = traceWithSource (ambientSource ()) renderError name sourceFlow
+            let operation = FlowInternal.invoke (traceWithSource (ambientSource ()) renderError name sourceFlow)
             operation env cancellationToken)
 
     /// <summary>
@@ -188,7 +188,7 @@ module Activity =
     /// </summary>
     let trace (name: string) (sourceFlow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         Flow(fun env cancellationToken ->
-            let (Flow operation) = traceOn (ambientSource ()) name sourceFlow
+            let operation = FlowInternal.invoke (traceOn (ambientSource ()) name sourceFlow)
             operation env cancellationToken)
 
 /// <summary>Creates <see cref="T:Axial.Telemetry.ActivityTracer" /> values.</summary>

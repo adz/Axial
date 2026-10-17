@@ -184,7 +184,7 @@ module Otel =
         Flow(fun environment cancellationToken ->
             match current () with
             | None ->
-                let (Flow operation) = sourceFlow
+                let operation = FlowInternal.invoke sourceFlow
                 operation environment cancellationToken
             | Some (api, tracer) ->
                 // Everything runtime-context-sensitive happens here, at invoke time: under Fable the
@@ -226,7 +226,7 @@ module Otel =
                 let execution =
                     RuntimeState.withRuntime sinkRuntime (fun () ->
                         try
-                            let (Flow operation) = sourceFlow
+                            let operation = FlowInternal.invoke sourceFlow
                             operation environment cancellationToken
                         with error ->
                             async.Return (Exit.Failure (causeOfThrown error)))

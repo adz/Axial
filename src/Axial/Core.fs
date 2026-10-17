@@ -1114,16 +1114,81 @@ module internal RuntimeState =
 type Flow<'env, 'error, 'value> =
     internal
     | Flow of ('env -> CancellationToken -> Execution<'value, 'error>)
+#if !FABLE_COMPILER
+    // Only sequencing is trampolined. Primitive operations still use the platform's normal awaitable.
+    | FlowDelay of (unit -> Flow<'env, 'error, 'value>)
+    | FlowContinue of ('env -> CancellationToken -> ValueTask<Flow<'env, 'error, 'value>>)
+#endif
+
+#if !FABLE_COMPILER
+    member private this.Advance(environment: 'env, cancellationToken: CancellationToken) =
+        // Consume tail continuations before executing their successors. A recursive bind must not leave
+        // an awaiting parent task behind; only a source with real work remaining owns a nested execution.
+        let mutable current = this
+        let mutable searching = true
+        let mutable terminal = Unchecked.defaultof<Execution<'value, 'error>>
+        let mutable pending = Unchecked.defaultof<ValueTask<Flow<'env, 'error, 'value>>>
+        let mutable finished = false
+
+        while searching do
+            match current with
+            | FlowDelay factory -> current <- factory ()
+            | FlowContinue next ->
+                let execution = next environment cancellationToken
+
+                if execution.IsCompletedSuccessfully then
+                    current <- execution.Result
+                else
+                    pending <- execution
+                    searching <- false
+            | Flow operation ->
+                terminal <- operation environment cancellationToken
+                finished <- true
+                searching <- false
+
+        struct (finished, terminal, pending)
+
+    member private this.RunTrampoline(environment: 'env, cancellationToken: CancellationToken) : Execution<'value, 'error> =
+        let struct (finished, terminal, pending) = this.Advance(environment, cancellationToken)
+
+        if finished then terminal
+        else
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    let mutable next = pending
+                    let mutable result = Unchecked.defaultof<Exit<'value, 'error>>
+                    let mutable running = true
+
+                    while running do
+                        let! successor = next
+                        let struct (finished, terminal, pending) = successor.Advance(environment, cancellationToken)
+
+                        if finished then
+                            let! exit = terminal
+                            result <- exit
+                            running <- false
+                        else
+                            next <- pending
+
+                    return result
+                })
+#endif
+
+    member internal this.Invoke(environment: 'env, cancellationToken: CancellationToken) : Execution<'value, 'error> =
+        match this with
+        | Flow operation -> Platform.guardStack (fun () -> operation environment cancellationToken)
+#if !FABLE_COMPILER
+        | _ -> Platform.guardStack (fun () -> this.RunTrampoline(environment, cancellationToken))
+#endif
 
     member private this.ToExecution(environment: 'env, cancellationToken: CancellationToken) : Execution<'value, 'error> =
-        let (Flow operation) = this
         let scope = new Scope()
         let runtime = RuntimeContext.create scope
 
         Platform.runScoped
             scope.Close
             cancellationToken
-            (fun () -> RuntimeState.withRuntime runtime (fun () -> operation environment cancellationToken))
+            (fun () -> RuntimeState.withRuntime runtime (fun () -> this.Invoke(environment, cancellationToken)))
             (fun cleanupError executionError exit ->
                 let causeOf (error: exn) : Cause<'error> =
                     if error :? OperationCanceledException then Cause.Interrupt else Cause.Die error
@@ -1196,11 +1261,11 @@ type Flow<'env, 'error, 'value> =
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 module internal FlowInternal =
     let invoke
-        (Flow operation: Flow<'env, 'error, 'value>)
+        (source: Flow<'env, 'error, 'value>)
         (environment: 'env)
         (cancellationToken: CancellationToken)
         : Execution<'value, 'error> =
-        Platform.guardStack (fun () -> operation environment cancellationToken)
+        source.Invoke(environment, cancellationToken)
 
     let create
         (operation: 'env -> CancellationToken -> Execution<'value, 'error>)

@@ -27,12 +27,10 @@ module MemoryRetentionTests =
 
     /// Runs <paramref name="iterations" /> of a loop and returns how many bytes stayed live between an early and a
     /// late iteration. <paramref name="build" /> receives the per-iteration callback to invoke.
-    let private retainedDuringLoopUnder
+    let private retainedBetweenUnder early late
         (cancellationToken: CancellationToken)
         (build: (int -> unit) -> Flow<ClockEnvironment, Never, unit>)
         : int64 =
-        let early = 2_000
-        let late = 42_000
         let mutable earlyBytes = 0L
         let mutable lateBytes = 0L
 
@@ -43,6 +41,10 @@ module MemoryRetentionTests =
         let exit = build observe |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellationToken
         test <@ exit = Exit.Success () @>
         lateBytes - earlyBytes
+
+    let private retainedBetween early late build = retainedBetweenUnder early late CancellationToken.None build
+
+    let private retainedDuringLoopUnder token build = retainedBetweenUnder 2_000 42_000 token build
 
     let private retainedDuringLoop build = retainedDuringLoopUnder CancellationToken.None build
 
@@ -66,6 +68,58 @@ module MemoryRetentionTests =
                         let! _ = Flow.ok 1 |> Flow.timeoutToOk (TimeSpan.FromSeconds 30.0) 0
                         observe index
                 })
+
+        test <@ retained < bound () @>
+
+    [<Fact>]
+    let ``A recursive flow that suspends each iteration runs in constant memory`` () =
+        let retained =
+            retainedDuringLoop (fun observe ->
+                let rec consume index =
+                    flow {
+                        do! suspend ()
+                        observe index
+                        if index < 42_000 then return! consume (index + 1)
+                    }
+
+                consume 0)
+
+        test <@ retained < bound () @>
+
+    [<Fact>]
+    let ``A recursive flow with synchronous binds runs in constant memory`` () =
+        let retained =
+            retainedBetween 2_000 1_000_000 (fun observe ->
+                let rec consume index =
+                    flow {
+                        do! Flow.ok ()
+                        observe index
+                        if index < 1_000_000 then return! consume (index + 1)
+                    }
+
+                consume 0)
+
+        test <@ retained < bound () @>
+
+    [<Fact>]
+    let ``Mutually recursive delayed flows run in constant memory`` () =
+        let retained =
+            retainedDuringLoop (fun observe ->
+                let rec even index =
+                    Flow.delay (fun () ->
+                        suspend ()
+                        |> Flow.bind (fun () ->
+                            observe index
+                            if index < 42_000 then odd (index + 1)
+                            else Flow.ok ()))
+                and odd index =
+                    flow {
+                        do! suspend ()
+                        observe index
+                        return! even (index + 1)
+                    }
+
+                even 0)
 
         test <@ retained < bound () @>
 
