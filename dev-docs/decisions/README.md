@@ -251,9 +251,9 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 
 - Primitive Flow operations still return `ValueTask<Exit<_,_>>`. Only `bind` and `delay` hand their next Flow back to
   an iterative executor, so `return!` in a recursive workflow does not create a chain of awaiting parent tasks.
-- Bind evaluates its source through the normal execution boundary, then relinquishes its continuation before the
-  executor runs the successor. A source with pending work, error handling, or cleanup retains that work; the executor
-  does not discard lexical obligations to achieve a memory bound.
+- Bind runs its source through the normal execution boundary, then hands its continuation to the executor before the
+  successor runs. A source with pending work, error handling, or cleanup keeps that work; the executor never drops a
+  `use` or `try/finally` to bound memory.
 - A pending bind keeps its typed source Task and binder in a continuation frame. The runner awaits that Task
   directly; an intermediate `Task<Flow<...>>` would add another state machine to every pending bind. A source
   ValueTask is converted with `AsTask` once, so single-consumption awaitables remain supported. A failed source

@@ -9,6 +9,8 @@ Work this queue from top to bottom. Remove completed items rather than retaining
 
 ## Product work
 
+These four ship in 0.11. Record each one's breaking changes and additions in `dev-docs/releases/0.11.0.md`.
+
 - Flow-valued resource release and `Layer.fromFlow`. Release and layer construction are raw `Task`/`Async`
   callbacks, so cleanup cannot use `Ref`, `'env` services, or typed failures, and docs fall back to `lock`.
   - Release becomes `'value -> Flow<'env, 'none, unit>`: it runs uninterruptibly with the environment captured at
@@ -26,8 +28,8 @@ Work this queue from top to bottom. Remove completed items rather than retaining
   - Benchmark `ParallelCompositionBenchmarks` and scope close before and after; the empty-close fast path in
     `Platform.runFinalizers` must stay allocation-free.
 - Flow-shaped process I/O and web handlers.
-  - `Process.Input.read`, `Input.produce`, `Output.callback`, and the `Sink` target (`src/Axial.Process/Process.fs`)
-    take `Async` callbacks with no environment. Add a `FlowStream<_, _, byte[]>` input and a flow output callback (or
+  - `Input.readOnce`, `Input.produce`, `Output.callback`, and the `Sink` target (`InputSource`/`OutputTarget` in
+    `src/Axial.Process/ProcessTypes.fs`, helpers in `ProcessDsl.fs`) take `Async` callbacks with no environment. Add a `FlowStream<_, _, byte[]>` input and a flow output callback (or
     output into a `Queue`); decide how a process spec carries `'env`.
   - `AspNetCore.handleParsed` (`'model -> Task<IResult>`) and `GenHttp.handleParsed` (`'model -> ValueTask<IResponse>`)
     are unused by docs and examples: take a flow or remove them.

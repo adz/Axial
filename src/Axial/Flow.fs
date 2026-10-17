@@ -1948,9 +1948,9 @@ module Flow =
     /// This is the flatmap operation for <see cref="T:Axial`3" />. The continuation only runs
     /// when the source flow succeeds, and it receives the successful value. Use <c>bind</c> when the
     /// next effect depends on the previous result; use <c>map</c> when the next step is pure.
+    /// On .NET, a recursive <c>return!</c> through <c>bind</c> does not keep a task per call alive. Work still pending
+    /// in the source, such as a <c>use</c> or <c>try/finally</c>, lives until the source completes.
     /// </remarks>
-    /// <remarks>On .NET, tail continuations run through a trampoline instead of retaining an awaiting task per bind.
-    /// Pending work in the source, including lexical cleanup, still lives until that source completes.</remarks>
     /// <param name="binder">A function that takes the successful value and returns a new flow.</param>
     /// <param name="flow">The source flow to sequence.</param>
     /// <returns>A <see cref="T:Axial`3" /> representing the combined workflow.</returns>

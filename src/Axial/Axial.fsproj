@@ -21,7 +21,7 @@
     <FsDocsLogoAlt>Axial</FsDocsLogoAlt>
     <FsDocsLogoLink>https://github.com/adz/Axial</FsDocsLogoLink>
     <FsDocsLicenseLink>https://github.com/adz/Axial/blob/main/LICENSE</FsDocsLicenseLink>
-    <FsDocsReleaseNotesLink>https://github.com/adz/Axial/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+    <FsDocsReleaseNotesLink>https://github.com/adz/Axial/tree/main/dev-docs/releases</FsDocsReleaseNotesLink>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
