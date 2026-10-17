@@ -1269,7 +1269,7 @@ type Flow<'env, 'error, 'value> =
     /// <returns>The final workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.RunSynchronously(environment: 'env, ?cancellationToken: CancellationToken) : Exit<'value, 'error> =
-        let pending = this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None)
+        let pending = this.StartAsValueTask(environment, ?cancellationToken = cancellationToken)
         if pending.IsCompletedSuccessfully then pending.Result
         else pending.AsTask().GetAwaiter().GetResult()
 #endif

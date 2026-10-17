@@ -272,3 +272,6 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 - `RunSynchronously` reads completed executions directly and converts pending executions to Task for blocking;
   single-consumption sources are consumed once in either path. Empty scopes skip the finalizer runner, rather than
   skipping scope ownership or making scope state reusable across runs.
+- The blocking runner enters through `StartAsValueTask`, then reads completed outcomes directly. A direct call to
+  the private execution method regressed completed Async interop in repeated measurements despite the lower
+  allocation count; forwarding through the public ValueTask boundary retained the savings without that regression.
