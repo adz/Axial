@@ -29,6 +29,8 @@
     <Compile Include="ScopedResourceOwnershipTests.fs" />
     <Compile Include="ParallelSettlementTests.fs" />
     <Compile Include="WorkflowStateTests.fs" />
+    <Compile Include="StmPrimitivesTests.fs" />
+    <Compile Include="BclInteropTests.fs" />
     <Compile Include="WorkflowQueueTests.fs" />
     <Compile Include="WorkflowHubTests.fs" />
     <Compile Include="WorkflowSubscriptionRefTests.fs" />
@@ -36,6 +38,7 @@
     <Compile Include="TortureCoverageTests.fs" />
     <Compile Include="MemoryRetentionTests.fs" />
     <Compile Include="WorkflowStreamTests.fs" />
+    <Compile Include="StreamInteropTests.fs" />
     <Compile Include="PolicyTests.fs" />
   </ItemGroup>
 

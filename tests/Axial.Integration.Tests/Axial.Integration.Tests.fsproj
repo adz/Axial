@@ -12,7 +12,9 @@
     <Compile Include="TestSupport.fs" />
     <Compile Include="UnifiedServiceTests.fs" />
     <Compile Include="ProcessServiceTests.fs" />
+    <Compile Include="ProcessStreamingTests.fs" />
     <Compile Include="DependencyInjectionIntegrationTests.fs" />
+    <Compile Include="TestDoubleTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

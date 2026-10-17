@@ -19,6 +19,31 @@ let private isSubsequence (part: 'a list) (whole: 'a list) =
 
     go part whole
 
+
+#if !FABLE_COMPILER
+let private asyncItems (items: int list) =
+    { new System.Collections.Generic.IAsyncEnumerable<int> with
+        member _.GetAsyncEnumerator(_) =
+            let mutable remaining = items
+            let mutable current = None
+
+            { new System.Collections.Generic.IAsyncEnumerator<int> with
+                member _.Current = current.Value
+
+                member _.MoveNextAsync() =
+                    match remaining with
+                    | [] ->
+                        current <- None
+                        System.Threading.Tasks.ValueTask<bool>(false)
+                    | head :: rest ->
+                        current <- Some head
+                        remaining <- rest
+                        System.Threading.Tasks.ValueTask<bool>(true)
+
+                member _.DisposeAsync() = System.Threading.Tasks.ValueTask() } }
+
+#endif
+
 // <snippet:torture-streams>
 let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let input = [ for _ in 1 .. round.Size 300 -> round.Next 20 ]
@@ -44,6 +69,11 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             (FlowStream.fromSeq input : FlowStream<unit, Never, int>)
             |> FlowStream.localEnv (fun (_: ClockEnvironment) -> ())
             |> FlowStream.runCollect
+#if FABLE_COMPILER
+        let interop = input
+#else
+        let! interop = asyncItems input |> FlowStream.ofAsyncEnumerable |> FlowStream.runCollect
+#endif
         let! folded = source () |> FlowStream.runFold (+) 0
         let! counted = source () |> FlowStream.runCount
         let! head = source () |> FlowStream.runTryHead
@@ -70,6 +100,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             && unfolded = [ 0..9 ]
             && single = [ 42 ]
             && localized = input
+            && interop = input
             && folded = List.sum input
             && counted = input.Length
             && head = List.tryHead input

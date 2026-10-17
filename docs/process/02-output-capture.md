@@ -3,7 +3,16 @@ title: Output capture and destinations
 description: Capture exact output, bound it, forward it, or write it elsewhere.
 ---
 
-Specifications capture stdout and stderr by default. [`Process.toFlow`](xref:M:Axial.Process.Process.toFlow) preserves that policy and returns exact bytes and an encoding-aware text view:
+Process output goes nowhere it isn't sent. By default, `Process.toFlow` retains all stdout and a 64 KiB
+diagnostic tail of stderr; streaming retains 64 KiB tails on both channels. Neither forwards anything to the
+console — that takes an explicit route.
+
+| Execution boundary | Default forwarding | Stdout retention | Unmerged stderr retention |
+| --- | --- | --- | --- |
+| `toFlow`, direct `Process.tryRun` / `Process.run` | None | All | 64 KiB tail |
+| `stream*` constructors | None | 64 KiB tail | 64 KiB tail |
+
+Explicit settings override these defaults. Runners applied to an existing Flow preserve its configured policies.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -16,6 +25,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 open Axial.Process
+open Axial.Process.DSL
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
@@ -23,62 +33,62 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-// The examples on this page start real processes with the live service.
-let host : ProcessHostEnvironment =
-    { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live }
-
-let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult>) : string =
-    match Flow.run host workflow with
-    | Exit.Success result -> result.StdOut
-    | Exit.Failure cause -> failwithf "%A" cause
-```
-
-```fsharp
-let inspect : Flow<ProcessHostEnvironment, ProcessError, string * int> =
-    flow {
-        let! result =
-            Process.command $"printf 'status: ok'"
-            |> Process.toFlow
-
-        let bytes = result.StdOutCapture.Bytes
-        return result.StdOut, bytes.Length
-    }
+let inspect () : ProcessResult =
+    cmd $"printf 'status: ok'" |> Process.run
 ```
 
 ```fsharp run
-inspect |> Flow.run host |> shouldEqual (Exit.Success("status: ok", 10))
+let result = inspect ()
+shouldEqual "status: ok" result.StdOut
+shouldEqual 10 result.StdOutCapture.Bytes.Length
 ```
 
-Configure output with [`Process.stdout`](xref:M:Axial.Process.Process.stdout) and [`Process.stderr`](xref:M:Axial.Process.Process.stderr). Targets include complete capture, bounded tail capture, console forwarding, inherited handles, discard, files, sinks, callbacks, and tee composition.
+`Process.run` returns `ProcessResult`. In that result, `StdOutCapture` and
+`StdErrCapture` are `CapturedOutput` values: retained `Bytes`, decoded `Text`, `Truncated`, and `Available`.
+
+## Choose retention independently of routing
+
+Retention and routing are separate choices. `captureAll`, `captureTail bytes`, and `captureNothing` affect final
+effective stdout only; `captureStderrAll`, `captureStderrTail bytes`, and `captureStderrNothing` affect readable
+unmerged stderr. Explicit capture settings override the execution mode and topology defaults.
+
+`stdoutToConsole`, `stdoutToFile`, `stdoutToAppendFile`, `stdoutToDiscard`, and `stdoutToInheritHandles`
+configure routes. Stderr has matching shortcuts. `stdoutTo` and `stderrTo` accept arbitrary targets, including
+callbacks, sinks, and `OutputTarget.Tee`. A file or console destination does not disable capture.
 
 ```fsharp
-let diagnose : Flow<ProcessHostEnvironment, ProcessError, ProcessResult> =
-    Process.command $"printf 'diagnostics'"
-    |> Process.stdout (OutputTarget.Tee [ OutputTarget.Console; OutputTarget.CaptureTail 65536 ])
-    |> Process.toFlow
+let diagnose =
+    cmd $"printf diagnostics"
+    |> stdoutToConsole
+    |> captureTail 5
 ```
 
-Use [`Process.stream`](xref:M:Axial.Process.Process.stream) when output must be handled before completion:
-
-```fsharp
-let events =
-    Process.command $"printf 'one\ntwo\n'"
-    |> Process.framing OutputFraming.Lines
-    |> Process.stream
-
-let outputLines : Flow<ProcessHostEnvironment, ProcessError, string list> =
-    events
-    |> FlowStream.choose (function
-        | ProcessEvent.Output output -> Some output.Text
-        | ProcessEvent.Completed _ -> None)
-    |> FlowStream.runCollect
-```
+To check console routing without writing to the terminal, supply a test console for this execution:
 
 ```fsharp run
-outputLines |> Flow.run host |> shouldEqual (Exit.Success [ "one"; "two" ])
+let consoleEnvironment = ProcessHostEnvironment.liveWithConsole (Console.test())
+let diagnosed = diagnose |> Process.runWith consoleEnvironment
+shouldEqual "stics" diagnosed.StdOut
+shouldEqual true diagnosed.StdOutTruncated
 ```
 
-The stream emits `ProcessEvent.Output` values followed by one `ProcessEvent.Completed`. Each output event identifies its stage, channel, text, and timestamp. Pulling provides bounded backpressure. Ending consumption early interrupts the producer fiber, which terminates the native process topology before the Flow scope closes.
+When the exit status is all you need, `captureNothing` drops stdout retention. It does not drop the stderr
+diagnostic tail; apply `captureStderrNothing` for that too. Full capture holds the whole stream in memory, so a
+tail or `captureNothing` is safer when output can be large.
 
-`OutputTarget.Inherit` gives the child the host handle directly. Inherited output cannot be observed, captured, or combined in a tee because it bypasses Axial's redirected streams.
+## Exact bytes and availability
+
+Capture is byte-based, and the text view is derived from those bytes. `CapturedOutput.Bytes` holds the exact
+retained bytes; `Text` decodes them with the command's encoding. A byte tail can split a multibyte character,
+producing replacement characters in the text view. `Truncated` reports omitted bytes. `Available` reports whether
+Axial could read the channel at all.
+
+Inherited handles go directly to the child and cannot be observed, captured, or included in a tee.
+Piped intermediate channels cannot be independently captured or observed. Final stdout capture includes merged
+stderr only after explicit `mergeStderr`. Aggregate stderr is bounded separately; stage captures expose the
+individual diagnostics.
+
+Callbacks receive the execution token through `Async.CancellationToken`; native stream adapters pass it to
+reads, writes, and flushes. They must cooperate with cancellation. Callback exceptions are defects; actual
+process I/O failures use `IoFailed`. Adapter streams and text writers remain caller-owned. `Output.textWriter`
+creates a fresh decoder per execution. On `netstandard2.1`, TextWriter operations lack token overloads.

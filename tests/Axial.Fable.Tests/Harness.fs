@@ -46,6 +46,13 @@ let private arguments () : string array = jsNative
 [<Emit("process.exitCode = $0")>]
 let private setExitCode (_code: int) : unit = jsNative
 
+// A host watchdog also covers cleanup: a stalled promise must not let Node exit successfully.
+[<Emit("setTimeout(() => { console.error('Fable test stalled during execution or cleanup'); process.exit(1); }, 30000)")>]
+let private startWatchdog () : obj = jsNative
+
+[<Emit("clearTimeout($0)")>]
+let private stopWatchdog (_timer: obj) : unit = jsNative
+
 // Each test must finish within this bound; a hang is reported as a failure instead of stalling the run.
 let private testTimeout = TimeSpan.FromSeconds 20.0
 
@@ -63,7 +70,10 @@ let run (allTests: Test list) : unit =
         let failures = ref 0
 
         for current in tests do
+            let watchdog = startWatchdog()
             let! exit = current.Body |> Flow.timeoutToOk testTimeout timedOut |> Flow.toAsync clockEnvironment
+
+            stopWatchdog watchdog
 
             match exit with
             | Exit.Success checks when checks |> List.forall _.Passed -> printfn "  pass %s" current.Name

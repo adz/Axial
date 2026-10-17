@@ -53,6 +53,74 @@ type IHasConsole =
     /// The console service supplied by this environment.
     abstract Console : IConsole
 
+#if !FABLE_COMPILER
+/// <summary>An in-memory console test double backed by string readers and writers.</summary>
+/// <remarks>Captured output is read from <c>OutText</c> and <c>ErrorText</c>; input is set with <c>SetInput</c>.</remarks>
+type TestConsole() =
+    let mutable input = new StringReader("")
+    let output = new StringWriter()
+    let error = new StringWriter()
+    let mutable inputEncoding = Encoding.UTF8
+    let mutable outputEncoding = Encoding.UTF8
+    let mutable foreground = ConsoleColor.Gray
+    let mutable background = ConsoleColor.Black
+    let mutable cursorLeft = 0
+    let mutable cursorTop = 0
+    let mutable cursorVisible = true
+    let mutable title = ""
+    let mutable treatControlCAsInput = false
+
+    /// <summary>Sets the text returned by <c>ReadLine</c>; each line is consumed once.</summary>
+    member _.SetInput(text: string) = input <- new StringReader(text)
+
+    /// <summary>Everything written to standard output so far.</summary>
+    member _.OutText = output.ToString()
+
+    /// <summary>Everything written to standard error so far.</summary>
+    member _.ErrorText = error.ToString()
+
+    /// <summary>Removes all captured output.</summary>
+    member _.ClearOutput() =
+        output.GetStringBuilder().Clear() |> ignore
+        error.GetStringBuilder().Clear() |> ignore
+
+    interface IConsole with
+        member _.In = input
+        member _.Out = output
+        member _.Error = error
+        member _.InputEncoding with get () = inputEncoding and set value = inputEncoding <- value
+        member _.OutputEncoding with get () = outputEncoding and set value = outputEncoding <- value
+        member _.IsInputRedirected = true
+        member _.IsOutputRedirected = true
+        member _.IsErrorRedirected = true
+        member _.KeyAvailable = input.Peek() >= 0
+        member _.Read() = input.Read()
+        member _.ReadLine() = input.ReadLine()
+        member _.ReadKey(_) = ConsoleKeyInfo()
+        member _.Write(value) = output.Write value
+        member _.WriteLine(value) = output.WriteLine value
+        member _.WriteError(value) = error.Write value
+        member _.WriteErrorLine(value) = error.WriteLine value
+        member _.OpenStandardInput() = new MemoryStream(Encoding.UTF8.GetBytes(input.ReadToEnd())) :> Stream
+        member _.OpenStandardOutput() = new MemoryStream() :> Stream
+        member _.OpenStandardError() = new MemoryStream() :> Stream
+        member _.Clear() = ()
+        member _.Beep() = ()
+        member _.ResetColor() =
+            foreground <- ConsoleColor.Gray
+            background <- ConsoleColor.Black
+        member _.ForegroundColor with get () = foreground and set value = foreground <- value
+        member _.BackgroundColor with get () = background and set value = background <- value
+        member _.CursorLeft with get () = cursorLeft and set value = cursorLeft <- value
+        member _.CursorTop with get () = cursorTop and set value = cursorTop <- value
+        member _.CursorVisible with get () = cursorVisible and set value = cursorVisible <- value
+        member _.SetCursorPosition(left, top) =
+            cursorLeft <- left
+            cursorTop <- top
+        member _.Title with get () = title and set value = title <- value
+        member _.TreatControlCAsInput with get () = treatControlCAsInput and set value = treatControlCAsInput <- value
+#endif
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Console =
@@ -134,4 +202,7 @@ module Console =
             member _.SetCursorPosition(left, top) = System.Console.SetCursorPosition(left, top)
             member _.Title with get () = System.Console.Title and set value = System.Console.Title <- value
             member _.TreatControlCAsInput with get () = System.Console.TreatControlCAsInput and set value = System.Console.TreatControlCAsInput <- value }
+
+    /// <summary>Creates an in-memory console test double that captures output and reads scripted input.</summary>
+    let test () : TestConsole = TestConsole()
 #endif

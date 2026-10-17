@@ -55,6 +55,15 @@ let renderExpanded : Flow<unit, Never, string> = render
 
 Read the full shape first. Use an alias when it makes a real signature shorter without hiding information.
 
+## What runs underneath
+
+Running a Flow produces an awaitable outcome. On .NET that is a `ValueTask`, so work that completes synchronously
+avoids a heap allocation. On Fable's JavaScript target it is an `Async`, because JavaScript has no value-type task.
+Your code does not change between the two: `Flow<'env, 'error, 'value>` is the same type on both.
+
+Interop with the platform types follows from this. See [Async and Task interop](/the-flow-type/task-async-interop.html)
+for binding existing `Async`, `Task`, and `ValueTask` code.
+
 ## Go Further
 
 - [Flow API reference](/api/) maps the construction, environment, composition,

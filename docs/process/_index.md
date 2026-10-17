@@ -1,98 +1,57 @@
 ---
 title: Processes
-description: Start external commands from an Axial workflow.
+description: Run external commands as standalone tools or as steps in an Axial workflow.
 ---
 
 # Processes
 
-`Axial.Process` lets a command-line program start an external command without giving up typed failures, cancellation,
-or cleanup. You describe the command first, choose what happens to its input and output, then run it.
-
-## A script
-
-For a small command-line program, describe commands, connect them, choose where output goes, then call `run`:
+A command starts as a description, not a running process. Configure it, connect commands into a pipeline if needed,
+then choose where to run it:
 
 ```fsharp prepare
-// Setup for the checked examples on this page.
-open System
-open System.IO
-open System.Threading
-open System.Threading.Tasks
-open Axial
-open Axial.Console
-open Axial.FileSystem
-open Axial.PlatformService
 open Axial.Process
-
-/// Fails the docs test when an example's result differs from the value shown.
+open Axial.Process.DSL
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
 ```fsharp
-// The examples on this page start real processes with the live service.
-let host : ProcessHostEnvironment =
-    { Process = Process.live Clock.live FileSystem.live Console.live
-      Console = Console.live }
-
-let stdoutOf (workflow: Flow<ProcessHostEnvironment, ProcessError, ProcessResult>) : string =
-    match Flow.run host workflow with
-    | Exit.Success result -> result.StdOut
-    | Exit.Failure cause -> failwithf "%A" cause
-```
-
-```fsharp
-open Axial.Process.DSL // Short pipeline helpers: cwd, env, timeout, =>, capture, run
-
-let recentCommits (repository: string) =
-    cmd $"git log --oneline -20"
-    |> cwd repository
-    |> env "NO_COLOR" "1"
-    |> timeout (TimeSpan.FromSeconds 5.0)
-    => cmd $"head -5"
-    |> capture
-
-// In a script, finish with `|> run`: it runs the workflow with live services and returns an exit code.
-let script () = recentCommits "." |> run
+let command = cmd $"printf hello"
 ```
 
 ```fsharp run
-let lines = stdoutOf (recentCommits ".") |> _.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-(lines.Length >= 1 && lines.Length <= 5) |> shouldEqual true
+command |> Process.run |> _.StdOut |> shouldEqual "hello"
 ```
 
-[`Process.command`](xref:M:Axial.Process.Process.command) (and DSL [`cmd`](xref:M:Axial.Process.DSL.cmd)) preserves each interpolation hole as one native argument. [`cwd`](xref:M:Axial.Process.DSL.cwd), [`env`](xref:M:Axial.Process.DSL.env), and
-[`timeout`](xref:M:Axial.Process.DSL.timeout) return updated command specifications. [`=>`](xref:M:Axial.Process.DSL.(=>)) connects stdout to the next command's stdin. [`capture`](xref:M:Axial.Process.DSL.capture) creates
-a `Flow` that retains stdout and stderr; none of those steps starts a child process. The final [`run`](xref:M:Axial.Process.DSL.run) starts the Flow
-with live clock, filesystem, console, and process services. It returns `0` on success, or writes a redacted error and
-returns an appropriate nonzero exit code. Use it at a .NET command-line application's outermost boundary.
+`Process.run` is the short path for scripts: it returns a successful value and raises `ProcessRunException` on
+failure. Use `Process.tryRun` when the caller needs to inspect the full `Exit`. In an application, convert a command
+to a lazy `Flow` with `toFlow` and bind it into the surrounding `flow { }` instead.
 
-For a server, worker, or application Flow, see [run a process in an application Flow](running-in-an-application-flow.html).
-That guide explains the explicit process capability, live wiring, test fakes, and the difference between [`Process.toFlow`](xref:M:Axial.Process.Process.toFlow)
-and [`Flow.run`](xref:M:Axial.Flow.run).
-
-## Choose how the command communicates
-
-| Need | DSL | Full API | What you receive |
-| --- | --- | --- | --- |
-| Inspect output after the command exits | [`capture`](xref:M:Axial.Process.DSL.capture) | [`Process.capture`](xref:M:Axial.Process.Process.capture) | `ProcessResult`: stdout, stderr, bytes, exit codes, and timing |
-| Show output as it arrives | [`console`](xref:M:Axial.Process.DSL.console) | [`Process.console`](xref:M:Axial.Process.Process.console) | Structured completion data |
-| React to output before completion | [`stream`](xref:M:Axial.Process.DSL.stream) | [`Process.stream`](xref:M:Axial.Process.Process.stream) | A backpressured stream of output and completion events |
-| Send final output elsewhere | [`writeTo`](xref:M:Axial.Process.DSL.writeTo) / [`appendTo`](xref:M:Axial.Process.DSL.appendTo) | [`Process.stdout`](xref:M:Axial.Process.Process.stdout) / [`Process.stderr`](xref:M:Axial.Process.Process.stderr) | A configured command |
-
-New process specifications capture stdout and stderr by default. [`capture`](xref:M:Axial.Process.DSL.capture) makes that choice explicit and replaces a prior output policy. [Output capture and destinations](output-capture.html) explains bounded capture, files, console forwarding, and tees. [Streaming output](streaming.html) covers long-running commands and incremental handling.
-
-## What Axial owns
-
-The process service starts the native topology; Axial owns its lifetime. A timeout or interruption terminates every started stage, including partially started pipelines, before the enclosing Flow finishes. Expected process problems remain `ProcessError` values instead of becoming unstructured exceptions.
+The distinction matters: command construction does no I/O; execution does. Axial owns the child processes it starts,
+including their cancellation and cleanup. It does not invoke a shell unless you explicitly choose one.
 
 ## Guides
 
-- [Commands, input, and pipelines](composition.html)
-- [Output capture and destinations](output-capture.html)
-- [Streaming output](streaming.html)
-- [Failures and transcripts](failures-and-transcripts.html)
-- [Scripts and shell syntax](scripts.html)
-- [Worked examples](worked-examples.html)
-- [Run a process in an application Flow](running-in-an-application-flow.html)
-- [Fable](fable.html)
+Follow these in order to learn the model. Start with one command, then compose it, then place it inside an application.
+
+1. [Commands and composition](composition.html) — arguments, settings, pipelines, and plans.
+2. [Run a process in an application Flow](running-in-an-application-flow.html) — provide the process service and compose with application work.
+3. [Worked examples](worked-examples.html) — see the pieces together.
+
+## How-to
+
+Jump to the task you need. Each page focuses on one decision rather than explaining the whole API again.
+
+- [Capture output or send it elsewhere](output-capture.html)
+- [Consume output as it arrives](streaming.html)
+- [Handle failures and inspect results](failures-and-transcripts.html)
+- [Write a script or use shell syntax](scripts.html)
+- [Use stdin, routes, fan-in, or parallel commands](dsl-recipes.html)
+- [Use Axial.Process from Fable](fable.html)
+
+## Reference
+
+The [Axial.Process API reference](xref:T:Axial.Process.ProcessCommand) lists the public types and members. Authored
+API introductions to [`Process`](xref:M:Axial.Process.Process.command) and the
+[`DSL`](xref:M:Axial.Process.DSL.cmd) explain how the main groups fit together. Use the reference when you know the
+name and need its signature or exact contract. The guides teach the choices.

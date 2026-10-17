@@ -114,20 +114,18 @@ module WithFlow =
             return counter.Value
         }
 
-    /// The process-output variant: `Process.stream` emits typed events from a live process, and
-    /// the same pipeline shape consumes them. Requires IHasProcess in the environment.
+    /// The process-output variant: `Process.streamStdoutLines` emits decoded lines from a live process, and
+    /// the same pipeline shape consumes them. Requires IHasProcess and IHasClock in the environment.
     // <snippet:compare-process-output>
-    let streamProcessOutput<'env when 'env :> IHasProcess>
+    let streamProcessOutput<'env when 'env :> IHasProcess and 'env :> IHasClock>
         (specification: ProcessSpec)
         (persist: string -> Result<unit, RecordError>)
         : Flow<'env, RecordError, int> =
         let lines =
-            Process.stream specification
+            specification
+            |> Process.streamStdoutLines
+            |> ProcessStream.toFlowStream
             |> FlowStream.mapError (fun error -> BadRecord(ProcessError.describe error))
-            |> FlowStream.choose (function
-                | ProcessEvent.Output output when output.Channel = OutputChannel.StdOut ->
-                    Some(output.Text.TrimEnd('\r', '\n'))
-                | _ -> None)
 
         processLines lines persist
     // </snippet:compare-process-output>

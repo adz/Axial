@@ -371,8 +371,10 @@ module FileSystemError =
     /// <summary>Classifies an exception raised by a file-system operation.</summary>
     let fromException (path: string option) (error: exn) : FileSystemError =
         match error with
+#if !FABLE_COMPILER
         | :? FileNotFoundException as fileNotFound ->
             FileSystemError.FileNotFound(defaultArg (Option.ofObj fileNotFound.FileName) (defaultArg path ""))
+#endif
         | :? DirectoryNotFoundException ->
             FileSystemError.DirectoryNotFound(defaultArg path "")
         | :? UnauthorizedAccessException ->
@@ -391,6 +393,216 @@ module FileSystemError =
     /// <summary>Formats a human-readable description for a file-system error.</summary>
     let describe (error: FileSystemError) = error.ToString()
 
+#if !FABLE_COMPILER
+/// <summary>An in-memory file-system test double for the common read/write/enumerate surface.</summary>
+/// <remarks>Stream-returning, timestamp, symbolic-link, attribute, and logical-drive members throw
+/// <see cref="T:System.NotSupportedException" />.</remarks>
+type TestFileSystem(?initial: seq<string * string>) =
+    let files = System.Collections.Generic.Dictionary<string, byte array>(StringComparer.OrdinalIgnoreCase)
+    let directories = System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    let mutable currentDirectory = Path.GetTempPath()
+
+    do
+        for path, contents in defaultArg initial Seq.empty do
+            files[Path.GetFullPath path] <- Encoding.UTF8.GetBytes contents
+
+    let normalize (path: string) =
+        let rooted =
+            if Path.IsPathRooted path then path else Path.Combine(currentDirectory, path)
+        Path.GetFullPath rooted
+
+    let requireFile path =
+        match files.TryGetValue(normalize path) with
+        | true, bytes -> bytes
+        | false, _ -> raise (FileNotFoundException($"File not found: {path}"))
+
+    let write (path: string) (bytes: byte array) =
+        let full = normalize path
+        files[full] <- bytes
+        let parent = Path.GetDirectoryName full
+        if not (isNull parent) then directories.Add parent |> ignore
+
+    let notSupported (memberName: string) : 'value =
+        raise (NotSupportedException($"{memberName} is not supported by the in-memory test file system."))
+
+    let wildcard (pattern: string) (name: string) =
+        if pattern = "*" || pattern = "*.*" then
+            true
+        else
+            let escaped = System.Text.RegularExpressions.Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".")
+            System.Text.RegularExpressions.Regex.IsMatch(name, "^" + escaped + "$", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+
+    let enumerateFiles (path: string) (pattern: string) (searchOption: SearchOption) =
+        let root = normalize path
+        let prefix = root.TrimEnd(Path.DirectorySeparatorChar) + string Path.DirectorySeparatorChar
+        files.Keys
+        |> Seq.filter (fun filePath ->
+            filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            && (searchOption = SearchOption.AllDirectories
+                || not (filePath.Substring(prefix.Length).Contains(string Path.DirectorySeparatorChar)))
+            && wildcard pattern (Path.GetFileName filePath))
+        |> Seq.map id
+
+    let enumerateDirectories (path: string) (pattern: string) (searchOption: SearchOption) =
+        let root = normalize path
+        let prefix = root.TrimEnd(Path.DirectorySeparatorChar) + string Path.DirectorySeparatorChar
+        directories
+        |> Seq.filter (fun dir ->
+            dir.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            && dir <> root.TrimEnd(Path.DirectorySeparatorChar)
+            && (searchOption = SearchOption.AllDirectories
+                || not (dir.Substring(prefix.Length).Contains(string Path.DirectorySeparatorChar)))
+            && wildcard pattern (Path.GetFileName dir))
+        |> Seq.map id
+
+    interface IFileSystem with
+        member _.ReadAllText(path) = requireFile path |> Encoding.UTF8.GetString
+        member _.ReadAllText(path, encoding) = requireFile path |> encoding.GetString
+        member _.ReadAllTextAsync(path, cancellationToken) = task { return requireFile path |> Encoding.UTF8.GetString }
+        member _.ReadAllLines(path) = requireFile path |> Encoding.UTF8.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None)
+        member _.ReadAllLines(path, encoding) = requireFile path |> encoding.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None)
+        member _.ReadAllLinesAsync(path, cancellationToken) = task { return requireFile path |> Encoding.UTF8.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None) }
+        member _.ReadAllBytes(path) = requireFile path
+        member _.ReadAllBytesAsync(path, cancellationToken) = task { return requireFile path }
+        member _.WriteAllText(path, contents) = write path (Encoding.UTF8.GetBytes contents)
+        member _.WriteAllText(path, contents, encoding) = write path (encoding.GetBytes contents)
+        member _.WriteAllTextAsync(path, contents, cancellationToken) = task { write path (Encoding.UTF8.GetBytes contents) }
+        member _.WriteAllLines(path, contents) = write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes)
+        member _.WriteAllLines(path, contents, encoding) = write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> encoding.GetBytes)
+        member _.WriteAllLinesAsync(path, contents, cancellationToken) = task { write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes) }
+        member _.WriteAllBytes(path, contents) = write path contents
+        member _.WriteAllBytesAsync(path, contents, cancellationToken) = task { write path contents }
+        member _.AppendAllText(path, contents) =
+            let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
+            write path (Array.append existing (Encoding.UTF8.GetBytes contents))
+        member _.AppendAllText(path, contents, encoding) =
+            let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
+            write path (Array.append existing (encoding.GetBytes contents))
+        member _.AppendAllTextAsync(path, contents, cancellationToken) = task {
+            let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
+            write path (Array.append existing (Encoding.UTF8.GetBytes contents)) }
+        member _.AppendAllLines(path, contents) =
+            let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
+            let text = contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine
+            write path (Array.append existing (Encoding.UTF8.GetBytes(text + Environment.NewLine)))
+        member _.AppendAllLines(path, contents, encoding) =
+            let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
+            let text = contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine
+            write path (Array.append existing (encoding.GetBytes(text + Environment.NewLine)))
+        member _.FileExists(path) = files.ContainsKey(normalize path)
+        member _.DeleteFile(path) = files.Remove(normalize path) |> ignore
+        member _.CopyFile(sourcePath, destinationPath, overwrite) =
+            if not overwrite && files.ContainsKey(normalize destinationPath) then
+                raise (IOException($"File already exists: {destinationPath}"))
+            write destinationPath (requireFile sourcePath)
+        member _.MoveFile(sourcePath, destinationPath, overwrite) =
+            if not overwrite && files.ContainsKey(normalize destinationPath) then
+                raise (IOException($"File already exists: {destinationPath}"))
+            let bytes = requireFile sourcePath
+            files.Remove(normalize sourcePath) |> ignore
+            write destinationPath bytes
+        member _.CreateFileSymbolicLink(_, _) = notSupported "CreateFileSymbolicLink"
+        member _.CreateDirectorySymbolicLink(_, _) = notSupported "CreateDirectorySymbolicLink"
+        member _.GetSymbolicLinkTarget(_) = notSupported "GetSymbolicLinkTarget"
+        member _.ResolveSymbolicLinkTarget(_, _) = notSupported "ResolveSymbolicLinkTarget"
+        member _.OpenFile(_, _) = notSupported "OpenFile"
+        member _.OpenFile(_, _, _) = notSupported "OpenFile"
+        member _.OpenFile(_, _, _, _) = notSupported "OpenFile"
+        member _.OpenRead(_) = notSupported "OpenRead"
+        member _.OpenText(_) = notSupported "OpenText"
+        member _.OpenWrite(_) = notSupported "OpenWrite"
+        member _.CreateFile(_) = notSupported "CreateFile"
+        member _.CreateText(_) = notSupported "CreateText"
+        member _.AppendText(_) = notSupported "AppendText"
+        member _.GetFileLength(path) = requireFile path |> fun bytes -> int64 bytes.Length
+        member _.GetFileAttributes(_) = notSupported "GetFileAttributes"
+        member _.SetFileAttributes(_, _) = notSupported "SetFileAttributes"
+        member _.GetFileCreationTime(_) = notSupported "GetFileCreationTime"
+        member _.GetFileCreationTimeUtc(_) = notSupported "GetFileCreationTimeUtc"
+        member _.SetFileCreationTime(_, _) = notSupported "SetFileCreationTime"
+        member _.SetFileCreationTimeUtc(_, _) = notSupported "SetFileCreationTimeUtc"
+        member _.GetFileLastAccessTime(_) = notSupported "GetFileLastAccessTime"
+        member _.GetFileLastAccessTimeUtc(_) = notSupported "GetFileLastAccessTimeUtc"
+        member _.SetFileLastAccessTime(_, _) = notSupported "SetFileLastAccessTime"
+        member _.SetFileLastAccessTimeUtc(_, _) = notSupported "SetFileLastAccessTimeUtc"
+        member _.GetFileLastWriteTime(_) = notSupported "GetFileLastWriteTime"
+        member _.GetFileLastWriteTimeUtc(_) = notSupported "GetFileLastWriteTimeUtc"
+        member _.SetFileLastWriteTime(_, _) = notSupported "SetFileLastWriteTime"
+        member _.SetFileLastWriteTimeUtc(_, _) = notSupported "SetFileLastWriteTimeUtc"
+        member _.DirectoryExists(path) =
+            let full = normalize path
+            directories.Contains full || files.Keys |> Seq.exists (fun filePath -> filePath.StartsWith(full.TrimEnd(Path.DirectorySeparatorChar) + string Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        member _.CreateDirectory(path) =
+            let full = normalize path
+            directories.Add full |> ignore
+            let parent = Path.GetDirectoryName full
+            if not (isNull parent) then directories.Add parent |> ignore
+        member _.DeleteDirectory(path, recursive) =
+            let full = normalize path
+            let prefix = full.TrimEnd(Path.DirectorySeparatorChar) + string Path.DirectorySeparatorChar
+            let contained = files.Keys |> Seq.filter (fun filePath -> filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) |> Seq.toArray
+            if contained.Length > 0 && not recursive then
+                raise (IOException($"Directory not empty: {path}"))
+            for filePath in contained do files.Remove filePath |> ignore
+            directories.Remove full |> ignore
+        member _.MoveDirectory(sourcePath, destinationPath) =
+            let source = normalize sourcePath
+            let destination = normalize destinationPath
+            let prefix = source.TrimEnd(Path.DirectorySeparatorChar) + string Path.DirectorySeparatorChar
+            for filePath in files.Keys |> Seq.filter (fun filePath -> filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) |> Seq.toArray do
+                let relative = filePath.Substring(prefix.Length)
+                let bytes = files[filePath]
+                files.Remove filePath |> ignore
+                files[Path.Combine(destination, relative)] <- bytes
+            directories.Remove source |> ignore
+            directories.Add destination |> ignore
+        member _.EnumerateFiles(path, searchPattern, searchOption) = enumerateFiles path searchPattern searchOption
+        member _.GetFiles(path, searchPattern, searchOption) = enumerateFiles path searchPattern searchOption |> Seq.toArray
+        member _.EnumerateDirectories(path, searchPattern, searchOption) = enumerateDirectories path searchPattern searchOption
+        member _.GetDirectories(path, searchPattern, searchOption) = enumerateDirectories path searchPattern searchOption |> Seq.toArray
+        member _.EnumerateFileSystemEntries(path, searchPattern, searchOption) =
+            Seq.append (enumerateFiles path searchPattern searchOption) (enumerateDirectories path searchPattern searchOption)
+        member _.GetFileSystemEntries(path, searchPattern, searchOption) =
+            Seq.append (enumerateFiles path searchPattern searchOption) (enumerateDirectories path searchPattern searchOption) |> Seq.toArray
+        member _.GetLogicalDrives() = notSupported "GetLogicalDrives"
+        member _.GetDirectoryRoot(path) = Path.GetPathRoot path
+        member _.GetParent(path) = Path.GetDirectoryName path |> Option.ofObj
+        member _.GetCurrentDirectory() = currentDirectory
+        member _.SetCurrentDirectory(path) = currentDirectory <- normalize path
+        member _.GetDirectoryCreationTime(_) = notSupported "GetDirectoryCreationTime"
+        member _.GetDirectoryCreationTimeUtc(_) = notSupported "GetDirectoryCreationTimeUtc"
+        member _.SetDirectoryCreationTime(_, _) = notSupported "SetDirectoryCreationTime"
+        member _.SetDirectoryCreationTimeUtc(_, _) = notSupported "SetDirectoryCreationTimeUtc"
+        member _.GetDirectoryLastAccessTime(_) = notSupported "GetDirectoryLastAccessTime"
+        member _.GetDirectoryLastAccessTimeUtc(_) = notSupported "GetDirectoryLastAccessTimeUtc"
+        member _.SetDirectoryLastAccessTime(_, _) = notSupported "SetDirectoryLastAccessTime"
+        member _.SetDirectoryLastAccessTimeUtc(_, _) = notSupported "SetDirectoryLastAccessTimeUtc"
+        member _.GetDirectoryLastWriteTime(_) = notSupported "GetDirectoryLastWriteTime"
+        member _.GetDirectoryLastWriteTimeUtc(_) = notSupported "GetDirectoryLastWriteTimeUtc"
+        member _.SetDirectoryLastWriteTime(_, _) = notSupported "SetDirectoryLastWriteTime"
+        member _.SetDirectoryLastWriteTimeUtc(_, _) = notSupported "SetDirectoryLastWriteTimeUtc"
+        member _.Combine(paths) = Path.Combine(paths)
+        member _.ChangeExtension(path, extension) = Path.ChangeExtension(path, extension)
+        member _.GetDirectoryName(path) = Path.GetDirectoryName path |> Option.ofObj
+        member _.GetInvalidFileNameChars() = Path.GetInvalidFileNameChars()
+        member _.GetInvalidPathChars() = Path.GetInvalidPathChars()
+        member _.GetExtension(path) = Path.GetExtension path
+        member _.GetFileName(path) = Path.GetFileName path
+        member _.GetFileNameWithoutExtension(path) = Path.GetFileNameWithoutExtension path
+        member _.GetFullPath(path) = Path.GetFullPath path
+        member _.GetPathRoot(path) = Path.GetPathRoot path |> Option.ofObj
+        member _.GetRelativePath(relativeTo, path) = Path.GetRelativePath(relativeTo, path)
+        member _.GetTempPath() = Path.GetTempPath()
+        member _.GetTempFileName() = notSupported "GetTempFileName"
+        member _.GetRandomFileName() = notSupported "GetRandomFileName"
+        member _.HasExtension(path) = Path.HasExtension path
+        member _.EndsInDirectorySeparator(path) =
+            path.EndsWith(string Path.DirectorySeparatorChar) || path.EndsWith(string Path.AltDirectorySeparatorChar)
+        member _.TrimEndingDirectorySeparator(path) = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+        member _.IsPathFullyQualified(path) = Path.IsPathFullyQualified path
+        member _.IsPathRooted(path) = Path.IsPathRooted path
+#endif
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module FileSystem =
@@ -399,7 +611,11 @@ module FileSystem =
         Flow.envWith _.FileSystem
 
     let private directorySeparators =
+        #if FABLE_COMPILER
+        [| '/'; '\\' |]
+#else
         [| Path.DirectorySeparatorChar; Path.AltDirectorySeparatorChar |]
+#endif
 
     let private endsInDirectorySeparatorRaw (path: string) =
         not (String.IsNullOrEmpty path)
@@ -432,7 +648,12 @@ module FileSystem =
         when 'env :> IHasFileSystem =
         flow {
             let! fileSystem = service
+#if FABLE_COMPILER
+            let! cancellationToken = Flow.cancellationToken
+            return! operation fileSystem cancellationToken |> Async.AwaitTask
+#else
             return! ColdTask(fun cancellationToken -> operation fileSystem cancellationToken)
+#endif
         }
         |> protect path
 
@@ -443,12 +664,17 @@ module FileSystem =
         when 'env :> IHasFileSystem =
         flow {
             let! fileSystem = service
+#if FABLE_COMPILER
+            let! cancellationToken = Flow.cancellationToken
+            do! operation fileSystem cancellationToken |> Async.AwaitTask
+#else
             do!
                 ColdTask(fun cancellationToken ->
                     task {
                         do! operation fileSystem cancellationToken
                         return ()
                     })
+#endif
         }
         |> protect path
 
@@ -1184,4 +1410,7 @@ module FileSystem =
             member _.TrimEndingDirectorySeparator(path) = trimEndingDirectorySeparatorRaw path
             member _.IsPathFullyQualified(path) = Path.IsPathFullyQualified(path)
             member _.IsPathRooted(path) = Path.IsPathRooted(path) }
+
+    /// <summary>Creates an empty in-memory file-system test double; seed via the <c>TestFileSystem</c> constructor.</summary>
+    let test () : TestFileSystem = TestFileSystem()
 #endif

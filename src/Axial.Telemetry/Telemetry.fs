@@ -498,3 +498,37 @@ module FiberDumpTelemetry =
                 for KeyValue(name, value) in tags do
                     activity.SetTag(name, value) |> ignore
         | current -> current.AddEvent(ActivityEvent("axial.flow.fiber.dump", tags = tags)) |> ignore
+
+/// <summary>Flow-native helpers for application-defined metrics over <see cref="T:System.Diagnostics.Metrics.Meter" />.</summary>
+[<RequireQualifiedAccess>]
+module Metrics =
+    /// <summary>Creates a meter for application metrics.</summary>
+    let meter (name: string) : System.Diagnostics.Metrics.Meter = new System.Diagnostics.Metrics.Meter(name)
+
+    /// <summary>Creates a monotonic counter on the supplied meter.</summary>
+    let counter (meter: System.Diagnostics.Metrics.Meter) (name: string) : System.Diagnostics.Metrics.Counter<int64> =
+        meter.CreateCounter<int64>(name)
+
+    /// <summary>Creates a histogram on the supplied meter.</summary>
+    let histogram (meter: System.Diagnostics.Metrics.Meter) (name: string) : System.Diagnostics.Metrics.Histogram<float> =
+        meter.CreateHistogram<float>(name)
+
+    /// <summary>Creates an observable gauge whose value is read on collection.</summary>
+    let gauge
+        (meter: System.Diagnostics.Metrics.Meter)
+        (name: string)
+        (measure: unit -> float)
+        : System.Diagnostics.Metrics.ObservableGauge<float> =
+        meter.CreateObservableGauge<float>(name, System.Func<float>(measure))
+
+    /// <summary>Records an increment on a counter.</summary>
+    let add (counter: System.Diagnostics.Metrics.Counter<int64>) (value: int64) : Flow<'env, 'error, unit> =
+        Flow.delay (fun () ->
+            counter.Add value
+            Flow.succeed ())
+
+    /// <summary>Records a value on a histogram.</summary>
+    let record (histogram: System.Diagnostics.Metrics.Histogram<float>) (value: float) : Flow<'env, 'error, unit> =
+        Flow.delay (fun () ->
+            histogram.Record value
+            Flow.succeed ())

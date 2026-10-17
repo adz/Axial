@@ -158,7 +158,7 @@ module DependencyInjectionIntegrationTests =
                     |> Flow.mapError (fun error -> FileSystemError.Unexpected(None, $"http failed: {error}"))
                 let! processResult =
                     ProcessService.commandArgs "dotnet" [ "--version" ]
-                    |> ProcessService.toFlow<ServicePackageLayerServices>
+                    |> ProcessService.toFlow
                     |> Flow.mapError (fun error -> FileSystemError.Unexpected(None, $"process failed: {error}"))
                 return fileBody, httpBody, processResult.ExitCode
             }

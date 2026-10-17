@@ -18,7 +18,7 @@ what is **still the application's responsibility**.
 | `DashboardFanOut.fs` | Parallel fan-out with one optional branch | `Flow.zipPar`, `Flow.orElse`, `Flow.race`, `Axial.Telemetry` |
 | `ScopedWorkspace.fs` | Temp workspace released exactly once | `Axial.FileSystem`, acquire/release lifetime |
 | `ReportWiring.fs` | Wiring that cannot omit a capability | `IHas<>` env, `Layer.merge`, `Clock.fromValue`, `Axial.Console` |
-| `OutputPipeline.fs` | Producer/consumer with interruption | `FlowStream`, `Axial.Process.Process.stream`, `Flow.fork`/`interrupt` |
+| `OutputPipeline.fs` | Producer/consumer with interruption | `FlowStream`, `Axial.Process.Process.streamStdoutLines`, `Flow.fork`/`interrupt` |
 | `InventoryStm.fs` | Contended reservation without locks | `STM`, `TRef`, `STM.retry`, `STM.orElse` |
 
 Every claimed guarantee has a failure-path test in

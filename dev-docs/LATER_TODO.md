@@ -1,7 +1,7 @@
 # Axial Flow-Group and Platform Backlog
 
-This is the Flow-group and platform-track backlog, kept demand-driven per `dev-docs/PLAN.md`: the
-active queue (`dev-docs/TASKS.md`) is the 1.0 gate, and items here are pulled forward when a concrete application
+This is the Flow-group and platform-track backlog, kept demand-driven per `PLAN.md`: the
+active queue (`TASKS.md`) is the 1.0 gate, and items here are pulled forward when a concrete application
 needs them, not worked top to bottom. Section numbering and the v1.0/post-v1.0 labels are preserved from the original
 ZIO-delta roadmap for continuity; "v1.0" sections describe what a full Flow 1.0 would require, not the current gate.
 One ordering rule survives from the original PRD: runtime foundation before broad module expansion — rich
@@ -12,7 +12,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 ## References
 
-- Product plan: `dev-docs/PLAN.md`
+- Product plan: `PLAN.md`
 - Reference PRD: external ZIO reference corpus, `specs/prd.md`
 - Reference TODO: external ZIO reference corpus, `TODO.md`
 - Reference source/test specs: external ZIO reference corpus, `specs/*.md`
@@ -71,7 +71,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 ## 6. v1.0 Scheduling and Time
 
 - [x] Add a minimal schedule implementation with recurrence limits, fixed spacing, exponential backoff, fixed-range jitter, attempt/delay outputs, and retry/repeat integration.
-- [x] Harden schedule semantics: deterministic jitter (`jitteredWith`), overflow capping, invalid-delay rejection, and pinned `recurs`/statelessness/retry/repeat behavior (see `dev-docs/current-ideas/schedule-expansion.md`).
+- [x] Harden schedule semantics: deterministic jitter (`jitteredWith`), overflow capping, invalid-delay rejection, and pinned `recurs`/statelessness/retry/repeat behavior (see `current-ideas/schedule-expansion.md`).
 - [x] Add `Schedule.union`, `Schedule.intersect`, and `Schedule.fixedRate`.
 - [x] Add `andThen`, `whileInput`/`untilInput`, `whileOutput`/`untilOutput`, `recursAtMost`, `upTo` (time budget), `elapsed`, `map`, and `resetAfter`; retry, repeat, and supervise run each attempt in a child scope, and schedules keep per-run memory for combinators that need it.
 - [x] Remove `Unchecked.defaultof<'error>` from `Flow.repeat` when schedule evaluation or sleeping is interrupted, preserving interruption/cause information without fabricating a typed error (sleep runs at the workflow's error type; schedule-evaluation failure becomes `Cause.Die`). Also hardened: `exponential` caps at the max delay instead of overflowing ticks, `spaced`/`exponential` reject negative delays, and `Schedule.jitteredWith` takes an injectable sample source for deterministic jitter.
@@ -103,7 +103,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Expand `Axial.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
 - [x] Add explicit process timeout/deadline configuration and tests (`Process.timeout` / DSL `timeout` on `ProcessSpec`, enforced via `Flow.timeout` with `ProcessError.TimedOut` and process-tree termination; live integration test in `ProcessServiceTests`).
 - [ ] Design `Axial.Network` after the core v1 service/layer surface is stable.
-- [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Telemetry` — see `dev-docs/decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
+- [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Telemetry` — see `decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
 - [x] Define telemetry-service composition with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries — not applicable; no telemetry service contracts are introduced per the decision above.
 
 ## 8. v1.0 Compatibility Tracks
@@ -136,14 +136,15 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 ## 11. Post-v1.0 STM Expansion
 
 - [ ] Replace or extend the current global-lock STM with a design that can scale while preserving correctness.
-- [ ] Add `TRef.modify`, `getAndSet`, `updateAndGet`, and common atomic helpers.
-- [ ] Add transactional collections: array, map, set, queue, priority queue, hub, promise, random, semaphore, and reentrant lock.
+- [x] Add `TRef.modify`, `getAndSet`, `getAndUpdate`, and `updateAndGet` (`src/Axial/State.fs`).
+- [x] Add the transactional collections with concrete demand: `TQueue` (bounded/unbounded offer/take with retry), `TSemaphore`, and `TPromise` (`succeed`/`fail`/`await`/`poll`).
+- [ ] Add the remaining transactional collections on demand: array, map, set, priority queue, hub, random, and reentrant lock.
 - [ ] Strengthen `retry` and `orElse` semantics with tests for wakeups, lost notifications, and concurrent commits.
 - [ ] Add STM interop tests with fibers and cancellation.
 
 ## 12. Post-v1.0 Streams, Sinks, Channels, and Pipelines
 
-- [ ] Define a chunked pull model for `FlowStream` that works on .NET and can compile through Fable where supported.
+- [x] Decide against a chunked pull model: `FlowStream` stays value-by-value; .NET streaming interop is `FlowStream.ofAsyncEnumerable` (which also covers `ChannelReader.ReadAllAsync`), not a public `Chunk` type.
 - [x] Add core stream constructors: `empty`, `singleton`, `fromSeq`, `fromFlow`, `unfoldFlow`.
 - [x] Add queue-backed and resource-owning constructors: `fromDequeue`, `repeatFlow`, and `using` (a stream that owns a `Resource` until consumption ends). A range is `fromSeq [a..b]`.
 - [ ] Add an async-callback constructor (events pushed into a stream) if pushing into a `Queue` and using `fromDequeue` proves awkward.
@@ -151,14 +152,14 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [ ] Add remaining combinators only on demand: retry, timeout/timeoutBetween. (`mergePar`, `buffer`, `fromSchedule`, `fromHub`, `runIntoQueue`, and `runIntoHub` exist.)
 - [x] Add sinks: `runFold`, `runCollect`, `runDrain`, `runForEach`, `runForEachFlow`, `runTryHead`, `runTryLast`, `runCount`.
 - [ ] Add `runExactlyOne` and failure capture on demand.
-- [ ] Add pipelines for text encoding/decoding and compression with the transport packages (`dev-docs/current-ideas/flow-transport-packages.md`).
+- [ ] Add pipelines for text encoding/decoding and compression with the transport packages (`current-ideas/flow-transport-packages.md`).
 - [ ] Add channel internals only when needed to support stream correctness and composition.
 - [x] Add stream tests for backpressure, interruption, finalizers, failures, and chunk boundaries.
 - [x] Run stream behavior tests under Fable, not only a compile check (`tests/Axial.Fable.Tests` via `scripts/run-fable-tests.sh`, in CI).
 
 ## 13. Post-v1.0 Collections and Internal Infrastructure
 
-- [ ] Add chunk and non-empty chunk types together with the chunked pull model above, if it is ever needed.
+- [x] Decide not to add chunk and non-empty chunk types; the chunked pull model was rejected.
 - [ ] Add differ/patch support if reloadable services or environment updates require it.
 - [x] Add internal ring-buffer and queue strategies for stream/hub performance (`QueueStrategy`: back-pressure, dropping, sliding, unbounded).
 - [ ] Keep these internals hidden until a public API has a clear user story.
@@ -167,7 +168,8 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 - [x] Add `Hub` pub-sub with per-subscription strategies, scope-owned subscriptions, and draining shutdown (`src/Axial/Hub.fs`).
 - [ ] Add latch, barrier, async mutex, reentrant lock, and concurrent map/set helpers where they compose with `Flow` cancellation and failure.
-- [ ] Add metrics primitives: counters, gauges, histograms, labels, listeners, and runtime connectors.
+- [x] Add metrics primitives: `Metrics.counter`/`gauge`/`histogram` over `System.Diagnostics.Metrics`, with `Metrics.add`/`record` to emit values from a workflow.
+- [ ] Add labels (tagged measurements), metric listeners, and runtime connectors on demand.
 - [ ] Add tracing/source-location model adapted to F# and .NET stack traces.
 - [ ] Add source-generator or build-time codegen equivalents for accessor and reloadable-service ergonomics.
 - [ ] Use the local ZIO JS files only as behavior and platform-constraint references.

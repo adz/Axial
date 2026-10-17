@@ -26,3 +26,32 @@ runtime.
 
 JavaScript-only hosting packages intentionally fail outside their named runtime. The browser adapter does not treat page
 visibility or unload as dependable application shutdown.
+
+## Dependencies
+
+Each package lists what it pulls in when you install it. Axial packages depend on each other as shown; NuGet brings
+the transitive ones automatically, so you only reference the packages you use directly. Every package also depends on
+`FSharp.Core`.
+
+`Axial` defines the service contracts, such as `IClock`, but does not depend on `Axial.PlatformService`. That package adds the live clock, logging, randomness, GUID, and environment-variable implementations.
+
+| Package | Axial packages it brings in | Other dependencies |
+| --- | --- | --- |
+| `Axial` | None | `Fable.Core` |
+| `Axial.Layers` | `Axial` | None |
+| `Axial.PlatformService` | `Axial`, `Axial.Layers` | None |
+| `Axial.Console` | `Axial` | None |
+| `Axial.FileSystem` | `Axial` | None |
+| `Axial.HttpClient` | `Axial`, `Axial.PlatformService` | None |
+| `Axial.Process` | `Axial`, `Axial.PlatformService`, `Axial.Console`, `Axial.FileSystem` | None |
+| `Axial.Hosting` | `Axial`, `Axial.Layers`, `Axial.PlatformService`, `Axial.HttpClient` | `Microsoft.Extensions.Configuration.Abstractions`, `DependencyInjection.Abstractions`, `Hosting.Abstractions`, `Http`, `Logging.Abstractions` |
+| `Axial.Hosting.Node` | `Axial`, `Axial.PlatformService` | `Fable.Core` |
+| `Axial.Hosting.Browser` | `Axial` | `Fable.Core` |
+| `Axial.Telemetry` | `Axial` | `System.Diagnostics.DiagnosticSource` |
+| `Axial.Telemetry.JavaScript` | `Axial` | `Fable.Core` |
+| `Axial.Hosting.AspNetCore` (experimental) | `Axial` | `Reified.Schema.Http`, `Reified.Schema.Json`, `Reified.Data` |
+| `Axial.Hosting.GenHttp` | `Axial` | `GenHTTP.Api`, `GenHTTP.Modules.IO`, `Reified.Schema.Http`, `Reified.Schema.Json`, `Reified.Data` |
+
+Installing `Axial.Process` therefore also installs `Axial.Console`, `Axial.FileSystem`, and `Axial.PlatformService`.
+Only the two HTTP host adapters, `Axial.Hosting.AspNetCore` (experimental) and `Axial.Hosting.GenHttp`, depend on Reified. The core
+`Axial` package and the operational packages do not.

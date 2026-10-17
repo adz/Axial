@@ -1000,3 +1000,44 @@ module FlowStream =
     /// <example><code>stream |&gt; FlowStream.runCount</code></example>
     let runCount (stream: FlowStream<'env, 'error, 'value>) : Flow<'env, 'error, int64> =
         runFold (fun count _ -> count + 1L) 0L stream
+
+#if !FABLE_COMPILER
+    /// <summary>Creates a stream that pulls values from an async enumerable until it is exhausted.</summary>
+    /// <remarks>
+    /// <c>System.Threading.Channels.ChannelReader</c> plugs in through <c>ReadAllAsync</c>:
+    /// <c>channel.Reader.ReadAllAsync() |&gt; FlowStream.ofAsyncEnumerable</c>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// source |&gt; FlowStream.ofAsyncEnumerable |&gt; FlowStream.runCollect
+    /// </code>
+    /// </example>
+    let ofAsyncEnumerable
+        (source: System.Collections.Generic.IAsyncEnumerable<'value>)
+        : FlowStream<'env, 'error, 'value> =
+        let rec pull
+            (enumerator: System.Collections.Generic.IAsyncEnumerator<'value>)
+            (environment: 'env)
+            (cancellationToken: CancellationToken)
+            ()
+            : Execution<StreamStep<'value, 'error>, 'error> =
+            Flow.invoke
+                // axial-allow-discarded-cancellation: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
+                (Flow.fromTask (fun _ ->
+                    task {
+                        let! moved = enumerator.MoveNextAsync()
+
+                        if moved then
+                            return Next(enumerator.Current, pull enumerator environment cancellationToken)
+                        else
+                            do! enumerator.DisposeAsync()
+                            return Done
+                    }))
+                environment
+                cancellationToken
+
+        FlowStream(fun environment cancellationToken ->
+            let enumerator = source.GetAsyncEnumerator(cancellationToken)
+            RuntimeState.current().Scope.AddAsyncDisposable enumerator
+            pull enumerator environment cancellationToken ())
+#endif

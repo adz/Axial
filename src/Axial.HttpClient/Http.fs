@@ -408,6 +408,35 @@ module Response =
           StartedAt = startedAt
           Duration = TimeSpan.Zero }
 
+#if !FABLE_COMPILER
+/// <summary>A scriptable HTTP service test double that records requests and replies through a handler.</summary>
+/// <remarks>Set <c>Handler</c> to control each response; <c>Sent</c> holds the requests that were sent.</remarks>
+type TestHttp(?startedAt: DateTimeOffset) =
+    let sent = ResizeArray<HttpRequest>()
+    let startedAt = defaultArg startedAt DateTimeOffset.UnixEpoch
+
+    let mutable handler : HttpRequest -> Result<HttpResponse, HttpError> =
+        fun _ -> Ok(Response.create startedAt 200 "")
+
+    /// <summary>The requests sent so far, in order.</summary>
+    member _.Sent : System.Collections.Generic.IReadOnlyList<HttpRequest> = sent
+
+    /// <summary>Produces a response for each request; the default is 200 with an empty body.</summary>
+    member _.Handler
+        with get () = handler
+        and set value = handler <- value
+
+    /// <summary>Removes all recorded requests.</summary>
+    member _.Clear() = sent.Clear()
+
+    interface IHttp with
+        member _.Send(request, _) =
+            async {
+                sent.Add request
+                return handler request
+            }
+#endif
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Http =
@@ -636,6 +665,9 @@ module Http =
                             return Error(HttpError.InvalidRequest error.Message)
                     } |> Async.AwaitTask
                 } }
+
+    /// <summary>Creates a scriptable HTTP service test double that records requests.</summary>
+    let test () : TestHttp = TestHttp()
 #endif
 
 module DSL =

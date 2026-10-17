@@ -63,6 +63,13 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
   Never keep an alias for a renamed API, and never add a near-synonym that behaves slightly differently.
 - Reserve `read` for I/O that actually reads something (`Console.read`, stream readers). It must not name a pure
   environment projection.
+- Never name a parameter or local `flow`, `stm`, or `layer`: it shadows the computation-expression builder and stops
+  `flow { }` / `stm { }` resolving. Related: `flow { }` is defined in `FlowBuilder.fs` (compiled last in `src/Axial`),
+  so files before it — `Flow.fs`, `Concurrency.fs`, `State.fs`, `Stream.fs`, … — cannot use `flow { }` and must use
+  the combinators (`Flow.bind`, `Flow.ensuring`).
+- BCL interop gotchas: `IHttpClientFactory` is in the `System.Net.Http` namespace, not `Microsoft.Extensions.Http`
+  (which holds the `CreateClient()` extension instead); `TimeProvider` exists only on `net8.0`+ (guard with
+  `#if !FABLE_COMPILER && !NETSTANDARD2_1`).
 
 ## Writing
 

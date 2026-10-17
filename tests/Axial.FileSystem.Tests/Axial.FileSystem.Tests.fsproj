@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="TestSupport.fs" />
     <Compile Include="FileSystemServiceTests.fs" />
+    <Compile Include="TestFileSystemTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

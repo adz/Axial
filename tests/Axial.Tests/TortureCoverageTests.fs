@@ -20,10 +20,13 @@ module TortureCoverageTests =
           "Axial.CacheModule"; "Axial.FlowStreamModule"; "Axial.ScheduleModule"; "Axial.RetryModule"
           "Axial.ParallelismModule"; "Axial.ResourceModule"; "Axial.Exit"; "Axial.Cause"; "Axial.PolicyModule"
           "Axial.FiberObserverModule"; "Axial.FiberDumpModule"; "Axial.BindModule"; "Axial.ColdTaskModule"
-          "Axial.Layers.LayerModule" ]
+          "Axial.Layers.LayerModule"; "Axial.Process.ProcessStream" ]
 
     /// Members deliberately left out, each with the reason.
-    let private excluded () : Map<string, string> = Map.empty
+    let private excluded () : Map<string, string> =
+        [ "Deferred.fromTask", "BCL interop bridge, covered by BclInteropTests."
+          "Deferred.toTask", "BCL interop bridge, covered by BclInteropTests." ]
+        |> Map.ofList
 
     let private sourceText () =
         let directory = Path.Combine(__SOURCE_DIRECTORY__, "..", "..", "examples", "Axial.TortureTest")
@@ -45,7 +48,7 @@ module TortureCoverageTests =
 
     /// Every public member of the covered modules, as the source spells it: "Queue.offer", "Flow.(>>=)".
     let private publicMembers () : string list =
-        let assemblies = [ typeof<Axial.Never>.Assembly; typeof<Axial.Layers.Pool<int>>.Assembly ]
+        let assemblies = [ typeof<Axial.Never>.Assembly; typeof<Axial.Layers.Pool<int>>.Assembly; typeof<Axial.Process.ProcessSpec>.Assembly ]
 
         [ for assembly in assemblies do
               for moduleType in assembly.GetExportedTypes() do

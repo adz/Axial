@@ -41,14 +41,6 @@ To disable the analyzer for one project, set:
 
 For adoption guidance, see [Installation](/getting-started/installation.html#add-effect-boundary-guardrails-optional).
 
-## Run the analyzer in the Axial repository
-
-Axial's `Directory.Build.targets` runs the local analyzer for every project. It imports the same targets file that the NuGet package provides, but points it at the local build output.
-
-As a result, `dotnet build` and `dotnet test` use the same checks in this repository and in consumer projects. No separate script or CI task is required.
-
-The repository sets `AxialGuardrailsSeverity` to `error`. To change the severity for one command, set the `AXIAL_GUARDRAILS_SEVERITY` environment variable.
-
 ## Review the diagnostics
 
 | Code | Name | Detects |

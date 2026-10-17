@@ -233,3 +233,14 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   into `'env`: F# cannot subtract a requirement the way `ZIO.scoped` removes `Scope` from `R`, and building an
   intersection-typed environment needs runtime proxies. The divergence is instead stated in `llms.txt` and the scopes
   guide, and `Axial.Guardrails` reports the ZIO form (a forked flow returning its own acquisition) as `AXG007`.
+
+## Process output, completion, and runners
+
+- Stdout is the primary data channel; stderr joins it only through explicit merging. Capture helpers keep this
+  distinction, even though the name `captureAll` can suggest both channels to a new reader. Guides state its scope.
+- Routing output does not determine retention. Batch output defaults to complete stdout for callers inspecting a
+  result; streaming defaults to bounded tails. The integer host runner can avoid retaining stdout it discards.
+- Process completion is terminal metadata rather than an item in the output stream. ProcessStream transformations
+  preserve it; conversion to FlowStream deliberately gives it up. Prefix stopping succeeds only after owned cleanup.
+- The outcome runner follows Axial's `Exit` model. Returning an integer is a separately named host boundary with
+  reporting-console requirements. This avoids silently discarding captured results through the ordinary `run` name.
