@@ -29,7 +29,6 @@ type ProcessHostEnvironment = {
 
     interface IHasClock with
         member this.Clock = this.Clock
-#endif
 
 type TestProcessHostEnvironment = {
     Environment: ProcessHostEnvironment
@@ -37,6 +36,7 @@ type TestProcessHostEnvironment = {
     Console: TestConsole
     Clock: ManualClock
 }
+#endif
 
 /// Raised by Process.run when execution does not succeed. Use Process.tryRun to retain the Exit instead.
 #if !FABLE_COMPILER
