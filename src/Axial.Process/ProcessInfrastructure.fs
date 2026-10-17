@@ -101,7 +101,7 @@ type internal AsyncCell<'value>() =
                                 deliver item))
         }
 
-type private AsyncRendezvous<'value>() =
+type internal AsyncRendezvous<'value>() =
     let gate = obj ()
     let mutable pending: ('value * AsyncCell<unit>) option = None
     let mutable waiter: AsyncCell<'value * AsyncCell<unit>> option = None
