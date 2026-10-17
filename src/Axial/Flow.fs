@@ -14,8 +14,8 @@ type private BindAwaiter<'env, 'error, 'value, 'next>
             // The runner has already awaited this Task. AsTask consumed the source ValueTask exactly once;
             // reading the cached Task result here also supports executions backed by IValueTaskSource.
             match source.Result with
-            | Exit.Success value -> binder value
-            | Exit.Failure cause -> Flow(fun _ _ -> Execution.ofCause cause)
+            | Exit.Success value -> FlowStep.Next(binder value)
+            | Exit.Failure cause -> FlowStep.Failed cause
 #endif
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1974,7 +1974,7 @@ module Flow =
             if execution.IsCompletedSuccessfully then
                 match execution.Result with
                 | Exit.Success value -> FlowStep.Next(binder value)
-                | Exit.Failure cause -> FlowStep.Next(Flow(fun _ _ -> Execution.ofCause cause))
+                | Exit.Failure cause -> FlowStep.Failed cause
             else
                 FlowStep.Await(BindAwaiter(execution.AsTask(), binder)))
 #endif
