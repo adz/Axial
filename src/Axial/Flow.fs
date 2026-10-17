@@ -4,6 +4,20 @@ open System
 open System.Threading
 open System.Threading.Tasks
 
+#if !FABLE_COMPILER
+type private BindAwaiter<'env, 'error, 'value, 'next>
+    (source: Task<Exit<'value, 'error>>, binder: 'value -> Flow<'env, 'error, 'next>) =
+    interface IFlowAwaiter<'env, 'error, 'next> with
+        member _.Pending = source :> Task
+
+        member _.Resume() =
+            // The runner has already awaited this Task. AsTask consumed the source ValueTask exactly once;
+            // reading the cached Task result here also supports executions backed by IValueTaskSource.
+            match source.Result with
+            | Exit.Success value -> binder value
+            | Exit.Failure cause -> Flow(fun _ _ -> Execution.ofCause cause)
+#endif
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Resource =
@@ -1955,21 +1969,14 @@ module Flow =
             |> Execution.bind (fun value -> invoke (binder value) environment cancellationToken))
 #else
         FlowContinue(fun environment cancellationToken ->
-            let finish exit =
-                match exit with
-                | Exit.Success value -> binder value
-                | Exit.Failure cause -> Flow(fun _ _ -> Execution.ofCause cause)
-
             let execution = invoke flow environment cancellationToken
 
             if execution.IsCompletedSuccessfully then
-                ValueTask<Flow<'env, 'error, 'next>>(finish execution.Result)
+                match execution.Result with
+                | Exit.Success value -> FlowStep.Next(binder value)
+                | Exit.Failure cause -> FlowStep.Next(Flow(fun _ _ -> Execution.ofCause cause))
             else
-                ValueTask<Flow<'env, 'error, 'next>>(
-                    task {
-                        let! exit = execution
-                        return finish exit
-                    }))
+                FlowStep.Await(BindAwaiter(execution.AsTask(), binder)))
 #endif
 
     /// <summary>Sequences a synchronous continuation after a successful value.</summary>

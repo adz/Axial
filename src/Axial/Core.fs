@@ -1117,7 +1117,7 @@ type Flow<'env, 'error, 'value> =
 #if !FABLE_COMPILER
     // Only sequencing is trampolined. Primitive operations still use the platform's normal awaitable.
     | FlowDelay of (unit -> Flow<'env, 'error, 'value>)
-    | FlowContinue of ('env -> CancellationToken -> ValueTask<Flow<'env, 'error, 'value>>)
+    | FlowContinue of ('env -> CancellationToken -> FlowStep<'env, 'error, 'value>)
 #endif
 
 #if !FABLE_COMPILER
@@ -1127,19 +1127,17 @@ type Flow<'env, 'error, 'value> =
         let mutable current = this
         let mutable searching = true
         let mutable terminal = Unchecked.defaultof<Execution<'value, 'error>>
-        let mutable pending = Unchecked.defaultof<ValueTask<Flow<'env, 'error, 'value>>>
+        let mutable pending = Unchecked.defaultof<IFlowAwaiter<'env, 'error, 'value>>
         let mutable finished = false
 
         while searching do
             match current with
             | FlowDelay factory -> current <- factory ()
             | FlowContinue next ->
-                let execution = next environment cancellationToken
-
-                if execution.IsCompletedSuccessfully then
-                    current <- execution.Result
-                else
-                    pending <- execution
+                match next environment cancellationToken with
+                | FlowStep.Next successor -> current <- successor
+                | FlowStep.Await awaiter ->
+                    pending <- awaiter
                     searching <- false
             | Flow operation ->
                 terminal <- operation environment cancellationToken
@@ -1160,7 +1158,8 @@ type Flow<'env, 'error, 'value> =
                     let mutable running = true
 
                     while running do
-                        let! successor = next
+                        do! next.Pending
+                        let successor = next.Resume()
                         let struct (finished, terminal, pending) = successor.Advance(environment, cancellationToken)
 
                         if finished then
@@ -1267,6 +1266,19 @@ type Flow<'env, 'error, 'value> =
             .GetResult()
 #endif
 
+#if !FABLE_COMPILER
+// A pending bind keeps the typed source result in its frame. The runner awaits its Task directly, avoiding an
+// intermediate Task<Flow<...>> and its state machine for every asynchronous bind.
+and [<Struct; NoEquality; NoComparison>] internal FlowStep<'env, 'error, 'value> =
+    | Next of successor: Flow<'env, 'error, 'value>
+    | Await of pending: IFlowAwaiter<'env, 'error, 'value>
+
+and internal IFlowAwaiter<'env, 'error, 'value> =
+    abstract Pending: Task
+    abstract Resume: unit -> Flow<'env, 'error, 'value>
+#endif
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 module internal FlowInternal =
     let invoke

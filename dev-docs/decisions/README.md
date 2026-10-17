@@ -254,6 +254,9 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 - Bind evaluates its source through the normal execution boundary, then relinquishes its continuation before the
   executor runs the successor. A source with pending work, error handling, or cleanup retains that work; the executor
   does not discard lexical obligations to achieve a memory bound.
+- A pending bind keeps its typed source Task and binder in a continuation frame. The runner awaits that Task
+  directly; an intermediate `Task<Flow<...>>` would add another state machine to every pending bind. A source
+  ValueTask is converted with `AsTask` once, so single-consumption awaitables remain supported.
 - Fable keeps its existing `Async` execution, which already trampolines tail calls. The .NET fix does not introduce
   an inspectable operation tree, a new public workflow type, or pluggable backends. Those remain separate proposals.
 - Stack guards remain for nested non-tail execution and opaque combinators. Tail sequencing itself runs in a loop

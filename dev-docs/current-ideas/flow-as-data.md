@@ -26,7 +26,7 @@ type Flow<'env, 'error, 'value> =
     internal
     | Flow of ('env -> CancellationToken -> Execution<'value, 'error>)
     | FlowDelay of (unit -> Flow<'env, 'error, 'value>)
-    | FlowContinue of ('env -> CancellationToken -> ValueTask<Flow<'env, 'error, 'value>>)
+    | FlowContinue of ('env -> CancellationToken -> FlowStep<'env, 'error, 'value>)
 ```
 
 `Execution` is `ValueTask<Exit<..>>` on .NET and `Async<Exit<..>>` under Fable (`src/Axial/Platform.fs`). The carrier
@@ -34,7 +34,9 @@ is fixed per platform at compile time. Fable keeps just the closure case and its
 
 On .NET, `Flow.bind` evaluates its source and hands the successor to an iterative executor. `Flow.delay` hands over
 its factory. The executor consumes these tail continuations without retaining awaiting tasks for earlier iterations.
-Synchronous completion still avoids an async state machine. This is an execution fix, not a fully inspectable tree.
+A `FlowStep` is either the successor or a typed frame holding a pending source Task and its continuation. The
+executor awaits that Task directly, then consumes the frame. Synchronous completion still avoids an async state
+machine. This is an execution fix, not a fully inspectable tree.
 
 | Per `let!`, today | .NET | Fable |
 |---|---|---|
