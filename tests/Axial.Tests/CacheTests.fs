@@ -2,6 +2,7 @@ namespace Axial.Tests
 
 open System
 open System.Threading
+open System.Threading.Tasks
 open Axial
 open Swensen.Unquote
 open Xunit
@@ -53,10 +54,13 @@ module CacheTests =
     [<Fact>]
     let ``Interrupting one caller does not cancel the lookup others wait for`` () =
         let completed = ref false
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let load (_: int) : Flow<ClockEnvironment, string, string> =
             flow {
-                do! Flow.sleep (TimeSpan.FromMilliseconds 60.0)
+                started.SetResult(())
+                do! Flow.fromTask (fun token -> release.Task.WaitAsync token)
                 completed.Value <- true
                 return "shared"
             }
@@ -65,9 +69,10 @@ module CacheTests =
             flow {
                 let! cache = Cache.make load
                 let! impatient = Flow.fork (cache |> Cache.get 1)
+                do! Flow.fromTask (fun token -> started.Task.WaitAsync(TimeSpan.FromSeconds 10.0, token))
                 let! patient = Flow.fork (cache |> Cache.get 1)
-                do! Flow.sleep (TimeSpan.FromMilliseconds 10.0)
                 let! interrupted = Fiber.interrupt impatient
+                release.SetResult(())
                 let! value = Fiber.join patient
                 return interrupted, value
             }
