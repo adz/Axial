@@ -3,9 +3,33 @@ namespace Axial.Tests
 open System
 open System.Threading
 open System.Threading.Tasks
+open System.Threading.Tasks.Sources
 open Axial
 open Swensen.Unquote
 open Xunit
+
+/// An execution awaitable that rejects a second consumption, unlike a Task-backed ValueTask.
+type private SingleUseExecutionSource<'value, 'error>() as this =
+    let mutable core = ManualResetValueTaskSourceCore<Exit<'value, 'error>>()
+    let mutable reads = 0
+    let registered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+    do core.RunContinuationsAsynchronously <- true
+
+    member _.Execution = ValueTask<Exit<'value, 'error>>(this :> IValueTaskSource<_>, core.Version)
+    member _.Registered = registered.Task
+    member _.Reads = Volatile.Read(&reads)
+    member _.Complete exit = core.SetResult exit
+
+    interface IValueTaskSource<Exit<'value, 'error>> with
+        member _.GetStatus token = core.GetStatus token
+
+        member _.GetResult token =
+            if Interlocked.Increment(&reads) <> 1 then invalidOp "Execution was consumed twice."
+            core.GetResult token
+
+        member _.OnCompleted(continuation, state, token, flags) =
+            core.OnCompleted(continuation, state, token, flags)
+            registered.TrySetResult() |> ignore
 
 module TrampolineTests =
     let private suspend () : Flow<'env, 'error, unit> =
@@ -133,3 +157,20 @@ module TrampolineTests =
         match consume 0 |> Flow.runSync () with
         | Exit.Failure(Cause.Die error) -> test <@ obj.ReferenceEquals(error, foreign) @>
         | other -> failwithf "Expected a foreign cancellation defect, got %A" other
+
+    [<Fact>]
+    let ``A pending bind consumes an IValueTaskSource execution exactly once`` () =
+        task {
+            let source = SingleUseExecutionSource<int, string>()
+            // Exercise the executor boundary directly: public ValueTask interop wraps this source in a Task first.
+            let workflow : Flow<unit, string, int> =
+                Flow(fun _ _ -> source.Execution)
+                |> Flow.bind (fun value -> Flow.ok (value + 1))
+
+            let running = workflow.StartAsTask(())
+            do! source.Registered.WaitAsync(TimeSpan.FromSeconds 10.0)
+            source.Complete (Exit.Success 41)
+            let! exit = running.WaitAsync(TimeSpan.FromSeconds 10.0)
+            test <@ exit = Exit.Success 42 @>
+            test <@ source.Reads = 1 @>
+        }
