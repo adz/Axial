@@ -303,3 +303,112 @@ module RuntimeSemanticsTests =
         let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
 
         test <@ result = Exit.Failure(Cause.Then(Cause.Interrupt, Cause.Die finalizerDefect)) @>
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``While checks the guard once per iteration and stops immediately on failure`` (suspending: bool) =
+        let mutable checks = 0
+        let mutable visited = 0
+        let mutable cleaned = 0
+        let guard () =
+            checks <- checks + 1
+            visited < 10
+        let workflow : Flow<unit, string, unit> =
+            flow {
+                while guard () do
+                    if suspending then
+                        do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                    visited <- visited + 1
+                    if visited = 3 then return! Flow.fail "stop"
+            }
+            |> Flow.ensuring (Flow.delay (fun () -> cleaned <- cleaned + 1; Flow.ok ()))
+
+        test <@ workflow.RunSynchronously(()) = Exit.Failure(Cause.Fail "stop") @>
+        test <@ visited = 3 && checks = 3 && cleaned = 1 @>
+
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``While reevaluates its delayed body and preserves the outer runtime`` (suspending: bool) =
+        let mutable checks = 0
+        let mutable visited = 0
+        let guard () =
+            checks <- checks + 1
+            visited < 10
+        let workflow : Flow<unit, string, unit> =
+            flow {
+                while guard () do
+                    let expected = visited
+                    let! _ =
+                        flow {
+                            if suspending then
+                                do! Flow.fromTask (fun _ -> task { do! Task.Yield() })
+                            let! annotations = Flow.annotations
+                            test <@ annotations["region"] = "inner" @>
+                        }
+                        |> Flow.annotate "region" "inner"
+                    let! annotations = Flow.annotations
+                    test <@ annotations["region"] = "outer" @>
+                    test <@ visited = expected @>
+                    visited <- visited + 1
+            }
+            |> Flow.annotate "region" "outer"
+
+        test <@ workflow.RunSynchronously(()) = Exit.Success () @>
+        test <@ visited = 10 && checks = 11 @>
+
+    [<Theory>]
+    [<InlineData(false, false)>]
+    [<InlineData(false, true)>]
+    [<InlineData(true, false)>]
+    [<InlineData(true, true)>]
+    let ``Execution boundary closes once and combines outcomes across completion modes``
+        (pendingBody: bool, pendingCleanup: bool) =
+        task {
+            for outcome in 0..2 do
+                for cleanupFails in [false; true] do
+                    let bodyError = InvalidOperationException "body"
+                    let cleanupError = InvalidOperationException "cleanup"
+                    let bodySignal = TaskCompletionSource<Exit<int, string>>(TaskCreationOptions.RunContinuationsAsynchronously)
+                    let cleanupSignal = TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+                    let cleanupStarted = TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+                    let mutable closed = 0
+                    let bodyExit = if outcome = 1 then Exit.Failure(Cause.Fail "expected") else Exit.Success 42
+                    // Raw execution tests exceptions at the executor boundary, before an interop adapter classifies them.
+                    let workflow : Flow<unit, string, int> =
+                        Flow(fun _ _ ->
+                            RuntimeState.current().Scope.AddFinalizer(fun _ ->
+                                closed <- closed + 1
+                                cleanupStarted.SetResult()
+                                if pendingCleanup then cleanupSignal.Task
+                                elif cleanupFails then raise cleanupError
+                                else Task.CompletedTask)
+                            if pendingBody then ValueTask<Exit<int, string>>(bodySignal.Task)
+                            elif outcome = 2 then raise bodyError
+                            else ValueTask<Exit<int, string>>(bodyExit))
+
+                    let running = workflow.StartAsValueTask(())
+                    if pendingBody then
+                        let completed = running.IsCompleted
+                        test <@ not completed @>
+                        test <@ closed = 0 @>
+                        if outcome = 2 then bodySignal.SetException bodyError
+                        else bodySignal.SetResult bodyExit
+                    do! cleanupStarted.Task.WaitAsync(TimeSpan.FromSeconds 10.0)
+                    if pendingCleanup then
+                        let completed = running.IsCompleted
+                        test <@ not completed @>
+                        if cleanupFails then cleanupSignal.SetException cleanupError
+                        else cleanupSignal.SetResult()
+                    let! exit = running
+                    let primary = if outcome = 2 then Exit.Failure(Cause.Die bodyError) else bodyExit
+                    let expected =
+                        if cleanupFails then
+                            match primary with
+                            | Exit.Success _ -> Exit.Failure(Cause.Die cleanupError)
+                            | Exit.Failure cause -> Exit.Failure(Cause.Then(cause, Cause.Die cleanupError))
+                        else primary
+                    test <@ exit = expected @>
+                    test <@ closed = 1 @>
+        }

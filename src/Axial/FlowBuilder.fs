@@ -101,12 +101,7 @@ type FlowBuilder() =
         // A loop, not recursion through Bind: a `while` that suspends each iteration (a queue consumer, a polling
         // loop) would otherwise retain every iteration until it ends.
         Flow(fun environment cancellationToken ->
-            Execution.loop () (fun () ->
-                if guard () then
-                    FlowBuilderRuntime.run environment cancellationToken body
-                    |> Execution.map Platform.Continue
-                else
-                    Execution.ofValue (Platform.Break ())))
+            Platform.whileLoop guard (fun () -> FlowBuilderRuntime.run environment cancellationToken body))
 
     member this.For
         (

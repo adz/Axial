@@ -232,6 +232,65 @@ let loop (initial: 'state) (step: 'state -> Execution<LoopStep<'state, 'result>,
     outcome.Value
 #endif
 
+/// Repeats a unit-valued body without mapping every iteration into a separate loop-step execution.
+let whileLoop (guard: unit -> bool) (body: unit -> Execution<unit, 'error>) : Execution<unit, 'error> =
+#if FABLE_COMPILER
+    let rec consume () =
+        async {
+            if guard () then
+                let! exit = body ()
+                match exit with
+                | Exit.Success () -> return! consume ()
+                | Exit.Failure cause -> return Exit.Failure cause
+            else
+                return Exit.Success ()
+        }
+    consume ()
+#else
+    let awaitRest (pending: Execution<unit, 'error>) =
+        ValueTask<Exit<unit, 'error>>(
+            task {
+                let mutable current = pending
+                let mutable result = Unchecked.defaultof<Exit<unit, 'error>>
+                let mutable running = true
+
+                while running do
+                    let! exit = current
+                    match exit with
+                    | Exit.Failure _ ->
+                        result <- exit
+                        running <- false
+                    | Exit.Success () ->
+                        if guard () then current <- body ()
+                        else
+                            result <- exit
+                            running <- false
+
+                return result
+            })
+
+    let mutable result = Unchecked.defaultof<Execution<unit, 'error>>
+    let mutable running = true
+
+    while running do
+        if guard () then
+            let current = body ()
+            if current.IsCompletedSuccessfully then
+                match current.Result with
+                | Exit.Success () -> ()
+                | Exit.Failure cause ->
+                    result <- ofExit (Exit.Failure cause)
+                    running <- false
+            else
+                result <- awaitRest current
+                running <- false
+        else
+            result <- ofExit (Exit.Success ())
+            running <- false
+
+    result
+#endif
+
 /// Transforms both channels of an already-known exit outcome. A private mirror of <c>Exit.mapBoth</c> (defined
 /// later, in Core.fs) so this file does not need to depend on modules compiled after it.
 let private mapBothExit
