@@ -425,3 +425,27 @@ type InteropCompletionBenchmarks() =
                     return! consume (remaining - 1) next
             }
         (consume 20 0).RunSynchronously(()) |> Shared.consumeExit
+
+/// Left-nested chains can cross the runtime's stack-guard boundary; measure both sides instead of inferring a
+/// constant per-bind cost from a single depth. Direct Task recursion supplies a control with the same arithmetic.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+type CompositionDepthBenchmarks() =
+    let mutable workflow : Flow<int, string, int> = Flow.ok 0
+    let mutable direct = Shared.buildDirectTaskResultBindChain 20 None
+
+    [<Params(20, 80, 100, 200)>]
+    member val Depth = 20 with get, set
+
+    [<GlobalSetup>]
+    member this.Setup() =
+        workflow <- Shared.buildFlowBindChain this.Depth
+        direct <- Shared.buildDirectTaskResultBindChain this.Depth None
+
+    [<Benchmark(Baseline = true, Description = "Task<Result> bind")>]
+    member _.DirectTask() = Shared.runTaskResult direct
+
+    [<Benchmark(Description = "Flow left-nested bind")>]
+    member _.FlowBind() = Shared.runFlow workflow

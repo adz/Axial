@@ -11,6 +11,7 @@ Axial is the workflow product. Core is `src/Axial`; focused operational and host
 ## Task routing
 
 - Core workflow/runtime: `src/Axial/**`, `tests/Axial.Tests/**`
+- Runtime performance: `benchmarks/Axial.Benchmarks/**`; measurement scope and workflow in `dev-docs/BENCHMARKS.md`
 - Operational services: matching `src/Axial.{Console,FileSystem,HttpClient,Process,PlatformService}` and test projects
 - Effect-boundary linting: `src/Axial.Guardrails/**`; see `docs/15-notes/03-guardrails.md` and the effect-boundary rule in this file's Architecture Invariants
 - Hosting: `src/Axial.Hosting*`, `tests/Axial.Hosting.Tests/**`
