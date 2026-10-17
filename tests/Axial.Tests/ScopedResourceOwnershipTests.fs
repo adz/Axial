@@ -312,6 +312,53 @@ module ScopedResourceOwnershipTests =
         test <@ released events = [ "inner-left:released"; "inner-right:released"; "raced:released" ] @>
 
     [<Fact>]
+    let ``A fiber forked in a parallel branch outlives the branch when the caller keeps its value`` () =
+        // A race cancels its branches once it is decided, and a timeout disposes its own token; neither may interrupt
+        // a fiber that the winning branch forked and handed to the caller.
+        let forkSeven () : Flow<ClockEnvironment, string, Fiber<string, int>> =
+            Flow.sleep (TimeSpan.FromMilliseconds 50.0) |> Flow.map (fun () -> 7) |> Flow.fork
+
+        let workflow : Flow<ClockEnvironment, string, int list> =
+            flow {
+                let! raced = Flow.race (forkSeven ()) Flow.never
+                let! zipped, _ = Flow.zipPar (forkSeven ()) (Flow.ok 1)
+                let! sequenced = Flow.sequencePar [ forkSeven () ]
+                let! timed = forkSeven () |> Flow.timeout (TimeSpan.FromSeconds 30.0) "timed out"
+                return! raced :: zipped :: timed :: sequenced |> Flow.traverse Fiber.join
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ 7; 7; 7; 7 ] @>
+
+    [<Fact>]
+    let ``A fiber forked in a race loser is interrupted with the loser`` () =
+        let workflow : Flow<ClockEnvironment, string, Exit<unit, string>> =
+            flow {
+                let! forked = Deferred.make<ClockEnvironment, string, Fiber<string, unit>> ()
+
+                let loser =
+                    flow {
+                        let! fiber = Flow.fork Flow.never
+                        do! Deferred.succeed fiber forked |> Flow.ignore
+                        do! Flow.never
+                        return 0
+                    }
+
+                let winner =
+                    flow {
+                        let! _ = Deferred.await forked
+                        return 1
+                    }
+
+                let! _ = Flow.race loser winner
+                let! fiber = Deferred.await forked
+                return! Fiber.await fiber
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt) @>
+
+    [<Fact>]
     let ``A resource returned from a plain fork is already released when join returns it`` () =
         let events = ResizeArray<string>()
 
