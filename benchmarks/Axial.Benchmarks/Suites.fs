@@ -175,6 +175,7 @@ type CancellableTaskBenchmarks() =
     member _.ManualTokenTask() =
         Shared.runCancellableTask directTask
 
+/// CandidateValueTaskFlow omits scopes and runtime context; it measures a smaller contract, not a drop-in backend.
 [<MemoryDiagnoser>]
 [<InProcess>]
 [<WarmupCount(3)>]
@@ -204,6 +205,16 @@ type SynchronousCompletionBenchmarks() =
     [<Benchmark(Description = "Flow succeed")>]
     member _.PrimitiveFlow() =
         primitive.RunSynchronously(0)
+        |> Shared.consumeExit
+
+    [<Benchmark(Description = "Flow succeed ValueTask boundary")>]
+    member _.PrimitiveValueTask() =
+        primitive.StartAsValueTask(0).GetAwaiter().GetResult()
+        |> Shared.consumeExit
+
+    [<Benchmark(Description = "Flow pipeline ValueTask boundary")>]
+    member _.PipelineValueTask() =
+        flow.StartAsValueTask(0).GetAwaiter().GetResult()
         |> Shared.consumeExit
 
     [<Benchmark(Description = "Candidate ValueTaskFlow")>]
@@ -332,3 +343,85 @@ type RecursiveLoopBenchmarks() =
 
     [<Benchmark(Description = "While suspending loop x1000")>]
     member _.WhileSuspending() = suspendingWhile.RunSynchronously(())
+
+/// Completed operations and scheduler yields are separate cases; neither includes network or timer latency.
+/// Each case constructs a recursive workflow and runs it through its normal blocking boundary. The Async cases
+/// include Async-to-Task scheduling, so compare each carrier with its direct baseline rather than treating them as
+/// interchangeable executor implementations.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+type InteropCompletionBenchmarks() =
+    [<Params(false, true)>]
+    member val Suspend = false with get, set
+
+    member private this.Step(value: int) =
+        if this.Suspend then
+            task {
+                do! System.Threading.Tasks.Task.Yield()
+                return value + 1
+            }
+        else
+            System.Threading.Tasks.Task.FromResult(value + 1)
+
+    member private this.AsyncStep(value: int) =
+        async {
+            let! next = this.Step value |> Async.AwaitTask
+            return next
+        }
+
+    [<Benchmark(Baseline = true, Description = "Task<Result> x20")>]
+    member this.DirectTask() =
+        let rec consume remaining value =
+            task {
+                if remaining = 0 then return Ok value
+                else
+                    let! next = this.Step value
+                    return! consume (remaining - 1) next
+            }
+        consume 20 0 |> fun pending -> pending.GetAwaiter().GetResult() |> Shared.consumeResult
+
+    [<Benchmark(Description = "Async<Result> x20")>]
+    member this.DirectAsync() =
+        let rec consume remaining value =
+            async {
+                if remaining = 0 then return Ok value
+                else
+                    let! next = this.AsyncStep value
+                    return! consume (remaining - 1) next
+            }
+        consume 20 0 |> Async.RunSynchronously |> Shared.consumeResult
+
+    [<Benchmark(Description = "Flow Task interop x20")>]
+    member this.FlowTask() =
+        let rec consume remaining value : Flow<unit, string, int> =
+            flow {
+                if remaining = 0 then return value
+                else
+                    let! next = Flow.fromTask (fun _ -> this.Step value)
+                    return! consume (remaining - 1) next
+            }
+        (consume 20 0).RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "Flow ValueTask interop x20")>]
+    member this.FlowValueTask() =
+        let rec consume remaining value : Flow<unit, string, int> =
+            flow {
+                if remaining = 0 then return value
+                else
+                    let! next = Flow.fromValueTask (fun _ -> System.Threading.Tasks.ValueTask<int>(this.Step value))
+                    return! consume (remaining - 1) next
+            }
+        (consume 20 0).RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "Flow Async interop x20")>]
+    member this.FlowAsync() =
+        let rec consume remaining value : Flow<unit, string, int> =
+            flow {
+                if remaining = 0 then return value
+                else
+                    let! next = Flow.fromAsync (this.AsyncStep value)
+                    return! consume (remaining - 1) next
+            }
+        (consume 20 0).RunSynchronously(()) |> Shared.consumeExit

@@ -110,7 +110,7 @@ module internal Shared =
                     if failAt = Some index then
                         Flow.fail $"fail-{index}"
                     else
-                        Flow.succeed(value + index))
+                        Flow.fromAsync (async { return value + index }))
 
         flow
 
@@ -124,7 +124,7 @@ module internal Shared =
                     if failAt = Some index then
                         Flow.fail $"fail-{index}"
                     else
-                        Flow.succeed(value + index))
+                        Flow.fromTask (fun _ -> Task.FromResult(value + index)))
 
         flow
 
