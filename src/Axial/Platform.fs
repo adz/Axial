@@ -434,20 +434,24 @@ let disposeAsyncDeed (resource: IAsyncDisposable) : Deed =
 /// Runs a scope's finalizers in reverse registration order, collecting and re-raising any failures as a single
 /// exception or an <see cref="T:System.AggregateException" />.
 let runFinalizers (finalizers: Finalizer[]) (cancellationToken: CancellationToken) : Deed =
-    execution {
-        let errors = ResizeArray<exn>()
+    // Most scopes close empty (a race loser, a parallel branch that acquired nothing): skip the state machine.
+    if finalizers.Length = 0 then
+        completedDeed ()
+    else
+        execution {
+            let errors = ResizeArray<exn>()
 
-        for index = finalizers.Length - 1 downto 0 do
-            try
-                do! finalizers[index] cancellationToken
-            with error ->
-                errors.Add error
+            for index = finalizers.Length - 1 downto 0 do
+                try
+                    do! finalizers[index] cancellationToken
+                with error ->
+                    errors.Add error
 
-        match errors.Count with
-        | 0 -> ()
-        | 1 -> raise errors[0]
-        | _ -> raise (AggregateException("One or more scope finalizers failed.", errors))
-    }
+            match errors.Count with
+            | 0 -> ()
+            | 1 -> raise errors[0]
+            | _ -> raise (AggregateException("One or more scope finalizers failed.", errors))
+        }
 
 // ---------------------------------------------------------------------------------------------
 // Mutual exclusion.
@@ -806,6 +810,21 @@ let timeOfClock (clock: IClock) : ITimeSource =
     }
 
 
+/// Cancels <paramref name="target" /> when <paramref name="parent" /> is cancelled. Returns a function that detaches
+/// the link once it is no longer needed, so a long-lived parent does not accumulate one callback per call.
+let linkTo (parent: CancellationToken) (target: CancellationTokenSource) : unit -> unit =
+#if FABLE_COMPILER
+    // Fable's registration is a plain `{ Dispose }` object; its F# type does not expose Dispose.
+    let registration = unbox<IDisposable> (box (parent.Register(fun () -> target.Cancel())))
+    fun () -> registration.Dispose()
+#else
+    if not parent.CanBeCanceled then
+        ignore
+    else
+        let registration = parent.Register(fun () -> target.Cancel())
+        fun () -> registration.Dispose()
+#endif
+
 #if FABLE_COMPILER
 /// A running branch of a concurrent combinator on Fable: its exit once settled, and a way to be told of it.
 /// JavaScript runs one callback at a time, so the shared state needs no lock.
@@ -861,11 +880,11 @@ let private awaitFirst (left: Branch<'left, 'error>) (right: Branch<'right, 'err
         left.OnSettled(Choice1Of2 >> decide)
         right.OnSettled(Choice2Of2 >> decide))
 
-/// A cancellation source for one branch, cancelled when the enclosing execution is.
+/// A cancellation source for one branch, cancelled when the enclosing execution is, and a function that detaches
+/// it from the enclosing execution once the branch no longer needs that.
 let private branchSource (parent: CancellationToken) =
     let source = new CancellationTokenSource()
-    parent.Register(fun () -> source.Cancel()) |> ignore
-    source
+    source, linkTo parent source
 #endif
 
 /// Runs <paramref name="operation" />, racing it against a timeout of <paramref name="after" />. Falls back to
@@ -884,26 +903,34 @@ let timeoutExecution
     // The operation and the timer race on the supplied clock; the loser of a timeout is interrupted and
     // awaited, as on .NET.
     async {
-        let operationSource = branchSource cancellationToken
+        let operationSource, unlink = branchSource cancellationToken
         let timerSource = new CancellationTokenSource()
         let operation = startBranch operation operationSource.Token
         operation.OnSettled(fun _ -> timerSource.Cancel())
 
         match operation.Settled() with
-        | Some exit -> return exit
+        | Some exit ->
+            unlink ()
+            return exit
         | None ->
             let! timer = time.Sleep<unit>(after, timerSource.Token)
 
             match timer, operation.Settled() with
-            | _, Some exit -> return exit
+            | _, Some exit ->
+                unlink ()
+                return exit
             | Exit.Success(), None ->
                 operationSource.Cancel()
                 // The losing operation's exit is dropped here and can never be observed by anyone else,
                 // so hand it to the caller for unobserved-defect reporting before discarding it.
                 let! discarded = awaitBranch operation
+                unlink ()
                 onDiscardedExit discarded
                 return! onTimeout ()
-            | Exit.Failure _, None -> return! awaitBranch operation
+            | Exit.Failure _, None ->
+                let! exit = awaitBranch operation
+                unlink ()
+                return exit
     }
 #else
     ValueTask<Exit<'value, 'error>>(
@@ -934,6 +961,22 @@ let timeoutExecution
 // ---------------------------------------------------------------------------------------------
 // Parallel composition: zipPar (fail-fast, cancels the loser) and race.
 // ---------------------------------------------------------------------------------------------
+
+/// The exit of a zipPar whose first settled side failed with <paramref name="first" /> and cancelled the other, which
+/// then settled with <paramref name="other" />. The other side's interruption is that cancellation, so it is dropped.
+/// A first failure that is itself an interruption came from the shared cancellation (a failure elsewhere in the same
+/// sequencePar, which may reach this zipPar before the failure itself does), so it gives way to a real failure.
+let private failedAfterCancel
+    (leftFirst: bool)
+    (first: Cause<'error>)
+    (other: Exit<'other, 'error>)
+    : Exit<'value, 'error> =
+    match first, other with
+    | _, Exit.Success _
+    | _, Exit.Failure Cause.Interrupt -> Exit.Failure first
+    | Cause.Interrupt, Exit.Failure otherCause -> Exit.Failure otherCause
+    | _, Exit.Failure otherCause ->
+        Exit.Failure(if leftFirst then Cause.Both(first, otherCause) else Cause.Both(otherCause, first))
 
 #if !FABLE_COMPILER
 /// Starts <paramref name="operation" />, returning a synchronous exception instead of raising it.
@@ -968,12 +1011,7 @@ let private awaitBoth
                 | Exit.Failure cause ->
                     cts.Cancel()
                     let! rightExit = rightFiberTask
-
-                    return
-                        match rightExit with
-                        | Exit.Failure Cause.Interrupt -> Exit.Failure cause
-                        | Exit.Failure otherCause -> Exit.Failure(Cause.Both(cause, otherCause))
-                        | Exit.Success _ -> Exit.Failure cause
+                    return failedAfterCancel true cause rightExit
                 | Exit.Success leftValue ->
                     let! rightExit = rightFiberTask
 
@@ -986,12 +1024,7 @@ let private awaitBoth
                 | Exit.Failure cause ->
                     cts.Cancel()
                     let! leftExit = leftFiberTask
-
-                    return
-                        match leftExit with
-                        | Exit.Failure Cause.Interrupt -> Exit.Failure cause
-                        | Exit.Failure leftCause -> Exit.Failure(Cause.Both(leftCause, cause))
-                        | Exit.Success _ -> Exit.Failure cause
+                    return failedAfterCancel false cause leftExit
                 | Exit.Success rightValue ->
                     let! leftExit = leftFiberTask
 
@@ -1002,49 +1035,32 @@ let private awaitBoth
         })
 
 #endif
-/// Runs two operations concurrently, cancelling the other as soon as one of them fails, and folds their exits
-/// with <paramref name="chooseParallel" /> (both settled) or <paramref name="chooseAfterCancel" /> (one failed
-/// and cancelled the other).
-/// <remarks>
-/// The .NET branch cannot accept a shared "choose after cancel" callback the way <paramref name="chooseParallel" />
-/// is shared, because that helper is used at two different generic instantiations (once with the left exit as
-/// "other", once with the right exit) and F# functions are not implicitly rank-2 polymorphic. Its logic --
-/// identical to <c>Flow.chooseExitAfterCancel</c> -- is inlined here instead.
-/// </remarks>
+/// Runs two operations concurrently under <paramref name="source" />, cancelling it as soon as one of them fails,
+/// and folds their exits with <paramref name="chooseParallel" /> (both settled) or <c>failedAfterCancel</c> (one
+/// failed and cancelled the other). The caller owns <paramref name="source" />: nested calls that share it cancel one
+/// another, and the caller detaches it from its own token once they have all settled.
 let zipParExecution
     (leftOp: CancellationToken -> Execution<'left, 'error>)
     (rightOp: CancellationToken -> Execution<'right, 'error>)
-    (cancellationToken: CancellationToken)
+    (source: CancellationTokenSource)
     (chooseParallel: Exit<'left, 'error> -> Exit<'right, 'error> -> Exit<'left * 'right, 'error>)
     : Execution<'left * 'right, 'error> =
 #if FABLE_COMPILER
     // Fail-fast, as on .NET: the first failure cancels the other branch, which is awaited before combining.
     async {
-        let leftSource = branchSource cancellationToken
-        let rightSource = branchSource cancellationToken
-        let left = startBranch leftOp leftSource.Token
-        let right = startBranch rightOp rightSource.Token
+        let left = startBranch leftOp source.Token
+        let right = startBranch rightOp source.Token
         let! first = awaitFirst left right
 
         match first with
         | Choice1Of2(Exit.Failure cause) ->
-            rightSource.Cancel()
+            source.Cancel()
             let! rightExit = awaitBranch right
-
-            return
-                match rightExit with
-                | Exit.Failure Cause.Interrupt -> Exit.Failure cause
-                | Exit.Failure otherCause -> Exit.Failure(Cause.Both(cause, otherCause))
-                | Exit.Success _ -> Exit.Failure cause
+            return failedAfterCancel true cause rightExit
         | Choice2Of2(Exit.Failure cause) ->
-            leftSource.Cancel()
+            source.Cancel()
             let! leftExit = awaitBranch left
-
-            return
-                match leftExit with
-                | Exit.Failure Cause.Interrupt -> Exit.Failure cause
-                | Exit.Failure leftCause -> Exit.Failure(Cause.Both(leftCause, cause))
-                | Exit.Success _ -> Exit.Failure cause
+            return failedAfterCancel false cause leftExit
         | Choice1Of2 leftExit ->
             let! rightExit = awaitBranch right
             return chooseParallel leftExit rightExit
@@ -1053,27 +1069,27 @@ let zipParExecution
             return chooseParallel leftExit rightExit
     }
 #else
-    let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+    let cts = source
 
     // The operations start outside the task builder so that branches which complete synchronously are combined
-    // without allocating one. A throwing operation faults the result, and a throwing left operation leaves the
-    // right one unstarted, as when both started inside the builder.
+    // without allocating one. A throwing operation faults the result and, like a failure, cancels the other one; a
+    // throwing left operation leaves the right one unstarted.
     match startOperation leftOp cts.Token with
-    | Error error -> faultedExecution error
+    | Error error ->
+        cts.Cancel()
+        faultedExecution error
     | Ok leftRun ->
         match startOperation rightOp cts.Token with
-        | Error error -> faultedExecution error
+        | Error error ->
+            cts.Cancel()
+            faultedExecution error
         | Ok rightRun when leftRun.IsCompletedSuccessfully && rightRun.IsCompletedSuccessfully ->
             // Both settled: the left exit counts as the first, as Task.WhenAny would report it.
             let exit =
                 match leftRun.Result, rightRun.Result with
                 | Exit.Failure cause, rightExit ->
                     cts.Cancel()
-
-                    match rightExit with
-                    | Exit.Failure Cause.Interrupt -> Exit.Failure cause
-                    | Exit.Failure otherCause -> Exit.Failure(Cause.Both(cause, otherCause))
-                    | Exit.Success _ -> Exit.Failure cause
+                    failedAfterCancel true cause rightExit
                 | Exit.Success leftValue, Exit.Success rightValue -> Exit.Success(leftValue, rightValue)
                 | Exit.Success _, Exit.Failure cause -> Exit.Failure cause
 
@@ -1155,6 +1171,7 @@ let private reportLoser
 /// Settles a race whose winner has already completed: cancels the loser and returns the winner's exit.
 let private decideRace
     (cts: CancellationTokenSource)
+    (unlink: unit -> unit)
     (leftWon: bool)
     (winner: Execution<'value, 'error>)
     (loser: Execution<'value, 'error>)
@@ -1162,6 +1179,7 @@ let private decideRace
     (onLoserSettled: Exit<'value, 'error> option -> unit)
     : Execution<'value, 'error> =
     cts.Cancel()
+    unlink ()
     onDecided leftWon
 
     if loser.IsCompletedSuccessfully then
@@ -1174,6 +1192,7 @@ let private decideRace
 /// The asynchronous half of <c>raceExecution</c>: waits for the first operation to settle, then cancels the other.
 let private awaitRace
     (cts: CancellationTokenSource)
+    (unlink: unit -> unit)
     (leftRun: Execution<'value, 'error>)
     (rightRun: Execution<'value, 'error>)
     (onDecided: bool -> unit)
@@ -1186,6 +1205,7 @@ let private awaitRace
 
             let! completed = Task.WhenAny(leftFiberTask, rightFiberTask)
             cts.Cancel()
+            unlink ()
 
             // The loser's exit is dropped without ever being awaited, so hand it to the caller once the loser
             // settles.
@@ -1210,11 +1230,14 @@ let raceExecution
     : Execution<'value, 'error> =
 #if FABLE_COMPILER
     async {
-        let leftSource = branchSource cancellationToken
-        let rightSource = branchSource cancellationToken
+        let leftSource, unlinkLeft = branchSource cancellationToken
+        let rightSource, unlinkRight = branchSource cancellationToken
         let left = startBranch leftOp leftSource.Token
         let right = startBranch rightOp rightSource.Token
         let! first = awaitFirst left right
+        // Once decided, the winner has settled and the loser is cancelled: neither needs the caller's token.
+        unlinkLeft ()
+        unlinkRight ()
 
         // The loser is cancelled and not awaited; its exit goes to the caller once it settles.
         match first with
@@ -1230,21 +1253,29 @@ let raceExecution
             return exit
     }
 #else
-    let cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+    // Not CreateLinkedTokenSource: the link to the caller's token is detached as soon as the race is decided, while
+    // the source stays usable by a loser that is still running.
+    let cts = new CancellationTokenSource()
+    let unlink = linkTo cancellationToken cts
 
     // As in zipParExecution, the operations start outside the task builder so that a winner that has already
     // settled is returned without allocating one. Task.WhenAny reports the left operation first when both have
     // settled, so the right one wins synchronously only while the left one is still running.
     match startOperation leftOp cts.Token with
-    | Error error -> faultedExecution error
+    | Error error ->
+        unlink ()
+        faultedExecution error
     | Ok leftRun ->
         match startOperation rightOp cts.Token with
-        | Error error -> faultedExecution error
+        | Error error ->
+            cts.Cancel()
+            unlink ()
+            faultedExecution error
         | Ok rightRun when leftRun.IsCompletedSuccessfully ->
-            decideRace cts true leftRun rightRun onDecided onLoserSettled
+            decideRace cts unlink true leftRun rightRun onDecided onLoserSettled
         | Ok rightRun when not leftRun.IsCompleted && rightRun.IsCompletedSuccessfully ->
-            decideRace cts false rightRun leftRun onDecided onLoserSettled
-        | Ok rightRun -> awaitRace cts leftRun rightRun onDecided onLoserSettled
+            decideRace cts unlink false rightRun leftRun onDecided onLoserSettled
+        | Ok rightRun -> awaitRace cts unlink leftRun rightRun onDecided onLoserSettled
 #endif
 
 // ---------------------------------------------------------------------------------------------
@@ -1516,18 +1547,6 @@ let awaitAnyExitTaskAsSuccess
 // Cancellation wiring for operations that must stop on an event without racing a consuming operation.
 // ---------------------------------------------------------------------------------------------
 
-/// Cancels <paramref name="target" /> when <paramref name="parent" /> is cancelled. Returns a function that detaches
-/// the link once it is no longer needed, so a long-lived parent does not accumulate one callback per call.
-let linkTo (parent: CancellationToken) (target: CancellationTokenSource) : unit -> unit =
-#if FABLE_COMPILER
-    // Fable's registration is a plain `{ Dispose }` object; its F# type does not expose Dispose.
-    let registration = unbox<IDisposable> (box (parent.Register(fun () -> target.Cancel())))
-    fun () -> registration.Dispose()
-#else
-    let registration = parent.Register(fun () -> target.Cancel())
-    fun () -> registration.Dispose()
-#endif
-
 /// Cancels <paramref name="target" /> once <paramref name="delay" /> has passed on the supplied clock, unless the
 /// returned function is called first.
 let cancelAfter (time: ITimeSource) (delay: TimeSpan) (target: CancellationTokenSource) : unit -> unit =
@@ -1553,6 +1572,31 @@ let cancelAfter (time: ITimeSource) (delay: TimeSpan) (target: CancellationToken
 #endif
 
     fun () -> timer.Cancel()
+
+/// Runs <paramref name="action" /> once <paramref name="execution" /> settles, whether with an exit or by faulting.
+let afterSettled (action: unit -> unit) (execution: Execution<'value, 'error>) : Execution<'value, 'error> =
+#if FABLE_COMPILER
+    async {
+        try
+            return! execution
+        finally
+            action ()
+    }
+#else
+    if execution.IsCompleted then
+        action ()
+        execution
+    else
+        ValueTask<Exit<'value, 'error>>(
+            task {
+                try
+                    let! exit = execution
+                    return exit
+                finally
+                    action ()
+            }
+        )
+#endif
 
 /// Runs <paramref name="action" /> once a fiber's exit task has settled.
 let whenSettled (exitTask: ExitTask<'value, 'error>) (action: unit -> unit) : unit =

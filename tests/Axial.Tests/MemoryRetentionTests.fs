@@ -1,6 +1,7 @@
 namespace Axial.Tests
 
 open System
+open System.Threading
 open System.Threading.Tasks
 open Axial
 open Axial.State
@@ -26,7 +27,10 @@ module MemoryRetentionTests =
 
     /// Runs <paramref name="iterations" /> of a loop and returns how many bytes stayed live between an early and a
     /// late iteration. <paramref name="build" /> receives the per-iteration callback to invoke.
-    let private retainedDuringLoop (build: (int -> unit) -> Flow<ClockEnvironment, Never, unit>) : int64 =
+    let private retainedDuringLoopUnder
+        (cancellationToken: CancellationToken)
+        (build: (int -> unit) -> Flow<ClockEnvironment, Never, unit>)
+        : int64 =
         let early = 2_000
         let late = 42_000
         let mutable earlyBytes = 0L
@@ -36,13 +40,34 @@ module MemoryRetentionTests =
             if index = early then earlyBytes <- liveBytes ()
             elif index = late then lateBytes <- liveBytes ()
 
-        let exit = build observe |> Flow.runSync (TestSupport.clockEnv ())
+        let exit = build observe |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellationToken
         test <@ exit = Exit.Success () @>
         lateBytes - earlyBytes
+
+    let private retainedDuringLoop build = retainedDuringLoopUnder CancellationToken.None build
 
     // Before loops ran in constant memory, each of these retained 400-600 bytes per iteration: about 16-24 MB over
     // the 40,000 measured iterations. The bound leaves room for allocator noise.
     let private bound () = 4L * 1024L * 1024L
+
+    [<Fact>]
+    let ``Parallel combinators under a cancellable token run in constant memory`` () =
+        // Each combinator links its own cancellation to the caller's token; a link left behind after it settles stays
+        // reachable from that token for as long as the token lives, about 140 bytes per call.
+        use source = new CancellationTokenSource()
+
+        let retained =
+            retainedDuringLoopUnder source.Token (fun observe ->
+                flow {
+                    for index in 0..42_000 do
+                        let! _ = Flow.zipPar (Flow.ok 1) (Flow.ok 2)
+                        let! _ = Flow.race (Flow.ok 1) (Flow.ok 2)
+                        let! _ = Flow.sequencePar [ Flow.ok 1; Flow.ok 2; Flow.ok 3 ]
+                        let! _ = Flow.ok 1 |> Flow.timeoutToOk (TimeSpan.FromSeconds 30.0) 0
+                        observe index
+                })
+
+        test <@ retained < bound () @>
 
     [<Fact>]
     let ``A flow while loop that suspends each iteration runs in constant memory`` () =
