@@ -17,7 +17,8 @@ work; results do not predict HTTP throughput, database latency, or production ta
 - `InteropCompletionBenchmarks` constructs and executes recursive chains of 20 steps. `Suspend=false` uses completed
   operations; `Suspend=true` uses `Task.Yield` in the source operation. Async cases use `Async.AwaitTask` over the
   same operation. Yields exercise scheduler transitions, not network or timer latency. Flow Async interop includes
-  the Async bridge on every step; compare it with the direct Async case as well as the Task cases.
+  the Async bridge on every step; compare it with the direct Async case as well as the Task cases. The ValueTask
+  cases wrap the same Task source; they do not isolate inline-result or pooled IValueTaskSource performance.
 - `RecursiveLoopBenchmarks` compares direct tail recursion with CE `while`, both with synchronous bodies and with
   yielding Task bodies. Workflow construction occurs during execution, as it does in recursive application code.
 - `ParallelCompositionBenchmarks` measures concurrent combinator overhead with trivial successful branches. It
@@ -44,7 +45,10 @@ probing causes, then rerun the entire suite on the final implementation. Keep re
 
 Compare allocation counts alongside time. Allocated bytes measure churn, not memory retained by a long-running
 workflow; `MemoryRetentionTests` and the recursive reproduction cover retention separately. Raw Task/Async/Ply
-controls help identify machine-wide timing changes. Cross-session timing differences alone do not isolate a change.
+controls help identify machine-wide timing changes. InProcess cases share a host: preceding cases can change
+thread-pool and JIT state. Use the same complete case inventory and order in both runs; separately running new
+cases does not make an older full-suite baseline comparable. Cross-session timing differences alone do not isolate
+a change.
 
 Fable, NativeAOT and solution restores share intermediate paths within a worktree. Run them serially, and restore
 again before a solution build after a Fable restore. Runtime optimizations must preserve source single-consumption,
