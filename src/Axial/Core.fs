@@ -1188,7 +1188,16 @@ type Flow<'env, 'error, 'value> =
         Platform.runScoped
             scope.Close
             cancellationToken
-            (fun () -> RuntimeState.withRuntime runtime (fun () -> this.Invoke(environment, cancellationToken)))
+            (fun () ->
+                RuntimeState.withRuntime runtime (fun () ->
+                    // The root is already a fresh execution boundary. Keep the primitive fast path free of
+                    // a stack-guard closure; nested sources still enter through Invoke.
+                    match this with
+                    | Flow operation -> operation environment cancellationToken
+#if !FABLE_COMPILER
+                    | _ -> this.RunTrampoline(environment, cancellationToken)
+#endif
+                ))
             (fun cleanupError executionError exit ->
                 let causeOf (error: exn) : Cause<'error> =
                     if error :? OperationCanceledException then Cause.Interrupt else Cause.Die error

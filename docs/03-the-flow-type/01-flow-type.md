@@ -61,6 +61,12 @@ Running a Flow produces an awaitable outcome. On .NET that is a `ValueTask`, so 
 avoids a heap allocation. On Fable's JavaScript target it is an `Async`, because JavaScript has no value-type task.
 Your code does not change between the two: `Flow<'env, 'error, 'value>` is the same type on both.
 
+On .NET, `Flow.bind` and `Flow.delay` hand tail continuations back to an execution loop. A recursive workflow such
+as `let rec loop () = flow { do! step; return! loop () }` does not retain a pending task for every iteration.
+Pending work after a recursive call still needs storage: an enclosing `try/finally`, for example, must keep its
+cleanup until the recursive call finishes. Release per-iteration resources before the next recursive call, or use a
+`while` loop whose body owns those resources.
+
 Interop with the platform types follows from this. See [Async and Task interop](/the-flow-type/task-async-interop.html)
 for binding existing `Async`, `Task`, and `ValueTask` code.
 

@@ -181,6 +181,7 @@ type CancellableTaskBenchmarks() =
 [<IterationCount(3)>]
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type SynchronousCompletionBenchmarks() =
+    let primitive : Flow<int, string, int> = Flow.ok 1
     let flow =
         Flow.succeed 1
         |> Flow.bind (fun value -> Flow.succeed(value + 1))
@@ -198,6 +199,11 @@ type SynchronousCompletionBenchmarks() =
     [<Benchmark(Baseline = true)>]
     member _.Flow() =
         flow.RunSynchronously(0)
+        |> Shared.consumeExit
+
+    [<Benchmark(Description = "Flow succeed")>]
+    member _.PrimitiveFlow() =
+        primitive.RunSynchronously(0)
         |> Shared.consumeExit
 
     [<Benchmark(Description = "Candidate ValueTaskFlow")>]
@@ -301,13 +307,13 @@ type RecursiveLoopBenchmarks() =
         }
 
     [<Benchmark(Description = "Recursive synchronous loop x1000")>]
-    member _.RecursiveSynchronous() = synchronous 1000 |> Flow.runSync ()
+    member _.RecursiveSynchronous() = (synchronous 1000).RunSynchronously(())
 
     [<Benchmark(Description = "While synchronous loop x1000")>]
-    member _.WhileSynchronous() = synchronousWhile |> Flow.runSync ()
+    member _.WhileSynchronous() = synchronousWhile.RunSynchronously(())
 
     [<Benchmark(Description = "Recursive suspending loop x1000")>]
-    member _.RecursiveSuspending() = suspending 1000 |> Flow.runSync ()
+    member _.RecursiveSuspending() = (suspending 1000).RunSynchronously(())
 
     [<Benchmark(Description = "While suspending loop x1000")>]
-    member _.WhileSuspending() = suspendingWhile |> Flow.runSync ()
+    member _.WhileSuspending() = suspendingWhile.RunSynchronously(())

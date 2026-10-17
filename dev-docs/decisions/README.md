@@ -244,3 +244,16 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   preserve it; conversion to FlowStream deliberately gives it up. Prefix stopping succeeds only after owned cleanup.
 - The outcome runner follows Axial's `Exit` model. Returning an integer is a separately named host boundary with
   reporting-console requirements. This avoids silently discarding captured results through the ordinary `run` name.
+
+
+## 2026-10-17: Trampoline tail continuations on .NET
+
+- Primitive Flow operations still return `ValueTask<Exit<_,_>>`. Only `bind` and `delay` hand their next Flow back to
+  an iterative executor, so `return!` in a recursive workflow does not create a chain of awaiting parent tasks.
+- Bind evaluates its source through the normal execution boundary, then relinquishes its continuation before the
+  executor runs the successor. A source with pending work, error handling, or cleanup retains that work; the executor
+  does not discard lexical obligations to achieve a memory bound.
+- Fable keeps its existing `Async` execution, which already trampolines tail calls. The .NET fix does not introduce
+  an inspectable operation tree, a new public workflow type, or pluggable backends. Those remain separate proposals.
+- Stack guards remain for nested non-tail execution and opaque combinators. Tail sequencing itself runs in a loop
+  and does not need periodic thread-pool hops.

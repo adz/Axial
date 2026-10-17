@@ -23,8 +23,8 @@ module TrampolineTests =
 
         let workflow = count 1000
         test <@ visits = 0 @>
-        test <@ workflow |> Flow.runSync () = Exit.Success 1001 @>
-        test <@ workflow |> Flow.runSync () = Exit.Success 2002 @>
+        test <@ workflow.RunSynchronously(()) = Exit.Success 1001 @>
+        test <@ workflow.RunSynchronously(()) = Exit.Success 2002 @>
 
     [<Fact>]
     let ``Tail recursion sequences mixed synchronous and asynchronous sources with different value types`` () =
