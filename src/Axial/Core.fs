@@ -1269,9 +1269,9 @@ type Flow<'env, 'error, 'value> =
     /// <returns>The final workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.RunSynchronously(environment: 'env, ?cancellationToken: CancellationToken) : Exit<'value, 'error> =
-        this.StartAsTask(environment, cancellationToken = defaultArg cancellationToken CancellationToken.None)
-            .GetAwaiter()
-            .GetResult()
+        let pending = this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None)
+        if pending.IsCompletedSuccessfully then pending.Result
+        else pending.AsTask().GetAwaiter().GetResult()
 #endif
 
 #if !FABLE_COMPILER

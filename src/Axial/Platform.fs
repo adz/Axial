@@ -696,6 +696,7 @@ let inline runScoped
     (body: unit -> Execution<'value, 'error>)
     (combine: exn option -> exn option -> Exit<'value, 'error> option -> Exit<'value, 'error>)
     : Execution<'value, 'error> =
+#if FABLE_COMPILER
     execution {
         let mutable exit: Exit<'value, 'error> option = None
         let mutable executionError: exn option = None
@@ -716,6 +717,57 @@ let inline runScoped
         return combine cleanupError executionError exit
     }
     |> ofAwaitable
+#else
+    let struct (exit, executionError, pending) =
+        try
+            let current = body ()
+            if current.IsCompletedSuccessfully then
+                struct (Some current.Result, None, Unchecked.defaultof<_>)
+            else
+                struct (None, None, current)
+        with error ->
+            struct (None, Some error, Unchecked.defaultof<_>)
+
+    if exit.IsSome || executionError.IsSome then
+        let struct (cleanup, cleanupError) =
+            try
+                struct (closeScope cancellationToken, None)
+            with error ->
+                struct (Task.CompletedTask, Some error)
+
+        if cleanup.IsCompletedSuccessfully then
+            ofExit (combine cleanupError executionError exit)
+        else
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    let mutable failure = cleanupError
+                    try
+                        do! cleanup
+                    with error ->
+                        failure <- Some error
+                    return combine failure executionError exit
+                })
+    else
+        // Once the body suspends, keep body and cleanup in one state machine, including when both suspend.
+        ValueTask<Exit<'value, 'error>>(
+            task {
+                let mutable result = None
+                let mutable failure = None
+                try
+                    let! value = pending
+                    result <- Some value
+                with error ->
+                    failure <- Some error
+
+                let mutable cleanupError = None
+                try
+                    do! closeScope cancellationToken
+                with error ->
+                    cleanupError <- Some error
+
+                return combine cleanupError failure result
+            })
+#endif
 
 // ---------------------------------------------------------------------------------------------
 // Sleep and timeout.
