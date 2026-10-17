@@ -429,6 +429,36 @@ module WorkflowConcurrencyTests =
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, Exit.Success 2, 2, 0) @>
 
     [<Fact>]
+    let ``forkReplacingKey forgets fibers that settle before the fork returns`` () =
+        // A fiber can settle before the slot records it; that fiber must still leave the slot.
+        let rec settledCount slots attempts : Flow<ClockEnvironment, string, int> =
+            flow {
+                let! count = FiberSlot.count slots
+
+                if count = 0 || attempts = 0 then
+                    return count
+                else
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 10.0)
+                    return! settledCount slots (attempts - 1)
+            }
+
+        let workflow : Flow<ClockEnvironment, string, int> =
+            flow {
+                let! slots = FiberSlot.makeKeyed ()
+
+                let! fibers =
+                    [ 1..5000 ]
+                    |> Flow.traverse (fun key ->
+                        let work = if key % 2 = 0 then Flow.ok key else Flow.delay (fun () -> failwith "thrown")
+                        work |> Flow.forkReplacingKey key slots)
+
+                let! _ = fibers |> Flow.traverse Fiber.await
+                return! settledCount slots 100
+            }
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 0 @>
+
+    [<Fact>]
     let ``FiberSlot.interrupt stops the current fiber and waits for its cleanup`` () =
         let cleaned = ref false
 
