@@ -25,8 +25,8 @@ module MemoryRetentionTests =
     let private suspend () : Flow<ClockEnvironment, Never, unit> =
         Flow.fromTask (fun _ -> task { do! Task.Yield() })
 
-    /// Runs <paramref name="iterations" /> of a loop and returns how many bytes stayed live between an early and a
-    /// late iteration. <paramref name="build" /> receives the per-iteration callback to invoke.
+    /// Returns growth in live managed memory between two iterations. The builder receives the callback to invoke
+    /// after each step, while the loop is still running.
     let private retainedBetweenUnder early late
         (cancellationToken: CancellationToken)
         (build: (int -> unit) -> Flow<ClockEnvironment, Never, unit>)

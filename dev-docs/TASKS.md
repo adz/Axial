@@ -41,13 +41,6 @@ Work this queue from top to bottom. Remove completed items rather than retaining
   `ZStream.async`. `Queue.tryOffer` is already synchronous. Use it to remove the locks in the telemetry guide
   (`ActivityListener`) and the supervision guide (`OnUnobservedDefect`, possibly as a defect stream). Consider an
   `Axial.Guardrails` rule for `lock` inside `flow { }`.
-- Make hand-written recursive loops (`let rec loop () = flow { ...; return! loop () }`) run in constant memory on
-  .NET. Each `return!` of a pending `ValueTask` must be awaited by the caller, so every iteration stays live until
-  the loop ends (~420 B per suspending iteration, ~5 B per synchronous one; measured 2026-09-26). Library loops —
-  `flow { while/for }`, stream consumers and skipping operators, `Flow.retry`/`repeat`/`supervise`,
-  `STM.atomically`, `Queue.offerAll` — already use `Platform.loop`. Fixing user recursion needs the
-  runner to trampoline binds itself; see `dev-docs/current-ideas/flow-as-data.md`. Until then, docs should steer
-  long-running loops to `while`, streams, or schedules.
 - Reassess remaining demand-driven Flow work in `LATER_TODO.md` against a concrete application before expanding the API.
 
 ## Acceptance

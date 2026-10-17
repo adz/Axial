@@ -246,3 +246,15 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   into `'env`: F# cannot subtract a requirement the way `ZIO.scoped` removes `Scope` from `R`, and building an
   intersection-typed environment needs runtime proxies. `llms.txt` and the scopes guide state the divergence instead,
   and `Axial.Guardrails` reports the ZIO form (a forked flow returning its own acquisition) as `AXG007`.
+
+## 2026-10-17: Trampoline tail continuations on .NET
+
+- Primitive Flow operations still return `ValueTask<Exit<_,_>>`. Only `bind` and `delay` hand their next Flow back to
+  an iterative executor, so `return!` in a recursive workflow does not create a chain of awaiting parent tasks.
+- Bind evaluates its source through the normal execution boundary, then relinquishes its continuation before the
+  executor runs the successor. A source with pending work, error handling, or cleanup retains that work; the executor
+  does not discard lexical obligations to achieve a memory bound.
+- Fable keeps its existing `Async` execution, which already trampolines tail calls. The .NET fix does not introduce
+  an inspectable operation tree, a new public workflow type, or pluggable backends. Those remain separate proposals.
+- Stack guards remain for nested non-tail execution and opaque combinators. Tail sequencing itself runs in a loop
+  and does not need periodic thread-pool hops.
