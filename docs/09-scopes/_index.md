@@ -217,8 +217,9 @@ Use `Resource.finalizer` for task-based cleanup and `Resource.asyncFinalizer` fo
 
 ## Concurrency and scoped resources
 
-Every concurrent flow runs in a scope of its own: each branch of `Flow.zipPar` or `Flow.race`, each item of
-`Flow.traversePar`, and each fiber from `Flow.fork`. What decides whether its scoped resources outlive it is one rule:
+Concurrent flows run in scopes of their own: the flows of one `Flow.zipPar`, `Flow.sequencePar`, or parallel
+traversal share a scope, each branch of `Flow.race` has one, and so does each fiber from `Flow.fork`. What decides
+whether their scoped resources outlive them is one rule:
 
 > **If you receive a concurrent flow's value, you also receive its scoped resources. If you don't, they are released.**
 

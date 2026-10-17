@@ -144,6 +144,66 @@ module ScopedResourceOwnershipTests =
         test <@ released events = (expectedNames |> List.map (fun name -> name + ":released") |> List.sort) @>
 
     [<Fact>]
+    let ``A single failing flow in sequencePar releases its scoped resources before it returns`` () =
+        let events = ResizeArray<string>()
+
+        let failsAfterAcquiring name : Flow<ClockEnvironment, string, string> =
+            acquire events name |> Flow.bind (fun (_: string) -> Flow.fail "boom")
+
+        let workflow : Flow<ClockEnvironment, string, string list * string list> =
+            flow {
+                do! Flow.sequencePar [ failsAfterAcquiring "only" ] |> Flow.ignore |> Flow.orElse (Flow.ok ())
+                let afterSequence = released events
+
+                do!
+                    [ "first"; "second" ]
+                    |> Flow.forEachPar (Parallelism.bounded 1) (fun name -> failsAfterAcquiring name |> Flow.ignore)
+                    |> Flow.orElse (Flow.ok ())
+
+                return afterSequence, released events
+            }
+            |> Flow.scoped
+
+        test
+            <@
+                Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(
+                    [ "only:released" ],
+                    [ "first:released"; "only:released" ]
+                )
+            @>
+
+    [<Fact>]
+    let ``traverseParUsing releases each worker's resource but keeps what its items acquired`` () =
+        let events = ResizeArray<string>()
+
+        let workflow : Flow<ClockEnvironment, string, string list * string list> =
+            flow {
+                let! names =
+                    [ 1..4 ]
+                    |> Flow.traverseParUsing
+                        (Parallelism.bounded 2)
+                        (connection events "worker")
+                        (fun _ index -> acquire events $"item{index}")
+
+                return names, released events
+            }
+            |> Flow.scoped
+
+        let expectedNames = [ for index in 1..4 -> $"item{index}" ]
+
+        let workersReleased = [ "worker:released"; "worker:released" ]
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(expectedNames, workersReleased) @>
+
+        test
+            <@
+                released events = List.sort (
+                    [ "worker:released"; "worker:released" ]
+                    @ (expectedNames |> List.map (fun name -> name + ":released"))
+                )
+            @>
+
+    [<Fact>]
     let ``A timed-out flow releases its scoped resources before the fallback, and one in time keeps them`` () =
         let events = ResizeArray<string>()
 
@@ -203,6 +263,54 @@ module ScopedResourceOwnershipTests =
             |> underClosedScope
 
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 2, 3, 4) @>
+
+    [<Fact>]
+    let ``A branch that registers after the caller's scope closed fails as the caller would`` () =
+        let underClosedScope (inner: Flow<ClockEnvironment, string, 'value>) : Flow<ClockEnvironment, string, 'value> =
+            Flow(fun environment cancellationToken ->
+                let closed = new Scope()
+                (closed :> IDisposable).Dispose()
+                let runtime = RuntimeState.current () |> RuntimeContext.withScope closed
+                RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke inner environment cancellationToken))
+
+        let registers = Flow.scopeFinalizer (fun _ -> Task.CompletedTask)
+
+        let direct = Flow.runSync (TestSupport.clockEnv ()) (underClosedScope registers)
+        let inBranch = Flow.runSync (TestSupport.clockEnv ()) (underClosedScope (Flow.zipPar registers (Flow.ok 1)))
+
+        let directDisposed =
+            match direct with
+            | Exit.Failure(Cause.Die(:? ObjectDisposedException)) -> true
+            | _ -> false
+
+        let inBranchDisposed =
+            match inBranch with
+            | Exit.Failure(Cause.Die(:? ObjectDisposedException)) -> true
+            | _ -> false
+
+        test <@ directDisposed @>
+        test <@ inBranchDisposed @>
+
+    [<Fact>]
+    let ``Nested parallel branches hand their scoped resources up to the outermost caller`` () =
+        let events = ResizeArray<string>()
+
+        let workflow : Flow<ClockEnvironment, string, string list * int> =
+            flow {
+                let! _ =
+                    Flow.zipPar
+                        (Flow.zipPar (acquire events "inner-left") (acquire events "inner-right"))
+                        (Flow.race (acquire events "raced") Flow.never)
+
+                let! registered = registeredInCurrentScope ()
+                return released events, registered
+            }
+            |> Flow.scoped
+
+        // zipPar's two flows share one branch scope, which holds the inner zipPar's scope and the race winner's, so
+        // the caller's scope gains a single registration and nothing is released until it closes.
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([], 1) @>
+        test <@ released events = [ "inner-left:released"; "inner-right:released"; "raced:released" ] @>
 
     [<Fact>]
     let ``A resource returned from a plain fork is already released when join returns it`` () =

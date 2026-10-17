@@ -293,52 +293,58 @@ module Flow =
                 (fun cleanupError executionError exit ->
                     combineCleanup cleanupError executionError exit "Scoped flow execution produced no outcome."))
 
-    // Parallel combinators run each branch in its own child scope of the caller's scope, then decide whether the
-    // caller receives the branch's value. A branch whose value the caller receives keeps its scope: it stays
-    // registered with the caller's scope and closes with it, so its scoped resources live exactly as if the caller
-    // had acquired them. Any other branch (a race loser, a sibling interrupted by a failure) has its scope closed at
-    // once. If the caller's scope has already closed, the branch runs under the caller's runtime unchanged.
+    // Parallel combinators run their flows in a branch scope, a child of the caller's scope, then decide whether the
+    // caller receives the branch's value: zipPar and sequencePar share one branch among all their flows, race gives
+    // each flow its own. A branch whose value the caller receives keeps its scope: it stays registered with the
+    // caller's scope and closes with it, so its scoped resources live exactly as if the caller had acquired them. Any
+    // other branch (a race loser, a sibling interrupted by a failure) has its scope closed at once. The scope attaches
+    // to the caller's only when the branch first registers something (Scope.Branch), so a branch that acquires nothing
+    // costs no registration.
     let private branchIn
         (parent: RuntimeContext)
         (flow: Flow<'env, 'error, 'value>)
         (environment: 'env)
-        : Scope voption * (CancellationToken -> Execution<'value, 'error>) =
-        let branchScope = parent.Scope.TryAddChild()
-
-        match branchScope with
-        | ValueSome scope ->
-            let branchRuntime = parent |> RuntimeContext.withScope scope
-            branchScope, (fun token -> RuntimeState.withRuntime branchRuntime (fun () -> invoke flow environment token))
-        | ValueNone -> branchScope, (fun token -> invoke flow environment token)
+        : Scope * (CancellationToken -> Execution<'value, 'error>) =
+        let branchScope = Scope.Branch parent.Scope
+        let branchRuntime = parent |> RuntimeContext.withScope branchScope
+        branchScope, (fun token -> RuntimeState.withRuntime branchRuntime (fun () -> invoke flow environment token))
 
     // The caller receives this branch's value, so its scope stays with the caller's scope. An empty scope is closed
     // so that a long-lived caller does not retain one child per parallel call.
-    let private keepBranch (branchScope: Scope voption) : unit =
-        match branchScope with
-        | ValueSome scope -> scope.CloseIfEmpty()
-        | ValueNone -> ()
+    let private keepBranch (branchScope: Scope) : unit = branchScope.CloseIfEmpty()
 
     // Closes scopes in order and waits for their cleanup, folding a cleanup failure into the exit as a defect.
     let private closeScopes
         (cancellationToken: CancellationToken)
-        (scopes: Scope voption list)
+        (scopes: Scope list)
         (exit: Exit<'value, 'error>)
         : Execution<'value, 'error> =
         Platform.execution {
             let result = ref exit
 
             for scope in scopes do
-                match scope with
-                | ValueSome scope ->
-                    try
-                        do! scope.Close cancellationToken
-                    with error ->
-                        result.Value <- combineCleanup (Some error) None (Some result.Value) "Branch cleanup produced no outcome."
-                | ValueNone -> ()
+                try
+                    do! scope.Close cancellationToken
+                with error ->
+                    result.Value <-
+                        combineCleanup (Some error) None (Some result.Value) "Branch cleanup produced no outcome."
 
             return result.Value
         }
         |> Platform.ofAwaitable
+
+    // Runs a flow as one branch of the caller: its scoped resources move to the caller's scope when it succeeds and
+    // are released before it returns when it fails.
+    let private asBranch (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            let branchScope, run = branchIn (RuntimeState.current()) flow environment
+
+            run cancellationToken
+            |> Execution.fold
+                (fun value ->
+                    keepBranch branchScope
+                    Execution.ofValue value)
+                (fun cause -> closeScopes cancellationToken [ branchScope ] (Exit.Failure cause)))
 
     /// <summary>Creates a flow from a raw async operation.</summary>
     /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>). Cancellation is recorded as interruption when the runtime token requested it, and as a defect otherwise. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
@@ -1489,7 +1495,7 @@ module Flow =
                         match ownerScope.TryRegister(fun token -> holder.Close token) with
                         | ValueSome _ -> Execution.ofValue value
                         | ValueNone ->
-                            closeScopes CancellationToken.None [ ValueSome holder ] (Exit.Failure Cause.Interrupt)))
+                            closeScopes CancellationToken.None [ holder ] (Exit.Failure Cause.Interrupt)))
 
             invoke (fork acquireForOwner) environment cancellationToken)
 
@@ -1667,14 +1673,26 @@ module Flow =
 
                 fiber))
 
+    // zipPar without a branch scope of its own, for combinators that already run all their flows in one branch.
+    let private zipParUnscoped
+        (left: Flow<'env, 'error, 'left>)
+        (right: Flow<'env, 'error, 'right>)
+        : Flow<'env, 'error, 'left * 'right> =
+        Flow(fun environment cancellationToken ->
+            Platform.zipParExecution
+                (invoke left environment)
+                (invoke right environment)
+                cancellationToken
+                chooseParallelExit)
+
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
     /// <para>If either flow fails, the other is interrupted immediately.</para>
     /// <para>
-    /// Each flow runs in its own scope. When both succeed, the scoped resources they acquired move to the caller's
-    /// scope, as if the caller had acquired them, so <c>zipPar (scopeResource a) (scopeResource b)</c> acquires two
-    /// resources in parallel and both stay open until the caller's scope closes. When <c>zipPar</c> fails, both
-    /// flows' scoped resources are released before it returns.
+    /// The two flows share a scope of their own. When both succeed, the scoped resources they acquired move to the
+    /// caller's scope, as if the caller had acquired them, so <c>zipPar (scopeResource a) (scopeResource b)</c>
+    /// acquires two resources in parallel and both stay open until the caller's scope closes. When <c>zipPar</c> fails,
+    /// both flows' scoped resources are released before it returns.
     /// </para>
     /// </remarks>
     /// <param name="left">The first flow to combine.</param>
@@ -1690,33 +1708,31 @@ module Flow =
         (left: Flow<'env, 'error, 'left>)
         (right: Flow<'env, 'error, 'right>)
         : Flow<'env, 'error, 'left * 'right> =
-        Flow(fun environment cancellationToken ->
-            let parent = RuntimeState.current()
-            let leftScope, leftOp = branchIn parent left environment
-            let rightScope, rightOp = branchIn parent right environment
-
-            Platform.zipParExecution leftOp rightOp cancellationToken chooseParallelExit
-            |> Execution.fold
-                (fun values ->
-                    keepBranch leftScope
-                    keepBranch rightScope
-                    Execution.ofValue values)
-                (fun cause -> closeScopes cancellationToken [ rightScope; leftScope ] (Exit.Failure cause)))
+        // Both flows share one branch scope: the caller receives both values or neither, so their scoped resources
+        // are kept or released together.
+        zipParUnscoped left right |> asBranch
 
     /// <summary>Runs all flows concurrently and returns their values in input order.</summary>
     /// <remarks>An empty input succeeds immediately. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>. Scoped resources follow <c>zipPar</c> too: when every flow succeeds they move to the caller's scope; when any fails, all of them are released before <c>sequencePar</c> returns.</remarks>
-    let rec sequencePar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
+    let sequencePar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
         let mapValue mapper flow =
             Flow(fun environment cancellationToken -> invoke flow environment cancellationToken |> Execution.map mapper)
 
+        let rec combine (flows: Flow<'env, 'error, 'value> list) =
+            match flows with
+            | [] -> ok []
+            | [ flow ] -> mapValue List.singleton flow
+            | _ ->
+                let midpoint = flows.Length / 2
+                let left, right = List.splitAt midpoint flows
+                zipParUnscoped (combine left) (combine right)
+                |> mapValue (fun (leftValues, rightValues) -> leftValues @ rightValues)
+
+        // Every flow shares one branch scope, as in zipPar: the caller receives all the values or none of them. A
+        // single flow runs in it too, so its failure releases what it acquired.
         match flows with
         | [] -> ok []
-        | [ flow ] -> mapValue List.singleton flow
-        | _ ->
-            let midpoint = flows.Length / 2
-            let left, right = List.splitAt midpoint flows
-            zipPar (sequencePar left) (sequencePar right)
-            |> mapValue (fun (leftValues, rightValues) -> leftValues @ rightValues)
+        | _ -> combine flows |> asBranch
 
     /// <summary>Runs two flows concurrently and returns the result of the first one to complete.</summary>
     /// <remarks>
@@ -1755,12 +1771,11 @@ module Flow =
             let closeLoser (loserExit: Exit<'value, 'error> option) =
                 loserExit |> Option.iter (reportDiscardedExit observer)
 
-                match loserScope () with
-                | ValueSome scope ->
-                    Platform.startDeed
-                        (fun () -> scope.Close CancellationToken.None)
-                        (FiberObserver.notifyUnobservedDefect observer None)
-                | ValueNone -> ()
+                let scope = loserScope ()
+
+                Platform.startDeed
+                    (fun () -> scope.Close CancellationToken.None)
+                    (FiberObserver.notifyUnobservedDefect observer None)
 
             Platform.raceExecution leftOp rightOp cancellationToken (fun won -> leftWon.Value <- won) closeLoser
             |> Execution.fold
@@ -2423,68 +2438,83 @@ module Flow =
             |> Execution.map List.rev)
 
     // Runs a mapping over `items` with at most `parallelism` workers, each taking the next index from a shared
-    // counter so a slow item delays only its own worker. Workers are combined with sequencePar, which interrupts the
-    // others as soon as one fails. Each worker runs in its own child scope and gets its mapping from `workerMapping`,
-    // which may acquire a per-worker resource into that scope; that resource is released when the worker finishes.
-    // Each item runs as a branch of the traversal rather than of its worker, so what an item acquires outlives the
-    // worker. The traversal is itself one branch of the caller: kept when every item succeeds, closed otherwise.
+    // counter so a slow item delays only its own worker. Workers are combined with sequencePar, which runs each as a
+    // branch and interrupts the others as soon as one fails, so what the items acquire follows the sequencePar rule:
+    // kept by the caller when every item succeeds, released before the traversal returns otherwise.
+    // `workerMapping` gives each worker its mapping. When `workerOwnsScope` is set it may acquire a per-worker
+    // resource, so the worker opens a scope for it that closes when the worker finishes, and runs its items under
+    // the runtime outside that scope so that what they acquire outlives the worker's resource.
     // `store` records each result; the counter and storage are allocated per run.
     let private runWorkers
         (parallelism: Parallelism)
         (workerMapping: Flow<'env, 'error, 'value -> Flow<'env, 'error, 'next>>)
+        (workerOwnsScope: bool)
         (items: 'value array)
         (store: int -> 'next -> unit)
         : Flow<'env, 'error, unit> =
         Flow(fun environment cancellationToken ->
             let next = ref -1L
 
-            let traversal =
-                Flow(fun environment cancellationToken ->
-                    let traversalRuntime = RuntimeState.current()
+            // A loop rather than recursion, so a worker that processes many items runs in constant memory.
+            let drain
+                (mapping: 'value -> Flow<'env, 'error, 'next>)
+                (itemRuntime: RuntimeContext voption)
+                (cancellationToken: CancellationToken)
+                =
+                Execution.loop () (fun () ->
+                    let index = int (Platform.nextId next)
 
-                    let worker =
-                        Flow(fun environment cancellationToken ->
-                            invoke workerMapping environment cancellationToken
-                            |> Execution.bind (fun mapping ->
-                                // A loop rather than recursion, so a worker that processes many items runs in
-                                // constant memory.
-                                Execution.loop () (fun () ->
-                                    let index = int (Platform.nextId next)
+                    if index >= items.Length then
+                        Execution.ofValue (Platform.Break())
+                    else
+                        let item = mapping items[index]
 
-                                    if index >= items.Length then
-                                        Execution.ofValue (Platform.Break())
-                                    else
-                                        let itemScope, item = branchIn traversalRuntime (mapping items[index]) environment
+                        let running =
+                            match itemRuntime with
+                            | ValueSome runtime ->
+                                RuntimeState.withRuntime runtime (fun () -> invoke item environment cancellationToken)
+                            | ValueNone -> invoke item environment cancellationToken
 
-                                        item cancellationToken
-                                        |> Execution.fold
-                                            (fun mapped ->
-                                                keepBranch itemScope
-                                                store index mapped
-                                                Execution.ofValue (Platform.Continue()))
-                                            (fun cause -> closeScopes cancellationToken [ itemScope ] (Exit.Failure cause)))))
-                        |> scoped
+                        running
+                        |> Execution.map (fun mapped ->
+                            store index mapped
+                            Platform.Continue()))
 
-                    let workers = min (Parallelism.value parallelism) items.Length
+            let worker =
+                if workerOwnsScope then
+                    Flow(fun environment cancellationToken ->
+                        let outside = RuntimeState.current()
 
-                    invoke (sequencePar (List.replicate workers worker)) environment cancellationToken
-                    |> Execution.map (fun (_: unit list) -> ()))
+                        let withWorkerResource =
+                            Flow(fun environment cancellationToken ->
+                                invoke workerMapping environment cancellationToken
+                                |> Execution.bind (fun mapping -> drain mapping (ValueSome outside) cancellationToken))
+                            |> scoped
 
-            let traversalScope, run = branchIn (RuntimeState.current()) traversal environment
+                        invoke withWorkerResource environment cancellationToken)
+                else
+                    Flow(fun environment cancellationToken ->
+                        invoke workerMapping environment cancellationToken
+                        |> Execution.bind (fun mapping -> drain mapping ValueNone cancellationToken))
 
-            run cancellationToken
-            |> Execution.fold
-                (fun () ->
-                    keepBranch traversalScope
-                    Execution.ofValue ())
-                (fun cause -> closeScopes cancellationToken [ traversalScope ] (Exit.Failure cause)))
+            let workers = min (Parallelism.value parallelism) items.Length
 
-    let private traverseWorkers parallelism workerMapping (values: seq<'value>) : Flow<'env, 'error, 'next list> =
+            invoke (sequencePar (List.replicate workers worker)) environment cancellationToken
+            |> Execution.map (fun (_: unit list) -> ()))
+
+    let private traverseWorkers
+        parallelism
+        workerMapping
+        workerOwnsScope
+        (values: seq<'value>)
+        : Flow<'env, 'error, 'next list> =
         Flow(fun environment cancellationToken ->
             let items = Array.ofSeq values
             let results = Array.zeroCreate items.Length
 
-            invoke (runWorkers parallelism workerMapping items (fun index mapped -> results[index] <- mapped)) environment cancellationToken
+            let store index mapped = results[index] <- mapped
+
+            invoke (runWorkers parallelism workerMapping workerOwnsScope items store) environment cancellationToken
             |> Execution.map (fun () -> List.ofArray results))
 
     /// <summary>Maps values to flows and runs them with bounded concurrency, returning results in input order.</summary>
@@ -2511,7 +2541,7 @@ module Flow =
         (mapping: 'value -> Flow<'env, 'error, 'next>)
         (values: seq<'value>)
         : Flow<'env, 'error, 'next list> =
-        traverseWorkers parallelism (ok mapping) values
+        traverseWorkers parallelism (ok mapping) false values
 
     /// <summary>Like <c>traversePar</c>, giving each worker its own resource, acquired once and reused for every value it maps.</summary>
     /// <remarks>
@@ -2537,7 +2567,7 @@ module Flow =
         (mapping: 'resource -> 'value -> Flow<'env, 'error, 'next>)
         (values: seq<'value>)
         : Flow<'env, 'error, 'next list> =
-        traverseWorkers parallelism (scopeResource resource |> map mapping) values
+        traverseWorkers parallelism (scopeResource resource |> map mapping) true values
 
     /// <summary>Runs a flow for each value with bounded concurrency, discarding the results.</summary>
     /// <remarks>Runs like <c>traversePar</c>: at most <paramref name="parallelism" /> at once, the first failure interrupts the rest, and scoped resources move to the caller's scope only when every flow succeeds.</remarks>
@@ -2555,7 +2585,8 @@ module Flow =
         (values: seq<'value>)
         : Flow<'env, 'error, unit> =
         Flow(fun environment cancellationToken ->
-            invoke (runWorkers parallelism (ok action) (Array.ofSeq values) (fun _ () -> ())) environment cancellationToken)
+            let run = runWorkers parallelism (ok action) false (Array.ofSeq values) (fun _ () -> ())
+            invoke run environment cancellationToken)
 
     /// <summary>Like <c>forEachPar</c>, giving each worker its own resource, acquired once and reused for every value it processes.</summary>
     /// <remarks>Resources are acquired and released as in <c>traverseParUsing</c>.</remarks>
@@ -2571,7 +2602,7 @@ module Flow =
         : Flow<'env, 'error, unit> =
         Flow(fun environment cancellationToken ->
             invoke
-                (runWorkers parallelism (scopeResource resource |> map action) (Array.ofSeq values) (fun _ () -> ()))
+                (runWorkers parallelism (scopeResource resource |> map action) true (Array.ofSeq values) (fun _ () -> ()))
                 environment
                 cancellationToken)
 

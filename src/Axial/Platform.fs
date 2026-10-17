@@ -1490,19 +1490,20 @@ let startDeed (deed: unit -> Deed) (onError: exn -> unit) : unit =
         with error ->
             Task.FromException error
 
-    started.ContinueWith(
-        (fun (settled: Task) ->
-            if settled.IsFaulted then
-                let failure = settled.Exception
+    if not started.IsCompletedSuccessfully then
+        started.ContinueWith(
+            (fun (settled: Task) ->
+                if settled.IsFaulted then
+                    let failure = settled.Exception
 
-                onError (
-                    if failure.InnerExceptions.Count = 1 then
-                        failure.InnerExceptions[0]
-                    else
-                        failure :> exn
-                )),
-        TaskContinuationOptions.ExecuteSynchronously)
-    |> ignore
+                    onError (
+                        if failure.InnerExceptions.Count = 1 then
+                            failure.InnerExceptions[0]
+                        else
+                            failure :> exn
+                    )),
+            TaskContinuationOptions.ExecuteSynchronously)
+        |> ignore
 #endif
 
 // ---------------------------------------------------------------------------------------------

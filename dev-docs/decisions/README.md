@@ -213,10 +213,13 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
 ## 2026-10-11: Scoped resources follow the value in concurrent code
 
 - One rule decides who owns a scoped resource acquired by concurrent work: if the caller receives a concurrent flow's
-  value, it also receives that flow's scoped resources; if not, they are released. Each branch of `zipPar`, `race`,
-  `sequencePar`, a parallel traversal item, and a timed flow runs in a child scope of the caller. A branch whose value
+  value, it also receives that flow's scoped resources; if not, they are released. Concurrent work runs in a branch
+  scope, a child of the caller's: one shared by all the flows of `zipPar`, `sequencePar`, or a parallel traversal
+  (the caller receives all their values or none), one per `race` branch, and one per timed flow. A branch whose value
   the caller receives keeps that scope registered with the caller's scope (an empty one is closed so long-lived scopes
-  do not accumulate them); a race loser, a failed or interrupted sibling, and a timed-out flow have it closed at once.
+  do not accumulate them); a race loser, a failed `zipPar` or traversal, and a timed-out flow have it closed at once.
+  A branch scope attaches to the caller's only when something first registers with it, so a branch that acquires
+  nothing costs no registration.
 - `fork` keeps per-fiber ownership from 0.10: it returns a handle, the fiber cannot know whether it will be joined, and
   keeping its scope open "in case" would bring back the stalled-publisher bug. `Flow.forkResource` covers "acquire in
   the background, join later": only the acquisition runs in the fiber, and the release is registered with the caller's
