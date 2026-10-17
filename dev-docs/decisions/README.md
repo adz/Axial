@@ -261,3 +261,13 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   an inspectable operation tree, a new public workflow type, or pluggable backends. Those remain separate proposals.
 - Stack guards remain for nested non-tail execution and opaque combinators. Tail sequencing itself runs in a loop
   and does not need periodic thread-pool hops.
+
+## 2026-10-17: Preserve synchronous completion through loops and scopes
+
+- CE `while` awaits its unit-valued body directly. Mapping each body result into a general loop-control value adds
+  an execution and allocations per iteration; the general stateful loop remains available for other combinators.
+- On .NET, a body and scope cleanup that both finish synchronously return a completed ValueTask. A pending body
+  and its cleanup share one state machine. Every path still closes its scope and combines body and cleanup failures.
+- `RunSynchronously` reads completed executions directly and converts pending executions to Task for blocking;
+  single-consumption sources are consumed once in either path. Empty scopes skip the finalizer runner, rather than
+  skipping scope ownership or making scope state reusable across runs.
