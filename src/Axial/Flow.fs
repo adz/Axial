@@ -342,27 +342,51 @@ module Flow =
     // caller's scope and closes with it, so its scoped resources live as if the caller had acquired them. Any
     // other branch (a race loser, a sibling interrupted by a failure) has its scope closed at once. The scope attaches
     // to the caller's only when the branch first registers something (Scope.Branch), so a branch that acquires nothing
-    // costs no registration.
+    // costs no registration. The branch runs under a token its combinator cancels to stop it; a fiber forked in the
+    // branch follows the caller's token (`outerToken`) instead, as the branch's scoped resources follow its scope.
     let private branchIn
         (parent: RuntimeContext)
+        (outerToken: CancellationToken)
         (flow: Flow<'env, 'error, 'value>)
         (environment: 'env)
-        : Scope * (CancellationToken -> Execution<'value, 'error>) =
+        : struct (Scope * (CancellationToken -> Execution<'value, 'error>)) =
         let branchScope = Scope.Branch parent.Scope
-        let branchRuntime = parent |> RuntimeContext.withScope branchScope
-        branchScope, (fun token -> RuntimeState.withRuntime branchRuntime (fun () -> invoke flow environment token))
+
+        let run token =
+            let branchRuntime = parent |> RuntimeContext.inBranch branchScope outerToken token
+            RuntimeState.withRuntime branchRuntime (fun () -> invoke flow environment token)
+
+        struct (branchScope, run)
 
     // The caller receives this branch's value, so its scope stays with the caller's scope. An empty scope is closed
     // so that a long-lived caller does not retain one child per parallel call.
     let private keepBranch (branchScope: Scope) : unit = branchScope.CloseIfEmpty()
 
-    // Runs a flow as one branch of the caller: its scoped resources move to the caller's scope when it succeeds and
-    // are released before it returns when it fails.
-    let private asBranch (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+    // Runs zipPar's or sequencePar's flows as one branch of the caller, under one cancellation source that every
+    // zipParExecution in the branch shares, so the first failure anywhere in it interrupts the rest. The branch's
+    // scoped resources move to the caller's scope when it succeeds and are released before it returns when it fails.
+    // The source is detached from the caller's token once the branch settles. `start` runs inside the branch and
+    // starts its flows under the source; it is a plain function rather than a Flow so that each call builds nothing
+    // extra.
+    let private parallelBranch
+        (start: CancellationTokenSource -> 'env -> Execution<'value, 'error>)
+        : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
-            let branchScope, run = branchIn (RuntimeState.current()) flow environment
+            let source = new CancellationTokenSource()
+            let unlink = Platform.linkTo cancellationToken source
+            let parent = RuntimeState.current()
+            let branchScope = Scope.Branch parent.Scope
+            let branchRuntime = parent |> RuntimeContext.inBranch branchScope cancellationToken source.Token
 
-            run cancellationToken
+            let running =
+                try
+                    RuntimeState.withRuntime branchRuntime (fun () -> start source environment)
+                with _ ->
+                    unlink ()
+                    reraise ()
+
+            running
+            |> Platform.afterSettled unlink
             |> Execution.fold
                 (fun value ->
                     keepBranch branchScope
@@ -882,7 +906,7 @@ module Flow =
         (onTimeout: unit -> Execution<'value, 'error>)
         : Execution<'value, 'error> =
         let parent = RuntimeState.current()
-        let branchScope, operation = branchIn parent flow environment
+        let struct (branchScope, operation) = branchIn parent cancellationToken flow environment
         let timedOut = ref false
 
         Platform.timeoutExecution
@@ -1238,7 +1262,7 @@ module Flow =
             let parentToken =
                 match graceful with
                 | Some _ -> CancellationToken.None
-                | None -> cancellationToken
+                | None -> RuntimeContext.forkToken parentRuntime cancellationToken
 
             let cts, exitTask =
                 Platform.startFiber
@@ -1672,18 +1696,6 @@ module Flow =
                 Platform.whenSettled fiber.ExitTask (fun () -> slots.Remove(key, marker))
                 fiber))
 
-    // zipPar without a branch scope of its own, for combinators that already run all their flows in one branch.
-    let private zipParUnscoped
-        (left: Flow<'env, 'error, 'left>)
-        (right: Flow<'env, 'error, 'right>)
-        : Flow<'env, 'error, 'left * 'right> =
-        Flow(fun environment cancellationToken ->
-            Platform.zipParExecution
-                (invoke left environment)
-                (invoke right environment)
-                cancellationToken
-                chooseParallelExit)
-
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
     /// <para>If either flow fails, the other is interrupted immediately.</para>
@@ -1709,29 +1721,39 @@ module Flow =
         : Flow<'env, 'error, 'left * 'right> =
         // Both flows share one branch scope: the caller receives both values or neither, so their scoped resources
         // are kept or released together.
-        zipParUnscoped left right |> asBranch
+        parallelBranch (fun source environment ->
+            Platform.zipParExecution (invoke left environment) (invoke right environment) source chooseParallelExit)
 
     /// <summary>Runs all flows concurrently and returns their values in input order.</summary>
     /// <remarks>An empty input succeeds immediately. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>. Scoped resources follow <c>zipPar</c> too: when every flow succeeds they move to the caller's scope; when any fails, all of them are released before <c>sequencePar</c> returns.</remarks>
     let sequencePar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
-        let mapValue mapper flow =
-            Flow(fun environment cancellationToken -> invoke flow environment cancellationToken |> Execution.map mapper)
-
-        let rec combine (flows: Flow<'env, 'error, 'value> list) =
+        // A balanced tree of zipPars, built once. Each node starts its two halves under the branch's shared source.
+        let rec combine (flows: Flow<'env, 'error, 'value> list)
+            : CancellationTokenSource -> 'env -> CancellationToken -> Execution<'value list, 'error> =
             match flows with
-            | [] -> ok []
-            | [ flow ] -> mapValue List.singleton flow
+            | [] -> fun _ _ _ -> Execution.ofValue []
+            | [ flow ] -> fun _ environment token -> invoke flow environment token |> Execution.map List.singleton
             | _ ->
                 let midpoint = flows.Length / 2
                 let left, right = List.splitAt midpoint flows
-                zipParUnscoped (combine left) (combine right)
-                |> mapValue (fun (leftValues, rightValues) -> leftValues @ rightValues)
+                let startLeft = combine left
+                let startRight = combine right
+
+                fun source environment _ ->
+                    Platform.zipParExecution
+                        (startLeft source environment)
+                        (startRight source environment)
+                        source
+                        chooseParallelExit
+                    |> Execution.map (fun (leftValues, rightValues) -> leftValues @ rightValues)
 
         // Every flow shares one branch scope, as in zipPar: the caller receives all the values or none of them. A
         // single flow runs in it too, so its failure releases what it acquired.
         match flows with
         | [] -> ok []
-        | _ -> combine flows |> asBranch
+        | _ ->
+            let start = combine flows
+            parallelBranch (fun source environment -> start source environment source.Token)
 
     /// <summary>Runs two flows concurrently and returns the result of the first one to complete.</summary>
     /// <remarks>
@@ -1758,8 +1780,8 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let parent = RuntimeState.current()
             let observer = parent.Observer
-            let leftScope, leftOp = branchIn parent left environment
-            let rightScope, rightOp = branchIn parent right environment
+            let struct (leftScope, leftOp) = branchIn parent cancellationToken left environment
+            let struct (rightScope, rightOp) = branchIn parent cancellationToken right environment
             // Set by raceExecution before it returns the winner's exit or reports the loser.
             let leftWon = ref false
             let winnerScope () = if leftWon.Value then leftScope else rightScope

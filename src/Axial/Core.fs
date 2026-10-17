@@ -992,6 +992,12 @@ type internal RuntimeContext =
         /// Opaque ambient tracer slot. `Axial` has no dependency on `System.Diagnostics.DiagnosticSource`, so this
         /// is untyped here; `Axial.Telemetry` is the only package that boxes/unboxes it (as `ActivitySource`).
         Tracer: obj option
+        /// The token of the innermost parallel branch (zipPar, race, timeout), whose combinator cancels it to stop
+        /// the branch; default outside any branch.
+        BranchToken: CancellationToken
+        /// The token outside every enclosing branch. A fiber forked under BranchToken follows this one instead, so
+        /// it outlives the branch when the caller keeps the branch's value; see forkToken.
+        OuterToken: CancellationToken
     }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1008,6 +1014,8 @@ module internal RuntimeContext =
             Observer = FiberObserver.none
             Registries = []
             Tracer = None
+            BranchToken = CancellationToken.None
+            OuterToken = CancellationToken.None
         }
 
     let detached : RuntimeContext =
@@ -1015,6 +1023,25 @@ module internal RuntimeContext =
 
     let withScope (scope: Scope) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Scope = scope }
+
+    /// The token a fiber forked under <paramref name="token" /> follows. A branch's own token is cancelled when its
+    /// combinator is decided (a race cancels both branches once one wins), so a fiber forked directly in a branch
+    /// follows the token outside the branch; the branch's scope interrupts it if the branch is not kept.
+    let forkToken (runtime: RuntimeContext) (token: CancellationToken) : CancellationToken =
+#if FABLE_COMPILER
+        // Fable's tokens are objects: the branch's token is the same object.
+        if obj.ReferenceEquals(token, runtime.BranchToken) then runtime.OuterToken else token
+#else
+        if token.Equals runtime.BranchToken then runtime.OuterToken else token
+#endif
+
+    /// The runtime of a branch that runs under <paramref name="branchToken" /> inside code running under
+    /// <paramref name="token" />.
+    let inBranch (scope: Scope) (token: CancellationToken) (branchToken: CancellationToken) (runtime: RuntimeContext) =
+        { runtime with
+            Scope = scope
+            BranchToken = branchToken
+            OuterToken = forkToken runtime token }
 
     let withAnnotation (name: string) (value: string) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with Annotations = runtime.Annotations |> Map.add name value }

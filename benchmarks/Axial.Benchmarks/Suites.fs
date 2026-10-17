@@ -237,6 +237,17 @@ type ParallelCompositionBenchmarks() =
             return total.Value
         }
 
+    let sequencePars: Flow<unit, string, int> =
+        flow {
+            let total = ref 0
+
+            for value in 1..100 do
+                let! values = Flow.sequencePar [ for offset in 1..10 -> Flow.succeed (value + offset) ]
+                total.Value <- total.Value + List.sum values
+
+            return total.Value
+        }
+
     let races: Flow<unit, string, int> =
         flow {
             let total = ref 0
@@ -255,6 +266,10 @@ type ParallelCompositionBenchmarks() =
     [<Benchmark(Description = "zipPar x1000")>]
     member _.ZipPar() =
         zipPars.RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "sequencePar 10 flows x100")>]
+    member _.SequencePar() =
+        sequencePars.RunSynchronously(()) |> Shared.consumeExit
 
     [<Benchmark(Description = "race x1000")>]
     member _.Race() =

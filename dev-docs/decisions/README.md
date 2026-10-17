@@ -233,6 +233,11 @@ Bind such values locally inside the test, or make them functions. Do not fix it 
   empty one is closed so long-lived scopes do not accumulate them); a race loser, a failed `zipPar` or traversal, and
   a timed-out flow have it closed at once. A branch scope attaches to the caller's only when something first registers
   with it, so a branch that acquires nothing costs no registration.
+- The same applies to fibers forked in a branch. A branch runs under a token its combinator cancels (a race cancels
+  both branches once it is decided), so a fiber forked directly in a branch follows the caller's token instead and is
+  interrupted by the branch scope when the branch is not kept. Each combinator detaches its token from the caller's
+  once it settles, so a long-lived caller token does not retain one link per call. Registering with a scope that has
+  already closed (a race loser that finishes acquiring late) runs the release at once and interrupts the flow.
 - `fork` keeps per-fiber ownership from 0.10: it returns a handle, the fiber cannot know whether it will be joined, and
   keeping its scope open "in case" would bring back the stalled-publisher bug. `Flow.forkResource` covers "acquire in
   the background, join later": only the acquisition runs in the fiber, and the release is registered with the caller's
