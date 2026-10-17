@@ -174,3 +174,29 @@ module TrampolineTests =
             test <@ exit = Exit.Success 42 @>
             test <@ source.Reads = 1 @>
         }
+
+    [<Theory>]
+    [<InlineData(false, false)>]
+    [<InlineData(false, true)>]
+    [<InlineData(true, false)>]
+    [<InlineData(true, true)>]
+    let ``While consumes each IValueTaskSource body once`` (pending: bool, failing: bool) =
+        task {
+            let source = SingleUseExecutionSource<unit, string>()
+            let expected = if failing then Exit.Failure(Cause.Fail "stop") else Exit.Success ()
+            if not pending then source.Complete expected
+            let mutable runs = 0
+            let step : Flow<unit, string, unit> =
+                Flow(fun _ _ ->
+                    runs <- runs + 1
+                    source.Execution)
+            let workflow = flow { while runs < 1 do do! step }
+            let running = workflow.StartAsTask(())
+            if pending then
+                do! source.Registered.WaitAsync(TimeSpan.FromSeconds 10.0)
+                source.Complete expected
+            let! exit = running.WaitAsync(TimeSpan.FromSeconds 10.0)
+            test <@ exit = expected @>
+            test <@ source.Reads = 1 @>
+            test <@ runs = 1 @>
+        }
