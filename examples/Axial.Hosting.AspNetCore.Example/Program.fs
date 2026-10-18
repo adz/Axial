@@ -10,8 +10,7 @@
 /// self-contained smoke pass with `AXIAL_EXAMPLE=smoke`, which is what CI and the docs build execute.
 module Axial.Api.Program
 
-open Reified.Data
-open Reified.Constraint
+open Reified
 open System
 open System.Net
 open System.Net.Http
@@ -21,10 +20,8 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
-open Reified.Schema
 open Reified.Schema.Http
 open Axial.Hosting.AspNetCore
-open Reified.Schema.Json
 open Axial
 
 // ---------------------------------------------------------------------------
@@ -59,16 +56,16 @@ type Signup =
       Tags: string list }
 
 module Signup =
-    open Reified.Schema.Syntax
-    open Reified.Constraint.ConstraintDSL
+    open Reified.SchemaDSL
+    open Reified.ConstraintDSL
 
     let addressSchema =
         schema<Address> {
-            field "street" _.Street {
+            field _.Street {
                 constrain (minLength 1)
                 constrain (maxLength 120)
             }
-            field "city" _.City {
+            field _.City {
                 constrain (minLength 1)
                 constrain (maxLength 80)
             }
@@ -77,18 +74,18 @@ module Signup =
 
     let schema =
         schema<Signup> {
-            field "name" _.Name {
+            field _.Name {
                 constrain (minLength 1)
                 constrain (maxLength 80)
             }
-            field "email" _.Email
-            field "age" _.Age {
+            field _.Email
+            field _.Age {
                 constrain (Constraint.between 13 120)
             }
-            field "address" _.Address {
+            field _.Address {
                 withSchema (addressSchema |> Schema.mustSupply)
             }
-            field "tags" _.Tags {
+            field _.Tags {
                 withSchema (Schema.listWith Schema.text)
                 constrain (maxLength 5)
             }
@@ -262,7 +259,7 @@ let buildApp (args: string[]) =
         "/signup",
         Func<HttpRequest, Task<IResult>>(fun request ->
             task {
-                let! parsed = SchemaRequest.form Signup.schema request
+                let! parsed = SchemaRequest.form Signup.schema request request.HttpContext.RequestAborted
                 return Results.Text(FormPage.render (Some parsed), "text/html")
             })
     )

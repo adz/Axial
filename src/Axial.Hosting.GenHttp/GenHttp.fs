@@ -1,28 +1,26 @@
 namespace Axial.Hosting.GenHttp
 
-open Reified.Data
+open Reified
 
 open System
 open System.Text.Json
 open System.Threading.Tasks
 open GenHTTP.Api.Protocol
 open GenHTTP.Modules.IO
-open Reified.Schema
 open Reified.Schema.Http
-open Reified.Schema.Json
 open Axial
 
-/// <summary>Parses GenHTTP requests into <see cref="T:Reified.Schema.RetainedParseResult`2" /> through a schema.</summary>
+/// <summary>Parses GenHTTP requests into <see cref="T:Reified.RetainedParseResult`1" /> through a schema.</summary>
 [<RequireQualifiedAccess>]
 module SchemaRequest =
     /// <summary>Parses the JSON request body through the schema; a missing body parses as missing input.</summary>
-    let json (schema: Schema<'model>) (request: IRequest) : ValueTask<RetainedParseResult<'model>> =
+    let json (schema: Schema<'model>) (request: IRequest) (cancellationToken: System.Threading.CancellationToken) : ValueTask<RetainedParseResult<'model>> =
         match request.Content with
         | null -> ValueTask<_>(Schema.parseRetainingInput schema Data.Null)
         | content ->
             let parse: Task<RetainedParseResult<'model>> =
                 task {
-                    use! document = JsonDocument.ParseAsync content
+                    use! document = JsonDocument.ParseAsync(content, cancellationToken = cancellationToken)
                     return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
                 }
 
@@ -99,10 +97,11 @@ module Request =
     let json (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.envWith _.Request
         |> Flow.bind (fun request ->
-            Flow.fromTask (fun _ ->
+            Flow.fromTask (fun cancellationToken ->
                 task {
+                    cancellationToken.ThrowIfCancellationRequested()
                     try
-                        let! parsed = (SchemaRequest.json schema request).AsTask()
+                        let! parsed = (SchemaRequest.json schema request cancellationToken).AsTask()
                         return Ok parsed
                     with :? JsonException ->
                         return Error ProblemDetails.malformedJson
@@ -250,6 +249,8 @@ module FlowEndpoint =
                             | [] when Cause.isInterrupted cause ->
                                 return raise (OperationCanceledException("Endpoint Flow was interrupted."))
                             | [] ->
-                                let rendered = Cause.prettyPrint (fun error -> string error) cause
+                                let rendered = Cause.prettyPrint (function
+                                    | EndpointError.InvalidRequest _ -> "invalid request"
+                                    | EndpointError.ApplicationError _ -> "application error") cause
                                 return raise (InvalidOperationException($"Endpoint Flow failed with an unsupported composite cause: {rendered}"))
                 }))

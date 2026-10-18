@@ -14,10 +14,6 @@ lists the queue. Work on main.
   - Recover the rest without weakening the semantics (uninterruptible, acquisition env and runtime, own scope):
     candidates are a scope created only when the release registers something, avoiding the ambient runtime switch
     when the release completes synchronously without reading it, and sharing one release runtime per scope close.
-- [ ] T5: Test Reified HTTP adapters against NuGet packages
-  - `Reified.*` packages are on NuGet (latest 0.8.2; `Directory.Build.props` pins `ReifiedVersion` 0.7.0). Restore and
-    test `Axial.Hosting.AspNetCore`, `Axial.Hosting.GenHttp`, their examples and tests, and
-    `examples/Axial.ReferenceApp` against package references.
 - [ ] T15: `Axial.Files` package: stream-native walk, lines, watch, durable writes
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Needs T3 (flow-returning `IFileSystem`) and T4
     (`FlowStream.fromCallback` for watcher events). Scheduled ahead of T8.

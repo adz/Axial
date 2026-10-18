@@ -1,8 +1,8 @@
 namespace Axial.ReferenceApp
 
-open System
+open Reified
 open Reified.Result
-open Reified.Constraint
+open System
 open Reified.Refinements
 
 /// Domain values use private representations so successful construction is the durable proof.
@@ -111,7 +111,8 @@ module Workspace =
         |> Result.bind (fun _ ->
             workspace.Items
             |> List.tryFindIndex (fun item -> item.Id = itemId)
-            |> Result.someOr (DomainError.WorkItemNotFound itemId))
+            |> Result.fromOption
+            |> Result.orError (DomainError.WorkItemNotFound itemId))
         |> Result.map (fun index ->
             let item = workspace.Items[index]
             { workspace with Items = workspace.Items |> List.updateAt index { item with Assignee = Some memberId } })
@@ -119,7 +120,8 @@ module Workspace =
     let complete itemId workspace =
         workspace.Items
         |> List.tryFindIndex (fun item -> item.Id = itemId)
-        |> Result.someOr (DomainError.WorkItemNotFound itemId)
+        |> Result.fromOption
+            |> Result.orError (DomainError.WorkItemNotFound itemId)
         |> Result.bind (fun index ->
             index
             |> Result.failIf (fun index -> workspace.Items[index].State = WorkItemState.Done)

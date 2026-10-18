@@ -11,7 +11,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Xunit
 open Swensen.Unquote
-open Reified.Schema.Json
+open Reified
 open Axial
 open Reified.Schema.Http
 open Axial.Hosting.AspNetCore
@@ -68,7 +68,7 @@ let private buildApp () =
     app.MapPost("/rejected-signups", endpoint rejectedEndpoint)
     |> ignore
 
-    let ageSchema = Reified.Schema.Schema.int
+    let ageSchema = Schema.int
 
     let ageEndpoint : Flow<HttpEndpointEnv<string>, EndpointError<string>, IResult> =
         flow {

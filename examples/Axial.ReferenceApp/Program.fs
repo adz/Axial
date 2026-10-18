@@ -1,10 +1,13 @@
 module Axial.ReferenceApp.Program
 
-open Reified.Data
+open Reified
+open Reified.Result
+
 
 open System
 open System.Diagnostics
 open System.Net
+open System.IO
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
@@ -15,15 +18,11 @@ open OpenTelemetry.Logs
 open OpenTelemetry.Metrics
 open OpenTelemetry.Resources
 open OpenTelemetry.Trace
-open Reified.Result
-open Reified.Constraint
 open Axial
 open Axial.FileSystem
 open Reified.Refinements
-open Reified.Schema
 open Reified.Schema.Http
 open Axial.Hosting.AspNetCore
-open Reified.Schema.Json
 open Axial.PlatformService
 open Axial.Hosting
 open Axial.Telemetry
@@ -37,7 +36,7 @@ let private renderError = function
     | AppError.InvalidInput errors ->
         errors
         |> SchemaErrors.toList
-        |> List.map (fun issue -> $"{Path.format issue.Path}: {SchemaError.render issue.Error}")
+        |> List.map (fun issue -> $"{SchemaPath.format issue.Path}: {SchemaError.render issue.Error}")
         |> String.concat "; "
     | AppError.InvalidValue failures -> Violation.render failures
     | AppError.ProductionRejected error -> ProductionAdmissionError.describe error
@@ -365,7 +364,7 @@ input, select, button {{ padding: .35rem; }} code {{ background: #eee; padding: 
     app.MapGet("/workspaces/new", Func<IResult>(fun () -> Results.Text(FormPage.renderNewWorkspace None, "text/html"))) |> ignore
 
     app.MapPost("/workspaces/new", Func<HttpRequest, Task<IResult>>(fun request -> task {
-        let! parsed = SchemaRequest.form Contracts.nameInput request
+        let! parsed = SchemaRequest.form Contracts.nameInput request request.HttpContext.RequestAborted
 
         match parsed.Result with
         | Error _ -> return Results.Text(FormPage.renderNewWorkspace (Some parsed), "text/html", statusCode = 400)
@@ -382,12 +381,12 @@ input, select, button {{ padding: .35rem; }} code {{ background: #eee; padding: 
     app.MapPost("/workspaces/{workspaceId}/items/{itemId}/assign", endpoint "workspaces.items.assign-form" assignItemFromForm) |> ignore
 
     app.MapGet("/observability/demo", Func<IResult>(fun () ->
-        let demonstration =
+        let demonstration : Flow<AppEnv, AppError, unit> =
             flow {
                 do! Log.info "Starting the observability demonstration"
                 let! first = Flow.forkNamed "demo-fast" (Flow.sleep(TimeSpan.FromMilliseconds 150.0))
                 let! second = Flow.forkNamed "demo-slow" (Flow.sleep(TimeSpan.FromMilliseconds 350.0))
-                do FiberDumpTelemetry.record registry
+                do FiberDumpTelemetry.record runtime.Clock registry
                 do! Fiber.join first
                 do! Fiber.join second
                 do! Log.info "Finished the observability demonstration"

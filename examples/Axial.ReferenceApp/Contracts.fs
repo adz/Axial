@@ -1,10 +1,9 @@
 namespace Axial.ReferenceApp
 
-open System
+open Reified
 open Reified.Result
-open Reified.Constraint
+open System
 open Reified.Refinements
-open Reified.Schema
 
 // Wire records can represent untrusted drafts and old persisted versions.
 type WorkspaceV1 = { version: int; id: Guid; name: string }
@@ -32,8 +31,8 @@ module ProductionAdmissionError =
 
 [<RequireQualifiedAccess>]
 module Contracts =
-    open Reified.Schema.Syntax
-    open Reified.Constraint.ConstraintDSL
+    open Reified.SchemaDSL
+    open Reified.ConstraintDSL
 
     let private requiredText create inspect maximum : Schema<'value> =
         let constraint' = Constraint.all [ Constraint.present; Constraint.maxLength maximum ]
@@ -54,7 +53,7 @@ module Contracts =
 
     let nameInput =
         schema<NameInput> {
-            field "name" (fun (value: NameInput) -> value.name) {
+            field (fun (value: NameInput) -> value.name) {
                 constrain (minLength 1)
             }
             construct (fun name -> { name = name })
@@ -62,7 +61,7 @@ module Contracts =
 
     let titleInput =
         schema<TitleInput> {
-            field "title" (fun (value: TitleInput) -> value.title) {
+            field (fun (value: TitleInput) -> value.title) {
                 constrain (minLength 1)
             }
             construct (fun title -> { title = title })
@@ -70,15 +69,15 @@ module Contracts =
 
     let assignmentInput =
         schema<AssignmentInput> {
-            field "memberId" (fun (value: AssignmentInput) -> value.memberId)
+            field (fun (value: AssignmentInput) -> value.memberId)
             construct (fun memberId -> { memberId = memberId })
         }
 
     let workspaceV1 =
         schema<WorkspaceV1> {
-            field "version" (fun (value: WorkspaceV1) -> value.version)
-            field "id" (fun (value: WorkspaceV1) -> value.id)
-            field "name" (fun (value: WorkspaceV1) -> value.name) {
+            field (fun (value: WorkspaceV1) -> value.version)
+            field (fun (value: WorkspaceV1) -> value.id)
+            field (fun (value: WorkspaceV1) -> value.name) {
                 constrain (minLength 1)
                 constrain (maxLength 80)
             }
@@ -87,8 +86,8 @@ module Contracts =
 
     let memberV2 =
         schema<MemberV2> {
-            field "id" (fun (value: MemberV2) -> value.id)
-            field "name" (fun (value: MemberV2) -> value.name) {
+            field (fun (value: MemberV2) -> value.id)
+            field (fun (value: MemberV2) -> value.name) {
                 withSchema personName
             }
             construct (fun id name -> { id = id; name = name })
@@ -96,14 +95,14 @@ module Contracts =
 
     let workItemV2 =
         schema<WorkItemV2> {
-            field "id" (fun (value: WorkItemV2) -> value.id)
-            field "title" (fun (value: WorkItemV2) -> value.title) {
+            field (fun (value: WorkItemV2) -> value.id)
+            field (fun (value: WorkItemV2) -> value.title) {
                 withSchema workItemTitle
             }
-            field "assignee" (fun (value: WorkItemV2) -> value.assignee) {
+            field (fun (value: WorkItemV2) -> value.assignee) {
                 withSchema (Schema.option Schema.guid)
             }
-            field "state" (fun (value: WorkItemV2) -> value.state) {
+            field (fun (value: WorkItemV2) -> value.state) {
                 constrain (Constraint.oneOf [ "todo"; "done" ])
             }
             construct (fun id title assignee state ->
@@ -112,15 +111,15 @@ module Contracts =
 
     let workspaceV2 =
         schema<WorkspaceV2> {
-            field "version" (fun (value: WorkspaceV2) -> value.version)
-            field "id" (fun (value: WorkspaceV2) -> value.id)
-            field "name" (fun (value: WorkspaceV2) -> value.name) {
+            field (fun (value: WorkspaceV2) -> value.version)
+            field (fun (value: WorkspaceV2) -> value.id)
+            field (fun (value: WorkspaceV2) -> value.name) {
                 withSchema workspaceName
             }
-            field "members" (fun (value: WorkspaceV2) -> value.members) {
+            field (fun (value: WorkspaceV2) -> value.members) {
                 withSchema (Schema.listWith memberV2)
             }
-            field "items" (fun (value: WorkspaceV2) -> value.items) {
+            field (fun (value: WorkspaceV2) -> value.items) {
                 withSchema (Schema.listWith workItemV2)
             }
             construct (fun version id name members items ->

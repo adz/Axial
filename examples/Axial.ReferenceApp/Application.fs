@@ -1,17 +1,14 @@
 namespace Axial.ReferenceApp
 
-open Reified.Data
 
+open Reified
+open Reified.Result
 open System
 open System.IO
 open System.Text.Json
-open Reified.Result
-open Reified.Constraint
 open Axial
 open Axial.FileSystem
 open Axial.PlatformService
-open Reified.Schema
-open Reified.Schema.Json
 open Reified.Refinements
 
 [<RequireQualifiedAccess>]
@@ -84,7 +81,7 @@ module FileWorkspaceStore =
                     let! exists = FileSystem.fileExists file |> storage
 
                     return!
-                        Result.requireTrue (AppError.NotFound id) exists
+                        (exists |> Result.require |> Result.orError (AppError.NotFound id))
                         |> Flow.fromResult
                         |> Flow.bind (fun () -> loadFile file)
                 }
@@ -110,7 +107,7 @@ module FileWorkspaceStore =
                 flow {
                     let file = path id
                     let! exists = FileSystem.fileExists file |> storage
-                    do! Result.requireTrue (AppError.NotFound id) exists |> Flow.fromResult
+                    do! (exists |> Result.require |> Result.orError (AppError.NotFound id)) |> Flow.fromResult
                     do! FileSystem.deleteFile file |> storage
                 } }
 

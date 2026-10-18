@@ -16,10 +16,8 @@ open System.Threading.Tasks
 open GenHTTP.Api.Protocol
 open GenHTTP.Engine.Internal
 open GenHTTP.Modules.Functional
-open Reified.Constraint
-open Reified.Schema.Json
+open Reified
 open Axial
-open Reified.Schema
 open Reified.Schema.Http
 open Axial.Hosting.GenHttp
 
@@ -30,19 +28,19 @@ open Axial.Hosting.GenHttp
 type Signup = { Name: string; Email: string; Age: int }
 
 module Signup =
-    open Reified.Schema.Syntax
-    open Reified.Constraint.ConstraintDSL
+    open Reified.SchemaDSL
+    open Reified.ConstraintDSL
 
     let schema =
         schema<Signup> {
-            field "name" _.Name {
+            field _.Name {
                 constrain (minLength 1)
                 constrain (maxLength 80)
             }
-            field "email" _.Email {
+            field _.Email {
                 constrain email
             }
-            field "age" _.Age {
+            field _.Age {
                 constrain (Constraint.between 13 120)
             }
             construct (fun name email age -> { Name = name; Email = email; Age = age })

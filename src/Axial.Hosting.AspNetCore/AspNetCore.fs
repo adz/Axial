@@ -1,30 +1,28 @@
 namespace Axial.Hosting.AspNetCore
 
-open Reified.Data
+open Reified
 
 open System
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open Reified.Schema
 open Reified.Schema.Http
-open Reified.Schema.Json
 open Axial
 
-/// <summary>Parses ASP.NET Core requests into <see cref="T:Reified.Schema.RetainedParseResult`2" /> through a schema.</summary>
+/// <summary>Parses ASP.NET Core requests into <see cref="T:Reified.RetainedParseResult`1" /> through a schema.</summary>
 [<RequireQualifiedAccess>]
 module SchemaRequest =
     /// <summary>Parses the JSON request body through the schema.</summary>
-    let json (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model>> =
+    let json (schema: Schema<'model>) (request: HttpRequest) (cancellationToken: System.Threading.CancellationToken) : Task<RetainedParseResult<'model>> =
         task {
-            use! document = JsonDocument.ParseAsync request.Body
+            use! document = JsonDocument.ParseAsync(request.Body, cancellationToken = cancellationToken)
             return Schema.parseRetainingInput schema (Data.ofJsonDocument document)
         }
 
     /// <summary>Parses the posted form through the schema; dotted field names such as <c>address.street</c> nest.</summary>
-    let form (schema: Schema<'model>) (request: HttpRequest) : Task<RetainedParseResult<'model>> =
+    let form (schema: Schema<'model>) (request: HttpRequest) (cancellationToken: System.Threading.CancellationToken) : Task<RetainedParseResult<'model>> =
         task {
-            let! form = request.ReadFormAsync()
+            let! form = request.ReadFormAsync(cancellationToken)
 
             let pairs =
                 form
@@ -100,11 +98,11 @@ module Request =
             Flow.fail (EndpointError.InvalidRequest(ProblemDetails.ofErrors diagnostics))
 
     let private parsed
-        (parse: HttpRequest -> Task<RetainedParseResult<'model>>)
+        (parse: HttpRequest -> System.Threading.CancellationToken -> Task<RetainedParseResult<'model>>) 
         : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.envWith _.Request
         |> Flow.bind (fun request ->
-            Flow.fromTask (fun _ -> parse request)
+            Flow.fromTask (parse request)
             |> Flow.bind fromParsed)
 
     /// <summary>Reads and schema-parses a JSON request body; malformed JSON and schema diagnostics become invalid-request failures.</summary>
@@ -114,10 +112,11 @@ module Request =
     let json (schema: Schema<'model>) : Flow<HttpEndpointEnv<'app>, EndpointError<'error>, 'model> =
         Flow.envWith _.Request
         |> Flow.bind (fun request ->
-            Flow.fromTask (fun _ ->
+            Flow.fromTask (fun cancellationToken ->
                 task {
+                    cancellationToken.ThrowIfCancellationRequested()
                     try
-                        let! parsed = SchemaRequest.json schema request
+                        let! parsed = SchemaRequest.json schema request cancellationToken
                         return Ok parsed
                     with :? JsonException ->
                         return Error ProblemDetails.malformedJson
