@@ -15,25 +15,13 @@ dotnet add package Axial
 
 ## The smallest Flow
 
-Try it in F# Interactive (`dotnet fsi`, after `#r "nuget: Axial";;` and `open Axial;;`):
+Try the transcript in F# Interactive (`dotnet fsi`, after `#r "nuget: Axial";;` and `open Axial;;`). The following setup is for the longer checked examples on this page, not for F# Interactive; those examples also use `System.Threading` and `System.Threading.Tasks`.
 
 ```fsharp prepare
-// Setup for the checked examples on this page.
 open System
-open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
-open Axial.Console
-open Axial.FileSystem
-open Axial.Hosting
-open Axial.Hosting.Browser
-open Axial.Hosting.Node
-open Axial.PlatformService
-open Axial.State
-open Axial.Telemetry
-open Axial.Telemetry.JavaScript
 
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =

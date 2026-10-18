@@ -80,7 +80,8 @@ let handleCheckout (env: CheckoutEnv) (orderId: int) (cancellationToken: Cancell
         | Exit.Success receipt -> return $"200 {receipt.Reference}"
         | Exit.Failure(Cause.Fail(OrderNotFound id)) -> return $"404 order {id} not found"
         | Exit.Failure(Cause.Fail(PaymentDeclined reason)) -> return $"402 {reason}"
-        | Exit.Failure cause -> return failwith (Cause.prettyPrint string cause)
+        | Exit.Failure Cause.Interrupt -> return raise (OperationCanceledException(cancellationToken))
+        | Exit.Failure cause -> return raise (InvalidOperationException(Cause.prettyPrint string cause))
     }
 ```
 
@@ -98,10 +99,11 @@ let sample =
 
 The match handles expected errors, defects, and cancellation:
 
-- The compiler lists the `Cause.Fail` cases for you. Adding a case to `CheckoutError` makes every boundary that maps
-  it incomplete, so the compiler shows every place that has to handle the new case.
-- The final case covers `Cause.Die` and `Cause.Interrupt`: defects and interruption, not expected failures. Re-raise
-  or log them the way your host already handles unhandled exceptions.
+- The two `Cause.Fail` arms map the expected errors. The final catch-all also matches any new `CheckoutError` case,
+  so adding one does **not** make this match incomplete; review boundary mappings whenever the error union changes.
+- `Cause.Interrupt` becomes a cancelled task at this host boundary. The final arm reports other causes, including
+  defects and compound failures, as an exception with the cause text. Adapt that arm to your host's exception policy;
+  it does not preserve the original defect exception.
 - The host's cancellation token flows in, so cancelling the request cancels every inner call and closes the
   workflow's scope. `ColdTask` supplies that token to each task dependency without adding it to the workflow's public
   parameters.

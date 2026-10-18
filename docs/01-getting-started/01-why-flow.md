@@ -205,7 +205,7 @@ let fixedServices =
 let placed = stamp |> Flow.run fixedServices
 ```
 
-All dependencies arrive through the environment, so the same environment gives the same result. With [Axial.Guardrails](../notes/guardrails.html) installed, the build
+With the fixed clock and GUID implementations above, repeated runs produce the same stamp. A live service can read changing external state or hold mutable state, so reusing an environment alone does not guarantee identical results. With [Axial.Guardrails](../notes/guardrails.html) installed, the build
 also warns when code reads the clock, randomness, or environment variables directly instead of through a service.
 
 ## 5. Resources belong to the flow that acquired them
@@ -270,16 +270,17 @@ annotations travel to every fiber the flow starts:
 ```fsharp
 let registry = FiberRegistry(100)
 
-let poller : Flow<ClockEnvironment, Never, unit> =
+let pollerSnapshot : Flow<ClockEnvironment, Never, string> =
     flow {
+        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
         let! _ = Flow.sleep (TimeSpan.FromMinutes 1.0) |> Flow.forkNamed "outbox-poller"
-        return ()
+        return registry.DumpAt(clock)
     }
     |> Flow.annotate "tenant" "acme"
     |> Flow.withFiberRegistry registry
 ```
 
-`registry.DumpAt(clock)` prints each live fiber with its name, status, age, and annotations, which is what a diagnostics
+The snapshot is taken before the parent flow ends; when it ends, it interrupts and awaits the poller. `registry.DumpAt(clock)` prints each live fiber with its name, status, age, and annotations, which is what a diagnostics
 endpoint or a stuck shutdown needs. `Axial.Telemetry` turns the same information into OpenTelemetry spans and metrics,
 including a count of failures in background work that nothing awaited. See [observability](../observability/index.html).
 
