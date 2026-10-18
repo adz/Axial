@@ -10,8 +10,7 @@ open Axial
 open Axial.State
 ```
 
-Software Transactional Memory (STM) is a concurrency primitive that lets you compose multiple
-atomic operations into a single **transaction**.
+Software Transactional Memory (STM) combines operations into one atomic **transaction**.
 
 `Ref` updates one variable atomically. `STM` updates **several** variables in one atomic transaction, and supports `retry` / `orElse` style coordination for transactions
 that need to wait on state changes or fall back to alternate branches.
@@ -96,8 +95,7 @@ let batchTransfer acc1 acc2 acc3 amount =
 ```
 ## Why use STM instead of lock?
 
-Using manual `lock` calls is error-prone and often leads to deadlocks when different parts of your
-code acquire multiple locks in inconsistent orders.
+Manual `lock` calls can deadlock when code acquires multiple locks in different orders.
 
 Axial's `STM` keeps commit atomicity inside the engine and adds `retry` / `orElse` coordination
 so a transaction can wait for a relevant state change or fall back to another branch without
@@ -112,8 +110,7 @@ lock-free model.
 - **Suspending retry**: When `STM.retry` is called, the transaction suspends without blocking a thread until another transaction commits, then reruns from the start. Every commit wakes every waiting transaction.
 - **Performance**: Because of the global lock, transactions are mutually exclusive. This is suitable for coordinating low-frequency state changes but may become a bottleneck under high contention.
 
-This design prioritizes correctness and simplicity for the initial release while keeping the usual STM programming
-model: transactional references, composable transactions, `retry`, and `orElse`.
+The global lock keeps the initial implementation simple while supporting transactional references, composable transactions, `retry`, and `orElse`.
 ## API Reference: Module `TRef`
 
 | Function | Signature | Description |

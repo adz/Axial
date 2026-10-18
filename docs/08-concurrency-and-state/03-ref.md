@@ -5,7 +5,7 @@ description: Shared mutable state with atomic updates in Axial.
 
 # Ref (Atomic References)
 
-`Ref<'T>` is a handle to a mutable reference that can be updated atomically. It is the simplest way to manage shared state between multiple concurrent parts of your application.
+`Ref<'T>` holds a mutable value that concurrent workflows can update atomically.
 
 ```fsharp
 open Axial
@@ -16,11 +16,11 @@ open Axial.State
 
 In a functional program, state is usually passed as parameters or through the environment. Some state, such as a shared counter, a cache, or a status flag, needs several concurrent workflows to observe and update the same value. 
 
-`Ref` provides a high-level abstraction for thread-safe state management. It encapsulates the synchronization logic (currently implemented using lightweight per-instance locking), ensuring that you can perform complex updates without manual `lock` management or risking data races.
+`Ref` uses lightweight per-instance locking to make updates atomic without manual `lock` management.
 
 ## Creating a Ref
 
-Use `Ref.make` to create a new reference with an initial value. Like all things in Axial, creating a `Ref` is an effectful operation that returns a `Flow`.
+Use `Ref.make` to create a new reference with an initial value. Creating a `Ref` returns a `Flow`.
 
 ```fsharp transcript
 > open Axial.State;;
@@ -54,7 +54,7 @@ let workWithRef (counter: Ref<int>) =
 
 ## Atomic Updates
 
-For concurrent safety, you should use `Ref.update` or `Ref.modify`. These operations ensure that the update is atomic, preventing race conditions when multiple fibers are updating the same reference simultaneously.
+Use `Ref.update` or `Ref.modify` to update a value atomically when multiple fibers share it.
 
 ### `Ref.update`
 Updates the value using a transformation function.

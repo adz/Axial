@@ -5,9 +5,7 @@ description: Lightweight logical threads and structured concurrency in Axial.
 
 # Fibers
 
-Fibers represent running child workflows.
-
-In Axial, a **Fiber** is a handle to a running [**`Flow`**](/api/). A flow is a cold description of work. A fiber is the hot execution that exists after that work has been started in the background.
+A **Fiber** is a handle to a running [**`Flow`**](/api/). A flow describes work; a fiber represents its execution after it starts in the background.
 
 ## Fiber-local values
 
@@ -15,9 +13,7 @@ In Axial, a **Fiber** is a handle to a running [**`Flow`**](/api/). A flow is a 
 
 ## The Mental Model
 
-While a `Flow` is **cold** (a description of work that hasn't started yet), a **Fiber** is **hot** (the work is currently being executed).
-
-When you fork a flow, you are saying: start this work now, give me a typed handle to it, and let the current workflow continue. That handle is the fiber.
+A `Flow` is **cold** until it starts. Forking starts it and returns a **Fiber** handle while the current workflow continues.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -60,9 +56,9 @@ The example starts `left` in the background, runs `right` in the current workflo
 
 ## Structured Concurrency
 
-Fibers are the foundation of **Structured Concurrency** in Axial. Unlike "fire-and-forget" background tasks, Fibers allow you to maintain a parent-child relationship between workflows, ensuring that background work is always accounted for and safely cleaned up.
+Forked fibers retain a parent-child relationship: closing the parent scope interrupts running children and releases their scoped resources.
 
-The primary operations for managing fibers are:
+Fiber operations:
 
 - [**`Flow.fork`**](/api/): starts a flow in the background and returns a `Fiber<'error, 'value>` handle.
 - `Flow.forkResource`: starts acquiring a `Resource` in the background; joining the fiber returns the resource, still
@@ -109,7 +105,7 @@ Joining, awaiting, or interrupting a fiber marks its outcome as observed. A fibe
 
 ## Why Fibers?
 
-Fibers provide several advantages over raw `Task` or `Async` values:
+Compared with raw `Task` or `Async` values, fibers provide:
 
 ### Interruption
 
@@ -142,7 +138,7 @@ On .NET, a fiber wraps a `Task<Exit<'value, 'error>>`, a `CancellationTokenSourc
 
 ## Concurrency Primitives
 
-Most code should not manage fibers manually. Prefer high-level parallel combinators when they express the whole relationship:
+Use parallel combinators when they express the whole relationship:
 
 - `Flow.zipPar`: Runs two flows concurrently and waits for both.
 - `Flow.race`: Runs two flows concurrently and returns the result of the winner, interrupting the loser.

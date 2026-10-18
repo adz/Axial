@@ -5,13 +5,12 @@ description: "Sixteen runnable scenarios that drive every concurrency construct 
 
 # Torture Tests
 
-Most of Axial's concurrency guarantees are about races. An interrupted take never loses a value. A lossless
-subscriber sees every value in order. A scope releases what it acquired, however its fibers end. Each guarantee is easy
-to state and easy to break by accident, and a race that breaks it only now and then will not show up in a small example.
+An interrupted take must not lose a value. A lossless subscriber must see every value in order. A scope must release
+what it acquired, however its fibers end. These races may not appear in small examples.
 
-Each torture scenario runs one area of the library hard: many fibers, random interruptions, failures, and shutdowns in
-the middle of the work. Then it checks the invariants that must hold whatever the interleaving was. A check never
-depends on timing, such as "this finished within 10 ms", so a violated check is a defect, not a slow machine.
+Each scenario runs many fibers with random interruptions, failures, and shutdowns, then checks invariants regardless of
+interleaving. Checks do not depend on timing, such as "this finished within 10 ms", so a failed check does not depend
+on machine speed.
 
 ## Run them yourself
 
