@@ -4,6 +4,8 @@ Axial is an asynchronous F# workflow library. Its public model is `Flow<'env,'er
 
 Load `/llms.txt` for API selection, execution, resources, concurrency, services, hosting, and platform guidance. User documentation starts at `/index.html`.
 
+Elmish integration: install `Axial.Elmish`, open `Axial.ElmishFlows`, and read `/platforms-and-hosting/elmish.html`.
+
 Process DSL guides: `/process/index.html`, `/process/scripts.html`, `/process/streaming.html`, and `/process/dsl-recipes.html`.
 
 Reified is a separate library for constraints, refinements, parsing, structured data, schemas, codecs, and contracts: https://github.com/adz/Reified

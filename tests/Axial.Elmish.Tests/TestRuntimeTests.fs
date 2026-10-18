@@ -3,7 +3,7 @@ namespace Axial.Elmish.Tests
 open System
 open System.Threading.Tasks
 open Axial
-open Axial.Elmish
+open Axial.ElmishFlows
 open Xunit
 
 module TestRuntimeTests =

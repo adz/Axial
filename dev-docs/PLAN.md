@@ -30,6 +30,8 @@ Durable decisions remain in `dev-docs/decisions/README.md`; current work belongs
 
 ## Axial.Elmish
 
+- The package remains `Axial.Elmish`; its namespace is `Axial.ElmishFlows` so `open Axial` does not shadow Elmish's namespace.
+- Runtime environments implement `IHasClock`; commands can select current application dependencies with `Flow.localEnv`.
 - One runtime per program owns one root scope for commands, subscriptions, and releases.
 - All dispatch goes through the host's `Post`; defects go to `OnDefect`.
 - Command keys provide per-runtime latest-wins cancellation.

@@ -5,7 +5,7 @@ open System.Collections.Concurrent
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Elmish
+open Axial.ElmishFlows
 open Xunit
 
 module SubscriptionTests =

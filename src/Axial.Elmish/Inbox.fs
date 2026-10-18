@@ -1,4 +1,4 @@
-namespace Axial.Elmish
+namespace Axial.ElmishFlows
 
 open System
 open System.Threading
