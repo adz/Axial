@@ -75,15 +75,15 @@ type FileSystemEntry =
         $"{this.Kind}: {this.FullPath} ({this.Size} bytes, {this.LastWriteTimeUtc:O})"
 
 [<RequireQualifiedAccess>]
-type FileChangeKind =
+type FileSystemChangeKind =
     | Created | Changed | Deleted | Renamed
     override this.ToString() =
         match this with
         | Created -> "Created" | Changed -> "Changed" | Deleted -> "Deleted" | Renamed -> "Renamed"
 
 /// <summary>A change reported by a file-system watcher.</summary>
-type FileChange =
-    { Kind: FileChangeKind; Path: string; OldPath: string option }
+type FileSystemChange =
+    { Kind: FileSystemChangeKind; Path: string; OldPath: string option }
     override this.ToString() =
         match this.OldPath with
         | Some old -> $"{this.Kind}: {old} -> {this.Path}"
@@ -92,7 +92,7 @@ type FileChange =
 /// <summary>Provides access to common file, directory, and path operations.</summary>
 type IFileSystem =
     /// <summary>Subscribes to changes at a directory or a file; disposing stops delivery.</summary>
-    abstract Watch : path: string * includeSubdirectories: bool * onChange: (FileChange -> unit) * onError: (exn -> unit) -> IDisposable
+    abstract Watch : path: string * includeSubdirectories: bool * onChange: (FileSystemChange -> unit) * onError: (exn -> unit) -> IDisposable
 
     /// <summary>Opens a text file, reads all text, and then closes the file.</summary>
     abstract ReadAllText : path: string -> string
@@ -443,7 +443,7 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
     let files = System.Collections.Generic.Dictionary<string, byte array>(StringComparer.OrdinalIgnoreCase)
     let directories = System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
     let mutable currentDirectory = Path.GetTempPath()
-    let watchers = System.Collections.Generic.Dictionary<int, string * bool * (FileChange -> unit) * (exn -> unit)>()
+    let watchers = System.Collections.Generic.Dictionary<int, string * bool * (FileSystemChange -> unit) * (exn -> unit)>()
     let mutable nextWatcher = 0
     do
         for path, contents in defaultArg initial Seq.empty do
@@ -499,7 +499,7 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
         |> Seq.map id
 
     member _.ActiveWatchers = lock watchers (fun () -> watchers.Count)
-    member _.RaiseChange(change: FileChange) =
+    member _.RaiseChange(change: FileSystemChange) =
         let subscriptions = lock watchers (fun () -> watchers.Values |> Seq.toArray)
         for root, recursive, callback, _ in subscriptions do
             let target = Path.GetFullPath change.Path
@@ -1348,10 +1348,10 @@ module FileSystem =
                 let filter = if Directory.Exists path then "*" else Path.GetFileName path
                 let watcher = new FileSystemWatcher(directory, filter)
                 watcher.IncludeSubdirectories <- recursive
-                watcher.Created.Add(fun args -> onChange { Kind = FileChangeKind.Created; Path = args.FullPath; OldPath = None })
-                watcher.Changed.Add(fun args -> onChange { Kind = FileChangeKind.Changed; Path = args.FullPath; OldPath = None })
-                watcher.Deleted.Add(fun args -> onChange { Kind = FileChangeKind.Deleted; Path = args.FullPath; OldPath = None })
-                watcher.Renamed.Add(fun args -> onChange { Kind = FileChangeKind.Renamed; Path = args.FullPath; OldPath = Some args.OldFullPath })
+                watcher.Created.Add(fun args -> onChange { Kind = FileSystemChangeKind.Created; Path = args.FullPath; OldPath = None })
+                watcher.Changed.Add(fun args -> onChange { Kind = FileSystemChangeKind.Changed; Path = args.FullPath; OldPath = None })
+                watcher.Deleted.Add(fun args -> onChange { Kind = FileSystemChangeKind.Deleted; Path = args.FullPath; OldPath = None })
+                watcher.Renamed.Add(fun args -> onChange { Kind = FileSystemChangeKind.Renamed; Path = args.FullPath; OldPath = Some args.OldFullPath })
                 watcher.Error.Add(fun args -> onError (args.GetException()))
                 watcher.EnableRaisingEvents <- true
                 watcher :> IDisposable

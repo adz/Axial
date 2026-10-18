@@ -111,7 +111,7 @@ module Files =
 
     /// <summary>Watches a directory (optionally recursively) or one file until consumption ends.</summary>
     /// <remarks>The 1024-event buffer fails on overflow rather than silently losing changes. Rescan after any failure.</remarks>
-    let watch (recursive: bool) (path: string) : FlowStream<'env, FileSystemError, FileChange> when 'env :> IHasFileSystem =
+    let watch (recursive: bool) (path: string) : FlowStream<'env, FileSystemError, FileSystemChange> when 'env :> IHasFileSystem =
         FlowStream.fromCallbackWith 1024 (CallbackOverflow.Fail (FileSystemError.Io(Some path, "Watcher buffer overflow; rescan required")))
             (fun emit ->
                 flow {

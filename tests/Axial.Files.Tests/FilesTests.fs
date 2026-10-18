@@ -77,7 +77,7 @@ type FilesTests() =
     member _.``watch delivers changes in order and take disposes``() =
         let fs = TestFileSystem()
         let environment = { new IHasFileSystem with member _.FileSystem = fs :> IFileSystem }
-        let changes = [ 1; 2 ] |> List.map (fun n -> { Kind = FileChangeKind.Created; Path = $"/tree/{n}"; OldPath = None })
+        let changes = [ 1; 2 ] |> List.map (fun n -> { Kind = FileSystemChangeKind.Created; Path = $"/tree/{n}"; OldPath = None })
         let producer = System.Threading.Tasks.Task.Run(fun () ->
             Assert.True(System.Threading.SpinWait.SpinUntil((fun () -> fs.ActiveWatchers = 1), 5000))
             for change in changes do fs.RaiseChange change)
@@ -89,7 +89,7 @@ type FilesTests() =
     [<Fact>]
     member _.``nonrecursive watch ignores nested changes``() =
         let fs = TestFileSystem()
-        let direct = { Kind = FileChangeKind.Created; Path = "/tree/direct"; OldPath = None }
+        let direct = { Kind = FileSystemChangeKind.Created; Path = "/tree/direct"; OldPath = None }
         let producer = System.Threading.Tasks.Task.Run(fun () ->
             Assert.True(System.Threading.SpinWait.SpinUntil((fun () -> fs.ActiveWatchers = 1), 5000))
             fs.RaiseChange { direct with Path = "/tree/nested/hidden" }
@@ -123,13 +123,13 @@ type FilesTests() =
                 File.WriteAllText(target, "hello"))
             let consumer = System.Threading.Tasks.Task.Run(fun () ->
                 Files.watch true root
-                |> FlowStream.filter (fun change -> change.Kind = FileChangeKind.Created && change.Path = target)
+                |> FlowStream.filter (fun change -> change.Kind = FileSystemChangeKind.Created && change.Path = target)
                 |> FlowStream.runTryHead
                 |> Flow.run { new IHasFileSystem with member _.FileSystem = FileSystem.live })
             Assert.True(consumer.Wait(TimeSpan.FromSeconds 5.))
             let result = consumer.Result
             producer.GetAwaiter().GetResult()
-            Assert.Equal(Exit.Success(Some { Kind = FileChangeKind.Created; Path = target; OldPath = None }), result)
+            Assert.Equal(Exit.Success(Some { Kind = FileSystemChangeKind.Created; Path = target; OldPath = None }), result)
         finally Directory.Delete(root, true)
 
     [<Fact>]

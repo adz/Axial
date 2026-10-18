@@ -35,6 +35,10 @@ To make findings fail the build, set the severity to `error`:
 </PropertyGroup>
 ```
 
+To downgrade findings to non-failing warnings during a migration, without editing each project, set
+`AXIAL_GUARDRAILS_SEVERITY=warning` in the environment, or pass `-p:AxialGuardrailsSeverity=warning` to `dotnet build`
+or `dotnet test`. A severity set in a project or with `-p:` wins over the environment variable.
+
 To disable the analyzer for one project, set:
 
 ```xml

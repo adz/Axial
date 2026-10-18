@@ -20,6 +20,7 @@ let main args =
             let length = 1000 + int ((int64 i * 7919L) % 50000L)
             let payload = Encoding.ASCII.GetBytes(string length + "\n" + String(char (int 'a' + i % 26), length))
             Files.writeAtomic path payload |> run
+            printfn "wrote"
             i <- i + 1
         0
     | [| "log"; path |] ->
@@ -30,6 +31,7 @@ let main args =
             printfn "ready"
             while true do
                 do! AppendLog.append (Encoding.ASCII.GetBytes(string next)) log
+                printfn "wrote"
                 next <- next + 1
         }
         run operation
