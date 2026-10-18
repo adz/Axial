@@ -52,6 +52,11 @@ lists the queue. Work on main.
     runtime makes progress. Document SCM recovery (`sc failure`) and a systemd unit with `Restart=` and `WatchdogSec=`.
   - Done when: `kill -9` restarts the agent under systemd, and a deliberately hung runtime is restarted by the
     watchdog (scripted test, Linux; Windows documented).
+- [ ] T20b: Skip AXG001 for `.Result` guarded by `IsCompleted*`
+  - The blocking-wait rule flags `if t.IsCompletedSuccessfully then t.Result`, which cannot block; the runtime marks
+    these as boundaries (`src/Axial/Platform.fs` file marker and line markers in Core/Flow/Concurrency). Exempt a
+    `.Result`/`GetAwaiter().GetResult()` on a value whose `IsCompleted`, `IsCompletedSuccessfully`, or `Status` is
+    tested in an enclosing `if`, and on the argument of a `ContinueWith` continuation; then drop the line markers.
 - [ ] T6: Move the reference app and host examples to their own repository
   - Move the cross-product reference application and host examples to a separate integration/examples repository
     after both release trains are public.
