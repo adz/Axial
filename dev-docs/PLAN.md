@@ -52,8 +52,8 @@ Durable decisions remain in `dev-docs/decisions/README.md`; current work belongs
 - Line streams remove LF/CRLF delimiters, preserve blank and final unterminated lines, and enforce a default
   1,048,576 UTF-16-unit line limit with `LineTooLong`. Structured output distinguishes observed and original
   channels and uses plan stage indices. Stage and overall timeout failures are distinct; drain expiry is `IoFailed`.
-- `run` and `runWith` return complete `Exit` outcomes and preserve batch defaults for direct command/spec inputs.
-  `runExitCode` and `runExitCodeWith` are integer host boundaries: direct inputs default to console routing and no
-  stdout retention, and explicit settings win. Already constructed Flows preserve their behavior in either runner.
+- `run` and `runWith` return the value and raise `ProcessRunException` on failure; `tryRun` and `tryRunWith` return
+  the complete `Exit`. All four accept a command, a spec, or a Flow, and keep batch defaults for direct command and
+  spec inputs.
 - Native stream and text-writer adapters remain caller-owned. Decoders and capture state are fresh per execution.
   Mid-pipeline tee nodes and detached process lifetimes remain out of scope; compose an OS tee command when needed.
