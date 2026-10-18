@@ -62,6 +62,19 @@ module GuardrailConfigTests =
         }
 
     [<Fact>]
+    let ``local time zone is flagged but explicit conversion is not`` () =
+        task {
+            let! found =
+                findings (
+                    "let local () = System.TimeZoneInfo.Local\n"
+                    + "let explicitZone (utc: System.DateTime) (zone: System.TimeZoneInfo) =\n"
+                    + "    System.TimeZoneInfo.ConvertTimeFromUtc(utc, zone)\n")
+            test <@ found = [ 1 ] @>
+            let rule = builtInRules |> List.find (fun rule -> rule.Id = "clock.local-timezone")
+            test <@ rule.Guardrail = "Axial.PlatformService" && rule.Category = "environment" @>
+        }
+
+    [<Fact>]
     let ``constructing FileSystemWatcher is flagged`` () =
         task {
             let! found = findings "let watcher () = new System.IO.FileSystemWatcher()\n"

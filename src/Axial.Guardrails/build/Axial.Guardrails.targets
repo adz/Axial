@@ -65,11 +65,9 @@
   <!--
     Runs after every build of a project that references Axial.Guardrails, but only when @(Compile)
     is newer than the stamp file from the last successful run (see Inputs/Outputs above). Deliberately
-    does not use FSharp.Analyzers.Build's own AfterBuild target: that target hardcodes
-    IgnoreExitCode="true", so it can never fail a build regardless of severity. This target instead
-    lets Exec's normal exit-code handling do the work: the CLI itself exits non-zero only when a
-    finding is treated as an error, so AxialGuardrailsSeverity=warning (the default) can never fail
-    the build, and =error always does.
+    does not use FSharp.Analyzers.Build's own AfterBuild target: that target ignores the
+    exit code without failing the build. Capture the CLI exit code instead: findings return -2
+    (254 on Unix), while other non-zero codes indicate a tool failure.
 
     Still skips silently if the analyzers path is somehow missing after AxialGuardrailsEnsureBuilt
     (or there was nothing to bootstrap with) - a real package consumer never hits this at all.
@@ -101,7 +99,13 @@
           Outputs="$(_AxialGuardrailsStampFile)">
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
-          EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile)" />
+          EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_AxialGuardrailsExit" />
+    </Exec>
+    <Error Condition="'$(_AxialGuardrailsExit)' == '-2' or '$(_AxialGuardrailsExit)' == '254'"
+           Text="Axial.Guardrails reported findings above (see AXG codes)." />
+    <Error Condition="'$(_AxialGuardrailsExit)' != '0' and '$(_AxialGuardrailsExit)' != '-2' and '$(_AxialGuardrailsExit)' != '254'"
+           Text="Axial.Guardrails analyzer tool failed (exit code $(_AxialGuardrailsExit)); inspect the output above." />
     <Touch Files="$(_AxialGuardrailsStampFile)" AlwaysCreate="true" />
   </Target>
 

@@ -64,6 +64,11 @@ let builtInRules: EffectRule list =
           "reads the ambient system clock through System.DateTimeOffset, which makes timing untestable"
           "Axial.IClock (Axial.PlatformService.Clock.now)"
 
+      rule "clock.local-timezone" "Axial.PlatformService" "environment"
+          (MembersOf("System.TimeZoneInfo", [ "get_Local"; "Local" ]))
+          "reads TimeZoneInfo.Local, which depends on the machine's configured time zone"
+          "an explicit TimeZoneInfo supplied through 'env or configuration"
+
       rule "clock.stopwatch" CoreGuardrail "clock" (AnyMemberOf "System.Diagnostics.Stopwatch")
           "measures time with System.Diagnostics.Stopwatch directly, which makes durations untestable"
           "Axial.IClock (Axial.PlatformService.Clock.timed / Clock.elapsed)"

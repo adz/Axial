@@ -23,7 +23,11 @@ dotnet add package Axial.Guardrails
 The package configures the analyzer automatically. You don't need to edit an MSBuild file or run a separate command.
 Which rules run depends on the Axial packages the project references; see [Choose guardrails per package](#choose-guardrails-per-package).
 
-Findings are warnings by default. To make findings fail the build, set the severity to `error`:
+Findings are warnings by default. With error severity, the build shows the `AXG` findings and fails with
+`Axial.Guardrails reported findings above (see AXG codes).` A different analyzer CLI exit code reports a tool failure
+instead; neither case is reported as an `MSB3073` command failure.
+
+To make findings fail the build, set the severity to `error`:
 
 ```xml
 <PropertyGroup>
@@ -65,7 +69,7 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 | Guardrail | Rules |
 | --- | --- |
 | `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking task waits inside `flow { }`, and `AXG002`–`AXG007` |
-| `Axial.PlatformService` | Randomness, GUIDs, and environment state |
+| `Axial.PlatformService` | Randomness, GUIDs, environment state, and `TimeZoneInfo.Local` |
 | `Axial.Console` | `System.Console` |
 | `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
 | `Axial.Process` | `Process.Start` |
@@ -115,13 +119,16 @@ an intentional use. Item metadata cannot contain a semicolon; write it as `%3B`.
 | `random` | Construction of `System.Random` | `IRandom`, `Random.service`, or `Random.nextDouble` |
 | `guid` | `Guid.NewGuid()` | `IGuid`, `Guid.service`, or `Guid.newGuid` |
 | `clock` | Ambient date and time properties, `Stopwatch`, and `Task.Delay` | `IClock`, `Clock.service`, `Clock.utcNow`, `Clock.timed`, `Flow.sleep`, or `Schedule` |
-| `environment` | Ambient environment variables and machine or process properties | `IEnvironment` or a value passed through `'env`; `Parallelism.ofProcessors` for `ProcessorCount` |
+| `environment` | Ambient environment variables, machine or process properties, and `TimeZoneInfo.Local` | `IEnvironment` or a value passed through `'env`; an explicit `TimeZoneInfo` for conversions; `Parallelism.ofProcessors` for `ProcessorCount` |
 | `console` | Any `System.Console` member | `Axial.Console.IConsole` |
 | `filesystem` | Any `System.IO.File` or `System.IO.Directory` member | `Axial.FileSystem.IFileSystem` |
 | `process` | `System.Diagnostics.Process.Start` | `Axial.Process.IProcess` |
 | `sleep` | `Thread.Sleep` | `Flow.sleep` or `Schedule` |
 | `http` | Construction of `HttpClient` | `Axial.HttpClient.IHttp`, with `Http.live` over one shared client |
 | `blocking` | `.GetAwaiter().GetResult()` and `.Result` on a task, inside `flow { }` only | `let!` on the task, or `Flow.fromBlocking` for synchronous work |
+
+`TimeZoneInfo.ConvertTimeFromUtc(utc, zone)` is allowed when `zone` is supplied explicitly; reading
+`TimeZoneInfo.Local` to supply that argument is not. Pass the desired zone through configuration or `'env`.
 
 The analyzer matches resolved `System.*` symbols, not source text. It does not flag an application type named `Random` or a local value named `now`.
 
