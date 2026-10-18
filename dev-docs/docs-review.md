@@ -25,7 +25,7 @@
 
 - `docs/08-concurrency-and-state/07-hub.md:168` — The display example polls `Hub.subscriberCount` without a deadline; if the consumer fails before subscribing, the example hangs instead of surfacing its exit. Show a bounded handshake or failure-aware startup.
 
-- `docs/07-layers/02-tutorial.md:142` — The fake connection is created before provisioning and reused; the example assumes a single run. Show acquisition inside the layer for a reusable resource layer.
+- [fixed] `docs/07-layers/02-tutorial.md:142` — The fake connection is created before provisioning and reused; the example assumes a single run. Show acquisition inside the layer for a reusable resource layer.
 
 - [fixed] `docs/06-services/02-console.md:43` — `Console.readLine` may return null at EOF; `answer.Trim()` assumes interactive input always supplies a line. Show EOF handling in a reusable confirmation example.
 
@@ -82,9 +82,9 @@
 - `docs/08-concurrency-and-state/05-stm.md:36` — `withdraw` and `transferFunds` subtract without checking available funds; the banking example silently permits negative balances, unlike the linked torture test's guarded transfers. Add an insufficient-funds condition or label the operations arithmetic-only.
 - `docs/08-concurrency-and-state/10-torture-tests/16-interop.md:30` — “A cancelled token becomes an interruption” omits the distinction between runtime-requested cancellation and a foreign operation throwing cancellation while the runtime token is live; qualify the claim.
 
-- `docs/07-layers/_index.md:121` — “A record cannot express that” overstates the case: a factory returning `Result<AppEnv, BaseRuntimeError>` can model typed startup failure without a layer. Explain the added value of scoped provisioning and `Layer.provide` instead.
-- `docs/07-layers/_index.md:131` — A host-created `ILoggerFactory` can still be placed in a record after host startup; the example demonstrates adapting a dependency, not an inability to use records.
-- `docs/07-layers/_index.md:54` — “Its lifetime is the runtime's” suggests a longer-lived resource than the later `Layer.provide` boundary, which releases it when the provided flow finishes. Name the provided-flow scope here.
+- [fixed] `docs/07-layers/_index.md:121` — “A record cannot express that” overstates the case: a factory returning `Result<AppEnv, BaseRuntimeError>` can model typed startup failure without a layer. Explain the added value of scoped provisioning and `Layer.provide` instead.
+- [fixed] `docs/07-layers/_index.md:131` — A host-created `ILoggerFactory` can still be placed in a record after host startup; the example demonstrates adapting a dependency, not an inability to use records.
+- [fixed] `docs/07-layers/_index.md:54` — “Its lifetime is the runtime's” suggests a longer-lived resource than the later `Layer.provide` boundary, which releases it when the provided flow finishes. Name the provided-flow scope here.
 
 - [fixed] `docs/06-services/01-platform-services/01-clock.md:103` — The manual-clock example says to advance after a sleeper registers but provides only a comment, not a wait; copying the snippet can race and hang. The later suggestion to implement a mutable clock also omits the already introduced `ManualClock`.
 - [fixed] `docs/06-services/03-filesystem.md:134` — "The `Async` members on `IFileSystem` ... return `Flow`" blurs service methods and workflow wrappers; distinguish the interface's signatures from the `FileSystem.*Async` functions readers call.

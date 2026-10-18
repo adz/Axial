@@ -51,7 +51,7 @@ Direct construction needs no package beyond the services themselves. See [depend
 Use a layer when construction is itself effectful:
 
 - provisioning can fail, and the failure should be a typed startup error rather than an exception
-- a service must be acquired and released, and its lifetime is the runtime's
+- a service must be acquired and released for the duration of the flow `Layer.provide` runs: acquired during provisioning and released when that flow ends, whether it succeeds, fails, or is interrupted
 - independent parts of the environment should be built in parallel
 - a service needs another service in order to be constructed
 
@@ -118,7 +118,11 @@ let servicesFromServiceProvider
     )
 ```
 
-The error channel is `BaseRuntimeError`, not `Never`. Construction can fail with a typed error naming the missing service. A record cannot express that; you would throw, or return an option and push the problem onto every caller. `Layer.provide` surfaces it as a typed startup failure before any workflow runs.
+The error channel is `BaseRuntimeError`, not `Never`. Construction can fail with a typed error naming the missing
+service. A factory returning `Result<'env, BaseRuntimeError>` could model that typed failure in a record, but a layer
+keeps the failure inside the provisioning step: `Layer.provide` runs the workflow only after every step succeeds,
+releases resources acquired by earlier steps when one fails, and lets independent steps build in parallel with
+`merge`. A missing service surfaces as a typed startup failure before any workflow runs.
 
 **A service built from another service.** `Axial.Hosting` turns what the host container has into what workflows
 need:
@@ -128,7 +132,10 @@ let layer (categoryName: string) : Layer<ILoggerFactory, Never, ILog> =
     Layer.envWith (fromFactory categoryName)
 ```
 
-The layer consumes an `ILoggerFactory` and produces an `ILog`. The factory does not exist until the host starts, so there is no record field to put it in.
+The layer consumes the host's `ILoggerFactory` and produces an `ILog` named by the category. The factory arrives only
+after the host starts, so `Layer.envWith (fromFactory categoryName)` adapts it at the `provide` boundary. This
+demonstrates adapting one dependency into another — not a limitation of records, since a record built after startup
+could hold the factory or the resulting logger directly.
 
 An already-built value that cannot fail needs no provisioning. `Layer.succeed` wraps it:
 

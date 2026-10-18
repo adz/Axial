@@ -142,11 +142,13 @@ type FakeConnection() =
             this.Disposed <- true
             ValueTask(Task.CompletedTask)
 
-let connection = new FakeConnection()
+let connections = ResizeArray<FakeConnection>()
 
 let connectionLayer : Layer<unit, string, FakeConnection> =
     Layer.fromFlow (
         flow {
+            let connection = new FakeConnection()
+            connections.Add connection
             do! Flow.scopeAsyncDisposable connection
             return connection
         }
@@ -154,15 +156,21 @@ let connectionLayer : Layer<unit, string, FakeConnection> =
 ```
 
 ```fsharp run
-Flow.envWith (fun (open': FakeConnection) -> open'.Disposed)
-|> Layer.provide connectionLayer
-|> Flow.run ()
-|> shouldEqual (Exit.Success false)
+connections.Clear()
 
-connection.Disposed |> shouldEqual true
+for _ in 1..2 do
+    Flow.envWith (fun (open': FakeConnection) -> open'.Disposed)
+    |> Layer.provide connectionLayer
+    |> Flow.run ()
+    |> shouldEqual (Exit.Success false)
+
+connections.Count |> shouldEqual 2
+List.ofSeq connections |> List.map (fun connection -> connection.Disposed) |> shouldEqual [ true; true ]
 ```
 
-While the workflow ran, the connection was open; once `Layer.provide` finished, it was disposed.
+Acquisition happens inside the layer, so each `Layer.provide` run builds a fresh connection and registers its
+release in the provisioning scope. While each workflow ran, its connection was open; once `Layer.provide` finished,
+that connection was disposed.
 
 `Layer.fromFlow` runs its flow in the provisioning scope, so whatever it registers there (`Flow.scopeAsyncDisposable`
 here, or `Flow.scopeAcquireRelease`) is released when the provided workflow completes, fails, or is interrupted.
