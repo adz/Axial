@@ -497,6 +497,11 @@ let runFinalizers (finalizers: Finalizer[]) (cancellationToken: CancellationToke
     // Most scopes close empty (a race loser, a parallel branch that acquired nothing): skip the state machine.
     if finalizers.Length = 0 then
         completedDeed ()
+#if !FABLE_COMPILER
+    elif finalizers.Length = 1 then
+        try finalizers[0] cancellationToken
+        with error -> Task.FromException(error)
+#endif
     else
         execution {
             let errors = ResizeArray<exn>()

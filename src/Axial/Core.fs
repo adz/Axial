@@ -824,11 +824,15 @@ module internal FiberId =
 /// Scopes aggregate cleanup in reverse registration order, prevent double-disposal, and surface
 /// cleanup failures as defects rather than typed business errors.
 /// </remarks>
-type Scope() =
-    let gate = obj()
+type Scope() as this =
+    // The scope itself is the monitor; a separate gate object adds an allocation to every scope.
+    let gate = this :> obj
     // Keys increase monotonically, so sorting them recovers registration order after removals. Allocated on the
     // first registration: most parallel branch scopes never hold anything.
     let mutable finalizers: System.Collections.Generic.Dictionary<int64, Platform.Finalizer> = null
+    // A single registration needs no dictionary. Keep its key so Unregister can remove it.
+    let mutable firstFinalizer: Platform.Finalizer = Unchecked.defaultof<_>
+    let mutable firstKey = 0L
     let mutable nextKey = 0L
     let mutable closed = false
     let mutable detach: unit -> unit = ignore
@@ -874,26 +878,36 @@ type Scope() =
             if closed then
                 ValueNone
             else
-                if isNull finalizers then
-                    finalizers <- System.Collections.Generic.Dictionary<int64, Platform.Finalizer>()
-
                 let key = nextKey
                 nextKey <- nextKey + 1L
-                finalizers[key] <- finalizer
+                if isNull finalizers then
+                    if isNull (box firstFinalizer) then
+                        firstKey <- key
+                        firstFinalizer <- finalizer
+                    else
+                        finalizers <- System.Collections.Generic.Dictionary<int64, Platform.Finalizer>()
+                        finalizers[firstKey] <- firstFinalizer
+                        firstFinalizer <- Unchecked.defaultof<_>
+                        finalizers[key] <- finalizer
+                else
+                    finalizers[key] <- finalizer
                 ValueSome key)
 
     /// Removes a finalizer without running it. Has no effect once the scope has closed.
     member internal _.Unregister(key: int64) : unit =
         lock gate (fun () ->
-            if not closed && not (isNull finalizers) then
-                finalizers.Remove key |> ignore)
+            if not closed then
+                if isNull finalizers then
+                    if key = firstKey then firstFinalizer <- Unchecked.defaultof<_>
+                else
+                    finalizers.Remove key |> ignore)
 
     member this.AddFinalizer(finalizer: Platform.Finalizer) =
         this.Register finalizer |> ignore
 
     /// The number of finalizers still registered; used by tests to prove that settled work is released.
     member internal _.RegisteredCount =
-        lock gate (fun () -> if isNull finalizers then 0 else finalizers.Count)
+        lock gate (fun () -> if isNull finalizers then (if isNull (box firstFinalizer) then 0 else 1) else finalizers.Count)
 
     member this.AddDisposable(resource: IDisposable) =
         if isNull (box resource) then
@@ -933,7 +947,7 @@ type Scope() =
     member internal _.CloseIfEmpty() : unit =
         let emptied =
             lock gate (fun () ->
-                if not closed && (isNull finalizers || finalizers.Count = 0) then
+                if not closed && (if isNull finalizers then isNull (box firstFinalizer) else finalizers.Count = 0) then
                     closed <- true
                     pendingParent <- Unchecked.defaultof<Scope>
                     true
@@ -954,10 +968,19 @@ type Scope() =
                     pendingParent <- Unchecked.defaultof<Scope>
 
                     if isNull finalizers then
-                        [||]
+                        if isNull (box firstFinalizer) then [||]
+                        else
+                            let only = firstFinalizer
+                            firstFinalizer <- Unchecked.defaultof<_>
+                            [| only |]
                     else
                         let ordered =
-                            finalizers.Keys |> Seq.sort |> Seq.map (fun key -> finalizers[key]) |> Seq.toArray
+                            if finalizers.Count = 1 then
+                                let mutable only = Unchecked.defaultof<Platform.Finalizer>
+                                for entry in finalizers.Values do only <- entry
+                                [| only |]
+                            else
+                                finalizers.Keys |> Seq.sort |> Seq.map (fun key -> finalizers[key]) |> Seq.toArray
 
                         finalizers.Clear()
                         ordered)

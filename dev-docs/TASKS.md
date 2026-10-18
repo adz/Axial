@@ -7,13 +7,6 @@ lists the queue. Work on main.
 
 ## Queue
 
-- [ ] T1b: Recover resource-release cost
-  - T1 made releases flows with their own scope and the acquisition runtime. Per 1000 scope closes with one release,
-    `ScopeCloseBenchmarks` went from 860 us / 1587 KB to about 1223 us / 2048 KB (about 0.37 us and 460 B per
-    release; about 210 B is the release flow itself). Empty close and parallel composition are unchanged.
-  - Recover the rest without weakening the semantics (uninterruptible, acquisition env and runtime, own scope):
-    candidates are a scope created only when the release registers something, avoiding the ambient runtime switch
-    when the release completes synchronously without reading it, and sharing one release runtime per scope close.
 - [ ] T16: `Axial.Elmish` package and `App.start` off the caller's context
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Spec: `dev-docs/current-ideas/axial-elmish.md`. Needs T1.
   - First fix the verified shutdown deadlock in core: `App.start` runs `Async.StartWithContinuations` on the caller's
