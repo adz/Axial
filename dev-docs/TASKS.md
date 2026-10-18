@@ -62,25 +62,21 @@ lists the queue. Work on main.
     which corrupts `--json` output. Add a total-bytes limit per channel, independent of framing, that terminates the
     process tree and fails with a typed `ProcessError` when exceeded.
   - Done when: a test runs a command that overflows the cap and gets the typed failure with no orphaned process.
-- [ ] T9: Monotonic and wall-clock time as separate capabilities
-  - Ships in 0.11 (breaking); record in `dev-docs/releases/0.11.0.md`.
-  - Do not implement yet: the design is under discussion with the user. Skip to the next task.
-  - `IClock` (`src/Axial/Outcome.fs`) mixes `UtcNow` with `Elapsed`/`Sleep`. Split it so the runtime, `Flow.timeout`,
-    schedules, and renewal logic require only the monotonic capability, and wall-clock time is asked for explicitly.
-    Update `Clock.fromTimeProvider`/`toTimeProvider`, the manual test clock, Process/Http live implementations, and
-    guides. Keep the empty-env / hot paths allocation-free; benchmark before and after.
-  - Done when: no timeout or schedule path can observe `UtcNow`, enforced by types.
 - [ ] T10: Fiber-local context carried into logs
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Replaces the `LATER_TODO.md` "fiber-local state" item.
   - Add FiberRef-style fiber-local values (make, get, set, locally), inherited by forked fibers. Have `ILog`
     implementations and `Hosting.observer` attach the current context (correlation ID, unit ID) to each entry.
   - Fork is a hot path: benchmark `ParallelCompositionBenchmarks` before and after; no cost when no fiber-local is set.
   - Done when: a test shows one job ID on every log line of a job, across forked fibers.
-- [ ] T11: Durable file primitives in `Axial.FileSystem`
+- [ ] T11: Durable file writes and a bounded append log
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
-  - Atomic file write (temp file in the same directory, flush to disk, rename, and fsync the directory where the
-    platform supports it) and a bounded append-only log (length-prefixed or checksummed records, torn-tail recovery,
-    size cap with compaction or rotation). Flow-returning members per T3, `FileSystemError` failures.
+  - Not BCL API, so keep it off `IFileSystem` (which mirrors `System.IO`). Add separate modules in the
+    `Axial.FileSystem` package, built only on `IFileSystem` members (`OpenFile` returns a `FileStream` for
+    `Flush(true)`; `MoveFile` with overwrite), so `FileSystem.test` covers them.
+  - Atomic write: temp file in the same directory, flush to disk, rename over the target. Directory fsync after rename
+    is not in the BCL (Unix `open`/`fsync` on the directory); decide whether to add it as an explicit live dependency.
+    Process kills only need the rename; power loss needs the flushes.
+  - Bounded append-only log: checksummed records, torn-tail recovery on open, size cap with rotation or compaction.
   - Done when: a crash test (kill a child process at random points while writing) never yields a lost, duplicated, or
     partially written record.
 - [ ] T12: Wakeable reissue combinator for long polls
