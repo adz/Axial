@@ -129,6 +129,7 @@ type ProcessSpec = internal {
     MergeStdErr: bool
     Framing: OutputFraming
     MaxLineLength: int
+    MaxOutputBytes: int64 option * int64 option
     OverallTimeout: TimeSpan option
     DrainTimeout: TimeSpan option
     Mode: ExecutionMode
@@ -210,6 +211,7 @@ type ProcessPlan = {
     MergeStdErr: bool
     Framing: OutputFraming
     MaxLineLength: int
+    MaxOutputBytes: int64 option * int64 option
     OverallTimeout: TimeSpan option
     DrainTimeout: TimeSpan option
 }
@@ -240,6 +242,8 @@ type ProcessLineFailure = {
     Limit: int
 }
 
+type ProcessOutputFailure = { Stage: int; Channel: OutputChannel; Limit: int64; Command: string }
+
 type ProcessObservationFailure = { Stage: int; Channel: OutputChannel }
 
 /// Expected process errors. Runtime cancellation remains Cause.Interrupt.
@@ -253,6 +257,7 @@ type ProcessError =
     | InputFailed of string
     | OutputFailed of string
     | LineTooLong of ProcessLineFailure
+    | OutputTooLarge of ProcessOutputFailure
     | ObservationUnavailable of ProcessObservationFailure
 
     override this.ToString() =
@@ -281,6 +286,9 @@ type ProcessError =
                 | OutputChannel.StdErr -> "stderr"
 
             $"Stage {failure.Stage} {channel} exceeded {failure.Limit} UTF-16 code units per line."
+        | OutputTooLarge failure ->
+            let channel = if failure.Channel = OutputChannel.StdOut then "stdout" else "stderr"
+            $"Stage {failure.Stage} ({failure.Command}) {channel} exceeded {failure.Limit} bytes."
         | ObservationUnavailable failure ->
             let channel =
                 match failure.Channel with
@@ -415,6 +423,7 @@ type ProcessInput =
         MergeStdErr = false
         Framing = OutputFraming.Chunks
         MaxLineLength = 1048576
+        MaxOutputBytes = None, None
         OverallTimeout = None
         DrainTimeout = None
         Mode = ExecutionMode.Batch
@@ -539,6 +548,13 @@ type ProcessInput with
             specification with
                 MaxLineLength = value
         }
+
+    static member MaxOutputBytes(stdout, stderr, specification: ProcessSpec) =
+        for value in [ stdout; stderr ] do
+            match value with
+            | Some limit when limit < 0L -> invalidArg "value" "Output byte limits must be non-negative."
+            | _ -> ()
+        { specification with MaxOutputBytes = stdout, stderr }
 
     static member Defaults(defaults, specification: ProcessSpec) = {
         specification with

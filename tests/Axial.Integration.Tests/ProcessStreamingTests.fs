@@ -21,6 +21,47 @@ module ProcessStreamingTests =
         | ProcessCompletion.Completed result -> result
         | ProcessCompletion.StoppedEarly -> failwith "Expected full completion"
 
+    let private tooLarge stage channel limit outcome =
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessError.OutputTooLarge error)) ->
+            Assert.Equal(stage, error.Stage)
+            Assert.Equal(channel, error.Channel)
+            Assert.Equal(limit, error.Limit)
+            Assert.NotEmpty(error.Command)
+        | other -> failwithf "Expected OutputTooLarge, got %A" other
+
+    [<Fact>]
+    let ``OutputTooLarge terminates unbounded batch stdout`` () =
+        let started = Diagnostics.Stopwatch.StartNew()
+        shText "yes" |> maxOutputBytes (Some 65536L) None |> Process.tryRun
+        |> tooLarge 0 OutputChannel.StdOut 65536L
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds 10.)
+
+    [<Fact>]
+    let ``OutputTooLarge limits stderr independently in streaming`` () =
+        shText "head -c 100000 /dev/zero >&2"
+        |> maxOutputBytes (Some 1L) (Some 65536L)
+        |> streamStdoutLines
+        |> ProcessStream.runDrain
+        |> Process.tryRun
+        |> tooLarge 0 OutputChannel.StdErr 65536L
+
+    [<Fact>]
+    let ``OutputTooLarge preserves output below cap`` () =
+        let result =
+            shText "printf hello; printf error >&2"
+            |> maxOutputBytes (Some 5L) (Some 5L)
+            |> Process.tryRun |> succeeded
+        Assert.Equal("hello", result.StdOut)
+        Assert.Equal("error", result.StdErr)
+
+    [<Fact>]
+    let ``OutputTooLarge kills a pipeline when stage zero overflows`` () =
+        shText "yes" |> pipeTo (shText "cat >/dev/null; sleep 30")
+        |> maxOutputBytes (Some 65536L) None
+        |> Process.tryRun
+        |> tooLarge 0 OutputChannel.StdOut 65536L
+
     [<Fact>]
     let ``batch and streaming resolve distinct capture defaults`` () =
         let command = shText "head -c 70000 /dev/zero; head -c 70000 /dev/zero >&2"

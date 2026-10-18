@@ -283,6 +283,24 @@ module internal NativeProcess =
                                             ioCancellation.Cancel()
                                             terminate ()
 
+                                    let byteCounts = Array.init commands.Length (fun _ -> Array.zeroCreate<int64> 2)
+                                    let countBytes stage channel count =
+                                        let index = if channel = OutputChannel.StdOut then 0 else 1
+                                        let stdoutLimit, stderrLimit = specification.MaxOutputBytes
+                                        let limit = if index = 0 then stdoutLimit else stderrLimit
+                                        lock byteCounts[stage] (fun () ->
+                                            let current = byteCounts[stage][index]
+                                            match limit with
+                                            | Some maximum when int64 count > maximum - current ->
+                                                // axial-allow-raise
+                                                raise (ProcessFailureException(ProcessError.OutputTooLarge {
+                                                    Stage = stage
+                                                    Channel = channel
+                                                    Limit = maximum
+                                                    Command = Configuration.renderCommand commands[stage]
+                                                })) // axial-allow-raise
+                                            | _ -> byteCounts[stage][index] <- current + int64 count)
+
                                     // A continuation rather than `task { try return! work with error -> ... }`: the
                                     // F# compiler in SDK 10.0.4xx emits invalid IL for that generic shape here
                                     // (InvalidProgramException at run time).
@@ -600,6 +618,8 @@ module internal NativeProcess =
                                                                             token
                                                                         )
 
+                                                                    if count > 0 then countBytes source channel count
+
                                                                     if count = 0 then
                                                                         reading <- false
 
@@ -867,6 +887,8 @@ module internal NativeProcess =
 
                                                     while reading do
                                                         let! count = stream.ReadAsync(buffer, 0, buffer.Length, token)
+
+                                                        if count > 0 then countBytes stage original count
 
                                                         if count = 0 then
                                                             reading <- false

@@ -191,6 +191,9 @@ module DSL =
     let withoutTimeout command = Process.withoutTimeout command
     let inline framing value source = Process.framing value source
     let inline maxLineLength value source = Process.maxLineLength value source
+
+    /// Same as Process.maxOutputBytes.
+    let inline maxOutputBytes stdout stderr source = Process.maxOutputBytes stdout stderr source
     let inline stageDefaults value source = Process.stageDefaults value source
     let inline overallTimeout value source = Process.overallTimeout value source
     let inline drainTimeout value source = Process.drainTimeout value source

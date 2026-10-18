@@ -442,6 +442,10 @@ module Process =
     let inline maxLineLength value source =
         ProcessInput.MaxLineLength(value, toSpecification source)
 
+    /// Fails and terminates the topology when either original output channel exceeds its byte limit.
+    let inline maxOutputBytes stdout stderr source =
+        ProcessInput.MaxOutputBytes(stdout, stderr, toSpecification source)
+
     /// Supplies topology-wide fallbacks, including future stages. Explicit command settings always win.
     let inline stageDefaults defaults source =
         ProcessInput.Defaults(defaults, toSpecification source)
@@ -681,6 +685,7 @@ module Process =
             MergeStdErr = specification.MergeStdErr
             Framing = specification.Framing
             MaxLineLength = specification.MaxLineLength
+            MaxOutputBytes = specification.MaxOutputBytes
             OverallTimeout = specification.OverallTimeout
             DrainTimeout = specification.DrainTimeout
         }

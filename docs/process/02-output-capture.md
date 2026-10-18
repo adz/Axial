@@ -76,6 +76,19 @@ When the exit status is all you need, `captureNothing` drops stdout retention. I
 diagnostic tail; apply `captureStderrNothing` for that too. Full capture holds the whole stream in memory, so a
 tail or `captureNothing` is safer when output can be large.
 
+## Fail instead of truncating
+
+`maxOutputBytes stdout stderr` sets independent total byte caps for each stage's original stdout and stderr.
+Pass `Some limit` for a channel or `None` to leave it unlimited. The cap counts pipe bytes before framing,
+forwarding, or capture, including intermediate stages. Exceeding it kills the process tree and returns
+`ProcessError.OutputTooLarge` with the stage, original channel, limit, and command. Unlike `captureTail`,
+this does not return a truncated success. Inherited handles cannot be counted.
+
+```fsharp run
+let capped = cmd $"printf hello" |> maxOutputBytes (Some 5L) None |> Process.run
+shouldEqual "hello" capped.StdOut
+```
+
 ## Exact bytes and availability
 
 Capture is byte-based, and the text view is derived from those bytes. `CapturedOutput.Bytes` holds the exact
