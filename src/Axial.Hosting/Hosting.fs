@@ -161,7 +161,9 @@ type FlowHostedService<'env, 'error>
 
 /// <summary>Transport for systemd notification datagrams.</summary>
 type ISystemdNotifier =
-    abstract Notify: string -> unit
+    /// <summary>Sends a notification payload to the service manager.</summary>
+    /// <param name="message">The systemd notification payload.</param>
+    abstract Notify: message: string -> unit
 
 /// <summary>Systemd notification transport with an explicitly supplied socket address.</summary>
 [<RequireQualifiedAccess>]
