@@ -17,7 +17,7 @@
 
 - `docs/11-observability/01-telemetry/01-javascript.md:50` — The first tracing snippet assumes `checkout`, `order`, `user`, `AppAttributes`, `tenantId`, and `CheckoutError.describe` already exist; none is defined on this page. Label it schematic or provide a minimal runnable workflow and key.
 
-- `docs/10-streams/02-constructing.md:166` — The crawler uses `Map.find` for every discovered URL and assumes all links exist in the in-memory site; a real crawl needs a typed fetch error or an explicit missing-page policy.
+- [fixed] `docs/10-streams/02-constructing.md:166` — The crawler uses `Map.find` for every discovered URL and assumes all links exist in the in-memory site; a real crawl needs a typed fetch error or an explicit missing-page policy.
 
 - [fixed] `docs/09-scopes/_index.md:33` — `File.OpenText path` assumes the file exists and acquisition succeeds, but the example has no typed filesystem error or explicit filesystem dependency; label it illustrative rather than a production read pattern.
 
@@ -68,9 +68,9 @@
 - `docs/11-observability/_index.md:260` — The literal fiber-dump output is separate from the checked example and uses an unrelated three-fiber tree; readers may mistake it for the output of `withPoller`. Mark it as a hypothetical example or generate a verified transcript.
 - `docs/11-observability/01-telemetry/_index.md:381` — This recommends `Clock.live` for a dump even though the overview's example passes the supplied environment clock. Explain when a live clock is appropriate versus the application's injected clock.
 
-- `docs/10-streams/_index.md:21` — “Upstream cannot outrun” downstream is too absolute for the later producer-fiber and parallel operators; qualify this as bounded backpressure, with `fromCallback` explicitly able to drop values on overflow.
-- `docs/10-streams/04-batching-and-parallelism.md:35` — “Does not begin the next batch until the current result list is consumed” could imply per-item consumption of that list; the terminal pulls the next batch after the previous batch has been emitted, regardless of what the caller does with its elements.
-- `docs/10-streams/08-time-and-latest.md:83` — The checked search example debounces before `switchMapFlow`, so it never demonstrates interruption of an in-flight request; add a separate example with a request already running when the next input arrives.
+- [fixed] `docs/10-streams/_index.md:21` — “Upstream cannot outrun” downstream is too absolute for the later producer-fiber and parallel operators; qualify this as bounded backpressure, with `fromCallback` explicitly able to drop values on overflow.
+- [fixed] `docs/10-streams/04-batching-and-parallelism.md:35` — “Does not begin the next batch until the current result list is consumed” could imply per-item consumption of that list; the terminal pulls the next batch after the previous batch has been emitted, regardless of what the caller does with its elements.
+- [fixed] `docs/10-streams/08-time-and-latest.md:83` — The checked search example debounces before `switchMapFlow`, so it never demonstrates interruption of an in-flight request; add a separate example with a request already running when the next input arrives.
 
 - [fixed] `docs/09-scopes/_index.md:148` — A release defect is said to become a defect “of the flow that closed the scope,” but the page does not show how it combines with an existing failure or appears in `Exit`; clarify the observable outcome here.
 

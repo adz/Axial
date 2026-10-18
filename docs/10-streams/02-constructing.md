@@ -126,6 +126,10 @@ let extractLinks (html: string) : string list =
     html.Split(' ', StringSplitOptions.RemoveEmptyEntries) |> Array.skip 1 |> List.ofArray
 ```
 
+`fetchHtml` looks each URL up with `Map.find url site`, which throws for a URL absent from `site`. The example
+site lists only pages that exist, so every discovered link resolves; a real crawl over an open set needs a typed
+fetch error or an explicit missing-page policy instead of an exception from `Map.find`.
+
 ```fsharp
 let fetchKnownPages (urls: string list) : FlowStream<ClockEnvironment, Never, HtmlPage> =
     urls

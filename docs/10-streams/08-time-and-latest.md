@@ -86,7 +86,8 @@ one starts:
 
 ```fsharp
 let search (query: string) : Flow<ClockEnvironment, Never, string> =
-    Flow.sleep (TimeSpan.FromMilliseconds 5.0) |> Flow.map (fun () -> $"results for {query}")
+    // A slow request so a later keystroke can arrive while this one is still running.
+    Flow.sleep (TimeSpan.FromMilliseconds 100.0) |> Flow.map (fun () -> $"results for {query}")
 
 let shownResults (keystrokes: FlowStream<ClockEnvironment, Never, string>) : Flow<ClockEnvironment, Never, string list> =
     keystrokes
@@ -99,6 +100,22 @@ Typing "a", "ax", "axi" quickly searches only once, for the settled input:
 
 ```fsharp run
 shownResults (FlowStream.fromSeq [ "a"; "ax"; "axi" ]) |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ "results for axi" ])
+```
+
+The debounce means `switchMapFlow` only ever sees the settled input, so it never interrupts anything there. To see
+`switchMapFlow` interrupt an in-flight request, drop the debounce: each keystroke starts a search, and the next
+keystroke arrives while the previous search is still sleeping, so the earlier search is interrupted and its result
+is never emitted:
+
+```fsharp
+let latestResult (keystrokes: FlowStream<ClockEnvironment, Never, string>) : Flow<ClockEnvironment, Never, string list> =
+    keystrokes
+    |> FlowStream.switchMapFlow search
+    |> FlowStream.runCollect
+```
+
+```fsharp run
+latestResult (FlowStream.fromSeq [ "a"; "ax"; "axi" ]) |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ "results for axi" ])
 ```
 
 When upstream ends, the running flow is allowed to finish. The first failure stops the stream.

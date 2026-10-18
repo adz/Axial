@@ -18,8 +18,11 @@ or network adapters.
 val it: Exit<int list,Never> = Success [20; 40; 60]
 ```
 
-The stream is **cold**: constructing it starts nothing. It is **pull-based**: downstream asks for each next value, so
-upstream cannot outrun it. It shares Flow's environment, typed failures, cancellation, scopes, and structured fibers.
+The stream is **cold**: constructing it starts nothing. It is **pull-based**: downstream asks for each next value, and
+operators pull upstream only as far ahead as their buffers allow, so backpressure is bounded. `mapFlowPar` and the
+timed/`switchMapFlow` operators read ahead by a fixed number of values, and `fromCallback` drops values when its
+fixed-size buffer is full rather than blocking the producer. It shares Flow's environment, typed failures,
+cancellation, scopes, and structured fibers.
 
 [Getting started](getting-started.html) builds one complete stream.
 

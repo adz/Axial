@@ -32,7 +32,7 @@ This pipeline:
 - pulls at most two source values for each batch in this example;
 - runs those two mappings concurrently;
 - returns results in input order;
-- does not begin the next batch until the current result list is consumed;
+- does not begin the next batch until the previous batch has been emitted as a single list value; the next pull starts it, regardless of what the caller does with that list's elements;
 - interrupts sibling mappings when one fails.
 
 `Flow.sequencePar` runs every Flow in the supplied list, so `FlowStream.chunkBySize` supplies the bound.
