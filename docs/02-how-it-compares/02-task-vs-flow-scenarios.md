@@ -59,7 +59,9 @@ defects and interruption are never retried, because `Flow.retry` re-runs `Cause.
 tests pin all four behaviors: recovery within the budget, budget exhaustion, no retry of `Malformed`, and the
 timeout interrupting a hung request. ZIO correspondence: `timeoutFail`, typed `Schedule`, `retry`.
 
-- **Made visible by the type**: the transient/terminal error taxonomy and the `IHasHttp` requirement.
+- **Made visible by the type**: the transient/terminal error taxonomy and both required capabilities: `IHasHttp`
+  for the request and `IHasClock` for retry delays and the two-second timeout. The underlying request needs only
+  `IHasHttp`; the composed operation needs an environment implementing both interfaces.
 - **Enforced by the runtime**: only predicate-accepted typed failures are retried; the timeout reaches sleeps and
   the in-flight request through the ambient cancellation token.
 - **Still the application's responsibility**: the operation must be safe to repeat, and the adapter must not hide a

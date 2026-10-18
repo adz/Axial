@@ -103,9 +103,10 @@ A `Task` starts when the method that returns it runs, so the Flow version wraps 
 happens when the Flow runs, and every run makes it again.
 
 Calling `loadCustomer` starts and returns a `Task`; calling
-`loadCustomerFlow` returns a cold workflow description that starts when a Flow runtime runs it. The runtime passes its
-cancellation token through cold Flow and `ColdTask` operations, so timeout, race, and parallel-composition operators
-can interrupt participating work. An already-started `Task`, including the result of calling a `taskResult` function,
+`loadCustomerFlow` returns a cold workflow description that starts when a Flow runtime runs it. The runtime supplies its cancellation token to each `ColdTask` factory. These particular factories discard it
+(`fun _ -> ...`), so timeout or race can interrupt the Flow but cannot cancel a repository task already in flight.
+For in-flight cancellation, make repository methods accept a `CancellationToken` and forward the factory's token:
+`ColdTask(fun token -> repository.Find(customerId, token))`. An already-started `Task`, including the result of calling a `taskResult` function,
 cannot receive that token after it has started; expose cancellation-aware task code as a token-taking factory or
 `ColdTask` when it must participate.
 
@@ -145,7 +146,9 @@ let checkout customerId : Flow<CheckoutEnv, CustomerError, Receipt> =
     }
 ```
 
-Here the environment is part of the workflow type rather than a closure or a parameter repeated through each layer.
+Unlike `loadCustomerFlow`, which captures a repository argument in a closure, `checkout` declares its services in
+`CheckoutEnv` and reads them at execution time with `Flow.envWith`. The example's repository method still ignores
+the `ColdTask` token; forward it to a cancellation-aware method if the lookup must stop when interrupted.
 At the application boundary, `Flow.run` returns an `Exit`; expected errors, defects, and interruption remain distinct
 instead of sharing the task's exception channel.
 

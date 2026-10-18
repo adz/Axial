@@ -33,7 +33,7 @@
 
 - `docs/03-the-flow-type/06-task-async-interop.md:22` — “Flow cannot pass cancellation into” a started task assumes it was created without a token the caller controls; clarify that the Flow cannot supply its own token retroactively, even if the caller has another cancellation source.
 
-- `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:107` — Cancellation propagation is attributed to `ColdTask`, but both shown factories ignore the token (`fun _ -> ...`); the repository calls must accept and use it for interruption to reach in-flight work.
+- [fixed] `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:107` — Cancellation propagation is attributed to `ColdTask`, but both shown factories ignore the token (`fun _ -> ...`); the repository calls must accept and use it for interruption to reach in-flight work.
 
 - [fixed] `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
@@ -103,8 +103,8 @@
 - `docs/03-the-flow-type/08-resources.md:13` — `File.OpenText path` runs inside the Flow but is an ambient filesystem effect and is not interruptible; the resource example does not model the filesystem dependency or failure channel it teaches elsewhere.
 - `docs/03-the-flow-type/08-resources.md:54` — “The flow's own outcome is kept” sounds like finalizer defects cannot change the outcome, but the next sentence says they are added; state how combined causes appear at the boundary.
 
-- `docs/02-how-it-compares/02-task-vs-flow-scenarios.md:62` — The retry scenario says the type requires only `IHasHttp`, although the described backoff and deadline also need a clock; clarify the full environment requirement.
-- `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:143` — Checkout claims dependencies are in the environment rather than closures, but the earlier `loadCustomerFlow` example closes over its repository; distinguish the two approaches.
+- [fixed] `docs/02-how-it-compares/02-task-vs-flow-scenarios.md:62` — The retry scenario says the type requires only `IHasHttp`, although the described backoff and deadline also need a clock; clarify the full environment requirement.
+- [fixed] `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:143` — Checkout claims dependencies are in the environment rather than closures, but the earlier `loadCustomerFlow` example closes over its repository; distinguish the two approaches.
 
 - [fixed] `docs/01-getting-started/03-existing-task-application.md:101` — The claim that adding a `CheckoutError` case makes every boundary mapping incomplete is undermined by the catch-all `Exit.Failure cause` arm; this match remains exhaustive and the compiler need not flag it.
 - [fixed] `docs/01-getting-started/03-existing-task-application.md:103` — The catch-all uses `failwith`, which creates a new exception rather than re-raising the original defect or preserving cancellation; show a cancellation-aware boundary mapping.
@@ -309,3 +309,7 @@
 
 - `docs/process/01-composition.md:10` — Narrow or hide the repeated visible `prepare` imports (`Console`, `FileSystem`, threading, tasks) in command-only examples; assistants copying them may infer optional packages are required. The same fixture recurs in output, streaming, failures, scripts, and worked examples.
 - `docs/process/09-dsl-recipes.md:66` — File-routing recipes create temporary files using ambient `System.IO.File`; label this as docs-test setup rather than an application pattern, since the application guide recommends an explicit filesystem dependency.
+
+## Code issues
+
+- `examples/Axial.Comparisons/RetryBudget.fs:89` — `WithFlow.fetchRate` is annotated `when 'env :> IHasHttp`, but its body pipes through `Flow.retry` and `Flow.timeout`, which both require `IHasClock`; the compiler silently adds that constraint to the emitted signature (the compiled `fetchRate[env]` carries both `IHasHttp` and `IHasClock`). Update the annotation and the `/// Flow<...> where 'env :> IHasHttp.` doc comment at line 84 to name both interfaces, so readers of the linked comparison source do not think only HTTP is required.
