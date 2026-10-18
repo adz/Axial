@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/api/Axial.HubModule.md:3` — “Lossless consumer” assumes a `BackPressure` subscription and a publisher that waits for acceptance; name that strategy so readers do not infer every subscription is lossless.
+
 - `docs/15-notes/03-guardrails.md:175` — The suppression guidance assumes readers can inspect repository-relative `src/Axial.Guardrails` files; published NuGet consumers need a public source link or the exact rules documented here.
 
 - `docs/14-advanced/04-writing-effect-analyzers.md:85` — The packaging walkthrough assumes access to this repository's `src/Axial.Guardrails` files; a NuGet consumer reading published docs cannot follow it without a public source link or standalone template.
@@ -34,6 +36,10 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/api/Axial.QueueModule.md:11` — “One logical consumer” suggests a queue cannot have multiple competing takers, while the next paragraph discusses many consumers. Say each value goes to one taker, not that only one taker may exist.
+- `docs/api/Axial.Scope.md:18` — “That scope moves to the caller's scope when the caller receives the value” has no clear antecedent after listing parallel, race, and timed flows; specify which child scope transfers ownership and when, including failure.
+- `docs/api/Axial.FlowStreamModule.md:12` — Calling `groupedWithin`, `throttle`, `debounce`, and `switchMapFlow` all queue-backed read-ahead operators obscures their different buffering and cancellation behavior. Distinguish operators that prefetch from those that only wait or replace work.
 
 - `docs/15-notes/03-guardrails.md:178` — The `AXG008` heading is followed by blocking-wait exemptions at line 182, which belong to `AXG001`; move them under the blocking category so readers do not mistake them for scope diagnostics.
 - `docs/15-notes/03-guardrails.md:278` — The page says `Fiber.join` returns an already released resource, then says the example “fails only at runtime”; the shown resource is a string, so no runtime failure is demonstrated. Use a disposable resource and checked failure or qualify the claim.
@@ -164,6 +170,9 @@
 
 ## Missing
 
+- `docs/api/Axial.ScheduleModule.md:4` — `Schedule` is described as deciding after each run, but the page never explains what its input/output mean for `retry` versus `repeat`, or whether `recurs n` means n retries or n total runs; add a small counted example.
+- `docs/api/Axial.State.SubscriptionRefModule.md:3` — The page promises every update to each running stream but does not explain what happens when a subscriber's chosen overflow strategy fills; qualify delivery guarantees by strategy and link to its behavior.
+
 - `docs/15-notes/01-packages-and-platforms.md:12` — The platform table omits `Axial.Layers`, `Axial.Guardrails`, and both HTTP host adapters even though the dependency table or adjacent notes name them; include their runtime/build-time status or state why they are excluded.
 - `docs/15-notes/03-guardrails.md:32` — No command or example shows how to confirm that a consumer project actually runs the analyzer and fails at error severity; provide a minimal deliberate diagnostic and expected build result.
 
@@ -215,6 +224,8 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/api/Axial.FlowStreamModule.md:8` — Show one minimal source → operator → terminal → `Flow.run` pipeline in the API introduction; otherwise the first example requires following a guide before an assistant can construct a stream.
 
 - `docs/15-notes/01-packages-and-platforms.md:35` — Link package names to their first-use installation/setup guides; the matrix tells readers what runs where but not which package to install for a given host.
 - `docs/15-notes/03-guardrails.md:154` — Mark the live `IClock` implementation as an illustrative boundary fragment rather than a complete copyable implementation; it omits other interface members and does not show the required imports.
