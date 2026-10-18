@@ -6,15 +6,12 @@ description: Authoring a library that asks callers for a dependency it cannot na
 # Providing Services from a Package
 
 Application code owns both sides of its environment: the workflow names `AppEnv`, and the composition root supplies
-one. A package author has neither. Your library is compiled before its callers exist, so it cannot mention their
-types, and it should not force every consumer into one record shape.
-
-This page is the authoring side of [service contracts](/dependencies/service-contracts.html). Everything Axial's own
-service packages do, you can do.
+one. A package is compiled before its callers exist, so it cannot mention their types or require one record shape.
+This page covers the package side of [service contracts](/dependencies/service-contracts.html).
 
 ## The shape
 
-Three declarations per service, and the third is the only one with any subtlety.
+Declare an interface, a contract, and an accessor for each service.
 
 **The service**: an ordinary interface describing the capability:
 
@@ -54,7 +51,7 @@ type IHasExchangeRates =
     abstract ExchangeRates : IExchangeRates
 ```
 
-**The accessor**: one module-level binding that reads it:
+**The accessor**: a module-level binding that reads it:
 
 ```fsharp
 [<RequireQualifiedAccess>]
@@ -68,7 +65,7 @@ because the lambda's parameter type is not known until the surrounding annotatio
 the body is checked. At module level the annotation sits next to the expression that needs it, so it resolves once
 and every caller binds it with no annotation at all.
 
-Everything the package publishes then builds on the accessor:
+Package operations build on the accessor:
 
 ```fsharp
 let priceInAud<'env, 'error when 'env :> IHasExchangeRates> (usdAmount: decimal) : Flow<'env, 'error, decimal> =
@@ -114,16 +111,15 @@ not need to coordinate names.
 
 ## Typed errors belong in the package
 
-The reason to publish operations rather than just the interface is that you can wrap the failure model once. Compare
-the raw interface call with what `Axial.FileSystem` publishes:
+Publishing operations lets the package wrap the failure model once. Compare the raw interface call with what
+`Axial.FileSystem` publishes:
 
 ```fsharp no-check reason="Two calls side by side for their result types"
 fileSystem.ReadAllText path                 // string, throws
 FileSystem.readAllText path                 // Flow<'env, FileSystemError, string>
 ```
 
-The second is the first plus `Flow.catch`, classifying exceptions into a union the caller can match on. That
-translation is the package's job: the package does it once, and every consumer gets typed failures.
+`FileSystem.readAllText` uses `Flow.catch` to classify exceptions into a union the caller can match on.
 
 ## Also expose the raw service
 

@@ -10,7 +10,7 @@ description: Build and package an analyzer that detects direct access to effects
 
 For example, callers can bypass an HTTP, queue, or database service interface by using the underlying .NET API. A package-specific analyzer can detect that access during the build.
 
-This guide shows how to create and package such an analyzer. Use this approach only after your package defines an explicit service boundary that you want consumers to follow.
+Create an analyzer after your package defines an explicit service boundary for consumers.
 
 ## Copy the reusable components
 
@@ -76,7 +76,7 @@ let httpBoundaryAnalyzer: Analyzer<CliContext> =
     }
 ```
 
-A matching call now produces a diagnostic that identifies both the direct call and the service that should replace it.
+A matching call produces a diagnostic identifying the direct call and the replacement service.
 
 ## Package the analyzer
 
@@ -112,4 +112,4 @@ Start by copying the three source files and packaging configuration into your re
 
 The implementation is a template, not a plug-in API. Keeping the analyzer independent also prevents consumers from acquiring an unrelated Axial dependency.
 
-Consider extracting shared analyzer infrastructure only after several analyzers need the same code and the maintenance cost becomes significant.
+Extract shared analyzer infrastructure if several analyzers need the same code and maintaining separate copies becomes costly.

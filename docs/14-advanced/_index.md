@@ -5,10 +5,8 @@ description: Publishing reusable services and enforcing application effect bound
 
 # Advanced
 
-Topics that most applications never need, and that make the earlier sections harder to read if they sit inline.
-
-None of these are required to use Axial. [Dependencies](/dependencies/index.html) covers the model you will
-actually write day to day; this section is for the places that model runs out, or scales past one application.
+Most applications only need the model in [Dependencies](/dependencies/index.html). These topics cover publishing
+services for other applications and enforcing effect boundaries.
 
 ## In this section
 

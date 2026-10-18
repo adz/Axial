@@ -5,15 +5,13 @@ description: Define your own named service contracts and consume them through IH
 
 # Tutorial: Creating Reusable Services
 
-The built-in services all follow one shape: a narrow interface (`IClock`, `IFileSystem`), an `IHasX` marker the
-environment implements, and a module of helpers constrained by that marker rather than by any particular field
-name. The library gives that shape no special treatment, so this tutorial builds one
-for a service Axial does not ship: a currency conversion rate.
+Built-in services use a narrow interface (`IClock`, `IFileSystem`), an `IHasX` marker the environment implements,
+and helpers constrained by that marker rather than by a field name. This tutorial uses the same shape for a
+currency conversion rate.
 
-Use it when several workflows should depend on the same named contract without being tied to one concrete
-app record field name, for the same reason [built-in services](/services/index.html) are declared as `IHasX` instead
-of read from a fixed field. A dependency used by exactly one workflow usually does not need this; see
-[choosing an approach](/dependencies/choosing-an-approach.html).
+Use a named contract when several workflows need the same dependency without relying on one app record field name.
+[Built-in services](/services/index.html) use `IHasX` for this reason. A dependency used by exactly one workflow
+usually does not need a contract; see [choosing an approach](/dependencies/choosing-an-approach.html).
 
 ## Define the contract
 
@@ -78,7 +76,7 @@ field. It only needs `IHasExchangeRates`, the same generic-constraint pattern `C
 ## Give it a typed failure
 
 `priceInAud` above lets a failed lookup surface as an unhandled `Task` exception, which is a defect, not something
-a caller can react to. Most services worth naming this way are worth failing this way too; compare
+a caller can react to. For typed failures, compare
 [`FileSystemError`](/services/filesystem.html#typed-errors) or `HttpError`:
 
 ```fsharp
@@ -121,8 +119,8 @@ priceInAudOrFail 10m |> Flow.run { Rates = failing; Region = "au" } |> shouldEqu
 
 ## Combine it with the built-in services
 
-A custom service composes into the same environment as `BaseRuntime` exactly the way two built-in services do:
-each gets its own interface member, delegating to wherever the value actually lives. See
+A custom service and `BaseRuntime` can share an environment: each contract gets its own interface member,
+delegating to the stored value. See
 [Tutorial: Composing Built-in Services](/services/existing-services.html) for the `BaseRuntime` half of this:
 
 ```fsharp
@@ -145,14 +143,11 @@ type FixedRates(rate: decimal) =
         member _.GetUsdToAud() = Task.FromResult rate
 ```
 
-Now every workflow that depends on `IExchangeRates` can run against the same deterministic test implementation,
-whether it is running alone or as part of the full `AppEnv` above.
+Workflows that depend on `IExchangeRates` can use this deterministic test implementation alone or as part of the
+full `AppEnv` above.
 
 ## Publish it from a package
 
-Everything on this page lives in the application. When the contract, the helper module, and a `live`
-implementation should ship to callers you will never see (the same relationship `Axial.FileSystem` has to
-`Axial.Core`), see [providing services from a package](reusable-packages.html) for the composable shape that
-requires.
-
-With the contract in place, helpers written for one workflow can be shared across workflows.
+The examples above define the service in the application. To ship the contract, helper module, and a `live`
+implementation to other applications (as `Axial.FileSystem` does for `Axial.Core`), see
+[providing services from a package](reusable-packages.html).
