@@ -8,7 +8,7 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 Axial models operational effects as explicit, mockable dependencies. Direct access to ambient state can bypass those dependencies without changing a function's signature.
 
-For example, `Schedule.jittered` once created its own `System.Random`, and `FiberDump` once read `DateTimeOffset.UtcNow` directly. Both errors compiled because the build did not enforce the effect boundary.
+`Schedule.jittered` once created its own `System.Random`, and `FiberDump` once read `DateTimeOffset.UtcNow` directly. Both compiled because the build did not enforce the effect boundary.
 
 `Axial.Guardrails` is an [FSharp.Analyzers.SDK](https://ionide.github.io/FSharp.Analyzers.SDK/) analyzer package. It checks effect boundaries and related Axial conventions during each build.
 
@@ -20,7 +20,7 @@ Add the package to your project:
 dotnet add package Axial.Guardrails
 ```
 
-The package configures the analyzer automatically. You don't need to edit an MSBuild file or run a separate command.
+The package configures the analyzer without MSBuild edits or a separate command.
 Which rules run depends on the Axial packages the project references; see [Choose guardrails per package](#choose-guardrails-per-package).
 
 Findings are warnings by default. With error severity, the build shows the `AXG` findings and fails with
@@ -136,7 +136,7 @@ The analyzer matches resolved `System.*` symbols, not source text. It does not f
 
 ### Allow an intentional effect boundary
 
-Some code implements the explicit boundary around an effect. Examples include a live service implementation, a process entry point, and the scheduler.
+Live service implementations, process entry points, and the scheduler implement explicit effect boundaries.
 
 To allow one call, add a category-specific directive to the flagged line or the line immediately above it:
 
@@ -292,7 +292,7 @@ let releasedBeforeUse =
     }
 ```
 
-The code compiles and matches ZIO, where a forked fiber shares its parent's `Scope`, so it is easy to write. It fails
+The code compiles and matches ZIO, where a forked fiber shares its parent's `Scope`. In Axial it fails
 only at runtime, usually as `ObjectDisposedException` on first use.
 
 `AXG007` reports a `Flow.fork`, `forkNamed`, `forkGraceful`, `forkDetached`, `forkReplacing`, or `forkReplacingKey` of

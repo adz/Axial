@@ -29,9 +29,7 @@ visibility or unload as dependable application shutdown.
 
 ## Dependencies
 
-Each package lists what it pulls in when you install it. Axial packages depend on each other as shown; NuGet brings
-the transitive ones automatically, so you only reference the packages you use directly. Every package also depends on
-`FSharp.Core`.
+NuGet installs the transitive dependencies shown below; reference only the packages you use directly. Every package also depends on `FSharp.Core`.
 
 `Axial` defines the service contracts, such as `IClock`, but does not depend on `Axial.PlatformService`. That package adds the live clock, logging, randomness, GUID, and environment-variable implementations.
 
@@ -52,6 +50,6 @@ the transitive ones automatically, so you only reference the packages you use di
 | `Axial.Hosting.AspNetCore` (experimental) | `Axial` | `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
 | `Axial.Hosting.GenHttp` | `Axial` | `GenHTTP.Api`, `GenHTTP.Modules.IO`, `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
 
-Installing `Axial.Process` therefore also installs `Axial.Console`, `Axial.FileSystem`, and `Axial.PlatformService`.
+Installing `Axial.Process` also installs `Axial.Console`, `Axial.FileSystem`, and `Axial.PlatformService`.
 Only the two HTTP host adapters, `Axial.Hosting.AspNetCore` (experimental) and `Axial.Hosting.GenHttp`, depend on Reified. The core
 `Axial` package and the operational packages do not.
