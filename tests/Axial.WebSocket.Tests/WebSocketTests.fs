@@ -160,3 +160,79 @@ module WebSocketTests =
         Assert.Equal(1, called)
         Assert.True(sent > 5, sprintf "sent %d" sent)
         Assert.True(received > 5, sprintf "received %d" received)
+
+    let private tlsOptions url ca client =
+        WebSocket.connect url
+        |> WebSocket.tls { ClientCertificate = client; TrustAnchors = Some [ca]; MinimumVersion = TlsVersion.Tls13 }
+
+    let private tlsEnv () = { new IHasWebSocket with member _.WebSocket = WebSocket.live() }
+
+    [<Fact>]
+    let ``local mutual TLS text echo`` () = task {
+        use ca = TlsServer.makeCa ()
+        use serverCert = TlsServer.issue ca "CN=localhost" true
+        use clientCert = TlsServer.issue ca "CN=Axial client" false
+        let! port, server = TlsServer.start serverCert (Some ca)
+        try
+            let options = tlsOptions $"wss://localhost:{port}/ws" ca (Some clientCert)
+            use session =
+                match (WebSocket.openSession options).RunSynchronously(tlsEnv ()) with
+                | Exit.Success value -> value
+                | other -> failwithf "mTLS connect: %A" other
+            Assert.Equal(Exit.Success (), (session |> WebSocket.sendText "hello").RunSynchronously(()))
+            Assert.Equal(Exit.Success (Some(WebSocketMessage.Text "hello")), session.Receive().RunSynchronously(()))
+        finally server.DisposeAsync().AsTask().GetAwaiter().GetResult()
+    }
+
+    [<Fact>]
+    let ``untrusted local TLS server is rejected`` () = task {
+        use ca = TlsServer.makeCa ()
+        use otherCa = TlsServer.makeCa ()
+        use serverCert = TlsServer.issue otherCa "CN=localhost" true
+        let! port, server = TlsServer.start serverCert None
+        try
+            match (WebSocket.openSession (tlsOptions $"wss://localhost:{port}/ws" ca None)).RunSynchronously(tlsEnv ()) with
+            | Exit.Failure(Cause.Fail(WebSocketError.ConnectFailed _)) -> ()
+            | other -> failwithf "expected ConnectFailed: %A" other
+        finally server.DisposeAsync().AsTask().GetAwaiter().GetResult()
+    }
+
+    [<Fact>]
+    let ``local mutual TLS requires client certificate`` () = task {
+        use ca = TlsServer.makeCa ()
+        use serverCert = TlsServer.issue ca "CN=localhost" true
+        let! port, server = TlsServer.start serverCert (Some ca)
+        try
+            match (WebSocket.openSession (tlsOptions $"wss://localhost:{port}/ws" ca None)).RunSynchronously(tlsEnv ()) with
+            // TLS 1.3 can report a post-handshake client-cert rejection as a lost connection.
+            | Exit.Failure(Cause.Fail(WebSocketError.ConnectFailed _ | WebSocketError.ConnectionLost _)) -> ()
+            | other -> failwithf "expected TLS rejection: %A" other
+        finally server.DisposeAsync().AsTask().GetAwaiter().GetResult()
+    }
+
+    [<Fact>]
+    let ``local TLS echo counts wire bytes in both directions`` () = task {
+        use ca = TlsServer.makeCa ()
+        use serverCert = TlsServer.issue ca "CN=localhost" true
+        use clientCert = TlsServer.issue ca "CN=Axial client" false
+        let! port, server = TlsServer.start serverCert (Some ca)
+        try
+            let mutable sent = 0
+            let mutable received = 0
+            let options =
+                tlsOptions $"wss://localhost:{port}/ws" ca (Some clientCert)
+                |> WebSocket.onBytes (fun direction count ->
+                    match direction with
+                    | BytesDirection.Sent -> Interlocked.Add(&sent, count) |> ignore
+                    | BytesDirection.Received -> Interlocked.Add(&received, count) |> ignore)
+            use session =
+                match (WebSocket.openSession options).RunSynchronously(tlsEnv ()) with
+                | Exit.Success value -> value
+                | other -> failwithf "connect: %A" other
+            let payload = "hello"
+            Assert.Equal(Exit.Success (), (session |> WebSocket.sendText payload).RunSynchronously(()))
+            Assert.Equal(Exit.Success (Some(WebSocketMessage.Text payload)), session.Receive().RunSynchronously(()))
+            Assert.True(sent > payload.Length, $"sent {sent}")
+            Assert.True(received > payload.Length, $"received {received}")
+        finally server.DisposeAsync().AsTask().GetAwaiter().GetResult()
+    }
