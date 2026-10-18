@@ -97,9 +97,17 @@ let joinKeptConnection (connection: Resource<ClockEnvironment, string, string>) 
     }
 ```
 
-To acquire several resources in parallel, use `Flow.zipPar` or `Flow.sequencePar`; see
-[Concurrency and scoped resources](/scopes/index.html#concurrency-and-scoped-resources) for what each concurrent
-combinator does with scoped resources.
+Whatever the fiber acquires — a value from `Flow.scopeResource`, a resource registered with
+`Flow.scopeAcquireRelease`, a [hub subscription](./hub.html), or a
+[scoped queue](./queue.html#tying-a-queue-to-a-scope) — is released when the fiber settles, not when the parent scope
+eventually closes. A consumer fiber that ends therefore cannot leave a subscription behind that holds up a publisher.
+Closing the parent scope interrupts fibers that are still running, then releases what they acquired.
+
+`Flow.forkResource` differs: only the acquisition runs in the fiber, and the resource's release is registered with
+the caller's scope. If that scope closes before the acquisition finishes, the fiber is interrupted and a resource
+acquired anyway is released at once. To acquire several resources in parallel, use `Flow.zipPar` or
+`Flow.sequencePar`; see [Concurrency and scoped resources](/scopes/index.html#concurrency-and-scoped-resources) for
+what each concurrent combinator does with scoped resources.
 
 Joining, awaiting, or interrupting a fiber marks its outcome as observed. A fiber whose handle is simply discarded and that later dies with a defect is reported through the runtime's [fiber observer](./supervision.html); use `Flow.forkDetached` when the silence is intentional, and [`Flow.supervise`](./supervision.html) to restart background work that dies with defects.
 
@@ -249,19 +257,6 @@ one document replaces only that document's previous load. A key's entry is remov
 `FiberSlot.interrupt` and `FiberSlot.interruptAll` stop what is running and wait for its cleanup, for example on
 shutdown. `FiberSlot.count` returns how many keyed fibers are running. For a stream of inputs,
 `FlowStream.switchMapFlow` applies the same rule inside the stream.
-
-## What a fiber owns
-
-Each forked fiber runs in its own scope, a child of the scope that forked it. Whatever the fiber acquires, such as a
-resource registered with `Flow.scopeAcquireRelease`, a [hub subscription](./hub.html), or a
-[scoped queue](./queue.html#tying-a-queue-to-a-scope), is released when the fiber settles, not when the parent scope
-eventually closes. A consumer fiber that ends therefore cannot leave a subscription behind that holds up a publisher.
-
-Closing the parent scope interrupts fibers that are still running, then releases what they acquired.
-
-`Flow.forkResource` differs: only the acquisition runs in the fiber, and the resource's release is
-registered with the caller's scope. If that scope closes before the acquisition finishes, the fiber is interrupted and
-a resource acquired anyway is released at once.
 
 ## Stopping a consumer gracefully
 

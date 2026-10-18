@@ -25,3 +25,14 @@ exits. A Flow scope can span functions, subflows, stream pulls, and child fibers
 
 Read the [Scopes guide](/scopes/index.html) for a timeline of root, lexical, child, and nested lifetimes before using the
 low-level members listed below.
+
+## Scope transfer per combinator
+
+| Combinator | What happens to its scoped resources |
+| --- | --- |
+| `Flow.zipPar`, `Flow.sequencePar`, `Flow.traversePar`, `Flow.forEachPar` | Move to the caller's scope when every flow succeeds. Released before it returns when any flow fails. |
+| `Flow.race` | The winner's move to the caller's scope if it succeeds. The loser's are released once it has been interrupted. |
+| `Flow.timeout`, `Flow.timeoutToOk`, `Flow.timeoutWith` | Move to the caller's scope when the flow succeeds in time. Released when it fails or times out. |
+| `Flow.fork` and its variants | Stay with the fiber and are released when it settles. `Fiber.join` gives you the value, not the resources. |
+| `Flow.forkResource` | The resource is acquired in a fiber and its release goes to the caller's scope. |
+| The per-worker resource of `Flow.traverseParUsing` and `Flow.forEachParUsing` | Released when that worker finishes. |

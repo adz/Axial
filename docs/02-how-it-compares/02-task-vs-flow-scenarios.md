@@ -107,7 +107,7 @@ there is no such gap: `Flow.scopeAcquireRelease` owns the resource from the inst
 ZIO correspondence: `Scope` and `ZIO.acquireRelease`; for resources that should live as long as a provided layer,
 Axial has `Flow.scopeAcquireRelease` and `Layer.acquireRelease`. One difference: a forked fiber in Axial owns its own
 scope, like `ZIO.scoped(effect).fork`, so use `Flow.forkResource` where ZIO code would `fork` an `acquireRelease` and
-`join` it later (see [Concurrency and scoped resources](/scopes/index.html#concurrency-and-scoped-resources)).
+`join` it later (see the [Scope reference](/api/Axial.Scope.html#scope-transfer-per-combinator)).
 
 - **Made visible by the type**: acquisition and finalization form one construct with one signature.
 - **Enforced by the runtime**: the finalizer runs on success, typed failure, defect, and interruption, and a

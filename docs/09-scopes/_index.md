@@ -241,14 +241,9 @@ traversal share a scope, each branch of `Flow.race` has one, and so does each fi
   they stay open for your later steps and are released when your scope closes.
 - When you don't receive the value, its scoped resources are released.
 
-| Combinator | What happens to its scoped resources |
-| --- | --- |
-| `Flow.zipPar`, `Flow.sequencePar`, `Flow.traversePar`, `Flow.forEachPar` | Move to the caller's scope when every flow succeeds. Released before it returns when any flow fails. |
-| `Flow.race` | The winner's move to the caller's scope if it succeeds. The loser's are released once it has been interrupted. |
-| `Flow.timeout`, `Flow.timeoutToOk`, `Flow.timeoutWith` | Move to the caller's scope when the flow succeeds in time. Released when it fails or times out. |
-| `Flow.fork` and its variants | Stay with the fiber and are released when it settles. `Fiber.join` gives you the value, not the resources. |
-| `Flow.forkResource` | The resource is acquired in a fiber and its release goes to the caller's scope. |
-| The per-worker resource of `Flow.traverseParUsing` and `Flow.forEachParUsing` | Released when that worker finishes. |
+The per-combinator details — what `zipPar`/`sequencePar`/`traversePar`/`forEachPar`, `race`, `timeout*`, `fork`, and
+`forkResource` each do with their scoped resources — are in the
+[Scope API reference](/api/Axial.Scope.html#scope-transfer-per-combinator).
 
 `Flow.fork` returns a handle instead of a value. The fiber cannot know whether anyone will join it, so it releases
 its scoped resources when it settles. This prevents a finished consumer from holding a hub subscription open and
@@ -361,22 +356,33 @@ reverse registration order.
 
 ## Streams
 
-[FlowStream](/streams/index.html) terminal consumers create child scopes internally. Stream resources and parallel
-mapping fibers close on completion, failure, interruption, or early termination. The
-[consuming streams](/streams/consuming.html) guide explains that boundary from the stream user's perspective.
+[FlowStream](/streams/index.html) terminal consumers create child scopes internally. The lifecycle of that scope is:
 
-## Rules to remember
+1. Building a `FlowStream` opens nothing and creates no scope.
+2. Running the terminal Flow creates the stream's child scope.
+3. Pulling starts the source. Enumerators, adapter handles, and parallel mapping fibers register with that scope.
+4. Operators and their subflows use the same stream scope unless they explicitly call `Flow.scoped`.
+5. The terminal consumer stops pulling after completion, failure, interruption, or an operator such as
+   `FlowStream.take` ending early.
+6. It closes the child scope, runs finalizers in reverse registration order, interrupts and awaits unfinished child
+   fibers, and only then returns its `Exit`.
 
-- Use `use` or `use!` when one lexical body exclusively owns a disposable.
-- Use `Flow.scoped` when ownership spans functions, subflows, fibers, or stream pulls.
-- `scope...` functions attach cleanup to the current scope; they do not clean up immediately.
-- Ordinary `Flow.bind` and `flow { }` nesting share the current scope.
-- In concurrent code, you receive a flow's scoped resources when you receive its value; otherwise they are released.
-- A forked fiber releases its scoped resources when it settles. Use `Flow.forkResource` to acquire in the background
-  and keep the resource, and `Flow.zipPar` or `Flow.sequencePar` to acquire several in parallel.
-- Nested scopes close before their parent.
-- Finalizers run in reverse registration order and at most once.
-- Cleanup failures are defects and combine with the failure that caused closure.
+An enumerator opened by `FlowStream.fromSeq` is disposed before `FlowStream.runCollect` returns. Likewise, when
+`FlowStream.mapFlowPar` has outstanding mappings and downstream stops after `FlowStream.take`, the terminal scope
+interrupts and awaits those mappings before the terminal Flow completes. The
+[consuming streams](/streams/consuming.html) guide explains the practical cleanup guarantee from the stream user's
+perspective.
+
+## Choosing a scope
+
+- One lexical body exclusively owns a disposable → `use` or `use!`.
+- Ownership spans functions, subflows, fibers, or stream pulls → `Flow.scoped`.
+- Acquire in the background and keep the resource → `Flow.forkResource`; several in parallel → `Flow.zipPar` or
+  `Flow.sequencePar`.
+- Everything else stays on the current scope: `scope...` functions attach to it and do not clean up immediately,
+  finalizers run in reverse registration order at most once, and cleanup failures are defects that combine with the
+  failure that caused closure. The [lifetime maps](#lifetime-maps) and
+  [concurrency section](#concurrency-and-scoped-resources) above give the full detail.
 
 Layers use the same model. `Layer.fromFlow` runs a flow in the layer's scope, so what it acquires with
 `Flow.scopeAcquireRelease` stays alive until `Layer.provide` finishes; `Layer.acquireRelease` does the same for a
