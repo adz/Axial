@@ -5,8 +5,7 @@ description: Adopt Flow in one module of a Task-based application without changi
 
 # Add Axial to an existing Task application
 
-You do not have to convert an application to adopt Axial. A `Flow` becomes a `Task` at one boundary, so you can
-convert a single module, keep every caller above it on `Task`, and leave the host untouched.
+Convert one module to `Flow` and turn it back into a `Task` at the boundary. Callers above it can stay on `Task`, and the host need not change.
 
 This page assumes you have read [Get started](index.html) and repeats its `checkout` workflow so the example below
 compiles on its own.
@@ -97,7 +96,7 @@ let sample =
 (handleCheckout sample 7 CancellationToken.None).Result |> shouldEqual "404 order 7 not found"
 ```
 
-Three properties of that match matter:
+The match handles expected errors, defects, and cancellation:
 
 - The compiler lists the `Cause.Fail` cases for you. Adding a case to `CheckoutError` makes every boundary that maps
   it incomplete, so the compiler shows every place that has to handle the new case.
@@ -156,7 +155,7 @@ then configure the analyzer to report errors when the project is clean.
 For installation and configuration, see
 [Installation](installation.html#add-effect-boundary-guardrails-optional).
 
-## Go further
+## Related guides
 
 - [Task and async interop](/the-flow-type/task-async-interop.html) covers the full set of conversions in both
   directions.

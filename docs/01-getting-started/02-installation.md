@@ -64,7 +64,7 @@ To disable the analyzer for one project without removing the package, set
 See [Effect-boundary guardrails](/notes/guardrails.html) for the diagnostic list, configuration options, and
 suppression syntax.
 
-## Go further
+## Related guides
 
 - [Hosting](/platforms-and-hosting/dotnet.html) chooses between standalone .NET, Generic Host, Node, and browser
   entry points.

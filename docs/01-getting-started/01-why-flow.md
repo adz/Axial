@@ -6,8 +6,7 @@ description: Eight things that change when application work returns Flow instead
 # Why Flow?
 
 `Flow<'env, 'error, 'value>` is a type for application work that runs asynchronously, can fail in expected ways, can
-be cancelled, and uses services. Eight things change when that work returns `Flow` instead of `Task`. Each section
-shows the difference in code; the last one is what they add up to.
+be cancelled, and uses services. The examples below show eight differences from `Task`.
 
 The examples share these types:
 
@@ -75,8 +74,7 @@ apart from the expected errors in `OrderError`.
 
 [FsToolkit.ErrorHandling](https://demystifyfp.gitbook.io/fstoolkit-errorhandling/)'s `taskResult { }` removes the
 same nesting, and `flow { }` reads the same way. The result is still `Task` code, though: cancellation tokens,
-failures in parallel work, and cleanup are still handled by hand at every call site. The next three sections cover
-those. The [FsToolkit.ErrorHandling comparison](../how-it-compares/fstoolkit-errorhandling-comparison.html) shows how
+failures in parallel work, and cleanup are still handled by hand at every call site. The [FsToolkit.ErrorHandling comparison](../how-it-compares/fstoolkit-errorhandling-comparison.html) shows how
 to use the two together.
 
 ## 2. Cancellation is handled the same way everywhere
@@ -207,8 +205,7 @@ let fixedServices =
 let placed = stamp |> Flow.run fixedServices
 ```
 
-This is what keeps a workflow pure in the useful sense: everything it depends on arrives through its environment, so
-the same environment gives the same result. With [Axial.Guardrails](../notes/guardrails.html) installed, the build
+All dependencies arrive through the environment, so the same environment gives the same result. With [Axial.Guardrails](../notes/guardrails.html) installed, the build
 also warns when code reads the clock, randomness, or environment variables directly instead of through a service.
 
 ## 5. Resources belong to the flow that acquired them
@@ -302,16 +299,11 @@ The build enforces the conventions the types cannot. [Axial.Guardrails](../notes
 to the clock, randomness, and other ambient effects (`AXG001`), exceptions raised inside `flow { }` (`AXG003`), task
 adapters that drop their cancellation token (`AXG005`), and formatting that breaks under NativeAOT (`AXG006`).
 
-For an LLM coding assistant or someone new to the codebase, the signature names the available services and expected
-errors, leaving less to guess. The mistakes it
-tends to make are harder to make or show up in the build: forked work is owned by its scope even if nobody awaits it,
-there is no token to forget to pass, and reading `DateTime.Now` or dropping a token in a task adapter produces a
-build warning. Review can then focus on the business logic.
+The signature names the available services and expected errors. Forked work belongs to its scope even if nobody awaits it. There is no token to forget to pass. Reading `DateTime.Now` or dropping a token in a task adapter produces a build warning.
 
 ## When to use something else
 
-Validation and other pure transformations need none of this: write them as ordinary functions returning `Result`.
-Return `Flow` from application
+Write validation and other pure transformations as ordinary functions returning `Result`. Return `Flow` from application
 operations: the ones that call services, can be cancelled, need a timeout or retry, own a resource, or start
 background work. A `Task`-based service can be called from a flow directly, so you can adopt Axial one module at a time; see
 [Add Axial to an existing Task application](existing-task-application.html).

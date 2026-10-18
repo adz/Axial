@@ -59,9 +59,7 @@ Here, `unit` means no capabilities and `Never` means no expected failure. A capa
 allowed to use: usually a service dependency, but sometimes configuration or request context. Only `string` carries
 information here, so the alias keeps the first signature uncluttered.
 
-You do not need to carry those two empty slots around until the workflow needs them. The next example does.
-
-## A useful Flow: quote a price
+## Quote a price
 
 Suppose the application already has an exchange-rate service. The service is ordinary application code: its live
 implementation might call an API, use a cache, or dispatch to another service. Axial does not construct it and does
@@ -87,7 +85,7 @@ let quoteAud (usd: decimal) : Flow<QuoteApp, QuoteError, decimal> =
     }
 ```
 
-The type reads as a contract: `quoteAud` needs `QuoteApp`, can fail with `QuoteError`, and otherwise returns a decimal.
+`quoteAud` needs `QuoteApp`, can fail with `QuoteError`, and otherwise returns a decimal.
 The caller does not pass a cancellation token; `ColdTask` receives the one owned by the Flow runtime and gives it to
 the service.
 

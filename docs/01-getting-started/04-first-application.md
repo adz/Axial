@@ -34,10 +34,7 @@ Use `App.start` when a signal handler, desktop window, UI component, or external
 The [Application Lifecycle](/platforms-and-hosting/application-lifecycle.html) guide covers start and stop ownership. Hosting
 guides show the .NET, Node, and browser boundaries.
 
-You now have the complete introductory path: describe work, compose it, distinguish outcomes, provide dependencies,
-and run one root workflow.
-
-## Go further
+## Related guides
 
 - [Application Lifecycle](/platforms-and-hosting/application-lifecycle.html) covers `App.start`, coordinated stop, and lifecycle ownership.
 - [Scopes and Resources](/scopes/index.html) explains finalizers and
