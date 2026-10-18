@@ -31,6 +31,7 @@ projects=(
   "src/Axial.FileSystem/Axial.FileSystem.fsproj"
   "src/Axial.Files/Axial.Files.fsproj"
   "src/Axial.HttpClient/Axial.HttpClient.fsproj"
+  "src/Axial.WebSocket/Axial.WebSocket.fsproj"
   "src/Axial.Process/Axial.Process.fsproj"
   "src/Axial.PlatformService/Axial.PlatformService.fsproj"
   "src/Axial.Hosting/Axial.Hosting.fsproj"

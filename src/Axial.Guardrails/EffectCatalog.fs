@@ -178,6 +178,8 @@ let builtInRules: EffectRule list =
           "starts an OS process directly, bypassing the explicit process service"
           "Axial.Process's IProcess service"
 
+      rule "websocket.new-client" "Axial.WebSocket" "websocket" (ConstructorOf "System.Net.WebSockets.ClientWebSocket")
+          "constructs a WebSocket outside the mockable service boundary" "Axial.WebSocket IWebSocket service"
       rule "http.new-client" "Axial.HttpClient" "http" (ConstructorOf "System.Net.Http.HttpClient")
           "constructs HttpClient directly, which exhausts sockets when repeated and cannot be replaced in tests"
           "Axial.HttpClient's IHttp service (Http.live with one shared HttpClient)" ]

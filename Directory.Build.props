@@ -52,5 +52,6 @@
     <AxialGuardrail Include="Axial.FileSystem" />
     <AxialGuardrail Include="Axial.Process" />
     <AxialGuardrail Include="Axial.HttpClient" />
+    <AxialGuardrail Include="Axial.WebSocket" />
   </ItemGroup>
 </Project>

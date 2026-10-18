@@ -29,6 +29,7 @@
     <Project Path="src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj" />
     <Project Path="src/Axial.Hosting/Axial.Hosting.fsproj" />
     <Project Path="src/Axial.HttpClient/Axial.HttpClient.fsproj" />
+    <Project Path="src/Axial.WebSocket/Axial.WebSocket.fsproj" />
     <Project Path="src/Axial.Layers/Axial.Layers.fsproj" />
     <Project Path="src/Axial.PlatformService/Axial.PlatformService.fsproj" />
     <Project Path="src/Axial.Process/Axial.Process.fsproj" />
@@ -44,6 +45,7 @@
     <Project Path="tests/Axial.Files.Tests/Axial.Files.Tests.fsproj" />
     <Project Path="tests/Axial.Hosting.Tests/Axial.Hosting.Tests.fsproj" />
     <Project Path="tests/Axial.HttpClient.Tests/Axial.HttpClient.Tests.fsproj" />
+    <Project Path="tests/Axial.WebSocket.Tests/Axial.WebSocket.Tests.fsproj" />
     <Project Path="tests/Axial.Integration.Tests/Axial.Integration.Tests.fsproj" />
     <Project Path="tests/Axial.PlatformService.Tests/Axial.PlatformService.Tests.fsproj" />
     <Project Path="tests/Axial.Telemetry.Tests/Axial.Telemetry.Tests.fsproj" />
