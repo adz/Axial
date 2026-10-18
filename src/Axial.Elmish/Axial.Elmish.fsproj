@@ -23,7 +23,9 @@
     <ProjectReference Include="..\Axial\Axial.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Runtime.fs" />
+    <Compile Include="Diagnostics.fs" />
     <Compile Include="Cmd.fs" />
     <Compile Include="Sub.fs" />
     <Compile Include="Inbox.fs" />

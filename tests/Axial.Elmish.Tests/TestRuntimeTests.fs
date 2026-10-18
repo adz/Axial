@@ -1,6 +1,7 @@
 namespace Axial.Elmish.Tests
 
 open System
+open System.Threading.Tasks
 open Axial
 open Axial.Elmish
 open Xunit
@@ -16,3 +17,12 @@ module TestRuntimeTests =
         TestRuntime.run (Cmd.OfFlow.perform "broken" test.Runtime (Flow.die (Exception("boom"))) id) test
         Assert.True(TestRuntime.settle (TimeSpan.FromSeconds 5.0) test)
         Assert.Single(TestRuntime.defects test) |> ignore
+
+    [<Fact>]
+    let ``stop drains jobs not yet started`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        use test = ElmishRuntime.test (ClockEnvironment(clock))
+        for i in 1 .. 1000 do
+            TestRuntime.run (Cmd.OfFlow.perform "queued" test.Runtime (Flow.succeed i) id) test
+        Assert.True(test.Runtime.StopAndWait(TimeSpan.FromSeconds 5.0))
+        Assert.True(Task.Run(fun () -> TestRuntime.settle (TimeSpan.FromSeconds 5.0) test).Result)

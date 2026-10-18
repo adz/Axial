@@ -158,6 +158,53 @@ module CommandTests =
         Assert.Empty(messages)
 
     [<Fact>]
+    let ``release defect during stop is reported despite interruption`` () =
+        let defects = ConcurrentQueue<CommandDefect>()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        use owner = runtime (fun callback -> callback ()) defects.Enqueue
+        let work = flow {
+            do! Flow.scopeFinalizer (Flow.die (Exception("release failed")))
+            do! Flow.fromTask (fun token ->
+                started.TrySetResult() |> ignore
+                Task.Delay(30000, token).ContinueWith(Func<Task, unit>(fun completed -> completed.GetAwaiter().GetResult())))
+            return 1
+        }
+        for start in Cmd.OfFlow.perform "release" owner work id do start ignore
+        Assert.True(started.Task.Wait(5000))
+        Assert.True(owner.StopAndWait(TimeSpan.FromSeconds 5.0))
+        Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
+        Assert.Contains("release failed", defects.ToArray().[0].Rendered)
+
+    [<Fact>]
+    let ``host callback failures are reported and do not stop later commands`` () =
+        let defects = ConcurrentQueue<CommandDefect>()
+        let messages = ConcurrentQueue<int>()
+        use owner = runtime (fun callback -> callback ()) defects.Enqueue
+        for start in Cmd.OfFlow.perform "mapper" owner (Flow.succeed 1) (fun _ -> failwith "mapper exploded") do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
+        Assert.Contains("mapper exploded", defects.ToArray().[0].Rendered)
+        for start in Cmd.OfFlow.perform "next" owner (Flow.succeed 2) id do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1), 5000))
+
+    [<Fact>]
+    let ``throwing diagnostic sink does not break subsequent commands`` () =
+        let messages = ConcurrentQueue<int>()
+        use owner = runtime (fun callback -> callback ()) (fun _ -> failwith "sink exploded")
+        for start in Cmd.OfFlow.perform "bad" owner (Flow.die (Exception("bad"))) id do start messages.Enqueue
+        for start in Cmd.OfFlow.perform "good" owner (Flow.succeed 2) id do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1), 5000))
+        Assert.Equal(2, messages.ToArray().[0])
+
+    [<Fact>]
+    let ``completed latest keys are removed`` () =
+        let messages = ConcurrentQueue<int>()
+        use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        for i in 1 .. 1000 do
+            for start in Cmd.OfFlow.Latest.perform (string i) owner (Flow.succeed i) id do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1000), 30000))
+        Assert.Equal(0, owner.LatestCount)
+
+    [<Fact>]
     let ``concurrent commands each pass through Post once`` () =
         let messages = ConcurrentQueue<int>()
         let mutable postCount = 0

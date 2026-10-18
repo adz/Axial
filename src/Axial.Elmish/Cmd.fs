@@ -7,11 +7,6 @@ open global.Elmish
 [<RequireQualifiedAccess>]
 module Cmd =
     module OfFlow =
-        let private render (value: 'error) =
-            match box value with
-            | null -> "null"
-            | instance -> instance.ToString()
-
         let private run name (latest: string option) (runtime: ElmishRuntime<'env>) (workflow: Flow<'env, 'error, 'value>) onSuccess onError : Cmd<'msg> =
             [ fun dispatch ->
                 let version = latest |> Option.map runtime.Begin
@@ -19,9 +14,20 @@ module Cmd =
                     match latest, version with
                     | Some key, Some v -> runtime.IsCurrent(key, v)
                     | _ -> true
-                let deliver message =
-                    if current () then
-                        runtime.Options.Post(fun () -> if current () then dispatch message)
+                let deliver mapper value =
+                    try
+                        let message = mapper value
+                        runtime.Options.Post(fun () ->
+                            try
+                                match latest, version with
+                                | Some key, Some v -> runtime.DeliverIfCurrent(key, v, fun () -> dispatch message)
+                                | _ -> dispatch message
+                            with error -> Diagnostics.exceptionFrom name runtime.Options error)
+                    with error ->
+                        Diagnostics.exceptionFrom name runtime.Options error
+                        match latest, version with
+                        | Some key, Some v -> runtime.Complete(key, v)
+                        | _ -> ()
                 let job : Flow<'env, Never, unit> =
                     flow {
                         if current () then
@@ -30,20 +36,19 @@ module Cmd =
                             | Some key, Some v -> runtime.SetCurrent(key, v, fiber.Metadata.Id)
                             | _ -> ()
                             let! outcome = Fiber.await fiber
-                            if current () then
+                            let wasCurrent = current ()
+                            if wasCurrent then
                                 match outcome with
-                                | Exit.Success value -> deliver (onSuccess value)
-                                | Exit.Failure(Cause.Fail error) -> deliver (onError error)
-                                | Exit.Failure cause when Cause.isInterrupted cause -> ()
+                                | Exit.Success value -> deliver onSuccess value
+                                | Exit.Failure(Cause.Fail error) -> deliver onError error
                                 | Exit.Failure cause ->
-                                    let error =
-                                        match cause with
-                                        | Cause.Die ex -> Some ex
-                                        | _ -> None
-                                    runtime.Options.OnDefect
-                                        { Name = name
-                                          Error = error
-                                          Rendered = Cause.prettyPrint render cause }
+                                    if not (List.isEmpty (Cause.defects cause)) then
+                                        Diagnostics.cause name runtime.Options cause
+                                    elif not (Cause.isInterrupted cause) then
+                                        Diagnostics.cause name runtime.Options cause
+                                    match latest, version with
+                                    | Some key, Some v -> runtime.Complete(key, v)
+                                    | _ -> ()
                     }
                 runtime.Enqueue job |> ignore ]
 

@@ -17,7 +17,12 @@ module Sub =
                 let ready = new TaskCompletionSource<FiberId option>(TaskCreationOptions.RunContinuationsAsynchronously)
                 let finished = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
                 let deliver message =
-                    runtime.Options.Post(fun () -> if Volatile.Read(&stopped) = 0 then dispatch message)
+                    try
+                        runtime.Options.Post(fun () ->
+                            try
+                                if Volatile.Read(&stopped) = 0 then dispatch message
+                            with error -> Diagnostics.exceptionFrom name runtime.Options error)
+                    with error -> Diagnostics.exceptionFrom name runtime.Options error
                 let job : Flow<'env, Never, unit> =
                     flow {
                         // axial-allow-discarded-cancellation
@@ -35,13 +40,12 @@ module Sub =
                         if Volatile.Read(&stopped) = 0 then
                             match outcome with
                             | Exit.Success () -> ()
-                            | Exit.Failure(Cause.Fail error) -> deliver (onError error)
-                            | Exit.Failure cause when Cause.isInterrupted cause -> ()
+                            | Exit.Failure(Cause.Fail error) ->
+                                try deliver (onError error)
+                                with error -> Diagnostics.exceptionFrom name runtime.Options error
                             | Exit.Failure cause ->
-                                runtime.Options.OnDefect
-                                    { Name = name
-                                      Error = match cause with Cause.Die ex -> Some ex | _ -> None
-                                      Rendered = Cause.prettyPrint (fun error -> match box error with null -> "null" | value -> value.ToString()) cause }
+                                if not (List.isEmpty (Cause.defects cause)) || not (Cause.isInterrupted cause) then
+                                    Diagnostics.cause name runtime.Options cause
                         finished.TrySetResult() |> ignore
                     }
                 if not (runtime.Enqueue job) then
@@ -57,6 +61,6 @@ module Sub =
                                     match started.Result with // axial-allow-effect: blocking (continuation of a completed task)
                                     | Some fiberId -> runtime.Registry.Interrupt fiberId |> ignore
                                     | None -> ()),
-                                TaskContinuationOptions.ExecuteSynchronously
+                                TaskScheduler.Default
                             )
                             |> ignore } ]
