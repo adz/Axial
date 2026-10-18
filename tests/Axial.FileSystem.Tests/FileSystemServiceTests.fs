@@ -284,3 +284,24 @@ module FileSystemServiceTests =
 
             test <@ length = 1234L @>
             test <@ match missing with Exit.Failure(Cause.Fail(FileSystemError.FileNotFound _)) -> true | _ -> false @>)
+
+    [<Fact>]
+    let ``async service members run through flows`` () =
+        withTempRoot (fun root ->
+            for fileSystem in [ FileSystem.live; FileSystem.test () :> IFileSystem ] do
+                let run computation = computation |> Flow.runSync () |> requireSuccess
+                let text = Path.Combine(root, "text.txt")
+                let lines = Path.Combine(root, "lines.txt")
+                let bytes = Path.Combine(root, "bytes.bin")
+                fileSystem.WriteAllTextAsync(text, "one") |> run
+                fileSystem.AppendAllTextAsync(text, " two") |> run
+                let actual = fileSystem.ReadAllTextAsync(text) |> run
+                test <@ actual = "one two" @>
+                fileSystem.WriteAllLinesAsync(lines, [ "first"; "second" ]) |> run
+                let actual = fileSystem.ReadAllLinesAsync(lines) |> run
+                test <@ actual = [| "first"; "second" |] @>
+                fileSystem.WriteAllBytesAsync(bytes, [| 1uy; 2uy |]) |> run
+                let actual = fileSystem.ReadAllBytesAsync(bytes) |> run
+                test <@ actual = [| 1uy; 2uy |] @>
+                let missing = fileSystem.ReadAllTextAsync(Path.Combine(root, "missing.txt")) |> Flow.runSync ()
+                test <@ match missing with Exit.Failure(Cause.Fail(FileSystemError.FileNotFound _)) -> true | _ -> false @>)

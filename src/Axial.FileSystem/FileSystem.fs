@@ -63,7 +63,7 @@ type IFileSystem =
     abstract ReadAllText : path: string * encoding: Encoding -> string
 
     /// <summary>Asynchronously opens a text file, reads all text, and then closes the file.</summary>
-    abstract ReadAllTextAsync : path: string * cancellationToken: CancellationToken -> Task<string>
+    abstract ReadAllTextAsync : path: string -> Flow<unit, FileSystemError, string>
 
     /// <summary>Opens a text file, reads all lines, and then closes the file.</summary>
     abstract ReadAllLines : path: string -> string array
@@ -72,13 +72,13 @@ type IFileSystem =
     abstract ReadAllLines : path: string * encoding: Encoding -> string array
 
     /// <summary>Asynchronously opens a text file, reads all lines, and then closes the file.</summary>
-    abstract ReadAllLinesAsync : path: string * cancellationToken: CancellationToken -> Task<string array>
+    abstract ReadAllLinesAsync : path: string -> Flow<unit, FileSystemError, string array>
 
     /// <summary>Opens a binary file, reads all bytes, and then closes the file.</summary>
     abstract ReadAllBytes : path: string -> byte array
 
     /// <summary>Asynchronously opens a binary file, reads all bytes, and then closes the file.</summary>
-    abstract ReadAllBytesAsync : path: string * cancellationToken: CancellationToken -> Task<byte array>
+    abstract ReadAllBytesAsync : path: string -> Flow<unit, FileSystemError, byte array>
 
     /// <summary>Creates or overwrites a text file, writes all text, and then closes the file.</summary>
     abstract WriteAllText : path: string * contents: string -> unit
@@ -87,7 +87,7 @@ type IFileSystem =
     abstract WriteAllText : path: string * contents: string * encoding: Encoding -> unit
 
     /// <summary>Asynchronously creates or overwrites a text file, writes all text, and then closes the file.</summary>
-    abstract WriteAllTextAsync : path: string * contents: string * cancellationToken: CancellationToken -> Task
+    abstract WriteAllTextAsync : path: string * contents: string -> Flow<unit, FileSystemError, unit>
 
     /// <summary>Creates or overwrites a text file, writes all lines, and then closes the file.</summary>
     abstract WriteAllLines : path: string * contents: seq<string> -> unit
@@ -96,13 +96,13 @@ type IFileSystem =
     abstract WriteAllLines : path: string * contents: seq<string> * encoding: Encoding -> unit
 
     /// <summary>Asynchronously creates or overwrites a text file, writes all lines, and then closes the file.</summary>
-    abstract WriteAllLinesAsync : path: string * contents: seq<string> * cancellationToken: CancellationToken -> Task
+    abstract WriteAllLinesAsync : path: string * contents: seq<string> -> Flow<unit, FileSystemError, unit>
 
     /// <summary>Creates or overwrites a binary file, writes all bytes, and then closes the file.</summary>
     abstract WriteAllBytes : path: string * contents: byte array -> unit
 
     /// <summary>Asynchronously creates or overwrites a binary file, writes all bytes, and then closes the file.</summary>
-    abstract WriteAllBytesAsync : path: string * contents: byte array * cancellationToken: CancellationToken -> Task
+    abstract WriteAllBytesAsync : path: string * contents: byte array -> Flow<unit, FileSystemError, unit>
 
     /// <summary>Appends text to a file, creating the file if needed.</summary>
     abstract AppendAllText : path: string * contents: string -> unit
@@ -111,7 +111,7 @@ type IFileSystem =
     abstract AppendAllText : path: string * contents: string * encoding: Encoding -> unit
 
     /// <summary>Asynchronously appends text to a file, creating the file if needed.</summary>
-    abstract AppendAllTextAsync : path: string * contents: string * cancellationToken: CancellationToken -> Task
+    abstract AppendAllTextAsync : path: string * contents: string -> Flow<unit, FileSystemError, unit>
 
     /// <summary>Appends lines to a file, creating the file if needed.</summary>
     abstract AppendAllLines : path: string * contents: seq<string> -> unit
@@ -458,29 +458,36 @@ type TestFileSystem(?initial: seq<string * string>) =
     interface IFileSystem with
         member _.ReadAllText(path) = requireFile path |> Encoding.UTF8.GetString
         member _.ReadAllText(path, encoding) = requireFile path |> encoding.GetString
-        member _.ReadAllTextAsync(path, cancellationToken) = task { return requireFile path |> Encoding.UTF8.GetString }
+        member _.ReadAllTextAsync(path) =
+            Flow.attemptBlocking (fun _ -> requireFile path |> Encoding.UTF8.GetString ) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.ReadAllLines(path) = requireFile path |> Encoding.UTF8.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None)
         member _.ReadAllLines(path, encoding) = requireFile path |> encoding.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None)
-        member _.ReadAllLinesAsync(path, cancellationToken) = task { return requireFile path |> Encoding.UTF8.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None) }
+        member _.ReadAllLinesAsync(path) =
+            Flow.attemptBlocking (fun _ -> requireFile path |> Encoding.UTF8.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None) ) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.ReadAllBytes(path) = requireFile path
-        member _.ReadAllBytesAsync(path, cancellationToken) = task { return requireFile path }
+        member _.ReadAllBytesAsync(path) =
+            Flow.attemptBlocking (fun _ -> requireFile path ) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.WriteAllText(path, contents) = write path (Encoding.UTF8.GetBytes contents)
         member _.WriteAllText(path, contents, encoding) = write path (encoding.GetBytes contents)
-        member _.WriteAllTextAsync(path, contents, cancellationToken) = task { write path (Encoding.UTF8.GetBytes contents) }
+        member _.WriteAllTextAsync(path, contents) =
+            Flow.attemptBlocking (fun _ -> write path (Encoding.UTF8.GetBytes contents) ) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.WriteAllLines(path, contents) = write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes)
         member _.WriteAllLines(path, contents, encoding) = write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> encoding.GetBytes)
-        member _.WriteAllLinesAsync(path, contents, cancellationToken) = task { write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes) }
+        member _.WriteAllLinesAsync(path, contents) =
+            Flow.attemptBlocking (fun _ -> write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes) ) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.WriteAllBytes(path, contents) = write path contents
-        member _.WriteAllBytesAsync(path, contents, cancellationToken) = task { write path contents }
+        member _.WriteAllBytesAsync(path, contents) =
+            Flow.attemptBlocking (fun _ -> write path contents ) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.AppendAllText(path, contents) =
             let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
             write path (Array.append existing (Encoding.UTF8.GetBytes contents))
         member _.AppendAllText(path, contents, encoding) =
             let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
             write path (Array.append existing (encoding.GetBytes contents))
-        member _.AppendAllTextAsync(path, contents, cancellationToken) = task {
-            let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
-            write path (Array.append existing (Encoding.UTF8.GetBytes contents)) }
+        member _.AppendAllTextAsync(path, contents) =
+            Flow.attemptBlocking (fun _ ->
+                let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
+                write path (Array.append existing (Encoding.UTF8.GetBytes contents))) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.AppendAllLines(path, contents) =
             let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
             let text = contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine
@@ -641,42 +648,14 @@ module FileSystem =
         }
         |> protect path
 
-    let private withServiceAsync
-        (path: string option)
-        (operation: IFileSystem -> CancellationToken -> Task<'value>)
+    let private withServiceFlow
+        (operation: IFileSystem -> Flow<unit, FileSystemError, 'value>)
         : Flow<'env, FileSystemError, 'value>
         when 'env :> IHasFileSystem =
         flow {
             let! fileSystem = service
-#if FABLE_COMPILER
-            let! cancellationToken = Flow.cancellationToken
-            return! operation fileSystem cancellationToken |> Async.AwaitTask
-#else
-            return! ColdTask(fun cancellationToken -> operation fileSystem cancellationToken)
-#endif
+            return! operation fileSystem |> Flow.localEnv (fun _ -> ())
         }
-        |> protect path
-
-    let private withServiceTask
-        (path: string option)
-        (operation: IFileSystem -> CancellationToken -> Task)
-        : Flow<'env, FileSystemError, unit>
-        when 'env :> IHasFileSystem =
-        flow {
-            let! fileSystem = service
-#if FABLE_COMPILER
-            let! cancellationToken = Flow.cancellationToken
-            do! operation fileSystem cancellationToken |> Async.AwaitTask
-#else
-            do!
-                ColdTask(fun cancellationToken ->
-                    task {
-                        do! operation fileSystem cancellationToken
-                        return ()
-                    })
-#endif
-        }
-        |> protect path
 
     /// <summary>Reads all text through an explicit file-system service.</summary>
     let readAllText<'env when 'env :> IHasFileSystem>
@@ -695,7 +674,7 @@ module FileSystem =
     let readAllTextAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string> =
-        withServiceAsync (Some path) (fun fileSystem cancellationToken -> fileSystem.ReadAllTextAsync(path, cancellationToken))
+        withServiceFlow (fun fileSystem -> fileSystem.ReadAllTextAsync(path))
 
     /// <summary>Reads all lines through an explicit file-system service.</summary>
     let readAllLines<'env when 'env :> IHasFileSystem>
@@ -714,7 +693,7 @@ module FileSystem =
     let readAllLinesAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, string array> =
-        withServiceAsync (Some path) (fun fileSystem cancellationToken -> fileSystem.ReadAllLinesAsync(path, cancellationToken))
+        withServiceFlow (fun fileSystem -> fileSystem.ReadAllLinesAsync(path))
 
     /// <summary>Reads all bytes through an explicit file-system service.</summary>
     let readAllBytes<'env when 'env :> IHasFileSystem>
@@ -726,7 +705,7 @@ module FileSystem =
     let readAllBytesAsync<'env when 'env :> IHasFileSystem>
         (path: string)
         : Flow<'env, FileSystemError, byte array> =
-        withServiceAsync (Some path) (fun fileSystem cancellationToken -> fileSystem.ReadAllBytesAsync(path, cancellationToken))
+        withServiceFlow (fun fileSystem -> fileSystem.ReadAllBytesAsync(path))
 
     /// <summary>Writes all text through an explicit file-system service.</summary>
     let writeAllText<'env when 'env :> IHasFileSystem>
@@ -748,7 +727,7 @@ module FileSystem =
         (path: string)
         (contents: string)
         : Flow<'env, FileSystemError, unit> =
-        withServiceTask (Some path) (fun fileSystem cancellationToken -> fileSystem.WriteAllTextAsync(path, contents, cancellationToken))
+        withServiceFlow (fun fileSystem -> fileSystem.WriteAllTextAsync(path, contents))
 
     /// <summary>Writes all lines through an explicit file-system service.</summary>
     let writeAllLines<'env when 'env :> IHasFileSystem>
@@ -770,7 +749,7 @@ module FileSystem =
         (path: string)
         (contents: seq<string>)
         : Flow<'env, FileSystemError, unit> =
-        withServiceTask (Some path) (fun fileSystem cancellationToken -> fileSystem.WriteAllLinesAsync(path, contents, cancellationToken))
+        withServiceFlow (fun fileSystem -> fileSystem.WriteAllLinesAsync(path, contents))
 
     /// <summary>Writes all bytes through an explicit file-system service.</summary>
     let writeAllBytes<'env when 'env :> IHasFileSystem>
@@ -784,7 +763,7 @@ module FileSystem =
         (path: string)
         (contents: byte array)
         : Flow<'env, FileSystemError, unit> =
-        withServiceTask (Some path) (fun fileSystem cancellationToken -> fileSystem.WriteAllBytesAsync(path, contents, cancellationToken))
+        withServiceFlow (fun fileSystem -> fileSystem.WriteAllBytesAsync(path, contents))
 
     /// <summary>Appends all text through an explicit file-system service.</summary>
     let appendAllText<'env when 'env :> IHasFileSystem>
@@ -806,7 +785,7 @@ module FileSystem =
         (path: string)
         (contents: string)
         : Flow<'env, FileSystemError, unit> =
-        withServiceTask (Some path) (fun fileSystem cancellationToken -> fileSystem.AppendAllTextAsync(path, contents, cancellationToken))
+        withServiceFlow (fun fileSystem -> fileSystem.AppendAllTextAsync(path, contents))
 
     /// <summary>Appends all lines through an explicit file-system service.</summary>
     let appendAllLines<'env when 'env :> IHasFileSystem>
@@ -1283,23 +1262,49 @@ module FileSystem =
         { new IFileSystem with
             member _.ReadAllText(path) = File.ReadAllText(path)
             member _.ReadAllText(path, encoding) = File.ReadAllText(path, encoding)
-            member _.ReadAllTextAsync(path, cancellationToken) = File.ReadAllTextAsync(path, cancellationToken)
+            member _.ReadAllTextAsync(path) =
+                Flow.attemptTask (fun cancellationToken -> File.ReadAllTextAsync(path, cancellationToken))
+                |> Flow.mapError (FileSystemError.fromException (Some path))
             member _.ReadAllLines(path) = File.ReadAllLines(path)
             member _.ReadAllLines(path, encoding) = File.ReadAllLines(path, encoding)
-            member _.ReadAllLinesAsync(path, cancellationToken) = File.ReadAllLinesAsync(path, cancellationToken)
+            member _.ReadAllLinesAsync(path) =
+                Flow.attemptTask (fun cancellationToken -> File.ReadAllLinesAsync(path, cancellationToken))
+                |> Flow.mapError (FileSystemError.fromException (Some path))
             member _.ReadAllBytes(path) = File.ReadAllBytes(path)
-            member _.ReadAllBytesAsync(path, cancellationToken) = File.ReadAllBytesAsync(path, cancellationToken)
+            member _.ReadAllBytesAsync(path) =
+                Flow.attemptTask (fun cancellationToken -> File.ReadAllBytesAsync(path, cancellationToken))
+                |> Flow.mapError (FileSystemError.fromException (Some path))
             member _.WriteAllText(path, contents) = File.WriteAllText(path, contents)
             member _.WriteAllText(path, contents, encoding) = File.WriteAllText(path, contents, encoding)
-            member _.WriteAllTextAsync(path, contents, cancellationToken) = File.WriteAllTextAsync(path, contents, cancellationToken)
+            member _.WriteAllTextAsync(path, contents) =
+                Flow.attemptTask (fun cancellationToken -> File.WriteAllTextAsync(path, contents, cancellationToken) |> fun operation -> task {
+                    do! operation
+                    return ()
+                })
+                |> Flow.mapError (FileSystemError.fromException (Some path))
             member _.WriteAllLines(path, contents) = File.WriteAllLines(path, contents)
             member _.WriteAllLines(path, contents, encoding) = File.WriteAllLines(path, contents, encoding)
-            member _.WriteAllLinesAsync(path, contents, cancellationToken) = File.WriteAllLinesAsync(path, contents, cancellationToken)
+            member _.WriteAllLinesAsync(path, contents) =
+                Flow.attemptTask (fun cancellationToken -> File.WriteAllLinesAsync(path, contents, cancellationToken) |> fun operation -> task {
+                    do! operation
+                    return ()
+                })
+                |> Flow.mapError (FileSystemError.fromException (Some path))
             member _.WriteAllBytes(path, contents) = File.WriteAllBytes(path, contents)
-            member _.WriteAllBytesAsync(path, contents, cancellationToken) = File.WriteAllBytesAsync(path, contents, cancellationToken)
+            member _.WriteAllBytesAsync(path, contents) =
+                Flow.attemptTask (fun cancellationToken -> File.WriteAllBytesAsync(path, contents, cancellationToken) |> fun operation -> task {
+                    do! operation
+                    return ()
+                })
+                |> Flow.mapError (FileSystemError.fromException (Some path))
             member _.AppendAllText(path, contents) = File.AppendAllText(path, contents)
             member _.AppendAllText(path, contents, encoding) = File.AppendAllText(path, contents, encoding)
-            member _.AppendAllTextAsync(path, contents, cancellationToken) = File.AppendAllTextAsync(path, contents, cancellationToken)
+            member _.AppendAllTextAsync(path, contents) =
+                Flow.attemptTask (fun cancellationToken -> File.AppendAllTextAsync(path, contents, cancellationToken) |> fun operation -> task {
+                    do! operation
+                    return ()
+                })
+                |> Flow.mapError (FileSystemError.fromException (Some path))
             member _.AppendAllLines(path, contents) = File.AppendAllLines(path, contents)
             member _.AppendAllLines(path, contents, encoding) = File.AppendAllLines(path, contents, encoding)
             member _.FileExists(path) = File.Exists(path)
