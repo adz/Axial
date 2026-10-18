@@ -41,11 +41,14 @@ let confirm question : Flow<#IHasConsole, Never, bool> =
     flow {
         do! Console.write $"{question} [y/N] "
         let! answer = Console.readLine
-        return answer.Trim().ToLowerInvariant() = "y"
+        return
+            match answer with
+            | null -> false
+            | value -> value.Trim().ToLowerInvariant() = "y"
     }
 ```
 
-The environment constraint requires callers of `confirm` to supply a console; the workflow cannot access the terminal without one.
+`Console.readLine` returns `null` at end of input, so `confirm` treats EOF the same as a blank line: a non-affirmative answer, and it never calls `Trim` on a null value. The environment constraint requires callers of `confirm` to supply a console; the workflow cannot access the terminal without one.
 
 ## Supplying the service
 
@@ -199,6 +202,9 @@ answeredYes.Written |> shouldEqual "Continue? [y/N] "
 
 let answeredBlank = RecordingConsole "\n"
 confirm "Continue?" |> Flow.run { Console = answeredBlank } |> shouldEqual (Exit.Success false)
+
+let answeredEof = RecordingConsole ""
+confirm "Continue?" |> Flow.run { Console = answeredEof } |> shouldEqual (Exit.Success false)
 
 let terminal = RecordingConsole ""
 withHiddenCursor (Console.writeLine "working") |> Flow.run { Console = terminal } |> shouldEqual (Exit.Success())

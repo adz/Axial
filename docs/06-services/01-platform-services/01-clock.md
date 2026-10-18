@@ -107,8 +107,11 @@ let clock = ManualClock(DateTimeOffset.Parse "2026-01-01T00:00:00Z")
 let env = ClockEnvironment(clock :> IClock)
 let sleeping : Flow<ClockEnvironment, Never, unit> = Flow.sleep (TimeSpan.FromSeconds 5.0)
 let pending = sleeping |> Flow.toAsync env |> Async.StartAsTask
-// Wait until clock.Sleepers reports one waiting operation.
+// The workflow registers its sleep asynchronously, so wait for it before advancing.
+while clock.Sleepers = 0 do
+    System.Threading.Thread.SpinWait 20
 clock.AdvanceBy(TimeSpan.FromSeconds 5.0)
+pending.Wait()
 ```
 
 `ManualClock` is currently available on .NET. `Clock.live` supports .NET and Fable. A fixed clock is enough for a time-read assertion:
@@ -138,9 +141,8 @@ expiresWithin (TimeSpan.FromHours 1.0) (DateTimeOffset(2026, 1, 1, 15, 0, 0, Tim
 |> shouldEqual (Exit.Success false)
 ```
 
-A fixed clock does not advance. When a test
-needs time to move, supply an `IClock` closing over a mutable field and step it explicitly, so the test controls
-how time moves instead of depending on wall-clock timing.
+A fixed clock does not advance. When a test needs time to move, use `ManualClock` and advance it explicitly, so the
+test controls how time moves instead of depending on wall-clock timing.
 
 `IClock` reports the time; it does not schedule. Delays, timeouts, and retry policies are Flow runtime
 concerns; see [scheduling and retries](/scheduling-and-retries/index.html).

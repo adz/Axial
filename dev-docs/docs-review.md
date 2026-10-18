@@ -27,7 +27,7 @@
 
 - `docs/07-layers/02-tutorial.md:142` — The fake connection is created before provisioning and reused; the example assumes a single run. Show acquisition inside the layer for a reusable resource layer.
 
-- `docs/06-services/02-console.md:43` — `Console.readLine` may return null at EOF; `answer.Trim()` assumes interactive input always supplies a line. Show EOF handling in a reusable confirmation example.
+- [fixed] `docs/06-services/02-console.md:43` — `Console.readLine` may return null at EOF; `answer.Trim()` assumes interactive input always supplies a line. Show EOF handling in a reusable confirmation example.
 
 - [fixed] `docs/05-dependencies/04-providing-the-environment.md:52` — `SqlUserStore(connectionString)` is invoked without a definition or indication that it is pseudocode; a newcomer may treat the production record as copyable.
 
@@ -86,9 +86,9 @@
 - `docs/07-layers/_index.md:131` — A host-created `ILoggerFactory` can still be placed in a record after host startup; the example demonstrates adapting a dependency, not an inability to use records.
 - `docs/07-layers/_index.md:54` — “Its lifetime is the runtime's” suggests a longer-lived resource than the later `Layer.provide` boundary, which releases it when the provided flow finishes. Name the provided-flow scope here.
 
-- `docs/06-services/01-platform-services/01-clock.md:103` — The manual-clock example says to advance after a sleeper registers but provides only a comment, not a wait; copying the snippet can race and hang. The later suggestion to implement a mutable clock also omits the already introduced `ManualClock`.
-- `docs/06-services/03-filesystem.md:134` — “The `Async` members on `IFileSystem` ... return `Flow`” blurs service methods and workflow wrappers; distinguish the interface's signatures from the `FileSystem.*Async` functions readers call.
-- `docs/06-services/04-files.md:5` — “A process crash cannot expose a partially written destination” needs a qualification for failures during rename or when the destination did not previously exist; specify the actual atomicity guarantee and supported filesystems.
+- [fixed] `docs/06-services/01-platform-services/01-clock.md:103` — The manual-clock example says to advance after a sleeper registers but provides only a comment, not a wait; copying the snippet can race and hang. The later suggestion to implement a mutable clock also omits the already introduced `ManualClock`.
+- [fixed] `docs/06-services/03-filesystem.md:134` — "The `Async` members on `IFileSystem` ... return `Flow`" blurs service methods and workflow wrappers; distinguish the interface's signatures from the `FileSystem.*Async` functions readers call.
+- [fixed] `docs/06-services/04-files.md:5` — "A process crash cannot expose a partially written destination" needs a qualification for failures during rename or when the destination did not previously exist; specify the actual atomicity guarantee and supported filesystems.
 
 - [fixed] `docs/05-dependencies/04-providing-the-environment.md:83` — The section says to use the container to build an environment and leave it behind, but its only direct example runs `Flow<IServiceProvider, _, _>`; show the conversion into an application record at the edge.
 - [fixed] `docs/05-dependencies/05-tutorials/01-explicit-dependencies.md:52` — `TimedOut` and `Cancelled` are declared as typed errors although the tutorial never produces either; cancellation should remain an interruption unless the workflow owns its cancellation source.

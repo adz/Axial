@@ -2,7 +2,15 @@
 
 `Axial.Files` composes `IFileSystem` operations into lazy streams. `Files.walk descend root` lists descendants breadth-first; `descend` receives each directory path and decides whether to list its children. `Files.lines path` reads text in batches of 2048 lines, detects UTF-8 and UTF-16 BOMs, and returns an empty stream for files with NUL bytes in the first 8192 bytes (unless they have a UTF-16 BOM). Stopping a line stream early closes its reader. Both operations work with `FileSystem.test`.
 
-`Files.writeAtomic path bytes` writes to a sibling temporary file, flushes it to disk, then renames it over the destination. `Files.writeAllTextAtomic path text` uses UTF-8; `Files.writeAllTextAtomicWithEncoding path text encoding` selects an encoding. Failures return `FileSystemError` and attempt to remove the temporary file. A process crash cannot expose a partially written destination. Power-loss durability on some filesystems also requires fsync of the parent directory after rename, which this API does not perform.
+`Files.writeAtomic path bytes` writes the full contents to a sibling temporary file in the same directory, flushes it
+to disk, then renames it over the destination with `MoveFile(overwrite = true)`. Because the temporary file lives in
+the same directory as the destination, the rename stays on one filesystem and is atomic: readers see either the
+previous contents — or no file, when the destination did not exist yet — or the complete new contents, never a
+partially written destination. A crash before the rename leaves the destination untouched and may leave a
+`.name.*.tmp` sibling, which `cleanupStaleTemps` removes. `Files.writeAllTextAtomic path text` uses UTF-8;
+`Files.writeAllTextAtomicWithEncoding path text encoding` selects an encoding. Failures return `FileSystemError` and
+attempt to remove the temporary file. Power-loss durability on some filesystems also requires fsync of the parent
+directory after rename, which this API does not perform.
 
 ## AppendLog
 

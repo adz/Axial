@@ -131,7 +131,14 @@ length |> shouldEqual (int64 ("one" + Environment.NewLine + "two" + Environment.
 The same family includes `readAllTextWithEncoding`, `readAllTextAsync`, `readAllBytes`, `writeAllBytes`, and other
 encoding-explicit and asynchronous forms.
 
-The `Async` members on `IFileSystem` (including `ReadAllTextAsync`, `ReadAllBytesAsync`, and `WriteAllTextAsync`) return `Flow<unit, FileSystemError, _>` without a token argument. The runtime passes its cancellation token to the underlying I/O, so interrupting a workflow stops a large read in progress. Prefer them for anything that is not small.
+The `Async` members on `IFileSystem` (including `ReadAllTextAsync`, `ReadAllBytesAsync`, and
+`WriteAllTextAsync`) have signatures such as
+`ReadAllTextAsync : path: string -> Flow<unit, FileSystemError, string>` — no token argument, and an environment
+type of `unit`. The `FileSystem` module functions you call from a workflow (`FileSystem.readAllTextAsync`,
+`FileSystem.readAllBytesAsync`, `FileSystem.writeAllTextAsync`, and the rest) wrap those members, so they return
+`Flow<'env, FileSystemError, _>` with `when 'env :> IHasFileSystem`. The runtime passes its cancellation token to the
+underlying I/O, so interrupting a workflow stops a large read in progress. Prefer them for anything that is not
+small.
 
 `fileExists`, `exists`, `deleteFile`, `copyFile`, and `moveFile` cover the other common operations.
 `getFileLength` returns a file's size in bytes, and file metadata has getters and setters for attributes and the creation, last-access, and last-write times in both local and
