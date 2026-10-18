@@ -34,139 +34,12 @@ Axial publishes spans through .NET's `System.Diagnostics` tracing model:
 
 The host decides at the edge whether anything listens and where spans go; workflows do not carry a tracing dependency.
 
-## What produces spans, and when
+## Setup and recipes
 
-Tracing is **explicit at workflow granularity**. Axial does not span every `flow { }` or operator; a span
-exists where you put one:
-
-```fsharp prepare
-// Setup for the checked examples on this page.
-open System
-open System.IO
-open System.Threading
-open System.Threading.Tasks
-open Axial
-open Axial.Layers
-open Axial.Console
-open Axial.FileSystem
-open Axial.Hosting
-open Axial.Hosting.Browser
-open Axial.Hosting.Node
-open Axial.PlatformService
-open Axial.State
-open Axial.Telemetry
-open Axial.Telemetry.JavaScript
-
-/// Fails the docs test when an example's result differs from the value shown.
-let shouldEqual expected actual =
-    if actual <> expected then failwithf "Expected %A but got %A" expected actual
-```
-
-```fsharp
-open System.Diagnostics
-open Axial.Telemetry
-
-let applicationActivitySource = new ActivitySource("Orders.Application")
-
-let placeOrder (order: int) : Flow<unit, string, int> =
-    flow { return order (* validate, charge, persist *) }
-    |> Activity.traceOn applicationActivitySource "orders.place"
-```
-
-Any `ActivityListener` sees the span; the OpenTelemetry SDK is one. This one records the names of finished spans:
-
-```fsharp run
-open System.Diagnostics
-
-let finished = ResizeArray<string>()
-
-let listener =
-    new ActivityListener(
-        ShouldListenTo = (fun source -> source.Name = "Orders.Application"),
-        Sample = SampleActivity<ActivityContext>(fun _ -> ActivitySamplingResult.AllData),
-        ActivityStopped = (fun activity -> finished.Add activity.DisplayName))
-
-ActivitySource.AddActivityListener listener
-placeOrder 7 |> Flow.run () |> shouldEqual (Exit.Success 7)
-List.ofSeq finished |> shouldEqual [ "orders.place" ]
-listener.Dispose()
-```
-
-`Activity.traceOn` stamps the span with the ambient typed attributes attached through `Axial.Telemetry.Context`, the
-fiber id, every runtime annotation, and, when the workflow settles (so the duration covers asynchronous work), the
-exit outcome and error or defect attributes. The [Telemetry guide](/observability/telemetry/index.html) starts with a
-complete Aspire setup and shows semantic and application-defined attributes.
-
-What you get without per-callsite work:
-
-- **Fiber observability**: one edge install of `FiberTelemetry.observe` records a span for every fiber
-  defect and every provably unobserved defect anywhere below it; `FiberTelemetry.observeWithSpans` upgrades
-  every forked fiber to a real span covering fork to settle.
-- **Host and client spans**: ASP.NET Core, `HttpClient`, and database instrumentation span their own
-  boundaries. Axial spans nest inside them via `Activity.Current`, so in a web application every request is
-  already a trace; `Activity.traceOn` (or an `ActivityTracer` installed ambiently) adds the meaningful
-  interior structure.
-
-## Plugging in OpenTelemetry
-
-The OpenTelemetry SDK listens to Axial's `ActivitySource` instances; no additional adapter is needed. Use an application-owned source for spans around user workflows, and subscribe to `"Axial"` separately
-for automatic runtime and fiber spans.
-
-In an ASP.NET Core or Generic Host application:
-
-```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
-// dotnet add package OpenTelemetry.Extensions.Hosting
-// dotnet add package OpenTelemetry.Exporter.OpenTelemetryProtocol
-// dotnet add package OpenTelemetry.Instrumentation.AspNetCore
-
-let applicationActivitySource = new System.Diagnostics.ActivitySource("MyApp")
-
-builder.Services
-    .AddOpenTelemetry()
-    .ConfigureResource(fun resource -> resource.AddService("my-app") |> ignore)
-    .WithTracing(fun tracing ->
-        tracing
-            .AddSource(applicationActivitySource.Name, "Axial")
-            .AddAspNetCoreInstrumentation()   // incoming request spans
-            .AddOtlpExporter()                // collector, Jaeger, Tempo, Honeycomb, ...
-        |> ignore)
-|> ignore
-```
-
-In a console application or script, build the provider directly and keep it alive for the process lifetime:
-
-```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
-open System.Diagnostics
-open OpenTelemetry
-open OpenTelemetry.Resources
-open OpenTelemetry.Trace
-
-use applicationActivitySource = new ActivitySource("MyScript")
-
-use tracerProvider =
-    Sdk.CreateTracerProviderBuilder()
-        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("my-script"))
-        .AddSource(applicationActivitySource.Name, "Axial")
-        .AddOtlpExporter()   // or .AddConsoleExporter() to print spans locally
-        .Build()
-```
-
-Install the edge observers on your application workflow, with or without an exporter:
-
-```fsharp no-check reason="Needs Axial.Hosting for Microsoft.Extensions.Logging as well as Axial.Telemetry; this page checks against Axial.Telemetry"
-let observeApplication (logger: Microsoft.Extensions.Logging.ILogger) (application: Flow<unit, string, int>) =
-    application
-    |> Flow.withFiberObserver
-        (FiberObserver.compose FiberTelemetry.observerWithSpans (FiberLogging.observer logger))
-```
-
-Sampling is the host's knob: the SDK samples everything by default, and something like
-`.SetSampler(TraceIdRatioBasedSampler 0.1)` scales that back in production. When the sampler declines,
-Axial's `StartActivity` returns `null` and the span site costs almost nothing.
-
-For a quick local look without infrastructure, use `.AddConsoleExporter()`. For a complete runnable setup, the
-[Axial.ReferenceApp](https://github.com/adz/Axial/tree/main/examples/Axial.ReferenceApp) starts an Aspire dashboard and
-OTLP receiver and provides an endpoint that generates every Axial observability signal.
+The [Telemetry guide](/observability/telemetry/index.html) covers the runnable setup that this overview only maps:
+span tag vocabulary and `Activity.traceOn`, OpenTelemetry wiring in ASP.NET Core and console hosts, the Aspire
+dashboard walkthrough, and fiber metrics and dumps. The [JavaScript guide](/observability/telemetry/javascript.html)
+covers the Fable bootstrap and cross-stack `traceparent` propagation.
 
 ## Correlation: how the signals join up
 
@@ -191,159 +64,25 @@ Unlike tracing, logging uses an explicit `ILog` environment service so applicati
 - [`Axial.Hosting`](/platforms-and-hosting/dotnet.html) bridges `ILog` to
   `Microsoft.Extensions.Logging`, exceptions included, so entries flow into the host's providers.
 - `FiberLogging.observe logger` is the logging counterpart of `FiberTelemetry.observe`: fiber defects are
-  logged as errors, unobserved defects as critical entries. Compose both from one edge install as shown
-  above.
+  logged as errors, unobserved defects as critical entries. Compose both from one edge install.
 
 OpenTelemetry can also export MEL logs (`builder.Logging.AddOpenTelemetry(...)`), which pairs naturally with
 the bridge: `ILog` → MEL → OTLP.
 
 ## Metrics
 
-The .NET counterpart of `ActivitySource` is `System.Diagnostics.Metrics.Meter`, and Axial owns one, named
-`"Axial"`. `FiberMetrics.observe` (in `Axial.Telemetry`) installs a fiber observer that records
-runtime health onto it:
-
-| Instrument | Kind | Meaning |
-| --- | --- | --- |
-| `axial.flow.fibers.started` | counter | fibers forked |
-| `axial.flow.fibers.live` | up-down counter | fibers currently running |
-| `axial.flow.fibers.settled` | counter, tagged `axial.flow.fiber.status` | settles split by `Succeeded`/`Failed`/`Interrupted` |
-| `axial.flow.fiber.duration` | histogram (seconds), tagged with status | fork-to-settle lifetime |
-| `axial.flow.fibers.unobserved_defects` | counter | defects the runtime proved no code could observe |
-
-```fsharp
-let observed (application: Flow<unit, string, int>) =
-    application
-    |> FiberMetrics.observe        // fiber runtime metrics
-    |> FiberTelemetry.observe      // fiber defect spans; installs compose
-```
-
-```fsharp run
-observed (placeOrder 3) |> Flow.run () |> shouldEqual (Exit.Success 3)
-```
-
-Subscribe with `.AddMeter("Axial")` in `.WithMetrics(...)` and the instruments land in any OTLP
-backend. A climbing `fibers.live` with flat `fibers.settled` is a fiber leak; a nonzero
-`unobserved_defects` rate is crashing background work nobody joins. Plain `Task.Run` code cannot report either
-without hand-rolled bookkeeping.
-
-Host instrumentation (`.AddAspNetCoreInstrumentation()`, `.AddHttpClientInstrumentation()`,
-`.AddRuntimeInstrumentation()`) still covers request rates and process health; the public `FiberObserver`
-hooks remain available for app-specific counters on your own meter.
+`FiberMetrics.observe` (in `Axial.Telemetry`) records fiber starts, live counts, settlement, duration, and unobserved
+defects onto the `Axial` `Meter`. Subscribe with `.AddMeter("Axial")`: a climbing `fibers.live` with flat
+`fibers.settled` is a fiber leak, and a nonzero `unobserved_defects` rate is crashing background work nobody joins.
+The instrument-by-instrument table is in the [FiberMetrics reference](/api/Axial.Telemetry.FiberMetrics.html).
 
 ## Fiber dumps
 
-A `FiberRegistry` (core `Axial`, no telemetry dependency) tracks every live fiber below one edge
-install and answers "what is my runtime doing right now?" with a structured snapshot or a rendered tree:
-
-```fsharp
-let registry = FiberRegistry()
-
-let withPoller : Flow<ClockEnvironment, string, string> =
-    flow {
-        let! clock = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)
-        let! poller = Flow.sleep (TimeSpan.FromMinutes 1.0) |> Flow.forkNamed "outbox-poller"
-        // later, from a diagnostics endpoint, a SIGQUIT-style handler, or a stuck-shutdown log:
-        let dump = registry.DumpAt(clock)
-        let! _ = Fiber.interrupt poller
-        return dump
-    }
-    |> Flow.withFiberRegistry registry // composes with observers installed elsewhere
-```
-
-```fsharp run
-match withPoller |> Flow.run (ClockEnvironment Clock.live) with
-| Exit.Success dump -> dump.Contains "\"outbox-poller\"" |> shouldEqual true
-| other -> failwithf "unexpected %A" other
-```
-
-The following rendering is illustrative — it comes from a program with a supervisor fiber, a named poller
-carrying a `tenant=acme` annotation, and an unnamed child, not from the one-fiber `withPoller` above:
-
-```text
-Fiber dump @ 2026-07-16T10:00:12.5000000+00:00 — 3 live fiber(s)
-#1 "outbox-supervisor" Running 3605.2s (started 2026-07-16T09:00:07.2000000+00:00)
-├─ #2 "outbox-poller" Running 12.5s (started 2026-07-16T10:00:00.0000000+00:00) [tenant=acme]
-└─ #3 Running 0.4s (started 2026-07-16T10:00:12.1000000+00:00)
-```
-
-Name fibers at the fork site with `Flow.forkNamed "outbox-poller" work`. The name carries into dumps,
-fiber spans, and metrics-adjacent tags, so long-lived background fibers are recognizable instead of bare
-ids. Each dump entry also carries the runtime annotations that were in scope at the fork site and, for
-settled fibers, the settle timestamp. `registry.Snapshot()` returns the same data as structured
-`FiberDump` values for programmatic checks; `Fiber.dump fiber` snapshots a single handle.
-
-The registry also remembers what already finished, which is what a diagnostics screen or a hang report needs:
-
-- `registry.Settled()` returns the most recently settled fibers, oldest first. Each carries its final metadata
-  (status, start and settle times, `Duration`) and, for a failed fiber, its cause rendered as text, for typed errors
-  as well as defects.
-- `registry.Stats()` returns totals per fiber name since the registry was installed: how many ran, failed, and were
-  interrupted, with total and longest duration. Unnamed fibers are counted under `(unnamed)`.
-- `registry.UnobservedDefects()` returns defects that nobody joined or awaited.
-- `registry.StartedCount` counts every fiber started.
-
-History is bounded: `FiberRegistry()` keeps the last 200 settled fibers and unobserved defects, and
-`FiberRegistry(capacity)` sets another bound. Totals are kept for every name. Install the registry with
-`Flow.withFiberRegistry` to get typed failure text; an observer composed by hand sees defects only.
-
-A dump that shows a stuck fiber can also act on it: `registry.Interrupt id` signals one live fiber to stop, and
-`registry.InterruptByName "outbox-poller"` signals every live fiber with that name and returns how many it signalled.
-Neither waits; whoever joins or awaits the fiber sees `Cause.Interrupt`.
-
-To put a dump where your traces are, `FiberDumpTelemetry.record Clock.live registry` attaches the live-fiber tree to
-the current activity as an `axial.flow.fiber.dump` event (or a standalone span when no activity is
-current). Record one just before a timeout fires or from a slow-request handler, so the trace that explains
-*that something was slow* also records *what the runtime was busy with*.
-
-## The Aspire dashboard
-
-Aspire's dashboard is an OTLP backend, and `AddServiceDefaults()` in an Aspire service project wires the OpenTelemetry SDK. Add your application source, Axial's runtime source, and
-Axial's meter to the pipeline:
-
-```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
-builder.Services
-    .AddOpenTelemetry()
-    .WithTracing(fun tracing -> tracing.AddSource(applicationActivitySource.Name, "Axial") |> ignore)
-    .WithMetrics(fun metrics -> metrics.AddMeter("Axial") |> ignore)
-|> ignore
-```
-
-The dashboard then shows:
-
-- **Traces**: application workflow spans from `Activity.traceOn`, and with `FiberTelemetry.observeWithSpans` a span per
-  forked fiber (named fibers display as `axial.flow.fiber <name>`), nested under the ASP.NET Core request
-  span. Fiber dump events from `FiberDumpTelemetry.record` appear on the span that recorded them.
-- **Metrics**: the `axial.flow.fibers.*` instruments as live charts. Watch `fibers.live` rise and fall under
-  load, and alarm on `unobserved_defects`.
-- **Structured logs**: fiber defects via `FiberLogging.observe` through the `ILog`/MEL bridge.
-
-## Distributed tracing across a .NET backend and a Fable frontend
-
-The two telemetry packages join into one distributed trace through the W3C `traceparent` header. Neither
-package does the propagation itself; the OpenTelemetry SDKs do it on both ends:
-
-1. The browser app bootstraps OTel JS (`WebTracerProvider`, `ZoneContextManager`, an OTLP exporter, and
-   `@opentelemetry/instrumentation-fetch`), then `Otel.installNamed api "Orders.Web"`.
-2. A user action runs `submitOrder |> Otel.trace "orders.submit"`. A span starts and becomes the active
-   context.
-3. The workflow calls the backend with `fetch`; the fetch instrumentation opens a client span under it and
-   injects `traceparent` into the request.
-4. ASP.NET Core reads `traceparent` natively, so the request span is a remote child of the browser's; with
-   `.AddAspNetCoreInstrumentation()` it is recorded.
-5. The handler runs `placeOrder |> Activity.traceOn applicationActivitySource "orders.place"`, nesting under the request span via
-   `Activity.Current`.
-
-Both ends export to the same collector, and the trace view shows one tree,
-`orders.submit → fetch → POST /orders → orders.place`, with browser and server spans interleaved. Because
-both packages compile the same shared vocabulary source (`src/Axial.Telemetry.Shared`), the
-`axial.flow.*` attributes mean the same thing on both halves, so one dashboard query spans the stack.
-
-The gotchas are standard browser-OTel operations, not Axial concerns: the API must allow the `traceparent`
-header through CORS and the fetch instrumentation needs `propagateTraceHeaderCorsUrls` for cross-origin
-calls; browsers should export via a collector (CORS again); use parent-based sampling on the server so the
-frontend's sampling decision carries through; and without a context manager, a `fetch` issued after an
-awaited boundary loses the active span and starts a fresh trace.
+A `FiberRegistry` (core `Axial`) tracks every live fiber below one edge install and answers "what is my runtime doing
+right now?" with `registry.DumpAt(clock)` (a rendered tree) or `registry.Snapshot()` (structured values). The method
+inventory — `Settled`, `Stats`, `UnobservedDefects`, `StartedCount`, `Interrupt`, `InterruptByName`, and the capacity
+bound — is in the [FiberRegistry reference](/api/Axial.FiberRegistry.html). `FiberDumpTelemetry.record` attaches a
+dump to the current trace.
 
 ## Packaging and platform notes
 
@@ -360,32 +99,13 @@ Hosting turns them into MEL logs.
 alike, with the same span semantics and `axial.flow.*` tag vocabulary. It never imports the npm module
 itself: the application registers the OpenTelemetry JS SDK (exporter and context manager) and hands the
 `@opentelemetry/api` object to `Otel.installNamed` once at the edge, the same host/library split as registering an
-application `ActivitySource` on .NET:
-
-```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
-open Fable.Core.JsInterop
-open Axial.Telemetry.JavaScript
-
-// after registering the OpenTelemetry JS SDK (NodeSDK / WebTracerProvider)
-Otel.installNamed (importAll "@opentelemetry/api") "Orders.Web"
-
-application
-|> Otel.trace "orders.place"      // the JS counterpart of Activity.trace
-|> FiberTelemetry.observe         // fiber defect spans, as on .NET
-```
-
-Platform caveats: span parenting across awaited boundaries requires the application's OpenTelemetry context
-manager (`AsyncLocalStorageContextManager` on Node, `ZoneContextManager` in the browser); environment traits
-are read structurally because interface type tests are erased in JavaScript; and the GC-based
-unobserved-defect net relies on .NET finalization, so under Fable unobserved defects are reported only at the
-deterministic detection sites (discarded race/timeout losers and scope close). The package's .NET build is
-inert (`Otel.install` throws and `Otel.trace` is a pass-through), so shared Fable/.NET source trees compile
-without conditional references; on .NET, use `Axial.Telemetry`.
+application `ActivitySource` on .NET. See the [JavaScript guide](/observability/telemetry/javascript.html) for the
+bootstrap and cross-stack propagation notes.
 
 ## Where to go deeper
 
 - [Telemetry](/observability/telemetry/index.html): span tag vocabulary, `Activity.traceWith`,
-  span-per-fiber details.
+  span-per-fiber details, metrics, dumps, and the Aspire walkthrough.
 - [Supervision and fiber observability](/concurrency-and-state/supervision.html):
   `FiberObserver`, `Flow.supervise`, unobserved-defect semantics.
 - [Hosting](/platforms-and-hosting/dotnet.html): DI integration and the `ILog`/MEL bridge.
