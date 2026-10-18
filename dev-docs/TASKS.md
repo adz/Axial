@@ -72,6 +72,15 @@ lists the queue. Work on main.
   - Done when: gitkay's filesystem suppressions that come from walking, reading lines, or watching are gone; LogDug
     can swap its Files internals for the package; recursive watch has a live test; a crash test (kill a child process
     at random points while writing) never yields a lost, duplicated, or partially written record.
+- [ ] T16: `Axial.Elmish` package and `App.start` off the caller's context
+  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Spec: `dev-docs/current-ideas/axial-elmish.md`. Needs T1.
+  - First fix the verified shutdown deadlock in core: `App.start` runs `Async.StartWithContinuations` on the caller's
+    thread and settles through its `SynchronizationContext`, so stopping on a UI thread never returns. Start on the
+    thread pool and add `AppHandle.StopAndWait(timeout)`, safe on any thread.
+  - Then extract gitkay's `src/Axial.Elmish` into a per-program runtime: one root scope, delivery only through a
+    host-supplied `Post`, `OnDefect` wired to the host crash path, a per-runtime `FiberRegistry`, `Cmd.OfFlow`
+    (`either`/`perform`/`attempt`, plus `Latest` keyed latest-wins), `Sub.OfFlowStream`, and `Inbox`.
+  - Done when: the spec's required tests pass, and gitkay and Logs Digger can delete their own bridges.
 - [ ] T8: Process output cap that fails
   - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`.
   - Kill on interrupt and stage/overall timeouts already exist (`ProcessLive.fs` `terminate`). The only failing limit
