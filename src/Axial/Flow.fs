@@ -2203,8 +2203,7 @@ module Flow =
 
     /// <summary>Folds both the successful value and the failure cause into a new flow.</summary>
     /// <remarks>
-    /// This is the most powerful combinator for branching logic based on the full outcome of a flow,
-    /// including interruptions and defects.
+    /// Use this to branch on the full outcome of a flow, including interruptions and defects.
     /// </remarks>
     /// <param name="onSuccess">A function that returns a new flow from the success value.</param>
     /// <param name="onFailure">A function that returns a new flow from the failure cause.</param>
