@@ -42,6 +42,11 @@ This is a **lexical lifetime**. The compiler disposes `reader` when control leav
 `flow { }`, disposal happens before the Flow produced by that body completes. Another function or later workflow cannot
 safely use the resource.
 
+`File.OpenText` and `ReadLineAsync` are ambient .NET filesystem calls, not the `IFileSystem` service, so this example is
+about lifetime only: a missing file or failed read throws instead of producing a typed error. For the recommended
+pattern — an explicit filesystem dependency with a typed error channel — see
+[FileSystem](/services/filesystem.html).
+
 A Flow scope is a runtime ownership boundary. It lets resources and child fibers live across function and subflow calls,
 then closes all of them together after success, failure, interruption, or defect.
 
@@ -144,8 +149,11 @@ environment, or wait on asynchronous work. When the scope closes:
 
 - The release runs with the environment the value was acquired with, even if the scope closes somewhere else.
 - It runs without interruption. Closing a scope because its flow was interrupted does not cancel the releases.
-- Its error type is `Never`, so it cannot fail with a typed error. A release that throws or dies becomes a defect
-  of the flow that closed the scope, after the scope's other releases have run.
+- Its error type is `Never`, so it cannot fail with a typed error. A release that throws or dies becomes a defect in
+  the `Exit` of the flow that owned the scope. All releases still run — they run in reverse registration order, and a
+  failing release does not skip the others — and their failures are collected and folded into that `Exit`. If the
+  scope closed because its flow had already failed, the release defect is appended to that failure's cause; if the
+  flow had succeeded, the release defect alone turns the result into an `Exit.Failure`.
 
 ## Register with the current scope
 

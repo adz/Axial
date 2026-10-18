@@ -19,7 +19,7 @@
 
 - `docs/10-streams/02-constructing.md:166` — The crawler uses `Map.find` for every discovered URL and assumes all links exist in the in-memory site; a real crawl needs a typed fetch error or an explicit missing-page policy.
 
-- `docs/09-scopes/_index.md:33` — `File.OpenText path` assumes the file exists and acquisition succeeds, but the example has no typed filesystem error or explicit filesystem dependency; label it illustrative rather than a production read pattern.
+- [fixed] `docs/09-scopes/_index.md:33` — `File.OpenText path` assumes the file exists and acquisition succeeds, but the example has no typed filesystem error or explicit filesystem dependency; label it illustrative rather than a production read pattern.
 
 - [fixed] `docs/09-scheduling-and-retries/_index.md:126` — The copyable jitter example constructs `System.Random()` directly; the next paragraph recommends injected `IRandom`. Show the service-based wiring so repeated runs and tests do not depend on an ambient random source.
 
@@ -72,7 +72,7 @@
 - `docs/10-streams/04-batching-and-parallelism.md:35` — “Does not begin the next batch until the current result list is consumed” could imply per-item consumption of that list; the terminal pulls the next batch after the previous batch has been emitted, regardless of what the caller does with its elements.
 - `docs/10-streams/08-time-and-latest.md:83` — The checked search example debounces before `switchMapFlow`, so it never demonstrates interruption of an in-flight request; add a separate example with a request already running when the next input arrives.
 
-- `docs/09-scopes/_index.md:148` — A release defect is said to become a defect “of the flow that closed the scope,” but the page does not show how it combines with an existing failure or appears in `Exit`; clarify the observable outcome here.
+- [fixed] `docs/09-scopes/_index.md:148` — A release defect is said to become a defect “of the flow that closed the scope,” but the page does not show how it combines with an existing failure or appears in `Exit`; clarify the observable outcome here.
 
 - [fixed] `docs/09-scheduling-and-retries/_index.md:360` — The comment says polling continues “until the flow fails,” but `pollStatus` has error type `Never` and always succeeds; this example runs indefinitely unless interrupted. Show a stopping condition or state explicitly that the caller must interrupt it.
 - [fixed] `docs/09-scheduling-and-retries/_index.md:247` — `resetAfter` calls a long run “successful,” yet the supervision example describes a worker that crashes after ten healthy minutes. Clarify that the threshold measures the duration of the failed run before its failure, not a previous successful execution.
