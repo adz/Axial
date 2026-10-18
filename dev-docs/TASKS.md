@@ -2,17 +2,15 @@
 
 Work this queue from top to bottom. Remove completed items rather than retaining a history here.
 
-## Integration follow-up
+Each task is one `- [ ] T<n>: <title>` line; details are indented under it. `grep '^- \[ \] ' dev-docs/TASKS.md`
+lists the queue. Work on main.
 
-- `Reified.*` packages are now on NuGet (latest 0.8.2; `Directory.Build.props` pins `ReifiedVersion` 0.7.0). Restore and test `Axial.Hosting.AspNetCore`, `Axial.Hosting.GenHttp`, their examples/tests, and `examples/Axial.ReferenceApp` against package references.
-- Move the cross-product reference application and host examples to a separate integration/examples repository after both release trains are public.
+## Queue
 
-## Product work
-
-These four ship in 0.11. Record each one's breaking changes and additions in `dev-docs/releases/0.11.0.md`.
-
-- Flow-valued resource release and `Layer.fromFlow`. Release and layer construction are raw `Task`/`Async`
-  callbacks, so cleanup cannot use `Ref`, `'env` services, or typed failures, and docs fall back to `lock`.
+- [ ] T1: Flow-valued resource release and `Layer.fromFlow`
+  - Ships in 0.11; record breaking changes and additions in `dev-docs/releases/0.11.0.md`.
+  - Release and layer construction are raw `Task`/`Async` callbacks, so cleanup cannot use `Ref`, `'env` services,
+    or typed failures, and docs fall back to `lock`.
   - Release becomes `'value -> Flow<'env, 'none, unit>`: it runs uninterruptibly with the environment captured at
     acquisition, and a failure is a defect (as in ZIO). Change `Resource.create`, `Resource.ofAsync`,
     `Resource.finalizer`, `Resource.asyncFinalizer`, `Flow.scopeAcquireRelease`, `Flow.scopeFinalizer`, and
@@ -27,23 +25,41 @@ These four ship in 0.11. Record each one's breaking changes and additions in `de
     and `02-supervision.md` (poll counter).
   - Benchmark `ParallelCompositionBenchmarks` and scope close before and after; the empty-close fast path in
     `Platform.runFinalizers` must stay allocation-free.
-- Flow-shaped process I/O and web handlers.
+- [ ] T2: Flow-shaped process I/O and web handlers
+  - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`.
   - `Input.readOnce`, `Input.produce`, `Output.callback`, and the `Sink` target (`InputSource`/`OutputTarget` in
-    `src/Axial.Process/ProcessTypes.fs`, helpers in `ProcessDsl.fs`) take `Async` callbacks with no environment. Add a `FlowStream<_, _, byte[]>` input and a flow output callback (or
-    output into a `Queue`); decide how a process spec carries `'env`.
+    `src/Axial.Process/ProcessTypes.fs`, helpers in `ProcessDsl.fs`) take `Async` callbacks with no environment. Add a
+    `FlowStream<_, _, byte[]>` input and a flow output callback (or output into a `Queue`).
+  - Open question, ask before implementing: how a process spec carries `'env`.
   - `AspNetCore.handleParsed` (`'model -> Task<IResult>`) and `GenHttp.handleParsed` (`'model -> ValueTask<IResponse>`)
     are unused by docs and examples: take a flow or remove them.
-- Services return flows for asynchronous operations. Async members return `Flow<unit, 'error, 'value>`, with
-  dependencies supplied at construction; `IProcess.Stream` already does this. Covers `IFileSystem` (`Task`) and
-  `IHttp.Send` (`Async<Result<...>>`). Keep `IClock` as it is (the runtime schedules with it) and keep synchronous
-  members synchronous (`UtcNow`, `ILog`, `IRandom`, `IGuid`). Update live implementations, fakes, and guides; let
-  recording fakes in the services and dependencies guides use `Ref`.
-- `FlowStream.fromCallback`: bridge .NET callbacks (events, `IObservable`, `ActivityListener`, runtime hooks) into a
-  stream fed through a scope-owned queue, with the subscription released when the stream ends, like ZIO's
-  `ZStream.async`. `Queue.tryOffer` is already synchronous. Use it to remove the locks in the telemetry guide
-  (`ActivityListener`) and the supervision guide (`OnUnobservedDefect`, possibly as a defect stream). Consider an
-  `Axial.Guardrails` rule for `lock` inside `flow { }`.
-- Reassess remaining demand-driven Flow work in `LATER_TODO.md` against a concrete application before expanding the API.
+- [ ] T3: Services return flows for asynchronous members
+  - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`.
+  - Async members return `Flow<unit, 'error, 'value>`, with dependencies supplied at construction; `IProcess.Execute`
+    already does this. Covers `IFileSystem` (`Task`) and `IHttp.Send` (`Async<Result<...>>`).
+  - Keep `IClock` as it is (the runtime schedules with it) and keep synchronous members synchronous (`UtcNow`, `ILog`,
+    `IRandom`, `IGuid`).
+  - Update live implementations, the test doubles (`FileSystem.test`, `Http.test`), and guides; let recording fakes
+    in the services and dependencies guides use `Ref`.
+  - Open question, ask before implementing: the typed error for `IFileSystem` and `IHttp` failures.
+- [ ] T4: `FlowStream.fromCallback` for .NET callbacks
+  - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`. Needs T1 (the subscription's release is a flow).
+  - Bridge .NET callbacks (events, `IObservable`, `ActivityListener`, runtime hooks) into a stream fed through a
+    scope-owned queue, with the subscription released when the stream ends, like ZIO's `ZStream.async`.
+    `Queue.tryOffer` is already synchronous.
+  - Use it to remove the locks in the telemetry guide (`ActivityListener`) and the supervision guide
+    (`OnUnobservedDefect`, possibly as a defect stream).
+  - Consider an `Axial.Guardrails` rule for `lock` inside `flow { }`.
+- [ ] T5: Test Reified HTTP adapters against NuGet packages
+  - `Reified.*` packages are on NuGet (latest 0.8.2; `Directory.Build.props` pins `ReifiedVersion` 0.7.0). Restore and
+    test `Axial.Hosting.AspNetCore`, `Axial.Hosting.GenHttp`, their examples and tests, and
+    `examples/Axial.ReferenceApp` against package references.
+- [ ] T6: Move the reference app and host examples to their own repository
+  - Move the cross-product reference application and host examples to a separate integration/examples repository
+    after both release trains are public.
+- [ ] T7: Reassess `LATER_TODO.md` Flow work against a real application
+  - Reassess remaining demand-driven Flow work in `LATER_TODO.md` against a concrete application before expanding the
+    API.
 
 ## Acceptance
 
