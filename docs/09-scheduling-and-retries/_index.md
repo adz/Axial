@@ -7,8 +7,6 @@ description: Retry failed workflows and repeat successful workflows with reusabl
 
 A `Schedule` decides whether a flow should run again and how long to wait. Creating a schedule doesn't run anything. Apply it with `Flow.retry` or `Flow.repeat`.
 
-Use schedules for tasks such as retrying a request, adding exponential backoff, polling a service, or running a heartbeat.
-
 Schedules don't store attempt state. `Flow.retry` and `Flow.repeat` track attempts for each run, so you can reuse one schedule value across unrelated flows.
 
 `Schedule` works on .NET and Fable's JavaScript target.
@@ -22,9 +20,7 @@ A schedule makes two decisions after each flow execution:
 
 The source flow always runs once before Axial consults the schedule. For example, `Schedule.recurs 3` allows three more runs, for up to four runs in total.
 
-The examples on this page check each schedule with two helpers. `runsUntilStopped` counts how many times a flow that
-always fails runs under a schedule. `firstOutputs` reads a schedule's first outputs as a stream. Their delays really
-happen, so the checks use millisecond versions of the schedules they describe:
+`runsUntilStopped` counts attempts by a flow that always fails. `firstOutputs` reads a schedule's first outputs as a stream. The checks use millisecond delays because the waits happen during the test:
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -97,13 +93,13 @@ Use `Schedule.spaced` to keep running with the same delay between runs.
 let everySecond : Schedule<ClockEnvironment, string, _> = Schedule.spaced (TimeSpan.FromSeconds 1.0)
 ```
 
-`spaced` never stops on its own, and its output counts the runs so far:
+The output counts the runs so far:
 
 ```fsharp run
 firstOutputs 3 (Schedule.spaced (ms 1.0)) |> shouldEqual [ 0; 1; 2 ]
 ```
 
-A spaced schedule doesn't stop on its own. The flow continues until it fails, is interrupted, or an outer operation stops it.
+`Schedule.spaced` continues until the flow fails, is interrupted, or an outer operation stops it.
 
 ### Use exponential backoff
 
@@ -207,8 +203,6 @@ Schedule.spaced (ms 0.1)
 |> runsUntilStopped
 |> shouldEqual 9
 ```
-
-One initial run, three quick retries, then five slower ones.
 
 Its output is `Choice1Of2` while the first schedule decides and `Choice2Of2` after the hand-over.
 
@@ -334,8 +328,6 @@ fetchFailing [ Unavailable; RateLimited ] |> resilientFetch |> Flow.run (ClockEn
 fetchFailing [ Unavailable; NotFound ] |> resilientFetch |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail NotFound))
 ```
 
-`NotFound` is not transient, so the retry stops there even though retries remain.
-
 `Schedule.untilInput` is the negation: it stops on the first input that satisfies the predicate.
 
 ### Describe a retry with a record
@@ -360,7 +352,7 @@ fixed-rate timing, or elapsed-time limits.
 
 ## Repeat successful flows
 
-Use `Flow.repeat` to run a successful flow again. This is useful for polling, heartbeats, and recurring background work.
+Use `Flow.repeat` to run a successful flow again.
 
 ```fsharp
 let pollStatus : Flow<ClockEnvironment, Never, string> =
