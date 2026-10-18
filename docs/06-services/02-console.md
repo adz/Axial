@@ -139,79 +139,10 @@ let withHiddenCursor (body: Flow<AppEnv, Never, 'value>) : Flow<AppEnv, Never, '
 
 ## Testing
 
-Substitute an `IConsole` implementation. Since the interface is wide, implement a recording console once in a test helper rather than in each test. This one reads its
-input from a string, records what is written, and keeps terminal state in fields:
-
-```fsharp
-type RecordingConsole(input: string) =
-    let reader = new StringReader(input)
-    let output = new StringWriter()
-    let error = new StringWriter()
-    let mutable inputEncoding = Text.Encoding.UTF8
-    let mutable outputEncoding = Text.Encoding.UTF8
-    let mutable foreground = ConsoleColor.Gray
-    let mutable background = ConsoleColor.Black
-    let mutable cursorLeft = 0
-    let mutable cursorTop = 0
-    let mutable cursorVisible = true
-    let mutable title = ""
-    let mutable treatControlC = false
-
-    member _.Written = output.ToString()
-    member _.IsCursorVisible = cursorVisible
-
-    interface IConsole with
-        member _.In = reader
-        member _.Out = output
-        member _.Error = error
-        member _.InputEncoding with get () = inputEncoding and set value = inputEncoding <- value
-        member _.OutputEncoding with get () = outputEncoding and set value = outputEncoding <- value
-        member _.IsInputRedirected = true
-        member _.IsOutputRedirected = true
-        member _.IsErrorRedirected = true
-        member _.KeyAvailable = false
-        member _.Read() = reader.Read()
-        member _.ReadLine() = reader.ReadLine()
-        member _.ReadKey _ = ConsoleKeyInfo()
-        member _.Write value = output.Write value
-        member _.WriteLine value = output.WriteLine value
-        member _.WriteError value = error.Write value
-        member _.WriteErrorLine value = error.WriteLine value
-        member _.OpenStandardInput() = Stream.Null
-        member _.OpenStandardOutput() = Stream.Null
-        member _.OpenStandardError() = Stream.Null
-        member _.Clear() = ()
-        member _.Beep() = ()
-        member _.ResetColor() = ()
-        member _.ForegroundColor with get () = foreground and set value = foreground <- value
-        member _.BackgroundColor with get () = background and set value = background <- value
-        member _.CursorLeft with get () = cursorLeft and set value = cursorLeft <- value
-        member _.CursorTop with get () = cursorTop and set value = cursorTop <- value
-        member _.CursorVisible with get () = cursorVisible and set value = cursorVisible <- value
-        member _.SetCursorPosition(left, top) = cursorLeft <- left; cursorTop <- top
-        member _.Title with get () = title and set value = title <- value
-        member _.TreatControlCAsInput with get () = treatControlC and set value = treatControlC <- value
-```
-
-Assert against the recorded output and terminal state:
-
-```fsharp run
-let answeredYes = RecordingConsole "y\n"
-confirm "Continue?" |> Flow.run { Console = answeredYes } |> shouldEqual (Exit.Success true)
-answeredYes.Written |> shouldEqual "Continue? [y/N] "
-
-let answeredBlank = RecordingConsole "\n"
-confirm "Continue?" |> Flow.run { Console = answeredBlank } |> shouldEqual (Exit.Success false)
-
-let answeredEof = RecordingConsole ""
-confirm "Continue?" |> Flow.run { Console = answeredEof } |> shouldEqual (Exit.Success false)
-
-let terminal = RecordingConsole ""
-withHiddenCursor (Console.writeLine "working") |> Flow.run { Console = terminal } |> shouldEqual (Exit.Success())
-terminal.IsCursorVisible |> shouldEqual true
-```
-
-The finalizer restores cursor visibility when the scope closes.
+Substitute an `IConsole` implementation. The interface is wide, so implement the recording double once in a test
+helper rather than in each test. The [test fakes recipe](/testing/fakes.html) provides a complete `RecordingConsole`
+— one that reads its input from a string, records what is written, and keeps terminal state in fields — with checked
+assertions against the recorded output and cursor visibility.
 
 ## Fable
 

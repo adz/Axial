@@ -8,16 +8,8 @@ These compiler errors often indicate a mismatch between wrapper types.
 
 ## Error: A Flow Alias Does Not Match The Channels You Intended
 
-`Flow<'env, 'error, 'value>` is the full workflow shape. The shorter aliases remove common channels:
-
-| Alias | Expands to |
-| :--- | :--- |
-| `Flow<'value>` | `Flow<unit, Never, 'value>` |
-| `Flow<'error, 'value>` | `Flow<unit, 'error, 'value>` |
-| `EnvFlow<'env, 'value>` | `Flow<'env, Never, 'value>` |
-| `ExnFlow<'value>` | `Flow<unit, exn, 'value>` |
-| `ExnEnvFlow<'env, 'value>` | `Flow<'env, exn, 'value>` |
-
+`Flow<'env, 'error, 'value>` is the full workflow shape. The shorter aliases remove common channels; the complete
+alias table, with what each expansion means, is in [Reading the type](/the-flow-type/flow-type.html#aliases).
 If your workflow reads an environment and has a typed domain error, use the full `Flow<'env, 'error, 'value>` form.
 
 ```fsharp prepare
@@ -215,6 +207,33 @@ startedWorkflow |> Flow.run () |> shouldEqual (Exit.Success 42)
 ```
 
 Use `Flow.awaitStartedTaskResult` when the started task returns `Result`.
+
+## Flexible type variables (`#T`) are each distinct
+
+`#IHasOrders` is F# shorthand for `'env when 'env :> IHasOrders`, a fresh type variable with one constraint. Each
+occurrence of `#T` in a signature is a separate type variable, so two occurrences do not unify to the same
+environment unless you name the variable explicitly.
+
+```fsharp no-check reason="Illustrates the aggregate-contract pattern from the service contracts guide"
+type ICheckoutEnv =
+    inherit IHasOrders
+    inherit IHasEmail
+
+let submitOrder (order: Order) : Flow<#ICheckoutEnv, CheckoutError, unit> = submit order
+```
+
+When the same environment appears more than once — two inputs, or an input and an output — write the explicit form
+so all occurrences name one variable:
+
+```fsharp
+type IHasOrders =
+    abstract Orders: unit
+
+let sequence<'env when 'env :> IHasOrders> (a: Flow<'env, 'e, 'v>) (b: Flow<'env, 'e, 'v>) : Flow<'env, 'e, 'v> =
+    Flow.bind (fun _ -> b) a
+```
+
+See [service contracts](/dependencies/service-contracts.html) for when to declare one.
 
 ## Check wrapper boundaries
 

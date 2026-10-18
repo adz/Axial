@@ -8,4 +8,5 @@ Supply fake environment values or replace layers at the execution boundary. Publ
 shape as production code.
 
 - [HTTP testing and layers](/http/testing.html)
+- [Test fakes](fakes.html)
 - [Runnable examples](runnable-examples.html)

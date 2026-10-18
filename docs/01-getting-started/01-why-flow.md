@@ -297,10 +297,9 @@ a value. Code that uses these pieces does not need to be checked for each interl
 [torture tests](../concurrency-and-state/torture-tests/index.html) check that the rules hold under random interruption.
 
 The build enforces the conventions the types cannot. [Axial.Guardrails](../notes/guardrails.html) reports direct calls
-to the clock, randomness, and other ambient effects (`AXG001`), exceptions raised inside `flow { }` (`AXG003`), task
-adapters that drop their cancellation token (`AXG005`), and formatting that breaks under NativeAOT (`AXG006`).
-
-The signature names the available services and expected errors. Forked work belongs to its scope even if nobody awaits it. There is no token to forget to pass. Reading `DateTime.Now` or dropping a token in a task adapter produces a build warning.
+to ambient effects, exceptions raised inside `flow { }`, task adapters that drop their cancellation token, and
+formatting that breaks under NativeAOT; the [diagnostics reference](../notes/guardrail-diagnostics.html) lists what
+each `AXG` code checks.
 
 ## When to use something else
 
