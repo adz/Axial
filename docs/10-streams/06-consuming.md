@@ -58,8 +58,7 @@ val it: Exit<string list,Never> = Success ["A"; "B"]
 val it: Exit<int list,Never> = Success [1; 2; 3]
 ```
 
-Use it only when the stream is known to be finite and the complete list is required. It intentionally retains every
-value until completion.
+Use it only when the stream is known to be finite and the complete list is required. It retains every value until completion.
 
 ## The terminal consumer owns the stream scope
 
@@ -78,7 +77,7 @@ The lifecycle is:
 6. It closes the child scope, runs finalizers in reverse registration order, interrupts and awaits unfinished child
    fibers, and only then returns its `Exit`.
 
-This means an enumerator opened by `FlowStream.fromSeq` is disposed before `FlowStream.runCollect` returns. Likewise,
+An enumerator opened by `FlowStream.fromSeq` is disposed before `FlowStream.runCollect` returns. Likewise,
 when `FlowStream.mapFlowPar` has outstanding mappings and downstream stops after `FlowStream.take`, the terminal scope
 interrupts and awaits those mappings before the terminal Flow completes.
 

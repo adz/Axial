@@ -4,8 +4,7 @@ title: Constructing Streams
 
 # Constructing Streams
 
-An array or `seq` is the right source when all values already exist and producing the next value is synchronous. Wrapping
-one in a `FlowStream` becomes useful when it must compose with effectful sources and incremental consumers under one
+An array or `seq` is the right source when all values already exist and producing the next value is synchronous. Wrap one in a `FlowStream` to compose it with effectful sources and incremental consumers under one
 failure, cancellation, backpressure, and cleanup model.
 
 Use `FlowStream.fromSeq`, `FlowStream.singleton`, and `FlowStream.empty` for those existing values:
@@ -83,8 +82,7 @@ A failed Flow fails the stream before producing a value.
 `FlowStream.unfoldFlow` repeatedly runs an effectful state transition. Return `Some(value, nextState)` to emit a value
 and remember the state for the next pull, or return `None` to finish.
 
-The value and state are separate because they serve different audiences. The value goes downstream; the state stays
-inside the source and tells it how to continue. A paginated source might emit a page of messages while retaining an
+The value goes downstream; the state stays inside the source and tells it how to continue. A paginated source might emit a page of messages while retaining an
 opaque continuation token. A socket parser might emit a decoded frame while retaining unread bytes. Requiring only a
 next state would either emit implementation state to consumers or restrict unfolding to sources whose state happens to
 be their output.
@@ -110,7 +108,7 @@ Suppose `fetchHtml` performs one HTTP request as a Flow, while `extractLinks` is
 to the links it contains. When the URLs are already known, construct a stream from the list and overlap requests with
 `FlowStream.mapFlowPar`:
 
-The examples stand in for HTTP with a small in-memory site, where each page lists the pages it links to:
+The examples use a small in-memory site in place of HTTP; each page lists the pages it links to:
 
 ```fsharp
 type HtmlPage = { Url: string; Html: string }

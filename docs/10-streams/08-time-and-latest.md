@@ -4,8 +4,7 @@ title: Time and Latest Value
 
 # Time and Latest Value
 
-Most stream operators react only to values. The operators on this page also react to time, or to a newer value
-arriving, which is what progress reporting, batching, and search-as-you-type need.
+Most stream operators react only to values. Progress reporting, batching, and search-as-you-type need operators that also react to time or to a newer value arriving.
 
 Each of them moves upstream values through a one-slot queue from a producer fiber, so it can wait for "the next value
 or a timer" at once. The producer runs in the consuming Flow's scope: it keeps upstream back-pressure, and it stops
@@ -56,7 +55,7 @@ batchSizes (FlowStream.fromSeq [ 1..250 ]) |> Flow.run (ClockEnvironment Clock.l
 
 No empty list is emitted, and the partial list is emitted when upstream ends or before a failure is propagated.
 
-## Report progress at a steady rate
+## Report progress at a limited rate
 
 `FlowStream.throttle interval` emits at most one value per interval. The first value is emitted immediately; values
 arriving faster replace each other, and the latest is emitted when the interval ends:

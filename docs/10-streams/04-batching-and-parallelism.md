@@ -4,8 +4,7 @@ title: Batching and Parallelism
 
 # Batching and Parallelism
 
-Strict batches and continuously replenished parallel work have different observable schedules. Axial keeps them
-separate rather than hiding both behaviors behind one operator.
+Strict batches and continuously replenished parallel work have different observable schedules and use separate operators.
 
 ## Strict batches
 
@@ -62,9 +61,9 @@ At most two mappings are active or retained in this example. Results are emitted
 not block later results or failures. Consuming a result opens one slot and starts the next upstream mapping.
 
 If consumption stops early, the terminal stream scope interrupts and awaits outstanding mapping fibers before
-returning. This keeps parallel work bounded in both count and lifetime.
+returning. Parallel work remains bounded in both count and lifetime.
 
-## Which should you choose?
+## Choosing between batches and parallel mapping
 
 Choose strict batches when order and batch barriers are part of the contract, for example checkpointing one page group
 before fetching the next. Choose `FlowStream.mapFlowPar` for worker-pool behavior where throughput matters and completion order is
