@@ -6,8 +6,7 @@ platform: fable
 
 # Export traces from Node or a browser
 
-`Axial.Telemetry.JavaScript` writes spans through the JavaScript OpenTelemetry API. It remains separate from the .NET
-adapter because JavaScript uses different span and context-propagation APIs. Both packages consume the same ambient
+`Axial.Telemetry.JavaScript` writes spans through the JavaScript OpenTelemetry API. JavaScript uses different span and context-propagation APIs from the .NET adapter. Both packages consume the same ambient
 `Axial.Telemetry.Context` from core and emit the same Axial attribute names.
 
 ## Install the packages
@@ -42,7 +41,7 @@ context manager. Without a context manager, a span can lose its active parent af
 
 ## Trace and tag a workflow
 
-The context API is the same on .NET and JavaScript:
+The context API works on .NET and JavaScript:
 
 ```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 open Axial.Telemetry
@@ -96,6 +95,6 @@ Open your trace backend and confirm that:
 - defects carry `exception.type`, `exception.message`, and `exception.stacktrace`;
 - named fiber spans appear when span-per-fiber observation is enabled.
 
-For the complete signal model, Aspire walkthrough, metrics, and fiber dumps, read
+For the signal model, Aspire walkthrough, metrics, and fiber dumps, read
 [Trace workflows and inspect them in Aspire](index.html). Fiber metrics and `System.Diagnostics`-based dump events are
 provided by the .NET adapter; the core `FiberRegistry` and rendered dumps remain available on supported Fable hosts.

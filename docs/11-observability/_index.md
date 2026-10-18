@@ -6,9 +6,6 @@ project: src/Axial.Telemetry/Axial.Telemetry.fsproj
 
 # Observability
 
-This page lists each observability signal, the Axial package that produces it, what you get automatically and what
-you opt into, and the one-time wiring that sends it to a backend such as OpenTelemetry. The fuller guides are linked from each section.
-
 | Signal | Where it comes from | Consumed by |
 | --- | --- | --- |
 | **Traces** (spans) | [`Axial.Telemetry`](/observability/telemetry/index.html) emitting on the `Axial` `ActivitySource`; `Axial.Telemetry.JavaScript` on Fable targets | any `ActivityListener`, in practice the OpenTelemetry SDK; OpenTelemetry JS under Fable |
@@ -23,8 +20,7 @@ observers** (`FiberObserver`, lifecycle hooks for every forked fiber; see
 
 ## How .NET tracing works: `ActivitySource` and `ActivityListener`
 
-.NET has a built-in publish/subscribe tracing model in `System.Diagnostics`, and Axial sits entirely on the
-publishing side:
+Axial publishes spans through .NET's `System.Diagnostics` tracing model:
 
 - An **`ActivitySource`** is the producer. Axial owns one, named `"Axial"`. Instrumented code calls
   `StartActivity`, and an `Activity` is a span: name, timing, tags, status, parent.
@@ -36,8 +32,7 @@ publishing side:
   which is how Axial spans nest inside ASP.NET Core request spans (and under an upstream `traceparent`
   header) with no wiring.
 
-This split is why telemetry is runtime instrumentation rather than an environment service: the host decides
-once, at the edge, whether anything listens and where spans go; workflows never carry a tracing dependency.
+The host decides at the edge whether anything listens and where spans go; workflows do not carry a tracing dependency.
 
 ## What produces spans, and when
 
@@ -114,8 +109,7 @@ What you get without per-callsite work:
 
 ## Plugging in OpenTelemetry
 
-Because Axial emits through standard `ActivitySource` instances, the OpenTelemetry SDK is the listener, and there is no
-adapter to write. Use an application-owned source for spans around user workflows, and subscribe to `"Axial"` separately
+The OpenTelemetry SDK listens to Axial's `ActivitySource` instances; no additional adapter is needed. Use an application-owned source for spans around user workflows, and subscribe to `"Axial"` separately
 for automatic runtime and fiber spans.
 
 In an ASP.NET Core or Generic Host application:
@@ -157,8 +151,7 @@ use tracerProvider =
         .Build()
 ```
 
-Then install the edge observers on your application workflow. They are worth having with or without an exporter
-attached:
+Install the edge observers on your application workflow, with or without an exporter:
 
 ```fsharp no-check reason="Needs Axial.Hosting for Microsoft.Extensions.Logging as well as Axial.Telemetry; this page checks against Axial.Telemetry"
 let observeApplication (logger: Microsoft.Extensions.Logging.ILogger) (application: Flow<unit, string, int>) =
@@ -192,8 +185,7 @@ OTLP receiver and provides an endpoint that generates every Axial observability 
 
 ## Logs
 
-Logging is deliberately the opposite design from tracing: *which logger* is an application dependency you
-substitute, so `ILog` is an explicit environment service, not ambient instrumentation.
+Unlike tracing, logging uses an explicit `ILog` environment service so applications can substitute the logger.
 
 - Workflows log through `Log.info`/`Log.error`/`Log.errorExn`/... against `IHasLog`.
 - [`Axial.Hosting`](/platforms-and-hosting/dotnet.html) bridges `ILog` to
@@ -303,8 +295,7 @@ current). Record one just before a timeout fires or from a slow-request handler,
 
 ## The Aspire dashboard
 
-Nothing Aspire-specific is required: Aspire's dashboard is an OTLP backend, and `AddServiceDefaults()` in an
-Aspire service project already wires the OpenTelemetry SDK. Add your application source, Axial's runtime source, and
+Aspire's dashboard is an OTLP backend, and `AddServiceDefaults()` in an Aspire service project wires the OpenTelemetry SDK. Add your application source, Axial's runtime source, and
 Axial's meter to the pipeline:
 
 ```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"

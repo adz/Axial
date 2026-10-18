@@ -5,8 +5,7 @@ description: Public modules in Axial.Telemetry for .NET tracing, fiber spans, me
 
 # Axial.Telemetry Reference
 
-`Axial.Telemetry` connects Flow execution and fiber lifecycle to .NET `ActivitySource` and `Meter` APIs. The host
-still chooses and configures its OpenTelemetry listeners, exporters, and sampling.
+`Axial.Telemetry` connects Flow execution and fiber lifecycle to .NET `ActivitySource` and `Meter` APIs. The host chooses and configures its OpenTelemetry listeners, exporters, and sampling.
 
 | Surface | Members | Purpose |
 | --- | --- | --- |
@@ -23,7 +22,7 @@ Use `Context.withAttributes` and `Activity.traceOn applicationActivitySource` fo
 workflow spans. Register that source name and `"Axial"` with OpenTelemetry. The application source owns user operation
 spans; Axial's `runtimeSource` owns automatic runtime and fiber spans, so trace application workflows through your own
 source, not Axial's. When many call sites share one application source, capture it once with `ActivityTracer.create`
-and either call `.Trace` on the tracer directly, or install it ambiently for a whole workflow tree with
+and either call `.Trace` on the tracer or install it ambiently for a whole workflow tree with
 `Activity.withTracer` and call the ambient `Activity.trace`/`Activity.traceWith` underneath it. Install
 `FiberTelemetry.observe` once at the application edge when unjoined child defects must be visible. Use the
 span-per-fiber observer only when that extra span volume is useful.

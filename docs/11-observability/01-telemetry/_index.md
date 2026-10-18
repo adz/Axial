@@ -171,8 +171,7 @@ let submittedOn =
 
 ### Trace without repeating the source at every call site
 
-Passing `applicationActivitySource` into every `traceOn` call gets repetitive once tracing spreads across a codebase.
-Capture the source once as an `ActivityTracer`, and call `.Trace` on it wherever you need a span:
+Capture `applicationActivitySource` once as an `ActivityTracer`, then call `.Trace` wherever you need a span:
 
 ```fsharp
 let checkoutTracer = ActivityTracer.create applicationActivitySource
@@ -183,8 +182,7 @@ let submittedWithTracer =
 ```
 
 For a workflow tree that traces from many places, install the tracer once near the composition root instead, and call
-the ambient `Activity.trace`/`Activity.traceWith` from anywhere underneath it, with no source to pass or capture at the
-call site:
+the ambient `Activity.trace`/`Activity.traceWith` from anywhere underneath it, without passing the source at each call site:
 
 ```fsharp
 // deep inside the workflow tree, in code that has no reference to checkoutTracer:
@@ -388,8 +386,7 @@ let recordDump () = FiberDumpTelemetry.record Clock.live registry
 ```
 
 `FiberDumpTelemetry.record` adds an `axial.flow.fiber.dump` event to the current activity. If no activity is current, it
-creates a standalone span. This connects a slow or failed trace to the exact fibers that were running when you captured
-the dump. See [Supervision and fiber observability](/concurrency-and-state/supervision.html) for registry and dump details.
+creates a standalone span. The event records which fibers were running when you captured the dump. See [Supervision and fiber observability](/concurrency-and-state/supervision.html) for registry and dump details.
 
 ## View Axial in the Aspire dashboard
 
@@ -418,9 +415,6 @@ Run the application and open the dashboard:
 4. Enable `FiberTelemetry.observeWithSpans` to see named child fibers in the same trace.
 5. Trigger `FiberDumpTelemetry.record` and inspect the `axial.flow.fiber.dump` event on the active span.
 6. Open **Metrics** and chart `axial.flow.fibers.live` and `axial.flow.fibers.unobserved_defects`.
-
-Used together, traces identify the slow or failed operation, attributes identify its application
-context, metrics show whether the runtime is degrading, and a fiber dump shows the work still in flight.
 
 ## Choose attributes, annotations, or logs
 
