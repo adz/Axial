@@ -129,6 +129,8 @@ an intentional use. Item metadata cannot contain a semicolon; write it as `%3B`.
 | `blocking` | `Async.RunSynchronously`, `Task.Wait()`/`Wait(timeout)`, task/value-task `.Result`, and `.GetAwaiter().GetResult()` outside flows; task `.Result` and `.GetAwaiter().GetResult()` inside flows | Await asynchronously outside flows; `let!` on the task inside flows |
 | `scope` | A direct `Cache.make*`, `Hub.make`/`bounded`, or `Queue.bounded`/`unbounded` returned by a run | Use the service before the scope closes |
 
+Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are exempt when the same value's completion state is tested in the enclosing `if` branch or `when` guard, or when the value is the parameter of a `ContinueWith` callback. Other waits remain findings. Blocking waits outside flows can deadlock UI synchronization contexts. At a genuine synchronous entry point or test boundary, use `// axial-allow-effect: blocking`.
+
 `TimeZoneInfo.ConvertTimeFromUtc(utc, zone)` is allowed when `zone` is supplied explicitly; reading
 `TimeZoneInfo.Local` to supply that argument is not. Pass the desired zone through configuration or `'env`.
 
@@ -161,13 +163,11 @@ A file directive allows only the named categories. For example, a `console` dire
 
 Each directive must name a category. There is no directive that allows every effect.
 
-For the exact matching and suppression rules, see `EffectCatalog.fs` and `Suppressions.fs` in `src/Axial.Guardrails`.
+For the exact matching and suppression rules, see [`EffectCatalog.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/EffectCatalog.fs) and [`Suppressions.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/Suppressions.fs) in `src/Axial.Guardrails`.
 
 ## AXG008: Keep scope-owned services inside their run
 
 `Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning a `Cache`, `Hub`, or `Queue` made directly by the run leaves a closed service. Use it inside the flow instead. The check is syntactic: direct constructor arguments and pipelines ending in a constructor are detected, but a constructor stored in a variable, a flow assembled elsewhere, or a `flow { }` that acquires and returns the service is not followed. `Ref` does not own a scope and is allowed. At an intentional boundary, add `// axial-allow-effect: scope`.
-
-Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are exempt when the same value's completion state is tested in the enclosing `if` branch or `when` guard, or when the value is the parameter of a `ContinueWith` callback. Other waits remain findings. Blocking waits outside flows can deadlock UI synchronization contexts. At a genuine synchronous entry point or test boundary, use `// axial-allow-effect: blocking`.
 
 ## AXG002: Remove invalid suppressions
 
@@ -281,8 +281,10 @@ A forked fiber owns the [scoped resources](/scopes/index.html#scoped-resources) 
 settles. `Fiber.join` returns the fiber's value after that, so a resource the fiber returns is already released:
 
 ```fsharp
-let connection : Resource<ClockEnvironment, string, string> =
-    Resource.create (Flow.ok "orders") (fun _ -> Flow.ok ())
+let connection : Resource<ClockEnvironment, Never, MemoryStream> =
+    Resource.create
+        (Flow.ok (new MemoryStream()))
+        (fun stream -> Flow.delay (fun () -> stream.Dispose(); Flow.ok ()))
 
 /// Reported: the connection is released before join returns it.
 let releasedBeforeUse =
@@ -292,8 +294,9 @@ let releasedBeforeUse =
     }
 ```
 
-The code compiles and matches ZIO, where a forked fiber shares its parent's `Scope`. In Axial it fails
-only at runtime, usually as `ObjectDisposedException` on first use.
+The code compiles and reads like ZIO, where a forked fiber shares its parent's `Scope`. In Axial the forked
+fiber's own scope closes when it settles, so the release runs before `Fiber.join` returns: the stream is
+already disposed, and the first use after the join throws `ObjectDisposedException`.
 
 `AXG007` reports a `Flow.fork`, `forkNamed`, `forkGraceful`, `forkDetached`, `forkReplacing`, or `forkReplacingKey` of
 a flow that is a `Flow.scopeResource` or `Flow.scopeAcquireRelease` call, or a `flow { }` that returns what it acquired

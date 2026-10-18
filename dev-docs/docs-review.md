@@ -6,7 +6,7 @@
 
 - `docs/api/Axial.HubModule.md:3` — “Lossless consumer” assumes a `BackPressure` subscription and a publisher that waits for acceptance; name that strategy so readers do not infer every subscription is lossless.
 
-- `docs/15-notes/03-guardrails.md:175` — The suppression guidance assumes readers can inspect repository-relative `src/Axial.Guardrails` files; published NuGet consumers need a public source link or the exact rules documented here.
+- [fixed] `docs/15-notes/03-guardrails.md:175` — The suppression guidance assumes readers can inspect repository-relative `src/Axial.Guardrails` files; published NuGet consumers need a public source link or the exact rules documented here.
 
 - [fixed] `docs/14-advanced/04-writing-effect-analyzers.md:85` — The packaging walkthrough assumes access to this repository's `src/Axial.Guardrails` files; a NuGet consumer reading published docs cannot follow it without a public source link or standalone template.
 
@@ -49,8 +49,8 @@
 - `docs/api/Axial.Scope.md:18` — “That scope moves to the caller's scope when the caller receives the value” has no clear antecedent after listing parallel, race, and timed flows; specify which child scope transfers ownership and when, including failure.
 - `docs/api/Axial.FlowStreamModule.md:12` — Calling `groupedWithin`, `throttle`, `debounce`, and `switchMapFlow` all queue-backed read-ahead operators obscures their different buffering and cancellation behavior. Distinguish operators that prefetch from those that only wait or replace work.
 
-- `docs/15-notes/03-guardrails.md:178` — The `AXG008` heading is followed by blocking-wait exemptions at line 182, which belong to `AXG001`; move them under the blocking category so readers do not mistake them for scope diagnostics.
-- `docs/15-notes/03-guardrails.md:278` — The page says `Fiber.join` returns an already released resource, then says the example “fails only at runtime”; the shown resource is a string, so no runtime failure is demonstrated. Use a disposable resource and checked failure or qualify the claim.
+- [fixed] `docs/15-notes/03-guardrails.md:178` — The `AXG008` heading is followed by blocking-wait exemptions at line 182, which belong to `AXG001`; move them under the blocking category so readers do not mistake them for scope diagnostics.
+- [fixed] `docs/15-notes/03-guardrails.md:278` — The page says `Fiber.join` returns an already released resource, then says the example “fails only at runtime”; the shown resource is a string, so no runtime failure is demonstrated. Use a disposable resource and checked failure or qualify the claim.
 
 - [fixed] `docs/14-advanced/03-custom-services.md:3` — The description promises `Service.get`, but the tutorial uses `ExchangeRates.service` and never introduces `Service.get`; update the metadata to match the API shown.
 - [fixed] `docs/14-advanced/03-custom-services.md:93` — Every exception from `GetUsdToAud`, not just timeouts, becomes `ProviderTimedOut`; `RateUnavailable` is never produced. Classify exceptions explicitly or simplify the error union and claim at line 99.
