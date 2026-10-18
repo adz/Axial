@@ -37,6 +37,8 @@
 
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
+- `docs/process/07-worked-examples.md:69` — The checked application example assumes the docs are run inside a Git repository with a reachable `HEAD`; a copied example in a new project can fail. Use a deterministic command or state the prerequisite.
+
 ## Unclear or misleading
 
 - `docs/http/03-reliability.md:95` — The stated 200/400/800ms backoff contradicts the example's 1ms base delay; distinguish that example's 1/2/4ms schedule from the 200ms `withRetries` default.
@@ -109,6 +111,10 @@
 - `docs/01-getting-started/01-why-flow.md:282` — The sample poller forks and immediately returns; the page says child fibers are interrupted when their parent ends, so `registry.DumpAt(clock)` cannot reliably show a live poller from this example.
 - `docs/01-getting-started/01-why-flow.md:203` — “The same environment gives the same result” overpromises determinism: live service implementations may read external state or have mutable state.
 
+- `docs/process/01-composition.md:123` — `cmdText` is described as fixed text “that should not be parsed,” but line 173 and the DSL API introduction say it tokenizes/parses fixed text. Correct this sentence so readers do not confuse it with `commandArgs`.
+- `docs/process/08-running-in-an-application-flow.md:92` — The fake `ProcessResult` gives `StdOutCapture.Text` a nonempty value but `Bytes = [||]`, despite the output guide saying text is decoded from retained bytes. Use matching UTF-8 bytes in the fake so tests do not teach an impossible capture.
+- `docs/process/07-worked-examples.md:104` — “If ... the consumer stops early” implies any downstream stream consumer stops the process successfully; the streaming guide only guarantees `StoppedEarly` for `ProcessStream.take`/`takeWhile`, while conversion to `FlowStream` discards completion. Name the specific early-stop operators.
+
 ## Too long
 
 - `docs/http/02-responses-and-errors.md:33` — The scripted service, decoder, and environment setup occupy nearly 40 lines before the first response example; move reusable test setup to the testing guide and keep a short local example here.
@@ -146,6 +152,8 @@
 
 - `docs/01-getting-started/01-why-flow.md:302` — The concluding paragraph repeats the preceding sections' points about service signatures, fork ownership, tokens, and guardrails without adding a next step.
 
+- `docs/process/03-streaming.md:129` — The queue/hub, merge/zip, fold, filtering, stderr provenance, line limits, and ordinary-stream conversion examples make this first-use guide 286 lines long. Keep a short line-consumption path here and split FlowStream integration into a recipe.
+
 ## Reference material in guides
 
 - `docs/http/02-responses-and-errors.md:120` — The exhaustive `HttpError` case match acts as a case catalog in a response walkthrough; keep a few handling choices here and link the full union contract in API reference.
@@ -180,6 +188,8 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/process/04-failures-and-transcripts.md:12` — The purported `ProcessError` failure-case table omits `OutputTooLarge` and `OutputFailed`, which the output guide explicitly names. Include both or label the table non-exhaustive and link their contracts.
 
 - `docs/packages/index.md:24` — Supporting packages are unnamed and have no direct first-use links on the package landing page; readers must leave the package index to discover which package provides console, filesystem, hosting, or telemetry support.
 
@@ -240,6 +250,10 @@
 - `docs/01-getting-started/04-first-application.md:11` — “Your First Application” defines `run` but never calls it or shows an entry point, so a newcomer cannot copy the page to run an application.
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
+- `docs/process/_index.md:6` — The first executable `printf` example gives no package-install or platform prerequisite; link the package/platform setup and note that the checked native-command examples need a Unix-like toolchain.
+- `docs/process/06-fable.md:9` — The only Fable sample defines a Flow but never supplies an `IProcess` implementation or runs it; provide a minimal fake/worker-backed implementation and a checked Fable project or label the fragment as construction-only.
+- `docs/process/02-output-capture.md:80` — The output cap example prints exactly five bytes with a five-byte limit, so it never demonstrates the advertised failure. Add a checked six-byte example matching `OutputTooLarge` and its stage/channel.
+
 ## Suggestions for humans and LLMs
 
 - `docs/http/03-reliability.md:206` — The copyable payment workflow generates an ambient GUID. Accept an idempotency key from the caller or an explicit generator service so retries across separate invocations can reuse the same key and tests can control it.
@@ -292,3 +306,6 @@
 
 - `docs/01-getting-started/_index.md:16` — Hide or separate docs-test `prepare` fixtures from copyable FSI examples; keep the visible snippet limited to namespaces available from the stated install.
 - `docs/01-getting-started/03-existing-task-application.md:120` — Prefer `GetRequiredService` in the copyable container example, with the required package/open stated, rather than unchecked `GetService` casts that conceal a missing registration.
+
+- `docs/process/01-composition.md:10` — Narrow or hide the repeated visible `prepare` imports (`Console`, `FileSystem`, threading, tasks) in command-only examples; assistants copying them may infer optional packages are required. The same fixture recurs in output, streaming, failures, scripts, and worked examples.
+- `docs/process/09-dsl-recipes.md:66` — File-routing recipes create temporary files using ambient `System.IO.File`; label this as docs-test setup rather than an application pattern, since the application guide recommends an explicit filesystem dependency.
