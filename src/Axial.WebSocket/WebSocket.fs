@@ -106,6 +106,14 @@ module WebSocket =
                                 for protocol in options.Subprotocols do socket.Options.AddSubProtocol protocol
                                 do! socket.ConnectAsync(options.Url, ct)
                                 let mutable closed = false
+                                let mutable disposed = 0
+                                let dispose () =
+                                    if Interlocked.Exchange(&disposed, 1) = 0 then socket.Dispose()
+                                let receivePart token chunk =
+                                    socket.ReceiveAsync(ArraySegment<byte>(chunk), token)
+                                    |> Async.AwaitTask
+                                    |> Flow.attemptAsync
+                                    |> Flow.mapError (fun error -> WebSocketError.ConnectionLost error.Message)
                                 let send message =
                                     flow {
                                         let! token = Flow.cancellationToken
@@ -114,7 +122,7 @@ module WebSocket =
                                             match message with
                                             | WebSocketMessage.Text text -> WebSocketMessageType.Text, Encoding.UTF8.GetBytes text
                                             | WebSocketMessage.Binary bytes -> WebSocketMessageType.Binary, bytes
-                                        do! Flow.fromAsync (socket.SendAsync(ArraySegment<byte>(bytes), kind, true, token) |> Async.AwaitTask)
+                                        do! socket.SendAsync(ArraySegment<byte>(bytes), kind, true, token) |> Async.AwaitTask |> Flow.attemptAsync |> Flow.mapError (fun error -> WebSocketError.ConnectionLost error.Message)
                                     }
                                 let receive () =
                                     flow {
@@ -124,8 +132,8 @@ module WebSocket =
                                         let mutable complete = false
                                         let mutable kind = WebSocketMessageType.Binary
                                         let mutable tooLarge = false
-                                        while not complete do
-                                            let! part = Flow.fromAsync (socket.ReceiveAsync(ArraySegment<byte>(chunk), token) |> Async.AwaitTask)
+                                        while not complete && not closed do
+                                            let! part = receivePart token chunk
                                             kind <- part.MessageType
                                             if kind = WebSocketMessageType.Close then complete <- true
                                             elif output.Length + int64 part.Count > int64 options.MaxMessageBytes then
@@ -135,7 +143,7 @@ module WebSocket =
                                                 output.Write(chunk, 0, part.Count)
                                                 complete <- part.EndOfMessage
                                         if tooLarge then return! Flow.fail(WebSocketError.ProtocolError "Message exceeds configured limit")
-                                        elif kind = WebSocketMessageType.Close then
+                                        elif closed || kind = WebSocketMessageType.Close then
                                             closed <- true
                                             return None
                                         elif kind = WebSocketMessageType.Text then
@@ -148,18 +156,19 @@ module WebSocket =
                                         let! token = Flow.cancellationToken
                                         if not closed then
                                             closed <- true
-                                            do! Flow.fromAsync (socket.CloseAsync(enum<WebSocketCloseStatus> code, reason, token) |> Async.AwaitTask)
+                                            do! socket.CloseAsync(enum<WebSocketCloseStatus> code, reason, token) |> Async.AwaitTask |> Flow.attemptAsync |> Flow.mapError (fun error -> WebSocketError.ConnectionLost error.Message)
                                     }
-                                return Ok(new WebSocketSession(send, receive, close, fun () -> socket.Dispose()))
+                                return Ok(new WebSocketSession(send, receive, close, dispose))
                             with
                             | :? OperationCanceledException as error -> socket.Dispose(); return raise error
                             | :? WebSocketException as error -> socket.Dispose(); return Error(WebSocketError.ConnectFailed error.Message)
+                            | error -> socket.Dispose(); return Error(WebSocketError.ConnectFailed error.Message)
                         } |> Async.AwaitTask
                     })
                 } }
 
 /// Scripted in-memory transport for deterministic application tests.
-type TestWebSocket(inbound: WebSocketMessage list) =
+type TestWebSocket(inbound: WebSocketMessage list, ?receiveError: WebSocketError) =
     let pending = Collections.Generic.Queue<WebSocketMessage>(inbound)
     let sent = ResizeArray<WebSocketMessage>()
     member _.Sent = sent :> Collections.Generic.IReadOnlyList<WebSocketMessage>
@@ -167,6 +176,10 @@ type TestWebSocket(inbound: WebSocketMessage list) =
         member _.Connect _ =
             Flow.succeed(new WebSocketSession(
                 (fun message -> Flow.delay (fun () -> sent.Add message; Flow.succeed ())),
-                (fun () -> Flow.delay (fun () -> Flow.succeed (if pending.Count = 0 then None else Some(pending.Dequeue())))),
+                (fun () -> Flow.delay (fun () ->
+                    if pending.Count > 0 then Flow.succeed (Some(pending.Dequeue()))
+                    else match receiveError with
+                         | Some error -> Flow.fail error
+                         | None -> Flow.succeed None)),
                 (fun _ _ -> Flow.succeed ()),
                 ignore))
