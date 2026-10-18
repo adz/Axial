@@ -76,6 +76,10 @@ type ScopedProvider() =
                     entries.Add(string state, jobId) }
         member _.Dispose() = ()
 
+type WatchdogEnvironment(clock: IClock, logger: ILog) =
+    interface IHasClock with member _.Clock = clock
+    interface IHasLog with member _.Log = logger
+
 module HostingTests =
     let private variables (entries: (string * string) list) =
         let values = Dictionary<string, string>(entries |> Seq.map (fun (key, value) -> KeyValuePair(key, value)))
@@ -109,7 +113,7 @@ module HostingTests =
         let mutable count = 0
         let notifier = { new ISystemdNotifier with member _.Notify _ = count <- count + 1 }
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
-        let result = App.run (ClockEnvironment(clock)) (Hosting.watchdog variables 1 notifier) |> Async.RunSynchronously
+        let result = App.run (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdog variables 1 notifier) |> Async.RunSynchronously
         test <@ result = Exit.Success () @>
         test <@ count = 0 @>
 
@@ -117,7 +121,7 @@ module HostingTests =
     let ``missing watchdog interval stays idle for ten virtual seconds`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdog (variables []) 42 notifier)
+        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdog (variables []) 42 notifier)
         clock.AdvanceBy(TimeSpan.FromSeconds 10.0)
         Assert.Equal(Exit.Success (), running.Completion |> Async.RunSynchronously)
         Assert.Empty(messages)
@@ -126,7 +130,7 @@ module HostingTests =
     let ``healthy watchdog pings once per second`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier)
+        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier)
         try
             for step in 1 .. 5 do advance clock 2 messages step
             Assert.Equal<string>(Array.create 5 "WATCHDOG=1", messages.ToArray())
@@ -138,9 +142,9 @@ module HostingTests =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
         let mutable checks = 0
-        let health : Flow<ClockEnvironment, Never, bool> =
+        let health : Flow<WatchdogEnvironment, Never, bool> =
             Flow.delay (fun () -> checks <- checks + 1; Flow.succeed (checks <= 2))
-        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdogWith (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier health)
+        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdogWith (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier health)
         try
             for step in 1 .. 2 do advance clock 2 messages step
             for _ in 3 .. 5 do
@@ -159,8 +163,8 @@ module HostingTests =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
         let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let heartbeat : Flow<ClockEnvironment, Never, unit> = Flow.fromTask (fun token -> gate.Task.WaitAsync token)
-        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdogWithHeartbeat heartbeat (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier (Flow.succeed true))
+        let heartbeat : Flow<WatchdogEnvironment, Never, unit> = Flow.fromTask (fun token -> gate.Task.WaitAsync token)
+        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdogWithHeartbeat heartbeat (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier (Flow.succeed true))
         try
             Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= 2), 5000))
             clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
@@ -178,10 +182,49 @@ module HostingTests =
     let ``watchdog for another PID never pings`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         let notifier, messages = recordingNotifier ()
-        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"; "WATCHDOG_PID", "99"]) 42 notifier)
+        let running = App.start (WatchdogEnvironment(clock, Log.live)) (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"; "WATCHDOG_PID", "99"]) 42 notifier)
         clock.AdvanceBy(TimeSpan.FromSeconds 10.0)
         Assert.Equal(Exit.Success (), running.Completion |> Async.RunSynchronously)
         Assert.Empty(messages)
+
+    [<Theory>]
+    [<InlineData("abc")>]
+    [<InlineData("0")>]
+    [<InlineData("18446744073709551615")>]
+    let ``invalid watchdog interval logs warning and disables watchdog`` value =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let warnings = ResizeArray<string>()
+        let logger =
+            { new ILog with
+                member _.Log level message =
+                    if level = Axial.LogLevel.Warning then warnings.Add message
+                member _.LogException _ _ _ = () }
+        let notifier, messages = recordingNotifier ()
+        let result = App.run (WatchdogEnvironment(clock, logger)) (Hosting.watchdog (variables ["WATCHDOG_USEC", value]) 42 notifier)
+                     |> Async.RunSynchronously
+        Assert.Equal(Exit.Success (), result)
+        Assert.Single(warnings) |> ignore
+        Assert.Empty(messages)
+
+    [<Fact>]
+    let ``full notify queue does not block or throw`` () =
+        if OperatingSystem.IsLinux() then
+            let path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "axial-notify-" + Guid.NewGuid().ToString("N"))
+            use receiver = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.Unix, System.Net.Sockets.SocketType.Dgram, System.Net.Sockets.ProtocolType.Unspecified)
+            try
+                receiver.Bind(System.Net.Sockets.UnixDomainSocketEndPoint(path))
+                let notifier = SystemdNotify.live path
+                use sender = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.Unix, System.Net.Sockets.SocketType.Dgram, System.Net.Sockets.ProtocolType.Unspecified)
+                sender.Blocking <- false
+                let payload = Array.zeroCreate<byte> 64
+                let mutable full = false
+                while not full do
+                    try sender.SendTo(payload, System.Net.Sockets.UnixDomainSocketEndPoint(path)) |> ignore
+                    with :? System.Net.Sockets.SocketException as error when error.SocketErrorCode = System.Net.Sockets.SocketError.WouldBlock -> full <- true
+                let pending = Task.Run(fun () -> notifier.Notify "WATCHDOG=1")
+                Assert.True(pending.Wait(TimeSpan.FromSeconds 2.), "notify blocked on full queue")
+            finally
+                if System.IO.File.Exists path then System.IO.File.Delete path
 
     [<Fact>]
     let ``live notifier sends unix datagram on Linux`` () =

@@ -4,7 +4,19 @@
 
 ## systemd
 
-Call `UseSystemd()` on the Generic Host builder. Run the root application alongside `Hosting.watchdogWith variables processId notifier isHealthy` (or `Hosting.watchdog` without a custom health check). Construct the notifier at the process edge with `SystemdNotify.live` and the `NOTIFY_SOCKET` environment variable. The watchdog reads `WATCHDOG_USEC` and optional `WATCHDOG_PID`; it sends `WATCHDOG=1` at half the configured interval only when its runtime heartbeat has advanced and the health flow returns true. For application work that can stall independently, use `Hosting.watchdogWithHeartbeat` with a gate driven by that work; a healthy timer alone cannot prove the application is making progress.
+Call `UseSystemd()` on the Generic Host builder. Construct the notifier at the process edge with `SystemdNotify.live` and `NOTIFY_SOCKET`. `Hosting.watchdog` detects a wedged Axial scheduler or starved thread pool; its sleeping heartbeat and always-true health check do **not** establish application progress. Supply `Hosting.watchdogWith variables processId notifier isHealthy` to tie pings to work your application owns. For example, record the monotonic time after each successful job and reject stale progress:
+
+```fsharp
+// no-check: host wiring and application environment are supplied by the service.
+let mutable lastCompletedTicks = clock.Elapsed().Ticks
+// In the job loop, after a completed unit of work:
+System.Threading.Interlocked.Exchange(&lastCompletedTicks, clock.Elapsed().Ticks) |> ignore
+let isHealthy : Flow<ProbeEnv, Never, bool> =
+    Flow.delay (fun () -> Flow.succeed (clock.Elapsed().Ticks - System.Threading.Interlocked.Read(&lastCompletedTicks) < TimeSpan.FromSeconds(2.).Ticks))
+let watchdog = Hosting.watchdogWith variables processId notifier isHealthy
+```
+
+The watchdog reads `WATCHDOG_USEC` and optional `WATCHDOG_PID`; it sends `WATCHDOG=1` at half the configured interval only when its runtime heartbeat advances and the health flow returns true. Invalid or unrepresentable intervals disable the watchdog and log a warning through the environment's `IHasLog`. For application work that must gate the heartbeat itself, use `Hosting.watchdogWithHeartbeat`. All watchdog environments supply `IHasClock` and `IHasLog`.
 
 ```ini
 [Unit]

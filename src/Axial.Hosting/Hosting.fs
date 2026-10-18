@@ -175,13 +175,18 @@ module SystemdNotify =
                 // This live transport is the explicit socket-effect boundary for ISystemdNotifier.
                 use socket = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified)
                 let payload = Encoding.UTF8.GetBytes message
-                socket.SendTo(payload, UnixDomainSocketEndPoint(address)) |> ignore }
+                socket.Blocking <- false
+                try
+                    socket.SendTo(payload, UnixDomainSocketEndPoint(address)) |> ignore
+                with :? SocketException as error when error.SocketErrorCode = SocketError.WouldBlock ->
+                    // A full notify queue drops this heartbeat; the next interval retries.
+                    () }
 
 /// <summary>Microsoft Generic Host registration helpers for root Flow applications.</summary>
 [<RequireQualifiedAccess>]
 module Hosting =
-    /// <summary>Runs a progress-gated systemd watchdog. Supply environment, process ID and notifier explicitly.</summary>
-    let watchdogWithHeartbeat<'env when 'env :> IHasClock>
+    /// <summary>Runs a scheduler heartbeat gated by an optional application health flow. Requires a clock and logger in the environment.</summary>
+    let watchdogWithHeartbeat<'env when 'env :> IHasClock and 'env :> IHasLog>
         (heartbeatGate: Flow<'env, Never, unit>)
         (variables: IEnvironmentVariables)
         (processId: int)
@@ -191,16 +196,19 @@ module Hosting =
             match variables.TryGet "WATCHDOG_USEC" with
             | None -> return ()
             | Some value ->
-                match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
-                | false, _ -> return! Flow.die (ArgumentException("Expected positive microseconds.", "WATCHDOG_USEC"))
-                | true, microseconds when microseconds <= 0L -> return! Flow.die (ArgumentException("Expected positive microseconds.", "WATCHDOG_USEC"))
+                match UInt64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
+                | false, _
+                | true, 0UL ->
+                    do! Log.warning "Invalid WATCHDOG_USEC; watchdog disabled"
+                | true, microseconds when microseconds > uint64 TimeSpan.MaxValue.Ticks / 5UL ->
+                    do! Log.warning "WATCHDOG_USEC exceeds TimeSpan range; watchdog disabled"
                 | true, microseconds ->
                     let enabled =
                         match variables.TryGet "WATCHDOG_PID" with
                         | None -> true
                         | Some pid -> pid = string processId
                     if enabled then
-                        let interval = TimeSpan.FromTicks(max 1L (microseconds * 5L))
+                        let interval = TimeSpan.FromTicks(max 1L (int64 microseconds * 5L))
                         let heartbeatInterval = TimeSpan.FromTicks(max 1L (interval.Ticks / 2L))
                         let mutable progress = 0L
                         let rec heartbeat () = flow {
@@ -225,14 +233,14 @@ module Hosting =
                             ignore fiber
         }
 
-    /// <summary>Runs a progress-gated systemd watchdog with an application health check.</summary>
-    let watchdogWith<'env when 'env :> IHasClock>
+    /// <summary>Runs the scheduler heartbeat with an application-owned progress check; use this to detect stalled work.</summary>
+    let watchdogWith<'env when 'env :> IHasClock and 'env :> IHasLog>
         (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier)
         (isHealthy: Flow<'env, Never, bool>) : Flow<'env, Never, unit> =
         watchdogWithHeartbeat (Flow.succeed ()) variables processId notifier isHealthy
 
-    /// <summary>Runs the watchdog without an application-specific health check.</summary>
-    let watchdog<'env when 'env :> IHasClock>
+    /// <summary>Detects a wedged Axial scheduler or starved thread pool; supply watchdogWith isHealthy to tie the watchdog to your application's progress.</summary>
+    let watchdog<'env when 'env :> IHasClock and 'env :> IHasLog>
         (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier) : Flow<'env, Never, unit> =
         watchdogWith variables processId notifier (Flow.succeed true)
 

@@ -8,6 +8,7 @@ open Axial.PlatformService
 type ProbeEnv =
     { Clock: IClock }
     interface IHasClock with member this.Clock = this.Clock
+    interface IHasLog with member _.Log = Log.live
 
 [<EntryPoint>]
 let main args =
