@@ -181,7 +181,8 @@ module SystemdNotify =
 [<RequireQualifiedAccess>]
 module Hosting =
     /// <summary>Runs a progress-gated systemd watchdog. Supply environment, process ID and notifier explicitly.</summary>
-    let watchdogWith<'env when 'env :> IHasClock>
+    let watchdogWithHeartbeat<'env when 'env :> IHasClock>
+        (heartbeatGate: Flow<'env, Never, unit>)
         (variables: IEnvironmentVariables)
         (processId: int)
         (notifier: ISystemdNotifier)
@@ -204,6 +205,7 @@ module Hosting =
                         let mutable progress = 0L
                         let rec heartbeat () = flow {
                             do! Flow.sleep heartbeatInterval
+                            do! heartbeatGate
                             Interlocked.Increment(&progress) |> ignore
                             return! heartbeat ()
                         }
@@ -222,6 +224,12 @@ module Hosting =
                             // The fork belongs to this Flow scope and is interrupted on cancellation.
                             ignore fiber
         }
+
+    /// <summary>Runs a progress-gated systemd watchdog with an application health check.</summary>
+    let watchdogWith<'env when 'env :> IHasClock>
+        (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier)
+        (isHealthy: Flow<'env, Never, bool>) : Flow<'env, Never, unit> =
+        watchdogWithHeartbeat (Flow.succeed ()) variables processId notifier isHealthy
 
     /// <summary>Runs the watchdog without an application-specific health check.</summary>
     let watchdog<'env when 'env :> IHasClock>

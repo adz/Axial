@@ -77,6 +77,27 @@ type ScopedProvider() =
         member _.Dispose() = ()
 
 module HostingTests =
+    let private variables (entries: (string * string) list) =
+        let values = Dictionary<string, string>(entries |> Seq.map (fun (key, value) -> KeyValuePair(key, value)))
+        { new IEnvironmentVariables with
+            member _.TryGet key = match values.TryGetValue key with true, value -> Some value | _ -> None
+            member _.Set(_, _) = ()
+            member _.Expand value = value
+            member _.GetAll() = values }
+
+    let private recordingNotifier () =
+        let messages = System.Collections.Concurrent.ConcurrentQueue<string>()
+        let notifier = { new ISystemdNotifier with member _.Notify message = messages.Enqueue message }
+        notifier, messages
+
+    let private advance (clock: ManualClock) sleepers (messages: System.Collections.Concurrent.ConcurrentQueue<string>) expected =
+        Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= sleepers), 5000), "watchdog did not arm its timers")
+        clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
+        Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= sleepers), 5000), "heartbeat did not rearm")
+        clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
+        Assert.True(SpinWait.SpinUntil((fun () -> messages.Count >= expected && clock.Sleepers >= sleepers), 5000), $"pings={messages.Count} sleepers={clock.Sleepers}")
+        Assert.Equal(expected, messages.Count)
+
     [<Fact>]
     let ``watchdog without interval completes without notifying`` () =
         let variables =
@@ -91,6 +112,76 @@ module HostingTests =
         let result = App.run (ClockEnvironment(clock)) (Hosting.watchdog variables 1 notifier) |> Async.RunSynchronously
         test <@ result = Exit.Success () @>
         test <@ count = 0 @>
+
+    [<Fact>]
+    let ``missing watchdog interval stays idle for ten virtual seconds`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let notifier, messages = recordingNotifier ()
+        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdog (variables []) 42 notifier)
+        clock.AdvanceBy(TimeSpan.FromSeconds 10.0)
+        Assert.Equal(Exit.Success (), running.Completion |> Async.RunSynchronously)
+        Assert.Empty(messages)
+
+    [<Fact>]
+    let ``healthy watchdog pings once per second`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let notifier, messages = recordingNotifier ()
+        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier)
+        try
+            for step in 1 .. 5 do advance clock 2 messages step
+            Assert.Equal<string>(Array.create 5 "WATCHDOG=1", messages.ToArray())
+        finally
+            running.Stop() |> Async.RunSynchronously |> ignore
+
+    [<Fact>]
+    let ``unhealthy watchdog stops pinging`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let notifier, messages = recordingNotifier ()
+        let mutable checks = 0
+        let health : Flow<ClockEnvironment, Never, bool> =
+            Flow.delay (fun () -> checks <- checks + 1; Flow.succeed (checks <= 2))
+        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdogWith (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier health)
+        try
+            for step in 1 .. 2 do advance clock 2 messages step
+            for _ in 3 .. 5 do
+                Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= 2), 5000))
+                clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
+                Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= 2), 5000))
+                clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
+                Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= 2), 5000))
+            Assert.Equal(5, checks)
+            Assert.Equal(2, messages.Count)
+        finally
+            running.Stop() |> Async.RunSynchronously |> ignore
+
+    [<Fact>]
+    let ``blocked heartbeat suspends pings until released`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let notifier, messages = recordingNotifier ()
+        let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let heartbeat : Flow<ClockEnvironment, Never, unit> = Flow.fromTask (fun token -> gate.Task.WaitAsync token)
+        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdogWithHeartbeat heartbeat (variables ["WATCHDOG_USEC", "2000000"]) 42 notifier (Flow.succeed true))
+        try
+            Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= 2), 5000))
+            clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
+            Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers = 1), 5000))
+            clock.AdvanceBy(TimeSpan.FromMilliseconds 500.0)
+            Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers = 1), 5000))
+            Assert.Empty(messages)
+            gate.SetResult()
+            Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers >= 2), 5000))
+            advance clock 2 messages 1
+        finally
+            running.Stop() |> Async.RunSynchronously |> ignore
+
+    [<Fact>]
+    let ``watchdog for another PID never pings`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let notifier, messages = recordingNotifier ()
+        let running = App.start (ClockEnvironment(clock)) (Hosting.watchdog (variables ["WATCHDOG_USEC", "2000000"; "WATCHDOG_PID", "99"]) 42 notifier)
+        clock.AdvanceBy(TimeSpan.FromSeconds 10.0)
+        Assert.Equal(Exit.Success (), running.Completion |> Async.RunSynchronously)
+        Assert.Empty(messages)
 
     [<Fact>]
     let ``live notifier sends unix datagram on Linux`` () =
