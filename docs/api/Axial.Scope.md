@@ -13,9 +13,12 @@ Most application code should not construct or mutate `Scope` directly. Use the F
 - [`Flow.forkResource`](/api/Axial.Flow.html#Axial.Flow.forkResource) acquires a `Resource` in a fiber and registers its release with the current scope.
 
 A forked fiber has its own scope and releases its scoped resources
-when it settles. The flows of `Flow.zipPar`, `Flow.sequencePar`, or `Flow.traversePar` share a scope, and each branch
-of `Flow.race` and each timed flow has one. That scope moves to the caller's scope when the caller receives the value
-and closes otherwise.
+when it settles. `Flow.zipPar`, `Flow.sequencePar`, and `Flow.traversePar` run their flows in one shared scope;
+`Flow.race` gives each branch its own scope, and each timed flow runs in its own scope. Whichever scope holds the
+value the caller receives stays open: it moves to the caller's scope and closes with it, so its resources live as if
+the caller had acquired them. Any other scope is released — a failed parallel group or a failed race winner closes
+before the combinator returns, a timed flow that fails or times out closes before the combinator returns (on timeout,
+before the fallback runs), and a race loser closes once it is interrupted, which may be after `race` returns.
 
 This runtime lifetime differs from F# `use` and `use!`, which dispose when their lexical computation-expression body
 exits. A Flow scope can span functions, subflows, stream pulls, and child fibers.

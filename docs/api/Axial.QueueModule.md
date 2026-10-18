@@ -1,7 +1,8 @@
 # Queue
 
-`Queue<'a>` hands values from producer fibers to one logical consumer, in FIFO order, with an overflow strategy chosen
-when it is created. This module creates queues and offers to them; take values, inspect, and shut a queue down with the
+`Queue<'a>` hands each value from producer fibers to exactly one taker, in FIFO order, with an overflow strategy chosen
+when it is created. Several fibers can take from one queue and share its values between them. This module creates
+queues and offers to them; take values, inspect, and shut a queue down with the
 [`Dequeue`](/api/Axial.DequeueModule.html) functions, which accept a `Queue`.
 
 Create a queue with [`make`](#Axial.Queue.make) and a `QueueStrategy`, or with a shorthand:

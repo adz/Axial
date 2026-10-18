@@ -1,8 +1,9 @@
 # Hub
 
 `Hub<'a>` delivers every published value to every current subscription. Each subscription chooses its own
-`QueueStrategy`, so one publisher can feed a lossless consumer and latest-value consumers at the same time, and every
-subscriber sees values in the same order.
+`QueueStrategy`, so a subscription is lossless only with `BackPressure` or `Unbounded`, while `Dropping` and
+`Sliding` subscriptions lose values; one publisher can feed a lossless `BackPressure` consumer and latest-value
+`Sliding` consumers at the same time, and every subscriber sees values in the same order.
 
 [`subscribe`](#Axial.Hub.subscribe) returns the subscription as a [`Dequeue`](/api/Axial.DequeueModule.html) owned by
 the current scope; to subscribe for the life of a stream, use

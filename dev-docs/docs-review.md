@@ -4,7 +4,7 @@
 
 - `docs/http/04-testing.md:72` — `runUserLookup` uses a relative URL but does not configure `client.BaseAddress` until the later, separate `apiClient` snippet. Say the caller must supply a client with a base address or use an absolute URL.
 
-- `docs/api/Axial.HubModule.md:3` — “Lossless consumer” assumes a `BackPressure` subscription and a publisher that waits for acceptance; name that strategy so readers do not infer every subscription is lossless.
+- [fixed] `docs/api/Axial.HubModule.md:3` — “Lossless consumer” assumes a `BackPressure` subscription and a publisher that waits for acceptance; name that strategy so readers do not infer every subscription is lossless.
 
 - [fixed] `docs/15-notes/03-guardrails.md:175` — The suppression guidance assumes readers can inspect repository-relative `src/Axial.Guardrails` files; published NuGet consumers need a public source link or the exact rules documented here.
 
@@ -45,9 +45,9 @@
 - `docs/http/04-testing.md:59` — `IHttp.Send` returns a Flow, so saying a fake can return `Error(HttpError.TimedOut(...))` suggests the wrong return shape. Show `Flow.fail (HttpError.TimedOut(...))` with the required arguments.
 - `docs/http/02-responses-and-errors.md:77` — “The transcript is safe to log as-is” follows a claim only about redacting the request line; `Body` and `Text` can contain credentials or personal data. Limit the safety claim to the request line and caution against logging the full response.
 
-- `docs/api/Axial.QueueModule.md:11` — “One logical consumer” suggests a queue cannot have multiple competing takers, while the next paragraph discusses many consumers. Say each value goes to one taker, not that only one taker may exist.
-- `docs/api/Axial.Scope.md:18` — “That scope moves to the caller's scope when the caller receives the value” has no clear antecedent after listing parallel, race, and timed flows; specify which child scope transfers ownership and when, including failure.
-- `docs/api/Axial.FlowStreamModule.md:12` — Calling `groupedWithin`, `throttle`, `debounce`, and `switchMapFlow` all queue-backed read-ahead operators obscures their different buffering and cancellation behavior. Distinguish operators that prefetch from those that only wait or replace work.
+- [fixed] `docs/api/Axial.QueueModule.md:11` — “One logical consumer” suggests a queue cannot have multiple competing takers, while the next paragraph discusses many consumers. Say each value goes to one taker, not that only one taker may exist.
+- [fixed] `docs/api/Axial.Scope.md:18` — “That scope moves to the caller's scope when the caller receives the value” has no clear antecedent after listing parallel, race, and timed flows; specify which child scope transfers ownership and when, including failure.
+- [fixed] `docs/api/Axial.FlowStreamModule.md:12` — Calling `groupedWithin`, `throttle`, `debounce`, and `switchMapFlow` all queue-backed read-ahead operators obscures their different buffering and cancellation behavior. Distinguish operators that prefetch from those that only wait or replace work.
 
 - [fixed] `docs/15-notes/03-guardrails.md:178` — The `AXG008` heading is followed by blocking-wait exemptions at line 182, which belong to `AXG001`; move them under the blocking category so readers do not mistake them for scope diagnostics.
 - [fixed] `docs/15-notes/03-guardrails.md:278` — The page says `Fiber.join` returns an already released resource, then says the example “fails only at runtime”; the shown resource is a string, so no runtime failure is demonstrated. Use a disposable resource and checked failure or qualify the claim.
