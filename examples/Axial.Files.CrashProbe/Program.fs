@@ -15,6 +15,7 @@ let main args =
     match args with
     | [| "atomic"; path |] ->
         let mutable i = 0
+        printfn "ready"
         while true do
             let length = 1000 + int ((int64 i * 7919L) % 50000L)
             let payload = Encoding.ASCII.GetBytes(string length + "\n" + String(char (int 'a' + i % 26), length))
@@ -23,9 +24,10 @@ let main args =
         0
     | [| "log"; path |] ->
         let operation = flow {
-            let! log = AppendLog.openLog path (100L * 1024L * 1024L) |> Flow.scopeResource
+            let! log = AppendLog.openLog path 256L |> Flow.scopeResource
             let! existing = AppendLog.readAll log |> FlowStream.runCollect
-            let mutable next = existing.Length
+            let mutable next = if existing.IsEmpty then 0 else (existing |> List.last |> Encoding.ASCII.GetString |> int) + 1
+            printfn "ready"
             while true do
                 do! AppendLog.append (Encoding.ASCII.GetBytes(string next)) log
                 next <- next + 1

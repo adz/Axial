@@ -79,6 +79,61 @@ type AppendLogTests() =
             Assert.Equal<byte array list>(records, replay path 24L))
 
     [<Fact>]
+    member _.``oversized frame header is truncated without allocating payload``() =
+        withTemp (fun path ->
+            write path 1024L [ bytes "first" ]
+            let valid = FileInfo(path).Length
+            use stream = new FileStream(path, FileMode.Append, FileAccess.Write)
+            let header = BitConverter.GetBytes(1900000000)
+            stream.Write(header, 0, header.Length)
+            stream.Write(Array.zeroCreate<byte> 4, 0, 4)
+            stream.Dispose()
+            Assert.Equal<byte array list>([ bytes "first" ], replay path 1024L)
+            Assert.Equal(valid, FileInfo(path).Length))
+
+    [<Fact>]
+    member _.``open preserves rotated generation if current was not created``() =
+        withTemp (fun path ->
+            write path 1024L [ bytes "first" ]
+            File.Move(path, path + ".1")
+            Assert.Equal<byte array list>([ bytes "first" ], replay path 1024L)
+            Assert.True(File.Exists path)
+            Assert.True(File.Exists(path + ".1")))
+
+    [<Fact>]
+    member _.``failed rotation returns typed error and reopens current file``() =
+        withTemp (fun path ->
+            let first = bytes "first"
+            write path 16L [ first ]
+            Directory.CreateDirectory(path + ".1") |> ignore
+            let operation = flow {
+                let! log = AppendLog.openLog path 16L |> Flow.scopeResource
+                return! AppendLog.append (bytes "second") log
+            }
+            let outcome = Flow.run env operation
+            match outcome with
+            | Exit.Failure(Cause.Fail _) -> ()
+            | other -> failwithf "Expected typed rotation error: %A" other
+            Directory.Delete(path + ".1")
+            Assert.Equal<byte array list>([ first ], replay path 16L))
+
+    [<Fact>]
+    member _.``parallel appends preserve each writer order``() =
+        withTemp (fun path ->
+            let records =
+                flow {
+                    let! log = AppendLog.openLog path 100000L |> Flow.scopeResource
+                    do! [ 0 .. 7 ] |> Flow.forEachPar (Parallelism.bounded 8) (fun writer ->
+                        [ 0 .. 199 ] |> List.fold (fun work index ->
+                            work |> Flow.bind (fun () -> AppendLog.append (bytes $"{writer}:{index}") log)) (Flow.succeed ()))
+                    return! AppendLog.readAll log |> FlowStream.runCollect
+                } |> run
+            Assert.Equal(1600, records.Length)
+            for writer in 0 .. 7 do
+                let actual = records |> List.map Encoding.ASCII.GetString |> List.filter (fun value -> value.StartsWith($"{writer}:"))
+                Assert.Equal<string list>([ for index in 0 .. 199 -> $"{writer}:{index}" ], actual))
+
+    [<Fact>]
     member _.``missing and empty logs replay no records``() =
         withTemp (fun path ->
             Assert.Empty(replay path 1024L)

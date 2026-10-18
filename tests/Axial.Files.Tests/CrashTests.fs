@@ -29,10 +29,13 @@ type CrashTests() =
             start.ArgumentList.Add mode
             start.ArgumentList.Add path
             start.UseShellExecute <- false
+            start.RedirectStandardOutput <- true
             use child = Process.Start start
             try
-                // Give the first probe time to JIT before exercising short kill windows.
-                Thread.Sleep(if iteration = 1 then 1000 else Random.Shared.Next(50, 301))
+                let ready = child.StandardOutput.ReadLineAsync()
+                Assert.True(ready.Wait(10000), "Probe never reported ready")
+                Assert.Equal("ready", ready.Result)
+                Thread.Sleep(Random.Shared.Next(50, 301))
                 if not child.HasExited then child.Kill(entireProcessTree = true)
                 Assert.True(child.WaitForExit(5000), "Probe failed to exit after kill")
             finally
@@ -43,7 +46,7 @@ type CrashTests() =
     let replay path =
         let env = { new IHasFileSystem with member _.FileSystem = FileSystem.live }
         let operation = flow {
-            let! log = AppendLog.openLog path (100L * 1024L * 1024L) |> Flow.scopeResource
+            let! log = AppendLog.openLog path 256L |> Flow.scopeResource
             return! AppendLog.readAll log |> FlowStream.runCollect
         }
         match Flow.run env operation with
@@ -56,6 +59,7 @@ type CrashTests() =
         else withTemp (fun path ->
             let dll = probeDll ()
             runProbe dll "atomic" path (fun () ->
+                Assert.True(File.Exists path, "Probe did not write an atomic target")
                 if File.Exists path then
                     let contents = File.ReadAllBytes path |> Encoding.ASCII.GetString
                     let split = contents.IndexOf '\n'
@@ -72,7 +76,11 @@ type CrashTests() =
         if not supported then () // Process-tree kill semantics are tested on Unix hosts only.
         else withTemp (fun path ->
             let dll = probeDll ()
+            let mutable previous = -1
             runProbe dll "log" path (fun () ->
                 let records = replay path |> List.map Encoding.ASCII.GetString
-                records |> List.iteri (fun i record -> Assert.Equal(string i, record)))
+                Assert.NotEmpty(records)
+                Assert.True(int (List.last records) > previous, "Probe made no progress")
+                previous <- int (List.last records)
+                records |> List.pairwise |> List.iter (fun (a, b) -> Assert.Equal(int a + 1, int b)))
             Assert.NotEmpty(replay path))

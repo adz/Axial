@@ -8,6 +8,8 @@
 
 `AppendLog.openLog path maxBytes` opens a scoped, single-writer log. `AppendLog.append record log` writes an 8-byte length/CRC32 header followed by the payload and flushes before acknowledging the append. On open, recovery scans frames and truncates the current file at the first incomplete or corrupt frame. `AppendLog.readAll log` replays valid records from `<path>.1` followed by `<path>` in order. When the next frame would exceed `maxBytes`, append rotates the current file to `<path>.1`, replacing the previous rotated file; each file stays within the cap. This is a bounded two-file log, not unlimited history.
 
-After a process kill, an acknowledged record is neither lost nor partial. An unacknowledged tail can be discarded on recovery. Power-loss durability depends on the filesystem honouring the flush; directory metadata durability after rotation is filesystem-dependent.
+Concurrent appends to one log are serialised. Recovery rejects frame lengths larger than `maxBytes - 8` before allocating. If a kill occurs after rotation's rename but before creation of the new current file, opening the log keeps `<path>.1` and creates an empty current file.
+
+`Flush(true)` makes acknowledged record contents durable. Process kills lose no acknowledged records; an unacknowledged tail can be discarded on recovery. A newly created or renamed file's directory entry is durable across power loss only when the directory is fsynced; this package does not fsync directories.
 
 `Files.watch recursive path` streams `FileChange` events for a directory or one file. Set `recursive` to `true` to include nested directories. The watcher is disposed when the stream ends, including after `FlowStream.take`. Watcher errors are typed `FileSystemError` failures. The buffer holds 1024 events; overflow fails the stream rather than silently dropping changes. Rescan the watched path after an error or overflow because filesystem notifications are not a durable log.

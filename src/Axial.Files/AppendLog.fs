@@ -5,10 +5,14 @@ open System.IO
 open Axial
 open Axial.FileSystem
 
-/// <summary>A bounded, single-writer framed file log. Dispose the resource before opening another writer.</summary>
+/// <summary>A bounded framed file log retaining two generations. Dispose the resource before opening another writer.</summary>
 [<Sealed>]
 type AppendLog internal (path: string, maxBytes: int64, fs: IFileSystem, stream: FileStream) =
     let mutable current = stream
+    let gate = Semaphore.make 1 |> Flow.run () |> function Exit.Success value -> value | _ -> failwith "Invalid semaphore"
+    let mutable failed = false
+    member internal _.Gate = gate
+    member internal _.Failed with get () = failed and set value = failed <- value
     member internal _.Path = path
     member internal _.MaxBytes = maxBytes
     member internal _.FileSystem = fs
@@ -30,7 +34,7 @@ module AppendLog =
             value <- table[int ((value ^^^ uint32 b) &&& 0xFFu)] ^^^ (value >>> 8)
         ~~~value
 
-    let private scan (stream: FileStream) =
+    let private scan (maxBytes: int64) (stream: FileStream) =
         stream.Position <- 0L
         let header = Array.zeroCreate<byte> 8
         let records = ResizeArray<byte array>()
@@ -43,7 +47,7 @@ module AppendLog =
                 if n = 0 then raise (EndOfStreamException())
                 count <- count + n
             let length = BitConverter.ToInt32(header, 0)
-            if length < 0 || int64 length > stream.Length - stream.Position then
+            if length < 0 || int64 length > maxBytes - 8L || int64 length > stream.Length - stream.Position then
                 scanning <- false
             else
                 let payload = Array.zeroCreate<byte> length
@@ -58,7 +62,7 @@ module AppendLog =
                     records.Add payload
         valid, records.ToArray()
 
-    /// <summary>Opens a single-writer log and truncates an incomplete or corrupt tail.</summary>
+    /// <summary>Opens a log, preserving the rotated generation when the current file is missing, and truncates a corrupt tail. Frame lengths are bounded by maxBytes.</summary>
     let openLog (path: string) (maxBytes: int64) : Resource<'env, FileSystemError, AppendLog> when 'env :> IHasFileSystem =
         Resource.create
             (flow {
@@ -69,7 +73,7 @@ module AppendLog =
                     Flow.attemptBlocking (fun _ ->
                         let stream = fs.OpenFile(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
                         try
-                            let valid, _ = scan stream
+                            let valid, _ = scan maxBytes stream
                             if valid <> stream.Length then
                                 stream.SetLength valid
                                 stream.Flush(true)
@@ -83,16 +87,27 @@ module AppendLog =
             })
             (fun log -> Flow.delay (fun () -> log.Stream.Dispose(); Flow.succeed ()))
 
-    /// <summary>Appends a length/CRC32 frame and flushes it to storage before acknowledgement.</summary>
+    /// <summary>Serialises appends and flushes record contents to storage before acknowledgement. Rotation retains two generations; directory entries are not fsynced for power-loss durability.</summary>
     let append (record: byte array) (log: AppendLog) : Flow<'env, FileSystemError, unit> =
-        Flow.attemptBlocking (fun _ ->
+        (Flow.attemptBlocking (fun _ ->
+            if log.Failed then raise (IOException("AppendLog is unavailable after failed rotation"))
             let size = int64 record.Length + 8L
             if size > log.MaxBytes then invalidArg (nameof record) "Record exceeds log cap"
             let stream = log.Stream
             if stream.Length + size > log.MaxBytes then
+                stream.Flush(true)
                 stream.Dispose()
-                log.FileSystem.MoveFile(log.Path, log.Path + ".1", true)
-                log.Stream <- log.FileSystem.OpenFile(log.Path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read)
+                try
+                    log.FileSystem.MoveFile(log.Path, log.Path + ".1", true)
+                    log.Stream <- log.FileSystem.OpenFile(log.Path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read)
+                with error ->
+                    try
+                        if log.FileSystem.FileExists log.Path then
+                            log.Stream <- log.FileSystem.OpenFile(log.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read)
+                            log.Stream.Position <- log.Stream.Length
+                        else log.Failed <- true
+                    with _ -> log.Failed <- true
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
             let stream = log.Stream
             let header = Array.zeroCreate<byte> 8
             Buffer.BlockCopy(BitConverter.GetBytes(record.Length), 0, header, 0, 4)
@@ -100,7 +115,8 @@ module AppendLog =
             stream.Write(header, 0, 8)
             stream.Write(record, 0, record.Length)
             stream.Flush(true))
-        |> Flow.mapError (FileSystemError.fromException (Some log.Path))
+        |> Flow.mapError (FileSystemError.fromException (Some log.Path)))
+        |> Semaphore.withPermit log.Gate
 
     /// <summary>Replays valid frames from the current file.</summary>
     let readAll (log: AppendLog) : FlowStream<'env, FileSystemError, byte array> =
@@ -109,7 +125,7 @@ module AppendLog =
                 let read path =
                     if log.FileSystem.FileExists path then
                         use stream = log.FileSystem.OpenFile(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-                        scan stream |> snd
+                        scan log.MaxBytes stream |> snd
                     else [||]
                 Array.append (read (log.Path + ".1")) (read log.Path))
             |> Flow.mapError (FileSystemError.fromException (Some log.Path)))
