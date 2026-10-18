@@ -9,6 +9,10 @@ Fibers represent running child workflows.
 
 In Axial, a **Fiber** is a handle to a running [**`Flow`**](/api/). A flow is a cold description of work. A fiber is the hot execution that exists after that work has been started in the background.
 
+## Fiber-local values
+
+`FiberLocal.make initial` creates an unnamed local. `FiberLocal.named "jobId" initial` creates one whose explicitly scoped value can be attached to log entries. `FiberLocal.get local` reads the current value or its initial value. `FiberLocal.locally value local work` overrides it for `work` and restores the prior value afterward. Child fibers inherit the value present when forked; concurrent siblings do not share changes. `FiberLocal.current ()` synchronously returns only named locals with an explicitly scoped value, as `(name, value)` pairs. Unset defaults and unnamed locals are excluded.
+
 ## The Mental Model
 
 While a `Flow` is **cold** (a description of work that hasn't started yet), a **Fiber** is **hot** (the work is currently being executed).

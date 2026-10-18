@@ -3,11 +3,14 @@ namespace Axial.Tests
 open System
 open System.Threading
 open System.Threading.Tasks
+open System.Collections.Generic
+open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial
 open Axial.Hosting
 open Axial.PlatformService
+open Axial.Layers
 open Swensen.Unquote
 open Xunit
 
@@ -51,7 +54,53 @@ type RecordingLifetime() =
             Interlocked.Increment(&stopCalls) |> ignore
             stopping.Cancel()
 
+type ScopedProvider() =
+    let entries = System.Collections.Concurrent.ConcurrentBag<string * string option>()
+    let mutable scopes: IExternalScopeProvider = LoggerExternalScopeProvider() :> IExternalScopeProvider
+    member _.Entries = entries |> Seq.toList
+    interface ISupportExternalScope with
+        member _.SetScopeProvider provider = scopes <- provider
+    interface ILoggerProvider with
+        member _.CreateLogger(_) =
+            { new ILogger with
+                member _.IsEnabled(_) = true
+                member _.BeginScope state = scopes.Push state
+                member _.Log(_, _, state, _, _) =
+                    let mutable jobId = None
+                    scopes.ForEachScope(
+                        Action<obj, unit>(fun scope _ ->
+                            match scope with
+                            | :? IDictionary<string, obj> as values when values.ContainsKey "jobId" ->
+                                jobId <- Some(string values["jobId"])
+                            | _ -> ()), ())
+                    entries.Add(string state, jobId) }
+        member _.Dispose() = ()
+
 module HostingTests =
+    [<Fact>]
+    let ``named locals follow concurrent jobs and forked logs`` () =
+        let provider = ScopedProvider()
+        use factory = LoggerFactory.Create(fun builder -> builder.AddProvider(provider) |> ignore)
+        let logger = MicrosoftLogging.fromFactory "jobs" factory
+        let jobId = FiberLocal.named "jobId" "unset"
+        let log message : Flow<ClockEnvironment, string, unit> =
+            Flow.delay (fun () -> logger.Log LogLevel.Information message; Flow.succeed ())
+        let job id =
+            flow {
+                do! log (id + " start")
+                let! child = Flow.fork (log (id + " child"))
+                do! Fiber.join child
+                do! log (id + " end")
+            }
+            |> FiberLocal.locally id jobId
+        let work = Flow.zipPar (job "job-42") (job "job-7")
+        test <@ App.run (ClockEnvironment(Clock.live)) work |> Async.RunSynchronously = Exit.Success ((), ()) @>
+        let entries = provider.Entries
+        test <@ entries.Length = 6 @>
+        for message, scope in entries do
+            let expected = message.Split(' ')[0]
+            test <@ scope = Some expected @>
+
     [<Fact>]
     let ``Microsoft logging adapter preserves levels and exceptions`` () =
         let logger = RecordingLogger()

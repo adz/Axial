@@ -2,6 +2,7 @@ namespace Axial.Hosting
 
 open System
 open System.Threading
+open System.Collections.Generic
 open System.Threading.Tasks
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
@@ -12,23 +13,34 @@ open Axial.HttpClient
 open Axial.Layers
 open Axial.PlatformService
 
+module private ScopedLogging =
+    let withScope (logger: ILogger) (action: unit -> unit) =
+        match FiberLocal.current () with
+        | [] -> action ()
+        | locals ->
+            let scope = Dictionary<string, obj>()
+            for name, value in locals do scope[name] <- value
+            use _scope = logger.BeginScope(scope)
+            action ()
+
 /// <summary>Adapts Microsoft.Extensions.Logging loggers to Axial's explicit logging service.</summary>
 [<RequireQualifiedAccess>]
 module MicrosoftLogging =
     let private write (logger: ILogger) (level: LogLevel) (error: exn option) (message: string) =
-        match level, error with
-        | LogLevel.Trace, None -> logger.LogTrace message
-        | LogLevel.Debug, None -> logger.LogDebug message
-        | LogLevel.Information, None -> logger.LogInformation message
-        | LogLevel.Warning, None -> logger.LogWarning message
-        | LogLevel.Error, None -> logger.LogError message
-        | LogLevel.Critical, None -> logger.LogCritical message
-        | LogLevel.Trace, Some error -> logger.LogTrace(error, message)
-        | LogLevel.Debug, Some error -> logger.LogDebug(error, message)
-        | LogLevel.Information, Some error -> logger.LogInformation(error, message)
-        | LogLevel.Warning, Some error -> logger.LogWarning(error, message)
-        | LogLevel.Error, Some error -> logger.LogError(error, message)
-        | LogLevel.Critical, Some error -> logger.LogCritical(error, message)
+        ScopedLogging.withScope logger (fun () ->
+            match level, error with
+            | LogLevel.Trace, None -> logger.LogTrace message
+            | LogLevel.Debug, None -> logger.LogDebug message
+            | LogLevel.Information, None -> logger.LogInformation message
+            | LogLevel.Warning, None -> logger.LogWarning message
+            | LogLevel.Error, None -> logger.LogError message
+            | LogLevel.Critical, None -> logger.LogCritical message
+            | LogLevel.Trace, Some error -> logger.LogTrace(error, message)
+            | LogLevel.Debug, Some error -> logger.LogDebug(error, message)
+            | LogLevel.Information, Some error -> logger.LogInformation(error, message)
+            | LogLevel.Warning, Some error -> logger.LogWarning(error, message)
+            | LogLevel.Error, Some error -> logger.LogError(error, message)
+            | LogLevel.Critical, Some error -> logger.LogCritical(error, message))
 
     /// <summary>Creates an Axial logger backed by a supplied Microsoft logger.</summary>
     let create (logger: ILogger) : ILog =
@@ -60,14 +72,16 @@ module FiberLogging =
                 fun metadata defect ->
                     defect
                     |> Option.iter (fun error ->
-                        logger.LogError(error, "Fiber {FiberId} died with a defect", metadata.Id.Value))
+                        ScopedLogging.withScope logger (fun () ->
+                            logger.LogError(error, "Fiber {FiberId} died with a defect", metadata.Id.Value)))
             OnUnobservedDefect =
                 fun metadata defect ->
-                    match metadata with
-                    | Some fiber ->
-                        logger.LogCritical(defect, "Unobserved fiber defect (fiber {FiberId})", fiber.Id.Value)
-                    | None ->
-                        logger.LogCritical(defect, "Unobserved defect from a discarded race/timeout loser") }
+                    ScopedLogging.withScope logger (fun () ->
+                        match metadata with
+                        | Some fiber ->
+                            logger.LogCritical(defect, "Unobserved fiber defect (fiber {FiberId})", fiber.Id.Value)
+                        | None ->
+                            logger.LogCritical(defect, "Unobserved defect from a discarded race/timeout loser")) }
 
     /// <summary>Installs fiber defect logging at the root application edge.</summary>
     let observe (logger: ILogger) (application: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =

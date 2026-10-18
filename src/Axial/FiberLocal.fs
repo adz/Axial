@@ -1,6 +1,7 @@
 namespace Axial
 
 open System.Threading
+open System.Collections.Generic
 
 /// A value scoped to the current fiber and inherited by fibers forked within its scope.
 type FiberLocal<'a> = internal { Id: int64; Initial: 'a; Name: string option }
@@ -8,6 +9,7 @@ type FiberLocal<'a> = internal { Id: int64; Initial: 'a; Name: string option }
 [<RequireQualifiedAccess>]
 module FiberLocal =
     let mutable private nextId = 0L
+    let private names = Dictionary<int64, string>()
 
     let private freshId () =
 #if FABLE_COMPILER
@@ -21,7 +23,22 @@ module FiberLocal =
         { Id = freshId (); Initial = initial; Name = None }
 
     let named (name: string) (initial: 'a) : FiberLocal<'a> =
-        { Id = freshId (); Initial = initial; Name = Some name }
+        let id = freshId ()
+        lock names (fun () -> names[id] <- name)
+        { Id = id; Initial = initial; Name = Some name }
+
+    /// Reads explicitly scoped named values on the current fiber; unnamed and unset locals are omitted.
+    let current () : (string * obj) list =
+        let locals = RuntimeState.current().Locals
+        if Map.isEmpty locals then []
+        else
+            lock names (fun () ->
+                locals
+                |> Map.toList
+                |> List.choose (fun (id, value) ->
+                    match names.TryGetValue id with
+                    | true, name -> Some(name, value)
+                    | _ -> None))
 
     let get (local: FiberLocal<'a>) : Flow<'env, 'error, 'a> =
         Flow.delay (fun () ->

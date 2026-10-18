@@ -11,12 +11,6 @@ lists the queue. Work on main.
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
   - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
     with keyed commands and an inbox subscription, and await cleanup on shutdown.
-- [ ] T10: Fiber-local context carried into logs
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Replaces the `LATER_TODO.md` "fiber-local state" item.
-  - Add FiberRef-style fiber-local values (make, get, set, locally), inherited by forked fibers. Have `ILog`
-    implementations and `Hosting.observer` attach the current context (correlation ID, unit ID) to each entry.
-  - Fork is a hot path: benchmark `ParallelCompositionBenchmarks` before and after; no cost when no fiber-local is set.
-  - Done when: a test shows one job ID on every log line of a job, across forked fibers.
 - [ ] T12: Wakeable reissue combinator for long polls
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
   - A combinator that runs a flow and, when a wake signal fires, interrupts and reissues it; the wake is neither a

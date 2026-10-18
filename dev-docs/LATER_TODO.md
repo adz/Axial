@@ -128,7 +128,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 ## 10. Post-v1.0 Fiber Runtime
 
-- [ ] Fiber-local state similar to FiberRef/FiberRefs: moved to `TASKS.md` T10 for 0.11.
+- [x] Fiber-local state similar to FiberRef/FiberRefs: done in 0.11.
 - [x] Add supervision hooks for fiber start/end/failure/interruption (`FiberObserver` with `OnStart`/`OnEnd`/`OnUnobservedDefect`, installed via `Flow.withFiberObserver`; interruption is reported through `OnEnd` status; unobserved defects are detected at race/timeout discard sites, scope close, and a GC net).
 - [x] Add `Flow.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget.
 - [ ] Add runtime flags and execution strategy where they materially affect .NET behavior.

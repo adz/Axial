@@ -5,6 +5,8 @@ description: Level-based logging as a declared dependency, and where it sits rel
 
 `ILog` is a deliberately small logging contract: write a message at a level, or write one carrying an exception.
 
+`MicrosoftLogging.create` and `MicrosoftLogging.fromFactory` wrap each entry in a Microsoft `ILogger.BeginScope` dictionary containing the current explicitly set named `FiberLocal` values. `FiberLogging.observer` does the same for defect entries. Without named values, no scope is opened. Providers must enable scope capture to display these fields.
+
 ```fsharp prepare
 // Setup for the checked examples on this page.
 open System
