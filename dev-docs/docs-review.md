@@ -2,6 +2,9 @@
 
 ## Assumptions
 
+- [fixed] `README.md:33` — `checkoutOrder` pipes `checkout` through `Flow.retry` and `Flow.timeout`, both of which require `'env :> IHasClock`; `CheckoutEnv` had no clock, so the example did not compile. Added `Clock: IClock` and an `IHasClock` implementation to `CheckoutEnv`.
+- [fixed] `README.md:75` — The package family lists "layers" as part of core `Axial`, but layers ship in the separate `Axial.Layers` package, not in core `Axial`. Moved "layers" into the supporting-packages sentence.
+
 - [fixed] `docs/http/04-testing.md:72` — `runUserLookup` uses a relative URL but does not configure `client.BaseAddress` until the later, separate `apiClient` snippet. Say the caller must supply a client with a base address or use an absolute URL.
 
 - [fixed] `docs/api/Axial.HubModule.md:3` — “Lossless consumer” assumes a `BackPressure` subscription and a publisher that waits for acceptance; name that strategy so readers do not infer every subscription is lossless.
@@ -40,6 +43,9 @@
 - [fixed] `docs/process/07-worked-examples.md:69` — The checked application example assumes the docs are run inside a Git repository with a reachable `HEAD`; a copied example in a new project can fail. Use a deterministic command or state the prerequisite.
 
 ## Unclear or misleading
+
+- [fixed] `README.md:52` — "does not change the signature" plus "a resource that must be released" overpromised: the example shows only retry and timeout, and those require a clock in the environment. Rewrote the prose to name what the example shows and state the `IHasClock` requirement.
+- [fixed] `README.md:95` — The trailing sentence "Axial's server adapters serve Reified contracts." duplicated the preceding claim; removed it.
 
 - [fixed] `docs/http/03-reliability.md:95` — The stated 200/400/800ms backoff contradicts the example's 1ms base delay; distinguish that example's 1/2/4ms schedule from the 200ms `withRetries` default.
 - [fixed] `docs/http/04-testing.md:59` — `IHttp.Send` returns a Flow, so saying a fake can return `Error(HttpError.TimedOut(...))` suggests the wrong return shape. Show `Flow.fail (HttpError.TimedOut(...))` with the required arguments.

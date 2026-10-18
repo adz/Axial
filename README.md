@@ -32,7 +32,10 @@ type Receipt = { OrderId: int; Total: decimal; Reference: string }
 
 type CheckoutEnv =
     { FindTotal: int -> ColdTask<Result<decimal, CheckoutError>>
-      Charge: decimal -> ColdTask<Result<string, CheckoutError>> }
+      Charge: decimal -> ColdTask<Result<string, CheckoutError>>
+      Clock: IClock }
+    interface IHasClock with
+        member this.Clock = this.Clock
 
 let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
     flow {
@@ -46,8 +49,9 @@ let checkout orderId : Flow<CheckoutEnv, CheckoutError, Receipt> =
 
 The application supplies live functions. A test supplies a record of fakes. The workflow does not change.
 
-Adding a timeout, a retry policy, and a resource that must be released does not change the signature either, because
-the runtime that starts the workflow owns cancellation, retries, and cleanup:
+Adding a timeout and a retry policy leaves the `Flow<CheckoutEnv, CheckoutError, Receipt>` signature unchanged — these
+combinators only require the environment to provide a clock (`IHasClock`) — because the runtime that starts the
+workflow owns cancellation, retries, and cleanup:
 
 ```fsharp
 open System
@@ -68,11 +72,11 @@ dotnet add package Axial
 
 ## Package family
 
-- [`Axial`](https://www.nuget.org/packages/Axial): the core workflow model: typed failures, dependencies, concurrency, resources, schedules, streams, and layers.
+- [`Axial`](https://www.nuget.org/packages/Axial): the core workflow model: typed failures, dependencies, concurrency, resources, schedules, and streams.
 - [`Axial.Process`](https://www.nuget.org/packages/Axial.Process): external process composition, pipelines, streaming output, typed failures, cancellation, and cleanup.
 - [`Axial.HttpClient`](https://www.nuget.org/packages/Axial.HttpClient): typed HTTP requests, response handling, and reliability policies.
 
-Supporting packages provide platform services, console and file-system access, hosting, and telemetry. The [package catalogue](https://adz.github.io/Axial/packages/) links the first-class libraries and the complete compatibility matrix.
+Supporting packages provide platform services, console and file-system access, hosting, telemetry, and layers. The [package catalogue](https://adz.github.io/Axial/packages/) links the first-class libraries and the complete compatibility matrix.
 
 ## Documentation and examples
 
@@ -89,5 +93,3 @@ Supporting packages provide platform services, console and file-system access, h
 ## Reified integration
 
 [Reified](https://github.com/adz/Reified) declares value, model, JSON, and HTTP contracts. Axial's optional server adapters execute Reified HTTP contracts as workflows; neither core depends on the other.
-
-Axial's server adapters serve Reified contracts.
