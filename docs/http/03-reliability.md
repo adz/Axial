@@ -92,11 +92,13 @@ firstUser |> Flow.run flaky.Env |> shouldEqual (Exit.Success { Id = 1; Name = "A
 flaky.Sent.Length |> shouldEqual 3
 ```
 
-`retryTransient 3` makes up to 3 retries after the first attempt, with exponential backoff (200ms, 400ms, 800ms).
+`retryTransient 3` makes up to 3 retries after the first attempt. The example above passes a 1ms base delay so
+the docs test does not sleep, producing a 1ms, 2ms, 4ms schedule. The DSL shorthand `withRetries 3` applies the
+same exponential schedule with the 200ms base delay instead, so its retries wait 200ms, 400ms, then 800ms.
 A permanent failure such as `HttpError.Status 404` or `HttpError.DecodeFailed` fails immediately on the first
-attempt. The DSL shorthand `withRetries 3` applies the same schedule with a 200ms base delay. To combine it with other
-schedules, take the schedule itself: `HttpError.transientRetry 3 (TimeSpan.FromMilliseconds 200.0)` is the
-`Schedule` that `retryTransient` passes to `Flow.retry`.
+attempt. To combine the retry with other schedules, take the schedule itself:
+`HttpError.transientRetry 3 (TimeSpan.FromMilliseconds 200.0)` is the `Schedule` that `retryTransient` passes to
+`Flow.retry`.
 
 For full control, describe the retry yourself and pass it to `Flow.retry`. A `Retry` record names each choice:
 

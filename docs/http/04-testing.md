@@ -56,8 +56,20 @@ Http.getJson decodeUser "https://api.example.test/users/1"
 ```
 
 Because the fake receives the full `HttpRequest`, tests can also assert on what was sent: method, URL, query,
-headers, and body are all plain data. Returning `Error(HttpError.TimedOut(...))` from a fake exercises retry and
-fallback paths deterministically, with no network and no clock.
+headers, and body are all plain data. `IHttp.Send` returns a `Flow`, so a fake reports a failure with `Flow.fail`,
+not a bare `Result`:
+
+```fsharp
+/// A fake that always fails with a per-request timeout; no network and no clock are involved.
+let alwaysTimesOut =
+    { Http =
+        { new IHttp with
+            member _.Send(request) =
+                Flow.fail (HttpError.TimedOut(Request.render request, TimeSpan.FromSeconds 5.0)) } }
+```
+
+Returning a typed failure such as `HttpError.TimedOut` from a fake exercises retry and fallback paths
+deterministically, with no network and no clock.
 
 ## The Live Service
 
@@ -82,6 +94,10 @@ let runUserLookup (client: HttpClient) =
     |> Layer.provide (appLayer Clock.live client)
     |> Flow.run ()
 ```
+
+`runUserLookup` sends the relative URL `"users/1"`, so the caller must supply a `client` whose `BaseAddress` is
+set, or the lookup must use an absolute URL. Without a base address, `Http.live` fails the request with
+`HttpError.InvalidRequest`.
 
 Reuse one `HttpClient` per application: connection pooling, DNS rotation handlers,
 and proxy settings remain `HttpClient` concerns. Axial adds the typed request/response boundary on top

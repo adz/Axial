@@ -2,7 +2,7 @@
 
 ## Assumptions
 
-- `docs/http/04-testing.md:72` — `runUserLookup` uses a relative URL but does not configure `client.BaseAddress` until the later, separate `apiClient` snippet. Say the caller must supply a client with a base address or use an absolute URL.
+- [fixed] `docs/http/04-testing.md:72` — `runUserLookup` uses a relative URL but does not configure `client.BaseAddress` until the later, separate `apiClient` snippet. Say the caller must supply a client with a base address or use an absolute URL.
 
 - [fixed] `docs/api/Axial.HubModule.md:3` — “Lossless consumer” assumes a `BackPressure` subscription and a publisher that waits for acceptance; name that strategy so readers do not infer every subscription is lossless.
 
@@ -41,9 +41,9 @@
 
 ## Unclear or misleading
 
-- `docs/http/03-reliability.md:95` — The stated 200/400/800ms backoff contradicts the example's 1ms base delay; distinguish that example's 1/2/4ms schedule from the 200ms `withRetries` default.
-- `docs/http/04-testing.md:59` — `IHttp.Send` returns a Flow, so saying a fake can return `Error(HttpError.TimedOut(...))` suggests the wrong return shape. Show `Flow.fail (HttpError.TimedOut(...))` with the required arguments.
-- `docs/http/02-responses-and-errors.md:77` — “The transcript is safe to log as-is” follows a claim only about redacting the request line; `Body` and `Text` can contain credentials or personal data. Limit the safety claim to the request line and caution against logging the full response.
+- [fixed] `docs/http/03-reliability.md:95` — The stated 200/400/800ms backoff contradicts the example's 1ms base delay; distinguish that example's 1/2/4ms schedule from the 200ms `withRetries` default.
+- [fixed] `docs/http/04-testing.md:59` — `IHttp.Send` returns a Flow, so saying a fake can return `Error(HttpError.TimedOut(...))` suggests the wrong return shape. Show `Flow.fail (HttpError.TimedOut(...))` with the required arguments.
+- [fixed] `docs/http/02-responses-and-errors.md:77` — “The transcript is safe to log as-is” follows a claim only about redacting the request line; `Body` and `Text` can contain credentials or personal data. Limit the safety claim to the request line and caution against logging the full response.
 
 - [fixed] `docs/api/Axial.QueueModule.md:11` — “One logical consumer” suggests a queue cannot have multiple competing takers, while the next paragraph discusses many consumers. Say each value goes to one taker, not that only one taker may exist.
 - [fixed] `docs/api/Axial.Scope.md:18` — “That scope moves to the caller's scope when the caller receives the value” has no clear antecedent after listing parallel, race, and timed flows; specify which child scope transfers ownership and when, including failure.

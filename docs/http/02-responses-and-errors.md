@@ -73,8 +73,10 @@ summary |> Flow.run (ScriptedHttp([ 200, "[]" ]).Env) |> shouldEqual (Exit.Succe
 `response.Duration` records how long the exchange took, measured with the service's `IClock`.
 
 - `StatusCode`, `ReasonPhrase`, and `Headers` (response plus content headers, in arrival order).
-- `Body` is the exact bytes; `Text` is decoded with the response charset, defaulting to UTF-8.
-- `Request` is the redacted request line, so the transcript is safe to log as-is.
+- `Body` is the exact bytes; `Text` is decoded with the response charset, defaulting to UTF-8. Neither is
+  redacted, so treat them as sensitive: a body may contain credentials or personal data.
+- `Request` is the redacted request line (secret query values and headers are replaced with `***`), so the
+  request line is safe to log as-is. Do not log the full transcript without bounding `Body`/`Text`.
 - `StartedAt` and `Duration` time the full exchange including body download.
 
 ## Typed JSON Decoding
