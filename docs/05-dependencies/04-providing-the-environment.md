@@ -49,8 +49,7 @@ let summary : Flow<AppEnv, Never, string> =
     }
 ```
 
-Production builds the record from the live services, for example `{ Users = SqlUserStore(connectionString); Clock =
-Clock.live }`. A test builds it from fixed ones:
+Production builds the record from the live services; `SqlUserStore` is a placeholder for your own store implementation, not a type Axial ships. For example: `{ Users = SqlUserStore(connectionString); Clock = Clock.live }`. A test builds it from fixed ones:
 
 ```fsharp run
 let fixedEnv =
@@ -80,13 +79,14 @@ pattern.
 
 ## 2. Take it from a host container
 
-.NET hosts already have an `IServiceProvider`. Use it to *build* the environment, then leave it behind:
+.NET hosts already have an `IServiceProvider`. Use it to *build* the environment, then leave it behind.
+Resolving inside the workflow is the escape hatch, not the default shape:
 
 ```fsharp
 type IOrderQueue =
     abstract Flush: unit -> int
 
-let flushOrders : Flow<IServiceProvider, unit, int> =
+let flushOrdersFromProvider : Flow<IServiceProvider, unit, int> =
     flow {
         let! orders = ServiceProvider.get<IOrderQueue, _, _> ()
         return orders.Flush()
@@ -105,9 +105,9 @@ let provider (services: (Type * obj) list) =
 ```fsharp run
 let withQueue = provider [ typeof<IOrderQueue>, box { new IOrderQueue with member _.Flush() = 5 } ]
 
-flushOrders |> Flow.run withQueue |> shouldEqual (Exit.Success 5)
+flushOrdersFromProvider |> Flow.run withQueue |> shouldEqual (Exit.Success 5)
 
-match flushOrders |> Flow.run (provider []) with
+match flushOrdersFromProvider |> Flow.run (provider []) with
 | Exit.Failure(Cause.Die _) -> ()
 | other -> failwithf "expected a defect, got %A" other
 ```
@@ -117,7 +117,35 @@ service is a configuration bug rather than something a workflow should handle.
 
 The rule is one line: **use `IServiceProvider` to build the world; do not make every business workflow depend on it.**
 A workflow typed `Flow<IServiceProvider, _, _>` can reach anything, which is exactly the property the environment
-channel exists to remove. Convert at the edge and let the rest of the application name what it needs.
+channel exists to remove. Convert at the edge and let the rest of the application name what it needs. At the
+composition root, resolve the dependencies once and hand the application an ordinary record:
+
+```fsharp
+type OrderEnv = { Orders: IOrderQueue }
+
+let buildOrderEnv : Flow<IServiceProvider, unit, OrderEnv> =
+    flow {
+        let! orders = ServiceProvider.get<IOrderQueue, _, _> ()
+        return { Orders = orders }
+    }
+
+let flushOrders : Flow<OrderEnv, unit, int> =
+    flow {
+        let! orders = Flow.envWith _.Orders
+        return orders.Flush()
+    }
+```
+
+```fsharp run
+let appEnv =
+    match buildOrderEnv |> Flow.run (provider [ typeof<IOrderQueue>, box { new IOrderQueue with member _.Flush() = 5 } ]) with
+    | Exit.Success env -> env
+    | Exit.Failure cause -> failwithf "startup failed: %A" cause
+
+flushOrders |> Flow.run appEnv |> shouldEqual (Exit.Success 5)
+```
+
+With this shape, the container lookup happens once in `buildOrderEnv`; `flushOrders` and the rest of the application name only the record.
 
 ## 3. Provision it with a layer
 

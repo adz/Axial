@@ -29,7 +29,7 @@
 
 - `docs/06-services/02-console.md:43` — `Console.readLine` may return null at EOF; `answer.Trim()` assumes interactive input always supplies a line. Show EOF handling in a reusable confirmation example.
 
-- `docs/05-dependencies/04-providing-the-environment.md:52` — `SqlUserStore(connectionString)` is invoked without a definition or indication that it is pseudocode; a newcomer may treat the production record as copyable.
+- [fixed] `docs/05-dependencies/04-providing-the-environment.md:52` — `SqlUserStore(connectionString)` is invoked without a definition or indication that it is pseudocode; a newcomer may treat the production record as copyable.
 
 - [fixed] `docs/03-the-flow-type/06-task-async-interop.md:22` — “Flow cannot pass cancellation into” a started task assumes it was created without a token the caller controls; clarify that the Flow cannot supply its own token retroactively, even if the caller has another cancellation source.
 
@@ -90,10 +90,10 @@
 - `docs/06-services/03-filesystem.md:134` — “The `Async` members on `IFileSystem` ... return `Flow`” blurs service methods and workflow wrappers; distinguish the interface's signatures from the `FileSystem.*Async` functions readers call.
 - `docs/06-services/04-files.md:5` — “A process crash cannot expose a partially written destination” needs a qualification for failures during rename or when the destination did not previously exist; specify the actual atomicity guarantee and supported filesystems.
 
-- `docs/05-dependencies/04-providing-the-environment.md:83` — The section says to use the container to build an environment and leave it behind, but its only direct example runs `Flow<IServiceProvider, _, _>`; show the conversion into an application record at the edge.
-- `docs/05-dependencies/05-tutorials/01-explicit-dependencies.md:52` — `TimedOut` and `Cancelled` are declared as typed errors although the tutorial never produces either; cancellation should remain an interruption unless the workflow owns its cancellation source.
-- `docs/05-dependencies/05-tutorials/02-app-record.md:18` — “Reuse The Same Interfaces” is inaccurate: the page redefines the types independently and changes the error union and adds audit; readers cannot simply continue the preceding tutorial's session.
-- `docs/05-dependencies/05-tutorials/02-app-record.md:213` — “Only `Flow.run env` names the record” contradicts the `Flow<AppEnv, …>` annotations on each helper; distinguish passing the record value from naming its type.
+- [fixed] `docs/05-dependencies/04-providing-the-environment.md:83` — The section says to use the container to build an environment and leave it behind, but its only direct example runs `Flow<IServiceProvider, _, _>`; show the conversion into an application record at the edge.
+- [fixed] `docs/05-dependencies/05-tutorials/01-explicit-dependencies.md:52` — `TimedOut` and `Cancelled` are declared as typed errors although the tutorial never produces either; cancellation should remain an interruption unless the workflow owns its cancellation source.
+- [fixed] `docs/05-dependencies/05-tutorials/02-app-record.md:18` — “Reuse The Same Interfaces” is inaccurate: the page redefines the types independently and changes the error union and adds audit; readers cannot simply continue the preceding tutorial's session.
+- [fixed] `docs/05-dependencies/05-tutorials/02-app-record.md:213` — “Only `Flow.run env` names the record” contradicts the `Flow<AppEnv, …>` annotations on each helper; distinguish passing the record value from naming its type.
 
 - [fixed] `docs/04-error-handling/03-defects.md:24` — “Cause.Interrupt for cancellation” does not distinguish cancellation requested by the Flow runtime from a foreign `OperationCanceledException`; the latter is an expected exception for `attempt*` while the runtime token is live.
 - [fixed] `docs/04-error-handling/02-policy.md:133` — `Policy.compose requireName normalizeName` rejects whitespace-only names before trimming; if the intended rule is “trim, then require a name,” reverse the composition and show the effect on the returned value.

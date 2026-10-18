@@ -15,7 +15,10 @@ Explicit parameters become repetitive when:
 
 An app record bundles dependencies at the boundary while workflows name the fields they read.
 
-## 1. Reuse The Same Interfaces
+## 1. Same Interfaces, Plus An Audit Log
+
+This page redefines the interfaces and error union from the previous tutorial so it stands alone, then adds a third
+dependency — `IAuditLog` — and the `AuditWriteFailed` error case. The two existing interfaces keep their signatures.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -210,7 +213,9 @@ List.ofSeq sent |> shouldEqual [ "ada@example.com" ]
 List.ofSeq entries |> shouldEqual [ "Placed ada@example.com for 125" ]
 ```
 
-Only `Flow.run env` names the record. Every helper reads the fields it needs with `Flow.envWith`.
+`Flow.run env` is the only place a record *value* is supplied. Helpers name the record *type* in their
+`Flow<AppEnv, …>` annotations and read individual fields with `Flow.envWith`, so they never receive the whole
+record.
 
 ## When To Stop Here
 

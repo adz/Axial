@@ -52,8 +52,6 @@ type Order =
 type PlaceOrderError =
     | InvalidEmail
     | OrderRejected of string
-    | TimedOut
-    | Cancelled
 
 type IOrderRepository =
     abstract Save : Order -> Task<Result<unit, string>>
@@ -63,6 +61,8 @@ type IEmailSender =
 ```
 
 These interfaces are intentionally narrow. They represent what the workflow needs, not the full database or mail client API.
+
+`PlaceOrderError` deliberately has no timeout or cancellation case: this workflow owns no cancellation source or deadline, so a cancelled run surfaces as an interruption (matched with `Cause.isInterrupted` in step 5), and a timeout would only become a typed error if the workflow owned its deadline.
 
 ## 2. Compose Small Flows
 
