@@ -10,6 +10,10 @@
 
 ## Unclear or misleading
 
+- `docs/04-error-handling/03-defects.md:24` — “Cause.Interrupt for cancellation” does not distinguish cancellation requested by the Flow runtime from a foreign `OperationCanceledException`; the latter is an expected exception for `attempt*` while the runtime token is live.
+- `docs/04-error-handling/02-policy.md:133` — `Policy.compose requireName normalizeName` rejects whitespace-only names before trimming; if the intended rule is “trim, then require a name,” reverse the composition and show the effect on the returned value.
+- `docs/04-error-handling/03-defects.md:50` — `File.ReadAllTextAsync` is an ambient filesystem operation in an error-handling example; clarify that this demonstrates interop exception capture, not the recommended explicit filesystem-service boundary.
+
 - `docs/03-the-flow-type/01-flow-type.md:28` — Calling every Flow an “immutable, cold description” obscures that `Flow.awaitStartedTask` can wrap work already running; distinguish cold Flow execution from the lifecycle of captured inputs.
 - `docs/03-the-flow-type/08-resources.md:13` — `File.OpenText path` runs inside the Flow but is an ambient filesystem effect and is not interruptible; the resource example does not model the filesystem dependency or failure channel it teaches elsewhere.
 - `docs/03-the-flow-type/08-resources.md:54` — “The flow's own outcome is kept” sounds like finalizer defects cannot change the outcome, but the next sentence says they are added; state how combined causes appear at the boundary.
@@ -23,6 +27,8 @@
 - `docs/01-getting-started/01-why-flow.md:203` — “The same environment gives the same result” overpromises determinism: live service implementations may read external state or have mutable state.
 
 ## Too long
+
+- `docs/04-error-handling/_index.md:41` — The single paragraph combines recovery, traced and compound causes, error-type changes, wrapper exceptions, and handler cancellation; split into a short choice guide and a focused compound-cause explanation.
 
 - `docs/03-the-flow-type/06-task-async-interop.md:272` — The summary repeats the interop selection table and section conclusions; retain one quick decision aid and link to the examples.
 
@@ -40,6 +46,8 @@
 
 ## Missing
 
+- `docs/04-error-handling/_index.md:41` — `Flow.recover`, `Flow.orElseWith`, and `Flow.fold` are introduced without a runnable example showing which causes each handles; add a small typed-failure versus defect example or link to one.
+
 - `docs/03-the-flow-type/03-running-flows.md:47` — The page mentions optional member cancellation tokens but gives no example of running with one or interpreting an interrupted `Exit`; this is a likely boundary task for a Task-based application.
 - `docs/03-the-flow-type/08-resources.md:8` — `use!` is recommended alongside `use`, but neither example shows its binding behavior or when to prefer it over scope acquisition.
 
@@ -50,6 +58,8 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/04-error-handling/01-bind.md:16` — The visible `prepare` block imports many optional Axial packages unrelated to binding; hide the test fixture or limit copyable imports to those needed by the examples. The same fixture appears in `02-policy.md:13` and `03-defects.md:26`.
 
 - `docs/03-the-flow-type/08-resources.md:10` — Add the required `open` statements before the first code block, as done for the second example, so a first-time reader can paste it independently.
 - `docs/03-the-flow-type/04-flow-ce.md:12` — Keep docs-test `prepare` imports out of copyable examples; most listed optional packages are unrelated to the CE demonstration and make the required dependencies hard to infer.
