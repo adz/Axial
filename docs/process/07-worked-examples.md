@@ -5,8 +5,7 @@ description: Three complete shapes for using Axial.Process.
 
 # Worked examples
 
-These examples go from a command-line script to an application Flow. Each command is a value until a
-Flow runner reaches the host boundary.
+Each command is a value until a Flow runner reaches the host boundary.
 
 ## A command-line tool that shows progress
 
@@ -50,7 +49,7 @@ let main _ =
         1
 ```
 
-There is no separate process runtime to construct. Console forwarding is configured lazily; `Process.tryRun` starts the command.
+Console forwarding is configured lazily; `Process.tryRun` starts the command.
 
 ## Use a command as one step in an application
 

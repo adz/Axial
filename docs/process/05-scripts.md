@@ -98,7 +98,7 @@ script |> Process.run |> shouldEqual "firstsecond"
 ```
 
 If a script needs to inspect a process failure rather than raise, `Process.tryRun` returns `Exit`.
-For example, an entry point can distinguish a failed stage from a startup error:
+An entry point can distinguish a failed stage from a startup error:
 
 ```fsharp run
 match shText "exit 3" |> Process.tryRun with

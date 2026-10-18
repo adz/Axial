@@ -27,12 +27,11 @@ command |> Process.run |> _.StdOut |> shouldEqual "hello"
 failure. Use `Process.tryRun` when the caller needs to inspect the full `Exit`. In an application, convert a command
 to a lazy `Flow` with `toFlow` and bind it into the surrounding `flow { }` instead.
 
-The distinction matters: command construction does no I/O; execution does. Axial owns the child processes it starts,
+Command construction does no I/O; execution does. Axial owns the child processes it starts,
 including their cancellation and cleanup. It does not invoke a shell unless you explicitly choose one.
 
 ## Guides
 
-Follow these in order to learn the model. Start with one command, then compose it, then place it inside an application.
 
 1. [Commands and composition](composition.html) — arguments, settings, pipelines, and plans.
 2. [Run a process in an application Flow](running-in-an-application-flow.html) — provide the process service and compose with application work.
@@ -40,7 +39,6 @@ Follow these in order to learn the model. Start with one command, then compose i
 
 ## How-to
 
-Jump to the task you need. Each page focuses on one decision rather than explaining the whole API again.
 
 - [Capture output or send it elsewhere](output-capture.html)
 - [Consume output as it arrives](streaming.html)
@@ -54,4 +52,4 @@ Jump to the task you need. Each page focuses on one decision rather than explain
 The [Axial.Process API reference](xref:T:Axial.Process.ProcessCommand) lists the public types and members. Authored
 API introductions to [`Process`](xref:M:Axial.Process.Process.command) and the
 [`DSL`](xref:M:Axial.Process.DSL.cmd) explain how the main groups fit together. Use the reference when you know the
-name and need its signature or exact contract. The guides teach the choices.
+name and need its signature or exact contract. The guides cover when to use each operation.

@@ -73,6 +73,5 @@ api:
 
 # Axial.Process API
 
-The reference is organized by the job each part of the API does: build commands, run them, handle output, or inspect
-the result. The [`Process` operations](Axial.Process.Process.html) page groups its functions by that same path.
-Use the [Process guides](/process/index.html) to choose an approach before looking up a member.
+The [`Process` operations](Axial.Process.Process.html) page groups functions by command construction, execution, output, and results.
+See the [Process guides](/process/index.html) for usage examples.

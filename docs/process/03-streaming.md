@@ -5,13 +5,11 @@ description: Consume process output while a command is still running.
 
 # Streaming output
 
-Some commands produce useful output long before they finish — a build, a log tail, a long-running server.
 `streamStdoutLines` yields decoded stdout lines as they arrive. It returns a `ProcessStream`, and its terminal
 returns the consumed value together with process completion. Stderr stays separate unless you apply `mergeStderr`.
 
 `ProcessStream<'env, 'value>` is the stream **type**; the `ProcessStream` **module** holds the functions that
-operate on it: `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. This mirrors the `Flow` type and
-its `Flow` module. A stream terminal returns a Flow, which a script executes with `Process.run` or an
+operate on it: `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. A stream terminal returns a Flow, which a script executes with `Process.run` or an
 application binds with `let!` inside the enclosing Flow. A `ProcessStream` cannot be passed to `Process.run` directly.
 
 ```fsharp prepare
@@ -216,8 +214,7 @@ numbers () |> ProcessStream.runForEach observed.Add |> Process.run |> ignore
 shouldEqual ["1"; "2"; "3"; "4"] (List.ofSeq observed)
 ```
 
-A synchronous callback is for ordinary in-memory work. Use `runForEachFlow` or `runFoldFlow` for dependencies
-such as `IConsole`; those effects remain explicit in the environment. Typed consumer errors become
+Use `runForEachFlow` or `runFoldFlow` for dependencies such as `IConsole`; those effects remain explicit in the environment. Typed consumer errors become
 `ProcessStreamError.ConsumerFailed`, while process failures become `ProcessFailed`.
 
 ```fsharp run

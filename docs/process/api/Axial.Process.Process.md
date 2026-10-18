@@ -52,8 +52,6 @@ api:
 
 # Process operations
 
-`Process` covers the lifecycle from command description through execution and observation. Its functions are grouped
-above by the job they do; most callers need only a few.
 
 A command or specification is immutable data. Constructing it starts no process. Use `toFlow` to add execution to an
 application workflow, or `run` / `tryRun` for a script boundary. The former raises `ProcessRunException` on failure;
