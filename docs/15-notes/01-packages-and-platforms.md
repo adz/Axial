@@ -49,8 +49,8 @@ the transitive ones automatically, so you only reference the packages you use di
 | `Axial.Hosting.Browser` | `Axial` | `Fable.Core` |
 | `Axial.Telemetry` | `Axial` | `System.Diagnostics.DiagnosticSource` |
 | `Axial.Telemetry.JavaScript` | `Axial` | `Fable.Core` |
-| `Axial.Hosting.AspNetCore` (experimental) | `Axial` | `Reified.Schema.Http`, `Reified.Schema.Json`, `Reified.Data` |
-| `Axial.Hosting.GenHttp` | `Axial` | `GenHTTP.Api`, `GenHTTP.Modules.IO`, `Reified.Schema.Http`, `Reified.Schema.Json`, `Reified.Data` |
+| `Axial.Hosting.AspNetCore` (experimental) | `Axial` | `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
+| `Axial.Hosting.GenHttp` | `Axial` | `GenHTTP.Api`, `GenHTTP.Modules.IO`, `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
 
 Installing `Axial.Process` therefore also installs `Axial.Console`, `Axial.FileSystem`, and `Axial.PlatformService`.
 Only the two HTTP host adapters, `Axial.Hosting.AspNetCore` (experimental) and `Axial.Hosting.GenHttp`, depend on Reified. The core

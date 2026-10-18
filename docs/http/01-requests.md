@@ -121,7 +121,7 @@ val it: string = "application/octet-stream (2 bytes)"
 
 `jsonBodyOf` takes any serializer, such as a Reified or Thoth codec's encode function.
 
-`jsonBodyOf` takes any `'value -> string` function, so it works with `Reified.Schema.Json`, hand-written serializers, or
+`jsonBodyOf` takes any `'value -> string` function, so it works with Reified's `Json` module (`Reified.Schema`), hand-written serializers, or
 any other JSON library without coupling this package to one.
 
 ## Plans Show What Would Be Sent
