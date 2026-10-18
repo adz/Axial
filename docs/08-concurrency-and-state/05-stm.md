@@ -36,6 +36,8 @@ Use `stm {}` to combine reads and writes into one transaction.
 let withdraw (amount: decimal) (account: TRef<decimal>) : STM<decimal> =
     stm {
         let! balance = TRef.get account
+        // Wait until the account can cover the withdrawal instead of driving the balance negative.
+        if balance < amount then return! STM.retry
         do! TRef.set (balance - amount) account
         return! TRef.get account
     }
@@ -49,6 +51,9 @@ let withdrawAnnotated (amount: decimal) (account: TRef<decimal>) : STM<decimal> 
         let! (balance: decimal) =
             (TRef.get account: STM<decimal>)
 
+        if balance < amount then
+            return! (STM.retry: STM<unit>)
+
         do! (TRef.set (balance - amount) account: STM<unit>)
         return! (TRef.get account: STM<decimal>)
     }
@@ -58,7 +63,8 @@ let withdrawAnnotated (amount: decimal) (account: TRef<decimal>) : STM<decimal> 
 let transferFunds (fromAcc: TRef<decimal>) (toAcc: TRef<decimal>) (amount: decimal) =
     stm {
         let! currentFrom = TRef.get fromAcc
-        
+        // Retry later if the source balance cannot cover the transfer.
+        if currentFrom < amount then return! STM.retry
         do! TRef.set (currentFrom - amount) fromAcc
         do! TRef.update (fun balance -> balance + amount) toAcc
     }

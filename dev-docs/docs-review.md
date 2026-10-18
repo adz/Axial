@@ -23,7 +23,7 @@
 
 - `docs/09-scheduling-and-retries/_index.md:126` — The copyable jitter example constructs `System.Random()` directly; the next paragraph recommends injected `IRandom`. Show the service-based wiring so repeated runs and tests do not depend on an ambient random source.
 
-- `docs/08-concurrency-and-state/07-hub.md:168` — The display example polls `Hub.subscriberCount` without a deadline; if the consumer fails before subscribing, the example hangs instead of surfacing its exit. Show a bounded handshake or failure-aware startup.
+- [fixed] `docs/08-concurrency-and-state/07-hub.md:168` — The display example polls `Hub.subscriberCount` without a deadline; if the consumer fails before subscribing, the example hangs instead of surfacing its exit. Show a bounded handshake or failure-aware startup.
 
 - [fixed] `docs/07-layers/02-tutorial.md:142` — The fake connection is created before provisioning and reused; the example assumes a single run. Show acquisition inside the layer for a reusable resource layer.
 
@@ -77,10 +77,10 @@
 - `docs/09-scheduling-and-retries/_index.md:360` — The comment says polling continues “until the flow fails,” but `pollStatus` has error type `Never` and always succeeds; this example runs indefinitely unless interrupted. Show a stopping condition or state explicitly that the caller must interrupt it.
 - `docs/09-scheduling-and-retries/_index.md:247` — `resetAfter` calls a long run “successful,” yet the supervision example describes a worker that crashes after ten healthy minutes. Clarify that the threshold measures the duration of the failed run before its failure, not a previous successful execution.
 
-- `docs/08-concurrency-and-state/09-cache.md:105` — “There is no expiry” contradicts the `Cache.makeBoundedWithExpiry` option at line 61. Qualify this as the behavior of the default cache/memoized flow.
-- `docs/08-concurrency-and-state/09-cache.md:40` — `readConfigFromDisk` only increments a `Ref`; the comment says the file is read once, but no disk read occurs. Name it as a simulated load so readers do not mistake it for filesystem guidance.
-- `docs/08-concurrency-and-state/05-stm.md:36` — `withdraw` and `transferFunds` subtract without checking available funds; the banking example silently permits negative balances, unlike the linked torture test's guarded transfers. Add an insufficient-funds condition or label the operations arithmetic-only.
-- `docs/08-concurrency-and-state/10-torture-tests/16-interop.md:30` — “A cancelled token becomes an interruption” omits the distinction between runtime-requested cancellation and a foreign operation throwing cancellation while the runtime token is live; qualify the claim.
+- [fixed] `docs/08-concurrency-and-state/09-cache.md:105` — “There is no expiry” contradicts the `Cache.makeBoundedWithExpiry` option at line 61. Qualify this as the behavior of the default cache/memoized flow.
+- [fixed] `docs/08-concurrency-and-state/09-cache.md:40` — `readConfigFromDisk` only increments a `Ref`; the comment says the file is read once, but no disk read occurs. Name it as a simulated load so readers do not mistake it for filesystem guidance.
+- [fixed] `docs/08-concurrency-and-state/05-stm.md:36` — `withdraw` and `transferFunds` subtract without checking available funds; the banking example silently permits negative balances, unlike the linked torture test's guarded transfers. Add an insufficient-funds condition or label the operations arithmetic-only.
+- [fixed] `docs/08-concurrency-and-state/10-torture-tests/16-interop.md:30` — “A cancelled token becomes an interruption” omits the distinction between runtime-requested cancellation and a foreign operation throwing cancellation while the runtime token is live; qualify the claim.
 
 - [fixed] `docs/07-layers/_index.md:121` — “A record cannot express that” overstates the case: a factory returning `Result<AppEnv, BaseRuntimeError>` can model typed startup failure without a layer. Explain the added value of scoped provisioning and `Layer.provide` instead.
 - [fixed] `docs/07-layers/_index.md:131` — A host-created `ILoggerFactory` can still be placed in a record after host startup; the example demonstrates adapting a dependency, not an inability to use records.

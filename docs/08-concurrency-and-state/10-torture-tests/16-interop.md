@@ -27,7 +27,7 @@ On JavaScript, the Task adapters and cold tasks do not exist, and a blocking cal
 
 | Check | Guarantee |
 | --- | --- |
-| Every adapted call produced a value, a typed failure, a defect, or an interruption | A thrown exception becomes a defect, an `Error` becomes a typed failure, and a cancelled token becomes an interruption. |
+| Every adapted call produced a value, a typed failure, a defect, or an interruption | A thrown exception becomes a defect, an `Error` becomes a typed failure, and a cancellation requested through the runtime's own token becomes an interruption. A foreign operation that throws `OperationCanceledException` while the runtime token is still live was not cancelled by the runtime, so it becomes a defect (a typed failure for `attempt*`), never an interruption. |
 | A flow run as a task or an async has the same exit | Every way of running a flow reports the same outcome. |
 | Cold tasks started only when bound, once per binding | A `ColdTask` does no work until a flow binds it. |
 | A flow checking its token stopped when interrupted, and the token it read was cancelled | Interruption cancels the token that `Flow.cancellationToken` returns, and `Flow.ensureNotCanceled` observes it. |

@@ -37,16 +37,18 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let readConfigFromDisk (reads: Ref<int>) : Flow<ClockEnvironment, string, string> =
+// A simulated config load: increments a counter instead of touching the filesystem, so the example
+// demonstrates memoization without real I/O.
+let simulateConfigLoad (reads: Ref<int>) : Flow<ClockEnvironment, string, string> =
     reads |> Ref.updateAndGet ((+) 1) |> Flow.map (fun count -> $"config read {count} time(s)")
 
 /// Loads the config twice through one memoized flow, and returns whether both loads agree and how often it was read.
 let sameConfig : Flow<ClockEnvironment, string, bool * int> =
     flow {
         let! reads = Ref.make 0
-        let! loadConfig = Flow.memoize (readConfigFromDisk reads)
+        let! loadConfig = Flow.memoize (simulateConfigLoad reads)
         let! a = loadConfig
-        let! b = loadConfig // the same value; the file is read once
+        let! b = loadConfig // the same value; the load runs once
         let! readCount = Ref.get reads
         return a = b, readCount
     }
@@ -102,7 +104,9 @@ Five concurrent requests for two users ran the lookup twice.
   navigated away, never cancels a lookup that other callers are still waiting for.
 - **The owner's scope bounds the lookups.** Closing the scope where the cache was made interrupts any lookup still
   running. Make the cache where it should live, typically in a service's layer.
-- **Values are kept until invalidated.** There is no expiry; invalidate keys when their source changes.
+- **Values are kept until invalidated, evicted, or expired.** `Cache.make` and `Flow.memoize` never expire an entry,
+  so invalidate keys when their source changes. A bounded cache also evicts the least recently read key when full, and
+  `Cache.makeBoundedWithExpiry` expires successful entries after its time-to-live.
 
 The [cache torture test](torture-tests/caches.html) interrupts callers, fails lookups, and invalidates keys while
 hundreds of callers share one cache, and checks each rule above.

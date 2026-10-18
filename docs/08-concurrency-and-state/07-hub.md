@@ -162,15 +162,35 @@ flow {
     let! (readings: Hub<float>) = Hub.make ()
     let! displaying = display readings |> Flow.fork
 
-    // Wait until the display has subscribed, then publish and shut down.
+    // Wait until the display has subscribed, or until the fork settles or the deadline passes.
+    let deadline = TimeSpan.FromSeconds 1.0
+    let! startedAt = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock.Elapsed())
+
     let mutable subscribers = 0
+    let mutable endedEarly = false
+    let mutable timedOut = false
 
-    while subscribers = 0 do
-        let! count = Hub.subscriberCount readings
-        subscribers <- count
+    while subscribers = 0 && not endedEarly && not timedOut do
+        match! Fiber.poll displaying with
+        | Some _ -> endedEarly <- true
+        | None ->
+            let! count = Hub.subscriberCount readings
+            subscribers <- count
 
-        if subscribers = 0 then
-            do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+            if subscribers = 0 then
+                let! now = Flow.envWith (fun (env: ClockEnvironment) -> env.Clock.Elapsed())
+                timedOut <- now - startedAt >= deadline
+
+                if not timedOut then
+                    do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+
+    if endedEarly then
+        // The display settled before subscribing; join it so its exit becomes this flow's outcome.
+        do! Fiber.join displaying
+        return failwith "display ended before subscribing"
+
+    if timedOut then
+        return failwith "display did not subscribe within the deadline"
 
     do! feed readings
     do! Hub.shutdown readings
