@@ -18,7 +18,8 @@ Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 [`dev-docs/TASKS.md`](dev-docs/TASKS.md) for the active queue.
 
 Verify changes with `scripts/verify.sh` and report its `artifacts/verify/result.json`, checkpoint before agent runs,
-and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICATION.md).
+and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICATION.md). Coordinating delegated agents
+(Codex or Claude workers, quota, handoff across compaction) follows [`dev-docs/AGENT_WORKFLOW.md`](dev-docs/AGENT_WORKFLOW.md).
 
 ## Architecture Invariants
 
