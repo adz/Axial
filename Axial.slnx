@@ -21,6 +21,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Axial.Console/Axial.Console.fsproj" />
+    <Project Path="src/Axial.Elmish/Axial.Elmish.fsproj" />
     <Project Path="src/Axial.FileSystem/Axial.FileSystem.fsproj" />
     <Project Path="src/Axial.Files/Axial.Files.fsproj" />
     <Project Path="src/Axial.Guardrails/Axial.Guardrails.fsproj" />
@@ -37,6 +38,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Axial.Comparisons.Tests/Axial.Comparisons.Tests.fsproj" />
+    <Project Path="tests/Axial.Elmish.Tests/Axial.Elmish.Tests.fsproj" />
     <Project Path="tests/Axial.Fable.Tests/Axial.Fable.Tests.fsproj" />
     <Project Path="tests/Axial.FileSystem.Tests/Axial.FileSystem.Tests.fsproj" />
     <Project Path="tests/Axial.Files.Tests/Axial.Files.Tests.fsproj" />
