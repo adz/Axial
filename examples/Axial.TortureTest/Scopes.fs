@@ -41,27 +41,42 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
             match round.Next 8 with
             | 0 ->
-                let resource = Resource.ofAsync (acquired id) (fun _ _ -> async { release () })
+                let resource = Resource.create (acquired id) (fun _ -> finalizer release)
 
                 // Acquired here or by a fiber; either way the release belongs to this scope.
                 if round.Chance 50 then
                     Flow.scopeResource resource |> Flow.ignore
                 else
                     Flow.forkResource resource |> Flow.bind Fiber.join |> Flow.ignore
-            | 1 -> acquired () |> Flow.bind (fun () -> Flow.scopeAsyncFinalizer (fun _ -> async { release () }))
-            | 2 -> acquired () |> Flow.bind (fun () -> Flow.scopeResource (Resource.asyncFinalizer (fun _ -> async { release () })))
-            | 3 -> Flow.scope |> Flow.bind (fun current -> acquired () |> Flow.map (fun () -> current.AddFinalizer(finalizer release)))
+            | 1 -> acquired () |> Flow.bind (fun () -> Flow.scopeFinalizer (finalizer release))
+            | 2 -> acquired () |> Flow.bind (fun () -> Flow.scopeResource (Resource.finalizer (finalizer release)))
+            | 3 ->
+                Flow.scope
+                |> Flow.bind (fun current ->
+                    acquired ()
+                    |> Flow.map (fun () ->
+                        current.AddFinalizer(fun _ ->
+                            release ()
 #if FABLE_COMPILER
-            | _ -> Flow.scopeResource (Resource.ofAsync (acquired id) (fun _ _ -> async { release () })) |> Flow.ignore
+                            async.Return()))
 #else
-            | 4 -> Flow.scopeAcquireRelease (acquired id) (fun _ _ -> release (); Tasks.Task.CompletedTask) |> Flow.ignore
-            | 5 -> acquired () |> Flow.bind (fun () -> Flow.scopeFinalizer (finalizer release))
+                            Tasks.Task.CompletedTask))
+#endif
+                )
+            | 4 -> Flow.scopeAcquireRelease (acquired id) (fun _ -> finalizer release) |> Flow.ignore
+            // A release that reads the environment it was acquired with.
+            | 5 ->
+                Flow.scopeAcquireRelease (acquired id) (fun _ ->
+                    Flow.envWith (fun (env: ClockEnvironment) -> env.Clock) |> Flow.bind (fun _ -> finalizer release))
+                |> Flow.ignore
+#if FABLE_COMPILER
+            | _ -> Flow.scopeResource (Resource.create (acquired id) (fun _ -> finalizer release)) |> Flow.ignore
+#else
             | 6 -> acquired (new Disposable(release)) |> Flow.bind (fun resource -> Flow.scopeDisposable resource)
             | _ ->
-                match round.Next 3 with
+                match round.Next 2 with
                 | 0 -> acquired (new Disposable(release)) |> Flow.bind (fun resource -> Flow.scopeAsyncDisposable resource)
-                | 1 -> Flow.scopeResource (Resource.create (acquired id) (fun _ _ -> release (); Tasks.Task.CompletedTask)) |> Flow.ignore
-                | _ -> acquired () |> Flow.bind (fun () -> Flow.scopeResource (Resource.finalizer (finalizer release)))
+                | _ -> Flow.scopeResource (Resource.create (acquired id) (fun _ -> finalizer release)) |> Flow.ignore
 #endif
 
         // A scope acquires a few resources, then may open child scopes, fork children (joined, interrupted, or left

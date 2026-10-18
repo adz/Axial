@@ -99,7 +99,7 @@ module WorkflowSupervisionTests =
                 runs.Value <- runs.Value + 1
                 let attempt = runs.Value
 
-                do! Flow.scopeAsyncFinalizer (fun _ -> async { releases.Add attempt })
+                do! Flow.scopeFinalizer (Flow.delay (fun () -> releases.Add attempt; Flow.succeed ()))
 
                 if attempt < 3 then
                     return! Flow.die (InvalidOperationException "boom")
@@ -126,7 +126,7 @@ module WorkflowSupervisionTests =
             flow {
                 let! value =
                     flow {
-                        do! Flow.scopeAsyncFinalizer (fun _ -> async { released.Value <- true })
+                        do! Flow.scopeFinalizer (Flow.delay (fun () -> released.Value <- true; Flow.succeed ()))
                         return "connection"
                     }
                     |> Flow.supervise (Schedule.recurs 2)

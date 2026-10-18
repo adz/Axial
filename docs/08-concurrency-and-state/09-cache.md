@@ -37,23 +37,23 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let reads = ref 0
+let readConfigFromDisk (reads: Ref<int>) : Flow<ClockEnvironment, string, string> =
+    reads |> Ref.updateAndGet ((+) 1) |> Flow.map (fun count -> $"config read {count} time(s)")
 
-let readConfigFromDisk : Flow<ClockEnvironment, string, string> =
-    Flow.delay (fun () -> Flow.ok $"config read {Interlocked.Increment &reads.contents} time(s)")
-
-let sameConfig : Flow<ClockEnvironment, string, bool> =
+/// Loads the config twice through one memoized flow, and returns whether both loads agree and how often it was read.
+let sameConfig : Flow<ClockEnvironment, string, bool * int> =
     flow {
-        let! loadConfig = Flow.memoize readConfigFromDisk
+        let! reads = Ref.make 0
+        let! loadConfig = Flow.memoize (readConfigFromDisk reads)
         let! a = loadConfig
         let! b = loadConfig // the same value; the file is read once
-        return a = b
+        let! readCount = Ref.get reads
+        return a = b, readCount
     }
 ```
 
 ```fsharp run
-sameConfig |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success true)
-reads.Value |> shouldEqual 1
+sameConfig |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(true, 1))
 ```
 
 ## Cache by key
@@ -62,25 +62,28 @@ reads.Value |> shouldEqual 1
 only when no success is cached and no lookup for that key is already running:
 
 ```fsharp
-let lookups = ref 0
-
-let loadUser (id: int) : Flow<ClockEnvironment, string, string> =
-    Flow.sleep (TimeSpan.FromMilliseconds 5.0)
-    |> Flow.map (fun () ->
-        Interlocked.Increment &lookups.contents |> ignore
-        $"user {id}")
-
-let loadPages (userIds: int list) : Flow<ClockEnvironment, string, string list> =
+let loadUser (lookups: Ref<int>) (id: int) : Flow<ClockEnvironment, string, string> =
     flow {
-        let! users = Cache.make loadUser
+        do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
+        do! lookups |> Ref.update ((+) 1)
+        return $"user {id}"
+    }
+
+/// Loads a page per user id through one cache, and returns the pages and how many lookups ran.
+let loadPages (userIds: int list) : Flow<ClockEnvironment, string, string list * int> =
+    flow {
+        let! lookups = Ref.make 0
+        let! users = Cache.make (loadUser lookups)
         let! pages = userIds |> Flow.traversePar (Parallelism.bounded 8) (fun id -> users |> Cache.get id)
-        return pages
+        let! lookupCount = Ref.get lookups
+        return pages, lookupCount
     }
 ```
 
 ```fsharp run
-loadPages [ 1; 2; 1; 1; 2 ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ "user 1"; "user 2"; "user 1"; "user 1"; "user 2" ])
-lookups.Value |> shouldEqual 2
+loadPages [ 1; 2; 1; 1; 2 ]
+|> Flow.run (ClockEnvironment Clock.live)
+|> shouldEqual (Exit.Success([ "user 1"; "user 2"; "user 1"; "user 1"; "user 2" ], 2))
 ```
 
 Five concurrent requests for two users ran the lookup twice.

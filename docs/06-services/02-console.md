@@ -121,14 +121,13 @@ For interactive programs the service exposes terminal control directly: `clear`,
 a full-screen terminal application wants.
 
 Every one of these is mutable terminal state that outlives the workflow that set it. Restore what you change through
-a finalizer, so an interrupted or failed workflow cannot leave the user with an invisible cursor or a green prompt:
+a finalizer, so an interrupted or failed workflow cannot leave the user with an invisible cursor or a green prompt.
+The release is a flow, so it uses the same `Console` operation from the environment:
 
 ```fsharp
-let withHiddenCursor (console: IConsole) (body: Flow<AppEnv, Never, 'value>) : Flow<AppEnv, Never, 'value> =
+let withHiddenCursor (body: Flow<AppEnv, Never, 'value>) : Flow<AppEnv, Never, 'value> =
     flow {
-        do! Flow.scopeFinalizer(fun _ ->
-            console.CursorVisible <- true
-            Task.CompletedTask)
+        do! Flow.scopeFinalizer (Console.setCursorVisible true)
 
         do! Console.setCursorVisible false
         return! body
@@ -206,7 +205,7 @@ let answeredBlank = RecordingConsole "\n"
 confirm "Continue?" |> Flow.run { Console = answeredBlank } |> shouldEqual (Exit.Success false)
 
 let terminal = RecordingConsole ""
-withHiddenCursor terminal (Console.writeLine "working") |> Flow.run { Console = terminal } |> shouldEqual (Exit.Success())
+withHiddenCursor (Console.writeLine "working") |> Flow.run { Console = terminal } |> shouldEqual (Exit.Success())
 terminal.IsCursorVisible |> shouldEqual true
 ```
 

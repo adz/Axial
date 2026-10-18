@@ -267,7 +267,7 @@ settles. `Fiber.join` returns the fiber's value after that, so a resource the fi
 
 ```fsharp
 let connection : Resource<ClockEnvironment, string, string> =
-    Resource.create (Flow.ok "orders") (fun _ _ -> Task.CompletedTask)
+    Resource.create (Flow.ok "orders") (fun _ -> Flow.ok ())
 
 /// Reported: the connection is released before join returns it.
 let releasedBeforeUse =

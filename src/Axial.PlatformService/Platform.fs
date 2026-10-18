@@ -7,7 +7,6 @@ namespace Axial.PlatformService
 open System
 open System.Collections
 open System.Collections.Generic
-open System.Threading.Tasks
 open Axial
 open Axial.Layers
 
@@ -95,18 +94,17 @@ module internal Platform =
 
     let servicesFromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, IClock * ILog * IRandom * IGuid * IEnvironmentVariables> =
         #if FABLE_COMPILER
-        Layer.fromAsync (fun _ _ ->
-            async.Return(Exit.Failure(Cause.Die(PlatformNotSupportedException("IServiceProvider layers are not supported on Fable.")))))
+        Layer.fromFlow (Flow.die (PlatformNotSupportedException("IServiceProvider layers are not supported on Fable.")))
         #else
-        Layer.fromValueTask (fun (provider, _) _ ->
-            ValueTask<Exit<IClock * ILog * IRandom * IGuid * IEnvironmentVariables, BaseRuntimeError>>(
-                task {
-                    match tryService<IClock> provider, tryService<ILog> provider, tryService<IRandom> provider,
-                          tryService<IGuid> provider, tryService<IEnvironmentVariables> provider with
-                    | Ok clock, Ok log, Ok random, Ok guid, Ok environmentVariables ->
-                        return Exit.Success(clock, log, random, guid, environmentVariables)
-                    | Error name, _, _, _, _ | _, Error name, _, _, _ | _, _, Error name, _, _
-                    | _, _, _, Error name, _ | _, _, _, _, Error name ->
-                        return Exit.Failure(Cause.Fail(BaseRuntimeError.MissingService name))
-                }))
+        Layer.fromFlow (
+            Flow.envWith (fun provider ->
+                match tryService<IClock> provider, tryService<ILog> provider, tryService<IRandom> provider,
+                      tryService<IGuid> provider, tryService<IEnvironmentVariables> provider with
+                | Ok clock, Ok log, Ok random, Ok guid, Ok environmentVariables ->
+                    Ok(clock, log, random, guid, environmentVariables)
+                | Error name, _, _, _, _ | _, Error name, _, _, _ | _, _, Error name, _, _
+                | _, _, _, Error name, _ | _, _, _, _, Error name ->
+                    Error(BaseRuntimeError.MissingService name))
+            |> Flow.bind Flow.fromResult
+        )
         #endif

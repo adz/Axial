@@ -156,9 +156,10 @@ let readAndTransform (stream: Stream) (destination: string) : Flow<AppEnv, FileS
 let copyThrough (source: string) (destination: string) : Flow<AppEnv, FileSystemError, unit> =
     Flow.scopeAcquireRelease
         (FileSystem.openRead source)
-        (fun stream _ ->
-            stream.Dispose()
-            Task.CompletedTask)
+        (fun stream ->
+            Flow.delay (fun () ->
+                stream.Dispose()
+                Flow.ok ()))
     |> Flow.bind (fun stream -> readAndTransform stream destination)
     |> Flow.scoped
 ```

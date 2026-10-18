@@ -48,13 +48,12 @@ let shouldEqual expected actual =
 ```
 
 ```fsharp
-let polls = ref 0
-
 /// Crashes on its first two runs, as a worker does on a poison message, then succeeds.
-let pollQueue : Flow<ClockEnvironment, string, int> =
-    Flow.delay (fun () ->
-        let run = Interlocked.Increment &polls.contents
-        if run <= 2 then Flow.die (InvalidOperationException "poison message") else Flow.ok run)
+let pollQueue (polls: Ref<int>) : Flow<ClockEnvironment, string, int> =
+    flow {
+        let! run = polls |> Ref.updateAndGet ((+) 1)
+        if run <= 2 then return! Flow.die (InvalidOperationException "poison message") else return run
+    }
 
 let restartPolicy =
     Retry.schedule
@@ -62,12 +61,13 @@ let restartPolicy =
             Retries = 4
             Backoff = Backoff.Exponential(TimeSpan.FromMilliseconds 1.0, TimeSpan.FromMilliseconds 10.0) }
 
-let reliableWorker : Flow<ClockEnvironment, string, int> = pollQueue |> Flow.supervise restartPolicy
+let reliableWorker (polls: Ref<int>) : Flow<ClockEnvironment, string, int> = pollQueue polls |> Flow.supervise restartPolicy
 ```
 
 ```fsharp run
 flow {
-    let! fiber = Flow.fork reliableWorker
+    let! polls = Ref.make 0
+    let! fiber = Flow.fork (reliableWorker polls)
     return! Fiber.join fiber
 }
 |> Flow.run (ClockEnvironment Clock.live)

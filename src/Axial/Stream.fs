@@ -964,7 +964,7 @@ module FlowStream =
     /// <example>
     /// <code>
     /// let lines path =
-    ///     FlowStream.using (Resource.create (Flow.fromBlocking (fun _ -&gt; File.OpenText path)) (fun reader _ -&gt; reader.Dispose(); Task.CompletedTask))
+    ///     FlowStream.using (Resource.create (Flow.fromBlocking (fun _ -&gt; File.OpenText path)) (fun reader -&gt; Flow.delay (fun () -&gt; reader.Dispose(); Flow.succeed ())))
     ///         (fun reader -&gt; FlowStream.repeatFlow (Flow.fromBlocking (fun _ -&gt; reader.ReadLine())) |&gt; FlowStream.takeWhile (isNull &gt;&gt; not))
     /// </code>
     /// </example>

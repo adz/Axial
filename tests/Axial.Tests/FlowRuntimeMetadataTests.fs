@@ -252,9 +252,10 @@ module FlowRuntimeMetadataTests =
                 let! resource =
                     Flow.scopeAcquireRelease
                         (Flow.succeed "resource")
-                        (fun _ _ ->
-                            released.Value <- true
-                            System.Threading.Tasks.Task.CompletedTask)
+                        (fun _ ->
+                            Flow.delay (fun () ->
+                                released.Value <- true
+                                Flow.succeed ()))
 
                 do! Flow.annotate "resource" resource (Flow.succeed ())
                 let! service = Flow.env<string, string>

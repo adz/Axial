@@ -22,9 +22,10 @@ module ScopedResourceOwnershipTests =
             (Flow.delay (fun () ->
                 record events $"{name}:acquired"
                 Flow.ok name))
-            (fun _ _ ->
-                record events $"{name}:released"
-                Task.CompletedTask)
+            (fun _ ->
+                Flow.delay (fun () ->
+                    record events $"{name}:released"
+                    Flow.succeed ()))
 
     let private acquire events name = connection events name |> Flow.scopeResource
 
@@ -277,7 +278,7 @@ module ScopedResourceOwnershipTests =
 
         let events = ResizeArray<string>()
         let finalized = ref 0
-        let finalizer = Flow.scopeFinalizer (fun _ -> finalized.Value <- finalized.Value + 1; Task.CompletedTask)
+        let finalizer = Flow.scopeFinalizer (Flow.delay (fun () -> finalized.Value <- finalized.Value + 1; Flow.succeed ()))
 
         let run inner = Flow.runSync (TestSupport.clockEnv ()) (underClosedScope inner)
         let direct = run (acquire events "direct")

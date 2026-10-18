@@ -39,10 +39,11 @@ let readersClosed = ref 0
 let openReader (path: string) : Resource<unit, Never, StreamReader> =
     Resource.create
         (Flow.delay (fun () -> Flow.ok (File.OpenText path)))
-        (fun reader _ ->
-            reader.Dispose()
-            readersClosed.Value <- readersClosed.Value + 1
-            Task.CompletedTask)
+        (fun reader ->
+            Flow.delay (fun () ->
+                reader.Dispose()
+                readersClosed.Value <- readersClosed.Value + 1
+                Flow.ok ()))
 
 let lines (path: string) : FlowStream<string> =
     FlowStream.using (openReader path) (fun reader ->

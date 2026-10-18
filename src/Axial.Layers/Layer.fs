@@ -53,30 +53,25 @@ module Layer =
         : Layer<'input, 'error, 'output> =
         Layer operation
 
-    /// <summary>Creates a layer from a raw async provisioning function.</summary>
-    /// <platforms>Fable compatible</platforms>
-    let fromAsync
-        (operation: ('input * Scope) -> CancellationToken -> Async<Exit<'output, 'error>>)
-        : Layer<'input, 'error, 'output> =
-        Layer(fun input cancellationToken ->
-            Platform.executionOfAsyncExit cancellationToken (operation input cancellationToken))
-
-#if !FABLE_COMPILER
-    /// <summary>Creates a layer from a raw value task provisioning function.</summary>
-    /// <platforms>.NET only</platforms>
-    let fromValueTask
-        (operation: ('input * Scope) -> CancellationToken -> ValueTask<Exit<'output, 'error>>)
-        : Layer<'input, 'error, 'output> =
-        Layer operation
-
-    /// <summary>Creates a layer from a raw task provisioning function.</summary>
-    /// <platforms>.NET only</platforms>
-    let fromTask
-        (operation: ('input * Scope) -> CancellationToken -> Task<Exit<'output, 'error>>)
-        : Layer<'input, 'error, 'output> =
-        Layer(fun input cancellationToken ->
-            ValueTask<Exit<'output, 'error>>(operation input cancellationToken))
-#endif
+    /// <summary>Creates a layer that builds its output by running a flow with the layer's input as its environment.</summary>
+    /// <remarks>
+    /// The flow runs in the layer's scope, so what it registers with <c>Flow.scopeAcquireRelease</c>,
+    /// <c>Flow.scopeFinalizer</c>, or <c>Flow.scopeResource</c> stays open until the <c>Layer.provide</c> boundary
+    /// closes, and is released in reverse acquisition order. A typed failure fails provisioning; whatever was acquired
+    /// before it is released.
+    /// </remarks>
+    /// <param name="build">The flow that builds the layer output.</param>
+    /// <returns>A layer that succeeds with the flow's value.</returns>
+    /// <example>
+    /// <code>
+    /// let database : Layer&lt;AppConfig, DbError, Database&gt; =
+    ///     Layer.fromFlow (Flow.scopeAcquireRelease (Database.connect ()) Database.close)
+    /// </code>
+    /// </example>
+    let fromFlow (build: Flow<'input, 'error, 'output>) : Layer<'input, 'error, 'output> =
+        Layer(fun (input, scope) cancellationToken ->
+            let runtime = RuntimeState.current () |> RuntimeContext.withScope scope
+            RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke build input cancellationToken))
 
     /// <summary>Creates a layer that succeeds with a fixed output value.</summary>
     let succeed (value: 'output) : Layer<'input, 'error, 'output> =
@@ -86,32 +81,33 @@ module Layer =
     let envWith (projection: 'input -> 'output) : Layer<'input, 'error, 'output> =
         Layer(fun (input, _) _ -> Execution.ofValue (projection input))
 
-    /// <summary>Registers an asynchronous finalizer with the layer scope.</summary>
-    /// <param name="finalizer">The finalizer to run when the layer scope closes.</param>
-    /// <returns>A layer that registers the finalizer.</returns>
-    let addFinalizer
-        (finalizer: Platform.Finalizer)
-        : Layer<'input, 'error, unit> =
-        Layer(fun (_, scope) _ ->
-            scope.AddFinalizer finalizer
+    /// <summary>Registers a release flow with the layer scope.</summary>
+    /// <param name="release">The release flow run, with the layer's input as its environment, when the layer scope closes.</param>
+    /// <returns>A layer that registers the release.</returns>
+    /// <remarks>The release runs without interruption. A defect it raises becomes a defect of the provided flow.</remarks>
+    let addFinalizer (release: Flow<'input, Never, unit>) : Layer<'input, 'error, unit> =
+        Layer(fun (input, scope) _ ->
+            scope.AddFinalizer(Flow.releaseFinalizer input (fun () -> release) ())
             Execution.ofValue ())
 
     /// <summary>Acquires a resource and registers its release with the layer scope.</summary>
     /// <param name="acquire">The layer that acquires the resource.</param>
-    /// <param name="release">The release action to run when the layer scope closes.</param>
+    /// <param name="release">The release flow run, with the layer's input as its environment, when the layer scope closes.</param>
     /// <returns>A layer that succeeds with the acquired resource.</returns>
     /// <remarks>
     /// Use this for service implementations or provisioned resources that must live for the
-    /// full <c>Flow.provide</c> boundary rather than only for the construction expression.
+    /// full <c>Flow.provide</c> boundary rather than only for the construction expression. The release runs without
+    /// interruption; a defect it raises becomes a defect of the provided flow. To acquire with a flow, use
+    /// <c>Layer.fromFlow (Flow.scopeAcquireRelease acquire release)</c>.
     /// </remarks>
     let acquireRelease
         (acquire: Layer<'input, 'error, 'resource>)
-        (release: 'resource -> Platform.Finalizer)
+        (release: 'resource -> Flow<'input, Never, unit>)
         : Layer<'input, 'error, 'resource> =
         Layer(fun (input, scope) cancellationToken ->
             invoke acquire input scope cancellationToken
             |> Execution.bind (fun resource ->
-                scope.AddFinalizer(fun ct -> release resource ct)
+                scope.AddFinalizer(Flow.releaseFinalizer input release resource)
                 Execution.ofValue resource))
 
     /// <summary>Provisions a fixed-size pool of resource instances, handed out round-robin.</summary>

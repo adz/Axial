@@ -292,6 +292,68 @@ type ParallelCompositionBenchmarks() =
     member _.Race() =
         races.RunSynchronously(()) |> Shared.consumeExit
 
+/// The cost of closing a scope: an empty scope (the allocation-free fast path in the runtime) and scopes that release
+/// registered resources.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type ScopeCloseBenchmarks() =
+    let emptyScopes: Flow<unit, string, int> =
+        flow {
+            let total = ref 0
+
+            for value in 1..1_000 do
+                let! next = Flow.scoped (Flow.succeed value)
+                total.Value <- total.Value + next
+
+            return total.Value
+        }
+
+    let finalizerScopes: Flow<unit, string, int> =
+        flow {
+            let total = ref 0
+
+            for value in 1..1_000 do
+                let! next =
+                    Flow.scoped (
+                        flow {
+                            do! ScopeCloseCases.finalizer (fun () -> total.Value <- total.Value + 1)
+                            return value
+                        }
+                    )
+
+                total.Value <- total.Value + next
+
+            return total.Value
+        }
+
+    let resourceScopes: Flow<unit, string, int> =
+        flow {
+            let total = ref 0
+
+            for value in 1..1_000 do
+                let! next =
+                    Flow.scoped (ScopeCloseCases.acquireRelease value (fun _ -> total.Value <- total.Value + 1))
+
+                total.Value <- total.Value + next
+
+            return total.Value
+        }
+
+    [<Benchmark(Description = "scoped, empty close x1000")>]
+    member _.EmptyClose() =
+        emptyScopes.RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "scoped, one finalizer x1000")>]
+    member _.FinalizerClose() =
+        finalizerScopes.RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "scoped, acquireRelease x1000")>]
+    member _.AcquireReleaseClose() =
+        resourceScopes.RunSynchronously(()) |> Shared.consumeExit
+
 /// Exercises tail recursion separately from prebuilt left-nested composition chains.
 [<MemoryDiagnoser>]
 [<InProcess>]

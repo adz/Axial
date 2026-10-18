@@ -35,15 +35,11 @@ type Round(seed: int, scale: int) =
     /// Scales a size for this round, never below 1.
     member _.Size(full: int) : int = max 1 (full * scale / 100)
 
-/// A scope finalizer that runs a synchronous action: a Task-returning function on .NET, an Async one under Fable.
-#if FABLE_COMPILER
-let finalizer (action: unit -> unit) : System.Threading.CancellationToken -> Async<unit> = fun _ -> async { action () }
-#else
-let finalizer (action: unit -> unit) : System.Threading.CancellationToken -> System.Threading.Tasks.Task =
-    fun _ ->
+/// A release flow that runs a synchronous action.
+let finalizer (action: unit -> unit) : Axial.Flow<'env, Axial.Never, unit> =
+    Axial.Flow.delay (fun () ->
         action ()
-        System.Threading.Tasks.Task.CompletedTask
-#endif
+        Axial.Flow.succeed ())
 
 /// Adds one to a counter shared between fibers and returns the new value. JavaScript runs one fiber at a time, so a
 /// plain increment is enough there.

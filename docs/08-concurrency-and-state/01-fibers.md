@@ -157,20 +157,23 @@ let fetchPage (url: string) : Flow<ClockEnvironment, string, int> =
 let pageSizes (urls: string list) : Flow<ClockEnvironment, string, int list> =
     urls |> Flow.traversePar (Parallelism.bounded 8) fetchPage
 
-let indexed = ResizeArray<string>()
+let indexFile (indexed: Ref<string list>) (file: string) : Flow<ClockEnvironment, string, unit> =
+    indexed |> Ref.update (fun files -> file :: files)
 
-let indexFile (file: string) : Flow<ClockEnvironment, string, unit> =
-    Flow.delay (fun () -> lock indexed (fun () -> indexed.Add file); Flow.ok ())
-
-let indexAll (files: string list) : Flow<ClockEnvironment, string, unit> =
-    files |> Flow.forEachPar (Parallelism.ofProcessors id) indexFile
+/// Indexes every file in parallel and returns the indexed files, sorted.
+let indexAll (files: string list) : Flow<ClockEnvironment, string, string list> =
+    flow {
+        let! indexed = Ref.make []
+        do! files |> Flow.forEachPar (Parallelism.ofProcessors id) (indexFile indexed)
+        let! indexedFiles = Ref.get indexed
+        return List.sort indexedFiles
+    }
 ```
 
 ```fsharp run
 pageSizes [ "a"; "bb"; "ccc" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ 1; 2; 3 ])
 
-indexAll [ "b.fs"; "a.fs"; "c.fs" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success())
-indexed |> Seq.sort |> List.ofSeq |> shouldEqual [ "a.fs"; "b.fs"; "c.fs" ]
+indexAll [ "b.fs"; "a.fs"; "c.fs" ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ "a.fs"; "b.fs"; "c.fs" ])
 ```
 
 `traversePar` returns results in input order, whatever order the work finishes in.
@@ -182,26 +185,33 @@ When each worker needs its own connection or handle, use `Flow.traverseParUsing`
 when it finishes or the traversal fails, so at most `parallelism` resources exist at once:
 
 ```fsharp
-let readersOpened = ref 0
-let readersClosed = ref 0
+/// Counts readers opened and closed.
+type ReaderCounts = { Opened: int; Closed: int }
 
-let openReader : Resource<ClockEnvironment, string, int> =
+let openReader (counts: Ref<ReaderCounts>) : Resource<ClockEnvironment, string, int> =
     Resource.create
-        (Flow.delay (fun () -> Flow.ok (Interlocked.Increment &readersOpened.contents)))
-        (fun _ _ ->
-            Interlocked.Increment &readersClosed.contents |> ignore
-            Task.CompletedTask)
+        (counts |> Ref.updateAndGet (fun c -> { c with Opened = c.Opened + 1 }) |> Flow.map _.Opened)
+        (fun _ -> counts |> Ref.update (fun c -> { c with Closed = c.Closed + 1 }))
 
 let searchCommit (reader: int) (commit: int) : Flow<ClockEnvironment, string, bool> = Flow.ok (commit % 2 = 0)
 
-let evenCommits (commits: int list) : Flow<ClockEnvironment, string, bool list> =
-    commits |> Flow.traverseParUsing (Parallelism.bounded 2) openReader searchCommit
+/// Searches the commits with at most two readers, and returns the results with the reader counts.
+let evenCommits (commits: int list) : Flow<ClockEnvironment, string, bool list * ReaderCounts> =
+    flow {
+        let! counts = Ref.make { Opened = 0; Closed = 0 }
+        let! results = commits |> Flow.traverseParUsing (Parallelism.bounded 2) (openReader counts) searchCommit
+        let! final = Ref.get counts
+        return results, final
+    }
 ```
 
 ```fsharp run
-evenCommits [ 1..6 ] |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ false; true; false; true; false; true ])
-readersOpened.Value <= 2 |> shouldEqual true
-readersClosed.Value |> shouldEqual readersOpened.Value
+match evenCommits [ 1..6 ] |> Flow.run (ClockEnvironment Clock.live) with
+| Exit.Success(results, counts) ->
+    results |> shouldEqual [ false; true; false; true; false; true ]
+    counts.Opened <= 2 |> shouldEqual true
+    counts.Closed |> shouldEqual counts.Opened
+| other -> failwithf "Expected success, got %A" other
 ```
 
 `FlowStream.mapFlowParUsing` does the same for a stream, lending each running mapping a resource from a pool of at

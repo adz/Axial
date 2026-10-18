@@ -54,7 +54,9 @@ module ProcessStream =
 
             Flow.race consumer watcher
             |> Flow.scoped
-            |> Flow.fold Flow.succeed (fun cause ->
+            |> Flow.fold (fun result ->
+                failure () |> Option.iter Flow.reportUnobservedCause
+                Flow.succeed result) (fun cause ->
                 let combined =
                     failure ()
                     |> Option.map (fun producer -> Cause.Both(cause, producer))
@@ -92,7 +94,9 @@ module ProcessStream =
 
             Flow.race consumer watcher
             |> Flow.scoped
-            |> Flow.fold Flow.succeed (fun cause ->
+            |> Flow.fold (fun result ->
+                failure () |> Option.iter Flow.reportUnobservedCause
+                Flow.succeed result) (fun cause ->
                 let combined =
                     failure ()
                     |> Option.map (fun producer ->

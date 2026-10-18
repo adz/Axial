@@ -135,9 +135,9 @@ module WorkflowParallelTests =
         test <@ emptyTraversal = Exit.Success [] @>
 
     let private countingResource (acquired: int ref) (released: int ref) : Resource<ClockEnvironment, string, int> =
-        Resource.ofAsync
+        Resource.create
             (Flow.delay (fun () -> Flow.ok (Interlocked.Increment(&acquired.contents))))
-            (fun _ _ -> async { Interlocked.Increment(&released.contents) |> ignore })
+            (fun _ -> Flow.delay (fun () -> Interlocked.Increment(&released.contents) |> ignore; Flow.succeed ()))
 
     [<Fact>]
     let ``traverseParUsing gives each worker one resource and releases it`` () =

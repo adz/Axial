@@ -12,10 +12,10 @@ Run it with `dotnet run --project examples/Axial.TortureTest -- scopes 100`.
 
 ## What it does
 
-- Each resource is acquired in one of the ways Axial offers: `Flow.scopeResource` with `Resource.ofAsync`,
-  `Resource.create`, `Resource.finalizer`, or `Resource.asyncFinalizer`; `Flow.scopeAsyncFinalizer`,
-  `scopeFinalizer`, `scopeAcquireRelease`, `scopeDisposable`, `scopeAsyncDisposable`; or `Scope.AddFinalizer`. Each
-  logs when it is acquired and released.
+- Each resource is acquired in one of the ways Axial offers: `Flow.scopeResource` or `Flow.forkResource` with
+  `Resource.create` or `Resource.finalizer`; `Flow.scopeFinalizer`, `scopeAcquireRelease` (including a release that
+  reads the environment), `scopeDisposable`, `scopeAsyncDisposable`; or `Scope.AddFinalizer`. Each logs when it is
+  acquired and released.
 - A scope's children are nested with `Flow.scoped`, forked and joined, forked and interrupted, or forked and left for
   the scope to interrupt when it closes.
 - Every scope counts itself in, and counts itself out with `Flow.ensuring` and `Flow.onInterrupt`.

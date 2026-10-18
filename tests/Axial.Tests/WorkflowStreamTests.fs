@@ -171,7 +171,7 @@ module WorkflowStreamTests =
         let resource =
             Flow.scopeAcquireRelease
                 (Flow.ok ())
-                (fun () _ -> released <- true; Task.CompletedTask)
+                (fun () -> Flow.delay (fun () -> released <- true; Flow.succeed ()))
 
         let result =
             flow {
@@ -443,9 +443,9 @@ module WorkflowStreamTests =
         let released = ref 0
 
         let resource : Resource<ClockEnvironment, string, int> =
-            Resource.ofAsync
+            Resource.create
                 (Flow.delay (fun () -> acquired.Value <- acquired.Value + 1; Flow.ok 10))
-                (fun _ _ -> async { released.Value <- released.Value + 1 })
+                (fun _ -> Flow.delay (fun () -> released.Value <- released.Value + 1; Flow.succeed ()))
 
         let numbers = FlowStream.using resource (fun start -> FlowStream.fromSeq [ start .. start + 4 ])
 

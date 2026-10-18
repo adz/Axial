@@ -84,12 +84,12 @@ module RuntimeFoundationTests =
         let calls = ResizeArray<string>()
 
         let layer : Layer<unit, string, unit> =
-            Layer.fromValueTask (fun (_, scope) _ ->
-                scope.AddFinalizer(fun _ ->
-                    calls.Add "cleanup"
-                    Task.CompletedTask)
-
-                Execution.ofError "startup failed")
+            Layer.fromFlow (
+                flow {
+                    do! Flow.scopeFinalizer (Flow.delay (fun () -> calls.Add "cleanup"; Flow.succeed ()))
+                    return! Flow.fail "startup failed"
+                }
+            )
 
         let result =
             Flow.succeed "unreachable"
@@ -104,12 +104,12 @@ module RuntimeFoundationTests =
         let calls = ResizeArray<string>()
 
         let layer : Layer<unit, string, string> =
-            Layer.fromValueTask (fun (_, scope) _ ->
-                scope.AddFinalizer(fun _ ->
-                    calls.Add "cleanup"
-                    Task.CompletedTask)
-
-                Execution.ofValue "resource")
+            Layer.fromFlow (
+                flow {
+                    do! Flow.scopeFinalizer (Flow.delay (fun () -> calls.Add "cleanup"; Flow.succeed ()))
+                    return "resource"
+                }
+            )
 
         let result =
             Flow.fail "workflow failed"
@@ -124,14 +124,10 @@ module RuntimeFoundationTests =
         let calls = ResizeArray<string>()
 
         let left =
-            Layer.fromValueTask (fun (_, _) _ ->
-                calls.Add "left"
-                Execution.ofValue 1)
+            Layer.fromFlow (Flow.delay (fun () -> calls.Add "left"; Flow.succeed 1))
 
         let right =
-            Layer.fromValueTask (fun (_, _) _ ->
-                calls.Add "right"
-                Execution.ofValue 2)
+            Layer.fromFlow (Flow.delay (fun () -> calls.Add "right"; Flow.succeed 2))
 
         let result =
             Flow.env<int * int, string>
@@ -150,23 +146,24 @@ module RuntimeFoundationTests =
 
         let makeLayer name value =
 
-            Layer.fromValueTask (fun (_, scope) cancellationToken ->
-                ValueTask<Exit<int, string>>(
-                    task {
-                        calls.Add($"{name}-start")
+            Layer.fromFlow (
+                flow {
+                    do!
+                        Flow.fromTask (fun cancellationToken ->
+                            task {
+                                calls.Add($"{name}-start")
 
-                        if Interlocked.Increment(&started) = 2 then
-                            bothStarted.TrySetResult() |> ignore
+                                if Interlocked.Increment(&started) = 2 then
+                                    bothStarted.TrySetResult() |> ignore
 
-                        use _ = cancellationToken.Register(fun () -> release.TrySetCanceled(cancellationToken) |> ignore)
-                        do! release.Task
+                                use _ = cancellationToken.Register(fun () -> release.TrySetCanceled(cancellationToken) |> ignore)
+                                do! release.Task
+                            })
 
-                        scope.AddFinalizer(fun _ ->
-                            calls.Add($"{name}-cleanup")
-                            Task.CompletedTask)
-
-                        return Exit.Success value
-                    }))
+                    do! Flow.scopeFinalizer (Flow.delay (fun () -> calls.Add($"{name}-cleanup"); Flow.succeed ()))
+                    return value
+                }
+            )
 
         let workflow =
             Flow.env<int * int, string>
@@ -204,15 +201,15 @@ module RuntimeFoundationTests =
         let calls = ResizeArray<string>()
 
         let successful =
-            Layer.fromValueTask (fun (_, scope) _ ->
-                scope.AddFinalizer(fun _ ->
-                    calls.Add "success-cleanup"
-                    Task.CompletedTask)
-
-                Execution.ofValue "ok")
+            Layer.fromFlow (
+                flow {
+                    do! Flow.scopeFinalizer (Flow.delay (fun () -> calls.Add "success-cleanup"; Flow.succeed ()))
+                    return "ok"
+                }
+            )
 
         let failed =
-            Layer.fromValueTask (fun (_, _) _ -> Execution.ofError "failed")
+            Layer.fromFlow (Flow.fail "failed")
 
         let result =
             Flow.env<string * string, string>
@@ -224,8 +221,8 @@ module RuntimeFoundationTests =
 
     [<Fact>]
     let ``layer zipPar accumulates both branch failures`` () =
-        let left = Layer.fromValueTask (fun (_, _) _ -> Execution.ofError "left")
-        let right = Layer.fromValueTask (fun (_, _) _ -> Execution.ofError "right")
+        let left = Layer.fromFlow (Flow.fail "left")
+        let right = Layer.fromFlow (Flow.fail "right")
 
         let result =
             Flow.env<string * string, string>
@@ -237,7 +234,7 @@ module RuntimeFoundationTests =
     [<Fact>]
     let ``layer map2 map3 and mapError compose provisioning`` () =
         let mappedError =
-            Layer.fromValueTask (fun (_, _) _ -> Execution.ofError "missing")
+            Layer.fromFlow (Flow.fail "missing")
             |> Layer.mapError (fun error -> $"layer:{error}")
 
         let map2Result =
@@ -272,14 +269,10 @@ module RuntimeFoundationTests =
         let calls = ResizeArray<string>()
 
         let first =
-            Layer.fromValueTask (fun (_, _) _ ->
-                calls.Add "first"
-                Execution.ofValue 1)
+            Layer.fromFlow (Flow.delay (fun () -> calls.Add "first"; Flow.succeed 1))
 
         let second value =
-            Layer.fromValueTask (fun (_, _) _ ->
-                calls.Add $"second:{value}"
-                Execution.ofValue (value + 1))
+            Layer.fromFlow (Flow.delay (fun () -> calls.Add $"second:{value}"; Flow.succeed (value + 1)))
 
         let composed =
             layer {
@@ -304,8 +297,8 @@ module RuntimeFoundationTests =
         let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let makeLayer name value =
-            Layer.fromValueTask (fun (_, _) cancellationToken ->
-                ValueTask<Exit<int, string>>(
+            Layer.fromFlow (
+                Flow.fromTask (fun cancellationToken ->
                     task {
                         calls.Add($"{name}-start")
 
@@ -314,9 +307,9 @@ module RuntimeFoundationTests =
 
                         use _ = cancellationToken.Register(fun () -> release.TrySetCanceled(cancellationToken) |> ignore)
                         do! release.Task
-
-                        return Exit.Success value
-                    }))
+                    })
+                |> Flow.map (fun () -> value)
+            )
 
         let composed =
             layer {
@@ -351,8 +344,8 @@ module RuntimeFoundationTests =
         let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let makeLayer name value =
-            Layer.fromValueTask (fun (_, _) cancellationToken ->
-                ValueTask<Exit<int, string>>(
+            Layer.fromFlow (
+                Flow.fromTask (fun cancellationToken ->
                     task {
                         calls.Add($"{name}-start")
 
@@ -361,9 +354,9 @@ module RuntimeFoundationTests =
 
                         use _ = cancellationToken.Register(fun () -> release.TrySetCanceled(cancellationToken) |> ignore)
                         do! release.Task
-
-                        return Exit.Success value
-                    }))
+                    })
+                |> Flow.map (fun () -> value)
+            )
 
         let composed =
             layer {

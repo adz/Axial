@@ -24,9 +24,11 @@ module AppTests =
 
         let application : Flow<ClockEnvironment, string, unit> =
             flow {
-                do! Flow.scopeAsyncFinalizer(fun token -> async {
-                    finalized.Add token.IsCancellationRequested
-                })
+                do!
+                    Flow.scopeFinalizer (
+                        Flow.cancellationToken
+                        |> Flow.map (fun token -> finalized.Add token.IsCancellationRequested)
+                    )
                 started.TrySetResult() |> ignore
                 do! Flow.sleep(TimeSpan.FromSeconds 30.0)
             }
@@ -40,7 +42,8 @@ module AppTests =
 
         test <@ first.Result = Exit.Failure Cause.Interrupt @>
         test <@ second.Result = first.Result @>
-        test <@ List.ofSeq finalized = [ true ] @>
+        // The release runs without interruption, even though stopping interrupted the application.
+        test <@ List.ofSeq finalized = [ false ] @>
         test <@ running.Status = AppStatus.Completed @>
 
     [<Fact>]

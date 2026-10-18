@@ -54,7 +54,7 @@ type AppEnv =
 let events = ResizeArray<string>()
 
 let fail (error: StartupError) : Layer<'input, StartupError, 'output> =
-    Layer.fromAsync (fun _ _ -> async { return Exit.Failure(Cause.Fail error) })
+    Layer.fromFlow (Flow.fail error)
 
 let configLayer : Layer<Map<string, string>, StartupError, Config> =
     Layer.envWith (Map.tryFind "orders")
@@ -62,16 +62,18 @@ let configLayer : Layer<Map<string, string>, StartupError, Config> =
         | Some connectionString -> Layer.succeed { ConnectionString = connectionString }
         | None -> fail (MissingSetting "orders"))
 
+let openOrders (config: Config) : Flow<Map<string, string>, StartupError, IOrderRepository> =
+    Flow.delay (fun () ->
+        events.Add $"opened {config.ConnectionString}"
+        Flow.ok { new IOrderRepository with member _.Count() = 3 })
+
+let closeOrders (config: Config) (_: IOrderRepository) : Flow<Map<string, string>, Never, unit> =
+    Flow.delay (fun () ->
+        events.Add $"closed {config.ConnectionString}"
+        Flow.ok ())
+
 let ordersLayerFromConfig (config: Config) : Layer<Map<string, string>, StartupError, IOrderRepository> =
-    Layer.acquireRelease
-        (Layer.fromAsync (fun _ _ ->
-            async {
-                events.Add $"opened {config.ConnectionString}"
-                return Exit.Success { new IOrderRepository with member _.Count() = 3 }
-            }))
-        (fun _ _ ->
-            events.Add $"closed {config.ConnectionString}"
-            Task.CompletedTask)
+    Layer.fromFlow (Flow.scopeAcquireRelease (openOrders config) (closeOrders config))
 
 let clockLayer : Layer<Map<string, string>, StartupError, IClock> =
     Layer.succeed (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
@@ -142,8 +144,9 @@ that is an ordinary F# compile-time scope error, and the fix is to move it into 
 | --- | --- |
 | `Layer.succeed value` | A value that is already built |
 | `Layer.envWith projection` | A value read from the layer's input |
-| `Layer.fromAsync`, `Layer.fromTask`, `Layer.fromValueTask` | Construction that can fail or register cleanup |
-| `Layer.acquireRelease acquire release` | A resource that lives as long as the provided flow |
+| `Layer.fromFlow build` | Construction written as a flow: it can fail, read the input, and acquire scoped resources that live as long as the provided flow |
+| `Layer.acquireRelease acquire release` | A resource built by another layer, released when the provided flow ends |
+| `Layer.addFinalizer release` | Cleanup that runs when the provided flow ends |
 | `Layer.map`, `Layer.mapError`, `Layer.widenError` | Change the output or the error type |
 | `Layer.bind` | A step that depends on an earlier value, like `let!` |
 | `Layer.zip` | Two layers in sequence |

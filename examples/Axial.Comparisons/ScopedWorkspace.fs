@@ -88,7 +88,7 @@ module WithFlow =
         Flow.scoped (
             Flow.scopeAcquireRelease
                 acquire
-                (fun workspace _ -> Task.Run(fun () -> Directory.Delete(workspace, recursive = true)))
+                (fun workspace -> Flow.fromBlocking (fun _ -> Directory.Delete(workspace, recursive = true)))
             |> Flow.bind (fun workspace ->
                 flow {
                     // Every step here — including this gate that fails before any file exists —

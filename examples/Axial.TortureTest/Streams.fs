@@ -129,9 +129,9 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let released = ref 0
 
         let pool =
-            Resource.ofAsync
+            Resource.create
                 (Flow.delay (fun () -> Flow.ok (increment acquired)))
-                (fun _ _ -> async { increment released |> ignore })
+                (fun _ -> finalizer (fun () -> increment released |> ignore))
 
         let! pooledResults =
             source ()
@@ -175,7 +175,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
         let owned () =
             FlowStream.using
-                (Resource.ofAsync (Flow.delay (fun () -> increment opened |> ignore; Flow.ok ())) (fun _ _ -> async { increment closed |> ignore }))
+                (Resource.create (Flow.delay (fun () -> increment opened |> ignore; Flow.ok ())) (fun _ -> finalizer (fun () -> increment closed |> ignore)))
                 (fun () -> FlowStream.repeatFlow (Flow.ok 1))
 
         let! early = owned () |> FlowStream.mapFlowPar (Parallelism.bounded 3) slowly |> FlowStream.take 5 |> FlowStream.runCollect

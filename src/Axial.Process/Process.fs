@@ -842,8 +842,8 @@ module Process =
                             let! fiber = Flow.fork producer
 
                             do!
-                                Flow.scopeAsyncFinalizer (fun _ ->
-                                    async {
+                                Flow.scopeFinalizer (
+                                    Flow.fromAsync (async {
                                         fiber.InterruptSource.Cancel()
 #if FABLE_COMPILER
                                         let! _ = fiber.ExitTask
@@ -851,7 +851,7 @@ module Process =
                                         let! _ = fiber.ExitTask |> Async.AwaitTask
 #endif
                                         return ()
-                                    })
+                                    }))
 
                         let! token = Flow.cancellationToken
                         let! item, acknowledgment = events.Take token

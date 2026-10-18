@@ -140,6 +140,6 @@ module WithFlow =
         Flow.scoped (
             Flow.scopeAcquireRelease
                 reserve
-                (fun (reservation, inventory) _ -> inventory.Release reservation)
+                (fun (reservation, inventory) -> Flow.fromTask (fun _ -> task { do! inventory.Release reservation }))
             |> Flow.bind (fun (reservation, _) -> fulfil reservation))
     // </snippet:compare-checkout>

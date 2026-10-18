@@ -11,7 +11,7 @@ let tests : Test list =
 
           let! fiber =
               flow {
-                  do! Flow.scopeAsyncFinalizer (fun _ -> async { released.Value <- true })
+                  do! Flow.scopeFinalizer (Flow.delay (fun () -> released.Value <- true; Flow.ok ()))
                   return 42
               }
               |> Flow.fork
@@ -24,9 +24,9 @@ let tests : Test list =
           let events = ResizeArray<string>()
 
           let connection =
-              Resource.ofAsync
+              Resource.create
                   (Flow.delay (fun () -> events.Add "acquired"; Flow.ok "db"))
-                  (fun _ _ -> async { events.Add "released" })
+                  (fun _ -> Flow.delay (fun () -> events.Add "released"; Flow.ok ()))
 
           let! whileOpen =
               flow {
@@ -46,9 +46,9 @@ let tests : Test list =
 
           let acquire (name: string) =
               Flow.scopeResource (
-                  Resource.ofAsync
+                  Resource.create
                       (Flow.delay (fun () -> events.Add $"{name}:acquired"; Flow.ok name))
-                      (fun _ _ -> async { events.Add $"{name}:released" }))
+                      (fun _ -> Flow.delay (fun () -> events.Add $"{name}:released"; Flow.ok ())))
 
           let releasedNow () = events |> Seq.filter (fun event -> event.EndsWith ":released") |> List.ofSeq |> List.sort
 

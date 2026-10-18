@@ -7,24 +7,13 @@ lists the queue. Work on main.
 
 ## Queue
 
-- [ ] T1: Flow-valued resource release and `Layer.fromFlow`
-  - Ships in 0.11; record breaking changes and additions in `dev-docs/releases/0.11.0.md`.
-  - Release and layer construction are raw `Task`/`Async` callbacks, so cleanup cannot use `Ref`, `'env` services,
-    or typed failures, and docs fall back to `lock`.
-  - Release becomes `'value -> Flow<'env, 'none, unit>`: it runs uninterruptibly with the environment captured at
-    acquisition, and a failure is a defect (as in ZIO). Change `Resource.create`, `Resource.ofAsync`,
-    `Resource.finalizer`, `Resource.asyncFinalizer`, `Flow.scopeAcquireRelease`, `Flow.scopeFinalizer`, and
-    `Flow.scopeAsyncFinalizer` (`src/Axial/Flow.fs`). Before 1.0, drop the task/async forms or keep them only as thin
-    adapters.
-  - Add `Layer.fromFlow`; make `Layer.acquireRelease` and `Layer.addFinalizer` take flow releases. `Layer.fromAsync`,
-    `fromTask`, and `fromValueTask` (`src/Axial.Layers/Layer.fs`) hand the caller the raw `Scope` and expect a
-    hand-built `Exit`; replace their uses in the layers guide, its tutorial, `Axial.PlatformService`, and the layers
-    torture scenario.
-  - Rewrite doc examples to use `Ref` instead of locks or `Interlocked`: `docs/09-scopes/_index.md` (connection log),
-    `docs/08-concurrency-and-state/01-fibers.md` (lines ~163 and ~190), `04-deferred-semaphore.md`, `09-cache.md`,
-    and `02-supervision.md` (poll counter).
-  - Benchmark `ParallelCompositionBenchmarks` and scope close before and after; the empty-close fast path in
-    `Platform.runFinalizers` must stay allocation-free.
+- [ ] T1b: Recover resource-release cost
+  - T1 made releases flows with their own scope and the acquisition runtime. Per 1000 scope closes with one release,
+    `ScopeCloseBenchmarks` went from 860 us / 1587 KB to about 1223 us / 2048 KB (about 0.37 us and 460 B per
+    release; about 210 B is the release flow itself). Empty close and parallel composition are unchanged.
+  - Recover the rest without weakening the semantics (uninterruptible, acquisition env and runtime, own scope):
+    candidates are a scope created only when the release registers something, avoiding the ambient runtime switch
+    when the release completes synchronously without reading it, and sharing one release runtime per scope close.
 - [ ] T2: Flow-shaped process I/O and web handlers
   - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`.
   - `Input.readOnce`, `Input.produce`, `Output.callback`, and the `Sink` target (`InputSource`/`OutputTarget` in

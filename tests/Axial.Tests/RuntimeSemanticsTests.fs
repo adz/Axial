@@ -53,8 +53,8 @@ module RuntimeSemanticsTests =
 
     [<Fact>]
     let ``Layer zipPar accumulates parallel provisioning failures`` () =
-        let left : Layer<unit, string, int> = Layer.fromValueTask (fun _ _ -> Execution.ofError "left")
-        let right : Layer<unit, string, int> = Layer.fromValueTask (fun _ _ -> Execution.ofError "right")
+        let left : Layer<unit, string, int> = Layer.fromFlow (Flow.fail "left")
+        let right : Layer<unit, string, int> = Layer.fromFlow (Flow.fail "right")
 
         let workflow =
             Flow.env<int * int, string>
@@ -71,7 +71,7 @@ module RuntimeSemanticsTests =
         let workflow =
             Flow.scopeAcquireRelease
                 (Flow.succeed "resource")
-                (fun _ _ -> Task.FromException releaseDefect)
+                (fun _ -> Flow.die releaseDefect)
             |> Flow.bind (fun _ -> Flow.fail "use failed")
             |> Flow.scoped
 
@@ -85,7 +85,7 @@ module RuntimeSemanticsTests =
 
         let workflow =
             flow {
-                do! Flow.scopeFinalizer(fun _ -> Task.FromException finalizerDefect)
+                do! Flow.scopeFinalizer (Flow.die finalizerDefect)
                 return! Flow.fail "workflow failed"
             }
 
@@ -271,13 +271,17 @@ module RuntimeSemanticsTests =
 
         let workflow : Flow<ClockEnvironment, string, unit> =
             flow {
-                do! Flow.scopeFinalizer(fun token ->
-                    calls.Add $"first:{token.IsCancellationRequested}"
-                    Task.CompletedTask)
+                do!
+                    Flow.scopeFinalizer (
+                        Flow.cancellationToken
+                        |> Flow.map (fun token -> calls.Add $"first:{token.IsCancellationRequested}")
+                    )
 
-                do! Flow.scopeFinalizer(fun token ->
-                    calls.Add $"second:{token.IsCancellationRequested}"
-                    Task.CompletedTask)
+                do!
+                    Flow.scopeFinalizer (
+                        Flow.cancellationToken
+                        |> Flow.map (fun token -> calls.Add $"second:{token.IsCancellationRequested}")
+                    )
 
                 do! Flow.sleep (TimeSpan.FromSeconds 5.0)
             }
@@ -286,7 +290,8 @@ module RuntimeSemanticsTests =
         let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
 
         test <@ result = Exit.Failure Cause.Interrupt @>
-        test <@ List.ofSeq calls = [ "second:True"; "first:True" ] @>
+        // Releases run in reverse order and are not interrupted by the cancellation that closed the scope.
+        test <@ List.ofSeq calls = [ "second:False"; "first:False" ] @>
 
     [<Fact>]
     let ``Cancellation failure is sequenced before finalizer defect`` () =
@@ -295,7 +300,7 @@ module RuntimeSemanticsTests =
 
         let workflow : Flow<ClockEnvironment, string, unit> =
             flow {
-                do! Flow.scopeFinalizer(fun _ -> Task.FromException finalizerDefect)
+                do! Flow.scopeFinalizer (Flow.die finalizerDefect)
                 do! Flow.sleep (TimeSpan.FromSeconds 5.0)
             }
 

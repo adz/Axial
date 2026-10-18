@@ -46,9 +46,7 @@ module WorkflowResourceTests =
         let acquireReleaseResult =
             scopeUse
                 (Flow.succeed 7)
-                (fun _ _ ->
-                    releaseCount.Value <- releaseCount.Value + 1
-                    Task.CompletedTask)
+                (fun _ -> Flow.delay (fun () -> releaseCount.Value <- releaseCount.Value + 1; Flow.succeed ()))
                 (fun _ -> Flow.fail "boom")
             |> Flow.runSync (TestSupport.clockEnv ())
 
@@ -62,9 +60,7 @@ module WorkflowResourceTests =
         let acquireReleaseResult =
             scopeUse
                 (Flow.succeed 7)
-                (fun _ _ ->
-                    releaseCount.Value <- releaseCount.Value + 1
-                    Task.CompletedTask)
+                (fun _ -> Flow.delay (fun () -> releaseCount.Value <- releaseCount.Value + 1; Flow.succeed ()))
                 (fun _ -> Flow.die (InvalidOperationException "boom"))
             |> Flow.runSync (TestSupport.clockEnv ())
 
@@ -81,9 +77,7 @@ module WorkflowResourceTests =
         let acquireReleaseResult =
             scopeUse
                 (Flow.succeed 7)
-                (fun _ _ ->
-                    releaseCount.Value <- releaseCount.Value + 1
-                    Task.CompletedTask)
+                (fun _ -> Flow.delay (fun () -> releaseCount.Value <- releaseCount.Value + 1; Flow.succeed ()))
                 (fun _ -> interrupted)
             |> Flow.runSync (TestSupport.clockEnv ())
 
@@ -97,9 +91,10 @@ module WorkflowResourceTests =
         let acquireReleaseResult =
             scopeUse
                 (Flow.succeed 7)
-                (fun _ _ ->
-                    releaseCount.Value <- releaseCount.Value + 1
-                    Task.FromException(InvalidOperationException "release failed"))
+                (fun _ ->
+                    Flow.delay (fun () ->
+                        releaseCount.Value <- releaseCount.Value + 1
+                        Flow.die (InvalidOperationException "release failed")))
                 (fun _ -> Flow.succeed "ok")
             |> Flow.runSync (TestSupport.clockEnv ())
 
@@ -108,6 +103,179 @@ module WorkflowResourceTests =
         | other -> failwithf "Expected release defect, got %A" other
 
         test <@ releaseCount.Value = 1 @>
+
+    [<Fact>]
+    let ``A release runs without interruption when cancellation closes its scope`` () =
+        use cts = new CancellationTokenSource()
+        let events = ResizeArray<string>()
+
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do!
+                    Flow.scopeFinalizer (
+                        flow {
+                            // Interruptible work: it would stop at once if the release saw the cancellation.
+                            do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
+                            let! token = Flow.cancellationToken
+                            lock events (fun () -> events.Add $"released:{token.IsCancellationRequested}")
+                        }
+                    )
+
+                lock events (fun () -> events.Add "acquired")
+                do! Flow.sleep (TimeSpan.FromSeconds 30.0)
+            }
+
+        cts.CancelAfter(TimeSpan.FromMilliseconds 50.0)
+        let result = Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow
+
+        test <@ result = Exit.Failure Cause.Interrupt @>
+        test <@ List.ofSeq events = [ "acquired"; "released:False" ] @>
+
+    [<Fact>]
+    let ``Cancellation during a gated release waits for uncancelled completion`` () =
+        use cts = new CancellationTokenSource()
+        let entered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let completed = ref false
+        let tokenCancelled = ref true
+
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer (flow {
+                    entered.TrySetResult () |> ignore
+                    do! Flow.fromTask (fun _ -> gate.Task)
+                    let! token = Flow.cancellationToken
+                    tokenCancelled.Value <- token.IsCancellationRequested
+                    completed.Value <- true
+                })
+            }
+
+        let running = Task.Run(fun () -> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow)
+        Assert.True(entered.Task.Wait(TimeSpan.FromSeconds 10.0))
+        cts.Cancel()
+        gate.TrySetResult () |> ignore
+        let result = running.GetAwaiter().GetResult()
+        test <@ result = Exit.Success () @>
+        test <@ completed.Value && not tokenCancelled.Value @>
+
+    [<Fact>]
+    let ``Nested gated release finishes under cancellation and then closes its resource`` () =
+        use cts = new CancellationTokenSource()
+        let entered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let events = ResizeArray<string>()
+
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer (flow {
+                    let! _ = Flow.scopeAcquireRelease (Flow.succeed "inner") (fun _ ->
+                        Flow.delay (fun () -> events.Add "inner released"; Flow.succeed ()))
+                    entered.TrySetResult () |> ignore
+                    do! Flow.fromTask (fun _ -> gate.Task)
+                    events.Add "outer finished"
+                })
+            }
+
+        let running = Task.Run(fun () -> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token workflow)
+        Assert.True(entered.Task.Wait(TimeSpan.FromSeconds 10.0))
+        cts.Cancel()
+        gate.TrySetResult () |> ignore
+        test <@ running.GetAwaiter().GetResult() = Exit.Success () @>
+        test <@ List.ofSeq events = [ "outer finished"; "inner released" ] @>
+
+    [<Fact>]
+    let ``All finalizers run in reverse order when the middle finalizer dies`` () =
+        let events = ResizeArray<string>()
+        let defect = InvalidOperationException "middle"
+        let release name = Flow.delay (fun () -> events.Add name; Flow.succeed ())
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer (release "first")
+                do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "middle"; Flow.die defect))
+                do! Flow.scopeFinalizer (release "third")
+            }
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Failure(Cause.Die defect) @>
+        test <@ List.ofSeq events = [ "third"; "middle"; "first" ] @>
+
+    [<Fact>]
+    let ``Synchronous release construction defect does not skip other finalizers`` () =
+        let events = ResizeArray<string>()
+        let defect = InvalidOperationException "construct release"
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "first"; Flow.succeed ()))
+                let! _ = Flow.scopeAcquireRelease (Flow.succeed "resource") (fun _ -> raise defect)
+                do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "last"; Flow.succeed ()))
+            }
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Failure(Cause.Die defect) @>
+        test <@ List.ofSeq events = [ "last"; "first" ] @>
+
+    [<Fact>]
+    let ``Nested scope defect followed by parent release defect preserves ordered cause`` () =
+        let inner = InvalidOperationException "inner"
+        let outer = InvalidOperationException "outer"
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer (Flow.die outer)
+                do! Flow.scoped (Flow.scopeFinalizer (Flow.die inner))
+            }
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Failure(Cause.Then(Cause.Die inner, Cause.Die outer)) @>
+
+    [<Fact>]
+    let ``A release sees the environment captured at acquisition`` () =
+        let seen = ResizeArray<string>()
+
+        let workflow : Flow<string, string, string> =
+            flow {
+                let! resource =
+                    Flow.scopeAcquireRelease
+                        (Flow.envWith (fun (env: string) -> $"connection:{env}"))
+                        (fun connection -> Flow.envWith (fun (env: string) -> seen.Add $"{connection} released in {env}"))
+                    |> Flow.localEnv (fun (_: string) -> "tenant-a")
+
+                return resource
+            }
+            |> Flow.scoped
+
+        let result = Flow.runSync "root" workflow
+
+        test <@ result = Exit.Success "connection:tenant-a" @>
+        test <@ List.ofSeq seen = [ "connection:tenant-a released in tenant-a" ] @>
+
+    [<Fact>]
+    let ``A release that throws is a defect and the scope's other releases still run`` () =
+        let events = ResizeArray<string>()
+        let releaseDefect = InvalidOperationException "release threw"
+
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "first released"; Flow.succeed ()))
+                do! Flow.scopeFinalizer (Flow.delay (fun () -> raise releaseDefect))
+            }
+            |> Flow.scoped
+
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+
+        test <@ result = Exit.Failure(Cause.Die releaseDefect) @>
+        test <@ List.ofSeq events = [ "first released" ] @>
+
+    [<Fact>]
+    let ``A release closes the resources it acquires itself`` () =
+        let events = ResizeArray<string>()
+
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            Flow.scopeFinalizer (
+                flow {
+                    do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "inner released"; Flow.succeed ()))
+                    events.Add "outer released"
+                }
+            )
+            |> Flow.scoped
+
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+
+        test <@ result = Exit.Success () @>
+        test <@ List.ofSeq events = [ "outer released"; "inner released" ] @>
 
     [<Fact>]
     let ``Flow scope functions register disposable and resource finalizer`` () =
@@ -119,7 +287,7 @@ module WorkflowResourceTests =
                     let disposable = new TrackingDisposable(events, "disposable")
                     do! Flow.scopeDisposable disposable
                     do!
-                        Resource.finalizer(fun _ -> events.Add("finalized"); Task.CompletedTask)
+                        Resource.finalizer (Flow.delay (fun () -> events.Add("finalized"); Flow.succeed ()))
                         |> Flow.scopeResource
                         |> Flow.ignore
                     events.Add("used")
@@ -139,9 +307,7 @@ module WorkflowResourceTests =
                 let! resource =
                     Flow.scopeAcquireRelease
                         (Flow.succeed "resource")
-                        (fun name _ ->
-                            events.Add($"{name}:released")
-                            Task.CompletedTask)
+                        (fun name -> Flow.delay (fun () -> events.Add($"{name}:released"); Flow.succeed ()))
 
                 events.Add($"{resource}:after-acquire")
 
@@ -165,13 +331,9 @@ module WorkflowResourceTests =
 
         let workflow =
             flow {
-                do! Flow.scopeFinalizer(fun _ ->
-                    events.Add "first"
-                    Task.CompletedTask)
+                do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "first"; Flow.succeed ()))
 
-                do! Flow.scopeFinalizer(fun _ ->
-                    events.Add "second"
-                    Task.CompletedTask)
+                do! Flow.scopeFinalizer (Flow.delay (fun () -> events.Add "second"; Flow.succeed ()))
             }
 
         let result = Flow.runSync (TestSupport.clockEnv ()) workflow
@@ -186,9 +348,7 @@ module WorkflowResourceTests =
         let layer =
             Layer.acquireRelease
                 (Layer.succeed "service")
-                (fun service _ ->
-                    events.Add($"{service}:released")
-                    Task.CompletedTask)
+                (fun service -> Flow.delay (fun () -> events.Add($"{service}:released"); Flow.succeed ()))
 
         let workflow =
             flow {
@@ -212,12 +372,10 @@ module WorkflowResourceTests =
         let successful =
             Layer.acquireRelease
                 (Layer.succeed "service")
-                (fun service _ ->
-                    events.Add($"{service}:released")
-                    Task.CompletedTask)
+                (fun service -> Flow.delay (fun () -> events.Add($"{service}:released"); Flow.succeed ()))
 
         let failed =
-            Layer.fromValueTask (fun (_, _) _ -> Execution.ofError "failed")
+            Layer.fromFlow (Flow.fail "failed")
 
         let result =
             Flow.env<string * string, string>
@@ -226,6 +384,81 @@ module WorkflowResourceTests =
 
         test <@ result = Exit.Failure (Cause.Fail "failed") @>
         test <@ List.ofSeq events = [ "service:released" ] @>
+
+    [<Fact>]
+    let ``Layer fromFlow keeps scoped resources until the provided flow completes and releases them in reverse`` () =
+        let events = ResizeArray<string>()
+
+        let open' (name: string) =
+            Flow.scopeAcquireRelease
+                (Flow.envWith (fun (region: string) -> events.Add $"{name}:acquired"; $"{name}@{region}"))
+                (fun resource -> Flow.envWith (fun (region: string) -> events.Add $"{resource}:released in {region}"))
+
+        let layer : Layer<string, string, string * string> =
+            Layer.fromFlow (
+                flow {
+                    let! database = open' "database"
+                    let! cache = open' "cache"
+                    return database, cache
+                }
+            )
+
+        let workflow =
+            flow {
+                let! database, cache = Flow.env<string * string, string>
+                events.Add $"used {database} {cache}"
+                return database
+            }
+
+        let result = workflow |> Layer.provide layer |> Flow.runSync "eu"
+
+        test <@ result = Exit.Success "database@eu" @>
+
+        test
+            <@
+                List.ofSeq events = [ "database:acquired"
+                                      "cache:acquired"
+                                      "used database@eu cache@eu"
+                                      "cache@eu:released in eu"
+                                      "database@eu:released in eu" ]
+            @>
+
+    [<Fact>]
+    let ``Layer fromFlow releases what it acquired when provisioning fails`` () =
+        let events = ResizeArray<string>()
+
+        let layer : Layer<unit, string, string> =
+            Layer.fromFlow (
+                flow {
+                    let! _ =
+                        Flow.scopeAcquireRelease
+                            (Flow.succeed "connection")
+                            (fun resource -> Flow.delay (fun () -> events.Add $"{resource}:released"; Flow.succeed ()))
+
+                    return! Flow.fail "migration failed"
+                }
+            )
+
+        let result =
+            Flow.delay (fun () -> events.Add "used"; Flow.succeed ())
+            |> Layer.provide layer
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Fail "migration failed") @>
+        test <@ List.ofSeq events = [ "connection:released" ] @>
+
+    [<Fact>]
+    let ``Layer addFinalizer runs its release with the layer input as environment`` () =
+        let events = ResizeArray<string>()
+
+        let layer : Layer<string, string, int> =
+            Layer.addFinalizer (Flow.envWith (fun (input: string) -> events.Add $"released with {input}"))
+            |> Layer.bind (fun () -> Layer.envWith String.length)
+
+        let result = Flow.env<int, string> |> Layer.provide layer |> Flow.runSync "input"
+
+        test <@ result = Exit.Success 5 @>
+        test <@ List.ofSeq events = [ "released with input" ] @>
 
     [<Fact>]
     let ``Layer pool hands out instances round-robin`` () =
@@ -266,13 +499,11 @@ module WorkflowResourceTests =
         let layer =
             Layer.pool 3 (fun index ->
                 if index = 2 then
-                    Layer.fromValueTask (fun (_, _) _ -> Execution.ofError "boom")
+                    Layer.fromFlow (Flow.fail "boom")
                 else
                     Layer.acquireRelease
                         (Layer.succeed index)
-                        (fun instance _ ->
-                            events.Add($"{instance}:released")
-                            Task.CompletedTask))
+                        (fun instance -> Flow.delay (fun () -> events.Add($"{instance}:released"); Flow.succeed ())))
 
         let result =
             Flow.env<Pool<int>, string>
@@ -335,7 +566,7 @@ module WorkflowResourceTests =
 
                 let! fiber =
                     flow {
-                        do! Flow.scopeFinalizer (fun _ -> task { lock events (fun () -> events.Add "released") })
+                        do! Flow.scopeFinalizer (Flow.delay (fun () -> lock events (fun () -> events.Add "released"); Flow.succeed ()))
                         return "done"
                     }
                     |> Flow.fork
@@ -529,7 +760,7 @@ module WorkflowResourceTests =
         let cannotFail : Layer<unit, Never, int> = Layer.succeed 20
         let canFail : Layer<unit, string, int> = Layer.succeed 22
         let combined = Layer.map2 (+) (Layer.widenError cannotFail) canFail
-        let failing = Layer.map2 (+) (Layer.widenError cannotFail) (Layer.fromAsync (fun _ _ -> async { return Exit.Failure(Cause.Fail "down") }))
+        let failing = Layer.map2 (+) (Layer.widenError cannotFail) (Layer.fromFlow (Flow.fail "down"))
 
         test <@ Flow.envWith id |> Layer.provide combined |> Flow.runSync () = Exit.Success 42 @>
         test <@ (Flow.envWith id : Flow<int, string, int>) |> Layer.provide failing |> Flow.runSync () = Exit.Failure(Cause.Fail "down") @>

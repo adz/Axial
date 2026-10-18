@@ -39,9 +39,9 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let shared = ref false
 
         let pool =
-            Resource.ofAsync
+            Resource.create
                 (Flow.delay (fun () -> Flow.ok (increment acquired)))
-                (fun _ _ -> async { increment released |> ignore })
+                (fun _ -> finalizer (fun () -> increment released |> ignore))
 
         let useResource resource value =
             flow {

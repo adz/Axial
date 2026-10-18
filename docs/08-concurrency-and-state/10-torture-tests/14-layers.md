@@ -12,8 +12,9 @@ Run it with `dotnet run --project examples/Axial.TortureTest -- layers 100`.
 
 ## What it does
 
-- Each resource layer is built with `Layer.acquireRelease` and fails one time in twenty, through `Layer.fromAsync`, or
-  on .NET `Layer.fromTask` or `Layer.fromValueTask`.
+- Each resource layer fails one time in twenty, through `Layer.fromFlow`. One resource is built with
+  `Layer.acquireRelease`; the other with `Layer.fromFlow` over `Flow.scopeAcquireRelease`, whose release lives until
+  the provided flow ends.
 - Two resources are provisioned in sequence with `Layer.zip`, a pool of three with `Layer.pool` in parallel with
   `Layer.zipPar`, and the region comes from the input environment with `Layer.envWith`.
 - The flow reads the environment with `Flow.env` and `Flow.envWith`, uses the pool, and may fail. It runs under

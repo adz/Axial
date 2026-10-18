@@ -225,9 +225,10 @@ type Connection = { Name: string }
 let closed = ResizeArray<string>()
 
 let connect (name: string) : Flow<Connection> =
-    Flow.scopeAcquireRelease (Flow.ok { Name = name }) (fun connection _ ->
-        closed.Add connection.Name
-        Task.CompletedTask)
+    Flow.scopeAcquireRelease (Flow.ok { Name = name }) (fun connection ->
+        Flow.delay (fun () ->
+            closed.Add connection.Name
+            Flow.ok ()))
 
 let report : Flow<string> =
     flow {

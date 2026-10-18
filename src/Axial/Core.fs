@@ -1102,6 +1102,10 @@ module internal RuntimeState =
 #else
     let withRuntime (runtime: RuntimeContext) (operation: unit -> 'value) : 'value =
         Platform.withCell currentRuntime runtime operation
+
+    /// Makes <paramref name="runtime" /> current without restoring the previous one. Only for callers that restore
+    /// the whole <c>ExecutionContext</c> themselves, which costs one allocation instead of two.
+    let enter (runtime: RuntimeContext) : unit = currentRuntime.Current.Value <- runtime
 #endif
 
 /// <summary>
@@ -1111,6 +1115,10 @@ module internal RuntimeState =
 /// <typeparam name="env">The type of the environment dependency.</typeparam>
 /// <typeparam name="error">The type of the failure value.</typeparam>
 /// <typeparam name="value">The type of the success value.</typeparam>
+type internal ReleaseCauseException(cause: Cause<obj>) =
+    inherit Exception("Resource release failed.")
+    member _.Cause = cause
+
 type Flow<'env, 'error, 'value> =
     internal
     | Flow of ('env -> CancellationToken -> Execution<'value, 'error>)
@@ -1206,8 +1214,15 @@ type Flow<'env, 'error, 'value> =
 #endif
                 ))
             (fun cleanupError executionError exit ->
-                let causeOf (error: exn) : Cause<'error> =
-                    if error :? OperationCanceledException then Cause.Interrupt else Cause.Die error
+                let rec causeOf (error: exn) : Cause<'error> =
+                    match error with
+                    | :? ReleaseCauseException as release -> Cause.map (fun _ -> Unchecked.defaultof<'error>) release.Cause
+#if !FABLE_COMPILER
+                    | :? AggregateException as aggregate when aggregate.InnerExceptions.Count > 0 ->
+                        aggregate.InnerExceptions |> Seq.map causeOf |> Seq.reduce Cause.thenCause
+#endif
+                    | :? OperationCanceledException -> Cause.Interrupt
+                    | _ -> Cause.Die error
 
                 let primary =
                     match executionError, exit with
@@ -1324,16 +1339,6 @@ type LogLevel =
         | Error -> "Error"
         | Critical -> "Critical"
 
-/// <summary>Describes acquisition of a value together with registration of its release in the current Flow scope.</summary>
-/// <typeparam name="env">The environment required to acquire the value.</typeparam>
-/// <typeparam name="error">The typed acquisition failure.</typeparam>
-/// <typeparam name="value">The acquired value.</typeparam>
-type Resource<'env, 'error, 'value> =
-    internal
-    | Resource of
-        acquire: Flow<'env, 'error, 'value> *
-        release: ('value -> Platform.Finalizer)
-
 /// <summary>
 /// Represents an error channel that cannot occur.
 /// </summary>
@@ -1358,6 +1363,17 @@ module Never =
     let absurd (never: Never) : 'a =
         match never with
         | Never() -> invalidOp "A Never value cannot exist."
+
+/// <summary>Describes acquisition of a value together with registration of its release in the current Flow scope.</summary>
+/// <remarks>The release is a flow that cannot fail with a typed error. It runs without interruption, with the environment the value was acquired with; a defect it raises becomes a defect of the flow that closes the scope.</remarks>
+/// <typeparam name="env">The environment required to acquire the value.</typeparam>
+/// <typeparam name="error">The typed acquisition failure.</typeparam>
+/// <typeparam name="value">The acquired value.</typeparam>
+type Resource<'env, 'error, 'value> =
+    internal
+    | Resource of
+        acquire: Flow<'env, 'error, 'value> *
+        release: ('value -> Flow<'env, Never, unit>)
 
 /// <summary>A flow that requires no environment and cannot fail with a typed error.</summary>
 type Flow<'value> = Flow<unit, Never, 'value>

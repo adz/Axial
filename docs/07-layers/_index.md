@@ -70,9 +70,10 @@ type AppError = QueryFailed of string
 let connectionLayer (closed: ResizeArray<string>) : Layer<unit, Never, Connection> =
     Layer.acquireRelease
         (Layer.succeed (Connection("orders-db", closed)))
-        (fun connection _ ->
-            connection.Close()
-            Task.CompletedTask)
+        (fun connection ->
+            Flow.delay (fun () ->
+                connection.Close()
+                Flow.ok ()))
 
 let runtime (closed: ResizeArray<string>) : Layer<unit, Never, AppEnv> =
     Layer.merge Clock.layer (connectionLayer closed)
@@ -108,16 +109,17 @@ host container:
 ```fsharp no-check reason="Excerpted from the Axial.PlatformService source"
 let servicesFromServiceProvider
     : Layer<IServiceProvider, BaseRuntimeError, IClock * ILog * IRandom * IGuid * IEnvironmentVariables> =
-    Layer.fromValueTask (fun (provider, _) _ ->
-        task {
+    Layer.fromFlow (
+        Flow.envWith (fun provider ->
             match tryService<IClock> provider, tryService<ILog> provider, tryService<IRandom> provider,
                   tryService<IGuid> provider, tryService<IEnvironmentVariables> provider with
             | Ok clock, Ok log, Ok random, Ok guid, Ok environmentVariables ->
-                return Exit.Success(clock, log, random, guid, environmentVariables)
+                Ok(clock, log, random, guid, environmentVariables)
             | Error name, _, _, _, _ | _, Error name, _, _, _ | _, _, Error name, _, _
             | _, _, _, Error name, _ | _, _, _, _, Error name ->
-                return Exit.Failure(Cause.Fail(BaseRuntimeError.MissingService name))
-        })
+                Error(BaseRuntimeError.MissingService name))
+        |> Flow.bind Flow.fromResult
+    )
 ```
 
 Read the error channel: `BaseRuntimeError`, not `Never`. **Construction itself can fail**, and it fails with a typed
@@ -129,8 +131,7 @@ need:
 
 ```fsharp no-check reason="Excerpted from the Axial.Hosting source"
 let layer (categoryName: string) : Layer<ILoggerFactory, Never, ILog> =
-    Layer.fromValueTask (fun (loggerFactory, _) _ ->
-        ValueTask<Exit<ILog, Never>>(Exit.Success(fromFactory categoryName loggerFactory)))
+    Layer.envWith (fromFactory categoryName)
 ```
 
 The type says it: consumes an `ILoggerFactory`, produces an `ILog`. The factory does not exist until the host starts,

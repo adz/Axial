@@ -305,10 +305,15 @@ module WorkflowSchedulingTests =
         let cleanedUp = ref false
         let operation : Flow<ClockEnvironment, string, unit> =
             flow {
-                do! Flow.scopeAsyncFinalizer (fun _ -> async {
-                    do! Async.Sleep 10
-                    cleanedUp.Value <- true
-                })
+                do!
+                    Flow.scopeFinalizer (
+                        Flow.fromAsync (
+                            async {
+                                do! Async.Sleep 10
+                                cleanedUp.Value <- true
+                            }
+                        )
+                    )
                 do! Flow.sleep (TimeSpan.FromSeconds 30.0)
             }
 
@@ -609,7 +614,7 @@ module WorkflowSchedulingTests =
                     flow {
                         runs.Value <- runs.Value + 1
                         let attempt = runs.Value
-                        do! Flow.scopeAsyncFinalizer (fun _ -> async { lock released (fun () -> released.Add attempt) })
+                        do! Flow.scopeFinalizer (Flow.delay (fun () -> lock released (fun () -> released.Add attempt); Flow.succeed ()))
 
                         if attempt < 3 then
                             return! Flow.fail "transient"

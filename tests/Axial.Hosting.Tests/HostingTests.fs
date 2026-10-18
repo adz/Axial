@@ -110,7 +110,7 @@ module HostingTests =
 
         let application : Flow<ClockEnvironment, string, unit> =
             flow {
-                do! Flow.scopeFinalizer(fun _ -> finalized.TrySetResult() |> ignore; Task.CompletedTask)
+                do! Flow.scopeFinalizer(Flow.delay (fun () -> finalized.TrySetResult() |> ignore; Flow.succeed ()))
                 started.TrySetResult() |> ignore
                 do! Flow.sleep(TimeSpan.FromSeconds 30.0)
             }

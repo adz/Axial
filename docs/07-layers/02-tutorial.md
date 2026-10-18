@@ -112,10 +112,7 @@ Use plain `let!` when one provisioning step depends on another. Use sibling `and
 
 ```fsharp
 let failingOrdersLayer : Layer<unit, string, IOrders> =
-    Layer.fromTask (fun _ _ ->
-        task {
-            return Exit.Failure (Cause.Fail "database connection string missing")
-        })
+    Layer.fromFlow (Flow.fail "database connection string missing")
 ```
 
 ```fsharp run
@@ -149,9 +146,12 @@ type FakeConnection() =
 let connection = new FakeConnection()
 
 let connectionLayer : Layer<unit, string, FakeConnection> =
-    Layer.acquireRelease
-        (Layer.succeed connection)
-        (fun connection _ct -> (connection :> IAsyncDisposable).DisposeAsync().AsTask())
+    Layer.fromFlow (
+        flow {
+            do! Flow.scopeAsyncDisposable connection
+            return connection
+        }
+    )
 ```
 
 ```fsharp run
@@ -165,7 +165,8 @@ connection.Disposed |> shouldEqual true
 
 While the workflow ran, the connection was open; once `Layer.provide` finished, it was disposed.
 
-Layers also own what they acquire: acquired resources belong to the provisioning scope and are released when the provided workflow completes, fails, or is interrupted.
+`Layer.fromFlow` runs its flow in the provisioning scope, so whatever it registers there (`Flow.scopeAsyncDisposable`
+here, or `Flow.scopeAcquireRelease`) is released when the provided workflow completes, fails, or is interrupted.
 
 ## 6. Run Through `Layer.provide`
 

@@ -75,23 +75,22 @@ Awaiting respects runtime cancellation. If the waiting workflow is interrupted b
 `FlowSemaphore` limits how many workflows can enter a section at the same time. The public API is intentionally scoped: use `Semaphore.withPermit` instead of raw acquire/release.
 
 ```fsharp
-let active = ref 0
-let busiest = ref 0
+/// How many requests are running now, and the most that ever ran at once.
+type Load = { Active: int; Busiest: int }
 
-let runRequest (request: int) : Flow<ClockEnvironment, string, int> =
+let runRequest (load: Ref<Load>) (request: int) : Flow<ClockEnvironment, string, int> =
     flow {
-        let now = Interlocked.Increment &active.contents
-        lock busiest (fun () -> busiest.Value <- max busiest.Value now)
+        do! load |> Ref.update (fun l -> { Active = l.Active + 1; Busiest = max l.Busiest (l.Active + 1) })
         do! Flow.sleep (TimeSpan.FromMilliseconds 5.0)
-        Interlocked.Decrement &active.contents |> ignore
+        do! load |> Ref.update (fun l -> { l with Active = l.Active - 1 })
         return request * 10
     }
 
-let limitedFetch (semaphore: FlowSemaphore) (request: int) : Flow<ClockEnvironment, string, int> =
+let limitedFetch (semaphore: FlowSemaphore) (load: Ref<Load>) (request: int) : Flow<ClockEnvironment, string, int> =
     Semaphore.withPermit semaphore (
         flow {
             // Only one workflow per permit can run this section.
-            return! runRequest request
+            return! runRequest load request
         })
 ```
 
@@ -100,16 +99,22 @@ let limitedFetch (semaphore: FlowSemaphore) (request: int) : Flow<ClockEnvironme
 Create semaphores with a positive permit count:
 
 ```fsharp
-let program : Flow<ClockEnvironment, string, int list> =
+let program : Flow<ClockEnvironment, string, int list * int> =
     flow {
         let! semaphore = Semaphore.make 2
-        return! [ 1..8 ] |> Flow.traversePar (Parallelism.bounded 8) (limitedFetch semaphore)
+        let! load = Ref.make { Active = 0; Busiest = 0 }
+        let! results = [ 1..8 ] |> Flow.traversePar (Parallelism.bounded 8) (limitedFetch semaphore load)
+        let! final = Ref.get load
+        return results, final.Busiest
     }
 ```
 
 ```fsharp run
-program |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success [ 10; 20; 30; 40; 50; 60; 70; 80 ])
-busiest.Value <= 2 |> shouldEqual true
+match program |> Flow.run (ClockEnvironment Clock.live) with
+| Exit.Success(results, busiest) ->
+    results |> shouldEqual [ 10; 20; 30; 40; 50; 60; 70; 80 ]
+    busiest <= 2 |> shouldEqual true
+| other -> failwithf "Expected success, got %A" other
 ```
 
 Eight workers ran, but never more than the two permits at once.

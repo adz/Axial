@@ -30,19 +30,26 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                 (Layer.envWith id
                  |> Layer.bind (fun region ->
                      if round.Chance 5 then
-                         let unavailable = Exit.Failure(Cause.Fail $"{name} unavailable")
-#if FABLE_COMPILER
-                         Layer.fromAsync (fun _ _ -> async { return unavailable })
-#else
-                         match round.Next 3 with
-                         | 0 -> Layer.fromAsync (fun _ _ -> async { return unavailable })
-                         | 1 -> Layer.fromTask (fun _ _ -> Tasks.Task.FromResult unavailable)
-                         | _ -> Layer.fromValueTask (fun _ _ -> Tasks.ValueTask<_>(unavailable))
-#endif
+                         Layer.fromFlow (Flow.fail $"{name} unavailable")
                      else
                          lock gate (fun () -> acquired.Add name)
                          Layer.succeed $"{name}@{region}"))
                 (fun _ -> finalizer (fun () -> lock gate (fun () -> released.Add name)))
+
+        // The same resource, acquired by a flow whose scoped release lives until the provide boundary closes.
+        let resourceFromFlow (name: string) : Layer<string, string, string> =
+            Layer.fromFlow (
+                Flow.envWith id
+                |> Flow.bind (fun region ->
+                    if round.Chance 5 then
+                        Flow.fail $"{name} unavailable"
+                    else
+                        Flow.scopeAcquireRelease
+                            (Flow.delay (fun () ->
+                                lock gate (fun () -> acquired.Add name)
+                                Flow.succeed $"{name}@{region}"))
+                            (fun _ -> finalizer (fun () -> lock gate (fun () -> released.Add name))))
+            )
 
         let pool =
             Layer.pool 3 (fun index -> resource $"worker{index}" |> Layer.map (fun _ -> index))
@@ -51,7 +58,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let services : Layer<string, string, Services> =
             Layer.map3
                 (fun (primary, secondary) workers region -> { Primary = primary; Secondary = secondary; Workers = workers; Region = region; Clock = clock })
-                (Layer.zip (resource "primary") (resource "secondary"))
+                (Layer.zip (resource "primary") (resourceFromFlow "secondary"))
                 (Layer.zipPar pool (Layer.widenError (Layer.succeed () : Layer<string, Never, unit>)) |> Layer.map fst)
                 (Layer.merge (Layer.envWith id) (Layer.addFinalizer (finalizer ignore)) |> Layer.map fst)
             |> Layer.mapError id

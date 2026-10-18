@@ -316,3 +316,18 @@ module internal Shared =
             }
 
         fun cancellationToken -> loop 1 0 cancellationToken
+
+/// The release forms used by ScopeCloseBenchmarks, kept apart so the cases stay identical across release APIs.
+module internal ScopeCloseCases =
+    let finalizer (onRelease: unit -> unit) : Flow<unit, string, unit> =
+        Flow.scopeFinalizer (
+            Flow.delay (fun () ->
+                onRelease ()
+                Flow.succeed ())
+        )
+
+    let acquireRelease (value: int) (onRelease: int -> unit) : Flow<unit, string, int> =
+        Flow.scopeAcquireRelease (Flow.succeed value) (fun acquired ->
+            Flow.delay (fun () ->
+                onRelease acquired
+                Flow.succeed ()))

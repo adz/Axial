@@ -46,8 +46,7 @@ module MicrosoftLogging =
 
     /// <summary>Builds an Axial logger from a Microsoft logger factory supplied in the layer input.</summary>
     let layer (categoryName: string) : Layer<ILoggerFactory, Never, ILog> =
-        Layer.fromValueTask(fun (loggerFactory, _) _ ->
-            ValueTask<Exit<ILog, Never>>(Exit.Success(fromFactory categoryName loggerFactory)))
+        Layer.envWith (fromFactory categoryName)
 
 /// <summary>Fiber-lifecycle logging through Microsoft.Extensions.Logging.</summary>
 [<RequireQualifiedAccess>]

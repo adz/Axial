@@ -51,8 +51,7 @@ then closes all of them together after success, failure, interruption, or defect
 A **scoped resource** is anything whose cleanup is registered with a Flow scope instead of a lexical `use`:
 
 - a value acquired with `Flow.scopeResource` or `Flow.scopeAcquireRelease`
-- cleanup registered with `Flow.scopeFinalizer`, `Flow.scopeAsyncFinalizer`, `Flow.scopeDisposable`, or
-  `Flow.scopeAsyncDisposable`
+- cleanup registered with `Flow.scopeFinalizer`, `Flow.scopeDisposable`, or `Flow.scopeAsyncDisposable`
 - what Axial registers for you: a [hub subscription](/concurrency-and-state/hub.html), a queue from
   `Queue.makeScoped`, and a fiber from `Flow.fork`, which the scope interrupts if it is still running
 
@@ -109,9 +108,10 @@ let openConnection : Flow<string, Connection> =
         lifecycle.Add "open"
         Flow.ok (Connection "orders"))
 
-let closeConnection (connection: Connection) (_: CancellationToken) : Task =
-    lifecycle.Add $"close {connection.Name}"
-    Task.CompletedTask
+let closeConnection (connection: Connection) : Flow<unit> =
+    Flow.delay (fun () ->
+        lifecycle.Add $"close {connection.Name}"
+        Flow.ok ())
 
 let runApplicationWork (connection: Connection) : Flow<string, string> =
     Flow.delay (fun () ->
@@ -139,6 +139,16 @@ List.ofSeq lifecycle |> shouldEqual [ "open"; "work"; "close orders" ]
 Everything registered inside `Flow.scoped` remains available across calls made inside that block. Cleanup finishes
 before the resulting Flow returns.
 
+### How a release runs
+
+A release is itself a flow, `'value -> Flow<'env, Never, unit>`, so it can update a `Ref`, call a service from the
+environment, or wait on asynchronous work. When the scope closes:
+
+- The release runs with the environment the value was acquired with, even if the scope closes somewhere else.
+- It runs without interruption. Closing a scope because its flow was interrupted does not cancel the releases.
+- Its error type is `Never`, so it cannot fail with a typed error. A release that throws or dies becomes a defect
+  of the flow that closed the scope, after the scope's other releases have run.
+
 ## Register with the current scope
 
 The `scope` prefix means “attach this value or cleanup action to the current Flow scope”:
@@ -148,8 +158,8 @@ let registerEverything (stream: IDisposable) (response: IAsyncDisposable) : Flow
     flow {
         do! Flow.scopeDisposable stream
         do! Flow.scopeAsyncDisposable response
-        do! Flow.scopeFinalizer (fun _ -> lifecycle.Add "flush telemetry"; Task.CompletedTask)
-        do! Flow.scopeAsyncFinalizer (fun _ -> async { lifecycle.Add "save state" })
+        do! Flow.scopeFinalizer (Flow.delay (fun () -> lifecycle.Add "flush telemetry"; Flow.ok ()))
+        do! Flow.scopeFinalizer (Flow.fromAsync (async { lifecycle.Add "save state" }))
     }
 ```
 
@@ -166,7 +176,7 @@ List.ofSeq lifecycle |> shouldEqual [ "save state"; "flush telemetry"; "dispose 
 ```
 
 Use `Flow.scopeDisposable` and `Flow.scopeAsyncDisposable` for resources that already exist. Use
-`Flow.scopeFinalizer` or `Flow.scopeAsyncFinalizer` for custom cleanup.
+`Flow.scopeFinalizer` for custom cleanup.
 
 `Flow.scopeAcquireRelease` combines acquisition and registration without an interruption point between them:
 
@@ -180,9 +190,10 @@ type RequestCache() =
 let acquireRequestCache : Flow<string, RequestCache> =
     Flow.scopeAcquireRelease
         (Flow.succeed (new RequestCache()))
-        (fun cache _ ->
-            (cache :> IDisposable).Dispose()
-            Task.CompletedTask)
+        (fun cache ->
+            Flow.delay (fun () ->
+                (cache :> IDisposable).Dispose()
+                Flow.ok ()))
 ```
 
 The returned value remains available to later subflows in the same scope.
@@ -213,7 +224,7 @@ program |> Flow.run () |> shouldEqual (Exit.Success 6)
 List.ofSeq lifecycle |> shouldEqual [ "open"; "close orders" ]
 ```
 
-Use `Resource.finalizer` for task-based cleanup and `Resource.asyncFinalizer` for F# async cleanup.
+Use `Resource.finalizer release` for cleanup that has no acquired value.
 
 ## Concurrency and scoped resources
 
@@ -243,32 +254,36 @@ Acquire several scoped resources at once with `Flow.zipPar` or `Flow.sequencePar
 combinator returns:
 
 ```fsharp
-/// Records each open and close; the lock is there because the two opens run in parallel.
-let connectionLog = ResizeArray<string>()
-let log entry = lock connectionLog (fun () -> connectionLog.Add entry)
-
-let connectionTo (name: string) : Resource<ClockEnvironment, string, string> =
+/// Opens a connection, recording the open and the close in `log`.
+let connectionTo (log: Ref<string list>) (name: string) : Resource<ClockEnvironment, string, string> =
     Resource.create
-        (Flow.delay (fun () -> log $"open {name}"; Flow.ok name))
-        (fun _ _ -> log $"close {name}"; Task.CompletedTask)
+        (log |> Ref.update (fun entries -> entries @ [ $"open {name}" ]) |> Flow.map (fun () -> name))
+        (fun _ -> log |> Ref.update (fun entries -> entries @ [ $"close {name}" ]))
 
-let closedCount () = lock connectionLog (fun () -> connectionLog |> Seq.filter (fun entry -> entry.StartsWith "close") |> Seq.length)
+let closedIn (log: Ref<string list>) : Flow<ClockEnvironment, string, int> =
+    log |> Ref.get |> Flow.map (List.filter (fun (entry: string) -> entry.StartsWith "close") >> List.length)
 
-/// Opens two connections in parallel and reports how many were closed while they were in use.
-let openBoth : Flow<ClockEnvironment, string, int> =
+/// Opens two connections in parallel and counts the closed ones while they are in use and after their scope closes.
+let openBoth : Flow<ClockEnvironment, string, int * int> =
     flow {
-        let! orders, customers =
-            Flow.zipPar (Flow.scopeResource (connectionTo "orders")) (Flow.scopeResource (connectionTo "customers"))
+        let! log = Ref.make []
 
-        return closedCount ()
+        let! whileInUse =
+            flow {
+                let! _orders, _customers =
+                    Flow.zipPar (Flow.scopeResource (connectionTo log "orders")) (Flow.scopeResource (connectionTo log "customers"))
+
+                return! closedIn log
+            }
+            |> Flow.scoped
+
+        let! afterScope = closedIn log
+        return whileInUse, afterScope
     }
-    |> Flow.scoped
 ```
 
 ```fsharp run
-connectionLog.Clear()
-openBoth |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success 0)
-closedCount () |> shouldEqual 2
+openBoth |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(0, 2))
 ```
 
 No connection closed while `openBoth` used them; both closed when its scope did.
@@ -283,29 +298,36 @@ runs in a fiber, but the release belongs to the caller's scope, so `Fiber.join` 
 /// A plain fork: the fiber owns the connection and releases it when it settles, before join returns it.
 let forkedConnectionClosedOnJoin : Flow<ClockEnvironment, string, bool> =
     flow {
-        let! fiber = Flow.scopeResource (connectionTo "audit") |> Flow.fork
+        let! log = Ref.make []
+        let! fiber = Flow.scopeResource (connectionTo log "audit") |> Flow.fork
         let! _ = Fiber.join fiber
-        return lock connectionLog (fun () -> connectionLog.Contains "close audit")
+        let! entries = Ref.get log
+        return List.contains "close audit" entries
     }
     |> Flow.scoped
 
 /// forkResource: the caller's scope owns the connection, so it is still open after join.
-let keptConnectionClosedOnJoin : Flow<ClockEnvironment, string, bool> =
+let keptConnection : Flow<ClockEnvironment, string, bool * string list> =
     flow {
-        let! connecting = Flow.forkResource (connectionTo "audit")
-        let! _ = Fiber.join connecting
-        return lock connectionLog (fun () -> connectionLog.Contains "close audit")
+        let! log = Ref.make []
+
+        let! closedOnJoin =
+            flow {
+                let! connecting = Flow.forkResource (connectionTo log "audit")
+                let! _ = Fiber.join connecting
+                let! entries = Ref.get log
+                return List.contains "close audit" entries
+            }
+            |> Flow.scoped
+
+        let! entries = Ref.get log
+        return closedOnJoin, entries
     }
-    |> Flow.scoped
 ```
 
 ```fsharp run
-connectionLog.Clear()
 forkedConnectionClosedOnJoin |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success true)
-
-connectionLog.Clear()
-keptConnectionClosedOnJoin |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success false)
-List.ofSeq connectionLog |> shouldEqual [ "open audit"; "close audit" ]
+keptConnection |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(false, [ "open audit"; "close audit" ]))
 ```
 
 If the caller's scope closes before the acquisition finishes, the fiber is interrupted, and a resource acquired anyway
@@ -351,4 +373,6 @@ mapping fibers close on completion, failure, interruption, or early termination.
 - Finalizers run in reverse registration order and at most once.
 - Cleanup failures are defects and combine with the failure that caused closure.
 
-Layers use the same model. `Layer.acquireRelease` keeps a provisioned service alive until `Layer.provide` finishes.
+Layers use the same model. `Layer.fromFlow` runs a flow in the layer's scope, so what it acquires with
+`Flow.scopeAcquireRelease` stays alive until `Layer.provide` finishes; `Layer.acquireRelease` does the same for a
+resource built by another layer.

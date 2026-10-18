@@ -9,7 +9,7 @@ Most application code should not construct or mutate `Scope` directly. Use the F
 - [`Flow.scopeAcquireRelease`](/api/Axial.Flow.html#Axial.Flow.scopeAcquireRelease) acquires a value into the current scope.
 - [`Flow.scopeResource`](/api/Axial.Flow.html#Axial.Flow.scopeResource) acquires a reusable [`Resource`](/api/Axial.ResourceModule.html) description.
 - [`Flow.scopeDisposable`](/api/Axial.Flow.html#Axial.Flow.scopeDisposable) and [`Flow.scopeAsyncDisposable`](/api/Axial.Flow.html#Axial.Flow.scopeAsyncDisposable) register existing .NET resources.
-- [`Flow.scopeFinalizer`](/api/Axial.Flow.html#Axial.Flow.scopeFinalizer) and [`Flow.scopeAsyncFinalizer`](/api/Axial.Flow.html#Axial.Flow.scopeAsyncFinalizer) register custom cleanup.
+- [`Flow.scopeFinalizer`](/api/Axial.Flow.html#Axial.Flow.scopeFinalizer) registers custom cleanup as a release flow.
 - [`Flow.forkResource`](/api/Axial.Flow.html#Axial.Flow.forkResource) acquires a `Resource` in a fiber and registers its release with the current scope.
 
 Anything registered this way is a scoped resource. A forked fiber has its own scope and releases its scoped resources

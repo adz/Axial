@@ -2,6 +2,8 @@ namespace Axial.Tests
 
 open System
 open System.Text
+open System.Threading
+open System.Threading.Tasks
 open Axial
 open Axial.Process
 open Axial.Process.DSL
@@ -434,6 +436,64 @@ module ProcessStreamingTests =
         Assert.Equal("€€", writer.ToString())
         writer.Write("!")
         Assert.Equal("€€!", writer.ToString())
+
+    [<Fact>]
+    let ``Process stream cleanup does not observe a producer defect`` () =
+        let host = ProcessHostEnvironment.test ()
+        let defect = InvalidOperationException "producer defect"
+        let unobserved = ResizeArray<exn>()
+        host.Process.ExecuteHandler <- Some(fun _ _ -> Flow.die defect)
+        let observer =
+            { FiberObserver.none with
+                OnUnobservedDefect = fun _ error -> unobserved.Add error }
+
+        let outcome =
+            shText "printf unused"
+            |> streamStdoutLines
+            |> ProcessStream.runDrain
+            |> Flow.withFiberObserver observer
+            |> Process.tryRunWith host.Environment
+
+        match outcome with
+        | Exit.Failure cause -> Assert.True(Cause.defects cause |> List.exists (fun error -> obj.ReferenceEquals(error, defect)))
+        | other -> failwithf "Expected producer defect, got %A" other
+        Assert.Empty unobserved
+
+    [<Fact>]
+    let ``early process stream stop reports subsequent producer defect`` () =
+        let host = ProcessHostEnvironment.test ()
+        let defect = InvalidOperationException "producer died after first line"
+        let unobserved = ResizeArray<exn>()
+        host.Process.ExecuteHandler <- Some(fun _ publish ->
+            Flow.fromTask (fun token -> task {
+                Async.Start(publish {
+                    Stage = 0
+                    ObservedChannel = OutputChannel.StdOut
+                    OriginalChannel = OutputChannel.StdOut
+                    Text = "first"
+                    Timestamp = DateTimeOffset.UnixEpoch
+                }, cancellationToken = token)
+                try
+                    do! Task.Delay(Timeout.Infinite, token)
+                with :? OperationCanceledException -> ()
+                return raise defect
+            }))
+        let observer =
+            { FiberObserver.none with
+                OnUnobservedDefect = fun _ error -> unobserved.Add error }
+
+        let outcome =
+            shText "printf unused"
+            |> streamStdoutLines
+            |> ProcessStream.take 1
+            |> ProcessStream.runCollect
+            |> Flow.withFiberObserver observer
+            |> Process.tryRunWith host.Environment
+
+        let values, completion = succeeded outcome
+        Assert.Equal<string list>([ "first" ], values)
+        Assert.Equal(ProcessCompletion.StoppedEarly, completion)
+        Assert.Contains(unobserved, fun error -> obj.ReferenceEquals(error, defect))
 
     [<Fact>]
     let ``producer and consumer failures during the same published callback both survive`` () =
