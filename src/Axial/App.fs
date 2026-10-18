@@ -2,6 +2,9 @@ namespace Axial
 
 open System
 open System.Threading
+#if !FABLE_COMPILER
+open System.Threading.Tasks
+#endif
 
 /// <summary>Describes the lifecycle state of a running application.</summary>
 [<RequireQualifiedAccess>]
@@ -28,6 +31,9 @@ type AppHandle<'error, 'value> internal
         completion: Async<Exit<'value, 'error>>,
         status: unit -> AppStatus,
         requestStop: unit -> unit
+#if !FABLE_COMPILER
+        , settledTask: Task
+#endif
     ) =
 
     /// <summary>Gets the current application lifecycle state.</summary>
@@ -42,6 +48,14 @@ type AppHandle<'error, 'value> internal
             requestStop ()
             return! completion
         }
+
+#if !FABLE_COMPILER
+    /// <summary>Requests stop and blocks until the root and its finalizers settle, or the timeout expires. Safe on UI threads.</summary>
+    /// <returns>True if the application settled before the timeout.</returns>
+    member _.StopAndWait(timeout: TimeSpan) : bool =
+        requestStop ()
+        settledTask.Wait(timeout)
+#endif
 
     interface IDisposable with
         member _.Dispose() =
@@ -63,6 +77,9 @@ module App =
         let mutable currentStatus = AppStatus.Running
         let mutable settled: Exit<'value, 'error> option = None
         let mutable waiters: (Exit<'value, 'error> -> unit) list = []
+#if !FABLE_COMPILER
+        let settledSignal = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+#endif
 
         let requestStop () =
             let shouldCancel =
@@ -110,6 +127,9 @@ module App =
                         waiters <- []
                         callbacks)
 
+#if !FABLE_COMPILER
+            settledSignal.TrySetResult() |> ignore
+#endif
             for callback in callbacks do
                 callback exit
 
@@ -128,13 +148,20 @@ module App =
 #endif
             cancellationSource.Dispose()
 
-        Async.StartWithContinuations(
-            application.ToAsync(environment, cancellationToken = cancellationSource.Token),
-            finish,
-            (fun error -> finish (Exit.Failure(Cause.Die error))),
-            (fun _ -> finish (Exit.Failure Cause.Interrupt)))
+        let startRoot () =
+            Async.StartWithContinuations(
+                application.ToAsync(environment, cancellationToken = cancellationSource.Token),
+                finish,
+                (fun error -> finish (Exit.Failure(Cause.Die error))),
+                (fun _ -> finish (Exit.Failure Cause.Interrupt)))
 
+#if FABLE_COMPILER
+        startRoot ()
         new AppHandle<'error, 'value>(cancellationSource, completion, status, requestStop)
+#else
+        ThreadPool.UnsafeQueueUserWorkItem((fun (_: obj) -> startRoot ()), null) |> ignore
+        new AppHandle<'error, 'value>(cancellationSource, completion, status, requestStop, settledSignal.Task)
+#endif
 
     /// <summary>Starts a root workflow and returns a handle that owns its lifetime.</summary>
     /// <param name="environment">The explicit environment supplied to the root workflow.</param>

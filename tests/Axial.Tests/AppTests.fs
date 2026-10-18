@@ -1,11 +1,69 @@
 namespace Axial.Tests
 
 open System
+open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
 open Axial
 open Swensen.Unquote
 open Xunit
+
+type AppShutdownTests() =
+    [<Fact>]
+    member _.``stop from a single threaded context runs release without pumping`` () =
+        let previous = SynchronizationContext.Current
+        SynchronizationContext.SetSynchronizationContext(SynchronizationContext())
+        try
+            let started = new ManualResetEventSlim()
+            let released = new ManualResetEventSlim()
+            let application : Flow<unit, string, unit> =
+                flow {
+                    do! Flow.scopeFinalizer (Flow.delay (fun () -> released.Set(); Flow.succeed ()))
+                    started.Set()
+                    return! Flow.never
+                }
+            let running = App.start () application
+            test <@ started.Wait(TimeSpan.FromSeconds 2.) @>
+            let elapsed = Stopwatch.StartNew()
+            test <@ running.StopAndWait(TimeSpan.FromSeconds 5.) @>
+            test <@ released.IsSet @>
+            test <@ elapsed.Elapsed < TimeSpan.FromSeconds 3. @>
+        finally
+            SynchronizationContext.SetSynchronizationContext(previous)
+
+    [<Fact>]
+    member _.``root synchronous prefix runs on another thread`` () =
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let started = TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let application : Flow<unit, string, unit> =
+            flow {
+                started.TrySetResult(Thread.CurrentThread.ManagedThreadId) |> ignore
+                return! Flow.never
+            }
+        let running = App.start () application
+        test <@ started.Task.Wait(TimeSpan.FromSeconds 2.) @>
+        test <@ started.Task.Result <> caller @>
+        test <@ running.StopAndWait(TimeSpan.FromSeconds 5.) @>
+
+    [<Fact>]
+    member _.``stop timeout includes unfinished release`` () =
+        let started = new ManualResetEventSlim()
+        let releaseGate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let application : Flow<unit, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> releaseGate.Task))
+                started.Set()
+                return! Flow.never
+            }
+        let running = App.start () application
+        test <@ started.Wait(TimeSpan.FromSeconds 2.) @>
+        let elapsed = Stopwatch.StartNew()
+        let settled = running.StopAndWait(TimeSpan.FromMilliseconds 200.)
+        test <@ not settled @>
+        test <@ elapsed.Elapsed >= TimeSpan.FromMilliseconds 150. @>
+        test <@ elapsed.Elapsed < TimeSpan.FromSeconds 3. @>
+        releaseGate.SetResult()
+        test <@ running.StopAndWait(TimeSpan.FromSeconds 5.) @>
 
 module AppTests =
     [<Fact>]

@@ -126,6 +126,11 @@ An `AppHandle<'error,'value>` exposes:
 Calling `Stop()` several times is safe. Every caller observes the same final exit. Disposing the handle requests stop
 but cannot await asynchronous finalizers; application shutdown code should await `Stop()` or `Completion`.
 
+On .NET, `App.start` starts the root on the thread pool, away from the caller's `SynchronizationContext`.
+A UI thread can call `running.StopAndWait(timeout)` to request stop and block until finalizers finish;
+it returns `false` if the timeout expires. Use `Stop()` when the caller can await asynchronously.
+`StopAndWait` is not available on Fable.
+
 ## External Cancellation
 
 Use `App.startWithCancellation` or `App.runWithCancellation` when an existing owner already supplies a
