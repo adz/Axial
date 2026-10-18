@@ -1308,7 +1308,7 @@ type Flow<'env, 'error, 'value> =
     /// <platforms>.NET only</platforms>
     member this.RunSynchronously(environment: 'env, ?cancellationToken: CancellationToken) : Exit<'value, 'error> =
         let pending = this.StartAsValueTask(environment, ?cancellationToken = cancellationToken)
-        if pending.IsCompletedSuccessfully then pending.Result  // axial-allow-effect: blocking (completed fast path)
+        if pending.IsCompletedSuccessfully then pending.Result
         else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-effect: blocking (RunSynchronously is the documented blocking runner)
 #endif
 

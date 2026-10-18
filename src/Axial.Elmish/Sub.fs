@@ -58,7 +58,7 @@ module Sub =
                         if Interlocked.Exchange(&stopped, 1) = 0 then
                             ready.Task.ContinueWith(
                                 (fun (started: Task<_>) ->
-                                    match started.Result with // axial-allow-effect: blocking (continuation of a completed task)
+                                    match started.Result with
                                     | Some fiberId -> runtime.Registry.Interrupt fiberId |> ignore
                                     | None -> ()),
                                 TaskScheduler.Default

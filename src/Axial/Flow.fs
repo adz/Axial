@@ -255,7 +255,7 @@ module Flow =
                     | Exit.Failure cause -> return raise (releaseFailure cause)
                 } :> Task
             if execution.IsCompletedSuccessfully then
-                let exit = execution.Result  // axial-allow-effect: blocking (completed fast path)
+                let exit = execution.Result
                 let closing = scope.Close CancellationToken.None
                 if closing.IsCompletedSuccessfully then
                     match exit with
@@ -2062,7 +2062,7 @@ module Flow =
             let execution = invoke flow environment cancellationToken
 
             if execution.IsCompletedSuccessfully then
-                match execution.Result with  // axial-allow-effect: blocking (completed fast path)
+                match execution.Result with
                 | Exit.Success value -> FlowStep.Next(binder value)
                 | Exit.Failure cause -> FlowStep.Failed cause
             else

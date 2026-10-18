@@ -62,6 +62,27 @@ module GuardrailConfigTests =
         }
 
     [<Fact>]
+    let ``completed task guards exempt only the guarded value and branch`` () =
+        task {
+            let! found = findings (
+                "let guarded (t: System.Threading.Tasks.Task<int>) = if t.IsCompletedSuccessfully then t.Result else 0\n"
+                + "let unguarded (t: System.Threading.Tasks.Task<int>) = t.Result\n"
+                + "let different (t: System.Threading.Tasks.Task<int>) (other: System.Threading.Tasks.Task<int>) = if other.IsCompleted then t.Result else 0\n"
+                + "let wrongBranch (t: System.Threading.Tasks.Task<int>) = if t.IsCompleted then 0 else t.Result\n"
+                + "let valueTask (t: System.Threading.Tasks.ValueTask<int>) = if t.IsCompleted then t.Result else 0\n")
+            test <@ found = [ 2; 3; 4 ] @>
+        }
+
+    [<Fact>]
+    let ``continuation parameter result is complete`` () =
+        task {
+            let! found = findings (
+                "let continued (t: System.Threading.Tasks.Task<int>) =\n"
+                + "    t.ContinueWith(fun (doneTask: System.Threading.Tasks.Task<int>) -> doneTask.Result)\n")
+            test <@ found = [] @>
+        }
+
+    [<Fact>]
     let ``outside waits are typed and suppressible`` () =
         task {
             let! found =

@@ -167,7 +167,7 @@ For the exact matching and suppression rules, see `EffectCatalog.fs` and `Suppre
 
 `Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning a `Cache`, `Hub`, or `Queue` made directly by the run leaves a closed service. Use it inside the flow instead. The check is syntactic: direct constructor arguments and pipelines ending in a constructor are detected, but a constructor stored in a variable, a flow assembled elsewhere, or a `flow { }` that acquires and returns the service is not followed. `Ref` does not own a scope and is allowed. At an intentional boundary, add `// axial-allow-effect: scope`.
 
-Blocking waits outside flows can deadlock UI synchronization contexts. At a genuine synchronous entry point or test boundary, use `// axial-allow-effect: blocking`.
+Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are exempt when the same value's completion state is tested in the enclosing `if` branch or `when` guard, or when the value is the parameter of a `ContinueWith` callback. Other waits remain findings. Blocking waits outside flows can deadlock UI synchronization contexts. At a genuine synchronous entry point or test boundary, use `// axial-allow-effect: blocking`.
 
 ## AXG002: Remove invalid suppressions
 
