@@ -1001,11 +1001,20 @@ type Scope() =
             this.Close(CancellationToken.None).GetAwaiter().GetResult()  // axial-allow-effect: blocking (IDisposable.Dispose is synchronous by contract)
 #endif
 
+type internal FiberContext =
+    {
+        Annotations: Map<string, string>
+        Locals: Map<int64, obj>
+    }
+
+[<RequireQualifiedAccess>]
+module internal FiberContext =
+    let empty = { Annotations = Map.empty; Locals = Map.empty }
+
 type internal RuntimeContext =
     {
         Scope: Scope
-        Annotations: Map<string, string>
-        Locals: Map<int64, obj>
+        Context: FiberContext
         AnnotationSink: string -> string -> unit
         TelemetryContext: Axial.Telemetry.TelemetryContext
         TelemetrySink: Axial.Telemetry.Attribute -> unit
@@ -1030,8 +1039,7 @@ module internal RuntimeContext =
     let create (scope: Scope) : RuntimeContext =
         {
             Scope = scope
-            Annotations = Map.empty
-            Locals = Map.empty
+            Context = FiberContext.empty
             AnnotationSink = fun _ _ -> ()
             TelemetryContext = Axial.Telemetry.TelemetryContext Map.empty
             TelemetrySink = ignore
@@ -1069,7 +1077,7 @@ module internal RuntimeContext =
             OuterToken = forkToken runtime token }
 
     let withAnnotation (name: string) (value: string) (runtime: RuntimeContext) : RuntimeContext =
-        { runtime with Annotations = runtime.Annotations |> Map.add name value }
+        { runtime with Context = { runtime.Context with Annotations = runtime.Context.Annotations |> Map.add name value } }
 
     let withAnnotationSink (sink: string -> string -> unit) (runtime: RuntimeContext) : RuntimeContext =
         { runtime with AnnotationSink = sink }

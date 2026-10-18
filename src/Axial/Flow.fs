@@ -982,13 +982,13 @@ module Flow =
     /// <summary>Reads the current runtime annotations.</summary>
     /// <returns>A flow that succeeds with the ambient annotation map.</returns>
     let annotations<'env, 'error> : Flow<'env, 'error, Map<string, string>> =
-        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations))
+        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Context.Annotations))
 
     /// <summary>Reads the current trace id annotation, if one is present.</summary>
     /// <remarks>Set it with <c>Flow.withTraceId</c>.</remarks>
     /// <returns>A flow that succeeds with the ambient <c>trace_id</c> value, if present.</returns>
     let traceId<'env, 'error> : Flow<'env, 'error, string option> =
-        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Annotations |> Map.tryFind "trace_id"))
+        Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().Context.Annotations |> Map.tryFind "trace_id"))
 
     /// <summary>Reads the current fiber id from the ambient runtime context.</summary>
     /// <remarks>
@@ -1320,7 +1320,7 @@ module Flow =
                     Id = FiberId.next ()
                     Name = name
                     ParentId = Some parentRuntime.FiberId
-                    Annotations = parentRuntime.Annotations
+                    Annotations = parentRuntime.Context.Annotations
                     // Fiber lifecycle bookkeeping is scheduler mechanics, not application behavior — the
                     // AGENTS.md effect-boundary invariant carves out "ambient runtime for executor mechanics".
                     StartedAt = clock.UtcNow()

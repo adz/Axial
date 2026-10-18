@@ -29,7 +29,7 @@ module FiberLocal =
 
     /// Reads explicitly scoped named values on the current fiber; unnamed and unset locals are omitted.
     let current () : (string * obj) list =
-        let locals = RuntimeState.current().Locals
+        let locals = RuntimeState.current().Context.Locals
         if Map.isEmpty locals then []
         else
             lock names (fun () ->
@@ -43,7 +43,7 @@ module FiberLocal =
     let get (local: FiberLocal<'a>) : Flow<'env, 'error, 'a> =
         Flow.delay (fun () ->
             let runtime = RuntimeState.current ()
-            match Map.tryFind local.Id runtime.Locals with
+            match Map.tryFind local.Id runtime.Context.Locals with
             | Some value -> Flow.ok (unbox<'a> value)
             | None -> Flow.ok local.Initial)
 
@@ -51,5 +51,5 @@ module FiberLocal =
     let locally (value: 'a) (local: FiberLocal<'a>) (inner: Flow<'env, 'error, 'b>) : Flow<'env, 'error, 'b> =
         Flow(fun environment cancellationToken ->
             let currentRuntime = RuntimeState.current ()
-            let runtime = { currentRuntime with Locals = Map.add local.Id (box value) currentRuntime.Locals }
+            let runtime = { currentRuntime with Context = { currentRuntime.Context with Locals = Map.add local.Id (box value) currentRuntime.Context.Locals } }
             RuntimeState.withRuntime runtime (fun () -> FlowInternal.invoke inner environment cancellationToken))

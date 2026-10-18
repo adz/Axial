@@ -203,7 +203,7 @@ module Otel =
 
                 setTag "axial.flow.fiber.id" (string runtime.FiberId.Value)
 
-                for KeyValue(annotationName, value) in runtime.Annotations do
+                for KeyValue(annotationName, value) in runtime.Context.Annotations do
                     setTag ("axial.flow.annotation." + annotationName) value
 
                 for attribute in Axial.Telemetry.Context.toSeq runtime.TelemetryContext do
