@@ -46,9 +46,10 @@ let private arguments () : string array = jsNative
 [<Emit("process.exitCode = $0")>]
 let private setExitCode (_code: int) : unit = jsNative
 
-// A host watchdog also covers cleanup: a stalled promise must not let Node exit successfully.
-[<Emit("setTimeout(() => { console.error('Fable test stalled during execution or cleanup'); process.exit(1); }, 30000)")>]
-let private startWatchdog () : obj = jsNative
+// A host watchdog also covers cleanup: a stalled promise must not let Node exit successfully. It names the test,
+// because a stall prints nothing else and the last "pass" line belongs to the test before.
+[<Emit("setTimeout(() => { console.error('Fable test stalled during execution or cleanup: ' + $0); process.exit(1); }, 30000)")>]
+let private startWatchdog (_name: string) : obj = jsNative
 
 [<Emit("clearTimeout($0)")>]
 let private stopWatchdog (_timer: obj) : unit = jsNative
@@ -70,7 +71,7 @@ let run (allTests: Test list) : unit =
         let failures = ref 0
 
         for current in tests do
-            let watchdog = startWatchdog()
+            let watchdog = startWatchdog current.Name
             let! exit = current.Body |> Flow.timeoutToOk testTimeout timedOut |> Flow.toAsync clockEnvironment
 
             stopWatchdog watchdog

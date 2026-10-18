@@ -17,6 +17,9 @@ map, generated-path rules, and task routing.
 Refer to [`dev-docs/PLAN.md`](dev-docs/PLAN.md) for architectural direction and
 [`dev-docs/TASKS.md`](dev-docs/TASKS.md) for the active queue.
 
+Verify changes with `scripts/verify.sh` and report its `artifacts/verify/result.json`, checkpoint before agent runs,
+and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICATION.md).
+
 ## Architecture Invariants
 
 ### EFFECT BOUNDARY — DO NOT HIDE AMBIENT EFFECTS IN SERVICE ADAPTERS

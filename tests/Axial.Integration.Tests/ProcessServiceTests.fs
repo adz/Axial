@@ -312,7 +312,10 @@ module ProcessServiceTests =
         match Flow.runSync (env ()) workflow with
         | Exit.Failure(Cause.Fail(ProcessError.StageFailed failure)) ->
             test <@ failure.Stage.Stage = 0 @>
-            test <@ failure.Result.ExitCodes = [ 7; 0 ] @>
+            // A failing stage terminates the rest of the pipeline, so `cat` either reached end of input first (0)
+            // or was killed (137); which one is a race.
+            test <@ List.head failure.Result.ExitCodes = 7 @>
+            test <@ List.contains (List.item 1 failure.Result.ExitCodes) [ 0; 137 ] @>
         | result -> failwithf "Expected a typed non-zero exit, got %A" result
 
     [<Fact>]
