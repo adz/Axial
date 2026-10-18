@@ -824,9 +824,9 @@ module internal FiberId =
 /// Scopes aggregate cleanup in reverse registration order, prevent double-disposal, and surface
 /// cleanup failures as defects rather than typed business errors.
 /// </remarks>
-type Scope() as this =
-    // The scope itself is the monitor; a separate gate object adds an allocation to every scope.
-    let gate = this :> obj
+type Scope() =
+    // Never use the public scope as a monitor: callers can lock it independently of the runtime.
+    let gate = obj ()
     // Keys increase monotonically, so sorting them recovers registration order after removals. Allocated on the
     // first registration: most parallel branch scopes never hold anything.
     let mutable finalizers: System.Collections.Generic.Dictionary<int64, Platform.Finalizer> = null

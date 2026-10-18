@@ -498,9 +498,12 @@ let runFinalizers (finalizers: Finalizer[]) (cancellationToken: CancellationToke
     if finalizers.Length = 0 then
         completedDeed ()
 #if !FABLE_COMPILER
+    // Porting this path to Fable requires a minimised failing Fable test first.
     elif finalizers.Length = 1 then
         try finalizers[0] cancellationToken
-        with error -> Task.FromException(error)
+        with
+        | :? OperationCanceledException as canceled -> task { return raise canceled }
+        | error -> Task.FromException(error)
 #endif
     else
         execution {
