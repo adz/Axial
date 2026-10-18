@@ -99,3 +99,22 @@ module ReissueTests =
                 return! FlowStream.reissueOnWake (FlowStream.fromDequeue wakes) (Flow.ok 17)
             }
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 17 @>
+
+    [<Fact>]
+    let ``A wake racing the first run never loses its result or starts a third run`` () =
+        // The wake is queued when the call starts and the work completes synchronously, so the wake and the first
+        // run's completion race (forking the run is asynchronous). Either the settled run wins (value 1, one start)
+        // or the wake wins and reissues once (value 2, two starts). Every round must return the value of the last
+        // run started, never a stale one, and never start a third run.
+        for _ in 1..200 do
+            let mutable starts = 0
+            let workflow : Flow<ClockEnvironment, string, int> =
+                flow {
+                    let! wakes = Queue.unbounded ()
+                    do! wakes |> Queue.offer () |> Flow.ignore
+                    let work = Flow.delay (fun () -> starts <- starts + 1; Flow.ok starts)
+                    return! FlowStream.reissueOnWake (FlowStream.fromDequeue wakes) work
+                }
+            let exit = Flow.runSync (TestSupport.clockEnv ()) workflow
+            test <@ starts = 1 || starts = 2 @>
+            test <@ exit = Exit.Success starts @>
