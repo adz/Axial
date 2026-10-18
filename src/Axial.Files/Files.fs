@@ -36,6 +36,18 @@ module Files =
     let private sniffLength = 8192
     let private batchSize = 2048
 
+    /// <summary>Watches a directory (optionally recursively) or one file until consumption ends.</summary>
+    /// <remarks>The 1024-event buffer fails on overflow rather than silently losing changes. Rescan after any failure.</remarks>
+    let watch (recursive: bool) (path: string) : FlowStream<'env, FileSystemError, FileChange> when 'env :> IHasFileSystem =
+        FlowStream.fromCallbackWith 1024 (CallbackOverflow.Fail (FileSystemError.Io(Some path, "Watcher buffer overflow; rescan required")))
+            (fun emit ->
+                flow {
+                    let! fs = FileSystem.service
+                    return fs.Watch(path, recursive, (fun change -> emit.Value change |> ignore),
+                                    (fun error -> emit.Fail (FileSystemError.fromException (Some path) error)))
+                }
+                |> Flow.catch (FileSystemError.fromException (Some path)))
+
     /// <summary>Walks the children of root breadth-first. Directories are listed only when pulled and permitted by descend.</summary>
     let walk (descend: string -> bool) (root: string) : FlowStream<'env, FileSystemError, FileSystemEntry> when 'env :> IHasFileSystem =
         let rec step (pending: string list, entries: FileSystemEntry list) =

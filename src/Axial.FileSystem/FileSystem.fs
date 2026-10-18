@@ -74,8 +74,26 @@ type FileSystemEntry =
     override this.ToString() =
         $"{this.Kind}: {this.FullPath} ({this.Size} bytes, {this.LastWriteTimeUtc:O})"
 
+[<RequireQualifiedAccess>]
+type FileChangeKind =
+    | Created | Changed | Deleted | Renamed
+    override this.ToString() =
+        match this with
+        | Created -> "Created" | Changed -> "Changed" | Deleted -> "Deleted" | Renamed -> "Renamed"
+
+/// <summary>A change reported by a file-system watcher.</summary>
+type FileChange =
+    { Kind: FileChangeKind; Path: string; OldPath: string option }
+    override this.ToString() =
+        match this.OldPath with
+        | Some old -> $"{this.Kind}: {old} -> {this.Path}"
+        | None -> $"{this.Kind}: {this.Path}"
+
 /// <summary>Provides access to common file, directory, and path operations.</summary>
 type IFileSystem =
+    /// <summary>Subscribes to changes at a directory or a file; disposing stops delivery.</summary>
+    abstract Watch : path: string * includeSubdirectories: bool * onChange: (FileChange -> unit) * onError: (exn -> unit) -> IDisposable
+
     /// <summary>Opens a text file, reads all text, and then closes the file.</summary>
     abstract ReadAllText : path: string -> string
 
@@ -425,7 +443,8 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
     let files = System.Collections.Generic.Dictionary<string, byte array>(StringComparer.OrdinalIgnoreCase)
     let directories = System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
     let mutable currentDirectory = Path.GetTempPath()
-
+    let watchers = System.Collections.Generic.Dictionary<int, string * bool * (FileChange -> unit) * (exn -> unit)>()
+    let mutable nextWatcher = 0
     do
         for path, contents in defaultArg initial Seq.empty do
             files[Path.GetFullPath path] <- Encoding.UTF8.GetBytes contents
@@ -479,7 +498,29 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
             && wildcard pattern (Path.GetFileName dir))
         |> Seq.map id
 
+    member _.ActiveWatchers = lock watchers (fun () -> watchers.Count)
+    member _.RaiseChange(change: FileChange) =
+        let subscriptions = lock watchers (fun () -> watchers.Values |> Seq.toArray)
+        for root, recursive, callback, _ in subscriptions do
+            let target = Path.GetFullPath change.Path
+            let root = Path.GetFullPath root
+            let parent = Path.GetDirectoryName target
+            if String.Equals(target, root, StringComparison.OrdinalIgnoreCase)
+               || (recursive && target.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + string Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+               || (not recursive && String.Equals(parent, root, StringComparison.OrdinalIgnoreCase)) then
+                callback change
+    member _.RaiseWatchError(error: exn) =
+        let subscriptions = lock watchers (fun () -> watchers.Values |> Seq.toArray)
+        for _, _, _, callback in subscriptions do callback error
+
+
     interface IFileSystem with
+        member _.Watch(path, recursive, onChange, onError) =
+            let id = lock watchers (fun () ->
+                nextWatcher <- nextWatcher + 1
+                watchers[nextWatcher] <- (path, recursive, onChange, onError)
+                nextWatcher)
+            { new IDisposable with member _.Dispose() = lock watchers (fun () -> watchers.Remove id |> ignore) }
         member _.ReadAllText(path) = requireFile path |> Encoding.UTF8.GetString
         member _.ReadAllText(path, encoding) = requireFile path |> encoding.GetString
         member _.ReadAllTextAsync(path) =
@@ -1302,6 +1343,18 @@ module FileSystem =
     /// <summary>Creates a live file-system service backed by <see cref="T:System.IO.File" />, <see cref="T:System.IO.Directory" />, and <see cref="T:System.IO.Path" />.</summary>
     let live : IFileSystem =
         { new IFileSystem with
+            member _.Watch(path, recursive, onChange, onError) =
+                let directory = if Directory.Exists path then path else Path.GetDirectoryName(Path.GetFullPath path)
+                let filter = if Directory.Exists path then "*" else Path.GetFileName path
+                let watcher = new FileSystemWatcher(directory, filter)
+                watcher.IncludeSubdirectories <- recursive
+                watcher.Created.Add(fun args -> onChange { Kind = FileChangeKind.Created; Path = args.FullPath; OldPath = None })
+                watcher.Changed.Add(fun args -> onChange { Kind = FileChangeKind.Changed; Path = args.FullPath; OldPath = None })
+                watcher.Deleted.Add(fun args -> onChange { Kind = FileChangeKind.Deleted; Path = args.FullPath; OldPath = None })
+                watcher.Renamed.Add(fun args -> onChange { Kind = FileChangeKind.Renamed; Path = args.FullPath; OldPath = Some args.OldFullPath })
+                watcher.Error.Add(fun args -> onError (args.GetException()))
+                watcher.EnableRaisingEvents <- true
+                watcher :> IDisposable
             member _.ReadAllText(path) = File.ReadAllText(path)
             member _.ReadAllText(path, encoding) = File.ReadAllText(path, encoding)
             member _.ReadAllTextAsync(path) =

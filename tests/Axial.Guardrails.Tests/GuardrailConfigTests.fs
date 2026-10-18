@@ -62,6 +62,13 @@ module GuardrailConfigTests =
         }
 
     [<Fact>]
+    let ``constructing FileSystemWatcher is flagged`` () =
+        task {
+            let! found = findings "let watcher () = new System.IO.FileSystemWatcher()\n"
+            test <@ found = [ 1 ] @>
+        }
+
+    [<Fact>]
     let ``constructing HttpClient is flagged`` () =
         task {
             let! found = findings "let client () = new System.Net.Http.HttpClient()\n"

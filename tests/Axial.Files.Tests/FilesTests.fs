@@ -10,6 +10,65 @@ open Axial.Files
 
 type FilesTests() =
     [<Fact>]
+    member _.``watch delivers changes in order and take disposes``() =
+        let fs = TestFileSystem()
+        let environment = { new IHasFileSystem with member _.FileSystem = fs :> IFileSystem }
+        let changes = [ 1; 2 ] |> List.map (fun n -> { Kind = FileChangeKind.Created; Path = $"/tree/{n}"; OldPath = None })
+        let producer = System.Threading.Tasks.Task.Run(fun () ->
+            Assert.True(System.Threading.SpinWait.SpinUntil((fun () -> fs.ActiveWatchers = 1), 5000))
+            for change in changes do fs.RaiseChange change)
+        let result = Files.watch true "/tree" |> FlowStream.take 2 |> FlowStream.runCollect |> Flow.run environment
+        producer.GetAwaiter().GetResult()
+        Assert.Equal(Exit.Success changes, result)
+        Assert.Equal(0, fs.ActiveWatchers)
+
+    [<Fact>]
+    member _.``nonrecursive watch ignores nested changes``() =
+        let fs = TestFileSystem()
+        let direct = { Kind = FileChangeKind.Created; Path = "/tree/direct"; OldPath = None }
+        let producer = System.Threading.Tasks.Task.Run(fun () ->
+            Assert.True(System.Threading.SpinWait.SpinUntil((fun () -> fs.ActiveWatchers = 1), 5000))
+            fs.RaiseChange { direct with Path = "/tree/nested/hidden" }
+            fs.RaiseChange direct)
+        let result = Files.watch false "/tree" |> FlowStream.take 1 |> FlowStream.runCollect
+                     |> Flow.run { new IHasFileSystem with member _.FileSystem = fs :> IFileSystem }
+        producer.GetAwaiter().GetResult()
+        Assert.Equal(Exit.Success [ direct ], result)
+
+    [<Fact>]
+    member _.``watch error is typed``() =
+        let fs = TestFileSystem()
+        let producer = System.Threading.Tasks.Task.Run(fun () ->
+            Assert.True(System.Threading.SpinWait.SpinUntil((fun () -> fs.ActiveWatchers = 1), 5000))
+            fs.RaiseWatchError(IOException("broken")))
+        let result = Files.watch true "/tree" |> FlowStream.runCollect |> Flow.run { new IHasFileSystem with member _.FileSystem = fs :> IFileSystem }
+        producer.GetAwaiter().GetResult()
+        match result with
+        | Exit.Failure(Cause.Fail(FileSystemError.Io(Some "/tree", "broken"))) -> ()
+        | other -> failwithf "%A" other
+
+    [<Fact>]
+    member _.``live recursive watch sees nested creation``() =
+        let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+        let nested = Path.Combine(root, "nested")
+        Directory.CreateDirectory nested |> ignore
+        try
+            let target = Path.Combine(nested, "created.txt")
+            let producer = System.Threading.Tasks.Task.Run(fun () ->
+                System.Threading.Thread.Sleep 300
+                File.WriteAllText(target, "hello"))
+            let consumer = System.Threading.Tasks.Task.Run(fun () ->
+                Files.watch true root
+                |> FlowStream.filter (fun change -> change.Kind = FileChangeKind.Created && change.Path = target)
+                |> FlowStream.runTryHead
+                |> Flow.run { new IHasFileSystem with member _.FileSystem = FileSystem.live })
+            Assert.True(consumer.Wait(TimeSpan.FromSeconds 5.))
+            let result = consumer.Result
+            producer.GetAwaiter().GetResult()
+            Assert.Equal(Exit.Success(Some { Kind = FileChangeKind.Created; Path = target; OldPath = None }), result)
+        finally Directory.Delete(root, true)
+
+    [<Fact>]
     member _.``walk lists breadth first and skips excluded directories``() =
         let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
         let entered = Path.Combine(root, "entered")

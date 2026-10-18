@@ -32,6 +32,7 @@ type UnifiedServices =
 module UnifiedServiceTests =
     type MinimalFileSystem() =
         interface IFileSystem with
+            member _.Watch(_, _, _, _) = raise (NotSupportedException())
             member _.ReadAllText(_) = "content"
             member _.ReadAllText(_, _) = "content"
             member _.ReadAllTextAsync(_) = Flow.succeed "content"

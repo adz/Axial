@@ -129,6 +129,10 @@ let builtInRules: EffectRule list =
           "touches System.IO.Directory directly, bypassing the explicit filesystem service"
           "Axial.FileSystem's IFileSystem service"
 
+      rule "filesystem.watcher" "Axial.FileSystem" "filesystem" (ConstructorOf "System.IO.FileSystemWatcher")
+          "constructs a filesystem watcher directly, bypassing the explicit filesystem service"
+          "Axial.FileSystem's IFileSystem.Watch service"
+
       rule "process.start" "Axial.Process" "process" (MembersOf("System.Diagnostics.Process", [ "Start" ]))
           "starts an OS process directly, bypassing the explicit process service"
           "Axial.Process's IProcess service"
