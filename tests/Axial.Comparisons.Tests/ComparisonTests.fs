@@ -91,15 +91,15 @@ module RetryTests =
         member _.Attempts = attempts.Value
 
         interface IHttp with
-            member _.Send(_, _) =
-                async {
+            member _.Send(_) =
+                Flow.delay (fun () ->
                     let n = Interlocked.Increment attempts
 
                     if n <= failures then
-                        return Error(HttpError.ConnectionFailed("GET https://rates.example/gbp-usd", "socket reset"))
+                        Flow.fail (HttpError.ConnectionFailed("GET https://rates.example/gbp-usd", "socket reset"))
                     else
-                        return Ok(Response.create DateTimeOffset.UtcNow 200 body)
-                }
+                        Flow.succeed (Response.create DateTimeOffset.UtcNow 200 body)
+                )
 
     type private HttpEnv =
         { Http: IHttp; Clock: IClock }
@@ -137,11 +137,11 @@ module RetryTests =
     let ``a hung request becomes TimedOut instead of hanging the caller`` () =
         let hangingHttp =
             { new IHttp with
-                member _.Send(_, cancellationToken) =
+                member _.Send(_) =
                     async {
                         do! Async.Sleep 30_000
                         return Error(HttpError.ConnectionFailed("GET https://rates.example/gbp-usd", "unreachable"))
-                    } }
+                    } |> Flow.fromAsyncResult }
 
         // Shrink the wall-clock cost: the two-second policy timeout is the guarantee under test,
         // so run it for real but assert it fires (the request would otherwise take 30 s).

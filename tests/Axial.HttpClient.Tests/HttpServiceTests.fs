@@ -41,11 +41,10 @@ module HttpServiceTests =
         let queue = System.Collections.Generic.Queue<_> responses
         let service =
             { new IHttp with
-                member _.Send(request, _) =
-                    async {
+                member _.Send(request) =
+                    Flow.delay (fun () ->
                         sent.Add request
-                        return if queue.Count > 1 then queue.Dequeue() else queue.Peek()
-                    } }
+                        Flow.fromResult (if queue.Count > 1 then queue.Dequeue() else queue.Peek())) }
         sent, { Http = service; Clock = Clock.live }
 
     let private okResponse status body = Ok(Response.create syntheticTime status body)
@@ -113,6 +112,35 @@ module HttpServiceTests =
         let _, env = fake [ okResponse 404 "missing" ]
         let error = Http.get "https://api.example.test/" |> Http.send |> runSync env |> requireError
         test <@ match error with HttpError.Status response -> response.StatusCode = 404 | _ -> false @>
+
+    [<Fact>]
+    let ``send preserves a service HttpError as a typed failure`` () =
+        let expected = HttpError.ConnectionFailed("GET https://api.example.test/", "offline")
+        let _, env = fake [ Error expected ]
+        let actual = Http.get "https://api.example.test/" |> Http.send |> runSync env |> requireError
+        test <@ actual = expected @>
+
+    [<Fact>]
+    let ``interrupting an active send remains an interruption`` () =
+        use cancellation = new CancellationTokenSource()
+        use started = new ManualResetEventSlim(false)
+        let service =
+            { new IHttp with
+                member _.Send(_) =
+                    flow {
+                        let! token = Flow.cancellationToken
+                        return! Flow.fromTask (fun _ ->
+                            started.Set()
+                            task {
+                                do! Task.Delay(Timeout.Infinite, token)
+                                return Response.create syntheticTime 200 "late"
+                            })
+                    } }
+        let env = { Http = service; Clock = Clock.live }
+        let running = Task.Run(fun () -> (Http.get "https://api.example.test/" |> Http.send).RunSynchronously(env, cancellationToken = cancellation.Token))
+        Assert.True(started.Wait(TimeSpan.FromSeconds 5.0))
+        cancellation.Cancel()
+        test <@ match running.GetAwaiter().GetResult() with Exit.Failure Cause.Interrupt -> true | _ -> false @>
 
     [<Fact>]
     let ``sendResult returns unexpected statuses as plain values`` () =

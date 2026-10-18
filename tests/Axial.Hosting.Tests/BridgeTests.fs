@@ -48,9 +48,8 @@ module BridgeTests =
         let http = HttpFactory.live Clock.live factory
 
         let response =
-            http.Send(Http.get "https://example.test/items", CancellationToken.None)
-            |> Async.RunSynchronously
+            http.Send(Http.get "https://example.test/items").RunSynchronously(())
 
         test <@ match response with
-                | Ok response -> response.StatusCode = 201 && response.Text = "created"
-                | Error error -> failwithf "Expected Ok, got %A" error @>
+                | Exit.Success response -> response.StatusCode = 201 && response.Text = "created"
+                | Exit.Failure error -> failwithf "Expected Ok, got %A" error @>

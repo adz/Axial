@@ -187,7 +187,7 @@ module HttpError =
 /// Sends fully described HTTP requests for a concrete host platform.
 
 type IHttp =
-    abstract Send : request: HttpRequest * cancellationToken: System.Threading.CancellationToken -> Async<Result<HttpResponse, HttpError>>
+    abstract Send : request: HttpRequest -> Flow<unit, HttpError, HttpResponse>
 
 /// <summary>Declares that an environment supplies the HTTP service.</summary>
 /// <remarks>
@@ -430,11 +430,10 @@ type TestHttp(?startedAt: DateTimeOffset) =
     member _.Clear() = sent.Clear()
 
     interface IHttp with
-        member _.Send(request, _) =
-            async {
+        member _.Send(request) =
+            Flow.delay (fun () ->
                 sent.Add request
-                return handler request
-            }
+                Flow.fromResult (handler request))
 #endif
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -462,8 +461,7 @@ module Http =
     let sendResult<'env when 'env :> IHasHttp> (request: HttpRequest) : Flow<'env, HttpError, HttpResponse> =
         flow {
             let! http = service
-            let! cancellationToken = Flow.cancellationToken
-            let! response = http.Send(request, cancellationToken)
+            let! response = http.Send(request) |> Flow.localEnv (fun _ -> ())
 
             // The live service stops reading at the limit; this also holds any other IHttp to it.
             match request.MaxResponseBytes with
@@ -612,58 +610,62 @@ module Http =
     /// <example><code>Http.live Clock.live (new HttpClient())</code></example>
     let live (clock: IClock) (client: HttpClient) : IHttp =
         { new IHttp with
-            member _.Send(request, cancellationToken) =
-                async {
-                    return! task {
-                        let display = Request.render request
-                        let startedAt = clock.UtcNow()
-                        let started = clock.Elapsed()
-                        use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
-                        request.Timeout |> Option.iter timeoutSource.CancelAfter
-                        try
-                            use message = toMessage request
-                            use! response = client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token)
-                            match! readBody response.Content request.MaxResponseBytes timeoutSource.Token with
-                            | None ->
-                                return Error(HttpError.ResponseTooLarge(display, defaultArg request.MaxResponseBytes 0L))
-                            | Some body ->
-                                let contentType =
-                                    match response.Content.Headers.ContentType with
-                                    | null -> None
-                                    | value -> Some(value.ToString())
-                                let headers =
-                                    [ for pair in response.Headers do
-                                        for value in pair.Value do pair.Key, value
-                                      for pair in response.Content.Headers do
-                                        for value in pair.Value do pair.Key, value ]
-                                return Ok
-                                    { StatusCode = int response.StatusCode
-                                      ReasonPhrase = (match response.ReasonPhrase with null -> "" | reason -> reason)
-                                      Headers = headers
-                                      Body = body
-                                      Text = decodeBody contentType body
-                                      Request = display
-                                      StartedAt = startedAt
-                                      Duration = clock.Elapsed() - started }
-                        with
-                        | :? OperationCanceledException as error when cancellationToken.IsCancellationRequested ->
-                            // The workflow was interrupted: let the cancellation surface as Cause.Interrupt rather
-                            // than inventing an error for an outcome nobody asked this request to report.
-                            return raise error
-                        | :? OperationCanceledException ->
-                            let timeout = request.Timeout |> Option.defaultValue client.Timeout
-                            return Error(HttpError.TimedOut(display, timeout))
-                        | :? HttpRequestException as error ->
-                            let detail =
-                                match error.InnerException with
-                                | null -> error.Message
-                                | inner -> $"{error.Message} {inner.Message}"
-                            return Error(HttpError.ConnectionFailed(display, detail))
-                        | :? UriFormatException as error ->
-                            return Error(HttpError.InvalidRequest error.Message)
-                        | :? InvalidOperationException as error ->
-                            return Error(HttpError.InvalidRequest error.Message)
-                    } |> Async.AwaitTask
+            member _.Send(request) =
+                flow {
+                    let! cancellationToken = Flow.cancellationToken
+                    let! result = Flow.fromAsyncResult (async {
+                        return! task {
+                            let display = Request.render request
+                            let startedAt = clock.UtcNow()
+                            let started = clock.Elapsed()
+                            use timeoutSource = CancellationTokenSource.CreateLinkedTokenSource cancellationToken
+                            request.Timeout |> Option.iter timeoutSource.CancelAfter
+                            try
+                                use message = toMessage request
+                                use! response = client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token)
+                                match! readBody response.Content request.MaxResponseBytes timeoutSource.Token with
+                                | None ->
+                                    return Error(HttpError.ResponseTooLarge(display, defaultArg request.MaxResponseBytes 0L))
+                                | Some body ->
+                                    let contentType =
+                                        match response.Content.Headers.ContentType with
+                                        | null -> None
+                                        | value -> Some(value.ToString())
+                                    let headers =
+                                        [ for pair in response.Headers do
+                                            for value in pair.Value do pair.Key, value
+                                          for pair in response.Content.Headers do
+                                            for value in pair.Value do pair.Key, value ]
+                                    return Ok
+                                        { StatusCode = int response.StatusCode
+                                          ReasonPhrase = (match response.ReasonPhrase with null -> "" | reason -> reason)
+                                          Headers = headers
+                                          Body = body
+                                          Text = decodeBody contentType body
+                                          Request = display
+                                          StartedAt = startedAt
+                                          Duration = clock.Elapsed() - started }
+                            with
+                            | :? OperationCanceledException as error when cancellationToken.IsCancellationRequested ->
+                                // The workflow was interrupted: let the cancellation surface as Cause.Interrupt rather
+                                // than inventing an error for an outcome nobody asked this request to report.
+                                return raise error
+                            | :? OperationCanceledException ->
+                                let timeout = request.Timeout |> Option.defaultValue client.Timeout
+                                return Error(HttpError.TimedOut(display, timeout))
+                            | :? HttpRequestException as error ->
+                                let detail =
+                                    match error.InnerException with
+                                    | null -> error.Message
+                                    | inner -> $"{error.Message} {inner.Message}"
+                                return Error(HttpError.ConnectionFailed(display, detail))
+                            | :? UriFormatException as error ->
+                                return Error(HttpError.InvalidRequest error.Message)
+                            | :? InvalidOperationException as error ->
+                                return Error(HttpError.InvalidRequest error.Message)
+                        } |> Async.AwaitTask
+                    })
+                    return result
                 } }
 
     /// <summary>Creates a scriptable HTTP service test double that records requests.</summary>

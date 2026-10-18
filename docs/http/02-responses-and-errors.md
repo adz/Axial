@@ -44,10 +44,11 @@ type ScriptedHttp(replies: (int * string) list) =
     member this.Env = { Http = this }
 
     interface IHttp with
-        member _.Send(request, _) =
-            sent.Add request
-            let status, body = remaining.Dequeue()
-            async { return Ok(Response.create (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) status body) }
+        member _.Send(request) =
+            Flow.delay (fun () ->
+                sent.Add request
+                let status, body = remaining.Dequeue()
+                Flow.succeed (Response.create (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) status body))
 
 type User = { Id: int; Name: string }
 

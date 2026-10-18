@@ -15,9 +15,9 @@ module TestHttpTests =
         http.Handler <- fun _ -> Ok(Response.create startedAt 201 "created")
 
         let response =
-            match (http :> IHttp).Send(Http.get "https://example.test/items", CancellationToken.None) |> Async.RunSynchronously with
-            | Ok response -> response
-            | Error error -> failwithf "Expected Ok, got %A" error
+            match (http :> IHttp).Send(Http.get "https://example.test/items").RunSynchronously(()) with
+            | Exit.Success response -> response
+            | Exit.Failure error -> failwithf "Expected Ok, got %A" error
 
         test <@ response.StatusCode = 201 @>
         test <@ response.Text = "created" @>
@@ -29,6 +29,6 @@ module TestHttpTests =
         let http = Http.test ()
         http.Handler <- fun _ -> Error(HttpError.ConnectionFailed("https://example.test", "down"))
 
-        let result = (http :> IHttp).Send(Http.get "https://example.test", CancellationToken.None) |> Async.RunSynchronously
+        let result = (http :> IHttp).Send(Http.get "https://example.test").RunSynchronously(())
 
-        test <@ match result with Error(HttpError.ConnectionFailed _) -> true | _ -> false @>
+        test <@ match result with Exit.Failure(Cause.Fail(HttpError.ConnectionFailed _)) -> true | _ -> false @>

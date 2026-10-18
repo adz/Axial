@@ -45,7 +45,7 @@ let stub status body =
     let startedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
     { Http =
         { new IHttp with
-            member _.Send(_, _) = async { return Ok(Response.create startedAt status body) } } }
+            member _.Send(_) = Flow.succeed (Response.create startedAt status body) } }
 ```
 
 A test runs the workflow against the stub and checks the result, here with `shouldEqual`; an xUnit test would use its

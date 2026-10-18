@@ -284,5 +284,5 @@ module HttpFactory =
         if isNull factory then nullArg (nameof factory)
 
         { new IHttp with
-            member _.Send(request, cancellationToken) =
-                (Axial.HttpClient.Http.live clock (factory.CreateClient(""))).Send(request, cancellationToken) }
+            member _.Send(request) =
+                (Axial.HttpClient.Http.live clock (factory.CreateClient(""))).Send(request) }
