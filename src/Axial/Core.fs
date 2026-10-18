@@ -1004,7 +1004,7 @@ type Scope() =
 type internal FiberContext =
     {
         Annotations: Map<string, string>
-        Locals: Map<int64, obj>
+        Locals: Map<int64, struct (string option * obj)>
     }
 
 [<RequireQualifiedAccess>]

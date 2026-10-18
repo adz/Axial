@@ -18,6 +18,26 @@ let tests : Test list =
           return [ equal "forked" 9 value; equal "restored" 0 restored ]
       })
 
+      test "FiberLocal survives suspension while another fiber reads its own value" (flow {
+          let local = FiberLocal.named "request" 0
+          let! other =
+              (flow {
+                  do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)
+                  return! FiberLocal.get local
+              }
+              |> FiberLocal.locally 2 local)
+              |> Flow.fork
+          let! inner =
+              (flow {
+                  do! Flow.sleep (TimeSpan.FromMilliseconds 10.0)
+                  return! FiberLocal.get local
+              }
+              |> FiberLocal.locally 1 local)
+          let! sibling = Fiber.join other
+          let! outer = FiberLocal.get local
+          return [ equal "inner" 1 inner; equal "sibling" 2 sibling; equal "restored" 0 outer ]
+      })
+
       test "A forked fiber releases what it acquired when it settles" (flow {
           let released = ref false
 
