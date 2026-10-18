@@ -102,7 +102,7 @@ loadCustomerFlow repository 2 |> Flow.run () |> shouldEqual (Exit.Failure(Cause.
 A `Task` starts when the method that returns it runs, so the Flow version wraps each call in `ColdTask`: the call then
 happens when the Flow runs, and every run makes it again.
 
-The similar source hides an execution difference. Calling `loadCustomer` starts and returns a `Task`; calling
+Calling `loadCustomer` starts and returns a `Task`; calling
 `loadCustomerFlow` returns a cold workflow description that starts when a Flow runtime runs it. The runtime passes its
 cancellation token through cold Flow and `ColdTask` operations, so timeout, race, and parallel-composition operators
 can interrupt participating work. An already-started `Task`, including the result of calling a `taskResult` function,
@@ -181,6 +181,6 @@ let prepareOrder customerId : Flow<OrderEnv, CustomerError, Order> =
     }
 ```
 
-Because `flow { }` binds all of these (tasks through `ColdTask`), leaf functions can keep returning `Result`,
-`Async<Result<_, _>>`, or `Task<Result<_, _>>`, and FsToolkit.ErrorHandling can keep building them. Flow takes over where operations are
-composed: where dependencies, cancellation, timeouts, retries, and parallel work come in.
+Leaf functions can keep returning `Result`, `Async<Result<_, _>>`, or `Task<Result<_, _>>` through FsToolkit.ErrorHandling.
+At composition, `flow { }` binds these values (tasks through `ColdTask`) and handles dependencies, cancellation,
+timeouts, retries, and parallel work.

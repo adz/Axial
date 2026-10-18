@@ -14,11 +14,9 @@ contract and runtime model. The type records the capabilities it needs and expec
 owns cancellation, child work, and scoped cleanup. Retry, timeout, parallelism, and recovery are policies you compose
 with the operation instead of conventions each caller must reproduce.
 
-Every claim on this page has a test in the
-[comparison test file](https://github.com/adz/Axial/blob/main/tests/Axial.Comparisons.Tests/ComparisonTests.fs).
-Each scenario identifies what the type communicates, what the runtime guarantees, and what your application must
-still handle. For readers who know ZIO, the Scala effect library that uses the same model, each scenario also names the
-corresponding ZIO concepts.
+The [comparison test file](https://github.com/adz/Axial/blob/main/tests/Axial.Comparisons.Tests/ComparisonTests.fs)
+tests each scenario's behavior. Each scenario identifies what the type communicates, what the runtime guarantees, and
+what your application must still handle. ZIO concepts are named alongside their Axial counterparts.
 
 ## 1. Checkout orchestration with compensation
 
@@ -27,8 +25,8 @@ Reserve stock, charge a card, create a shipment; release the reservation when ch
 Read the [checkout comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/CheckoutCompensation.fs).
 
 The ordinary version is a `Task<CheckoutReceipt>` whose expected failures leave the signature as exceptions, and
-whose compensation lives in a catch block someone must remember. The comparison includes `checkoutBuggy`, the common
-real-world edit (a failure branch added outside the `try`) and a test proving the reservation leaks.
+whose compensation lives in a catch block. The comparison includes `checkoutBuggy`, a failure branch added outside
+the `try`, and a test proving the reservation leaks.
 
 {{< snippet id="compare-checkout" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
@@ -52,7 +50,7 @@ transport failures, back off exponentially, stop after three attempts, and turn 
 Read the [retry-budget comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/RetryBudget.fs).
 
 The ordinary version interleaves a retry loop, `CancellationTokenSource.CancelAfter`, `Task.Delay`, and exception
-classification in one function, and one overly broad `with _ ->` would make it retry a `NullReferenceException`.
+classification in one function, and a broad `with _ ->` would also retry a `NullReferenceException`.
 
 {{< snippet id="compare-retry" mode="no-check" reason="Excerpt from examples/Axial.Comparisons, whose tests compile and run it" >}}
 
@@ -97,7 +95,7 @@ steps, remove the directory exactly once on every exit shape.
 
 Read the [workspace comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/ScopedWorkspace.fs).
 
-The ordinary comparison includes `importBatchLeaky`, the classic leak: construction succeeds, then a setup check
+The ordinary comparison includes `importBatchLeaky`: construction succeeds, then a setup check
 throws *before* ownership transfers into `try/finally`. The test proves the directory survives. In the Flow version
 there is no such gap: `Flow.scopeAcquireRelease` owns the resource from the instant acquisition succeeds, and
 `Flow.scoped` keeps the failing gate inside the resource's lifetime:
@@ -117,7 +115,7 @@ scope, like `ZIO.scoped(effect).fork`, so use `Flow.forkResource` where ZIO code
 ## 5. Application wiring that cannot omit a capability
 
 A daily report needs a clock, a filesystem, a console, and a report store. The ordinary version threads four
-constructor parameters through every caller, and nothing stops a hurried edit from reading
+constructor parameters through every caller, and callers can instead read
 `DateTimeOffset.UtcNow` directly.
 
 Read the [report-wiring comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/ReportWiring.fs).
@@ -145,10 +143,9 @@ consumer fails.
 Read the [output-pipeline comparison source](https://github.com/adz/Axial/blob/main/examples/Axial.Comparisons/OutputPipeline.fs).
 
 The ordinary version combines a bounded `Channel`, a background producer task, a linked token source, and manual
-observation of the producer's exception. Forgetting one `linked.Cancel()` produces its usual bug: returning after a
-consumer failure while the producer keeps writing.
+observation of the producer's exception. Without `linked.Cancel()`, a consumer failure can return while the producer keeps writing.
 
-A `FlowStream` is cold and pull-based: when persistence fails, the stream is simply never pulled again. The test
+A `FlowStream` is cold and pull-based: when persistence fails, the consumer stops pulling. The test
 streams from an instrumented infinite sequence and asserts almost nothing was produced past the failing element.
 The process variant uses [`Process.streamStdoutLines`](/process/), which streams decoded stdout lines from a live
 process through the same pipeline shape:
@@ -195,6 +192,5 @@ park a reservation on empty stock until a replenishment commits. ZIO corresponde
 dotnet test tests/Axial.Comparisons.Tests --nologo
 ```
 
-Each [comparison source file](https://github.com/adz/Axial/tree/main/examples/Axial.Comparisons) is self-contained.
-It defines the shared domain types first, followed by the `Ordinary` module and the `WithFlow` module. Each
-implementation states its full return type.
+Each [comparison source file](https://github.com/adz/Axial/tree/main/examples/Axial.Comparisons) defines the shared
+domain types, then the `Ordinary` and `WithFlow` modules. Each implementation states its full return type.

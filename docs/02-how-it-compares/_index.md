@@ -5,9 +5,8 @@ description: Compare Flow with Task, FsToolkit.ErrorHandling, and Effect-TS, inc
 
 # How It Compares
 
-Flow combines typed failure with explicit dependencies and runtime policies. That does not make it the right type for
-every function. These comparisons separate the problems Flow addresses from cases where `Task`, `Result`, or a more
-focused library is enough.
+Flow combines typed failure with explicit dependencies and runtime policies. For functions that do not need those
+policies, `Task`, `Result`, or a focused library may be enough.
 
 ## F# choices
 
@@ -23,7 +22,3 @@ focused library is enough.
 - [Effect-TS Comparison](./effect-ts-comparison.html) explains the shared typed-effect model and why F# applications
   can keep using Axial when they target Node or the browser through Fable. Effect-TS remains a natural integration
   boundary when TypeScript owns the surrounding application.
-
-Read **Task vs Flow** first when deciding whether Flow earns its cost in an application. Read the
-**FsToolkit.ErrorHandling** comparison when typed errors are already your main concern. The **Effect-TS** comparison
-is for readers evaluating Axial as part of the broader typed-effect design family.

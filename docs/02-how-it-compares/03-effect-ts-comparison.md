@@ -5,9 +5,8 @@ description: How Axial and Effect-TS relate when an F# application targets .NET 
 
 # Effect-TS Comparison
 
-Axial and Effect-TS belong to the same typed-effect design family. For an F# application, however, Effect-TS is not
-the default choice merely because the application compiles to JavaScript. Axial runs on .NET and through Fable, so
-the same Flow model can cross server, Node, and browser targets.
+Axial and Effect-TS both model typed effects. Axial runs on .NET and through Fable, so an F# application can use the
+same Flow model on server, Node, and browser targets without adopting Effect-TS for JavaScript deployment.
 
 ## Shared model
 
@@ -38,15 +37,14 @@ Axial keeps the workflow and domain model in F#:
 - Node and browser hosting packages connect Flow interruption to platform lifecycle signals.
 - Fable telemetry integrates with the JavaScript observability platform without changing the application workflow.
 
-This makes Axial a direct option for shared F# code. A team does not need to translate its workflows into Effect-TS
-at the generated-JavaScript boundary to gain typed effects, concurrency, streams, or observability.
+Shared F# code can retain Axial's typed effects, concurrency, streams, and observability across the
+generated-JavaScript boundary without translating workflows into Effect-TS.
 
 ## When Effect-TS is still the natural boundary
 
 Use Effect-TS when the workflow is owned by TypeScript or must compose directly with an existing Effect-TS
 application and its services. Calling that application from generated F# may be a legitimate integration boundary.
-It is a different choice from using Effect-TS as the runtime for F# code solely because the deployment target is
-JavaScript.
+The JavaScript deployment target alone does not require Effect-TS as the runtime for F# code.
 
 Use Axial when F# owns the application workflow and the code needs to run on .NET, Node, the browser, or a combination
 of those targets. The same `Flow` API then remains the application model rather than an adapter on the way to a second
@@ -54,7 +52,7 @@ effect system.
 
 ## Compare concrete requirements
 
-Do not choose between the libraries from a generic feature checklist. Compare the requirements of the application:
+Compare the application's requirements:
 
 - which language owns orchestration and service definitions
 - whether workflows are shared between .NET and Fable
