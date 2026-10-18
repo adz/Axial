@@ -71,8 +71,14 @@ module SubscriptionTests =
         Assert.True(Inbox.post "a" inbox)
         Assert.True(Inbox.post "ab" inbox)
         Assert.True(Inbox.post "abc" inbox)
-        Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))
-        Thread.Sleep(50) // Let the stream consume the queued burst before advancing virtual time.
+        // The debounce re-arms per item, so wait until the whole burst has left the inbox, then for its timer.
+        // A fixed sleep here raced the stream under full-suite load and let "a" debounce on its own.
+        let queued () =
+            match (Dequeue.size inbox.Queue).RunSynchronously(()) with
+            | Exit.Success count -> count
+            | _ -> -1
+        let drained = SpinWait.SpinUntil((fun () -> queued () = 0 && clock.Sleepers > 0), 5000)
+        Assert.True(drained, $"queued={queued ()} sleepers={clock.Sleepers} size={(Dequeue.size inbox.Queue).RunSynchronously(())}")
         clock.AdvanceBy(TimeSpan.FromMilliseconds 300.0)
         Assert.True(searching.Task.Wait(5000))
         Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))
