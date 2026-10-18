@@ -70,10 +70,11 @@ Record a test here the first time it fails and then passes unchanged; fix or del
 
 | Test | Seen | Symptom | Status |
 |---|---|---|---|
-| `WorkflowStreamTests.debounce keeps the last value of each burst` | T20 slice 2 verify run | Expected `[3; 5]`, got `[5]` under full-suite load | Open: timing-sensitive burst test; first run passed, later run failed |
-| `WorkflowSchedulingTests.Flow runtime helpers cover timeout and retry` | 2026-10-18, T4 full run | 20 ms sleep raced a 1 ms timeout under load | Fixed: 30 s sleep and 100 ms timeout separate the deadlines |
+| `WorkflowStreamTests.debounce keeps the last value of each burst` | T20 slice 2 verify run | Expected `[3; 5]`, got `[5]` under full-suite load | Fixed: burst gaps were too close to the debounce deadline under load; zero-gap bursts and a wide virtual-time boundary separate them |
+| `WorkflowSchedulingTests.Flow runtime helpers cover timeout and retry` | 2026-10-18, T4 full run | 20 ms sleep raced a 1 ms timeout under load | Fixed: manual time and a 30 s sleep separate the timeout deadlines |
 | `ProcessServiceTests.run reports every non-zero stage through the typed error channel` | 2026-10-18, first `verify.sh` run | Asserted `cat` exits 0, but a failing stage kills the rest of the pipeline, so it is 0 or 137 | Fixed: the test accepts either |
 | `WorkspaceTests.the workspace is removed when the gate fails` | 2026-10-18, T15 slice 3 | Diffed every `/tmp` directory, so temp directories from other test assemblies counted as leaks | Fixed: workspaces use an `axial-workspace-` prefix and the test counts only those |
+| `WorkflowSchedulingTests.Flow timeout helpers work as expected` | 2026-10-18, full suite | 50 ms sleep raced 1 ms timeout | Fixed: manual time and 30 s sleeps separate the deadlines |
 | `WorkflowStreamTests.switchMapFlow interrupts the flow for a superseded value` | T17/T21 verify run | Failed once under full suite; needs investigation | Open |
 | `ParallelSettlementTests.zipPar interrupts a suspended sibling of a synchronous failure` | 2026-10-18, T16 slice 1 | The sibling slept 20 ms, so a slow interrupt under full-suite load let it finish | Fixed: the sibling sleeps 10 s, so it finishes only if not interrupted |
-| Schedules torture scenario; a stream test | 2026-10-18, T17 run | Each failed once under `verify.sh test`, then passed | Open: capture names and seeds from `artifacts/verify/test.log` next time |
+| `TortureTests.A torture scenario keeps every invariant on every round(name: "schedules")`; a stream test | 2026-10-18, T17 run; schedules again in flaky sweep verify run 2 | Schedules failed in full suite (701 passed, 1 failed); stream test failed once previously | Open: investigate schedules failure and capture seed from `artifacts/verify/test.log`; identify stream test |

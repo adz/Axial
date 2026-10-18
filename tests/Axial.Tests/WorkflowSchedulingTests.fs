@@ -233,7 +233,7 @@ module WorkflowSchedulingTests =
         let timeoutResult =
             Flow.sleep (TimeSpan.FromSeconds 30.0)
             |> Flow.timeout (TimeSpan.FromMilliseconds 100.0) "timed out"
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> runOnManualTime
 
         let retryRuns = ref 0
 
@@ -283,21 +283,21 @@ module WorkflowSchedulingTests =
     [<Fact>]
     let ``Flow timeout helpers work as expected`` () =
         let okResult = 
-            Flow.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> Flow.timeoutToOk (TimeSpan.FromMilliseconds 1.0) ()
-            |> Flow.runSync (TestSupport.clockEnv ())
+            Flow.sleep (TimeSpan.FromSeconds 30.0)
+            |> Flow.timeoutToOk (TimeSpan.FromMilliseconds 100.0) ()
+            |> runOnManualTime
         test <@ okResult = Exit.Success () @>
 
         let errorResult =
-            Flow.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> Flow.timeoutToError (TimeSpan.FromMilliseconds 1.0) "timed out"
-            |> Flow.runSync (TestSupport.clockEnv ())
+            Flow.sleep (TimeSpan.FromSeconds 30.0)
+            |> Flow.timeoutToError (TimeSpan.FromMilliseconds 100.0) "timed out"
+            |> runOnManualTime
         test <@ errorResult = Exit.Failure (Cause.Fail "timed out") @>
 
         let withResult =
-            Flow.sleep (TimeSpan.FromMilliseconds 50.0)
-            |> Flow.timeoutWith (TimeSpan.FromMilliseconds 1.0) (fun () -> Flow.succeed ())
-            |> Flow.runSync (TestSupport.clockEnv ())
+            Flow.sleep (TimeSpan.FromSeconds 30.0)
+            |> Flow.timeoutWith (TimeSpan.FromMilliseconds 100.0) (fun () -> Flow.succeed ())
+            |> runOnManualTime
         test <@ withResult = Exit.Success () @>
 
     [<Fact>]
@@ -319,8 +319,8 @@ module WorkflowSchedulingTests =
 
         let result =
             operation
-            |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
-            |> Flow.runSync (TestSupport.clockEnv ())
+            |> Flow.timeout (TimeSpan.FromMilliseconds 100.0) "timed out"
+            |> runOnManualTime
 
         test <@ result = Exit.Failure(Cause.Fail "timed out") @>
         test <@ cleanedUp.Value @>

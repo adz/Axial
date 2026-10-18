@@ -360,8 +360,8 @@ module WorkflowStreamTests =
     [<Fact>]
     let ``debounce keeps the last value of each burst`` () =
         let values =
-            timed [ 1, 0; 2, 5; 3, 5; 4, 250; 5, 5 ]
-            |> FlowStream.debounce (TimeSpan.FromMilliseconds 100.0)
+            timed [ 1, 0; 2, 0; 3, 0; 4, 10000; 5, 0 ]
+            |> FlowStream.debounce (TimeSpan.FromSeconds 1.0)
             |> FlowStream.runCollect
             |> runOnManualTime
 
