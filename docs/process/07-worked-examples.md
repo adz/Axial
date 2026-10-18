@@ -54,7 +54,9 @@ Console forwarding is configured lazily; `Process.tryRun` starts the command.
 ## Use a command as one step in an application
 
 Use [`toFlow`](xref:M:Axial.Process.DSL.toFlow) when the command is one step among other application work. The application supplies its own `IProcess`
-service and decides how to use the result.
+service and decides how to use the result. `git rev-parse --short HEAD` reads the enclosing Git checkout, so this
+example needs a reachable `HEAD`; replace it with a deterministic command such as `cmd $"printf v1.2.3"` in a
+project without Git.
 
 ```fsharp
 let gitRevision : Flow<#IHasProcess, ProcessError, string> =
@@ -102,8 +104,10 @@ Flow.run appEnvironment collectEvents
 |> shouldEqual (Exit.Success [ """{"event":"ready"}"""; """{"event":"done"}""" ])
 ```
 
-The consumer pulls the stream. If the enclosing Flow is interrupted or the consumer stops early, Axial interrupts the
-native process topology and waits for its cleanup.
+The consumer pulls the stream with backpressure. Interrupting the enclosing Flow interrupts the native process
+topology and waits for its cleanup. Only `ProcessStream.take` and `ProcessStream.takeWhile` stop the process early
+and report the stop as `ProcessCompletion.StoppedEarly`; after `ProcessStream.toFlowStream`, process completion is
+discarded, so a consumer that stops early there simply ends the stream. See [streaming output](streaming.html).
 
 For more checked command-line patterns, see [DSL recipes](dsl-recipes.html).
 

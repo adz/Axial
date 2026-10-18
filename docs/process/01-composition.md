@@ -120,7 +120,8 @@ native argument, so spaces and characters such as `;`, `|`, and `$` stay literal
 `shout` example above passes `"hello; world"` to `printf` unchanged before piping it into `tr`.
 
 Use [`secret`](xref:M:Axial.Process.DSL.secret) when plans and diagnostics must show `***` instead of the real
-argument. Use [`cmdText`](xref:M:Axial.Process.DSL.cmdText) for fixed command text that should not be parsed.
+argument. Use [`cmdText`](xref:M:Axial.Process.DSL.cmdText) for fixed command text: Axial tokenizes it into an
+executable and arguments without invoking a shell, so operators such as `|` and `;` stay ordinary arguments.
 For shell syntax, see [scripts and shell syntax](scripts.html).
 
 Use [`Process.commandArgs`](xref:M:Axial.Process.Process.commandArgs) when arguments already exist as separate

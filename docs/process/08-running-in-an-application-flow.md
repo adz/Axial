@@ -89,7 +89,7 @@ let expectedResult : ProcessResult =
       ExitCodes = [ 0 ]
       StdOut = "abc1234\n"
       StdErr = ""
-      StdOutCapture = { Text = "abc1234\n"; Bytes = [||]; Truncated = false; Available = true }
+      StdOutCapture = { Text = "abc1234\n"; Bytes = System.Text.Encoding.UTF8.GetBytes "abc1234\n"; Truncated = false; Available = true }
       StdErrCapture = { Text = ""; Bytes = [||]; Truncated = false; Available = true }
       Stages = []
       StartedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)

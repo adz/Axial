@@ -37,7 +37,7 @@
 
 - [fixed] `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
-- `docs/process/07-worked-examples.md:69` — The checked application example assumes the docs are run inside a Git repository with a reachable `HEAD`; a copied example in a new project can fail. Use a deterministic command or state the prerequisite.
+- [fixed] `docs/process/07-worked-examples.md:69` — The checked application example assumes the docs are run inside a Git repository with a reachable `HEAD`; a copied example in a new project can fail. Use a deterministic command or state the prerequisite.
 
 ## Unclear or misleading
 
@@ -111,9 +111,9 @@
 - [fixed] `docs/01-getting-started/01-why-flow.md:282` — The sample poller forks and immediately returns; the page says child fibers are interrupted when their parent ends, so `registry.DumpAt(clock)` cannot reliably show a live poller from this example.
 - [fixed] `docs/01-getting-started/01-why-flow.md:203` — “The same environment gives the same result” overpromises determinism: live service implementations may read external state or have mutable state.
 
-- `docs/process/01-composition.md:123` — `cmdText` is described as fixed text “that should not be parsed,” but line 173 and the DSL API introduction say it tokenizes/parses fixed text. Correct this sentence so readers do not confuse it with `commandArgs`.
-- `docs/process/08-running-in-an-application-flow.md:92` — The fake `ProcessResult` gives `StdOutCapture.Text` a nonempty value but `Bytes = [||]`, despite the output guide saying text is decoded from retained bytes. Use matching UTF-8 bytes in the fake so tests do not teach an impossible capture.
-- `docs/process/07-worked-examples.md:104` — “If ... the consumer stops early” implies any downstream stream consumer stops the process successfully; the streaming guide only guarantees `StoppedEarly` for `ProcessStream.take`/`takeWhile`, while conversion to `FlowStream` discards completion. Name the specific early-stop operators.
+- [fixed] `docs/process/01-composition.md:123` — `cmdText` is described as fixed text “that should not be parsed,” but line 173 and the DSL API introduction say it tokenizes/parses fixed text. Correct this sentence so readers do not confuse it with `commandArgs`.
+- [fixed] `docs/process/08-running-in-an-application-flow.md:92` — The fake `ProcessResult` gives `StdOutCapture.Text` a nonempty value but `Bytes = [||]`, despite the output guide saying text is decoded from retained bytes. Use matching UTF-8 bytes in the fake so tests do not teach an impossible capture.
+- [fixed] `docs/process/07-worked-examples.md:104` — “If ... the consumer stops early” implies any downstream stream consumer stops the process successfully; the streaming guide only guarantees `StoppedEarly` for `ProcessStream.take`/`takeWhile`, while conversion to `FlowStream` discards completion. Name the specific early-stop operators.
 
 ## Too long
 
