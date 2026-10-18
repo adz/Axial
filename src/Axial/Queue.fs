@@ -543,6 +543,14 @@ module Dequeue =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Queue =
+    /// Creates a dropping queue synchronously for synchronous producers such as UI event handlers.
+    let droppingNow (capacity: int) : Queue<'a> =
+        if capacity <= 0 then invalidArg (nameof capacity) "Capacity must be positive"
+        Queue<'a>(QueueStrategy.Dropping capacity)
+
+    /// Shuts down a queue synchronously, waking any suspended consumers.
+    let shutdownNow (queue: Queue<'a>) = QueueCore.shutdown queue
+
     /// <summary>Creates a queue with the given overflow strategy.</summary>
     /// <remarks>A non-positive capacity fails the returned flow with a defect.</remarks>
     /// <example><code>Queue.make (QueueStrategy.Sliding 1)</code></example>

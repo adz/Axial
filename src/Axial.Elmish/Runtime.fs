@@ -29,6 +29,7 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     let gate = obj ()
     let latest = Dictionary<string, int64 * FiberId option>()
     let mutable generation = 0L
+    let mutable pending = 0
     let shutdowns = ResizeArray<unit -> unit>()
 
     let rec pump () : Flow<'env, Never, unit> =
@@ -46,6 +47,7 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     member _.Environment = environment
     member _.Registry = registry
     member internal _.Options = options
+    member internal _.Pending = Volatile.Read(&pending)
     member internal _.IsStopped = handle.Status <> AppStatus.Running
     member internal _.RegisterShutdown(action) =
         lock gate (fun () ->
@@ -55,7 +57,8 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     member internal _.Enqueue(job: Flow<'env, Never, unit>) =
         lock gate (fun () ->
             if handle.Status = AppStatus.Running then
-                queue.Enqueue job
+                Interlocked.Increment(&pending) |> ignore
+                queue.Enqueue (Flow.ensuring (Flow.delay (fun () -> Interlocked.Decrement(&pending) |> ignore; Flow.ok ())) job)
                 signal.Release() |> ignore
                 true
             else false)
@@ -105,7 +108,3 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     interface IDisposable with
         member this.Dispose() = this.StopAndWait(TimeSpan.FromSeconds 30.0) |> ignore
 
-[<RequireQualifiedAccess>]
-module ElmishRuntime =
-    let start (options: ElmishRuntimeOptions) (environment: 'env when 'env :> IHasClock) =
-        new ElmishRuntime<'env>(options, environment)
