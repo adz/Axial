@@ -96,35 +96,51 @@ module internal NativeProcess =
 
         result.Task
 
+    let rec private hasTypedFailure (cause: Cause<'error>) =
+        match cause with
+        | Cause.Fail _ -> true
+        | Cause.Then(left, right)
+        | Cause.Both(left, right) -> hasTypedFailure left || hasTypedFailure right
+        | Cause.Traced(inner, _) -> hasTypedFailure inner
+        | _ -> false
+
+    let rec private firstDefect (cause: Cause<'error>) =
+        match cause with
+        | Cause.Die error -> Some error
+        | Cause.Then(left, right)
+        | Cause.Both(left, right) ->
+            match firstDefect left with
+            | Some error -> Some error
+            | None -> firstDefect right
+        | Cause.Traced(inner, _) -> firstDefect inner
+        | _ -> None
+
+    // Raises the exception a failed user input or output flow maps to. Kept out of `runUserFlow`'s `task { }`: the
+    // F# compiler in SDK 10.0.4xx emits invalid IL for local recursive functions inside that block.
+    let private raiseUserFlowFailure (token: CancellationToken) input (cause: Cause<string>) : unit =
+        if hasTypedFailure cause then
+            raise (
+                ProcessFailureException(
+                    if input then
+                        ProcessError.InputFailed(cause.ToString())
+                    else
+                        ProcessError.OutputFailed(cause.ToString())
+                )
+            )
+        else
+            match firstDefect cause with
+            | Some error -> raise (ObserverDefectException error)
+            | None ->
+                token.ThrowIfCancellationRequested()
+                raise (ObserverDefectException(Exception(cause.ToString())))
+
     let private runUserFlow token input (work: Flow<unit, string, unit>) =
         task {
             let! result = Async.StartAsTask(Flow.toAsync () work, cancellationToken = token)
+
             match result with
-            | Exit.Success () -> ()
-            | Exit.Failure cause ->
-                let rec typed = function
-                    | Cause.Fail _ -> true
-                    | Cause.Then(left, right) | Cause.Both(left, right) -> typed left || typed right
-                    | Cause.Traced(inner, _) -> typed inner
-                    | _ -> false
-                let rec defect = function
-                    | Cause.Die error -> Some error
-                    | Cause.Then(left, right) | Cause.Both(left, right) ->
-                        match defect left with
-                        | Some error -> Some error
-                        | None -> defect right
-                    | Cause.Traced(inner, _) -> defect inner
-                    | _ -> None
-                if typed cause then
-                    raise (ProcessFailureException(
-                        if input then ProcessError.InputFailed(cause.ToString())
-                        else ProcessError.OutputFailed(cause.ToString())))
-                else
-                    match defect cause with
-                    | Some error -> raise (ObserverDefectException error)
-                    | None ->
-                        token.ThrowIfCancellationRequested()
-                        raise (ObserverDefectException(Exception(cause.ToString())))
+            | Exit.Success() -> ()
+            | Exit.Failure cause -> raiseUserFlowFailure token input cause
         }
 
     let rec private writeTarget
@@ -267,16 +283,30 @@ module internal NativeProcess =
                                             ioCancellation.Cancel()
                                             terminate ()
 
-                                    let supervise (work: Task<'value>) =
-                                        (task {
-                                            try
-                                                return! work
-                                            with error ->
-                                                if not token.IsCancellationRequested then
-                                                    recordFailure error
+                                    // A continuation rather than `task { try return! work with error -> ... }`: the
+                                    // F# compiler in SDK 10.0.4xx emits invalid IL for that generic shape here
+                                    // (InvalidProgramException at run time).
+                                    let supervise (work: Task<'value>) : Task<'value> =
+                                        work
+                                            .ContinueWith(
+                                                (fun (completed: Task<'value>) ->
+                                                    if
+                                                        (completed.IsFaulted || completed.IsCanceled)
+                                                        && not token.IsCancellationRequested
+                                                    then
+                                                        recordFailure (
+                                                            if completed.IsFaulted then
+                                                                completed.Exception.InnerException
+                                                            else
+                                                                TaskCanceledException(completed) :> exn
+                                                        )
 
-                                                return raise error // axial-allow-raise
-                                        })
+                                                    completed),
+                                                CancellationToken.None,
+                                                TaskContinuationOptions.ExecuteSynchronously,
+                                                TaskScheduler.Default
+                                            )
+                                            .Unwrap()
 
                                     let monitor i (command: CommandDefinition) =
                                         (task {

@@ -35,7 +35,7 @@ jobs:
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 10.0.402
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -189,7 +189,7 @@ jobs:
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 10.0.402
 
       - name: Download package artifacts
         uses: actions/download-artifact@v4

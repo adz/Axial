@@ -22,6 +22,13 @@ Do not treat "passed on rerun" as passing: a stage that needed a rerun is a flak
 The Fable stage runs three times because a single pass hid a deterministic-under-load stall introduced by T1.
 `dotnet livedocs test --warn-as-error` stays a phase or release step (see AGENTS.md), not part of `verify.sh`.
 
+## Build with the SDK CI uses
+
+`mise.toml` and every workflow pin the same .NET SDK (10.0.402). When CI floated on `10.0.x` it moved to a newer
+F# compiler than local builds, which emitted invalid IL for two `task { }` shapes in `ProcessLive.fs` (a generic
+`try ... with error -> ...; return raise error`, and local `let rec` functions inside the block). Every process test
+failed on CI with `InvalidProgramException` while passing locally. Bump the pin in both places together.
+
 ## Checkpoint before every agent run
 
 `scripts/checkpoint.sh "<label>"` commits the working tree as a local `WIP checkpoint:` commit and prints
@@ -68,3 +75,4 @@ Record a test here the first time it fails and then passes unchanged; fix or del
 | `WorkspaceTests.the workspace is removed when the gate fails` | 2026-10-18, T15 slice 3 | Diffed every `/tmp` directory, so temp directories from other test assemblies counted as leaks | Fixed: workspaces use an `axial-workspace-` prefix and the test counts only those |
 | `WorkflowStreamTests.switchMapFlow interrupts the flow for a superseded value` | T17/T21 verify run | Failed once under full suite; needs investigation | Open |
 | `ParallelSettlementTests.zipPar interrupts a suspended sibling of a synchronous failure` | 2026-10-18, T16 slice 1 | The sibling slept 20 ms, so a slow interrupt under full-suite load let it finish | Fixed: the sibling sleeps 10 s, so it finishes only if not interrupted |
+| Schedules torture scenario; a stream test | 2026-10-18, T17 run | Each failed once under `verify.sh test`, then passed | Open: capture names and seeds from `artifacts/verify/test.log` next time |
