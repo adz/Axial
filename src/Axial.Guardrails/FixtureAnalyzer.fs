@@ -2,10 +2,9 @@
 /// also contains an xUnit `[<Fact>]`/`[<Theory>]`/FsCheck `[<Property>]` test.
 ///
 /// A module-level `let` binding with no parameters compiles to a value computed once, shared by
-/// every test in the module - exactly the xUnit-parallelism hazard AGENTS.md's Test Authoring
-/// section already documents in prose ("Do not define shared fixtures as module-level `let`
-/// values in xUnit test modules. Build fixtures inside each test or expose them as functions.").
-/// This makes that rule mechanically checked instead of relying on review to catch it.
+/// every test in the module. AGENTS.md's Test Authoring section prohibits shared fixtures as
+/// module-level values in xUnit test modules; build them inside each test or expose functions instead.
+/// The analyzer catches violations before review.
 module Axial.Guardrails.FixtureAnalyzer
 
 open System.Text.RegularExpressions
