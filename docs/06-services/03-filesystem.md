@@ -5,9 +5,8 @@ description: Files, directories, paths, and typed file-system errors as an expli
 project: src/Axial.FileSystem/Axial.FileSystem.fsproj
 ---
 
-`Axial.FileSystem` turns file access into a declared dependency with a typed failure channel. Where
-`File.ReadAllText` throws one of a dozen exception types, `FileSystem.readAllText` returns
-`Flow<'env, FileSystemError, string>`, so the ways it can fail are part of the signature.
+`Axial.FileSystem` makes file access an explicit dependency. `FileSystem.readAllText` returns
+`Flow<'env, FileSystemError, string>` instead of throwing the exceptions raised by `File.ReadAllText`.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -88,7 +87,7 @@ Every operation fails with `FileSystemError`, a union that classifies what went 
 | `Unsupported (path, message)` | The platform or path shape does not support the operation |
 | `Unexpected (path, message)` | Anything else that escaped the operation |
 
-Because failures are typed, recovery is a match rather than an exception filter:
+Match `FileSystemError` to recover from a failure:
 
 ```fsharp
 let defaults = { Name = "default" }
@@ -129,7 +128,7 @@ lines |> shouldEqual [| "one"; "two"; "three" |]
 length |> shouldEqual (int64 ("one" + Environment.NewLine + "two" + Environment.NewLine + "three").Length)
 ```
 
-The same family has `readAllTextWithEncoding`, `readAllTextAsync`, `readAllBytes`, `writeAllBytes`, and the other
+The same family includes `readAllTextWithEncoding`, `readAllTextAsync`, `readAllBytes`, `writeAllBytes`, and other
 encoding-explicit and asynchronous forms.
 
 The `Async` members on `IFileSystem` (including `ReadAllTextAsync`, `ReadAllBytesAsync`, and `WriteAllTextAsync`) return `Flow<unit, FileSystemError, _>` without a token argument. The runtime passes its cancellation token to the underlying I/O, so interrupting a workflow stops a large read in progress. Prefer them for anything that is not small.
@@ -145,7 +144,7 @@ whether to follow the whole chain or stop at the immediate target.
 ## Streams and scopes
 
 `openRead`, `openText`, `openWrite`, `createFile`, `createText`, `appendText`, and the `openFile` family return open
-handles. An open handle is a resource, so acquire it inside a scope rather than trusting a later `Dispose`:
+handles. Acquire open handles inside a scope to ensure disposal:
 
 ```fsharp
 let readAndTransform (stream: Stream) (destination: string) : Flow<AppEnv, FileSystemError, unit> =
@@ -199,8 +198,7 @@ the service keeps platform-specific separator and rooting behaviour substitutabl
 
 ## Testing
 
-`IFileSystem` is a wide interface, and implementing it in full to fake three calls is rarely worth it. Two approaches
-work better:
+To test a few `IFileSystem` calls without implementing the full interface, use one of these approaches:
 
 **Use `FileSystem.live` against a temporary directory.** This is what Axial's own tests do, and what the examples on
 this page do. The workflow exercises real I/O, and the test owns cleanup:

@@ -3,8 +3,7 @@ title: Randomness and GUIDs
 description: Non-deterministic values as declared dependencies you can pin in a test.
 ---
 
-`IRandom` and `IGuid` exist for the same reason as the clock: a workflow that calls `Guid.NewGuid()` directly cannot
-be asserted against, and one that declares the dependency can.
+Declare `IRandom` and `IGuid` as dependencies to control generated values in tests. A direct call to `Guid.NewGuid()` cannot be pinned to a chosen value.
 
 ```fsharp
 open System
@@ -38,7 +37,7 @@ val it: Exit<float,Never> = Success 0.25
 val it: Exit<Byte[],Never> = Success [|9uy; 9uy; 9uy|]
 ```
 
-Use `Random.bytes` for a fresh array: it allocates the buffer, fills it, and returns it in one step.
+`Random.bytes` allocates, fills, and returns a fresh array.
 
 `Random.live` is backed by the platform generator. Two doubles cover most tests: `Random.fromValue` returns the same
 integer from every method, and `Random.fromFixed integer double byte` pins the three value kinds separately when a

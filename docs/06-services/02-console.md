@@ -45,8 +45,7 @@ let confirm question : Flow<#IHasConsole, Never, bool> =
     }
 ```
 
-Because of the environment constraint, `confirm` cannot be called from a workflow that has not been given a
-console, and it cannot reach the real terminal behind your back.
+The environment constraint requires callers of `confirm` to supply a console; the workflow cannot access the terminal without one.
 
 ## Supplying the service
 
@@ -68,7 +67,7 @@ For a runtime assembled with [layers](/layers/index.html), wrap it: `Layer.succe
 
 ## Reading and writing
 
-Line-oriented operations cover the common cases. Each returns a flow with an unconstrained error channel, so they
+Line-oriented operations read and write standard streams. Each returns a flow with an unconstrained error channel, so they
 compose into a workflow with any failure type:
 
 ```fsharp
@@ -137,10 +136,7 @@ let withHiddenCursor (body: Flow<AppEnv, Never, 'value>) : Flow<AppEnv, Never, '
 
 ## Testing
 
-Substitute any `IConsole` implementation. A recording console over `StringWriter` is usually enough, and it makes
-assertions ordinary value comparisons:
-
-`IConsole` is a wide interface, so implement it once in a test helper rather than in each test. This one reads its
+Substitute an `IConsole` implementation. Since the interface is wide, implement a recording console once in a test helper rather than in each test. This one reads its
 input from a string, records what is written, and keeps terminal state in fields:
 
 ```fsharp
@@ -194,7 +190,7 @@ type RecordingConsole(input: string) =
         member _.TreatControlCAsInput with get () = treatControlC and set value = treatControlC <- value
 ```
 
-With it, assertions are ordinary value comparisons:
+Assert against the recorded output and terminal state:
 
 ```fsharp run
 let answeredYes = RecordingConsole "y\n"
@@ -209,7 +205,7 @@ withHiddenCursor (Console.writeLine "working") |> Flow.run { Console = terminal 
 terminal.IsCursorVisible |> shouldEqual true
 ```
 
-The cursor is visible again afterwards: the finalizer ran when the scope closed.
+The finalizer restores cursor visibility when the scope closes.
 
 ## Fable
 

@@ -5,9 +5,9 @@ description: Explicit clock, logging, randomness, environment, console, and file
 
 # Platform services
 
-Platform services expose common host capabilities to `Flow` with cancellation, replaceable implementations, and typed errors where callers can recover. They are supporting parts of Axial Core rather than separate documentation contexts.
+Platform services expose common host capabilities to `Flow` with cancellation, replaceable implementations, and typed errors where callers can recover. They support Axial Core rather than defining separate documentation contexts.
 
-Higher-level libraries build their own programming models on top of Axial and these capabilities. [Axial.Process](/process/) composes external commands and streams. [Axial.HttpClient](/http/) models HTTP requests, responses, and reliability. Each has its own guides and API reference.
+Other packages build on these capabilities. [Axial.Process](/process/) composes external commands and streams. [Axial.HttpClient](/http/) models HTTP requests, responses, and reliability. Each has its own guides and API reference.
 
 | Service | Wraps | Axial API |
 | --- | --- | --- |

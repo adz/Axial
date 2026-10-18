@@ -63,8 +63,7 @@ None of them produce a typed failure, so the error channel stays free for the wo
 
 ## Measuring durations
 
-Wall-clock time can jump when the system clock is adjusted, so it is the wrong tool for measuring how long something
-took. `IClock.Elapsed` is a monotonic reading for that job, and `Clock.timed` wraps a flow with it:
+Wall-clock time can jump when the system clock is adjusted, so do not use it to measure durations. `IClock.Elapsed` is a monotonic reading for that job, and `Clock.timed` wraps a flow with it:
 
 ```fsharp
 let buildReport : Flow<BaseRuntime, Never, string> = Flow.ok "report"
@@ -139,9 +138,9 @@ expiresWithin (TimeSpan.FromHours 1.0) (DateTimeOffset(2026, 1, 1, 15, 0, 0, Tim
 |> shouldEqual (Exit.Success false)
 ```
 
-A clock that returns a fixed instant does not advance, which is usually what you want for assertions. When a test
+A fixed clock does not advance. When a test
 needs time to move, supply an `IClock` closing over a mutable field and step it explicitly, so the test controls
 how time moves instead of depending on wall-clock timing.
 
-Note that `IClock` reports the time; it does not schedule. Delays, timeouts, and retry policies are Flow runtime
+`IClock` reports the time; it does not schedule. Delays, timeouts, and retry policies are Flow runtime
 concerns; see [scheduling and retries](/scheduling-and-retries/index.html).

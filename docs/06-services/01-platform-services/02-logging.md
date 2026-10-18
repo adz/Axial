@@ -3,7 +3,7 @@ title: Logging
 description: Level-based logging as a declared dependency, and where it sits relative to telemetry.
 ---
 
-`ILog` is a deliberately small logging contract: write a message at a level, or write one carrying an exception.
+`ILog` writes a message at a level, optionally carrying an exception.
 
 `MicrosoftLogging.create` and `MicrosoftLogging.fromFactory` wrap each entry in a Microsoft `ILogger.BeginScope` dictionary containing the current explicitly set named `FiberLocal` values. `FiberLogging.observer` does the same for defect entries. Without named values, no scope is opened. Providers must enable scope capture to display these fields.
 
@@ -65,8 +65,7 @@ trace in a structured logging backend.
 
 ## Supplying the service
 
-`Log.live` is a **no-op logger**. That is the deliberate default: a library that logs should not start writing to
-somebody's console because they forgot to configure a sink. Wire a real one with `Log.fromSink`:
+`Log.live` is a **no-op logger**, so a library does not write to the console unless the host configures a sink. Wire a real one with `Log.fromSink`:
 
 ```fsharp
 let consoleLog = Log.fromSink (fun level message -> Console.Error.WriteLine $"[{level}] {message}")
@@ -79,7 +78,7 @@ logging framework, implement `ILog` directly and forward both members.
 
 ## Logging against telemetry
 
-`ILog` is the service a workflow depends on to say something. Spans,
+A workflow uses `ILog` to emit messages. Spans,
 metrics, and OpenTelemetry export are covered separately, in [observability](/observability/index.html). The two meet at the
 host: an `ILog` implementation can forward into the same backend the telemetry exporter writes to.
 
@@ -110,4 +109,4 @@ everyLevel (InvalidOperationException "boom") |> Flow.run collecting |> ignore
 lock gate (fun () -> List.length messages) |> shouldEqual 10
 ```
 
-Because `Log.live` is a no-op, a test that does not care about logging can supply it and see nothing.
+Tests that do not assert on logging can supply `Log.live`.

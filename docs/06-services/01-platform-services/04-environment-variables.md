@@ -3,8 +3,7 @@ title: Environment Variables
 description: Typed configuration reads with a failure channel instead of nulls.
 ---
 
-Configuration read from the environment is the classic source of a late, confusing startup failure: a missing
-variable surfaces as a `null`, and a malformed one as a parse exception somewhere further in. `Axial.PlatformService`
+A missing environment variable can surface as `null`, and a malformed value can throw a parse exception later. `Axial.PlatformService`
 splits this into two modules: one for raw access, and one for typed reads with a failure channel.
 
 ```fsharp prepare
@@ -38,7 +37,7 @@ open Axial.PlatformService
 
 ## Raw access
 
-`EnvironmentVariables` returns what is there, with no opinion about what is required:
+`EnvironmentVariables` provides raw access without requiring values:
 
 | Function | Result |
 | --- | --- |
@@ -100,7 +99,7 @@ is genuinely shared across environment shapes.
 Numeric parsing uses the invariant culture, so a variable set on a machine with a comma decimal separator reads the
 same everywhere.
 
-`EnvironmentVariableError` has two cases, and they carry enough to write a useful message:
+`EnvironmentVariableError` has two cases:
 
 - `MissingVariable name`: the variable was not set.
 - `InvalidVariable (name, value, expected)`: it was set but did not parse, with what was expected.
@@ -108,10 +107,9 @@ same everywhere.
 `EnvironmentVariableErrors.describe` formats either into a sentence such as `Environment variable 'PORT' had value
 'eighty' but expected an integer.`
 
-## Failing startup once, with everything wrong listed
+## Validating configuration at startup
 
-Because the reads are flows with a typed error, configuration validation composes into one workflow that either
-produces the settings record or reports what is wrong:
+Typed reads compose into a workflow that produces settings or fails with `EnvironmentVariableError`:
 
 ```fsharp
 type Settings = { Port: int; Endpoint: Uri; Timeout: TimeSpan }

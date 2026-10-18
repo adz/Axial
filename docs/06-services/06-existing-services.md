@@ -5,9 +5,7 @@ description: Embed BaseRuntime and your own dependencies in one application envi
 
 # Tutorial: Composing Built-in Services
 
-Every page in this section shows one service in isolation, constrained by its own `IHasX` interface. A real
-application wants several of them at once, alongside its own dependencies, and it should build that combined
-environment without repeating itself. This tutorial builds that environment.
+An application can combine services constrained by `IHasX` interfaces with its own dependencies in one environment.
 
 ## The problem
 
@@ -56,15 +54,11 @@ type AppEnv =
         member this.EnvironmentVariables = this.Runtime.EnvironmentVariables
 ```
 
-Each line is a delegation: `member this.Clock = this.Runtime.Clock` tells the compiler
-which field satisfies which contract. Declare an interface member for every service the application actually uses;
-skip the ones it does not, the same way you would skip a field it does not need. This is boilerplate, but it is
-boilerplate you write once, at the boundary, rather than something that spreads through the workflow code.
+`member this.Clock = this.Runtime.Clock` delegates the contract to the `Runtime` field. Declare interface members for the services the application uses, once on the environment record.
 
 ## Use the services
 
-Nothing about calling a service changes because it arrived through `Runtime` instead of a top-level field. The
-workflow names the contract, not the storage:
+The workflow uses the same service APIs whether `Runtime` holds them or they are top-level fields:
 
 ```fsharp
 let loadMode : Flow<AppEnv, EnvironmentVariableError, string> =
@@ -119,7 +113,7 @@ let runLive () : Task<Exit<string, EnvironmentVariableError>> =
 
 ## Test it
 
-Nothing changes about substituting test doubles either. `BaseRuntime`'s fields each accept the fixed value shown in
+Tests can substitute services through `BaseRuntime`'s fields. `BaseRuntime`'s fields each accept the fixed value shown in
 [deterministic implementations](platform-services/index.html#deterministic-implementations), so a test builds the
 whole environment as one value literal, with no interface to reimplement:
 
@@ -139,8 +133,4 @@ loadMode |> Flow.run testEnv |> shouldEqual (Exit.Success "diagnostic")
 lock gate (fun () -> List.rev logged) |> shouldEqual [ "[2026-01-01T00:00:00.0000000Z] starting in mode diagnostic" ]
 ```
 
-If you already have several standard services in play, wrapping them once in an app environment like this is
-usually the cleanest boundary. Continue with
-[Tutorial: Creating Reusable Services](/advanced/custom-services.html) when you need your own service contract
-alongside the built-in ones, or with [Layers](/layers/tutorial.html) when building the environment itself becomes
-effectful.
+See [Tutorial: Creating Reusable Services](/advanced/custom-services.html) for an application-specific service contract, or [Layers](/layers/tutorial.html) when building the environment itself becomes effectful.

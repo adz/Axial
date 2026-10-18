@@ -3,10 +3,8 @@ title: Platform Services
 description: The clock, logging, randomness, GUID, and environment-variable services that make ambient state explicit.
 ---
 
-`Axial.PlatformService` covers the five capabilities that would otherwise be read straight from static globals:
-`DateTimeOffset.UtcNow`, a logger, `Random`, `Guid.NewGuid()`, and `Environment.GetEnvironmentVariable`. Each becomes
-a declared dependency, which is what makes a workflow that reads the time or generates an identifier reproducible in
-a test.
+`Axial.PlatformService` exposes five capabilities as dependencies instead of ambient state:
+`DateTimeOffset.UtcNow`, a logger, `Random`, `Guid.NewGuid()`, and `Environment.GetEnvironmentVariable`. Tests can then pin the time or generated identifier.
 
 ```fsharp
 open System
@@ -22,8 +20,7 @@ open Axial.PlatformService
 | `IGuid` | `Guid.NewGuid()` | `Guid` |
 | `IEnvironmentVariables` | `Environment.GetEnvironmentVariable` | `EnvironmentVariables`, `EnvironmentVariable` |
 
-These are the smallest services Axial ships, and the most valuable to make explicit. A function that reads the clock
-directly cannot be tested at a chosen instant; one that declares `IHasClock` can:
+A function that declares `IHasClock` can be tested at a chosen instant:
 
 ```fsharp
 let isExpired (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
