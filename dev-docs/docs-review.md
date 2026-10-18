@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/11-observability/01-telemetry/01-javascript.md:50` — The first tracing snippet assumes `checkout`, `order`, `user`, `AppAttributes`, `tenantId`, and `CheckoutError.describe` already exist; none is defined on this page. Label it schematic or provide a minimal runnable workflow and key.
+
 - `docs/10-streams/02-constructing.md:166` — The crawler uses `Map.find` for every discovered URL and assumes all links exist in the in-memory site; a real crawl needs a typed fetch error or an explicit missing-page policy.
 
 - `docs/09-scopes/_index.md:33` — `File.OpenText path` assumes the file exists and acquisition succeeds, but the example has no typed filesystem error or explicit filesystem dependency; label it illustrative rather than a production read pattern.
@@ -23,6 +25,10 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/11-observability/_index.md:291` — `FiberDumpTelemetry.record registry` conflicts with the two-argument `FiberDumpTelemetry.record Clock.live registry` shown in the telemetry guide at line 385. Use one consistent call shape.
+- `docs/11-observability/_index.md:260` — The literal fiber-dump output is separate from the checked example and uses an unrelated three-fiber tree; readers may mistake it for the output of `withPoller`. Mark it as a hypothetical example or generate a verified transcript.
+- `docs/11-observability/01-telemetry/_index.md:381` — This recommends `Clock.live` for a dump even though the overview's example passes the supplied environment clock. Explain when a live clock is appropriate versus the application's injected clock.
 
 - `docs/10-streams/_index.md:21` — “Upstream cannot outrun” downstream is too absolute for the later producer-fiber and parallel operators; qualify this as bounded backpressure, with `fromCallback` explicitly able to drop values on overflow.
 - `docs/10-streams/04-batching-and-parallelism.md:35` — “Does not begin the next batch until the current result list is consumed” could imply per-item consumption of that list; the terminal pulls the next batch after the previous batch has been emitted, regardless of what the caller does with its elements.
@@ -69,6 +75,8 @@
 
 ## Too long
 
+- `docs/11-observability/_index.md:37` — The overview repeats the telemetry guide's tracing setup, attributes, fiber metrics, dumps, Aspire walkthrough, and JavaScript setup across nearly 400 lines. Keep the signal map and cross-package decisions here; link to the platform guides for setup and recipes.
+
 - `docs/10-streams/02-constructing.md:105` — The two crawler walkthroughs occupy over half the construction guide and introduce HTTP-shaped domain modeling and frontier bookkeeping before the basic source choices are complete; move the crawler to a dedicated recipe and retain a short `unfoldFlow` example here.
 
 - `docs/09-scopes/_index.md:358` — The rules recap repeats the lifetime maps, concurrency table, and fork walkthrough; shorten it to a decision checklist linking back to the detailed sections.
@@ -93,6 +101,8 @@
 
 ## Reference material in guides
 
+- `docs/11-observability/_index.md:204` — The complete fiber instrument table and registry method inventory at lines 273–288 are reference contracts duplicated alongside the telemetry guide; retain a short operational interpretation and link to the telemetry reference for the inventories.
+
 - `docs/10-streams/06-consuming.md:63` — The six-step lifecycle and per-operator scope ownership rules read as a scope contract; keep the practical cleanup guarantee here and link to the scopes guide for the detailed ordering.
 
 - `docs/09-scopes/_index.md:233` — The combinator-by-combinator scope transfer table is a specialized contract better maintained in API reference; keep the value-received ownership rule and link to per-combinator details.
@@ -115,6 +125,9 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/11-observability/01-telemetry/01-javascript.md:19` — “Install the OpenTelemetry SDK, exporter, and context manager” gives no package names or minimal Node/browser bootstrap; the first runnable step depends on host setup that the page never demonstrates. Give one concrete bootstrap or a direct setup link.
+- `docs/11-observability/01-telemetry/_index.md:339` — Queue metrics are described but have no checked measurement example showing observed values or subscription cleanup; add a minimal collector example or link to one.
 
 - `docs/10-streams/_index.md:28` — The guide list omits `08-time-and-latest.md` and `09-resources-and-results.md`; add both so a new reader can discover timed operators and resource-backed streams without guessing URLs.
 - `docs/10-streams/02-constructing.md:49` — Callback overflow is explained but no checked example fills the capacity or shows how to handle `CallbackOverflow.Fail`; demonstrate the observable dropped-value and failure behavior.
@@ -151,6 +164,9 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/11-observability/01-telemetry/_index.md:43` — Hide or trim the visible `prepare` fixture: optional Browser, Node, filesystem, and JavaScript telemetry imports appear before the .NET-only tracing setup and obscure required packages. The overview repeats the same broad fixture at line 51.
+- `docs/11-observability/01-telemetry/_index.md:67` — The first host setup snippet uses an undefined `builder` and unchecked extension methods; show the host setup context and required `open` statements or label it as a fragment of an ASP.NET Core app.
 
 - `docs/10-streams/02-constructing.md:12` — Trim or hide the visible docs-test fixture: optional Browser, Node, telemetry, and filesystem imports obscure the packages needed for stream construction. The same fixture appears in `08-time-and-latest.md` and `09-resources-and-results.md`.
 - `docs/10-streams/09-resources-and-results.md:39` — The copyable file-reader example opens `File.OpenText` directly under a `Resource<unit, Never, _>` despite possible I/O exceptions; use the filesystem service and a typed error for a recommended application pattern, or label the snippet as cleanup-only demonstration.
