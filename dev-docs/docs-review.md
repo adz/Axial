@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/09-scheduling-and-retries/_index.md:126` — The copyable jitter example constructs `System.Random()` directly; the next paragraph recommends injected `IRandom`. Show the service-based wiring so repeated runs and tests do not depend on an ambient random source.
+
 - `docs/08-concurrency-and-state/07-hub.md:168` — The display example polls `Hub.subscriberCount` without a deadline; if the consumer fails before subscribing, the example hangs instead of surfacing its exit. Show a bounded handshake or failure-aware startup.
 
 - `docs/07-layers/02-tutorial.md:142` — The fake connection is created before provisioning and reused; the example assumes a single run. Show acquisition inside the layer for a reusable resource layer.
@@ -17,6 +19,9 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/09-scheduling-and-retries/_index.md:360` — The comment says polling continues “until the flow fails,” but `pollStatus` has error type `Never` and always succeeds; this example runs indefinitely unless interrupted. Show a stopping condition or state explicitly that the caller must interrupt it.
+- `docs/09-scheduling-and-retries/_index.md:247` — `resetAfter` calls a long run “successful,” yet the supervision example describes a worker that crashes after ten healthy minutes. Clarify that the threshold measures the duration of the failed run before its failure, not a previous successful execution.
 
 - `docs/08-concurrency-and-state/09-cache.md:105` — “There is no expiry” contradicts the `Cache.makeBoundedWithExpiry` option at line 61. Qualify this as the behavior of the default cache/memoized flow.
 - `docs/08-concurrency-and-state/09-cache.md:40` — `readConfigFromDisk` only increments a `Ref`; the comment says the file is read once, but no disk read occurs. Name it as a simulated load so readers do not mistake it for filesystem guidance.
@@ -54,6 +59,8 @@
 
 ## Too long
 
+- `docs/09-scheduling-and-retries/_index.md:151` — The long sequence of union, intersect, andThen, output predicates, budgets, reset, retry, and repeat makes the first-use guide hard to scan. Split basic retry/repeat from advanced schedule composition.
+
 - `docs/08-concurrency-and-state/01-fibers.md:244` — “What a fiber owns” repeats the ownership and `forkResource` rules already explained at line 77; consolidate the two sections and keep the graceful-stop walkthrough separate.
 
 - `docs/07-layers/01-layers.md:141` — The function catalog and separate zip/merge discussion interrupt the provisioning walkthrough; keep the choices needed by the example and move the full combinator inventory to reference documentation.
@@ -72,6 +79,8 @@
 
 ## Reference material in guides
 
+- `docs/09-scheduling-and-retries/_index.md:388` — The 18-row signature table duplicates the guide's descriptions and belongs in API reference; keep a short selection guide and link to the signatures.
+
 - `docs/08-concurrency-and-state/03-ref.md:92` — The full signature table repeats the immediately preceding examples of each `Ref` operation; link to API reference and retain the atomicity and get/set pitfall in this guide.
 - `docs/08-concurrency-and-state/05-stm.md:114` — Two signature tables restate the `TRef` and `STM` overview; move exhaustive signatures to API reference and use this space for `retry`/`orElse` behavior.
 
@@ -88,6 +97,9 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/09-scheduling-and-retries/_index.md:353` — Repetition has no checked example showing that the schedule receives the previous successful value or that a failure ends the loop; add a bounded example with `whileInput` and an observable exit.
+- `docs/09-scheduling-and-retries/_index.md:131` — The advice to use `IRandom` does not show how to project it from the environment into `jitteredWith`'s `(unit -> float)` callback; give a concrete environment-bound example.
 
 - `docs/08-concurrency-and-state/05-stm.md:18` — `STM.retry` and `STM.orElse` are named but never demonstrated in the guide; add a runnable wait-for-funds/fallback example showing when retry wakes and how interruption ends the wait.
 - `docs/08-concurrency-and-state/09-cache.md:61` — Expiry and bounded eviction are introduced without an example or an explanation of what happens to an in-flight load when invalidated/evicted. Show a clock-controlled expiry and concurrent invalidation case.
@@ -115,6 +127,8 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/09-scheduling-and-retries/_index.md:25` — Hide or trim the docs-test `prepare` fixture: imports of Browser, Node, filesystem, and telemetry before the first schedule example make the required packages look much broader than `Axial` and the clock service.
 
 - `docs/08-concurrency-and-state/10-torture-tests/_index.md:40` — The scenario pages embed `no-check` snippet directives and link to an external example; give first-time readers a short checked, self-contained representative invariant on the landing page before sending them to the full runner.
 - `docs/08-concurrency-and-state/01-fibers.md:23` — Hide or narrow the broad `prepare` fixture of optional Hosting, Browser, Node, filesystem, and telemetry imports; the same setup recurs on supervision, deferred/semaphore, hub, and cache pages and obscures required packages.
