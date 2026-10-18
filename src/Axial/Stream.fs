@@ -741,7 +741,7 @@ module FlowStream =
     /// search-as-you-type and autocomplete, where a result for stale input is worthless.
     /// </remarks>
     /// <example><code>queries |&gt; FlowStream.debounce (TimeSpan.FromMilliseconds 200.0) |&gt; FlowStream.switchMapFlow search</code></example>
-    let switchMapFlow (mapper: 'value -> Flow<'env, 'error, 'next>) stream : FlowStream<'env, 'error, 'next> =
+    let private switchMapFlowWithCompletionPriority preferCompleted (mapper: 'value -> Flow<'env, 'error, 'next>) stream : FlowStream<'env, 'error, 'next> =
         let (FlowStream op) = stream
 
         FlowStream(fun env ct ->
@@ -759,8 +759,11 @@ module FlowStream =
                 and running (fiber: Fiber<'error, 'next>) =
                     Execution.loop fiber (fun fiber ->
                         // Wait for the next value unless the running flow settles first; see takeUnless.
+                        let mutable settled = false
                         let settling (source: CancellationTokenSource) =
-                            Platform.whenSettled fiber.ExitTask (fun () -> source.Cancel())
+                            Platform.whenSettled fiber.ExitTask (fun () ->
+                                settled <- true
+                                source.Cancel())
                             ignore
 
                         takeUnless queue settling ct
@@ -769,6 +772,17 @@ module FlowStream =
                             | Some item -> Execution.ofValue (Choice1Of2 item)
                             | None -> Flow.invoke (Fiber.await fiber) env ct |> Execution.map Choice2Of2)
                         |> Execution.bind (function
+                            | Choice1Of2(Pumped.Item value) when preferCompleted &&
+#if FABLE_COMPILER
+                                settled ->
+#else
+                                fiber.ExitTask.IsCompleted ->
+#endif
+                                // A settled result belongs to the current run even if the wake was dequeued first.
+                                Flow.invoke (Fiber.await fiber) env ct
+                                |> Execution.bind (function
+                                    | Exit.Success result -> Execution.ofValue (Platform.Break(Next(result, idle)))
+                                    | Exit.Failure cause -> Execution.ofCause cause)
                             | Choice1Of2(Pumped.Item value) ->
                                 Flow.invoke (Fiber.interrupt fiber) env ct
                                 |> Execution.bind (fun _ -> start value)
@@ -784,6 +798,8 @@ module FlowStream =
                             | Choice2Of2(Exit.Failure cause) -> Execution.ofCause cause))
 
                 idle ()))
+
+    let switchMapFlow mapper stream = switchMapFlowWithCompletionPriority false mapper stream
 
     /// <summary>Groups consecutive values into non-empty lists of at most <paramref name="size"/> elements.</summary>
     /// <remarks>The operator pulls and retains at most <paramref name="size"/> upstream values for each emitted list.</remarks>
@@ -949,8 +965,9 @@ module FlowStream =
     /// may still complete. Interrupting the caller interrupts both the wake stream and the running work.
     /// </remarks>
     let reissueOnWake (wake: FlowStream<'env, 'error, unit>) (work: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        // append right left emits left first: the singleton starts work before waiting for a wake.
         append wake (singleton ())
-        |> switchMapFlow (fun () -> work)
+        |> switchMapFlowWithCompletionPriority true (fun () -> work)
         |> take 1
         |> runCollect
         |> Flow.map (function
