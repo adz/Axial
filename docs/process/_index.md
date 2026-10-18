@@ -36,7 +36,7 @@ Follow these in order to learn the model. Start with one command, then compose i
 
 1. [Commands and composition](composition.html) — arguments, settings, pipelines, and plans.
 2. [Run a process in an application Flow](running-in-an-application-flow.html) — provide the process service and compose with application work.
-3. [Worked examples](worked-examples.html) — see the pieces together.
+3. [Worked examples](worked-examples.html) — complete process workflows.
 
 ## How-to
 
