@@ -24,9 +24,10 @@ The Fable stage runs three times because a single pass hid a deterministic-under
 
 ## Checkpoint before every agent run
 
-`scripts/checkpoint.sh "<label>"` commits the working tree as a local `WIP checkpoint:` commit and prints its sha, so
-a bad run is undone with `git reset --hard <sha>`. Never push checkpoints: squash them into the task's commit with
-`git reset --soft <last pushed commit>` and one `git commit`.
+`scripts/checkpoint.sh "<label>"` commits the working tree as a local `WIP checkpoint:` commit and prints
+`restore=<sha>`, so a bad run is undone with `git reset --hard <sha>` (with a clean tree it makes no commit and `<sha>`
+is HEAD). Never push checkpoints: squash with `git reset --soft <last pushed commit>` and one `git commit`. Do not
+reset to "the checkpoint's parent": when no checkpoint was made, that drops the previous real commit into the squash.
 
 ## Prove a new test can fail
 

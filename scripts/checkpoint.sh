@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-# Commits the working tree as a local WIP checkpoint before an agent run, so the run can be undone with one command
-# (`git reset --hard <printed sha>`). Checkpoints are never pushed: squash them into the task's real commit with
-# `git reset --soft <base>` followed by one `git commit`, where <base> is the last pushed commit.
+# Commits the working tree as a local WIP checkpoint before an agent run and prints `restore=<sha>`: the commit to
+# return to with `git reset --hard <sha>` if the run goes wrong. With a clean tree no checkpoint commit is made and
+# <sha> is HEAD. Checkpoints are never pushed: squash with `git reset --soft <last pushed commit>` and one
+# `git commit`; never reset to "the checkpoint's parent", which goes one commit too far when nothing was committed.
 #
 #   scripts/checkpoint.sh "before T5 review fixes"
 
@@ -16,4 +17,4 @@ if [[ -n $(git status --porcelain) ]]; then
     git commit -q --no-verify -m "WIP checkpoint: $label"
 fi
 
-git rev-parse --short HEAD
+echo "restore=$(git rev-parse --short HEAD)"
