@@ -68,6 +68,15 @@ type private CountingStream(inner: Stream, notify: BytesDirection -> int -> unit
         let n = inner.Read(buffer, offset, count)
         notify BytesDirection.Received n
         n
+    override _.ReadByte() =
+        let value = inner.ReadByte()
+        if value >= 0 then notify BytesDirection.Received 1
+        value
+    override _.ReadAsync(buffer: byte[], offset, count, ct) = (task {
+        let! n = inner.ReadAsync(buffer, offset, count, ct)
+        notify BytesDirection.Received n
+        return n
+    })
     override _.ReadAsync(buffer: Memory<byte>, ct) = ValueTask<int>(task {
         let! n = inner.ReadAsync(buffer, ct)
         notify BytesDirection.Received n
@@ -76,6 +85,13 @@ type private CountingStream(inner: Stream, notify: BytesDirection -> int -> unit
     override _.Write(buffer, offset, count) =
         inner.Write(buffer, offset, count)
         notify BytesDirection.Sent count
+    override _.WriteByte(value) =
+        inner.WriteByte(value)
+        notify BytesDirection.Sent 1
+    override _.WriteAsync(buffer: byte[], offset, count, ct) = (task {
+        do! inner.WriteAsync(buffer, offset, count, ct)
+        notify BytesDirection.Sent count
+    } :> Task)
     override _.WriteAsync(buffer: ReadOnlyMemory<byte>, ct) = ValueTask(task {
         do! inner.WriteAsync(buffer, ct)
         notify BytesDirection.Sent buffer.Length
@@ -158,6 +174,7 @@ module WebSocket =
                             // The live service owns native connections.
                             // axial-allow-effect: websocket
                             let socket = new ClientWebSocket()
+                            let mutable connectDefect: exn option = None
                             try
                                 for protocol in options.Subprotocols do socket.Options.AddSubProtocol protocol
 #if NETSTANDARD2_1
@@ -174,13 +191,23 @@ module WebSocket =
                                     handler.SslOptions.ClientCertificates <- X509CertificateCollection()
                                     handler.SslOptions.ClientCertificates.Add cert |> ignore)
                                 options.Tls.TrustAnchors |> Option.iter (fun roots ->
-                                    handler.SslOptions.RemoteCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ cert _ _ ->
-                                        if isNull cert then false else
+                                    handler.SslOptions.RemoteCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ cert _ errors ->
+                                        if isNull cert || errors.HasFlag SslPolicyErrors.RemoteCertificateNameMismatch then false else
+                                        use peer = new X509Certificate2(cert)
+                                        let name = peer.GetNameInfo(X509NameType.DnsName, false)
+                                        let host = options.Url.IdnHost
+                                        let validName =
+                                            String.Equals(name, host, StringComparison.OrdinalIgnoreCase)
+                                            || (name.StartsWith("*.", StringComparison.Ordinal)
+                                                && host.EndsWith(name.Substring(1), StringComparison.OrdinalIgnoreCase)
+                                                && host.Length > name.Length - 1
+                                                && not (host.Substring(0, host.Length - name.Length + 1).Contains('.')))
+                                        if not validName then false else
                                         use chain = new X509Chain()
                                         chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
                                         chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
                                         for root in roots do chain.ChainPolicy.CustomTrustStore.Add root |> ignore
-                                        chain.Build(new X509Certificate2(cert))))
+                                        chain.Build(peer)))
                                 if options.Connect.IsSome || options.OnBytes.IsSome then
                                     handler.ConnectCallback <- Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>(fun context token ->
                                         ValueTask<Stream>(task {
@@ -189,7 +216,11 @@ module WebSocket =
                                                 | Some hook ->
                                                     match (hook { Host = context.DnsEndPoint.Host; Port = context.DnsEndPoint.Port }).RunSynchronously((), cancellationToken = token) with
                                                     | Exit.Success stream -> return stream
-                                                    | other -> return raise (IOException(sprintf "Custom connect failed: %A" other))
+                                                    | Exit.Failure(Cause.Fail error) -> return raise (IOException(sprintf "Custom connect failed: %O" error))
+                                                    | Exit.Failure(Cause.Die error) ->
+                                                        connectDefect <- Some error
+                                                        return raise error
+                                                    | other -> return raise (OperationCanceledException(sprintf "Custom connect interrupted: %A" other, token))
                                                 | None ->
                                                     let client = new Socket(SocketType.Stream, ProtocolType.Tcp)
                                                     try
@@ -205,23 +236,39 @@ module WebSocket =
                                 do! socket.ConnectAsync(options.Url, invoker, ct)
 #endif
                                 let mutable closed = false
+                                let sendGate = new SemaphoreSlim(1, 1)
                                 let mutable disposed = 0
                                 let dispose () =
-                                    if Interlocked.Exchange(&disposed, 1) = 0 then socket.Dispose()
+                                    if Interlocked.Exchange(&disposed, 1) = 0 then
+                                        socket.Dispose()
+                                        sendGate.Dispose()
+                                let transport (operation: CancellationToken -> Task<'a>) =
+                                    Flow.fromTaskResult (fun token -> task {
+                                        try
+                                            let! value = operation token
+                                            return Ok value
+                                        with
+                                        | :? WebSocketException as error -> return Error(WebSocketError.ConnectionLost error.Message)
+                                        | :? IOException as error -> return Error(WebSocketError.ConnectionLost error.Message)
+                                        | :? SocketException as error -> return Error(WebSocketError.ConnectionLost error.Message)
+                                        | :? AuthenticationException as error -> return Error(WebSocketError.ConnectionLost error.Message)
+                                    })
+                                let transportUnit (operation: CancellationToken -> Task) =
+                                    transport (fun token -> task { do! operation token })
                                 let receivePart token chunk =
-                                    socket.ReceiveAsync(ArraySegment<byte>(chunk), token)
-                                    |> Async.AwaitTask
-                                    |> Flow.attemptAsync
-                                    |> Flow.mapError (fun error -> WebSocketError.ConnectionLost error.Message)
+                                    transport (fun _ -> socket.ReceiveAsync(ArraySegment<byte>(chunk), token))
                                 let send message =
                                     flow {
                                         let! token = Flow.cancellationToken
-                                        if closed then return! Flow.fail(WebSocketError.Closed(None, None))
-                                        let kind, bytes =
-                                            match message with
-                                            | WebSocketMessage.Text text -> WebSocketMessageType.Text, Encoding.UTF8.GetBytes text
-                                            | WebSocketMessage.Binary bytes -> WebSocketMessageType.Binary, bytes
-                                        do! socket.SendAsync(ArraySegment<byte>(bytes), kind, true, token) |> Async.AwaitTask |> Flow.attemptAsync |> Flow.mapError (fun error -> WebSocketError.ConnectionLost error.Message)
+                                        do! Flow.fromTask (fun _ -> task { do! sendGate.WaitAsync(token) })
+                                        try
+                                            if closed then return! Flow.fail(WebSocketError.Closed(None, None))
+                                            let kind, bytes =
+                                                match message with
+                                                | WebSocketMessage.Text text -> WebSocketMessageType.Text, Encoding.UTF8.GetBytes text
+                                                | WebSocketMessage.Binary bytes -> WebSocketMessageType.Binary, bytes
+                                            do! transportUnit (fun _ -> socket.SendAsync(ArraySegment<byte>(bytes), kind, true, token))
+                                        finally sendGate.Release() |> ignore
                                     }
                                 let receive () =
                                     flow {
@@ -241,7 +288,11 @@ module WebSocket =
                                             else
                                                 output.Write(chunk, 0, part.Count)
                                                 complete <- part.EndOfMessage
-                                        if tooLarge then return! Flow.fail(WebSocketError.ProtocolError "Message exceeds configured limit")
+                                        if tooLarge then
+                                            // The unread fragments cannot be treated as a new message.
+                                            closed <- true
+                                            socket.Abort()
+                                            return! Flow.fail(WebSocketError.ProtocolError "Message exceeds configured limit")
                                         elif closed || kind = WebSocketMessageType.Close then
                                             closed <- true
                                             return None
@@ -253,15 +304,29 @@ module WebSocket =
                                 let close code reason =
                                     flow {
                                         let! token = Flow.cancellationToken
-                                        if not closed then
-                                            closed <- true
-                                            do! socket.CloseAsync(enum<WebSocketCloseStatus> code, reason, token) |> Async.AwaitTask |> Flow.attemptAsync |> Flow.mapError (fun error -> WebSocketError.ConnectionLost error.Message)
+                                        do! Flow.fromTask (fun _ -> task { do! sendGate.WaitAsync(token) })
+                                        try
+                                            if not closed then
+                                                closed <- true
+                                                do! transportUnit (fun _ -> socket.CloseAsync(enum<WebSocketCloseStatus> code, reason, token))
+                                        finally sendGate.Release() |> ignore
                                     }
                                 return Ok(new WebSocketSession(send, receive, close, dispose))
                             with
                             | :? OperationCanceledException as error -> socket.Dispose(); return raise error
-                            | :? WebSocketException as error -> socket.Dispose(); return Error(WebSocketError.ConnectFailed error.Message)
-                            | error -> socket.Dispose(); return Error(WebSocketError.ConnectFailed error.Message)
+                            | :? WebSocketException as error ->
+                                socket.Dispose()
+                                match connectDefect with
+                                | Some defect -> return raise defect
+                                | None -> return Error(WebSocketError.ConnectFailed error.Message)
+                            | :? IOException as error ->
+                                socket.Dispose()
+                                match connectDefect with
+                                | Some defect -> return raise defect
+                                | None -> return Error(WebSocketError.ConnectFailed error.Message)
+                            | :? SocketException as error -> socket.Dispose(); return Error(WebSocketError.ConnectFailed error.Message)
+                            | :? AuthenticationException as error -> socket.Dispose(); return Error(WebSocketError.ConnectFailed error.Message)
+                            | error -> socket.Dispose(); return raise error
                         } |> Async.AwaitTask
                     })
                 } }

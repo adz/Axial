@@ -31,8 +31,8 @@ module TlsServer =
         req.CertificateExtensions.Add(X509EnhancedKeyUsageExtension(ekus, false))
         if isServer then
             let san = SubjectAlternativeNameBuilder()
-            san.AddDnsName("localhost")
-            san.AddIpAddress(IPAddress.Loopback)
+            san.AddDnsName(if subject = "CN=other.example" then "other.example" else "localhost")
+            if subject <> "CN=other.example" then san.AddIpAddress(IPAddress.Loopback)
             req.CertificateExtensions.Add(san.Build())
         let serial = RandomNumberGenerator.GetBytes(16)
         use signed = req.Create(ca, DateTimeOffset.UtcNow.AddHours(-1.), DateTimeOffset.UtcNow.AddHours(12.), serial)

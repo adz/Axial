@@ -131,18 +131,50 @@ module WebSocketTests =
         Assert.Equal(Exit.Success [WebSocketMessage.Text "hello"; WebSocketMessage.Binary [| 1uy |]], (session |> WebSocket.messages |> FlowStream.runCollect).RunSynchronously(()))
         Assert.Equal<WebSocketMessage list>([WebSocketMessage.Text "one"; WebSocketMessage.Text "two"], List.ofSeq fake.Sent)
 
+    type private RecordingStream(inner: Stream, sent: int ref, received: int ref) =
+        inherit Stream()
+        override _.CanRead = inner.CanRead
+        override _.CanWrite = inner.CanWrite
+        override _.CanSeek = false
+        override _.Length = raise (NotSupportedException())
+        override _.Position with get () = raise (NotSupportedException()) and set _ = raise (NotSupportedException())
+        override _.Flush() = inner.Flush()
+        override _.Read(buffer, offset, count) =
+            let n = inner.Read(buffer, offset, count)
+            lock received (fun () -> received.Value <- received.Value + n)
+            n
+        override _.Write(buffer, offset, count) =
+            inner.Write(buffer, offset, count)
+            lock sent (fun () -> sent.Value <- sent.Value + count)
+        override _.ReadAsync(buffer: Memory<byte>, token) = ValueTask<int>(task {
+            let! n = inner.ReadAsync(buffer, token)
+            lock received (fun () -> received.Value <- received.Value + n)
+            return n
+        })
+        override _.WriteAsync(buffer: ReadOnlyMemory<byte>, token) = ValueTask(task {
+            do! inner.WriteAsync(buffer, token)
+            lock sent (fun () -> sent.Value <- sent.Value + buffer.Length)
+        })
+        override _.Seek(_, _) = raise (NotSupportedException())
+        override _.SetLength(_) = raise (NotSupportedException())
+        override _.Dispose(disposing) =
+            if disposing then inner.Dispose()
+            base.Dispose(disposing)
+
     [<Fact>]
     let ``custom transport is used and wire bytes are counted`` () =
         use server = new Server(false)
         let mutable called = 0
         let mutable sent = 0
         let mutable received = 0
+        let actualSent = ref 0
+        let actualReceived = ref 0
         let hook (context: ConnectContext) =
             Flow.delay (fun () ->
                 called <- called + 1
                 let socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
                 socket.Connect(context.Host, context.Port)
-                Flow.succeed (new NetworkStream(socket, true) :> Stream))
+                Flow.succeed (new RecordingStream(new NetworkStream(socket, true), actualSent, actualReceived) :> Stream))
         let options =
             WebSocket.connect server.Url
             |> WebSocket.connectWith hook
@@ -160,6 +192,8 @@ module WebSocketTests =
         Assert.Equal(1, called)
         Assert.True(sent > 5, sprintf "sent %d" sent)
         Assert.True(received > 5, sprintf "received %d" received)
+        Assert.Equal(actualSent.Value, sent)
+        Assert.Equal(actualReceived.Value, received)
 
     let private tlsOptions url ca client =
         WebSocket.connect url
@@ -183,6 +217,58 @@ module WebSocketTests =
             Assert.Equal(Exit.Success (Some(WebSocketMessage.Text "hello")), session.Receive().RunSynchronously(()))
         finally server.DisposeAsync().AsTask().GetAwaiter().GetResult()
     }
+
+    [<Fact>]
+    let ``trusted certificate for another host is rejected`` () = task {
+        use ca = TlsServer.makeCa ()
+        use cert = TlsServer.issue ca "CN=other.example" true
+        let! port, server = TlsServer.start cert None
+        try
+            match (WebSocket.openSession (tlsOptions $"wss://localhost:{port}/ws" ca None)).RunSynchronously(tlsEnv ()) with
+            | Exit.Failure(Cause.Fail(WebSocketError.ConnectFailed _)) -> ()
+            | other -> failwithf "expected hostname rejection: %A" other
+        finally server.DisposeAsync().AsTask().GetAwaiter().GetResult()
+    }
+
+    [<Fact>]
+    let ``foreign cancellation in connect hook is a defect`` () =
+        let options = WebSocket.connect "ws://localhost:12345/" |> WebSocket.connectWith (fun _ -> Flow.die (OperationCanceledException "foreign"))
+        match (WebSocket.openSession options).RunSynchronously(tlsEnv ()) with
+        | Exit.Failure(Cause.Die (:? OperationCanceledException)) -> ()
+        | other -> failwithf "expected defect: %A" other
+
+    [<Fact>]
+    let ``oversized message aborts session`` () =
+        use server = new Server(false)
+        let options = WebSocket.connect server.Url |> WebSocket.maxMessageBytes 2
+        use session =
+            match (WebSocket.openSession options).RunSynchronously(tlsEnv ()) with
+            | Exit.Success value -> value
+            | other -> failwithf "connect: %A" other
+        Assert.Equal(Exit.Success (), (session |> WebSocket.sendText "oversized").RunSynchronously(()))
+        match session.Receive().RunSynchronously(()) with
+        | Exit.Failure(Cause.Fail(WebSocketError.ProtocolError _)) -> ()
+        | other -> failwithf "expected protocol error: %A" other
+        match session.Receive().RunSynchronously(()) with
+        | Exit.Success None | Exit.Failure _ -> ()
+        | other -> failwithf "expected closed session: %A" other
+
+    [<Fact>]
+    let ``parallel sends arrive intact`` () =
+        use server = new Server(false)
+        use session = connect server.Url
+        let payloads = [ 1 .. 50 ] |> List.map (fun n -> String.replicate 1000 (string (n % 10)))
+        let sends = payloads |> List.map (fun text -> Task.Run(fun () -> (session |> WebSocket.sendText text).RunSynchronously(())))
+        let sendTask = Task.WhenAll sends
+        let received = [ for _ in payloads ->
+                            match session.Receive().RunSynchronously(()) with
+                            | Exit.Success(Some(WebSocketMessage.Text text)) -> text
+                            | other -> failwithf "receive: %A" other ]
+        for result in sendTask.Result do
+            match result with
+            | Exit.Success () -> ()
+            | other -> failwithf "send: %A" other
+        Assert.Equal<string list>(List.sort payloads, List.sort received)
 
     [<Fact>]
     let ``untrusted local TLS server is rejected`` () = task {
