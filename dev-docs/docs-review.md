@@ -2,6 +2,9 @@
 
 ## Assumptions
 
+- `docs/12-platforms-and-hosting/02-node.md:25` — The first Node snippet assumes `AppError`, `program`, and `Live.appLayer` exist without defining or linking their shapes. Label it schematic and link to a complete root-application example.
+- `docs/12-platforms-and-hosting/07-running-as-a-service.md:30` — The sample records progress using a live monotonic clock but does not show how the job loop shares `recordCompletion` with the watchdog; show the composition point so the health signal represents real work.
+
 - `docs/11-observability/01-telemetry/01-javascript.md:50` — The first tracing snippet assumes `checkout`, `order`, `user`, `AppAttributes`, `tenantId`, and `CheckoutError.describe` already exist; none is defined on this page. Label it schematic or provide a minimal runnable workflow and key.
 
 - `docs/10-streams/02-constructing.md:166` — The crawler uses `Map.find` for every discovered URL and assumes all links exist in the in-memory site; a real crawl needs a typed fetch error or an explicit missing-page policy.
@@ -25,6 +28,11 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/12-platforms-and-hosting/01-application-lifecycle.md:74` — The text says `appLayer` scopes acquired resources, but the shown layer only constructs a record and acquires nothing. Distinguish this example from a resource-acquiring layer.
+- `docs/12-platforms-and-hosting/04-browser.md:32` — The unmount snippet begins with `let!` and ends with `}` without an opening `async {`; it cannot be pasted or understood as a complete cleanup callback.
+- `docs/12-platforms-and-hosting/06-dotnet.md:105` — The Generic Host snippet provisions `Live.appLayer` yet the environment passed to `Hosting.addApp` contains only `Orders`; it never shows how that layer's input and the constructed `AppEnv` agree. Show a coherent end-to-end composition.
+- `docs/12-platforms-and-hosting/07-running-as-a-service.md:7` — `UseSystemd()` and the `Type=notify` unit imply READY notification, but the page never says which component sends READY or how `SystemdNotify.live` is passed into the host. Explain this wiring before recommending the unit.
 
 - `docs/11-observability/_index.md:291` — `FiberDumpTelemetry.record registry` conflicts with the two-argument `FiberDumpTelemetry.record Clock.live registry` shown in the telemetry guide at line 385. Use one consistent call shape.
 - `docs/11-observability/_index.md:260` — The literal fiber-dump output is separate from the checked example and uses an unrelated three-fiber tree; readers may mistake it for the output of `withPoller`. Mark it as a hypothetical example or generate a verified transcript.
@@ -75,6 +83,8 @@
 
 ## Too long
 
+- `docs/12-platforms-and-hosting/03-runtime-operations.md:10` — The 70-line simulated checkout and repeated runs dominate a page meant to select runtime operations; use a smaller shared workflow and link to dedicated retry/cancellation guidance for details.
+
 - `docs/11-observability/_index.md:37` — The overview repeats the telemetry guide's tracing setup, attributes, fiber metrics, dumps, Aspire walkthrough, and JavaScript setup across nearly 400 lines. Keep the signal map and cross-package decisions here; link to the platform guides for setup and recipes.
 
 - `docs/10-streams/02-constructing.md:105` — The two crawler walkthroughs occupy over half the construction guide and introduce HTTP-shaped domain modeling and frontier bookkeeping before the basic source choices are complete; move the crawler to a dedicated recipe and retain a short `unfoldFlow` example here.
@@ -101,6 +111,8 @@
 
 ## Reference material in guides
 
+- `docs/12-platforms-and-hosting/09-elmish.md:7` — The page lists command, subscription, inbox, shutdown, and test API contracts without a worked Elmish program; move the exhaustive operation inventory to reference and keep a first-use lifecycle example here.
+
 - `docs/11-observability/_index.md:204` — The complete fiber instrument table and registry method inventory at lines 273–288 are reference contracts duplicated alongside the telemetry guide; retain a short operational interpretation and link to the telemetry reference for the inventories.
 
 - `docs/10-streams/06-consuming.md:63` — The six-step lifecycle and per-operator scope ownership rules read as a scope contract; keep the practical cleanup guarantee here and link to the scopes guide for the detailed ordering.
@@ -125,6 +137,10 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/12-platforms-and-hosting/_index.md:10` — Navigation omits runtime operations, running as a service, and Elmish even though all three are pages in this section; link them for discoverability.
+- `docs/12-platforms-and-hosting/05-platform-services.md:37` — `BaseRuntime.live` and `BaseRuntime.fromServiceProvider` are recommended without a checked example showing their layer input, provisioning, or typed startup failure; add one composition example or a direct link to one.
+- `docs/12-platforms-and-hosting/09-elmish.md:3` — No install instruction or minimal runtime construction and dispatch-thread `Post` example accompanies the Elmish APIs; show enough setup to run a first command.
 
 - `docs/11-observability/01-telemetry/01-javascript.md:19` — “Install the OpenTelemetry SDK, exporter, and context manager” gives no package names or minimal Node/browser bootstrap; the first runnable step depends on host setup that the page never demonstrates. Give one concrete bootstrap or a direct setup link.
 - `docs/11-observability/01-telemetry/_index.md:339` — Queue metrics are described but have no checked measurement example showing observed values or subscription cleanup; add a minimal collector example or link to one.
@@ -164,6 +180,10 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/12-platforms-and-hosting/01-application-lifecycle.md:13` — Hide or narrow the docs-test fixture: Browser, Node, telemetry, and filesystem imports obscure the packages needed for `App`; the same broad fixture appears in runtime operations and .NET hosting.
+- `docs/12-platforms-and-hosting/02-node.md:45` — Fable-only examples are unchecked and depend on undefined application values; provide a small Fable-verified sample project for Node and browser hosting so assistants can copy working entry points.
+- `docs/12-platforms-and-hosting/07-running-as-a-service.md:1` — Add front matter and a concrete Generic Host registration example before the watchdog details; the current page starts with deployment configuration rather than a copyable service setup.
 
 - `docs/11-observability/01-telemetry/_index.md:43` — Hide or trim the visible `prepare` fixture: optional Browser, Node, filesystem, and JavaScript telemetry imports appear before the .NET-only tracing setup and obscure required packages. The overview repeats the same broad fixture at line 51.
 - `docs/11-observability/01-telemetry/_index.md:67` — The first host setup snippet uses an undefined `builder` and unchecked extension methods; show the host setup context and required `open` statements or label it as a fragment of an ASP.NET Core app.
