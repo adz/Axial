@@ -120,15 +120,26 @@ firstOutputs 4 (Schedule.exponential (ms 1.0)) |> shouldEqual [ ms 1.0; ms 2.0; 
 
 If many clients retry at the same time, they can place another burst of load on the service. Jitter spreads those retries across a wider period.
 
-`Schedule.jitteredWith` multiplies each delay by a sampled factor from 0.5 to 1.5. You provide the sample function, which keeps randomness explicit and replaceable in tests.
+`Schedule.jitteredWith` multiplies each delay by a sampled factor from 0.5 to 1.5. You provide the sample function — a
+`unit -> float` — which keeps randomness explicit and replaceable in tests.
+
+That function is `IRandom.NextDouble` from `Axial.PlatformService`, so the schedule never constructs `System.Random()`
+itself. Take the `IRandom` from your environment and pass its `NextDouble` method:
 
 ```fsharp
-let policy : Schedule<ClockEnvironment, string, _> =
+let policy (random: IRandom) : Schedule<ClockEnvironment, string, _> =
     Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
-    |> Schedule.jitteredWith (System.Random().NextDouble)
+    |> Schedule.jitteredWith random.NextDouble
 ```
 
-In application code, get the sample function from the `IRandom` service in `Axial.PlatformService`. In tests, replace it with a function that returns a fixed value.
+In application code, the `IRandom` comes from the [base runtime](/services/platform-services/random-and-guid.html) or
+a field of your own environment record. In tests, pass a deterministic `IRandom` such as
+`Random.fromFixed 0 0.25 0uy`, whose `NextDouble` always returns `0.25`, so every delay is multiplied by `0.75`:
+
+```fsharp
+let testPolicy : Schedule<ClockEnvironment, string, _> =
+    policy (Random.fromFixed 0 0.25 0uy)
+```
 
 ### Run at a fixed rate
 
@@ -242,14 +253,20 @@ runsUntilStopped (Schedule.exponential (ms 1.0) |> Schedule.whileOutput (fun del
 `Schedule.elapsed` recurs without waiting and emits the time since the first run, and `Schedule.map` transforms any
 schedule's output.
 
-### Restart the count after a healthy run
+### Restart the count after a long run
 
-`Schedule.resetAfter` treats a failure that follows a long, successful run as a new problem. When a run lasted at
-least the given time, the wrapped schedule starts counting from zero again, so `recurs` and `exponential` restart too:
+`Schedule.resetAfter` restarts the wrapped schedule's count when the run that just finished lasted at least the given
+time. The threshold measures that run's own duration, not a previous successful execution: with `Flow.supervise` it is
+how long the worker ran before it crashed. When the threshold is met, the wrapped schedule sees attempt 0 again, so
+`recurs` and `exponential` restart too:
 
 ```fsharp
-// Five restarts for a crash loop, but a crash after ten healthy minutes gets the full budget back
-let worker : Flow<ClockEnvironment, Never, unit> = Flow.ok ()
+// Five restarts for a crash loop, but a crash after ten minutes of good work gets the full budget back.
+let worker : Flow<ClockEnvironment, Never, unit> =
+    flow {
+        do! Flow.sleep (TimeSpan.FromMinutes 10.0)
+        return! Flow.die (InvalidOperationException "crash")
+    }
 
 let supervisedWorker =
     worker |> Flow.supervise (Schedule.recurs 5 |> Schedule.resetAfter (TimeSpan.FromMinutes 10.0))
@@ -352,7 +369,7 @@ fixed-rate timing, or elapsed-time limits.
 
 ## Repeat successful flows
 
-Use `Flow.repeat` to run a successful flow again.
+Use `Flow.repeat` to run a successful flow again. The schedule's input is the successful value.
 
 ```fsharp
 let pollStatus : Flow<ClockEnvironment, Never, string> =
@@ -360,13 +377,21 @@ let pollStatus : Flow<ClockEnvironment, Never, string> =
         return "Still working"
     }
 
-// Poll every 5 seconds until the flow fails or is interrupted.
+// pollStatus has error type Never, so it cannot fail with a typed error. With a schedule that never stops,
+// this repeats forever; the caller must interrupt it or let an outer scope end it.
 let recurringPoll =
     pollStatus
     |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 5.0))
+
+// A bounded variant: the initial run plus up to three repeats.
+let pollFourTimes =
+    pollStatus
+    |> Flow.repeat (Schedule.spaced (TimeSpan.FromSeconds 5.0) |> Schedule.recursAtMost 3)
 ```
 
-`Flow.repeat` consults the schedule only after a successful run. A typed failure, defect, or interruption stops the repetition immediately.
+`Flow.repeat` consults the schedule only after a successful run. A typed failure, defect, or interruption stops the
+repetition immediately; a schedule that never stops keeps repeating a successful flow until one of those happens or the
+caller interrupts it.
 
 ## Drive a stream from a schedule
 
