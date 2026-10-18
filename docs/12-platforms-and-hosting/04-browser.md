@@ -27,12 +27,14 @@ let running =
     BrowserApp.mount browserEnvironment application
 ```
 
-When the owner unmounts, request stop and allow cleanup to finish:
+When the owner unmounts, request stop and await cleanup so finalizers finish before the UI releases the mount:
 
 ```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
-    let! _ = running.Stop()
-    return ()
-}
+let unmount () =
+    async {
+        let! _ = running.Stop()
+        return ()
+    }
 ```
 
 React hooks, Elmish program ownership, custom elements, and other UI frameworks can call the same pair. The hosting

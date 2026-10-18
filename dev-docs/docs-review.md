@@ -12,8 +12,8 @@
 
 - `docs/13-testing/02-runnable-examples.md:15` — Run commands assume the reader is at the repository root with the example projects checked out; say so, since these paths do not work from a NuGet-only application.
 
-- `docs/12-platforms-and-hosting/02-node.md:25` — The first Node snippet assumes `AppError`, `program`, and `Live.appLayer` exist without defining or linking their shapes. Label it schematic and link to a complete root-application example.
-- `docs/12-platforms-and-hosting/07-running-as-a-service.md:30` — The sample records progress using a live monotonic clock but does not show how the job loop shares `recordCompletion` with the watchdog; show the composition point so the health signal represents real work.
+- [fixed] `docs/12-platforms-and-hosting/02-node.md:25` — The first Node snippet assumes `AppError`, `program`, and `Live.appLayer` exist without defining or linking their shapes. Label it schematic and link to a complete root-application example.
+- [fixed] `docs/12-platforms-and-hosting/07-running-as-a-service.md:30` — The sample records progress using a live monotonic clock but does not show how the job loop shares `recordCompletion` with the watchdog; show the composition point so the health signal represents real work.
 
 - [fixed] `docs/11-observability/01-telemetry/01-javascript.md:50` — The first tracing snippet assumes `checkout`, `order`, `user`, `AppAttributes`, `tenantId`, and `CheckoutError.describe` already exist; none is defined on this page. Label it schematic or provide a minimal runnable workflow and key.
 
@@ -59,10 +59,10 @@
 - `docs/13-testing/02-runnable-examples.md:76` — Playground comments claim `Ok` results, while the immediately following observed output shows `Success`; align the comments with the actual `Exit` formatting.
 - `docs/13-testing/02-runnable-examples.md:116` — Running the entire `Axial.Examples` project produces policy and greeting output before supervision output, although the section title and source link imply a standalone supervision example. Explain that the command runs multiple examples.
 
-- `docs/12-platforms-and-hosting/01-application-lifecycle.md:74` — The text says `appLayer` scopes acquired resources, but the shown layer only constructs a record and acquires nothing. Distinguish this example from a resource-acquiring layer.
-- `docs/12-platforms-and-hosting/04-browser.md:32` — The unmount snippet begins with `let!` and ends with `}` without an opening `async {`; it cannot be pasted or understood as a complete cleanup callback.
-- `docs/12-platforms-and-hosting/06-dotnet.md:105` — The Generic Host snippet provisions `Live.appLayer` yet the environment passed to `Hosting.addApp` contains only `Orders`; it never shows how that layer's input and the constructed `AppEnv` agree. Show a coherent end-to-end composition.
-- `docs/12-platforms-and-hosting/07-running-as-a-service.md:7` — `UseSystemd()` and the `Type=notify` unit imply READY notification, but the page never says which component sends READY or how `SystemdNotify.live` is passed into the host. Explain this wiring before recommending the unit.
+- [fixed] `docs/12-platforms-and-hosting/01-application-lifecycle.md:74` — The text says `appLayer` scopes acquired resources, but the shown layer only constructs a record and acquires nothing. Distinguish this example from a resource-acquiring layer.
+- [fixed] `docs/12-platforms-and-hosting/04-browser.md:32` — The unmount snippet begins with `let!` and ends with `}` without an opening `async {`; it cannot be pasted or understood as a complete cleanup callback.
+- [fixed] `docs/12-platforms-and-hosting/06-dotnet.md:105` — The Generic Host snippet provisions `Live.appLayer` yet the environment passed to `Hosting.addApp` contains only `Orders`; it never shows how that layer's input and the constructed `AppEnv` agree. Show a coherent end-to-end composition.
+- [fixed] `docs/12-platforms-and-hosting/07-running-as-a-service.md:7` — `UseSystemd()` and the `Type=notify` unit imply READY notification, but the page never says which component sends READY or how `SystemdNotify.live` is passed into the host. Explain this wiring before recommending the unit.
 
 - [fixed] `docs/11-observability/_index.md:291` — `FiberDumpTelemetry.record registry` conflicts with the two-argument `FiberDumpTelemetry.record Clock.live registry` shown in the telemetry guide at line 385. Use one consistent call shape.
 - [fixed] `docs/11-observability/_index.md:260` — The literal fiber-dump output is separate from the checked example and uses an unrelated three-fiber tree; readers may mistake it for the output of `withPoller`. Mark it as a hypothetical example or generate a verified transcript.

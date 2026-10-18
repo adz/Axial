@@ -71,7 +71,10 @@ let root : Flow<StartupInputs, AppError, unit> =
     |> Layer.provide appLayer
 ```
 
-`root` takes startup inputs, returns typed application failures, and scopes resources acquired by `appLayer` to the root execution.
+`root` takes startup inputs and returns typed application failures. `Layer.provide` runs `appLayer` inside a fresh
+provisioning scope that finalizes any acquired resources when `root` completes; the `appLayer` shown here only
+projects a record and acquires nothing, so there is no resource to release. See [Layers](/layers/index.html) for a
+resource-acquiring layer.
 
 ## Run a Finite Application
 

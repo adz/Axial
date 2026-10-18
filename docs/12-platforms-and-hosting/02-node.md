@@ -19,7 +19,9 @@ also fails because the Node `process` object is required.
 
 ## Root Application
 
-The Node entry point handles process lifecycle; the application workflow remains platform-neutral:
+The Node entry point handles process lifecycle; the application workflow remains platform-neutral. The root-application
+shape below is schematic: `AppError`, `program`, and `appLayer` are not defined on this page. See
+[Application lifecycle](application-lifecycle.html) for a complete, checked root application that defines them.
 
 ```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 type StartupInputs =
@@ -32,7 +34,7 @@ let inputs =
 
 let application : Flow<StartupInputs, AppError, unit> =
     program
-    |> Layer.provide Live.appLayer
+    |> Layer.provide appLayer
 ```
 
 `NodeEnvironment.live` implements `IEnvironmentVariables` over `process.env`. `TryGet`, `Set`, and `GetAll` use the

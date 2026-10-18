@@ -4,7 +4,7 @@
 
 ## systemd
 
-Call `UseSystemd()` on the Generic Host builder. Construct the notifier at the process edge with `SystemdNotify.live` and `NOTIFY_SOCKET`. `Hosting.watchdog` detects a wedged Axial scheduler or starved thread pool; its sleeping heartbeat and always-true health check do **not** establish application progress. Supply `Hosting.watchdogWith variables processId notifier isHealthy` to tie pings to work your application owns. Record the monotonic time after each successful job and reject stale progress:
+Call `UseSystemd()` on the Generic Host builder. The extension comes from the `Microsoft.Extensions.Hosting.Systemd` package and installs a `SystemdLifetime` that sends the `READY=1` and `STOPPING=1` notifications the `Type=notify` unit waits for. The watchdog is a separate transport: construct it at the process edge with `SystemdNotify.live` and the `NOTIFY_SOCKET` value, and pass it to `Hosting.watchdog` or `Hosting.watchdogWith` inside the application Flow — never to the host builder. `Hosting.watchdog` detects a wedged Axial scheduler or starved thread pool; its sleeping heartbeat and always-true health check do **not** establish application progress. Supply `Hosting.watchdogWith variables processId notifier isHealthy` to tie pings to work your application owns. Record the monotonic time after each successful job and reject stale progress:
 
 ```fsharp prepare
 open System
@@ -35,6 +35,34 @@ let progressWatchdog<'env when 'env :> IHasClock and 'env :> IHasLog>
         Flow.delay (fun () ->
             Flow.succeed (clock.Elapsed().Ticks - Interlocked.Read(&lastCompletedTicks) < TimeSpan.FromSeconds(2.).Ticks))
     recordCompletion, Hosting.watchdogWith variables processId notifier isHealthy
+```
+
+`recordCompletion` is shared between the job loop and the watchdog: the loop calls it after each completed unit of
+work, and `isHealthy` reads the same cell to decide whether progress is recent. Compose the loop in parallel with the
+watchdog and register the result with `Hosting.addApp`:
+
+```fsharp
+open System
+open System.Threading
+open Axial
+open Axial.Hosting
+open Axial.PlatformService
+
+// The job loop owns the work and records progress after each completed unit.
+let jobLoop (recordCompletion: unit -> unit) : Flow<'env, Never, unit> =
+    let rec loop () = flow {
+        do! Flow.succeed () // one unit of work
+        recordCompletion ()
+        return! loop ()
+    }
+    loop ()
+
+let application<'env when 'env :> IHasClock and 'env :> IHasLog>
+    (clock: IClock) (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier)
+    : Flow<'env, Never, unit> =
+    let recordCompletion, watchdog = progressWatchdog<'env> clock variables processId notifier
+    Flow.zipPar (jobLoop recordCompletion) watchdog
+    |> Flow.map ignore
 ```
 
 ```fsharp run
@@ -77,7 +105,7 @@ NotifyAccess=main
 WantedBy=default.target
 ```
 
-`Type=notify` waits for the host's READY notification. `NotifyAccess=main` permits notifications from the main process; `Restart=always` recovers from a crash or watchdog timeout. Choose `WatchdogSec` with enough margin for the heartbeat and health check.
+`Type=notify` waits for the READY notification that `SystemdLifetime` (installed by `UseSystemd()`) sends when the host starts. `NotifyAccess=main` permits notifications from the main process; `Restart=always` recovers from a crash or watchdog timeout. Choose `WatchdogSec` with enough margin for the heartbeat and health check.
 
 On Linux with a user systemd session, run `scripts/check-systemd-watchdog.sh` from the repository. It builds a transient probe, verifies steady operation, SIGKILL recovery and watchdog timeout, then stops and resets its units. This is a manual check, not part of CI.
 

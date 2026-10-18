@@ -94,24 +94,49 @@ from it:
 ```fsharp no-check reason="Needs the Microsoft.Extensions.Hosting package, which the documentation build does not reference"
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Logging
 open Axial
+open Axial.Layers
 open Axial.Hosting
+
+type AppError =
+    | OrderError of string
+    static member describe = function OrderError message -> message
+
+type IOrderRepository =
+    abstract ProcessPending: unit -> Result<unit, AppError>
+
+type SqlOrderRepository() =
+    interface IOrderRepository with
+        member _.ProcessPending() = Ok()
+
+type AppEnv =
+    { Orders: IOrderRepository
+      Log: ILog }
+
+let program : Flow<AppEnv, AppError, unit> =
+    flow {
+        let! orders = Flow.envWith _.Orders
+        return! orders.ProcessPending()
+    }
 
 let builder = Host.CreateApplicationBuilder(args)
 
 builder.Services.AddSingleton<IOrderRepository, SqlOrderRepository>()
 |> ignore
 
-let application : Flow<AppEnv, AppError, unit> =
+// The layer turns the container into the explicit AppEnv the domain flow needs.
+let appLayer : Layer<IServiceProvider, AppError, AppEnv> =
+    Layer.envWith (fun services ->
+        { Orders = services.GetRequiredService<IOrderRepository>()
+          Log = services.GetRequiredService<ILoggerFactory>() |> MicrosoftLogging.fromFactory "App" })
+
+let application : Flow<IServiceProvider, AppError, unit> =
     program
-    |> Layer.provide Live.appLayer
+    |> Layer.provide appLayer
 
 builder.Services
-|> Hosting.addApp
-    (fun services ->
-        { Orders = services.GetRequiredService<IOrderRepository>() })
-    AppError.describe
-    application
+|> Hosting.addApp id AppError.describe application
 |> ignore
 
 builder.Build().Run()
