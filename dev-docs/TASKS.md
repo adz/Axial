@@ -14,14 +14,6 @@ lists the queue. Work on main.
   - Recover the rest without weakening the semantics (uninterruptible, acquisition env and runtime, own scope):
     candidates are a scope created only when the release registers something, avoiding the ambient runtime switch
     when the release completes synchronously without reading it, and sharing one release runtime per scope close.
-- [ ] T2: Flow-shaped process I/O and web handlers
-  - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`.
-  - `Input.readOnce`, `Input.produce`, `Output.callback`, and the `Sink` target (`InputSource`/`OutputTarget` in
-    `src/Axial.Process/ProcessTypes.fs`, helpers in `ProcessDsl.fs`) take `Async` callbacks with no environment. Add a
-    `FlowStream<_, _, byte[]>` input and a flow output callback (or output into a `Queue`).
-  - Open question, ask before implementing: how a process spec carries `'env`.
-  - `AspNetCore.handleParsed` (`'model -> Task<IResult>`) and `GenHttp.handleParsed` (`'model -> ValueTask<IResponse>`)
-    are unused by docs and examples: take a flow or remove them.
 - [ ] T4: `FlowStream.fromCallback` for .NET callbacks
   - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`. Needs T1 (the subscription's release is a flow).
   - Bridge .NET callbacks (events, `IObservable`, `ActivityListener`, runtime hooks) into a stream fed through a
