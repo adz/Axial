@@ -21,7 +21,7 @@ Choose a function by the outcome it produces:
 | **Parallel Failures** | Parallel branches both fail | `Cause.Both (leftCause, rightCause)` |
 
 ### Bridging Exceptions
-Use `Flow.attemptAsync`, `Flow.attemptTask`, or `Flow.attemptValueTask` when exceptions from an interop boundary are expected and should enter the typed error channel. These constructors return `Cause.Fail exn` for non-cancellation exceptions and `Cause.Interrupt` for cancellation.
+Use `Flow.attemptAsync`, `Flow.attemptTask`, or `Flow.attemptValueTask` when exceptions from an interop boundary are expected and should enter the typed error channel. These constructors return `Cause.Fail exn` for thrown exceptions — including an `OperationCanceledException` the operation raised for its own reasons. They return `Cause.Interrupt` only when the runtime's own cancellation token requested the cancellation.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -50,6 +50,10 @@ let shouldEqual expected actual =
 let loadConfig : ExnFlow<string> =
     Flow.attemptTask (fun token -> File.ReadAllTextAsync("appsettings.json", token))
 ```
+
+This example calls `File.ReadAllTextAsync` directly only to show `attemptTask` capturing an interop exception. For
+application code, prefer [`FileSystem.readAllText`](/services/filesystem.html), which makes file access an explicit
+dependency and returns `Flow<'env, FileSystemError, string>` instead of throwing.
 
 Use `Flow.catch` to convert simple defects into domain errors after a flow has already produced `Cause.Die`. Existing typed failures and interruptions are preserved. Compound causes such as `Cause.Then` and `Cause.Both` are left unchanged.
 

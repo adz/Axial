@@ -124,13 +124,14 @@ register "  " |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail NameRequire
 ## Compose policies
 
 Use `Policy.compose first second` to run two policies from left to right. The second policy receives the successful
-output of the first. The first error stops the composition.
+output of the first. The first error stops the composition. To validate a trimmed name, put the normalizer first:
+`normalizeName` trims the input and `requireName` then checks the trimmed value.
 
 ```fsharp
 let normalizeName : Policy<unit, RegistrationError, string, string> =
     Policy.lift (fun (name: string) -> Ok(name.Trim())) id
 
-let normalizedName = Policy.compose requireName normalizeName
+let normalizedName = Policy.compose normalizeName requireName
 ```
 
 ```fsharp run
