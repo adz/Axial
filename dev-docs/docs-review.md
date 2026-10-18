@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/13-testing/02-runnable-examples.md:15` — Run commands assume the reader is at the repository root with the example projects checked out; say so, since these paths do not work from a NuGet-only application.
+
 - `docs/12-platforms-and-hosting/02-node.md:25` — The first Node snippet assumes `AppError`, `program`, and `Live.appLayer` exist without defining or linking their shapes. Label it schematic and link to a complete root-application example.
 - `docs/12-platforms-and-hosting/07-running-as-a-service.md:30` — The sample records progress using a live monotonic clock but does not show how the job loop shares `recordCompletion` with the watchdog; show the composition point so the health signal represents real work.
 
@@ -28,6 +30,9 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/13-testing/02-runnable-examples.md:76` — Playground comments claim `Ok` results, while the immediately following observed output shows `Success`; align the comments with the actual `Exit` formatting.
+- `docs/13-testing/02-runnable-examples.md:116` — Running the entire `Axial.Examples` project produces policy and greeting output before supervision output, although the section title and source link imply a standalone supervision example. Explain that the command runs multiple examples.
 
 - `docs/12-platforms-and-hosting/01-application-lifecycle.md:74` — The text says `appLayer` scopes acquired resources, but the shown layer only constructs a record and acquires nothing. Distinguish this example from a resource-acquiring layer.
 - `docs/12-platforms-and-hosting/04-browser.md:32` — The unmount snippet begins with `let!` and ends with `}` without an opening `async {`; it cannot be pasted or understood as a complete cleanup callback.
@@ -82,6 +87,8 @@
 - `docs/01-getting-started/01-why-flow.md:203` — “The same environment gives the same result” overpromises determinism: live service implementations may read external state or have mutable state.
 
 ## Too long
+
+- `docs/13-testing/02-runnable-examples.md:125` — The full unrelated greeting and policy output precedes the supervision results; show only the relevant supervised/fiber lines or split the command/output by example.
 
 - `docs/12-platforms-and-hosting/03-runtime-operations.md:10` — The 70-line simulated checkout and repeated runs dominate a page meant to select runtime operations; use a smaller shared workflow and link to dedicated retry/cancellation guidance for details.
 
@@ -138,6 +145,9 @@
 
 ## Missing
 
+- `docs/13-testing/_index.md:7` — The testing landing page says to supply fakes or replace layers but offers no minimal test with a fake environment, `Flow.run`, and an assertion; link directly to or include a first test independent of HTTP.
+- `docs/13-testing/02-runnable-examples.md:8` — The page says generation builds and runs examples but does not explain whether the literal observed-output blocks are verified against those runs or maintained manually; distinguish executable snippets from checked transcripts.
+
 - `docs/12-platforms-and-hosting/_index.md:10` — Navigation omits runtime operations, running as a service, and Elmish even though all three are pages in this section; link them for discoverability.
 - `docs/12-platforms-and-hosting/05-platform-services.md:37` — `BaseRuntime.live` and `BaseRuntime.fromServiceProvider` are recommended without a checked example showing their layer input, provisioning, or typed startup failure; add one composition example or a direct link to one.
 - `docs/12-platforms-and-hosting/09-elmish.md:3` — No install instruction or minimal runtime construction and dispatch-thread `Post` example accompanies the Elmish APIs; show enough setup to run a first command.
@@ -180,6 +190,8 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/13-testing/02-runnable-examples.md:61` — Replace the repeated `|> fun workflow -> workflow |> Flow.run env` pipeline with the direct `greetingFlow |> Flow.run env` form; it is easier to copy and does not imply an extra adapter is needed.
 
 - `docs/12-platforms-and-hosting/01-application-lifecycle.md:13` — Hide or narrow the docs-test fixture: Browser, Node, telemetry, and filesystem imports obscure the packages needed for `App`; the same broad fixture appears in runtime operations and .NET hosting.
 - `docs/12-platforms-and-hosting/02-node.md:45` — Fable-only examples are unchecked and depend on undefined application values; provide a small Fable-verified sample project for Node and browser hosting so assistants can copy working entry points.
