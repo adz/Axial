@@ -17,7 +17,7 @@ Use this order:
 
 ## Default Shape
 
-Plain F# records are the default recommendation because they are legible, easy to fake in tests, and easy to refactor.
+Plain F# records make dependencies visible and let tests supply fakes.
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -164,7 +164,7 @@ startup. Plain `let!` is sequential and dependent; sibling `and!` bindings are i
 
 ## Tutorials
 
-For concrete starting points, use [App Record](tutorials/app-record.html) and [Layers](/layers/tutorial.html).
+Start with [App Record](tutorials/app-record.html) and [Layers](/layers/tutorial.html).
 
 ## More Detail
 

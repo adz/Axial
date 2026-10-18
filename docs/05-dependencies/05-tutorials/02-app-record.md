@@ -7,13 +7,13 @@ description: Move from explicit dependency parameters to a reusable environment 
 
 This tutorial starts where [Explicit Dependencies First](explicit-dependencies.html) leaves off.
 
-The problem is not that explicit parameters are wrong. The problem is repetition:
+Explicit parameters become repetitive when:
 
 - every helper has to thread the same dependencies
 - adding one more dependency means touching many signatures
 - the execution boundary grows as the feature adds dependencies
 
-An app record solves that by bundling dependencies once at the boundary while keeping the workflow code explicit.
+An app record bundles dependencies at the boundary while workflows name the fields they read.
 
 ## 1. Reuse The Same Interfaces
 
@@ -214,7 +214,7 @@ Only `Flow.run env` names the record. Every helper reads the fields it needs wit
 
 ## When To Stop Here
 
-An app record is enough for a lot of applications.
+Keep the app record if it meets the application's needs.
 
 Move beyond it when:
 

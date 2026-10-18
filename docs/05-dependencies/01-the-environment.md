@@ -67,10 +67,9 @@ The other environment functions:
 val it: Exit<int,Never> = Success 3
 ```
 
-## What you will actually use
+## Application records
 
-An `int` proves the point but is not the shape you want. In practice the environment is **a record you define**,
-holding one field per dependency:
+An application environment is usually a record with one field per dependency:
 
 ```fsharp
 type User = { Id: int; Name: string }
@@ -95,7 +94,7 @@ let loadUser (id: int) : Flow<AppEnv, string, User> =
     }
 ```
 
-You construct that record in exactly two places:
+Construct that record at these boundaries:
 
 - **At boot**, with the live implementations, for example `{ Users = SqlUserStore(connection); Audit = FileAuditLog(path) }`.
 - **In tests**, with fakes: the same record type with different values.
@@ -130,9 +129,7 @@ Larger systems often define one record per architectural boundary rather than a 
 `Flow.localEnv` to move between them. A billing subsystem that cannot see the mailer is a record without a mailer
 field, and that is enforced by the compiler rather than by convention.
 
-## Where the rest of the section goes
-
-The rest of this section covers the cases a plain record does not:
+## Related topics
 
 - [Choosing an approach](choosing-an-approach.html): when arguments beat a record, and when a record stops being
   enough.

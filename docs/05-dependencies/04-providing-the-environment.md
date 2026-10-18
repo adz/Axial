@@ -5,14 +5,11 @@ description: Building the environment value at a host boundary, and the three wa
 
 # Providing the Environment
 
-Everything so far has been about *reading* the environment. This page is about producing the value in the first
-place, once at startup and again in each test.
-
-There are three ways. Prefer them in this order.
+Build the environment at startup and in each test. Prefer these approaches in order.
 
 ## 1. Construct it
 
-Build the record and hand it over. Nothing else is involved:
+Build the record and pass it to `Flow.run`:
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -63,8 +60,7 @@ let fixedEnv =
 summary |> Flow.run fixedEnv |> shouldEqual (Exit.Success "3 users on 2026-01-01")
 ```
 
-Most applications need nothing more. The wiring is a value literal rather than a resolution process, so a reader can
-see where every service comes from.
+The record literal shows where each service comes from.
 
 For the operational services, `Axial.PlatformService` ships a ready-made bundle so you do not have to name all five:
 

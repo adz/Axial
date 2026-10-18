@@ -105,7 +105,7 @@ let placeOrder
     }
 ```
 
-Nothing is hidden here:
+This approach keeps dependencies explicit:
 
 - pure validation stays in `Result`
 - each dependency is passed explicitly
@@ -151,7 +151,7 @@ type RecordingEmailSender(sent: ResizeArray<string>) =
             }
 ```
 
-These test doubles are boring on purpose. If this shape is awkward to test, the production dependency boundary is not sharp enough yet.
+If these doubles are awkward to use, reconsider the production dependency boundary.
 
 ## 5. Run The Flow
 
@@ -196,9 +196,7 @@ Exit.Failure(Cause.Fail(OrderRejected "duplicate")) |> describe |> shouldEqual "
 
 ## 6. Why This Stops Scaling
 
-Passing two dependencies explicitly is fine. Passing five through every helper is not.
-
-That is the point where you move to an environment record:
+When several helpers pass the same dependencies through their parameters, use an environment record:
 
 - the workflow code still depends on the same interfaces
 - the execution boundary gets cleaner

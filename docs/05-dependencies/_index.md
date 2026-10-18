@@ -8,8 +8,7 @@ description: Declare what a workflow needs, supply it at the edge, and manage sc
 Pass dependencies as ordinary function arguments until several workflows need the same ones and threading them
 through unrelated callers becomes noise. Then use an environment.
 
-**Then pass Flow a record.** A workflow states what it needs in its environment channel; you build that record and
-hand it over when the workflow runs:
+A workflow states what it needs in its environment channel. Build a record and pass it when the workflow runs:
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -57,8 +56,7 @@ let users =
 loadUser 1 |> Flow.run { Users = users } |> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
 ```
 
-Most applications need nothing more. There is no container, registration, or resolution step: a test supplies a
-different record, with fakes in place of the live services.
+There is no container or registration step. Tests supply a record with fakes in place of live services.
 
 Two further mechanisms build on it. **Contracts** let a *package* ask for a service without
 knowing your record type; that is how `Console.writeLine` and the rest of the

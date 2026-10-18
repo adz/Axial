@@ -9,8 +9,7 @@ A record works because *you* own both sides: the workflow names `AppEnv`, and yo
 author cannot do that. `Axial.Console` is compiled long before your `AppEnv` exists, so `Console.writeLine` cannot
 mention it.
 
-A contract is how the package asks anyway. It is an ordinary interface named `IHasFoo`, with a single
-member `Foo`:
+A package declares an ordinary interface named `IHasFoo` with a single member `Foo`:
 
 The examples on this page use these application types:
 
@@ -73,7 +72,7 @@ Read `Flow<#IHasOrders, …>` as "any environment that can give me an `IOrderRep
 
 ## Supplying one
 
-Your record implements the contracts it satisfies. One line each, and the fields keep whatever names you gave them:
+Your record implements the contracts it satisfies; its fields can retain their existing names:
 
 ```fsharp
 type IHasEmail =
@@ -150,8 +149,7 @@ signature, because each occurrence of `#T` is a separate type variable.
 
 ## When to declare one
 
-For application code, don't. A record is simpler, needs no interface, and is what
-[the environment](the-environment.html) documents.
+For application code, use the record described in [the environment](the-environment.html). It needs no interface.
 
 Declare a contract when you are **publishing a helper whose callers you will never see**, such as a shared library or a
 package like `Axial.FileSystem`. A record cannot cover that case, because the helper cannot know the caller's record
