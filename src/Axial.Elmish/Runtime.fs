@@ -1,4 +1,3 @@
-// axial-allow-effect-file: blocking
 namespace Axial.Elmish
 
 open System
@@ -34,7 +33,7 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
 
     let rec pump () : Flow<'env, Never, unit> =
         flow {
-            do! Flow.fromTask (fun token -> signal.WaitAsync(token).ContinueWith(Func<Task, unit>(fun completed -> completed.GetAwaiter().GetResult())))
+            do! Flow.fromTask (fun token -> task { do! signal.WaitAsync(token) })
             let mutable job = Unchecked.defaultof<Flow<'env, Never, unit>>
             if queue.TryDequeue(&job) then
                 let! _ = Flow.fork job

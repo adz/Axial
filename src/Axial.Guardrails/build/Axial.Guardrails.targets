@@ -92,10 +92,16 @@
     <WriteLinesToFile File="$(_AxialGuardrailsConfigFile)" Lines="@(_AxialGuardrailsConfigLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
+  <!-- The analyzer assemblies are inputs too: without them a project whose sources did not change keeps its stamp
+       when the rules change, so a Guardrails upgrade (or a rule edit in this repository) never re-analyzes it. -->
+  <ItemGroup>
+    <_AxialGuardrailsAnalyzerAssemblies Include="$(_AxialGuardrailsAnalyzersPath)\*.dll" />
+  </ItemGroup>
+
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and Exists('$(_AxialGuardrailsAnalyzersPath)')"
-          Inputs="@(_AxialGuardrailsSourceInputs);$(_AxialGuardrailsConfigFile)"
+          Inputs="@(_AxialGuardrailsSourceInputs);$(_AxialGuardrailsConfigFile);@(_AxialGuardrailsAnalyzerAssemblies)"
           Outputs="$(_AxialGuardrailsStampFile)">
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"

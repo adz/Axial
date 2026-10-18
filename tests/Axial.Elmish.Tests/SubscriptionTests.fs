@@ -46,8 +46,9 @@ module SubscriptionTests =
         Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 2), 5000))
         Assert.Equal<int>([| 1; 2 |], messages.ToArray())
         Assert.Equal(2, posts)
+        // Dispose only requests the interruption (it runs on the UI thread and must not block); the release follows.
         active.Dispose()
-        Assert.True(released.Task.IsCompleted)
+        Assert.True(released.Task.Wait(TimeSpan.FromSeconds 5.0))
 
     [<Fact>]
     let ``typed failure dispatches and defect reports without messages`` () =

@@ -67,6 +67,8 @@ Implement it; partial progress is better than none.
 
 1..n. Concrete steps naming files, signatures, and behaviour.
 Tests: one [<Fact>] per named behaviour.
+Never silence Guardrails with a file-level `axial-allow-effect-file` marker; mark a genuine boundary on its line with
+a reason, or change the code. (A worker's file-level markers once hid real blocking calls until CI caught them.)
 Docs and the release note; remove the task from TASKS.md when the last slice lands.
 `scripts/verify.sh <stages>`; report the summary lines.
 Squash: `git reset --soft <restore sha>` and commit "<message>". Do not push.

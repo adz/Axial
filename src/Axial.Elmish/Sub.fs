@@ -1,4 +1,3 @@
-// axial-allow-effect-file: blocking
 namespace Axial.Elmish
 
 open System
@@ -48,10 +47,16 @@ module Sub =
                 if not (runtime.Enqueue job) then
                     ready.TrySetResult(None) |> ignore
                     finished.TrySetResult() |> ignore
+                // Elmish disposes subscriptions on its dispatch (UI) thread, so Dispose must not block: it requests the
+                // interruption, applied once the fiber has started, and the stream's finalizers finish in the background.
                 { new IDisposable with
                     member _.Dispose() =
                         if Interlocked.Exchange(&stopped, 1) = 0 then
-                            match ready.Task.GetAwaiter().GetResult() with
-                            | Some fiberId -> runtime.Registry.Interrupt fiberId |> ignore
-                            | None -> ()
-                            finished.Task.GetAwaiter().GetResult() } ]
+                            ready.Task.ContinueWith(
+                                (fun (started: Task<_>) ->
+                                    match started.Result with // axial-allow-effect: blocking (continuation of a completed task)
+                                    | Some fiberId -> runtime.Registry.Interrupt fiberId |> ignore
+                                    | None -> ()),
+                                TaskContinuationOptions.ExecuteSynchronously
+                            )
+                            |> ignore } ]
