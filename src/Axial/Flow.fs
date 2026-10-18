@@ -13,7 +13,7 @@ type private BindAwaiter<'env, 'error, 'value, 'next>
         member _.Resume() =
             // The runner has already awaited this Task. AsTask consumed the source ValueTask exactly once;
             // reading the cached Task result here also supports executions backed by IValueTaskSource.
-            match source.Result with
+            match source.Result with  // axial-allow-effect: blocking (task already awaited)
             | Exit.Success value -> FlowStep.Next(binder value)
             | Exit.Failure cause -> FlowStep.Failed cause
 #endif
@@ -255,7 +255,7 @@ module Flow =
                     | Exit.Failure cause -> return raise (releaseFailure cause)
                 } :> Task
             if execution.IsCompletedSuccessfully then
-                let exit = execution.Result
+                let exit = execution.Result  // axial-allow-effect: blocking (completed fast path)
                 let closing = scope.Close CancellationToken.None
                 if closing.IsCompletedSuccessfully then
                     match exit with
@@ -2062,7 +2062,7 @@ module Flow =
             let execution = invoke flow environment cancellationToken
 
             if execution.IsCompletedSuccessfully then
-                match execution.Result with
+                match execution.Result with  // axial-allow-effect: blocking (completed fast path)
                 | Exit.Success value -> FlowStep.Next(binder value)
                 | Exit.Failure cause -> FlowStep.Failed cause
             else

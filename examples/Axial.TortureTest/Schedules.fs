@@ -78,7 +78,9 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             }
             |> Flow.repeat (Schedule.fixedRate (ms period) |> Schedule.intersect (Schedule.recurs 5))
 
-        let tolerance = period / 10.0
+        // Timers fire on a clock with about 1 ms resolution while `elapsed` is a high-resolution stopwatch, so a start
+        // can read up to ~1 ms early with no scheduling fault; a tenth of the period (0.8 ms) was tighter than that.
+        let tolerance = max (period / 10.0) 2.0
         let origin = (fst runs[0]).TotalMilliseconds
 
         let onGrid =

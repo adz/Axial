@@ -1,3 +1,4 @@
+// axial-allow-effect-file: blocking (runtime platform layer: reads results of tasks it has already checked are complete)
 /// The package's platform-variant surface. This file holds the FABLE_COMPILER directives for every genuinely
 /// dual-bodied Flow primitive: each half declares the same names (and, where the shape itself differs between
 /// platforms, the same type aliases), so the rest of the code is platform-directive-free. (Fable 5's project

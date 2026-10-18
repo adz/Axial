@@ -9,7 +9,7 @@ Run `scripts/verify.sh` (all stages) or name stages: `scripts/verify.sh build te
 
 | Stage | What it runs |
 |---|---|
-| `build` | `dotnet build Axial.slnx -c Release` |
+| `build` | `dotnet build Axial.slnx -c Release --no-incremental` (an up-to-date project skips the Guardrails analyzer) |
 | `test` | `dotnet test Axial.slnx -c Release --no-build` |
 | `fable` | `scripts/run-fable-tests.sh`, then the compiled suite again until it has run `FABLE_RUNS` times (default 3) |
 | `aot` | `scripts/run-aot-probe.sh` |

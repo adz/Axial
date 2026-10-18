@@ -281,7 +281,7 @@ module Deferred =
                 elif completed.IsFaulted then
                     dieNow (completed.Exception.GetBaseException()) deferred |> ignore
                 else
-                    succeedNow completed.Result deferred |> ignore)
+                    succeedNow completed.Result deferred |> ignore)  // axial-allow-effect: blocking (continuation of a completed task)
             |> ignore
 
             Execution.ofValue deferred)

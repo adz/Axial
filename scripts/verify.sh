@@ -34,7 +34,8 @@ record() {
 }
 
 run_build() {
-    timeout 1800 dotnet build Axial.slnx -c Release >"$out_dir/build.log" 2>&1
+    # --no-incremental: an up-to-date project skips the Guardrails analyzer, which let new AXG findings reach CI.
+    timeout 1800 dotnet build Axial.slnx -c Release --no-incremental >"$out_dir/build.log" 2>&1
     local code=$?
     local errors
     errors=$(grep -c " error " "$out_dir/build.log")
