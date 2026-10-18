@@ -51,7 +51,11 @@ module ParallelSettlementTests =
     [<Fact>]
     let ``zipPar interrupts a suspended sibling of a synchronous failure`` () =
         let siblingFinished = ref false
-        let sibling = later (Flow.delay (fun () -> siblingFinished.Value <- true; Flow.ok 2))
+        // Long enough that it can only finish if the failure does not interrupt it; 20 ms raced the interrupt under
+        // a loaded full-suite run.
+        let sibling =
+            Flow.sleep (TimeSpan.FromSeconds 10.0)
+            |> Flow.bind (fun () -> Flow.delay (fun () -> siblingFinished.Value <- true; Flow.ok 2))
 
         test <@ run (Flow.zipPar (Flow.fail "left") sibling) = Exit.Failure(Cause.Fail "left") @>
         test <@ not siblingFinished.Value @>
