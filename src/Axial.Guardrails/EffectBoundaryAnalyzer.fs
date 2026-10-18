@@ -74,7 +74,12 @@ let private completedReadRanges (ctx: CliContext) =
         match expr with
         | Lambda(parameter, body) -> parameter :: continuationParameters body
         | _ -> expr.ImmediateSubExpressions |> List.collect continuationParameters
+    // Expressions the compiler service built with error recovery (a project it could not fully resolve, as CI saw
+    // for executables) throw when their patterns are read. Skip them: an unreadable expression only loses its
+    // exemptions, so the finding stays, and the analyzer never crashes the build.
     let rec walk guarded continuation expr =
+        try walkChecked guarded continuation expr with _ -> []
+    and walkChecked guarded continuation expr =
         let here =
             match readReceiver expr with
             | Some value when List.exists ((=) value) (guarded @ continuation) -> [ expr.Range ]
@@ -94,9 +99,9 @@ let private completedReadRanges (ctx: CliContext) =
         match declaration with
         | FSharpImplementationFileDeclaration.Entity(_, members) -> members |> List.collect declarations
         | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
-        | FSharpImplementationFileDeclaration.InitAction body -> walk [] [] body
+        | FSharpImplementationFileDeclaration.InitAction body -> (try walk [] [] body with _ -> [])
     match (try ctx.TypedTree with _ -> None) with
-    | Some tree -> tree.Declarations |> List.collect declarations
+    | Some tree -> (try tree.Declarations |> List.collect declarations with _ -> [])
     | None -> []
 
 /// Every ambient-effect call site in the file for the enabled guardrails, regardless of suppression. Exposed so the

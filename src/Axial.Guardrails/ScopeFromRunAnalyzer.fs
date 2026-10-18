@@ -104,7 +104,7 @@ let rawRanges (ctx: CliContext) : range list =
         | _ -> []
     let typed =
         match (try ctx.TypedTree with _ -> None) with
-        | Some tree -> tree.Declarations |> List.collect typedDeclarations
+        | Some tree -> (try tree.Declarations |> List.collect typedDeclarations with _ -> [])
         | None -> []
     (expressions |> List.collect (find ctx)) @ typed
     |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
