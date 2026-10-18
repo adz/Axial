@@ -1,6 +1,6 @@
 ---
 title: "Tutorial: Creating Reusable Services"
-description: Define your own named service contracts and consume them through IHas and Service.get.
+description: Define a named service contract, its IHasX marker, and a type-directed ExchangeRates.service accessor that workflows consume.
 ---
 
 # Tutorial: Creating Reusable Services
@@ -81,8 +81,14 @@ a caller can react to. For typed failures, compare
 
 ```fsharp
 type ExchangeRateError =
-    | RateUnavailable of pair: string
+    | RateUnavailable of message: string
     | ProviderTimedOut
+
+module ExchangeRateError =
+    let fromException (error: exn) =
+        match error with
+        | :? TimeoutException -> ProviderTimedOut
+        | other -> RateUnavailable other.Message
 
 let priceInAudOrFail<'env when 'env :> IHasExchangeRates>
     (usdAmount: decimal)
@@ -91,12 +97,14 @@ let priceInAudOrFail<'env when 'env :> IHasExchangeRates>
         let! rates = ExchangeRates.service
         let! rate =
             Flow.attemptTask (fun _ -> rates.GetUsdToAud())
-            |> Flow.mapError (fun _ -> ProviderTimedOut)
+            |> Flow.mapError ExchangeRateError.fromException
         return usdAmount * rate
     }
 ```
 
-Now a caller can match `RateUnavailable` or `ProviderTimedOut` as ordinary values instead of catching an exception.
+`Flow.attemptTask` routes a thrown exception into the typed error channel as `exn`; `fromException` classifies it so
+a timeout becomes `ProviderTimedOut` and any other exception becomes `RateUnavailable` carrying its message. A
+caller can now match either case as an ordinary value instead of catching an exception.
 
 ## Provide an app environment
 
@@ -111,10 +119,12 @@ type AppEnv =
 
 ```fsharp run
 let fixedRate = { new IExchangeRates with member _.GetUsdToAud() = Task.FromResult 1.5m }
-let failing = { new IExchangeRates with member _.GetUsdToAud() = Task.FromException<decimal>(TimeoutException()) }
+let timedOut = { new IExchangeRates with member _.GetUsdToAud() = Task.FromException<decimal>(TimeoutException()) }
+let unavailable = { new IExchangeRates with member _.GetUsdToAud() = Task.FromException<decimal>(Exception("no rate")) }
 
 priceInAud 10m |> Flow.run { Rates = fixedRate; Region = "au" } |> shouldEqual (Exit.Success 15.0m : Exit<decimal, string>)
-priceInAudOrFail 10m |> Flow.run { Rates = failing; Region = "au" } |> shouldEqual (Exit.Failure(Cause.Fail ProviderTimedOut))
+priceInAudOrFail 10m |> Flow.run { Rates = timedOut; Region = "au" } |> shouldEqual (Exit.Failure(Cause.Fail ProviderTimedOut))
+priceInAudOrFail 10m |> Flow.run { Rates = unavailable; Region = "au" } |> shouldEqual (Exit.Failure(Cause.Fail (RateUnavailable "no rate")))
 ```
 
 ## Combine it with the built-in services

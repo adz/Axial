@@ -8,7 +8,7 @@
 
 - `docs/15-notes/03-guardrails.md:175` — The suppression guidance assumes readers can inspect repository-relative `src/Axial.Guardrails` files; published NuGet consumers need a public source link or the exact rules documented here.
 
-- `docs/14-advanced/04-writing-effect-analyzers.md:85` — The packaging walkthrough assumes access to this repository's `src/Axial.Guardrails` files; a NuGet consumer reading published docs cannot follow it without a public source link or standalone template.
+- [fixed] `docs/14-advanced/04-writing-effect-analyzers.md:85` — The packaging walkthrough assumes access to this repository's `src/Axial.Guardrails` files; a NuGet consumer reading published docs cannot follow it without a public source link or standalone template.
 
 - [fixed] `docs/13-testing/02-runnable-examples.md:15` — Run commands assume the reader is at the repository root with the example projects checked out; say so, since these paths do not work from a NuGet-only application.
 
@@ -52,9 +52,9 @@
 - `docs/15-notes/03-guardrails.md:178` — The `AXG008` heading is followed by blocking-wait exemptions at line 182, which belong to `AXG001`; move them under the blocking category so readers do not mistake them for scope diagnostics.
 - `docs/15-notes/03-guardrails.md:278` — The page says `Fiber.join` returns an already released resource, then says the example “fails only at runtime”; the shown resource is a string, so no runtime failure is demonstrated. Use a disposable resource and checked failure or qualify the claim.
 
-- `docs/14-advanced/03-custom-services.md:3` — The description promises `Service.get`, but the tutorial uses `ExchangeRates.service` and never introduces `Service.get`; update the metadata to match the API shown.
-- `docs/14-advanced/03-custom-services.md:93` — Every exception from `GetUsdToAud`, not just timeouts, becomes `ProviderTimedOut`; `RateUnavailable` is never produced. Classify exceptions explicitly or simplify the error union and claim at line 99.
-- `docs/14-advanced/01-reusable-packages.md:108` — “F# interface implementations are always explicit” is too broad; qualify the statement to the record's explicit implementations shown here, and demonstrate two colliding `Client` contracts if this is a composability guarantee.
+- [fixed] `docs/14-advanced/03-custom-services.md:3` — The description promises `Service.get`, but the tutorial uses `ExchangeRates.service` and never introduces `Service.get`; update the metadata to match the API shown.
+- [fixed] `docs/14-advanced/03-custom-services.md:93` — Every exception from `GetUsdToAud`, not just timeouts, becomes `ProviderTimedOut`; `RateUnavailable` is never produced. Classify exceptions explicitly or simplify the error union and claim at line 99.
+- [fixed] `docs/14-advanced/01-reusable-packages.md:108` — “F# interface implementations are always explicit” is too broad; qualify the statement to the record's explicit implementations shown here, and demonstrate two colliding `Client` contracts if this is a composability guarantee.
 
 - [fixed] `docs/13-testing/02-runnable-examples.md:76` — Playground comments claim `Ok` results, while the immediately following observed output shows `Success`; align the comments with the actual `Exit` formatting.
 - [fixed] `docs/13-testing/02-runnable-examples.md:116` — Running the entire `Axial.Examples` project produces policy and greeting output before supervision output, although the section title and source link imply a standalone supervision example. Explain that the command runs multiple examples.

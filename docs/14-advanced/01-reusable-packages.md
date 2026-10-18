@@ -106,8 +106,33 @@ type IHasRates = abstract ExchangeRates : IExchangeRates    // do this
 ```
 
 **Member names may collide freely.** Two packages can both define `IHasClient` exposing `Client`, and one record can
-implement both. F# interface implementations are always explicit, so there is no ambiguity, and package authors do
-not need to coordinate names.
+implement both. The record's implementations are explicit — each `interface` block names the contract it implements
+— so two contracts that expose the same member name do not clash and package authors do not need to coordinate
+names:
+
+```fsharp
+// Two packages independently define contracts with the same member name.
+type IHasClient =
+    abstract Client : string
+
+type IHasGateway =
+    abstract Client : string
+
+// One record implements both; each interface block names the contract it implements.
+type ClientEnv =
+    { ClientValue: string
+      GatewayValue: string }
+    interface IHasClient with
+        member this.Client = this.ClientValue
+    interface IHasGateway with
+        member this.Client = this.GatewayValue
+```
+
+```fsharp run
+let clientEnv = { ClientValue = "http"; GatewayValue = "db" }
+(clientEnv :> IHasClient).Client |> shouldEqual "http"
+(clientEnv :> IHasGateway).Client |> shouldEqual "db"
+```
 
 ## Typed errors belong in the package
 

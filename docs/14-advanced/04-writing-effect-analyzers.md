@@ -16,11 +16,11 @@ Create an analyzer after your package defines an explicit service boundary for c
 
 FSharp.Analyzers.SDK discovers each analyzer assembly independently. `Axial.Guardrails` does not provide a plug-in API, and your analyzer does not need to reference it.
 
-Use these files from `src/Axial.Guardrails` as a starting point:
+Copy these files from the [`src/Axial.Guardrails`](https://github.com/adz/Axial/tree/main/src/Axial.Guardrails) directory in the Axial source tree. The published docs and NuGet package do not ship these files, so fetch them from the repository:
 
-- `EffectCatalog.fs` defines symbol-match rules and diagnostic details.
-- `Suppressions.fs` parses line-level and file-level suppression directives.
-- `EffectBoundaryAnalyzer.fs` resolves symbols and reports unsuppressed matches.
+- [`EffectCatalog.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/EffectCatalog.fs) defines symbol-match rules and diagnostic details.
+- [`Suppressions.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/Suppressions.fs) parses line-level and file-level suppression directives.
+- [`EffectBoundaryAnalyzer.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/EffectBoundaryAnalyzer.fs) resolves symbols and reports unsuppressed matches.
 
 Together, these files contain about 150 lines. They use `FSharpMemberOrFunctionOrValue` from `FSharp.Compiler.Symbols` and do not depend on Axial types.
 
@@ -82,7 +82,7 @@ A matching call produces a diagnostic identifying the direct call and the replac
 
 Package the analyzer so that `dotnet add package` enables it without requiring consumers to edit MSBuild files.
 
-Use `src/Axial.Guardrails/Axial.Guardrails.fsproj` and `src/Axial.Guardrails/build/` as references for the following steps.
+Use [`src/Axial.Guardrails/Axial.Guardrails.fsproj`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/Axial.Guardrails.fsproj) and [`src/Axial.Guardrails/build/`](https://github.com/adz/Axial/tree/main/src/Axial.Guardrails/build) from the Axial source tree as references for the following steps.
 
 ### Include analyzer dependencies
 
