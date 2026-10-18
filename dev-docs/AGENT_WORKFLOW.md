@@ -18,7 +18,7 @@ them.
 2. Write the prompt to `<scratchpad>/pi/<task>.md` (template below) and run the worker in the background.
 3. Read only the tail of the worker's log and `artifacts/verify/result.json`, never its full transcript.
 4. Run the reviewer on the commit range, read its findings, write a fix prompt covering every finding.
-5. When `result.json` passes for the touched stages: push, then confirm CI with
+5. When `result.json` passes for the touched stages (check `verify.sh`'s own exit status, never a pipe's): push, then confirm CI with
    `gh run watch <id> --exit-status` in the background. CI failing is a stop-everything signal.
 6. Update the handoff file (below), then start the next slice.
 
@@ -55,6 +55,9 @@ It holds only what the repository does not:
 - decisions waiting on the user;
 - the last quota reading and when each window resets;
 - open flaky-test leads not yet in `VERIFICATION.md`.
+
+Work that must happen elsewhere (for example in applications only a work account can see) is handed off as a
+committed brief in `dev-docs/handoffs/`, with the output format and the way results come back.
 
 Durable lessons go into this file, `VERIFICATION.md`, or the coordinator's memory, not into the handoff file.
 

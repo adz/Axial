@@ -14,10 +14,11 @@ lists the queue. Work on main.
 - [ ] T6: Move the reference app and host examples to their own repository
   - Move the cross-product reference application and host examples to a separate integration/examples repository
     after both release trains are public.
-- [ ] T7: Reassess `LATER_TODO.md` Flow work against a real application
-  - Reassess remaining demand-driven Flow work in `LATER_TODO.md` against a concrete application before expanding the
-    API.
-
+- [ ] T7: Reassess `LATER_TODO.md` Flow work against real applications
+  - The remaining reference applications are work applications, reassessed from a separate (work-account) checkout.
+    Brief: `dev-docs/handoffs/T7-reference-app-reassessment.md`; findings come back as
+    `dev-docs/reassessment/<app>.md` on `chore/t7-reassessment-<app>` branches or patches.
+  - Then merge the findings into `LATER_TODO.md` (promote, defer, or delete items) and close this task.
 ## Acceptance
 
 - `Axial.slnx` builds and tests without Reified.
