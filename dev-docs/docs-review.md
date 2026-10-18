@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/14-advanced/04-writing-effect-analyzers.md:85` — The packaging walkthrough assumes access to this repository's `src/Axial.Guardrails` files; a NuGet consumer reading published docs cannot follow it without a public source link or standalone template.
+
 - `docs/13-testing/02-runnable-examples.md:15` — Run commands assume the reader is at the repository root with the example projects checked out; say so, since these paths do not work from a NuGet-only application.
 
 - `docs/12-platforms-and-hosting/02-node.md:25` — The first Node snippet assumes `AppError`, `program`, and `Live.appLayer` exist without defining or linking their shapes. Label it schematic and link to a complete root-application example.
@@ -30,6 +32,10 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/14-advanced/03-custom-services.md:3` — The description promises `Service.get`, but the tutorial uses `ExchangeRates.service` and never introduces `Service.get`; update the metadata to match the API shown.
+- `docs/14-advanced/03-custom-services.md:93` — Every exception from `GetUsdToAud`, not just timeouts, becomes `ProviderTimedOut`; `RateUnavailable` is never produced. Classify exceptions explicitly or simplify the error union and claim at line 99.
+- `docs/14-advanced/01-reusable-packages.md:108` — “F# interface implementations are always explicit” is too broad; qualify the statement to the record's explicit implementations shown here, and demonstrate two colliding `Client` contracts if this is a composability guarantee.
 
 - `docs/13-testing/02-runnable-examples.md:76` — Playground comments claim `Ok` results, while the immediately following observed output shows `Success`; align the comments with the actual `Exit` formatting.
 - `docs/13-testing/02-runnable-examples.md:116` — Running the entire `Axial.Examples` project produces policy and greeting output before supervision output, although the section title and source link imply a standalone supervision example. Explain that the command runs multiple examples.
@@ -88,6 +94,8 @@
 
 ## Too long
 
+- `docs/14-advanced/01-reusable-packages.md:18` — This package-author page and `03-custom-services.md` repeat the same exchange-rate interface, contract, accessor, helper, and environment. Keep the complete walkthrough in one page and link to it from the other.
+
 - `docs/13-testing/02-runnable-examples.md:125` — The full unrelated greeting and policy output precedes the supervision results; show only the relevant supervised/fiber lines or split the command/output by example.
 
 - `docs/12-platforms-and-hosting/03-runtime-operations.md:10` — The 70-line simulated checkout and repeated runs dominate a page meant to select runtime operations; use a smaller shared workflow and link to dedicated retry/cancellation guidance for details.
@@ -118,6 +126,8 @@
 
 ## Reference material in guides
 
+- `docs/14-advanced/04-writing-effect-analyzers.md:87` — NuGet layout, `PackageDownload`, and MSBuild target/CLI exit-code details are packaging reference material without a runnable project; link to a maintained template and keep the guide focused on adapting a rule and verifying a diagnostic.
+
 - `docs/12-platforms-and-hosting/09-elmish.md:7` — The page lists command, subscription, inbox, shutdown, and test API contracts without a worked Elmish program; move the exhaustive operation inventory to reference and keep a first-use lifecycle example here.
 
 - `docs/11-observability/_index.md:204` — The complete fiber instrument table and registry method inventory at lines 273–288 are reference contracts duplicated alongside the telemetry guide; retain a short operational interpretation and link to the telemetry reference for the inventories.
@@ -144,6 +154,9 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/14-advanced/04-writing-effect-analyzers.md:79` — No test or build command checks that the analyzer catches a direct constructor call, honors a suppression, and fails a consuming build at error severity; add a minimal consumer verification path.
+- `docs/14-advanced/01-reusable-packages.md:112` — The package guide recommends typed errors but its only runnable operation uses `ColdTask`, leaving exceptions as defects; show a checked typed-error package operation or link directly to the typed-error example in the tutorial.
 
 - `docs/13-testing/_index.md:7` — The testing landing page says to supply fakes or replace layers but offers no minimal test with a fake environment, `Flow.run`, and an assertion; link directly to or include a first test independent of HTTP.
 - `docs/13-testing/02-runnable-examples.md:8` — The page says generation builds and runs examples but does not explain whether the literal observed-output blocks are verified against those runs or maintained manually; distinguish executable snippets from checked transcripts.
@@ -190,6 +203,9 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/14-advanced/03-custom-services.md:18` — Hide or narrow the visible checked-example fixture: optional Browser, Node, telemetry, and filesystem imports obscure which packages the currency example requires; the package guide repeats the same fixture at line 18.
+- `docs/14-advanced/04-writing-effect-analyzers.md:30` — The illustrative symbol rule and analyzer are `no-check` fragments; provide a link to a versioned, compilable analyzer template so coding assistants need not guess omitted helpers and project wiring.
 
 - `docs/13-testing/02-runnable-examples.md:61` — Replace the repeated `|> fun workflow -> workflow |> Flow.run env` pipeline with the direct `greetingFlow |> Flow.run env` form; it is easier to copy and does not imply an extra adapter is needed.
 
