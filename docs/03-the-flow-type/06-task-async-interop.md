@@ -19,7 +19,7 @@ channel.
 | `ColdTask<Result<'value,'error>>` | Bind directly in `flow { }` | Cold task factory; `Error` enters the typed error channel |
 | `CancellationToken -> Task<'value>` | `Flow.fromTask` | Creates a cold Flow whose task value is successful output |
 | `CancellationToken -> Task<Result<'value,'error>>` | `Flow.fromTaskResult` | Creates a cold Flow whose `Error` enters the typed error channel |
-| Already-running `Task<'value>` | `Flow.awaitStartedTask` | Awaits the existing operation; Flow cannot pass cancellation into it |
+| Already-running `Task<'value>` | `Flow.awaitStartedTask` | Awaits the existing operation; Flow cannot retroactively supply its cancellation token |
 | Already-running `Task<Result<'value,'error>>` | `Flow.awaitStartedTaskResult` | Awaits the existing operation and lifts `Error` |
 
 `ValueTask` has the corresponding `fromValueTask`, `fromValueTaskResult`, `awaitStartedValueTask`, and
@@ -187,7 +187,7 @@ semantics:
 
 - It started before the Flow.
 - Reusing the Flow awaits the same operation.
-- Flow cannot pass its cancellation token into work that already started.
+- Flow cannot pass its cancellation token into work that already started: the task observes whatever token (if any) it was created with, and the Flow can only await its result.
 - Prefer a cold factory when you control task creation.
 
 Raw `Task` and `ValueTask` values do not bind directly in `flow { }`. This prevents an already-running operation from

@@ -25,8 +25,11 @@ For example:
 let loadUser (id: UserId) : Flow<AppEnv, LoadUserError, User> = ...
 ```
 
-The type does not mean that work has started. A Flow is an immutable, cold description. Each execution interprets the
-description with an environment and produces an outcome.
+The type does not mean that work has started. A Flow is an immutable description, and building one starts nothing: each
+execution interprets the description with an environment and produces an outcome. A Flow built from cold sources (the
+usual case) starts fresh work on every execution. But a Flow can capture work that is already running —
+`Flow.awaitStartedTask` observes a task that began before the Flow was built — so "cold" describes when the description
+starts work, not the lifecycle of everything it holds.
 
 ## Aliases
 

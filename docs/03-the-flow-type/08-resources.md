@@ -40,6 +40,11 @@ that cannot fail with a typed error; it runs without interruption, with the envi
 `Flow.scoped` creates the local ownership boundary and closes it after success, typed failure, defect, or
 interruption.
 
+Both examples open the file with `File.OpenText` to keep the focus on ownership and cleanup. That is an ambient
+.NET call, not the `IFileSystem` service: it is not interruptible, and I/O failures are not modeled as a typed
+`FileSystemError`. For the recommended pattern — an explicit filesystem dependency with a typed error channel — see
+[FileSystem](/services/filesystem.html).
+
 For reusable acquisition descriptions and direct registration of disposables or finalizers, see
 [scopes and resources](/scopes/index.html).
 
@@ -52,8 +57,9 @@ When cleanup belongs to one flow rather than to a resource, attach it to the flo
 - `Flow.onInterrupt handler` runs `handler` only when the flow is interrupted.
 
 The handler runs without the flow's cancellation, so the interruption that ended the flow cannot cut the cleanup short.
-The flow's own outcome is kept. The handler cannot fail with a typed error, and a defect it raises is added to the
-outcome.
+The handler cannot fail with a typed error. If the flow succeeded, a defect in the handler replaces the success with
+that defect; if the flow failed, the defect is appended to the original cause as `Cause.Then`, keeping the flow's own
+cause first.
 
 ```fsharp transcript
 > open Axial.PlatformService;;

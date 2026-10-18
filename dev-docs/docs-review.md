@@ -31,7 +31,7 @@
 
 - `docs/05-dependencies/04-providing-the-environment.md:52` — `SqlUserStore(connectionString)` is invoked without a definition or indication that it is pseudocode; a newcomer may treat the production record as copyable.
 
-- `docs/03-the-flow-type/06-task-async-interop.md:22` — “Flow cannot pass cancellation into” a started task assumes it was created without a token the caller controls; clarify that the Flow cannot supply its own token retroactively, even if the caller has another cancellation source.
+- [fixed] `docs/03-the-flow-type/06-task-async-interop.md:22` — “Flow cannot pass cancellation into” a started task assumes it was created without a token the caller controls; clarify that the Flow cannot supply its own token retroactively, even if the caller has another cancellation source.
 
 - [fixed] `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:107` — Cancellation propagation is attributed to `ColdTask`, but both shown factories ignore the token (`fun _ -> ...`); the repository calls must accept and use it for interruption to reach in-flight work.
 
@@ -99,9 +99,9 @@
 - `docs/04-error-handling/02-policy.md:133` — `Policy.compose requireName normalizeName` rejects whitespace-only names before trimming; if the intended rule is “trim, then require a name,” reverse the composition and show the effect on the returned value.
 - `docs/04-error-handling/03-defects.md:50` — `File.ReadAllTextAsync` is an ambient filesystem operation in an error-handling example; clarify that this demonstrates interop exception capture, not the recommended explicit filesystem-service boundary.
 
-- `docs/03-the-flow-type/01-flow-type.md:28` — Calling every Flow an “immutable, cold description” obscures that `Flow.awaitStartedTask` can wrap work already running; distinguish cold Flow execution from the lifecycle of captured inputs.
-- `docs/03-the-flow-type/08-resources.md:13` — `File.OpenText path` runs inside the Flow but is an ambient filesystem effect and is not interruptible; the resource example does not model the filesystem dependency or failure channel it teaches elsewhere.
-- `docs/03-the-flow-type/08-resources.md:54` — “The flow's own outcome is kept” sounds like finalizer defects cannot change the outcome, but the next sentence says they are added; state how combined causes appear at the boundary.
+- [fixed] `docs/03-the-flow-type/01-flow-type.md:28` — Calling every Flow an “immutable, cold description” obscures that `Flow.awaitStartedTask` can wrap work already running; distinguish cold Flow execution from the lifecycle of captured inputs.
+- [fixed] `docs/03-the-flow-type/08-resources.md:13` — `File.OpenText path` runs inside the Flow but is an ambient filesystem effect and is not interruptible; the resource example does not model the filesystem dependency or failure channel it teaches elsewhere.
+- [fixed] `docs/03-the-flow-type/08-resources.md:54` — “The flow's own outcome is kept” sounds like finalizer defects cannot change the outcome, but the next sentence says they are added; state how combined causes appear at the boundary.
 
 - [fixed] `docs/02-how-it-compares/02-task-vs-flow-scenarios.md:62` — The retry scenario says the type requires only `IHasHttp`, although the described backoff and deadline also need a clock; clarify the full environment requirement.
 - [fixed] `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:143` — Checkout claims dependencies are in the environment rather than closures, but the earlier `loadCustomerFlow` example closes over its repository; distinguish the two approaches.
