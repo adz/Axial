@@ -102,8 +102,9 @@
           EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile)" IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="_AxialGuardrailsExit" />
     </Exec>
+    <!-- CLI help does not document exit codes; 254 may also indicate a tool failure. -->
     <Error Condition="'$(_AxialGuardrailsExit)' == '-2' or '$(_AxialGuardrailsExit)' == '254'"
-           Text="Axial.Guardrails reported findings above (see AXG codes)." />
+           Text="Axial.Guardrails reported findings or failed; see the output above (AXG codes or tool errors)." />
     <Error Condition="'$(_AxialGuardrailsExit)' != '0' and '$(_AxialGuardrailsExit)' != '-2' and '$(_AxialGuardrailsExit)' != '254'"
            Text="Axial.Guardrails analyzer tool failed (exit code $(_AxialGuardrailsExit)); inspect the output above." />
     <Touch Files="$(_AxialGuardrailsStampFile)" AlwaysCreate="true" />

@@ -27,14 +27,46 @@ module ScopeFromRunAnalyzerTests =
             return ScopeFromRunAnalyzer.analyze ctx |> List.map (fun m -> m.Range.StartLine - prelude.Length, m.Code)
         }
 
+    let private realFindings body =
+        task {
+            let! ctx = AnalyzerTestContext.createWithAxial true ("module M\nopen Axial\n" + body)
+            return ScopeFromRunAnalyzer.analyze ctx |> List.map (fun m -> m.Code)
+        }
+
+    [<Theory>]
+    [<InlineData("Cache.make (fun k -> Flow.ok k)")>]
+    [<InlineData("Hub.make ()")>]
+    [<InlineData("Queue.unbounded ()")>]
+    let ``real constructors outlive run`` constructor =
+        task {
+            let! found = realFindings ("let result () = Flow.run (Unchecked.defaultof<IHasClock>) (" + constructor + ")")
+            test <@ found = [ "AXG008" ] @>
+        }
+
+    [<Theory>]
+    [<InlineData("flow { let! c = Cache.make (fun k -> Flow.ok k)\n             return c }")>]
+    [<InlineData("Cache.make (fun k -> Flow.ok k) |> Flow.map id")>]
+    let ``composed cache result outlives run`` expression =
+        task {
+            let! found = realFindings ("let result () = Flow.run (Unchecked.defaultof<IHasClock>) (" + expression + ")")
+            test <@ found = [ "AXG008" ] @>
+        }
+
     [<Fact>]
-    let ``direct and piped constructors escape their run`` () =
+    let ``integer result is not a scope service`` () =
+        task {
+            let! found = realFindings "let result () = Flow.run () (Flow.ok 42)"
+            test <@ found = [] @>
+        }
+
+    [<Fact>]
+    let ``unrelated lookalike modules do not trigger scope findings`` () =
         task {
             let! found = findings ("let a = Flow.run (Cache.make 4)\n"
                                    + "let b = Hub.bounded 2 |> Flow.runSync\n"
                                    + "let c = Flow.RunSynchronously (Queue.unbounded ())\n"
                                    + "let d = Flow.StartAsTask (Cache.make 2)\n")
-            test <@ found = [ 1, "AXG008"; 2, "AXG008"; 3, "AXG008"; 4, "AXG008" ] @>
+            test <@ found = [] @>
         }
 
     [<Fact>]

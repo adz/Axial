@@ -1,60 +1,100 @@
-/// Syntactic check for scope-owned services returned by a short-lived run.
-/// Named flows, aliases and computations that acquire then return a service are not followed.
+/// Checks direct scope-owned service constructors returned by a short-lived run.
 module Axial.Guardrails.ScopeFromRunAnalyzer
 
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Syntax
+open FSharp.Compiler.Symbols
+open FSharp.Compiler.Symbols.FSharpExprPatterns
 open FSharp.Compiler.Text
 open Axial.Guardrails.ResourceFromFiberAnalyzer
 open Axial.Guardrails.Suppressions
 
 let private constructors =
     Map.ofList [ "Cache", set [ "make"; "makeBounded"; "makeBoundedWithExpiry"; "makeRec" ]
-                 "Hub", set [ "make"; "bounded"; "unbounded" ]
-                 "Queue", set [ "bounded"; "unbounded" ] ]
+                 "Hub", set [ "make"; "makeScoped"; "bounded"; "unbounded" ]
+                 "Queue", set [ "make"; "makeScoped"; "bounded"; "unbounded" ] ]
 
-let rec private owner (expr: SynExpr) =
+let rec private headRange expr =
     match expr with
-    | SynExpr.Ident id -> Some id.idText
-    | SynExpr.LongIdent(_, ids, _, _) ->
-        ids.LongIdent |> List.map _.idText |> List.rev |> List.tryItem 1
-    | SynExpr.App(_, _, f, _, _) -> owner f
-    | SynExpr.Paren(e, _, _, _) -> owner e
-    | SynExpr.Typed(e, _, _) -> owner e
+    | SynExpr.Ident id -> Some id.idRange
+    | SynExpr.LongIdent(_, ids, _, _) -> ids.LongIdent |> List.tryLast |> Option.map _.idRange
+    | SynExpr.App(_, _, f, _, _)
+    | SynExpr.TypeApp(f, _, _, _, _, _, _)
+    | SynExpr.Paren(f, _, _, _)
+    | SynExpr.Typed(f, _, _) -> headRange f
     | _ -> None
 
-let private isConstructor expr =
-    match owner expr, headIdent expr with
-    | Some moduleName, Some name ->
-        constructors |> Map.tryFind moduleName |> Option.exists (Set.contains name)
-    | _ -> false
+let private symbolMatches (ctx: CliContext) entity names expr =
+    match headRange expr with
+    | None -> false
+    | Some location ->
+        ctx.GetAllSymbolUsesOfFile()
+        |> Seq.exists (fun useSite ->
+            useSite.Range = location
+            && (match useSite.Symbol with
+                | :? FSharpMemberOrFunctionOrValue as memberValue ->
+                    Set.contains memberValue.CompiledName names
+                    && (memberValue.DeclaringEntity
+                        |> Option.exists (fun declaring -> declaring.TryFullName = Some entity))
+                | _ -> false))
 
-let rec private returnsService expr =
+let private isConstructor ctx expr =
+    constructors |> Map.exists (fun moduleName names -> symbolMatches ctx ("Axial." + moduleName) names expr)
+
+let rec private returnsService ctx expr =
     match expr with
     | SynExpr.Paren(e, _, _, _)
-    | SynExpr.Typed(e, _, _) -> returnsService e
+    | SynExpr.Typed(e, _, _) -> returnsService ctx e
     | _ ->
         match pipe expr with
-        | Some(_, target) -> isConstructor target
+        | Some(_, target) -> isConstructor ctx target
         | None ->
             match expr with
-            | SynExpr.App _ -> isConstructor expr
+            | SynExpr.App _ -> isConstructor ctx expr
             | _ -> false
 
-let private isRunner expr =
-    match owner expr, headIdent expr with
-    | Some "Flow", Some ("run" | "runSync" | "RunSynchronously" | "StartAsTask") -> true
-    | _ -> false
+let private isRunner ctx expr =
+    symbolMatches ctx "Axial.Flow" (set [ "run"; "runSync" ]) expr
+    || symbolMatches ctx "Axial.Flow`3" (set [ "RunSynchronously"; "StartAsTask" ]) expr
 
-let rec private find expr : range list =
+let rec private find ctx expr : range list =
     let here =
         match pipe expr with
-        | Some(value, target) when isRunner target && returnsService value -> [ expr.Range ]
+        | Some(value, target) when isRunner ctx target && returnsService ctx value -> [ expr.Range ]
         | _ ->
             match expr with
-            | SynExpr.App(_, false, runner, argument, r) when isRunner runner && returnsService argument -> [ r ]
+            | SynExpr.App(_, false, runner, argument, r) when isRunner ctx runner && returnsService ctx argument -> [ r ]
             | _ -> []
-    here @ (childExprs expr |> List.collect find)
+    here @ (childExprs expr |> List.collect (find ctx))
+
+let private serviceTypes = set [ "Axial.Cache`3"; "Axial.Hub`1"; "Axial.Queue`1" ]
+
+let rec private isServiceType (t: FSharpType) =
+    if t.IsAbbreviation then isServiceType t.AbbreviatedType
+    else t.HasTypeDefinition && (t.TypeDefinition.TryFullName |> Option.exists serviceTypes.Contains)
+
+let private returnsServiceType (t: FSharpType) =
+    if t.HasTypeDefinition && t.TypeDefinition.TryFullName = Some "Axial.Flow`3" then
+        t.GenericArguments |> Seq.tryItem 2 |> Option.exists isServiceType
+    else false
+
+let rec private typedFindings (expr: FSharpExpr) =
+    let here =
+        match expr with
+        | Call(None, memberValue, _, _, arguments)
+            when (memberValue.DeclaringEntity
+                  |> Option.exists (fun entity -> entity.TryFullName = Some "Axial.Flow"))
+                 && Set.contains memberValue.CompiledName (set [ "run"; "runSync" ])
+                 && (arguments |> List.exists (fun argument -> returnsServiceType argument.Type)) -> [ expr.Range ]
+        | _ -> []
+    here @ (expr.ImmediateSubExpressions |> List.collect typedFindings)
+
+let rec private typedDeclarations declaration =
+    match declaration with
+    | FSharpImplementationFileDeclaration.Entity(_, declarations) -> declarations |> List.collect typedDeclarations
+    | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
+    | FSharpImplementationFileDeclaration.InitAction body ->
+        try typedFindings body with _ -> []
 
 let rawRanges (ctx: CliContext) : range list =
     let expressions =
@@ -62,8 +102,11 @@ let rawRanges (ctx: CliContext) : range list =
         | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
             modules |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
         | _ -> []
-    expressions
-    |> List.collect find
+    let typed =
+        match (try ctx.TypedTree with _ -> None) with
+        | Some tree -> tree.Declarations |> List.collect typedDeclarations
+        | None -> []
+    (expressions |> List.collect (find ctx)) @ typed
     |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
 
 let analyze (ctx: CliContext) : Message list =

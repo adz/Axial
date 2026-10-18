@@ -77,6 +77,19 @@ module GuardrailConfigTests =
         }
 
     [<Fact>]
+    let ``unrelated Result fields and synchronization waits are not blocking task waits`` () =
+        task {
+            let! found =
+                findings (
+                    "type Record = { Result: int }\n"
+                    + "let a (r: Result<int, string>) = r.IsOk\n"
+                    + "let b (r: Record) = r.Result\n"
+                    + "let c (s: System.Threading.SemaphoreSlim) = s.Wait()\n"
+                    + "let d (e: System.Threading.ManualResetEventSlim) = e.Wait()\n")
+            test <@ found = [] @>
+        }
+
+    [<Fact>]
     let ``local time zone is flagged but explicit conversion is not`` () =
         task {
             let! found =

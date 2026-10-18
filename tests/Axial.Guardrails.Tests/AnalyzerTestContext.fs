@@ -6,7 +6,7 @@ open FSharp.Analyzers.SDK
 open FSharp.Analyzers.SDK.Testing
 
 module AnalyzerTestContext =
-    let create (source: string) =
+    let createWithAxial (withAxial: bool) (source: string) =
         task {
             let! options = mkOptionsFromProject "net10.0" []
             let directory = Path.Combine(Path.GetTempPath(), "Axial.Guardrails.Tests", Guid.NewGuid().ToString("N"))
@@ -22,6 +22,12 @@ module AnalyzerTestContext =
             let options =
                 { options with
                     ProjectFileName = Path.Combine(directory, "Fixture.fsproj")
-                    OtherOptions = Array.concat [ compilerOptions; [| "--noframework"; "--targetprofile:netcore" |]; runtimeAssemblies ] }
+                    OtherOptions =
+                        Array.concat [ compilerOptions
+                                       [| "--noframework"; "--targetprofile:netcore" |]
+                                       runtimeAssemblies
+                                       (if withAxial then [| "-r:" + typeof<Axial.Flow<unit, unit, int>>.Assembly.Location |] else [||]) ] }
             return! getContextFor (BackgroundCompilerOptions options) [ file ] file
         }
+
+    let create source = createWithAxial false source
