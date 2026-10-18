@@ -117,22 +117,11 @@ lock-free model.
 - **Performance**: Because of the global lock, transactions are mutually exclusive. This is suitable for coordinating low-frequency state changes but may become a bottleneck under high contention.
 
 The global lock keeps the initial implementation simple while supporting transactional references, composable transactions, `retry`, and `orElse`.
-## API Reference: Module `TRef`
+## API Reference
 
-| Function | Signature | Description |
-| :--- | :--- | :--- |
-| `make` | `'T -> STM<TRef<'T>>` | Creates a new transactional reference. |
-| `get` | `TRef<'T> -> STM<'T>` | Reads the value of a `TRef` within a transaction. |
-| `set` | `'T -> TRef<'T> -> STM<unit>` | Sets the value of a `TRef` within a transaction. |
-| `update` | `('T -> 'T) -> TRef<'T> -> STM<unit>` | Atomically updates a `TRef` within a transaction. |
-
-## API Reference: Module `STM`
-
-| Function | Signature | Description |
-| :--- | :--- | :--- |
-| `retry` | `STM<'T>` | Requests that the current branch waits and reruns after a committed change. |
-| `orElse` | `STM<'T> -> STM<'T> -> STM<'T>` | Falls back to a second branch when the first branch retries. |
-| `atomically` | `STM<'T> -> Flow<'env, 'none, 'T>` | Executes a composed transaction as an atomic flow. |
+The `TRef` signatures (`make`, `get`, `set`, `update`) are in the
+[TRef API reference](/api/Axial.State.TRefModule.html); the `STM` signatures (`retry`, `orElse`, `atomically`) are in
+the [STM API reference](/api/Axial.State.STMModule.html).
 
 The [STM torture test](torture-tests/stm.html) runs hundreds of interrupted transfers against an auditor and checks that
 every audit sees a consistent total.

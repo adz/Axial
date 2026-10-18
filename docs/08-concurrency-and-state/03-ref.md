@@ -107,16 +107,8 @@ let trackProgress (total: int) =
 
 ## API Reference
 
-| Function | Signature | Description |
-| :--- | :--- | :--- |
-| `make` | `'T -> Flow<'env, 'none, Ref<'T>>` | Creates a new reference with an initial value. |
-| `get` | `Ref<'T> -> Flow<'env, 'none, 'T>` | Reads the current value of the reference. |
-| `set` | `'T -> Ref<'T> -> Flow<'env, 'none, unit>` | Sets the value of the reference to a new value. |
-| `update` | `('T -> 'T) -> Ref<'T> -> Flow<'env, 'none, unit>` | Atomically updates the value using the supplied function. |
-| `modify` | `('T -> 'v * 'T) -> Ref<'T> -> Flow<'env, 'none, 'v>` | Atomically updates the value and returns a derived result. |
-| `getAndSet` | `'T -> Ref<'T> -> Flow<'env, 'none, 'T>` | Sets the value and returns the value it held before the update. |
-| `getAndUpdate` | `('T -> 'T) -> Ref<'T> -> Flow<'env, 'none, 'T>` | Updates the value and returns the value it held before the update. |
-| `updateAndGet` | `('T -> 'T) -> Ref<'T> -> Flow<'env, 'none, 'T>` | Updates the value and returns the value after the update. |
+The full `Ref` signature list — `make`, `get`, `set`, `update`, `modify`, and the `getAndSet` / `getAndUpdate` /
+`updateAndGet` family — is in the [Ref API reference](/api/Axial.State.RefModule.html).
 
 The [refs torture test](torture-tests/refs.html) runs every update operation from eight fibers at once and checks that
 no update is lost and no two see the same value.

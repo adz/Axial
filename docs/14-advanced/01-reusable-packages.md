@@ -9,87 +9,19 @@ Application code owns both sides of its environment: the workflow names `AppEnv`
 one. A package is compiled before its callers exist, so it cannot mention their types or require one record shape.
 This page covers the package side of [service contracts](/dependencies/service-contracts.html).
 
-## The shape
-
-Declare an interface, a contract, and an accessor for each service.
-
-**The service**: an ordinary interface describing the capability:
-
 ```fsharp prepare
-// Setup for the checked examples on this page.
-open System
-open System.IO
-open System.Threading
-open System.Threading.Tasks
-open Axial
-open Axial.Layers
-open Axial.Console
-open Axial.FileSystem
-open Axial.Hosting
-open Axial.Hosting.Browser
-open Axial.Hosting.Node
-open Axial.PlatformService
-open Axial.State
-open Axial.Telemetry
-open Axial.Telemetry.JavaScript
-
 /// Fails the docs test when an example's result differs from the value shown.
 let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
-```fsharp
-type IExchangeRates =
-    abstract GetUsdToAud : unit -> Task<decimal>
-```
+## The shape
 
-**The contract**: how an environment advertises that it supplies one. Named `IHasFoo`, exposing exactly one member
-`Foo`:
-
-```fsharp
-type IHasExchangeRates =
-    abstract ExchangeRates : IExchangeRates
-```
-
-**The accessor**: a module-level binding that reads it:
-
-```fsharp
-[<RequireQualifiedAccess>]
-module ExchangeRates =
-    let service<'env, 'error when 'env :> IHasExchangeRates> : Flow<'env, 'error, IExchangeRates> =
-        Flow.envWith _.ExchangeRates
-```
-
-Bind the accessor at module level, not inline. `Flow.envWith _.ExchangeRates` cannot resolve inside a `flow { }` block,
-because the lambda's parameter type is not known until the surrounding annotation is applied, which happens after
-the body is checked. At module level the annotation sits next to the expression that needs it, so it resolves once
-and every caller binds it with no annotation at all.
-
-Package operations build on the accessor:
-
-```fsharp
-let priceInAud<'env, 'error when 'env :> IHasExchangeRates> (usdAmount: decimal) : Flow<'env, 'error, decimal> =
-    flow {
-        let! rates = ExchangeRates.service
-        let! rate = ColdTask(fun _ -> rates.GetUsdToAud())
-        return usdAmount * rate
-    }
-```
-
-Any environment that implements the contract can run it:
-
-```fsharp
-type RatesEnv =
-    { Rates: IExchangeRates }
-    interface IHasExchangeRates with
-        member this.ExchangeRates = this.Rates
-```
-
-```fsharp run
-priceInAud 10m
-|> Flow.run { Rates = { new IExchangeRates with member _.GetUsdToAud() = Task.FromResult 1.5m } }
-|> shouldEqual (Exit.Success 15.0m : Exit<decimal, string>)
-```
+Declare an interface, a contract (`IHasFoo` exposing one `Foo` member), and a module-level accessor. The
+[reusable services tutorial](custom-services.html) walks through the complete exchange-rate example — the
+`IExchangeRates` interface, the `IHasExchangeRates` contract, the `ExchangeRates.service` accessor, a `priceInAud`
+helper, an app environment, a typed failure, and a test double. This page covers the rules that keep such packages
+composable.
 
 ## Rules that keep contracts composable
 

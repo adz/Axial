@@ -140,18 +140,10 @@ that is an ordinary F# compile-time scope error, and the fix is to move it into 
 
 ## Layer functions
 
-| Function | Use |
-| --- | --- |
-| `Layer.succeed value` | A value that is already built |
-| `Layer.envWith projection` | A value read from the layer's input |
-| `Layer.fromFlow build` | Construction written as a flow: it can fail, read the input, and acquire scoped resources that live as long as the provided flow |
-| `Layer.acquireRelease acquire release` | A resource built by another layer, released when the provided flow ends |
-| `Layer.addFinalizer release` | Cleanup that runs when the provided flow ends |
-| `Layer.map`, `Layer.mapError`, `Layer.widenError` | Change the output or the error type |
-| `Layer.bind` | A step that depends on an earlier value, like `let!` |
-| `Layer.zip` | Two layers in sequence |
-| `Layer.zipPar`, `Layer.merge` | Two layers in parallel |
-| `Layer.map2`, `Layer.map3` | Combine outputs without nested tuples |
+`layer { }` uses `let!` (via `Layer.bind`) and `and!` (via `Layer.merge`/`Layer.zipPar`) above; the full combinator
+inventory — `succeed`, `envWith`, `fromFlow`, `acquireRelease`, `addFinalizer`, `map`/`mapError`/`widenError`,
+`zip`, `zipPar`/`merge`, and `map2`/`map3` — is in the
+[Layer API reference](/api/Axial.Layers.LayerModule.html).
 
 Layer error types must match the flow error type. When provisioning steps use different errors, map them into one
 startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as
@@ -159,12 +151,9 @@ startup error type with `Layer.mapError` before calling `Layer.provide`. A layer
 
 ## zip, zipPar, And merge
 
-`Layer.zip` provisions left then right, sequentially. Use it when ordering is intentional. `Layer.zipPar` provisions
-both sides independently in parallel and returns a tuple. `Layer.merge` is the layer-domain name for `zipPar`; prefer
-it when combining service bundles or environment fragments.
-
-`Layer.merge` does not merge service contracts or synthesize a new environment type. It only provisions both sides and
-returns their outputs, so build the final environment yourself:
+`Layer.zip` provisions left then right, sequentially. `Layer.zipPar` (its layer-domain name is `Layer.merge`)
+provisions both sides independently in parallel and returns a tuple. `Layer.merge` does not synthesize a new
+environment type; it only provisions both sides, so build the final environment yourself:
 
 ```fsharp
 let mergedLayer : Layer<Map<string, string>, StartupError, AppEnv> =

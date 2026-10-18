@@ -80,31 +80,10 @@ A matching call produces a diagnostic identifying the direct call and the replac
 
 ## Package the analyzer
 
-Package the analyzer so that `dotnet add package` enables it without requiring consumers to edit MSBuild files.
-
-Use [`src/Axial.Guardrails/Axial.Guardrails.fsproj`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/Axial.Guardrails.fsproj) and [`src/Axial.Guardrails/build/`](https://github.com/adz/Axial/tree/main/src/Axial.Guardrails/build) from the Axial source tree as references for the following steps.
-
-### Include analyzer dependencies
-
-Set `CopyLocalLockFileAssemblies` to `true`. This setting places the analyzer's transitive dependencies beside its assembly in the build output.
-
-Pack the complete output under `analyzers/` in the NuGet package. Set `IncludeBuildOutput` to `false` so consumer projects do not compile against the analyzer assembly.
-
-### Include the analyzer CLI
-
-The `fsharp-analyzers` CLI is a .NET tool. NuGet does not allow a normal `PackageReference` to a tool package and reports `NU1212` if you add one.
-
-Use `PackageDownload` during your build instead. At pack time, copy the downloaded CLI files into the NuGet package under `cli/`.
-
-### Add automatic build targets
-
-Add `build/{YourPackageId}.props` and `build/{YourPackageId}.targets` to the package. NuGet imports these files automatically into projects that reference the package.
-
-Use the props file to define the default severity and enabled state. Use the targets file to run the bundled CLI after `Build`, passing the bundled `analyzers/` and `cli/` directories.
-
-Run the CLI with an MSBuild `<Exec>` task. Do not use the `AfterBuild` target from `FSharp.Analyzers.Build`, because that target sets `IgnoreExitCode="true"` and cannot fail the build.
-
-The CLI exits with a nonzero code only when a diagnostic uses `--treat-as-error`. A normal `<Exec>` task therefore preserves warning and error behavior.
+Packaging — the NuGet layout, `PackageDownload` for the CLI, and the MSBuild props/targets that run it — is
+documented in the [analyzer packaging reference](analyzer-packaging.html). In short: pack the analyzer's
+`analyzers/` and `cli/` directories into the package, add `build/{YourPackageId}.props` and
+`build/{YourPackageId}.targets`, and run the CLI with an `<Exec>` task that can fail the build.
 
 ## Keep the analyzer independent
 
