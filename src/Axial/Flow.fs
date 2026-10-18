@@ -2393,6 +2393,45 @@ module Flow =
                     | Cause.Fail error -> invoke (fallback error) environment cancellationToken
                     | _ -> Execution.ofCause cause))
 
+    /// <summary>Recovers a typed failure with a flow whose error type may differ.</summary>
+    /// <remarks>
+    /// Like <c>orElseWith</c>, this handles a single <c>Cause.Fail</c>, including traced failures;
+    /// unlike <c>orElseWith</c>, the handler may change the error type. <c>fold</c> handles every
+    /// cause, including defects and interruption. Compound causes are not recovered. Because a
+    /// compound cause may contain old typed errors that cannot inhabit the new error channel,
+    /// those errors become defects wrapping their original values; existing defects, interruption,
+    /// and the compound structure remain intact.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// let optionalSettings (load: Flow&lt;'env, FileSystemError, Settings&gt;)
+    ///     : Flow&lt;'env, Never, Settings option&gt; =
+    ///     load |&gt; Flow.map Some |&gt; Flow.recover (fun _ -&gt; Flow.ok None)
+    /// </code>
+    /// </example>
+    let rec private retypeUnrecovered (cause: Cause<'error>) : Cause<'nextError> =
+        match cause with
+        | Cause.Fail _ -> Cause.Die(InvalidOperationException "Unrecovered compound typed failure")
+        | Cause.Die error -> Cause.Die error
+        | Cause.Interrupt -> Cause.Interrupt
+        | Cause.Then(left, right) -> Cause.Then(retypeUnrecovered left, retypeUnrecovered right)
+        | Cause.Both(left, right) -> Cause.Both(retypeUnrecovered left, retypeUnrecovered right)
+        | Cause.Traced(inner, trace) -> Cause.Traced(retypeUnrecovered inner, trace)
+
+    let recover
+        (handler: 'error -> Flow<'env, 'nextError, 'value>)
+        (source: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'nextError, 'value> =
+        Flow(fun environment cancellationToken ->
+            invoke source environment cancellationToken
+            |> Execution.fold
+                Execution.ofValue
+                (fun cause ->
+                    match Cause.untraced cause with
+                    | Cause.Fail error -> invoke (handler error) environment cancellationToken
+                    | _ ->
+                        Execution.ofCause (retypeUnrecovered cause)))
+
     /// <summary>Falls back to another flow when the source flow fails.</summary>
     /// <param name="fallback">The flow to run if the source flow fails.</param>
     /// <param name="flow">The source flow.</param>

@@ -76,6 +76,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             |> Flow.mapError (fun error -> error.ToUpperInvariant())
             |> Flow.tracedError "branch"
             |> Flow.orElseWith (fun error -> Flow.ok -error.Length)
+            |> Flow.recover (fun error -> Flow.ok -error.Length)
             |> Flow.mapBoth id (Cause.map id)
             |> Flow.orElse (Flow.ok 0)
             |> exitOf

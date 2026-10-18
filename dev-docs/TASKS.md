@@ -60,11 +60,6 @@ lists the queue. Work on main.
     runtime makes progress. Document SCM recovery (`sc failure`) and a systemd unit with `Restart=` and `WatchdogSec=`.
   - Done when: `kill -9` restarts the agent under systemd, and a deliberately hung runtime is restarted by the
     watchdog (scripted test, Linux; Windows documented).
-- [ ] T17: `Flow.recover` for typed-failure-only recovery that changes the error type
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
-  - `Flow.orElseWith` keeps `'error`; `Flow.fold` also catches defects and interruption. Add
-    `Flow.recover : ('error -> Flow<'env, 'nextError, 'value>) -> Flow<'env, 'error, 'value> -> Flow<'env, 'nextError, 'value>`
-    that handles `Cause.Fail` only and passes defects and interruption through. Tests for each cause; guide entry.
 - [ ] T18: Bounded and self-referencing `Cache`
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
   - `Cache.makeBounded capacity` (LRU eviction, optional expiry against the monotonic clock) and `Cache.makeRec`
@@ -79,9 +74,6 @@ lists the queue. Work on main.
   - Flag blocking waits (`Async.RunSynchronously`, `.Wait()`, `.Result`, `GetAwaiter().GetResult()`) outside flows
     in host/UI code paths, and `Flow.run`/`RunSynchronously` producing a scope-owned service (`Cache`, `Hub`, `Queue`)
     that dies when the run returns.
-- [ ] T21: Troubleshooting note for the value restriction on parameterless generic flows
-  - `let load : Flow<'env, Never, Settings> when 'env :> ...` does not compile; it needs
-    `let load<'env when ...> : Flow<...>`. One entry in the troubleshooting-types guide.
 - [ ] T6: Move the reference app and host examples to their own repository
   - Move the cross-product reference application and host examples to a separate integration/examples repository
     after both release trains are public.

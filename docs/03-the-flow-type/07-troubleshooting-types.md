@@ -23,6 +23,29 @@ The compiler usually sees one wrapper shape and you intended another.
 
 If your workflow reads an environment and has a typed domain error, use the full `Flow<'env, 'error, 'value>` form.
 
+## FS0030: Value Restriction On A Generic Flow
+
+A value cannot be generic over an environment type. This declaration fails with FS0030 (the value restriction):
+
+```fsharp no-check reason="FS0030: a generic value cannot be generalized"
+type Settings = { Name: string }
+let load : Flow<'env, Never, Settings> when 'env :> IHasFileSystem =
+    Flow.ok { Name = "default" }
+```
+
+Make `load` a type function instead:
+
+```fsharp
+type Settings = { Name: string }
+let load<'env when 'env :> IHasFileSystem> : Flow<'env, Never, Settings> =
+    Flow.ok { Name = "default" }
+```
+
+```fsharp run
+let env = { new IHasFileSystem with member _.FileSystem = TestFileSystem() :> IFileSystem }
+load<IHasFileSystem> |> Flow.run env |> shouldEqual (Exit.Success { Name = "default" })
+```
+
 ## Error: A Unique Overload For Method `Bind` Could Not Be Determined
 
 This usually happens when the compiler cannot tell which wrapper shape a `let!` value should use.

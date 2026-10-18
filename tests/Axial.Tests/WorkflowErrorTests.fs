@@ -11,6 +11,51 @@ open Xunit
 
 module WorkflowErrorTests =
     [<Fact>]
+    let ``recover changes error type on a traced typed failure`` () =
+        let source : Flow<unit, string, int> = Flow.fail "missing" |> Flow.tracedError "load"
+        let result : Exit<int, int> = source |> Flow.recover (fun error -> Flow.fail error.Length) |> Flow.runSync ()
+        test <@ result = Exit.Failure(Cause.Fail 7) @>
+
+    [<Fact>]
+    let ``recover returns its fallback error`` () =
+        let source : Flow<unit, string, int> = Flow.fail "missing"
+        let result : Exit<int, int> = source |> Flow.recover (fun _ -> Flow.fail 9) |> Flow.runSync ()
+        test <@ result = Exit.Failure(Cause.Fail 9) @>
+
+    [<Fact>]
+    let ``recover leaves success unchanged`` () =
+        let source : Flow<unit, string, int> = Flow.ok 42
+        let result : Exit<int, int> = source |> Flow.recover (fun _ -> Flow.fail 9) |> Flow.runSync ()
+        test <@ result = Exit.Success 42 @>
+
+    [<Fact>]
+    let ``recover passes defects through`` () =
+        let defect = Exception "broken"
+        let source : Flow<unit, string, int> = Flow.die defect
+        let result : Exit<int, int> = source |> Flow.recover (fun _ -> Flow.ok 0) |> Flow.runSync ()
+        test <@ result = Exit.Failure(Cause.Die defect) @>
+
+    [<Fact>]
+    let ``recover passes interruption through`` () =
+        let source : Flow<unit, string, int> = Flow.ofExit (Exit.Failure Cause.Interrupt)
+        let result : Exit<int, int> = source |> Flow.recover (fun _ -> Flow.ok 0) |> Flow.runSync ()
+        test <@ result = Exit.Failure Cause.Interrupt @>
+
+    [<Fact>]
+    let ``recover does not invoke handler for compound causes`` () =
+        let defect = Exception "broken"
+        let source : Flow<unit, string, int> =
+            Flow.ofExit (Exit.Failure(Cause.Both(Cause.Fail "missing", Cause.Die defect)))
+        let mutable invoked = false
+        let result : Exit<int, int> =
+            source |> Flow.recover (fun _ -> invoked <- true; Flow.ok 0) |> Flow.runSync ()
+        test <@ not invoked @>
+        match result with
+        | Exit.Failure(Cause.Both(Cause.Die converted, Cause.Die original)) ->
+            test <@ converted.Message = "Unrecovered compound typed failure" && obj.ReferenceEquals(original, defect) @>
+        | _ -> failwith "Expected both causes to remain"
+
+    [<Fact>]
     let ``Flow composition helpers cover error tapping fallback and pairing`` () =
         let tappedErrors = ResizeArray<string>()
 
