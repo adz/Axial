@@ -90,4 +90,4 @@ Supporting packages provide platform services, console and file-system access, h
 
 [Reified](https://github.com/adz/Reified) declares value, model, JSON, and HTTP contracts. Axial's optional server adapters execute Reified HTTP contracts as workflows; neither core depends on the other.
 
-Declare a contract with Reified. Serve it with Axial.
+Axial's server adapters serve Reified contracts.
