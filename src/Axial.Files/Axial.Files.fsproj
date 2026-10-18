@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <Compile Include="Files.fs" />
+    <Compile Include="AppendLog.fs" />
   </ItemGroup>
 
 </Project>
