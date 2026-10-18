@@ -53,7 +53,7 @@ let render : Flow<string> = Flow.succeed "ok"
 let renderExpanded : Flow<unit, Never, string> = render
 ```
 
-Read the full shape first. Use an alias when it makes a real signature shorter without hiding information.
+Use an alias when it shortens a signature without hiding information.
 
 ## What runs underneath
 
@@ -67,10 +67,10 @@ Pending work after a recursive call still needs storage: an enclosing `try/final
 cleanup until the recursive call finishes. Release per-iteration resources before the next recursive call, or use a
 `while` loop whose body owns those resources.
 
-Interop with the platform types follows from this. See [Async and Task interop](/the-flow-type/task-async-interop.html)
-for binding existing `Async`, `Task`, and `ValueTask` code.
+See [Async and Task interop](/the-flow-type/task-async-interop.html) for binding existing `Async`, `Task`, and
+`ValueTask` code.
 
-## Go Further
+## Related guides
 
 - [Flow API reference](/api/) maps the construction, environment, composition,
   execution, resource, and concurrency functions.

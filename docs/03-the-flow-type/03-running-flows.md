@@ -44,18 +44,14 @@ immediately and hands back a handle, and `run` executes to completion:
 | `Flow.startTask` / `StartAsTask` / `StartAsValueTask` | Yes: the work is already running when it returns |
 | `Flow.toAsync` / `ToAsync` | No: nothing runs until the returned async is started |
 
-This matters when you build a handle without awaiting it. `StartAsTask` has already begun the work at that point;
-`ToAsync` has not, and discarding the async discards the work.
-
 The members take an optional `cancellationToken` for interop callers; the module functions take none, which keeps the
 common path short. Use `Flow.timeout` to bound how long a workflow may run. On Fable, use `ToAsync`.
 
 Every call starts a fresh execution with its own root scope. Await the returned handle to receive the final Exit.
 
-Direct execution is useful at interop boundaries. A complete application normally starts its root workflow with
-`App.run`, introduced at the end of this section.
+At interop boundaries, run a Flow directly. Applications normally start their root workflow with `App.run`.
 
-## Go Further
+## Related guides
 
 - [App reference](/api/) covers root application execution and lifecycle handles.
 - [Exit reference](/api/) covers completed outcomes and boundary conversions.

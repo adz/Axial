@@ -25,7 +25,7 @@ channel.
 `ValueTask` has the corresponding `fromValueTask`, `fromValueTaskResult`, `awaitStartedValueTask`, and
 `awaitStartedValueTaskResult` functions.
 
-## The examples on this page
+## Example repository
 
 The examples use a stand-in for a data-access class. Its `LoadUserAsync` method starts work as soon as it is called,
 like most .NET APIs that return a `Task`, and it counts how often it was called:

@@ -40,13 +40,13 @@ val it: string = "FileNotFoundException"
 val it: string = "FileNotFoundException"
 ```
 
-The missing file shows the difference. `fromTask` reports the exception as a defect (`Cause.Die`); `attemptTask`
+`fromTask` reports the missing-file exception as a defect (`Cause.Die`); `attemptTask`
 places it in the typed error channel (`Cause.Fail`), where the caller is expected to handle it.
 
 The [Task and Async interop guide](/the-flow-type/task-async-interop.html) covers cancellation and
 all supported carriers.
 
-## Go Further
+## Related guides
 
 - [Flow construction reference](/api/) lists every constructor and
   conversion.

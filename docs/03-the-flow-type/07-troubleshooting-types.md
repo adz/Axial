@@ -4,10 +4,7 @@ title: Troubleshooting Types
 
 # Troubleshooting Types
 
-This page shows the compiler errors that usually mean you crossed a wrapper boundary in the wrong place.
-
-Most Axial type errors are not exotic.
-The compiler usually sees one wrapper shape and you intended another.
+These compiler errors often indicate a mismatch between wrapper types.
 
 ## Error: A Flow Alias Does Not Match The Channels You Intended
 
@@ -69,7 +66,7 @@ loadSettings<IHasFileSystem> |> Flow.run env |> shouldEqual (Exit.Success { Name
 
 ## Error: A Unique Overload For Method `Bind` Could Not Be Determined
 
-This usually happens when the compiler cannot tell which wrapper shape a `let!` value should use.
+The compiler cannot determine which wrapper shape a `let!` value should use.
 
 Example:
 
@@ -106,7 +103,7 @@ annotated |> Flow.run () |> shouldEqual (Exit.Success 42)
 
 ## Error: The Flow Requires A Different Environment Type
 
-This usually means you wrote a smaller workflow against one env type (or a specific service contract) and are trying to run it inside a larger env.
+A workflow written against one environment type (or service contract) cannot run directly inside a different environment type.
 
 Example 1: Records
 
@@ -219,7 +216,7 @@ startedWorkflow |> Flow.run () |> shouldEqual (Exit.Success 42)
 
 Use `Flow.awaitStartedTaskResult` when the started task returns `Result`.
 
-## When Type Errors Usually Mean A Boundary Problem
+## Check wrapper boundaries
 
 If the compiler error mentions one of these shapes, check the boundary first:
 
@@ -232,7 +229,7 @@ If the compiler error mentions one of these shapes, check the boundary first:
 
 `Flow.retry` and `Flow.repeat` take a `Schedule`. If the compiler reports a mismatch on the schedule's input type, check that the schedule's input matches the flow's error type (for `retry`) or value type (for `repeat`).
 
-Most fixes are one of:
+To resolve the mismatch:
 
 - add a type annotation to disambiguate `let!` overloads
 - derive a smaller local environment with `localEnv`

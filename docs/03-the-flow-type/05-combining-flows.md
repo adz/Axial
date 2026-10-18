@@ -26,10 +26,9 @@ val it: Exit<Tuple<string,int>,string> = Success ("ada", 42)
 `Flow.map2` and `Flow.map3` combine the successful values directly. Concurrent composition is a separate choice;
 use `Flow.zipPar` only when both branches are safe to run at the same time.
 
-Prefer `flow {}` for a longer dependent sequence and pipelines for a short transformation. They create the same Flow
-model and differ only in how the code reads.
+Prefer `flow {}` for a longer dependent sequence and pipelines for a short transformation. Both create the same Flow.
 
-## Go Further
+## Related guides
 
 - [Composition reference](/api/) lists mapping, binding, recovery,
   traversal, and sequential combination functions.
