@@ -122,30 +122,16 @@ dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
 
 This project runs several examples in one process: the request-boundary example, the policy
 examples, and then the supervision example below. The output before the
-`=== Supervision and fiber observability ===` banner belongs to those earlier examples. To run only
-the supervision example, set the `AXIAL_EXAMPLE` environment variable to `supervision`.
+`=== Supervision and fiber observability ===` banner belongs to those earlier examples and is omitted here. To run
+only the supervision example, set the `AXIAL_EXAMPLE` environment variable to `supervision`.
 
 Source: [SupervisionExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs)
 
 {{< snippet id="supervision-example" mode="no-check" reason="Compiled and run as its own example project" >}}
 
-Observed output:
+Observed output (supervision portion):
 
 ```text
-Flow result: Success { Id = 42
-          Name = "Ada" }
-Flow result: Success "Hello [11111111-1111-1111-1111-111111111111] Ada"
-Flow result: Success "Hello [11111111-1111-1111-1111-111111111111] Ada!"
-
-Policy examples
-  accepted:            Success { Sku = "SKU-1"
-          Quantity = 3 }
-  rejected (not int):  Failure (Fail QuantityNotANumber)
-  rejected (zero):     Failure (Fail QuantityNotPositive)
-  rejected (over cap): Failure (Fail (QuantityOverCap 10))
-  cap disabled:        Success { Sku = "SKU-1"
-          Quantity = 50 }
-
 === Supervision and fiber observability ===
 -- Flow.supervise: restart a background worker that dies with a defect
   result after 3 attempts: Success "worker succeeded on attempt 3"

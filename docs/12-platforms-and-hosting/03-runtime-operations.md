@@ -39,37 +39,18 @@ open System.Threading
 type CheckoutError =
     | GatewayUnavailable
     | CheckoutTimedOut
-    | ReceiptStoreFailed
     | UnexpectedGatewayFailure of string
 
-let authorizeCard : Flow<ClockEnvironment, CheckoutError, string> =
+/// One small workflow the runtime helpers below wrap: slow, cancellable, and able to fail.
+let checkout : Flow<ClockEnvironment, CheckoutError, string> =
     flow {
         do! Flow.sleep (TimeSpan.FromMilliseconds 50.0)
         return "receipt-123"
     }
-
-let storeReceipt (receiptId: string) : Flow<ClockEnvironment, CheckoutError, unit> =
-    flow {
-        do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
-        return ()
-    }
-
-let notifyCustomer (receiptId: string) : Flow<ClockEnvironment, CheckoutError, unit> =
-    flow {
-        do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
-        return ()
-    }
-
-let checkout : Flow<ClockEnvironment, CheckoutError, string> =
-    flow {
-        let! receiptId = authorizeCard
-        do! storeReceipt receiptId
-        do! notifyCustomer receiptId
-        return receiptId
-    }
 ```
 
-Runtime helpers control what happens when authorization, storage, or notification is slow, fails, is canceled, or throws.
+Runtime helpers control what happens when this workflow is slow, fails, is canceled, or throws. The
+[scheduling guide](/scheduling-and-retries/index.html) covers the schedule combinators in full.
 
 ## Timeout
 
@@ -96,8 +77,7 @@ let retryingCheckout =
         Schedule.exponential (TimeSpan.FromMilliseconds 50.0)
         |> Schedule.recursAtMost 3
         |> Schedule.whileInput (function
-            | GatewayUnavailable
-            | ReceiptStoreFailed -> true
+            | GatewayUnavailable -> true
             | _ -> false))
 ```
 
@@ -191,21 +171,11 @@ Annotations carry observability and correlation data at runtime, outside the dom
 ```fsharp
 let guardedCheckout =
     safeGatewayCall
-    |> Flow.bind (fun receiptId ->
-        flow {
-            do! storeReceipt receiptId
-            do! notifyCustomer receiptId
-            return receiptId
-        })
     |> Flow.timeoutToError (TimeSpan.FromSeconds 2.0) CheckoutTimedOut
     |> Flow.retry (
         Retry.schedule
             { Retry.defaults with
-                When =
-                    function
-                    | GatewayUnavailable
-                    | ReceiptStoreFailed -> true
-                    | _ -> false })
+                When = (function | GatewayUnavailable -> true | _ -> false) })
 ```
 
 ```fsharp run

@@ -40,6 +40,7 @@ including their cancellation and cleanup. It does not invoke a shell unless you 
 
 - [Capture output or send it elsewhere](output-capture.html)
 - [Consume output as it arrives](streaming.html)
+- [Integrate process streams with FlowStream](flowstream-integration.html)
 - [Handle failures and inspect results](failures-and-transcripts.html)
 - [Write a script or use shell syntax](scripts.html)
 - [Use stdin, routes, fan-in, or parallel commands](dsl-recipes.html)
