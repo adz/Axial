@@ -131,20 +131,23 @@ let tenantId = "acme"
 
 /// Runs a flow and returns the spans that finished on the application source, with their tags.
 let spansOf (workflow: Flow<unit, CheckoutError, int>) : (string * Map<string, string>) list =
-    let spans = ResizeArray<string * Map<string, string>>()
-
-    use listener =
-        new ActivityListener(
-            ShouldListenTo = (fun source -> source.Name = "Checkout.Api"),
-            Sample = SampleActivity<ActivityContext>(fun _ -> ActivitySamplingResult.AllData),
-            ActivityStopped =
-                (fun activity ->
-                    let tags = activity.TagObjects |> Seq.map (fun tag -> tag.Key, string tag.Value) |> Map.ofSeq
-                    lock spans (fun () -> spans.Add(activity.DisplayName, tags))))
-
-    ActivitySource.AddActivityListener listener
-    workflow |> Flow.run () |> ignore
-    List.ofSeq spans
+    FlowStream.fromCallback 64 (fun emit ->
+        Flow.delay (fun () ->
+            let listener =
+                new ActivityListener(
+                    ShouldListenTo = (fun source -> source.Name = "Checkout.Api"),
+                    Sample = SampleActivity<ActivityContext>(fun _ -> ActivitySamplingResult.AllData),
+                    ActivityStopped =
+                        (fun activity ->
+                            let tags = activity.TagObjects |> Seq.map (fun tag -> tag.Key, string tag.Value) |> Map.ofSeq
+                            emit.Value(activity.DisplayName, tags) |> ignore))
+            ActivitySource.AddActivityListener listener
+            workflow |> Flow.run () |> ignore
+            emit.End()
+            Flow.ok (listener :> IDisposable)))
+    |> FlowStream.runCollect
+    |> Flow.run ()
+    |> function Exit.Success spans -> spans | exit -> failwithf "Span collection failed: %A" exit
 ```
 
 ```fsharp

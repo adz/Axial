@@ -102,11 +102,15 @@ A detached fiber counts as observed from birth, so a defect it dies with is neve
 `FiberObserver` is a record of lifecycle hooks installed once at the application edge and carried implicitly to every descendant fork:
 
 ```fsharp
-let unobserved = ResizeArray<string>()
-
-let observer =
-    { FiberObserver.none with
-        OnUnobservedDefect = fun _ defect -> lock unobserved (fun () -> unobserved.Add defect.Message) }
+let defectStream (runApplication: FiberObserver -> Exit<unit, string>) =
+    FlowStream.fromCallback 16 (fun emit ->
+        Flow.delay (fun () ->
+            let observer =
+                { FiberObserver.none with
+                    OnUnobservedDefect = fun _ defect -> emit.Value defect.Message |> ignore }
+            runApplication observer |> ignore
+            emit.End()
+            Flow.ok ({ new IDisposable with member _.Dispose() = () })))
 
 /// Detaches one failing fiber and discards the handle of another.
 let application : Flow<ClockEnvironment, string, unit> =
@@ -119,8 +123,11 @@ let application : Flow<ClockEnvironment, string, unit> =
 ```
 
 ```fsharp run
-application |> Flow.withFiberObserver observer |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success())
-List.ofSeq unobserved |> shouldEqual [ "lost order" ]
+defectStream (fun observer ->
+    application |> Flow.withFiberObserver observer |> Flow.run (ClockEnvironment Clock.live))
+|> FlowStream.runCollect
+|> Flow.run (ClockEnvironment Clock.live)
+|> shouldEqual (Exit.Success [ "lost order" ])
 ```
 
 The discarded fork's defect was reported when its scope closed. The detached warmup's was not.

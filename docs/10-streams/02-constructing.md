@@ -45,6 +45,25 @@ val it: Exit<int list,Never> = Success [1; 2; 3; 42]
 `FlowStream.empty` emits nothing. `FlowStream.fromSeq` obtains its enumerator only when consumption starts. The enumerator is registered with the stream's Flow
 scope and disposed after completion or early termination.
 
+## Bridge callbacks
+
+`FlowStream.fromCallback capacity subscribe` creates a bounded stream from a synchronous callback. The subscription
+returns an `IDisposable` in a Flow; its disposal runs when consumption completes, fails, stops early, or is interrupted.
+If subscription attaches a handler before a later step can fail, register its cleanup with `Flow.scopeFinalizer`.
+`Emit.Value` returns `false` when the buffer is full (dropping the newest value) or the stream has ended. `Emit.Fail`
+ends with a typed error; `Emit.End` completes normally. Later callbacks are ignored. Use
+`FlowStream.fromCallbackWith capacity (CallbackOverflow.Fail error) subscribe` to fail rather than drop on overflow:
+previously queued values are delivered before the failure.
+
+```fsharp transcript
+> open System;;
+> open System.Threading.Tasks;;
+> open Axial;;
+> let notifications () : FlowStream<unit, string, int> = FlowStream.fromCallback 3 (fun emit -> Flow.delay (fun () -> Task.Run(fun () -> [1; 2; 3] |> List.iter (fun i -> emit.Value i |> ignore); emit.End()) |> ignore; Flow.ok ({ new IDisposable with member _.Dispose() = () })));;
+> notifications () |> FlowStream.runCollect |> Flow.run ();;
+val it: Exit<int list,string> = Success [1; 2; 3]
+```
+
 ## Lift one effect
 
 `FlowStream.fromFlow` creates a stream containing the successful result of one Flow:

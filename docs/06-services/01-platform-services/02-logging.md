@@ -98,10 +98,10 @@ type LogEnv =
 ```fsharp run
 let gate = obj()
 let mutable messages = []
-let collecting = { Log = Log.fromSink (fun level message -> messages.Add(level, message)) }
+let collecting = { Log = Log.fromSink (fun level message -> lock gate (fun () -> messages <- (level, message) :: messages)) }
 
 recordAttempt "invoice 7" |> Flow.run collecting |> shouldEqual (Exit.Success())
-lock gate (fun () -> List.rev messages) |> shouldEqual [ LogLevel.Information, "Processing invoice 7" ]
+lock gate (fun () -> messages) |> shouldEqual [ LogLevel.Information, "Processing invoice 7" ]
 
 lock gate (fun () -> messages <- [])
 everyLevel (InvalidOperationException "boom") |> Flow.run collecting |> ignore

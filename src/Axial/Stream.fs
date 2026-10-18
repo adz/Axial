@@ -42,6 +42,21 @@ type internal Pumped<'value, 'error> =
     | Ended
     | Failed of Cause<'error>
 
+/// <summary>Synchronous, thread-safe callback sink. Calls after completion return false or do nothing.</summary>
+type Emit<'error, 'value> internal (offer: 'value -> bool, fail: 'error -> unit, finish: unit -> unit) =
+    /// <summary>Offers a value; false means it was dropped or the stream has ended.</summary>
+    member _.Value(value) = offer value
+    /// <summary>Ends with a typed failure.</summary>
+    member _.Fail(error) = fail error
+    /// <summary>Ends normally.</summary>
+    member _.End() = finish ()
+
+/// <summary>What a callback stream does when its buffer is full.</summary>
+[<RequireQualifiedAccess>]
+type CallbackOverflow<'error> =
+    | Dropping
+    | Fail of 'error
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module FlowStream =
@@ -977,6 +992,71 @@ module FlowStream =
             |> Execution.bind (fun acquired ->
                 let (FlowStream op) = build acquired
                 op env ct))
+
+    /// <summary>Bridges a synchronous callback into a bounded, scope-owned stream with an overflow policy.</summary>
+    /// <remarks>On Fail overflow, queued values are delivered before the failure. Subscribe should register cleanup
+    /// with Flow.scopeFinalizer for anything it attaches before a later step can fail or be interrupted.</remarks>
+    let fromCallbackWith
+        (capacity: int)
+        (overflow: CallbackOverflow<'error>)
+        (subscribe: Emit<'error, 'value> -> Flow<'env, 'error, IDisposable>)
+        : FlowStream<'env, 'error, 'value> =
+        let resource =
+            Resource.create
+                (Flow.bind (fun (queue: Queue<'value>) ->
+                    let gate = obj ()
+                    let mutable terminal: Cause<'error> option option = None
+                    let finish cause =
+                        Platform.lock gate (fun () ->
+                            if terminal.IsNone then
+                                terminal <- Some cause
+                                QueueCore.shutdown queue)
+                    let emit = Emit<'error, 'value>(
+                        (fun value -> Platform.lock gate (fun () ->
+                            if terminal.IsSome then false
+                            else
+                                try
+                                    match Queue.tryOffer value queue with
+                                    | QueueTryOfferResult.Accepted -> true
+                                    | QueueTryOfferResult.Dropped ->
+                                        match overflow with
+                                        | CallbackOverflow.Dropping -> false
+                                        | CallbackOverflow.Fail error ->
+                                            terminal <- Some(Some(Cause.Fail error))
+                                            QueueCore.shutdown queue
+                                            false
+                                    | _ -> false
+                                with ex ->
+                                    // Waking a taker must not throw into a foreign callback thread.
+                                    terminal <- Some(Some(Cause.Die ex))
+                                    QueueCore.shutdown queue
+                                    false)),
+                        (fun error -> finish (Some(Cause.Fail error))),
+                        (fun () -> finish None))
+                    Flow.map (fun subscription -> queue, (fun () -> Platform.lock gate (fun () -> terminal)), finish, subscription)
+                        (subscribe emit))
+                    (Queue.makeScoped (QueueStrategy.Dropping capacity)))
+                (fun (_, _, finish, subscription) ->
+                    Flow.delay (fun () -> finish None; subscription.Dispose(); Flow.succeed ()))
+        using resource (fun (queue, terminal, _, _) ->
+            let rec pull ct () =
+                QueueCore.take queue
+                    (fun () -> match terminal () with
+                               | Some(Some cause) -> Execution.ofCause cause
+                               | _ -> Execution.ofValue Done)
+                    (fun value -> Execution.ofValue(Next(value, pull ct))) ct
+            FlowStream(fun _ ct -> pull ct ()))
+
+    /// <summary>Bridges a synchronous callback into a bounded, scope-owned stream.</summary>
+    /// <remarks>When full, the newest value is dropped; Value returns false.
+    /// The subscription is disposed on completion, failure, interruption, or early termination.
+    /// Subscribe should register cleanup with Flow.scopeFinalizer for anything it attaches before a later step
+    /// can fail or be interrupted. Callbacks after completion are ignored.</remarks>
+    let fromCallback
+        (capacity: int)
+        (subscribe: Emit<'error, 'value> -> Flow<'env, 'error, IDisposable>)
+        : FlowStream<'env, 'error, 'value> =
+        fromCallbackWith capacity CallbackOverflow.Dropping subscribe
 
     /// <summary>Returns the first value, or <c>None</c> for an empty stream, then stops the stream.</summary>
     /// <remarks>Only one value is pulled; resources and producer fibers are released as soon as it arrives.</remarks>

@@ -12,7 +12,18 @@ let private isInterrupted (exit: Exit<'value, 'error>) =
     | Exit.Success _ -> false
 
 let tests : Test list =
-    [ test "Each queue strategy handles a full queue its own way" (flow {
+    [ test "callback stream ends and releases on Fable" (flow {
+          let mutable released = 0
+          let! values =
+              FlowStream.fromCallback 2 (fun emit ->
+                  Flow.delay (fun () ->
+                      emit.Value 1 |> ignore
+                      emit.End()
+                      Flow.ok ({ new IDisposable with member _.Dispose() = released <- released + 1 })))
+              |> FlowStream.runCollect
+          return [ equal "callback values" [ 1 ] values; equal "callback release" 1 released ]
+      })
+      test "Each queue strategy handles a full queue its own way" (flow {
           let! (dropping: Queue<int>) = Queue.dropping 2
           let! droppingAccepted = dropping |> Queue.offerAll [ 1..4 ]
           let! droppingKept = Dequeue.takeAll dropping

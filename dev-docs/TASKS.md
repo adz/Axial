@@ -14,14 +14,6 @@ lists the queue. Work on main.
   - Recover the rest without weakening the semantics (uninterruptible, acquisition env and runtime, own scope):
     candidates are a scope created only when the release registers something, avoiding the ambient runtime switch
     when the release completes synchronously without reading it, and sharing one release runtime per scope close.
-- [ ] T4: `FlowStream.fromCallback` for .NET callbacks
-  - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`. Needs T1 (the subscription's release is a flow).
-  - Bridge .NET callbacks (events, `IObservable`, `ActivityListener`, runtime hooks) into a stream fed through a
-    scope-owned queue, with the subscription released when the stream ends, like ZIO's `ZStream.async`.
-    `Queue.tryOffer` is already synchronous.
-  - Use it to remove the locks in the telemetry guide (`ActivityListener`) and the supervision guide
-    (`OnUnobservedDefect`, possibly as a defect stream).
-  - Consider an `Axial.Guardrails` rule for `lock` inside `flow { }`.
 - [ ] T5: Test Reified HTTP adapters against NuGet packages
   - `Reified.*` packages are on NuGet (latest 0.8.2; `Directory.Build.props` pins `ReifiedVersion` 0.7.0). Restore and
     test `Axial.Hosting.AspNetCore`, `Axial.Hosting.GenHttp`, their examples and tests, and

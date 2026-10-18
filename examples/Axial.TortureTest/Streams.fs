@@ -65,6 +65,17 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! flowMapped = source () |> FlowStream.mapFlow (fun value -> Flow.ok (value + 1)) |> FlowStream.runCollect
         let! unfolded = FlowStream.unfoldFlow (fun state -> Flow.ok (if state < 10 then Some(state, state + 1) else None)) 0 |> FlowStream.runCollect
         let! single = FlowStream.fromFlow (Flow.ok 42) |> FlowStream.runCollect
+        let! callbackDefault =
+            FlowStream.fromCallback 2 (fun emit ->
+                Flow.delay (fun () -> emit.End(); Flow.ok ({ new IDisposable with member _.Dispose() = () })))
+            |> FlowStream.runCollect
+        let! callbackValues =
+            FlowStream.fromCallbackWith 4 CallbackOverflow.Dropping (fun emit ->
+                Flow.delay (fun () ->
+                    emit.Value 1 |> ignore
+                    emit.End()
+                    Flow.ok ({ new IDisposable with member _.Dispose() = () })))
+            |> FlowStream.runCollect
         let! localized =
             (FlowStream.fromSeq input : FlowStream<unit, Never, int>)
             |> FlowStream.localEnv (fun (_: ClockEnvironment) -> ())
@@ -85,7 +96,9 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         do! source () |> FlowStream.runForEachFlow (fun value -> Flow.delay (fun () -> seen.Add value; Flow.ok ()))
 
         let modelHolds =
-            mapped = (input |> List.map ((*) 3) |> List.filter (fun value -> value % 2 = 0))
+            callbackDefault = []
+            && callbackValues = [ 1 ]
+            && mapped = (input |> List.map ((*) 3) |> List.filter (fun value -> value % 2 = 0))
             && chosen = (input |> List.choose (fun value -> if value > 10 then Some(value - 10) else None))
             && scanned = (List.scan (+) 0 input |> List.tail)
             && indexed = List.indexed input
