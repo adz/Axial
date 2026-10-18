@@ -82,15 +82,16 @@ the clock instead of `Stopwatch` keeps durations deterministic in tests: under `
 zero:
 
 ```fsharp run
-let logged = ResizeArray<string>()
+let gate = obj()
+let mutable logged = []
 
 let testRuntime =
     { BaseRuntime.liveValue with
         Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero))
-        Log = Log.fromSink (fun _ message -> logged.Add message) }
+        Log = Log.fromSink (fun _ message -> lock gate (fun () -> logged <- message :: logged)) }
 
 timedReport |> Flow.run testRuntime |> shouldEqual (Exit.Success "report")
-List.ofSeq logged |> shouldEqual [ "report built in 0 ms" ]
+lock gate (fun () -> List.rev logged) |> shouldEqual [ "report built in 0 ms" ]
 ```
 
 ## Supplying the service

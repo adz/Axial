@@ -67,23 +67,26 @@ A test supplies the same record with fakes:
 
 ```fsharp
 type MemoryOrders() =
-    let saved = ResizeArray<int>()
-    member _.Saved = List.ofSeq saved
+    let gate = obj()
+    let mutable saved = []
+    member _.Saved = lock gate (fun () -> List.rev saved)
 
     interface IOrderRepo with
         member _.Save order =
-            if saved.Contains order.Id then
-                Error(DuplicateOrder order.Id)
-            else
-                saved.Add order.Id
-                Ok()
+            lock gate (fun () ->
+                if List.contains order.Id saved then
+                    Error(DuplicateOrder order.Id)
+                else
+                    saved <- order.Id :: saved
+                    Ok())
 
 type MemoryEmail() =
-    let sent = ResizeArray<int>()
-    member _.Sent = List.ofSeq sent
+    let gate = obj()
+    let mutable sent = []
+    member _.Sent = lock gate (fun () -> List.rev sent)
 
     interface IEmailSender with
-        member _.SendConfirmation order = sent.Add order.Id
+        member _.SendConfirmation order = lock gate (fun () -> sent <- order.Id :: sent)
 ```
 
 ```fsharp run

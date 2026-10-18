@@ -96,15 +96,16 @@ type LogEnv =
 ```
 
 ```fsharp run
-let messages = ResizeArray<LogLevel * string>()
+let gate = obj()
+let mutable messages = []
 let collecting = { Log = Log.fromSink (fun level message -> messages.Add(level, message)) }
 
 recordAttempt "invoice 7" |> Flow.run collecting |> shouldEqual (Exit.Success())
-List.ofSeq messages |> shouldEqual [ LogLevel.Information, "Processing invoice 7" ]
+lock gate (fun () -> List.rev messages) |> shouldEqual [ LogLevel.Information, "Processing invoice 7" ]
 
-messages.Clear()
+lock gate (fun () -> messages <- [])
 everyLevel (InvalidOperationException "boom") |> Flow.run collecting |> ignore
-messages.Count |> shouldEqual 10
+lock gate (fun () -> List.length messages) |> shouldEqual 10
 ```
 
 Because `Log.live` is a no-op, a test that does not care about logging can supply it and see nothing.

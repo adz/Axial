@@ -124,18 +124,19 @@ Nothing changes about substituting test doubles either. `BaseRuntime`'s fields e
 whole environment as one value literal, with no interface to reimplement:
 
 ```fsharp run
-let logged = ResizeArray<string>()
+let gate = obj()
+let mutable logged = []
 
 let testEnv =
     { Runtime =
         { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
-          Log = Log.fromSink (fun _ message -> logged.Add message)
+          Log = Log.fromSink (fun _ message -> lock gate (fun () -> logged <- message :: logged))
           Random = Random.fromValue 7
           Guid = Guid.fromValue (Guid.Parse "00000000-0000-0000-0000-000000000001")
           EnvironmentVariables = EnvironmentVariables.fromPairs [ "APP_MODE", "diagnostic" ] } }
 
 loadMode |> Flow.run testEnv |> shouldEqual (Exit.Success "diagnostic")
-List.ofSeq logged |> shouldEqual [ "[2026-01-01T00:00:00.0000000Z] starting in mode diagnostic" ]
+lock gate (fun () -> List.rev logged) |> shouldEqual [ "[2026-01-01T00:00:00.0000000Z] starting in mode diagnostic" ]
 ```
 
 If you already have several standard services in play, wrapping them once in an app environment like this is

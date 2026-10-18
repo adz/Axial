@@ -420,7 +420,7 @@ module FileSystemError =
 /// <summary>An in-memory file-system test double for the common read/write/enumerate surface.</summary>
 /// <remarks>Stream-returning, timestamp, symbolic-link, attribute, and logical-drive members throw
 /// <see cref="T:System.NotSupportedException" />.</remarks>
-type TestFileSystem(?initial: seq<string * string>) =
+type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string -> Flow<unit, FileSystemError, string>) =
     let files = System.Collections.Generic.Dictionary<string, byte array>(StringComparer.OrdinalIgnoreCase)
     let directories = System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
     let mutable currentDirectory = Path.GetTempPath()
@@ -482,7 +482,9 @@ type TestFileSystem(?initial: seq<string * string>) =
         member _.ReadAllText(path) = requireFile path |> Encoding.UTF8.GetString
         member _.ReadAllText(path, encoding) = requireFile path |> encoding.GetString
         member _.ReadAllTextAsync(path) =
-            Flow.attemptBlocking (fun _ -> requireFile path |> Encoding.UTF8.GetString ) |> Flow.mapError (FileSystemError.fromException (Some path))
+            match readAllTextAsync with
+            | Some read -> read path
+            | None -> Flow.attemptBlocking (fun _ -> requireFile path |> Encoding.UTF8.GetString ) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.ReadAllLines(path) = requireFile path |> Encoding.UTF8.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None)
         member _.ReadAllLines(path, encoding) = requireFile path |> encoding.GetString |> fun text -> text.Split([| "\r\n"; "\n" |], StringSplitOptions.None)
         member _.ReadAllLinesAsync(path) =

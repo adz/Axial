@@ -22,15 +22,6 @@ lists the queue. Work on main.
   - Open question, ask before implementing: how a process spec carries `'env`.
   - `AspNetCore.handleParsed` (`'model -> Task<IResult>`) and `GenHttp.handleParsed` (`'model -> ValueTask<IResponse>`)
     are unused by docs and examples: take a flow or remove them.
-- [ ] T3: Services return flows for asynchronous members
-  - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`.
-  - Async members return `Flow<unit, 'error, 'value>`, with dependencies supplied at construction; `IProcess.Execute`
-    already does this. Covers `IFileSystem` (`Task`) and `IHttp.Send` (`Async<Result<...>>`).
-  - Keep `IClock` as it is (the runtime schedules with it) and keep synchronous members synchronous (`UtcNow`, `ILog`,
-    `IRandom`, `IGuid`).
-  - Update live implementations, the test doubles (`FileSystem.test`, `Http.test`), and guides; let recording fakes
-    in the services and dependencies guides use `Ref`.
-  - Open question, ask before implementing: the typed error for `IFileSystem` and `IHttp` failures.
 - [ ] T4: `FlowStream.fromCallback` for .NET callbacks
   - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`. Needs T1 (the subscription's release is a flow).
   - Bridge .NET callbacks (events, `IObservable`, `ActivityListener`, runtime hooks) into a stream fed through a

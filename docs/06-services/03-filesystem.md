@@ -132,8 +132,7 @@ length |> shouldEqual (int64 ("one" + Environment.NewLine + "two" + Environment.
 The same family has `readAllTextWithEncoding`, `readAllTextAsync`, `readAllBytes`, `writeAllBytes`, and the other
 encoding-explicit and asynchronous forms.
 
-The `Async` variants pass the flow's cancellation token to the underlying call, so an interrupted workflow stops a
-large read in progress rather than after it. Prefer them for anything that is not small.
+The `Async` members on `IFileSystem` (including `ReadAllTextAsync`, `ReadAllBytesAsync`, and `WriteAllTextAsync`) return `Flow<unit, FileSystemError, _>` without a token argument. The runtime passes its cancellation token to the underlying I/O, so interrupting a workflow stops a large read in progress. Prefer them for anything that is not small.
 
 `fileExists`, `exists`, `deleteFile`, `copyFile`, and `moveFile` cover the other common operations.
 `getFileLength` returns a file's size in bytes, and file metadata has getters and setters for attributes and the creation, last-access, and last-write times in both local and
@@ -191,6 +190,8 @@ File.WriteAllText(Path.Combine(root, "src", "notes.md"), "")
 
 fsharpSources (Path.Combine(root, "src")) |> Flow.run live |> shouldEqual (Exit.Success [ "Library.fs"; "Program.fs" ])
 ```
+
+`enumerateFileSystemInfos directory pattern searchOption` yields `FileSystemEntry` values with path, kind, size, and timestamps in one listing, avoiding separate metadata calls per entry.
 
 Path manipulation is also on the service: `combine`, `getFullPath`, `getFileName`, `getExtension`, `getRelativePath`,
 `getTempPath`, `getRandomFileName`, and the rest. These are pure string operations on .NET, but routing them through

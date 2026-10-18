@@ -109,11 +109,12 @@ type InMemoryUsers(users: User list) =
             | None -> Error $"no user {id}"
 
 type ListAudit() =
-    let entries = ResizeArray<string>()
-    member _.Entries = List.ofSeq entries
+    let gate = obj()
+    let mutable entries = []
+    member _.Entries = lock gate (fun () -> List.rev entries)
 
     interface IAuditLog with
-        member _.Record entry = entries.Add entry
+        member _.Record entry = lock gate (fun () -> entries <- entry :: entries)
 ```
 
 ```fsharp run

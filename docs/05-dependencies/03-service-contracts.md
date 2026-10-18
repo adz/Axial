@@ -113,23 +113,25 @@ let submit<'env when 'env :> IHasOrders and 'env :> IHasEmail> (order: Order) : 
 `AppEnv` satisfies both constraints, so it runs `save` and `submit` alike:
 
 ```fsharp run
-let saved = ResizeArray<int>()
-let sent = ResizeArray<int>()
+let gate = obj()
+let mutable saved = []
+let mutable sent = []
 
 let env =
     { Orders =
         { new IOrderRepository with
             member _.Save order =
-                if saved.Contains order.Id then
-                    Error(AlreadySaved order.Id)
-                else
-                    saved.Add order.Id
-                    Ok() }
-      Email = { new IEmailSender with member _.SendConfirmation order = sent.Add order.Id } }
+                lock gate (fun () ->
+                    if List.contains order.Id saved then
+                        Error(AlreadySaved order.Id)
+                    else
+                        saved <- order.Id :: saved
+                        Ok()) }
+      Email = { new IEmailSender with member _.SendConfirmation order = lock gate (fun () -> sent <- order.Id :: sent) } }
 
 submit { Id = 1 } |> Flow.run env |> shouldEqual (Exit.Success())
 save { Id = 1 } |> Flow.run env |> shouldEqual (Exit.Failure(Cause.Fail(AlreadySaved 1)))
-List.ofSeq sent |> shouldEqual [ 1 ]
+lock gate (fun () -> List.rev sent) |> shouldEqual [ 1 ]
 ```
 
 When a combination recurs, name it and a single constraint covers it:

@@ -3,20 +3,31 @@ namespace Axial.Tests
 open System
 open System.IO
 open System.Text
+open System.Threading.Tasks
 open Axial
 open Axial.FileSystem
 open Swensen.Unquote
 open Xunit
 
 type FileSystemTestEnv =
-    { FileSystem: IFileSystem }
+    { FileSystem: IFileSystem
+      Clock: IClock }
+
+    interface IHasClock with
+        member this.Clock = this.Clock
 
     interface IHasFileSystem with
         member this.FileSystem = this.FileSystem
 
 module FileSystemServiceTests =
+    let private clock () : IClock =
+        { new IClock with
+            member _.UtcNow() = DateTimeOffset.UtcNow
+            member _.Elapsed() = TimeSpan.FromMilliseconds(Environment.TickCount64 |> float)
+            member _.Sleep(delay, token) = Task.Delay(delay, token) :> Task }
+
     let private env () : FileSystemTestEnv =
-        { FileSystem = FileSystem.live }
+        { FileSystem = FileSystem.live; Clock = clock () }
 
     let private tempRoot () =
         Path.Combine(Path.GetTempPath(), "axial-tests", Guid.NewGuid().ToString("N"))
@@ -72,6 +83,24 @@ module FileSystemServiceTests =
             match FileSystem.readAllTextAsync (Path.Combine(root, "missing")) |> Flow.runSync (env ()) with
             | Exit.Failure (Cause.Fail (FileSystemError.FileNotFound _)) -> ()
             | other -> failwithf "Expected FileNotFound, got %A" other)
+
+    [<Fact>]
+    let ``interrupting an in-progress file read is not a file-system error`` () =
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let gate = TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let service = TestFileSystem(readAllTextAsync = (fun _ ->
+            Flow.fromTask (fun cancellationToken ->
+                started.TrySetResult(()) |> ignore
+                gate.Task.WaitAsync(cancellationToken))))
+        let workflow = flow {
+            let! fiber = FileSystem.readAllTextAsync "blocked.txt" |> Flow.fork
+            do! Flow.fromTask (fun token -> started.Task.WaitAsync(token))
+            return! Fiber.interrupt fiber
+        }
+        let result = Flow.runSync { FileSystem = service :> IFileSystem; Clock = clock () } workflow
+        match result with
+        | Exit.Success (Exit.Failure Cause.Interrupt) -> ()
+        | other -> failwithf "Expected interrupted read, got %A" other
 
     [<Fact>]
     let ``live file-system service creates and resolves file and directory symbolic links`` () =
