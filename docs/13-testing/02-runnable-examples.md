@@ -5,7 +5,7 @@ description: Executable Axial examples mirrored into the documentation.
 
 # Runnable Examples
 
-These examples are built and run while this page is generated, keeping the documentation tied to executable code.
+Page generation builds and runs these examples.
 
 ## Playground
 
