@@ -4,7 +4,7 @@ title: Packages
 
 # Packages
 
-Choose the library that matches the work you need to do. Supporting packages are documented with Axial Core unless they provide an independently useful programming model.
+Supporting packages are documented with Axial Core unless they provide an independently useful programming model.
 
 ## Axial Core
 
