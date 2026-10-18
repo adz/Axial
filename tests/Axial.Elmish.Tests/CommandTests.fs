@@ -47,6 +47,7 @@ module CommandTests =
         Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
         Assert.Empty(messages)
         Assert.Equal("broken", defects.ToArray().[0].Name)
+        Assert.Contains("boom", defects.ToArray().[0].Rendered)
 
     [<Fact>]
     let ``latest replaces a slow command and cancel suppresses delivery`` () =
@@ -54,18 +55,43 @@ module CommandTests =
         let started = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let interrupted = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        let gate =
+            match App.run owner.Environment (Deferred.make<ClockEnvironment, Never, int> ()) |> Async.RunSynchronously with
+            | Exit.Success value -> value
+            | _ -> failwith "Could not create gate"
         let slow =
-            Flow.fromTask (fun token ->
-                started.TrySetResult() |> ignore
-                token.Register(fun () -> interrupted.TrySetResult() |> ignore) |> ignore
-                Task.Delay(30000, token).ContinueWith(Func<Task, int>(fun completed -> completed.GetAwaiter().GetResult(); 1)))
+            flow {
+                do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> interrupted.TrySetResult() |> ignore; Task.FromResult(())))
+                do! Flow.fromTask (fun _ -> started.TrySetResult() |> ignore; Task.FromResult(()))
+                return! Deferred.await gate
+            }
         for start in Cmd.OfFlow.Latest.perform "key" owner slow id do start messages.Enqueue
         Assert.True(started.Task.Wait(5000))
         for start in Cmd.OfFlow.Latest.perform "key" owner (Flow.succeed 2) id do start messages.Enqueue
         Assert.True(interrupted.Task.Wait(5000))
         Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1), 5000))
         Assert.Equal(2, messages.ToArray().[0])
-        for start in Cmd.OfFlow.Latest.cancel "key" owner do start messages.Enqueue
+
+    [<Fact>]
+    let ``latest cancel interrupts a running command without dispatch`` () =
+        let messages = ConcurrentQueue<int>()
+        let started = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let released = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        let gate =
+            match App.run owner.Environment (Deferred.make<ClockEnvironment, Never, int> ()) |> Async.RunSynchronously with
+            | Exit.Success value -> value
+            | _ -> failwith "Could not create gate"
+        let work = flow {
+            do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> released.TrySetResult() |> ignore; Task.FromResult(())))
+            do! Flow.fromTask (fun _ -> started.TrySetResult() |> ignore; Task.FromResult(()))
+            return! Deferred.await gate
+        }
+        for start in Cmd.OfFlow.Latest.perform "k" owner work id do start messages.Enqueue
+        Assert.True(started.Task.Wait(5000))
+        for start in Cmd.OfFlow.Latest.cancel "k" owner do start messages.Enqueue
+        Assert.True(released.Task.Wait(5000))
+        Assert.Empty(messages)
 
     [<Fact>]
     let ``stop interrupts a command and runs its release`` () =
@@ -83,6 +109,26 @@ module CommandTests =
         Assert.True(started.Task.Wait(5000))
         Assert.True(owner.StopAndWait(TimeSpan.FromSeconds 5.0))
         Assert.True(released.Task.Wait(5000))
+        Assert.Empty(messages)
+
+    [<Fact>]
+    let ``command first step runs off the caller thread`` () =
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let observed = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let messages = ConcurrentQueue<int>()
+        use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        let work = Flow.delay (fun () -> observed.TrySetResult(Thread.CurrentThread.ManagedThreadId) |> ignore; Flow.succeed 1)
+        for start in Cmd.OfFlow.perform "thread" owner work id do start messages.Enqueue
+        Assert.True(observed.Task.Wait(5000))
+        Assert.NotEqual(caller, observed.Task.Result)
+        Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1), 5000))
+
+    [<Fact>]
+    let ``commands started after stop do not dispatch`` () =
+        let messages = ConcurrentQueue<int>()
+        use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        Assert.True(owner.StopAndWait(TimeSpan.FromSeconds 5.0))
+        for start in Cmd.OfFlow.perform "late" owner (Flow.succeed 1) id do start messages.Enqueue
         Assert.Empty(messages)
 
     [<Fact>]

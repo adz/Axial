@@ -231,8 +231,8 @@ module WorkflowSchedulingTests =
     [<Fact>]
     let ``Flow runtime helpers cover timeout and retry`` () =
         let timeoutResult =
-            Flow.sleep (TimeSpan.FromMilliseconds 20.0)
-            |> Flow.timeout (TimeSpan.FromMilliseconds 1.0) "timed out"
+            Flow.sleep (TimeSpan.FromSeconds 30.0)
+            |> Flow.timeout (TimeSpan.FromMilliseconds 100.0) "timed out"
             |> Flow.runSync (TestSupport.clockEnv ())
 
         let retryRuns = ref 0
