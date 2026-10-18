@@ -198,6 +198,12 @@ module internal NativeProcess =
                                     let token = ioCancellation.Token
                                     let commands = specification.Commands |> List.toArray
                                     let processes = ResizeArray<Diagnostics.Process>()
+                                    let stdoutCap, stderrCap = specification.MaxOutputBytes
+                                    for command in commands do
+                                        if stdoutCap.IsSome && inherited command.StdOut.Value then
+                                            invalidArg "specification" "A stdout byte cap cannot be enforced on inherited stdout." // axial-allow-raise
+                                        if stderrCap.IsSome && inherited command.StdErr.Value then
+                                            invalidArg "specification" "A stderr byte cap cannot be enforced on inherited stderr." // axial-allow-raise
                                     let starts = ResizeArray<DateTimeOffset>()
                                     let elapsedStarts = ResizeArray<TimeSpan>()
                                     let exitTasks = ResizeArray<Task<unit>>()
@@ -261,21 +267,34 @@ module internal NativeProcess =
                                     let terminate () =
                                         for proc in lock processes (fun () -> processes.ToArray()) do
                                             try
-                                                if not proc.HasExited then
+                                                // Kill(true) must be attempted even after the direct child exits:
+                                                // descendants may still own its redirected pipe. .NET cannot always
+                                                // discover reparented descendants; closing our pipes below ensures
+                                                // that an orphan cannot hold this execution's drain open.
 #if NETSTANDARD2_1
-                                                    proc.Kill()
+                                                proc.Kill()
 #else
-                                                    proc.Kill(entireProcessTree = true)
+                                                proc.Kill(entireProcessTree = true)
 #endif
-                                            with _ ->
-                                                ()
+                                            with _ -> ()
+                                            try
+                                                if proc.StartInfo.RedirectStandardOutput then proc.StandardOutput.Close()
+                                                if proc.StartInfo.RedirectStandardError then proc.StandardError.Close()
+                                                if proc.StartInfo.RedirectStandardInput then proc.StandardInput.Close()
+                                            with _ -> ()
 
-                                    let recordFailure error =
+                                    let recordFailure (error: exn) =
                                         let first =
                                             lock errorGate (fun () ->
-                                                if firstFailure.IsSome then
-                                                    false
-                                                else
+                                                match firstFailure, error with
+                                                | Some (:? StageExitException), (:? ProcessFailureException as failure) ->
+                                                    match failure.Error with
+                                                    | ProcessError.OutputTooLarge _ ->
+                                                        firstFailure <- Some error
+                                                        false
+                                                    | _ -> false
+                                                | Some _, _ -> false
+                                                | None, _ ->
                                                     firstFailure <- Some error
                                                     true)
 
@@ -366,7 +385,8 @@ module internal NativeProcess =
 
                                             if not (command.SuccessCodes.Value.Contains processes[i].ExitCode) then
                                                 do! launchComplete.Task
-                                                recordFailure (StageExitException i)
+                                                lock errorGate (fun () ->
+                                                    if firstFailure.IsNone then firstFailure <- Some(StageExitException i))
 
                                             return ()
                                         })
@@ -1008,7 +1028,7 @@ module internal NativeProcess =
 
                                             do! Task.WhenAll [| io :> Task; drain :> Task |]
 
-                                            match firstFailure with
+                                            match lock errorGate (fun () -> firstFailure) with
                                             | Some error -> return raise error // axial-allow-raise
                                             | None -> return Choice1Of3(buildResult ())
                                         with error ->

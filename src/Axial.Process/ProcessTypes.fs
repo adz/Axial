@@ -492,6 +492,12 @@ module internal Configuration =
         }
 
     let validate (specification: ProcessSpec) =
+        let stdoutCap, stderrCap = specification.MaxOutputBytes
+        for command in specification.Commands do
+            if stdoutCap.IsSome && (match command.StdOut with Some OutputTarget.Inherit -> true | _ -> false) then
+                invalidArg "specification" "A stdout byte cap cannot be enforced on inherited stdout."
+            if stderrCap.IsSome && (match command.StdErr with Some OutputTarget.Inherit -> true | _ -> false) then
+                invalidArg "specification" "A stderr byte cap cannot be enforced on inherited stderr."
         for source, target, both in specification.Connections do
             if specification.Commands[source].StdOut.IsSome then
                 invalidArg "source" "Piped stdout already has an explicit destination."
@@ -554,7 +560,7 @@ type ProcessInput with
             match value with
             | Some limit when limit < 0L -> invalidArg "value" "Output byte limits must be non-negative."
             | _ -> ()
-        { specification with MaxOutputBytes = stdout, stderr }
+        { specification with MaxOutputBytes = stdout, stderr } |> Configuration.validate
 
     static member Defaults(defaults, specification: ProcessSpec) = {
         specification with

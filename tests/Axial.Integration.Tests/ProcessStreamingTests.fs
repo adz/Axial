@@ -63,6 +63,39 @@ module ProcessStreamingTests =
         |> tooLarge 0 OutputChannel.StdOut 65536L
 
     [<Fact>]
+    let ``orphan holding output pipe cannot block cap failure`` () =
+        let work = Task.Run(fun () ->
+            shText "sh -c 'yes' & exit 0"
+            |> maxOutputBytes (Some 65536L) None
+            |> Process.tryRun)
+        Assert.True(work.Wait(TimeSpan.FromSeconds 10.), "Output drain hung after parent exited")
+        tooLarge 0 OutputChannel.StdOut 65536L work.Result
+
+    [<Fact>]
+    let ``nonzero exit does not conceal buffered output overflow`` () =
+        shText "head -c 200000 /dev/zero; exit 3"
+        |> maxOutputBytes (Some 65536L) None
+        |> Process.tryRun
+        |> tooLarge 0 OutputChannel.StdOut 65536L
+
+    [<Theory>]
+    [<InlineData(false, 64)>]
+    [<InlineData(true, 64)>]
+    let ``byte caps accept exactly the limit and reject one more`` stderr limit =
+        let command count =
+            shText (sprintf "head -c %d /dev/zero%s" count (if stderr then " >&2" else ""))
+            |> maxOutputBytes (if stderr then None else Some(int64 limit)) (if stderr then Some(int64 limit) else None)
+        command limit |> Process.tryRun |> succeeded |> ignore
+        command (limit + 1) |> Process.tryRun
+        |> tooLarge 0 (if stderr then OutputChannel.StdErr else OutputChannel.StdOut) (int64 limit)
+
+    [<Fact>]
+    let ``inherited channel cannot have a cap`` () =
+        Assert.Throws<ArgumentException>(fun () ->
+            shText "true" |> stdoutToInheritHandles |> maxOutputBytes (Some 1L) None |> ignore)
+        |> ignore
+
+    [<Fact>]
     let ``batch and streaming resolve distinct capture defaults`` () =
         let command = shText "head -c 70000 /dev/zero; head -c 70000 /dev/zero >&2"
         let batch = command |> Process.tryRun |> succeeded
