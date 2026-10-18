@@ -30,9 +30,11 @@ let private matches (rule: EffectRule) (mfv: FSharpMemberOrFunctionOrValue) : bo
         |> Option.map (fun e -> e.TryFullName = Some entityFullName)
         |> Option.defaultValue false
 
-let private ruleFor (rules: EffectRule list) (symbol: FSharpSymbol) : EffectRule option =
+let private ruleFor (rules: EffectRule list) (insideFlow: bool) (symbol: FSharpSymbol) : EffectRule option =
     match symbol with
-    | :? FSharpMemberOrFunctionOrValue as mfv -> rules |> List.tryFind (fun r -> matches r mfv)
+    | :? FSharpMemberOrFunctionOrValue as mfv ->
+        rules |> List.tryFind (fun r ->
+            matches r mfv && (match r.Scope with Anywhere -> true | InsideFlow -> insideFlow | OutsideFlow -> not insideFlow))
     | _ -> None
 
 let private contains (outer: FSharp.Compiler.Text.range) (inner: FSharp.Compiler.Text.range) =
@@ -46,11 +48,9 @@ let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) li
     let flowBodies = lazy (RaiseInFlowAnalyzer.flowBodyRanges ctx)
 
     ctx.GetAllSymbolUsesOfFile()
-    |> Seq.choose (fun symbolUse -> ruleFor rules symbolUse.Symbol |> Option.map (fun rule -> rule, symbolUse.Range))
-    |> Seq.filter (fun (rule, range) ->
-        match rule.Scope with
-        | Anywhere -> true
-        | InsideFlow -> flowBodies.Value |> List.exists (fun body -> contains body range))
+    |> Seq.choose (fun symbolUse ->
+        let inside = flowBodies.Value |> List.exists (fun body -> contains body symbolUse.Range)
+        ruleFor rules inside symbolUse.Symbol |> Option.map (fun rule -> rule, symbolUse.Range))
     |> Seq.toList
 
 let private toMessage (severity: Severity) (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =

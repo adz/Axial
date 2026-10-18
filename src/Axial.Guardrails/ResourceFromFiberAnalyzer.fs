@@ -33,7 +33,7 @@ let private isAllowed (sourceText: ISourceText) (line1: int) : bool =
     allowDirective.IsMatch(textOfLine1 line1) || allowDirective.IsMatch(textOfLine1 (line1 - 1))
 
 /// The identifier an application chain ultimately applies: `fork` in `Flow.forkNamed "x" body` is `forkNamed`.
-let rec private headIdent (expr: SynExpr) : string option =
+let rec headIdent (expr: SynExpr) : string option =
     match expr with
     | SynExpr.Ident ident -> Some ident.idText
     | SynExpr.LongIdent(_, longIdent, _, _) -> longIdent.LongIdent |> List.tryLast |> Option.map (fun i -> i.idText)
@@ -47,7 +47,7 @@ let private headIn (names: Set<string>) (expr: SynExpr) : bool =
     headIdent expr |> Option.map (fun name -> Set.contains name names) |> Option.defaultValue false
 
 /// `x |> f` parses as `App(App(op_PipeRight, x), f)`. Returns the piped value and the function it is piped into.
-let private pipe (expr: SynExpr) : (SynExpr * SynExpr) option =
+let pipe (expr: SynExpr) : (SynExpr * SynExpr) option =
     match expr with
     | SynExpr.App(_, false, SynExpr.App(_, true, operator, value, _), target, _) when headIdent operator = Some "op_PipeRight" ->
         Some(value, target)
@@ -106,7 +106,7 @@ let rec private returnsScopedResource (expr: SynExpr) : bool =
         returnsAcquisition Set.empty body
     | _ -> isAcquisition expr
 
-let private childExprs (expr: SynExpr) : SynExpr list =
+let childExprs (expr: SynExpr) : SynExpr list =
     match expr with
     | SynExpr.App(_, _, funcExpr, argExpr, _) -> [ funcExpr; argExpr ]
     | SynExpr.TypeApp(funcExpr, _, _, _, _, _, _) -> [ funcExpr ]
@@ -158,7 +158,7 @@ let rec private findForkedResources (expr: SynExpr) : range list =
 
     self @ (childExprs expr |> List.collect findForkedResources)
 
-let rec private allExprsInModule (decls: SynModuleDecl list) : SynExpr list =
+let rec allExprsInModule (decls: SynModuleDecl list) : SynExpr list =
     decls
     |> List.collect (fun decl ->
         match decl with

@@ -52,15 +52,6 @@ lists the queue. Work on main.
     runtime makes progress. Document SCM recovery (`sc failure`) and a systemd unit with `Restart=` and `WatchdogSec=`.
   - Done when: `kill -9` restarts the agent under systemd, and a deliberately hung runtime is restarted by the
     watchdog (scripted test, Linux; Windows documented).
-- [ ] T20: Guardrails output and new rules
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
-  - When the analyzer exits because of findings, suppress or reword MSBuild's `MSB3073 ... FSharp.Analyzers.Cli.dll
-    ... exited with code -2`, which reads like a tool crash.
-  - Flag `TimeZoneInfo.Local` (ambient machine state, like the clock) under the guardrail of the package that provides
-    the replacement, or document why it is excluded.
-  - Flag blocking waits (`Async.RunSynchronously`, `.Wait()`, `.Result`, `GetAwaiter().GetResult()`) outside flows
-    in host/UI code paths, and `Flow.run`/`RunSynchronously` producing a scope-owned service (`Cache`, `Hub`, `Queue`)
-    that dies when the run returns.
 - [ ] T6: Move the reference app and host examples to their own repository
   - Move the cross-product reference application and host examples to a separate integration/examples repository
     after both release trains are public.

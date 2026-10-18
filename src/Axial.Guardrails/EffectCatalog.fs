@@ -21,6 +21,8 @@ type RuleScope =
     | Anywhere
     /// Only inside a `flow { }` computation expression.
     | InsideFlow
+    /// Only outside a `flow { }` computation expression.
+    | OutsideFlow
 
 type EffectRule =
     { Id: string
@@ -121,6 +123,40 @@ let builtInRules: EffectRule list =
             "blocks a thread on a task with .Result inside a flow, which stalls the workflow and ignores interruption"
             "let! (bind the task with Flow.fromTask / ColdTask), or Flow.fromBlocking for synchronous work" with
             Scope = InsideFlow }
+
+      { rule "blocking.async" CoreGuardrail "blocking"
+            (MembersOf("Microsoft.FSharp.Control.FSharpAsync", [ "RunSynchronously" ]))
+            "blocks the calling thread waiting for an async computation"
+            "Async.StartAsTask and await the task at the host boundary" with Scope = OutsideFlow }
+
+      { rule "blocking.task-wait" CoreGuardrail "blocking"
+            (MembersOf("System.Threading.Tasks.Task", [ "Wait" ]))
+            "blocks the calling thread waiting for a task"
+            "await the task asynchronously" with Scope = OutsideFlow }
+
+      { rule "blocking.task-result-outside" CoreGuardrail "blocking"
+            (MembersOf("System.Threading.Tasks.Task`1", [ "get_Result"; "Result" ]))
+            "blocks the calling thread waiting for a task result"
+            "await the task asynchronously" with Scope = OutsideFlow }
+
+      { rule "blocking.value-task-result" CoreGuardrail "blocking"
+            (MembersOf("System.Threading.Tasks.ValueTask`1", [ "get_Result"; "Result" ]))
+            "blocks the calling thread waiting for a value task result"
+            "await the value task asynchronously" with Scope = OutsideFlow }
+
+      { rule "blocking.get-result-outside" CoreGuardrail "blocking"
+            (MembersOf("System.Runtime.CompilerServices.TaskAwaiter`1", [ "GetResult" ]))
+            "blocks the calling thread waiting for a task"
+            "await the task asynchronously" with Scope = OutsideFlow }
+
+      { rule "blocking.get-result-unit-outside" CoreGuardrail "blocking"
+            (MembersOf("System.Runtime.CompilerServices.TaskAwaiter", [ "GetResult" ]))
+            "blocks the calling thread waiting for a task"
+            "await the task asynchronously" with Scope = OutsideFlow }
+
+      // AXG008 is syntactic; this entry registers its suppression category.
+      rule "scope.run" CoreGuardrail "scope" (MembersOf("Axial.__ScopeFromRun", []))
+          "returns a scope-owned service" "use the service within its run"
 
       rule "console.any" "Axial.Console" "console" (AnyMemberOf "System.Console")
           "touches System.Console directly, which makes output/input an untestable ambient effect"

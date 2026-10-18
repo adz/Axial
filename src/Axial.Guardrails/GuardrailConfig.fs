@@ -40,6 +40,7 @@ let private parseSeverity (text: string) =
 let private parseScope (text: string) =
     match text.Trim().ToLowerInvariant() with
     | "insideflow" -> InsideFlow
+    | "outsideflow" -> OutsideFlow
     | _ -> Anywhere
 
 let defaults: Config =

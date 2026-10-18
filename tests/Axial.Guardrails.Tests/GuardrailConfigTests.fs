@@ -48,7 +48,7 @@ module GuardrailConfigTests =
         test <@ parseMatch "nonsense" = None @>
 
     [<Fact>]
-    let ``blocking task waits are flagged only inside flow`` () =
+    let ``blocking task waits are flagged inside and outside flow once`` () =
         task {
             let! found =
                 findings (
@@ -58,7 +58,22 @@ module GuardrailConfigTests =
                     + "        return t.GetAwaiter().GetResult() + t.Result\n"
                     + "    }\n")
 
-            test <@ found = [ 4; 4 ] @>
+            test <@ found = [ 1; 4; 4 ] @>
+        }
+
+    [<Fact>]
+    let ``outside waits are typed and suppressible`` () =
+        task {
+            let! found =
+                findings (
+                    "let a (t: System.Threading.Tasks.Task<int>) = t.Result\n"
+                    + "let b (t: System.Threading.Tasks.Task) = t.Wait(10)\n"
+                    + "let c (v: System.Threading.Tasks.ValueTask<int>) = v.Result\n"
+                    + "let d (a: Async<int>) = Async.RunSynchronously a\n"
+                    + "let e (t: System.Threading.Tasks.Task) = t.GetAwaiter().GetResult()\n"
+                    + "let f (t: System.Threading.Tasks.Task<int>) = t.Result // axial-allow-effect: blocking\n"
+                    + "let g (x: int) = x\n")
+            test <@ found = [ 1; 2; 3; 4; 5 ] @>
         }
 
     [<Fact>]

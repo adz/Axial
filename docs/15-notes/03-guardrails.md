@@ -56,8 +56,9 @@ For adoption guidance, see [Installation](/getting-started/installation.html#add
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
 | `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
 | `AXG007` | `ResourceFromFiber` | A forked flow that returns a scoped resource it acquired, which the fiber releases before `Fiber.join` returns it |
+| `AXG008` | `ScopeFromRun` | A run returning a scope-owned service that closes when the run ends |
 
-`AXG001`, `AXG002`, `AXG003`, `AXG005`, `AXG006`, and `AXG007` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
+`AXG001`, `AXG002`, `AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
 
 `AXG004` runs only in projects where MSBuild sets `IsTestProject`. It checks a test-specific risk and does not apply to application or library projects.
 
@@ -68,7 +69,7 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 
 | Guardrail | Rules |
 | --- | --- |
-| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking task waits inside `flow { }`, and `AXG002`–`AXG007` |
+| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking waits, and `AXG002`–`AXG008` |
 | `Axial.PlatformService` | Randomness, GUIDs, environment state, and `TimeZoneInfo.Local` |
 | `Axial.Console` | `System.Console` |
 | `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
@@ -125,7 +126,8 @@ an intentional use. Item metadata cannot contain a semicolon; write it as `%3B`.
 | `process` | `System.Diagnostics.Process.Start` | `Axial.Process.IProcess` |
 | `sleep` | `Thread.Sleep` | `Flow.sleep` or `Schedule` |
 | `http` | Construction of `HttpClient` | `Axial.HttpClient.IHttp`, with `Http.live` over one shared client |
-| `blocking` | `.GetAwaiter().GetResult()` and `.Result` on a task, inside `flow { }` only | `let!` on the task, or `Flow.fromBlocking` for synchronous work |
+| `blocking` | `Async.RunSynchronously`, `Task.Wait()`/`Wait(timeout)`, task/value-task `.Result`, and `.GetAwaiter().GetResult()` outside flows; task `.Result` and `.GetAwaiter().GetResult()` inside flows | Await asynchronously outside flows; `let!` on the task inside flows |
+| `scope` | A direct `Cache.make*`, `Hub.make`/`bounded`, or `Queue.bounded`/`unbounded` returned by a run | Use the service before the scope closes |
 
 `TimeZoneInfo.ConvertTimeFromUtc(utc, zone)` is allowed when `zone` is supplied explicitly; reading
 `TimeZoneInfo.Local` to supply that argument is not. Pass the desired zone through configuration or `'env`.
@@ -160,6 +162,12 @@ A file directive allows only the named categories. For example, a `console` dire
 Each directive must name a category. There is no directive that allows every effect.
 
 For the exact matching and suppression rules, see `EffectCatalog.fs` and `Suppressions.fs` in `src/Axial.Guardrails`.
+
+## AXG008: Keep scope-owned services inside their run
+
+`Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning a `Cache`, `Hub`, or `Queue` made directly by the run leaves a closed service. Use it inside the flow instead. The check is syntactic: direct constructor arguments and pipelines ending in a constructor are detected, but a constructor stored in a variable, a flow assembled elsewhere, or a `flow { }` that acquires and returns the service is not followed. `Ref` does not own a scope and is allowed. At an intentional boundary, add `// axial-allow-effect: scope`.
+
+Blocking waits outside flows can deadlock UI synchronization contexts. At a genuine synchronous entry point or test boundary, use `// axial-allow-effect: blocking`.
 
 ## AXG002: Remove invalid suppressions
 

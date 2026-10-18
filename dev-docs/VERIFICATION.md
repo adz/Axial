@@ -70,6 +70,7 @@ Record a test here the first time it fails and then passes unchanged; fix or del
 
 | Test | Seen | Symptom | Status |
 |---|---|---|---|
+| `WorkflowStreamTests.debounce keeps the last value of each burst` | T20 slice 2 verify run | Expected `[3; 5]`, got `[5]` under full-suite load | Open: timing-sensitive burst test; first run passed, later run failed |
 | `WorkflowSchedulingTests.Flow runtime helpers cover timeout and retry` | 2026-10-18, T4 full run | 20 ms sleep raced a 1 ms timeout under load | Fixed: 30 s sleep and 100 ms timeout separate the deadlines |
 | `ProcessServiceTests.run reports every non-zero stage through the typed error channel` | 2026-10-18, first `verify.sh` run | Asserted `cat` exits 0, but a failing stage kills the rest of the pipeline, so it is 0 or 137 | Fixed: the test accepts either |
 | `WorkspaceTests.the workspace is removed when the gate fails` | 2026-10-18, T15 slice 3 | Diffed every `/tmp` directory, so temp directories from other test assemblies counted as leaks | Fixed: workspaces use an `axial-workspace-` prefix and the test counts only those |

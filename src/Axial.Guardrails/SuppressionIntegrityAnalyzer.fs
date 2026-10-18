@@ -99,7 +99,11 @@ let suppressionIntegrityAnalyzer: Analyzer<CliContext> =
     fun (ctx: CliContext) ->
         async {
             let sourceText = ctx.SourceText
-            let raw = rawFindings ctx
+            let raw =
+                rawFindings ctx
+                @ (ScopeFromRunAnalyzer.rawRanges ctx
+                   |> List.map (fun range ->
+                       builtInRules |> List.find (fun rule -> rule.Id = "scope.run"), range))
             let lineDirectives = allLineDirectives sourceText
             let fileDirectives = allFileDirectives sourceText
 

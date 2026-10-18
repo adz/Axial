@@ -65,11 +65,12 @@
     <Compile Include="Suppressions.fs" />
     <Compile Include="RaiseInFlowAnalyzer.fs" />
     <Compile Include="EffectBoundaryAnalyzer.fs" />
+    <Compile Include="ResourceFromFiberAnalyzer.fs" />
+    <Compile Include="ScopeFromRunAnalyzer.fs" />
     <Compile Include="SuppressionIntegrityAnalyzer.fs" />
     <Compile Include="FixtureAnalyzer.fs" />
     <Compile Include="DiscardedCancellationAnalyzer.fs" />
     <Compile Include="ReflectionFormattingAnalyzer.fs" />
-    <Compile Include="ResourceFromFiberAnalyzer.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -12,6 +12,7 @@
     <Compile Include="AnalyzerTestContext.fs" />
     <Compile Include="ReflectionFormattingAnalyzerTests.fs" />
     <Compile Include="ResourceFromFiberAnalyzerTests.fs" />
+    <Compile Include="ScopeFromRunAnalyzerTests.fs" />
     <Compile Include="GuardrailConfigTests.fs" />
   </ItemGroup>
 
