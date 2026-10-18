@@ -15,7 +15,7 @@
 - `docs/12-platforms-and-hosting/02-node.md:25` — The first Node snippet assumes `AppError`, `program`, and `Live.appLayer` exist without defining or linking their shapes. Label it schematic and link to a complete root-application example.
 - `docs/12-platforms-and-hosting/07-running-as-a-service.md:30` — The sample records progress using a live monotonic clock but does not show how the job loop shares `recordCompletion` with the watchdog; show the composition point so the health signal represents real work.
 
-- `docs/11-observability/01-telemetry/01-javascript.md:50` — The first tracing snippet assumes `checkout`, `order`, `user`, `AppAttributes`, `tenantId`, and `CheckoutError.describe` already exist; none is defined on this page. Label it schematic or provide a minimal runnable workflow and key.
+- [fixed] `docs/11-observability/01-telemetry/01-javascript.md:50` — The first tracing snippet assumes `checkout`, `order`, `user`, `AppAttributes`, `tenantId`, and `CheckoutError.describe` already exist; none is defined on this page. Label it schematic or provide a minimal runnable workflow and key.
 
 - [fixed] `docs/10-streams/02-constructing.md:166` — The crawler uses `Map.find` for every discovered URL and assumes all links exist in the in-memory site; a real crawl needs a typed fetch error or an explicit missing-page policy.
 
@@ -64,9 +64,9 @@
 - `docs/12-platforms-and-hosting/06-dotnet.md:105` — The Generic Host snippet provisions `Live.appLayer` yet the environment passed to `Hosting.addApp` contains only `Orders`; it never shows how that layer's input and the constructed `AppEnv` agree. Show a coherent end-to-end composition.
 - `docs/12-platforms-and-hosting/07-running-as-a-service.md:7` — `UseSystemd()` and the `Type=notify` unit imply READY notification, but the page never says which component sends READY or how `SystemdNotify.live` is passed into the host. Explain this wiring before recommending the unit.
 
-- `docs/11-observability/_index.md:291` — `FiberDumpTelemetry.record registry` conflicts with the two-argument `FiberDumpTelemetry.record Clock.live registry` shown in the telemetry guide at line 385. Use one consistent call shape.
-- `docs/11-observability/_index.md:260` — The literal fiber-dump output is separate from the checked example and uses an unrelated three-fiber tree; readers may mistake it for the output of `withPoller`. Mark it as a hypothetical example or generate a verified transcript.
-- `docs/11-observability/01-telemetry/_index.md:381` — This recommends `Clock.live` for a dump even though the overview's example passes the supplied environment clock. Explain when a live clock is appropriate versus the application's injected clock.
+- [fixed] `docs/11-observability/_index.md:291` — `FiberDumpTelemetry.record registry` conflicts with the two-argument `FiberDumpTelemetry.record Clock.live registry` shown in the telemetry guide at line 385. Use one consistent call shape.
+- [fixed] `docs/11-observability/_index.md:260` — The literal fiber-dump output is separate from the checked example and uses an unrelated three-fiber tree; readers may mistake it for the output of `withPoller`. Mark it as a hypothetical example or generate a verified transcript.
+- [fixed] `docs/11-observability/01-telemetry/_index.md:381` — This recommends `Clock.live` for a dump even though the overview's example passes the supplied environment clock. Explain when a live clock is appropriate versus the application's injected clock.
 
 - [fixed] `docs/10-streams/_index.md:21` — “Upstream cannot outrun” downstream is too absolute for the later producer-fiber and parallel operators; qualify this as bounded backpressure, with `fromCallback` explicitly able to drop values on overflow.
 - [fixed] `docs/10-streams/04-batching-and-parallelism.md:35` — “Does not begin the next batch until the current result list is consumed” could imply per-item consumption of that list; the terminal pulls the next batch after the previous batch has been emitted, regardless of what the caller does with its elements.

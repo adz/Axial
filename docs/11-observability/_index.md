@@ -257,6 +257,9 @@ match withPoller |> Flow.run (ClockEnvironment Clock.live) with
 | other -> failwithf "unexpected %A" other
 ```
 
+The following rendering is illustrative — it comes from a program with a supervisor fiber, a named poller
+carrying a `tenant=acme` annotation, and an unnamed child, not from the one-fiber `withPoller` above:
+
 ```text
 Fiber dump @ 2026-07-16T10:00:12.5000000+00:00 — 3 live fiber(s)
 #1 "outbox-supervisor" Running 3605.2s (started 2026-07-16T09:00:07.2000000+00:00)
@@ -288,7 +291,7 @@ A dump that shows a stuck fiber can also act on it: `registry.Interrupt id` sign
 `registry.InterruptByName "outbox-poller"` signals every live fiber with that name and returns how many it signalled.
 Neither waits; whoever joins or awaits the fiber sees `Cause.Interrupt`.
 
-To put a dump where your traces are, `FiberDumpTelemetry.record registry` attaches the live-fiber tree to
+To put a dump where your traces are, `FiberDumpTelemetry.record Clock.live registry` attaches the live-fiber tree to
 the current activity as an `axial.flow.fiber.dump` event (or a standalone span when no activity is
 current). Record one just before a timeout fires or from a slow-request handler, so the trace that explains
 *that something was slow* also records *what the runtime was busy with*.

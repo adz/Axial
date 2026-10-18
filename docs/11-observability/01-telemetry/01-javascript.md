@@ -41,16 +41,19 @@ context manager. Without a context manager, a span can lose its active parent af
 
 ## Trace and tag a workflow
 
-The context API works on .NET and JavaScript:
+The context API works on .NET and JavaScript. This snippet is schematic: `checkout`, `order`, `userId`,
+`CheckoutAttributes`, `tenantId`, and `CheckoutError.describe` are application values defined in the checked
+example of the [.NET telemetry guide](index.html). Only the JavaScript `Otel.traceWith` adapter and the extra
+`Axial.Telemetry.JavaScript` open differ here; the context calls are identical.
 
 ```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 open Axial.Telemetry
 open Axial.Telemetry.JavaScript
 
 checkout order
-|> Context.withEndUserId user.Id
+|> Context.withEndUserId userId
 |> Context.withAttributes [
-    Context.attribute AppAttributes.tenantId tenantId
+    Context.attribute CheckoutAttributes.tenantId tenantId
 ]
 |> Otel.traceWith CheckoutError.describe "checkout.submit"
 ```

@@ -378,8 +378,11 @@ let pollOutbox : Flow<ClockEnvironment, CheckoutError, unit> = Flow.sleep (TimeS
 let startPoller : Flow<ClockEnvironment, CheckoutError, Fiber<CheckoutError, unit>> = Flow.forkNamed "outbox-poller" pollOutbox
 ```
 
-Return `registry.DumpAt(Clock.live)` from a protected diagnostics endpoint, write it during a stuck shutdown, or attach it to the
-current trace:
+`registry.DumpAt` and `FiberDumpTelemetry.record` both take an `IClock` to timestamp the snapshot. Inside a workflow,
+read the environment's injected clock (`Flow.envWith (fun (env: ClockEnvironment) -> env.Clock)`) so tests and
+repeated runs get a deterministic timestamp. At the edge there is no environment to read: call
+`registry.DumpAt(Clock.live)` from a protected diagnostics endpoint, write it during a stuck shutdown, or attach it
+to the current trace, all with the live clock:
 
 ```fsharp
 let recordDump () = FiberDumpTelemetry.record Clock.live registry
