@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/07-layers/02-tutorial.md:142` — The fake connection is created before provisioning and reused; the example assumes a single run. Show acquisition inside the layer for a reusable resource layer.
+
 - `docs/06-services/02-console.md:43` — `Console.readLine` may return null at EOF; `answer.Trim()` assumes interactive input always supplies a line. Show EOF handling in a reusable confirmation example.
 
 - `docs/05-dependencies/04-providing-the-environment.md:52` — `SqlUserStore(connectionString)` is invoked without a definition or indication that it is pseudocode; a newcomer may treat the production record as copyable.
@@ -13,6 +15,10 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/07-layers/_index.md:121` — “A record cannot express that” overstates the case: a factory returning `Result<AppEnv, BaseRuntimeError>` can model typed startup failure without a layer. Explain the added value of scoped provisioning and `Layer.provide` instead.
+- `docs/07-layers/_index.md:131` — A host-created `ILoggerFactory` can still be placed in a record after host startup; the example demonstrates adapting a dependency, not an inability to use records.
+- `docs/07-layers/_index.md:54` — “Its lifetime is the runtime's” suggests a longer-lived resource than the later `Layer.provide` boundary, which releases it when the provided flow finishes. Name the provided-flow scope here.
 
 - `docs/06-services/01-platform-services/01-clock.md:103` — The manual-clock example says to advance after a sleeper registers but provides only a comment, not a wait; copying the snippet can race and hang. The later suggestion to implement a mutable clock also omits the already introduced `ManualClock`.
 - `docs/06-services/03-filesystem.md:134` — “The `Async` members on `IFileSystem` ... return `Flow`” blurs service methods and workflow wrappers; distinguish the interface's signatures from the `FileSystem.*Async` functions readers call.
@@ -41,6 +47,8 @@
 
 ## Too long
 
+- `docs/07-layers/01-layers.md:141` — The function catalog and separate zip/merge discussion interrupt the provisioning walkthrough; keep the choices needed by the example and move the full combinator inventory to reference documentation.
+
 - `docs/06-services/02-console.md:139` — The 49-line full `IConsole` fake overwhelms the console usage guide; move the complete implementation to a test-helper recipe and retain a short assertion or link.
 
 - `docs/05-dependencies/01-the-environment.md:70` — The application-record example, two complete fake implementations, and assertions repeat the dedicated app-record tutorial; keep a minimal projection example here and link to the tutorial.
@@ -55,6 +63,8 @@
 
 ## Reference material in guides
 
+- `docs/07-layers/01-layers.md:143` — The table enumerates `map`, `mapError`, `widenError`, `bind`, `zip`, `zipPar`, `merge`, `map2`, and `map3` without showing most in use; link to their API reference and retain the composition rules that matter here.
+
 - `docs/06-services/03-filesystem.md:131` — The catalog of async methods, metadata setters, symlinks, directory enumerators, and path helpers across lines 131–197 is API-reference material; keep representative usage and link to a searchable operation reference.
 
 - `docs/05-dependencies/03-service-contracts.md:146` — The subtle `#T` type-variable rule is reference material in a conceptual guide; keep a brief warning here and link to a focused signature reference with examples.
@@ -66,6 +76,9 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/07-layers/01-layers.md:156` — The text tells readers to map differing startup errors before providing but gives no example of combining a `Never` layer and a typed-error layer, or of mapping distinct error unions; show the conversion at the composition site.
+- `docs/07-layers/01-layers.md:209` — Parallel failure claims `Cause.Both`, but there is no checked example showing two failing branches or how callers inspect the combined cause.
 
 - `docs/06-services/_index.md:36` — The section navigation omits `04-files.md` and `07-websocket.md`; first-time readers cannot discover those capabilities from this landing page.
 - `docs/06-services/04-files.md:7` — `AppendLog.openLog` is described as scoped but no runnable example shows acquiring, appending, replaying, and closing it; include a minimal end-to-end example and required environment.
@@ -86,6 +99,9 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/07-layers/_index.md:10` — Hide or reduce the repeated `prepare` fixture: optional Browser, Node, telemetry, and filesystem imports appear before the first layer example, obscuring the required packages. The same fixture appears in both other layers pages.
+- `docs/07-layers/02-tutorial.md:167` — Use a checked acquisition/release example with a fresh connection per provision, rather than a prebuilt object registered for disposal, to make ownership and repeated runs safe to copy.
 
 - `docs/06-services/01-platform-services/01-clock.md:8` — Hide or trim the repeated docs-test `prepare` fixture: optional Browser, Node, filesystem, and telemetry imports obscure the packages needed for the clock example; the same fixture appears on logging, environment variables, console, filesystem, and existing-services pages.
 - `docs/06-services/01-platform-services/02-logging.md:8` — Link or demonstrate the `MicrosoftLogging`/`FiberLogging` adapter and explain their package imports; the opening introduces them before teaching basic `ILog` and never uses them in a snippet.
