@@ -7,17 +7,10 @@ lists the queue. Work on main.
 
 ## Queue
 
-- [ ] T16: `Axial.Elmish` package and `App.start` off the caller's context
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Spec: `dev-docs/current-ideas/axial-elmish.md`. Needs T1.
-  - First fix the verified shutdown deadlock in core: `App.start` runs `Async.StartWithContinuations` on the caller's
-    thread and settles through its `SynchronizationContext`, so stopping on a UI thread never returns. Start on the
-    thread pool and add `AppHandle.StopAndWait(timeout)`, safe on any thread.
-  - Then extract gitkay's `src/Axial.Elmish` into a per-program runtime: one root scope, delivery only through a
-    host-supplied `Post`, `OnDefect` wired to the host crash path, a per-runtime `FiberRegistry`, `Cmd.OfFlow`
-    (`either`/`perform`/`attempt`, plus `Latest` keyed latest-wins), `Sub.OfFlowStream`, and `Inbox`.
-  - Done when: the spec's required tests pass, and gitkay and Logs Digger can delete their own bridges.
-- [ ] T15b: Migrate gitkay and LogDug to Axial.Files once 0.11 is published
+- [ ] T15b: Migrate gitkay and LogDug to Axial.Files and Axial.Elmish once 0.11 is published
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
+  - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
+    with keyed commands and an inbox subscription, and await cleanup on shutdown.
 - [ ] T10: Fiber-local context carried into logs
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Replaces the `LATER_TODO.md` "fiber-local state" item.
   - Add FiberRef-style fiber-local values (make, get, set, locally), inherited by forked fibers. Have `ILog`

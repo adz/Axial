@@ -28,6 +28,10 @@ type TestRuntime<'env when 'env :> IHasClock> internal (environment: 'env) =
     member _.Run(command: Cmd<'msg>) =
         for start in command do start (fun message -> messages.Enqueue(box message))
 
+    member _.Subscribe(subscription: Sub<'msg>) =
+        subscription
+        |> List.map (fun (_, start) -> start (fun message -> messages.Enqueue(box message)))
+
     /// Waits for all queued jobs and registered fibers, then drains UI deliveries.
     member this.Settle(timeout: TimeSpan) =
         let watch = Stopwatch.StartNew() // axial-allow-effect: clock (wall-clock test timeout, independent of manual workflow clock)
@@ -57,3 +61,4 @@ module TestRuntime =
     let defects (runtime: TestRuntime<'env>) = runtime.Defects
     let settle timeout (runtime: TestRuntime<'env>) = runtime.Settle(timeout)
     let run command (runtime: TestRuntime<'env>) = runtime.Run(command)
+    let subscribe subscription (runtime: TestRuntime<'env>) = runtime.Subscribe(subscription)

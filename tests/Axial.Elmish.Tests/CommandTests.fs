@@ -112,6 +112,32 @@ module CommandTests =
         Assert.Empty(messages)
 
     [<Fact>]
+    let ``stop on an unpumped single-thread context releases command`` () =
+        let previous = SynchronizationContext.Current
+        let callbacks = ConcurrentQueue<SendOrPostCallback * obj>()
+        let context =
+            { new SynchronizationContext() with
+                override _.Post(callback, state) = callbacks.Enqueue(callback, state) }
+        SynchronizationContext.SetSynchronizationContext(context)
+        try
+            let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+            let work = flow {
+                do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> released.TrySetResult() |> ignore; Task.FromResult(())))
+                do! Flow.fromTask (fun token ->
+                    started.TrySetResult() |> ignore
+                    Task.Delay(30000, token).ContinueWith(Func<Task, unit>(fun completed -> completed.GetAwaiter().GetResult())))
+                return 1
+            }
+            for start in Cmd.OfFlow.perform "context" owner work id do start ignore
+            Assert.True(started.Task.Wait(5000))
+            Assert.True(owner.StopAndWait(TimeSpan.FromSeconds 5.0))
+            Assert.True(released.Task.Wait(5000))
+        finally
+            SynchronizationContext.SetSynchronizationContext(previous)
+
+    [<Fact>]
     let ``command first step runs off the caller thread`` () =
         let caller = Thread.CurrentThread.ManagedThreadId
         let observed = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)

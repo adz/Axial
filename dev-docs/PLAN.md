@@ -28,6 +28,13 @@ Teach from the smallest useful `Flow` shape, then introduce environment and type
 
 Durable decisions remain in `dev-docs/decisions/README.md`; current work belongs in `dev-docs/TASKS.md`.
 
+## Axial.Elmish
+
+- One runtime per program owns one root scope for commands, subscriptions, and releases.
+- All dispatch goes through the host's `Post`; defects go to `OnDefect`.
+- Command keys provide per-runtime latest-wins cancellation.
+- Subscriptions are streams; their `Dispose` requests interruption without blocking the UI thread.
+
 ## Axial.Process
 
 - `ProcessCommand` owns command settings; `ProcessSpec` owns connections and topology policy. Public facades adapt

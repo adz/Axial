@@ -51,6 +51,40 @@ module SubscriptionTests =
         Assert.True(released.Task.Wait(TimeSpan.FromSeconds 5.0))
 
     [<Fact>]
+    let ``manual clock search pipeline dispatches only the latest query`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        use test = ElmishRuntime.test (ClockEnvironment(clock))
+        let inbox = Inbox.create 8 test.Runtime
+        let searching = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let search query : Flow<ClockEnvironment, string, string> = flow {
+            searching.TrySetResult() |> ignore
+            do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
+            return $"result-{query}"
+        }
+        let source =
+            Inbox.stream inbox
+            |> FlowStream.debounce (TimeSpan.FromMilliseconds 300.0)
+            |> FlowStream.switchMapFlow search
+            |> FlowStream.map (fun result -> $"found:{result}")
+        let subscription = Sub.OfFlowStream.subscribe ["search"] test.Runtime source (fun error -> $"error:{error}")
+        use active = TestRuntime.subscribe subscription test |> List.head
+        Assert.True(Inbox.post "a" inbox)
+        Assert.True(Inbox.post "ab" inbox)
+        Assert.True(Inbox.post "abc" inbox)
+        Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))
+        Thread.Sleep(50) // Let the stream consume the queued burst before advancing virtual time.
+        clock.AdvanceBy(TimeSpan.FromMilliseconds 300.0)
+        Assert.True(searching.Task.Wait(5000))
+        Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))
+        clock.AdvanceBy(TimeSpan.FromMilliseconds 100.0)
+        Assert.True(SpinWait.SpinUntil((fun () ->
+            TestRuntime.drain test
+            not (List.isEmpty (TestRuntime.dispatched test))), 5000))
+        active.Dispose()
+        Assert.True(TestRuntime.settle (TimeSpan.FromSeconds 5.0) test)
+        Assert.Equal<obj list>([box "found:result-abc"], TestRuntime.dispatched test)
+
+    [<Fact>]
     let ``typed failure dispatches and defect reports without messages`` () =
         let messages = ConcurrentQueue<int>()
         let defects = ConcurrentQueue<CommandDefect>()
