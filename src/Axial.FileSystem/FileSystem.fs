@@ -54,6 +54,26 @@ type FileSystemError =
         | Unsupported(path, message) -> $"Unsupported file-system operation at {describePath path}: {message}"
         | Unexpected(path, message) -> $"Unexpected file-system error at {describePath path}: {message}"
 
+/// <summary>Distinguishes files from directories in a listing.</summary>
+[<RequireQualifiedAccess>]
+type FileSystemEntryKind =
+    | File
+    | Directory
+    override this.ToString() =
+        match this with
+        | File -> "File"
+        | Directory -> "Directory"
+
+/// <summary>Metadata captured for a file or directory during enumeration.</summary>
+type FileSystemEntry =
+    { Name: string
+      FullPath: string
+      Kind: FileSystemEntryKind
+      Size: int64
+      LastWriteTimeUtc: DateTimeOffset }
+    override this.ToString() =
+        $"{this.Kind}: {this.FullPath} ({this.Size} bytes, {this.LastWriteTimeUtc:O})"
+
 /// <summary>Provides access to common file, directory, and path operations.</summary>
 type IFileSystem =
     /// <summary>Opens a text file, reads all text, and then closes the file.</summary>
@@ -241,6 +261,9 @@ type IFileSystem =
 
     /// <summary>Enumerates files and directories in a directory.</summary>
     abstract EnumerateFileSystemEntries : path: string * searchPattern: string * searchOption: SearchOption -> seq<string>
+
+    /// <summary>Enumerates files and directories with their metadata; directory sizes are zero.</summary>
+    abstract EnumerateFileSystemInfos : path: string * searchPattern: string * searchOption: SearchOption -> seq<FileSystemEntry>
 
     /// <summary>Gets files and directories in a directory.</summary>
     abstract GetFileSystemEntries : path: string * searchPattern: string * searchOption: SearchOption -> string array
@@ -569,6 +592,16 @@ type TestFileSystem(?initial: seq<string * string>) =
         member _.GetDirectories(path, searchPattern, searchOption) = enumerateDirectories path searchPattern searchOption |> Seq.toArray
         member _.EnumerateFileSystemEntries(path, searchPattern, searchOption) =
             Seq.append (enumerateFiles path searchPattern searchOption) (enumerateDirectories path searchPattern searchOption)
+        member _.EnumerateFileSystemInfos(path, searchPattern, searchOption) =
+            let timestamp = DateTimeOffset.UnixEpoch
+            seq {
+                for filePath in enumerateFiles path searchPattern searchOption do
+                    yield { Name = Path.GetFileName filePath; FullPath = filePath; Kind = FileSystemEntryKind.File
+                            Size = int64 files[filePath].Length; LastWriteTimeUtc = timestamp }
+                for directoryPath in enumerateDirectories path searchPattern searchOption do
+                    yield { Name = Path.GetFileName directoryPath; FullPath = directoryPath; Kind = FileSystemEntryKind.Directory
+                            Size = 0L; LastWriteTimeUtc = timestamp }
+            }
         member _.GetFileSystemEntries(path, searchPattern, searchOption) =
             Seq.append (enumerateFiles path searchPattern searchOption) (enumerateDirectories path searchPattern searchOption) |> Seq.toArray
         member _.GetLogicalDrives() = notSupported "GetLogicalDrives"
@@ -1061,6 +1094,14 @@ module FileSystem =
         : Flow<'env, FileSystemError, seq<string>> =
         withService (Some path) (fun fileSystem -> fileSystem.EnumerateFileSystemEntries(path, searchPattern, searchOption))
 
+    /// <summary>Enumerates files and directories with metadata through the file-system service.</summary>
+    let enumerateFileSystemInfos<'env when 'env :> IHasFileSystem>
+        (path: string)
+        (searchPattern: string)
+        (searchOption: SearchOption)
+        : Flow<'env, FileSystemError, seq<FileSystemEntry>> =
+        withService (Some path) (fun fileSystem -> fileSystem.EnumerateFileSystemInfos(path, searchPattern, searchOption))
+
     /// <summary>Gets files and directories through an explicit file-system service.</summary>
     let getFileSystemEntries<'env when 'env :> IHasFileSystem>
         (path: string)
@@ -1378,6 +1419,14 @@ module FileSystem =
             member _.EnumerateDirectories(path, searchPattern, searchOption) = Directory.EnumerateDirectories(path, searchPattern, searchOption)
             member _.GetDirectories(path, searchPattern, searchOption) = Directory.GetDirectories(path, searchPattern, searchOption)
             member _.EnumerateFileSystemEntries(path, searchPattern, searchOption) = Directory.EnumerateFileSystemEntries(path, searchPattern, searchOption)
+            member _.EnumerateFileSystemInfos(path, searchPattern, searchOption) =
+                DirectoryInfo(path).EnumerateFileSystemInfos(searchPattern, searchOption)
+                |> Seq.map (fun info ->
+                    { Name = info.Name
+                      FullPath = info.FullName
+                      Kind = if info :? DirectoryInfo then FileSystemEntryKind.Directory else FileSystemEntryKind.File
+                      Size = match info with | :? FileInfo as file -> file.Length | _ -> 0L
+                      LastWriteTimeUtc = DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero) })
             member _.GetFileSystemEntries(path, searchPattern, searchOption) = Directory.GetFileSystemEntries(path, searchPattern, searchOption)
             member _.GetLogicalDrives() = Directory.GetLogicalDrives()
             member _.GetDirectoryRoot(path) = Directory.GetDirectoryRoot(path)

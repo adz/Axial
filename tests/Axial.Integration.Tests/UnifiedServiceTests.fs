@@ -94,6 +94,7 @@ module UnifiedServiceTests =
             member _.EnumerateDirectories(_, _, _) = Seq.singleton "folder"
             member _.GetDirectories(_, _, _) = [| "folder" |]
             member _.EnumerateFileSystemEntries(_, _, _) = seq { "test.txt"; "folder" }
+            member _.EnumerateFileSystemInfos(_, _, _) = Seq.empty
             member _.GetFileSystemEntries(_, _, _) = [| "test.txt"; "folder" |]
             member _.GetLogicalDrives() = [| Path.GetPathRoot(Path.GetTempPath()) |]
             member _.GetDirectoryRoot(path) = Path.GetPathRoot path

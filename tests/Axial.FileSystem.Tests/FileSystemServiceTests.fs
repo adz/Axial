@@ -37,6 +37,43 @@ module FileSystemServiceTests =
         | Exit.Failure cause -> failwithf "Expected success, got %A" cause
 
     [<Fact>]
+    let ``listing metadata reports file and directory for live and test services`` () =
+        withTempRoot (fun root ->
+            for service in [ FileSystem.live; FileSystem.test () :> IFileSystem ] do
+                let file = Path.Combine(root, "sample.txt")
+                let directory = Path.Combine(root, "child")
+                service.CreateDirectory directory
+                service.WriteAllText(file, "hello")
+                let entries = service.EnumerateFileSystemInfos(root, "*", SearchOption.TopDirectoryOnly) |> Seq.toArray
+                test <@ entries.Length = 2 @>
+                let text = entries |> Array.find (fun entry -> entry.Name = "sample.txt")
+                let child = entries |> Array.find (fun entry -> entry.Name = "child")
+                test <@ text.FullPath = file && text.Kind = FileSystemEntryKind.File && text.Size = 5L @>
+                test <@ child.FullPath = directory && child.Kind = FileSystemEntryKind.Directory && child.Size = 0L @>)
+
+    [<Fact>]
+    let ``async file operations roundtrip and missing reads are typed`` () =
+        withTempRoot (fun root ->
+            let path = Path.Combine(root, "sample.txt")
+            let lines = Path.Combine(root, "lines.txt")
+            let bytes = Path.Combine(root, "bytes.bin")
+            let workflow = flow {
+                do! FileSystem.writeAllTextAsync path "a"
+                do! FileSystem.appendAllTextAsync path "b"
+                let! text = FileSystem.readAllTextAsync path
+                do! FileSystem.writeAllLinesAsync lines [ "one"; "two" ]
+                let! readLines = FileSystem.readAllLinesAsync lines
+                do! FileSystem.writeAllBytesAsync bytes [| 1uy; 2uy |]
+                let! readBytes = FileSystem.readAllBytesAsync bytes
+                return text, readLines, readBytes
+            }
+            let text, readLines, readBytes = Flow.runSync (env ()) workflow |> requireSuccess
+            test <@ text = "ab" && readLines = [| "one"; "two" |] && readBytes = [| 1uy; 2uy |] @>
+            match FileSystem.readAllTextAsync (Path.Combine(root, "missing")) |> Flow.runSync (env ()) with
+            | Exit.Failure (Cause.Fail (FileSystemError.FileNotFound _)) -> ()
+            | other -> failwithf "Expected FileNotFound, got %A" other)
+
+    [<Fact>]
     let ``live file-system service creates and resolves file and directory symbolic links`` () =
         withTempRoot (fun root ->
             let targetFile = Path.Combine(root, "target.txt")

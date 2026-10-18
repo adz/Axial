@@ -115,10 +115,6 @@ lists the queue. Work on main.
   - `Cache.makeBounded capacity` (LRU eviction, optional expiry against the monotonic clock) and `Cache.makeRec`
     (lookup receives the cache itself, e.g. nested archives), or a documented pattern if `makeRec` adds nothing.
   - Say in the Cache docs that `Cache.make` requires `'env :> IHasClock`.
-- [ ] T19: Directory listing with metadata in one call
-  - Ships in 0.11; fold into T3/T15 if they are still open. `GetFileSystemEntries` then `DirectoryExists` and
-    `GetFileLength` per entry is three syscalls; add an `IFileSystem` member mirroring
-    `DirectoryInfo.EnumerateFileSystemInfos` that returns name, kind, size, and modified time.
 - [ ] T20: Guardrails output and new rules
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
   - When the analyzer exits because of findings, suppress or reword MSBuild's `MSB3073 ... FSharp.Analyzers.Cli.dll
