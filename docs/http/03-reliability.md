@@ -11,7 +11,8 @@ description: Enforce per-request timeouts and retry only the failures that can a
 cancellation. An Axial timeout is per request and produces a dedicated typed error:
 
 The examples on this page run against a scripted service that replies with fixed statuses in turn and records each
-request, so they can check how many attempts were made:
+request, so they can check how many attempts were made. The double is the `ScriptedHttp` from the
+[testing guide](testing.html#a-scripted-double-for-sequences):
 
 ```fsharp prepare
 // Setup for the checked examples on this page.

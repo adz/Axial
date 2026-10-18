@@ -337,7 +337,7 @@ keptConnection |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Su
 ```
 
 If the caller's scope closes before the acquisition finishes, the fiber is interrupted, and a resource acquired anyway
-is released straight away. [`Axial.Guardrails`](/notes/guardrails.html#axg007-keep-resources-acquired-by-a-fiber)
+is released straight away. [`Axial.Guardrails`](/notes/guardrail-diagnostics.html#axg007-keep-resources-acquired-by-a-fiber)
 reports a forked flow that returns its own scoped resource as `AXG007`.
 
 ### Coming from ZIO or Effect

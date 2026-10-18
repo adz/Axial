@@ -71,6 +71,31 @@ let alwaysTimesOut =
 Returning a typed failure such as `HttpError.TimedOut` from a fake exercises retry and fallback paths
 deterministically, with no network and no clock.
 
+### A scripted double for sequences
+
+When a test needs several requests to answer in turn — two transient failures, then success — a scripted double
+dequeues one reply per request and records what was sent. The reliability guide uses this shape for its retry
+examples:
+
+```fsharp
+/// An HTTP service that replies with each status and body in turn, and records the requests it received.
+type ScriptedHttp(replies: (int * string) list) =
+    let remaining = Collections.Generic.Queue(replies)
+    let sent = ResizeArray<HttpRequest>()
+    member _.Sent = List.ofSeq sent
+    member this.Env = { Http = this }
+
+    interface IHttp with
+        member _.Send(request) =
+            Flow.delay (fun () ->
+                sent.Add request
+                let status, body = remaining.Dequeue()
+                Flow.succeed (Response.create (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) status body))
+```
+
+Build one with the replies it should return in order, run the workflow against its `Env`, then assert on `Sent` to
+check how many attempts were made and what each request carried.
+
 ## The Live Service
 
 `Http.live` adapts an explicit `IClock` and one `HttpClient`; `Layer.succeed (Http.live …)` exposes them as a layer:

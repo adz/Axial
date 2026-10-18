@@ -28,26 +28,12 @@ let shouldEqual expected actual =
 ```fsharp
 open Axial.HttpClient.DSL
 
+type User = { Id: int; Name: string }
+
 type TestEnv =
     { Http: IHttp }
     interface IHasHttp with
         member this.Http = this.Http
-
-/// An HTTP service that replies with each status and body in turn, and records the requests it received.
-type ScriptedHttp(replies: (int * string) list) =
-    let remaining = Collections.Generic.Queue(replies)
-    let sent = ResizeArray<HttpRequest>()
-    member _.Sent = List.ofSeq sent
-    member this.Env = { Http = this }
-
-    interface IHttp with
-        member _.Send(request) =
-            Flow.delay (fun () ->
-                sent.Add request
-                let status, body = remaining.Dequeue()
-                Flow.succeed (Response.create (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) status body))
-
-type User = { Id: int; Name: string }
 
 /// A hand-written decoder for {"id":1,"name":"Ada"}; a JSON library's decoder fits the same signature.
 let decodeUser (json: string) : Result<User, string> =
@@ -55,6 +41,18 @@ let decodeUser (json: string) : Result<User, string> =
 
     if found.Success then Ok { Id = int found.Groups[1].Value; Name = found.Groups[2].Value }
     else Error $"not a user: {json}"
+
+/// A double that replies with one fixed status/body and records the requests it received.
+/// The multi-reply scripted double used by the reliability examples lives in the testing guide.
+type RecordingHttp(status: int, body: string) =
+    let sent = ResizeArray<HttpRequest>()
+    member _.Sent = List.ofSeq sent
+    member this.Env : TestEnv = { Http = this }
+
+    interface IHttp with
+        member _.Send(request) =
+            sent.Add request
+            Flow.succeed (Response.create (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) status body)
 ```
 
 ```fsharp
@@ -67,7 +65,7 @@ let summary : Flow<TestEnv, HttpError, int * string * string option> =
 ```
 
 ```fsharp run
-summary |> Flow.run (ScriptedHttp([ 200, "[]" ]).Env) |> shouldEqual (Exit.Success(200, "[]", None))
+summary |> Flow.run (RecordingHttp(200, "[]").Env) |> shouldEqual (Exit.Success(200, "[]", None))
 ```
 
 `response.Duration` records how long the exchange took, measured with the service's `IClock`.
@@ -91,9 +89,9 @@ let user (userId: int) : Flow<TestEnv, HttpError, User> =
 ```
 
 ```fsharp run
-user 1 |> Flow.run (ScriptedHttp([ 200, """{"id":1,"name":"Ada"}""" ]).Env) |> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
+user 1 |> Flow.run (RecordingHttp(200, """{"id":1,"name":"Ada"}""").Env) |> shouldEqual (Exit.Success { Id = 1; Name = "Ada" })
 
-match user 1 |> Flow.run (ScriptedHttp([ 200, "not json" ]).Env) with
+match user 1 |> Flow.run (RecordingHttp(200, "not json").Env) with
 | Exit.Failure(Cause.Fail(HttpError.DecodeFailed _)) -> ()
 | other -> failwithf "expected a decode failure, got %A" other
 ```
@@ -111,28 +109,26 @@ let created (newUser: User) : Flow<TestEnv, HttpError, User> =
 ```
 
 ```fsharp run
-let service = ScriptedHttp([ 201, """{"id":7,"name":"Ada"}""" ])
+let service = RecordingHttp(201, """{"id":7,"name":"Ada"}""")
 created { Id = 0; Name = "Ada" } |> Flow.run service.Env |> shouldEqual (Exit.Success { Id = 7; Name = "Ada" })
 service.Sent |> List.map (Request.plan >> _.Body) |> shouldEqual [ "application/json (22 characters)" ]
 ```
 
 ## One Error Type
 
-HTTP failures are cases of `HttpError`:
+HTTP failures are cases of `HttpError`. Handle the cases your workflow can recover from, and fall back to
+`HttpError.describe` for the rest:
 
 ```fsharp
 let explain (error: HttpError) =
     match error with
-    | HttpError.InvalidRequest message -> $"bad request: {message}"             // malformed URL or request construction
-    | HttpError.ConnectionFailed(_, message) -> $"unreachable: {message}"       // DNS, refused, dropped connection
-    | HttpError.TimedOut(_, timeout) -> $"no reply within {timeout}"            // per-request timeout elapsed
     | HttpError.Status response -> $"status {response.StatusCode}"              // outside the expectation, full transcript
     | HttpError.DecodeFailed(message, _) -> $"unexpected body: {message}"       // did not decode, full transcript
-    | HttpError.ResponseTooLarge(_, limit) -> $"body over {limit} bytes"        // over Request.maxResponseBytes
+    | other -> HttpError.describe other
 ```
 
 ```fsharp run
-match user 1 |> Flow.run (ScriptedHttp([ 503, "" ]).Env) with
+match user 1 |> Flow.run (RecordingHttp(503, "").Env) with
 | Exit.Failure(Cause.Fail error) -> explain error |> shouldEqual "status 503"
 | other -> failwithf "expected a status error, got %A" other
 ```
@@ -140,9 +136,8 @@ match user 1 |> Flow.run (ScriptedHttp([ 503, "" ]).Env) with
 Interrupting the workflow is not one of them: the request is abandoned and the flow ends with `Cause.Interrupt`,
 so no error handler has to recognize a cancellation it did not ask for.
 
-`HttpError.describe` formats any case with its redacted request context and a bounded body preview, so a single
-`Flow.mapError HttpError.describe` produces loggable messages. `HttpError.tryResponse` extracts the transcript
-from the cases that carry one.
+The full six-case union, together with `HttpError.describe`, `HttpError.tryResponse`, `HttpError.isTransient`, and
+`HttpError.transientRetry`, is listed in the [HttpError reference](/http/api/Axial.HttpClient.HttpError.html).
 
 ## Statuses Are Data, Not Exceptions
 
@@ -162,8 +157,8 @@ let findUser (userId: int) : Flow<TestEnv, HttpError, User option> =
 ```
 
 ```fsharp run
-findUser 9 |> Flow.run (ScriptedHttp([ 404, "" ]).Env) |> shouldEqual (Exit.Success None)
-findUser 1 |> Flow.run (ScriptedHttp([ 200, """{"id":1,"name":"Ada"}""" ]).Env) |> shouldEqual (Exit.Success(Some { Id = 1; Name = "Ada" }))
+findUser 9 |> Flow.run (RecordingHttp(404, "").Env) |> shouldEqual (Exit.Success None)
+findUser 1 |> Flow.run (RecordingHttp(200, """{"id":1,"name":"Ada"}""").Env) |> shouldEqual (Exit.Success(Some { Id = 1; Name = "Ada" }))
 ```
 
 `Http.sendResult` skips status interpretation entirely and returns whatever arrived; use it when a proxy or
