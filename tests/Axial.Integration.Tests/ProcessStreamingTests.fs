@@ -64,12 +64,21 @@ module ProcessStreamingTests =
 
     [<Fact>]
     let ``orphan holding output pipe cannot block cap failure`` () =
+        let marker = $"axial-orphan-{Guid.NewGuid():N}"
         let work = Task.Run(fun () ->
-            shText "sh -c 'yes' & exit 0"
+            shText $"sh -c 'yes {marker}' & exit 0"
             |> maxOutputBytes (Some 65536L) None
             |> Process.tryRun)
         Assert.True(work.Wait(TimeSpan.FromSeconds 10.), "Output drain hung after parent exited")
         tooLarge 0 OutputChannel.StdOut 65536L work.Result
+        // The grandchild that held the pipe must not outlive the run.
+        let survivors () =
+            Diagnostics.Process.GetProcessesByName "yes"
+            |> Array.filter (fun proc ->
+                try IO.File.ReadAllText($"/proc/{proc.Id}/cmdline").Contains marker with _ -> false)
+        let deadline = DateTime.UtcNow.AddSeconds 5.
+        while survivors().Length > 0 && DateTime.UtcNow < deadline do Threading.Thread.Sleep 50
+        Assert.Empty(survivors ())
 
     [<Fact>]
     let ``nonzero exit does not conceal buffered output overflow`` () =
