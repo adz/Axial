@@ -34,8 +34,7 @@ type InputSource =
     | Bytes of byte array
     | File of path: string
     | Inherit
-    | ReadOnce of read: (unit -> Async<byte array>)
-    | Produce of produce: ((byte array -> Async<unit>) -> Async<unit>)
+    | Stream of FlowStream<unit, string, byte array>
 
     /// The source kind, rendered without reflection so it stays safe under NativeAOT.
     override this.ToString() =
@@ -45,8 +44,7 @@ type InputSource =
         | Bytes bytes -> $"Bytes ({bytes.Length} bytes)"
         | File path -> $"File {path}"
         | Inherit -> "Inherit"
-        | ReadOnce _ -> "ReadOnce"
-        | Produce _ -> "Produce"
+        | Stream _ -> "Stream"
 
 /// Receives bytes independently of the transcript retention policy.
 [<RequireQualifiedAccess>]
@@ -56,10 +54,10 @@ type OutputTarget =
     | Discard
     | File of path: string
     | AppendFile of path: string
-    | Callback of write: (byte array -> Async<unit>)
-    | Sink of write: (byte array -> Async<unit>) * complete: (unit -> Async<unit>)
+    | Callback of write: (byte array -> Flow<unit, string, unit>)
+    | Sink of write: (byte array -> Flow<unit, string, unit>) * complete: (unit -> Flow<unit, string, unit>)
     | Tee of OutputTarget list
-    | SinkFactory of create: (unit -> (byte array -> Async<unit>) * (unit -> Async<unit>))
+    | SinkFactory of create: (unit -> (byte array -> Flow<unit, string, unit>) * (unit -> Flow<unit, string, unit>))
 
     /// The target kind, rendered without reflection so it stays safe under NativeAOT.
     override this.ToString() =
@@ -252,6 +250,8 @@ type ProcessError =
     | OverallTimedOut of ProcessTimeout
     | StageFailed of StageFailure
     | IoFailed of ProcessIoFailure
+    | InputFailed of string
+    | OutputFailed of string
     | LineTooLong of ProcessLineFailure
     | ObservationUnavailable of ProcessObservationFailure
 
@@ -272,6 +272,8 @@ type ProcessError =
 
             $"Stage {stage.Stage} ({stage.Command}) exited with code {stage.ExitCode}.{diagnostic}"
         | IoFailed failure -> $"Process I/O failed: {failure.Message}"
+        | InputFailed cause -> $"Process input failed: {cause}"
+        | OutputFailed cause -> $"Process output failed: {cause}"
         | LineTooLong failure ->
             let channel =
                 match failure.OriginalChannel with

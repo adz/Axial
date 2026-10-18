@@ -96,6 +96,37 @@ module internal NativeProcess =
 
         result.Task
 
+    let private runUserFlow token input (work: Flow<unit, string, unit>) =
+        task {
+            let! result = Async.StartAsTask(Flow.toAsync () work, cancellationToken = token)
+            match result with
+            | Exit.Success () -> ()
+            | Exit.Failure cause ->
+                let rec typed = function
+                    | Cause.Fail _ -> true
+                    | Cause.Then(left, right) | Cause.Both(left, right) -> typed left || typed right
+                    | Cause.Traced(inner, _) -> typed inner
+                    | _ -> false
+                let rec defect = function
+                    | Cause.Die error -> Some error
+                    | Cause.Then(left, right) | Cause.Both(left, right) ->
+                        match defect left with
+                        | Some error -> Some error
+                        | None -> defect right
+                    | Cause.Traced(inner, _) -> defect inner
+                    | _ -> None
+                if typed cause then
+                    raise (ProcessFailureException(
+                        if input then ProcessError.InputFailed(cause.ToString())
+                        else ProcessError.OutputFailed(cause.ToString())))
+                else
+                    match defect cause with
+                    | Some error -> raise (ObserverDefectException error)
+                    | None ->
+                        token.ThrowIfCancellationRequested()
+                        raise (ObserverDefectException(Exception(cause.ToString())))
+        }
+
     let rec private writeTarget
         (console: IConsole)
         (files: Dictionary<string * bool, FileStream>)
@@ -117,7 +148,7 @@ module internal NativeProcess =
             | OutputTarget.File path -> do! files[path, false].WriteAsync(bytes, 0, bytes.Length, token)
             | OutputTarget.AppendFile path -> do! files[path, true].WriteAsync(bytes, 0, bytes.Length, token)
             | OutputTarget.Callback callback
-            | OutputTarget.Sink(callback, _) -> do! invokeCallback token (callback bytes)
+            | OutputTarget.Sink(callback, _) -> do! runUserFlow token false (callback bytes)
             | OutputTarget.Tee targets ->
                 for item in targets do
                     do! writeTarget console files token channel item bytes
@@ -127,7 +158,7 @@ module internal NativeProcess =
     let rec private finishTarget (token: CancellationToken) target =
         (task {
             match target with
-            | OutputTarget.Sink(_, finish) -> do! invokeCallback token (finish ())
+            | OutputTarget.Sink(_, finish) -> do! runUserFlow token false (finish ())
             | OutputTarget.Tee targets ->
                 for item in targets do
                     do! finishTarget token item
@@ -641,61 +672,57 @@ module internal NativeProcess =
                                                                 ((task {
                                                                     let target = processes[i].StandardInput.BaseStream
 
-                                                                    let write (bytes: byte array) =
-                                                                        target.WriteAsync(bytes, 0, bytes.Length, token)
-                                                                        |> Async.AwaitTask
+                                                                    try
+                                                                        match source with
+                                                                        | InputSource.Empty
+                                                                        | InputSource.Inherit -> ()
+                                                                        | InputSource.Text text ->
+                                                                            do!
+                                                                                target.WriteAsync(
+                                                                                    command.Encoding.Value.GetBytes text,
+                                                                                    0,
+                                                                                    command.Encoding.Value.GetByteCount text,
+                                                                                    token
+                                                                                )
+                                                                        | InputSource.Bytes bytes ->
+                                                                            do!
+                                                                                target.WriteAsync(
+                                                                                    bytes,
+                                                                                    0,
+                                                                                    bytes.Length,
+                                                                                    token
+                                                                                )
+                                                                        | InputSource.File path ->
+                                                                            use input =
+                                                                                fileSystem.OpenFile(
+                                                                                    path,
+                                                                                    FileMode.Open,
+                                                                                    FileAccess.Read,
+                                                                                    FileShare.Read
+                                                                                )
 
-                                                                    match source with
-                                                                    | InputSource.Empty
-                                                                    | InputSource.Inherit -> ()
-                                                                    | InputSource.Text text ->
-                                                                        do!
-                                                                            target.WriteAsync(
-                                                                                command.Encoding.Value.GetBytes text,
-                                                                                0,
-                                                                                command.Encoding.Value.GetByteCount text,
-                                                                                token
-                                                                            )
-                                                                    | InputSource.Bytes bytes ->
-                                                                        do!
-                                                                            target.WriteAsync(
-                                                                                bytes,
-                                                                                0,
-                                                                                bytes.Length,
-                                                                                token
-                                                                            )
-                                                                    | InputSource.File path ->
-                                                                        use input =
-                                                                            fileSystem.OpenFile(
-                                                                                path,
-                                                                                FileMode.Open,
-                                                                                FileAccess.Read,
-                                                                                FileShare.Read
-                                                                            )
+                                                                            do! input.CopyToAsync(target, 81920, token)
+                                                                        | InputSource.Stream source ->
+                                                                            use inputCancellation = CancellationTokenSource.CreateLinkedTokenSource(token)
+                                                                            let write bytes =
+                                                                                Flow.fromAsync (async {
+                                                                                    let! cancellation = Async.CancellationToken
+                                                                                    do! target.WriteAsync(bytes, 0, bytes.Length, cancellation) |> Async.AwaitTask
+                                                                                })
+                                                                            let work = source |> FlowStream.runForEachFlow write
+                                                                            let pumping = runUserFlow inputCancellation.Token true work
+                                                                            let exiting = exitTasks[i] :> Task
+                                                                            let! winner = Task.WhenAny(pumping :> Task, exiting)
+                                                                            if obj.ReferenceEquals(winner, exiting) then
+                                                                                inputCancellation.Cancel()
+                                                                                try
+                                                                                    do! pumping
+                                                                                with :? OperationCanceledException when inputCancellation.IsCancellationRequested -> ()
+                                                                            else
+                                                                                do! pumping
 
-                                                                        do! input.CopyToAsync(target, 81920, token)
-                                                                    | InputSource.ReadOnce read ->
-                                                                        let! bytes =
-                                                                            Async.StartAsTask(
-                                                                                read (),
-                                                                                cancellationToken = token
-                                                                            )
-
-                                                                        do!
-                                                                            target.WriteAsync(
-                                                                                bytes,
-                                                                                0,
-                                                                                bytes.Length,
-                                                                                token
-                                                                            )
-                                                                    | InputSource.Produce producer ->
-                                                                        do!
-                                                                            Async.StartAsTask(
-                                                                                producer write,
-                                                                                cancellationToken = token
-                                                                            )
-
-                                                                    processes[i].StandardInput.Close()
+                                                                    finally
+                                                                        processes[i].StandardInput.Close()
                                                                  })
                                                                  |> supervise
                                                                 :> Task)

@@ -543,8 +543,7 @@ module Process =
         | InputSource.Text value -> $"text ({value.Length} characters)"
         | InputSource.Bytes value -> $"bytes ({value.Length} bytes)"
         | InputSource.File path -> $"file: {path}"
-        | InputSource.ReadOnce _ -> "asynchronous read once"
-        | InputSource.Produce _ -> "asynchronous producer"
+        | InputSource.Stream _ -> "flow stream"
 
     let rec private describeTarget =
         function

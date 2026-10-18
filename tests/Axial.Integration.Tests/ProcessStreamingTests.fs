@@ -556,11 +556,7 @@ module ProcessStreamingTests =
             let generated =
                 cmd $"cat"
                 |> stdinFrom (
-                    Input.produce (fun emit ->
-                        async {
-                            do! emit (Encoding.UTF8.GetBytes "one")
-                            do! emit (Encoding.UTF8.GetBytes "two")
-                        })
+                    Input.flowStream (FlowStream.fromSeq [ Encoding.UTF8.GetBytes "one"; Encoding.UTF8.GetBytes "two" ])
                 )
                 |> Process.tryRun
                 |> succeeded

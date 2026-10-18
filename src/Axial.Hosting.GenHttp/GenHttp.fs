@@ -62,15 +62,6 @@ module SchemaResponse =
         request.Respond().Content(document).Type("application/json").Build()
 
     /// <summary>Runs the handler with the trusted model, or short-circuits to the problem-details response.</summary>
-    let handleParsed
-        (request: IRequest)
-        (handler: 'model -> ValueTask<IResponse>)
-        (parsed: RetainedParseResult<'model>)
-        : ValueTask<IResponse> =
-        match parsed.Result with
-        | Ok model -> handler model
-        | Error _ -> ValueTask<_>(problem request parsed)
-
 /// <summary>The request-scoped environment supplied to a GenHTTP endpoint Flow.</summary>
 /// <remarks>The host factory supplies <c>App</c>; adapter request operations read <c>Request</c>. Keep application workflows typed against <c>'app</c> and embed them with <c>EndpointFlow.run</c>.</remarks>
 type HttpEndpointEnv<'app> =

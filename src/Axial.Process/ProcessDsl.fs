@@ -263,28 +263,28 @@ module DSL =
         /// (such as `ssh` asking for a password) can read it. Stdin is not redirected, so the child, not Axial,
         /// decides when it ends. Pipe-connected stages still receive redirected stdin.
         let inheritHandles = InputSource.Inherit
-        /// Reads one asynchronous byte block when execution begins.
-        let readOnce producer = InputSource.ReadOnce producer
-        /// Produces asynchronous byte blocks with backpressure.
-        let produce producer = InputSource.Produce producer
+        /// Consumes a cold byte stream with backpressure. Close over dependencies with Flow.localEnv (or Layer.provide) before building the spec.
+        let flowStream (source: FlowStream<unit, 'error, byte array>) =
+            source |> FlowStream.mapError (fun error -> (Cause.Fail error).ToString()) |> InputSource.Stream
 #if !FABLE_COMPILER
         /// Adapts a .NET stream into a backpressured input source.
         let stream (source: Stream) =
-            InputSource.Produce(fun write ->
-                async {
-                    let! cancellationToken = Async.CancellationToken
-                    let buffer = Array.zeroCreate<byte> 81920
-                    let mutable reading = true
-
-                    while reading do
-                        let! count =
-                            source.ReadAsync(buffer, 0, buffer.Length, cancellationToken) |> Async.AwaitTask
-
-                        if count = 0 then
-                            reading <- false
-                        else
-                            do! write buffer[.. count - 1]
-                })
+            // The stream remains caller-owned; each execution creates a fresh enumerator.
+            let blocks =
+                { new Collections.Generic.IAsyncEnumerable<byte array> with
+                    member _.GetAsyncEnumerator(token) =
+                        let buffer = Array.zeroCreate<byte> 81920
+                        let mutable current = [||]
+                        { new Collections.Generic.IAsyncEnumerator<byte array> with
+                            member _.Current = current
+                            member _.MoveNextAsync() =
+                                ValueTask<bool>(task {
+                                    let! count = source.ReadAsync(buffer, 0, buffer.Length, token)
+                                    current <- buffer[.. count - 1]
+                                    return count > 0
+                                })
+                            member _.DisposeAsync() = ValueTask() } }
+            blocks |> FlowStream.ofAsyncEnumerable |> FlowStream.mapError (fun error -> string error) |> InputSource.Stream
 #endif
 
     [<RequireQualifiedAccess>]
@@ -299,63 +299,52 @@ module DSL =
         let file path = OutputTarget.File path
         /// Writes output to an appending file.
         let appendFile path = OutputTarget.AppendFile path
-        /// Sends exact byte chunks to an asynchronous backpressured callback using the process cancellation token.
-        let callback write = OutputTarget.Callback write
+        /// Sends exact byte chunks to a backpressured Flow callback using the process cancellation token.
+        let callback (write: byte array -> Flow<unit, 'error, unit>) =
+            OutputTarget.Callback(fun bytes -> write bytes |> Flow.mapError (fun error -> (Cause.Fail error).ToString()))
         /// Sends every byte chunk to each target in order.
         let tee targets = OutputTarget.Tee(List.ofSeq targets)
 #if !FABLE_COMPILER
         /// Adapts a writable .NET stream into an output target.
         let stream (target: Stream) =
             OutputTarget.Sink(
-                (fun bytes ->
-                    async {
-                        let! cancellationToken = Async.CancellationToken
-                        do! target.WriteAsync(bytes, 0, bytes.Length, cancellationToken) |> Async.AwaitTask
-                    }),
-                (fun () ->
-                    async {
-                        let! cancellationToken = Async.CancellationToken
-                        do! target.FlushAsync(cancellationToken) |> Async.AwaitTask
-                    })
+                (fun bytes -> Flow.fromAsync (async { let! token = Async.CancellationToken
+                                                  do! target.WriteAsync(bytes, 0, bytes.Length, token) |> Async.AwaitTask })),
+                (fun () -> Flow.fromAsync (async { let! token = Async.CancellationToken
+                                                  do! target.FlushAsync(token) |> Async.AwaitTask }))
             )
 
         /// Decodes output incrementally into a .NET text writer.
         let textWriter (encoding: Encoding) (target: TextWriter) =
             OutputTarget.SinkFactory(fun () ->
                 let decoder = encoding.GetDecoder()
-
-                ((fun bytes ->
-                    async {
-                        let chars = Array.zeroCreate<char>(encoding.GetMaxCharCount bytes.Length)
-                        let count = decoder.GetChars(bytes, 0, bytes.Length, chars, 0, false)
+                let write (bytes: byte array) =
+                    Flow.fromAsync (async {
+                            let! token = Async.CancellationToken
+                            let chars = Array.zeroCreate<char>(encoding.GetMaxCharCount bytes.Length)
+                            let count = decoder.GetChars(bytes, 0, bytes.Length, chars, 0, false)
 #if NETSTANDARD2_1
-                        do! target.WriteAsync(chars, 0, count) |> Async.AwaitTask
+                            do! target.WriteAsync(chars, 0, count) |> Async.AwaitTask
 #else
-                        let! cancellationToken = Async.CancellationToken
-
-                        do!
-                            target.WriteAsync(chars.AsMemory(0, count), cancellationToken)
-                            |> Async.AwaitTask
+                            do! target.WriteAsync(chars.AsMemory(0, count), token) |> Async.AwaitTask
 #endif
-                    }),
-                 (fun () ->
-                     async {
-                         let chars = Array.zeroCreate<char>(encoding.GetMaxCharCount 0)
-                         let count = decoder.GetChars(Array.empty, 0, 0, chars, 0, true)
+                        })
+                let finish () =
+                    Flow.fromAsync (async {
+                            let! token = Async.CancellationToken
+                            let chars = Array.zeroCreate<char>(encoding.GetMaxCharCount 0)
+                            let count = decoder.GetChars([||], 0, 0, chars, 0, true)
+                            if count > 0 then
 #if NETSTANDARD2_1
-                         if count > 0 then
-                             do! target.WriteAsync(chars, 0, count) |> Async.AwaitTask
-
-                         do! target.FlushAsync() |> Async.AwaitTask
+                                do! target.WriteAsync(chars, 0, count) |> Async.AwaitTask
 #else
-                         let! cancellationToken = Async.CancellationToken
-
-                         if count > 0 then
-                             do!
-                                 target.WriteAsync(chars.AsMemory(0, count), cancellationToken)
-                                 |> Async.AwaitTask
-
-                         do! target.FlushAsync(cancellationToken) |> Async.AwaitTask
+                                do! target.WriteAsync(chars.AsMemory(0, count), token) |> Async.AwaitTask
 #endif
-                     })))
+#if NETSTANDARD2_1
+                            do! target.FlushAsync() |> Async.AwaitTask
+#else
+                            do! target.FlushAsync(token) |> Async.AwaitTask
+#endif
+                        })
+                write, finish)
 #endif

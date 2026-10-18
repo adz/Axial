@@ -43,6 +43,112 @@ module ProcessServiceTests =
         | failure -> failwithf "Expected success, got %A" failure
 
     [<Fact>]
+    let ``flow stream input and flow callback transfer bytes in order`` () =
+        let received = ResizeArray<byte>()
+        let source =
+            [ "one"; "two"; "three" ]
+            |> List.map Encoding.UTF8.GetBytes
+            |> FlowStream.fromSeq
+        let result =
+            cmd $"cat"
+            |> stdinFrom (Input.flowStream source)
+            |> stdoutTo (Output.callback (fun bytes -> Flow.fromAsync (async { received.AddRange bytes })))
+            |> toFlow |> run
+        test <@ result.StdOut = "onetwothree" @>
+        test <@ Encoding.UTF8.GetString(received.ToArray()) = result.StdOut @>
+
+    [<Fact>]
+    let ``typed input failure is process error and defect remains defect`` () =
+        let failing = FlowStream.fromFlow (Flow.fail "bad input" : Flow<unit, string, byte array>)
+        let outcome = cmd $"cat" |> stdinFrom (Input.flowStream failing) |> toFlow |> Flow.runSync (env ())
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessError.InputFailed text)) -> test <@ text.Contains "bad input" @>
+        | other -> failwithf "Expected input failure, got %A" other
+
+        let broken = FlowStream.fromFlow (Flow.die (InvalidOperationException "broken input") : Flow<unit, string, byte array>)
+        match cmd $"cat" |> stdinFrom (Input.flowStream broken) |> toFlow |> Flow.runSync (env ()) with
+        | Exit.Failure(Cause.Die error) -> test <@ error.GetBaseException().Message = "broken input" @>
+        | other -> failwithf "Expected defect, got %A" other
+
+    [<Fact>]
+    let ``typed output failure is a process error`` () =
+        let outcome =
+            cmd $"printf sample"
+            |> stdoutTo (Output.callback (fun _ -> Flow.fail "output refused"))
+            |> toFlow |> Flow.runSync (env ())
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessError.OutputFailed cause)) -> test <@ cause.Contains "output refused" @>
+        | other -> failwithf "Expected output failure, got %A" other
+
+    [<Fact>]
+    let ``exiting child cancels infinite input and runs its finalizer`` () = task {
+        let finalized = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let source =
+            FlowStream.fromFlow (Flow.succeed (Encoding.UTF8.GetBytes "first"))
+            |> FlowStream.append (FlowStream.repeatFlow (
+                Flow.fromAsync (async {
+                    do! Async.Sleep 30000
+                    return Encoding.UTF8.GetBytes "again"
+                })
+                |> Flow.ensuring (Flow.fromAsync (async { finalized.TrySetResult(()) |> ignore }))))
+        let running = shText "head -c 1" |> stdinFrom (Input.flowStream source) |> toFlow |> fun work -> work.StartAsTask(env ())
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+        match outcome with
+        | Exit.Success result -> test <@ result.StdOut = "f" @>
+        | other -> failwithf "Expected success, got %A" other
+        do! finalized.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+    }
+
+    [<Fact>]
+    let ``compound input failure remains typed`` () =
+        let source =
+            Flow.ofExit (Exit.Failure (Cause.Then(Cause.Interrupt, Cause.Fail "compound input")))
+            |> FlowStream.fromFlow
+        match cmd $"cat" |> stdinFrom (Input.flowStream source) |> toFlow |> Flow.runSync (env ()) with
+        | Exit.Failure(Cause.Fail(ProcessError.InputFailed text)) -> test <@ text.Contains "compound input" @>
+        | other -> failwithf "Expected compound input failure, got %A" other
+
+    [<Fact>]
+    let ``input captures its environment before construction`` () =
+        let source =
+            Flow.envWith (fun (value: string) -> Encoding.UTF8.GetBytes value)
+            |> Flow.localEnv (fun () -> "captured")
+            |> FlowStream.fromFlow
+        let result = cmd $"cat" |> stdinFrom (Input.flowStream source) |> toFlow |> run
+        test <@ result.StdOut = "captured" @>
+
+    [<Fact>]
+    let ``interrupting suspended input closes its scope and kills the child`` () = task {
+        use cancellation = new CancellationTokenSource()
+        let entered = TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finalized = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let source =
+            flow {
+                let! () = Flow.scopeFinalizer (Flow.fromAsync (async { finalized.TrySetResult(()) |> ignore }))
+                let! () = Flow.fromAsync (async {
+                    entered.TrySetResult(0) |> ignore
+                    do! Async.Sleep 30000
+                })
+                return Encoding.UTF8.GetBytes "late"
+            }
+            |> FlowStream.fromFlow
+        let running =
+            shText "exec sleep 30"
+            |> stdinFrom (Input.flowStream source)
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
+        try
+            let! _ = entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            cancellation.Cancel()
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure Cause.Interrupt -> ()
+            | other -> failwithf "Expected interruption, got %A" other
+            do! finalized.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        finally cancellation.Cancel()
+    }
+
+    [<Fact>]
     let ``live process timestamps transcripts through the supplied clock`` () =
         let fixedTime = DateTimeOffset(2030, 4, 5, 6, 7, 8, TimeSpan.Zero)
         let fixedEnv = { Process = Process.live (Clock.fromValue fixedTime) FileSystem.live Console.live; Clock = Clock.fromValue fixedTime }
@@ -453,7 +559,7 @@ module ProcessServiceTests =
         }
         let running =
             shText "printf '%s' $$; exec sleep 30"
-            |> stdoutTo (Output.callback callback)
+            |> stdoutTo (Output.callback (fun bytes -> Flow.fromAsync (callback bytes)))
             |> toFlow
             |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
         try
@@ -480,7 +586,7 @@ module ProcessServiceTests =
         }
         let running =
             shText "printf '%s' $$; exec sleep 30"
-            |> stdoutTo (Output.callback callback)
+            |> stdoutTo (Output.callback (fun bytes -> Flow.fromAsync (callback bytes)))
             |> toFlow
             |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
         try
@@ -518,7 +624,7 @@ module ProcessServiceTests =
         use rescue = new CancellationTokenSource()
         let running =
             shText "printf ready; exec sleep 30"
-            |> stdoutTo (Output.callback (fun _ -> async { return raise (OperationCanceledException "foreign cancellation") }))
+            |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { return raise (OperationCanceledException "foreign cancellation") })))
             |> toFlow
             |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
         try
@@ -622,7 +728,7 @@ module ProcessServiceTests =
         use rescue = new CancellationTokenSource()
         let running =
             shText "printf ready; exec sleep 30"
-            |> stdoutTo (Output.callback (fun _ -> async { return raise (IOException "stream destination failed") }))
+            |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { return raise (IOException "stream destination failed") })))
             |> streamOutputs
             |> ProcessStream.runCollect
             |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
@@ -658,7 +764,7 @@ module ProcessServiceTests =
         }
         let running =
             cmd $"printf ready"
-            |> stdoutTo (OutputTarget.Sink((fun _ -> async.Return()), finish))
+            |> stdoutTo (OutputTarget.Sink((fun _ -> Flow.ok ()), (fun () -> Flow.fromAsync (finish ()))))
             |> drainTimeout (TimeSpan.FromMilliseconds 100.0)
             |> toFlow
             |> fun workflow -> workflow.StartAsTask(host, rescue.Token)

@@ -73,14 +73,6 @@ module SchemaResult =
         Results.Text(document, "application/json")
 
     /// <summary>Runs the handler with the trusted model, or short-circuits to the problem-details response.</summary>
-    let handleParsed
-        (handler: 'model -> Task<IResult>)
-        (parsed: RetainedParseResult<'model>)
-        : Task<IResult> =
-        match parsed.Result with
-        | Ok model -> handler model
-        | Error _ -> Task.FromResult(problem parsed)
-
 /// <summary>The request-scoped environment supplied to an ASP.NET Core endpoint Flow.</summary>
 /// <remarks>The host factory supplies <c>App</c>; adapter request operations read <c>Request</c>. Keep application workflows typed against <c>'app</c> and embed them with <c>EndpointFlow.run</c>.</remarks>
 type HttpEndpointEnv<'app> =

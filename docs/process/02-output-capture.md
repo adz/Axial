@@ -88,7 +88,8 @@ Piped intermediate channels cannot be independently captured or observed. Final 
 stderr only after explicit `mergeStderr`. Aggregate stderr is bounded separately; stage captures expose the
 individual diagnostics.
 
-Callbacks receive the execution token through `Async.CancellationToken`; native stream adapters pass it to
-reads, writes, and flushes. They must cooperate with cancellation. Callback exceptions are defects; actual
-process I/O failures use `IoFailed`. Adapter streams and text writers remain caller-owned. `Output.textWriter`
+Flow callbacks run under the process cancellation token; native stream adapters pass it to
+reads, writes, and flushes. They must cooperate with cancellation. Typed callback failures become
+`OutputFailed`; defects remain defects. Native process I/O failures use `IoFailed`.
+Adapter streams and text writers remain caller-owned. `Output.textWriter`
 creates a fresh decoder per execution. On `netstandard2.1`, TextWriter operations lack token overloads.

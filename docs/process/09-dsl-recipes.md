@@ -42,18 +42,15 @@ cmd $"cat" |> stdinFromText "inline" |> Process.run
 |> _.StdOut |> shouldEqual "inline"
 ```
 
-Use `Input.readOnce` for one asynchronously obtained byte block, or `Input.produce` to write several blocks
-with backpressure. The producer runs during execution and must cooperate with cancellation.
+`Input.flowStream` consumes a cold byte stream with backpressure. The process spec has no environment;
+close over application services with `Flow.localEnv` (or `Layer.provide`) before passing the stream to the spec.
 
 ```fsharp run
-cmd $"cat"
-|> stdinFrom (Input.readOnce (fun () -> async { return Encoding.UTF8.GetBytes "once" }))
-|> Process.run |> _.StdOut |> shouldEqual "once"
-
-let generated = Input.produce (fun write -> async {
-    do! write (Encoding.UTF8.GetBytes "first\n")
-    do! write (Encoding.UTF8.GetBytes "second\n")
-})
+let generated =
+    [ "first\n"; "second\n" ]
+    |> List.map Encoding.UTF8.GetBytes
+    |> FlowStream.fromSeq
+    |> Input.flowStream
 generated => cmd $"cat" |> Process.run |> _.StdOut
 |> shouldEqual "first\nsecond\n"
 ```
@@ -115,7 +112,7 @@ do
 
     let chunks = ResizeArray<byte>()
     cmd $"printf callback"
-    |> stdoutTo (Output.callback (fun bytes -> async { chunks.AddRange bytes }))
+    |> stdoutTo (Output.callback (fun bytes -> Flow.fromAsync (async { chunks.AddRange bytes })))
     |> captureNothing |> Process.run |> ignore
     shouldEqual "callback" (Encoding.UTF8.GetString(chunks.ToArray()))
 ```
