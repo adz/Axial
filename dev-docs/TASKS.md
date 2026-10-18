@@ -19,6 +19,7 @@ lists the queue. Work on main.
     Brief: `dev-docs/handoffs/T7-reference-app-reassessment.md`; findings come back as
     `dev-docs/reassessment/<app>.md` on `chore/t7-reassessment-<app>` branches or patches.
   - Then merge the findings into `LATER_TODO.md` (promote, defer, or delete items) and close this task.
+
 ## Acceptance
 
 - `Axial.slnx` builds and tests without Reified.
