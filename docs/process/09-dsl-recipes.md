@@ -5,7 +5,7 @@ description: Checked recipes for input, routing, fan-in, parallel commands, and 
 
 Open `Axial.Process.DSL` to build commands with `cmd`, configure them with pipeline helpers, and connect them
 with `=>`. Configuration is lazy; `toFlow`, streaming terminals, and host runners choose how to execute it.
-`ProcessStream` and `Flow` combinators stay in their own modules, following the type they operate on.
+`ProcessStream` and `Flow` combinators live in the modules of their input types.
 
 ```fsharp prepare
 open System

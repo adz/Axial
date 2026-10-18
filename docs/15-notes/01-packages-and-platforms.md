@@ -29,7 +29,7 @@ visibility or unload as dependable application shutdown.
 
 ## Dependencies
 
-NuGet installs the transitive dependencies shown below; reference only the packages you use directly. Every package also depends on `FSharp.Core`.
+NuGet installs the transitive dependencies below; reference only the packages you use directly. Every package also depends on `FSharp.Core`.
 
 `Axial` defines the service contracts, such as `IClock`, but does not depend on `Axial.PlatformService`. That package adds the live clock, logging, randomness, GUID, and environment-variable implementations.
 

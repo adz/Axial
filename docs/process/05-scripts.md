@@ -81,8 +81,7 @@ cmd $"printf hello" |> Process.run |> _.StdOut |> shouldEqual "hello"
 cmd $"true" |> Process.run |> _.ExitCode |> shouldEqual 0
 ```
 
-For a longer script, compose commands inside `flow { }` and run the whole script once.
-Each command becomes a lazy step with `toFlow`:
+Compose longer scripts inside `flow { }` and run them once. `toFlow` makes each command a lazy step:
 
 ```fsharp
 let script : Flow<ProcessHostEnvironment, ProcessError, string> =

@@ -6,11 +6,10 @@ description: "Sixteen runnable scenarios that drive every concurrency construct 
 # Torture Tests
 
 An interrupted take must not lose a value. A lossless subscriber must see every value in order. A scope must release
-what it acquired, however its fibers end. These races may not appear in small examples.
+what it acquired, however its fibers end. Small examples may miss these races.
 
 Each scenario runs many fibers with random interruptions, failures, and shutdowns, then checks invariants regardless of
-interleaving. Checks do not depend on timing, such as "this finished within 10 ms", so a failed check does not depend
-on machine speed.
+interleaving. Checks avoid timing assertions such as "this finished within 10 ms", so machine speed does not determine whether a check fails.
 
 ## Run them yourself
 
@@ -39,7 +38,7 @@ fiber to interrupt, which strategy a subscriber uses, how long an operation wait
 with the seeds it failed on, so the same choices can be run again. The interleaving of fibers still differs from run to
 run, which is what the rounds are for.
 
-The runner around the scenarios:
+The scenario runner:
 
 {{< snippet id="torture-runner" mode="no-check" reason="Compiled and run as part of examples/Axial.TortureTest, which also defines the Round and Check helpers it uses" >}}
 

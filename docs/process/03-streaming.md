@@ -8,8 +8,7 @@ description: Consume process output while a command is still running.
 `streamStdoutLines` yields decoded stdout lines as they arrive. It returns a `ProcessStream`, and its terminal
 returns the consumed value together with process completion. Stderr stays separate unless you apply `mergeStderr`.
 
-`ProcessStream<'env, 'value>` is the stream **type**; the `ProcessStream` **module** holds the functions that
-operate on it: `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. A stream terminal returns a Flow, which a script executes with `Process.run` or an
+`ProcessStream<'env, 'value>` is the stream **type**; the `ProcessStream` **module** provides `ProcessStream.map`, `filter`, `take`, and the `run*` terminals. A stream terminal returns a Flow, which a script executes with `Process.run` or an
 application binds with `let!` inside the enclosing Flow. A `ProcessStream` cannot be passed to `Process.run` directly.
 
 ```fsharp prepare
@@ -120,8 +119,7 @@ match retainedTail |> Process.run with
 Lines exclude LF and one preceding CR, preserve blank lines and bare CR, and emit final unterminated text.
 `maxLineLength` defaults to 1,048,576 UTF-16 code units; oversized lines fail with `LineTooLong`.
 
-Use `ProcessStream.toFlowStream` when an ordinary `FlowStream` API is needed and successful process completion
-can be discarded. The converted stream retains typed process failures, backpressure, and scoped cleanup.
+Use `ProcessStream.toFlowStream` when you need an ordinary `FlowStream` API and can discard successful process completion. The converted stream retains typed process failures, backpressure, and scoped cleanup.
 For completion-aware processing, keep transformations and terminals in `ProcessStream`. After conversion,
 application callback deadlines belong to the enclosing Flow; use `Flow.timeout` to bound them.
 `ProcessStream` terminals include callbacks in the process overall timeout.

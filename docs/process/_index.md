@@ -5,7 +5,7 @@ description: Run external commands as standalone tools or as steps in an Axial w
 
 # Processes
 
-A command starts as a description, not a running process. Configure it, connect commands into a pipeline if needed,
+A command is a description, not a running process. Configure it, connect commands into a pipeline if needed,
 then choose where to run it:
 
 ```fsharp prepare
@@ -23,7 +23,7 @@ let command = cmd $"printf hello"
 command |> Process.run |> _.StdOut |> shouldEqual "hello"
 ```
 
-`Process.run` is the short path for scripts: it returns a successful value and raises `ProcessRunException` on
+For scripts, `Process.run` returns a successful value and raises `ProcessRunException` on
 failure. Use `Process.tryRun` when the caller needs to inspect the full `Exit`. In an application, convert a command
 to a lazy `Flow` with `toFlow` and bind it into the surrounding `flow { }` instead.
 
@@ -32,13 +32,11 @@ including their cancellation and cleanup. It does not invoke a shell unless you 
 
 ## Guides
 
-
 1. [Commands and composition](composition.html) — arguments, settings, pipelines, and plans.
 2. [Run a process in an application Flow](running-in-an-application-flow.html) — provide the process service and compose with application work.
 3. [Worked examples](worked-examples.html) — complete process workflows.
 
 ## How-to
-
 
 - [Capture output or send it elsewhere](output-capture.html)
 - [Consume output as it arrives](streaming.html)
