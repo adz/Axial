@@ -145,7 +145,7 @@ When local state changes, a wake signal cancels the in-flight GET and starts a f
 
 The endpoint below must support long polling, so this example needs a server and is not run by the docs build (`no-check`).
 
-```fsharp no-check
+```fsharp no-check reason="needs a long-poll HTTP server"
 open Axial
 open Axial.HttpClient
 
