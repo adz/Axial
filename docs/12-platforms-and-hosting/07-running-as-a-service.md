@@ -4,7 +4,7 @@
 
 ## systemd
 
-Call `UseSystemd()` on the Generic Host builder. Construct the notifier at the process edge with `SystemdNotify.live` and `NOTIFY_SOCKET`. `Hosting.watchdog` detects a wedged Axial scheduler or starved thread pool; its sleeping heartbeat and always-true health check do **not** establish application progress. Supply `Hosting.watchdogWith variables processId notifier isHealthy` to tie pings to work your application owns. For example, record the monotonic time after each successful job and reject stale progress:
+Call `UseSystemd()` on the Generic Host builder. Construct the notifier at the process edge with `SystemdNotify.live` and `NOTIFY_SOCKET`. `Hosting.watchdog` detects a wedged Axial scheduler or starved thread pool; its sleeping heartbeat and always-true health check do **not** establish application progress. Supply `Hosting.watchdogWith variables processId notifier isHealthy` to tie pings to work your application owns. Record the monotonic time after each successful job and reject stale progress:
 
 ```fsharp prepare
 open System

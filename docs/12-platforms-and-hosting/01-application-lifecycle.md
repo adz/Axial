@@ -71,8 +71,7 @@ let root : Flow<StartupInputs, AppError, unit> =
     |> Layer.provide appLayer
 ```
 
-`root` is the complete application description: startup inputs in, typed application failures out, and all resources
-acquired by `Live.appLayer` scoped to the root execution.
+`root` takes startup inputs, returns typed application failures, and scopes resources acquired by `appLayer` to the root execution.
 
 ## Run a Finite Application
 

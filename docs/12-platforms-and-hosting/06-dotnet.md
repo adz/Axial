@@ -16,8 +16,7 @@ project: src/Axial.Hosting/Axial.Hosting.fsproj
 dotnet add package Axial.Hosting
 ```
 
-The package is optional. [`App`](application-lifecycle.html) works in console, desktop, test, and embedded applications without
-Microsoft.Extensions.Hosting or a dependency-injection container.
+[`App`](application-lifecycle.html) works in console, desktop, test, and embedded applications without this package, Microsoft.Extensions.Hosting, or a dependency-injection container.
 
 ## Standalone CLI or Script
 
@@ -194,8 +193,7 @@ let startDesktop (requestExit: unit -> unit) (application: Flow<unit, string, un
     closeApplication
 ```
 
-Do not block the UI thread on `Completion`. Framework-specific packages are unnecessary unless an integration can
-provide more than wiring one close event to `Stop()`.
+Do not block the UI thread on `Completion`. A framework-specific package is unnecessary for wiring one close event to `Stop()`.
 
 ## Other Runtimes
 

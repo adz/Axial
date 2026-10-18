@@ -5,9 +5,7 @@ description: Timeout, retry, cancellation, and runtime annotations.
 
 # Tutorial: Runtime Operations
 
-This tutorial focuses on the operational helpers that sit around a workflow: timeout, retry, cancellation, annotations, and exception translation.
-
-Use these helpers at the application boundary. They are not substitutes for domain rules.
+Use timeout, retry, cancellation, annotations, and exception translation at the application boundary, not in place of domain rules.
 
 ## A Small Workflow To Wrap
 
@@ -71,7 +69,7 @@ let checkout : Flow<ClockEnvironment, CheckoutError, string> =
     }
 ```
 
-Even in this tiny example there are already several composed steps. Runtime helpers answer how this execution should behave when one of those steps is slow, flaky, canceled, or throws.
+Runtime helpers control what happens when authorization, storage, or notification is slow, fails, is canceled, or throws.
 
 ## Timeout
 
@@ -87,7 +85,7 @@ Authorizing the card takes 50 ms, so the 10 ms limit fails the checkout:
 checkoutWithTimeout |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail CheckoutTimedOut))
 ```
 
-`timeout`, `timeoutToError`, `timeoutToOk`, and `timeoutWith` are boundary tools. They answer "what should this workflow do if it takes too long?"
+`timeout`, `timeoutToError`, `timeoutToOk`, and `timeoutWith` set the outcome when a workflow takes too long.
 
 ## Retry
 
@@ -108,8 +106,7 @@ retryingCheckout |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.
 ```
 
 `Flow.retry` takes a `Schedule`, which sees each typed error: `Schedule.whileInput` selects the errors worth retrying,
-and `Schedule.recursAtMost` bounds the attempts. For the common case, `Retry.schedule` builds the same schedule from a record
-with named fields.
+and `Schedule.recursAtMost` bounds the attempts. `Retry.schedule` builds the same schedule from a record with named fields.
 
 ## Exceptions
 
@@ -187,9 +184,9 @@ annotatedCharge
 |> shouldEqual (Exit.Success(Map [ "order_id", "o-7"; "trace_id", "trace-1" ], Some "trace-1"))
 ```
 
-Annotations are useful for observability and correlation. They belong to runtime mechanics, not to your domain model.
+Annotations carry observability and correlation data at runtime, outside the domain model.
 
-## Pulling It Together
+## Combine the Helpers
 
 ```fsharp
 let guardedCheckout =
@@ -215,7 +212,7 @@ let guardedCheckout =
 guardedCheckout |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success "receipt-123")
 ```
 
-Each concern has its own place:
+The resulting workflow keeps these decisions separate:
 
 - domain validation decides whether the operation should happen at all
 - runtime helpers decide how the host should run that operation

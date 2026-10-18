@@ -19,7 +19,7 @@ also fails because the Node `process` object is required.
 
 ## Root Application
 
-The Node entry point handles the process; the application workflow stays platform-neutral:
+The Node entry point handles process lifecycle; the application workflow remains platform-neutral:
 
 ```fsharp no-check reason="Compiles only with Fable; FsLiveDocs checks .NET code"
 type StartupInputs =
@@ -95,4 +95,4 @@ A minimal project uses Fable and an ES module package:
 }
 ```
 
-The application and layers remain normal F# source. Only `Program.fs` needs Node hosting calls.
+Only `Program.fs` needs Node hosting calls; the application and layers remain F# source.

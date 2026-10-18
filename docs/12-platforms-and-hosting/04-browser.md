@@ -7,8 +7,7 @@ platform: fable
 
 # Browser Hosting
 
-`Axial.Hosting.Browser` is a JavaScript-only Fable package. It connects a root `App` to browser ownership without
-pretending the browser has a dependable process-shutdown phase.
+`Axial.Hosting.Browser` is a JavaScript-only Fable package. It connects a root `App` to browser ownership; browsers do not provide a dependable process-shutdown phase.
 
 ```sh
 dotnet add package Axial.Hosting.Browser
@@ -64,7 +63,7 @@ requests stop immediately. The event listener is removed after application compl
 
 ## Page Lifecycle Is Not Application Shutdown
 
-The adapter deliberately does not stop applications on `visibilitychange`, `pagehide`, or `beforeunload`:
+The adapter does not stop applications on `visibilitychange`, `pagehide`, or `beforeunload`:
 
 - a hidden tab can become visible again;
 - `pagehide` may place the page in the back/forward cache;
