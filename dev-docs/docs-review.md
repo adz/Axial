@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/http/04-testing.md:72` — `runUserLookup` uses a relative URL but does not configure `client.BaseAddress` until the later, separate `apiClient` snippet. Say the caller must supply a client with a base address or use an absolute URL.
+
 - `docs/api/Axial.HubModule.md:3` — “Lossless consumer” assumes a `BackPressure` subscription and a publisher that waits for acceptance; name that strategy so readers do not infer every subscription is lossless.
 
 - `docs/15-notes/03-guardrails.md:175` — The suppression guidance assumes readers can inspect repository-relative `src/Axial.Guardrails` files; published NuGet consumers need a public source link or the exact rules documented here.
@@ -36,6 +38,10 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/http/03-reliability.md:95` — The stated 200/400/800ms backoff contradicts the example's 1ms base delay; distinguish that example's 1/2/4ms schedule from the 200ms `withRetries` default.
+- `docs/http/04-testing.md:59` — `IHttp.Send` returns a Flow, so saying a fake can return `Error(HttpError.TimedOut(...))` suggests the wrong return shape. Show `Flow.fail (HttpError.TimedOut(...))` with the required arguments.
+- `docs/http/02-responses-and-errors.md:77` — “The transcript is safe to log as-is” follows a claim only about redacting the request line; `Body` and `Text` can contain credentials or personal data. Limit the safety claim to the request line and caution against logging the full response.
 
 - `docs/api/Axial.QueueModule.md:11` — “One logical consumer” suggests a queue cannot have multiple competing takers, while the next paragraph discusses many consumers. Say each value goes to one taker, not that only one taker may exist.
 - `docs/api/Axial.Scope.md:18` — “That scope moves to the caller's scope when the caller receives the value” has no clear antecedent after listing parallel, race, and timed flows; specify which child scope transfers ownership and when, including failure.
@@ -105,6 +111,9 @@
 
 ## Too long
 
+- `docs/http/02-responses-and-errors.md:33` — The scripted service, decoder, and environment setup occupy nearly 40 lines before the first response example; move reusable test setup to the testing guide and keep a short local example here.
+- `docs/http/03-reliability.md:35` — The page repeats the scripted service and decoder from the responses guide before explaining timeouts; share or link the fixture so the retry policy is visible sooner.
+
 - `docs/15-notes/03-guardrails.md:186` — The per-diagnostic walkthrough runs through line 315 after tables already summarize the rules. Keep install, severity, and suppression choices here and move detailed diagnostic contracts into reference pages.
 
 - `docs/14-advanced/01-reusable-packages.md:18` — This package-author page and `03-custom-services.md` repeat the same exchange-rate interface, contract, accessor, helper, and environment. Keep the complete walkthrough in one page and link to it from the other.
@@ -139,6 +148,8 @@
 
 ## Reference material in guides
 
+- `docs/http/02-responses-and-errors.md:120` — The exhaustive `HttpError` case match acts as a case catalog in a response walkthrough; keep a few handling choices here and link the full union contract in API reference.
+
 - `docs/15-notes/03-guardrails.md:97` — `AxialGuardrailRule` metadata syntax and matching grammar are package-author reference material within an adoption guide; link to a dedicated rule-authoring reference from the install path.
 
 - `docs/14-advanced/04-writing-effect-analyzers.md:87` — NuGet layout, `PackageDownload`, and MSBuild target/CLI exit-code details are packaging reference material without a runnable project; link to a maintained template and keep the guide focused on adapting a rule and verifying a diagnostic.
@@ -169,6 +180,10 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/http/_index.md:66` — The HTTP landing page has no install/package guidance or link to setup before its first workflow; name the required package and link to the live-service wiring on the testing page.
+- `docs/http/01-requests.md:57` — Secret redaction examples do not explain that ordinary `query`/`header` values and JSON bodies are not automatically secret; show when to choose `secretQuery`/`secretHeader` and avoid treating the whole plan as safe for arbitrary user data.
+- `docs/http/03-reliability.md:69` — Timeout behavior is described but never exercised with a checked slow-service example; show the resulting `HttpError.TimedOut` and distinguish it from runtime interruption.
 
 - `docs/api/Axial.ScheduleModule.md:4` — `Schedule` is described as deciding after each run, but the page never explains what its input/output mean for `retry` versus `repeat`, or whether `recurs n` means n retries or n total runs; add a small counted example.
 - `docs/api/Axial.State.SubscriptionRefModule.md:3` — The page promises every update to each running stream but does not explain what happens when a subscriber's chosen overflow strategy fills; qualify delivery guarantees by strategy and link to its behavior.
@@ -224,6 +239,9 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/http/03-reliability.md:206` — The copyable payment workflow generates an ambient GUID. Accept an idempotency key from the caller or an explicit generator service so retries across separate invocations can reuse the same key and tests can control it.
+- `docs/http/04-testing.md:16` — The repeated visible `prepare` imports include threading and task namespaces not used by the first fake; hide test-only setup or narrow imports to make copyable dependencies clear.
 
 - `docs/api/Axial.FlowStreamModule.md:8` — Show one minimal source → operator → terminal → `Flow.run` pipeline in the API introduction; otherwise the first example requires following a guide before an assistant can construct a stream.
 
