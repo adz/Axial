@@ -1,7 +1,7 @@
 ---
 title: Guardrail diagnostics
 linkTitle: Guardrail diagnostics
-description: The contract of each AXG diagnostic: what it detects, what to use instead, and how to allow an intentional boundary.
+description: The contract of each AXG diagnostic, what it detects, what to use instead, and how to allow an intentional boundary.
 ---
 
 # Guardrail diagnostics

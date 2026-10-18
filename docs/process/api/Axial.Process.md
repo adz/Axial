@@ -67,6 +67,7 @@ api:
         - Axial.Process.ProcessTimeout
         - Axial.Process.ProcessIoFailure
         - Axial.Process.ProcessLineFailure
+        - Axial.Process.ProcessOutputFailure
         - Axial.Process.ProcessObservationFailure
         - Axial.Process.ProcessRunException`1
 ---

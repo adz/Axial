@@ -121,7 +121,7 @@ The global lock keeps the initial implementation simple while supporting transac
 
 The `TRef` signatures (`make`, `get`, `set`, `update`) are in the
 [TRef API reference](/api/Axial.State.TRefModule.html); the `STM` signatures (`retry`, `orElse`, `atomically`) are in
-the [STM API reference](/api/Axial.State.STMModule.html).
+the [STM API reference](/api/Axial.State.STM.html).
 
 The [STM torture test](torture-tests/stm.html) runs hundreds of interrupted transfers against an auditor and checks that
 every audit sees a consistent total.

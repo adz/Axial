@@ -146,7 +146,7 @@ let submitOrder (order: Order) : Flow<#ICheckoutEnv, CheckoutError, unit> = subm
 `#IHasOrders` carries exactly one constraint, which is why the aggregate exists. Each occurrence of `#T` is a
 separate type variable, so when an environment appears more than once in a signature, use the explicit
 `<'env when 'env :> … and 'env :> …>` form. The
-[troubleshooting types](/the-flow-type/troubleshooting-types.html#flexible-type-variables-t-are-each-distinct)
+[troubleshooting types](/the-flow-type/troubleshooting-types.html#flexible-type-variables-are-each-distinct)
 page shows the exact rule and where it bites.
 
 ## When to declare one

@@ -123,75 +123,75 @@
 
 ## Too long
 
-- `docs/http/02-responses-and-errors.md:33` — The scripted service, decoder, and environment setup occupy nearly 40 lines before the first response example; move reusable test setup to the testing guide and keep a short local example here.
-- `docs/http/03-reliability.md:35` — The page repeats the scripted service and decoder from the responses guide before explaining timeouts; share or link the fixture so the retry policy is visible sooner.
+- [done] `docs/http/02-responses-and-errors.md:33` — The scripted service, decoder, and environment setup occupy nearly 40 lines before the first response example; move reusable test setup to the testing guide and keep a short local example here.
+- [done] `docs/http/03-reliability.md:35` — The page repeats the scripted service and decoder from the responses guide before explaining timeouts; share or link the fixture so the retry policy is visible sooner.
 
-- `docs/15-notes/03-guardrails.md:186` — The per-diagnostic walkthrough runs through line 315 after tables already summarize the rules. Keep install, severity, and suppression choices here and move detailed diagnostic contracts into reference pages.
+- [done] `docs/15-notes/03-guardrails.md:186` — The per-diagnostic walkthrough runs through line 315 after tables already summarize the rules. Keep install, severity, and suppression choices here and move detailed diagnostic contracts into reference pages.
 
-- `docs/14-advanced/01-reusable-packages.md:18` — This package-author page and `03-custom-services.md` repeat the same exchange-rate interface, contract, accessor, helper, and environment. Keep the complete walkthrough in one page and link to it from the other.
+- [done] `docs/14-advanced/01-reusable-packages.md:18` — This package-author page and `03-custom-services.md` repeat the same exchange-rate interface, contract, accessor, helper, and environment. Keep the complete walkthrough in one page and link to it from the other.
 
-- `docs/13-testing/02-runnable-examples.md:125` — The full unrelated greeting and policy output precedes the supervision results; show only the relevant supervised/fiber lines or split the command/output by example.
+- [done] `docs/13-testing/02-runnable-examples.md:125` — The full unrelated greeting and policy output precedes the supervision results; show only the relevant supervised/fiber lines or split the command/output by example.
 
-- `docs/12-platforms-and-hosting/03-runtime-operations.md:10` — The 70-line simulated checkout and repeated runs dominate a page meant to select runtime operations; use a smaller shared workflow and link to dedicated retry/cancellation guidance for details.
+- [done] `docs/12-platforms-and-hosting/03-runtime-operations.md:10` — The 70-line simulated checkout and repeated runs dominate a page meant to select runtime operations; use a smaller shared workflow and link to dedicated retry/cancellation guidance for details.
 
-- `docs/11-observability/_index.md:37` — The overview repeats the telemetry guide's tracing setup, attributes, fiber metrics, dumps, Aspire walkthrough, and JavaScript setup across nearly 400 lines. Keep the signal map and cross-package decisions here; link to the platform guides for setup and recipes.
+- [done] `docs/11-observability/_index.md:37` — The overview repeats the telemetry guide's tracing setup, attributes, fiber metrics, dumps, Aspire walkthrough, and JavaScript setup across nearly 400 lines. Keep the signal map and cross-package decisions here; link to the platform guides for setup and recipes.
 
-- `docs/10-streams/02-constructing.md:105` — The two crawler walkthroughs occupy over half the construction guide and introduce HTTP-shaped domain modeling and frontier bookkeeping before the basic source choices are complete; move the crawler to a dedicated recipe and retain a short `unfoldFlow` example here.
+- [done] `docs/10-streams/02-constructing.md:105` — The two crawler walkthroughs occupy over half the construction guide and introduce HTTP-shaped domain modeling and frontier bookkeeping before the basic source choices are complete; move the crawler to a dedicated recipe and retain a short `unfoldFlow` example here.
 
-- `docs/09-scopes/_index.md:358` — The rules recap repeats the lifetime maps, concurrency table, and fork walkthrough; shorten it to a decision checklist linking back to the detailed sections.
+- [done] `docs/09-scopes/_index.md:358` — The rules recap repeats the lifetime maps, concurrency table, and fork walkthrough; shorten it to a decision checklist linking back to the detailed sections.
 
-- `docs/09-scheduling-and-retries/_index.md:151` — The long sequence of union, intersect, andThen, output predicates, budgets, reset, retry, and repeat makes the first-use guide hard to scan. Split basic retry/repeat from advanced schedule composition.
+- [done] `docs/09-scheduling-and-retries/_index.md:151` — The long sequence of union, intersect, andThen, output predicates, budgets, reset, retry, and repeat makes the first-use guide hard to scan. Split basic retry/repeat from advanced schedule composition.
 
-- `docs/08-concurrency-and-state/01-fibers.md:244` — “What a fiber owns” repeats the ownership and `forkResource` rules already explained at line 77; consolidate the two sections and keep the graceful-stop walkthrough separate.
+- [done] `docs/08-concurrency-and-state/01-fibers.md:244` — “What a fiber owns” repeats the ownership and `forkResource` rules already explained at line 77; consolidate the two sections and keep the graceful-stop walkthrough separate.
 
-- `docs/07-layers/01-layers.md:141` — The function catalog and separate zip/merge discussion interrupt the provisioning walkthrough; keep the choices needed by the example and move the full combinator inventory to reference documentation.
+- [done] `docs/07-layers/01-layers.md:141` — The function catalog and separate zip/merge discussion interrupt the provisioning walkthrough; keep the choices needed by the example and move the full combinator inventory to reference documentation.
 
-- `docs/06-services/02-console.md:139` — The 49-line full `IConsole` fake overwhelms the console usage guide; move the complete implementation to a test-helper recipe and retain a short assertion or link.
+- [done] `docs/06-services/02-console.md:139` — The 49-line full `IConsole` fake overwhelms the console usage guide; move the complete implementation to a test-helper recipe and retain a short assertion or link.
 
-- `docs/05-dependencies/01-the-environment.md:70` — The application-record example, two complete fake implementations, and assertions repeat the dedicated app-record tutorial; keep a minimal projection example here and link to the tutorial.
+- [done] `docs/05-dependencies/01-the-environment.md:70` — The application-record example, two complete fake implementations, and assertions repeat the dedicated app-record tutorial; keep a minimal projection example here and link to the tutorial.
 
-- `docs/04-error-handling/_index.md:41` — The single paragraph combines recovery, traced and compound causes, error-type changes, wrapper exceptions, and handler cancellation; split into a short choice guide and a focused compound-cause explanation.
+- [done] `docs/04-error-handling/_index.md:41` — The single paragraph combines recovery, traced and compound causes, error-type changes, wrapper exceptions, and handler cancellation; split into a short choice guide and a focused compound-cause explanation.
 
-- `docs/03-the-flow-type/06-task-async-interop.md:272` — The summary repeats the interop selection table and section conclusions; retain one quick decision aid and link to the examples.
+- [done] `docs/03-the-flow-type/06-task-async-interop.md:272` — The summary repeats the interop selection table and section conclusions; retain one quick decision aid and link to the examples.
 
-- `docs/02-how-it-compares/02-task-vs-flow-scenarios.md:8` — Seven scenarios repeat the same source link, unchecked snippet, ZIO correspondence, and three-part guarantee list; a summary matrix with links to individual scenarios would make this comparison easier to scan.
+- [done] `docs/02-how-it-compares/02-task-vs-flow-scenarios.md:8` — Seven scenarios repeat the same source link, unchecked snippet, ZIO correspondence, and three-part guarantee list; a summary matrix with links to individual scenarios would make this comparison easier to scan.
 
-- `docs/01-getting-started/01-why-flow.md:302` — The concluding paragraph repeats the preceding sections' points about service signatures, fork ownership, tokens, and guardrails without adding a next step.
+- [done] `docs/01-getting-started/01-why-flow.md:302` — The concluding paragraph repeats the preceding sections' points about service signatures, fork ownership, tokens, and guardrails without adding a next step.
 
-- `docs/process/03-streaming.md:129` — The queue/hub, merge/zip, fold, filtering, stderr provenance, line limits, and ordinary-stream conversion examples make this first-use guide 286 lines long. Keep a short line-consumption path here and split FlowStream integration into a recipe.
+- [done] `docs/process/03-streaming.md:129` — The queue/hub, merge/zip, fold, filtering, stderr provenance, line limits, and ordinary-stream conversion examples make this first-use guide 286 lines long. Keep a short line-consumption path here and split FlowStream integration into a recipe.
 
 ## Reference material in guides
 
-- `docs/http/02-responses-and-errors.md:120` — The exhaustive `HttpError` case match acts as a case catalog in a response walkthrough; keep a few handling choices here and link the full union contract in API reference.
+- [done] `docs/http/02-responses-and-errors.md:120` — The exhaustive `HttpError` case match acts as a case catalog in a response walkthrough; keep a few handling choices here and link the full union contract in API reference.
 
-- `docs/15-notes/03-guardrails.md:97` — `AxialGuardrailRule` metadata syntax and matching grammar are package-author reference material within an adoption guide; link to a dedicated rule-authoring reference from the install path.
+- [done] `docs/15-notes/03-guardrails.md:97` — `AxialGuardrailRule` metadata syntax and matching grammar are package-author reference material within an adoption guide; link to a dedicated rule-authoring reference from the install path.
 
-- `docs/14-advanced/04-writing-effect-analyzers.md:87` — NuGet layout, `PackageDownload`, and MSBuild target/CLI exit-code details are packaging reference material without a runnable project; link to a maintained template and keep the guide focused on adapting a rule and verifying a diagnostic.
+- [done] `docs/14-advanced/04-writing-effect-analyzers.md:87` — NuGet layout, `PackageDownload`, and MSBuild target/CLI exit-code details are packaging reference material without a runnable project; link to a maintained template and keep the guide focused on adapting a rule and verifying a diagnostic.
 
-- `docs/12-platforms-and-hosting/09-elmish.md:7` — The page lists command, subscription, inbox, shutdown, and test API contracts without a worked Elmish program; move the exhaustive operation inventory to reference and keep a first-use lifecycle example here.
+- [done] `docs/12-platforms-and-hosting/09-elmish.md:7` — The page lists command, subscription, inbox, shutdown, and test API contracts without a worked Elmish program; move the exhaustive operation inventory to reference and keep a first-use lifecycle example here.
 
-- `docs/11-observability/_index.md:204` — The complete fiber instrument table and registry method inventory at lines 273–288 are reference contracts duplicated alongside the telemetry guide; retain a short operational interpretation and link to the telemetry reference for the inventories.
+- [done] `docs/11-observability/_index.md:204` — The complete fiber instrument table and registry method inventory at lines 273–288 are reference contracts duplicated alongside the telemetry guide; retain a short operational interpretation and link to the telemetry reference for the inventories.
 
-- `docs/10-streams/06-consuming.md:63` — The six-step lifecycle and per-operator scope ownership rules read as a scope contract; keep the practical cleanup guarantee here and link to the scopes guide for the detailed ordering.
+- [done] `docs/10-streams/06-consuming.md:63` — The six-step lifecycle and per-operator scope ownership rules read as a scope contract; keep the practical cleanup guarantee here and link to the scopes guide for the detailed ordering.
 
-- `docs/09-scopes/_index.md:233` — The combinator-by-combinator scope transfer table is a specialized contract better maintained in API reference; keep the value-received ownership rule and link to per-combinator details.
+- [done] `docs/09-scopes/_index.md:233` — The combinator-by-combinator scope transfer table is a specialized contract better maintained in API reference; keep the value-received ownership rule and link to per-combinator details.
 
-- `docs/09-scheduling-and-retries/_index.md:388` — The 18-row signature table duplicates the guide's descriptions and belongs in API reference; keep a short selection guide and link to the signatures.
+- [done] `docs/09-scheduling-and-retries/_index.md:388` — The 18-row signature table duplicates the guide's descriptions and belongs in API reference; keep a short selection guide and link to the signatures.
 
-- `docs/08-concurrency-and-state/03-ref.md:92` — The full signature table repeats the immediately preceding examples of each `Ref` operation; link to API reference and retain the atomicity and get/set pitfall in this guide.
-- `docs/08-concurrency-and-state/05-stm.md:114` — Two signature tables restate the `TRef` and `STM` overview; move exhaustive signatures to API reference and use this space for `retry`/`orElse` behavior.
+- [done] `docs/08-concurrency-and-state/03-ref.md:92` — The full signature table repeats the immediately preceding examples of each `Ref` operation; link to API reference and retain the atomicity and get/set pitfall in this guide.
+- [done] `docs/08-concurrency-and-state/05-stm.md:114` — Two signature tables restate the `TRef` and `STM` overview; move exhaustive signatures to API reference and use this space for `retry`/`orElse` behavior.
 
-- `docs/07-layers/01-layers.md:143` — The table enumerates `map`, `mapError`, `widenError`, `bind`, `zip`, `zipPar`, `merge`, `map2`, and `map3` without showing most in use; link to their API reference and retain the composition rules that matter here.
+- [done] `docs/07-layers/01-layers.md:143` — The table enumerates `map`, `mapError`, `widenError`, `bind`, `zip`, `zipPar`, `merge`, `map2`, and `map3` without showing most in use; link to their API reference and retain the composition rules that matter here.
 
-- `docs/06-services/03-filesystem.md:131` — The catalog of async methods, metadata setters, symlinks, directory enumerators, and path helpers across lines 131–197 is API-reference material; keep representative usage and link to a searchable operation reference.
+- [done] `docs/06-services/03-filesystem.md:131` — The catalog of async methods, metadata setters, symlinks, directory enumerators, and path helpers across lines 131–197 is API-reference material; keep representative usage and link to a searchable operation reference.
 
-- `docs/05-dependencies/03-service-contracts.md:146` — The subtle `#T` type-variable rule is reference material in a conceptual guide; keep a brief warning here and link to a focused signature reference with examples.
+- [done] `docs/05-dependencies/03-service-contracts.md:146` — The subtle `#T` type-variable rule is reference material in a conceptual guide; keep a brief warning here and link to a focused signature reference with examples.
 
-- `docs/03-the-flow-type/07-troubleshooting-types.md:13` — The complete alias expansion table duplicates `01-flow-type.md:35`; link to the canonical table and focus on the diagnostic here.
+- [done] `docs/03-the-flow-type/07-troubleshooting-types.md:13` — The complete alias expansion table duplicates `01-flow-type.md:35`; link to the canonical table and focus on the diagnostic here.
 
-- `docs/02-how-it-compares/02-task-vs-flow-scenarios.md:107` — The `forkResource` scope rule is a specialized concurrency contract inside a comparison; link to the scopes reference for the rule and keep only the comparison-specific consequence here.
+- [done] `docs/02-how-it-compares/02-task-vs-flow-scenarios.md:107` — The `forkResource` scope rule is a specialized concurrency contract inside a comparison; link to the scopes reference for the rule and keep only the comparison-specific consequence here.
 
-- `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
+- [done] `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
 

@@ -208,7 +208,7 @@ startedWorkflow |> Flow.run () |> shouldEqual (Exit.Success 42)
 
 Use `Flow.awaitStartedTaskResult` when the started task returns `Result`.
 
-## Flexible type variables (`#T`) are each distinct
+## Flexible type variables are each distinct
 
 `#IHasOrders` is F# shorthand for `'env when 'env :> IHasOrders`, a fresh type variable with one constraint. Each
 occurrence of `#T` in a signature is a separate type variable, so two occurrences do not unify to the same
