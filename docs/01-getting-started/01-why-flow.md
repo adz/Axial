@@ -288,8 +288,6 @@ including a count of failures in background work that nothing awaited. See [obse
 
 ## 8. Fewer states to reason about
 
-The first seven points shrink what a reader, a reviewer, or a test has to consider.
-
 A flow ends in one of three ways: its value, one of the errors named in its type, or an unexpected outcome (a defect or
 an interruption). There is no fourth case such as an exception that escapes past a `Result`, or a task still running
 after its caller has returned.
@@ -304,8 +302,8 @@ The build enforces the conventions the types cannot. [Axial.Guardrails](../notes
 to the clock, randomness, and other ambient effects (`AXG001`), exceptions raised inside `flow { }` (`AXG003`), task
 adapters that drop their cancellation token (`AXG005`), and formatting that breaks under NativeAOT (`AXG006`).
 
-This matters most when the code is written by an LLM coding assistant, or by someone new to the codebase. The
-signature says which services exist and which errors are expected, so the assistant has less to guess. The mistakes it
+For an LLM coding assistant or someone new to the codebase, the signature names the available services and expected
+errors, leaving less to guess. The mistakes it
 tends to make are harder to make or show up in the build: forked work is owned by its scope even if nobody awaits it,
 there is no token to forget to pass, and reading `DateTime.Now` or dropping a token in a task adapter produces a
 build warning. Review can then focus on the business logic.
