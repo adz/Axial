@@ -12,6 +12,7 @@
     <Project Path="examples/Axial.Hosting.Desktop.Example/Axial.Hosting.Desktop.Example.fsproj" />
     <Project Path="examples/Axial.Hosting.DotNet.Example/Axial.Hosting.DotNet.Example.fsproj" />
     <Project Path="examples/Axial.Hosting.GenericHost.Example/Axial.Hosting.GenericHost.Example.fsproj" />
+    <Project Path="examples/Axial.Hosting.WatchdogProbe/Axial.Hosting.WatchdogProbe.fsproj" />
     <Project Path="examples/Axial.Hosting.Node.Example/Axial.Hosting.Node.Example.fsproj" />
     <Project Path="examples/Axial.MaintenanceExamples/Axial.MaintenanceExamples.fsproj" />
     <Project Path="examples/Axial.PlatformService.Examples/Axial.PlatformService.Examples.fsproj" />

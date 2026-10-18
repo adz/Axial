@@ -19,6 +19,8 @@ It writes `artifacts/verify/result.json` (commit, dirty flag, per-stage status, 
 per stage. A task is verified when `"passed": true` for the stages it touches. Quote the summary lines in reports.
 Do not treat "passed on rerun" as passing: a stage that needed a rerun is a flaky test to record below.
 
+On Linux with a user systemd session, run `scripts/check-systemd-watchdog.sh` manually. It verifies steady operation, SIGKILL restart, and watchdog timeout of a transient user unit; it is not run in CI. On machines without a user session it prints `skipped`.
+
 The Fable stage runs three times because a single pass hid a deterministic-under-load stall introduced by T1.
 `dotnet livedocs test --warn-as-error` stays a phase or release step (see AGENTS.md), not part of `verify.sh`.
 
