@@ -6,7 +6,19 @@ open Axial
 open Axial.Fable.Tests.Harness
 
 let tests : Test list =
-    [ test "A forked fiber releases what it acquired when it settles" (flow {
+    [ test "FiberLocal overrides are inherited by forked fibers" (flow {
+          let local = FiberLocal.make 0
+          let! value =
+              flow {
+                  let! fiber = Flow.fork (FiberLocal.get local)
+                  return! Fiber.join fiber
+              }
+              |> FiberLocal.locally 9 local
+          let! restored = FiberLocal.get local
+          return [ equal "forked" 9 value; equal "restored" 0 restored ]
+      })
+
+      test "A forked fiber releases what it acquired when it settles" (flow {
           let released = ref false
 
           let! fiber =

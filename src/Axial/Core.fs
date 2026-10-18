@@ -1005,6 +1005,7 @@ type internal RuntimeContext =
     {
         Scope: Scope
         Annotations: Map<string, string>
+        Locals: Map<int64, obj>
         AnnotationSink: string -> string -> unit
         TelemetryContext: Axial.Telemetry.TelemetryContext
         TelemetrySink: Axial.Telemetry.Attribute -> unit
@@ -1030,6 +1031,7 @@ module internal RuntimeContext =
         {
             Scope = scope
             Annotations = Map.empty
+            Locals = Map.empty
             AnnotationSink = fun _ _ -> ()
             TelemetryContext = Axial.Telemetry.TelemetryContext Map.empty
             TelemetrySink = ignore
