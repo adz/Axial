@@ -139,6 +139,24 @@ let jitteredUser : Flow<TestEnv, HttpError, User> =
 A schedule without `whileInput` retries every typed error; select the transient ones so permanent failures stay
 fast.
 
+## Long polls that restart on demand
+
+When local state changes, a wake signal cancels the in-flight GET and starts a fresh one. Wakes do not count as retry failures; only an HTTP failure reaches the retry policy.
+
+The endpoint below must support long polling, so this example needs a server and is not run by the docs build (`no-check`).
+
+```fsharp no-check
+open Axial
+open Axial.HttpClient
+
+let pollUntilResponse (wakes: Queue<unit>) : Flow<TestEnv, HttpError, HttpResponse> =
+    let request = Http.get "https://api.example.com/events?wait=30"
+    let work = Http.send request |> Http.retryTransient 3 (TimeSpan.FromMilliseconds 200.0)
+    FlowStream.reissueOnWake (FlowStream.fromDequeue wakes) work
+```
+
+Create `wakes` with `Queue.unbounded ()` inside a flow, and call `Queue.offer () wakes` when a local change should restart the poll.
+
 ## Limit Response Size
 
 A server you do not control can send a body of any size. `Request.maxResponseBytes` caps it:

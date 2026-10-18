@@ -65,6 +65,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! flowMapped = source () |> FlowStream.mapFlow (fun value -> Flow.ok (value + 1)) |> FlowStream.runCollect
         let! unfolded = FlowStream.unfoldFlow (fun state -> Flow.ok (if state < 10 then Some(state, state + 1) else None)) 0 |> FlowStream.runCollect
         let! single = FlowStream.fromFlow (Flow.ok 42) |> FlowStream.runCollect
+        let! reissued = FlowStream.reissueOnWake FlowStream.empty (Flow.ok 42)
         let! callbackDefault =
             FlowStream.fromCallback 2 (fun emit ->
                 Flow.delay (fun () -> emit.End(); Flow.ok ({ new IDisposable with member _.Dispose() = () })))
@@ -112,6 +113,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             && flowMapped = List.map ((+) 1) input
             && unfolded = [ 0..9 ]
             && single = [ 42 ]
+            && reissued = 42
             && localized = input
             && interop = input
             && folded = List.sum input

@@ -940,6 +940,23 @@ module FlowStream =
     /// <example><code>stream |&gt; FlowStream.runCollect</code></example>
     let runCollect stream = runFold (fun values value -> value :: values) [] stream |> Flow.map List.rev
 
+    /// <summary>Runs a flow until it completes, replacing an in-flight run whenever the wake stream emits.</summary>
+    /// <remarks>
+    /// The first run starts immediately. Each wake interrupts and awaits cleanup of the current run before
+    /// starting another. A wake is not a failure or a retry attempt; wrap <paramref name="work" /> in
+    /// <c>Flow.retry</c> to retry only genuine failures. The first successful result is returned.
+    /// Failures and defects from the work or wake propagate. If the wake stream ends, the current run
+    /// may still complete. Interrupting the caller interrupts both the wake stream and the running work.
+    /// </remarks>
+    let reissueOnWake (wake: FlowStream<'env, 'error, unit>) (work: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        append wake (singleton ())
+        |> switchMapFlow (fun () -> work)
+        |> take 1
+        |> runCollect
+        |> Flow.map (function
+            | value :: _ -> value
+            | [] -> invalidOp "FlowStream.reissueOnWake ended without a result from its initial or reissued work")
+
     /// <summary>Consumes a stream and ignores its values.</summary>
     /// <example><code>stream |&gt; FlowStream.runDrain</code></example>
     let runDrain stream = runFold (fun () _ -> ()) () stream

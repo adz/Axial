@@ -11,11 +11,6 @@ lists the queue. Work on main.
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
   - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
     with keyed commands and an inbox subscription, and await cleanup on shutdown.
-- [ ] T12: Wakeable reissue combinator for long polls
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
-  - A combinator that runs a flow and, when a wake signal fires, interrupts and reissues it; the wake is neither a
-    failure nor a retry attempt for `Flow.retry`/schedules. Decide its module by its input (likely `Flow`).
-  - Done when: a test shows wake-reissue cycles with zero counted failures and a long-poll guide example over `Http`.
 - [ ] T13: `Axial.WebSocket` client service
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Needs T3 (flow-returning services) and T4
     (`FlowStream.fromCallback` for the receive stream).
