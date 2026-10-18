@@ -78,6 +78,36 @@ type ScopedProvider() =
 
 module HostingTests =
     [<Fact>]
+    let ``watchdog without interval completes without notifying`` () =
+        let variables =
+            { new IEnvironmentVariables with
+                member _.TryGet _ = None
+                member _.Set(_, _) = ()
+                member _.Expand value = value
+                member _.GetAll() = Dictionary<string, string>() }
+        let mutable count = 0
+        let notifier = { new ISystemdNotifier with member _.Notify _ = count <- count + 1 }
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let result = App.run (ClockEnvironment(clock)) (Hosting.watchdog variables 1 notifier) |> Async.RunSynchronously
+        test <@ result = Exit.Success () @>
+        test <@ count = 0 @>
+
+    [<Fact>]
+    let ``live notifier sends unix datagram on Linux`` () =
+        if OperatingSystem.IsLinux() then
+            let path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "axial-notify-" + Guid.NewGuid().ToString("N"))
+            use receiver = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.Unix, System.Net.Sockets.SocketType.Dgram, System.Net.Sockets.ProtocolType.Unspecified)
+            try
+                receiver.Bind(System.Net.Sockets.UnixDomainSocketEndPoint(path))
+                receiver.ReceiveTimeout <- 3000
+                SystemdNotify.live path |> fun notifier -> notifier.Notify "WATCHDOG=1"
+                let buffer = Array.zeroCreate<byte> 64
+                let received = receiver.Receive buffer
+                test <@ System.Text.Encoding.UTF8.GetString(buffer, 0, received) = "WATCHDOG=1" @>
+            finally
+                if System.IO.File.Exists path then System.IO.File.Delete path
+
+    [<Fact>]
     let ``named locals follow concurrent jobs and forked logs`` () =
         let provider = ScopedProvider()
         use factory = LoggerFactory.Create(fun builder -> builder.AddProvider(provider) |> ignore)

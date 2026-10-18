@@ -4,6 +4,9 @@ open System
 open System.Threading
 open System.Collections.Generic
 open System.Threading.Tasks
+open System.Net.Sockets
+open System.Text
+open System.Globalization
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
@@ -156,9 +159,75 @@ type FlowHostedService<'env, 'error>
                 |> fun work -> Async.StartAsTask(work, cancellationToken = cancellationToken)
                 :> Task
 
+/// <summary>Transport for systemd notification datagrams.</summary>
+type ISystemdNotifier =
+    abstract Notify: string -> unit
+
+/// <summary>Systemd notification transport with an explicitly supplied socket address.</summary>
+[<RequireQualifiedAccess>]
+module SystemdNotify =
+    /// <summary>Creates a notifier for a filesystem or abstract (@-prefixed) Unix datagram socket.</summary>
+    let live (socketPath: string) : ISystemdNotifier =
+        if String.IsNullOrEmpty socketPath then invalidArg (nameof socketPath) "A notification socket is required."
+        let address = if socketPath[0] = '@' then "\u0000" + socketPath.Substring(1) else socketPath
+        { new ISystemdNotifier with
+            member _.Notify message =
+                // This live transport is the explicit socket-effect boundary for ISystemdNotifier.
+                use socket = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified)
+                let payload = Encoding.UTF8.GetBytes message
+                socket.SendTo(payload, UnixDomainSocketEndPoint(address)) |> ignore }
+
 /// <summary>Microsoft Generic Host registration helpers for root Flow applications.</summary>
 [<RequireQualifiedAccess>]
 module Hosting =
+    /// <summary>Runs a progress-gated systemd watchdog. Supply environment, process ID and notifier explicitly.</summary>
+    let watchdogWith<'env when 'env :> IHasClock>
+        (variables: IEnvironmentVariables)
+        (processId: int)
+        (notifier: ISystemdNotifier)
+        (isHealthy: Flow<'env, Never, bool>) : Flow<'env, Never, unit> =
+        flow {
+            match variables.TryGet "WATCHDOG_USEC" with
+            | None -> return ()
+            | Some value ->
+                match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
+                | false, _ -> return! Flow.die (ArgumentException("Expected positive microseconds.", "WATCHDOG_USEC"))
+                | true, microseconds when microseconds <= 0L -> return! Flow.die (ArgumentException("Expected positive microseconds.", "WATCHDOG_USEC"))
+                | true, microseconds ->
+                    let enabled =
+                        match variables.TryGet "WATCHDOG_PID" with
+                        | None -> true
+                        | Some pid -> pid = string processId
+                    if enabled then
+                        let interval = TimeSpan.FromTicks(max 1L (microseconds * 5L))
+                        let heartbeatInterval = TimeSpan.FromTicks(max 1L (interval.Ticks / 2L))
+                        let mutable progress = 0L
+                        let rec heartbeat () = flow {
+                            do! Flow.sleep heartbeatInterval
+                            Interlocked.Increment(&progress) |> ignore
+                            return! heartbeat ()
+                        }
+                        let! fiber = Flow.fork (heartbeat ())
+                        try
+                            let rec ping last = flow {
+                                do! Flow.sleep interval
+                                let current = Interlocked.Read(&progress)
+                                if current <> last then
+                                    let! healthy = isHealthy
+                                    if healthy then notifier.Notify "WATCHDOG=1"
+                                return! ping current
+                            }
+                            return! ping (Interlocked.Read(&progress))
+                        finally
+                            // The fork belongs to this Flow scope and is interrupted on cancellation.
+                            ignore fiber
+        }
+
+    /// <summary>Runs the watchdog without an application-specific health check.</summary>
+    let watchdog<'env when 'env :> IHasClock>
+        (variables: IEnvironmentVariables) (processId: int) (notifier: ISystemdNotifier) : Flow<'env, Never, unit> =
+        watchdogWith variables processId notifier (Flow.succeed true)
+
     /// <summary>Registers a root application that owns the Generic Host lifetime.</summary>
     let addApp
         (environmentFactory: IServiceProvider -> 'env)
