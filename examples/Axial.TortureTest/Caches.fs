@@ -29,6 +29,9 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                 return key, attempt
             }
 
+        let! _bounded = Cache.makeBounded 2 lookup
+        let! _expiring = Cache.makeBoundedWithExpiry 2 (TimeSpan.FromMinutes 1.0) lookup
+        let! _recursive = Cache.makeRec (fun _ key -> lookup key)
         let! cache = Cache.make lookup
 
         // Many callers per key; a random fifth are interrupted as soon as they start waiting.

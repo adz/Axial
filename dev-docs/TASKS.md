@@ -60,11 +60,6 @@ lists the queue. Work on main.
     runtime makes progress. Document SCM recovery (`sc failure`) and a systemd unit with `Restart=` and `WatchdogSec=`.
   - Done when: `kill -9` restarts the agent under systemd, and a deliberately hung runtime is restarted by the
     watchdog (scripted test, Linux; Windows documented).
-- [ ] T18: Bounded and self-referencing `Cache`
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
-  - `Cache.makeBounded capacity` (LRU eviction, optional expiry against the monotonic clock) and `Cache.makeRec`
-    (lookup receives the cache itself, e.g. nested archives), or a documented pattern if `makeRec` adds nothing.
-  - Say in the Cache docs that `Cache.make` requires `'env :> IHasClock`.
 - [ ] T20: Guardrails output and new rules
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
   - When the analyzer exits because of findings, suppress or reword MSBuild's `MSB3073 ... FSharp.Analyzers.Cli.dll

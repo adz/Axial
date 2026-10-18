@@ -58,6 +58,8 @@ sameConfig |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Succes
 
 ## Cache by key
 
+`Cache.make` requires `'env :> IHasClock`: the runtime uses the supplied clock to schedule detached lookup fibers. `Cache.makeBounded capacity` evicts the least recently read key when full; `Cache.makeBoundedWithExpiry capacity timeToLive` also refreshes successful entries after the monotonic clock's elapsed duration. Eviction does not cancel existing waiters. `Cache.makeRec` passes the cache to its lookup for nested reads. Do not look up the same key recursively, directly or through a cycle: single-flight waits for the running lookup and deadlocks.
+
 `Cache.make` takes a lookup function and returns a cache. `Cache.get` returns the value for a key, running the lookup
 only when no success is cached and no lookup for that key is already running:
 

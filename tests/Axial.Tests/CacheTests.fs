@@ -9,6 +9,47 @@ open Xunit
 
 module CacheTests =
     [<Fact>]
+    let ``bounded cache refreshes LRU and limits count`` () =
+        let calls = System.Collections.Generic.Dictionary<int, int>()
+        let load key : Flow<ClockEnvironment, string, int> =
+            Flow.delay (fun () ->
+                let count = (if calls.ContainsKey key then calls[key] else 0) + 1
+                calls[key] <- count
+                Flow.ok count)
+        let workflow = flow {
+            let! cache = Cache.makeBounded 2 load
+            let! _ = cache |> Cache.get 1
+            let! _ = cache |> Cache.get 2
+            let! _ = cache |> Cache.get 1
+            let! _ = cache |> Cache.get 3
+            let! size = Cache.count cache
+            let! reloaded = cache |> Cache.get 2
+            let! sizeAfter = Cache.count cache
+            return size, reloaded, sizeAfter, calls[1]
+        }
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(2, 2, 2, 1) @>
+
+    [<Fact>]
+    let ``recursive cache reads nested keys only once`` () =
+        let calls = ref 0
+        let lookup cache key : Flow<ClockEnvironment, string, int> = flow {
+            if key = 0 then
+                calls.Value <- calls.Value + 1
+                return 10
+            else
+                let! inner = cache |> Cache.get 0
+                let! again = cache |> Cache.get 0
+                return inner + again
+        }
+        let workflow = flow {
+            let! cache = Cache.makeRec lookup
+            let! value = cache |> Cache.get 1
+            return value
+        }
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 20 @>
+        test <@ calls.Value = 1 @>
+
+    [<Fact>]
     let ``Cache runs one lookup for concurrent callers of the same key`` () =
         let lookups = ref 0
 
