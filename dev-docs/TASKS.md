@@ -54,6 +54,24 @@ lists the queue. Work on main.
   - `Reified.*` packages are on NuGet (latest 0.8.2; `Directory.Build.props` pins `ReifiedVersion` 0.7.0). Restore and
     test `Axial.Hosting.AspNetCore`, `Axial.Hosting.GenHttp`, their examples and tests, and
     `examples/Axial.ReferenceApp` against package references.
+- [ ] T15: `Axial.Files` package: stream-native walk, lines, watch, durable writes
+  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Needs T3 (flow-returning `IFileSystem`) and T4
+    (`FlowStream.fromCallback` for watcher events). Scheduled ahead of T8.
+  - `Axial.FileSystem` mirrors `System.IO` one call at a time; apps fall back to raw `System.IO` for anything
+    composite (gitkay carries 19 Guardrails suppressions, mostly in `Git/Trash.fs` and `GitService.fs`). Package the
+    generic part of LogDug's Files service (`~/projects/logdug/src/LogDug.Core/Files/Files.fs`): `walk` (lazy,
+    descend predicate), `lines` (batched, binary-sniffing, encoding-aware reader as a `Resource`), and `watch` as a
+    `FlowStream` with recursive watching (`IncludeSubdirectories`) and a scope-owned watcher. Leave LogDug's archive
+    navigation and `Location` model in LogDug unless they generalise cleanly.
+  - Built on `IFileSystem` so `FileSystem.test` covers it; `FileSystemWatcher` is the one new effect, behind its own
+    mockable member and a guardrail rule in `EffectCatalog.fs`.
+  - Durable writes live here too (not BCL API, so not on `IFileSystem`): atomic write (temp file in the same
+    directory, `Flush(true)`, `MoveFile` with overwrite; directory fsync is not in the BCL, decide whether to add it as
+    an explicit live dependency) and a bounded append-only log (checksummed records, torn-tail recovery, size cap with
+    rotation). Process kills need only the rename; power loss needs the flushes.
+  - Done when: gitkay's filesystem suppressions that come from walking, reading lines, or watching are gone; LogDug
+    can swap its Files internals for the package; recursive watch has a live test; a crash test (kill a child process
+    at random points while writing) never yields a lost, duplicated, or partially written record.
 - [ ] T8: Process output cap that fails
   - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`.
   - Kill on interrupt and stage/overall timeouts already exist (`ProcessLive.fs` `terminate`). The only failing limit
@@ -68,17 +86,6 @@ lists the queue. Work on main.
     implementations and `Hosting.observer` attach the current context (correlation ID, unit ID) to each entry.
   - Fork is a hot path: benchmark `ParallelCompositionBenchmarks` before and after; no cost when no fiber-local is set.
   - Done when: a test shows one job ID on every log line of a job, across forked fibers.
-- [ ] T11: Durable file writes and a bounded append log
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
-  - Not BCL API, so keep it off `IFileSystem` (which mirrors `System.IO`). Add separate modules in the
-    `Axial.FileSystem` package, built only on `IFileSystem` members (`OpenFile` returns a `FileStream` for
-    `Flush(true)`; `MoveFile` with overwrite), so `FileSystem.test` covers them.
-  - Atomic write: temp file in the same directory, flush to disk, rename over the target. Directory fsync after rename
-    is not in the BCL (Unix `open`/`fsync` on the directory); decide whether to add it as an explicit live dependency.
-    Process kills only need the rename; power loss needs the flushes.
-  - Bounded append-only log: checksummed records, torn-tail recovery on open, size cap with rotation or compaction.
-  - Done when: a crash test (kill a child process at random points while writing) never yields a lost, duplicated, or
-    partially written record.
 - [ ] T12: Wakeable reissue combinator for long polls
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
   - A combinator that runs a flow and, when a wake signal fires, interrupts and reissues it; the wake is neither a
