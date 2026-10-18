@@ -5,8 +5,7 @@ description: Choose lexical or runtime-owned resource lifetimes.
 
 # Scopes
 
-.NET already has resources, and F# already has `use` and `use!`. Axial's `flow { }` computation expression supports
-both directly:
+Axial's `flow { }` supports F# `use` and `use!` for .NET resources:
 
 ```fsharp prepare
 // Setup for the checked examples on this page.
@@ -40,8 +39,8 @@ let readFirstLine path =
 ```
 
 This is a **lexical lifetime**. The compiler disposes `reader` when control leaves the body governed by that `use`. In a
-`flow { }`, disposal happens before the Flow produced by that body completes. The resource cannot safely escape for
-another function or later workflow to use.
+`flow { }`, disposal happens before the Flow produced by that body completes. Another function or later workflow cannot
+safely use the resource.
 
 A Flow scope is a runtime ownership boundary. It lets resources and child fibers live across function and subflow calls,
 then closes all of them together after success, failure, interruption, or defect.
@@ -90,9 +89,8 @@ so `R` remains alive while Flow A continues and is cleaned only when that scope 
 <div class="lifetime-stage lifetime-stage--flow"><strong>Flow A</strong><span class="lifetime-region lifetime-region--scope" style="--x: 12; --w: 70; --y: 2.2; --h: 7"><b>Flow.scoped child</b><span class="lifetime-region lifetime-region--subflow" style="--x: 10; --w: 38; --y: 1.8; --h: 2.2">Flow B registers R</span><span class="lifetime-region lifetime-region--resource" style="--x: 27; --w: 66; --y: 4.5; --h: 1.7">R remains owned · cleanup</span></span></div>
 </div>
 
-Here Flow B still ends before `R` does, but the child scope closes before Flow A ends. This is the reason for
-`Flow.scoped`: it chooses a runtime cleanup boundary independently of the function or subflow that acquired the
-resource.
+Flow B ends before `R` does; the child scope closes before Flow A ends. `Flow.scoped` sets a cleanup boundary
+independently of the function or subflow that acquired the resource.
 
 ## Create a local runtime scope
 
@@ -136,7 +134,7 @@ application |> Flow.run () |> shouldEqual (Exit.Success "used orders")
 List.ofSeq lifecycle |> shouldEqual [ "open"; "work"; "close orders" ]
 ```
 
-Everything registered inside `Flow.scoped` remains available across calls made inside that block. Cleanup finishes
+Resources registered inside `Flow.scoped` remain available across calls inside that block. Cleanup finishes
 before the resulting Flow returns.
 
 ### How a release runs
@@ -244,9 +242,9 @@ traversal share a scope, each branch of `Flow.race` has one, and so does each fi
 | `Flow.forkResource` | The resource is acquired in a fiber and its release goes to the caller's scope. |
 | The per-worker resource of `Flow.traverseParUsing` and `Flow.forEachParUsing` | Released when that worker finishes. |
 
-`Flow.fork` is the combinator that returns a handle instead of a value. Nothing tells the fiber whether anyone will
-join it, so it releases its scoped resources when it settles. That is what stops a finished consumer from holding a hub
-subscription open and stalling the publisher.
+`Flow.fork` returns a handle instead of a value. The fiber cannot know whether anyone will join it, so it releases
+its scoped resources when it settles. This prevents a finished consumer from holding a hub subscription open and
+stalling the publisher.
 
 ### Acquire in parallel
 
@@ -286,7 +284,7 @@ let openBoth : Flow<ClockEnvironment, string, int * int> =
 openBoth |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success(0, 2))
 ```
 
-No connection closed while `openBoth` used them; both closed when its scope did.
+Both connections remain open while `openBoth` uses them and close with its scope.
 
 ### Acquire in the background and keep it
 
@@ -347,9 +345,8 @@ stored the resource somewhere else first, such as in a `Ref`, that reference poi
 ### Nested scopes
 
 A fiber created with `Flow.fork` is itself registered with the current scope. Closing the scope interrupts and awaits an
-unfinished fiber, then releases what the fiber acquired. A nested `Flow.scoped` therefore gives a group of resources and
-fibers a lifetime shorter than the surrounding application without requiring every function to pass cleanup handles
-manually.
+unfinished fiber, then releases what the fiber acquired. A nested `Flow.scoped` gives resources and fibers a lifetime shorter than the surrounding application without passing
+cleanup handles through every function.
 
 Child scopes are also owned by their parent. If the root execution is interrupted, it closes every remaining child in
 reverse registration order.
