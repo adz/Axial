@@ -99,7 +99,7 @@ let appLayer : Layer<Map<string, string>, StartupError, AppEnv> =
     }
 ```
 
-Here is the same block with the left- and right-hand types shown:
+The left- and right-hand types can be annotated:
 
 ```fsharp
 let appLayerAnnotated =
@@ -181,8 +181,7 @@ countOrders
 |> shouldEqual (Exit.Success "3 orders in db://replica")
 ```
 
-This keeps service requirements visible to people, the compiler, and LLMs. It also avoids ambiguous cases such as two
-services with the same implementation type. If an application needs multiple instances of the same service shape, give
+Named environment fields make service requirements explicit and avoid ambiguity when two services share an implementation type. If an application needs multiple instances of the same service shape, give
 them named record fields or distinct nominal contracts rather than relying on tags.
 
 ## Cleanup

@@ -3,10 +3,7 @@ title: Layers
 description: Reusable provisioning for environments that need flow capabilities to build.
 ---
 
-A layer builds an environment, and building it may itself need flow capabilities: awaiting a
-connection, reading configuration, failing with a typed startup error, or acquiring something that
-must be released again. `Axial.Layers` is a separate package because most applications never need
-that.
+A layer builds an environment using flow capabilities when construction must await a connection, read configuration, fail with a typed startup error, or acquire a resource that must be released. Most applications do not need the separate `Axial.Layers` package.
 
 **Use a record when you can.** Construct the environment directly and hand it to the workflow:
 
@@ -49,8 +46,7 @@ let env = { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpa
 describeRegion |> Flow.run env |> shouldEqual (Exit.Success "eu at 2026")
 ```
 
-That covers most applications, needs no package beyond the services themselves, and is what
-[dependencies](/dependencies/index.html) documents.
+Direct construction needs no package beyond the services themselves. See [dependencies](/dependencies/index.html).
 
 Use a layer when construction is itself effectful:
 
@@ -101,7 +97,7 @@ interrupted.
 
 ## Two real examples
 
-Axial's own packages contain both of the cases that justify a layer.
+Axial packages use layers for typed provisioning errors and service construction from other services.
 
 **Provisioning that can fail with a typed error.** `Axial.PlatformService` builds the five standard services from a
 host container:
@@ -122,9 +118,7 @@ let servicesFromServiceProvider
     )
 ```
 
-Read the error channel: `BaseRuntimeError`, not `Never`. **Construction itself can fail**, and it fails with a typed
-error naming the missing service. A record cannot express that; you would throw, or return an option and push the
-problem onto every caller. `Layer.provide` surfaces it as a typed startup failure before any workflow runs.
+The error channel is `BaseRuntimeError`, not `Never`. Construction can fail with a typed error naming the missing service. A record cannot express that; you would throw, or return an option and push the problem onto every caller. `Layer.provide` surfaces it as a typed startup failure before any workflow runs.
 
 **A service built from another service.** `Axial.Hosting` turns what the host container has into what workflows
 need:
@@ -134,11 +128,9 @@ let layer (categoryName: string) : Layer<ILoggerFactory, Never, ILog> =
     Layer.envWith (fromFactory categoryName)
 ```
 
-The type says it: consumes an `ILoggerFactory`, produces an `ILog`. The factory does not exist until the host starts,
-so there is no record field to put it in. The layer does the conversion.
+The layer consumes an `ILoggerFactory` and produces an `ILog`. The factory does not exist until the host starts, so there is no record field to put it in.
 
-Compare with the case that does **not** need a layer. Wrapping a value that is already built and cannot fail is
-`Layer.succeed`, which provisions nothing:
+An already-built value that cannot fail needs no provisioning. `Layer.succeed` wraps it:
 
 ```fsharp
 Layer.succeed Console.live

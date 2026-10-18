@@ -5,7 +5,7 @@ description: Provision environments, manage resources, and keep startup concerns
 
 # Tutorial: Layers
 
-Layers are for construction time, not business logic time.
+Layers construct environments before workflows run.
 
 Use a layer when you need to:
 
@@ -129,8 +129,7 @@ saveOrder "A-100" |> Layer.provide failingAppLayer |> Flow.run () |> shouldEqual
 persisted.Count |> shouldEqual 0
 ```
 
-If provisioning fails, `Layer.provide` never runs the downstream business workflow: nothing was persisted. That
-separation is one of the main reasons to use layers.
+If provisioning fails, `Layer.provide` never runs the downstream workflow: nothing was persisted.
 
 ## 5. Resource Ownership
 
@@ -181,10 +180,4 @@ saveOrder "A-100"
 List.ofSeq persisted |> shouldEqual [ "A-100" ]
 ```
 
-The call site stays small:
-
-- construct or choose the layer
-- provide it once
-- run the workflow
-
-Feature entry points no longer open and close startup resources themselves.
+Feature entry points provide the layer once and run the workflow without opening or closing startup resources themselves.
