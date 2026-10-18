@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/08-concurrency-and-state/07-hub.md:168` — The display example polls `Hub.subscriberCount` without a deadline; if the consumer fails before subscribing, the example hangs instead of surfacing its exit. Show a bounded handshake or failure-aware startup.
+
 - `docs/07-layers/02-tutorial.md:142` — The fake connection is created before provisioning and reused; the example assumes a single run. Show acquisition inside the layer for a reusable resource layer.
 
 - `docs/06-services/02-console.md:43` — `Console.readLine` may return null at EOF; `answer.Trim()` assumes interactive input always supplies a line. Show EOF handling in a reusable confirmation example.
@@ -15,6 +17,11 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/08-concurrency-and-state/09-cache.md:105` — “There is no expiry” contradicts the `Cache.makeBoundedWithExpiry` option at line 61. Qualify this as the behavior of the default cache/memoized flow.
+- `docs/08-concurrency-and-state/09-cache.md:40` — `readConfigFromDisk` only increments a `Ref`; the comment says the file is read once, but no disk read occurs. Name it as a simulated load so readers do not mistake it for filesystem guidance.
+- `docs/08-concurrency-and-state/05-stm.md:36` — `withdraw` and `transferFunds` subtract without checking available funds; the banking example silently permits negative balances, unlike the linked torture test's guarded transfers. Add an insufficient-funds condition or label the operations arithmetic-only.
+- `docs/08-concurrency-and-state/10-torture-tests/16-interop.md:30` — “A cancelled token becomes an interruption” omits the distinction between runtime-requested cancellation and a foreign operation throwing cancellation while the runtime token is live; qualify the claim.
 
 - `docs/07-layers/_index.md:121` — “A record cannot express that” overstates the case: a factory returning `Result<AppEnv, BaseRuntimeError>` can model typed startup failure without a layer. Explain the added value of scoped provisioning and `Layer.provide` instead.
 - `docs/07-layers/_index.md:131` — A host-created `ILoggerFactory` can still be placed in a record after host startup; the example demonstrates adapting a dependency, not an inability to use records.
@@ -47,6 +54,8 @@
 
 ## Too long
 
+- `docs/08-concurrency-and-state/01-fibers.md:244` — “What a fiber owns” repeats the ownership and `forkResource` rules already explained at line 77; consolidate the two sections and keep the graceful-stop walkthrough separate.
+
 - `docs/07-layers/01-layers.md:141` — The function catalog and separate zip/merge discussion interrupt the provisioning walkthrough; keep the choices needed by the example and move the full combinator inventory to reference documentation.
 
 - `docs/06-services/02-console.md:139` — The 49-line full `IConsole` fake overwhelms the console usage guide; move the complete implementation to a test-helper recipe and retain a short assertion or link.
@@ -63,6 +72,9 @@
 
 ## Reference material in guides
 
+- `docs/08-concurrency-and-state/03-ref.md:92` — The full signature table repeats the immediately preceding examples of each `Ref` operation; link to API reference and retain the atomicity and get/set pitfall in this guide.
+- `docs/08-concurrency-and-state/05-stm.md:114` — Two signature tables restate the `TRef` and `STM` overview; move exhaustive signatures to API reference and use this space for `retry`/`orElse` behavior.
+
 - `docs/07-layers/01-layers.md:143` — The table enumerates `map`, `mapError`, `widenError`, `bind`, `zip`, `zipPar`, `merge`, `map2`, and `map3` without showing most in use; link to their API reference and retain the composition rules that matter here.
 
 - `docs/06-services/03-filesystem.md:131` — The catalog of async methods, metadata setters, symlinks, directory enumerators, and path helpers across lines 131–197 is API-reference material; keep representative usage and link to a searchable operation reference.
@@ -76,6 +88,10 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/08-concurrency-and-state/05-stm.md:18` — `STM.retry` and `STM.orElse` are named but never demonstrated in the guide; add a runnable wait-for-funds/fallback example showing when retry wakes and how interruption ends the wait.
+- `docs/08-concurrency-and-state/09-cache.md:61` — Expiry and bounded eviction are introduced without an example or an explanation of what happens to an in-flight load when invalidated/evicted. Show a clock-controlled expiry and concurrent invalidation case.
+- `docs/08-concurrency-and-state/_index.md:8` — The landing page advertises Schedule and FlowStream but provides no links to their guides; link to the actual sections so new readers can locate them.
 
 - `docs/07-layers/01-layers.md:156` — The text tells readers to map differing startup errors before providing but gives no example of combining a `Never` layer and a typed-error layer, or of mapping distinct error unions; show the conversion at the composition site.
 - `docs/07-layers/01-layers.md:209` — Parallel failure claims `Cause.Both`, but there is no checked example showing two failing branches or how callers inspect the combined cause.
@@ -99,6 +115,9 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/08-concurrency-and-state/10-torture-tests/_index.md:40` — The scenario pages embed `no-check` snippet directives and link to an external example; give first-time readers a short checked, self-contained representative invariant on the landing page before sending them to the full runner.
+- `docs/08-concurrency-and-state/01-fibers.md:23` — Hide or narrow the broad `prepare` fixture of optional Hosting, Browser, Node, filesystem, and telemetry imports; the same setup recurs on supervision, deferred/semaphore, hub, and cache pages and obscures required packages.
 
 - `docs/07-layers/_index.md:10` — Hide or reduce the repeated `prepare` fixture: optional Browser, Node, telemetry, and filesystem imports appear before the first layer example, obscuring the required packages. The same fixture appears in both other layers pages.
 - `docs/07-layers/02-tutorial.md:167` — Use a checked acquisition/release example with a fresh connection per provision, rather than a prebuilt object registered for disposal, to make ownership and repeated runs safe to copy.
