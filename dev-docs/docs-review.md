@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/06-services/02-console.md:43` — `Console.readLine` may return null at EOF; `answer.Trim()` assumes interactive input always supplies a line. Show EOF handling in a reusable confirmation example.
+
 - `docs/05-dependencies/04-providing-the-environment.md:52` — `SqlUserStore(connectionString)` is invoked without a definition or indication that it is pseudocode; a newcomer may treat the production record as copyable.
 
 - `docs/03-the-flow-type/06-task-async-interop.md:22` — “Flow cannot pass cancellation into” a started task assumes it was created without a token the caller controls; clarify that the Flow cannot supply its own token retroactively, even if the caller has another cancellation source.
@@ -11,6 +13,10 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/06-services/01-platform-services/01-clock.md:103` — The manual-clock example says to advance after a sleeper registers but provides only a comment, not a wait; copying the snippet can race and hang. The later suggestion to implement a mutable clock also omits the already introduced `ManualClock`.
+- `docs/06-services/03-filesystem.md:134` — “The `Async` members on `IFileSystem` ... return `Flow`” blurs service methods and workflow wrappers; distinguish the interface's signatures from the `FileSystem.*Async` functions readers call.
+- `docs/06-services/04-files.md:5` — “A process crash cannot expose a partially written destination” needs a qualification for failures during rename or when the destination did not previously exist; specify the actual atomicity guarantee and supported filesystems.
 
 - `docs/05-dependencies/04-providing-the-environment.md:83` — The section says to use the container to build an environment and leave it behind, but its only direct example runs `Flow<IServiceProvider, _, _>`; show the conversion into an application record at the edge.
 - `docs/05-dependencies/05-tutorials/01-explicit-dependencies.md:52` — `TimedOut` and `Cancelled` are declared as typed errors although the tutorial never produces either; cancellation should remain an interruption unless the workflow owns its cancellation source.
@@ -35,6 +41,8 @@
 
 ## Too long
 
+- `docs/06-services/02-console.md:139` — The 49-line full `IConsole` fake overwhelms the console usage guide; move the complete implementation to a test-helper recipe and retain a short assertion or link.
+
 - `docs/05-dependencies/01-the-environment.md:70` — The application-record example, two complete fake implementations, and assertions repeat the dedicated app-record tutorial; keep a minimal projection example here and link to the tutorial.
 
 - `docs/04-error-handling/_index.md:41` — The single paragraph combines recovery, traced and compound causes, error-type changes, wrapper exceptions, and handler cancellation; split into a short choice guide and a focused compound-cause explanation.
@@ -47,6 +55,8 @@
 
 ## Reference material in guides
 
+- `docs/06-services/03-filesystem.md:131` — The catalog of async methods, metadata setters, symlinks, directory enumerators, and path helpers across lines 131–197 is API-reference material; keep representative usage and link to a searchable operation reference.
+
 - `docs/05-dependencies/03-service-contracts.md:146` — The subtle `#T` type-variable rule is reference material in a conceptual guide; keep a brief warning here and link to a focused signature reference with examples.
 
 - `docs/03-the-flow-type/07-troubleshooting-types.md:13` — The complete alias expansion table duplicates `01-flow-type.md:35`; link to the canonical table and focus on the diagnostic here.
@@ -56,6 +66,10 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/06-services/_index.md:36` — The section navigation omits `04-files.md` and `07-websocket.md`; first-time readers cannot discover those capabilities from this landing page.
+- `docs/06-services/04-files.md:7` — `AppendLog.openLog` is described as scoped but no runnable example shows acquiring, appending, replaying, and closing it; include a minimal end-to-end example and required environment.
+- `docs/06-services/07-websocket.md:3` — No example shows opening a session, sending/receiving a message, handling `WebSocketError`, or supplying a live/test service; the page cannot guide a first integration.
 
 - `docs/05-dependencies/05-tutorials/02-app-record.md:208` — The app-record test asserts success, email, and audit but not the saved order or failure paths; demonstrate that the moved dependency still receives the right order and that failure short-circuits later effects.
 - `docs/05-dependencies/04-providing-the-environment.md:124` — Layers promise resource cleanup, but this page has no acquisition/release example or direct link to a scoped-resource walkthrough at the point of that claim.
@@ -72,6 +86,10 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/06-services/01-platform-services/01-clock.md:8` — Hide or trim the repeated docs-test `prepare` fixture: optional Browser, Node, filesystem, and telemetry imports obscure the packages needed for the clock example; the same fixture appears on logging, environment variables, console, filesystem, and existing-services pages.
+- `docs/06-services/01-platform-services/02-logging.md:8` — Link or demonstrate the `MicrosoftLogging`/`FiberLogging` adapter and explain their package imports; the opening introduces them before teaching basic `ILog` and never uses them in a snippet.
+- `docs/06-services/04-files.md:1` — Add front matter, package/install information, and code blocks consistent with neighboring service pages; this and `07-websocket.md` currently read as dense API notes rather than first-use guides.
 
 - `docs/05-dependencies/_index.md:13` — Hide or trim the repeated docs-test `prepare` fixture: it imports optional hosting, browser, Node, telemetry, and other packages that the dependency example does not need. The same fixture appears on every page in this section.
 - `docs/05-dependencies/05-tutorials/01-explicit-dependencies.md:87` — Explain why `ColdTask` is used for the sender while the repository uses `Flow.fromTaskResult`, and show token forwarding if cancellation of in-flight work is intended; both factories discard the token.
