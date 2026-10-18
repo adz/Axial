@@ -18,6 +18,18 @@ The [comparison test file](https://github.com/adz/Axial/blob/main/tests/Axial.Co
 tests each scenario's behavior. Each scenario identifies what the type communicates, what the runtime guarantees, and
 what your application must still handle. ZIO concepts are named alongside their Axial counterparts.
 
+| Scenario | Type makes visible | Runtime enforces |
+| --- | --- | --- |
+| [1. Checkout orchestration](#1-checkout-orchestration-with-compensation) | required services and the complete failure set | release runs on every exit shape, including defects |
+| [2. Resilient HTTP with a retry budget](#2-resilient-http-call-with-a-retry-budget) | transient/terminal error taxonomy and both capabilities | only predicate-accepted typed failures retry; the timeout reaches in-flight work |
+| [3. Parallel dashboard fan-out](#3-parallel-dashboard-fan-out) | which branch may fail silently | loser interruption and cause merging |
+| [4. Scoped temporary workspace](#4-scoped-temporary-workspace) | acquisition and finalization as one signature | the finalizer runs on every exit shape and its failure is preserved |
+| [5. Application wiring](#5-application-wiring-that-cannot-omit-a-capability) | the full capability set | nothing — the compiler checked it |
+| [6. Producer/consumer pipeline](#6-producerconsumer-pipeline-with-backpressure-and-interruption) | stream failure and environment requirements stay typed | pull-based evaluation stops the producer with the consumer |
+| [7. Atomic inventory reservation](#7-atomic-inventory-reservation-under-contention) | `STM` as a transaction value, separate from effects | all-or-nothing commit; coherent-snapshot retry |
+
+Each row links to its full comparison below.
+
 ## 1. Checkout orchestration with compensation
 
 Reserve stock, charge a card, create a shipment; release the reservation when charging or shipment creation fails.

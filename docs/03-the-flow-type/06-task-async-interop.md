@@ -271,10 +271,7 @@ The builder lifts the outer `Result<_,Never>` and leaves the inner `Result<User,
 
 ## Summary
 
-- Bind `Async` and `ColdTask` directly in `flow { }`.
-- An outer `Result.Error` always enters Flow's typed error channel.
-- Use `ColdTask` or `Flow.fromTask*` to start task work when the Flow runs.
-- Use `Flow.awaitStarted*` only for work that has already started.
-- Raw `Task` and `ValueTask` values are not Flow builder sources.
-- Use `attempt*` when exceptions are expected failures rather than defects.
-- Use `Flow.fromBlocking*` for synchronous library calls that block.
+The [selection table](#choose-an-interop-form) above is the decision aid: bind `Async` and `ColdTask` directly, use
+`Flow.fromTask*` for cold factories, `Flow.awaitStarted*` only for work that has already started, `attempt*` when
+exceptions are expected failures, and `Flow.fromBlocking*` for synchronous blocking calls. The sections above show
+each form in use.

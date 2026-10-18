@@ -69,7 +69,8 @@ val it: Exit<int,Never> = Success 3
 
 ## Application records
 
-An application environment is usually a record with one field per dependency:
+An application environment is usually a record with one field per dependency, and a workflow reads its fields with
+`Flow.envWith`:
 
 ```fsharp
 type User = { Id: int; Name: string }
@@ -94,40 +95,12 @@ let loadUser (id: int) : Flow<AppEnv, string, User> =
     }
 ```
 
-Construct that record at these boundaries:
-
-- **At boot**, with the live implementations, for example `{ Users = SqlUserStore(connection); Audit = FileAuditLog(path) }`.
-- **In tests**, with fakes: the same record type with different values.
-
-```fsharp
-type InMemoryUsers(users: User list) =
-    interface IUserStore with
-        member _.Load id =
-            match users |> List.tryFind (fun user -> user.Id = id) with
-            | Some user -> Ok user
-            | None -> Error $"no user {id}"
-
-type ListAudit() =
-    let gate = obj()
-    let mutable entries = []
-    member _.Entries = lock gate (fun () -> List.rev entries)
-
-    interface IAuditLog with
-        member _.Record entry = lock gate (fun () -> entries <- entry :: entries)
-```
-
-```fsharp run
-let audit = ListAudit()
-let underTest = { Users = InMemoryUsers [ { Id = 42; Name = "Ada" } ]; Audit = audit }
-
-loadUser 42 |> Flow.run underTest |> shouldEqual (Exit.Success { Id = 42; Name = "Ada" })
-loadUser 7 |> Flow.run underTest |> shouldEqual (Exit.Failure(Cause.Fail "no user 7"))
-audit.Entries |> shouldEqual [ "loaded 42" ]
-```
-
-Larger systems often define one record per architectural boundary rather than a single application-wide one, and use
-`Flow.localEnv` to move between them. A billing subsystem that cannot see the mailer is a record without a mailer
-field, and that is enforced by the compiler rather than by convention.
+Construct that record at boot with the live implementations and in tests with fakes: the same record type, different
+values. The [App Record tutorial](/dependencies/tutorials/app-record.html) builds a complete application record,
+shows the boot and test construction, and proves a moved dependency still receives the right value. Larger systems
+often define one record per architectural boundary rather than a single application-wide one, and use `Flow.localEnv`
+to move between them; a billing subsystem that cannot see the mailer is a record without a mailer field, enforced by
+the compiler rather than by convention.
 
 ## Related topics
 
