@@ -35,38 +35,69 @@ type private PrefixedStream(prefix: byte array, length: int, rest: Stream) =
 module Files =
     let private sniffLength = 8192
     let private batchSize = 2048
-    let mutable private nextTemp = 0L
+    let private tempId () =
+        use rng = System.Security.Cryptography.RandomNumberGenerator.Create()
+        let bytes = Array.zeroCreate<byte> 16
+        rng.GetBytes bytes
+        BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant()
 
     /// <summary>Writes bytes to a sibling temporary file, flushes them to disk, then replaces the destination by rename.</summary>
     /// <remarks>A process crash cannot leave a partial destination file. Surviving power loss on some file systems
-    /// also requires fsync of the parent directory after rename; this function does not perform directory fsync.</remarks>
+    /// also requires fsync of the parent directory after rename; this function does not perform directory fsync.
+    /// A killed process may leave a .&lt;name&gt;.*.tmp sibling, safe to remove with cleanupStaleTemps.</remarks>
     let writeAtomic (path: string) (contents: byte array) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
         flow {
             let! fs = FileSystem.service
             return!
-                Flow.attemptBlocking (fun _ ->
+                Flow.attemptBlocking (fun token ->
                     let directory = Path.GetDirectoryName(Path.GetFullPath path)
                     let name = Path.GetFileName path
                     let mutable temporary = ""
+                    let mutable owned = false
                     try
                         let mutable opened = false
                         let mutable stream = Unchecked.defaultof<FileStream>
-                        while not opened do
-                            let id = System.Threading.Interlocked.Increment(&nextTemp)
-                            temporary <- Path.Combine(directory, $".{name}.{id}.tmp")
+                        let mutable attempts = 0
+                        while not opened && attempts < 5 do
+                            attempts <- attempts + 1
+                            temporary <- Path.Combine(directory, $".{name}.{tempId ()}.tmp")
                             try
                                 stream <- fs.OpenFile(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None)
+                                owned <- true
                                 opened <- true
-                            with :? IOException when fs.FileExists temporary -> ()
+                            with :? IOException when fs.FileExists temporary && attempts < 5 -> ()
                         do
                             use output = stream
                             output.Write(contents, 0, contents.Length)
                             output.Flush(true)
+                        token.ThrowIfCancellationRequested()
                         fs.MoveFile(temporary, path, true)
+                        owned <- false
                     with error ->
-                        if temporary <> "" then
+                        if owned then
                             try fs.DeleteFile temporary with _ -> ()
                         System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+                |> Flow.mapError (FileSystemError.fromException (Some path))
+        }
+
+    /// <summary>Deletes sibling atomic-write temporary files older than age for the target path.</summary>
+    /// <remarks>Only names matching .&lt;name&gt;.&lt;32 hex digits&gt;.tmp are removed. Do not run concurrently with writers using an age shorter than their write duration.</remarks>
+    let cleanupStaleTemps (path: string) (age: TimeSpan) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem and 'env :> IHasClock =
+        flow {
+            let! fs = FileSystem.service
+            let! environment = Flow.env
+            return!
+                Flow.attemptBlocking (fun token ->
+                    let directory = Path.GetDirectoryName(Path.GetFullPath path)
+                    let prefix = "." + Path.GetFileName path + "."
+                    let cutoff = (environment :> IHasClock).Clock.UtcNow().UtcDateTime - age
+                    for candidate in fs.EnumerateFiles(directory, prefix + "*.tmp", SearchOption.TopDirectoryOnly) do
+                        token.ThrowIfCancellationRequested()
+                        let name = Path.GetFileName candidate
+                        if name.StartsWith(prefix, StringComparison.Ordinal) && name.EndsWith(".tmp", StringComparison.Ordinal) &&
+                           name.Length = prefix.Length + 32 + 4 &&
+                           (name.Substring(prefix.Length, 32) |> Seq.forall Uri.IsHexDigit) then
+                            if fs.GetFileLastWriteTimeUtc candidate < cutoff then fs.DeleteFile candidate)
                 |> Flow.mapError (FileSystemError.fromException (Some path))
         }
 

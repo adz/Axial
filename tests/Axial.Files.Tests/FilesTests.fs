@@ -8,7 +8,38 @@ open Axial
 open Axial.FileSystem
 open Axial.Files
 
-type FilesTests() =
+type private CleanupEnv =
+    { FileSystem: IFileSystem; Clock: IClock }
+    interface IHasFileSystem with member this.FileSystem = this.FileSystem
+    interface IHasClock with member this.Clock = this.Clock
+
+type FilesTests() = 
+    [<Fact>]
+    member _.``stale cleanup removes only old matching temporary files``() =
+        let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory root |> ignore
+        try
+            let path = Path.Combine(root, "data")
+            let old = Path.Combine(root, ".data." + String.replicate 32 "a" + ".tmp")
+            let fresh = Path.Combine(root, ".data." + String.replicate 32 "b" + ".tmp")
+            let unrelated = Path.Combine(root, ".data.other.tmp")
+            for file in [ old; fresh; unrelated ] do File.WriteAllText(file, "keep")
+            let now = DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            File.SetLastWriteTimeUtc(old, now.UtcDateTime.AddHours(-2.))
+            File.SetLastWriteTimeUtc(fresh, now.UtcDateTime)
+            let clock =
+                { new IClock with
+                    member _.UtcNow() = now
+                    member _.Elapsed() = TimeSpan.Zero
+                    member _.Sleep(_, _) = System.Threading.Tasks.Task.CompletedTask }
+            let env = { FileSystem = FileSystem.live; Clock = clock }
+            Assert.Equal(Exit.Success (), Files.cleanupStaleTemps path (TimeSpan.FromHours 1.) |> Flow.run env)
+            Assert.False(File.Exists old)
+            Assert.True(File.Exists fresh)
+            Assert.True(File.Exists unrelated)
+        finally Directory.Delete(root, true)
+
+
     [<Fact>]
     member _.``atomic replacement leaves complete contents and no temporary files``() =
         let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())

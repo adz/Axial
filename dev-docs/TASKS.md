@@ -14,24 +14,6 @@ lists the queue. Work on main.
   - Recover the rest without weakening the semantics (uninterruptible, acquisition env and runtime, own scope):
     candidates are a scope created only when the release registers something, avoiding the ambient runtime switch
     when the release completes synchronously without reading it, and sharing one release runtime per scope close.
-- [ ] T15: `Axial.Files` package: stream-native walk, lines, watch, durable writes
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Needs T3 (flow-returning `IFileSystem`) and T4
-    (`FlowStream.fromCallback` for watcher events). Scheduled ahead of T8.
-  - `Axial.FileSystem` mirrors `System.IO` one call at a time; apps fall back to raw `System.IO` for anything
-    composite (gitkay carries 19 Guardrails suppressions, mostly in `Git/Trash.fs` and `GitService.fs`). Package the
-    generic part of LogDug's Files service (`~/projects/logdug/src/LogDug.Core/Files/Files.fs`): `walk` (lazy,
-    descend predicate), `lines` (batched, binary-sniffing, encoding-aware reader as a `Resource`), and `watch` as a
-    `FlowStream` with recursive watching (`IncludeSubdirectories`) and a scope-owned watcher. Leave LogDug's archive
-    navigation and `Location` model in LogDug unless they generalise cleanly.
-  - Built on `IFileSystem` so `FileSystem.test` covers it; `FileSystemWatcher` is the one new effect, behind its own
-    mockable member and a guardrail rule in `EffectCatalog.fs`.
-  - Durable writes live here too (not BCL API, so not on `IFileSystem`): atomic write (temp file in the same
-    directory, `Flush(true)`, `MoveFile` with overwrite; directory fsync is not in the BCL, decide whether to add it as
-    an explicit live dependency) and a bounded append-only log (checksummed records, torn-tail recovery, size cap with
-    rotation). Process kills need only the rename; power loss needs the flushes.
-  - Done when: gitkay's filesystem suppressions that come from walking, reading lines, or watching are gone; LogDug
-    can swap its Files internals for the package; recursive watch has a live test; a crash test (kill a child process
-    at random points while writing) never yields a lost, duplicated, or partially written record.
 - [ ] T16: `Axial.Elmish` package and `App.start` off the caller's context
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Spec: `dev-docs/current-ideas/axial-elmish.md`. Needs T1.
   - First fix the verified shutdown deadlock in core: `App.start` runs `Async.StartWithContinuations` on the caller's
@@ -41,6 +23,8 @@ lists the queue. Work on main.
     host-supplied `Post`, `OnDefect` wired to the host crash path, a per-runtime `FiberRegistry`, `Cmd.OfFlow`
     (`either`/`perform`/`attempt`, plus `Latest` keyed latest-wins), `Sub.OfFlowStream`, and `Inbox`.
   - Done when: the spec's required tests pass, and gitkay and Logs Digger can delete their own bridges.
+- [ ] T15b: Migrate gitkay and LogDug to Axial.Files once 0.11 is published
+  - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
 - [ ] T8: Process output cap that fails
   - Ships in 0.11; record changes in `dev-docs/releases/0.11.0.md`.
   - Kill on interrupt and stage/overall timeouts already exist (`ProcessLive.fs` `terminate`). The only failing limit

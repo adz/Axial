@@ -1406,10 +1406,14 @@ module FileSystem =
             member _.DeleteFile(path) = File.Delete(path)
             member _.CopyFile(sourcePath, destinationPath, overwrite) = File.Copy(sourcePath, destinationPath, overwrite)
             member _.MoveFile(sourcePath, destinationPath, overwrite) =
+#if NETSTANDARD2_1
                 if overwrite && File.Exists destinationPath then
-                    File.Delete destinationPath
-
-                File.Move(sourcePath, destinationPath)
+                    File.Replace(sourcePath, destinationPath, null)
+                else
+                    File.Move(sourcePath, destinationPath)
+#else
+                File.Move(sourcePath, destinationPath, overwrite)
+#endif
             member _.CreateFileSymbolicLink(linkPath, targetPath) =
 #if NETSTANDARD2_1
                 raise (PlatformNotSupportedException("Symbolic links require a modern .NET runtime."))

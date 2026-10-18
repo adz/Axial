@@ -20,6 +20,34 @@ type FileSystemTestEnv =
         member this.FileSystem = this.FileSystem
 
 module FileSystemServiceTests =
+    [<Fact>]
+    let ``live overwrite never exposes a missing destination`` () =
+        let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory root |> ignore
+        try
+            let destination = Path.Combine(root, "destination")
+            let source = Path.Combine(root, "source")
+            File.WriteAllText(destination, "initial")
+            use stop = new System.Threading.CancellationTokenSource()
+            let mutable missing = 0
+            let reader = Task.Run(fun () ->
+                while not stop.IsCancellationRequested do
+                    try
+                        use input = File.Open(destination, FileMode.Open, FileAccess.Read, FileShare.ReadWrite ||| FileShare.Delete)
+                        input.ReadByte() |> ignore
+                    with :? FileNotFoundException ->
+                        System.Threading.Interlocked.Increment(&missing) |> ignore)
+            let until = System.Diagnostics.Stopwatch.StartNew()
+            try
+                while until.Elapsed < TimeSpan.FromSeconds 1. do
+                    File.WriteAllText(source, "next")
+                    FileSystem.live.MoveFile(source, destination, true)
+            finally
+                stop.Cancel()
+                reader.GetAwaiter().GetResult()
+            Assert.Equal(0, missing)
+        finally Directory.Delete(root, true)
+
     let private clock () : IClock =
         { new IClock with
             member _.UtcNow() = DateTimeOffset.UtcNow

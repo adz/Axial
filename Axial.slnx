@@ -6,6 +6,7 @@
     <Project Path="examples/Axial.AotProbe/Axial.AotProbe.fsproj" />
     <Project Path="examples/Axial.App.Example/Axial.App.Example.fsproj" />
     <Project Path="examples/Axial.Comparisons/Axial.Comparisons.fsproj" />
+    <Project Path="examples/Axial.Files.CrashProbe/Axial.Files.CrashProbe.fsproj" />
     <Project Path="examples/Axial.Examples/Axial.Examples.fsproj" />
     <Project Path="examples/Axial.Hosting.Browser.Example/Axial.Hosting.Browser.Example.fsproj" />
     <Project Path="examples/Axial.Hosting.Desktop.Example/Axial.Hosting.Desktop.Example.fsproj" />
