@@ -35,6 +35,48 @@ type private PrefixedStream(prefix: byte array, length: int, rest: Stream) =
 module Files =
     let private sniffLength = 8192
     let private batchSize = 2048
+    let mutable private nextTemp = 0L
+
+    /// <summary>Writes bytes to a sibling temporary file, flushes them to disk, then replaces the destination by rename.</summary>
+    /// <remarks>A process crash cannot leave a partial destination file. Surviving power loss on some file systems
+    /// also requires fsync of the parent directory after rename; this function does not perform directory fsync.</remarks>
+    let writeAtomic (path: string) (contents: byte array) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+        flow {
+            let! fs = FileSystem.service
+            return!
+                Flow.attemptBlocking (fun _ ->
+                    let directory = Path.GetDirectoryName(Path.GetFullPath path)
+                    let name = Path.GetFileName path
+                    let mutable temporary = ""
+                    try
+                        let mutable opened = false
+                        let mutable stream = Unchecked.defaultof<FileStream>
+                        while not opened do
+                            let id = System.Threading.Interlocked.Increment(&nextTemp)
+                            temporary <- Path.Combine(directory, $".{name}.{id}.tmp")
+                            try
+                                stream <- fs.OpenFile(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None)
+                                opened <- true
+                            with :? IOException when fs.FileExists temporary -> ()
+                        do
+                            use output = stream
+                            output.Write(contents, 0, contents.Length)
+                            output.Flush(true)
+                        fs.MoveFile(temporary, path, true)
+                    with error ->
+                        if temporary <> "" then
+                            try fs.DeleteFile temporary with _ -> ()
+                        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
+                |> Flow.mapError (FileSystemError.fromException (Some path))
+        }
+
+    /// <summary>Encodes text as UTF-8 and atomically replaces a file.</summary>
+    let writeAllTextAtomic (path: string) (contents: string) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+        writeAtomic path (Encoding.UTF8.GetBytes contents)
+
+    /// <summary>Encodes text with the supplied encoding and atomically replaces a file.</summary>
+    let writeAllTextAtomicWithEncoding (path: string) (contents: string) (encoding: Encoding) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+        writeAtomic path (encoding.GetBytes contents)
 
     /// <summary>Watches a directory (optionally recursively) or one file until consumption ends.</summary>
     /// <remarks>The 1024-event buffer fails on overflow rather than silently losing changes. Rescan after any failure.</remarks>

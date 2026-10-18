@@ -31,7 +31,7 @@ module Ordinary =
     /// The correct shape: create, then immediately enter try/finally.
     let importBatch (records: string list) : Task<int> =
         task {
-            let workspace = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString "N")
+            let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
             Directory.CreateDirectory workspace |> ignore
 
             try
@@ -48,7 +48,7 @@ module Ordinary =
     /// into the try/finally. The directory survives the exception.
     let importBatchLeaky (records: string list) : Task<int> =
         task {
-            let workspace = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString "N")
+            let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
             Directory.CreateDirectory workspace |> ignore
 
             // Setup between acquisition and try/finally: throws with no owner to clean up.
@@ -80,7 +80,7 @@ module WithFlow =
         // <snippet:compare-workspace>
         let acquire: Flow<WorkspaceEnv, ImportError, string> =
             flow {
-                let workspace = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString "N")
+                let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
                 do! FileSystem.createDirectory workspace |> Flow.mapError (FileSystemError.describe >> UnreadableBatch)
                 return workspace
             }

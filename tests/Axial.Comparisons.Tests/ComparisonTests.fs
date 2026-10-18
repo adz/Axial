@@ -229,11 +229,12 @@ module WorkspaceTests =
 
     let private env () : WithFlow.WorkspaceEnv = { FileSystem = FileSystem.live }
 
+    // Only workspace directories count: other test assemblies create temp directories concurrently.
     let private tempEntriesCreatedBy (run: unit -> 'a) =
-        let before = Directory.GetDirectories(Path.GetTempPath()) |> Set.ofArray
+        let workspaces () = Directory.GetDirectories(Path.GetTempPath(), "axial-workspace-*") |> Set.ofArray
+        let before = workspaces ()
         run () |> ignore
-        let after = Directory.GetDirectories(Path.GetTempPath()) |> Set.ofArray
-        Set.difference after before
+        Set.difference (workspaces ()) before
 
     [<Fact>]
     let ``the workspace is removed when the gate fails`` () =

@@ -10,6 +10,39 @@ open Axial.Files
 
 type FilesTests() =
     [<Fact>]
+    member _.``atomic replacement leaves complete contents and no temporary files``() =
+        let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+        Directory.CreateDirectory root |> ignore
+        try
+            let path = Path.Combine(root, "data")
+            File.WriteAllText(path, String.replicate 10000 "old")
+            let env = { new IHasFileSystem with member _.FileSystem = FileSystem.live }
+            Assert.Equal(Exit.Success (), Files.writeAllTextAtomic path "new" |> Flow.run env)
+            Assert.Equal("new", File.ReadAllText path)
+            Assert.Equal<string>([| "data" |], Directory.GetFiles(root) |> Array.map Path.GetFileName)
+            match Files.writeAtomic (Path.Combine(root, "missing", "data")) [| 1uy |] |> Flow.run env with
+            | Exit.Failure(Cause.Fail(FileSystemError.DirectoryNotFound _)) -> ()
+            | other -> failwithf "%A" other
+            Assert.Equal("new", File.ReadAllText path)
+            Assert.Equal<string>([| "data" |], Directory.GetFiles(root) |> Array.map Path.GetFileName)
+        finally Directory.Delete(root, true)
+
+    [<Fact>]
+    member _.``concurrent atomic replacements never mix payloads``() =
+        let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
+        Directory.CreateDirectory root |> ignore
+        try
+            let path = Path.Combine(root, "data")
+            let env = { new IHasFileSystem with member _.FileSystem = FileSystem.live }
+            let payloads = [| for n in 0 .. 15 -> Array.create 65536 (byte n) |]
+            let jobs = payloads |> Array.map (fun bytes -> System.Threading.Tasks.Task.Run(fun () -> Files.writeAtomic path bytes |> Flow.run env))
+            System.Threading.Tasks.Task.WaitAll(jobs |> Array.map (fun job -> job :> System.Threading.Tasks.Task))
+            for job in jobs do Assert.Equal(Exit.Success (), job.Result)
+            let result = File.ReadAllBytes path
+            Assert.Contains(payloads, fun payload -> payload = result)
+            Assert.Equal(1, Directory.GetFiles(root).Length)
+        finally Directory.Delete(root, true)
+    [<Fact>]
     member _.``watch delivers changes in order and take disposes``() =
         let fs = TestFileSystem()
         let environment = { new IHasFileSystem with member _.FileSystem = fs :> IFileSystem }
