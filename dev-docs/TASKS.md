@@ -11,15 +11,6 @@ lists the queue. Work on main.
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
   - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
     with keyed commands and an inbox subscription, and await cleanup on shutdown.
-- [ ] T13: `Axial.WebSocket` client service
-  - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`. Needs T3 (flow-returning services) and T4
-    (`FlowStream.fromCallback` for the receive stream).
-  - New package shaped like `Axial.HttpClient`: mockable `IWebSocket` service, a pluggable connect hook (the
-    `SocketsHttpHandler.ConnectCallback` equivalent), TLS options as data (client certificate, trust-anchor-only
-    validation, TLS 1.3 minimum), and a wire byte-counting hook. Add its guardrail (`new ClientWebSocket`) to
-    `EffectCatalog.fs`.
-  - Done when: a test opens a wss connection with mTLS against a local server and reports wire bytes; MQTT itself stays
-    outside Axial (thin MQTTnet-backed service in the application).
 - [ ] T14: OS service hosting with watchdog
   - Ships in 0.11; record in `dev-docs/releases/0.11.0.md`.
   - Windows service and systemd support in `Axial.Hosting` (`UseWindowsService`, `UseSystemd`). Microsoft's systemd

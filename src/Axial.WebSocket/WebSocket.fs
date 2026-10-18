@@ -2,6 +2,12 @@ namespace Axial.WebSocket
 
 open System
 open System.Net.WebSockets
+open System.Net.Http
+open System.Net.Security
+open System.Security.Authentication
+open System.Security.Cryptography.X509Certificates
+open System.IO
+open System.Net.Sockets
 open System.Text
 open System.Threading
 open System.Threading.Tasks
@@ -32,8 +38,54 @@ type WebSocketError =
             let detail = reason |> Option.defaultValue ""
             $"WebSocket closed ({status}, {detail})"
 
-/// Immutable connection specification.
-type WebSocketOptions = internal { Url: Uri; Subprotocols: string list; MaxMessageBytes: int }
+[<RequireQualifiedAccess>]
+type TlsVersion = | Default | Tls12 | Tls13
+
+type WebSocketTls = { ClientCertificate: X509Certificate2 option; TrustAnchors: X509Certificate2 list option; MinimumVersion: TlsVersion }
+
+[<RequireQualifiedAccess>]
+type BytesDirection = | Sent | Received
+
+type ConnectContext = { Host: string; Port: int }
+
+/// Immutable connection specification. Advanced transport options require net8.0.
+type WebSocketOptions = internal {
+    Url: Uri; Subprotocols: string list; MaxMessageBytes: int
+    Tls: WebSocketTls; Connect: (ConnectContext -> Flow<unit, WebSocketError, Stream>) option
+    OnBytes: (BytesDirection -> int -> unit) option }
+
+#if !NETSTANDARD2_1
+type private CountingStream(inner: Stream, notify: BytesDirection -> int -> unit) =
+    inherit Stream()
+    override _.CanRead = inner.CanRead
+    override _.CanWrite = inner.CanWrite
+    override _.CanSeek = false
+    override _.Length = raise (NotSupportedException())
+    override _.Position with get () = raise (NotSupportedException()) and set _ = raise (NotSupportedException())
+    override _.Flush() = inner.Flush()
+    override _.FlushAsync(ct) = inner.FlushAsync(ct)
+    override _.Read(buffer, offset, count) =
+        let n = inner.Read(buffer, offset, count)
+        notify BytesDirection.Received n
+        n
+    override _.ReadAsync(buffer: Memory<byte>, ct) = ValueTask<int>(task {
+        let! n = inner.ReadAsync(buffer, ct)
+        notify BytesDirection.Received n
+        return n
+    })
+    override _.Write(buffer, offset, count) =
+        inner.Write(buffer, offset, count)
+        notify BytesDirection.Sent count
+    override _.WriteAsync(buffer: ReadOnlyMemory<byte>, ct) = ValueTask(task {
+        do! inner.WriteAsync(buffer, ct)
+        notify BytesDirection.Sent buffer.Length
+    })
+    override _.Seek(_, _) = raise (NotSupportedException())
+    override _.SetLength(_) = raise (NotSupportedException())
+    override _.Dispose(disposing) =
+        if disposing then inner.Dispose()
+        base.Dispose(disposing)
+#endif
 
 /// A session owns its connection until disposed or released by the owning scope.
 type WebSocketSession internal
@@ -58,7 +110,7 @@ module WebSocket =
         let mutable uri = Unchecked.defaultof<Uri>
         if not (Uri.TryCreate(url, UriKind.Absolute, &uri)) || (uri.Scheme <> "ws" && uri.Scheme <> "wss") then
             invalidArg (nameof url) "An absolute ws or wss URL is required."
-        { Url = uri; Subprotocols = []; MaxMessageBytes = 1024 * 1024 }
+        { Url = uri; Subprotocols = []; MaxMessageBytes = 1024 * 1024; Tls = { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Default }; Connect = None; OnBytes = None }
 
     let subprotocol value (options: WebSocketOptions) =
         if String.IsNullOrWhiteSpace value || options.Subprotocols |> List.contains value then
@@ -68,6 +120,10 @@ module WebSocket =
     let maxMessageBytes value (options: WebSocketOptions) =
         if value <= 0 then invalidArg (nameof value) "The message limit must be positive."
         { options with MaxMessageBytes = value }
+
+    let tls value options = { options with Tls = value }
+    let connectWith value options = { options with Connect = Some value }
+    let onBytes value options = { options with OnBytes = Some value }
 
     let service<'env, 'error when 'env :> IHasWebSocket> : Flow<'env, 'error, IWebSocket> = Flow.envWith _.WebSocket
 
@@ -104,7 +160,50 @@ module WebSocket =
                             let socket = new ClientWebSocket()
                             try
                                 for protocol in options.Subprotocols do socket.Options.AddSubProtocol protocol
+#if NETSTANDARD2_1
+                                if options.Connect.IsSome || options.OnBytes.IsSome || options.Tls <> { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Default } then
+                                    invalidOp "TLS and transport hooks require net8.0."
                                 do! socket.ConnectAsync(options.Url, ct)
+#else
+                                use handler = new SocketsHttpHandler()
+                                match options.Tls.MinimumVersion with
+                                | TlsVersion.Tls13 -> handler.SslOptions.EnabledSslProtocols <- SslProtocols.Tls13
+                                | TlsVersion.Tls12 -> handler.SslOptions.EnabledSslProtocols <- SslProtocols.Tls12 ||| SslProtocols.Tls13
+                                | TlsVersion.Default -> ()
+                                options.Tls.ClientCertificate |> Option.iter (fun cert ->
+                                    handler.SslOptions.ClientCertificates <- X509CertificateCollection()
+                                    handler.SslOptions.ClientCertificates.Add cert |> ignore)
+                                options.Tls.TrustAnchors |> Option.iter (fun roots ->
+                                    handler.SslOptions.RemoteCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ cert _ _ ->
+                                        if isNull cert then false else
+                                        use chain = new X509Chain()
+                                        chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
+                                        chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
+                                        for root in roots do chain.ChainPolicy.CustomTrustStore.Add root |> ignore
+                                        chain.Build(new X509Certificate2(cert))))
+                                if options.Connect.IsSome || options.OnBytes.IsSome then
+                                    handler.ConnectCallback <- Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>(fun context token ->
+                                        ValueTask<Stream>(task {
+                                            let! transport = task {
+                                                match options.Connect with
+                                                | Some hook ->
+                                                    match (hook { Host = context.DnsEndPoint.Host; Port = context.DnsEndPoint.Port }).RunSynchronously((), cancellationToken = token) with
+                                                    | Exit.Success stream -> return stream
+                                                    | other -> return raise (IOException(sprintf "Custom connect failed: %A" other))
+                                                | None ->
+                                                    let client = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                                                    try
+                                                        do! client.ConnectAsync(context.DnsEndPoint, token)
+                                                        return new NetworkStream(client, true) :> Stream
+                                                    with error -> client.Dispose(); return raise error
+                                            }
+                                            return match options.OnBytes with
+                                                   | Some notify -> new CountingStream(transport, notify) :> Stream
+                                                   | None -> transport
+                                        }))
+                                use invoker = new HttpMessageInvoker(handler, false)
+                                do! socket.ConnectAsync(options.Url, invoker, ct)
+#endif
                                 let mutable closed = false
                                 let mutable disposed = 0
                                 let dispose () =

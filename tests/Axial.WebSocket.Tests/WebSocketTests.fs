@@ -3,6 +3,7 @@ namespace Axial.Tests
 open System
 open System.Net
 open System.Net.Sockets
+open System.IO
 open System.Net.WebSockets
 open System.Threading
 open System.Threading.Tasks
@@ -129,3 +130,33 @@ module WebSocketTests =
         Assert.Equal(Exit.Success (), (session |> WebSocket.sendText "two").RunSynchronously(()))
         Assert.Equal(Exit.Success [WebSocketMessage.Text "hello"; WebSocketMessage.Binary [| 1uy |]], (session |> WebSocket.messages |> FlowStream.runCollect).RunSynchronously(()))
         Assert.Equal<WebSocketMessage list>([WebSocketMessage.Text "one"; WebSocketMessage.Text "two"], List.ofSeq fake.Sent)
+
+    [<Fact>]
+    let ``custom transport is used and wire bytes are counted`` () =
+        use server = new Server(false)
+        let mutable called = 0
+        let mutable sent = 0
+        let mutable received = 0
+        let hook (context: ConnectContext) =
+            Flow.delay (fun () ->
+                called <- called + 1
+                let socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                socket.Connect(context.Host, context.Port)
+                Flow.succeed (new NetworkStream(socket, true) :> Stream))
+        let options =
+            WebSocket.connect server.Url
+            |> WebSocket.connectWith hook
+            |> WebSocket.onBytes (fun direction count ->
+                match direction with
+                | BytesDirection.Sent -> Interlocked.Add(&sent, count) |> ignore
+                | BytesDirection.Received -> Interlocked.Add(&received, count) |> ignore)
+        let env = { new IHasWebSocket with member _.WebSocket = WebSocket.live() }
+        use session =
+            match (WebSocket.openSession options).RunSynchronously(env) with
+            | Exit.Success value -> value
+            | other -> failwithf "connect: %A" other
+        Assert.Equal(Exit.Success (), (session |> WebSocket.sendText "hello").RunSynchronously(()))
+        Assert.Equal(Exit.Success (Some(WebSocketMessage.Text "hello")), session.Receive().RunSynchronously(()))
+        Assert.Equal(1, called)
+        Assert.True(sent > 5, sprintf "sent %d" sent)
+        Assert.True(received > 5, sprintf "received %d" received)
