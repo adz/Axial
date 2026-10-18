@@ -102,6 +102,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Expand `Axial.HttpClient` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
 - [x] Expand `Axial.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
 - [x] Add explicit process timeout/deadline configuration and tests (`Process.timeout` / DSL `timeout` on `ProcessSpec`, enforced via `Flow.timeout` with `ProcessError.TimedOut` and process-tree termination; live integration test in `ProcessServiceTests`).
+- [ ] Add a UI-dispatcher service (marshal flow results onto a UI thread) with an Avalonia example; low priority while capture stays in C#.
 - [ ] Design `Axial.Network` after the core v1 service/layer surface is stable.
 - [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Telemetry` — see `decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
 - [x] Define telemetry-service composition with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries — not applicable; no telemetry service contracts are introduced per the decision above.
@@ -127,7 +128,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 
 ## 10. Post-v1.0 Fiber Runtime
 
-- [ ] Add fiber-local state similar to FiberRef/FiberRefs, adapted to .NET/F#.
+- [ ] Fiber-local state similar to FiberRef/FiberRefs: moved to `TASKS.md` T10 for 0.11.
 - [x] Add supervision hooks for fiber start/end/failure/interruption (`FiberObserver` with `OnStart`/`OnEnd`/`OnUnobservedDefect`, installed via `Flow.withFiberObserver`; interruption is reported through `OnEnd` status; unobserved defects are detected at race/timeout discard sites, scope close, and a GC net).
 - [x] Add `Flow.supervise` restart-on-defect combinator (`SupervisePolicy`, fresh child scope per attempt) and `Flow.forkDetached` for explicit fire-and-forget.
 - [ ] Add runtime flags and execution strategy where they materially affect .NET behavior.
