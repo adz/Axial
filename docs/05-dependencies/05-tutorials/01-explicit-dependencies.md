@@ -118,7 +118,7 @@ type SqlOrderRepository() =
     interface IOrderRepository with
         member _.Save order =
             task {
-                // Imagine the real dependency here: DbConnection, EF Core, Dapper, etc.
+                // In an application, this could use DbConnection, EF Core, or Dapper.
                 printfn "Saving %A to the database" order.Id
                 return Ok ()
             }
@@ -127,7 +127,7 @@ type SmtpEmailSender() =
     interface IEmailSender with
         member _.SendConfirmation order =
             task {
-                // Imagine the real dependency here: SMTP client, SendGrid SDK, etc.
+                // In an application, this could use an SMTP client or SendGrid SDK.
                 printfn "Sending order email to %s" order.Email
             }
 ```

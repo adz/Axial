@@ -138,7 +138,7 @@ type SqlOrderRepository() =
     interface IOrderRepository with
         member _.Save order =
             task {
-                // Imagine the real dependency here: database transaction, ORM, etc.
+                // In an application, this could use a database transaction or ORM.
                 return Ok ()
             }
 
@@ -146,14 +146,14 @@ type SmtpEmailSender() =
     interface IEmailSender with
         member _.SendConfirmation order =
             task {
-                // Imagine the real dependency here: SMTP or email API client.
+                // In an application, this could use SMTP or an email API client.
             }
 
 type FileAuditLog() =
     interface IAuditLog with
         member _.Write message =
             task {
-                // Imagine the real dependency here: file append, structured logger, queue, etc.
+                // In an application, this could append to a file or use a structured logger or queue.
                 return Ok ()
             }
 ```
