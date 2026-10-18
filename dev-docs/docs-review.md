@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/09-scopes/_index.md:33` — `File.OpenText path` assumes the file exists and acquisition succeeds, but the example has no typed filesystem error or explicit filesystem dependency; label it illustrative rather than a production read pattern.
+
 - `docs/09-scheduling-and-retries/_index.md:126` — The copyable jitter example constructs `System.Random()` directly; the next paragraph recommends injected `IRandom`. Show the service-based wiring so repeated runs and tests do not depend on an ambient random source.
 
 - `docs/08-concurrency-and-state/07-hub.md:168` — The display example polls `Hub.subscriberCount` without a deadline; if the consumer fails before subscribing, the example hangs instead of surfacing its exit. Show a bounded handshake or failure-aware startup.
@@ -19,6 +21,8 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/09-scopes/_index.md:148` — A release defect is said to become a defect “of the flow that closed the scope,” but the page does not show how it combines with an existing failure or appears in `Exit`; clarify the observable outcome here.
 
 - `docs/09-scheduling-and-retries/_index.md:360` — The comment says polling continues “until the flow fails,” but `pollStatus` has error type `Never` and always succeeds; this example runs indefinitely unless interrupted. Show a stopping condition or state explicitly that the caller must interrupt it.
 - `docs/09-scheduling-and-retries/_index.md:247` — `resetAfter` calls a long run “successful,” yet the supervision example describes a worker that crashes after ten healthy minutes. Clarify that the threshold measures the duration of the failed run before its failure, not a previous successful execution.
@@ -59,6 +63,8 @@
 
 ## Too long
 
+- `docs/09-scopes/_index.md:358` — The rules recap repeats the lifetime maps, concurrency table, and fork walkthrough; shorten it to a decision checklist linking back to the detailed sections.
+
 - `docs/09-scheduling-and-retries/_index.md:151` — The long sequence of union, intersect, andThen, output predicates, budgets, reset, retry, and repeat makes the first-use guide hard to scan. Split basic retry/repeat from advanced schedule composition.
 
 - `docs/08-concurrency-and-state/01-fibers.md:244` — “What a fiber owns” repeats the ownership and `forkResource` rules already explained at line 77; consolidate the two sections and keep the graceful-stop walkthrough separate.
@@ -79,6 +85,8 @@
 
 ## Reference material in guides
 
+- `docs/09-scopes/_index.md:233` — The combinator-by-combinator scope transfer table is a specialized contract better maintained in API reference; keep the value-received ownership rule and link to per-combinator details.
+
 - `docs/09-scheduling-and-retries/_index.md:388` — The 18-row signature table duplicates the guide's descriptions and belongs in API reference; keep a short selection guide and link to the signatures.
 
 - `docs/08-concurrency-and-state/03-ref.md:92` — The full signature table repeats the immediately preceding examples of each `Ref` operation; link to API reference and retain the atomicity and get/set pitfall in this guide.
@@ -97,6 +105,8 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/09-scopes/_index.md:144` — Release failures and interruption safety are described but never exercised in a checked example; show a failing body plus a defective release and demonstrate the resulting `Exit` and cleanup order.
 
 - `docs/09-scheduling-and-retries/_index.md:353` — Repetition has no checked example showing that the schedule receives the previous successful value or that a failure ends the loop; add a bounded example with `whileInput` and an observable exit.
 - `docs/09-scheduling-and-retries/_index.md:131` — The advice to use `IRandom` does not show how to project it from the environment into `jitteredWith`'s `(unit -> float)` callback; give a concrete environment-bound example.
@@ -127,6 +137,8 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/09-scopes/_index.md:10` — Hide or narrow the visible docs-test `prepare` fixture: Browser, Node, telemetry, and filesystem imports appear before basic scope examples and obscure which packages a reader actually needs.
 
 - `docs/09-scheduling-and-retries/_index.md:25` — Hide or trim the docs-test `prepare` fixture: imports of Browser, Node, filesystem, and telemetry before the first schedule example make the required packages look much broader than `Axial` and the clock service.
 
