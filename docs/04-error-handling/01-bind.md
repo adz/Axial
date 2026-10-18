@@ -6,7 +6,7 @@ description: Assign or map an error at a flow computation-expression bind site.
 
 # Bind
 
-Use `Bind.error` and `Bind.mapError` to give different bind sources the same error-assignment syntax.
+`Bind.error` and `Bind.mapError` assign or map errors at a `flow { }` bind site, regardless of the source type.
 
 ## Why use Bind
 
@@ -67,8 +67,7 @@ let signIn (user: string) : Flow<SessionError, string> =
 The equivalent transformation for a `Result` uses `Result.mapError` directly. A `Flow` uses `Flow.mapError`. Assigning
 an error to `Option` or `Async<Option<_>>` requires another shape-specific conversion.
 
-`Bind` gives these supported bind sources one bind-site syntax. You choose whether to assign or map the error; the
-Flow computation expression handles the source shape:
+With `Bind`, you assign or map the error at the bind site; the Flow computation expression handles the source shape:
 
 ```fsharp
 let startSession (maybeProfile: string option) : Flow<SessionError, string> =
@@ -85,8 +84,8 @@ startSession None |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail Profile
 startSession (Some "bob") |> Flow.run () |> shouldEqual (Exit.Failure(Cause.Fail(Unauthorized(Denied "bob"))))
 ```
 
-Here, `maybeProfile` can be an `Option` or an asynchronous option source. Similarly, error mapping has the same form
-for `Result`, `Async<Result<_,_>>`, and `Flow`.
+`maybeProfile` can be an `Option` or an asynchronous option source. Error mapping has the same form for `Result`,
+`Async<Result<_,_>>`, and `Flow`.
 
 Use `Bind` directly with `let!`, `do!`, or `return!`. It marks the error adaptation for that bind and does not run the
 source. If the source already uses the workflow's error type, bind it without `Bind`.

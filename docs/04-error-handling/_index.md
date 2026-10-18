@@ -14,8 +14,7 @@ A Flow has a typed channel for failures the caller is expected to handle:
 val it: Exit<decimal,PaymentError> = Failure (Fail CardDeclined)
 ```
 
-Unexpected exceptions are defects. They are retained in the execution outcome rather than being added silently to
-the workflow's typed error:
+Unexpected exceptions are defects. The execution outcome retains them outside the workflow's typed error channel:
 
 ```fsharp transcript
 > open System;;
@@ -41,8 +40,8 @@ when the application deliberately translates a defect into a typed error.
 
 Use `Flow.recover` when a typed failure needs a fallback with a different error type. Like `Flow.orElseWith`, it handles a single typed failure (including a traced one), not defects or interruption; `orElseWith` keeps the original error type. `Flow.fold` can inspect every cause. A compound cause is never recovered; when changing error types, each old typed failure becomes a `Cause.Die` containing an `UnrecoveredFailureException`. Its `Value` retains the original failure as `obj`; the wrapper's message renders it AOT-safely. The compound structure, existing defects, and interruptions remain. A throwing handler produces a defect, except cancellation with the flow's cancelled token, which interrupts.
 
-`Exit.toResult` is intentionally lossy. Use it only at a boundary that has decided how defects, interruption, and
-combined causes should be represented.
+`Exit.toResult` loses information. Use it only at a boundary that has decided how to represent defects, interruption,
+and combined causes.
 
 ## Learn more
 

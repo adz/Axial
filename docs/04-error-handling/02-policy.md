@@ -6,8 +6,7 @@ description: Define reusable, environment-aware verification rules and run them 
 
 # Policy and verification
 
-Use a `Policy` to define a named verification rule that a workflow can apply to an input value. Run the rule inside a
-workflow with `Flow.verify`.
+A `Policy` defines a named verification rule for an input value. `Flow.verify` runs it inside a workflow.
 
 A policy has this shape:
 
@@ -51,8 +50,8 @@ The type parameters describe the policy's contract:
 - `'input` is the value to verify.
 - `'output` is the verified or transformed value returned on success.
 
-Defining a policy does not run a Flow. A policy is a reusable function value. `Flow.verify policy input` creates a
-Flow that supplies the current workflow environment to the policy when the Flow runs. `Ok output` continues the
+A policy is a reusable function value; defining one does not run a Flow. `Flow.verify policy input` creates a Flow
+that supplies the current workflow environment to the policy when it runs. `Ok output` continues the
 workflow, and `Error error` short-circuits it through the typed error channel.
 
 ## Define and run a policy
@@ -86,7 +85,7 @@ placeOrder 3 |> Flow.run { EnforceLimit = true; Limit = 5 } |> shouldEqual (Exit
 placeOrder 9 |> Flow.run { EnforceLimit = true; Limit = 5 } |> shouldEqual (Exit.Failure(Cause.Fail TooLarge))
 ```
 
-`Flow.verify` is pipe-friendly because it takes the policy first and the input second. The example is equivalent to
+`Flow.verify` takes the policy first and the input second, so `count |> Flow.verify withinLimit` is equivalent to
 `Flow.verify withinLimit count`.
 
 ## Adapt an existing function
