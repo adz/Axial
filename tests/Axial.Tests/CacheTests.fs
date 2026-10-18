@@ -30,6 +30,102 @@ module CacheTests =
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(2, 2, 2, 1) @>
 
     [<Fact>]
+    let ``bounded concurrent overlapping keys respect capacity and single flight`` () =
+        let calls = System.Collections.Concurrent.ConcurrentDictionary<int, int>()
+        let load key : Flow<ClockEnvironment, string, int> = flow {
+            calls.AddOrUpdate(key, 1, fun _ count -> count + 1) |> ignore
+            do! Flow.sleep (TimeSpan.FromMilliseconds 30.0)
+            return key
+        }
+        let workflow = flow {
+            let! cache = Cache.makeBounded 3 load
+            let! values = [ 1; 2; 1; 2; 1; 2; 1; 2 ] |> Flow.traversePar (Parallelism.bounded 8) (fun key -> cache |> Cache.get key)
+            let! count = Cache.count cache
+            return values, count
+        }
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success([ 1; 2; 1; 2; 1; 2; 1; 2 ], 2) @>
+        test <@ calls[1] = 1 && calls[2] = 1 @>
+
+    [<Fact>]
+    let ``evicted in-flight bounded lookup still serves waiters`` () =
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let load key : Flow<ClockEnvironment, string, int> = flow {
+            if key = 1 then
+                started.TrySetResult(()) |> ignore
+                do! Flow.fromTask (fun token -> release.Task.WaitAsync token)
+            return key
+        }
+        let workflow = flow {
+            let! cache = Cache.makeBounded 1 load
+            let! first = Flow.fork (cache |> Cache.get 1)
+            do! Flow.fromTask (fun token -> started.Task.WaitAsync(TimeSpan.FromSeconds 10.0, token))
+            let! waiter = Flow.fork (cache |> Cache.get 1)
+            let! other = cache |> Cache.get 2
+            let! before = Cache.count cache
+            release.SetResult(())
+            let! a = Fiber.join first
+            let! b = Fiber.join waiter
+            let! after = Cache.count cache
+            return a, b, other, before, after
+        }
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 1, 2, 1, 1) @>
+
+    [<Fact>]
+    let ``interrupting first bounded caller leaves lookup available to waiters`` () =
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let calls = ref 0
+        let load (_: int) : Flow<ClockEnvironment, string, int> = flow {
+            Interlocked.Increment(&calls.contents) |> ignore
+            started.TrySetResult(()) |> ignore
+            do! Flow.fromTask (fun token -> release.Task.WaitAsync token)
+            return 42
+        }
+        let workflow = flow {
+            let! cache = Cache.makeBounded 1 load
+            let! first = Flow.fork (cache |> Cache.get 1)
+            do! Flow.fromTask (fun token -> started.Task.WaitAsync(TimeSpan.FromSeconds 10.0, token))
+            let! waiter = Flow.fork (cache |> Cache.get 1)
+            let! interrupted = Fiber.interrupt first
+            release.SetResult(())
+            let! value = Fiber.join waiter
+            return interrupted, value
+        }
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, 42) @>
+        test <@ calls.Value = 1 @>
+
+    [<Fact>]
+    let ``bounded TTL refreshes once after expiry`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let calls = ref 0
+        let load (_: int) : Flow<ClockEnvironment, string, int> = flow {
+            let count = Interlocked.Increment(&calls.contents)
+            return count
+        }
+        let workflow = flow {
+            let! cache = Cache.makeBoundedWithExpiry 2 (TimeSpan.FromSeconds 10.0) load
+            let! first = cache |> Cache.get 1
+            clock.AdvanceBy(TimeSpan.FromSeconds 9.0)
+            let! cached = cache |> Cache.get 1
+            clock.AdvanceBy(TimeSpan.FromSeconds 2.0)
+            let! refreshed = [ 1; 1 ] |> Flow.traversePar (Parallelism.bounded 2) (fun key -> cache |> Cache.get key)
+            return first, cached, refreshed
+        }
+        test <@ Flow.runSync (ClockEnvironment(clock)) workflow = Exit.Success(1, 1, [ 2; 2 ]) @>
+        test <@ calls.Value = 2 @>
+
+    [<Fact>]
+    let ``bounded constructors reject nonpositive capacity and TTL`` () =
+        let load (_: int) : Flow<ClockEnvironment, string, int> = Flow.ok 1
+        Assert.Throws<ArgumentException>(fun () -> Cache.makeBounded 0 load |> ignore) |> ignore
+        Assert.Throws<ArgumentException>(fun () -> Cache.makeBounded -1 load |> ignore) |> ignore
+        Assert.Throws<ArgumentException>(fun () -> Cache.makeBoundedWithExpiry 0 TimeSpan.Zero load |> ignore) |> ignore
+        let invalid = Assert.Throws<ArgumentException>(fun () -> Cache.makeBoundedWithExpiry 1 TimeSpan.Zero load |> ignore)
+        test <@ invalid.Message.Contains("positive") @>
+        Assert.Throws<ArgumentException>(fun () -> Cache.makeBoundedWithExpiry 1 (TimeSpan.FromSeconds -1.0) load |> ignore) |> ignore
+
+    [<Fact>]
     let ``recursive cache reads nested keys only once`` () =
         let calls = ref 0
         let lookup cache key : Flow<ClockEnvironment, string, int> = flow {

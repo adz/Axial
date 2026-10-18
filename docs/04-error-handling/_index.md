@@ -39,7 +39,7 @@ An Exit distinguishes the cases:
 Use an `attempt` constructor only when an exception from an interop API is an expected outcome. Use `Flow.catch` only
 when the application deliberately translates a defect into a typed error.
 
-Use `Flow.recover` when a typed failure needs a fallback with a different error type. Like `Flow.orElseWith`, it handles a single typed failure (including a traced one), not defects or interruption; `orElseWith` keeps the original error type. `Flow.fold` can inspect every cause. A compound cause is never recovered; when changing error types, its old typed failures become defects while its structure and other causes remain.
+Use `Flow.recover` when a typed failure needs a fallback with a different error type. Like `Flow.orElseWith`, it handles a single typed failure (including a traced one), not defects or interruption; `orElseWith` keeps the original error type. `Flow.fold` can inspect every cause. A compound cause is never recovered; when changing error types, each old typed failure becomes a `Cause.Die` containing an `UnrecoveredFailureException`. Its `Value` retains the original failure as `obj`; the wrapper's message renders it AOT-safely. The compound structure, existing defects, and interruptions remain. A throwing handler produces a defect, except cancellation with the flow's cancelled token, which interrupts.
 
 `Exit.toResult` is intentionally lossy. Use it only at a boundary that has decided how defects, interruption, and
 combined causes should be represented.

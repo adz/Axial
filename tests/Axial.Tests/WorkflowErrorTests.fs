@@ -52,8 +52,44 @@ module WorkflowErrorTests =
         test <@ not invoked @>
         match result with
         | Exit.Failure(Cause.Both(Cause.Die converted, Cause.Die original)) ->
-            test <@ converted.Message = "Unrecovered compound typed failure" && obj.ReferenceEquals(original, defect) @>
+            let wrapped = Assert.IsType<UnrecoveredFailureException>(converted)
+            test <@ wrapped.Value :?> string = "missing" && wrapped.Message.Contains("missing") && obj.ReferenceEquals(original, defect) @>
         | _ -> failwith "Expected both causes to remain"
+
+    [<Fact>]
+    let ``recover retypes deeply nested causes without stack overflow`` () =
+        let mutable cause = Cause.Fail "original"
+        for _ in 1 .. 100000 do
+            cause <- Cause.Traced(cause, "trace")
+        let source : Flow<unit, string, int> = Flow.ofExit (Exit.Failure(Cause.Both(cause, Cause.Interrupt)))
+        let result : Exit<int, int> = source |> Flow.recover (fun _ -> Flow.ok 0) |> Flow.runSync ()
+        let mutable current =
+            match result with
+            | Exit.Failure(Cause.Both(left, Cause.Interrupt)) -> left
+            | _ -> failwith "Expected compound cause"
+        for _ in 1 .. 100000 do
+            match current with
+            | Cause.Traced(inner, _) -> current <- inner
+            | _ -> failwith "Expected trace"
+        match current with
+        | Cause.Die (:? UnrecoveredFailureException as wrapped) -> test <@ wrapped.Value :?> string = "original" @>
+        | _ -> failwith "Expected retained failure"
+
+    [<Fact>]
+    let ``recover handler exceptions become defects`` () =
+        let thrown = InvalidOperationException "handler"
+        let source : Flow<unit, string, int> = Flow.fail "missing"
+        let result : Exit<int, int> = source |> Flow.recover (fun _ -> raise thrown) |> Flow.runSync ()
+        test <@ result = Exit.Failure(Cause.Die thrown) @>
+
+    [<Fact>]
+    let ``recover handler cancellation with cancelled runtime token interrupts`` () =
+        use cancellation = new CancellationTokenSource()
+        let source : Flow<unit, string, int> = Flow.fail "missing"
+        let result : Exit<int, int> =
+            source |> Flow.recover (fun _ -> cancellation.Cancel(); raise (OperationCanceledException()))
+            |> Flow.runSyncWithToken () cancellation.Token
+        test <@ result = Exit.Failure Cause.Interrupt @>
 
     [<Fact>]
     let ``Flow composition helpers cover error tapping fallback and pairing`` () =

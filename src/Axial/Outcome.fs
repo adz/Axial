@@ -50,6 +50,11 @@ module internal OutcomeText =
         | :? string as text -> "\"" + text + "\""
         | other -> plain other
 
+/// <summary>A typed failure retained as a defect when changing a compound cause's error type.</summary>
+type UnrecoveredFailureException(value: obj) =
+    inherit Exception("Unrecovered compound typed failure: " + OutcomeText.value value)
+    member _.Value = value
+
 /// <summary>
 /// Represents the cause of a failed workflow.
 /// </summary>

@@ -2399,8 +2399,10 @@ module Flow =
     /// unlike <c>orElseWith</c>, the handler may change the error type. <c>fold</c> handles every
     /// cause, including defects and interruption. Compound causes are not recovered. Because a
     /// compound cause may contain old typed errors that cannot inhabit the new error channel,
-    /// those errors become defects wrapping their original values; existing defects, interruption,
-    /// and the compound structure remain intact.
+    /// each old typed failure becomes a <c>Cause.Die</c> containing an <c>UnrecoveredFailureException</c>
+    /// whose <c>Value</c> holds the original failure; existing defects, interruption, and structure remain.
+    /// If the handler throws, its exception is a defect, except cancellation requested by this flow's
+    /// token, which is an interruption.
     /// </remarks>
     /// <example>
     /// <code>
@@ -2409,14 +2411,35 @@ module Flow =
     ///     load |&gt; Flow.map Some |&gt; Flow.recover (fun _ -&gt; Flow.ok None)
     /// </code>
     /// </example>
-    let rec private retypeUnrecovered (cause: Cause<'error>) : Cause<'nextError> =
-        match cause with
-        | Cause.Fail _ -> Cause.Die(InvalidOperationException "Unrecovered compound typed failure")
-        | Cause.Die error -> Cause.Die error
-        | Cause.Interrupt -> Cause.Interrupt
-        | Cause.Then(left, right) -> Cause.Then(retypeUnrecovered left, retypeUnrecovered right)
-        | Cause.Both(left, right) -> Cause.Both(retypeUnrecovered left, retypeUnrecovered right)
-        | Cause.Traced(inner, trace) -> Cause.Traced(retypeUnrecovered inner, trace)
+    let private retypeUnrecovered (cause: Cause<'error>) : Cause<'nextError> =
+        let pending = System.Collections.Generic.Stack<Choice<Cause<'error>, int * string>>()
+        let results = System.Collections.Generic.Stack<Cause<'nextError>>()
+        pending.Push(Choice1Of2 cause)
+        while pending.Count > 0 do
+            match pending.Pop() with
+            | Choice1Of2 node ->
+                match node with
+                | Cause.Fail error -> results.Push(Cause.Die(UnrecoveredFailureException(box error)))
+                | Cause.Die error -> results.Push(Cause.Die error)
+                | Cause.Interrupt -> results.Push Cause.Interrupt
+                | Cause.Then(left, right) ->
+                    pending.Push(Choice2Of2(0, ""))
+                    pending.Push(Choice1Of2 right)
+                    pending.Push(Choice1Of2 left)
+                | Cause.Both(left, right) ->
+                    pending.Push(Choice2Of2(1, ""))
+                    pending.Push(Choice1Of2 right)
+                    pending.Push(Choice1Of2 left)
+                | Cause.Traced(inner, trace) ->
+                    pending.Push(Choice2Of2(2, trace))
+                    pending.Push(Choice1Of2 inner)
+            | Choice2Of2(kind, trace) ->
+                if kind = 2 then results.Push(Cause.Traced(results.Pop(), trace))
+                else
+                    let right = results.Pop()
+                    let left = results.Pop()
+                    results.Push(if kind = 0 then Cause.Then(left, right) else Cause.Both(left, right))
+        results.Pop()
 
     let recover
         (handler: 'error -> Flow<'env, 'nextError, 'value>)
@@ -2428,7 +2451,9 @@ module Flow =
                 Execution.ofValue
                 (fun cause ->
                     match Cause.untraced cause with
-                    | Cause.Fail error -> invoke (handler error) environment cancellationToken
+                    | Cause.Fail error ->
+                        try invoke (handler error) environment cancellationToken
+                        with thrown -> Execution.ofCause (ForeignCancellation.causeOf cancellationToken thrown)
                     | _ ->
                         Execution.ofCause (retypeUnrecovered cause)))
 
