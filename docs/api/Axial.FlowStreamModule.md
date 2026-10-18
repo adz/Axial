@@ -24,11 +24,11 @@ feed a stream into them. [`mergePar`](#Axial.FlowStream.mergePar) runs several s
 [`fromSchedule`](#Axial.FlowStream.fromSchedule) turns a schedule into a tick stream. See the [Queue](/concurrency-and-state/queue.html)
 and [Hub](/concurrency-and-state/hub.html) guides.
 
-## Start here
+## Guides
 
 The [Streams guide](/streams/index.html) introduces the model. [Getting started](/streams/getting-started.html) builds a
 complete pipeline, while [Batching and parallelism](/streams/batching-and-parallelism.html) explains the scheduling
 difference between strict batches and [`mapFlowPar`](#Axial.FlowStream.mapFlowPar).
 
-Use incremental terminal operations for large or unbounded streams. [`runCollect`](#Axial.FlowStream.runCollect) deliberately retains every emitted
+Use incremental terminal operations for large or unbounded streams. [`runCollect`](#Axial.FlowStream.runCollect) retains every emitted
 value and should be reserved for known finite inputs.
