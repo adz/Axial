@@ -2,6 +2,8 @@
 
 ## Assumptions
 
+- `docs/15-notes/03-guardrails.md:175` — The suppression guidance assumes readers can inspect repository-relative `src/Axial.Guardrails` files; published NuGet consumers need a public source link or the exact rules documented here.
+
 - `docs/14-advanced/04-writing-effect-analyzers.md:85` — The packaging walkthrough assumes access to this repository's `src/Axial.Guardrails` files; a NuGet consumer reading published docs cannot follow it without a public source link or standalone template.
 
 - `docs/13-testing/02-runnable-examples.md:15` — Run commands assume the reader is at the repository root with the example projects checked out; say so, since these paths do not work from a NuGet-only application.
@@ -32,6 +34,9 @@
 - `docs/01-getting-started/_index.md:16` — F# Interactive instructions assume `#r "nuget: Axial"` and `open Axial` suffice, but the first visible block is a `prepare` fixture opening many optional package namespaces. Readers may paste it and get missing-namespace errors after installing only Axial.
 
 ## Unclear or misleading
+
+- `docs/15-notes/03-guardrails.md:178` — The `AXG008` heading is followed by blocking-wait exemptions at line 182, which belong to `AXG001`; move them under the blocking category so readers do not mistake them for scope diagnostics.
+- `docs/15-notes/03-guardrails.md:278` — The page says `Fiber.join` returns an already released resource, then says the example “fails only at runtime”; the shown resource is a string, so no runtime failure is demonstrated. Use a disposable resource and checked failure or qualify the claim.
 
 - `docs/14-advanced/03-custom-services.md:3` — The description promises `Service.get`, but the tutorial uses `ExchangeRates.service` and never introduces `Service.get`; update the metadata to match the API shown.
 - `docs/14-advanced/03-custom-services.md:93` — Every exception from `GetUsdToAud`, not just timeouts, becomes `ProviderTimedOut`; `RateUnavailable` is never produced. Classify exceptions explicitly or simplify the error union and claim at line 99.
@@ -94,6 +99,8 @@
 
 ## Too long
 
+- `docs/15-notes/03-guardrails.md:186` — The per-diagnostic walkthrough runs through line 315 after tables already summarize the rules. Keep install, severity, and suppression choices here and move detailed diagnostic contracts into reference pages.
+
 - `docs/14-advanced/01-reusable-packages.md:18` — This package-author page and `03-custom-services.md` repeat the same exchange-rate interface, contract, accessor, helper, and environment. Keep the complete walkthrough in one page and link to it from the other.
 
 - `docs/13-testing/02-runnable-examples.md:125` — The full unrelated greeting and policy output precedes the supervision results; show only the relevant supervised/fiber lines or split the command/output by example.
@@ -126,6 +133,8 @@
 
 ## Reference material in guides
 
+- `docs/15-notes/03-guardrails.md:97` — `AxialGuardrailRule` metadata syntax and matching grammar are package-author reference material within an adoption guide; link to a dedicated rule-authoring reference from the install path.
+
 - `docs/14-advanced/04-writing-effect-analyzers.md:87` — NuGet layout, `PackageDownload`, and MSBuild target/CLI exit-code details are packaging reference material without a runnable project; link to a maintained template and keep the guide focused on adapting a rule and verifying a diagnostic.
 
 - `docs/12-platforms-and-hosting/09-elmish.md:7` — The page lists command, subscription, inbox, shutdown, and test API contracts without a worked Elmish program; move the exhaustive operation inventory to reference and keep a first-use lifecycle example here.
@@ -154,6 +163,9 @@
 - `docs/01-getting-started/01-why-flow.md:298` — Diagnostic IDs and what each guardrail checks are reference detail; link to the guardrails page rather than maintaining an abbreviated diagnostic list here.
 
 ## Missing
+
+- `docs/15-notes/01-packages-and-platforms.md:12` — The platform table omits `Axial.Layers`, `Axial.Guardrails`, and both HTTP host adapters even though the dependency table or adjacent notes name them; include their runtime/build-time status or state why they are excluded.
+- `docs/15-notes/03-guardrails.md:32` — No command or example shows how to confirm that a consumer project actually runs the analyzer and fails at error severity; provide a minimal deliberate diagnostic and expected build result.
 
 - `docs/14-advanced/04-writing-effect-analyzers.md:79` — No test or build command checks that the analyzer catches a direct constructor call, honors a suppression, and fails a consuming build at error severity; add a minimal consumer verification path.
 - `docs/14-advanced/01-reusable-packages.md:112` — The package guide recommends typed errors but its only runnable operation uses `ColdTask`, leaving exceptions as defects; show a checked typed-error package operation or link directly to the typed-error example in the tutorial.
@@ -203,6 +215,9 @@
 - `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 ## Suggestions for humans and LLMs
+
+- `docs/15-notes/01-packages-and-platforms.md:35` — Link package names to their first-use installation/setup guides; the matrix tells readers what runs where but not which package to install for a given host.
+- `docs/15-notes/03-guardrails.md:154` — Mark the live `IClock` implementation as an illustrative boundary fragment rather than a complete copyable implementation; it omits other interface members and does not show the required imports.
 
 - `docs/14-advanced/03-custom-services.md:18` — Hide or narrow the visible checked-example fixture: optional Browser, Node, telemetry, and filesystem imports obscure which packages the currency example requires; the package guide repeats the same fixture at line 18.
 - `docs/14-advanced/04-writing-effect-analyzers.md:30` — The illustrative symbol rule and analyzer are `no-check` fragments; provide a link to a versioned, compilable analyzer template so coding assistants need not guess omitted helpers and project wiring.
