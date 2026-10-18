@@ -45,7 +45,7 @@ module Cmd =
                                           Error = error
                                           Rendered = Cause.prettyPrint render cause }
                     }
-                runtime.Enqueue job ]
+                runtime.Enqueue job |> ignore ]
 
         let either name runtime workflow onSuccess onError =
             run name None runtime workflow onSuccess onError

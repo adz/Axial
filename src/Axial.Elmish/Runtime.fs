@@ -1,3 +1,4 @@
+// axial-allow-effect-file: blocking
 namespace Axial.Elmish
 
 open System
@@ -29,6 +30,7 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     let gate = obj ()
     let latest = Dictionary<string, int64 * FiberId option>()
     let mutable generation = 0L
+    let shutdowns = ResizeArray<unit -> unit>()
 
     let rec pump () : Flow<'env, Never, unit> =
         flow {
@@ -45,12 +47,19 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     member _.Environment = environment
     member _.Registry = registry
     member internal _.Options = options
+    member internal _.IsStopped = handle.Status <> AppStatus.Running
+    member internal _.RegisterShutdown(action) =
+        lock gate (fun () ->
+            if handle.Status = AppStatus.Running then shutdowns.Add action
+            else action ())
 
     member internal _.Enqueue(job: Flow<'env, Never, unit>) =
         lock gate (fun () ->
             if handle.Status = AppStatus.Running then
                 queue.Enqueue job
-                signal.Release() |> ignore)
+                signal.Release() |> ignore
+                true
+            else false)
 
     member internal _.Begin(key: string) =
         lock gate (fun () ->
@@ -80,10 +89,22 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
             | _ -> ()
             latest.Remove key |> ignore)
 
-    member _.Stop() : Async<unit> = async { let! _ = handle.Stop() in return () }
-    member _.StopAndWait(timeout: TimeSpan) = handle.StopAndWait timeout
+    member _.Stop() : Async<unit> = async {
+        lock gate (fun () ->
+            let pending = shutdowns.ToArray()
+            shutdowns.Clear()
+            for shutdown in pending do shutdown ())
+        let! _ = handle.Stop()
+        return ()
+    }
+    member _.StopAndWait(timeout: TimeSpan) =
+        lock gate (fun () ->
+            let pending = shutdowns.ToArray()
+            shutdowns.Clear()
+            for shutdown in pending do shutdown ())
+        handle.StopAndWait timeout
     interface IDisposable with
-        member _.Dispose() = (handle :> IDisposable).Dispose()
+        member this.Dispose() = this.StopAndWait(TimeSpan.FromSeconds 30.0) |> ignore
 
 [<RequireQualifiedAccess>]
 module ElmishRuntime =

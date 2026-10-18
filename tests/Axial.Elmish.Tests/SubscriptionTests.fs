@@ -1,0 +1,64 @@
+namespace Axial.Elmish.Tests
+
+open System
+open System.Collections.Concurrent
+open System.Threading
+open System.Threading.Tasks
+open Axial
+open Axial.Elmish
+open Xunit
+
+module SubscriptionTests =
+    let private owner post defect =
+        let clock =
+            { new IClock with
+                member _.UtcNow() = DateTimeOffset.UtcNow
+                member _.Elapsed() = TimeSpan.FromTicks(Environment.TickCount64)
+                member _.Sleep(delay, token) = Task.Delay(delay, token) :> Task }
+        ElmishRuntime.start { Post = post; OnDefect = defect; HistoryCapacity = 32 } (ClockEnvironment(clock))
+
+    [<Fact>]
+    let ``inbox drops full offers and counts them`` () =
+        use runtime = owner (fun callback -> callback ()) ignore
+        let inbox = Inbox.create 1 runtime
+        Assert.True(Inbox.post 1 inbox)
+        Assert.False(Inbox.post 2 inbox)
+        Assert.Equal(1L, Inbox.dropped inbox)
+
+    [<Fact>]
+    let ``subscription delivers ordered messages through Post and dispose releases resource`` () =
+        let messages = ConcurrentQueue<int>()
+        let mutable posts = 0
+        let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        use runtime = owner (fun callback -> Interlocked.Increment(&posts) |> ignore; callback ()) (fun defect -> failwith defect.Rendered)
+        let inbox = Inbox.create 8 runtime
+        let source =
+            Inbox.stream inbox
+            |> FlowStream.mapFlow (fun value -> flow {
+                // axial-allow-discarded-cancellation
+                do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> released.TrySetResult() |> ignore; Task.FromResult(())))
+                return value
+            })
+        let subscription = Sub.OfFlowStream.subscribe ["values"] runtime source (fun (_: string) -> -1)
+        use active = snd (List.head subscription) messages.Enqueue
+        Assert.True(Inbox.post 1 inbox)
+        Assert.True(Inbox.post 2 inbox)
+        Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 2), 5000))
+        Assert.Equal<int>([| 1; 2 |], messages.ToArray())
+        Assert.Equal(2, posts)
+        active.Dispose()
+        Assert.True(released.Task.IsCompleted)
+
+    [<Fact>]
+    let ``typed failure dispatches and defect reports without messages`` () =
+        let messages = ConcurrentQueue<int>()
+        let defects = ConcurrentQueue<CommandDefect>()
+        use runtime = owner (fun callback -> callback ()) defects.Enqueue
+        let failing : FlowStream<ClockEnvironment, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.fail "bad") ()
+        use typed = snd (List.head (Sub.OfFlowStream.subscribe ["typed"] runtime failing (fun _ -> 9))) messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> messages.Count = 1), 5000))
+        Assert.Equal(9, messages.ToArray().[0])
+        let broken : FlowStream<ClockEnvironment, string, int> = FlowStream.unfoldFlow (fun _ -> Flow.die (Exception("boom"))) ()
+        use defect = snd (List.head (Sub.OfFlowStream.subscribe ["broken"] runtime broken (fun _ -> 0))) messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
+        Assert.Equal(1, messages.Count)

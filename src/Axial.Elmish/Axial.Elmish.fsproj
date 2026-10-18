@@ -25,5 +25,7 @@
   <ItemGroup>
     <Compile Include="Runtime.fs" />
     <Compile Include="Cmd.fs" />
+    <Compile Include="Sub.fs" />
+    <Compile Include="Inbox.fs" />
   </ItemGroup>
 </Project>
