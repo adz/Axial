@@ -10,7 +10,7 @@
 
 - `docs/14-advanced/04-writing-effect-analyzers.md:85` — The packaging walkthrough assumes access to this repository's `src/Axial.Guardrails` files; a NuGet consumer reading published docs cannot follow it without a public source link or standalone template.
 
-- `docs/13-testing/02-runnable-examples.md:15` — Run commands assume the reader is at the repository root with the example projects checked out; say so, since these paths do not work from a NuGet-only application.
+- [fixed] `docs/13-testing/02-runnable-examples.md:15` — Run commands assume the reader is at the repository root with the example projects checked out; say so, since these paths do not work from a NuGet-only application.
 
 - [fixed] `docs/12-platforms-and-hosting/02-node.md:25` — The first Node snippet assumes `AppError`, `program`, and `Live.appLayer` exist without defining or linking their shapes. Label it schematic and link to a complete root-application example.
 - [fixed] `docs/12-platforms-and-hosting/07-running-as-a-service.md:30` — The sample records progress using a live monotonic clock but does not show how the job loop shares `recordCompletion` with the watchdog; show the composition point so the health signal represents real work.
@@ -56,8 +56,8 @@
 - `docs/14-advanced/03-custom-services.md:93` — Every exception from `GetUsdToAud`, not just timeouts, becomes `ProviderTimedOut`; `RateUnavailable` is never produced. Classify exceptions explicitly or simplify the error union and claim at line 99.
 - `docs/14-advanced/01-reusable-packages.md:108` — “F# interface implementations are always explicit” is too broad; qualify the statement to the record's explicit implementations shown here, and demonstrate two colliding `Client` contracts if this is a composability guarantee.
 
-- `docs/13-testing/02-runnable-examples.md:76` — Playground comments claim `Ok` results, while the immediately following observed output shows `Success`; align the comments with the actual `Exit` formatting.
-- `docs/13-testing/02-runnable-examples.md:116` — Running the entire `Axial.Examples` project produces policy and greeting output before supervision output, although the section title and source link imply a standalone supervision example. Explain that the command runs multiple examples.
+- [fixed] `docs/13-testing/02-runnable-examples.md:76` — Playground comments claim `Ok` results, while the immediately following observed output shows `Success`; align the comments with the actual `Exit` formatting.
+- [fixed] `docs/13-testing/02-runnable-examples.md:116` — Running the entire `Axial.Examples` project produces policy and greeting output before supervision output, although the section title and source link imply a standalone supervision example. Explain that the command runs multiple examples.
 
 - [fixed] `docs/12-platforms-and-hosting/01-application-lifecycle.md:74` — The text says `appLayer` scopes acquired resources, but the shown layer only constructs a record and acquires nothing. Distinguish this example from a resource-acquiring layer.
 - [fixed] `docs/12-platforms-and-hosting/04-browser.md:32` — The unmount snippet begins with `let!` and ends with `}` without an opening `async {`; it cannot be pasted or understood as a complete cleanup callback.

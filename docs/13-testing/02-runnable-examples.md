@@ -7,6 +7,10 @@ description: Executable Axial examples mirrored into the documentation.
 
 Page generation builds and runs these examples.
 
+The `dotnet run` commands below are repository-relative: run them from the repository root with
+the example projects checked out next to `src/`. The example projects are not shipped in the NuGet
+packages, so these paths do not exist in an application that only references Axial.
+
 ## Playground
 
 Run it:
@@ -73,9 +77,9 @@ let main _ =
     printfn "Flow: %A" syncResult
     printfn "Async: %A" asyncResult
     printfn "Task: %A" taskResult
-    // Flow: Ok "Hello Ada"
-    // Async: Ok "HELLO ADA"
-    // Task: Ok "Hello Ada!"
+    // Flow: Success "Hello Ada"
+    // Async: Success "HELLO ADA"
+    // Task: Success "Hello Ada!"
     0
 
 ```
@@ -115,6 +119,11 @@ Run it:
 ```bash
 dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --nologo
 ```
+
+This project runs several examples in one process: the request-boundary example, the policy
+examples, and then the supervision example below. The output before the
+`=== Supervision and fiber observability ===` banner belongs to those earlier examples. To run only
+the supervision example, set the `AXIAL_EXAMPLE` environment variable to `supervision`.
 
 Source: [SupervisionExample.fs](https://github.com/adz/Axial/blob/main/examples/Axial.Examples/SupervisionExample.fs)
 
