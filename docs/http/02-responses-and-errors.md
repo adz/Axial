@@ -88,7 +88,7 @@ summary |> Flow.run (ScriptedHttp([ 200, "[]" ]).Env) |> shouldEqual (Exit.Succe
 ```fsharp
 let user (userId: int) : Flow<TestEnv, HttpError, User> =
     GET $"https://api.example.com/users/{userId}"
-    |> fetchJson decodeUser   // Reified.Schema.Json, Thoth, or hand-written
+    |> fetchJson decodeUser   // Reified.Schema, Thoth, or hand-written
 ```
 
 ```fsharp run
