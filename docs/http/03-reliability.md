@@ -5,8 +5,6 @@ description: Enforce per-request timeouts and retry only the failures that can a
 
 # Reliability
 
-This page shows how typed errors turn timeout and retry policy into ordinary, testable code.
-
 ## Per-Request Timeouts
 
 `HttpClient.Timeout` is one global setting that throws `TaskCanceledException`, indistinguishable from real
@@ -175,8 +173,7 @@ request's limit back, for example in a test double that enforces it.
 
 ## Expected Statuses Are Part Of The Request
 
-Reliability starts with saying what success means. The expectation travels with the request, so callers cannot
-forget to check:
+The expected status travels with the request, so callers cannot forget to check it:
 
 ```fsharp
 let deleteUser (userId: int) : Flow<TestEnv, HttpError, HttpResponse> =

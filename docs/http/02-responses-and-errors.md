@@ -5,9 +5,6 @@ description: Read complete response transcripts, decode JSON into typed values, 
 
 # Responses And Errors
 
-This page shows how one response transcript and one error type replace scattered status checks and exception
-handling.
-
 ## The Response Transcript
 
 Every exchange produces a complete `HttpResponse`. The examples on this page run against a scripted service that
@@ -119,7 +116,7 @@ service.Sent |> List.map (Request.plan >> _.Body) |> shouldEqual [ "application/
 
 ## One Error Type
 
-Every way an HTTP call can fail is one case of `HttpError`:
+HTTP failures are cases of `HttpError`:
 
 ```fsharp
 let explain (error: HttpError) =

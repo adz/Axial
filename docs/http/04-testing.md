@@ -5,8 +5,6 @@ description: Fake the one-method HTTP service, wire the live HttpClient service,
 
 # Testing And Layers
 
-This page shows how the single `IHttp.Send` boundary makes HTTP workflows testable without a mocking library.
-
 ## A Complete Fake In A Few Lines
 
 The service has one method, and `Response.create` builds synthetic transcripts from an explicit timestamp:
@@ -85,8 +83,8 @@ let runUserLookup (client: HttpClient) =
     |> Flow.run ()
 ```
 
-Reuse one `HttpClient` per application, exactly as .NET recommends: connection pooling, DNS rotation handlers,
-and proxy settings stay standard `HttpClient` concerns. Axial adds the typed request/response boundary on top
+Reuse one `HttpClient` per application: connection pooling, DNS rotation handlers,
+and proxy settings remain `HttpClient` concerns. Axial adds the typed request/response boundary on top
 without hiding the client or the clock used for transcript timestamps and durations. Tests can pass `Clock.fromValue`
 or another `IClock` fake for deterministic time.
 

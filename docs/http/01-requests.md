@@ -5,8 +5,6 @@ description: Build immutable HTTP requests with encoded URLs, redacted secrets, 
 
 # Requests
 
-This page shows how immutable request values replace string concatenation, manual escaping, and leaked credentials.
-
 ## Interpolated URLs Encode Every Hole
 
 String-built URLs break on spaces, slashes, and user input. The DSL builders treat every interpolation hole as one
@@ -95,8 +93,6 @@ val it: string list = ["application/json"; "my-app/1.0"; "***"]
 
 ## Bodies
 
-Bodies carry their content type with them:
-
 Each body helper sets the content type. `Request.plan` shows it with the body's size:
 
 ```fsharp transcript
@@ -118,8 +114,6 @@ val it: string = "form (2 fields)"
 > (POST $"https://api.example.com/blobs" |> Request.bytesBody "application/octet-stream" [| 1uy; 2uy |] |> Request.plan).Body;;
 val it: string = "application/octet-stream (2 bytes)"
 ```
-
-`jsonBodyOf` takes any serializer, such as a Reified or Thoth codec's encode function.
 
 `jsonBodyOf` takes any `'value -> string` function, so it works with Reified's `Json` module (`Reified.Schema`), hand-written serializers, or
 any other JSON library without coupling this package to one.

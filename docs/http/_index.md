@@ -6,8 +6,6 @@ description: Build typed HTTP requests, decode responses safely, and retry trans
 
 # HTTP Clients
 
-This page shows the shortest path from `HttpClient` boilerplate to a typed, testable HTTP workflow.
-
 A direct `HttpClient` call mixes four failure channels into exceptions and manual status checks:
 
 ```fsharp no-check reason="The plain HttpClient code being replaced; client, userId, and parseUser stand for application code"
@@ -45,12 +43,12 @@ failures all arrive as one typed `HttpError`, and nothing is sent until a Flow r
 
 ## Two Levels
 
-`Axial.HttpClient` has two deliberate levels:
+`Axial.HttpClient` has two levels:
 
 1. **The `Http` and `Request` modules** wrap the common `HttpClient` operations with explicit requests, typed
    errors, and service-based execution. Use them when you want full control over every request field.
 2. **The `DSL` module** adds interpolated URL builders (`GET $"..."`), pipe-friendly configuration, and terminal
-   verbs (`fetch`, `fetchText`, `fetchJson`) for the everyday call that should read as one line.
+   verbs (`fetch`, `fetchText`, `fetchJson`) for one-line calls.
 
 Both levels build the same immutable `HttpRequest` value, so they mix freely: start a request with `GET $"..."`
 and finish it with `Request.expect [ 200; 404 ] >> Http.sendResult`.
