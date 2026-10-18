@@ -181,6 +181,8 @@
 
 ## Missing
 
+- `docs/packages/index.md:24` — Supporting packages are unnamed and have no direct first-use links on the package landing page; readers must leave the package index to discover which package provides console, filesystem, hosting, or telemetry support.
+
 - `docs/http/_index.md:66` — The HTTP landing page has no install/package guidance or link to setup before its first workflow; name the required package and link to the live-service wiring on the testing page.
 - `docs/http/01-requests.md:57` — Secret redaction examples do not explain that ordinary `query`/`header` values and JSON bodies are not automatically secret; show when to choose `secretQuery`/`secretHeader` and avoid treating the whole plan as safe for arbitrary user data.
 - `docs/http/03-reliability.md:69` — Timeout behavior is described but never exercised with a checked slow-service example; show the resulting `HttpError.TimedOut` and distinguish it from runtime interruption.
