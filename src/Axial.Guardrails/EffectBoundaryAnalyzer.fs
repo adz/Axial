@@ -43,9 +43,10 @@ let private contains (outer: FSharp.Compiler.Text.range) (inner: FSharp.Compiler
 
 let private completionMembers = set [ "get_IsCompleted"; "get_IsCompletedSuccessfully"; "get_IsFaulted"; "get_IsCanceled"; "get_Status"; "IsCompleted"; "IsCompletedSuccessfully"; "IsFaulted"; "IsCanceled"; "Status" ]
 
-let private valueOf expr =
+let rec private valueOf expr =
     match expr with
     | Value value -> Some value
+    | AddressOf inner -> valueOf inner
     | _ -> None
 
 let rec private completionValues expr =
@@ -59,6 +60,7 @@ let rec private completionValues expr =
 let rec private awaiterReceiver expr =
     match expr with
     | Call(Some receiver, getAwaiter, _, _, _) when getAwaiter.CompiledName = "GetAwaiter" -> valueOf receiver
+    | Call(None, getAwaiter, _, _, receiver :: _) when getAwaiter.CompiledName = "GetAwaiter" -> valueOf receiver
     | _ -> expr.ImmediateSubExpressions |> List.tryPick awaiterReceiver
 
 let private readReceiver expr =
@@ -66,7 +68,10 @@ let private readReceiver expr =
     | Call(Some receiver, memberValue, _, _, _) when memberValue.CompiledName = "get_Result" || memberValue.CompiledName = "Result" ->
         valueOf receiver
     | Call(receiver, memberValue, _, _, arguments) when memberValue.CompiledName = "GetResult" ->
-        (receiver |> Option.toList) @ arguments |> List.tryPick awaiterReceiver
+        // The awaiter is a struct, so F# often copies it into a local first; that local is aliased in `walk`.
+        match (receiver |> Option.toList) @ arguments |> List.tryPick awaiterReceiver with
+        | Some value -> Some value
+        | None -> receiver |> Option.bind valueOf
     | _ -> None
 
 let private completedReadRanges (ctx: CliContext) =
@@ -90,6 +95,16 @@ let private completedReadRanges (ctx: CliContext) =
                 walk guarded continuation condition
                 @ walk (completionValues condition @ guarded) continuation yes
                 @ walk guarded continuation no
+            | Let((local, bound, _), body) ->
+                // `let copy = x.GetAwaiter()` under a completion guard on x: the copy is guarded too.
+                let aliased =
+                    match awaiterReceiver bound with
+                    | Some value when List.exists ((=) value) (guarded @ continuation) -> [ local ]
+                    | _ -> []
+                walk guarded continuation bound @ walk (aliased @ guarded) continuation body
+            | DecisionTree(decision, targets) ->
+                walk guarded continuation decision
+                @ (targets |> List.collect (fun (_, body) -> walk guarded continuation body))
             | Call(_, memberValue, _, _, arguments) when memberValue.CompiledName = "ContinueWith" ->
                 arguments |> List.collect (fun argument ->
                     walk guarded (continuationParameters argument @ continuation) argument)

@@ -69,8 +69,11 @@ module GuardrailConfigTests =
                 + "let unguarded (t: System.Threading.Tasks.Task<int>) = t.Result\n"
                 + "let different (t: System.Threading.Tasks.Task<int>) (other: System.Threading.Tasks.Task<int>) = if other.IsCompleted then t.Result else 0\n"
                 + "let wrongBranch (t: System.Threading.Tasks.Task<int>) = if t.IsCompleted then 0 else t.Result\n"
-                + "let valueTask (t: System.Threading.Tasks.ValueTask<int>) = if t.IsCompleted then t.Result else 0\n")
-            test <@ found = [ 2; 3; 4 ] @>
+                + "let valueTask (t: System.Threading.Tasks.ValueTask<int>) = if t.IsCompleted then t.Result else 0\n"
+                + "let awaiter (t: System.Threading.Tasks.Task<int>) = if t.IsCompletedSuccessfully then t.GetAwaiter().GetResult() else 0\n"
+                + "let matchGuard (t: System.Threading.Tasks.Task<int>) = match 1 with | _ when t.IsCompletedSuccessfully -> t.Result | _ -> 0\n"
+                + "let differentGuard (t: System.Threading.Tasks.Task<int>) (other: System.Threading.Tasks.Task<int>) = match 1 with | _ when other.IsCompletedSuccessfully -> t.Result | _ -> 0\n")
+            test <@ found = [ 2; 3; 4; 8 ] @>
         }
 
     [<Fact>]
