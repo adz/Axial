@@ -213,9 +213,14 @@ module Flow =
         ReleaseCauseException(Cause.map Never.absurd cause)
 
 #if FABLE_COMPILER
+    // On JavaScript the runtime cell is the ambient slot, so the release installs its runtime directly; the
+    // finalizer gives the closing flow its own value back once the release completes. Going through
+    // `RuntimeState.withRuntime` here (an async try/finally on a fresh ambient trampoline, nested inside the closing
+    // scope's finalizer loop) stalls the torture suite's stream scenario.
     let private runRelease (runtime: RuntimeContext) (environment: 'env) (release: unit -> Flow<'env, Never, unit>) =
         try
-            RuntimeState.withRuntime runtime (fun () -> invoke (release ()) environment CancellationToken.None)
+            Platform.restoreAmbient (box runtime)
+            invoke (release ()) environment CancellationToken.None
         with error ->
             Platform.ofExit (Exit.Failure(Cause.Die error))
 
@@ -282,8 +287,6 @@ module Flow =
                     BranchToken = CancellationToken.None
                     OuterToken = CancellationToken.None }
 
-            let execution = runRelease runtime environment (fun () -> release value)
-
             let finish (exit: Exit<unit, Never>) (closing: Platform.Deed) : Platform.Deed =
                 Platform.execution {
                     let mutable closeError = None
@@ -297,33 +300,15 @@ module Flow =
                     | Exit.Success() -> ()
                     | Exit.Failure cause -> return raise (releaseFailure cause)
                 }
-#if !FABLE_COMPILER
-                :> Task
-#endif
 
-#if FABLE_COMPILER
             async {
-                let! exit = execution
+                // The release resumes from its own runtime; give the closing flow its ambient runtime back, or it
+                // carries on in the release's closed scope with inert tokens and later timers and forks are lost.
+                let captured = Platform.captureAmbient ()
+                let! exit = runRelease runtime environment (fun () -> release value)
+                Platform.restoreAmbient captured
                 return! finish exit (scope.Close CancellationToken.None)
             }
-#else
-            if execution.IsCompletedSuccessfully then
-                let exit = execution.Result
-                let closing = scope.Close CancellationToken.None
-
-                if closing.IsCompletedSuccessfully then
-                    match exit with
-                    | Exit.Success() -> Task.CompletedTask
-                    | Exit.Failure cause -> Task.FromException(releaseFailure cause)
-                else
-                    finish exit closing
-            else
-                task {
-                    let! exit = execution
-                    return! finish exit (scope.Close CancellationToken.None)
-                }
-                :> Task
-#endif
 #endif
 
     /// <summary>Creates a flow from an execution outcome.</summary>
