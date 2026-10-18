@@ -646,13 +646,17 @@ module Http =
                                           StartedAt = startedAt
                                           Duration = clock.Elapsed() - started }
                             with
-                            | :? OperationCanceledException as error when cancellationToken.IsCancellationRequested ->
+                            | :? OperationCanceledException as error when ForeignCancellation.isOurs cancellationToken error ->
                                 // The workflow was interrupted: let the cancellation surface as Cause.Interrupt rather
                                 // than inventing an error for an outcome nobody asked this request to report.
                                 return raise error
-                            | :? OperationCanceledException ->
+                            | :? OperationCanceledException as error when timeoutSource.IsCancellationRequested ||
+                                                                 client.Timeout <> Timeout.InfiniteTimeSpan &&
+                                                                 clock.Elapsed() - started >= client.Timeout ->
                                 let timeout = request.Timeout |> Option.defaultValue client.Timeout
                                 return Error(HttpError.TimedOut(display, timeout))
+                            | :? OperationCanceledException as error ->
+                                return raise error
                             | :? HttpRequestException as error ->
                                 let detail =
                                     match error.InnerException with

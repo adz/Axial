@@ -262,7 +262,7 @@ type IFileSystem =
     /// <summary>Enumerates files and directories in a directory.</summary>
     abstract EnumerateFileSystemEntries : path: string * searchPattern: string * searchOption: SearchOption -> seq<string>
 
-    /// <summary>Enumerates files and directories with their metadata; directory sizes are zero.</summary>
+    /// <summary>Enumerates files and directories with their metadata; directory sizes are zero. Live enumeration and metadata access are lazy and may throw when consumed.</summary>
     abstract EnumerateFileSystemInfos : path: string * searchPattern: string * searchOption: SearchOption -> seq<FileSystemEntry>
 
     /// <summary>Gets files and directories in a directory.</summary>
@@ -420,6 +420,7 @@ module FileSystemError =
 /// <summary>An in-memory file-system test double for the common read/write/enumerate surface.</summary>
 /// <remarks>Stream-returning, timestamp, symbolic-link, attribute, and logical-drive members throw
 /// <see cref="T:System.NotSupportedException" />.</remarks>
+/// <param name="readAllTextAsync">Overrides only ReadAllTextAsync, for tests that need to control that read (for example, hold it open).</param>
 type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string -> Flow<unit, FileSystemError, string>) =
     let files = System.Collections.Generic.Dictionary<string, byte array>(StringComparer.OrdinalIgnoreCase)
     let directories = System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -596,14 +597,12 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
             Seq.append (enumerateFiles path searchPattern searchOption) (enumerateDirectories path searchPattern searchOption)
         member _.EnumerateFileSystemInfos(path, searchPattern, searchOption) =
             let timestamp = DateTimeOffset.UnixEpoch
-            seq {
-                for filePath in enumerateFiles path searchPattern searchOption do
-                    yield { Name = Path.GetFileName filePath; FullPath = filePath; Kind = FileSystemEntryKind.File
-                            Size = int64 files[filePath].Length; LastWriteTimeUtc = timestamp }
-                for directoryPath in enumerateDirectories path searchPattern searchOption do
-                    yield { Name = Path.GetFileName directoryPath; FullPath = directoryPath; Kind = FileSystemEntryKind.Directory
-                            Size = 0L; LastWriteTimeUtc = timestamp }
-            }
+            [| for filePath in enumerateFiles path searchPattern searchOption do
+                   { Name = Path.GetFileName filePath; FullPath = filePath; Kind = FileSystemEntryKind.File
+                     Size = int64 files[filePath].Length; LastWriteTimeUtc = timestamp }
+               for directoryPath in enumerateDirectories path searchPattern searchOption do
+                   { Name = Path.GetFileName directoryPath; FullPath = directoryPath; Kind = FileSystemEntryKind.Directory
+                     Size = 0L; LastWriteTimeUtc = timestamp } |] :> seq<_>
         member _.GetFileSystemEntries(path, searchPattern, searchOption) =
             Seq.append (enumerateFiles path searchPattern searchOption) (enumerateDirectories path searchPattern searchOption) |> Seq.toArray
         member _.GetLogicalDrives() = notSupported "GetLogicalDrives"
@@ -1102,7 +1101,7 @@ module FileSystem =
         (searchPattern: string)
         (searchOption: SearchOption)
         : Flow<'env, FileSystemError, seq<FileSystemEntry>> =
-        withService (Some path) (fun fileSystem -> fileSystem.EnumerateFileSystemInfos(path, searchPattern, searchOption))
+        withService (Some path) (fun fileSystem -> fileSystem.EnumerateFileSystemInfos(path, searchPattern, searchOption) |> Seq.toArray :> seq<_>)
 
     /// <summary>Gets files and directories through an explicit file-system service.</summary>
     let getFileSystemEntries<'env when 'env :> IHasFileSystem>

@@ -63,6 +63,24 @@ module FileSystemServiceTests =
                 test <@ child.FullPath = directory && child.Kind = FileSystemEntryKind.Directory && child.Size = 0L @>)
 
     [<Fact>]
+    let ``metadata listing maps missing directory during enumeration`` () =
+        withTempRoot (fun root ->
+            let missing = Path.Combine(root, "missing")
+            match FileSystem.enumerateFileSystemInfos missing "*" SearchOption.TopDirectoryOnly |> Flow.runSync (env ()) with
+            | Exit.Failure(Cause.Fail(FileSystemError.DirectoryNotFound path)) -> test <@ path = missing @>
+            | other -> failwithf "Expected DirectoryNotFound, got %A" other)
+
+    [<Fact>]
+    let ``test metadata listing snapshots sizes before deletion`` () =
+        withTempRoot (fun root ->
+            let service = FileSystem.test () :> IFileSystem
+            let path = Path.Combine(root, "sample.txt")
+            service.WriteAllText(path, "hello")
+            let entries = service.EnumerateFileSystemInfos(root, "*", SearchOption.TopDirectoryOnly)
+            service.DeleteFile path
+            test <@ entries |> Seq.map (fun entry -> entry.Size) |> Seq.toList = [ 5L ] @>)
+
+    [<Fact>]
     let ``async file operations roundtrip and missing reads are typed`` () =
         withTempRoot (fun root ->
             let path = Path.Combine(root, "sample.txt")
@@ -84,6 +102,8 @@ module FileSystemServiceTests =
             | Exit.Failure (Cause.Fail (FileSystemError.FileNotFound _)) -> ()
             | other -> failwithf "Expected FileNotFound, got %A" other)
 
+    // A live file read cannot be held open portably: FIFO opens can block synchronously before
+    // cancellation is observed, while large regular-file reads may finish before interruption.
     [<Fact>]
     let ``interrupting an in-progress file read is not a file-system error`` () =
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)

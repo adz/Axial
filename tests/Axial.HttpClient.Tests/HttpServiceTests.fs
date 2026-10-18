@@ -356,6 +356,37 @@ module HttpServiceTests =
                 test <@ match error with HttpError.TimedOut(_, timeout) -> timeout = TimeSpan.FromMilliseconds 100.0 | _ -> false @>)
 
     [<Fact>]
+    let ``live service interruption during a request remains interruption`` () =
+        use started = new ManualResetEventSlim(false)
+        use release = new ManualResetEventSlim(false)
+        withServer
+            (fun context ->
+                started.Set()
+                release.Wait(TimeSpan.FromSeconds 5.0) |> ignore
+                context.Response.StatusCode <- 200)
+            (fun root ->
+                use cancellation = new CancellationTokenSource()
+                use client = new HttpClient()
+                let environment = { Http = Http.live Clock.live client; Clock = Clock.live }
+                let running = Task.Run(fun () -> (Http.get root |> Http.send).RunSynchronously(environment, cancellationToken = cancellation.Token))
+                try
+                    Assert.True(started.Wait(TimeSpan.FromSeconds 5.0))
+                    cancellation.Cancel()
+                    test <@ match running.GetAwaiter().GetResult() with Exit.Failure Cause.Interrupt -> true | _ -> false @>
+                finally release.Set())
+
+    [<Fact>]
+    let ``live service treats unsolicited handler cancellation as defect`` () =
+        use handler =
+            { new HttpMessageHandler() with
+                member _.SendAsync(_, _) = Task.FromException<HttpResponseMessage>(OperationCanceledException("foreign")) }
+        use client = new HttpClient(handler)
+        let environment = { Http = Http.live Clock.live client; Clock = Clock.live }
+        match Http.get "https://example.test/" |> Http.send |> runSync environment with
+        | Exit.Failure(Cause.Die (:? OperationCanceledException)) -> ()
+        | other -> failwithf "Expected cancellation defect, got %A" other
+
+    [<Fact>]
     let ``response headers are readable case-insensitively`` () =
         withServer
             (fun context ->
