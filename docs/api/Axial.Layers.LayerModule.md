@@ -1,3 +1,39 @@
+---
+title: Layer
+api:
+  family: Axial.Layers.LayerModule
+  sections:
+    - id: create
+      title: Create layers
+      order: 10
+      members: ["succeed", "fromFlow", "envWith"]
+      facets:
+        task: [create]
+    - id: resources
+      title: Manage resources
+      order: 20
+      members: ["addFinalizer", "acquireRelease", "pool"]
+      facets:
+        task: [resources]
+    - id: transform
+      title: Transform layers
+      order: 30
+      members: ["map", "mapError", "widenError"]
+      facets:
+        task: [transform]
+    - id: combine
+      title: Combine layers
+      order: 40
+      members: ["bind", "zip", "zipPar", "merge", "map2", "apply", "map3"]
+      facets:
+        task: [combine]
+    - id: provide
+      title: Provide environments
+      order: 50
+      members: ["provide"]
+      facets:
+        task: [provide]
+---
 # Layer
 
 `Layer<'input, 'error, 'output>` builds an environment or service bundle from an input value, running inside a

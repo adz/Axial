@@ -1,3 +1,9 @@
+---
+title: Sub
+api:
+  family: Axial.ElmishFlows.Sub
+---
+
 # Sub
 
 `Axial.ElmishFlows.Sub` connects `FlowStream` subscriptions to an Elmish program.

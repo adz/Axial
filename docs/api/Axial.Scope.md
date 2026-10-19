@@ -1,3 +1,33 @@
+---
+title: Scope
+api:
+  family: Axial.Scope
+  sections:
+    - id: create
+      title: Create scopes
+      order: 10
+      members: ["Scope"]
+      facets:
+        task: [create]
+    - id: register
+      title: Register cleanup
+      order: 20
+      members: ["AddDisposable", "AddAsyncDisposable", "AddFinalizer"]
+      facets:
+        task: [register]
+    - id: children
+      title: Manage children
+      order: 30
+      members: ["AddChild"]
+      facets:
+        task: [children]
+    - id: close
+      title: Close scopes
+      order: 40
+      members: ["Close"]
+      facets:
+        task: [close]
+---
 # Scope
 
 A `Scope` owns finalizers for resources and child fibers. Closing it runs registered cleanup in reverse order, at most

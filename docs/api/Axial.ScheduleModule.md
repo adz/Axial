@@ -1,3 +1,39 @@
+---
+title: Schedule
+api:
+  family: Axial.ScheduleModule
+  sections:
+    - id: create
+      title: Create schedules
+      order: 10
+      members: ["recurs", "spaced", "exponential", "fixedRate"]
+      facets:
+        task: [create]
+    - id: timing
+      title: Adjust timing
+      order: 20
+      members: ["jitteredWith", "upTo", "resetAfter"]
+      facets:
+        task: [timing]
+    - id: combine
+      title: Combine schedules
+      order: 30
+      members: ["union", "intersect", "andThen"]
+      facets:
+        task: [combine]
+    - id: input
+      title: Filter inputs
+      order: 40
+      members: ["whileInput", "untilInput", "recursAtMost"]
+      facets:
+        task: [input]
+    - id: output
+      title: Transform outputs
+      order: 50
+      members: ["map", "elapsed", "whileOutput", "untilOutput"]
+      facets:
+        task: [output]
+---
 # Schedule
 
 A `Schedule<'env, 'input, 'output>` decides, after each run of a flow, whether to run it again and how long to wait

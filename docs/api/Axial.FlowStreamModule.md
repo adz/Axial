@@ -1,3 +1,57 @@
+---
+title: FlowStream
+api:
+  family: Axial.FlowStreamModule
+  sections:
+    - id: create
+      title: Create streams
+      order: 10
+      members: ["FlowStream", "empty", "singleton", "fromSeq", "fromFlow", "unfoldFlow", "repeatFlow", "fromSchedule"]
+      facets:
+        task: [create]
+    - id: sources
+      title: Connect sources
+      order: 20
+      members: ["fromDequeue", "fromHub", "fromCallbackWith", "fromCallback", "ofAsyncEnumerable"]
+      facets:
+        task: [sources]
+    - id: transform
+      title: Transform values
+      order: 30
+      members: ["map", "mapError", "filter", "choose", "tapFlow", "mapFlow", "mapFlowPar", "mapFlowParUsing", "collect", "indexed", "scan", "distinctUntilChangedBy", "localEnv"]
+      facets:
+        task: [transform]
+    - id: select
+      title: Select values
+      order: 40
+      members: ["take", "skip", "takeWhile", "skipWhile", "chunkBySize"]
+      facets:
+        task: [select]
+    - id: combine
+      title: Combine streams
+      order: 50
+      members: ["append", "zip", "mergePar", "switchMapFlow"]
+      facets:
+        task: [combine]
+    - id: pace
+      title: Buffer and pace
+      order: 60
+      members: ["buffer", "groupedWithin", "debounce", "throttle", "reissueOnWake"]
+      facets:
+        task: [pace]
+    - id: resources
+      title: Manage resources
+      order: 70
+      members: ["using"]
+      facets:
+        task: [resources]
+    - id: run
+      title: Run streams
+      order: 80
+      members: ["runFold", "runCollect", "runDrain", "runForEach", "runForEachFlow", "runTryHead", "runTryLast", "runCount", "runIntoQueue", "runIntoHub"]
+      facets:
+        task: [run]
+---
 # FlowStream
 
 `FlowStream<'env, 'error, 'value>` describes a cold, pull-based sequence of effectful values. It uses the same

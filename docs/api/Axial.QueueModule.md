@@ -1,3 +1,27 @@
+---
+title: Queue
+api:
+  family: Axial.QueueModule
+  sections:
+    - id: create
+      title: Create queues
+      order: 10
+      members: ["make", "makeScoped", "bounded", "dropping", "sliding", "unbounded"]
+      facets:
+        task: [create]
+    - id: offer
+      title: Offer values
+      order: 20
+      members: ["offer", "tryOffer", "offerAll"]
+      facets:
+        task: [offer]
+    - id: callbacks
+      title: Use from callbacks
+      order: 30
+      members: ["droppingNow", "shutdownNow"]
+      facets:
+        task: [callbacks]
+---
 # Queue
 
 `Queue<'a>` hands each value from producer fibers to exactly one taker, in FIFO order, with an overflow strategy chosen

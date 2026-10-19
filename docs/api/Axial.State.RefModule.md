@@ -1,3 +1,27 @@
+---
+title: Ref
+api:
+  family: Axial.State.RefModule
+  sections:
+    - id: create
+      title: Create refs
+      order: 10
+      members: ["make"]
+      facets:
+        task: [create]
+    - id: read-write
+      title: Read and write
+      order: 20
+      members: ["get", "set", "getAndSet"]
+      facets:
+        task: [read-write]
+    - id: update
+      title: Update atomically
+      order: 30
+      members: ["update", "modify", "getAndUpdate", "updateAndGet"]
+      facets:
+        task: [update]
+---
 # Ref
 
 `Ref<'T>` holds a mutable value that concurrent workflows update atomically. Create one with

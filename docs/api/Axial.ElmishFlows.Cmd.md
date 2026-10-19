@@ -1,3 +1,9 @@
+---
+title: Cmd
+api:
+  family: Axial.ElmishFlows.Cmd
+---
+
 # Cmd
 
 `Axial.ElmishFlows.Cmd` turns Axial workflows into Elmish commands. Each command runs in the runtime's scope, off the

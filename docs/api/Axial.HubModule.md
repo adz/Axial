@@ -1,3 +1,33 @@
+---
+title: Hub
+api:
+  family: Axial.HubModule
+  sections:
+    - id: create
+      title: Create hubs
+      order: 10
+      members: ["make", "makeScoped"]
+      facets:
+        task: [create]
+    - id: publish
+      title: Publish values
+      order: 20
+      members: ["publish", "publishAll", "tryPublish", "tryPublishNow"]
+      facets:
+        task: [publish]
+    - id: subscribe
+      title: Subscribe
+      order: 30
+      members: ["subscribe", "subscriberCount"]
+      facets:
+        task: [subscribe]
+    - id: lifecycle
+      title: Manage lifecycle
+      order: 40
+      members: ["shutdown", "isShutdown", "awaitShutdown"]
+      facets:
+        task: [lifecycle]
+---
 # Hub
 
 `Hub<'a>` delivers every published value to every current subscription. Each subscription chooses its own

@@ -1,3 +1,21 @@
+---
+title: STM
+api:
+  family: Axial.State.STM
+  sections:
+    - id: control
+      title: Control transactions
+      order: 10
+      members: ["retry", "orElse"]
+      facets:
+        task: [control]
+    - id: run
+      title: Run transactions
+      order: 20
+      members: ["atomically"]
+      facets:
+        task: [run]
+---
 # STM
 
 `STM<'T>` is a composable transaction: a value describing reads and writes that commit together. Compose transactions
