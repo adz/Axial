@@ -82,7 +82,7 @@ for the effect's package is enabled (the core `Axial` guardrail covers clock rea
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
 | `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
 | `AXG007` | `ResourceFromFiber` | A forked flow that returns a scoped resource it acquired, which the fiber releases before `Fiber.join` returns it |
-| `AXG008` | `ScopeFromRun` | A run returning a scope-owned service that closes when the run ends |
+| `AXG008` | `ScopeFromRun` | A run returning a scope-owned `Queue.makeScoped`, `Hub.makeScoped` or `Hub.subscribe` result, or a cache tied to its creating runtime |
 
 `AXG001`, `AXG002`, `AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
 
@@ -134,4 +134,4 @@ intentional boundary — is on the [diagnostics reference](guardrail-diagnostics
 - [`AXG005`](guardrail-diagnostics.html#axg005-preserve-cancellation-tokens): task adapters that drop their token.
 - [`AXG006`](guardrail-diagnostics.html#axg006-format-without-reflection): reflection-dependent formatting.
 - [`AXG007`](guardrail-diagnostics.html#axg007-keep-resources-acquired-by-a-fiber): resources returned from fibers.
-- [`AXG008`](guardrail-diagnostics.html#axg008-keep-scope-owned-services-inside-their-run): scope-owned services returned by a run.
+- [`AXG008`](guardrail-diagnostics.html#axg008-keep-scope-owned-services-inside-their-run): scoped queues and hubs, subscriptions, and caches returned by a run. Unscoped `Queue.make` (including its shorthands) and `Hub.make` are allowed.

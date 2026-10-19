@@ -11,8 +11,8 @@ open Axial.Guardrails.Suppressions
 
 let private constructors =
     Map.ofList [ "Cache", set [ "make"; "makeBounded"; "makeBoundedWithExpiry"; "makeRec" ]
-                 "Hub", set [ "make"; "makeScoped"; "bounded"; "unbounded" ]
-                 "Queue", set [ "make"; "makeScoped"; "bounded"; "unbounded" ] ]
+                 "Hub", set [ "makeScoped"; "subscribe" ]
+                 "Queue", set [ "makeScoped" ] ]
 
 let rec private headRange expr =
     match expr with
@@ -30,12 +30,13 @@ let private symbolMatches (ctx: CliContext) entity names expr =
     | Some location ->
         ctx.GetAllSymbolUsesOfFile()
         |> Seq.exists (fun useSite ->
-            useSite.Range = location
+            (useSite.Range.End = location.End && useSite.Range.StartLine = location.StartLine
+             && useSite.Range.StartColumn <= location.StartColumn)
             && (match useSite.Symbol with
                 | :? FSharpMemberOrFunctionOrValue as memberValue ->
                     Set.contains memberValue.CompiledName names
                     && (memberValue.DeclaringEntity
-                        |> Option.exists (fun declaring -> declaring.TryFullName = Some entity))
+                        |> Option.exists (fun declaring -> declaring.TryFullName = Some entity || declaring.TryFullName = Some(entity + "Module")))
                 | _ -> false))
 
 let private isConstructor ctx expr =
@@ -67,7 +68,9 @@ let rec private find ctx expr : range list =
             | _ -> []
     here @ (childExprs expr |> List.collect (find ctx))
 
-let private serviceTypes = set [ "Axial.Cache`3"; "Axial.Hub`1"; "Axial.Queue`1" ]
+// A result type cannot distinguish make from makeScoped for Queue or Hub.
+// Only Cache is always tied to its creating runtime, so type-based detection is Cache-only.
+let private serviceTypes = set [ "Axial.Cache`3" ]
 
 let rec private isServiceType (t: FSharpType) =
     if t.IsAbbreviation then isServiceType t.AbbreviatedType

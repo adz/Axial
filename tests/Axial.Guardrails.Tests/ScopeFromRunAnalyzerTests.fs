@@ -35,12 +35,22 @@ module ScopeFromRunAnalyzerTests =
 
     [<Theory>]
     [<InlineData("Cache.make (fun k -> Flow.ok k)")>]
-    [<InlineData("Hub.make ()")>]
-    [<InlineData("Queue.unbounded ()")>]
+    [<InlineData("Hub.makeScoped ()")>]
+    [<InlineData("Queue.makeScoped QueueStrategy.Unbounded")>]
     let ``real constructors outlive run`` constructor =
         task {
             let! found = realFindings ("let result () = Flow.run (Unchecked.defaultof<IHasClock>) (" + constructor + ")")
             test <@ found = [ "AXG008" ] @>
+        }
+
+    [<Theory>]
+    [<InlineData("Queue.unbounded ()")>]
+    [<InlineData("Queue.bounded 8")>]
+    [<InlineData("Hub.make ()")>]
+    let ``unscoped constructors outlive run safely`` constructor =
+        task {
+            let! found = realFindings ("let result () = Flow.run (Unchecked.defaultof<IHasClock>) (" + constructor + ")")
+            test <@ found = [] @>
         }
 
     [<Theory>]
@@ -49,6 +59,13 @@ module ScopeFromRunAnalyzerTests =
     let ``composed cache result outlives run`` expression =
         task {
             let! found = realFindings ("let result () = Flow.run (Unchecked.defaultof<IHasClock>) (" + expression + ")")
+            test <@ found = [ "AXG008" ] @>
+        }
+
+    [<Fact>]
+    let ``hub subscription is scope owned`` () =
+        task {
+            let! found = realFindings "let result () = Flow.run () (Hub.subscribe QueueStrategy.Unbounded (Unchecked.defaultof<Hub<int>>))"
             test <@ found = [ "AXG008" ] @>
         }
 
