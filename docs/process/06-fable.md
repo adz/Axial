@@ -30,7 +30,7 @@ nothing executes until then. Supply an interpreter that delegates execution to a
 ```fsharp no-check reason="Requires Fable compiler validation; FsLiveDocs currently checks .NET contexts only"
 open Axial
 
-/// A minimal interpreter that delegates to a worker and returns its reported result without starting a process locally.
+/// A minimal interpreter that delegates to a worker and returns its result locally.
 type WorkerProcess(execute: ProcessSpec -> Async<ProcessResult>) =
     interface IProcess with
         member _.Execute(specification, observe) =
