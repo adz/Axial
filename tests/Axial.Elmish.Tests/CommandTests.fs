@@ -50,6 +50,50 @@ module CommandTests =
         Assert.Contains("boom", defects.ToArray().[0].Rendered)
 
     [<Fact>]
+    let ``start runs fire-and-forget without dispatching`` () =
+        let ran = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let messages = ConcurrentQueue<int>()
+        use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        let work : Flow<ClockEnvironment, Never, unit> =
+            Flow.fromTask (fun _ -> ran.TrySetResult() |> ignore; Task.FromResult(()))
+        for start in Cmd.OfFlow.start "background" owner work do start messages.Enqueue
+        Assert.True(ran.Task.Wait(5000))
+        Assert.Empty(messages)
+
+    [<Fact>]
+    let ``start reports defects to OnDefect without dispatching`` () =
+        let defects = ConcurrentQueue<CommandDefect>()
+        let messages = ConcurrentQueue<int>()
+        use owner = runtime (fun callback -> callback ()) defects.Enqueue
+        let work : Flow<ClockEnvironment, Never, unit> = Flow.die (InvalidOperationException("boom"))
+        for start in Cmd.OfFlow.start "background" owner work do start messages.Enqueue
+        Assert.True(SpinWait.SpinUntil((fun () -> defects.Count = 1), 5000))
+        Assert.Empty(messages)
+        Assert.Equal("background", defects.ToArray().[0].Name)
+        Assert.Contains("boom", defects.ToArray().[0].Rendered)
+
+    [<Fact>]
+    let ``start runs a named fiber in the runtime registry`` () =
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let messages = ConcurrentQueue<int>()
+        use owner = runtime (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        let gate =
+            match App.run owner.Environment (Deferred.make<ClockEnvironment, Never, unit> ()) |> Async.RunSynchronously with
+            | Exit.Success value -> value
+            | _ -> failwith "Could not create gate"
+        let work : Flow<ClockEnvironment, Never, unit> =
+            flow {
+                do! Flow.fromTask (fun _ -> started.TrySetResult() |> ignore; Task.FromResult(()))
+                do! Deferred.await gate
+            }
+        for start in Cmd.OfFlow.start "background" owner work do start messages.Enqueue
+        Assert.True(started.Task.Wait(5000))
+        Assert.True(SpinWait.SpinUntil((fun () ->
+            owner.Registry.Snapshot() |> List.exists (fun dump -> dump.Name = Some "background")), 5000))
+        Assert.Empty(messages)
+        Assert.True(Deferred.succeedNow () gate)
+
+    [<Fact>]
     let ``latest replaces a slow command and cancel suppresses delivery`` () =
         let messages = ConcurrentQueue<int>()
         let started = new TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)

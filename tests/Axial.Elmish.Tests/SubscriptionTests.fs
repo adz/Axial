@@ -79,6 +79,11 @@ module SubscriptionTests =
             | _ -> -1
         let drained = SpinWait.SpinUntil((fun () -> queued () = 0 && clock.Sleepers > 0), 5000)
         Assert.True(drained, $"queued={queued ()} sleepers={clock.Sleepers} size={(Dequeue.size inbox.Queue).RunSynchronously(())}")
+        // The debounce's timer cannot fire while the manual clock is still, so let any in-flight stream pull hand
+        // the last item to the debounce before advancing. Without this, a full-suite run could advance while the
+        // last item was still between the inbox and the debounce and then wait on a search that never started.
+        Thread.Sleep(100)
+        Assert.True(SpinWait.SpinUntil((fun () -> queued () = 0 && clock.Sleepers > 0), 5000))
         clock.AdvanceBy(TimeSpan.FromMilliseconds 300.0)
         Assert.True(searching.Task.Wait(5000))
         Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))

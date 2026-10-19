@@ -22,7 +22,7 @@ type ElmishRuntimeOptions =
 
 /// Owns the root scope for all commands in one Elmish program.
 [<Sealed>]
-type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntimeOptions, environment: 'env) =
+type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntimeOptions) =
     let registry = FiberRegistry(options.HistoryCapacity)
     let queue = ConcurrentQueue<Flow<'env, Never, unit>>()
     let signal = new SemaphoreSlim(0)
@@ -32,6 +32,10 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
     let mutable pending = 0
     let mutable stopping = false
     let shutdowns = ResizeArray<unit -> unit>()
+    let mutable environment = Unchecked.defaultof<'env>
+    let mutable isStopped = (fun () -> true)
+    let mutable stop = (fun () -> async { return () })
+    let mutable stopAndWait = (fun (_: TimeSpan) -> false)
 
     let rec pump () : Flow<'env, Never, unit> =
         flow {
@@ -43,13 +47,24 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
             return! pump ()
         }
 
-    let handle = App.start environment (Flow.withFiberRegistry registry (pump ()))
-
     member _.Environment = environment
     member _.Registry = registry
     member internal _.Options = options
     member internal _.Pending = Volatile.Read(&pending)
     member internal _.LatestCount = lock gate (fun () -> latest.Count)
+    member internal _.Pump() : Flow<'env, Never, unit> = pump ()
+
+    member internal _.SetEnvironment(environmentValue: 'env) =
+        environment <- environmentValue
+
+    member internal _.Attach(handle: AppHandle<'error, unit>) =
+        isStopped <- (fun () -> handle.Status <> AppStatus.Running)
+        stop <- (fun () -> async {
+            let! _ = handle.Stop()
+            return ()
+        })
+        stopAndWait <- (fun timeout -> handle.StopAndWait timeout)
+
     // Post callbacks and generation mutations share gate; dispatch occurs inside this boundary.
     member internal _.DeliverIfCurrent(key: string, version: int64, dispatch: unit -> unit) =
         lock gate (fun () ->
@@ -63,15 +78,15 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
             match latest.TryGetValue key with
             | true, (v, _) when v = version -> latest.Remove key |> ignore
             | _ -> ())
-    member internal _.IsStopped = handle.Status <> AppStatus.Running
+    member internal _.IsStopped = isStopped ()
     member internal _.RegisterShutdown(action) =
         lock gate (fun () ->
-            if handle.Status = AppStatus.Running then shutdowns.Add action
+            if not (isStopped ()) then shutdowns.Add action
             else action ())
 
     member internal _.Enqueue(job: Flow<'env, Never, unit>) =
         lock gate (fun () ->
-            if not stopping && handle.Status = AppStatus.Running then
+            if not stopping && not (isStopped ()) then
                 Interlocked.Increment(&pending) |> ignore
                 queue.Enqueue (Flow.ensuring (Flow.delay (fun () -> Interlocked.Decrement(&pending) |> ignore; Flow.ok ())) job)
                 signal.Release() |> ignore
@@ -118,12 +133,10 @@ type ElmishRuntime<'env when 'env :> IHasClock> internal (options: ElmishRuntime
 
     member this.Stop() : Async<unit> = async {
         this.Drain()
-        let! _ = handle.Stop()
-        return ()
+        do! stop ()
     }
     member this.StopAndWait(timeout: TimeSpan) =
         this.Drain()
-        handle.StopAndWait timeout
+        stopAndWait timeout
     interface IDisposable with
         member this.Dispose() = this.StopAndWait(TimeSpan.FromSeconds 30.0) |> ignore
-

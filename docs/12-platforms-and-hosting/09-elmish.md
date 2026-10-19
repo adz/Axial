@@ -41,16 +41,72 @@ let command =
 `Flow.localEnv` selects the environment when the command runs; capture the selected environment for each command when
 constructing it so later repository switches do not change already-issued requests.
 
+## Provisioning with startLayer
+
+When a runtime needs resources that must live for the whole program — a `Cache.make*` cache, queues, hubs, or a
+`Layer.fromFlow` resource — build them with a layer and start the runtime with `ElmishRuntime.startLayer`. The layer
+is provisioned inside the runtime's root scope, so `Stop`/`StopAndWait` releases what the layer acquired. A typed
+provisioning failure returns `Error` and leaves nothing running.
+
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.Elmish.Tests"
+open Axial
+open Axial.Layers
+open Axial.ElmishFlows
+open Axial.PlatformService
+
+type CacheEnvironment = { Clock: IClock; Cache: Cache<int, Never, string> } with
+    interface IHasClock with
+        member this.Clock = this.Clock
+
+let layer : Layer<ClockEnvironment, string, CacheEnvironment> =
+    Layer.fromFlow (flow {
+        let! cache =
+            Cache.make (fun key -> Flow.succeed $"value-{key}" : Flow<ClockEnvironment, Never, string>)
+        let! clock = Flow.envWith (fun env -> env.Clock)
+        return { Clock = clock; Cache = cache }
+    })
+
+let runtime =
+    match
+        ElmishRuntime.startLayer
+            { Post = (fun callback -> callback ())
+              OnDefect = (fun defect -> failwith defect.Rendered)
+              HistoryCapacity = 32 }
+            layer
+            (ClockEnvironment Clock.live)
+        |> Async.RunSynchronously
+    with
+    | Ok runtime -> runtime
+    | Error error -> failwith error
+```
+
+## Command parameter order
+
+Axial's commands keep Elmish's "work first" idea, but the runtime owns the command's root scope, so it precedes the
+flow. Pass the flow positionally, not piped:
+
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.Elmish.Tests"
+let command =
+    Cmd.OfFlow.either "increment" runtime
+        (Flow.succeed 2)
+        id
+        (fun (_: string) -> 0)
+```
+
+The order is `name runtime workflow onSuccess onError` for `either`; `perform` drops `onError`, `attempt` drops
+`onSuccess`, and `Cmd.OfFlow.start name runtime workflow` is fire-and-forget: it runs a
+`Flow<'env, Never, unit>` as a named fiber in the root scope, dispatches nothing, and reports defects to `OnDefect`.
+
 ## Operation reference
 
 The exhaustive operation inventory lives in the API reference:
 
-- [Cmd](/api/Axial.ElmishFlows.Cmd.html): `Cmd.OfFlow.either`/`perform`/`attempt` and the latest-wins
+- [Cmd](/api/Axial.ElmishFlows.Cmd.html): `Cmd.OfFlow.either`/`perform`/`attempt`/`start` and the latest-wins
   `Cmd.OfFlow.Latest` variants.
 - [Sub](/api/Axial.ElmishFlows.Sub.html): `Sub.OfFlowStream.subscribe` for running a stream under a subscription id.
 - [Inbox](/api/Axial.ElmishFlows.Inbox.html): `Inbox.create`/`offer`/`post`/`dropped`/`stream` for synchronous UI
   input and search-as-you-type.
-- [ElmishRuntime](/api/Axial.ElmishFlows.ElmishRuntime.html): `start`, `test`, and the `Stop`/`StopAndWait` shutdown
-  methods.
+- [ElmishRuntime](/api/Axial.ElmishFlows.ElmishRuntime.html): `start`, `startLayer`, `test`, and the
+  `Stop`/`StopAndWait` shutdown methods.
 - [TestRuntime](/api/Axial.ElmishFlows.TestRuntime.html): `run`, `settle`, `drain`, `dispatched`, and `defects` for
   tests with a manual clock.

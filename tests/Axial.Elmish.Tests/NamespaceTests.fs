@@ -27,6 +27,19 @@ module NamespaceTests =
         Assert.NotNull(box program)
 
     [<Fact>]
+    let ``Elmish Sub module coexists with Axial Sub module`` () =
+        use runtime =
+            ElmishRuntime.start
+                { Post = (fun callback -> callback ()); OnDefect = (fun defect -> failwith defect.Rendered); HistoryCapacity = 32 }
+                (ClockEnvironment Clock.live)
+        let source : FlowStream<ClockEnvironment, string, int> = FlowStream.empty
+        let ax = Sub.OfFlowStream.subscribe ["values"] runtime source (fun (_: string) -> 0)
+        let none = Sub.none
+        let batch = Sub.batch [ ax; none ]
+        Assert.Empty(none)
+        Assert.Equal(1, List.length batch)
+
+    [<Fact>]
     let ``per-command environments override the runtime clock environment`` () =
         use runtime =
             ElmishRuntime.start
