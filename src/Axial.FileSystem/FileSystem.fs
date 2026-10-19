@@ -409,6 +409,16 @@ type IHasFileSystem =
 
 [<RequireQualifiedAccess>]
 module FileSystemError =
+    /// <summary>True for missing files or directories, access denial, path length errors, and general I/O errors; false for invalid paths, existing targets, unsupported operations, and unexpected failures.</summary>
+    let isIoFailure (error: FileSystemError) =
+        match error with
+        | FileSystemError.FileNotFound _
+        | FileSystemError.DirectoryNotFound _
+        | FileSystemError.Unauthorized _
+        | FileSystemError.PathTooLong _
+        | FileSystemError.Io _ -> true
+        | _ -> false
+
     /// <summary>Classifies an exception raised by a file-system operation.</summary>
     let fromException (path: string option) (error: exn) : FileSystemError =
         match error with

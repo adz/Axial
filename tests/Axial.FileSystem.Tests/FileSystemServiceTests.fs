@@ -21,6 +21,22 @@ type FileSystemTestEnv =
 
 module FileSystemServiceTests =
     [<Fact>]
+    let ``isIoFailure includes missing access length and IO but excludes other errors`` () =
+        let io =
+            [ FileSystemError.FileNotFound "a"
+              FileSystemError.DirectoryNotFound "a"
+              FileSystemError.Unauthorized(None, "denied")
+              FileSystemError.PathTooLong(None, "long")
+              FileSystemError.Io(None, "failed") ]
+        let other =
+            [ FileSystemError.AlreadyExists "a"
+              FileSystemError.InvalidPath(None, "invalid")
+              FileSystemError.Unsupported(None, "unsupported")
+              FileSystemError.Unexpected(None, "unexpected") ]
+        Assert.All(io, fun error -> Assert.True(FileSystemError.isIoFailure error))
+        Assert.All(other, fun error -> Assert.False(FileSystemError.isIoFailure error))
+
+    [<Fact>]
     let ``live overwrite never exposes a missing destination`` () =
         let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory root |> ignore
