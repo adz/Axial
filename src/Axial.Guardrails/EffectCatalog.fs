@@ -52,6 +52,14 @@ let builtInRules: EffectRule list =
           "constructs System.Random directly, which makes behavior depend on ambient, untestable randomness"
           "Axial.PlatformService.IRandom (Random.service / Random.nextDouble)"
 
+      rule "random.cryptographic" "Axial.PlatformService" "random"
+          (MembersOf(
+              "System.Security.Cryptography.RandomNumberGenerator",
+              [ "Create"; "GetBytes"; "GetNonZeroBytes"; "Fill"; "GetInt32"; "GetHexString"; "GetString"; "GetItems"; "Shuffle" ]
+          ))
+          "uses RandomNumberGenerator directly, which makes generated values depend on ambient, untestable randomness"
+          "Axial.PlatformService.IRandom or IGuid (Random.service / Guid.service)"
+
       rule "guid.new" "Axial.PlatformService" "guid" (MembersOf("System.Guid", [ "NewGuid" ]))
           "calls Guid.NewGuid() directly, which makes generated identifiers untestable"
           "Axial.PlatformService.IGuid (Guid.service / Guid.newGuid)"

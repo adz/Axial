@@ -3,8 +3,17 @@ open System.Text
 open Axial
 open Axial.FileSystem
 open Axial.Files
+open Axial.PlatformService
 
-let env = { new IHasFileSystem with member _.FileSystem = FileSystem.live }
+type ProbeEnvironment =
+    { FileSystem: IFileSystem
+      Guid: IGuid }
+    interface IHasFileSystem with member this.FileSystem = this.FileSystem
+    interface IHasGuid with member this.Guid = this.Guid
+
+let env =
+    { FileSystem = FileSystem.live
+      Guid = Guid.live }
 let run operation =
     match Flow.run env operation with
     | Exit.Success value -> value

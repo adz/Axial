@@ -17,7 +17,7 @@ Other packages build on these capabilities. [Axial.Process](/process/) composes 
 | [Environment variables](platform-services/environment-variables.html) | `Environment.GetEnvironmentVariable` | Required and parsed reads with `EnvironmentVariableError` |
 | [Console](console.html) | `System.Console` | Standard streams, redirection, and terminal control |
 | [File system](filesystem.html) | `System.IO.File` and `Directory` | File and directory operations with `FileSystemError` |
-| [Files](files.html) | `System.IO` traversal and writes | `Files.walk`, `Files.lines`, `Files.writeAtomic`, `AppendLog` |
+| [Files](files.html) | `System.IO` traversal and writes, with GUID-named atomic-write temporary files | `Files.walk`, `Files.lines`, `Files.writeAtomic`, `AppendLog` |
 | [WebSocket](websocket.html) | `ClientWebSocket` | Typed sessions, sends, receives, and `WebSocketError` |
 
 ```fsharp
@@ -33,7 +33,7 @@ let greet name : Flow<#IHasConsole, Never, unit> =
 ```
 
 The host supplies the live implementation at the edge, `Console.live`. Tests supply a recording or in-memory
-implementation of the same contract; the [console page](console.html#testing) builds one.
+implementation of the same contract; the [console page](console.html#testing) builds one. Composite operations declare every capability they use: for example, `Files.writeAtomic` requires both `IHasFileSystem` and `IHasGuid`, so tests can control its temporary-file name.
 
 ## In this section
 

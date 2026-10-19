@@ -13,6 +13,11 @@ type private CleanupEnv =
     interface IHasFileSystem with member this.FileSystem = this.FileSystem
     interface IHasClock with member this.Clock = this.Clock
 
+type private AtomicEnv =
+    { FileSystem: IFileSystem; Guid: Axial.PlatformService.IGuid }
+    interface IHasFileSystem with member this.FileSystem = this.FileSystem
+    interface Axial.PlatformService.IHasGuid with member this.Guid = this.Guid
+
 type FilesTests() = 
     [<Fact>]
     member _.``stale cleanup removes only old matching temporary files``() =
@@ -47,7 +52,9 @@ type FilesTests() =
         try
             let path = Path.Combine(root, "data")
             File.WriteAllText(path, String.replicate 10000 "old")
-            let env = { new IHasFileSystem with member _.FileSystem = FileSystem.live }
+            let env =
+                { FileSystem = FileSystem.live
+                  Guid = Axial.PlatformService.Guid.live }
             Assert.Equal(Exit.Success (), Files.writeAllTextAtomic path "new" |> Flow.run env)
             Assert.Equal("new", File.ReadAllText path)
             Assert.Equal<string>([| "data" |], Directory.GetFiles(root) |> Array.map Path.GetFileName)
@@ -59,12 +66,58 @@ type FilesTests() =
         finally Directory.Delete(root, true)
 
     [<Fact>]
+    member _.``atomic write uses the GUID service for its temporary name``() =
+        let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory root |> ignore
+        try
+            let path = Path.Combine(root, "data")
+            let first = Guid.Parse("00112233-4455-6677-8899-aabbccddeeff")
+            let second = Guid.Parse("ffeeddcc-bbaa-9988-7766-554433221100")
+            let predictableTemp = Path.Combine(root, ".data.00112233445566778899aabbccddeeff.tmp")
+            File.WriteAllText(predictableTemp, "existing")
+            let env =
+                { FileSystem = FileSystem.live
+                  Guid = Axial.PlatformService.Guid.fromSequence [ first; second ] }
+
+            Assert.Equal(Exit.Success (), Files.writeAllTextAtomic path "new" |> Flow.run env)
+            Assert.Equal("existing", File.ReadAllText predictableTemp)
+            Assert.Equal("new", File.ReadAllText path)
+        finally Directory.Delete(root, true)
+
+    [<Fact>]
+    member _.``atomic write stops after five collisions and preserves the existing temporary file``() =
+        let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory root |> ignore
+        try
+            let path = Path.Combine(root, "data")
+            let fixedGuid = Guid.Parse("00112233-4455-6677-8899-aabbccddeeff")
+            let temporary = Path.Combine(root, ".data.00112233445566778899aabbccddeeff.tmp")
+            File.WriteAllText(temporary, "untouched")
+            let mutable calls = 0
+            let guid =
+                { new Axial.PlatformService.IGuid with
+                    member _.NewGuid() =
+                        calls <- calls + 1
+                        fixedGuid }
+            let env = { FileSystem = FileSystem.live; Guid = guid }
+
+            match Files.writeAtomic path [| 1uy |] |> Flow.run env with
+            | Exit.Failure(Cause.Fail(_: FileSystemError)) -> ()
+            | other -> failwithf "Expected a typed file-system failure, got %A" other
+            Assert.Equal(5, calls)
+            Assert.Equal("untouched", File.ReadAllText temporary)
+            Assert.False(File.Exists path)
+        finally Directory.Delete(root, true)
+
+    [<Fact>]
     member _.``concurrent atomic replacements never mix payloads``() =
         let root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())
         Directory.CreateDirectory root |> ignore
         try
             let path = Path.Combine(root, "data")
-            let env = { new IHasFileSystem with member _.FileSystem = FileSystem.live }
+            let env =
+                { FileSystem = FileSystem.live
+                  Guid = Axial.PlatformService.Guid.live }
             let payloads = [| for n in 0 .. 15 -> Array.create 65536 (byte n) |]
             let jobs = payloads |> Array.map (fun bytes -> System.Threading.Tasks.Task.Run(fun () -> Files.writeAtomic path bytes |> Flow.run env))
             System.Threading.Tasks.Task.WaitAll(jobs |> Array.map (fun job -> job :> System.Threading.Tasks.Task))

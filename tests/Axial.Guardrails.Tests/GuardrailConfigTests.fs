@@ -114,6 +114,29 @@ module GuardrailConfigTests =
         }
 
     [<Fact>]
+    let ``cryptographic random static and instance generation is flagged`` () =
+        task {
+            let! found =
+                findings (
+                    "let create () = System.Security.Cryptography.RandomNumberGenerator.Create()\n"
+                    + "let bytes (rng: System.Security.Cryptography.RandomNumberGenerator) (buffer: byte array) = rng.GetBytes buffer\n"
+                    + "let nonzero (rng: System.Security.Cryptography.RandomNumberGenerator) (buffer: byte array) = rng.GetNonZeroBytes buffer\n"
+                    + "let integer () = System.Security.Cryptography.RandomNumberGenerator.GetInt32(10)\n")
+            test <@ found = [ 1; 2; 3; 4 ] @>
+        }
+
+    [<Fact>]
+    let ``cryptographic random generation permits line-marked boundaries`` () =
+        task {
+            let! found =
+                findings (
+                    "let create () = System.Security.Cryptography.RandomNumberGenerator.Create() // axial-allow-effect: random\n"
+                    + "let bytes (rng: System.Security.Cryptography.RandomNumberGenerator) (buffer: byte array) =\n"
+                    + "    rng.GetBytes buffer // axial-allow-effect: random\n")
+            test <@ found = [] @>
+        }
+
+    [<Fact>]
     let ``local time zone is flagged but explicit conversion is not`` () =
         task {
             let! found =

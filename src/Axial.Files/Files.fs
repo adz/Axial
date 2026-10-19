@@ -6,6 +6,7 @@ open System.IO
 open System.Text
 open Axial
 open Axial.FileSystem
+open Axial.PlatformService
 
 [<Sealed>]
 type private PrefixedStream(prefix: byte array, length: int, rest: Stream) =
@@ -35,19 +36,14 @@ type private PrefixedStream(prefix: byte array, length: int, rest: Stream) =
 module Files =
     let private sniffLength = 8192
     let private batchSize = 2048
-    let private tempId () =
-        use rng = System.Security.Cryptography.RandomNumberGenerator.Create()
-        let bytes = Array.zeroCreate<byte> 16
-        rng.GetBytes bytes
-        BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant()
-
     /// <summary>Writes bytes to a sibling temporary file, flushes them to disk, then replaces the destination by rename.</summary>
     /// <remarks>A process crash cannot leave a partial destination file. Surviving power loss on some file systems
     /// also requires fsync of the parent directory after rename; this function does not perform directory fsync.
     /// A killed process may leave a .&lt;name&gt;.*.tmp sibling, safe to remove with cleanupStaleTemps.</remarks>
-    let writeAtomic (path: string) (contents: byte array) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+    let writeAtomic (path: string) (contents: byte array) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem and 'env :> IHasGuid =
         flow {
             let! fs = FileSystem.service
+            let! guid = Guid.service
             return!
                 Flow.attemptBlocking (fun token ->
                     let directory = Path.GetDirectoryName(Path.GetFullPath path)
@@ -60,7 +56,8 @@ module Files =
                         let mutable attempts = 0
                         while not opened && attempts < 5 do
                             attempts <- attempts + 1
-                            temporary <- Path.Combine(directory, $".{name}.{tempId ()}.tmp")
+                            let identifier = guid.NewGuid().ToString("N")
+                            temporary <- Path.Combine(directory, $".{name}.{identifier}.tmp")
                             try
                                 stream <- fs.OpenFile(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None)
                                 owned <- true
@@ -102,11 +99,11 @@ module Files =
         }
 
     /// <summary>Encodes text as UTF-8 and atomically replaces a file.</summary>
-    let writeAllTextAtomic (path: string) (contents: string) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+    let writeAllTextAtomic (path: string) (contents: string) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem and 'env :> IHasGuid =
         writeAtomic path (Encoding.UTF8.GetBytes contents)
 
     /// <summary>Encodes text with the supplied encoding and atomically replaces a file.</summary>
-    let writeAllTextAtomicWithEncoding (path: string) (contents: string) (encoding: Encoding) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem =
+    let writeAllTextAtomicWithEncoding (path: string) (contents: string) (encoding: Encoding) : Flow<'env, FileSystemError, unit> when 'env :> IHasFileSystem and 'env :> IHasGuid =
         writeAtomic path (encoding.GetBytes contents)
 
     /// <summary>Watches a directory (optionally recursively) or one file until consumption ends.</summary>
