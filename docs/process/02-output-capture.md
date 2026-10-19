@@ -89,6 +89,20 @@ let capped = cmd $"printf hello" |> maxOutputBytes (Some 5L) None |> Process.run
 shouldEqual "hello" capped.StdOut
 ```
 
+`hello` is exactly five bytes, so it fits the cap. A sixth byte exceeds it and returns `OutputTooLarge` with the
+stage, channel, and limit:
+
+```fsharp run
+let tooLarge = cmd $"printf 'hello!'" |> maxOutputBytes (Some 5L) None |> Process.tryRun
+
+match tooLarge with
+| Exit.Failure(Cause.Fail(ProcessError.OutputTooLarge failure)) ->
+    shouldEqual 0 failure.Stage
+    shouldEqual OutputChannel.StdOut failure.Channel
+    shouldEqual 5L failure.Limit
+| other -> failwithf "Expected OutputTooLarge, got %A" other
+```
+
 ## Exact bytes and availability
 
 Capture is byte-based, and the text view is derived from those bytes. `CapturedOutput.Bytes` holds the exact

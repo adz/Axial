@@ -23,3 +23,19 @@ let workflow =
 An interpreter implements `IProcess.Execute`, returning a lazy `Flow<unit, ProcessError, ProcessResult>` and
 awaiting the supplied observer serially with backpressure. It must not start work while constructing the Flow.
 Streaming constructors additionally require an `IHasClock` environment for Axial's supervised producer.
+
+`workflow` above is construction-only: it builds a specification and a Flow that asks for `IProcess` when run, and
+nothing executes until then. Supply an interpreter that delegates execution to a worker or another host, for example:
+
+```fsharp no-check reason="Requires Fable compiler validation; FsLiveDocs currently checks .NET contexts only"
+open Axial
+
+/// A minimal interpreter that delegates to a worker and returns its reported result without starting a process locally.
+type WorkerProcess(execute: ProcessSpec -> Async<ProcessResult>) =
+    interface IProcess with
+        member _.Execute(specification, observe) =
+            Flow.fromAsync (execute specification)
+```
+
+`Flow.fromAsync` treats a worker exception as a defect; use `Flow.attemptAsync` and map the exception into
+`ProcessError` when the worker reports typed failures.

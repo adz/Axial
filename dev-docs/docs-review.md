@@ -256,9 +256,9 @@
 - [done] `docs/01-getting-started/04-first-application.md:11` — “Your First Application” defines `run` but never calls it or shows an entry point, so a newcomer cannot copy the page to run an application.
 - [done] `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
-- `docs/process/_index.md:6` — The first executable `printf` example gives no package-install or platform prerequisite; link the package/platform setup and note that the checked native-command examples need a Unix-like toolchain.
-- `docs/process/06-fable.md:9` — The only Fable sample defines a Flow but never supplies an `IProcess` implementation or runs it; provide a minimal fake/worker-backed implementation and a checked Fable project or label the fragment as construction-only.
-- `docs/process/02-output-capture.md:80` — The output cap example prints exactly five bytes with a five-byte limit, so it never demonstrates the advertised failure. Add a checked six-byte example matching `OutputTooLarge` and its stage/channel.
+- [done] `docs/process/_index.md:6` — The first executable `printf` example gives no package-install or platform prerequisite; link the package/platform setup and note that the checked native-command examples need a Unix-like toolchain.
+- [done] `docs/process/06-fable.md:9` — The only Fable sample defines a Flow but never supplies an `IProcess` implementation or runs it; provide a minimal fake/worker-backed implementation and a checked Fable project or label the fragment as construction-only.
+- [done] `docs/process/02-output-capture.md:80` — The output cap example prints exactly five bytes with a five-byte limit, so it never demonstrates the advertised failure. Add a checked six-byte example matching `OutputTooLarge` and its stage/channel.
 
 ## Suggestions for humans and LLMs
 

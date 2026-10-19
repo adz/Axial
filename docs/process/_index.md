@@ -5,6 +5,21 @@ description: Run external commands as standalone tools or as steps in an Axial w
 
 # Processes
 
+Install `Axial.Process` and open the two namespaces used below:
+
+```bash
+dotnet add package Axial.Process
+```
+
+```fsharp
+open Axial.Process
+open Axial.Process.DSL
+```
+
+The checked examples on these pages run native commands such as `printf`, `sh`, `wc`, `cat`, and `sleep`, so they
+assume a Unix-like toolchain. On Windows, run them from WSL, Git Bash, or another POSIX shell, or adapt the commands
+to `pwsh`/`cmd` equivalents; the DSL and failure model are unchanged.
+
 A command is a description, not a running process. Configure it, connect commands into a pipeline if needed,
 then choose where to run it:
 
