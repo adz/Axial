@@ -381,15 +381,13 @@ module WorkflowStreamTests =
     let ``switchMapFlow interrupts the flow for a superseded value`` () =
         let interrupted = ref 0
         let started = [| for _ in 1..3 -> TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously) |]
-        let finishedThird = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let observedThird = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let search (query: int) : Flow<ClockEnvironment, string, string> =
             Flow.fromTask (fun cancellationToken -> task {
-                started.[query - 1].TrySetResult(()) |> ignore
+                if query <= 3 then started.[query - 1].TrySetResult(()) |> ignore
                 if query < 3 then
                     do! Task.Delay(Timeout.Infinite, cancellationToken)
-                else
-                    if query = 3 then finishedThird.TrySetResult(()) |> ignore
                 return $"result-{query}"
             })
             |> Flow.fold Flow.ok (fun cause ->
@@ -402,13 +400,16 @@ module WorkflowStreamTests =
                     if query > 1 && query <= 3 then
                         do! started.[query - 2].Task
                     if query = 4 then
-                        do! finishedThird.Task
+                        do! observedThird.Task
                     return if query > 4 then None else Some(query, query + 1)
                 })) 1
 
         let results =
             source
             |> FlowStream.switchMapFlow search
+            |> FlowStream.tapFlow (fun value -> flow {
+                if value = "result-3" then observedThird.TrySetResult(()) |> ignore
+            })
             |> FlowStream.runCollect
             |> Flow.runSync (TestSupport.clockEnv ())
 
