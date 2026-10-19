@@ -207,23 +207,38 @@ module App =
             let! outcome =
                 Async.FromContinuations(fun (success, failure, cancelled) ->
                     let mutable registration = Unchecked.defaultof<CancellationTokenRegistration>
+                    let mutable completed = 0
+                    let tryComplete () =
+#if FABLE_COMPILER
+                        let notDone = completed = 0
+                        if notDone then completed <- 1
+                        notDone
+#else
+                        Interlocked.Exchange(&completed, 1) = 0
+#endif
                     let finish action =
 #if !FABLE_COMPILER
                         registration.Dispose()
 #endif
                         action ()
+                    let finishOnce action =
+                        if tryComplete () then finish action
                     registration <- callerToken.Register(Action(fun () ->
+                        // Claim before stopping so a publication racing this cancellation cannot deliver
+                        // success after the caller asked to cancel. Stop always runs: if the caller
+                        // cancelled after publication, nothing may be left running.
+                        let won = tryComplete ()
                         Async.StartWithContinuations(
                             running.Stop(),
-                            (fun _ -> finish (fun () -> cancelled (OperationCanceledException("startWith was cancelled", callerToken)))),
-                            (fun error -> finish (fun () -> failure error)),
-                            (fun error -> finish (fun () -> cancelled error)),
+                            (fun _ -> if won then finish (fun () -> cancelled (OperationCanceledException("startWith was cancelled", callerToken)))),
+                            (fun error -> if won then finish (fun () -> failure error)),
+                            (fun error -> if won then finish (fun () -> cancelled error)),
                             cancellationToken = CancellationToken.None)))
                     Async.StartWithContinuations(
                         async { return! published.Task |> Async.AwaitTask },
-                        (fun exit -> if not callerToken.IsCancellationRequested then finish (fun () -> success exit)),
-                        (fun error -> if not callerToken.IsCancellationRequested then finish (fun () -> failure error)),
-                        (fun error -> if not callerToken.IsCancellationRequested then finish (fun () -> cancelled error)),
+                        (fun exit -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> success exit)),
+                        (fun error -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> failure error)),
+                        (fun error -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> cancelled error)),
                         cancellationToken = CancellationToken.None))
             match outcome with
             | Exit.Success services -> return Ok(running, services)

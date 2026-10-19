@@ -70,8 +70,10 @@ module AppTests =
     let ``startWith defect returns promptly with original exception`` () =
         let defect = InvalidOperationException("build died")
         let build : Flow<unit, string, int> = Flow.die defect
-        let error = Assert.Throws<InvalidOperationException>(fun () ->
-            App.startWith () build |> fun work -> Async.RunSynchronously(work, 2000) |> ignore)
+        let task = App.startWith () build |> Async.StartAsTask
+        try task.Wait(TimeSpan.FromSeconds 2.) |> ignore with :? AggregateException -> ()
+        test <@ task.IsCompleted @>
+        let error = Assert.Throws<InvalidOperationException>(fun () -> task.GetAwaiter().GetResult() |> ignore)
         test <@ obj.ReferenceEquals(error, defect) @>
 
     [<Fact>]
@@ -79,8 +81,10 @@ module AppTests =
         let build : Flow<unit, string, int> = Flow.fromAsync (async {
             return raise (OperationCanceledException("interrupted"))
         })
-        Assert.ThrowsAny<OperationCanceledException>(fun () ->
-            App.startWith () build |> fun work -> Async.RunSynchronously(work, 2000) |> ignore) |> ignore
+        let task = App.startWith () build |> Async.StartAsTask
+        try task.Wait(TimeSpan.FromSeconds 2.) |> ignore with :? AggregateException -> ()
+        test <@ task.IsCompleted @>
+        Assert.ThrowsAny<OperationCanceledException>(fun () -> task.GetAwaiter().GetResult() |> ignore) |> ignore
 
     [<Fact>]
     let ``startWith caller cancellation waits for finalizer`` () =
@@ -96,6 +100,23 @@ module AppTests =
         test <@ entered.Wait(TimeSpan.FromSeconds 2.) @>
         source.Cancel()
         try task.Wait(TimeSpan.FromSeconds 2.) |> ignore with :? AggregateException -> ()
+        test <@ task.IsCompleted @>
+        test <@ released.IsSet @>
+
+    [<Fact>]
+    let ``startWith cancellation before publication still stops the app and cancels the caller`` () =
+        use source = new CancellationTokenSource()
+        let released = new ManualResetEventSlim()
+        let build : Flow<unit, string, int> = flow {
+            do! Flow.scopeFinalizer (Flow.delay (fun () -> released.Set(); Flow.succeed ()))
+            do! Flow.fromAsync (async {
+                source.Cancel()
+                return ()
+            })
+            return 7
+        }
+        let task = Async.StartAsTask(App.startWith () build, cancellationToken = source.Token)
+        Assert.ThrowsAny<OperationCanceledException>(fun () -> task.GetAwaiter().GetResult() |> ignore) |> ignore
         test <@ task.IsCompleted @>
         test <@ released.IsSet @>
 
