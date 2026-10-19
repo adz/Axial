@@ -245,10 +245,10 @@
 - [done] `docs/05-dependencies/05-tutorials/02-app-record.md:208` — The app-record test asserts success, email, and audit but not the saved order or failure paths; demonstrate that the moved dependency still receives the right order and that failure short-circuits later effects.
 - [done] `docs/05-dependencies/04-providing-the-environment.md:124` — Layers promise resource cleanup, but this page has no acquisition/release example or direct link to a scoped-resource walkthrough at the point of that claim.
 
-- `docs/04-error-handling/_index.md:41` — `Flow.recover`, `Flow.orElseWith`, and `Flow.fold` are introduced without a runnable example showing which causes each handles; add a small typed-failure versus defect example or link to one.
+- [done] `docs/04-error-handling/_index.md:41` — `Flow.recover`, `Flow.orElseWith`, and `Flow.fold` are introduced without a runnable example showing which causes each handles; add a small typed-failure versus defect example or link to one.
 
-- `docs/03-the-flow-type/03-running-flows.md:47` — The page mentions optional member cancellation tokens but gives no example of running with one or interpreting an interrupted `Exit`; this is a likely boundary task for a Task-based application.
-- `docs/03-the-flow-type/08-resources.md:8` — `use!` is recommended alongside `use`, but neither example shows its binding behavior or when to prefer it over scope acquisition.
+- [done] `docs/03-the-flow-type/03-running-flows.md:47` — The page mentions optional member cancellation tokens but gives no example of running with one or interpreting an interrupted `Exit`; this is a likely boundary task for a Task-based application.
+- [done] `docs/03-the-flow-type/08-resources.md:8` — `use!` is recommended alongside `use`, but neither example shows its binding behavior or when to prefer it over scope acquisition.
 
 - `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:171` — The combined `prepareOrder` example uses undefined `OrderEnv`, `Order`, and `createOrder`; provide their minimal definitions or explicitly label the block schematic so it can be adapted safely.
 - `docs/02-how-it-compares/03-effect-ts-comparison.md:33` — Promise-to-`Async` adaptation is recommended but no concrete adapter or link to one is provided; a Fable newcomer cannot act on this guidance from the comparison.

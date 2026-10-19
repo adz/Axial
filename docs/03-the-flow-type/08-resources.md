@@ -15,7 +15,20 @@ let readFirstLineLexically path =
     }
 ```
 
-Use a Flow scope when ownership must span functions, subflows, or fibers:
+`use` disposes a value that already exists. `use!` first runs a Flow to obtain the disposable, then owns it for the
+rest of the body:
+
+```fsharp
+let readFirstLineWithUseBang path =
+    flow {
+        use! reader = Flow.succeed (File.OpenText path)
+        return! ColdTask(fun _ -> reader.ReadLineAsync())
+    }
+```
+
+Both are **lexical**: the compiler disposes the resource when control leaves the body governed by the binding, even
+when `return!` fails or the flow is interrupted. Prefer them when one `flow { }` body owns the resource for its whole
+lifetime; use a Flow scope when ownership must span functions, subflows, or fibers.
 
 ```fsharp
 open System.IO

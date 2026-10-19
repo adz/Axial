@@ -5,6 +5,18 @@ description: Start a cold Flow and observe its Exit.
 
 # Running Flows
 
+```fsharp prepare
+// Setup for the checked example on this page.
+open System
+open System.Threading
+open System.Threading.Tasks
+open Axial
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 Creating a Flow does not execute it. Start it explicitly at a boundary, and read the outcome from the
 `Exit<'value, 'error>` it returns:
 
@@ -46,6 +58,24 @@ immediately and hands back a handle, and `run` executes to completion:
 
 The members take an optional `cancellationToken` for interop callers; the module functions take none, which keeps the
 common path short. Use `Flow.timeout` to bound how long a workflow may run. On Fable, use `ToAsync`.
+
+Passing an already-cancelled token to a member ends the run with `Cause.Interrupt`, not a value or a typed error:
+
+```fsharp run
+let waitForever () : Flow<string> =
+    Flow.fromTask (fun token ->
+        task {
+            do! Task.Delay(Timeout.InfiniteTimeSpan, token)
+            return "never"
+        })
+
+let interrupted = new CancellationTokenSource()
+interrupted.Cancel()
+
+match (waitForever ()).RunSynchronously((), interrupted.Token) with
+| Exit.Failure Cause.Interrupt -> ()
+| other -> failwithf "expected interruption, got %A" other
+```
 
 Every call starts a fresh execution with its own root scope. Await the returned handle to receive the final Exit.
 
