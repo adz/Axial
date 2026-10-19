@@ -226,10 +226,10 @@
 - [done] `docs/10-streams/02-constructing.md:49` — Callback overflow is explained but no checked example fills the capacity or shows how to handle `CallbackOverflow.Fail`; demonstrate the observable dropped-value and failure behavior.
 - [done] `docs/10-streams/09-resources-and-results.md:73` — `runTryHead`, `runTryLast`, and `runCount` are described without a checked result example, including what an empty stream returns; add a small example of each.
 
-- `docs/09-scopes/_index.md:144` — Release failures and interruption safety are described but never exercised in a checked example; show a failing body plus a defective release and demonstrate the resulting `Exit` and cleanup order.
+- [done] `docs/09-scopes/_index.md:144` — Release failures and interruption safety are described but never exercised in a checked example; show a failing body plus a defective release and demonstrate the resulting `Exit` and cleanup order.
 
-- `docs/09-scheduling-and-retries/_index.md:353` — Repetition has no checked example showing that the schedule receives the previous successful value or that a failure ends the loop; add a bounded example with `whileInput` and an observable exit.
-- `docs/09-scheduling-and-retries/_index.md:131` — The advice to use `IRandom` does not show how to project it from the environment into `jitteredWith`'s `(unit -> float)` callback; give a concrete environment-bound example.
+- [done] `docs/09-scheduling-and-retries/_index.md:353` — Repetition has no checked example showing that the schedule receives the previous successful value or that a failure ends the loop; add a bounded example with `whileInput` and an observable exit.
+- [done] `docs/09-scheduling-and-retries/_index.md:131` — The advice to use `IRandom` does not show how to project it from the environment into `jitteredWith`'s `(unit -> float)` callback; give a concrete environment-bound example.
 
 - `docs/08-concurrency-and-state/05-stm.md:18` — `STM.retry` and `STM.orElse` are named but never demonstrated in the guide; add a runnable wait-for-funds/fallback example showing when retry wakes and how interruption ends the wait.
 - `docs/08-concurrency-and-state/09-cache.md:61` — Expiry and bounded eviction are introduced without an example or an explanation of what happens to an in-flight load when invalidated/evicted. Show a clock-controlled expiry and concurrent invalidation case.

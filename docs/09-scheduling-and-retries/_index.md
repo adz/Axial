@@ -141,6 +141,37 @@ let testPolicy : Schedule<ClockEnvironment, string, _> =
     policy (Random.fromFixed 0 0.25 0uy)
 ```
 
+To build the jittered schedule from the environment rather than an ambient random source, read `IRandom` inside the
+workflow and apply its `NextDouble` as the `unit -> float` sample:
+
+```fsharp
+let jitteredFetch (fetch: Flow<BaseRuntime, string, string>) : Flow<BaseRuntime, string, string> =
+    flow {
+        let! random = Random.service
+        let schedule =
+            Schedule.exponential (TimeSpan.FromMilliseconds 100.0)
+            |> Schedule.jitteredWith random.NextDouble
+        return! fetch |> Flow.retry schedule
+    }
+```
+
+```fsharp run
+let attempts = ref 0
+
+let transientFetch : Flow<BaseRuntime, string, string> =
+    flow {
+        attempts.Value <- attempts.Value + 1
+        if attempts.Value < 2 then return! Flow.fail "transient" else return "payload"
+    }
+
+let runtime = { BaseRuntime.liveValue with Random = Random.fromFixed 0 0.25 0uy }
+
+jitteredFetch transientFetch |> Flow.run runtime |> shouldEqual (Exit.Success "payload")
+```
+
+`Random.service` is the type-directed accessor for the `IHasRandom` contract; the fixed random makes the retried
+attempt succeed deterministically.
+
 ### Run at a fixed rate
 
 `Schedule.spaced` waits a fixed delay *after* each run, so a run that takes 15 ms on a 50 ms spacing starts every 65 ms.
@@ -285,6 +316,48 @@ let pollFourTimes =
 `Flow.repeat` consults the schedule only after a successful run. A typed failure, defect, or interruption stops the
 repetition immediately; a schedule that never stops keeps repeating a successful flow until one of those happens or the
 caller interrupts it.
+
+The schedule receives each successful value as its input, so `whileInput` can stop the loop on the value itself:
+
+```fsharp
+let repeatCount = ref 0
+
+let ticking : Flow<ClockEnvironment, Never, int> =
+    flow {
+        repeatCount.Value <- repeatCount.Value + 1
+        return repeatCount.Value
+    }
+
+let repeatUntilThree =
+    ticking
+    |> Flow.repeat (Schedule.spaced TimeSpan.Zero |> Schedule.whileInput (fun value -> value < 3))
+```
+
+```fsharp run
+repeatCount.Value <- 0
+repeatUntilThree |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success 3)
+repeatCount.Value |> shouldEqual 3
+```
+
+A failure ends the loop immediately, without consulting the schedule again:
+
+```fsharp
+let failingRepeatCount = ref 0
+
+let failingTick : Flow<ClockEnvironment, string, int> =
+    flow {
+        failingRepeatCount.Value <- failingRepeatCount.Value + 1
+        if failingRepeatCount.Value = 2 then return! Flow.fail "stopped" else return failingRepeatCount.Value
+    }
+
+let failingRepeat = failingTick |> Flow.repeat (Schedule.spaced TimeSpan.Zero)
+```
+
+```fsharp run
+failingRepeatCount.Value <- 0
+failingRepeat |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Failure(Cause.Fail "stopped"))
+failingRepeatCount.Value |> shouldEqual 2
+```
 
 ## Drive a stream from a schedule
 

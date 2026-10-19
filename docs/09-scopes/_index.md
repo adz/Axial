@@ -155,6 +155,42 @@ environment, or wait on asynchronous work. When the scope closes:
   scope closed because its flow had already failed, the release defect is appended to that failure's cause; if the
   flow had succeeded, the release defect alone turns the result into an `Exit.Failure`.
 
+```fsharp
+let releaseOrder = ResizeArray<string>()
+
+let releaseA : Flow<unit> =
+    Flow.delay (fun () -> releaseOrder.Add "release A"; Flow.ok ())
+
+let releaseC : Flow<unit> =
+    Flow.delay (fun () -> releaseOrder.Add "release C"; raise (InvalidOperationException "boom"))
+
+let releaseB : Flow<unit> =
+    Flow.delay (fun () -> releaseOrder.Add "release B"; Flow.ok ())
+
+let failingBody : Flow<string, unit> =
+    Flow.scoped (
+        flow {
+            do! Flow.scopeFinalizer releaseA
+            do! Flow.scopeFinalizer releaseC
+            do! Flow.scopeFinalizer releaseB
+            return! Flow.fail "body failed"
+        })
+```
+
+```fsharp run
+releaseOrder.Clear()
+
+match failingBody |> Flow.run () with
+| Exit.Failure cause ->
+    Cause.failures cause |> shouldEqual [ "body failed" ]
+    Cause.defects cause |> List.map (fun error -> error.Message) |> shouldEqual [ "boom" ]
+    List.ofSeq releaseOrder |> shouldEqual [ "release B"; "release C"; "release A" ]
+| other -> failwithf "Expected a failure, got %A" other
+```
+
+All three releases ran, in reverse registration order, even though `release C` threw; the typed failure from the
+body and the release defect both appear in the final `Exit`.
+
 ## Register with the current scope
 
 The `scope` prefix means “attach this value or cleanup action to the current Flow scope”:
