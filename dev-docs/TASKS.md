@@ -14,9 +14,6 @@ lists the queue. Work on main.
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
   - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
     with keyed commands and an inbox subscription, and await cleanup on shutdown.
-- [ ] T6: Move the reference app and host examples to their own repository
-  - Move the cross-product reference application and host examples to a separate integration/examples repository
-    after both release trains are public.
 - [ ] T7: Reassess `LATER_TODO.md` Flow work against real applications
   - The remaining reference applications are work applications, reassessed from a separate (work-account) checkout.
     Brief: `dev-docs/handoffs/T7-reference-app-reassessment.md`; findings come back as
@@ -27,5 +24,5 @@ lists the queue. Work on main.
 
 - `Axial.slnx` builds and tests without Reified.
 - Core `Axial` and operational packages contain no Reified references.
-- Only the isolated HTTP adapters and retained reference application cross the product boundary.
+- Only the isolated HTTP adapters cross the product boundary here; the reference app lives in [axial-examples](https://github.com/adz/axial-examples).
 - Package, AOT, Fable, documentation, and site checks pass at release boundaries.

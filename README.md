@@ -88,7 +88,7 @@ Experimental [`Axial.Hosting.AspNetCore`](https://www.nuget.org/packages/Axial.H
 - [Process](docs/process/_index.md)
 - [HTTP client](docs/http/_index.md)
 - [Runnable examples](docs/13-testing/02-runnable-examples.md)
-- [Integration reference application](examples/Axial.ReferenceApp/README.md)
+- [Integration reference application and HTTP host examples](https://github.com/adz/axial-examples)
 
 ## Reified integration
 

@@ -33,7 +33,7 @@ dotnet add package OpenTelemetry.Instrumentation.AspNetCore
 
 You need an OTLP receiver such as the Aspire dashboard, an OpenTelemetry Collector, Jaeger, Tempo, or a hosted
 observability service. Axial does not choose an exporter or send telemetry by itself. The runnable
-[Axial.ReferenceApp](https://github.com/adz/Axial/tree/main/examples/Axial.ReferenceApp) configures the SDK and OTLP
+[Axial.ReferenceApp](https://github.com/adz/axial-examples/tree/main/examples/Axial.ReferenceApp) configures the SDK and OTLP
 exporters, launches a local Aspire dashboard, and generates traces, metrics, logs, and a fiber dump from one endpoint.
 
 ## Configure OpenTelemetry once
@@ -473,7 +473,7 @@ creates a standalone span. The event records which fibers were running when you 
 ## View Axial in the Aspire dashboard
 
 Aspire's dashboard accepts OTLP telemetry. The quickest complete example is
-[Axial.ReferenceApp](https://github.com/adz/Axial/tree/main/examples/Axial.ReferenceApp): run
+[Axial.ReferenceApp](https://github.com/adz/axial-examples/tree/main/examples/Axial.ReferenceApp): run
 `dotnet run --file apphost.cs` from its directory, then call its `/observability/demo` endpoint as described in the
 example README.
 

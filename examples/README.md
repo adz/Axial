@@ -19,8 +19,4 @@ Hosting examples are independent applications with local instructions:
 
 `Axial.Comparisons` implements equivalent scenarios with ordinary Task-based code and Axial. `Axial.AotProbe` is the NativeAOT smoke application.
 
-`Axial.ReferenceApp` is the complete observability example. Its single-file Aspire host starts an OTLP receiver and
-local dashboard; the application demonstrates an application-owned activity source, Axial runtime spans and metrics,
-typed telemetry context, structured logs, and fiber dumps.
-
-The ASP.NET Core and GenHTTP examples plus `Axial.ReferenceApp` are temporary cross-product examples. They require published `Reified.*` packages and are intentionally outside `Axial.slnx` until those packages exist.
+The [axial-examples repository](https://github.com/adz/axial-examples) contains the reference application and ASP.NET Core / GenHTTP host examples. They use published Axial and Reified packages. The reference app demonstrates telemetry, structured logs, and fiber dumps.

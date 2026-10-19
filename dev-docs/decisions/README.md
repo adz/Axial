@@ -7,7 +7,7 @@ This file records only decisions that remain necessary to understand Axial. Impl
 - This project is workflows and their operational surface. Constraints, refinements, parsing, result composition, structured data, schema, codecs, and contracts were removed to a separate project and are out of scope here.
 - `Axial.Flow` became the `Axial` package and namespace. Add-ons became `Axial.*`; pre-1.0 compatibility packages and namespace aliases were not retained.
 - Core `Axial` and its operational packages take no dependency outside this project.
-- `Axial.Hosting.AspNetCore` and `Axial.Hosting.GenHttp` are the sole exception: explicit optional integrations that serve externally declared HTTP contracts, consumed as released packages. The retained reference application is temporary integration evidence and should eventually move to a separate examples repository.
+- `Axial.Hosting.AspNetCore` and `Axial.Hosting.GenHttp` are the sole exception: explicit optional integrations that serve externally declared HTTP contracts, consumed as released packages. The reference application and host examples live in [axial-examples](https://github.com/adz/axial-examples), outside this product's source tree.
 
 ## 2026-08-07: Why the name is Axial
 

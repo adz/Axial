@@ -11,7 +11,7 @@ Axial is an asynchronous F# workflow library. Its public model is `Flow<'env, 'e
 - `Axial.Telemetry`, `Axial.Telemetry.JavaScript` — tracing and runtime observability
 - `Axial.Hosting.AspNetCore`, `Axial.Hosting.GenHttp` — optional adapters that execute Reified HTTP contracts
 
-Core `Axial` has no Reified dependency. Host adapters are the only library projects allowed to reference Reified. The retained reference application is integration evidence, not part of the core product; it should move to a separate examples repository when both package families are published.
+Core `Axial` has no Reified dependency. The HTTP host adapters are the only projects here allowed to reference Reified. The reference application and host examples live in [axial-examples](https://github.com/adz/axial-examples), built against published packages.
 
 ## Architecture
 
