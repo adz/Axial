@@ -178,34 +178,58 @@ module App =
     /// <remarks>For a desktop app's per-repository lifetime, start on repository open and call
     /// <c>StopAndWait</c> on repository switch. Unlike <c>App.start</c>, this publishes the result of
     /// the build while keeping its resources alive. Unlike <c>ElmishRuntime.startLayer</c>, it does not
-    /// own an Elmish program. If the build fails, its scope closes and no handle is returned.</remarks>
+    /// own an Elmish program. A typed build failure returns Error after scope cleanup. A defect rethrows its
+    /// exception; interruption throws OperationCanceledException. Cancelling the caller stops the app and waits
+    /// for its finalizers before cancelling the caller's async.</remarks>
     /// <platforms>Fable compatible</platforms>
     let startWith
         (environment: 'env)
         (build: Flow<'env, 'error, 'services>)
         : Async<Result<AppHandle<'error, unit> * 'services, 'error>> =
         async {
-            let published = System.Threading.Tasks.TaskCompletionSource<Result<'services, 'error>>(
+            let published = System.Threading.Tasks.TaskCompletionSource<Exit<'services, 'error>>(
                 System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
             let application : Flow<'env, 'error, unit> =
                 Flow.bind (fun services ->
-                    published.TrySetResult(Ok services) |> ignore
+                    published.TrySetResult(Exit.Success services) |> ignore
                     Flow.never) build
             let running = start environment application
             Async.StartWithContinuations(
                 running.Completion,
                 (fun exit ->
                     match exit with
-                    | Exit.Failure(Cause.Fail error) -> published.TrySetResult(Error error) |> ignore
-                    | _ -> ()),
-                (fun _ -> ()),
-                (fun _ -> ()))
-            let! outcome = published.Task |> Async.AwaitTask
+                    | Exit.Failure cause -> published.TrySetResult(Exit.Failure cause) |> ignore
+                    | Exit.Success () ->
+                        published.TrySetException(InvalidOperationException("Application completed before publishing services")) |> ignore),
+                (fun error -> published.TrySetException(error) |> ignore),
+                (fun _ -> published.TrySetCanceled() |> ignore))
+            let! callerToken = Async.CancellationToken
+            let! outcome =
+                Async.FromContinuations(fun (success, failure, cancelled) ->
+                    let mutable registration = Unchecked.defaultof<CancellationTokenRegistration>
+                    let finish action =
+#if !FABLE_COMPILER
+                        registration.Dispose()
+#endif
+                        action ()
+                    registration <- callerToken.Register(Action(fun () ->
+                        Async.StartWithContinuations(
+                            running.Stop(),
+                            (fun _ -> finish (fun () -> cancelled (OperationCanceledException("startWith was cancelled", callerToken)))),
+                            (fun error -> finish (fun () -> failure error)),
+                            (fun error -> finish (fun () -> cancelled error)),
+                            cancellationToken = CancellationToken.None)))
+                    Async.StartWithContinuations(
+                        async { return! published.Task |> Async.AwaitTask },
+                        (fun exit -> if not callerToken.IsCancellationRequested then finish (fun () -> success exit)),
+                        (fun error -> if not callerToken.IsCancellationRequested then finish (fun () -> failure error)),
+                        (fun error -> if not callerToken.IsCancellationRequested then finish (fun () -> cancelled error)),
+                        cancellationToken = CancellationToken.None))
             match outcome with
-            | Ok services -> return Ok(running, services)
-            | Error error ->
+            | Exit.Success services -> return Ok(running, services)
+            | exit ->
                 let! _ = running.Completion
-                return Error error
+                return Exit.toResult exit |> Result.map (fun _ -> failwith "unreachable")
         }
 
     /// <summary>Starts a root workflow linked to an external cancellation token.</summary>

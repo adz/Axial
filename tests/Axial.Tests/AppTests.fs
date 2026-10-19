@@ -67,6 +67,39 @@ type AppShutdownTests() =
 
 module AppTests =
     [<Fact>]
+    let ``startWith defect returns promptly with original exception`` () =
+        let defect = InvalidOperationException("build died")
+        let build : Flow<unit, string, int> = Flow.die defect
+        let error = Assert.Throws<InvalidOperationException>(fun () ->
+            App.startWith () build |> fun work -> Async.RunSynchronously(work, 2000) |> ignore)
+        test <@ obj.ReferenceEquals(error, defect) @>
+
+    [<Fact>]
+    let ``startWith interruption returns promptly`` () =
+        let build : Flow<unit, string, int> = Flow.fromAsync (async {
+            return raise (OperationCanceledException("interrupted"))
+        })
+        Assert.ThrowsAny<OperationCanceledException>(fun () ->
+            App.startWith () build |> fun work -> Async.RunSynchronously(work, 2000) |> ignore) |> ignore
+
+    [<Fact>]
+    let ``startWith caller cancellation waits for finalizer`` () =
+        use source = new CancellationTokenSource()
+        let entered = new ManualResetEventSlim()
+        let released = new ManualResetEventSlim()
+        let build : Flow<unit, string, int> = flow {
+            do! Flow.scopeFinalizer (Flow.delay (fun () -> released.Set(); Flow.succeed ()))
+            entered.Set()
+            return! Flow.never
+        }
+        let task = Async.StartAsTask(App.startWith () build, cancellationToken = source.Token)
+        test <@ entered.Wait(TimeSpan.FromSeconds 2.) @>
+        source.Cancel()
+        try task.Wait(TimeSpan.FromSeconds 2.) |> ignore with :? AggregateException -> ()
+        test <@ task.IsCompleted @>
+        test <@ released.IsSet @>
+
+    [<Fact>]
     let ``startWith keeps cache lookups alive after publishing`` () =
         let environment = TestSupport.clockEnv ()
         let build = Cache.make (fun key -> Flow.succeed (key + 1))
