@@ -150,10 +150,17 @@ jobs:
           branch="${{ github.event.repository.default_branch }}"
           git fetch origin "$branch"
           git switch "$branch"
-          dotnet livedocs history-sync "$GITHUB_REPOSITORY" \
-            --output .livedocs/history.json \
-            --interactive false \
-            --banner false
+          version="${{ steps.version.outputs.value }}"
+          # The release API can lag the upload, so a single sync may miss the new capsule (0.11.3).
+          for attempt in $(seq 1 20); do
+            dotnet livedocs history-sync "$GITHUB_REPOSITORY" \
+              --output .livedocs/history.json \
+              --interactive false \
+              --banner false
+            jq -e --arg v "$version" 'any(.Entries[]; .Version == $v)' .livedocs/history.json >/dev/null && break
+            [ "$attempt" = 20 ] && { echo "Release history never listed $version." >&2; exit 1; }
+            sleep 15
+          done
           dotnet livedocs history-check --interactive false --banner false
           if ! git diff --quiet -- .livedocs/history.json; then
             git config user.name "github-actions[bot]"
