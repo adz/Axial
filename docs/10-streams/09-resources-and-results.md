@@ -79,3 +79,25 @@ Some consumers only need part of a stream:
 let firstLongLine (path: string) : Flow<string option> =
     lines path |> FlowStream.filter (fun line -> line.Length > 5) |> FlowStream.runTryHead
 ```
+
+```fsharp run
+let stream = FlowStream.fromSeq [ 1; 2; 3 ]
+
+(stream |> FlowStream.runTryHead |> Flow.run () : Exit<int option, Never>)
+|> shouldEqual (Exit.Success (Some 1))
+
+(stream |> FlowStream.runTryLast |> Flow.run () : Exit<int option, Never>)
+|> shouldEqual (Exit.Success (Some 3))
+
+(stream |> FlowStream.runCount |> Flow.run () : Exit<int64, Never>)
+|> shouldEqual (Exit.Success 3L)
+
+(FlowStream.fromSeq ([] : int list) |> FlowStream.runTryHead |> Flow.run () : Exit<int option, Never>)
+|> shouldEqual (Exit.Success None)
+
+(FlowStream.fromSeq ([] : int list) |> FlowStream.runTryLast |> Flow.run () : Exit<int option, Never>)
+|> shouldEqual (Exit.Success None)
+
+(FlowStream.fromSeq ([] : int list) |> FlowStream.runCount |> Flow.run () : Exit<int64, Never>)
+|> shouldEqual (Exit.Success 0L)
+```

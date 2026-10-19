@@ -35,7 +35,9 @@ cancellation, scopes, and structured fibers.
 5. [Composing streams](composing.html): append, flatten, and zip.
 6. [Consuming streams](consuming.html): folds, incremental effects, collection, and resource cleanup.
 7. [Platform boundary](platform-boundary.html): portable stream mechanics and host-specific adapters.
-8. [Crawler recipe](crawler-recipe.html): a concurrent link crawler from `unfoldFlow`, `mapFlowPar`, and `collect`.
+8. [Time and latest](time-and-latest.html): throttling, debouncing, and switching to the latest input.
+9. [Resources and results](resources-and-results.html): resource-backed streams and partial-result terminals.
+10. [Crawler recipe](crawler-recipe.html): a concurrent link crawler from `unfoldFlow`, `mapFlowPar`, and `collect`.
 
 For one OS integration example, see the Process guide's [Streaming output](/process/streaming.html) page. It explains
 how `Axial.Process` exposes stdout and stderr as a `FlowStream`; process handling is not part of the stream model.

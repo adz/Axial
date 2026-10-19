@@ -63,6 +63,56 @@ previously queued values are delivered before the failure.
 val it: Exit<int list,string> = Success [1; 2; 3]
 ```
 
+A producer that emits synchronously, before the consumer starts pulling, makes overflow deterministic. With the
+default `Dropping` policy, the newest values are dropped once the buffer is full; `emit.Value` returns `false` for
+each one:
+
+```fsharp
+let droppedFlags = ref []
+
+let overflowing : FlowStream<unit, string, int> =
+    FlowStream.fromCallback 3 (fun emit ->
+        Flow.delay (fun () ->
+            droppedFlags.Value <- [ 1; 2; 3; 4; 5 ] |> List.map (fun i -> emit.Value i)
+            emit.End()
+            Flow.ok ({ new IDisposable with member _.Dispose() = () })))
+```
+
+```fsharp run
+overflowing |> FlowStream.runCollect |> Flow.run () |> shouldEqual (Exit.Success [ 1; 2; 3 ])
+droppedFlags.Value |> shouldEqual [ true; true; true; false; false ]
+```
+
+`CallbackOverflow.Fail` replaces the drop with a typed failure, and the values already queued are delivered before
+it:
+
+```fsharp
+let deliveredBeforeFailure = ref []
+
+let failing : FlowStream<unit, string, int> =
+    FlowStream.fromCallbackWith 3 (CallbackOverflow.Fail "buffer full") (fun emit ->
+        Flow.delay (fun () ->
+            [ 1; 2; 3; 4 ] |> List.iter (fun i -> emit.Value i |> ignore)
+            emit.End()
+            Flow.ok ({ new IDisposable with member _.Dispose() = () })))
+```
+
+```fsharp run
+let tappedFailing =
+    failing
+    |> FlowStream.tapFlow (fun i ->
+        Flow.delay (fun () ->
+            deliveredBeforeFailure.Value <- deliveredBeforeFailure.Value @ [ i ]
+            Flow.ok ()))
+    |> FlowStream.runCollect
+
+match tappedFailing |> Flow.run () with
+| Exit.Failure(Cause.Fail "buffer full") -> ()
+| other -> failwithf "Expected buffer full, got %A" other
+
+deliveredBeforeFailure.Value |> shouldEqual [ 1; 2; 3 ]
+```
+
 ## Lift one effect
 
 `FlowStream.fromFlow` creates a stream containing the successful result of one Flow:

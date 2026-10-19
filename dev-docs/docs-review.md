@@ -222,9 +222,9 @@
 - [done] `docs/11-observability/01-telemetry/01-javascript.md:19` — “Install the OpenTelemetry SDK, exporter, and context manager” gives no package names or minimal Node/browser bootstrap; the first runnable step depends on host setup that the page never demonstrates. Give one concrete bootstrap or a direct setup link.
 - [done] `docs/11-observability/01-telemetry/_index.md:339` — Queue metrics are described but have no checked measurement example showing observed values or subscription cleanup; add a minimal collector example or link to one.
 
-- `docs/10-streams/_index.md:28` — The guide list omits `08-time-and-latest.md` and `09-resources-and-results.md`; add both so a new reader can discover timed operators and resource-backed streams without guessing URLs.
-- `docs/10-streams/02-constructing.md:49` — Callback overflow is explained but no checked example fills the capacity or shows how to handle `CallbackOverflow.Fail`; demonstrate the observable dropped-value and failure behavior.
-- `docs/10-streams/09-resources-and-results.md:73` — `runTryHead`, `runTryLast`, and `runCount` are described without a checked result example, including what an empty stream returns; add a small example of each.
+- [done] `docs/10-streams/_index.md:28` — The guide list omits `08-time-and-latest.md` and `09-resources-and-results.md`; add both so a new reader can discover timed operators and resource-backed streams without guessing URLs.
+- [done] `docs/10-streams/02-constructing.md:49` — Callback overflow is explained but no checked example fills the capacity or shows how to handle `CallbackOverflow.Fail`; demonstrate the observable dropped-value and failure behavior.
+- [done] `docs/10-streams/09-resources-and-results.md:73` — `runTryHead`, `runTryLast`, and `runCount` are described without a checked result example, including what an empty stream returns; add a small example of each.
 
 - `docs/09-scopes/_index.md:144` — Release failures and interruption safety are described but never exercised in a checked example; show a failing body plus a defective release and demonstrate the resulting `Exit` and cleanup order.
 
