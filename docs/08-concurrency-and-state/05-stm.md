@@ -5,9 +5,17 @@ description: Composable atomic transactions across multiple variables in Axial.
 
 # STM (Software Transactional Memory)
 
-```fsharp
+```fsharp prepare
+// Setup for the checked examples on this page.
+open System
+open System.Threading
 open Axial
+open Axial.PlatformService
 open Axial.State
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
 Software Transactional Memory (STM) combines operations into one atomic **transaction**.
@@ -81,6 +89,69 @@ let processTransfer fromAcc toAcc amount =
         do! STM.atomically (transferFunds fromAcc toAcc amount)
         return "Transfer complete"
     }
+```
+
+## Wait and fall back
+
+`STM.retry` suspends the transaction without blocking the thread; the next commit wakes it and the transaction
+re-runs from the start. `STM.orElse` runs a fallback branch when the first branch retries:
+
+```fsharp
+let withdrawWaiting (amount: decimal) (account: TRef<decimal>) : STM<decimal> =
+    stm {
+        let! balance = TRef.get account
+        if balance < amount then return! STM.retry
+        do! TRef.set (balance - amount) account
+        return! TRef.get account
+    }
+```
+
+```fsharp run
+// A forked withdrawer suspends on an empty account; the deposit commit wakes it and it completes.
+let waitForFunds =
+    flow {
+        let! account = STM.atomically (TRef.make 0m)
+        let! withdrawer = STM.atomically (withdrawWaiting 10m account) |> Flow.fork
+        do! STM.atomically (TRef.update (fun balance -> balance + 10m) account)
+        return! Fiber.join withdrawer
+    }
+
+(waitForFunds |> Flow.run (ClockEnvironment Clock.live) : Exit<decimal, unit>) |> shouldEqual (Exit.Success 0m)
+```
+
+```fsharp run
+// When the first branch retries, orElse runs the fallback instead of waiting.
+let fallback : Flow<unit, Never, string> =
+    flow {
+        let! account = STM.atomically (TRef.make 0m)
+        let! outcome =
+            STM.atomically (
+                STM.orElse
+                    (stm {
+                        let! balance = TRef.get account
+                        if balance < 10m then return! STM.retry
+                        return "withdrew" })
+                    (stm { return "insufficient funds" }))
+        return outcome
+    }
+
+fallback |> Flow.run () |> shouldEqual (Exit.Success "insufficient funds")
+```
+
+```fsharp run
+// An interrupted retry withdraws its wake-up signal and the flow ends with Cause.Interrupt.
+let interruptedSource = new CancellationTokenSource()
+interruptedSource.Cancel()
+
+let waiting : Flow<unit, unit, decimal> = STM.atomically (stm {
+    let! account = TRef.make 0m
+    let! balance = TRef.get account
+    if balance < 10m then return! STM.retry
+    return balance })
+
+match waiting.RunSynchronously((), interruptedSource.Token) with
+| Exit.Failure Cause.Interrupt -> ()
+| other -> failwithf "Expected Cause.Interrupt, got %A" other
 ```
 
 ## Composition

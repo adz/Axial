@@ -95,6 +95,75 @@ Five concurrent requests for two users ran the lookup twice.
 `Cache.invalidate` forgets one key and `Cache.invalidateAll` forgets every key, so the next `get` looks up again.
 `Cache.count` reports how many keys are cached or loading.
 
+## Expiry, eviction, and in-flight loads
+
+`Cache.makeBoundedWithExpiry` expires a successful entry after the monotonic clock's time-to-live. The cache reads
+the environment's clock, so a manual clock makes expiry deterministic:
+
+```fsharp
+let manualClock = ManualClock(DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))
+
+let expiryLoads : Flow<ClockEnvironment, string, string list * int> =
+    flow {
+        let! lookups = Ref.make 0
+
+        let loadUser (id: int) : Flow<ClockEnvironment, string, string> =
+            flow {
+                do! lookups |> Ref.update ((+) 1)
+                return $"user {id}"
+            }
+
+        let! users = Cache.makeBoundedWithExpiry 2 (TimeSpan.FromSeconds 10.0) loadUser
+        let! first = users |> Cache.get 1
+        let! second = users |> Cache.get 1
+        manualClock.AdvanceBy(TimeSpan.FromSeconds 11.0)
+        let! third = users |> Cache.get 1
+        let! count = Ref.get lookups
+        return [ first; second; third ], count
+    }
+```
+
+```fsharp run
+expiryLoads |> Flow.run (ClockEnvironment manualClock) |> shouldEqual (Exit.Success([ "user 1"; "user 1"; "user 1" ], 2))
+```
+
+The first two reads shared one lookup; after the clock passed the time-to-live, the third read started a second
+lookup. Bounded eviction removes the least recently read key once the capacity is exceeded.
+
+Invalidation and eviction never cancel an in-flight lookup or its existing waiters: those waiters still receive the
+result, but the key is no longer cached, so the next `get` starts a fresh lookup:
+
+```fsharp
+let invalidateInFlight : Flow<ClockEnvironment, string, string * string * int> =
+    flow {
+        let! lookups = Ref.make 0
+        let! loadStarted = Deferred.make<ClockEnvironment, string, unit> ()
+        let! finishLoad = Deferred.make<ClockEnvironment, string, unit> ()
+
+        let load (id: int) : Flow<ClockEnvironment, string, string> =
+            flow {
+                do! lookups |> Ref.update ((+) 1)
+                do! Deferred.succeed () loadStarted |> Flow.ignore
+                do! Deferred.await finishLoad
+                return $"user {id}"
+            }
+
+        let! users = Cache.make load
+        let! waiter = users |> Cache.get 1 |> Flow.fork
+        do! Deferred.await loadStarted
+        do! users |> Cache.invalidate 1
+        do! Deferred.succeed () finishLoad |> Flow.ignore
+        let! first = Fiber.join waiter
+        let! second = users |> Cache.get 1
+        let! count = Ref.get lookups
+        return first, second, count
+    }
+```
+
+```fsharp run
+invalidateInFlight |> Flow.run (ClockEnvironment Clock.live) |> shouldEqual (Exit.Success("user 1", "user 1", 2))
+```
+
 ## Rules
 
 - **Successes are kept; failures are not.** A failed lookup is removed when it settles, so the next caller starts a
