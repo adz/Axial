@@ -153,6 +153,10 @@ When building the environment is itself effectful (it can fail with a typed star
 later, or must await something), construction becomes a workflow of its own. [Layers](/layers/index.html) are those
 workflows. They live in a separate package because most applications never need them.
 
+A layer acquires its resources inside the scope `Layer.provide` creates, so they are released when the provided flow
+finishes, fails, or is interrupted. The [layers guide](/layers/layers.html#cleanup) opens and closes a repository
+around the workflow, and the [resources guide](/the-flow-type/resources.html) covers scope-based cleanup directly.
+
 The signal is in the type. `Layer<IServiceProvider, BaseRuntimeError, BaseRuntime>` says: consumes a provider, may
 fail with a typed startup error, produces a runtime. `Axial.PlatformService` ships exactly that as
 `BaseRuntime.fromServiceProvider`, which turns dynamic registrations into an explicit `BaseRuntime` and reports

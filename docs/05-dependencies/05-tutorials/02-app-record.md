@@ -209,8 +209,43 @@ let order =
       Total = 125m }
 
 placeOrder order |> Flow.run env |> shouldEqual (Exit.Success order.Id)
+List.ofSeq saved |> shouldEqual [ order ]
 List.ofSeq sent |> shouldEqual [ "ada@example.com" ]
 List.ofSeq entries |> shouldEqual [ "Placed ada@example.com for 125" ]
+```
+
+A failing save reaches the repository with the same order, then short-circuits the email and audit steps:
+
+```fsharp run
+let rejectedSaved = ResizeArray<Order>()
+let rejectedSent = ResizeArray<string>()
+let rejectedEntries = ResizeArray<string>()
+
+let rejecting =
+    { new IOrderRepository with
+        member _.Save order =
+            task {
+                rejectedSaved.Add order
+                return Error "declined"
+            } }
+
+let rejectedEnv =
+    { Orders = rejecting
+      Email = RecordingEmails(rejectedSent)
+      Audit = RecordingAudit(rejectedEntries) }
+
+let rejectedOrder =
+    { Id = OrderId(Guid.Parse "7d3c2e1a-0000-4000-8000-000000000002")
+      Email = "ada@example.com"
+      Total = 125m }
+
+placeOrder rejectedOrder
+|> Flow.run rejectedEnv
+|> shouldEqual (Exit.Failure(Cause.Fail(OrderRejected "declined")))
+
+List.ofSeq rejectedSaved |> shouldEqual [ rejectedOrder ]
+List.ofSeq rejectedSent |> shouldEqual []
+List.ofSeq rejectedEntries |> shouldEqual []
 ```
 
 `Flow.run env` is the only place a record *value* is supplied. Helpers name the record *type* in their

@@ -242,8 +242,8 @@
 - [done] `docs/06-services/04-files.md:7` — `AppendLog.openLog` is described as scoped but no runnable example shows acquiring, appending, replaying, and closing it; include a minimal end-to-end example and required environment.
 - [done] `docs/06-services/07-websocket.md:3` — No example shows opening a session, sending/receiving a message, handling `WebSocketError`, or supplying a live/test service; the page cannot guide a first integration.
 
-- `docs/05-dependencies/05-tutorials/02-app-record.md:208` — The app-record test asserts success, email, and audit but not the saved order or failure paths; demonstrate that the moved dependency still receives the right order and that failure short-circuits later effects.
-- `docs/05-dependencies/04-providing-the-environment.md:124` — Layers promise resource cleanup, but this page has no acquisition/release example or direct link to a scoped-resource walkthrough at the point of that claim.
+- [done] `docs/05-dependencies/05-tutorials/02-app-record.md:208` — The app-record test asserts success, email, and audit but not the saved order or failure paths; demonstrate that the moved dependency still receives the right order and that failure short-circuits later effects.
+- [done] `docs/05-dependencies/04-providing-the-environment.md:124` — Layers promise resource cleanup, but this page has no acquisition/release example or direct link to a scoped-resource walkthrough at the point of that claim.
 
 - `docs/04-error-handling/_index.md:41` — `Flow.recover`, `Flow.orElseWith`, and `Flow.fold` are introduced without a runnable example showing which causes each handles; add a small typed-failure versus defect example or link to one.
 
