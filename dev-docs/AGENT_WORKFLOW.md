@@ -29,7 +29,7 @@ panes) at the start of a session and whenever a 5-hour window is close to its li
 
 | Situation | Worker |
 |---|---|
-| Default: implementation slices, reviews, fixes | Codex via `pi -p --model openai-codex/gpt-6-sol --thinking low --no-session "$(cat prompt.md)"` |
+| Default: implementation slices, reviews, fixes | Codex via `pi -p --model openai-codex/gpt-5.6-sol --thinking low --no-session "$(cat prompt.md)"` |
 | Codex 5-hour window under 15% left | Claude subagent (`Agent`, `model: sonnet`, `effort: low`) until the Codex window resets |
 | Both windows low (Codex under 15%, Claude session over 70%) | Pause and resume after the earlier reset |
 | Performance tuning, Fable runtime internals, concurrency diagnosis, after one failed Codex attempt | The coordinator (Claude) directly |
