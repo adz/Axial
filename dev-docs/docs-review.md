@@ -203,17 +203,17 @@
 - [done] `docs/http/01-requests.md:57` — Secret redaction examples do not explain that ordinary `query`/`header` values and JSON bodies are not automatically secret; show when to choose `secretQuery`/`secretHeader` and avoid treating the whole plan as safe for arbitrary user data.
 - [done] `docs/http/03-reliability.md:69` — Timeout behavior is described but never exercised with a checked slow-service example; show the resulting `HttpError.TimedOut` and distinguish it from runtime interruption.
 
-- `docs/api/Axial.ScheduleModule.md:4` — `Schedule` is described as deciding after each run, but the page never explains what its input/output mean for `retry` versus `repeat`, or whether `recurs n` means n retries or n total runs; add a small counted example.
-- `docs/api/Axial.State.SubscriptionRefModule.md:3` — The page promises every update to each running stream but does not explain what happens when a subscriber's chosen overflow strategy fills; qualify delivery guarantees by strategy and link to its behavior.
+- [done] `docs/api/Axial.ScheduleModule.md:4` — `Schedule` is described as deciding after each run, but the page never explains what its input/output mean for `retry` versus `repeat`, or whether `recurs n` means n retries or n total runs; add a small counted example.
+- [done] `docs/api/Axial.State.SubscriptionRefModule.md:3` — The page promises every update to each running stream but does not explain what happens when a subscriber's chosen overflow strategy fills; qualify delivery guarantees by strategy and link to its behavior.
 
 - [done] `docs/15-notes/01-packages-and-platforms.md:12` — The platform table omits `Axial.Layers`, `Axial.Guardrails`, and both HTTP host adapters even though the dependency table or adjacent notes name them; include their runtime/build-time status or state why they are excluded.
-- `docs/15-notes/03-guardrails.md:32` — No command or example shows how to confirm that a consumer project actually runs the analyzer and fails at error severity; provide a minimal deliberate diagnostic and expected build result.
+- [done] `docs/15-notes/03-guardrails.md:32` — No command or example shows how to confirm that a consumer project actually runs the analyzer and fails at error severity; provide a minimal deliberate diagnostic and expected build result.
 
-- `docs/14-advanced/04-writing-effect-analyzers.md:79` — No test or build command checks that the analyzer catches a direct constructor call, honors a suppression, and fails a consuming build at error severity; add a minimal consumer verification path.
-- `docs/14-advanced/01-reusable-packages.md:112` — The package guide recommends typed errors but its only runnable operation uses `ColdTask`, leaving exceptions as defects; show a checked typed-error package operation or link directly to the typed-error example in the tutorial.
+- [done] `docs/14-advanced/04-writing-effect-analyzers.md:79` — No test or build command checks that the analyzer catches a direct constructor call, honors a suppression, and fails a consuming build at error severity; add a minimal consumer verification path.
+- [done] `docs/14-advanced/01-reusable-packages.md:112` — The package guide recommends typed errors but its only runnable operation uses `ColdTask`, leaving exceptions as defects; show a checked typed-error package operation or link directly to the typed-error example in the tutorial.
 
-- `docs/13-testing/_index.md:7` — The testing landing page says to supply fakes or replace layers but offers no minimal test with a fake environment, `Flow.run`, and an assertion; link directly to or include a first test independent of HTTP.
-- `docs/13-testing/02-runnable-examples.md:8` — The page says generation builds and runs examples but does not explain whether the literal observed-output blocks are verified against those runs or maintained manually; distinguish executable snippets from checked transcripts.
+- [done] `docs/13-testing/_index.md:7` — The testing landing page says to supply fakes or replace layers but offers no minimal test with a fake environment, `Flow.run`, and an assertion; link directly to or include a first test independent of HTTP.
+- [done] `docs/13-testing/02-runnable-examples.md:8` — The page says generation builds and runs examples but does not explain whether the literal observed-output blocks are verified against those runs or maintained manually; distinguish executable snippets from checked transcripts.
 
 - `docs/12-platforms-and-hosting/_index.md:10` — Navigation omits runtime operations, running as a service, and Elmish even though all three are pages in this section; link them for discoverability.
 - `docs/12-platforms-and-hosting/05-platform-services.md:37` — `BaseRuntime.live` and `BaseRuntime.fromServiceProvider` are recommended without a checked example showing their layer input, provisioning, or typed startup failure; add one composition example or a direct link to one.

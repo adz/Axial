@@ -3,6 +3,19 @@
 A `Schedule<'env, 'input, 'output>` decides, after each run of a flow, whether to run it again and how long to wait
 first. It holds no state, so one schedule value can drive any number of independent runs.
 
+What the `'input` and `'output` mean depends on which driver consumes the schedule. [`Flow.retry`](#Axial.Flow.retry)
+runs the flow once and then consults the schedule with each typed error; [`Flow.repeat`](#Axial.Flow.repeat) consults it
+with each successful value. The schedule's output is its own recurrence index (or another transformed value), not the
+flow's result. `recurs n` counts recurrences, not executions: it allows `n` additional runs on top of the one free run,
+so the flow executes `n + 1` times in total.
+
+```fsharp no-check reason="Illustrative counted schedule; the scheduling guide runs these drivers"
+let attempts () : Flow<unit, string, int> = Flow.succeed 1
+
+attempts () |> Flow.retry (Schedule.recurs 2)   // 1 free attempt + 2 retries = up to 3 executions
+attempts () |> Flow.repeat (Schedule.recurs 2)  // 1 free run + 2 repeats = 3 executions
+```
+
 Build one from [`recurs`](#Axial.Schedule.recurs), [`spaced`](#Axial.Schedule.spaced),
 [`exponential`](#Axial.Schedule.exponential), or [`fixedRate`](#Axial.Schedule.fixedRate), then shape it: cap it with
 [`union`](#Axial.Schedule.union) or [`upTo`](#Axial.Schedule.upTo), bound it with

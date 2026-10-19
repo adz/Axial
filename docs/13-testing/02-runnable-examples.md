@@ -5,7 +5,12 @@ description: Executable Axial examples mirrored into the documentation.
 
 # Runnable Examples
 
-Page generation builds and runs these examples.
+These pages transclude source from the example projects with snippet directives marked `no-check`: the docs test
+does not compile or run them, because each example project builds and runs as its own program (CI runs the
+Playground, MaintenanceExamples, and Examples projects). The literal `Observed output` text blocks beside them are
+maintained manually from those runs, not verified by FsLiveDocs, so keep them in sync when an example changes.
+Checked `fsharp run` blocks elsewhere in the docs are the opposite: FsLiveDocs compiles and executes them and fails
+on a mismatch.
 
 The `dotnet run` commands below are repository-relative: run them from the repository root with
 the example projects checked out next to `src/`. The example projects are not shipped in the NuGet

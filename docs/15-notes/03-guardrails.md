@@ -49,6 +49,28 @@ To disable the analyzer for one project, set:
 
 For adoption guidance, see [Installation](/getting-started/installation.html#add-effect-boundary-guardrails-optional).
 
+### Verify the analyzer runs
+
+A minimal deliberate finding confirms that the package actually runs and fails at error severity. In a consumer
+project that references `Axial.Guardrails` and `Axial`, put this in a source file:
+
+```fsharp no-check reason="Deliberate finding in a separate consumer project, not part of the docs build"
+module Consumer
+let now () = System.DateTimeOffset.UtcNow
+```
+
+Build with `<AxialGuardrailsSeverity>error</AxialGuardrailsSeverity>` set (or `AXIAL_GUARDRAILS_SEVERITY=error` in
+the environment). The build exits non-zero and reports the finding:
+
+```text
+error AXG001: This call reads the ambient system clock through System.DateTimeOffset, which makes timing untestable.
+The Axial guardrail asks for an explicit, mockable alternative: use Axial.IClock (Axial.PlatformService.Clock.now).
+```
+
+The same source built with `AXIAL_GUARDRAILS_SEVERITY=warning` succeeds and reports `warning AXG001` instead. If
+you see neither form, the analyzer is not running in that project: check the package reference and that the guardrail
+for the effect's package is enabled (the core `Axial` guardrail covers clock reads).
+
 ## Review the diagnostics
 
 | Code | Name | Detects |

@@ -78,6 +78,31 @@ let httpBoundaryAnalyzer: Analyzer<CliContext> =
 
 A matching call produces a diagnostic identifying the direct call and the replacement service.
 
+## Verify a consumer build
+
+After packaging, confirm three behaviors in one consumer project: the analyzer flags the direct call, a suppression
+silences it, and error severity fails the build. Create a consumer that references the analyzer package and builds
+the direct call:
+
+```fsharp no-check reason="Illustrative consumer source for a package analyzer that does not exist in this repository"
+module Consumer
+let makeClient () = new System.Net.Http.HttpClient()
+```
+
+Build with severity `error`. The build exits non-zero and reports the `ContosoHttpBoundary` diagnostic naming the
+`System.Net.Http.HttpClient` constructor and the `IHttp` replacement. Then mark the boundary and rebuild; the build
+now succeeds:
+
+```fsharp no-check reason="Illustrative consumer source for a package analyzer that does not exist in this repository"
+module Consumer
+let makeClient () = new System.Net.Http.HttpClient() // contoso-http-allow: http
+```
+
+Run the same pair for every rule the analyzer ships, once at `warning` (build succeeds, finding reported) and once
+at `error` (build fails). `tests/Axial.Guardrails.Tests/PackagePropsTests.fs` is the reference implementation of this
+loop: it writes a consumer into a temp directory, runs `dotnet build`, and asserts on the exit code and the reported
+`AXG001`/`AXG002` findings.
+
 ## Package the analyzer
 
 Packaging — the NuGet layout, `PackageDownload` for the CLI, and the MSBuild props/targets that run it — is

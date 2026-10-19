@@ -76,7 +76,11 @@ fileSystem.ReadAllText path                 // string, throws
 FileSystem.readAllText path                 // Flow<'env, FileSystemError, string>
 ```
 
-`FileSystem.readAllText` uses `Flow.catch` to classify exceptions into a union the caller can match on.
+`FileSystem.readAllText` uses `Flow.catch` to classify exceptions into a union the caller can match on. The
+[custom-services tutorial](custom-services.html#give-it-a-typed-failure) builds the same pattern end to end:
+`priceInAudOrFail` wraps `GetUsdToAud` with `Flow.attemptTask`, classifies `TimeoutException` versus any other
+exception through `ExchangeRateError.fromException`, and runs three checked outcomes (success, `ProviderTimedOut`,
+and `RateUnavailable`).
 
 ## Also expose the raw service
 
