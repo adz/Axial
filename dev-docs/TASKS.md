@@ -7,6 +7,9 @@ lists the queue. Work on main.
 
 ## Queue
 
+- [ ] T16: Split the HTTP host adapters into their own Axial+Reified product before 1.0
+  - Move the two cross-product packages out of the Axial release train once their product boundary is settled.
+
 - [ ] T15b: Migrate gitkay and LogDug to Axial.Files and Axial.ElmishFlows once 0.11 is published
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
   - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
