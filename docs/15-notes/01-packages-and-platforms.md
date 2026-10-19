@@ -23,7 +23,7 @@ runtime.
 | `Axial.Hosting.Node` | No | Yes | No | Node signals, arguments, exit code, and `process.env`. |
 | `Axial.Hosting.Browser` | No | No | Yes | Browser ownership and `AbortSignal` integration. |
 | `Axial.Hosting.AspNetCore` (experimental) | Yes | No | No | ASP.NET Core schema-driven endpoints; depends on Reified packages. |
-| `Axial.Hosting.GenHttp` | Yes | No | No | GenHTTP schema-driven endpoints; depends on Reified packages. |
+| `Axial.Hosting.GenHttp` (experimental) | Yes | No | No | GenHTTP schema-driven endpoints; depends on Reified packages. |
 | `Axial.Telemetry` | Yes | No | No | .NET `System.Diagnostics` and OpenTelemetry integration. |
 | `Axial.Telemetry.JavaScript` | No | Yes | Yes | Fable JavaScript span export; configure an exporter appropriate to the host. |
 | `Axial.Guardrails` | — | — | — | Build-time FSharp.Analyzers.SDK analyzer (`net8.0`). Runs during compilation of any project, including Fable ones, to flag direct ambient effects; not a runtime dependency. |
@@ -54,8 +54,8 @@ NuGet installs the transitive dependencies below; reference only the packages yo
 | `Axial.Telemetry` | `Axial` | `System.Diagnostics.DiagnosticSource` |
 | `Axial.Telemetry.JavaScript` | `Axial` | `Fable.Core` |
 | `Axial.Hosting.AspNetCore` (experimental) | `Axial` | `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
-| `Axial.Hosting.GenHttp` | `Axial` | `GenHTTP.Api`, `GenHTTP.Modules.IO`, `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
+| `Axial.Hosting.GenHttp` (experimental) | `Axial` | `GenHTTP.Api`, `GenHTTP.Modules.IO`, `Reified.Schema.Http`, `Reified.Schema`, `Reified.Data` |
 
 Installing `Axial.Process` also installs `Axial.Console`, `Axial.FileSystem`, and `Axial.PlatformService`.
-Only the two HTTP host adapters, `Axial.Hosting.AspNetCore` (experimental) and `Axial.Hosting.GenHttp`, depend on Reified. The core
+Only the two HTTP host adapters, `Axial.Hosting.AspNetCore` (experimental) and `Axial.Hosting.GenHttp` (experimental), depend on Reified. The core
 `Axial` package and the operational packages do not.

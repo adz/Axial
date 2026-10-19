@@ -27,8 +27,8 @@ A real application is in active use outside this repository. Currently gitkay an
 | `Axial.Hosting` | Experimental | No qualifying application |
 | `Axial.Hosting.Browser` | Experimental | No qualifying application |
 | `Axial.Hosting.Node` | Experimental | No qualifying application |
-| `Axial.Hosting.AspNetCore` | Experimental | No qualifying application |
-| `Axial.Hosting.GenHttp` | Experimental | No qualifying application |
+| `Axial.Hosting.AspNetCore` | Experimental | Used by the axial-examples reference app; no qualifying external application |
+| `Axial.Hosting.GenHttp` | Experimental | Used by the axial-examples reference app; no qualifying external application |
 | `Axial.Telemetry` | Experimental | No qualifying application |
 | `Axial.Telemetry.JavaScript` | Experimental | No qualifying application |
 | `Axial.WebSocket` | Experimental | No qualifying application |

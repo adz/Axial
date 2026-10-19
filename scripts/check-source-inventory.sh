@@ -51,8 +51,6 @@ if ! diff -u "$tmp_dir/sources.actual" "$tmp_dir/sources.expected"; then
 fi
 
 find src -name '*.fsproj' \
-  ! -path 'src/Axial.Hosting.AspNetCore/*' \
-  ! -path 'src/Axial.Hosting.GenHttp/*' \
   -print0 \
   | xargs -0 grep -l '<PackageId>' \
   | sed "s|^|$root_dir/|" \

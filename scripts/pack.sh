@@ -35,6 +35,8 @@ projects=(
   "src/Axial.Process/Axial.Process.fsproj"
   "src/Axial.PlatformService/Axial.PlatformService.fsproj"
   "src/Axial.Hosting/Axial.Hosting.fsproj"
+  "src/Axial.Hosting.AspNetCore/Axial.Hosting.AspNetCore.fsproj"
+  "src/Axial.Hosting.GenHttp/Axial.Hosting.GenHttp.fsproj"
   "src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj"
   "src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj"
   "src/Axial.Telemetry/Axial.Telemetry.fsproj"

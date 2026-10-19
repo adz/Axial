@@ -2,7 +2,7 @@
 
 All public Axial packages share one pre-1.0 version, taken from the `vX.Y.Z` release tag itself (not from a version committed in the repo). A `vX.Y.Z` tag produces that version of core and every focused add-on listed by `scripts/pack.sh`.
 
-The Reified release train is independent. The two HTTP contract adapters are not packed until public `Reified.*` dependencies are available.
+The Reified release train is independent. The two HTTP contract adapters are packed with public `Reified.*` dependencies; they will move to their own Axial+Reified product before 1.0.
 
 ## Prepare
 

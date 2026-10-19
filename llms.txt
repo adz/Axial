@@ -10,4 +10,6 @@ Elmish integration: install `Axial.ElmishFlows`, open `Axial.ElmishFlows`, and r
 
 Process DSL guides: `/process/index.html`, `/process/scripts.html`, `/process/streaming.html`, and `/process/dsl-recipes.html`.
 
+Experimental `Axial.Hosting.AspNetCore` and `Axial.Hosting.GenHttp` packages host Reified HTTP contracts on Axial workflows; see `/notes/packages-and-platforms.html`.
+
 Reified is a separate library for constraints, refinements, parsing, structured data, schemas, codecs, and contracts: https://github.com/adz/Reified
