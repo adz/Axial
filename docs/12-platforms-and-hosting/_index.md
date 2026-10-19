@@ -11,4 +11,7 @@ Host, Node, or a browser owner.
 - [.NET hosting](dotnet.html)
 - [Node hosting](node.html)
 - [Browser hosting](browser.html)
+- [Runtime operations](runtime-operations.html)
 - [Platform services](platform-services.html)
+- [Running as a service](running-as-a-service.html)
+- [Elmish programs](elmish.html)

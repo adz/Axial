@@ -215,9 +215,9 @@
 - [done] `docs/13-testing/_index.md:7` — The testing landing page says to supply fakes or replace layers but offers no minimal test with a fake environment, `Flow.run`, and an assertion; link directly to or include a first test independent of HTTP.
 - [done] `docs/13-testing/02-runnable-examples.md:8` — The page says generation builds and runs examples but does not explain whether the literal observed-output blocks are verified against those runs or maintained manually; distinguish executable snippets from checked transcripts.
 
-- `docs/12-platforms-and-hosting/_index.md:10` — Navigation omits runtime operations, running as a service, and Elmish even though all three are pages in this section; link them for discoverability.
-- `docs/12-platforms-and-hosting/05-platform-services.md:37` — `BaseRuntime.live` and `BaseRuntime.fromServiceProvider` are recommended without a checked example showing their layer input, provisioning, or typed startup failure; add one composition example or a direct link to one.
-- `docs/12-platforms-and-hosting/09-elmish.md:3` — No install instruction or minimal runtime construction and dispatch-thread `Post` example accompanies the Elmish APIs; show enough setup to run a first command.
+- [done] `docs/12-platforms-and-hosting/_index.md:10` — Navigation omits runtime operations, running as a service, and Elmish even though all three are pages in this section; link them for discoverability.
+- [done] `docs/12-platforms-and-hosting/05-platform-services.md:37` — `BaseRuntime.live` and `BaseRuntime.fromServiceProvider` are recommended without a checked example showing their layer input, provisioning, or typed startup failure; add one composition example or a direct link to one.
+- [done] `docs/12-platforms-and-hosting/09-elmish.md:3` — No install instruction or minimal runtime construction and dispatch-thread `Post` example accompanies the Elmish APIs; show enough setup to run a first command.
 
 - `docs/11-observability/01-telemetry/01-javascript.md:19` — “Install the OpenTelemetry SDK, exporter, and context manager” gives no package names or minimal Node/browser bootstrap; the first runnable step depends on host setup that the page never demonstrates. Give one concrete bootstrap or a direct setup link.
 - `docs/11-observability/01-telemetry/_index.md:339` — Queue metrics are described but have no checked measurement example showing observed values or subscription cleanup; add a minimal collector example or link to one.

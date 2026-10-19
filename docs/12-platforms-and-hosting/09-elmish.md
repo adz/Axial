@@ -6,6 +6,36 @@ host's dispatch thread. When already on that thread, `Post` should run inline; o
 call Elmish's dispatch directly from workers. Connect `OnDefect` to the host's crash reporting path; typed failures
 are messages, but defects are not.
 
+## Install
+
+```bash
+dotnet add package Axial.Elmish
+```
+
+`Axial.Elmish` brings Elmish 5 with it. Reference Elmish directly when your program uses `Program.mkProgram` and
+`dispatch`. Open `Axial.ElmishFlows` for the Axial API, and `Axial.PlatformService` when your environment needs
+`Clock.live`.
+
+A minimal runtime supplies an environment, a `Post` function, a defect handler, and a history capacity:
+
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.Elmish.Tests"
+open Axial
+open Axial.ElmishFlows
+open Axial.PlatformService
+
+// In an Elmish host, `Post` is usually the program's dispatch, so callbacks run on the host's dispatch thread.
+// Here the code is already on that thread, so it runs the callback inline.
+let runtime =
+    ElmishRuntime.start
+        { Post = (fun callback -> callback ())
+          OnDefect = (fun defect -> failwith defect.Rendered)
+          HistoryCapacity = 32 }
+        (ClockEnvironment Clock.live)
+```
+
+When `Post` is not already on the dispatch thread it must post to it (for example `Application.Post` in WPF or
+dispatching back to a UI loop); never call Elmish's dispatch directly from a worker.
+
 ## First-use lifecycle
 
 `ElmishRuntime` requires an environment implementing `IHasClock`. Keep the runtime's clock environment stable, and
