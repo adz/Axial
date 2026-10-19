@@ -380,22 +380,37 @@ module WorkflowStreamTests =
     [<Fact>]
     let ``switchMapFlow interrupts the flow for a superseded value`` () =
         let interrupted = ref 0
+        let started = [| for _ in 1..3 -> TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously) |]
+        let finishedThird = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
         let search (query: int) : Flow<ClockEnvironment, string, string> =
-            flow {
-                do! Flow.sleep (TimeSpan.FromMilliseconds 400.0)
+            Flow.fromTask (fun cancellationToken -> task {
+                started.[query - 1].TrySetResult(()) |> ignore
+                if query < 3 then
+                    do! Task.Delay(Timeout.Infinite, cancellationToken)
+                else
+                    if query = 3 then finishedThird.TrySetResult(()) |> ignore
                 return $"result-{query}"
-            }
+            })
             |> Flow.fold Flow.ok (fun cause ->
                 if Cause.isInterrupted cause then Interlocked.Increment(&interrupted.contents) |> ignore
                 Flow.ofExit (Exit.Failure cause))
 
+        let source =
+            FlowStream.unfoldFlow (fun query ->
+                Flow.fromTask (fun _ -> task {
+                    if query > 1 && query <= 3 then
+                        do! started.[query - 2].Task
+                    if query = 4 then
+                        do! finishedThird.Task
+                    return if query > 4 then None else Some(query, query + 1)
+                })) 1
+
         let results =
-            // Values 2 and 3 arrive long before the 400 ms search finishes; 4 arrives long after 3's result.
-            timed [ 1, 0; 2, 30; 3, 30; 4, 900 ]
+            source
             |> FlowStream.switchMapFlow search
             |> FlowStream.runCollect
-            |> runOnManualTime
+            |> Flow.runSync (TestSupport.clockEnv ())
 
         test <@ results = Exit.Success [ "result-3"; "result-4" ] @>
         test <@ interrupted.Value = 2 @>

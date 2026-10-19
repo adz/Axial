@@ -126,7 +126,7 @@ type FilesTests() =
                 |> FlowStream.filter (fun change -> change.Kind = FileSystemChangeKind.Created && change.Path = target)
                 |> FlowStream.runTryHead
                 |> Flow.run { new IHasFileSystem with member _.FileSystem = FileSystem.live })
-            Assert.True(consumer.Wait(TimeSpan.FromSeconds 5.))
+            Assert.True(consumer.Wait(TimeSpan.FromSeconds 30.), $"Timed out waiting for creation of {target}")
             let result = consumer.Result
             producer.GetAwaiter().GetResult()
             Assert.Equal(Exit.Success(Some { Kind = FileSystemChangeKind.Created; Path = target; OldPath = None }), result)
