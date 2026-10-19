@@ -17,6 +17,8 @@ Other packages build on these capabilities. [Axial.Process](/process/) composes 
 | [Environment variables](platform-services/environment-variables.html) | `Environment.GetEnvironmentVariable` | Required and parsed reads with `EnvironmentVariableError` |
 | [Console](console.html) | `System.Console` | Standard streams, redirection, and terminal control |
 | [File system](filesystem.html) | `System.IO.File` and `Directory` | File and directory operations with `FileSystemError` |
+| [Files](files.html) | `System.IO` traversal and writes | `Files.walk`, `Files.lines`, `Files.writeAtomic`, `AppendLog` |
+| [WebSocket](websocket.html) | `ClientWebSocket` | Typed sessions, sends, receives, and `WebSocketError` |
 
 ```fsharp
 open Axial
@@ -38,6 +40,8 @@ implementation of the same contract; the [console page](console.html#testing) bu
 1. [Platform-service bundle](platform-services/index.html): clock, logging, randomness, GUIDs, and environment variables.
 2. [Console](console.html): standard streams, redirection, and terminal control.
 3. [File system](filesystem.html): files, directories, paths, and typed failures.
-4. [Using existing services](existing-services.html): compose `BaseRuntime` with application dependencies.
+4. [Files](files.html): streaming traversal, atomic writes, and the append log.
+5. [Using existing services](existing-services.html): compose `BaseRuntime` with application dependencies.
+6. [WebSocket](websocket.html): typed WebSocket client sessions.
 
 [Telemetry](/observability/telemetry/index.html) instruments the runtime rather than defining a workflow dependency. [Hosting](/platforms-and-hosting/index.html) supplies environments and application lifecycle integration.

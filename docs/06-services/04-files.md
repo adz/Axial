@@ -18,6 +18,35 @@ directory after rename, which this API does not perform.
 
 Concurrent appends to one log are serialised. Recovery rejects frame lengths larger than `maxBytes - 8` before allocating. If a kill occurs after rotation's rename but before creation of the new current file, opening the log keeps `<path>.1` and creates an empty current file.
 
+```fsharp no-check reason="Axial.Files is not referenced by the documentation example compiler; the same API is compiled in Axial.Files.Tests"
+open System.IO
+open Axial
+open Axial.FileSystem
+open Axial.Files
+
+let fileSystemEnv = { new IHasFileSystem with member _.FileSystem = FileSystem.live }
+
+let appendAndReplay (path: string) =
+    flow {
+        // Open the log, append two records, and let the scope close it.
+        let! log = AppendLog.openLog path 1024L |> Flow.scopeResource
+        do! [ "first"; "second" ]
+            |> List.map Text.Encoding.ASCII.GetBytes
+            |> List.fold (fun step record -> step |> Flow.bind (fun () -> AppendLog.append record log)) (Flow.succeed ())
+
+        // Reopen and replay the acknowledged records in order.
+        let! log = AppendLog.openLog path 1024L |> Flow.scopeResource
+        return! AppendLog.readAll log |> FlowStream.runCollect
+    }
+
+// appendAndReplay (Path.Combine(Path.GetTempPath(), "axial-log"))
+// |> Flow.run fileSystemEnv
+// -> Exit.Success [| "first"; "second" |]
+```
+
+`AppendLog.openLog` returns a `Resource`, so the scope acquires and later closes the log; `AppendLog.readAll`
+replays the records written by the earlier append.
+
 `Flush(true)` makes acknowledged record contents durable. Process kills lose no acknowledged records; an unacknowledged tail can be discarded on recovery. A newly created or renamed file's directory entry is durable across power loss only when the directory is fsynced; this package does not fsync directories.
 
 `Files.watch recursive path` streams `FileSystemChange` events for a directory or one file. Set `recursive` to `true` to include nested directories. The watcher is disposed when the stream ends, including after `FlowStream.take`. Watcher errors are typed `FileSystemError` failures. The buffer holds 1024 events; overflow fails the stream rather than silently dropping changes. Rescan the watched path after an error or overflow because filesystem notifications are not a durable log.

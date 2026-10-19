@@ -238,9 +238,9 @@
 - [done] `docs/07-layers/01-layers.md:156` — The text tells readers to map differing startup errors before providing but gives no example of combining a `Never` layer and a typed-error layer, or of mapping distinct error unions; show the conversion at the composition site.
 - [done] `docs/07-layers/01-layers.md:209` — Parallel failure claims `Cause.Both`, but there is no checked example showing two failing branches or how callers inspect the combined cause.
 
-- `docs/06-services/_index.md:36` — The section navigation omits `04-files.md` and `07-websocket.md`; first-time readers cannot discover those capabilities from this landing page.
-- `docs/06-services/04-files.md:7` — `AppendLog.openLog` is described as scoped but no runnable example shows acquiring, appending, replaying, and closing it; include a minimal end-to-end example and required environment.
-- `docs/06-services/07-websocket.md:3` — No example shows opening a session, sending/receiving a message, handling `WebSocketError`, or supplying a live/test service; the page cannot guide a first integration.
+- [done] `docs/06-services/_index.md:36` — The section navigation omits `04-files.md` and `07-websocket.md`; first-time readers cannot discover those capabilities from this landing page.
+- [done] `docs/06-services/04-files.md:7` — `AppendLog.openLog` is described as scoped but no runnable example shows acquiring, appending, replaying, and closing it; include a minimal end-to-end example and required environment.
+- [done] `docs/06-services/07-websocket.md:3` — No example shows opening a session, sending/receiving a message, handling `WebSocketError`, or supplying a live/test service; the page cannot guide a first integration.
 
 - `docs/05-dependencies/05-tutorials/02-app-record.md:208` — The app-record test asserts success, email, and audit but not the saved order or failure paths; demonstrate that the moved dependency still receives the right order and that failure short-circuits later effects.
 - `docs/05-dependencies/04-providing-the-environment.md:124` — Layers promise resource cleanup, but this page has no acquisition/release example or direct link to a scoped-resource walkthrough at the point of that claim.
