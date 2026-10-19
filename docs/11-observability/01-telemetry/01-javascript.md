@@ -13,11 +13,30 @@ platform: fable
 
 ```bash
 dotnet add package Axial.Telemetry.JavaScript
-npm install @opentelemetry/api
+npm install @opentelemetry/api @opentelemetry/sdk-trace-node @opentelemetry/exporter-trace-otlp-http
 ```
 
-Install the OpenTelemetry SDK, exporter, and context manager required by your Node or browser host. Axial accepts the API
+`@opentelemetry/sdk-trace-node` pulls in `@opentelemetry/context-async-hooks` and registers the
+`AsyncLocalStorageContextManager` Node applications need. A browser host installs `@opentelemetry/sdk-trace-web`
+and `@opentelemetry/context-zone` instead, then registers a zone-based context manager. Axial accepts the API
 object; it does not import or configure an SDK for you.
+
+A minimal Node bootstrap registers a provider, an exporter, and the default context manager before any Axial
+workflow runs:
+
+```js
+const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node');
+const { BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+
+const provider = new NodeTracerProvider();
+provider.addSpanProcessor(new BatchSpanProcessor(new OTLPTraceExporter()));
+provider.register(); // registers the provider and AsyncLocalStorageContextManager
+```
+
+The browser equivalent is `new WebTracerProvider()` from `@opentelemetry/sdk-trace-web` with
+`provider.register({ contextManager: new ZoneContextManager() })` from `@opentelemetry/context-zone`. Axial then
+reads the registered API object in [Install the tracer](#install-the-tracer).
 
 ## Install the tracer
 

@@ -354,6 +354,82 @@ measurement carries an `axial.queue.name` tag. `axial.queue.size`, `axial.queue.
 `axial.queue.dropped`, and `axial.queue.evicted` are counters. Alert when a lossless subscriber's size approaches its
 capacity, before it fills and holds up the publisher, and on the rate of drops or evictions for a lossy one.
 
+A `MeterListener` can sample the `Axial` meter to check the observed figures, and to confirm a queue stops being
+reported after its scope closes:
+
+```fsharp
+open System.Diagnostics.Metrics
+
+type QueueCapture() =
+    let gate = obj ()
+    let latest = Collections.Generic.Dictionary<string * string, int64>()
+    let listener = new MeterListener()
+
+    do
+        listener.InstrumentPublished <- fun instrument metricListener ->
+            if instrument.Meter.Name = "Axial" && instrument.Name.StartsWith "axial.queue." then
+                metricListener.EnableMeasurementEvents instrument
+
+        listener.SetMeasurementEventCallback<int64>(fun instrument value tags _ ->
+            let queueName =
+                tags.ToArray()
+                |> Array.tryFind (fun tag -> tag.Key = "axial.queue.name")
+                |> Option.map (fun tag -> string tag.Value)
+                |> Option.defaultValue ""
+
+            lock gate (fun () -> latest[(instrument.Name, queueName)] <- value))
+
+        listener.Start()
+
+    member _.Read(instrument: string, queueName: string) =
+        lock gate (fun () -> latest.Clear())
+        listener.RecordObservableInstruments()
+
+        lock gate (fun () ->
+            match latest.TryGetValue((instrument, queueName)) with
+            | true, value -> Some value
+            | _ -> None)
+
+    interface IDisposable with
+        member _.Dispose() = listener.Dispose()
+
+let observeQueue (capture: QueueCapture) : Flow<unit, Never, (int64 option list) * int64 option> =
+    flow {
+        let! readings =
+            flow {
+                let! (display: Queue<int>) = Queue.sliding 2
+                do! display |> QueueMetrics.observe "queue-metrics-display"
+                do! display |> Queue.offerAll [ 1..5 ] |> Flow.ignore
+
+                return
+                    [ for instrument in
+                          [ "axial.queue.size"
+                            "axial.queue.capacity"
+                            "axial.queue.accepted"
+                            "axial.queue.evicted"
+                            "axial.queue.dropped" ] ->
+                          capture.Read(instrument, "queue-metrics-display") ]
+            }
+            |> Flow.scoped
+
+        let afterScope = capture.Read("axial.queue.size", "queue-metrics-display")
+        return readings, afterScope
+    }
+```
+
+```fsharp run
+use capture = new QueueCapture()
+
+observeQueue capture
+|> Flow.run ()
+|> shouldEqual
+    (Exit.Success([ Some 2L; Some 2L; Some 5L; Some 3L; Some 0L ], None)
+     : Exit<(int64 option list) * int64 option, Never>)
+```
+
+The sliding queue has capacity `2`, accepted all five offers, evicted the first three, and ended with two values
+buffered; after its scope closed, `axial.queue.size` no longer reports the queue (`None`).
+
 ## Capture a fiber dump
 
 A trace explains completed and timed operations. A fiber dump shows the work that is live now.
