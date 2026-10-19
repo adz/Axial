@@ -76,5 +76,8 @@ Compare the application's requirements:
 - which concurrency and stream operators the application actually uses
 - which telemetry backend and hosting lifecycle own execution
 
-For an F#-owned application, use Axial on every supported target. Introduce an Effect-TS boundary only when the
-application must participate in TypeScript code that already uses Effect-TS.
+For an F#-owned application, use Axial on every target its packages support: `Axial`, `Axial.Layers`, and the
+operational packages run on .NET, Node, and browser, while `Axial.Hosting` is .NET-only and the Node/browser host
+adapters are JavaScript-only. See [Packages and platforms](/notes/packages-and-platforms.html) for the matrix before
+choosing a target. Introduce an Effect-TS boundary only when the application must participate in TypeScript code
+that already uses Effect-TS.

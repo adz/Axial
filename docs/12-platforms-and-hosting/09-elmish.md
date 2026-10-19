@@ -110,6 +110,83 @@ let runtime =
     | Error error -> failwith error
 ```
 
+## Long-lived services and fire-and-forget
+
+A service that lives as long as the program — a search pipeline, a poller, a cache warmer — belongs in a stream
+subscription or in a service the runtime provisions, not in a never-completing command. `Cmd.OfFlow.perform` needs a
+success message, so running `Flow.never` through it forces an unreachable `onSuccess`; use
+`Sub.OfFlowStream.subscribe` instead, and let Elmish dispose the subscription
+(interrupting the stream and releasing its resources) when the program unmounts:
+
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
+open Axial
+open Axial.ElmishFlows
+open Axial.PlatformService
+
+// A search pipeline backed by an inbox: post queries, subscribe to results for the program's lifetime.
+let searchPipeline (runtime: ElmishRuntime<ClockEnvironment>) =
+    let inbox = Inbox.create 8 runtime
+    let queries : FlowStream<ClockEnvironment, string, string> =
+        Inbox.stream inbox |> FlowStream.map (fun query -> $"result:{query}")
+    inbox, Sub.OfFlowStream.subscribe [ "search" ] runtime queries (fun error -> $"search-error:{error}")
+```
+
+When the service also needs resources provisioned once for the whole program, `ElmishRuntime.startLayer`
+above is the alternative: it builds the cache, queue, or hub inside the runtime's root scope and releases it on
+`Stop`/`StopAndWait`.
+
+`Cmd.OfFlow.start` is the right tool for fire-and-forget work, but it accepts only `Flow<'env, Never, unit>`. A flow
+with a typed failure channel must handle that failure first — log it, then recover to `unit`:
+
+```fsharp prepare
+open System
+open Axial
+open Axial.PlatformService
+
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type SearchEnvironment =
+    { Clock: IClock
+      Log: ILog }
+    interface IHasClock with member this.Clock = this.Clock
+    interface IHasLog with member this.Log = this.Log
+
+let indexDocument (query: string) : Flow<SearchEnvironment, string, unit> =
+    flow {
+        if String.IsNullOrWhiteSpace query then
+            return! Flow.fail "empty query"
+    }
+
+// Handle the typed failure before Cmd.OfFlow.start, which accepts only Flow<'env, Never, unit>.
+let indexSafely (query: string) : Flow<SearchEnvironment, Never, unit> =
+    indexDocument query
+    |> Flow.recover (fun error ->
+        flow {
+            do! Log.error $"indexing skipped: {error}"
+        })
+```
+
+```fsharp run
+let log = Log.capturing ()
+let env = { Clock = ManualClock(DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)); Log = log }
+
+indexSafely "" |> Flow.run env |> shouldEqual (Exit.Success ())
+
+log.Entries |> Seq.toList |> List.map _.Message |> shouldEqual [ "indexing skipped: empty query" ]
+```
+
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
+open Axial
+open Axial.ElmishFlows
+
+// indexSafely already handled its typed failure, so its type is Flow<'env, Never, unit>.
+let backgroundIndex runtime query =
+    Cmd.OfFlow.start "index" runtime (indexSafely query)
+```
+
 ## Command parameter order
 
 Axial's commands keep Elmish's "work first" idea, but the runtime owns the command's root scope, so it precedes the

@@ -28,6 +28,26 @@ feed a stream into them. [`mergePar`](#Axial.FlowStream.mergePar) runs several s
 [`fromSchedule`](#Axial.FlowStream.fromSchedule) turns a schedule into a tick stream. See the [Queue](/concurrency-and-state/queue.html)
 and [Hub](/concurrency-and-state/hub.html) guides.
 
+A minimal pipeline is a source, an operator, and a terminal run as a Flow:
+
+```fsharp prepare
+open Axial
+
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+let names : Flow<unit, Never, string list> =
+    FlowStream.fromSeq [ "ada"; "grace" ]
+    |> FlowStream.map (fun name -> name.ToUpperInvariant())
+    |> FlowStream.runCollect
+```
+
+```fsharp run
+names |> Flow.run () |> shouldEqual (Exit.Success [ "ADA"; "GRACE" ])
+```
+
 ## Guides
 
 The [Streams guide](/streams/index.html) introduces the model. [Getting started](/streams/getting-started.html) builds a

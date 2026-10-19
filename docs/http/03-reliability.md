@@ -252,20 +252,20 @@ type Payment = { Amount: decimal }
 let encodePayment (payment: Payment) = $"{{\"amount\":{payment.Amount}}}"
 let decodeReceipt (json: string) : Result<string, string> = Ok json
 
-let pay (payment: Payment) : Flow<TestEnv, HttpError, string> =
+let pay (idempotencyKey: string) (payment: Payment) : Flow<TestEnv, HttpError, string> =
     POST $"https://api.example.com/payments"
-    |> header "Idempotency-Key" (Guid.NewGuid().ToString())
+    |> header "Idempotency-Key" idempotencyKey
     |> jsonBodyOf encodePayment payment
     |> fetchJson decodeReceipt
     |> withRetries 3
 ```
 
-The key is created once when the request is built, so the retry resends the same key and the server can recognise
-the repeat:
+Pass the key in from the caller: the request is built once, so the retry resends the same key and the server can
+recognise the repeat — and two separate invocations can share a key when the caller chooses one:
 
 ```fsharp run
 let payments = ScriptedHttp([ 503, ""; 200, "receipt-1" ])
-pay { Amount = 9.5m } |> Flow.run payments.Env |> shouldEqual (Exit.Success "receipt-1")
+pay "idem-checkout-1" { Amount = 9.5m } |> Flow.run payments.Env |> shouldEqual (Exit.Success "receipt-1")
 
 payments.Sent
 |> List.map (fun request -> Request.plan request |> _.Headers |> List.find (fst >> (=) "Idempotency-Key") |> snd)

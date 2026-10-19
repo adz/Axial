@@ -1,3 +1,9 @@
+---
+title: WebSocket
+linkTitle: WebSocket
+description: Typed WebSocket client sessions, sends, receives, and WebSocketError as a first-use guide.
+---
+
 # WebSocket
 
 Install `Axial.WebSocket` and open `Axial.WebSocket`:

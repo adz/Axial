@@ -8,6 +8,9 @@ description: Acquiring values owned by a Flow scope.
 Use `use` or `use!` when one `flow { }` body owns an `IDisposable` for its whole lifetime:
 
 ```fsharp
+open System.IO
+open Axial
+
 let readFirstLineLexically path =
     flow {
         use reader = File.OpenText path

@@ -11,6 +11,32 @@ what it acquired, however its fibers end. Small examples may miss these races.
 Each scenario runs many fibers with random interruptions, failures, and shutdowns, then checks invariants regardless of
 interleaving. Checks avoid timing assertions such as "this finished within 10 ms", so machine speed does not determine whether a check fails.
 
+A representative invariant, checked here: a queue delivers offered values in order, even after shutdown.
+
+```fsharp prepare
+open Axial
+
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+let orderedDrain : Flow<unit, Never, int list> =
+    flow {
+        let! queue = Queue.unbounded ()
+        let! _ = Queue.offerAll [ 3; 1; 2 ] queue
+        do! Dequeue.shutdown queue
+        return! Dequeue.takeAll queue
+    }
+```
+
+```fsharp run
+orderedDrain |> Flow.run () |> shouldEqual (Exit.Success [ 3; 1; 2 ])
+```
+
+The full runner below drives the same guarantees under randomized interruption, failure, and shutdown, across many
+rounds.
+
 ## Run them yourself
 
 The scenarios are a runnable example in

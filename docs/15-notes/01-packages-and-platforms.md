@@ -28,6 +28,8 @@ runtime.
 | `Axial.Telemetry.JavaScript` | No | Yes | Yes | Fable JavaScript span export; configure an exporter appropriate to the host. |
 | `Axial.Guardrails` | — | — | — | Build-time FSharp.Analyzers.SDK analyzer (`net8.0`). Runs during compilation of any project, including Fable ones, to flag direct ambient effects; not a runtime dependency. |
 
+Each guide installs the package it teaches at first use: [Console](/services/console.html), [FileSystem](/services/filesystem.html) and [Files](/services/files.html), [WebSocket](/services/websocket.html), [Process](/process/), [HttpClient](/http/), [Hosting](/platforms-and-hosting/index.html) ([Node](/platforms-and-hosting/node.html) and [Browser](/platforms-and-hosting/browser.html) for Fable), [Telemetry](/observability/telemetry/index.html), and [Elmish flows](/platforms-and-hosting/elmish.html).
+
 JavaScript-only hosting packages intentionally fail outside their named runtime. The browser adapter does not treat page
 visibility or unload as dependable application shutdown.
 

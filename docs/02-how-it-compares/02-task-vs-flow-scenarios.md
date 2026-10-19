@@ -30,6 +30,47 @@ what your application must still handle. ZIO concepts are named alongside their 
 
 Each row links to its full comparison below.
 
+A self-contained pair, checked here: a lookup that fails the same way in both models, but only `Flow` names the
+failure in the type.
+
+```fsharp prepare
+open System
+open System.Threading.Tasks
+open Axial
+
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+type UserId = UserId of int
+type LookupError = | Missing of int
+
+let directory = Map [ (1, "Ada"); (2, "Grace") ]
+
+// Task: a missing user is an exception the signature does not name.
+let taskLookup (UserId id) : Task<string> =
+    task {
+        match Map.tryFind id directory with
+        | Some name -> return $"Hello, {name}"
+        | None -> return raise (InvalidOperationException($"no user {id}"))
+    }
+
+// Flow: the same failure is part of the type.
+let flowLookup (UserId id) : Flow<unit, LookupError, string> =
+    flow {
+        match Map.tryFind id directory with
+        | Some name -> return $"Hello, {name}"
+        | None -> return! Flow.fail (Missing id)
+    }
+```
+
+```fsharp run
+taskLookup (UserId 1) |> fun (t: Task<string>) -> t.GetAwaiter().GetResult() |> shouldEqual "Hello, Ada"
+flowLookup (UserId 1) |> Flow.run () |> shouldEqual (Exit.Success "Hello, Ada")
+flowLookup (UserId 99) |> Flow.run () |> shouldEqual (Exit.Failure (Cause.Fail (Missing 99)))
+```
+
 ## 1. Checkout orchestration with compensation
 
 Reserve stock, charge a card, create a shipment; release the reservation when charging or shipment creation fails.

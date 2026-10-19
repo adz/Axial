@@ -112,20 +112,20 @@ The match handles expected errors, defects, and cancellation:
 
 The environment is a record, so build it once from whatever your host already resolves:
 
-```fsharp
+```fsharp no-check reason="Uses Microsoft.Extensions.DependencyInjection, which the documentation build does not reference"
+open Microsoft.Extensions.DependencyInjection
+
 type IOrderRepository =
     abstract FindTotalAsync: orderId: int * cancellationToken: CancellationToken -> Task<Result<decimal, CheckoutError>>
 
 type IPaymentGateway =
     abstract ChargeAsync: total: decimal * cancellationToken: CancellationToken -> Task<Result<string, CheckoutError>>
 
-let checkoutEnv (provider: System.IServiceProvider) : CheckoutEnv =
-    // With Microsoft.Extensions.DependencyInjection opened, provider.GetRequiredService<IOrderRepository>() reads better.
-    let orders = provider.GetService typeof<IOrderRepository> :?> IOrderRepository
-    let payments = provider.GetService typeof<IPaymentGateway> :?> IPaymentGateway
-
-    { FindTotal = fun orderId cancellationToken -> orders.FindTotalAsync(orderId, cancellationToken)
-      Charge = fun total cancellationToken -> payments.ChargeAsync(total, cancellationToken) }
+let checkoutEnv (provider: IServiceProvider) : CheckoutEnv =
+    // GetRequiredService throws when a registration is missing, so a missing service fails here
+    // instead of surfacing as a null dereference later.
+    { FindTotal = fun orderId cancellationToken -> provider.GetRequiredService<IOrderRepository>().FindTotalAsync(orderId, cancellationToken)
+      Charge = fun total cancellationToken -> provider.GetRequiredService<IPaymentGateway>().ChargeAsync(total, cancellationToken) }
 ```
 
 Register that function with your container and resolve `CheckoutEnv` in the handler. The workflows below the boundary

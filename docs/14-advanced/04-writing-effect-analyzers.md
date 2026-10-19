@@ -22,7 +22,7 @@ Copy these files from the [`src/Axial.Guardrails`](https://github.com/adz/Axial/
 - [`Suppressions.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/Suppressions.fs) parses line-level and file-level suppression directives.
 - [`EffectBoundaryAnalyzer.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/EffectBoundaryAnalyzer.fs) resolves symbols and reports unsuppressed matches.
 
-Together, these files contain about 150 lines. They use `FSharpMemberOrFunctionOrValue` from `FSharp.Compiler.Symbols` and do not depend on Axial types.
+Together, these files contain about 150 lines. They use `FSharpMemberOrFunctionOrValue` from `FSharp.Compiler.Symbols` and do not depend on Axial types. They form a complete, compilable template together with [`tests/Axial.Guardrails.Tests`](https://github.com/adz/Axial/tree/main/tests/Axial.Guardrails.Tests), the analyzer project and its consumer-verification loop. Fetch both from a release tag such as [`v0.11.0`](https://github.com/adz/Axial/tree/v0.11.0) when you need a stable snapshot instead of `main`.
 
 ## Define a symbol rule
 

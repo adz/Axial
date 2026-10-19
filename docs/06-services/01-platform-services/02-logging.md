@@ -85,6 +85,28 @@ host: an `ILog` implementation can forward into the same backend the telemetry e
 Choose `ILog` when the workflow itself should emit a message. Choose telemetry when you want the runtime's own
 execution structure recorded.
 
+## Microsoft.Extensions.Logging adapter
+
+`MicrosoftLogging` and `FiberLogging` live in `Axial.Hosting`, not `Axial.PlatformService`; the types they adapt
+come from `Microsoft.Extensions.Logging`. `MicrosoftLogging.fromFactory` wraps a host `ILoggerFactory` as an `ILog`,
+opening a scope of named `FiberLocal` values per entry. `FiberLogging.observe` reports fiber defects through the same
+Microsoft logger:
+
+```fsharp no-check reason="Needs the Microsoft.Extensions.Hosting package, which the documentation build does not reference"
+open Microsoft.Extensions.Logging
+open Axial
+open Axial.Hosting
+
+// `factory` is the host's ILoggerFactory, supplied at composition time.
+let logger : ILog = MicrosoftLogging.fromFactory "App" factory
+
+// Report fiber defects through the same Microsoft logger.
+let observed (application: Flow<'env, 'error, 'value>) =
+    application |> FiberLogging.observe (factory.CreateLogger "App")
+```
+
+The [.NET hosting guide](/platforms-and-hosting/dotnet.html) wires both adapters into a Generic Host.
+
 ## Testing
 
 Assert on log output by collecting it:

@@ -64,6 +64,9 @@ let shouldEqual expected actual =
     if actual <> expected then failwithf "Expected %A but got %A" expected actual
 ```
 
+The `builder` below is the `WebApplicationBuilder` from an ASP.NET Core `Program.fs`; this block is a fragment of
+that host setup, not a standalone snippet.
+
 ```fsharp no-check reason="Needs the OpenTelemetry SDK packages, which Axial does not reference"
 open System.Diagnostics
 

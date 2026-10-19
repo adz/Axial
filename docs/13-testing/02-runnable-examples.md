@@ -69,15 +69,15 @@ let main _ =
 
     let syncResult =
         greetingFlow
-        |> fun workflow -> workflow |> Flow.run env
+        |> Flow.run env
 
     let asyncResult =
         greetingAsync
-        |> fun workflow -> workflow |> Flow.run env
+        |> Flow.run env
 
     let taskResult =
         greetingTask
-        |> fun workflow -> workflow |> Flow.run env
+        |> Flow.run env
 
     printfn "Flow: %A" syncResult
     printfn "Async: %A" asyncResult

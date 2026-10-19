@@ -61,7 +61,10 @@ readersClosed.Value |> shouldEqual 2
 File.Delete path
 ```
 
-The reader was closed after the full read and after `take 1` stopped the stream early.
+The reader was closed after the full read and after `take 1` stopped the stream early. This example is about
+`using`'s release behavior only: it opens `File.OpenText` directly, so a missing file or failed read is a defect
+rather than a typed error. For a recommended read pattern, model the filesystem with `IFileSystem` and a typed
+`FileSystemError`; see [FileSystem](/services/filesystem.html).
 
 `FlowStream.repeatFlow` runs its flow once per pull, forever, so it never runs ahead of the consumer. Bound it with
 `take` or `takeWhile`, or pace it with `throttle`.

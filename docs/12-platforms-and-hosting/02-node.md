@@ -98,3 +98,10 @@ A minimal project uses Fable and an ES module package:
 ```
 
 Only `Program.fs` needs Node hosting calls; the application and layers remain F# source.
+
+## Working example
+
+The repository's [`examples/Axial.Hosting.Node.Example`](https://github.com/adz/Axial/tree/main/examples/Axial.Hosting.Node.Example)
+is a complete Fable entry point: it reads `process.env`, installs SIGINT/SIGTERM handling, and assigns
+`process.exitCode` only after root-scope cleanup finishes. Its `README.md` lists the build and run commands. The
+browser host has a matching [`examples/Axial.Hosting.Browser.Example`](https://github.com/adz/Axial/tree/main/examples/Axial.Hosting.Browser.Example).

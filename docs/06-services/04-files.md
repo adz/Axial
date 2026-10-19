@@ -1,6 +1,19 @@
+---
+title: Files
+linkTitle: Files
+description: Streaming traversal, atomic writes, and the append log as first-use operations over IFileSystem.
+project: src/Axial.Files/Axial.Files.fsproj
+---
+
 # Axial.Files
 
-`Axial.Files` composes `IFileSystem` operations into lazy streams. `Files.walk descend root` lists descendants breadth-first; `descend` receives each directory path and decides whether to list its children. `Files.lines path` reads text in batches of 2048 lines, detects UTF-8 and UTF-16 BOMs, and returns an empty stream for files with NUL bytes in the first 8192 bytes (unless they have a UTF-16 BOM). Stopping a line stream early closes its reader. Both operations work with `FileSystem.test`.
+Install `Axial.Files`; it composes `IFileSystem` operations into lazy streams:
+
+```bash
+dotnet add package Axial.Files
+```
+
+`Files.walk descend root` lists descendants breadth-first; `descend` receives each directory path and decides whether to list its children. `Files.lines path` reads text in batches of 2048 lines, detects UTF-8 and UTF-16 BOMs, and returns an empty stream for files with NUL bytes in the first 8192 bytes (unless they have a UTF-16 BOM). Stopping a line stream early closes its reader. Both operations work with `FileSystem.test`.
 
 `Files.writeAtomic path bytes` writes the full contents to a sibling temporary file in the same directory, flushes it
 to disk, then renames it over the destination with `MoveFile(overwrite = true)`. Because the temporary file lives in
@@ -18,30 +31,52 @@ directory after rename, which this API does not perform.
 
 Concurrent appends to one log are serialised. Recovery rejects frame lengths larger than `maxBytes - 8` before allocating. If a kill occurs after rotation's rename but before creation of the new current file, opening the log keeps `<path>.1` and creates an empty current file.
 
-```fsharp no-check reason="Axial.Files is not referenced by the documentation example compiler; the same API is compiled in Axial.Files.Tests"
+```fsharp prepare
+open System
 open System.IO
+open System.Text
+open Axial
+open Axial.FileSystem
+open Axial.Files
+
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
+```fsharp
+open System.Text
 open Axial
 open Axial.FileSystem
 open Axial.Files
 
 let fileSystemEnv = { new IHasFileSystem with member _.FileSystem = FileSystem.live }
 
-let appendAndReplay (path: string) =
+let appendAndReplay (path: string) : Flow<IHasFileSystem, FileSystemError, byte array list> =
     flow {
         // Open the log, append two records, and let the scope close it.
         let! log = AppendLog.openLog path 1024L |> Flow.scopeResource
         do! [ "first"; "second" ]
-            |> List.map Text.Encoding.ASCII.GetBytes
+            |> List.map Encoding.ASCII.GetBytes
             |> List.fold (fun step record -> step |> Flow.bind (fun () -> AppendLog.append record log)) (Flow.succeed ())
 
         // Reopen and replay the acknowledged records in order.
         let! log = AppendLog.openLog path 1024L |> Flow.scopeResource
         return! AppendLog.readAll log |> FlowStream.runCollect
     }
+```
 
-// appendAndReplay (Path.Combine(Path.GetTempPath(), "axial-log"))
-// |> Flow.run fileSystemEnv
-// -> Exit.Success [| "first"; "second" |]
+```fsharp run
+let path = Path.Combine(Path.GetTempPath(), "axial-docs-append-log")
+for candidate in [ path; path + ".1" ] do
+    if File.Exists candidate then File.Delete candidate
+try
+    appendAndReplay path
+    |> Flow.run fileSystemEnv
+    |> Exit.map (List.map (fun bytes -> System.Text.Encoding.ASCII.GetString bytes))
+    |> shouldEqual (Exit.Success [ "first"; "second" ])
+finally
+    for candidate in [ path; path + ".1" ] do
+        if File.Exists candidate then File.Delete candidate
 ```
 
 `AppendLog.openLog` returns a `Resource`, so the scope acquires and later closes the log; `AppendLog.readAll`

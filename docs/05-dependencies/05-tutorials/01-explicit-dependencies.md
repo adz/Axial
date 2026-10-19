@@ -111,6 +111,27 @@ This approach keeps dependencies explicit:
 - each dependency is passed explicitly
 - `Flow` is only used where async work and typed execution outcomes matter
 
+`Flow.fromTaskResult` and `ColdTask` are both cold task factories, but they bind different shapes. The repository
+returns a `Task<Result<_, _>>`, so `Flow.fromTaskResult` sends its `Error` case to the typed-error channel (mapped with
+`Flow.mapError`). The sender returns a bare `Task`, so `ColdTask` wraps it directly. Both discard the token here
+(`fun _ ->`) because the interfaces do not accept one. When the underlying API can be cancelled, accept the token and
+forward it, so cancelling the workflow stops the in-flight call:
+
+```fsharp
+type ICancellableSender =
+    abstract SendConfirmation : Order * CancellationToken -> Task
+
+let sendConfirmationCancellable (email: ICancellableSender) (order: Order) : Flow<unit, PlaceOrderError, unit> =
+    flow {
+        do!
+            ColdTask(fun token ->
+                task {
+                    do! email.SendConfirmation(order, token)
+                    return ()
+                })
+    }
+```
+
 ## 3. Realistic Implementations
 
 ```fsharp

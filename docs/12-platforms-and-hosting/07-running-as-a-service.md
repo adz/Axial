@@ -1,10 +1,39 @@
+---
+title: Running as a service
+linkTitle: Running as a service
+description: Register a root Flow with the Microsoft Generic Host, notify systemd, and watchdog long-running work.
+---
+
 # Running as a service
 
 `Axial.Hosting` integrates a root Flow with the Generic Host. Register it with `Hosting.addApp`; supply an environment containing `IHasClock` for the watchdog.
 
+## Register with the Generic Host
+
+Wire the root Flow to the host lifetime once. `Hosting.addApp` runs the workflow when the host starts and requests
+`App.Stop()` on shutdown; `AddSystemd()` (or `AddWindowsService()` on Windows) selects the host lifetime. The
+[.NET hosting guide](dotnet.html) shows the full end-to-end composition, including building the application
+environment from the container with a layer:
+
+```fsharp no-check reason="Needs the Microsoft.Extensions.Hosting package, which the documentation build does not reference"
+open Microsoft.Extensions.Hosting
+open Axial
+open Axial.Hosting
+
+let builder = Host.CreateApplicationBuilder args
+
+builder.Services.AddSystemd() |> ignore    // or AddWindowsService() on Windows
+builder.Services
+|> Hosting.addApp id AppError.describe application
+|> ignore
+
+use host = builder.Build()
+host.Run()
+```
+
 ## systemd
 
-Call `UseSystemd()` on the Generic Host builder. The extension comes from the `Microsoft.Extensions.Hosting.Systemd` package and installs a `SystemdLifetime` that sends the `READY=1` and `STOPPING=1` notifications the `Type=notify` unit waits for. The watchdog is a separate transport: construct it at the process edge with `SystemdNotify.live` and the `NOTIFY_SOCKET` value, and pass it to `Hosting.watchdog` or `Hosting.watchdogWith` inside the application Flow — never to the host builder. `Hosting.watchdog` detects a wedged Axial scheduler or starved thread pool; its sleeping heartbeat and always-true health check do **not** establish application progress. Supply `Hosting.watchdogWith variables processId notifier isHealthy` to tie pings to work your application owns. Record the monotonic time after each successful job and reject stale progress:
+Call `AddSystemd()` on the `HostApplicationBuilder` (`UseSystemd()` on an older `IHostBuilder`). The extension comes from the `Microsoft.Extensions.Hosting.Systemd` package and installs a `SystemdLifetime` that sends the `READY=1` and `STOPPING=1` notifications the `Type=notify` unit waits for. The watchdog is a separate transport: construct it at the process edge with `SystemdNotify.live` and the `NOTIFY_SOCKET` value, and pass it to `Hosting.watchdog` or `Hosting.watchdogWith` inside the application Flow — never to the host builder. `Hosting.watchdog` detects a wedged Axial scheduler or starved thread pool; its sleeping heartbeat and always-true health check do **not** establish application progress. Supply `Hosting.watchdogWith variables processId notifier isHealthy` to tie pings to work your application owns. Record the monotonic time after each successful job and reject stale progress:
 
 ```fsharp prepare
 open System
@@ -111,7 +140,7 @@ On Linux with a user systemd session, run `scripts/check-systemd-watchdog.sh` fr
 
 ## Windows
 
-Call `UseWindowsService()` on the Generic Host builder and register the root application with `Hosting.addApp`. Configure Service Control Manager recovery separately; registration alone does not configure restart policy:
+Call `AddWindowsService()` on the `HostApplicationBuilder` (`UseWindowsService()` on an older `IHostBuilder`) and register the root application with `Hosting.addApp`. Configure Service Control Manager recovery separately; registration alone does not configure restart policy:
 
 ```text
 sc failure <svc> reset= 86400 actions= restart/5000/restart/5000/restart/5000
