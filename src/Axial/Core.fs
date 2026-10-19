@@ -17,7 +17,7 @@ type ManualClock(initialUtc: DateTimeOffset) =
     /// <summary>The next monotonic deadline, when a delay is waiting.</summary>
     member _.NextDeadline = time.NextDeadline
 
-    /// <summary>Advances wall and monotonic time together and wakes due delays.</summary>
+    /// <summary>Advances wall and monotonic time together, running continuations released by due delays before returning.</summary>
     member _.AdvanceBy(duration: TimeSpan) =
         if duration < TimeSpan.Zero then invalidArg (nameof duration) "Clock cannot move backwards."
         time.Advance duration

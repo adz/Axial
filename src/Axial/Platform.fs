@@ -1825,7 +1825,9 @@ type ManualTime() =
             if delay <= TimeSpan.Zero then
                 ofExit (Exit.Success())
             else
-                let signal = newSignal<unit> ()
+                // Manual time advances on the test-driver thread. Inline timer continuations before that thread
+                // can advance again, so work released by an earlier deadline cannot be overtaken by a later one.
+                let signal = TaskCompletionSource<unit>()
 
                 let entry =
                     lock gate (fun () ->

@@ -11,6 +11,23 @@ open Xunit
 
 module WorkflowSchedulingTests =
     [<Fact>]
+    let ``ManualClock drains a due sleep continuation before advance returns`` () =
+        let clock = ManualClock(DateTimeOffset.UnixEpoch)
+        let mutable resumedOn = -1
+
+        let sleeping = task {
+            do! (clock :> IClock).Sleep(TimeSpan.FromMilliseconds 1.0, CancellationToken.None)
+            resumedOn <- Environment.CurrentManagedThreadId
+        }
+
+        let registered = SpinWait.SpinUntil((fun () -> clock.Sleepers = 1), TimeSpan.FromSeconds 5.0)
+        test <@ registered @>
+        let advancingOn = Environment.CurrentManagedThreadId
+        test <@ clock.AdvanceToNextDeadline() @>
+        test <@ resumedOn = advancingOn @>
+        sleeping.GetAwaiter().GetResult()
+
+    [<Fact>]
     let ``Scheduling: retry failing flow`` () =
         let mutable attempts = 0
         let workflow : Flow<ClockEnvironment, string, string> =
