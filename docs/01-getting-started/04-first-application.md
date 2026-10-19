@@ -8,6 +8,16 @@ description: Run a root Flow with application-owned cancellation and scope clean
 Use `App.run` when a Flow is the root of an application. It carries cancellation from the calling Async and returns
 after the root scope and its resources have closed.
 
+```fsharp prepare
+// Setup for the checked example on this page.
+open System
+open Axial
+
+/// Fails the docs test when an example's result differs from the value shown.
+let shouldEqual expected actual =
+    if actual <> expected then failwithf "Expected %A but got %A" expected actual
+```
+
 ```fsharp
 open Axial
 
@@ -26,8 +36,13 @@ let run () =
     }
 ```
 
-The `()` value is the environment because this workflow has no dependencies. An application with an `AppEnv` record
-passes its live value in the same position.
+```fsharp run
+App.run () application |> Async.RunSynchronously |> shouldEqual (Exit.Success "Hello from Flow" : Exit<string, Never>)
+```
+
+`run` is the entry point: call `run () |> Async.RunSynchronously` from a `[<EntryPoint>]`, or hand the same `Async`
+to an ASP.NET Core or Node host. The `()` value is the environment because this workflow has no dependencies. An
+application with an `AppEnv` record passes its live value in the same position.
 
 Use `App.start` when a signal handler, desktop window, UI component, or external host will request shutdown later.
 

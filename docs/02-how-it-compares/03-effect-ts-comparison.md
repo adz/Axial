@@ -40,6 +40,22 @@ Axial keeps the workflow and domain model in F#:
 Shared F# code can retain Axial's typed effects, concurrency, streams, and observability across the
 generated-JavaScript boundary without translating workflows into Effect-TS.
 
+The concrete Promise adapter is Fable's `Async.AwaitPromise`; because `flow { }` binds `Async` directly, an adapted
+Promise is one `let!` away:
+
+```fsharp no-check reason="Compiles only with Fable; Async.AwaitPromise is the Fable.Core Promise bridge"
+open Fable.Core
+
+let awaitPromise (promise: JS.Promise<'T>) : Async<'T> =
+    Async.AwaitPromise promise
+
+let readRemote : Flow<unit, string, 'T> =
+    flow {
+        let! value = awaitPromise (loadRemote ())  // loadRemote returns JS.Promise<'T>
+        return value
+    }
+```
+
 ## When Effect-TS is still the natural boundary
 
 Use Effect-TS when the workflow is owned by TypeScript or must compose directly with an existing Effect-TS

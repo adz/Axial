@@ -169,9 +169,11 @@ let verifyCustomer customer : Async<Result<unit, CustomerError>> =
 ```
 
 A Flow can then bind the `taskResult`-based `loadCustomer` function through `ColdTask` and bind this `asyncResult`
-function directly in the same block:
+function directly in the same block. The example is schematic: `OrderEnv`, `Order`, and `createOrder` stand for the
+application's order environment, order type, and order constructor, and `verifyEmail`/`verifyAccount` come from the
+eligibility check above:
 
-```fsharp no-check reason="Uses FsToolkit.ErrorHandling, which the documentation build does not reference"
+```fsharp no-check reason="Uses FsToolkit.ErrorHandling, which the documentation build does not reference; OrderEnv, Order, and createOrder are application types"
 let prepareOrder customerId : Flow<OrderEnv, CustomerError, Order> =
     flow {
         let! repository = Flow.envWith _.Customers

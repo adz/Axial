@@ -250,11 +250,11 @@
 - [done] `docs/03-the-flow-type/03-running-flows.md:47` — The page mentions optional member cancellation tokens but gives no example of running with one or interpreting an interrupted `Exit`; this is a likely boundary task for a Task-based application.
 - [done] `docs/03-the-flow-type/08-resources.md:8` — `use!` is recommended alongside `use`, but neither example shows its binding behavior or when to prefer it over scope acquisition.
 
-- `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:171` — The combined `prepareOrder` example uses undefined `OrderEnv`, `Order`, and `createOrder`; provide their minimal definitions or explicitly label the block schematic so it can be adapted safely.
-- `docs/02-how-it-compares/03-effect-ts-comparison.md:33` — Promise-to-`Async` adaptation is recommended but no concrete adapter or link to one is provided; a Fable newcomer cannot act on this guidance from the comparison.
+- [done] `docs/02-how-it-compares/01-fstoolkit-errorhandling-comparison.md:171` — The combined `prepareOrder` example uses undefined `OrderEnv`, `Order`, and `createOrder`; provide their minimal definitions or explicitly label the block schematic so it can be adapted safely.
+- [done] `docs/02-how-it-compares/03-effect-ts-comparison.md:33` — Promise-to-`Async` adaptation is recommended but no concrete adapter or link to one is provided; a Fable newcomer cannot act on this guidance from the comparison.
 
-- `docs/01-getting-started/04-first-application.md:11` — “Your First Application” defines `run` but never calls it or shows an entry point, so a newcomer cannot copy the page to run an application.
-- `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
+- [done] `docs/01-getting-started/04-first-application.md:11` — “Your First Application” defines `run` but never calls it or shows an entry point, so a newcomer cannot copy the page to run an application.
+- [done] `docs/01-getting-started/03-existing-task-application.md:129` — “Register that function with your container” does not show how to register the factory or pass the resolved environment to a real handler; this is the handoff the migration guide promises.
 
 - `docs/process/_index.md:6` — The first executable `printf` example gives no package-install or platform prerequisite; link the package/platform setup and note that the checked native-command examples need a Unix-like toolchain.
 - `docs/process/06-fable.md:9` — The only Fable sample defines a Flow but never supplies an `IProcess` implementation or runs it; provide a minimal fake/worker-backed implementation and a checked Fable project or label the fragment as construction-only.

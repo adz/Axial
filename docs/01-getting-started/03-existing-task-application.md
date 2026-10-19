@@ -131,6 +131,26 @@ let checkoutEnv (provider: System.IServiceProvider) : CheckoutEnv =
 Register that function with your container and resolve `CheckoutEnv` in the handler. The workflows below the boundary
 still take a plain record and stay testable without the container.
 
+```fsharp no-check reason="Uses Microsoft.Extensions.DependencyInjection, which the documentation build does not reference"
+open Microsoft.Extensions.DependencyInjection
+
+// Register the concrete services, then the environment factory that resolves them.
+let configureServices (services: IServiceCollection) =
+    services.AddSingleton<IOrderRepository, SqlOrderRepository>() |> ignore
+    services.AddSingleton<IPaymentGateway, StripePaymentGateway>() |> ignore
+    services.AddSingleton<CheckoutEnv>(checkoutEnv) |> ignore
+```
+
+`checkoutEnv` is itself the factory `IServiceProvider -> CheckoutEnv`, so `AddSingleton<CheckoutEnv>(checkoutEnv)`
+registers it directly. The handler resolves the record and hands it to the same boundary function the checked example
+above used:
+
+```fsharp no-check reason="Uses Microsoft.Extensions.DependencyInjection, which the documentation build does not reference"
+let handleOrder (provider: IServiceProvider) (orderId: int) (token: CancellationToken) : Task<string> =
+    let env = provider.GetRequiredService<CheckoutEnv>()
+    handleCheckout env orderId token
+```
+
 ## Convert leaf functions last
 
 Before binding a `CancellationToken -> Task<_>` function, wrap it in `ColdTask`. The wrapper keeps task creation cold
