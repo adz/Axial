@@ -3,11 +3,11 @@
     <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0'">true</IsAotCompatible>
-    <AssemblyName>Axial.Elmish</AssemblyName>
+    <AssemblyName>Axial.ElmishFlows</AssemblyName>
     <RootNamespace>Axial.ElmishFlows</RootNamespace>
-    <PackageId>Axial.Elmish</PackageId>
+    <PackageId>Axial.ElmishFlows</PackageId>
     <Authors>Adam Davies</Authors>
-    <Description>Elmish commands backed by Axial workflows.</Description>
+    <Description>Elmish integration for Axial flows: commands and subscriptions backed by workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

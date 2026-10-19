@@ -1,4 +1,4 @@
-namespace Axial.Elmish.Tests
+namespace Axial.ElmishFlows.Tests
 
 open System
 open System.Collections.Concurrent

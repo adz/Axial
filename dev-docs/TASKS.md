@@ -7,7 +7,7 @@ lists the queue. Work on main.
 
 ## Queue
 
-- [ ] T15b: Migrate gitkay and LogDug to Axial.Files and Axial.Elmish once 0.11 is published
+- [ ] T15b: Migrate gitkay and LogDug to Axial.Files and Axial.ElmishFlows once 0.11 is published
   - Remove gitkay's walk/lines/watch Guardrails suppressions and swap LogDug's Files internals for the package.
   - Replace both apps' flow-to-Elmish bridges with the per-program runtime; replace gitkay's slots and debounce
     with keyed commands and an inbox subscription, and await cleanup on shutdown.

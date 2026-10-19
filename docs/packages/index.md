@@ -43,7 +43,7 @@ Typed HTTP workflows with request construction, response handling, reliability p
 | `Axial.Hosting` | .NET and Microsoft Generic Host integration. | [Platforms and hosting](/platforms-and-hosting/) |
 | `Axial.Hosting.Node` | Node.js signals, arguments, exit code, and environment. | [Node](/platforms-and-hosting/node.html) |
 | `Axial.Hosting.Browser` | Browser ownership and `AbortSignal` integration. | [Browser](/platforms-and-hosting/browser.html) |
-| `Axial.Elmish` | Elmish commands backed by Axial workflows. | [Elmish](/platforms-and-hosting/elmish.html) |
+| `Axial.ElmishFlows` | Elmish commands backed by Axial workflows. | [Elmish](/platforms-and-hosting/elmish.html) |
 | `Axial.Telemetry` | .NET tracing and OpenTelemetry integration. | [Observability](/observability/) |
 | `Axial.Telemetry.JavaScript` | Fable JavaScript span export. | [JavaScript telemetry](/observability/telemetry/javascript.html) |
 | `Axial.Guardrails` | Build-time analyzer that flags direct ambient effects. | [Guardrails](/notes/guardrails.html) |

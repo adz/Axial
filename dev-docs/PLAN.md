@@ -28,9 +28,9 @@ Teach from the smallest useful `Flow` shape, then introduce environment and type
 
 Durable decisions remain in `dev-docs/decisions/README.md`; current work belongs in `dev-docs/TASKS.md`.
 
-## Axial.Elmish
+## Axial.ElmishFlows
 
-- The package remains `Axial.Elmish`; its namespace is `Axial.ElmishFlows` so `open Axial` does not shadow Elmish's namespace.
+- The package and namespace are `Axial.ElmishFlows`, so `open Axial` does not shadow Elmish's namespace.
 - Runtime environments implement `IHasClock`; commands can select current application dependencies with `Flow.localEnv`.
 - One runtime per program owns one root scope for commands, subscriptions, and releases.
 - All dispatch goes through the host's `Post`; defects go to `OnDefect`.

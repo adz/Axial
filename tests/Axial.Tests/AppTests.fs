@@ -67,6 +67,51 @@ type AppShutdownTests() =
 
 module AppTests =
     [<Fact>]
+    let ``startWith keeps cache lookups alive after publishing`` () =
+        let environment = TestSupport.clockEnv ()
+        let build = Cache.make (fun key -> Flow.succeed (key + 1))
+        let running, cache =
+            match App.startWith environment build |> Async.RunSynchronously with
+            | Ok value -> value
+            | Error _ -> failwith "build failed"
+        let result = Cache.get 41 cache |> Flow.run environment
+        test <@ result = Exit.Success 42 @>
+        test <@ running.StopAndWait(TimeSpan.FromSeconds 5.) @>
+
+    [<Fact>]
+    let ``startWith stop waits for build finalizer`` () =
+        let released = new ManualResetEventSlim()
+        let build : Flow<unit, string, int> = flow {
+            do! Flow.scopeFinalizer (Flow.delay (fun () -> released.Set(); Flow.succeed ()))
+            return 7
+        }
+        let running, value = App.startWith () build |> Async.RunSynchronously |> function Ok value -> value | Error _ -> failwith "build failed"
+        test <@ value = 7 @>
+        test <@ not released.IsSet @>
+        test <@ running.StopAndWait(TimeSpan.FromSeconds 5.) @>
+        test <@ released.IsSet @>
+
+    [<Fact>]
+    let ``startWith failure leaves no running scope`` () =
+        let released = new ManualResetEventSlim()
+        let build : Flow<unit, string, int> = flow {
+            do! Flow.scopeFinalizer (Flow.delay (fun () -> released.Set(); Flow.succeed ()))
+            return! Flow.fail "failed"
+        }
+        let result = App.startWith () build |> Async.RunSynchronously
+        test <@ Result.isError result @>
+        test <@ released.IsSet @>
+
+    [<Fact>]
+    let ``startWith handles own independent scopes`` () =
+        let build : Flow<unit, string, unit> = Flow.succeed ()
+        let first, _ = App.startWith () build |> Async.RunSynchronously |> function Ok value -> value | Error _ -> failwith "build failed"
+        let second, _ = App.startWith () build |> Async.RunSynchronously |> function Ok value -> value | Error _ -> failwith "build failed"
+        test <@ first.StopAndWait(TimeSpan.FromSeconds 5.) @>
+        test <@ second.Status = AppStatus.Running @>
+        test <@ second.StopAndWait(TimeSpan.FromSeconds 5.) @>
+
+    [<Fact>]
     let ``App start exposes completion and completed status`` () =
         let running = App.start "environment" (Flow.envWith (fun value -> value.Length))
 

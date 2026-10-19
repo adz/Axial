@@ -133,6 +133,15 @@ A UI thread can call `running.StopAndWait(timeout)` to request stop and block un
 it returns `false` if the timeout expires. Use `Stop()` when the caller can await asynchronously.
 `StopAndWait` is not available on Fable.
 
+## Publish Scoped Services
+
+Use `App.startWith env build` when a desktop app opens a repository: `build` creates its cache, queues, or
+`Layer.fromFlow` resources and returns the services the UI needs. The returned `Async<Result<AppHandle<_,unit> * _,_>>`
+resolves after construction, while the root scope stays open. On repository switch, call `StopAndWait` on .NET
+(or await `Stop()`); only then open the next repository. A failed build returns `Error` after cleanup, with no handle.
+Unlike `App.start`, `startWith` publishes built services; unlike `ElmishRuntime.startLayer`, it does not own an Elmish
+program.
+
 ## External Cancellation
 
 Use `App.startWithCancellation` or `App.runWithCancellation` when an existing owner already supplies a
@@ -156,6 +165,7 @@ interop boundaries. `App` adds ownership around a root workflow:
 | Execute one operation | `workflow |> Flow.run env` or `workflow |> Flow.startTask env` |
 | Run a finite root application | `App.run env application` |
 | Start and later stop a root application | `App.start env application` |
+| Publish services with a scoped lifetime | `App.startWith env build` |
 | Integrate with .NET Generic Host | [`Axial.Hosting`](./dotnet.html) |
 | Run under Node signals | [Node hosting](./node.html) |
 | Tie lifetime to a browser owner | [Browser hosting](./browser.html) |

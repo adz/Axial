@@ -1,6 +1,6 @@
 # Elmish programs
 
-The `Axial.Elmish` package exposes the `Axial.ElmishFlows` namespace and connects an Elmish 5 program to Axial
+The `Axial.ElmishFlows` package exposes the `Axial.ElmishFlows` namespace and connects an Elmish 5 program to Axial
 workflows. Create one runtime per program, passing an environment and a `Post` function that delivers callbacks on the
 host's dispatch thread. When already on that thread, `Post` should run inline; otherwise it should post to it. Do not
 call Elmish's dispatch directly from workers. Connect `OnDefect` to the host's crash reporting path; typed failures
@@ -9,16 +9,16 @@ are messages, but defects are not.
 ## Install
 
 ```bash
-dotnet add package Axial.Elmish
+dotnet add package Axial.ElmishFlows
 ```
 
-`Axial.Elmish` brings Elmish 5 with it. Reference Elmish directly when your program uses `Program.mkProgram` and
+`Axial.ElmishFlows` brings Elmish 5 with it. Reference Elmish directly when your program uses `Program.mkProgram` and
 `dispatch`. Open `Axial.ElmishFlows` for the Axial API, and `Axial.PlatformService` when your environment needs
 `Clock.live`.
 
 A minimal runtime supplies an environment, a `Post` function, a defect handler, and a history capacity:
 
-```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.Elmish.Tests"
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 open Axial
 open Axial.ElmishFlows
 open Axial.PlatformService
@@ -42,7 +42,7 @@ dispatching back to a UI loop); never call Elmish's dispatch directly from a wor
 supply a command's current dependencies with `Flow.localEnv`. For example, a git client can open another repository
 without recreating its Elmish runtime:
 
-```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.Elmish.Tests"
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 open Axial
 open Axial.ElmishFlows
 open Axial.PlatformService
@@ -78,7 +78,7 @@ When a runtime needs resources that must live for the whole program — a `Cache
 is provisioned inside the runtime's root scope, so `Stop`/`StopAndWait` releases what the layer acquired. A typed
 provisioning failure returns `Error` and leaves nothing running.
 
-```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.Elmish.Tests"
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 open Axial
 open Axial.Layers
 open Axial.ElmishFlows
@@ -115,7 +115,7 @@ let runtime =
 Axial's commands keep Elmish's "work first" idea, but the runtime owns the command's root scope, so it precedes the
 flow. Pass the flow positionally, not piped:
 
-```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.Elmish.Tests"
+```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 let command =
     Cmd.OfFlow.either "increment" runtime
         (Flow.succeed 2)

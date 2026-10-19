@@ -102,7 +102,7 @@ It is .NET focused. JavaScript means Fable-generated JavaScript. JVM, JS, and Na
 - [x] Expand `Axial.HttpClient` into a practical HTTP service package covering common requests/responses, headers, text/JSON/byte content, per-request timeout, cancellation, error classification, host-owned `HttpClient` configuration, live tests, and user guides.
 - [x] Expand `Axial.Process` into a practical process service package covering commands and pipelines, environment and working-directory configuration, structured and streaming output, cancellation, exit handling, typed errors, live tests, scripts, and user guides.
 - [x] Add explicit process timeout/deadline configuration and tests (`Process.timeout` / DSL `timeout` on `ProcessSpec`, enforced via `Flow.timeout` with `ProcessError.TimedOut` and process-tree termination; live integration test in `ProcessServiceTests`).
-- [ ] Add an Avalonia example app; the UI-dispatcher part is covered by `Axial.Elmish`'s host-supplied `Post` (T16).
+- [ ] Add an Avalonia example app; the UI-dispatcher part is covered by `Axial.ElmishFlows`'s host-supplied `Post` (T16).
 - [ ] Design `Axial.Network` after the core v1 service/layer surface is stable.
 - [x] Decide whether telemetry needs explicit service contracts under a future telemetry package: it remains runtime instrumentation through `Axial.Telemetry` — see `decisions/README.md` (2026-07-14). Logging stays the explicit `ILog` service.
 - [x] Define telemetry-service composition with annotations, `ActivitySource`, `Microsoft.Extensions.Logging`, layers, and host-provider boundaries — not applicable; no telemetry service contracts are introduced per the decision above.

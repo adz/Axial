@@ -174,6 +174,40 @@ module App =
         : AppHandle<'error, 'value> =
         startCore None environment application
 
+    /// <summary>Builds services in a new root scope and returns them with a handle that keeps the scope alive.</summary>
+    /// <remarks>For a desktop app's per-repository lifetime, start on repository open and call
+    /// <c>StopAndWait</c> on repository switch. Unlike <c>App.start</c>, this publishes the result of
+    /// the build while keeping its resources alive. Unlike <c>ElmishRuntime.startLayer</c>, it does not
+    /// own an Elmish program. If the build fails, its scope closes and no handle is returned.</remarks>
+    /// <platforms>Fable compatible</platforms>
+    let startWith
+        (environment: 'env)
+        (build: Flow<'env, 'error, 'services>)
+        : Async<Result<AppHandle<'error, unit> * 'services, 'error>> =
+        async {
+            let published = System.Threading.Tasks.TaskCompletionSource<Result<'services, 'error>>(
+                System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
+            let application : Flow<'env, 'error, unit> =
+                Flow.bind (fun services ->
+                    published.TrySetResult(Ok services) |> ignore
+                    Flow.never) build
+            let running = start environment application
+            Async.StartWithContinuations(
+                running.Completion,
+                (fun exit ->
+                    match exit with
+                    | Exit.Failure(Cause.Fail error) -> published.TrySetResult(Error error) |> ignore
+                    | _ -> ()),
+                (fun _ -> ()),
+                (fun _ -> ()))
+            let! outcome = published.Task |> Async.AwaitTask
+            match outcome with
+            | Ok services -> return Ok(running, services)
+            | Error error ->
+                let! _ = running.Completion
+                return Error error
+        }
+
     /// <summary>Starts a root workflow linked to an external cancellation token.</summary>
     /// <param name="cancellationToken">A host-owned token that requests application stop when cancelled.</param>
     /// <param name="environment">The explicit environment supplied to the root workflow.</param>
