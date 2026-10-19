@@ -87,7 +87,14 @@ Every operation fails with `FileSystemError`, a union that classifies what went 
 | `Unsupported (path, message)` | The platform or path shape does not support the operation |
 | `Unexpected (path, message)` | Anything else that escaped the operation |
 
-Use `FileSystemError.isIoFailure` to recognize missing files or directories, unauthorized access, path length errors, and general I/O errors together; it excludes invalid paths, existing targets, unsupported operations, and unexpected failures.
+Use `FileSystemError.isIoFailure` to recognize missing files or directories, `Unauthorized`, path length errors, and general I/O errors together; it excludes invalid paths, existing targets, unsupported operations, and unexpected failures. `Unauthorized` includes access denial from `UnauthorizedAccessException`, which is not an `IOException`. Code migrating from `catch IOException` therefore handles access denial too. To exclude it, match `FileSystemError.Unauthorized _` before applying `isIoFailure`:
+
+```fsharp
+let isIoFailureWithoutAccessDenial error =
+    match error with
+    | FileSystemError.Unauthorized _ -> false
+    | other -> FileSystemError.isIoFailure other
+```
 
 Match `FileSystemError` to recover from a failure:
 

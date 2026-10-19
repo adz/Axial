@@ -409,7 +409,8 @@ type IHasFileSystem =
 
 [<RequireQualifiedAccess>]
 module FileSystemError =
-    /// <summary>True for missing files or directories, access denial, path length errors, and general I/O errors; false for invalid paths, existing targets, unsupported operations, and unexpected failures.</summary>
+    /// <summary>True for missing files or directories, Unauthorized, path length errors, and general I/O errors; false for invalid paths, existing targets, unsupported operations, and unexpected failures.</summary>
+    /// <remarks>Unauthorized includes access denial from UnauthorizedAccessException, which is not an IOException. When replacing a catch IOException handler, match Unauthorized separately to exclude access denial.</remarks>
     let isIoFailure (error: FileSystemError) =
         match error with
         | FileSystemError.FileNotFound _

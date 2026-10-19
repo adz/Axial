@@ -6,7 +6,7 @@ Read this after `AGENTS.md` and before broad repository search.
 
 Axial is the workflow product. Core is `src/Axial`; focused operational and hosting packages are the other `src/Axial.*` directories. Reified owns constraints, refinements, parsing, Result helpers, Data, Schema, codecs, and contracts in a separate repository.
 
-`src/Axial.Hosting.AspNetCore` and `src/Axial.Hosting.GenHttp` are explicit cross-product adapters. `examples/Axial.ReferenceApp` is retained temporarily as the integration example. They consume Reified packages and are intentionally excluded from `Axial.slnx` until those packages are published; core Axial must never depend on Reified.
+`src/Axial.Hosting.AspNetCore` and `src/Axial.Hosting.GenHttp` are explicit cross-product adapters. `examples/Axial.ReferenceApp` is retained temporarily as the integration example. They consume Reified packages and stay out of `Axial.slnx` so the solution builds without Reified; their own CI step runs `tests/Axial.Hosting.Http.Tests`. Core Axial must never depend on Reified.
 
 ## Task routing
 
