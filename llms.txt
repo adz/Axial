@@ -1,5 +1,7 @@
 # Axial documentation
 
+Package maturity ratings and application evidence: `/notes/package-maturity.html`.
+
 Axial is an asynchronous F# workflow library. Its public model is `Flow<'env,'error,'value>`: required dependencies and expected failures are visible in the workflow type.
 
 Load `/llms.txt` for API selection, execution, resources, concurrency, services, hosting, and platform guidance. User documentation starts at `/index.html`.

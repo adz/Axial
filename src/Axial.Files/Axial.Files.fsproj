@@ -8,6 +8,7 @@
     <RootNamespace>Axial.Files</RootNamespace>
     <PackageId>Axial.Files</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Incubating</PackageMaturity>
     <Description>Streaming file traversal and text reading for Axial workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

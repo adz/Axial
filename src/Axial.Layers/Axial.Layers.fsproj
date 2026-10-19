@@ -8,6 +8,7 @@
     <RootNamespace>Axial.Layers</RootNamespace>
     <PackageId>Axial.Layers</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Incubating</PackageMaturity>
     <Description>Reusable provisioning for Axial workflows: build an environment with flow capabilities, then provide it.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

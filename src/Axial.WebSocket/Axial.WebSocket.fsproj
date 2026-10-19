@@ -8,6 +8,7 @@
     <RootNamespace>Axial.WebSocket</RootNamespace>
     <PackageId>Axial.WebSocket</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Experimental</PackageMaturity>
     <Description>Typed WebSocket client workflows for F#.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

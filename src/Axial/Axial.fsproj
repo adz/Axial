@@ -8,6 +8,7 @@
     <AssemblyName>Axial</AssemblyName>
     <RootNamespace>Axial</RootNamespace>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Incubating</PackageMaturity>
     <Description>Effectful workflow execution for sync, Async, Task, and explicit environment code.</Description>
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

@@ -6,6 +6,7 @@
     <RootNamespace>Axial.Hosting.Browser</RootNamespace>
     <PackageId>Axial.Hosting.Browser</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Experimental</PackageMaturity>
     <Description>Browser ownership and AbortSignal adapters for Axial Flow applications compiled with Fable.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

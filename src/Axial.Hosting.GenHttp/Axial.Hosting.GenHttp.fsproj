@@ -7,6 +7,7 @@
     <AssemblyName>Axial.Hosting.GenHttp</AssemblyName>
     <RootNamespace>Axial.Hosting.GenHttp</RootNamespace>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Experimental</PackageMaturity>
     <Description>GenHTTP hosting for schema-driven Axial Flow endpoints, with trusted request parsing, typed outcome lowering, problem details, compiled codecs, and OpenAPI support.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

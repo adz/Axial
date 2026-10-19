@@ -8,6 +8,7 @@
     <RootNamespace>Axial.PlatformService</RootNamespace>
     <PackageId>Axial.PlatformService</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Incubating</PackageMaturity>
     <Description>Shared explicit service primitives for Axial flow clock, random, GUID, logging, and environment-variable boundaries.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

@@ -8,6 +8,7 @@
     <RootNamespace>Axial.FileSystem</RootNamespace>
     <PackageId>Axial.FileSystem</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Incubating</PackageMaturity>
     <Description>Standard file-system service for Axial workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

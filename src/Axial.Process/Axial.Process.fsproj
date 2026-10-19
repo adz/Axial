@@ -8,6 +8,7 @@
     <RootNamespace>Axial.Process</RootNamespace>
     <PackageId>Axial.Process</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Incubating</PackageMaturity>
     <Description>Composable external processes for F# workflows, with pipelines, streaming, typed failures, cancellation and safe cleanup.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

@@ -7,6 +7,7 @@
     <RootNamespace>Axial.Guardrails</RootNamespace>
     <PackageId>Axial.Guardrails</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Incubating</PackageMaturity>
     <Description>FSharp.Analyzers.SDK analyzer that flags direct use of ambient effects (clock, randomness, GUIDs, console, filesystem, process, environment) so they stay explicit, mockable services instead of hidden dependencies.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

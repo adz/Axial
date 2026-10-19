@@ -108,4 +108,4 @@
 - `Axial.Hosting.Browser` is Fable JavaScript for browsers only.
 - Core Flow is supported in Fable JavaScript on both Node and browsers.
 
-See `/notes/packages-and-platforms.html` for the complete package matrix.
+See `/notes/packages-and-platforms.html` for the complete package matrix and `/notes/package-maturity.html` for ratings and application evidence.

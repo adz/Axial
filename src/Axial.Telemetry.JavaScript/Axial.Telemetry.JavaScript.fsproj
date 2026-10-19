@@ -7,6 +7,7 @@
     <RootNamespace>Axial.Telemetry.JavaScript</RootNamespace>
     <PackageId>Axial.Telemetry.JavaScript</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Experimental</PackageMaturity>
     <Description>OpenTelemetry JS tracing for Axial flows compiled with Fable: spans, fiber observability, and annotation attributes through a host-supplied @opentelemetry/api object. Node and browser; JavaScript targets only.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

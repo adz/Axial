@@ -1,4 +1,11 @@
 <Project>
+  <Target Name="ValidatePackageMaturity" BeforeTargets="Build;Pack" Condition="'$(IsPackable)' != 'false' and $(MSBuildProjectDirectory.Contains('/src/'))">
+    <Error Condition="'$(PackageMaturity)' != 'Experimental' and '$(PackageMaturity)' != 'Incubating' and '$(PackageMaturity)' != 'Stable'" Text="$(MSBuildProjectName) must set PackageMaturity to Experimental, Incubating, or Stable." />
+  </Target>
+  <PropertyGroup Condition="'$(IsPackable)' != 'false' and $(MSBuildProjectDirectory.Contains('/src/')) and '$(PackageMaturity)' != ''">
+    <PackageTags>$(PackageTags);maturity-$(PackageMaturity.ToLowerInvariant())</PackageTags>
+    <Description>[$(PackageMaturity)] $(Description)</Description>
+  </PropertyGroup>
 
   <!--
     Runs Axial.Guardrails against every project in this repo except itself, the same way a

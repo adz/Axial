@@ -6,6 +6,7 @@
     <RootNamespace>Axial.Hosting.Node</RootNamespace>
     <PackageId>Axial.Hosting.Node</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Experimental</PackageMaturity>
     <Description>Node.js signals, process exit, arguments, and environment adapters for Axial Flow applications compiled with Fable.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

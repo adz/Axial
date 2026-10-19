@@ -76,7 +76,7 @@ dotnet add package Axial
 - [`Axial.Process`](https://www.nuget.org/packages/Axial.Process): external process composition, pipelines, streaming output, typed failures, cancellation, and cleanup.
 - [`Axial.HttpClient`](https://www.nuget.org/packages/Axial.HttpClient): typed HTTP requests, response handling, and reliability policies.
 
-Supporting packages provide platform services, console and file-system access, hosting, telemetry, and layers. The [package catalogue](https://adz.github.io/Axial/packages/) links the first-class libraries and the complete compatibility matrix.
+Supporting packages provide platform services, console and file-system access, hosting, telemetry, and layers. See the [package maturity table](docs/15-notes/02-package-maturity.md) for each package's rating and application evidence. The [package catalogue](https://adz.github.io/Axial/packages/) links the first-class libraries and the complete compatibility matrix.
 
 ## Documentation and examples
 

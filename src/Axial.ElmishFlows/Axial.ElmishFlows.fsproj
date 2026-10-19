@@ -7,6 +7,7 @@
     <RootNamespace>Axial.ElmishFlows</RootNamespace>
     <PackageId>Axial.ElmishFlows</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Incubating</PackageMaturity>
     <Description>Elmish integration for Axial flows: commands and subscriptions backed by workflows.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>

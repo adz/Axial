@@ -8,6 +8,7 @@
     <RootNamespace>Axial.Telemetry</RootNamespace>
     <PackageId>Axial.Telemetry</PackageId>
     <Authors>Adam Davies</Authors>
+    <PackageMaturity>Experimental</PackageMaturity>
     <Description>Automatic telemetry and tracing for Axial flow runtimes using System.Diagnostics.Activity.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/adz/Axial</RepositoryUrl>
