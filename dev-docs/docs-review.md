@@ -235,8 +235,8 @@
 - [done] `docs/08-concurrency-and-state/09-cache.md:61` — Expiry and bounded eviction are introduced without an example or an explanation of what happens to an in-flight load when invalidated/evicted. Show a clock-controlled expiry and concurrent invalidation case.
 - [done] `docs/08-concurrency-and-state/_index.md:8` — The landing page advertises Schedule and FlowStream but provides no links to their guides; link to the actual sections so new readers can locate them.
 
-- `docs/07-layers/01-layers.md:156` — The text tells readers to map differing startup errors before providing but gives no example of combining a `Never` layer and a typed-error layer, or of mapping distinct error unions; show the conversion at the composition site.
-- `docs/07-layers/01-layers.md:209` — Parallel failure claims `Cause.Both`, but there is no checked example showing two failing branches or how callers inspect the combined cause.
+- [done] `docs/07-layers/01-layers.md:156` — The text tells readers to map differing startup errors before providing but gives no example of combining a `Never` layer and a typed-error layer, or of mapping distinct error unions; show the conversion at the composition site.
+- [done] `docs/07-layers/01-layers.md:209` — Parallel failure claims `Cause.Both`, but there is no checked example showing two failing branches or how callers inspect the combined cause.
 
 - `docs/06-services/_index.md:36` — The section navigation omits `04-files.md` and `07-websocket.md`; first-time readers cannot discover those capabilities from this landing page.
 - `docs/06-services/04-files.md:7` — `AppendLog.openLog` is described as scoped but no runnable example shows acquiring, appending, replaying, and closing it; include a minimal end-to-end example and required environment.

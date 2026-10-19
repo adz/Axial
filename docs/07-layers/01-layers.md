@@ -149,6 +149,36 @@ Layer error types must match the flow error type. When provisioning steps use di
 startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as
 `BaseRuntime.live` or `Clock.layer`, has error type `Never`; `Layer.widenError` gives it any error type.
 
+```fsharp
+type OrdersError = MissingOrders of string
+type ClockError = BrokenClock of string
+
+type ProvisionError =
+    | OrdersProblem of OrdersError
+    | ClockProblem of ClockError
+
+let ordersFrom (config: string option) : Layer<unit, OrdersError, int> =
+    match config with
+    | Some _ -> Layer.succeed 3
+    | None -> Layer.fromFlow (Flow.fail (MissingOrders "orders"))
+
+let clockFrom : Layer<unit, Never, IClock> =
+    Layer.succeed (Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
+
+// Map the typed-error union into the shared union and widen the Never layer to the same error type.
+let provision : Layer<unit, ProvisionError, int * IClock> =
+    Layer.zip
+        (ordersFrom None |> Layer.mapError OrdersProblem)
+        (clockFrom |> Layer.widenError)
+```
+
+```fsharp run
+Flow.ok 0
+|> Layer.provide (provision |> Layer.map ignore)
+|> Flow.run ()
+|> shouldEqual (Exit.Failure(Cause.Fail(OrdersProblem(MissingOrders "orders"))))
+```
+
 ## zip, zipPar, And merge
 
 `Layer.zip` provisions left then right, sequentially. `Layer.zipPar` (its layer-domain name is `Layer.merge`)
@@ -197,3 +227,22 @@ List.ofSeq events |> shouldEqual [ "opened db://orders"; "closed db://orders" ]
 Parallel composition uses parent-owned child scopes, so the same holds when one parallel branch fails after another
 acquired resources. If both parallel branches fail, Axial preserves both failures as `Cause.Both (leftCause, rightCause)` rather than
 discarding one side.
+
+```fsharp
+let failOrders : Layer<unit, ProvisionError, int> =
+    Layer.fromFlow (Flow.fail (OrdersProblem(MissingOrders "orders")))
+
+let failClock : Layer<unit, ProvisionError, IClock> =
+    Layer.fromFlow (Flow.fail (ClockProblem(BrokenClock "clock")))
+```
+
+```fsharp run
+Flow.ok 0
+|> Layer.provide (Layer.merge failOrders failClock |> Layer.map ignore)
+|> Flow.run ()
+|> function
+| Exit.Failure cause ->
+    Cause.failures cause
+    |> shouldEqual [ OrdersProblem(MissingOrders "orders"); ClockProblem(BrokenClock "clock") ]
+| other -> failwithf "Expected a failure, got %A" other
+```
