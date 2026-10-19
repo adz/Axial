@@ -13,6 +13,7 @@ runtime.
 | Package | .NET | Fable JavaScript: Node | Fable JavaScript: browser | Notes |
 | --- | --- | --- | --- | --- |
 | `Axial` | Yes | Yes | Yes | Core workflows, runtime, layers, concurrency, streams, schedules, and `App`. |
+| `Axial.Layers` | Yes | Yes | Yes | Reusable provisioning: build an environment with flow capabilities, then provide it. |
 | `Axial.PlatformService` | Yes | Yes | Yes | Clock, logging, randomness, GUID, and environment-variable services; live behavior follows the host. |
 | `Axial.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |
@@ -21,8 +22,11 @@ runtime.
 | `Axial.Hosting` | Yes | No | No | Standalone .NET and Microsoft Generic Host integration. |
 | `Axial.Hosting.Node` | No | Yes | No | Node signals, arguments, exit code, and `process.env`. |
 | `Axial.Hosting.Browser` | No | No | Yes | Browser ownership and `AbortSignal` integration. |
+| `Axial.Hosting.AspNetCore` (experimental) | Yes | No | No | ASP.NET Core schema-driven endpoints; depends on Reified packages. |
+| `Axial.Hosting.GenHttp` | Yes | No | No | GenHTTP schema-driven endpoints; depends on Reified packages. |
 | `Axial.Telemetry` | Yes | No | No | .NET `System.Diagnostics` and OpenTelemetry integration. |
 | `Axial.Telemetry.JavaScript` | No | Yes | Yes | Fable JavaScript span export; configure an exporter appropriate to the host. |
+| `Axial.Guardrails` | — | — | — | Build-time FSharp.Analyzers.SDK analyzer (`net8.0`). Runs during compilation of any project, including Fable ones, to flag direct ambient effects; not a runtime dependency. |
 
 JavaScript-only hosting packages intentionally fail outside their named runtime. The browser adapter does not treat page
 visibility or unload as dependable application shutdown.

@@ -68,7 +68,55 @@ let slowReport : Flow<TestEnv, HttpError, HttpResponse> =
     GET $"https://api.example.com/slow-report"
     |> timeout (TimeSpan.FromSeconds 5.0)
     |> fetch
-// Fails with HttpError.TimedOut(request, 5s). Interrupting the workflow is Cause.Interrupt, not an HttpError.
+```
+
+A handler that accepts the connection and never responds leaves only the per-request timeout to finish the call:
+
+```fsharp
+let stalledHandler () =
+    { new HttpMessageHandler() with
+        member _.SendAsync(request: HttpRequestMessage, cancellationToken: CancellationToken) : Task<HttpResponseMessage> =
+            task {
+                do! Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken)
+                return null
+            } }
+
+let timeoutEnv =
+    { Http = Http.live Clock.live (new HttpClient(stalledHandler ()))
+      Clock = Clock.live }
+```
+
+```fsharp run
+let shortTimeout =
+    GET $"https://api.example.com/slow-report"
+    |> timeout (TimeSpan.FromMilliseconds 50.0)
+    |> fetch
+
+match shortTimeout |> Flow.run timeoutEnv with
+| Exit.Failure(Cause.Fail(HttpError.TimedOut(request, timeout))) ->
+    timeout |> shouldEqual (TimeSpan.FromMilliseconds 50.0)
+    request |> shouldEqual "GET https://api.example.com/slow-report"
+| other -> failwithf "expected HttpError.TimedOut, got %A" other
+```
+
+The checked block uses a 50ms deadline so the docs test does not sleep; `slowReport` keeps the readable 5s value.
+The `TimedOut` case carries the redacted request line and the timeout that elapsed.
+
+Interrupting the workflow is `Cause.Interrupt`, never `HttpError.TimedOut`; the runtime token is the one that asked,
+so the failure stays outside the typed error channel:
+
+```fsharp run
+let interruptedSource = new CancellationTokenSource()
+interruptedSource.Cancel()
+
+let interruptedTimeout =
+    GET $"https://api.example.com/slow-report"
+    |> timeout (TimeSpan.FromMilliseconds 50.0)
+    |> fetch
+
+match interruptedTimeout.RunSynchronously(timeoutEnv, interruptedSource.Token) with
+| Exit.Failure Cause.Interrupt -> ()
+| other -> failwithf "expected Cause.Interrupt, got %A" other
 ```
 
 The live service enforces the timeout with a linked cancellation source, so the connection is torn down when the

@@ -6,6 +6,19 @@ description: Build typed HTTP requests, decode responses safely, and retry trans
 
 # HTTP Clients
 
+Install `Axial.HttpClient` and open the two namespaces used below:
+
+```bash
+dotnet add package Axial.HttpClient
+```
+
+```fsharp
+open Axial.HttpClient
+open Axial.HttpClient.DSL
+```
+
+Wire the live `HttpClient` service with `Http.live` and a layer (see [Testing HTTP](testing.html)) before running a workflow on .NET.
+
 A direct `HttpClient` call mixes four failure channels into exceptions and manual status checks:
 
 ```fsharp no-check reason="The plain HttpClient code being replaced; client, userId, and parseUser stand for application code"

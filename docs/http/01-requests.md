@@ -80,6 +80,12 @@ rendered as `key=***`. `bearer` and `basicAuth` are always redacted, with no opt
 `Request.render` produces the redacted request line (for example `GET https://api.example.com/lookup?key=***`)
 that appears inside `HttpError` values, so error logging is safe by default.
 
+Redaction is opt-in per value. An ordinary `query` or `header` value is sent for real **and** rendered in full in
+plans and transcripts; use `secretQuery` / `secretHeader` (or a `secret` interpolation hole) for API keys, tokens,
+and other sensitive values. Body helpers (`jsonBody`, `textBody`, `bytesBody`, `formBody`) send the real content,
+but `Request.plan` shows only the content type and size, never the body text. That keeps body contents out of
+plans, but the value is still transmitted — do not treat a body as redacted just because the plan omits its text.
+
 ## Headers
 
 ```fsharp transcript

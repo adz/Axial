@@ -18,6 +18,9 @@ Flow and match `Exit.Failure(Cause.Fail error)` when this boundary needs to deci
 | `ObservationUnavailable` | A requested output channel uses inherited handles. | Stage and channel |
 | `StageFailed` | A started command exits with a code outside its configured success-code set. This is the usual result for a command that reports failure with a nonzero exit code. | Failed `StageResult` and the complete `ProcessResult` |
 | `IoFailed` | Axial cannot read, write, or route one of the process streams or configured file targets, or the optional drain deadline expires. | I/O error message |
+| `InputFailed` | An `InputSource.Stream` input fails with a typed error while feeding a command. | The cause string from the stream's failure |
+| `OutputFailed` | A completion-aware output callback (`OutputTarget.Callback`, `Sink`, or `SinkFactory`) fails with a typed error. | The cause string from the callback's failure |
+| `OutputTooLarge` | A stage's captured stdout or stderr exceeds its `maxOutputBytes` cap. | Stage, original channel, byte limit, and command |
 
 When a pump fails, Axial cancels the remaining I/O and attempts to terminate running stages, preserving the original
 failure. A pipeline consumer that exits before accepting all input can therefore produce `IoFailed` for the broken

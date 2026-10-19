@@ -195,18 +195,18 @@
 
 ## Missing
 
-- `docs/process/04-failures-and-transcripts.md:12` — The purported `ProcessError` failure-case table omits `OutputTooLarge` and `OutputFailed`, which the output guide explicitly names. Include both or label the table non-exhaustive and link their contracts.
+- [done] `docs/process/04-failures-and-transcripts.md:12` — The purported `ProcessError` failure-case table omits `OutputTooLarge` and `OutputFailed`, which the output guide explicitly names. Include both or label the table non-exhaustive and link their contracts.
 
-- `docs/packages/index.md:24` — Supporting packages are unnamed and have no direct first-use links on the package landing page; readers must leave the package index to discover which package provides console, filesystem, hosting, or telemetry support.
+- [done] `docs/packages/index.md:24` — Supporting packages are unnamed and have no direct first-use links on the package landing page; readers must leave the package index to discover which package provides console, filesystem, hosting, or telemetry support.
 
-- `docs/http/_index.md:66` — The HTTP landing page has no install/package guidance or link to setup before its first workflow; name the required package and link to the live-service wiring on the testing page.
-- `docs/http/01-requests.md:57` — Secret redaction examples do not explain that ordinary `query`/`header` values and JSON bodies are not automatically secret; show when to choose `secretQuery`/`secretHeader` and avoid treating the whole plan as safe for arbitrary user data.
-- `docs/http/03-reliability.md:69` — Timeout behavior is described but never exercised with a checked slow-service example; show the resulting `HttpError.TimedOut` and distinguish it from runtime interruption.
+- [done] `docs/http/_index.md:66` — The HTTP landing page has no install/package guidance or link to setup before its first workflow; name the required package and link to the live-service wiring on the testing page.
+- [done] `docs/http/01-requests.md:57` — Secret redaction examples do not explain that ordinary `query`/`header` values and JSON bodies are not automatically secret; show when to choose `secretQuery`/`secretHeader` and avoid treating the whole plan as safe for arbitrary user data.
+- [done] `docs/http/03-reliability.md:69` — Timeout behavior is described but never exercised with a checked slow-service example; show the resulting `HttpError.TimedOut` and distinguish it from runtime interruption.
 
 - `docs/api/Axial.ScheduleModule.md:4` — `Schedule` is described as deciding after each run, but the page never explains what its input/output mean for `retry` versus `repeat`, or whether `recurs n` means n retries or n total runs; add a small counted example.
 - `docs/api/Axial.State.SubscriptionRefModule.md:3` — The page promises every update to each running stream but does not explain what happens when a subscriber's chosen overflow strategy fills; qualify delivery guarantees by strategy and link to its behavior.
 
-- `docs/15-notes/01-packages-and-platforms.md:12` — The platform table omits `Axial.Layers`, `Axial.Guardrails`, and both HTTP host adapters even though the dependency table or adjacent notes name them; include their runtime/build-time status or state why they are excluded.
+- [done] `docs/15-notes/01-packages-and-platforms.md:12` — The platform table omits `Axial.Layers`, `Axial.Guardrails`, and both HTTP host adapters even though the dependency table or adjacent notes name them; include their runtime/build-time status or state why they are excluded.
 - `docs/15-notes/03-guardrails.md:32` — No command or example shows how to confirm that a consumer project actually runs the analyzer and fails at error severity; provide a minimal deliberate diagnostic and expected build result.
 
 - `docs/14-advanced/04-writing-effect-analyzers.md:79` — No test or build command checks that the analyzer catches a direct constructor call, honors a suppression, and fails a consuming build at error severity; add a minimal consumer verification path.
