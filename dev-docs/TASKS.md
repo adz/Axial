@@ -19,6 +19,14 @@ lists the queue. Work on main.
     Brief: `dev-docs/handoffs/T7-reference-app-reassessment.md`; findings come back as
     `dev-docs/reassessment/<app>.md` on `chore/t7-reassessment-<app>` branches or patches.
   - Then merge the findings into `LATER_TODO.md` (promote, defer, or delete items) and close this task.
+- [ ] T22: Resilience policies for Polly parity (shared, stateful policies beside the stateless `Schedule`)
+  - Bulkhead: a bounded wait queue on `Semaphore` that rejects with a typed error when full.
+  - Circuit breaker: `CircuitBreaker.make` and `CircuitBreaker.protect`; shared `Ref`/STM state, open duration on
+    `IHasClock`, typed-error failure predicate, defects configurable, interruption never counts, open error mapped
+    into the caller's error type, consecutive-failure trip plus half-open probes, state changes on a `Hub`.
+  - Rate limiter bridge to `System.Threading.RateLimiting` with a typed rejection (.NET only; decide Fable).
+  - Hedging as a documented recipe over `Flow.race`; a "Coming from Polly" page mapping every Polly strategy.
+  - Adaptive concurrency stays a `dev-docs/current-ideas/` sketch until an application needs it.
 
 ## Acceptance
 
