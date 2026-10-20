@@ -19,9 +19,13 @@ module DSL =
         if isNull value then
             ""
         else
+#if FABLE_COMPILER
+            string value
+#else
             match value with
             | :? IFormattable as formattable -> formattable.ToString(format, CultureInfo.InvariantCulture)
             | _ -> string value
+#endif
 
 
     type EndpointConnector =
@@ -85,7 +89,11 @@ module DSL =
                     else
                         descriptor.Substring(0, separator)
 
+#if FABLE_COMPILER
+                let valueIndex = Int32.Parse(indexText)
+#else
                 let valueIndex = Int32.Parse(indexText, CultureInfo.InvariantCulture)
+#endif
 
                 if valueIndex < 0 || valueIndex >= values.Length then
                     invalidArg (nameof program) "Shell interpolation index is out of range."

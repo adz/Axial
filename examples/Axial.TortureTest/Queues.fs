@@ -106,7 +106,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
 /// Lossy strategies under concurrent producers: a dropping queue and a sliding queue each read by a slow consumer.
 let runLossy (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
-    let synchronous = Queue.droppingNow<int> 1
+    let synchronous : Queue<int> = Queue.droppingNow 1
     Queue.shutdownNow synchronous
     let perProducer = round.Size 500
 

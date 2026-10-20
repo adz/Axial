@@ -95,7 +95,7 @@ module Clock =
             member _.Sleep(delay, cancellationToken) =
 #if FABLE_COMPILER
                 let pending =
-                    JS.Promise.Create<unit>(fun resolve reject ->
+                    JS.Constructors.Promise.Create<unit>(fun resolve reject ->
                         let deadline = Platform.monotonicNow () + delay
                         let settled = ref false
                         let timer: obj ref = ref null
@@ -665,7 +665,11 @@ module EnvironmentVariable =
         (name: string)
         : Flow<'env, EnvironmentVariableError, int> =
         readParsed "an integer" (fun value ->
+#if FABLE_COMPILER
+            match Int32.TryParse(value) with
+#else
             match Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture) with
+#endif
             | true, parsed -> Some parsed
             | false, _ -> None) name
 
@@ -674,7 +678,11 @@ module EnvironmentVariable =
         (name: string)
         : Flow<'env, EnvironmentVariableError, int64> =
         readParsed "a 64-bit integer" (fun value ->
+#if FABLE_COMPILER
+            match Int64.TryParse(value) with
+#else
             match Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture) with
+#endif
             | true, parsed -> Some parsed
             | false, _ -> None) name
 
@@ -683,7 +691,11 @@ module EnvironmentVariable =
         (name: string)
         : Flow<'env, EnvironmentVariableError, float> =
         readParsed "a floating-point number" (fun value ->
+#if FABLE_COMPILER
+            match Double.TryParse(value) with
+#else
             match Double.TryParse(value, NumberStyles.Float ||| NumberStyles.AllowThousands, CultureInfo.InvariantCulture) with
+#endif
             | true, parsed -> Some parsed
             | false, _ -> None) name
 
@@ -692,7 +704,11 @@ module EnvironmentVariable =
         (name: string)
         : Flow<'env, EnvironmentVariableError, decimal> =
         readParsed "a decimal number" (fun value ->
+#if FABLE_COMPILER
+            match Decimal.TryParse(value) with
+#else
             match Decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture) with
+#endif
             | true, parsed -> Some parsed
             | false, _ -> None) name
 
@@ -719,7 +735,11 @@ module EnvironmentVariable =
         (name: string)
         : Flow<'env, EnvironmentVariableError, TimeSpan> =
         readParsed "a time span" (fun value ->
+#if FABLE_COMPILER
+            match TimeSpan.TryParse(value) with
+#else
             match TimeSpan.TryParse(value, CultureInfo.InvariantCulture) with
+#endif
             | true, parsed -> Some parsed
             | false, _ -> None) name
 

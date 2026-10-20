@@ -243,7 +243,7 @@ module HostingTests =
 
     [<Fact>]
     let ``named locals follow concurrent jobs and forked logs`` () =
-        let provider = ScopedProvider()
+        let provider = new ScopedProvider()
         use factory = LoggerFactory.Create(fun builder -> builder.AddProvider(provider) |> ignore)
         let logger = MicrosoftLogging.fromFactory "jobs" factory
         let jobId = FiberLocal.named "jobId" "unset"

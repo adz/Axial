@@ -68,7 +68,7 @@ module FileSystemServiceTests =
         { new IClock with
             member _.UtcNow() = DateTimeOffset.UtcNow
             member _.Elapsed() = TimeSpan.FromMilliseconds(Environment.TickCount64 |> float)
-            member _.Sleep(delay, token) = Task.Delay(delay, token) :> Task }
+            member _.Sleep(delay, token) = Task.Delay(delay, token) }
 
     let private env () : FileSystemTestEnv =
         { FileSystem = FileSystem.live; Clock = clock () }

@@ -422,11 +422,14 @@ module FileSystemError =
 
     /// <summary>Classifies an exception raised by a file-system operation.</summary>
     let fromException (path: string option) (error: exn) : FileSystemError =
+#if FABLE_COMPILER
+        // JavaScript errors do not retain reliable .NET exception identities. At this boundary,
+        // failures raised by an IFileSystem operation are therefore classified as generic I/O.
+        FileSystemError.Io(path, error.Message)
+#else
         match error with
-#if !FABLE_COMPILER
         | :? FileNotFoundException as fileNotFound ->
             FileSystemError.FileNotFound(defaultArg (Option.ofObj fileNotFound.FileName) (defaultArg path ""))
-#endif
         | :? DirectoryNotFoundException ->
             FileSystemError.DirectoryNotFound(defaultArg path "")
         | :? UnauthorizedAccessException ->
@@ -441,6 +444,7 @@ module FileSystemError =
             FileSystemError.Io(path, error.Message)
         | _ ->
             FileSystemError.Unexpected(path, error.Message)
+#endif
 
     /// <summary>Formats a human-readable description for a file-system error.</summary>
     let describe (error: FileSystemError) = error.ToString()

@@ -14,7 +14,7 @@ module CommandTests =
             { new IClock with
                 member _.UtcNow() = DateTimeOffset.UtcNow
                 member _.Elapsed() = TimeSpan.FromTicks(Environment.TickCount64)
-                member _.Sleep(delay, token) = Task.Delay(delay, token) :> Task }
+                member _.Sleep(delay, token) = Task.Delay(delay, token) }
         ElmishRuntime.start
             { Post = post; OnDefect = onDefect; HistoryCapacity = 1024 }
             (ClockEnvironment(clock))

@@ -6,6 +6,10 @@
     <GenerateProgramFile>false</GenerateProgramFile>
     <OutputType>Library</OutputType>
     <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>
+    <!-- F# emits FS0988 for this xUnit library despite OutputType=Library; there is intentionally no entry point.
+         NU1605 is expected because analyzer tests must load the exact FSharp.Core used by FCS, while their Axial
+         fixture reference was built by the current SDK and advertises its newer FSharp.Core. -->
+    <NoWarn>$(NoWarn);FS0988;NU1605</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +29,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Unquote" Version="7.0.0" />
+    <PackageReference Update="FSharp.Core" Version="10.1.201" PrivateAssets="all" />
     <PackageReference Include="FSharp.Analyzers.SDK.Testing" Version="0.37.2" />
   </ItemGroup>
 

@@ -17,7 +17,7 @@ type TestRuntime<'env when 'env :> IHasClock> internal (environment: 'env) =
     let errors = ConcurrentQueue<CommandDefect>()
     let runtime =
         let runtime =
-            ElmishRuntime<'env>(
+            new ElmishRuntime<'env>(
                 { Post = deliveries.Enqueue
                   OnDefect = errors.Enqueue
                   HistoryCapacity = 128 })
@@ -61,7 +61,7 @@ module ElmishRuntime =
     /// <param name="environment">The environment every command runs with; it must implement <see cref="T:Axial.IHasClock" />.</param>
     /// <returns>A running <see cref="T:Axial.ElmishFlows.ElmishRuntime`1" />.</returns>
     let start (options: ElmishRuntimeOptions) (environment: 'env when 'env :> IHasClock) =
-        let runtime = ElmishRuntime<'env>(options)
+        let runtime = new ElmishRuntime<'env>(options)
         let handle = App.start environment (Flow.withFiberRegistry runtime.Registry (runtime.Pump()))
         runtime.SetEnvironment(environment)
         runtime.Attach(handle)
@@ -85,7 +85,7 @@ module ElmishRuntime =
         (input: 'input)
         : Async<Result<ElmishRuntime<'env>, 'error>> =
         async {
-            let runtime = ElmishRuntime<'env>(options)
+            let runtime = new ElmishRuntime<'env>(options)
             let ready = TaskCompletionSource<Result<ElmishRuntime<'env>, 'error>>(TaskCreationOptions.RunContinuationsAsynchronously)
 
             let root : Flow<'input, 'error, unit> =

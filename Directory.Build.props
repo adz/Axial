@@ -26,6 +26,7 @@
       would.
     -->
     <_AxialGuardrailsInStrictTree Condition="$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src')) or $(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)tests'))">true</_AxialGuardrailsInStrictTree>
+    <TreatWarningsAsErrors Condition="'$(_AxialGuardrailsInStrictTree)' == 'true'">true</TreatWarningsAsErrors>
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
     <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == '' and '$(AXIAL_GUARDRAILS_SEVERITY)' != ''">$(AXIAL_GUARDRAILS_SEVERITY)</AxialGuardrailsSeverity>
     <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == '' and '$(_AxialGuardrailsInStrictTree)' == 'true'">error</AxialGuardrailsSeverity>

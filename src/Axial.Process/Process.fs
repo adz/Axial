@@ -62,9 +62,13 @@ module Process =
         if isNull value then
             ""
         else
+#if FABLE_COMPILER
+            string value
+#else
             match value with
             | :? IFormattable as formattable -> formattable.ToString(format, CultureInfo.InvariantCulture)
             | _ -> string value
+#endif
 
     /// Creates a one-command process specification from an executable and already-separated arguments.
     /// Example: Process.commandArgs "git" [ "status"; "--short" ] |&gt; Process.toFlow
@@ -162,7 +166,11 @@ module Process =
                     else
                         descriptor.Substring(0, separator)
 
+#if FABLE_COMPILER
+                let valueIndex = Int32.Parse(indexText)
+#else
                 let valueIndex = Int32.Parse(indexText, CultureInfo.InvariantCulture)
+#endif
                 let colon = descriptor.IndexOf ':'
                 hole valueIndex (if colon < 0 then null else descriptor.Substring(colon + 1))
                 index <- closing + 1

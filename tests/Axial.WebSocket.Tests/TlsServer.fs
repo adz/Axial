@@ -57,9 +57,9 @@ module TlsServer =
                         | Some root ->
                             use chain = new X509Chain()
                             chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
-                            chain.ChainPolicy.CustomTrustStore.Add(root)
+                            chain.ChainPolicy.CustomTrustStore.Add(root) |> ignore
                             chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
-                            chain.Build(cert)) |> ignore))
+                            chain.Build(cert)) |> ignore) |> ignore) |> ignore
         let app = builder.Build()
         app.UseWebSockets() |> ignore
         app.Map("/ws", RequestDelegate(fun (context: HttpContext) -> task {
@@ -72,7 +72,8 @@ module TlsServer =
                     if result.MessageType = WebSocketMessageType.Close then
                         active <- false
                     else
-                        do! socket.SendAsync(ReadOnlyMemory<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None)
+                        let! sent = socket.SendAsync(ReadOnlyMemory<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None)
+                        sent |> ignore
             else context.Response.StatusCode <- 400
         })) |> ignore
         do! app.StartAsync()

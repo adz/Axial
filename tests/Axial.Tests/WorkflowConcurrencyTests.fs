@@ -371,7 +371,7 @@ module WorkflowConcurrencyTests =
         test <@ blockingThread.Value <> callerThread @>
         test <@ result = Exit.Failure(Cause.Fail "rejected") @>
         test <@ match defect with Exit.Failure(Cause.Die _) -> true | _ -> false @>
-        test <@ match attempted with Exit.Failure(Cause.Fail (:? Exception)) -> true | _ -> false @>
+        test <@ match attempted with Exit.Failure(Cause.Fail _) -> true | _ -> false @>
 
     [<Fact>]
     let ``Blocking work runs to completion when interrupted and reports the interruption`` () =
