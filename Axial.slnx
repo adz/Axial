@@ -39,6 +39,7 @@
     <Project Path="src/Axial/Axial.fsproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Axial.Build.Tests/Axial.Build.Tests.csproj" />
     <Project Path="tests/Axial.Comparisons.Tests/Axial.Comparisons.Tests.fsproj" />
     <Project Path="tests/Axial.ElmishFlows.Tests/Axial.ElmishFlows.Tests.fsproj" />
     <Project Path="tests/Axial.Fable.Tests/Axial.Fable.Tests.fsproj" />

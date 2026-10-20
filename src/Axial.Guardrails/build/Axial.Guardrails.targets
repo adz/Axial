@@ -89,6 +89,8 @@
         <Severity>$(AxialGuardrailsSeverity)</Severity>
       </_AxialGuardrailResolved>
       <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailResolved->'guardrail&#9;%(Identity)&#9;%(Severity)')" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;true" Condition="'$(IsAotCompatible)' == 'true' or '$(PublishAot)' == 'true'" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;false" Condition="'$(IsAotCompatible)' != 'true' and '$(PublishAot)' != 'true'" />
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Category)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
     </ItemGroup>
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />

@@ -19,8 +19,8 @@ type WebSocketMessage =
     | Binary of byte array
     override this.ToString() =
         match this with
-        | Text value -> $"Text({value.Length} chars)"
-        | Binary bytes -> $"Binary({bytes.Length} bytes)"
+        | Text value -> "Text(" + string value.Length + " chars)"
+        | Binary bytes -> "Binary(" + string bytes.Length + " bytes)"
 
 [<RequireQualifiedAccess>]
 type WebSocketError =
@@ -36,7 +36,7 @@ type WebSocketError =
         | Closed(code, reason) ->
             let status = code |> Option.map string |> Option.defaultValue "unknown"
             let detail = reason |> Option.defaultValue ""
-            $"WebSocket closed ({status}, {detail})"
+            "WebSocket closed (" + status + ", " + detail + ")"
 
 [<RequireQualifiedAccess>]
 type TlsVersion = | Default | Tls12 | Tls13

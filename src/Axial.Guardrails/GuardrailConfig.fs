@@ -21,6 +21,8 @@ let EnvironmentVariable = "AXIAL_GUARDRAILS_CONFIG"
 type Config =
     { /// Enabled guardrails and their severity. A guardrail that is absent does not run.
       Severities: Map<string, Severity>
+      /// Whether the analyzed project declares NativeAOT compatibility or publishing intent.
+      NativeAot: bool
       /// Every rule, built-in and contributed, whether or not its guardrail is enabled.
       AllRules: EffectRule list }
 
@@ -45,6 +47,7 @@ let private parseScope (text: string) =
 
 let defaults: Config =
     { Severities = builtInGuardrails |> Seq.map (fun name -> name, Severity.Warning) |> Map.ofSeq
+      NativeAot = false
       AllRules = builtInRules }
 
 let parse (lines: string seq) : Config =
@@ -73,7 +76,14 @@ let parse (lines: string seq) : Config =
                       Replacement = replacement.Trim() })
             | _ -> None)
 
+    let nativeAot =
+        entries
+        |> List.exists (function
+            | [| "setting"; "nativeAot"; value |] -> String.Equals(value.Trim(), "true", StringComparison.OrdinalIgnoreCase)
+            | _ -> false)
+
     { Severities = severities
+      NativeAot = nativeAot
       AllRules = builtInRules @ contributed }
 
 let private gate = obj ()

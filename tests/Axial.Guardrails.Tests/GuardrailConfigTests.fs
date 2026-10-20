@@ -29,9 +29,11 @@ module GuardrailConfigTests =
             GuardrailConfig.parse
                 [ "guardrail\tAxial\terror"
                   "guardrail\tAxial.HttpClient\twarning"
+                  "setting\tnativeAot\ttrue"
                   "rule\tacme.clock\tAcme\tacme-clock\tmember:Acme.Clock::Now,Today\tinsideFlow\treads the Acme clock\tAcme.IClock" ]
 
         test <@ config.Severities = Map.ofList [ "Axial", Severity.Error; "Axial.HttpClient", Severity.Warning ] @>
+        test <@ config.NativeAot @>
         test <@ config.Rules |> List.forall (fun rule -> rule.Guardrail = "Axial" || rule.Guardrail = "Axial.HttpClient") @>
         test <@ config.Rules |> List.exists (fun rule -> rule.Id = "http.new-client") @>
         test <@ not (config.Rules |> List.exists (fun rule -> rule.Guardrail = "Axial.Console")) @>

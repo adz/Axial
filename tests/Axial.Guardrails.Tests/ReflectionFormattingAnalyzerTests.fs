@@ -19,6 +19,39 @@ module ReflectionFormattingAnalyzerTests =
             return ReflectionFormattingAnalyzer.analyze ctx |> List.map (fun message -> message.Range.StartLine - 5, message.Code)
         }
 
+    let private nativeAotFindings (body: string) =
+        task {
+            let! ctx = AnalyzerTestContext.create ("module M\n" + body)
+            return ReflectionFormattingAnalyzer.analyzeWithNativeAot true ctx |> List.map (fun message -> message.Range.StartLine - 1, message.Code, message.Message)
+        }
+
+    [<Fact>]
+    let ``flags printf family and printf-lowered interpolation in NativeAOT projects`` () =
+        task {
+            let! found =
+                nativeAotFindings (
+                    "let a = sprintf \"count %d\" 1\n"
+                    + "let b () : unit = failwithf \"bad %d\" 2\n"
+                    + "let c = $\"count {3}.\"\n")
+
+            test <@ found |> List.map (fun (line, code, _) -> line, code) = [ 1, "AXG006"; 2, "AXG006"; 3, "AXG006" ] @>
+            test <@ found |> List.forall (fun (_, _, message) -> message.Contains("Convert the hole with `string` or use String.Concat.")) @>
+        }
+
+    [<Fact>]
+    let ``does not flag printf lowering outside NativeAOT projects`` () =
+        task {
+            let! ctx = AnalyzerTestContext.create "module M\nlet value = $\"count {1}.\"\n"
+            test <@ ReflectionFormattingAnalyzer.analyzeWithNativeAot false ctx = [] @>
+        }
+
+    [<Fact>]
+    let ``does not flag all-string-hole interpolation in NativeAOT projects`` () =
+        task {
+            let! found = nativeAotFindings "let name = \"Axial\"\nlet value = $\"hello {name}\"\n"
+            test <@ found = [] @>
+        }
+
     [<Fact>]
     let ``flags interpolation, string, ToString and %A on unions and records`` () =
         task {

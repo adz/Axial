@@ -57,7 +57,7 @@ module Files =
                         while not opened && attempts < 5 do
                             attempts <- attempts + 1
                             let identifier = guid.NewGuid().ToString("N")
-                            temporary <- Path.Combine(directory, $".{name}.{identifier}.tmp")
+                            temporary <- Path.Combine(directory, "." + name + "." + identifier + ".tmp")
                             try
                                 stream <- fs.OpenFile(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None)
                                 owned <- true

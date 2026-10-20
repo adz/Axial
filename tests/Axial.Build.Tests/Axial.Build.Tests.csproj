@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Axial/Axial.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Console/Axial.Console.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Layers/Axial.Layers.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.FileSystem/Axial.FileSystem.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Files/Axial.Files.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.HttpClient/Axial.HttpClient.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.WebSocket/Axial.WebSocket.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Process/Axial.Process.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.PlatformService/Axial.PlatformService.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Hosting/Axial.Hosting.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Telemetry/Axial.Telemetry.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>
