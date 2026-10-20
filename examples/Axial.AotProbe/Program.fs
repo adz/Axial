@@ -1,5 +1,5 @@
 /// Runs under NativeAOT and fails loudly when a code path depends on metadata that AOT removes: F#'s reflection-based
-/// structured printing (compiler-generated ToString on unions and records, %A), diagnostics rendering, and deep
+/// structural rendering, diagnostics rendering, and deep
 /// synchronous flow chains. `scripts/run-aot-probe.sh` publishes and runs it.
 open System
 open Axial
@@ -14,7 +14,7 @@ type ProbeError =
 
     override this.ToString() =
         match this with
-        | Rejected code -> $"Rejected {code}"
+        | Rejected code -> "Rejected " + code.ToString()
 
 /// A user error type without its own rendering: its generated ToString needs reflection that AOT removes.
 type PlainError = Refused of int
@@ -24,28 +24,40 @@ let mutable failures = 0
 let expect (name: string) (actual: string) (expected: string) =
     if actual <> expected then
         failures <- failures + 1
-        eprintfn "FAIL %s: expected <%s> got <%s>" name expected actual
+        // Probe reporting is an executable host-boundary console effect.
+        // axial-allow-effect: console
+        Console.Error.WriteLine(String.Concat("FAIL ", name, ": expected <", expected, "> got <", actual, ">"))
     else
-        printfn "ok   %s" name
+        // Probe reporting is an executable host-boundary console effect.
+        // axial-allow-effect: console
+        Console.Out.WriteLine("ok   " + name)
 
 let expectContains (name: string) (actual: string) (fragment: string) =
     if not (actual.Contains fragment) then
         failures <- failures + 1
-        eprintfn "FAIL %s: <%s> does not contain <%s>" name actual fragment
+        // Probe reporting is an executable host-boundary console effect.
+        // axial-allow-effect: console
+        Console.Error.WriteLine(String.Concat("FAIL ", name, ": <", actual, "> does not contain <", fragment, ">"))
     else
-        printfn "ok   %s" name
+        // Probe reporting is an executable host-boundary console effect.
+        // axial-allow-effect: console
+        Console.Out.WriteLine("ok   " + name)
 
 let guarded (name: string) (check: unit -> unit) =
     try
         check ()
     with error ->
         failures <- failures + 1
-        eprintfn "FAIL %s threw %s: %s" name (error.GetType().FullName) error.Message
+        // Probe reporting is an executable host-boundary console effect.
+        // axial-allow-effect: console
+        Console.Error.WriteLine(String.Concat("FAIL ", name, " threw ", error.GetType().FullName, ": ", error.Message))
 
 [<EntryPoint>]
 let main _ =
     guarded "flow result" (fun () ->
         let exit =
+            // executable host boundary performs this effect.
+            // axial-allow-effect: blocking
             (Flow.succeed 21 |> Flow.map ((*) 2)).StartAsTask(()).GetAwaiter().GetResult()
 
         expect "flow result" (exit.ToString()) "Success(42)")
@@ -74,15 +86,16 @@ let main _ =
         expect "Exit string payload" ((Exit<string, ProbeError>.Success "x").ToString()) "Success(\"x\")"
         let plain: Exit<int, PlainError> = Exit.Failure(Cause.Fail(Refused 3))
         let rendered = plain.ToString()
-        // Under the JIT the generated ToString works; under NativeAOT it falls back to the type name instead of throwing.
-        if
-            rendered <> "Failure(Fail(<PlainError>))"
-            && rendered <> "Failure(Fail(Refused 3))"
-        then
+        // With --reflectionfree, a union without an override falls back to its runtime type name.
+        if not (rendered.StartsWith("Failure(Fail(") && rendered.EndsWith("PlainError))")) then
             failures <- failures + 1
-            eprintfn "FAIL Exit.ToString without own ToString: got <%s>" rendered
+            // Probe reporting is an executable host-boundary console effect.
+            // axial-allow-effect: console
+            Console.Error.WriteLine("FAIL Exit.ToString without own ToString: got <" + rendered + ">")
         else
-            printfn "ok   Exit.ToString without own ToString")
+            // Probe reporting is an executable host-boundary console effect.
+            // axial-allow-effect: console
+            Console.Out.WriteLine("ok   Exit.ToString without own ToString"))
 
     guarded "Exit.toResult composite" (fun () ->
         try
@@ -90,7 +103,9 @@ let main _ =
             |> ignore
 
             failures <- failures + 1
-            eprintfn "FAIL Exit.toResult composite: expected an exception"
+            // Probe reporting is an executable host-boundary console effect.
+            // axial-allow-effect: console
+            Console.Error.WriteLine("FAIL Exit.toResult composite: expected an exception")
         with :? InvalidOperationException as error ->
             expectContains "Exit.toResult composite" error.Message "Fail(Rejected 1)")
 
@@ -118,6 +133,9 @@ let main _ =
             }
             |> Flow.withFiberRegistry registry
 
+        // executable host boundary performs this effect.
+
+        // axial-allow-effect: blocking
         match workflow.StartAsTask(ClockEnvironment(Clock.live)).GetAwaiter().GetResult() with
         | Exit.Success text -> expectContains "FiberRegistry.DumpAt" text "\"probe child\" Running"
         | other -> expect "fiber diagnostics exit" (other.ToString()) "Success")
@@ -136,6 +154,8 @@ let main _ =
 
         expect
             "200k synchronous loop"
+            // executable host boundary performs this effect.
+            // axial-allow-effect: blocking
             ((workflow.StartAsTask(()).GetAwaiter().GetResult()).ToString())
             "Success(200000)")
 
@@ -163,7 +183,7 @@ let main _ =
             "Tee(Discard, File log)")
 
     guarded "process capture and streaming" (fun () ->
-        let command = Process.commandArgs "printf" [ "first\nsecond\n" ]
+        let command = Process.commandArgs "sh" [ "-c"; "echo first; echo second" ]
 
         let checkResult (outcome: Exit<ProcessResult, ProcessError>) =
             match outcome with
@@ -194,8 +214,12 @@ let main _ =
         expect "value runner" (string result.ExitCode) "0")
 
     if failures = 0 then
-        printfn "AOT probe passed."
+        // Probe reporting is an executable host-boundary console effect.
+        // axial-allow-effect: console
+        Console.Out.WriteLine("AOT probe passed.")
         0
     else
-        eprintfn "AOT probe: %d failure(s)." failures
+        // Probe reporting is an executable host-boundary console effect.
+        // axial-allow-effect: console
+        Console.Error.WriteLine("AOT probe: " + string failures + " failure(s).")
         1

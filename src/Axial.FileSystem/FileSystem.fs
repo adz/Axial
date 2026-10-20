@@ -44,15 +44,15 @@ type FileSystemError =
     override this.ToString() =
         let describePath path = defaultArg path "<unknown>"
         match this with
-        | FileNotFound path -> $"File not found: {path}"
-        | DirectoryNotFound path -> $"Directory not found: {path}"
-        | AlreadyExists path -> $"Path already exists: {path}"
-        | Unauthorized(path, message) -> $"Unauthorized file-system access at {describePath path}: {message}"
-        | InvalidPath(path, message) -> $"Invalid path {describePath path}: {message}"
-        | PathTooLong(path, message) -> $"Path too long {describePath path}: {message}"
-        | Io(path, message) -> $"File-system I/O error at {describePath path}: {message}"
-        | Unsupported(path, message) -> $"Unsupported file-system operation at {describePath path}: {message}"
-        | Unexpected(path, message) -> $"Unexpected file-system error at {describePath path}: {message}"
+        | FileNotFound path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "File not found: {0}", path))
+        | DirectoryNotFound path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Directory not found: {0}", path))
+        | AlreadyExists path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Path already exists: {0}", path))
+        | Unauthorized(path, message) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Unauthorized file-system access at {0}: {1}", describePath path, message))
+        | InvalidPath(path, message) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Invalid path {0}: {1}", describePath path, message))
+        | PathTooLong(path, message) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Path too long {0}: {1}", describePath path, message))
+        | Io(path, message) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "File-system I/O error at {0}: {1}", describePath path, message))
+        | Unsupported(path, message) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Unsupported file-system operation at {0}: {1}", describePath path, message))
+        | Unexpected(path, message) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Unexpected file-system error at {0}: {1}", describePath path, message))
 
 /// <summary>Distinguishes files from directories in a listing.</summary>
 [<RequireQualifiedAccess>]
@@ -72,7 +72,8 @@ type FileSystemEntry =
       Size: int64
       LastWriteTimeUtc: DateTimeOffset }
     override this.ToString() =
-        $"{this.Kind}: {this.FullPath} ({this.Size} bytes, {this.LastWriteTimeUtc:O})"
+        let lastWrite = this.LastWriteTimeUtc.ToString("O")
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}: {1} ({2} bytes, {3})", this.Kind, this.FullPath, this.Size, lastWrite))
 
 [<RequireQualifiedAccess>]
 type FileSystemChangeKind =
@@ -86,8 +87,8 @@ type FileSystemChange =
     { Kind: FileSystemChangeKind; Path: string; OldPath: string option }
     override this.ToString() =
         match this.OldPath with
-        | Some old -> $"{this.Kind}: {old} -> {this.Path}"
-        | None -> $"{this.Kind}: {this.Path}"
+        | Some old -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}: {1} -> {2}", this.Kind, old, this.Path))
+        | None -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}: {1}", this.Kind, this.Path))
 
 /// <summary>Provides access to common file, directory, and path operations.</summary>
 type IFileSystem =
@@ -472,7 +473,7 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
     let requireFile path =
         match files.TryGetValue(normalize path) with
         | true, bytes -> bytes
-        | false, _ -> raise (FileNotFoundException($"File not found: {path}"))
+        | false, _ -> raise (FileNotFoundException((System.String.Format(Globalization.CultureInfo.InvariantCulture, "File not found: {0}", path))))
 
     let write (path: string) (bytes: byte array) =
         let full = normalize path
@@ -481,7 +482,7 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
         if not (isNull parent) then directories.Add parent |> ignore
 
     let notSupported (memberName: string) : 'value =
-        raise (NotSupportedException($"{memberName} is not supported by the in-memory test file system."))
+        raise (NotSupportedException((System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} is not supported by the in-memory test file system.", memberName))))
 
     let wildcard (pattern: string) (name: string) =
         if pattern = "*" || pattern = "*.*" then
@@ -553,10 +554,10 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
         member _.WriteAllText(path, contents, encoding) = write path (encoding.GetBytes contents)
         member _.WriteAllTextAsync(path, contents) =
             Flow.attemptBlocking (fun _ -> write path (Encoding.UTF8.GetBytes contents) ) |> Flow.mapError (FileSystemError.fromException (Some path))
-        member _.WriteAllLines(path, contents) = write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes)
-        member _.WriteAllLines(path, contents, encoding) = write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> encoding.GetBytes)
+        member _.WriteAllLines(path, contents) = write path (contents |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes)
+        member _.WriteAllLines(path, contents, encoding) = write path (contents |> String.concat Environment.NewLine |> encoding.GetBytes)
         member _.WriteAllLinesAsync(path, contents) =
-            Flow.attemptBlocking (fun _ -> write path (contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes) ) |> Flow.mapError (FileSystemError.fromException (Some path))
+            Flow.attemptBlocking (fun _ -> write path (contents |> String.concat Environment.NewLine |> Encoding.UTF8.GetBytes) ) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.WriteAllBytes(path, contents) = write path contents
         member _.WriteAllBytesAsync(path, contents) =
             Flow.attemptBlocking (fun _ -> write path contents ) |> Flow.mapError (FileSystemError.fromException (Some path))
@@ -572,21 +573,21 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
                 write path (Array.append existing (Encoding.UTF8.GetBytes contents))) |> Flow.mapError (FileSystemError.fromException (Some path))
         member _.AppendAllLines(path, contents) =
             let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
-            let text = contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine
+            let text = contents |> String.concat Environment.NewLine
             write path (Array.append existing (Encoding.UTF8.GetBytes(text + Environment.NewLine)))
         member _.AppendAllLines(path, contents, encoding) =
             let existing = if files.ContainsKey(normalize path) then requireFile path else Array.empty
-            let text = contents |> Seq.map (sprintf "%s") |> String.concat Environment.NewLine
+            let text = contents |> String.concat Environment.NewLine
             write path (Array.append existing (encoding.GetBytes(text + Environment.NewLine)))
         member _.FileExists(path) = files.ContainsKey(normalize path)
         member _.DeleteFile(path) = files.Remove(normalize path) |> ignore
         member _.CopyFile(sourcePath, destinationPath, overwrite) =
             if not overwrite && files.ContainsKey(normalize destinationPath) then
-                raise (IOException($"File already exists: {destinationPath}"))
+                raise (IOException((System.String.Format(Globalization.CultureInfo.InvariantCulture, "File already exists: {0}", destinationPath))))
             write destinationPath (requireFile sourcePath)
         member _.MoveFile(sourcePath, destinationPath, overwrite) =
             if not overwrite && files.ContainsKey(normalize destinationPath) then
-                raise (IOException($"File already exists: {destinationPath}"))
+                raise (IOException((System.String.Format(Globalization.CultureInfo.InvariantCulture, "File already exists: {0}", destinationPath))))
             let bytes = requireFile sourcePath
             files.Remove(normalize sourcePath) |> ignore
             write destinationPath bytes
@@ -631,7 +632,7 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
             let prefix = full.TrimEnd(Path.DirectorySeparatorChar) + string Path.DirectorySeparatorChar
             let contained = files.Keys |> Seq.filter (fun filePath -> filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) |> Seq.toArray
             if contained.Length > 0 && not recursive then
-                raise (IOException($"Directory not empty: {path}"))
+                raise (IOException((System.String.Format(Globalization.CultureInfo.InvariantCulture, "Directory not empty: {0}", path))))
             for filePath in contained do files.Remove filePath |> ignore
             directories.Remove full |> ignore
         member _.MoveDirectory(sourcePath, destinationPath) =

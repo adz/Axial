@@ -81,17 +81,17 @@ type Cause<'error> =
     /// </summary>
     override this.ToString() =
         match this with
-        | Fail error -> $"Fail({OutcomeText.value (box error)})"
+        | Fail error -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Fail({0})", OutcomeText.value (box error)))
         | Die exn ->
 #if FABLE_COMPILER
-            $"Die({exn.Message})"
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Die({0})", exn.Message))
 #else
-            $"Die({exn.GetType().Name}: {exn.Message})"
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Die({0}: {1})", exn.GetType().Name, exn.Message))
 #endif
         | Interrupt -> "Interrupt"
-        | Then(left, right) -> $"Then({left.ToString()}, {right.ToString()})"
-        | Both(left, right) -> $"Both({left.ToString()}, {right.ToString()})"
-        | Traced(inner, trace) -> $"Traced({inner.ToString()}, {trace})"
+        | Then(left, right) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Then({0}, {1})", left.ToString(), right.ToString()))
+        | Both(left, right) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Both({0}, {1})", left.ToString(), right.ToString()))
+        | Traced(inner, trace) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Traced({0}, {1})", inner.ToString(), trace))
 
 /// <summary>
 /// Represents the final outcome of a workflow execution.
@@ -108,8 +108,8 @@ type Exit<'value, 'error> =
     /// <summary>Renders the exit without reflection. Values use their own <c>ToString</c>, or their type name when that ToString needs reflection the runtime removed.</summary>
     override this.ToString() =
         match this with
-        | Success value -> $"Success({OutcomeText.value (box value)})"
-        | Failure cause -> $"Failure({cause.ToString()})"
+        | Success value -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Success({0})", OutcomeText.value (box value)))
+        | Failure cause -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Failure({0})", cause.ToString()))
 
 /// <summary>Describes the current lifecycle state of a fiber.</summary>
 [<RequireQualifiedAccess>]

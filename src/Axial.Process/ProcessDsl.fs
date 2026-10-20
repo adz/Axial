@@ -153,7 +153,7 @@ module DSL =
         shellCommand
             "pwsh"
             (fun script -> [ "-NoProfile"; "-NonInteractive"; "-Command"; script ])
-            (fun index -> $"$args[{index}]")
+            (fun index -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "$args[{0}]", index)))
             program
 
     /// Builds an explicitly assembled Bash program. Values in the text are not escaped by Axial.

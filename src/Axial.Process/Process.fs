@@ -552,9 +552,9 @@ module Process =
         function
         | InputSource.Empty -> "empty"
         | InputSource.Inherit -> "inherited handle"
-        | InputSource.Text value -> $"text ({value.Length} characters)"
-        | InputSource.Bytes value -> $"bytes ({value.Length} bytes)"
-        | InputSource.File path -> $"file: {path}"
+        | InputSource.Text value -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "text ({0} characters)", value.Length))
+        | InputSource.Bytes value -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "bytes ({0} bytes)", value.Length))
+        | InputSource.File path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "file: {0}", path))
         | InputSource.Stream _ -> "flow stream"
 
     let rec private describeTarget =
@@ -562,8 +562,8 @@ module Process =
         | OutputTarget.Console -> "console"
         | OutputTarget.Inherit -> "inherited handle"
         | OutputTarget.Discard -> "discard"
-        | OutputTarget.File path -> $"file: {path}"
-        | OutputTarget.AppendFile path -> $"append file: {path}"
+        | OutputTarget.File path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "file: {0}", path))
+        | OutputTarget.AppendFile path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "append file: {0}", path))
         | OutputTarget.Callback _ -> "callback"
         | OutputTarget.Sink _
         | OutputTarget.SinkFactory _ -> "sink"
@@ -708,9 +708,9 @@ module Process =
         let commands = String.concat " | " plan.Commands
 
         [
-            yield $"commands: {commands}"
+            yield (System.String.Format(Globalization.CultureInfo.InvariantCulture, "commands: {0}", commands))
             for stage in plan.Stages do
-                yield $"stage {stage.Stage}: in {stage.StdIn}, out {stage.StdOut}, err {stage.StdErr}"
+                yield (System.String.Format(Globalization.CultureInfo.InvariantCulture, "stage {0}: in {1}, out {2}, err {3}", stage.Stage, stage.StdIn, stage.StdOut, stage.StdErr))
         ]
 
     let service<'env, 'error when 'env :> IHasProcess> : Flow<'env, 'error, IProcess> =

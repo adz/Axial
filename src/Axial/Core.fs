@@ -34,7 +34,7 @@ type ManualClock(initialUtc: DateTimeOffset) =
                 match exit with
                 | Exit.Success() -> ()
                 | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException(cancellationToken))
-                | Exit.Failure cause -> failwith $"Manual clock sleep failed: {cause}"
+                | Exit.Failure cause -> failwith (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Manual clock sleep failed: {0}", cause))
             } :> Task
 #endif
 
@@ -119,16 +119,16 @@ module Cause =
             let padding = String.replicate indent " "
 
             match current with
-            | Cause.Fail error -> $"{padding}Fail({formatError error})"
+            | Cause.Fail error -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Fail({1})", padding, formatError error))
             | Cause.Die error ->
-                $"{padding}Die({Platform.dieDescription error})"
-            | Cause.Interrupt -> $"{padding}Interrupt"
+                (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Die({1})", padding, Platform.dieDescription error))
+            | Cause.Interrupt -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Interrupt", padding))
             | Cause.Then(left, right) ->
-                $"{padding}Then\n{loop (indent + 2) left}\n{loop (indent + 2) right}"
+                (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Then\n{1}\n{2}", padding, loop (indent + 2) left, loop (indent + 2) right))
             | Cause.Both(left, right) ->
-                $"{padding}Both\n{loop (indent + 2) left}\n{loop (indent + 2) right}"
+                (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Both\n{1}\n{2}", padding, loop (indent + 2) left, loop (indent + 2) right))
             | Cause.Traced(inner, trace) ->
-                $"{padding}Traced({trace})\n{loop (indent + 2) inner}"
+                (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}Traced({1})\n{2}", padding, trace, loop (indent + 2) inner))
 
         loop 0 cause
 
@@ -199,7 +199,7 @@ module Exit =
                 raise (OperationCanceledException("Workflow was interrupted"))
             else
                 let rendered = Cause.prettyPrint (fun error -> OutcomeText.value (box error)) cause
-                raise (InvalidOperationException($"Workflow failed with a composite cause that cannot be represented as Result: {rendered}"))
+                raise (InvalidOperationException((System.String.Format(Globalization.CultureInfo.InvariantCulture, "Workflow failed with a composite cause that cannot be represented as Result: {0}", rendered))))
 
 /// <summary>Unique identifier for a running fiber.</summary>
 [<Struct>]
@@ -209,7 +209,7 @@ type FiberId =
     /// <summary>The id as <c>#n</c>, rendered without reflection.</summary>
     override this.ToString() =
         let (FiberId value) = this
-        $"#{value}"
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "#{0}", value))
 
     /// <summary>The numeric fiber identifier.</summary>
     member this.Value =
@@ -266,24 +266,26 @@ type FiberDump =
     member internal dump.RenderAtTick(nowTick: TimeSpan) : string =
         let name =
             match dump.Name with
-            | Some name -> $" \"{name}\""
+            | Some name -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, " \"{0}\"", name))
             | None -> ""
 
         let lifetime =
             let settled = dump.SettledTick |> Option.defaultValue nowTick
             let elapsed = settled - dump.StartedTick
-            $"%.1f{max elapsed.TotalSeconds 0.0}s"
+            (max elapsed.TotalSeconds 0.0).ToString("F1", Globalization.CultureInfo.InvariantCulture) + "s"
 
         let annotations =
             if Map.isEmpty dump.Annotations then
                 ""
             else
-                dump.Annotations
-                |> Seq.map (fun (KeyValue(key, value)) -> $"{key}={value}")
-                |> String.concat " "
-                |> sprintf " [%s]"
+                " ["
+                + (dump.Annotations
+                   |> Seq.map (fun (KeyValue(key, value)) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}={1}", key, value)))
+                   |> String.concat " ")
+                + "]"
 
-        $"#{dump.Id.Value}{name} {dump.Status} {lifetime} (started {dump.StartedAt:o}){annotations}"
+        let startedAt = dump.StartedAt.ToString("o")
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "#{0}{1} {2} {3} (started {4}){5}", dump.Id.Value, name, dump.Status, lifetime, startedAt, annotations))
 
     /// <summary>Renders the dump as a single line, measuring lifetime against <paramref name="clock" /> for live fibers.</summary>
     member dump.RenderAt(clock: IClock) : string =
@@ -291,16 +293,19 @@ type FiberDump =
 
     /// <summary>Renders the dump without reflection (safe under NativeAOT), measuring lifetime to when it settled.</summary>
     override dump.ToString() =
-        let name = dump.Name |> Option.map (fun value -> $" \"{value}\"") |> Option.defaultValue ""
+        let name = dump.Name |> Option.map (fun value -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, " \"{0}\"", value))) |> Option.defaultValue ""
         let lifetime = (dump.SettledTick |> Option.defaultValue dump.StartedTick) - dump.StartedTick
         let annotations =
             if Map.isEmpty dump.Annotations then ""
             else
-                dump.Annotations
-                |> Seq.map (fun (KeyValue(key, value)) -> $"{key}={value}")
-                |> String.concat " "
-                |> sprintf " [%s]"
-        $"#{dump.Id.Value}{name} {dump.Status} {max lifetime.TotalSeconds 0.0:F1}s (started {dump.StartedAt:o}){annotations}"
+                " ["
+                + (dump.Annotations
+                   |> Seq.map (fun (KeyValue(key, value)) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}={1}", key, value)))
+                   |> String.concat " ")
+                + "]"
+        let seconds = (max lifetime.TotalSeconds 0.0).ToString("F1", Globalization.CultureInfo.InvariantCulture)
+        let startedAt = dump.StartedAt.ToString("o")
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "#{0}{1} {2} {3}s (started {4}){5}", dump.Id.Value, name, dump.Status, seconds, startedAt, annotations))
 
 /// <summary>Snapshot conversion and rendering for fiber dumps.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -641,7 +646,8 @@ type FiberRegistry(historyCapacity: int) =
     member this.DumpAt(clock: IClock) : string =
         let snapshot = this.Snapshot()
         let now = clock.UtcNow()
-        let header = $"Fiber dump @ {now:o} — {snapshot.Length} live fiber(s)"
+        let renderedNow = now.ToString("o")
+        let header = (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Fiber dump @ {0} — {1} live fiber(s)", renderedNow, snapshot.Length))
 
         match snapshot with
         | [] -> header

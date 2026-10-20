@@ -43,4 +43,6 @@ let main arguments =
     // DotNetApp translates Ctrl+C and the structured Exit; F# entry points still require a synchronous int.
     DotNetApp.run describeError { Arguments = arguments; Clock = Clock.live } application
     |> Async.AwaitTask
+    // executable host boundary performs this effect.
+    // axial-allow-effect: blocking
     |> Async.RunSynchronously

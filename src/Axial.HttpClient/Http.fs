@@ -53,9 +53,9 @@ type RequestBody =
     override this.ToString() =
         match this with
         | Empty -> "Empty"
-        | Text(content, contentType) -> $"Text({contentType}, {content.Length} chars)"
-        | Bytes(content, contentType) -> $"Bytes({contentType}, {content.Length} bytes)"
-        | Form fields -> $"Form({fields.Length} fields)"
+        | Text(content, contentType) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Text({0}, {1} chars)", contentType, content.Length))
+        | Bytes(content, contentType) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Bytes({0}, {1} bytes)", contentType, content.Length))
+        | Form fields -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Form({0} fields)", fields.Length))
 
 /// Decides which response status codes count as success for a request.
 [<RequireQualifiedAccess>]
@@ -117,7 +117,8 @@ type HttpResponse =
 
     /// A one-line summary, rendered without reflection so it stays safe under NativeAOT.
     override this.ToString() =
-        $"HttpResponse({this.Request} -> {this.StatusCode} {this.ReasonPhrase}, {this.Body.Length} bytes, {this.Duration.TotalMilliseconds:F0} ms)"
+        let duration = this.Duration.TotalMilliseconds.ToString("F0", Globalization.CultureInfo.InvariantCulture)
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "HttpResponse({0} -> {1} {2}, {3} bytes, {4} ms)", this.Request, this.StatusCode, this.ReasonPhrase, this.Body.Length, duration))
 
 /// A recoverable HTTP transport, timeout, status, or decoding failure.
 [<RequireQualifiedAccess>]
@@ -138,17 +139,17 @@ type HttpError =
     /// Hand-written so it stays safe under NativeAOT and trimming (the generated ToString uses reflection).
     override this.ToString() =
         match this with
-        | InvalidRequest message -> $"Invalid HTTP request: {message}"
-        | ConnectionFailed(request, message) -> $"Could not reach '{request}': {message}"
+        | InvalidRequest message -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Invalid HTTP request: {0}", message))
+        | ConnectionFailed(request, message) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not reach '{0}': {1}", request, message))
         | TimedOut(request, timeout) ->
             let seconds = timeout.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)
-            $"'{request}' did not complete within {seconds} seconds."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "'{0}' did not complete within {1} seconds.", request, seconds))
         | Status response ->
             let preview = if response.Text.Length > 512 then response.Text.Substring(0, 512) + "…" else response.Text
             let detail = if preview = "" then "" else Environment.NewLine + preview
-            $"'{response.Request}' returned {response.StatusCode} {response.ReasonPhrase}.{detail}"
-        | DecodeFailed(message, response) -> $"Could not decode the response from '{response.Request}': {message}"
-        | ResponseTooLarge(request, limit) -> $"'{request}' returned a body larger than {limit} bytes."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "'{0}' returned {1} {2}.{3}", response.Request, response.StatusCode, response.ReasonPhrase, detail))
+        | DecodeFailed(message, response) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not decode the response from '{0}': {1}", response.Request, message))
+        | ResponseTooLarge(request, limit) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "'{0}' returned a body larger than {1} bytes.", request, limit))
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
@@ -259,13 +260,13 @@ module Request =
     /// Adds a bearer-token Authorization header. The token is always redacted in diagnostics.
     /// <example><code>request |&gt; Request.bearer token</code></example>
     let bearer (token: string) (request: HttpRequest) =
-        secretHeader "Authorization" $"Bearer {token}" request
+        secretHeader "Authorization" (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Bearer {0}", token)) request
 
     /// Adds a basic-auth Authorization header. The credentials are always redacted in diagnostics.
     /// <example><code>request |&gt; Request.basicAuth user password</code></example>
     let basicAuth (user: string) (password: string) (request: HttpRequest) =
-        let credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes $"{user}:{password}")
-        secretHeader "Authorization" $"Basic {credentials}" request
+        let credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}:{1}", user, password)))
+        secretHeader "Authorization" (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Basic {0}", credentials)) request
 
     /// Sets the Accept header. <example><code>request |&gt; Request.accept "application/json"</code></example>
     let accept (mediaType: string) (request: HttpRequest) = header "Accept" mediaType request
@@ -343,7 +344,7 @@ module Request =
             else
                 let separator = if request.DisplayUrl.Contains "?" then "&" else "?"
                 request.DisplayUrl + separator + encodedQuery request.Query true
-        $"{Method.name request.Method} {url}"
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} {1}", Method.name request.Method, url))
 
     /// Returns a redacted request plan without sending anything.
     /// <example><code>Request.plan request</code></example>
@@ -351,9 +352,9 @@ module Request =
         let body =
             match request.Body with
             | RequestBody.Empty -> "empty"
-            | RequestBody.Text(content, contentType) -> $"{contentType} ({content.Length} characters)"
-            | RequestBody.Bytes(content, contentType) -> $"{contentType} ({content.Length} bytes)"
-            | RequestBody.Form fields -> $"form ({fields.Length} fields)"
+            | RequestBody.Text(content, contentType) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} ({1} characters)", contentType, content.Length))
+            | RequestBody.Bytes(content, contentType) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} ({1} bytes)", contentType, content.Length))
+            | RequestBody.Form fields -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "form ({0} fields)", fields.Length))
         let expectation =
             match request.Expectation with
             | StatusExpectation.Success -> "2xx"
@@ -661,7 +662,7 @@ module Http =
                                 let detail =
                                     match error.InnerException with
                                     | null -> error.Message
-                                    | inner -> $"{error.Message} {inner.Message}"
+                                    | inner -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0} {1}", error.Message, inner.Message))
                                 return Error(HttpError.ConnectionFailed(display, detail))
                             | :? UriFormatException as error ->
                                 return Error(HttpError.InvalidRequest error.Message)

@@ -23,12 +23,16 @@ type ReaderOverheadBenchmarks() =
     [<Benchmark(Description = "Manual env passing x10")>]
     member _.ManualEnvPassingX10() =
         manualLocalEnv 0 Shared.noCancellation
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> Shared.consumeResult
 
     [<Benchmark(Description = "AsyncLocal updates x10")>]
     member _.AsyncLocalUpdatesX10() =
         asyncLocalReader 0 Shared.noCancellation
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> Shared.consumeResult
 
@@ -442,6 +446,8 @@ type InteropCompletionBenchmarks() =
                     let! next = this.Step value
                     return! consume (remaining - 1) next
             }
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         consume 20 0 |> fun pending -> pending.GetAwaiter().GetResult() |> Shared.consumeResult
 
     [<Benchmark(Description = "Async<Result> x20")>]
@@ -453,6 +459,8 @@ type InteropCompletionBenchmarks() =
                     let! next = this.AsyncStep value
                     return! consume (remaining - 1) next
             }
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         consume 20 0 |> Async.RunSynchronously |> Shared.consumeResult
 
     [<Benchmark(Description = "Flow Task interop x20")>]

@@ -31,16 +31,24 @@ module Ordinary =
     /// The correct shape: create, then immediately enter try/finally.
     let importBatch (records: string list) : Task<int> =
         task {
+            // comparison intentionally demonstrates the ambient-effect alternative.
+            // axial-allow-effect: guid
             let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+            // comparison intentionally demonstrates the ambient-effect alternative.
+            // axial-allow-effect: filesystem
             Directory.CreateDirectory workspace |> ignore
 
             try
                 if List.isEmpty records then
                     return raise (ImportFailed NoRecords)
                 else
+                    // comparison intentionally demonstrates the ambient-effect alternative.
+                    // axial-allow-effect: filesystem
                     File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                     return records.Length
             finally
+                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-effect: filesystem
                 Directory.Delete(workspace, recursive = true)
         }
 
@@ -48,7 +56,11 @@ module Ordinary =
     /// into the try/finally. The directory survives the exception.
     let importBatchLeaky (records: string list) : Task<int> =
         task {
+            // comparison intentionally demonstrates the ambient-effect alternative.
+            // axial-allow-effect: guid
             let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+            // comparison intentionally demonstrates the ambient-effect alternative.
+            // axial-allow-effect: filesystem
             Directory.CreateDirectory workspace |> ignore
 
             // Setup between acquisition and try/finally: throws with no owner to clean up.
@@ -56,9 +68,13 @@ module Ordinary =
                 raise (ImportFailed NoRecords)
 
             try
+                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-effect: filesystem
                 File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                 return records.Length
             finally
+                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-effect: filesystem
                 Directory.Delete(workspace, recursive = true)
         }
 
@@ -80,6 +96,8 @@ module WithFlow =
         // <snippet:compare-workspace>
         let acquire: Flow<WorkspaceEnv, ImportError, string> =
             flow {
+                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-effect: guid
                 let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
                 do! FileSystem.createDirectory workspace |> Flow.mapError (FileSystemError.describe >> UnreadableBatch)
                 return workspace
@@ -88,6 +106,8 @@ module WithFlow =
         Flow.scoped (
             Flow.scopeAcquireRelease
                 acquire
+                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-effect: filesystem
                 (fun workspace -> Flow.fromBlocking (fun _ -> Directory.Delete(workspace, recursive = true)))
             |> Flow.bind (fun workspace ->
                 flow {

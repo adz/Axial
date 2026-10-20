@@ -181,7 +181,7 @@ jobs:
           gh run watch "$run_id" --exit-status
 
       - name: Upload packages for NuGet publication
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: packages
           path: artifacts/package/
@@ -202,7 +202,7 @@ jobs:
           dotnet-version: 10.0.402
 
       - name: Download package artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: packages
           path: artifacts/package

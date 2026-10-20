@@ -140,6 +140,8 @@ module WithFlow =
         Flow.scoped (
             Flow.scopeAcquireRelease
                 reserve
+                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-discarded-cancellation
                 (fun (reservation, inventory) -> Flow.fromTask (fun _ -> task { do! inventory.Release reservation }))
             |> Flow.bind (fun (reservation, _) -> fulfil reservation))
     // </snippet:compare-checkout>

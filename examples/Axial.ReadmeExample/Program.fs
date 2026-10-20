@@ -13,11 +13,16 @@ let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
     flow {
         // In production, map access and path exceptions separately at the boundary.
         do!
+            // executable host boundary performs this effect.
+            // axial-allow-effect: filesystem
             if File.Exists path then
                 Ok()
             else
                 Error(NotFound path)
 
+        // executable host boundary performs this effect.
+
+        // axial-allow-effect: filesystem
         return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))
     }
 
@@ -37,6 +42,8 @@ let program : Flow<ReadmeEnv, FileReadError, string * string> =
 [<EntryPoint>]
 let main _ =
     let root =
+        // executable host boundary performs this effect.
+        // axial-allow-effect: guid
         Path.Combine(Path.GetTempPath(), "Axial.ReadmeExample", Guid.NewGuid().ToString "N")
     let settingsPath = Path.Combine(root, "settings.json")
     let featureFlagsPath = Path.Combine(root, "feature-flags.json")
@@ -44,14 +51,21 @@ let main _ =
     let readPairResult () =
         program.RunSynchronously({ Root = root })
 
-    printfn "Config pair result (before files exist): %A" (readPairResult ())
+    printfn "Config pair result (before files exist): %s" ((readPairResult ()).ToString())
     // Config pair result: Failure (Fail (NotFound ".../settings.json"))
 
+    // executable host boundary performs this effect.
+
+    // axial-allow-effect: filesystem
     Directory.CreateDirectory root |> ignore
+    // executable host boundary performs this effect.
+    // axial-allow-effect: filesystem
     File.WriteAllText(settingsPath, """{"name":"Ada"}""")
+    // executable host boundary performs this effect.
+    // axial-allow-effect: filesystem
     File.WriteAllText(featureFlagsPath, """{"darkMode":true}""")
 
-    printfn "Config pair result (after files created): %A" (readPairResult ())
+    printfn "Config pair result (after files created): %s" ((readPairResult ()).ToString())
     // Config pair result: Success ("{\"name\":\"Ada\"}", "{\"darkMode\":true}")
 
     0

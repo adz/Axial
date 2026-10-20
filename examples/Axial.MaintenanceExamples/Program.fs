@@ -6,21 +6,21 @@ open Axial
 
 let runFlow label env (workflow: Flow<'env, 'error, 'value>) =
     let result = workflow.RunSynchronously(env)
-    printfn "%s: %A" label result
+    printfn "%s: %s" label (result.ToString())
 
 let runAsyncExample label env (workflow: Flow<'env, 'error, 'value>) =
     let result =
         workflow
         |> fun workflow -> workflow.RunSynchronously(env)
 
-    printfn "%s: %A" label result
+    printfn "%s: %s" label (result.ToString())
 
 let runTaskExample label env (workflow: Flow<'env, 'error, 'value>) =
     let result =
         workflow
         |> fun workflow -> workflow.RunSynchronously(env)
 
-    printfn "%s: %A" label result
+    printfn "%s: %s" label (result.ToString())
 
 let syncExample : Flow<int, string, int> =
     Flow.envWith id // Flow<int, string, int>
@@ -35,6 +35,8 @@ let asyncExample : Flow<int, string, int> =
 let taskExample : Flow<int, string, int> =
     flow {
         let! env = Flow.envWith id
+        // executable host boundary performs this effect.
+        // axial-allow-discarded-cancellation
         let! suffix = ColdTask(fun _ -> Task.FromResult 5)
         return env + suffix
     }

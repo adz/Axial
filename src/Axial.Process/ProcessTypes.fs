@@ -40,9 +40,9 @@ type InputSource =
     override this.ToString() =
         match this with
         | Empty -> "Empty"
-        | Text text -> $"Text ({text.Length} chars)"
-        | Bytes bytes -> $"Bytes ({bytes.Length} bytes)"
-        | File path -> $"File {path}"
+        | Text text -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Text ({0} chars)", text.Length))
+        | Bytes bytes -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Bytes ({0} bytes)", bytes.Length))
+        | File path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "File {0}", path))
         | Inherit -> "Inherit"
         | Stream _ -> "Stream"
 
@@ -65,8 +65,8 @@ type OutputTarget =
         | Console -> "Console"
         | Inherit -> "Inherit"
         | Discard -> "Discard"
-        | File path -> $"File {path}"
-        | AppendFile path -> $"AppendFile {path}"
+        | File path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "File {0}", path))
+        | AppendFile path -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "AppendFile {0}", path))
         | Callback _ -> "Callback"
         | Sink _ -> "Sink"
         | SinkFactory _ -> "SinkFactory"
@@ -184,7 +184,8 @@ type ProcessResult = {
 
     override this.ToString() =
         let codes = this.ExitCodes |> List.map string |> String.concat ","
-        $"ProcessResult(exit {this.ExitCode} [{codes}], {this.Duration.TotalMilliseconds:F0} ms, stdout {this.StdOut.Length} chars, stderr {this.StdErr.Length} chars)"
+        let duration = this.Duration.TotalMilliseconds.ToString("F0", Globalization.CultureInfo.InvariantCulture)
+        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "ProcessResult(exit {0} [{1}], {2} ms, stdout {3} chars, stderr {4} chars)", this.ExitCode, codes, duration, this.StdOut.Length, this.StdErr.Length))
 
 /// A resolved per-command plan, including fallback provenance.
 type ProcessStagePlan = {
@@ -262,10 +263,10 @@ type ProcessError =
 
     override this.ToString() =
         match this with
-        | StartFailed failure -> $"Could not start '{failure.Command}': {failure.Message}"
-        | StageTimedOut failure -> $"Stage {failure.Stage} ({failure.Command}) exceeded {failure.Timeout}."
+        | StartFailed failure -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not start '{0}': {1}", failure.Command, failure.Message))
+        | StageTimedOut failure -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} ({1}) exceeded {2}.", failure.Stage, failure.Command, failure.Timeout))
         | OverallTimedOut failure ->
-            $"Process specification '{failure.Specification}' timed out after {failure.Timeout}."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process specification '{0}' timed out after {1}.", failure.Specification, failure.Timeout))
         | StageFailed failure ->
             let stage = failure.Stage
 
@@ -275,27 +276,27 @@ type ProcessError =
                 else
                     Environment.NewLine + stage.StdErrCapture.Text
 
-            $"Stage {stage.Stage} ({stage.Command}) exited with code {stage.ExitCode}.{diagnostic}"
-        | IoFailed failure -> $"Process I/O failed: {failure.Message}"
-        | InputFailed cause -> $"Process input failed: {cause}"
-        | OutputFailed cause -> $"Process output failed: {cause}"
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} ({1}) exited with code {2}.{3}", stage.Stage, stage.Command, stage.ExitCode, diagnostic))
+        | IoFailed failure -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process I/O failed: {0}", failure.Message))
+        | InputFailed cause -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process input failed: {0}", cause))
+        | OutputFailed cause -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process output failed: {0}", cause))
         | LineTooLong failure ->
             let channel =
                 match failure.OriginalChannel with
                 | OutputChannel.StdOut -> "stdout"
                 | OutputChannel.StdErr -> "stderr"
 
-            $"Stage {failure.Stage} {channel} exceeded {failure.Limit} UTF-16 code units per line."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} {1} exceeded {2} UTF-16 code units per line.", failure.Stage, channel, failure.Limit))
         | OutputTooLarge failure ->
             let channel = if failure.Channel = OutputChannel.StdOut then "stdout" else "stderr"
-            $"Stage {failure.Stage} ({failure.Command}) {channel} exceeded {failure.Limit} bytes."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} ({1}) {2} exceeded {3} bytes.", failure.Stage, failure.Command, channel, failure.Limit))
         | ObservationUnavailable failure ->
             let channel =
                 match failure.Channel with
                 | OutputChannel.StdOut -> "stdout"
                 | OutputChannel.StdErr -> "stderr"
 
-            $"Stage {failure.Stage} {channel} uses inherited handles and cannot be observed."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} {1} uses inherited handles and cannot be observed.", failure.Stage, channel))
 
 /// Executes lazily, awaiting each observation with backpressure.
 type IProcess =

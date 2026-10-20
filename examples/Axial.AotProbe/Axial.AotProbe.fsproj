@@ -5,6 +5,7 @@
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
     <RuntimeIdentifiers>linux-x64</RuntimeIdentifiers>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
   <ItemGroup><Compile Include="Program.fs" /></ItemGroup>
   <ItemGroup>

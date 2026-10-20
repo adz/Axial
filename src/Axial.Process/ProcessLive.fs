@@ -549,7 +549,7 @@ module internal NativeProcess =
                                                 try
                                                     if not (proc.Start()) then
                                                         // axial-allow-raise
-                                                        raise (Exception $"Could not start {command.FileName}.")
+                                                        raise (Exception (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not start {0}.", command.FileName)))
                                                 with error ->
                                                     proc.Dispose()
 
@@ -1018,7 +1018,7 @@ module internal NativeProcess =
                                                                 // axial-allow-raise
                                                                 raise (
                                                                     IOException
-                                                                        $"Process I/O did not finish within {after} after all process stages exited."
+                                                                        (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process I/O did not finish within {0} after all process stages exited.", after))
                                                                 ) // axial-allow-raise
                                                         finally
                                                             timerCancellation.Cancel()

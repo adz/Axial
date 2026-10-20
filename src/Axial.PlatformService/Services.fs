@@ -87,8 +87,8 @@ type EnvironmentVariableError =
     /// Describes the error without reflection (safe under NativeAOT); matches EnvironmentVariableErrors.describe.
     override this.ToString() =
         match this with
-        | MissingVariable name -> $"Missing required environment variable '{name}'."
-        | InvalidVariable(name, value, expected) -> $"Environment variable '{name}' had value '{value}' but expected {expected}."
+        | MissingVariable name -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Missing required environment variable '{0}'.", name))
+        | InvalidVariable(name, value, expected) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Environment variable '{0}' had value '{1}' but expected {2}.", name, value, expected))
 
 [<RequireQualifiedAccess>]
 type BaseRuntimeError =
@@ -97,4 +97,4 @@ type BaseRuntimeError =
     /// Describes the error without reflection so it stays safe under NativeAOT.
     override this.ToString() =
         match this with
-        | MissingService serviceName -> $"Missing runtime service '{serviceName}'."
+        | MissingService serviceName -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Missing runtime service '{0}'.", serviceName))

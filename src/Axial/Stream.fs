@@ -17,7 +17,7 @@ type StreamStep<'value, 'error> =
     override this.ToString() =
         match this with
         | Done -> "Done"
-        | Next(value, _) -> $"Next({OutcomeText.value (box value)})"
+        | Next(value, _) -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Next({0})", OutcomeText.value (box value)))
 
 /// <summary>
 /// Represents a cold stream of values that requires an environment, can fail with a typed error,

@@ -50,9 +50,9 @@ let main _ =
         greetingTask
         |> fun workflow -> workflow.RunSynchronously(env)
 
-    printfn "Flow: %A" syncResult
-    printfn "Async: %A" asyncResult
-    printfn "Task: %A" taskResult
+    printfn "Flow: %s" (syncResult.ToString())
+    printfn "Async: %s" (asyncResult.ToString())
+    printfn "Task: %s" (taskResult.ToString())
     // Flow: Ok "Hello Ada"
     // Async: Ok "HELLO ADA"
     // Task: Ok "Hello Ada!"

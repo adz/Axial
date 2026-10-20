@@ -19,9 +19,9 @@ module CoreServicesExample =
 
     let private renderExit formatter result =
         match result with
-        | Exit.Success value -> $"Ok {formatter value}"
-        | Exit.Failure (Cause.Fail error) -> $"Error {EnvironmentVariableErrors.describe error}"
-        | Exit.Failure cause -> $"Failure {cause}"
+        | Exit.Success value -> "Ok " + formatter value
+        | Exit.Failure (Cause.Fail error) -> "Error " + EnvironmentVariableErrors.describe error
+        | Exit.Failure cause -> "Failure " + cause.ToString()
 
     let run () =
         let services =

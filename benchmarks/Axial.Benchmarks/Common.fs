@@ -52,16 +52,22 @@ module internal Shared =
 
     let runTaskResult (workflow: unit -> Task<Result<int, string>>) =
         workflow ()
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> consumeResult
 
     let runAsyncResult (workflow: unit -> Async<Result<int, string>>) =
         workflow ()
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         |> Async.RunSynchronously
         |> consumeResult
 
     let runTask (workflow: unit -> Task<int>) =
         workflow ()
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         |> fun operation -> operation.GetAwaiter().GetResult()
 
     let runValueTask (workflow: unit -> ValueTask<int>) =
@@ -75,11 +81,15 @@ module internal Shared =
 
     let runCancellableTaskResult (workflow: CancellationToken -> Task<Result<int, string>>) =
         workflow noCancellation
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> consumeResult
 
     let runCancellableTask (workflow: CancellationToken -> Task<int>) =
         workflow noCancellation
+        // benchmark measurement requires a synchronous host boundary.
+        // axial-allow-effect: blocking
         |> fun operation -> operation.GetAwaiter().GetResult()
 
     let buildFlowBindChain (depth: int) =

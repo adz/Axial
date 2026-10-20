@@ -229,7 +229,7 @@ module WebSocket =
                                                     | Some hook ->
                                                         match (hook { Host = context.DnsEndPoint.Host; Port = context.DnsEndPoint.Port }).RunSynchronously((), cancellationToken = token) with
                                                         | Exit.Success stream -> return stream
-                                                        | Exit.Failure(Cause.Fail error) -> return raise (IOException(sprintf "Custom connect failed: %O" error))
+                                                        | Exit.Failure(Cause.Fail error) -> return raise (IOException("Custom connect failed: " + error.ToString()))
                                                         | Exit.Failure(Cause.Die error) ->
                                                             connectDefect <- Some error
                                                             return raise error

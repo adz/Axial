@@ -111,7 +111,7 @@ type Dequeue<'a> internal (strategy: QueueStrategy) =
     /// <summary>Describes the queue without reading its contents.</summary>
     override this.ToString() =
         match this.Capacity with
-        | Some limit -> $"Dequeue(capacity {limit})"
+        | Some limit -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Dequeue(capacity {0})", limit))
         | None -> "Dequeue(unbounded)"
 
 /// <summary>
@@ -130,7 +130,7 @@ type Queue<'a> internal (strategy: QueueStrategy) =
     /// <summary>Describes the queue without reading its contents.</summary>
     override this.ToString() =
         match this.Capacity with
-        | Some limit -> $"Queue(capacity {limit})"
+        | Some limit -> (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Queue(capacity {0})", limit))
         | None -> "Queue(unbounded)"
 
 type internal OfferOutcome<'a> =

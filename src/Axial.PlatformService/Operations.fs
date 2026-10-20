@@ -132,7 +132,7 @@ module Clock =
                     match exit with
                     | Exit.Success() -> ()
                     | Exit.Failure Cause.Interrupt -> raise (OperationCanceledException(cancellationToken))
-                    | Exit.Failure cause -> failwith $"Clock sleep failed: {cause}"
+                    | Exit.Failure cause -> failwith (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Clock sleep failed: {0}", cause))
                 } :> Task
 #endif
             }
@@ -319,7 +319,7 @@ module Log =
     let fromSink (sink: LogLevel -> string -> unit) : ILog =
         { new ILog with
             member _.Log level message = sink level message
-            member _.LogException level error message = sink level $"{message}{Environment.NewLine}{error}" }
+            member _.LogException level error message = sink level (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}{1}{2}", message, Environment.NewLine, error)) }
 
     /// <summary>Creates a recording logger whose entries are exposed for assertions.</summary>
     let capturing () : TestLog = TestLog()
@@ -764,9 +764,9 @@ module EnvironmentVariableErrors =
     let describe =
         function
         | EnvironmentVariableError.MissingVariable name ->
-            $"Missing required environment variable '{name}'."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Missing required environment variable '{0}'.", name))
         | EnvironmentVariableError.InvalidVariable(name, value, expected) ->
-            $"Environment variable '{name}' had value '{value}' but expected {expected}."
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Environment variable '{0}' had value '{1}' but expected {2}.", name, value, expected))
 
 /// <summary>Helpers for constructing the standard explicit service bundle used by workflow hosts.</summary>
 [<RequireQualifiedAccess>]

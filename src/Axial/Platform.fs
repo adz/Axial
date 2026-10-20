@@ -573,7 +573,7 @@ let serviceResolutionUnavailable<'service, 'error> () : Execution<'service, 'err
         Exit.Failure(
             Cause.Die(
                 InvalidOperationException(
-                    $"Service {typeof<'service>.Name} was not registered in the IServiceProvider."
+                    (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Service {0} was not registered in the IServiceProvider.", typeof<'service>.Name))
                 )
             )
         )
@@ -613,9 +613,9 @@ let nextIndex (counter: int ref) : int =
 /// for exceptions, so it falls back to a fixed "Exception" label.
 let dieDescription (error: exn) : string =
 #if FABLE_COMPILER
-    $"Exception: {error.Message}"
+    (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Exception: {0}", error.Message))
 #else
-    $"{error.GetType().Name}: {error.Message}"
+    (System.String.Format(Globalization.CultureInfo.InvariantCulture, "{0}: {1}", error.GetType().Name, error.Message))
 #endif
 
 // ---------------------------------------------------------------------------------------------
