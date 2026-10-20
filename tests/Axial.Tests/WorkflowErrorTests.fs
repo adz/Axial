@@ -11,6 +11,54 @@ open Xunit
 
 module WorkflowErrorTests =
     [<Fact>]
+    let ``fold lets interruption pass through without running the typed error handler`` () =
+        let mutable handlerRan = false
+
+        let source : Flow<ClockEnvironment, string, int> =
+            flow {
+                do! Flow.sleep (TimeSpan.FromSeconds 30.0)
+                return 42
+            }
+
+        let folded : Flow<ClockEnvironment, Never, int> =
+            source
+            |> Flow.fold Flow.ok (fun _ ->
+                handlerRan <- true
+                Flow.ok 0)
+
+        let workflow =
+            flow {
+                let! fiber = Flow.fork folded
+                let! exit = Fiber.interrupt fiber
+                return exit, handlerRan
+            }
+
+        let result = Flow.runSync (TestSupport.clockEnv ()) workflow
+        test <@ result = Exit.Success(Exit.Failure Cause.Interrupt, false) @>
+
+    [<Fact>]
+    let ``fold lets a defect pass through without running the typed error handler`` () =
+        let defect = InvalidOperationException "broken"
+        let mutable handlerRan = false
+        let source : Flow<unit, string, int> = Flow.die defect
+
+        let result : Exit<int, Never> =
+            source
+            |> Flow.fold Flow.ok (fun _ ->
+                handlerRan <- true
+                Flow.ok 0)
+            |> Flow.runSync ()
+
+        test <@ result = Exit.Failure(Cause.Die defect) @>
+        test <@ not handlerRan @>
+
+    [<Fact>]
+    let ``fold sends a typed failure to the error handler`` () =
+        let source : Flow<unit, string, int> = Flow.fail "missing"
+        let result = source |> Flow.fold (string >> Flow.ok) (fun error -> Flow.ok $"error: {error}") |> Flow.runSync ()
+        test <@ result = Exit.Success "error: missing" @>
+
+    [<Fact>]
     let ``recover changes error type on a traced typed failure`` () =
         let source : Flow<unit, string, int> = Flow.fail "missing" |> Flow.tracedError "load"
         let result : Exit<int, int> = source |> Flow.recover (fun error -> Flow.fail error.Length) |> Flow.runSync ()

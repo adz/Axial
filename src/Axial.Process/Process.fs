@@ -838,7 +838,7 @@ module Process =
                                         )
                                         |> Flow.localEnv (fun (_: 'env) -> ())
                                 }
-                                |> Flow.fold (Exit.Success >> publish) (fun cause ->
+                                |> Flow.foldCause (Exit.Success >> publish) (fun cause ->
                                     match Cause.untraced cause with
                                     | Cause.Interrupt -> ()
                                     | _ -> pendingFailure <- Some cause

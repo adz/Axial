@@ -49,7 +49,7 @@ module FiberLocalTests =
     let ``typed failure restores the outer local`` () =
         let local = FiberLocal.make 0
         let workflow = flow {
-            let! outcome = Flow.fail "expected" |> FiberLocal.locally 1 local |> Flow.fold (Exit.Success >> Flow.ok) (Exit.Failure >> Flow.ok)
+            let! outcome = Flow.fail "expected" |> FiberLocal.locally 1 local |> Flow.foldCause (Exit.Success >> Flow.ok) (Exit.Failure >> Flow.ok)
             let! restored = FiberLocal.get local
             return outcome, restored
         }
@@ -60,7 +60,7 @@ module FiberLocalTests =
         let local = FiberLocal.make 0
         let defect = InvalidOperationException "boom"
         let workflow = flow {
-            let! outcome = Flow.die defect |> FiberLocal.locally 1 local |> Flow.fold (Exit.Success >> Flow.ok) (Exit.Failure >> Flow.ok)
+            let! outcome = Flow.die defect |> FiberLocal.locally 1 local |> Flow.foldCause (Exit.Success >> Flow.ok) (Exit.Failure >> Flow.ok)
             let! restored = FiberLocal.get local
             return outcome, restored
         }
@@ -74,7 +74,7 @@ module FiberLocalTests =
                 Flow.sleep (TimeSpan.FromSeconds 30.0)
                 |> FiberLocal.locally 1 local
                 |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
-                |> Flow.fold (Exit.Success >> Flow.ok) (Exit.Failure >> Flow.ok)
+                |> Flow.foldCause (Exit.Success >> Flow.ok) (Exit.Failure >> Flow.ok)
             let! restored = FiberLocal.get local
             return outcome, restored
         }

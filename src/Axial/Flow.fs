@@ -2201,15 +2201,16 @@ module Flow =
             invoke flow environment cancellationToken
             |> Execution.mapBoth onSuccess onFailure)
 
-    /// <summary>Folds both the successful value and the failure cause into a new flow.</summary>
+    /// <summary>Folds both the successful value and the full failure cause into a new flow.</summary>
     /// <remarks>
-    /// Use this to branch on the full outcome of a flow, including interruptions and defects.
+    /// The failure handler sees typed failures, defects, and interruption. Unless the caller owns the cancellation,
+    /// it must re-raise <c>Cause.Interrupt</c> rather than recover from it.
     /// </remarks>
     /// <param name="onSuccess">A function that returns a new flow from the success value.</param>
     /// <param name="onFailure">A function that returns a new flow from the failure cause.</param>
     /// <param name="flow">The source flow.</param>
     /// <returns>A flow that continues with the outcome of either <paramref name="onSuccess" /> or <paramref name="onFailure" />.</returns>
-    let fold
+    let foldCause
         (onSuccess: 'value -> Flow<'env, 'nextError, 'next>)
         (onFailure: Cause<'error> -> Flow<'env, 'nextError, 'next>)
         (flow: Flow<'env, 'error, 'value>)
@@ -2395,7 +2396,7 @@ module Flow =
     /// <summary>Recovers a typed failure with a flow whose error type may differ.</summary>
     /// <remarks>
     /// Like <c>orElseWith</c>, this handles a single <c>Cause.Fail</c>, including traced failures;
-    /// unlike <c>orElseWith</c>, the handler may change the error type. <c>fold</c> handles every
+    /// unlike <c>orElseWith</c>, the handler may change the error type. <c>foldCause</c> handles every
     /// cause, including defects and interruption. Compound causes are not recovered. Because a
     /// compound cause may contain old typed errors that cannot inhabit the new error channel,
     /// each old typed failure becomes a <c>Cause.Die</c> containing an <c>UnrecoveredFailureException</c>
@@ -2455,6 +2456,27 @@ module Flow =
                         with thrown -> Execution.ofCause (ForeignCancellation.causeOf cancellationToken thrown)
                     | _ ->
                         Execution.ofCause (retypeUnrecovered cause)))
+
+    /// <summary>Folds a successful value or a single typed failure into a new flow.</summary>
+    /// <remarks>
+    /// Traced typed failures reach <paramref name="onError" />. Defects and interruption pass through, and compound
+    /// causes are retyped without recovery in the same way as <c>recover</c>.
+    /// </remarks>
+    /// <param name="onSuccess">A function that returns a new flow from the success value.</param>
+    /// <param name="onError">A function that returns a new flow from the typed error.</param>
+    /// <param name="source">The source flow.</param>
+    /// <returns>A flow that continues with the success or typed-error result.</returns>
+    let fold
+        (onSuccess: 'value -> Flow<'env, 'nextError, 'next>)
+        (onError: 'error -> Flow<'env, 'nextError, 'next>)
+        (source: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'nextError, 'next> =
+        source
+        |> map Choice1Of2
+        |> recover (fun error -> onError error |> map Choice2Of2)
+        |> bind (function
+            | Choice1Of2 value -> onSuccess value
+            | Choice2Of2 next -> Flow(fun _ _ -> Execution.ofValue next))
 
     /// <summary>Falls back to another flow when the source flow fails.</summary>
     /// <param name="fallback">The flow to run if the source flow fails.</param>

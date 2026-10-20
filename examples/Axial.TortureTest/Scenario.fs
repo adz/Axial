@@ -78,7 +78,7 @@ let stopwatch () : unit -> System.TimeSpan =
 
 /// Runs a flow and returns its outcome as a value, so a scenario can inspect failures and interruptions.
 let exitOf (flow: Axial.Flow<'env, 'error, 'value>) : Axial.Flow<'env, 'none, Axial.Exit<'value, 'error>> =
-    flow |> Axial.Flow.fold (fun value -> Axial.Flow.ok (Axial.Exit.Success value)) (fun cause -> Axial.Flow.ok (Axial.Exit.Failure cause))
+    flow |> Axial.Flow.foldCause (fun value -> Axial.Flow.ok (Axial.Exit.Success value)) (fun cause -> Axial.Flow.ok (Axial.Exit.Failure cause))
 
 let isInterrupted (exit: Axial.Exit<'value, 'error>) =
     match exit with

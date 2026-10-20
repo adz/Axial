@@ -156,7 +156,7 @@ module RuntimeSemanticsTests =
 
                 let! joined =
                     Fiber.join fiber
-                    |> Flow.fold
+                    |> Flow.foldCause
                         (Exit.Success >> Flow.succeed)
                         (Exit.Failure >> Flow.succeed)
 
@@ -220,7 +220,7 @@ module RuntimeSemanticsTests =
 
                 let! joined =
                     Fiber.join fiber
-                    |> Flow.fold
+                    |> Flow.foldCause
                         (Exit.Success >> Flow.succeed)
                         (Exit.Failure >> Flow.succeed)
 

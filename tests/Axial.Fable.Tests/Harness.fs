@@ -34,7 +34,7 @@ let test (name: string) (body: Flow<Axial.ClockEnvironment, Never, Check list>) 
 
 /// Runs a flow and returns its outcome as a value, so a test can check failures and interruptions.
 let exitOf (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
-    flow |> Flow.fold (fun value -> Flow.ok (Exit.Success value)) (fun cause -> Flow.ok (Exit.Failure cause))
+    flow |> Flow.foldCause (fun value -> Flow.ok (Exit.Success value)) (fun cause -> Flow.ok (Exit.Failure cause))
 
 /// Milliseconds on the JavaScript monotonic clock, for coarse timing checks.
 [<Emit("performance.now()")>]

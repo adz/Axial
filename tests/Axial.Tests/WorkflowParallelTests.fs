@@ -100,7 +100,7 @@ module WorkflowParallelTests =
                 else
                     do!
                         Flow.sleep (TimeSpan.FromSeconds 30.0)
-                        |> Flow.fold Flow.ok (fun cause ->
+                        |> Flow.foldCause Flow.ok (fun cause ->
                             if Cause.isInterrupted cause then
                                 System.Threading.Interlocked.Increment(&interrupted.contents) |> ignore
 

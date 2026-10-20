@@ -24,7 +24,7 @@ api:
     - id: errors
       title: Errors and recovery
       order: 40
-      members: ["mapError", "widenError", "tracedError", "fold", "catch", "orElseFlow", "orElseWith", "recover", "orElse", "catchCancellation"]
+      members: ["mapError", "widenError", "tracedError", "fold", "foldCause", "catch", "orElseFlow", "orElseWith", "recover", "orElse", "catchCancellation"]
       facets:
         task: [errors]
     - id: concurrency

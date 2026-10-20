@@ -468,7 +468,7 @@ module WorkflowConcurrencyTests =
 
                 let! _ =
                     Flow.sleep (TimeSpan.FromSeconds 30.0)
-                    |> Flow.fold Flow.ok (fun cause ->
+                    |> Flow.foldCause Flow.ok (fun cause ->
                         cleaned.Value <- true
                         Flow.ofExit (Exit.Failure cause))
                     |> Flow.forkReplacing slot
