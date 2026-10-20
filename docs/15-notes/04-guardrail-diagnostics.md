@@ -167,8 +167,25 @@ let printDiagnostics (diagnostics: Map<string, int list>) =
     printfn "%A" diagnostics // axial-allow-reflection-format
 ```
 
+Axial's packable libraries are compiled with F#'s `--reflectionfree` option. This prevents the compiler from
+emitting reflection-based structural `ToString()` implementations and rejects `%A` in those libraries. A NativeAOT
+application can apply the same option:
+
+```xml
+<PropertyGroup>
+  <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+</PropertyGroup>
+```
+
+The option does not make FSharp.Core's `printf` implementation reflection-free. An application that uses `printf`,
+including formats without `%A`, can still produce the aggregate `IL2104` and `IL3053` warnings for `FSharp.Core` and
+can fail at run time after trimming. Use explicit rendering with `System.Console.WriteLine` or another non-`printf`
+output API on NativeAOT paths.
+
 `scripts/run-aot-probe.sh` publishes a NativeAOT probe that renders these types and dumps a fiber registry, so the
-release checks catch a regression that the analyzer cannot see.
+release checks catch a regression that the analyzer cannot see. The probe itself uses `printf` to label checks, so
+its publish currently reports the two aggregate FSharp.Core warnings above; it reports no such warning for an Axial
+assembly.
 
 ## AXG007: Keep resources acquired by a fiber
 

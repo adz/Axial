@@ -11,6 +11,9 @@
     <PackageProjectUrl>https://github.com/adz/Axial</PackageProjectUrl>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == ''">README.md</PackageReadmeFile>
 
+    <!-- Build distributable F# libraries without generated reflection-based structural formatting. -->
+    <OtherFlags Condition="$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src')) and '$(MSBuildProjectName)' != 'Axial.Guardrails'">$(OtherFlags) --reflectionfree</OtherFlags>
+
     <!--
       Axial.Guardrails' own repo-internal defaults: see Directory.Build.targets for how every
       project gets the same check a package consumer gets via PackageReference, without one.
