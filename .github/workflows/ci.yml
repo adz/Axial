@@ -49,7 +49,8 @@ jobs:
         run: dotnet test tests/Axial.Hosting.Http.Tests --configuration Release --nologo -v minimal
 
       - name: Check shipped assemblies for FSharp.Core printf
-        run: dotnet test tests/Axial.Build.Tests --configuration Release --no-build --nologo -v minimal
+        # Not in Axial.slnx: it builds every shipped project itself, including the HTTP adapters.
+        run: dotnet test tests/Axial.Build.Tests --configuration Release --nologo -v minimal
 
       - name: Run main example
         run: dotnet run --project examples/Axial.Examples/Axial.Examples.fsproj --configuration Release --no-build --nologo

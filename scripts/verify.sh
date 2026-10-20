@@ -45,6 +45,8 @@ run_build() {
 run_test() {
     timeout 2400 dotnet test Axial.slnx -c Release --no-build >"$out_dir/test.log" 2>&1
     local code=$?
+    # The shipped-assembly scan is outside Axial.slnx because it builds every shipped project, HTTP adapters included.
+    timeout 1200 dotnet test tests/Axial.Build.Tests -c Release >>"$out_dir/test.log" 2>&1 || code=$?
     local passed failed_count projects
     passed=$(grep -oE "Passed: +[0-9]+" "$out_dir/test.log" | awk '{s+=$2} END {print s+0}')
     failed_count=$(grep -oE "Failed: +[0-9]+" "$out_dir/test.log" | awk '{s+=$2} END {print s+0}')
