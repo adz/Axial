@@ -33,11 +33,14 @@ module SecureRandomTests =
         test <@ values |> List.forall (function Exit.Success value -> value >= -20 && value < 30 | _ -> false) @>
 
     [<Fact>]
-    let ``live secure random fills a buffer with nonzero data`` () =
+    let ``live secure random produces different draws`` () =
         let environment = { SecureRandomService = SecureRandom.live }
 
-        let result =
-            SecureRandom.bytes 32
-            |> Flow.runSync environment
+        let first = SecureRandom.bytes 32 |> Flow.runSync environment
+        let second = SecureRandom.bytes 32 |> Flow.runSync environment
 
-        test <@ result |> function Exit.Success bytes -> bytes |> Array.exists ((<>) 0uy) | _ -> false @>
+        test <@
+            match first, second with
+            | Exit.Success firstBytes, Exit.Success secondBytes -> firstBytes <> secondBytes
+            | _ -> false
+        @>

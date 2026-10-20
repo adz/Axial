@@ -59,7 +59,7 @@ module PackagePropsTests =
 
     type BuildResult = { ExitCode: int; Output: string }
 
-    let private runBuild (project: string) (severityEnv: string option) (severityProperty: string option) =
+    let private runBuild (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) =
         let startInfo = ProcessStartInfo("dotnet")
         startInfo.ArgumentList.Add "build"
         startInfo.ArgumentList.Add project
@@ -68,28 +68,41 @@ module PackagePropsTests =
         startInfo.ArgumentList.Add "-v"
         startInfo.ArgumentList.Add "minimal"
         startInfo.ArgumentList.Add "--nologo"
+        startInfo.ArgumentList.Add "-nodeReuse:false"
+        startInfo.ArgumentList.Add "-m:1"
+        match framework with
+        | Some value ->
+            startInfo.ArgumentList.Add "-f"
+            startInfo.ArgumentList.Add value
+        | None -> ()
         match severityProperty with
         | Some value -> startInfo.ArgumentList.Add("-p:AxialGuardrailsSeverity=" + value)
         | None -> ()
         startInfo.UseShellExecute <- false
         startInfo.RedirectStandardOutput <- true
         startInfo.RedirectStandardError <- true
+        startInfo.EnvironmentVariables["MSBUILDDISABLENODEREUSE"] <- "1"
         match severityEnv with
         | Some value -> startInfo.EnvironmentVariables["AXIAL_GUARDRAILS_SEVERITY"] <- value
         | None -> ()
         use child = Process.Start startInfo
         let stdout = child.StandardOutput.ReadToEndAsync()
         let stderr = child.StandardError.ReadToEndAsync()
-        Assert.True(child.WaitForExit(120_000), "Consumer build timed out")
+        let exited = child.WaitForExit(90_000)
+        if not exited then
+            child.Kill(true)
+            child.WaitForExit()
         System.Threading.Tasks.Task.WaitAll(stdout, stderr)
-        { ExitCode = child.ExitCode; Output = stdout.Result + "\n" + stderr.Result }
+        let output = stdout.Result + "\n" + stderr.Result
+        Assert.True(exited, "Consumer build timed out and its process tree was killed:\n" + output)
+        { ExitCode = child.ExitCode; Output = output }
 
     let private buildConsumerInTemp write severityEnv severityProperty =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
             write dir
-            runBuild (Path.Combine(dir, "Consumer.fsproj")) severityEnv severityProperty
+            runBuild (Path.Combine(dir, "Consumer.fsproj")) None severityEnv severityProperty
         finally
             Directory.Delete(dir, true)
 
@@ -123,6 +136,17 @@ module PackagePropsTests =
                 "<TargetFrameworks>netstandard2.1;net10.0</TargetFrameworks>"
                 "module Consumer\ntype Conditional = Value of int\n#if NET10_0\nlet render value = sprintf \"%A\" value\n#endif\n"
 
-        let result = buildConsumerInTemp write (Some "error") None
-        Assert.NotEqual(0, result.ExitCode)
-        Assert.Contains("error AXG006", result.Output)
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            write dir
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let netstandard = runBuild project (Some "netstandard2.1") (Some "error") None
+            let net10 = runBuild project (Some "net10.0") (Some "error") None
+
+            Assert.Equal(0, netstandard.ExitCode)
+            Assert.DoesNotContain("AXG006", netstandard.Output)
+            Assert.True(net10.ExitCode <> 0, net10.Output)
+            Assert.Contains("error AXG006", net10.Output)
+        finally
+            Directory.Delete(dir, true)

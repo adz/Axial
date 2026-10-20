@@ -30,8 +30,11 @@
       analyzed changed. The stamp file below is what lets MSBuild skip the target entirely on a
       rebuild where @(Compile) hasn't changed, which is the common case in an edit-build loop.
     -->
-    <_AxialGuardrailsStampFile>$(IntermediateOutputPath)axial-guardrails.stamp</_AxialGuardrailsStampFile>
-    <_AxialGuardrailsConfigFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.rules))</_AxialGuardrailsConfigFile>
+    <!-- Cross-targeting builds can evaluate IntermediateOutputPath before the SDK appends the target framework.
+         Keep analyzer state per framework explicitly: sharing these files lets one TFM suppress another and lets
+         concurrent analyzer processes contend over the same config and stamp. -->
+    <_AxialGuardrailsStampFile>$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).stamp</_AxialGuardrailsStampFile>
+    <_AxialGuardrailsConfigFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).rules))</_AxialGuardrailsConfigFile>
   </PropertyGroup>
 
   <!--

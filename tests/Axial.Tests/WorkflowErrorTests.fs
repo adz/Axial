@@ -14,21 +14,25 @@ module WorkflowErrorTests =
     let ``fold lets interruption pass through without running the typed error handler`` () =
         let mutable handlerRan = false
 
-        let source : Flow<ClockEnvironment, string, int> =
-            flow {
-                do! Flow.sleep (TimeSpan.FromSeconds 30.0)
-                return 42
-            }
-
-        let folded : Flow<ClockEnvironment, Never, int> =
-            source
-            |> Flow.fold Flow.ok (fun _ ->
-                handlerRan <- true
-                Flow.ok 0)
-
         let workflow =
             flow {
+                let! started = Deferred.make<ClockEnvironment, string, unit> ()
+
+                let source : Flow<ClockEnvironment, string, int> =
+                    flow {
+                        let! _ = Deferred.succeed () started
+                        do! Flow.sleep (TimeSpan.FromSeconds 30.0)
+                        return 42
+                    }
+
+                let folded : Flow<ClockEnvironment, Never, int> =
+                    source
+                    |> Flow.fold Flow.ok (fun _ ->
+                        handlerRan <- true
+                        Flow.ok 0)
+
                 let! fiber = Flow.fork folded
+                do! Deferred.await started
                 let! exit = Fiber.interrupt fiber
                 return exit, handlerRan
             }

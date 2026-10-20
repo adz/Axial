@@ -467,14 +467,19 @@ module SecureRandom =
         |> Flow.map (fun secureRandom -> secureRandom.GetInt32 minInclusive maxExclusive)
 
 #if FABLE_COMPILER
-    [<Emit("globalThis.crypto.getRandomValues($0)")>]
-    let private fillWithWebCrypto (_buffer: byte array) : unit = jsNative
+    [<Emit("globalThis.crypto.getRandomValues(new Uint8Array($0.buffer, $0.byteOffset + $1, $2))")>]
+    let private fillChunkWithWebCrypto (_buffer: byte array) (_offset: int) (_count: int) : unit = jsNative
 #endif
 
     /// <summary>Creates a live cryptographically secure generator backed by the platform cryptography provider.</summary>
     let live : ISecureRandom =
 #if FABLE_COMPILER
-        let fill buffer = fillWithWebCrypto buffer
+        let fill (buffer: byte array) =
+            let mutable offset = 0
+            while offset < buffer.Length do
+                let count = min 65_536 (buffer.Length - offset)
+                fillChunkWithWebCrypto buffer offset count
+                offset <- offset + count
 
         let getInt32 minInclusive maxExclusive =
             if minInclusive >= maxExclusive then invalidArg (nameof maxExclusive) "The maximum must be greater than the minimum."
