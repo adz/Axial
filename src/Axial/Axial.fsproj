@@ -45,6 +45,8 @@
     <Compile Include="Schedule.fs" />
     <Compile Include="Parallelism.fs" />
     <Compile Include="Flow.fs" />
+    <Compile Include="Layer.fs" />
+    <Compile Include="LayerBuilder.fs" />
     <Compile Include="FiberLocal.fs" />
     <Compile Include="Cache.fs" />
     <Compile Include="App.fs" />

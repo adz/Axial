@@ -3,10 +3,10 @@
 Prompted by FsLiveDocs, the documentation tool that builds this site, adopting Axial. That adoption surfaced two
 related gaps that belong in Axial rather than in each consumer.
 
-## 1. Generic pooled-resource combinator (`Axial.Layers`) — shipped in 0.9.0
+## 1. Generic pooled-resource combinator (`core Axial`) — shipped in 0.9.0
 
 Done: `Layer.pool : size:int -> (int -> Layer<'input,'error,'resource>) -> Layer<'input,'error,Pool<'resource>>` plus
-`Pool<'resource>` (`Next()` round-robin accessor, `Count`, `Instances`) in `src/Axial.Layers/Layer.fs`. Sequential
+`Pool<'resource>` (`Next()` round-robin accessor, `Count`, `Instances`) in `src/Axial/Layer.fs`. Sequential
 acquisition, `acquireRelease`-based release in reverse order, same as every other layer combinator. Tested in
 `tests/Axial.Tests/WorkflowResourceTests.fs`. See `dev-docs/releases/0.9.0.md`.
 

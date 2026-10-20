@@ -17,7 +17,6 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
@@ -60,8 +59,8 @@ There is no container or registration step. Tests supply a record with fakes in 
 
 Two further mechanisms build on it. **Contracts** let a *package* ask for a service without
 knowing your record type; that is how `Console.writeLine` and the rest of the
-[built-in services](/services/index.html) work, and how you would publish your own. **Layers** are for provisioning
-that is itself effectful; see [layers](/layers/index.html), a separate package.
+[built-in services](/services/index.html) work, and how you would publish your own. **Layers** are core combinators for
+provisioning that is itself effectful; see [layers](/layers/index.html).
 
 ## In this section
 

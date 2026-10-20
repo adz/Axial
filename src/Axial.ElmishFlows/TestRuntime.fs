@@ -6,7 +6,6 @@ open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open global.Elmish
 
 /// A program runtime with queued UI delivery and captured defects.

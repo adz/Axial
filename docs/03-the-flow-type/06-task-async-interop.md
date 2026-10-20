@@ -37,7 +37,6 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting

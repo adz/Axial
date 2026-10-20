@@ -4,7 +4,7 @@ set -euo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 probe_dir="$(mktemp -d)"
 trap 'rm -rf "$probe_dir"' EXIT
-for package in Axial Axial.Layers Axial.PlatformService Axial.Console Axial.FileSystem Axial.Process; do
+for package in Axial Axial.PlatformService Axial.Console Axial.FileSystem Axial.Process; do
   printf '#r @"%s/artifacts/bin/%s/debug_net8.0/%s.dll"\n' "$root_dir" "$package" "$package" >> "$probe_dir/prelude.fsx"
 done
 cat >> "$probe_dir/prelude.fsx" <<'FSHARP'

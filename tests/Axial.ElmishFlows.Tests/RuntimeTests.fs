@@ -5,7 +5,6 @@ open System.Collections.Concurrent
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.ElmishFlows
 open Xunit
 

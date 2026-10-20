@@ -27,7 +27,6 @@ projects=(
   "src/Axial/Axial.fsproj"
   "src/Axial.Console/Axial.Console.fsproj"
   "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj"
-  "src/Axial.Layers/Axial.Layers.fsproj"
   "src/Axial.FileSystem/Axial.FileSystem.fsproj"
   "src/Axial.Files/Axial.Files.fsproj"
   "src/Axial.HttpClient/Axial.HttpClient.fsproj"

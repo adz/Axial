@@ -2604,7 +2604,7 @@ module Flow =
 
     /// <summary>Runs a provisioning step in a fresh scope, then the downstream flow, closing the scope after.</summary>
     /// <remarks>
-    /// Internal seam for <c>Axial.Layers</c>. The provisioning step is supplied as a plain function so
+    /// Internal seam for layers. The provisioning step is supplied as a plain function so
     /// that the scope handling, which depends on inlined runtime internals, stays inside this assembly.
     /// </remarks>
     let internal provideScoped

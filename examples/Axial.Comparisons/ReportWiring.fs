@@ -14,7 +14,6 @@ module Axial.Comparisons.ReportWiring
 open System
 open System.IO
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService

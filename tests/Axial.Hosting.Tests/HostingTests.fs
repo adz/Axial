@@ -10,7 +10,6 @@ open Microsoft.Extensions.Logging
 open Axial
 open Axial.Hosting
 open Axial.PlatformService
-open Axial.Layers
 open Swensen.Unquote
 open Xunit
 

@@ -2,7 +2,6 @@ namespace Axial.Tests
 
 open System
 open Axial
-open Axial.Layers
 open Axial.PlatformService
 open Swensen.Unquote
 open Xunit

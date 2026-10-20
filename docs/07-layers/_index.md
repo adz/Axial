@@ -3,7 +3,7 @@ title: Layers
 description: Reusable provisioning for environments that need flow capabilities to build.
 ---
 
-A layer builds an environment using flow capabilities when construction must await a connection, read configuration, fail with a typed startup error, or acquire a resource that must be released. Most applications do not need the separate `Axial.Layers` package.
+Layers are not required: when every service can be built synchronously, a record built in code is enough. Once building the environment means awaiting a connection, reading configuration, failing with a typed startup error, or acquiring something that must be released (a database pool, a socket), a layer does that work and releases it in reverse order on shutdown. It is a small set of combinators over `Flow` and `Scope` for exactly those needs, and it ships in the core `Axial` package.
 
 **Use a record when you can.** Construct the environment directly and hand it to the workflow:
 
@@ -14,7 +14,6 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
@@ -46,7 +45,7 @@ let env = { Clock = Clock.fromValue (DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpa
 describeRegion |> Flow.run env |> shouldEqual (Exit.Success "eu at 2026")
 ```
 
-Direct construction needs no package beyond the services themselves. See [dependencies](/dependencies/index.html).
+Direct construction needs no layer. See [dependencies](/dependencies/index.html).
 
 Use a layer when construction is itself effectful:
 

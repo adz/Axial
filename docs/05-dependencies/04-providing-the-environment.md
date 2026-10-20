@@ -18,7 +18,6 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
@@ -150,8 +149,8 @@ With this shape, the container lookup happens once in `buildOrderEnv`; `flushOrd
 ## 3. Provision it with a layer
 
 When building the environment is itself effectful (it can fail with a typed startup error, needs a resource released
-later, or must await something), construction becomes a workflow of its own. [Layers](/layers/index.html) are those
-workflows. They live in a separate package because most applications never need them.
+later, or must await something), construction becomes a workflow of its own. [Layers](/layers/index.html) are the core
+combinators for those workflows.
 
 A layer acquires its resources inside the scope `Layer.provide` creates, so they are released when the provided flow
 finishes, fails, or is interrupted. The [layers guide](/layers/layers.html#cleanup) opens and closes a repository

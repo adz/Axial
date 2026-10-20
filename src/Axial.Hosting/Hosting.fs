@@ -13,7 +13,6 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Axial
 open Axial.HttpClient
-open Axial.Layers
 open Axial.PlatformService
 
 module private ScopedLogging =

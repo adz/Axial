@@ -1,7 +1,7 @@
 ---
 title: Layer
 api:
-  family: Axial.Layers.LayerModule
+  family: Axial.LayerModule
   sections:
     - id: create
       title: Create layers

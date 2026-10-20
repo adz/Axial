@@ -15,7 +15,6 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
@@ -33,7 +32,6 @@ let shouldEqual expected actual =
 
 ```fsharp
 open Axial
-open Axial.Layers
 ```
 
 The examples on this page provision an orders repository from a settings map. Opening the repository is recorded in
@@ -143,7 +141,7 @@ that is an ordinary F# compile-time scope error, and the fix is to move it into 
 `layer { }` uses `let!` (via `Layer.bind`) and `and!` (via `Layer.merge`/`Layer.zipPar`) above; the full combinator
 inventory — `succeed`, `envWith`, `fromFlow`, `acquireRelease`, `addFinalizer`, `map`/`mapError`/`widenError`,
 `zip`, `zipPar`/`merge`, and `map2`/`map3` — is in the
-[Layer API reference](/api/Axial.Layers.LayerModule.html).
+[Layer API reference](/api/Axial.LayerModule.html).
 
 Layer error types must match the flow error type. When provisioning steps use different errors, map them into one
 startup error type with `Layer.mapError` before calling `Layer.provide`. A layer that cannot fail, such as

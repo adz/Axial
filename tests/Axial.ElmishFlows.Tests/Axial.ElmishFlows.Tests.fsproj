@@ -18,7 +18,6 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <ProjectReference Include="..\..\src\Axial.ElmishFlows\Axial.ElmishFlows.fsproj" />
-    <ProjectReference Include="..\..\src\Axial.Layers\Axial.Layers.fsproj" />
     <ProjectReference Include="..\..\src\Axial.PlatformService\Axial.PlatformService.fsproj" />
   </ItemGroup>
 </Project>

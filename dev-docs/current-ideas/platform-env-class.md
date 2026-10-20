@@ -1,6 +1,6 @@
 # A base environment class for platform services
 
-Status: sketch, not accepted. Prompted by `ISecureRandom` (0.11.4): each platform service adds an `IHas*`
+Status: sketch, not accepted. Prompted by `ISecureRandom` (0.12.0): each platform service adds an `IHas*`
 interface that every application environment must implement by hand.
 
 ## Problem

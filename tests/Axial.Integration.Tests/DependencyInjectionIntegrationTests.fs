@@ -7,7 +7,6 @@ open System.Net.Http
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.PlatformService
 open Axial.FileSystem

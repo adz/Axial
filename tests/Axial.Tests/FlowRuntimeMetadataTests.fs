@@ -1,7 +1,6 @@
 namespace Axial.Tests
 
 open Axial
-open Axial.Layers
 open Axial.Telemetry
 open Axial.Tests.TestSupport
 open Swensen.Unquote

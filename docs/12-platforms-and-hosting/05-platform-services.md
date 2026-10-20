@@ -13,7 +13,6 @@ ordinary and cryptographically secure randomness, GUIDs, and environment variabl
 // Setup for the checked example on this page.
 open System
 open Axial
-open Axial.Layers
 open Axial.PlatformService
 
 /// Fails the docs test when an example's result differs from the value shown.

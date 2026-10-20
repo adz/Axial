@@ -177,7 +177,7 @@ Measured on `main` at `20ee18d0`:
 
 - `src/Axial/Flow.fs`: about 80 sites that build or unwrap the closure directly.
 - Rest of `src/Axial`: about 30 more, in Runtime, Concurrency, Schedule, FlowBuilder, Stream, Interop, Core and State.
-- `Execution.*` helpers: about 170 calls — Flow.fs 63, Stream.fs 61, Axial.Layers 15, Schedule.fs 14, the rest small.
+- `Execution.*` helpers: about 170 calls — Flow.fs 63, Stream.fs 61, core Axial 15, Schedule.fs 14, the rest small.
 - Tests: about 308. Because the public API does not change, they are the oracle for behaviour.
 
 Most of the ~80 sites in Flow.fs are combinators expressible in terms of about ten primitives. Only the primitives

@@ -23,7 +23,6 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Console
 open Axial.FileSystem
 open Axial.Hosting
@@ -44,7 +43,6 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 
 type IOrders =
     abstract Save : string -> Task<unit>

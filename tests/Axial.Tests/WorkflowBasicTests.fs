@@ -4,7 +4,6 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit

@@ -5,7 +5,6 @@ module Axial.TortureTest.Layers
 open System
 open System.Threading
 open Axial
-open Axial.Layers
 open Axial.TortureTest.Scenario
 
 type private Services =

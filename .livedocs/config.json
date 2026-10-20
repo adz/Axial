@@ -1,7 +1,6 @@
 {
   "projects": [
     "src/Axial/Axial.fsproj",
-    "src/Axial.Layers/Axial.Layers.fsproj",
     "src/Axial.PlatformService/Axial.PlatformService.fsproj",
     "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj",
     "src/Axial.Console/Axial.Console.fsproj",
@@ -28,7 +27,7 @@
     { "label": "Packages", "href": "/packages/" },
     { "label": "GitHub", "href": "https://github.com/adz/Axial" }
   ],
-  "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Layers\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.PlatformService\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript",
+  "fSharpPrelude": "open System\nopen System.IO\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\nopen Axial.Console\nopen Axial.FileSystem\nopen Axial.Hosting\nopen Axial.Hosting.Browser\nopen Axial.Hosting.Node\nopen Axial.PlatformService\nopen Axial.State\nopen Axial.Telemetry\nopen Axial.Telemetry.JavaScript",
   "docsSets": [
     {
       "id": "core",
@@ -38,7 +37,6 @@
       "default": true,
       "projects": [
         "src/Axial/Axial.fsproj",
-        "src/Axial.Layers/Axial.Layers.fsproj",
         "src/Axial.PlatformService/Axial.PlatformService.fsproj",
         "src/Axial.ElmishFlows/Axial.ElmishFlows.fsproj",
         "src/Axial.Console/Axial.Console.fsproj",

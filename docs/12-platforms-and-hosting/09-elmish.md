@@ -80,7 +80,6 @@ provisioning failure returns `Error` and leaves nothing running.
 
 ```fsharp no-check reason="The Elmish package is not referenced by the documentation example compiler; the same API is compiled in Axial.ElmishFlows.Tests"
 open Axial
-open Axial.Layers
 open Axial.ElmishFlows
 open Axial.PlatformService
 

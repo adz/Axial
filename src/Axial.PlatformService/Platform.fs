@@ -8,7 +8,6 @@ open System
 open System.Collections
 open System.Collections.Generic
 open Axial
-open Axial.Layers
 
 /// Runtime-specific implementations of the otherwise portable services.
 module internal Platform =

@@ -13,7 +13,6 @@ runtime.
 | Package | .NET | Fable JavaScript: Node | Fable JavaScript: browser | Notes |
 | --- | --- | --- | --- | --- |
 | `Axial` | Yes | Yes | Yes | Core workflows, runtime, layers, concurrency, streams, schedules, and `App`. |
-| `Axial.Layers` | Yes | Yes | Yes | Reusable provisioning: build an environment with flow capabilities, then provide it. |
 | `Axial.PlatformService` | Yes | Yes | Yes | Clock, logging, ordinary and secure randomness, GUID, and environment-variable services; live behavior follows the host. |
 | `Axial.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |
@@ -42,13 +41,12 @@ NuGet installs the transitive dependencies below; reference only the packages yo
 | Package | Axial packages it brings in | Other dependencies |
 | --- | --- | --- |
 | `Axial` | None | `Fable.Core` |
-| `Axial.Layers` | `Axial` | None |
-| `Axial.PlatformService` | `Axial`, `Axial.Layers` | None |
+| `Axial.PlatformService` | `Axial` | None |
 | `Axial.Console` | `Axial` | None |
 | `Axial.FileSystem` | `Axial` | None |
 | `Axial.HttpClient` | `Axial`, `Axial.PlatformService` | None |
 | `Axial.Process` | `Axial`, `Axial.PlatformService`, `Axial.Console`, `Axial.FileSystem` | None |
-| `Axial.Hosting` | `Axial`, `Axial.Layers`, `Axial.PlatformService`, `Axial.HttpClient` | `Microsoft.Extensions.Configuration.Abstractions`, `DependencyInjection.Abstractions`, `Hosting.Abstractions`, `Http`, `Logging.Abstractions` |
+| `Axial.Hosting` | `Axial`, `Axial.PlatformService`, `Axial.HttpClient` | `Microsoft.Extensions.Configuration.Abstractions`, `DependencyInjection.Abstractions`, `Hosting.Abstractions`, `Http`, `Logging.Abstractions` |
 | `Axial.Hosting.Node` | `Axial`, `Axial.PlatformService` | `Fable.Core` |
 | `Axial.Hosting.Browser` | `Axial` | `Fable.Core` |
 | `Axial.Telemetry` | `Axial` | `System.Diagnostics.DiagnosticSource` |

@@ -1,6 +1,5 @@
-namespace Axial.Layers
+namespace Axial
 
-open Axial
 
 open System.Threading
 open System.Threading.Tasks
@@ -19,7 +18,7 @@ type Layer<'input, 'error, 'output> =
 /// <remarks>
 /// Use for expensive, non-thread-safe-per-call resources such as compiler services or pinned
 /// clients: acquire a small fixed pool once, then spread concurrent work across instances instead
-/// of contending on one shared instance or reacquiring one per call. Build one with <see cref="M:Axial.Layers.Layer.pool``3" />.
+/// of contending on one shared instance or reacquiring one per call. Build one with <see cref="M:Axial.Layer.pool``3" />.
 /// </remarks>
 [<Sealed>]
 type Pool<'resource> internal (instances: 'resource array) =
@@ -113,11 +112,11 @@ module Layer =
     /// <summary>Provisions a fixed-size pool of resource instances, handed out round-robin.</summary>
     /// <param name="size">The number of instances to provision. Must be at least one.</param>
     /// <param name="acquire">Builds one instance, given its zero-based index in the pool.</param>
-    /// <returns>A layer that succeeds with a <see cref="T:Axial.Layers.Pool`1" />.</returns>
+    /// <returns>A layer that succeeds with a <see cref="T:Axial.Pool`1" />.</returns>
     /// <remarks>
     /// Instances are provisioned sequentially, in index order, inside the layer's scope, so finalizers
     /// registered by <paramref name="acquire" /> release in the reverse of that order when the scope
-    /// closes. Use <see cref="M:Axial.Layers.Layer.acquireRelease``2" /> inside <paramref name="acquire" />
+    /// closes. Use <see cref="M:Axial.Layer.acquireRelease``2" /> inside <paramref name="acquire" />
     /// when each instance owns a resource that needs an explicit release.
     /// </remarks>
     /// <example>

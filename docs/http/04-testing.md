@@ -101,7 +101,6 @@ check how many attempts were made and what each request carried.
 `Http.live` adapts an explicit `IClock` and one `HttpClient`; `Layer.succeed (Http.live …)` exposes them as a layer:
 
 ```fsharp
-open Axial.Layers
 
 type AppEnv =
     { Http: IHttp }

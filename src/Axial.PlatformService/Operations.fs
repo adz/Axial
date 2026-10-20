@@ -12,7 +12,6 @@ open System.Security.Cryptography
 #endif
 open System.Threading.Tasks
 open Axial
-open Axial.Layers
 #if FABLE_COMPILER
 open Fable.Core
 #endif

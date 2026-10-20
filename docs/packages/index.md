@@ -12,7 +12,7 @@ Supporting packages are documented with Axial Core unless they provide an indepe
 
 Maturity: Incubating
 
-Typed asynchronous workflows with explicit dependencies and expected failures, plus concurrency, resources, streams, and scheduling.
+Typed asynchronous workflows with explicit dependencies and expected failures, plus concurrency, resources, layers, streams, and scheduling.
 
 [Read the Core documentation →](/)
 
@@ -45,7 +45,6 @@ Typed HTTP workflows with request construction, response handling, reliability p
 | `Axial.FileSystem` | Incubating | The file-system service (`IFileSystem`). | [File system](/services/filesystem.html) |
 | `Axial.Files` | Incubating | Streaming file traversal and text reading. | [Files](/services/files.html) |
 | `Axial.WebSocket` | Experimental | Typed WebSocket client workflows. | [WebSocket](/services/websocket.html) |
-| `Axial.Layers` | Incubating | Reusable environment provisioning. | [Layers](/layers/) |
 | `Axial.Hosting` | Experimental | .NET and Microsoft Generic Host integration. | [Platforms and hosting](/platforms-and-hosting/) |
 | `Axial.Hosting.Node` | Experimental | Node.js signals, arguments, exit code, and environment. | [Node](/platforms-and-hosting/node.html) |
 | `Axial.Hosting.Browser` | Experimental | Browser ownership and `AbortSignal` integration. | [Browser](/platforms-and-hosting/browser.html) |
