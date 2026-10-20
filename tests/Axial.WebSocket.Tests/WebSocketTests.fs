@@ -2,6 +2,8 @@ namespace Axial.Tests
 
 open System
 open System.Net
+open System.Net.Http
+open System.Net.Security
 open System.Net.Sockets
 open System.IO
 open System.Net.WebSockets
@@ -200,6 +202,40 @@ module WebSocketTests =
         |> WebSocket.tls { ClientCertificate = client; TrustAnchors = Some [ca]; MinimumVersion = TlsVersion.Tls13 }
 
     let private tlsEnv () = { new IHasWebSocket with member _.WebSocket = WebSocket.live() }
+
+    [<Fact>]
+    let ``caller supplied handler controls TLS validation`` () = task {
+        use ca = TlsServer.makeCa ()
+        use serverCert = TlsServer.issue ca "CN=localhost" true
+        let! port, server = TlsServer.start serverCert None
+        try
+            use handler = new SocketsHttpHandler()
+            handler.SslOptions.RemoteCertificateValidationCallback <-
+                RemoteCertificateValidationCallback(fun _ _ _ _ -> true)
+            use invoker = new HttpMessageInvoker(handler, false)
+            let options =
+                WebSocket.connect $"wss://localhost:{port}/ws"
+                |> WebSocket.invoker invoker
+            use session =
+                match (WebSocket.openSession options).RunSynchronously(tlsEnv ()) with
+                | Exit.Success value -> value
+                | other -> failwithf "custom handler connect: %A" other
+            Assert.Equal(Exit.Success (), (session |> WebSocket.sendText "hello").RunSynchronously(()))
+            Assert.Equal(Exit.Success (Some(WebSocketMessage.Text "hello")), session.Receive().RunSynchronously(()))
+        finally server.DisposeAsync().AsTask().GetAwaiter().GetResult()
+    }
+
+    [<Fact>]
+    let ``caller supplied handler rejects Axial TLS options`` () =
+        use handler = new SocketsHttpHandler()
+        use invoker = new HttpMessageInvoker(handler, false)
+        let options =
+            WebSocket.connect "wss://localhost/"
+            |> WebSocket.tls { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Tls12 }
+            |> WebSocket.invoker invoker
+        Assert.Equal(
+            Exit.Failure(Cause.Fail(WebSocketError.ConnectFailed "A caller-supplied HTTP invoker cannot be combined with WebSocket.tls.")),
+            (WebSocket.openSession options).RunSynchronously(tlsEnv ()))
 
     [<Fact>]
     let ``local mutual TLS text echo`` () = task {

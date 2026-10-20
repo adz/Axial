@@ -33,11 +33,11 @@ module PackagePropsTests =
     let private xmlEscape (value: string) =
         value.Replace("&", "&amp;").Replace("\"", "&quot;").Replace("<", "&lt;").Replace(">", "&gt;")
 
-    let private writeConsumer (dir: string) =
+    let private writeConsumerProject (dir: string) (frameworkProperty: string) (source: string) =
         let fsproj =
             $"""<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    {frameworkProperty}
     <OutputType>Library</OutputType>
     <_AxialGuardrailsAnalyzersPath>{xmlEscape (analyzersPath ())}</_AxialGuardrailsAnalyzersPath>
     <_AxialGuardrailsExe>dotnet &quot;{xmlEscape (cliDll ())}&quot;</_AxialGuardrailsExe>
@@ -52,7 +52,10 @@ module PackagePropsTests =
 </Project>
 """
         File.WriteAllText(Path.Combine(dir, "Consumer.fsproj"), fsproj)
-        File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n")
+        File.WriteAllText(Path.Combine(dir, "Program.fs"), source)
+
+    let private writeConsumer (dir: string) =
+        writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
 
     type BuildResult = { ExitCode: int; Output: string }
 
@@ -81,14 +84,17 @@ module PackagePropsTests =
         System.Threading.Tasks.Task.WaitAll(stdout, stderr)
         { ExitCode = child.ExitCode; Output = stdout.Result + "\n" + stderr.Result }
 
-    let private buildInTemp severityEnv severityProperty =
+    let private buildConsumerInTemp write severityEnv severityProperty =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
-            writeConsumer dir
+            write dir
             runBuild (Path.Combine(dir, "Consumer.fsproj")) severityEnv severityProperty
         finally
             Directory.Delete(dir, true)
+
+    let private buildInTemp severityEnv severityProperty =
+        buildConsumerInTemp writeConsumer severityEnv severityProperty
 
     [<Fact>]
     let ``AXIAL_GUARDRAILS_SEVERITY maps to AxialGuardrailsSeverity in the package props`` () =
@@ -108,3 +114,15 @@ module PackagePropsTests =
         Assert.Equal(0, overridden.ExitCode)
         Assert.Contains("warning AXG001", overridden.Output)
         Assert.DoesNotContain("error AXG001", overridden.Output)
+
+    [<Fact>]
+    let ``analyzes code selected by every target framework`` () =
+        let write dir =
+            writeConsumerProject
+                dir
+                "<TargetFrameworks>netstandard2.1;net10.0</TargetFrameworks>"
+                "module Consumer\ntype Conditional = Value of int\n#if NET10_0\nlet render value = sprintf \"%A\" value\n#endif\n"
+
+        let result = buildConsumerInTemp write (Some "error") None
+        Assert.NotEqual(0, result.ExitCode)
+        Assert.Contains("error AXG006", result.Output)

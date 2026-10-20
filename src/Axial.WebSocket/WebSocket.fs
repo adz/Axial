@@ -52,7 +52,8 @@ type ConnectContext = { Host: string; Port: int }
 type WebSocketOptions = internal {
     Url: Uri; Subprotocols: string list; MaxMessageBytes: int
     Tls: WebSocketTls; Connect: (ConnectContext -> Flow<unit, WebSocketError, Stream>) option
-    OnBytes: (BytesDirection -> int -> unit) option }
+    OnBytes: (BytesDirection -> int -> unit) option
+    Invoker: HttpMessageInvoker option }
 
 #if !NETSTANDARD2_1
 type private CountingStream(inner: Stream, notify: BytesDirection -> int -> unit) =
@@ -126,7 +127,7 @@ module WebSocket =
         let mutable uri = Unchecked.defaultof<Uri>
         if not (Uri.TryCreate(url, UriKind.Absolute, &uri)) || (uri.Scheme <> "ws" && uri.Scheme <> "wss") then
             invalidArg (nameof url) "An absolute ws or wss URL is required."
-        { Url = uri; Subprotocols = []; MaxMessageBytes = 1024 * 1024; Tls = { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Default }; Connect = None; OnBytes = None }
+        { Url = uri; Subprotocols = []; MaxMessageBytes = 1024 * 1024; Tls = { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Default }; Connect = None; OnBytes = None; Invoker = None }
 
     let subprotocol value (options: WebSocketOptions) =
         if String.IsNullOrWhiteSpace value || options.Subprotocols |> List.contains value then
@@ -140,6 +141,10 @@ module WebSocket =
     let tls value options = { options with Tls = value }
     let connectWith value options = { options with Connect = Some value }
     let onBytes value options = { options with OnBytes = Some value }
+
+    /// Uses a caller-owned HTTP invoker for the WebSocket upgrade. The caller must keep it alive through the session.
+    /// This cannot be combined with `tls` or `connectWith`; `onBytes` is not called because the invoker owns transport.
+    let invoker value options = { options with Invoker = Some value }
 
     let service<'env, 'error when 'env :> IHasWebSocket> : Flow<'env, 'error, IWebSocket> = Flow.envWith _.WebSocket
 
@@ -167,7 +172,12 @@ module WebSocket =
     let live () : IWebSocket =
         { new IWebSocket with
             member _.Connect options =
-                flow {
+                let defaultTls = { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Default }
+                if options.Invoker.IsSome && options.Tls <> defaultTls then
+                    Flow.fail(WebSocketError.ConnectFailed "A caller-supplied HTTP invoker cannot be combined with WebSocket.tls.")
+                elif options.Invoker.IsSome && options.Connect.IsSome then
+                    Flow.fail(WebSocketError.ConnectFailed "A caller-supplied HTTP invoker cannot be combined with WebSocket.connectWith.")
+                else flow {
                     let! ct = Flow.cancellationToken
                     return! Flow.fromAsyncResult (async {
                         return! task {
@@ -178,62 +188,65 @@ module WebSocket =
                             try
                                 for protocol in options.Subprotocols do socket.Options.AddSubProtocol protocol
 #if NETSTANDARD2_1
-                                if options.Connect.IsSome || options.OnBytes.IsSome || options.Tls <> { ClientCertificate = None; TrustAnchors = None; MinimumVersion = TlsVersion.Default } then
+                                if options.Connect.IsSome || options.OnBytes.IsSome || options.Invoker.IsSome || options.Tls <> defaultTls then
                                     invalidOp "TLS and transport hooks require net8.0."
                                 do! socket.ConnectAsync(options.Url, ct)
 #else
-                                use handler = new SocketsHttpHandler()
-                                match options.Tls.MinimumVersion with
-                                | TlsVersion.Tls13 -> handler.SslOptions.EnabledSslProtocols <- SslProtocols.Tls13
-                                | TlsVersion.Tls12 -> handler.SslOptions.EnabledSslProtocols <- SslProtocols.Tls12 ||| SslProtocols.Tls13
-                                | TlsVersion.Default -> ()
-                                options.Tls.ClientCertificate |> Option.iter (fun cert ->
-                                    handler.SslOptions.ClientCertificates <- X509CertificateCollection()
-                                    handler.SslOptions.ClientCertificates.Add cert |> ignore)
-                                options.Tls.TrustAnchors |> Option.iter (fun roots ->
-                                    handler.SslOptions.RemoteCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ cert _ errors ->
-                                        if isNull cert || errors.HasFlag SslPolicyErrors.RemoteCertificateNameMismatch then false else
-                                        use peer = new X509Certificate2(cert)
-                                        let name = peer.GetNameInfo(X509NameType.DnsName, false)
-                                        let host = options.Url.IdnHost
-                                        let validName =
-                                            String.Equals(name, host, StringComparison.OrdinalIgnoreCase)
-                                            || (name.StartsWith("*.", StringComparison.Ordinal)
-                                                && host.EndsWith(name.Substring(1), StringComparison.OrdinalIgnoreCase)
-                                                && host.Length > name.Length - 1
-                                                && not (host.Substring(0, host.Length - name.Length + 1).Contains('.')))
-                                        if not validName then false else
-                                        use chain = new X509Chain()
-                                        chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
-                                        chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
-                                        for root in roots do chain.ChainPolicy.CustomTrustStore.Add root |> ignore
-                                        chain.Build(peer)))
-                                if options.Connect.IsSome || options.OnBytes.IsSome then
-                                    handler.ConnectCallback <- Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>(fun context token ->
-                                        ValueTask<Stream>(task {
-                                            let! transport = task {
-                                                match options.Connect with
-                                                | Some hook ->
-                                                    match (hook { Host = context.DnsEndPoint.Host; Port = context.DnsEndPoint.Port }).RunSynchronously((), cancellationToken = token) with
-                                                    | Exit.Success stream -> return stream
-                                                    | Exit.Failure(Cause.Fail error) -> return raise (IOException(sprintf "Custom connect failed: %O" error))
-                                                    | Exit.Failure(Cause.Die error) ->
-                                                        connectDefect <- Some error
-                                                        return raise error
-                                                    | other -> return raise (OperationCanceledException(sprintf "Custom connect interrupted: %A" other, token))
-                                                | None ->
-                                                    let client = new Socket(SocketType.Stream, ProtocolType.Tcp)
-                                                    try
-                                                        do! client.ConnectAsync(context.DnsEndPoint, token)
-                                                        return new NetworkStream(client, true) :> Stream
-                                                    with error -> client.Dispose(); return raise error
-                                            }
-                                            return match options.OnBytes with
-                                                   | Some notify -> new CountingStream(transport, notify) :> Stream
-                                                   | None -> transport
-                                        }))
-                                use invoker = new HttpMessageInvoker(handler, false)
-                                do! socket.ConnectAsync(options.Url, invoker, ct)
+                                match options.Invoker with
+                                | Some invoker -> do! socket.ConnectAsync(options.Url, invoker, ct)
+                                | None ->
+                                    use handler = new SocketsHttpHandler()
+                                    match options.Tls.MinimumVersion with
+                                    | TlsVersion.Tls13 -> handler.SslOptions.EnabledSslProtocols <- SslProtocols.Tls13
+                                    | TlsVersion.Tls12 -> handler.SslOptions.EnabledSslProtocols <- SslProtocols.Tls12 ||| SslProtocols.Tls13
+                                    | TlsVersion.Default -> ()
+                                    options.Tls.ClientCertificate |> Option.iter (fun cert ->
+                                        handler.SslOptions.ClientCertificates <- X509CertificateCollection()
+                                        handler.SslOptions.ClientCertificates.Add cert |> ignore)
+                                    options.Tls.TrustAnchors |> Option.iter (fun roots ->
+                                        handler.SslOptions.RemoteCertificateValidationCallback <- RemoteCertificateValidationCallback(fun _ cert _ errors ->
+                                            if isNull cert || errors.HasFlag SslPolicyErrors.RemoteCertificateNameMismatch then false else
+                                            use peer = new X509Certificate2(cert)
+                                            let name = peer.GetNameInfo(X509NameType.DnsName, false)
+                                            let host = options.Url.IdnHost
+                                            let validName =
+                                                String.Equals(name, host, StringComparison.OrdinalIgnoreCase)
+                                                || (name.StartsWith("*.", StringComparison.Ordinal)
+                                                    && host.EndsWith(name.Substring(1), StringComparison.OrdinalIgnoreCase)
+                                                    && host.Length > name.Length - 1
+                                                    && not (host.Substring(0, host.Length - name.Length + 1).Contains('.')))
+                                            if not validName then false else
+                                            use chain = new X509Chain()
+                                            chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
+                                            chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
+                                            for root in roots do chain.ChainPolicy.CustomTrustStore.Add root |> ignore
+                                            chain.Build(peer)))
+                                    if options.Connect.IsSome || options.OnBytes.IsSome then
+                                        handler.ConnectCallback <- Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>(fun context token ->
+                                            ValueTask<Stream>(task {
+                                                let! transport = task {
+                                                    match options.Connect with
+                                                    | Some hook ->
+                                                        match (hook { Host = context.DnsEndPoint.Host; Port = context.DnsEndPoint.Port }).RunSynchronously((), cancellationToken = token) with
+                                                        | Exit.Success stream -> return stream
+                                                        | Exit.Failure(Cause.Fail error) -> return raise (IOException(sprintf "Custom connect failed: %O" error))
+                                                        | Exit.Failure(Cause.Die error) ->
+                                                            connectDefect <- Some error
+                                                            return raise error
+                                                        | _ -> return raise (OperationCanceledException("Custom connect interrupted.", token))
+                                                    | None ->
+                                                        let client = new Socket(SocketType.Stream, ProtocolType.Tcp)
+                                                        try
+                                                            do! client.ConnectAsync(context.DnsEndPoint, token)
+                                                            return new NetworkStream(client, true) :> Stream
+                                                        with error -> client.Dispose(); return raise error
+                                                }
+                                                return match options.OnBytes with
+                                                       | Some notify -> new CountingStream(transport, notify) :> Stream
+                                                       | None -> transport
+                                            }))
+                                    use invoker = new HttpMessageInvoker(handler, false)
+                                    do! socket.ConnectAsync(options.Url, invoker, ct)
 #endif
                                 let mutable closed = false
                                 let sendGate = new SemaphoreSlim(1, 1)
