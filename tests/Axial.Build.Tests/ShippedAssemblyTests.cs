@@ -9,12 +9,25 @@ namespace Axial.Build.Tests;
 
 public sealed class ShippedAssemblyTests
 {
-    private static readonly string[] ShippedAssemblies =
+    private static readonly (string Assembly, string[] Frameworks)[] ShippedAssemblies =
     [
-        "Axial", "Axial.Console", "Axial.ElmishFlows", "Axial.Layers", "Axial.FileSystem", "Axial.Files",
-        "Axial.HttpClient", "Axial.WebSocket", "Axial.Process", "Axial.PlatformService", "Axial.Hosting",
-        "Axial.Hosting.AspNetCore", "Axial.Hosting.GenHttp", "Axial.Hosting.Node", "Axial.Hosting.Browser",
-        "Axial.Telemetry", "Axial.Telemetry.JavaScript"
+        ("Axial", ["net8.0", "netstandard2.1"]),
+        ("Axial.Console", ["net8.0", "netstandard2.1"]),
+        ("Axial.ElmishFlows", ["net8.0", "netstandard2.1"]),
+        ("Axial.Layers", ["net8.0", "netstandard2.1"]),
+        ("Axial.FileSystem", ["net8.0", "netstandard2.1"]),
+        ("Axial.Files", ["net8.0", "netstandard2.1"]),
+        ("Axial.HttpClient", ["net8.0", "netstandard2.1"]),
+        ("Axial.WebSocket", ["net8.0", "netstandard2.1"]),
+        ("Axial.Process", ["net8.0", "netstandard2.1"]),
+        ("Axial.PlatformService", ["net8.0", "netstandard2.1"]),
+        ("Axial.Hosting", ["net8.0", "netstandard2.1"]),
+        ("Axial.Hosting.AspNetCore", ["net8.0"]),
+        ("Axial.Hosting.GenHttp", ["net8.0"]),
+        ("Axial.Hosting.Node", ["netstandard2.1"]),
+        ("Axial.Hosting.Browser", ["netstandard2.1"]),
+        ("Axial.Telemetry", ["net8.0", "netstandard2.1"]),
+        ("Axial.Telemetry.JavaScript", ["netstandard2.1"])
     ];
 
     private static readonly Dictionary<short, OpCode> OpCodesByValue =
@@ -29,10 +42,12 @@ public sealed class ShippedAssemblyTests
         var artifacts = FindArtifactsRoot();
         var findings = new List<string>();
 
-        foreach (var assemblyName in ShippedAssemblies)
+        foreach (var (assemblyName, frameworks) in ShippedAssemblies)
+        foreach (var framework in frameworks)
         {
-            var path = FindAssembly(artifacts, assemblyName);
-            if (path is not null) findings.AddRange(FindPrintfReferences(path));
+            var path = AssemblyPath(artifacts, assemblyName, framework, frameworks.Length == 1);
+            Assert.True(File.Exists(path), $"Expected shipped artifact is missing: {path}");
+            findings.AddRange(FindPrintfReferences(path));
         }
 
         Assert.True(findings.Count == 0,
@@ -47,16 +62,23 @@ public sealed class ShippedAssemblyTests
         return directory?.FullName ?? throw new InvalidOperationException("Could not find artifacts directory.");
     }
 
-    private static string? FindAssembly(string artifacts, string assemblyName)
+    private static string AssemblyPath(string artifacts, string assemblyName, string framework, bool singleTarget) =>
+        Path.Combine(artifacts, "bin", assemblyName, singleTarget ? "release" : "release_" + framework, assemblyName + ".dll");
+
+    [Fact]
+    public void Scanner_resolves_generic_printf_calls_through_method_specifications()
     {
-        var projectOutput = Path.Combine(artifacts, "bin", assemblyName);
-        var candidates = new[]
-        {
-            Path.Combine(projectOutput, "release_net8.0", assemblyName + ".dll"),
-            Path.Combine(projectOutput, "release", assemblyName + ".dll"),
-            Path.Combine(projectOutput, "release_netstandard2.1", assemblyName + ".dll")
-        };
-        return candidates.FirstOrDefault(File.Exists);
+        var artifacts = FindArtifactsRoot();
+        var path = Path.Combine(artifacts, "bin", "Axial.PrintfFixture", "release", "Axial.PrintfFixture.dll");
+        Assert.True(File.Exists(path), $"Expected deliberately bad fixture is missing: {path}");
+        Assert.Contains(FindPrintfReferences(path), finding => finding.EndsWith("Axial.PrintfFixture.BadPrintf.render"));
+
+        using var stream = File.OpenRead(path);
+        using var pe = new PEReader(stream);
+        var metadata = pe.GetMetadataReader();
+        var methodSpecifications = Enumerable.Range(1, metadata.GetTableRowCount(TableIndex.MethodSpec))
+            .Select(MetadataTokens.MethodSpecificationHandle);
+        Assert.Contains(methodSpecifications, handle => ResolvesToPrintfReference(metadata, handle));
     }
 
     private static IEnumerable<string> FindPrintfReferences(string path)
@@ -64,20 +86,23 @@ public sealed class ShippedAssemblyTests
         using var stream = File.OpenRead(path);
         using var pe = new PEReader(stream);
         var metadata = pe.GetMetadataReader();
-        var printfReferences = metadata.MemberReferences
-            .Where(handle => IsPrintfReference(metadata, handle))
-            .Select(handle => MetadataTokens.GetToken(handle))
-            .ToHashSet();
-
         foreach (var methodHandle in metadata.MethodDefinitions)
         {
             var method = metadata.GetMethodDefinition(methodHandle);
             if (method.RelativeVirtualAddress == 0) continue;
             var il = pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes()!;
-            if (ReferencedTokens(il).Any(printfReferences.Contains))
+            if (ReferencedTokens(il).Any(token => ResolvesToPrintfReference(metadata, MetadataTokens.EntityHandle(token))))
                 yield return Path.GetFileNameWithoutExtension(path) + ": " + MethodFullName(metadata, methodHandle);
         }
     }
+
+    private static bool ResolvesToPrintfReference(MetadataReader metadata, EntityHandle handle) => handle.Kind switch
+    {
+        HandleKind.MemberReference => IsPrintfReference(metadata, (MemberReferenceHandle)handle),
+        HandleKind.MethodSpecification => ResolvesToPrintfReference(
+            metadata, metadata.GetMethodSpecification((MethodSpecificationHandle)handle).Method),
+        _ => false
+    };
 
     private static bool IsPrintfReference(MetadataReader metadata, MemberReferenceHandle handle)
     {

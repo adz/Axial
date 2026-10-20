@@ -50,6 +50,7 @@
     <Project Path="tests/Axial.WebSocket.Tests/Axial.WebSocket.Tests.fsproj" />
     <Project Path="tests/Axial.Integration.Tests/Axial.Integration.Tests.fsproj" />
     <Project Path="tests/Axial.PlatformService.Tests/Axial.PlatformService.Tests.fsproj" />
+    <Project Path="tests/Axial.PrintfFixture/Axial.PrintfFixture.fsproj" />
     <Project Path="tests/Axial.Telemetry.Tests/Axial.Telemetry.Tests.fsproj" />
     <Project Path="tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj" />
     <Project Path="tests/Axial.Tests/Axial.Tests.fsproj" />

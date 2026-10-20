@@ -18,10 +18,13 @@
     <ProjectReference Include="../../src/Axial.Process/Axial.Process.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.PlatformService/Axial.PlatformService.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Hosting/Axial.Hosting.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Hosting.AspNetCore/Axial.Hosting.AspNetCore.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/Axial.Hosting.GenHttp/Axial.Hosting.GenHttp.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Hosting.Node/Axial.Hosting.Node.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Hosting.Browser/Axial.Hosting.Browser.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Telemetry/Axial.Telemetry.fsproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../Axial.PrintfFixture/Axial.PrintfFixture.fsproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
