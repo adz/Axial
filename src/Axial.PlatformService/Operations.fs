@@ -7,6 +7,9 @@ open System
 open System.Collections
 open System.Collections.Generic
 open System.Globalization
+#if !FABLE_COMPILER
+open System.Security.Cryptography
+#endif
 open System.Threading.Tasks
 open Axial
 open Axial.Layers
@@ -19,6 +22,7 @@ type BaseRuntime =
     { Clock: IClock
       Log: ILog
       Random: IRandom
+      SecureRandom: ISecureRandom
       Guid: IGuid
       EnvironmentVariables: IEnvironmentVariables }
     interface IHasClock with
@@ -27,6 +31,8 @@ type BaseRuntime =
         member this.Log = this.Log
     interface IHasRandom with
         member this.Random = this.Random
+    interface IHasSecureRandom with
+        member this.SecureRandom = this.SecureRandom
     interface IHasGuid with
         member this.Guid = this.Guid
     interface IHasEnvironmentVariables with
@@ -436,6 +442,92 @@ module Random =
     let layer : Layer<unit, Never, IRandom> =
         Layer.succeed live
 
+/// <summary>Helpers for cryptographically secure random values used for secrets, tokens, and nonces.</summary>
+/// <remarks><see cref="T:Axial.PlatformService.IRandom" /> is not suitable for security-sensitive values.</remarks>
+[<RequireQualifiedAccess>]
+module SecureRandom =
+    /// Reads the service from the environment.
+    let service<'env, 'error when 'env :> IHasSecureRandom> : Flow<'env, 'error, ISecureRandom> =
+        Flow.envWith _.SecureRandom
+
+    /// <summary>Creates a byte array filled with cryptographically secure random bytes.</summary>
+    let bytes<'env, 'error when 'env :> IHasSecureRandom> (count: int) : Flow<'env, 'error, byte array> =
+        service
+        |> Flow.map (fun secureRandom ->
+            let buffer = Array.zeroCreate<byte> count
+            secureRandom.Fill buffer
+            buffer)
+
+    /// <summary>Reads a cryptographically secure integer from the requested half-open range.</summary>
+    let int32<'env, 'error when 'env :> IHasSecureRandom>
+        (minInclusive: int)
+        (maxExclusive: int)
+        : Flow<'env, 'error, int> =
+        service
+        |> Flow.map (fun secureRandom -> secureRandom.GetInt32 minInclusive maxExclusive)
+
+#if FABLE_COMPILER
+    [<Emit("globalThis.crypto.getRandomValues($0)")>]
+    let private fillWithWebCrypto (_buffer: byte array) : unit = jsNative
+#endif
+
+    /// <summary>Creates a live cryptographically secure generator backed by the platform cryptography provider.</summary>
+    let live : ISecureRandom =
+#if FABLE_COMPILER
+        let fill buffer = fillWithWebCrypto buffer
+
+        let getInt32 minInclusive maxExclusive =
+            if minInclusive >= maxExclusive then invalidArg (nameof maxExclusive) "The maximum must be greater than the minimum."
+            let range = uint64 (int64 maxExclusive - int64 minInclusive)
+            let limit = (0x100000000UL / range) * range
+            let buffer = Array.zeroCreate<byte> 4
+            let mutable sample = 0UL
+            let mutable accepted = false
+            while not accepted do
+                fill buffer
+                sample <- uint64 buffer[0] ||| (uint64 buffer[1] <<< 8) ||| (uint64 buffer[2] <<< 16) ||| (uint64 buffer[3] <<< 24)
+                accepted <- sample < limit
+            int (int64 minInclusive + int64 (sample % range))
+
+        { new ISecureRandom with
+            member _.Fill buffer = fill buffer
+            member _.GetInt32 minInclusive maxExclusive = getInt32 minInclusive maxExclusive }
+#else
+        { new ISecureRandom with
+            // The live ISecureRandom implementation is the explicit boundary for this ambient effect.
+            member _.Fill buffer = RandomNumberGenerator.Fill buffer // axial-allow-effect: secure-random
+            // The live ISecureRandom implementation is the explicit boundary for this ambient effect.
+            member _.GetInt32 minInclusive maxExclusive = RandomNumberGenerator.GetInt32(minInclusive, maxExclusive) // axial-allow-effect: secure-random
+        }
+#endif
+
+    /// <summary>Creates a deterministic generator that cycles through the supplied bytes.</summary>
+    let fromBytes (values: seq<byte>) : ISecureRandom =
+        let values = Seq.toArray values
+        if values.Length = 0 then invalidArg (nameof values) "Supply at least one byte."
+        let mutable index = 0
+        let nextByte () =
+            let value = values[index]
+            index <- (index + 1) % values.Length
+            value
+        let fill (buffer: byte array) =
+            for position in 0 .. buffer.Length - 1 do
+                buffer[position] <- nextByte ()
+
+        { new ISecureRandom with
+            member _.Fill buffer = fill buffer
+            member _.GetInt32 minInclusive maxExclusive =
+                if minInclusive >= maxExclusive then invalidArg (nameof maxExclusive) "The maximum must be greater than the minimum."
+                let buffer = Array.zeroCreate<byte> 4
+                fill buffer
+                let sample = uint64 buffer[0] ||| (uint64 buffer[1] <<< 8) ||| (uint64 buffer[2] <<< 16) ||| (uint64 buffer[3] <<< 24)
+                let range = uint64 (int64 maxExclusive - int64 minInclusive)
+                int (int64 minInclusive + int64 (sample % range)) }
+
+    /// <summary>Builds the live cryptographically secure random generator as a layer.</summary>
+    let layer : Layer<unit, Never, ISecureRandom> =
+        Layer.succeed live
+
 /// <summary>Helpers for the GUID service.</summary>
 [<RequireQualifiedAccess>]
 module Guid =
@@ -656,7 +748,12 @@ module EnvironmentVariableErrors =
 module BaseRuntime =
     /// <summary>Creates the standard live base runtime as an explicit service bundle.</summary>
     let liveValue : BaseRuntime =
-        { Clock = Clock.live; Log = Log.live; Random = Random.live; Guid = Guid.live; EnvironmentVariables = EnvironmentVariables.live }
+        { Clock = Clock.live
+          Log = Log.live
+          Random = Random.live
+          SecureRandom = SecureRandom.live
+          Guid = Guid.live
+          EnvironmentVariables = EnvironmentVariables.live }
 
     /// <summary>Builds the standard live base runtime as an explicit service bundle.</summary>
     let live : Layer<unit, Never, BaseRuntime> =
@@ -665,8 +762,13 @@ module BaseRuntime =
     /// <summary>Builds the base runtime from an <see cref="T:System.IServiceProvider" />.</summary>
     let fromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, BaseRuntime> =
         Platform.servicesFromServiceProvider
-        |> Layer.map (fun (clock, log, random, guid, environmentVariables) ->
-            { Clock = clock; Log = log; Random = random; Guid = guid; EnvironmentVariables = environmentVariables })
+        |> Layer.map (fun (clock, log, random, secureRandom, guid, environmentVariables) ->
+            { Clock = clock
+              Log = log
+              Random = random
+              SecureRandom = secureRandom
+              Guid = guid
+              EnvironmentVariables = environmentVariables })
 
 #if !FABLE_COMPILER
 /// <summary>A deterministic test environment: a manual clock, a recording log, and scripted random, GUID, and
@@ -682,6 +784,9 @@ type TestRuntime(startUtc: DateTimeOffset) =
     /// <summary>The random service; assign a scripted generator such as <c>Random.fromSequence</c>.</summary>
     member val Random : IRandom = Random.fromSequence Seq.empty with get, set
 
+    /// <summary>The secure random service; assign a deterministic generator such as <c>SecureRandom.fromBytes</c>.</summary>
+    member val SecureRandom : ISecureRandom = SecureRandom.fromBytes [ 0uy ] with get, set
+
     /// <summary>The GUID service; assign a scripted generator such as <c>Guid.fromSequence</c>.</summary>
     member val Guid : IGuid = Guid.fromSequence Seq.empty with get, set
 
@@ -694,6 +799,8 @@ type TestRuntime(startUtc: DateTimeOffset) =
         member this.Log = this.Log
     interface IHasRandom with
         member this.Random = this.Random
+    interface IHasSecureRandom with
+        member this.SecureRandom = this.SecureRandom
     interface IHasGuid with
         member this.Guid = this.Guid
     interface IHasEnvironmentVariables with

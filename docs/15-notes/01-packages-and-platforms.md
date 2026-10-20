@@ -14,7 +14,7 @@ runtime.
 | --- | --- | --- | --- | --- |
 | `Axial` | Yes | Yes | Yes | Core workflows, runtime, layers, concurrency, streams, schedules, and `App`. |
 | `Axial.Layers` | Yes | Yes | Yes | Reusable provisioning: build an environment with flow capabilities, then provide it. |
-| `Axial.PlatformService` | Yes | Yes | Yes | Clock, logging, randomness, GUID, and environment-variable services; live behavior follows the host. |
+| `Axial.PlatformService` | Yes | Yes | Yes | Clock, logging, ordinary and secure randomness, GUID, and environment-variable services; live behavior follows the host. |
 | `Axial.Console` | Yes | Yes | Yes | Console service; JavaScript behavior is limited to facilities supplied by the host console. |
 | `Axial.FileSystem` | Yes | API only | API only | The live filesystem implementation is .NET-only. Supply a JavaScript implementation explicitly if needed. |
 | `Axial.HttpClient` | Yes | API only | API only | Request plans are portable; the live `HttpClient` implementation is .NET-only. |
@@ -37,7 +37,7 @@ visibility or unload as dependable application shutdown.
 
 NuGet installs the transitive dependencies below; reference only the packages you use directly. Every package also depends on `FSharp.Core`.
 
-`Axial` defines the service contracts, such as `IClock`, but does not depend on `Axial.PlatformService`. That package adds the live clock, logging, randomness, GUID, and environment-variable implementations.
+`Axial` defines the service contracts, such as `IClock`, but does not depend on `Axial.PlatformService`. That package adds the live clock, logging, ordinary and secure randomness, GUID, and environment-variable implementations.
 
 | Package | Axial packages it brings in | Other dependencies |
 | --- | --- | --- |

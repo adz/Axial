@@ -22,6 +22,7 @@ module CoreEnvironmentVariables = Axial.PlatformService.EnvironmentVariables
 module CoreGuid = Axial.PlatformService.Guid
 module CoreLog = Axial.PlatformService.Log
 module CoreRandom = Axial.PlatformService.Random
+module CoreSecureRandom = Axial.PlatformService.SecureRandom
 module ConsoleService = Axial.Console.Console
 module FileSystemService = Axial.FileSystem.FileSystem
 module HttpService = Axial.HttpClient.Http
@@ -59,6 +60,7 @@ module DependencyInjectionIntegrationTests =
         let logMessages = ResizeArray<LogLevel * string>()
         let logger = CoreLog.fromSink (fun level message -> logMessages.Add(level, message))
         let random = CoreRandom.fromValue 17
+        let secureRandom = CoreSecureRandom.fromBytes [ 23uy ]
         let guid = CoreGuid.fromValue (System.Guid.Parse "cccccccc-cccc-cccc-cccc-cccccccccccc")
         let envVars = CoreEnvironmentVariables.fromPairs [ "AXIAL_DI", "registered" ]
 
@@ -67,6 +69,7 @@ module DependencyInjectionIntegrationTests =
                 .AddSingleton<IClock>(clock)
                 .AddSingleton<ILog>(logger)
                 .AddSingleton<IRandom>(random)
+                .AddSingleton<ISecureRandom>(secureRandom)
                 .AddSingleton<IGuid>(guid)
                 .AddSingleton<IEnvironmentVariables>(envVars)
                 .BuildServiceProvider()

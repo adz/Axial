@@ -1,13 +1,13 @@
 ---
 title: Supplying Platform Services
 linkTitle: Supplying Platform Services
-description: Get a live clock, logger, randomness, GUID, and environment-variable bundle into a host.
+description: Get live clock, logger, random, secure-random, GUID, and environment-variable services into a host.
 ---
 
 # Supplying Platform Services
 
 A host needs the standard operational services before it can run application workflows: a clock, a logger,
-randomness, GUIDs, and environment variables. `Axial.PlatformService` bundles all five as `BaseRuntime`.
+ordinary and cryptographically secure randomness, GUIDs, and environment variables. `Axial.PlatformService` bundles all six as `BaseRuntime`.
 
 ```fsharp prepare
 // Setup for the checked example on this page.

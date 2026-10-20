@@ -96,7 +96,7 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 | Guardrail | Rules |
 | --- | --- |
 | `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking waits, and `AXG002`–`AXG008` |
-| `Axial.PlatformService` | Randomness, GUIDs, environment state, and `TimeZoneInfo.Local` |
+| `Axial.PlatformService` | Ordinary randomness (`random`), cryptographic randomness (`secure-random`), GUIDs, environment state, and `TimeZoneInfo.Local` |
 | `Axial.Console` | `System.Console` |
 | `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
 | `Axial.Process` | `Process.Start` |

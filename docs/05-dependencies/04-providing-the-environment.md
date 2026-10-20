@@ -61,7 +61,7 @@ summary |> Flow.run fixedEnv |> shouldEqual (Exit.Success "3 users on 2026-01-01
 
 The record literal shows where each service comes from.
 
-For the operational services, `Axial.PlatformService` ships a ready-made bundle so you do not have to name all five:
+For the operational services, `Axial.PlatformService` ships a ready-made bundle so you do not have to name all six:
 
 ```fsharp transcript
 > open System;;
@@ -71,7 +71,7 @@ For the operational services, `Axial.PlatformService` ships a ready-made bundle 
 val it: Exit<int,Never> = Success 2026
 ```
 
-`BaseRuntime` groups `IClock`, `ILog`, `IRandom`, `IGuid`, and `IEnvironmentVariables`, and implements one contract
+`BaseRuntime` groups `IClock`, `ILog`, `IRandom`, `ISecureRandom`, `IGuid`, and `IEnvironmentVariables`, and implements one contract
 per service, so helpers like `Clock.now` and `EnvironmentVariable.get` work against it directly. Embedding it
 alongside your own services takes one interface member per service, delegating to wherever `BaseRuntime` ends up
 living in your record; see [Tutorial: Composing Built-in Services](/services/existing-services.html) for the full

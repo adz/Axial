@@ -8,12 +8,18 @@ open Xunit
 
 module CoreServiceTests =
     let private makeRuntime clock random guid envVars : BaseRuntime =
-        { Clock = clock; Log = Log.live; Random = random; Guid = guid; EnvironmentVariables = envVars }
+        { Clock = clock
+          Log = Log.live
+          Random = random
+          SecureRandom = SecureRandom.fromBytes [ 0uy ]
+          Guid = guid
+          EnvironmentVariables = envVars }
 
     [<Fact>]
     let ``operational service contracts belong to the optional platform-service package`` () =
         test <@ typeof<IClock>.Assembly.GetName().Name = "Axial" @>
         test <@ typeof<IRandom>.Assembly.GetName().Name = "Axial.PlatformService" @>
+        test <@ typeof<ISecureRandom>.Assembly.GetName().Name = "Axial.PlatformService" @>
         test <@ typeof<IEnvironmentVariables>.Assembly.GetName().Name = "Axial.PlatformService" @>
 
     [<Fact>]

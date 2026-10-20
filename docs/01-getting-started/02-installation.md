@@ -68,7 +68,7 @@ suppression syntax.
 
 - [Hosting](/platforms-and-hosting/dotnet.html) chooses between standalone .NET, Generic Host, Node, and browser
   entry points.
-- [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random,
+- [Platform services](/services/platform-services/index.html) introduces the explicit clock, logging, random, secure-random,
   GUID, and environment-variable contracts.
 - [Effect-boundary guardrails](/notes/guardrails.html) is the analyzer that enforces those contracts as a build
   check instead of a review convention.

@@ -1,10 +1,10 @@
 ---
 title: Platform Services
-description: The clock, logging, randomness, GUID, and environment-variable services that make ambient state explicit.
+description: Clock, logging, random, secure-random, GUID, and environment-variable services that make ambient state explicit.
 ---
 
-`Axial.PlatformService` exposes five capabilities as dependencies instead of ambient state:
-`DateTimeOffset.UtcNow`, a logger, `Random`, `Guid.NewGuid()`, and `Environment.GetEnvironmentVariable`. Tests can then pin the time or generated identifier.
+`Axial.PlatformService` exposes six capabilities as dependencies instead of ambient state:
+`DateTimeOffset.UtcNow`, a logger, ordinary and cryptographically secure randomness, `Guid.NewGuid()`, and `Environment.GetEnvironmentVariable`. Tests can then pin the time or generated identifier.
 
 ```fsharp
 open System
@@ -16,7 +16,8 @@ open Axial.PlatformService
 | --- | --- | --- |
 | `IClock` | `DateTimeOffset.UtcNow` | `Clock` |
 | `ILog` | An ambient logger | `Log` |
-| `IRandom` | `System.Random` | `Random` |
+| `IRandom` | `System.Random` for non-security-sensitive randomness | `Random` |
+| `ISecureRandom` | `RandomNumberGenerator` for secrets, tokens, and nonces | `SecureRandom` |
 | `IGuid` | `Guid.NewGuid()` | `Guid` |
 | `IEnvironmentVariables` | `Environment.GetEnvironmentVariable` | `EnvironmentVariables`, `EnvironmentVariable` |
 
@@ -29,7 +30,7 @@ let isExpired (expiry: DateTimeOffset) : Flow<#IHasClock, Never, bool> =
 
 ## The base runtime
 
-Applications usually need all five. `BaseRuntime` bundles them, and it
+Applications usually need all six. `BaseRuntime` bundles them, and it
 implements one contract per service, so a workflow requiring any combination is satisfied by the single value:
 
 ```fsharp
@@ -54,12 +55,13 @@ let fixedRuntime : BaseRuntime =
     { Clock = Clock.fromValue (DateTimeOffset.Parse "2026-01-01T00:00:00Z")
       Log = Log.live
       Random = Random.fromValue 7
+      SecureRandom = SecureRandom.fromBytes [ 1uy; 2uy; 3uy ]
       Guid = Guid.fromValue (System.Guid.Parse "00000000-0000-0000-0000-000000000001")
       EnvironmentVariables = EnvironmentVariables.fromPairs [ "AXIAL_ENV", "test" ] }
 ```
 
-`Clock.fromValue`, `Guid.fromValue`, `Random.fromValue`, `Random.fromFixed`, `EnvironmentVariables.fromPairs`, and
-`Log.fromSink` each pin one service to a known answer.
+`Clock.fromValue`, `Guid.fromValue`, `Random.fromValue`, `Random.fromFixed`, `SecureRandom.fromBytes`,
+`EnvironmentVariables.fromPairs`, and `Log.fromSink` each pin one service to a known answer.
 
 ## In this section
 

@@ -92,18 +92,18 @@ module internal Platform =
         | service -> Ok (unbox<'service> service)
     #endif
 
-    let servicesFromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, IClock * ILog * IRandom * IGuid * IEnvironmentVariables> =
+    let servicesFromServiceProvider : Layer<IServiceProvider, BaseRuntimeError, IClock * ILog * IRandom * ISecureRandom * IGuid * IEnvironmentVariables> =
         #if FABLE_COMPILER
         Layer.fromFlow (Flow.die (PlatformNotSupportedException("IServiceProvider layers are not supported on Fable.")))
         #else
         Layer.fromFlow (
             Flow.envWith (fun provider ->
                 match tryService<IClock> provider, tryService<ILog> provider, tryService<IRandom> provider,
-                      tryService<IGuid> provider, tryService<IEnvironmentVariables> provider with
-                | Ok clock, Ok log, Ok random, Ok guid, Ok environmentVariables ->
-                    Ok(clock, log, random, guid, environmentVariables)
-                | Error name, _, _, _, _ | _, Error name, _, _, _ | _, _, Error name, _, _
-                | _, _, _, Error name, _ | _, _, _, _, Error name ->
+                      tryService<ISecureRandom> provider, tryService<IGuid> provider, tryService<IEnvironmentVariables> provider with
+                | Ok clock, Ok log, Ok random, Ok secureRandom, Ok guid, Ok environmentVariables ->
+                    Ok(clock, log, random, secureRandom, guid, environmentVariables)
+                | Error name, _, _, _, _, _ | _, Error name, _, _, _, _ | _, _, Error name, _, _, _
+                | _, _, _, Error name, _, _ | _, _, _, _, Error name, _ | _, _, _, _, _, Error name ->
                     Error(BaseRuntimeError.MissingService name))
             |> Flow.bind Flow.fromResult
         )

@@ -40,7 +40,7 @@ Typed HTTP workflows with request construction, response handling, reliability p
 
 | Package | Maturity | Provides | First use |
 | --- | --- | --- | --- |
-| `Axial.PlatformService` | Incubating | Clock, logging, randomness, GUID, and environment-variable services. | [Platform services](/services/platform-services/) |
+| `Axial.PlatformService` | Incubating | Clock, logging, ordinary and secure randomness, GUID, and environment-variable services. | [Platform services](/services/platform-services/) |
 | `Axial.Console` | Incubating | The console service (`IConsole`). | [Console](/services/console.html) |
 | `Axial.FileSystem` | Incubating | The file-system service (`IFileSystem`). | [File system](/services/filesystem.html) |
 | `Axial.Files` | Incubating | Streaming file traversal and text reading. | [Files](/services/files.html) |

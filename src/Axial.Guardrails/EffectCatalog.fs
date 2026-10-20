@@ -49,16 +49,16 @@ let private rule id guardrail category matching message replacement =
 
 let builtInRules: EffectRule list =
     [ rule "random.new" "Axial.PlatformService" "random" (ConstructorOf "System.Random")
-          "constructs System.Random directly, which makes behavior depend on ambient, untestable randomness"
-          "Axial.PlatformService.IRandom (Random.service / Random.nextDouble)"
+          "constructs System.Random directly, which makes behavior depend on ambient, untestable randomness; use ISecureRandom instead for secrets, tokens, and nonces"
+          "Axial.PlatformService.IRandom (Random.service / Random.nextDouble), or ISecureRandom for secrets"
 
-      rule "random.cryptographic" "Axial.PlatformService" "random"
+      rule "random.cryptographic" "Axial.PlatformService" "secure-random"
           (MembersOf(
               "System.Security.Cryptography.RandomNumberGenerator",
               [ "Create"; "GetBytes"; "GetNonZeroBytes"; "Fill"; "GetInt32"; "GetHexString"; "GetString"; "GetItems"; "Shuffle" ]
           ))
-          "uses RandomNumberGenerator directly, which makes generated values depend on ambient, untestable randomness"
-          "Axial.PlatformService.IRandom or IGuid (Random.service / Guid.service)"
+          "uses RandomNumberGenerator directly, which makes security-sensitive values depend on ambient, untestable randomness"
+          "Axial.PlatformService.ISecureRandom (SecureRandom.live / SecureRandom.service)"
 
       rule "guid.new" "Axial.PlatformService" "guid" (MembersOf("System.Guid", [ "NewGuid" ]))
           "calls Guid.NewGuid() directly, which makes generated identifiers untestable"

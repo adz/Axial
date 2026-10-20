@@ -391,6 +391,7 @@ module RuntimeFoundationTests =
         let logger =
             Log.fromSink (fun level message -> logMessages.Add(level, message))
         let random = Random.fromValue 42
+        let secureRandom = SecureRandom.fromBytes [ 5uy ]
         let guid = Guid.fromValue (Guid.Parse "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
         let envVars = EnvironmentVariables.fromPairs [ "AXIAL_TEST", "value" ]
 
@@ -400,6 +401,7 @@ module RuntimeFoundationTests =
                     if serviceType = typeof<IClock> then clock :> obj
                     elif serviceType = typeof<ILog> then logger :> obj
                     elif serviceType = typeof<IRandom> then random :> obj
+                    elif serviceType = typeof<ISecureRandom> then secureRandom :> obj
                     elif serviceType = typeof<IGuid> then guid :> obj
                     elif serviceType = typeof<IEnvironmentVariables> then envVars :> obj
                     else null }
@@ -444,6 +446,7 @@ module RuntimeFoundationTests =
             { Clock = Clock.fromValue (DateTimeOffset(2026, 5, 15, 11, 0, 0, TimeSpan.Zero))
               Log = Log.live
               Random = Random.fromValue 7
+              SecureRandom = SecureRandom.fromBytes [ 9uy ]
               Guid = Guid.fromValue (Guid.Parse "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
               EnvironmentVariables = EnvironmentVariables.fromPairs [ "AXIAL_RUNTIME", "ok" ] }
 

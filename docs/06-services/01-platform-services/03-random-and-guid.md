@@ -3,7 +3,7 @@ title: Randomness and GUIDs
 description: Non-deterministic values as declared dependencies you can pin in a test.
 ---
 
-Declare `IRandom` and `IGuid` as dependencies to control generated values in tests. A direct call to `Guid.NewGuid()` cannot be pinned to a chosen value.
+Declare `IRandom`, `ISecureRandom`, and `IGuid` as dependencies to control generated values in tests. A direct call to `Guid.NewGuid()` cannot be pinned to a chosen value.
 
 ```fsharp
 open System
@@ -43,8 +43,20 @@ val it: Exit<Byte[],Never> = Success [|9uy; 9uy; 9uy|]
 integer from every method, and `Random.fromFixed integer double byte` pins the three value kinds separately when a
 test cares about the difference.
 
-None of these are cryptographic. For key material or tokens, use a cryptographic generator behind your own service
-contract rather than `IRandom`.
+None of these are cryptographic. `IRandom` is not suitable for secrets, tokens, or nonces.
+
+## Secure randomness
+
+`ISecureRandom` provides cryptographically secure bytes and bounded integers. `SecureRandom.live` uses the platform
+cryptography provider; `SecureRandom.fromBytes` cycles a supplied sequence for deterministic tests.
+
+| Function | Result |
+| --- | --- |
+| `SecureRandom.bytes count` | Allocates and securely fills a new array |
+| `SecureRandom.int32 minimum maximum` | `minimum <= value < maximum` |
+
+Use `SecureRandom.bytes` for key material, tokens, and nonces. Use `IRandom` for simulations, jitter, sampling, and
+other values that do not need to be unpredictable.
 
 ## GUIDs
 
