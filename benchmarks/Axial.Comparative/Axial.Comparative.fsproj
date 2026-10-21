@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageReference Include="FSharp.FIO" Version="0.5.0-beta" />
+    <ProjectReference Include="../../src/Axial/Axial.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="RuntimeParam.fs" />
+    <Compile Include="Fio/*.fs" />
+    <Compile Include="Axial/Common.fs" />
+    <Compile Include="Axial/*.fs" Exclude="Axial/Common.fs" />
+    <Compile Include="Benchmarks/*.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+</Project>
