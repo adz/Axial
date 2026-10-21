@@ -12,7 +12,7 @@ api:
       title: Configure execution
       order: 20
       summary: Set stage defaults, environment, working directory, timeouts, and success codes before running.
-      members: [workingDirectory, tryWorkingDirectory, environment, environmentVariables, removeEnvironment, encoding, successCodes, timeout, withoutTimeout, overallTimeout, drainTimeout, stageDefaults, mapFinalCommand]
+      members: [workingDirectory, tryWorkingDirectory, environment, environmentVariables, removeEnvironment, encoding, successCodes, timeout, withoutTimeout, overallTimeout, drainTimeout, onStarted, stopGracefully, stageDefaults, mapFinalCommand]
     - id: compose
       title: Compose commands
       order: 30
@@ -62,4 +62,4 @@ bytes remain available in `ProcessResult`. Streaming constructors produce a `Pro
 terminals are grouped on its companion module page.
 
 See [Commands and composition](/process/composition.html), [output capture](/process/output-capture.html), and
-[streaming output](/process/streaming.html) for examples.
+[streaming output](/process/streaming.html), and [process identity and graceful stop](/process/process-lifecycle.html) for examples.

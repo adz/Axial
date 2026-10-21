@@ -114,6 +114,40 @@ type internal CommandDefinition = {
 /// One immutable command; configure it before connecting stages.
 type ProcessCommand = internal ProcessCommand of CommandDefinition
 
+/// Requests a cooperative action from a running process stage.
+[<RequireQualifiedAccess>]
+type StopRequest =
+    /// Asks a Windows GUI process to close its main window.
+    | CloseMainWindow
+    /// Sends SIGINT on Unix or CTRL_C_EVENT on Windows.
+    | Interrupt
+    /// Sends SIGTERM on Unix or CTRL_BREAK_EVENT on Windows.
+    | Terminate
+    /// Sends SIGHUP on Unix.
+    | Hangup
+    /// Closes the stage's redirected standard-input pipe.
+    | CloseStdIn
+    /// Sends a raw numeric signal on Unix.
+    | Signal of int
+
+    override this.ToString() =
+        match this with
+        | CloseMainWindow -> "CloseMainWindow"
+        | Interrupt -> "Interrupt"
+        | Terminate -> "Terminate"
+        | Hangup -> "Hangup"
+        | CloseStdIn -> "CloseStdIn"
+        | Signal number -> "Signal " + number.ToString(CultureInfo.InvariantCulture)
+
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+type IProcessStartedObserver =
+    abstract Invoke:
+        stage: int *
+        processId: int *
+        command: string *
+        startedAt: DateTimeOffset *
+        close: (StopRequest -> Async<Result<unit, string>>) -> Async<unit>
+
 [<RequireQualifiedAccess>]
 type internal ExecutionMode =
     | Batch
@@ -132,6 +166,8 @@ type ProcessSpec = internal {
     MaxOutputBytes: int64 option * int64 option
     OverallTimeout: TimeSpan option
     DrainTimeout: TimeSpan option
+    OnStarted: IProcessStartedObserver option
+    StopGracefully: (StopRequest * TimeSpan) list
     Mode: ExecutionMode
 }
 
@@ -155,6 +191,7 @@ type ProcessOutput = {
 /// Completion information and captured output for one stage.
 type StageResult = {
     Stage: int
+    ProcessId: int
     Command: string
     ExitCode: int
     Succeeded: bool
@@ -247,6 +284,8 @@ type ProcessOutputFailure = { Stage: int; Channel: OutputChannel; Limit: int64; 
 
 type ProcessObservationFailure = { Stage: int; Channel: OutputChannel }
 
+type ProcessStopFailure = { Stage: int; Request: StopRequest; Message: string }
+
 /// Expected process errors. Runtime cancellation remains Cause.Interrupt.
 [<RequireQualifiedAccess>]
 type ProcessError =
@@ -260,6 +299,7 @@ type ProcessError =
     | LineTooLong of ProcessLineFailure
     | OutputTooLarge of ProcessOutputFailure
     | ObservationUnavailable of ProcessObservationFailure
+    | StopFailed of ProcessStopFailure
 
     override this.ToString() =
         match this with
@@ -297,6 +337,17 @@ type ProcessError =
                 | OutputChannel.StdErr -> "stderr"
 
             (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} {1} uses inherited handles and cannot be observed.", failure.Stage, channel))
+        | StopFailed failure ->
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not send {0} to stage {1}: {2}", failure.Request, failure.Stage, failure.Message))
+
+/// A stage that has started and can receive cooperative stop requests.
+type ProcessStarted = {
+    Stage: int
+    ProcessId: int
+    Command: string
+    StartedAt: DateTimeOffset
+    Close: StopRequest -> Flow<unit, ProcessError, unit>
+}
 
 /// Executes lazily, awaiting each observation with backpressure.
 type IProcess =
@@ -427,6 +478,8 @@ type ProcessInput =
         MaxOutputBytes = None, None
         OverallTimeout = None
         DrainTimeout = None
+        OnStarted = None
+        StopGracefully = []
         Mode = ExecutionMode.Batch
     }
 
@@ -576,6 +629,10 @@ type ProcessInput with
             specification with
                 OverallTimeout = Some after
         }
+
+    static member OnStarted(handler, specification: ProcessSpec) = { specification with OnStarted = Some handler }
+
+    static member StopGracefully(steps, specification: ProcessSpec) = { specification with StopGracefully = steps }
 
     static member DrainTimeout(after, specification: ProcessSpec) =
         if after <= TimeSpan.Zero then

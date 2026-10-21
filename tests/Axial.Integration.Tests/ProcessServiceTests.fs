@@ -787,6 +787,115 @@ module ProcessServiceTests =
             rescue.Cancel()
     }
 
+    [<Fact>]
+    let ``onStarted reports pid before output and terminate reaches the stage`` () = task {
+        let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let output = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let specification =
+            shText "trap 'echo term; exit 3' TERM; echo ready; while :; do sleep 1; done"
+            |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { output.TrySetResult() |> ignore })))
+            |> Process.successCodes (set [ 3 ])
+            |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+        let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env ())
+        let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        test <@ File.Exists("/proc/" + string handle.ProcessId + "/status") @>
+        do! output.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let! closeResult = handle.Close StopRequest.Terminate |> fun workflow -> workflow.StartAsTask(())
+        test <@ closeResult = Exit.Success () @>
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+        match outcome with
+        | Exit.Success result ->
+            test <@ result.Stages[0].ProcessId = handle.ProcessId @>
+            test <@ result.ExitCode = 3 @>
+            test <@ result.StdOut.Contains "term" @>
+        | other -> failwithf "Expected successful handled exit, got %A" other
+    }
+
+    [<Fact>]
+    let ``CloseStdIn lets a waiting process finish`` () = task {
+        let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let running =
+            cmd $"cat"
+            |> stdinFrom (Input.flowStream (FlowStream.repeatFlow (Flow.fromAsync (async {
+                do! Async.Sleep 30000
+                return [||]
+            }))))
+            |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env ())
+        let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let! closeResult = handle.Close StopRequest.CloseStdIn |> fun workflow -> workflow.StartAsTask(())
+        test <@ closeResult = Exit.Success () @>
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+        match outcome with
+        | Exit.Success result -> test <@ result.ExitCode = 0 @>
+        | other -> failwithf "Expected cat to exit, got %A" other
+    }
+
+    [<Fact>]
+    let ``CloseMainWindow is unsupported on Unix`` () = task {
+        if not (OperatingSystem.IsWindows()) then
+            let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+            use rescue = new CancellationTokenSource()
+            let running =
+                shText "exec sleep 30"
+                |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+                |> toFlow
+                |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+            let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            let! outcome = handle.Close StopRequest.CloseMainWindow |> fun workflow -> workflow.StartAsTask(())
+            match outcome with
+            | Exit.Failure(Cause.Fail(ProcessError.StopFailed failure)) ->
+                test <@ failure.Message.Contains "only on Windows" @>
+            | other -> failwithf "Expected unsupported stop request, got %A" other
+            rescue.Cancel()
+            let! _ = running
+            ()
+    }
+
+    [<Fact>]
+    let ``stopGracefully sends TERM before interruption kills the tree`` () = task {
+        let marker = Path.Combine(Path.GetTempPath(), "axial-graceful-" + Guid.NewGuid().ToString("N"))
+        use cancellation = new CancellationTokenSource()
+        let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let specification =
+            shText ("trap 'echo stopped > " + marker + "; exit 0' TERM; echo ready; while :; do sleep 1; done")
+            |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
+            |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 2.0 ]
+        let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
+        try
+            do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            do! Task.Run(fun () -> cancellation.Cancel()).WaitAsync(TimeSpan.FromSeconds 5.0)
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+            match outcome with
+            | Exit.Failure Cause.Interrupt -> test <@ File.Exists marker @>
+            | other -> failwithf "Expected interruption, got %A" other
+        finally
+            if File.Exists marker then File.Delete marker
+    }
+
+    [<Fact>]
+    let ``TestProcess exposes fake pid and records close requests`` () =
+        let host = ProcessHostEnvironment.test ()
+        host.Process.ProcessId <- 9000
+        host.Process.RunHandler <- fun _ -> TestProcess.Result(0, "")
+        let mutable seen = -1
+        let workflow =
+            cmd $"fake"
+            |> onStarted (fun handle ->
+                seen <- handle.ProcessId
+                Flow.fromAsync (async {
+                    match Flow.runSync () (handle.Close StopRequest.Hangup) with
+                    | Exit.Success () -> ()
+                    | other -> failwithf "Expected fake close success, got %A" other
+                }))
+            |> toFlow
+        match Flow.runSync host.Environment workflow with
+        | Exit.Success _ ->
+            test <@ seen = 9000 @>
+            test <@ Seq.toList host.Process.CloseRequests = [ 0, StopRequest.Hangup ] @>
+        | other -> failwithf "Expected fake success, got %A" other
+
     [<Theory>]
     [<InlineData("startup")>]
     [<InlineData("stage")>]

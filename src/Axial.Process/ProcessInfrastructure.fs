@@ -150,6 +150,8 @@ type internal AsyncRendezvous<'value>() =
 type TestProcess() =
     let specs = ResizeArray<ProcessSpec>()
     let mutable outputs: ProcessOutput list = []
+    let closeRequests = ResizeArray<int * StopRequest>()
+    let mutable processId = 4242
 
     let mutable resultHandler: ProcessSpec -> ProcessResult =
         fun _ -> invalidOp "Configure TestProcess.RunHandler."
@@ -159,6 +161,11 @@ type TestProcess() =
         None
 
     member _.RunSpecs: IReadOnlyList<ProcessSpec> = specs
+    member _.CloseRequests: IReadOnlyList<int * StopRequest> = closeRequests
+
+    member _.ProcessId
+        with get () = processId
+        and set value = processId <- value
 
     member _.Outputs
         with get () = outputs
@@ -172,7 +179,9 @@ type TestProcess() =
         with get () = executeHandler
         and set value = executeHandler <- value
 
-    member _.Clear() = specs.Clear()
+    member _.Clear() =
+        specs.Clear()
+        closeRequests.Clear()
 
     static member Result(exitCode: int, stdOut: string, ?stdErr: string) : ProcessResult =
         let stdErr = defaultArg stdErr ""
@@ -205,6 +214,22 @@ type TestProcess() =
                 | Some handler -> handler specification observe
                 | None ->
                     flow {
+                        match specification.OnStarted with
+                        | Some handler ->
+                            for stage, command in specification.Commands |> List.indexed do
+                                do!
+                                    handler.Invoke(
+                                        stage,
+                                        processId + stage,
+                                        Configuration.renderCommand command,
+                                        DateTimeOffset.UnixEpoch,
+                                        (fun request -> async {
+                                            closeRequests.Add(stage, request)
+                                            return Ok ()
+                                        })
+                                    )
+                        | None -> ()
+
                         for output in outputs do
                             do! observe output
 

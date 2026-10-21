@@ -403,6 +403,8 @@ module Process =
                 Defaults = Configuration.combine source.Defaults next.Defaults
                 OverallTimeout = next.OverallTimeout |> Option.orElse source.OverallTimeout
                 DrainTimeout = next.DrainTimeout |> Option.orElse source.DrainTimeout
+                OnStarted = next.OnStarted |> Option.orElse source.OnStarted
+                StopGracefully = if next.StopGracefully.IsEmpty then source.StopGracefully else next.StopGracefully
                 MergeStdErr = next.MergeStdErr
         }
         |> Configuration.validate
@@ -461,6 +463,45 @@ module Process =
     /// Bounds the topology from launch through drain and completion-aware consumer callbacks.
     let inline overallTimeout after source =
         ProcessInput.OverallTimeout(after, toSpecification source)
+
+    /// Invokes the handler once for every stage, immediately after it starts and before output is observed.
+    let inline onStarted (handler: ProcessStarted -> Flow<unit, Never, unit>) source =
+        let callback stage processId command startedAt close =
+            async {
+                let closeFlow request =
+                    Flow.fromAsync (close request)
+                    |> Flow.bind (function
+                        | Ok () -> Flow.succeed ()
+                        | Error message ->
+                            Flow.fail (ProcessError.StopFailed { Stage = stage; Request = request; Message = message }))
+
+                let started = {
+                    Stage = stage
+                    ProcessId = processId
+                    Command = command
+                    StartedAt = startedAt
+                    Close = closeFlow
+                }
+
+                let! outcome = Flow.toAsync () (handler started)
+                match outcome with
+                | Exit.Success () -> return ()
+                | Exit.Failure cause -> return failwith (cause.ToString())
+            }
+
+        let observer =
+            { new IProcessStartedObserver with
+                member _.Invoke(stage, processId, command, startedAt, close) =
+                    callback stage processId command startedAt close }
+
+        ProcessInput.OnStarted(observer, toSpecification source)
+
+    /// Sends each request to all live stages on interruption or timeout, waiting its grace period before escalating.
+    let inline stopGracefully (steps: (StopRequest * TimeSpan) list) source =
+        for _, grace in steps do
+            if grace < TimeSpan.Zero then invalidArg (nameof steps) "Grace periods cannot be negative."
+
+        ProcessInput.StopGracefully(steps, toSpecification source)
 
     /// Bounds remaining I/O and sink completion after every managed stage exits.
     let inline drainTimeout after source =

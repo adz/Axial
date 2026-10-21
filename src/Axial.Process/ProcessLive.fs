@@ -5,6 +5,7 @@ open System
 open System.Collections.Generic
 open System.Diagnostics
 open System.IO
+open System.Runtime.InteropServices
 open System.Text
 open System.Threading
 open System.Threading.Tasks
@@ -15,6 +16,9 @@ open Axial.FileSystem
 
 #if !FABLE_COMPILER
 module internal NativeProcess =
+    [<DllImport("libc", SetLastError = true)>]
+    extern int private kill(int pid, int signal)
+
     let private inherited =
         function
         | OutputTarget.Inherit -> true
@@ -192,8 +196,7 @@ module internal NativeProcess =
                         async {
                             return!
                                 (task {
-                                    use ioCancellation =
-                                        CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                                    use ioCancellation = new CancellationTokenSource()
 
                                     let token = ioCancellation.Token
                                     let commands = specification.Commands |> List.toArray
@@ -264,6 +267,41 @@ module internal NativeProcess =
                                     let startedAt = clock.UtcNow()
                                     let startedElapsed = clock.Elapsed()
 
+                                    let closeStage stage request =
+                                        async {
+                                            try
+                                                let proc = lock processes (fun () -> if stage < processes.Count then Some processes[stage] else None)
+                                                match proc with
+                                                | None -> return Error "The stage has not started."
+                                                | Some proc when proc.HasExited -> return Ok ()
+                                                | Some proc ->
+                                                    match request with
+                                                    | StopRequest.CloseStdIn when proc.StartInfo.RedirectStandardInput ->
+                                                        proc.StandardInput.Close()
+                                                        return Ok ()
+                                                    | StopRequest.CloseStdIn -> return Error "Standard input is not owned by Axial."
+                                                    | StopRequest.CloseMainWindow when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ->
+                                                        if proc.CloseMainWindow() then return Ok ()
+                                                        else return Error "The process has no main window."
+                                                    | StopRequest.CloseMainWindow -> return Error "CloseMainWindow is supported only on Windows."
+                                                    | StopRequest.Interrupt
+                                                    | StopRequest.Terminate
+                                                    | StopRequest.Hangup
+                                                    | StopRequest.Signal _ when not (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ->
+                                                        let signal =
+                                                            match request with
+                                                            | StopRequest.Interrupt -> 2
+                                                            | StopRequest.Terminate -> 15
+                                                            | StopRequest.Hangup -> 1
+                                                            | StopRequest.Signal value -> value
+                                                            | _ -> 0
+                                                        if kill(proc.Id, signal) = 0 then return Ok ()
+                                                        else return Error (System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()).Message)
+                                                    | _ -> return Error "This stop request is unsupported on Windows."
+                                            with error ->
+                                                return Error error.Message
+                                        }
+
                                     let terminate () =
                                         for proc in lock processes (fun () -> processes.ToArray()) do
                                             try
@@ -282,6 +320,37 @@ module internal NativeProcess =
                                                 if proc.StartInfo.RedirectStandardError then proc.StandardError.Close()
                                                 if proc.StartInfo.RedirectStandardInput then proc.StandardInput.Close()
                                             with _ -> ()
+
+                                    let mutable stopping = false
+                                    let mutable hadFailureWhenStopping = false
+
+                                    let stopOnCancellation () =
+                                        hadFailureWhenStopping <- lock errorGate (fun () -> firstFailure.IsSome)
+                                        stopping <- true
+                                        try
+                                            for request, grace in specification.StopGracefully do
+                                                let live =
+                                                    lock processes (fun () ->
+                                                        processes
+                                                        |> Seq.mapi (fun stage proc -> stage, proc)
+                                                        |> Seq.filter (fun (_, proc) -> not proc.HasExited)
+                                                        |> Seq.toArray)
+
+                                                let mutable sent = false
+                                                for stage, _ in live do
+                                                    match closeStage stage request |> Async.RunSynchronously with
+                                                    | Ok () -> sent <- true
+                                                    | Error _ -> ()
+
+                                                if sent && live.Length > 0 && grace > TimeSpan.Zero then
+                                                    let exits = live |> Array.map (fun (_, proc) -> waitForExit proc CancellationToken.None)
+                                                    let delay = clock.Sleep(grace, CancellationToken.None)
+                                                    // Cancellation callbacks are synchronous; this is the live process boundary.
+                                                    Task.WhenAny(Task.WhenAll exits, delay).GetAwaiter().GetResult() |> ignore // axial-allow-effect: blocking
+                                        with _ -> ()
+
+                                        terminate ()
+                                        ioCancellation.Cancel()
 
                                     let recordFailure (error: exn) =
                                         let first =
@@ -386,7 +455,8 @@ module internal NativeProcess =
                                             if not (command.SuccessCodes.Value.Contains processes[i].ExitCode) then
                                                 do! launchComplete.Task
                                                 lock errorGate (fun () ->
-                                                    if firstFailure.IsNone then firstFailure <- Some(StageExitException i))
+                                                    if firstFailure.IsNone && not stopping then
+                                                        firstFailure <- Some(StageExitException i))
 
                                             return ()
                                         })
@@ -406,6 +476,7 @@ module internal NativeProcess =
 
                                                 {
                                                     Stage = i
+                                                    ProcessId = (if i < processes.Count then processes[i].Id else -1)
                                                     Command = Configuration.renderCommand command
                                                     ExitCode = exitCode
                                                     Succeeded = command.SuccessCodes.Value.Contains exitCode
@@ -487,7 +558,7 @@ module internal NativeProcess =
                                         try
                                             Array.iter (openTargets fileSystem files) stdoutTargets
                                             Array.iter (openTargets fileSystem files) stderrTargets
-                                            use registration = token.Register terminate
+                                            use registration = cancellationToken.Register stopOnCancellation
 
                                             for i, command in commands |> Array.indexed do
                                                 token.ThrowIfCancellationRequested()
@@ -564,9 +635,15 @@ module internal NativeProcess =
                                                     ) // axial-allow-raise
 
                                                 lock processes (fun () -> processes.Add proc)
-                                                starts.Add(clock.UtcNow())
+                                                let stageStartedAt = clock.UtcNow()
+                                                starts.Add(stageStartedAt)
                                                 elapsedStarts.Add(clock.Elapsed())
                                                 exitTasks.Add(monitor i command)
+
+                                                match specification.OnStarted with
+                                                | Some handler ->
+                                                    do! handler.Invoke(i, proc.Id, Configuration.renderCommand command, stageStartedAt, closeStage i)
+                                                | None -> ()
 
                                             let copies =
                                                 specification.Connections
@@ -1030,7 +1107,9 @@ module internal NativeProcess =
 
                                             match lock errorGate (fun () -> firstFailure) with
                                             | Some error -> return raise error // axial-allow-raise
-                                            | None -> return Choice1Of3(buildResult ())
+                                            | None ->
+                                                cancellationToken.ThrowIfCancellationRequested()
+                                                return Choice1Of3(buildResult ())
                                         with error ->
                                             let original = lock errorGate (fun () -> defaultArg firstFailure error)
                                             ioCancellation.Cancel()
@@ -1049,9 +1128,7 @@ module internal NativeProcess =
                                                 ()
 
                                             match original with
-                                            | :? OperationCanceledException when
-                                                cancellationToken.IsCancellationRequested
-                                                ->
+                                            | _ when cancellationToken.IsCancellationRequested && not hadFailureWhenStopping ->
                                                 return! Task.FromCanceled<_>(cancellationToken)
                                             | :? ObserverDefectException as defect ->
                                                 return Choice3Of3 defect.InnerException
