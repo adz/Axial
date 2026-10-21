@@ -131,6 +131,14 @@ let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list>
                           | _ -> Flow.ok () |> Flow.forkNamed "worker" |> Flow.map Choice1Of2 ]
                     |> Flow.sequence
 
+                let! requested = Flow.never |> Flow.forkNamed "requested"
+                do! Fiber.requestInterrupt requested
+                let! requestedExit = Fiber.await requested
+                let requestedStopped =
+                    match requestedExit with
+                    | Exit.Failure cause -> Cause.isInterrupted cause
+                    | Exit.Success _ -> false
+
                 let sleepers = fibers |> List.choose (function Choice1Of2 fiber when (Fiber.dump fiber).Name = Some "sleeper" -> Some fiber | _ -> None)
                 let firstSleeper = List.head sleepers
                 let interruptedOne = registry.Interrupt (Fiber.dump firstSleeper).Id
@@ -146,10 +154,10 @@ let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list>
                     }
                     |> Flow.scoped
 
-                return interruptedOne, interruptedByName, exits.Length
+                return interruptedOne, interruptedByName, exits.Length, requestedStopped
             }
 
-        let! interruptedOne, interruptedByName, settled =
+        let! interruptedOne, interruptedByName, settled, requestedStopped =
             body
             |> Flow.withFiberRegistry registry
             |> Flow.withFiberObserver counting
@@ -175,7 +183,8 @@ let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list>
 
         return
             // The fiber interrupted by id may not have settled yet when InterruptByName runs, so it can be counted twice.
-            [ check "interrupting by id and by name reached every sleeper" (interruptedOne && interruptedByName >= sleepers - 1)
+            [ check "requestInterrupt stopped without joining in the request operation" requestedStopped
+              check "interrupting by id and by name reached every sleeper" (interruptedOne && interruptedByName >= sleepers - 1)
               check "the registry counted every named fiber and how each ended" (stats["sleeper"].Interrupted = sleepers && stats["failer"].Failed = stats["failer"].Count && settled = workers)
               check "nothing is live afterwards, and history stays within its capacity" (registry.LiveFiberCount = 0 && registry.Snapshot().IsEmpty && registry.Settled().Length <= registry.HistoryCapacity)
               check "the registry saw every fork, and dumps render" (registry.StartedCount >= int64 workers && not (isNull dump))

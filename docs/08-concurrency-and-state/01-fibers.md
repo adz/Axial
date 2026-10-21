@@ -65,6 +65,7 @@ Fiber operations:
 - [**`Fiber.join`**](/api/): waits for the fiber and resumes with its successful value or typed failure.
 - [**`Fiber.await`**](/api/): waits for the fiber and returns its `Exit` without failing, for callers that decide what the outcome means.
 - `Fiber.poll`: returns the fiber's `Exit` if it has settled, without waiting.
+- `Fiber.requestInterrupt`: asks the fiber to stop and returns immediately. Use it before a bounded race when foreign work may ignore interruption. Cancellation-callback exceptions are contained and reported through the fiber observer.
 - [**`Fiber.interrupt`**](/api/): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
 - [**`Flow.forkDetached`**](/api/): starts deliberate fire-and-forget work whose defects are never reported as unobserved.
 - `Flow.forkNamed`: forks with a diagnostic name that carries into dumps and telemetry fiber spans, so long-lived background fibers are recognizable instead of bare ids.
