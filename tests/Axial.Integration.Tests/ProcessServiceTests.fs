@@ -986,6 +986,141 @@ module ProcessServiceTests =
     }
 
     [<Fact>]
+    let ``CloseStdIn bound is not delayed by a blocking cancellation callback`` () = task {
+        let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let sourceEntered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let callbackEntered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let callbackRelease = new ManualResetEventSlim(false)
+        let sourceRelease = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let source =
+            Flow.fromTask (fun token -> task {
+                use _registration = token.Register(fun () ->
+                    callbackEntered.TrySetResult() |> ignore
+                    callbackRelease.Wait())
+                sourceEntered.TrySetResult() |> ignore
+                do! sourceRelease.Task
+                return Encoding.UTF8.GetBytes "late"
+            })
+            |> FlowStream.fromFlow
+        let running =
+            cmd $"cat"
+            |> stdinFrom (Input.flowStream source)
+            |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env ())
+        try
+            let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            do! sourceEntered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            let stopwatch = Diagnostics.Stopwatch.StartNew()
+            let closing = handle.Close StopRequest.CloseStdIn |> fun workflow -> workflow.StartAsTask(())
+            do! callbackEntered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            let! closeExit = closing.WaitAsync(TimeSpan.FromSeconds 3.0)
+            stopwatch.Stop()
+            test <@ closeExit = Exit.Success () @>
+            test <@ stopwatch.Elapsed < TimeSpan.FromSeconds 2.0 @>
+            callbackRelease.Set()
+            sourceRelease.TrySetResult() |> ignore
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+            match outcome with
+            | Exit.Success result -> test <@ result.ExitCode = 0 @>
+            | other -> failwithf "Expected clean stdin close, got %A" other
+        finally
+            callbackRelease.Set()
+            sourceRelease.TrySetResult() |> ignore
+            callbackRelease.Dispose()
+    }
+
+    [<Fact>]
+    let ``CloseStdIn contains a throwing cancellation callback`` () = task {
+        let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let sourceEntered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let source =
+            Flow.fromTask (fun token -> task {
+                use _registration = token.Register(fun () -> raise (InvalidOperationException "callback failed"))
+                sourceEntered.TrySetResult() |> ignore
+                do! Task.Delay(Timeout.InfiniteTimeSpan, token)
+                return [||]
+            })
+            |> FlowStream.fromFlow
+        let running =
+            cmd $"cat"
+            |> stdinFrom (Input.flowStream source)
+            |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env ())
+        let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        do! sourceEntered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let! closeExit =
+            handle.Close StopRequest.CloseStdIn
+            |> fun workflow -> workflow.StartAsTask(())
+            |> fun closing -> closing.WaitAsync(TimeSpan.FromSeconds 3.0)
+        test <@ closeExit = Exit.Success () @>
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+        match outcome with
+        | Exit.Success result -> test <@ result.ExitCode = 0 @>
+        | other -> failwithf "Expected clean stdin close, got %A" other
+    }
+
+    [<Fact>]
+    let ``graceful stop returns when user input ignores cancellation`` () = task {
+        if not (OperatingSystem.IsWindows()) then
+            use cancellation = new CancellationTokenSource()
+            let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let sourceEntered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let sourceRelease = TaskCompletionSource<byte array>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let source =
+                Flow.fromTask (fun _ ->
+                    sourceEntered.TrySetResult() |> ignore
+                    sourceRelease.Task)
+                |> FlowStream.fromFlow
+            let specification =
+                shText "trap '' TERM; echo ready; exec sleep 30"
+                |> stdinFrom (Input.flowStream source)
+                |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
+                |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromMilliseconds 200.0 ]
+            let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
+            try
+                do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+                do! sourceEntered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+                cancellation.Cancel()
+                let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+                test <@ outcome = Exit.Failure Cause.Interrupt @>
+            finally
+                sourceRelease.TrySetResult [||] |> ignore
+    }
+
+    [<Fact>]
+    let ``CloseStdIn preserves a user input defect raised during cancellation`` () = task {
+        let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let sourceEntered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let defect = InvalidOperationException "input cancellation defect"
+        let source =
+            Flow.fromTask (fun token -> task {
+                sourceEntered.TrySetResult() |> ignore
+                try
+                    do! Task.Delay(Timeout.InfiniteTimeSpan, token)
+                    return [||]
+                with :? OperationCanceledException ->
+                    return raise defect
+            })
+            |> FlowStream.fromFlow
+        let running =
+            cmd $"cat"
+            |> stdinFrom (Input.flowStream source)
+            |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env ())
+        let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        do! sourceEntered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let! closeExit = handle.Close StopRequest.CloseStdIn |> fun workflow -> workflow.StartAsTask(())
+        test <@ closeExit = Exit.Success () @>
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+        match outcome with
+        | Exit.Failure(Cause.Die error) -> test <@ obj.ReferenceEquals(error, defect) @>
+        | other -> failwithf "Expected input defect, got %A" other
+    }
+
+    [<Fact>]
     let ``graceful ladder kills a child that ignores TERM after grace`` () = task {
         if not (OperatingSystem.IsWindows()) then
             use cancellation = new CancellationTokenSource()
@@ -1071,19 +1206,23 @@ module ProcessServiceTests =
         if not (OperatingSystem.IsWindows()) then
             use cancellation = new CancellationTokenSource()
             let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
             let feeding = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-            // 8 MiB in one write into a child that never reads stdin: the pipe fills and the feeder blocks.
+            let mutable chunksRequested = 0
+            // Each next element is requested only after the previous write completes. A stable
+            // count therefore proves that the feeder is blocked in the write to the unread pipe.
             let chunk = Array.zeroCreate<byte> (8 * 1024 * 1024)
             let source =
-                FlowStream.fromFlow (
-                    Flow.fromAsync (async {
-                        feeding.TrySetResult() |> ignore
-                        return chunk
-                    })
-                )
+                Flow.fromTask (fun _ -> task {
+                    Interlocked.Increment(&chunksRequested) |> ignore
+                    feeding.TrySetResult() |> ignore
+                    return chunk
+                })
+                |> FlowStream.repeatFlow
             let specification =
-                shText "trap '' TERM; exec sleep 30"
+                shText "trap '' TERM; echo ready; exec sleep 30"
                 |> stdinFrom (Input.flowStream source)
+                |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
                 |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
                 |> stopGracefully [
                     StopRequest.CloseStdIn, TimeSpan.FromMilliseconds 300.0
@@ -1091,7 +1230,13 @@ module ProcessServiceTests =
                 ]
             let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
             let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
             do! feeding.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            do! Task.Delay(TimeSpan.FromMilliseconds 500.0)
+            let blockedAt = Volatile.Read(&chunksRequested)
+            do! Task.Delay(TimeSpan.FromMilliseconds 500.0)
+            let stillBlockedAt = Volatile.Read(&chunksRequested)
+            test <@ blockedAt > 0 && stillBlockedAt = blockedAt @>
             do! Task.Run(fun () -> cancellation.Cancel())
             let! outcome = running.WaitAsync(TimeSpan.FromSeconds 10.0)
             test <@ outcome = Exit.Failure Cause.Interrupt @>
@@ -1104,17 +1249,25 @@ module ProcessServiceTests =
             let marker = Path.Combine(Path.GetTempPath(), "axial-ladder-once-" + Guid.NewGuid().ToString("N"))
             use cancellation = new CancellationTokenSource()
             let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let raceAfter = TimeSpan.FromSeconds 2.0
             let specification =
-                shText ("trap 'echo term >> " + marker + "' TERM; echo ready; while :; do sleep 0.05; done")
+                shText ("trap 'echo term >> " + marker + "; exit 0' TERM; echo ready; while :; do sleep 1; done")
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
-                |> Process.timeout (TimeSpan.FromMilliseconds 800.0)
-                |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 1.0 ]
+                |> Process.timeout raceAfter
+                |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+                |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 2.0 ]
             let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
             try
+                let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+                // Both causes use the process start timestamp as their reference point.
+                let remaining = max TimeSpan.Zero (raceAfter - (DateTimeOffset.UtcNow - handle.StartedAt))
+                let cancelAtDeadline = task {
+                    do! Task.Delay remaining
+                    cancellation.Cancel()
+                }
                 do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
-                // Race the 800 ms stage timeout against cancellation; whichever wins, the ladder runs once.
-                do! Task.Delay(TimeSpan.FromMilliseconds 750.0)
-                do! Task.Run(fun () -> cancellation.Cancel())
+                do! cancelAtDeadline
                 let! outcome = running.WaitAsync(TimeSpan.FromSeconds 10.0)
                 match outcome with
                 | Exit.Failure Cause.Interrupt -> ()

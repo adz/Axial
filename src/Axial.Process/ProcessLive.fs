@@ -333,6 +333,38 @@ module internal NativeProcess =
                                     let startedAt = clock.UtcNow()
                                     let startedElapsed = clock.Elapsed()
 
+                                    // Cancellation callbacks are notification plumbing. The work they wake is
+                                    // supervised separately, so a throwing callback must not crash a pool thread.
+                                    let cancelIgnoringCallbackErrors (source: CancellationTokenSource) =
+                                        try
+                                            source.Cancel()
+                                        with _ ->
+                                            ()
+
+                                    let cancelOffThread (source: CancellationTokenSource) : Task =
+                                        let completed =
+                                            TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+                                        ThreadPool.QueueUserWorkItem(fun _ ->
+                                            cancelIgnoringCallbackErrors source
+                                            completed.TrySetResult() |> ignore)
+                                        |> ignore
+
+                                        completed.Task :> Task
+
+                                    let observeFault (work: Task) =
+                                        work.ContinueWith(
+                                            (fun (completed: Task) ->
+                                                // Reading Exception observes faults from detached user input.
+                                                let _ = completed.Exception
+                                                ()),
+                                            CancellationToken.None,
+                                            TaskContinuationOptions.OnlyOnFaulted
+                                            ||| TaskContinuationOptions.ExecuteSynchronously,
+                                            TaskScheduler.Default
+                                        )
+                                        |> ignore
+
                                     let closeStage stage request =
                                         async {
                                             try
@@ -345,25 +377,26 @@ module internal NativeProcess =
                                                     | StopRequest.CloseStdIn when stdinOwned[stage] ->
                                                         let shouldWait =
                                                             lock settled (fun () ->
-                                                                if settled[stage] then false
-                                                                else
-                                                                    stdinStops[stage].Cancel()
-                                                                    if stdinStarted[stage] then true
-                                                                    else
-                                                                        closeStdIns[stage] |> Option.iter (fun close -> close ())
-                                                                        stdinCompleted[stage].TrySetResult() |> ignore
-                                                                        false)
-                                                        if shouldWait then
-                                                            // Bound the cooperative wait: a feeder blocked in a write on a full
-                                                            // pipe may not observe the cancellation token, so once the bound
-                                                            // expires force-close the pipe to unblock it.
+                                                                not settled[stage] && stdinStarted[stage])
+
+                                                        if not (lock settled (fun () -> settled[stage])) then
+                                                            // Start the bound before requesting cancellation: user callbacks run
+                                                            // outside `settled` and cannot delay the forced pipe close.
                                                             use closeTimer = new CancellationTokenSource()
                                                             let timer = clock.Sleep(closeStdInFeederBound, closeTimer.Token)
-                                                            let! winner = Task.WhenAny(stdinCompleted[stage].Task, timer) |> Async.AwaitTask
-                                                            if not (obj.ReferenceEquals(winner, timer)) then
-                                                                closeTimer.Cancel()
+                                                            cancelOffThread stdinStops[stage] |> ignore
+
+                                                            if shouldWait then
+                                                                let! winner =
+                                                                    Task.WhenAny(stdinCompleted[stage].Task, timer)
+                                                                    |> Async.AwaitTask
+
+                                                                if not (obj.ReferenceEquals(winner, timer)) then
+                                                                    cancelIgnoringCallbackErrors closeTimer
+
                                                             closeStdIns[stage] |> Option.iter (fun close -> close ())
                                                             stdinCompleted[stage].TrySetResult() |> ignore
+
                                                         return Ok ()
                                                     | StopRequest.CloseStdIn -> return Error StopRequestError.Unsupported
                                                     | StopRequest.CloseMainWindow when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ->
@@ -440,7 +473,7 @@ module internal NativeProcess =
                                     let mutable stopping = false
                                     let mutable hadFailureWhenStopping = false
                                     let mutable cancellationObserved = false
-                                    let mutable stopLadderTask: Task option = None
+                                    let mutable stopLadderTask: Task<Exit<unit, Never>> option = None
 
                                     // The stop ladder runs at most once per execution. The first stop cause to be observed
                                     // under errorGate decides the final result: a stage timeout recorded before cancellation
@@ -450,47 +483,60 @@ module internal NativeProcess =
                                     // continuations inline, and they reach the cleanup below, which waits for this ladder
                                     // to finish. Queuing the cancellation lets the ladder complete first.
                                     let cancelIoOffLadder () =
-                                        ThreadPool.QueueUserWorkItem(fun _ ->
-                                            try ioCancellation.Cancel() with :? ObjectDisposedException -> ())
-                                        |> ignore
+                                        cancelOffThread ioCancellation |> ignore
 
-                                    let runStopLadder () =
-                                        task {
+                                    let runStopLadder =
+                                        flow {
                                             for request, grace in specification.StopGracefully do
                                                 let live =
                                                     lock settled (fun () ->
-                                                        [| for stage in 0 .. processes.Count - 1 do
-                                                               if not settled[stage] then yield stage |])
+                                                        [ for stage in 0 .. processes.Count - 1 do
+                                                              if not settled[stage] then yield stage ])
 
                                                 let mutable sent = false
+
                                                 for stage in live do
-                                                    let! result = closeStage stage request |> Async.StartAsTask
+                                                    let! result = closeStage stage request |> Flow.fromAsync
+
                                                     match result with
                                                     | Ok () -> sent <- true
                                                     | Error StopRequestError.Unsupported -> ()
                                                     | Error (StopRequestError.Failed _) -> ()
 
-                                                if sent && live.Length > 0 && grace > TimeSpan.Zero then
-                                                    use timerCancellation = new CancellationTokenSource()
-                                                    // Wait on the process exit directly, not the monitor task: the stage that
-                                                    // timed out is running this ladder from inside its own monitor, so waiting
-                                                    // on exitTasks would self-deadlock that step and leave the grace timer
-                                                    // permanently armed even after a cooperative exit.
-                                                    let exits = live |> Array.map (fun stage -> waitForExit processes[stage] CancellationToken.None)
-                                                    let timer = clock.Sleep(grace, timerCancellation.Token)
-                                                    let! winner = Task.WhenAny(Task.WhenAll exits, timer)
-                                                    if not (obj.ReferenceEquals(winner, timer)) then
-                                                        timerCancellation.Cancel()
+                                                if sent && not live.IsEmpty && grace > TimeSpan.Zero then
+                                                    // Wait on process exit rather than the monitor fiber: the timing-out
+                                                    // stage can itself be the caller of this shared ladder.
+                                                    let exits =
+                                                        live
+                                                        |> List.map (fun stage ->
+                                                            Flow.fromTask (fun token -> task {
+                                                                do! waitForExit processes[stage] token
+                                                                return ()
+                                                            }))
+                                                        |> Flow.sequencePar
+                                                        |> Flow.ignore
+
+                                                    do! Flow.race exits (Flow.sleep grace)
 
                                             terminate ()
                                             cancelIoOffLadder ()
                                         }
+                                        |> Flow.ensuring (
+                                            Flow.delay (fun () ->
+                                                terminate ()
+                                                cancelIoOffLadder ()
+                                                Flow.succeed ())
+                                        )
 
-                                    // Every stop cause shares one ladder: a cause that arrives while the ladder runs
-                                    // waits for it instead of killing straight away, so grace periods are honoured.
-                                    let stopLadder = Lazy<Task>((fun () -> runStopLadder () :> Task), LazyThreadSafetyMode.ExecutionAndPublication)
+                                    // Every stop cause shares one Flow execution. Memoizing at this bridge keeps
+                                    // callbacks thin while the ladder itself uses Flow race/sleep semantics.
+                                    let stopLadder =
+                                        Lazy<Task<Exit<unit, Never>>>(
+                                            (fun () -> runStopLadder |> Flow.startTask (ClockEnvironment clock)),
+                                            LazyThreadSafetyMode.ExecutionAndPublication
+                                        )
 
-                                    let runStopLadderOnce () : Task = stopLadder.Value
+                                    let runStopLadderOnce () = stopLadder.Value
 
                                     let stopOnCancellation () =
                                         let hadFailure =
@@ -499,18 +545,9 @@ module internal NativeProcess =
                                                 firstFailure.IsSome)
                                         hadFailureWhenStopping <- hadFailure
                                         stopping <- true
-                                        // Never run the ladder synchronously inside the CancellationToken callback: the
-                                        // callback runs on the caller's Cancel() thread, and the ladder waits grace
-                                        // periods that would block it. Cancel() must return promptly.
-                                        stopLadderTask <-
-                                            Some (
-                                                Task.Run(fun () ->
-                                                    try
-                                                        runStopLadderOnce().GetAwaiter().GetResult() // axial-allow-AXG001: intentional blocking host or live-service boundary
-                                                    with _ ->
-                                                        terminate ()
-                                                        cancelIoOffLadder ())
-                                            )
+                                        // Continue asynchronously: neither the Cancel() caller nor a pool worker is
+                                        // occupied for the ladder's grace periods.
+                                        stopLadderTask <- Some(runStopLadderOnce ())
 
                                     let recordFailure (error: exn) =
                                         let first =
@@ -528,7 +565,7 @@ module internal NativeProcess =
                                                     true)
 
                                         if first then
-                                            ioCancellation.Cancel()
+                                            cancelIgnoringCallbackErrors ioCancellation
                                             terminate ()
 
                                     let byteCounts = Array.init commands.Length (fun _ -> Array.zeroCreate<int64> 2)
@@ -608,7 +645,7 @@ module internal NativeProcess =
                                                             if not cancellationObserved && firstFailure.IsNone then
                                                                 firstFailure <- Some timeoutFailure)
                                                         stopping <- true
-                                                        do! runStopLadderOnce ()
+                                                        let! _ = runStopLadderOnce ()
                                                         return raise timeoutFailure // axial-allow-AXG003: task interop reports foreign failure by exception
 
                                                     do! wait
@@ -993,9 +1030,11 @@ module internal NativeProcess =
                                                             do! Task.WhenAll pumps
                                                         with
                                                         | :? OperationCanceledException when stdinStops[target].IsCancellationRequested -> ()
-                                                        | error when stdinStops[target].IsCancellationRequested ->
-                                                            // CloseStdIn forced the pipe closed while a write was in flight; that is an
-                                                            // expected outcome, not a fault.
+                                                        | error
+                                                            when stdinStops[target].IsCancellationRequested
+                                                                 && (error :? ObjectDisposedException
+                                                                     || error :? IOException) ->
+                                                            // Only pipe failures caused by the forced close are expected.
                                                             try processes[target].StandardInput.Close() with _ -> ()
                                                             stdinCompleted[target].TrySetResult() |> ignore
                                                         | error ->
@@ -1059,29 +1098,62 @@ module internal NativeProcess =
 
                                                                             do! input.CopyToAsync(target, 81920, inputToken)
                                                                         | InputSource.Stream source ->
-                                                                            use streamCancellation = CancellationTokenSource.CreateLinkedTokenSource(inputToken)
+                                                                            let streamCancellation =
+                                                                                CancellationTokenSource.CreateLinkedTokenSource(inputToken)
+
                                                                             let write bytes =
                                                                                 Flow.fromAsync (async {
                                                                                     let! cancellation = Async.CancellationToken
                                                                                     do! target.WriteAsync(bytes, 0, bytes.Length, cancellation) |> Async.AwaitTask
                                                                                 })
+
                                                                             let work = source |> FlowStream.runForEachFlow write
                                                                             let pumping = runUserFlow streamCancellation.Token true work
                                                                             let exiting = exitTasks[i] :> Task
                                                                             let! winner = Task.WhenAny(pumping :> Task, exiting)
+
                                                                             if obj.ReferenceEquals(winner, exiting) then
-                                                                                streamCancellation.Cancel()
-                                                                                try
-                                                                                    do! pumping
-                                                                                with :? OperationCanceledException when streamCancellation.IsCancellationRequested -> ()
+                                                                                let cancellation = cancelOffThread streamCancellation
+                                                                                use inputTimerCancellation = new CancellationTokenSource()
+                                                                                let timer =
+                                                                                    clock.Sleep(
+                                                                                        closeStdInFeederBound,
+                                                                                        inputTimerCancellation.Token
+                                                                                    )
+                                                                                let! stopped = Task.WhenAny(pumping :> Task, timer)
+
+                                                                                if obj.ReferenceEquals(stopped, pumping) then
+                                                                                    cancelIgnoringCallbackErrors inputTimerCancellation
+
+                                                                                    try
+                                                                                        do! pumping
+                                                                                    with
+                                                                                    | :? OperationCanceledException
+                                                                                        when streamCancellation.IsCancellationRequested ->
+                                                                                        ()
+                                                                                else
+                                                                                    // A source may ignore its token. Do not let it retain the
+                                                                                    // completed process execution; observe any eventual fault.
+                                                                                    observeFault pumping
+
+                                                                                cancellation.ContinueWith(
+                                                                                    (fun (_: Task) -> streamCancellation.Dispose()),
+                                                                                    CancellationToken.None,
+                                                                                    TaskContinuationOptions.ExecuteSynchronously,
+                                                                                    TaskScheduler.Default
+                                                                                )
+                                                                                |> ignore
                                                                             else
+                                                                                streamCancellation.Dispose()
                                                                                 do! pumping
 
                                                                     with
                                                                     | :? OperationCanceledException when stdinStops[i].IsCancellationRequested -> ()
-                                                                    | error when stdinStops[i].IsCancellationRequested ->
-                                                                        // CloseStdIn forced the pipe closed while a write was in flight; that is an
-                                                                        // expected outcome, not a fault.
+                                                                    | error
+                                                                        when stdinStops[i].IsCancellationRequested
+                                                                             && (error :? ObjectDisposedException
+                                                                                 || error :? IOException) ->
+                                                                        // Only pipe failures caused by the forced close are expected.
                                                                         try processes[i].StandardInput.Close() with _ -> ()
                                                                         stdinCompleted[i].TrySetResult() |> ignore
                                                                     | error ->
@@ -1316,7 +1388,7 @@ module internal NativeProcess =
                                                                         (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process I/O did not finish within {0} after all process stages exited.", after))
                                                                 )
                                                         finally
-                                                            timerCancellation.Cancel()
+                                                            cancelIgnoringCallbackErrors timerCancellation
                                                     | _ -> ()
                                                 })
                                                 |> supervise
@@ -1330,8 +1402,19 @@ module internal NativeProcess =
                                                 return Choice1Of3(buildResult ())
                                         with error ->
                                             let original = lock errorGate (fun () -> defaultArg firstFailure error)
-                                            ioCancellation.Cancel()
+                                            cancelIgnoringCallbackErrors ioCancellation
                                             terminate ()
+
+                                            // A cancellation callback may still own the shared ladder. Await it
+                                            // asynchronously before process handles are disposed.
+                                            match stopLadderTask with
+                                            | Some ladder ->
+                                                try
+                                                    let! _ = ladder
+                                                    ()
+                                                with _ ->
+                                                    ()
+                                            | None -> ()
 
                                             for proc in processes do
                                                 try
@@ -1365,20 +1448,10 @@ module internal NativeProcess =
                                             | _ ->
                                                 return Choice2Of3(ProcessError.IoFailed { Message = original.Message })
                                     finally
-                                        ioCancellation.Cancel()
+                                        cancelIgnoringCallbackErrors ioCancellation
                                         terminate ()
                                         lock settled (fun () -> Array.fill settled 0 settled.Length true)
                                         for completion in stdinCompleted do completion.TrySetResult() |> ignore
-
-                                        // Wait for a background stop ladder (started by the cancellation callback) to
-                                        // finish before disposing the processes it may still be waiting on.
-                                        match stopLadderTask with
-                                        | Some task ->
-                                            try
-                                                task.GetAwaiter().GetResult() // axial-allow-AXG001: intentional blocking host or live-service boundary
-                                            with _ ->
-                                                ()
-                                        | None -> ()
 
                                         for proc in processes do
                                             try

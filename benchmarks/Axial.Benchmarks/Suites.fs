@@ -6,6 +6,11 @@ open System.Threading.Tasks
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Order
 open Axial
+open Axial.Console
+open Axial.FileSystem
+open Axial.PlatformService
+open Axial.Process
+open Axial.Process.DSL
 
 [<MemoryDiagnoser>]
 [<InProcess>]
@@ -646,12 +651,47 @@ type InteropCompletionBenchmarks() =
             }
         (consume 20 0).RunSynchronously(()) |> Shared.consumeExit
 
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type ProcessExecutionBenchmarks() =
+    let environment =
+        { new IHasProcess with
+            member _.Process = Process.live Clock.live FileSystem.live Console.live
+          interface IHasClock with
+            member _.Clock = Clock.live }
+
+    let start workflow = Flow.startTask environment workflow
+
+    let trueWorkflow = cmd $"true" |> Process.toFlow
+
+    let capture50MbWorkflow =
+        shText "head -c 52428800 /dev/zero"
+        |> Process.captureAll
+        |> Process.toFlow
+
+    let threeStagesWorkflow =
+        (shText "printf axial") => (cmd $"cat") => (cmd $"cat")
+        |> Process.toFlow
+
+    [<Benchmark(Description = "Process true start to exit")>]
+    member _.TrueStartToExit() = start trueWorkflow
+
+    [<Benchmark(Description = "Process capture 50 MB")>]
+    member _.Capture50Mb() = start capture50MbWorkflow
+
+    [<Benchmark(Description = "Process pipeline, three stages")>]
+    member _.ThreeStagePipeline() = start threeStagesWorkflow
+
 /// Left-nested chains can cross the runtime's stack-guard boundary; measure both sides instead of inferring a
 /// constant per-bind cost from a single depth. Direct Task recursion supplies a control with the same arithmetic.
 [<MemoryDiagnoser>]
 [<InProcess>]
 [<WarmupCount(3)>]
 [<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type CompositionDepthBenchmarks() =
     let mutable workflow : Flow<int, string, int> = Flow.ok 0
     let mutable direct = Shared.buildDirectTaskResultBindChain 20 None

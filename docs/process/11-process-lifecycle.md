@@ -44,6 +44,8 @@ let withGracefulStop (command: ProcessCommand) =
 
 For the common single-step policy, use `[ StopRequest.Terminate, grace ]`. Cancellation remains `Cause.Interrupt`; stage and overall timeouts retain their existing typed errors after graceful shutdown has had its opportunity to run.
 
-The ladder runs once per execution. If cancellation and a stage timeout both happen, the one observed first decides the result: a timeout recorded before cancellation keeps `StageTimedOut`, and otherwise the result is `Cause.Interrupt`. The later cause waits for the running ladder rather than killing early. `CloseStdIn` waits a short, fixed time for an in-flight write to stop, then closes the pipe, so a child that never reads its input cannot hold the ladder at that step.
+The ladder runs once per execution. If cancellation and a stage timeout both happen, the one observed first decides the result: a timeout recorded before cancellation keeps `StageTimedOut`, and otherwise the result is `Cause.Interrupt`. The later cause waits for the running ladder rather than killing early. `CloseStdIn` starts a short, fixed bound before requesting feeder cancellation, then closes the pipe, so a blocking cancellation callback or a child that never reads its input cannot hold the ladder at that step.
+
+When a process exits, Axial asks a user `InputSource.Stream` flow to stop and gives it the same short bound. The process execution then returns even if that flow ignores interruption; Axial observes any eventual fault from the detached work so it does not become an unobserved task exception. A typed input failure or defect that settles before the bound still remains the execution's failure.
 
 Axial.Process currently provides a live implementation only on .NET. The Fable build can type-check process specifications and test doubles, but it does not start Node child processes.
