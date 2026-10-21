@@ -325,6 +325,69 @@ module WorkflowConcurrencyTests =
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(None, Some(Exit.Success())) @>
 
     [<Fact>]
+    let ``Fiber requestInterrupt returns before a blocking cancellation callback`` () =
+        use callbackRelease = new ManualResetEventSlim(false)
+        let callbackEntered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let registered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let requested = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finish = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let work =
+            Flow.fromTask (fun token -> task {
+                use _registration = token.Register(fun () ->
+                    callbackEntered.TrySetResult() |> ignore
+                    callbackRelease.Wait())
+                registered.TrySetResult() |> ignore
+                do! Task.Delay(Timeout.InfiniteTimeSpan, token)
+            })
+
+        let running =
+            flow {
+                let! fiber = Flow.fork work
+                do! Flow.fromTask (fun _ -> registered.Task)
+                do! Fiber.requestInterrupt fiber
+                requested.TrySetResult() |> ignore
+                do! Flow.fromTask (fun _ -> finish.Task)
+                return! Fiber.await fiber
+            }
+            |> Flow.startTask (TestSupport.clockEnv ())
+
+        requested.Task.WaitAsync(TimeSpan.FromSeconds 3.0).Wait()
+        callbackEntered.Task.WaitAsync(TimeSpan.FromSeconds 3.0).Wait()
+        test <@ not callbackRelease.IsSet @>
+        callbackRelease.Set()
+        finish.TrySetResult() |> ignore
+        match running.WaitAsync(TimeSpan.FromSeconds 3.0).Result with
+        | Exit.Success(Exit.Failure cause) -> test <@ Cause.isInterrupted cause @>
+        | other -> failwithf "Expected interrupted fiber, got %A" other
+
+    [<Fact>]
+    let ``Fiber requestInterrupt reports throwing cancellation callbacks`` () =
+        let observed = TaskCompletionSource<exn>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let registered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let observer =
+            { FiberObserver.none with
+                OnUnobservedDefect = fun _ error -> observed.TrySetResult error |> ignore }
+        let work =
+            Flow.fromTask (fun token -> task {
+                use _registration = token.Register(fun () -> raise (InvalidOperationException "callback failed"))
+                registered.TrySetResult() |> ignore
+                do! Task.Delay(Timeout.InfiniteTimeSpan, token)
+            })
+        let running =
+            flow {
+                let! fiber = Flow.fork work
+                do! Flow.fromTask (fun _ -> registered.Task)
+                do! Fiber.requestInterrupt fiber
+                let! _ = Fiber.await fiber
+                return ()
+            }
+            |> Flow.withFiberObserver observer
+            |> Flow.startTask (TestSupport.clockEnv ())
+        running.WaitAsync(TimeSpan.FromSeconds 3.0).Wait()
+        let error = observed.Task.WaitAsync(TimeSpan.FromSeconds 3.0).Result
+        test <@ error.Message = "callback failed" @>
+
+    [<Fact>]
     let ``Fiber.interrupt returns the interrupted exit`` () =
         let workflow : Flow<ClockEnvironment, string, Exit<unit, string>> =
             flow {

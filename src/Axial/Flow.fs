@@ -3045,6 +3045,45 @@ module Fiber =
     let poll (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error> option> =
         Flow(fun _ _ -> Execution.ofValue fiber.Settled)
 
+    /// <summary>Signals a fiber to stop without waiting for it to settle.</summary>
+    /// <remarks>
+    /// Cancellation is requested asynchronously, so a blocking cancellation callback cannot hold the caller.
+    /// Exceptions raised by cancellation callbacks are contained and reported to the ambient fiber observer as
+    /// unobserved defects associated with the target fiber. This operation does not consume the fiber's outcome;
+    /// use <c>await</c>, <c>join</c>, or <c>interrupt</c> when the outcome matters.
+    /// </remarks>
+    /// <param name="fiber">The fiber to ask to stop.</param>
+    let requestInterrupt (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, unit> =
+        Flow(fun _ _ ->
+            let observer = RuntimeState.current().Observer
+
+            let report (error: exn) =
+#if !FABLE_COMPILER
+                match error with
+                | :? AggregateException as aggregate ->
+                    for inner in aggregate.Flatten().InnerExceptions do
+                        FiberObserver.notifyUnobservedDefect observer (Some fiber.Metadata) inner
+                | _ -> FiberObserver.notifyUnobservedDefect observer (Some fiber.Metadata) error
+#else
+                FiberObserver.notifyUnobservedDefect observer (Some fiber.Metadata) error
+#endif
+
+#if !FABLE_COMPILER
+            // Cancellation callbacks are arbitrary user code; queue the request so this Flow always returns promptly.
+            ThreadPool.QueueUserWorkItem(fun _ ->
+                try
+                    fiber.InterruptSource.Cancel()
+                with error ->
+                    report error)
+            |> ignore
+#else
+            try
+                fiber.InterruptSource.Cancel()
+            with error ->
+                report error
+#endif
+            Execution.ofValue ())
+
     /// <summary>Signals a fiber to stop, waits for its cleanup, and returns its final exit.</summary>
     /// <remarks>
     /// Interruption requests cooperative cancellation through the fiber's cancellation source. A fiber that had
