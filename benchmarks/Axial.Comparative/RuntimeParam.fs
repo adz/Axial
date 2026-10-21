@@ -70,20 +70,28 @@ let intParams (envVar: string) (defaults: int array) =
                 raise (ArgumentException $"Invalid integer '{part}' in {envVar} (expected comma-separated integers)"))
 
 // Runs an effect on the runtime, raising if it fails or is interrupted.
-let run (runtime: FIORuntime) effect =
+let runValue (runtime: FIORuntime) effect =
     task {
         match! runtime.Run(effect).Task() with
-        | Succeeded _ -> ()
-        | Failed error -> raise error
-        | Interrupted ex -> raise ex
+        | Succeeded value -> return value
+        | Failed error -> return raise error
+        | Interrupted ex -> return raise ex
+    }
+
+let run (runtime: FIORuntime) effect =
+    task {
+        let! _ = runValue runtime effect
+        return ()
     }
 
 // Runs an Axial flow through its public Task boundary and preserves defects as exceptions.
-let runAxial (workflow: Flow<unit, exn, unit>) =
+let runAxialValue (workflow: Flow<unit, exn, 'value>) =
     task {
         match! Flow.startTask () workflow with
-        | Exit.Success () -> ()
-        | Exit.Failure (Cause.Fail error) -> raise error
-        | Exit.Failure (Cause.Die error) -> raise error
-        | Exit.Failure cause -> raise (InvalidOperationException $"Axial workflow did not complete: {cause}")
+        | Exit.Success value -> return value
+        | Exit.Failure (Cause.Fail error) -> return raise error
+        | Exit.Failure (Cause.Die error) -> return raise error
+        | Exit.Failure cause -> return raise (InvalidOperationException $"Axial workflow did not complete: {cause}")
     }
+
+let runAxial (workflow: Flow<unit, exn, unit>) = runAxialValue workflow

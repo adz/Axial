@@ -43,9 +43,19 @@ let private validate () = task {
         if not (obj.ReferenceEquals(winner, operation)) then failwith $"{name}: timed out"
         do! operation
         printfn "PASS %s (FIO Direct, Axial)" name
-    match Axial.Fibonacci.value 10 5 |> global.Axial.Flow.run () with
-    | global.Axial.Exit.Success 55 -> ()
-    | result -> failwith $"Fibonacci value mismatch: {result}"
+    use valueRuntime = RuntimeParam.create "Direct"
+    let! fioFib = RuntimeParam.runValue valueRuntime (Fio.Validation.fibonacci 10 5)
+    let! axialFib = RuntimeParam.runAxialValue (Axial.Fibonacci.value 10 5)
+    if fioFib <> axialFib || axialFib <> 55 then failwith $"Fibonacci mismatch: FIO={fioFib}, Axial={axialFib}"
+
+    let! fioCount = RuntimeParam.runValue valueRuntime (Fio.Validation.counting 20)
+    let! axialCount = RuntimeParam.runAxialValue (Axial.Counting.value 20)
+    if fioCount <> axialCount then failwith $"Counting mismatch: FIO={fioCount}, Axial={axialCount}"
+
+    let! fioTrap = RuntimeParam.runValue valueRuntime (Fio.Validation.trapezoidal 2 10000)
+    let! axialTrap = RuntimeParam.runAxialValue (Axial.Trapezoidal.value 2 10000)
+    if abs (fioTrap - axialTrap) > 1e-12 then failwith $"Trapezoidal mismatch: FIO={fioTrap}, Axial={axialTrap}"
+    printfn "PASS values (Fibonacci=%d, Counting=%d, Trapezoidal difference=%g)" axialFib axialCount (abs (fioTrap - axialTrap))
     printfn "Validation passed: 12 workloads"
 }
 

@@ -5,7 +5,7 @@ open Axial
 [<RequireQualifiedAccess>]
 module internal Counting =
     type private Message = Increment | Retrieve of Queue<int>
-    let effect messageCount : Flow<unit, exn, unit> = flow {
+    let value messageCount : Flow<unit, exn, int> = flow {
         let! mailbox = Queue.unbounded ()
         let! reply = Queue.unbounded ()
         let rec counter count = flow {
@@ -17,7 +17,11 @@ module internal Counting =
             for _ in 1 .. messageCount do do! Common.put Increment mailbox
             do! Common.put (Retrieve reply) mailbox
             let! total = Dequeue.take reply
-            if total <> messageCount then return! Flow.fail (InvalidOperationException $"Counting: expected {messageCount}, got {total}" :> exn)
+            if total <> messageCount then
+                return! Flow.fail (InvalidOperationException $"Counting: expected {messageCount}, got {total}" :> exn)
+            return total
         }
-        return! Flow.zipPar (counter 0) producer |> Flow.ignore
+        let! _, total = Flow.zipPar (counter 0) producer
+        return total
     }
+    let effect messageCount = value messageCount |> Flow.ignore

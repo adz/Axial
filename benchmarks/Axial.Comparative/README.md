@@ -21,7 +21,9 @@ The project is intentionally outside `Axial.slnx`, keeping FIO out of Axial's ma
 | Trapezoidal | workers 8, 16; 1,000,000 points |
 | ZipRace | rounds 1,000, 10,000 |
 
-Each Axial module mirrors the corresponding FIO topology. FIO `Channel()` is an unbounded FIFO, mapped to `Queue.unbounded`; parallel collections map to structured `Flow.sequencePar`; Fibonacci uses `Flow.zipPar`; ZipRace maps directly to `Flow.zipPar` and `Flow.race`. BoundedBuffer and Philosophers retain FIO's actor-owned mutable state and arbitrator design rather than substituting a different primitive. Axial uses its default runtime settings and does not add FIO's internal message boxing.
+Each Axial module preserves the corresponding FIO message counts and topology. FIO `Channel()` is an unbounded FIFO, mapped to `Queue.unbounded`. Fork builds its inputs per run, forks all no-op flows, then joins every fiber. Fibonacci defers every sequential leaf, forks the left branch, evaluates the right branch on the current fiber, and joins the left. Trapezoidal defers each slice's CPU work inside its parallel flow. BoundedBuffer and Philosophers retain FIO's actor-owned mutable state and arbitrator design rather than substituting another primitive.
+
+The construction audit also checked Bang, Big, BoundedBuffer, Chameneos, Counting, Philosophers, Pingpong, and Threadring: their queues, arrays, mutable actor state, peer lists, and item distribution are created inside the outer `flow { }`, so each benchmark invocation rebuilds them. ZipRace creates each pair in its per-run loop. Its Axial branches can settle synchronously without scheduler dispatch, while FIO's `ZipPar` and `RaceFirst` fork fibers; that row compares each library's idiomatic combinator cost, not equivalent raw fiber cost. Axial uses default runtime settings and does not add FIO's internal message boxing.
 
 ## Run
 
@@ -38,7 +40,7 @@ FIO_BENCH_RUNTIMES=Direct,WorkStealing-12-200-1,Axial dotnet run --project bench
 BenchmarkDotNet writes CSV files under `BenchmarkDotNet.Artifacts/results`.
 
 ```bash
-python benchmarks/Axial.Comparative/scripts/plot.py BenchmarkDotNet.Artifacts/results
+python benchmarks/Axial.Comparative/scripts/plot.py --results-dir BenchmarkDotNet.Artifacts/results
 python benchmarks/Axial.Comparative/scripts/compare.py --self-test
 python benchmarks/Axial.Comparative/scripts/compare.py results-before results-after
 ```

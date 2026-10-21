@@ -16,7 +16,7 @@ module internal Trapezoidal =
                     let x = (float i + 0.5) * h
                     sum <- sum + 4.0 / (1.0 + x * x)
                 sum
-            Flow.succeed (compute ())
+            Flow.delay (fun () -> Flow.succeed (compute ()))
         let! sums = [ for i in 0 .. workers - 1 -> partial i ] |> Flow.sequencePar
         return List.sum sums * h
     }
