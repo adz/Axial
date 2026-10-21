@@ -142,11 +142,11 @@ An already-built value that cannot fail needs no provisioning. `Layer.succeed` w
 Layer.succeed Console.live
 ```
 
-Console, FileSystem, HttpClient and Process are all of this shape, which is why none of them depends on this package.
+Console, FileSystem, HttpClient and Process are all of this shape, which is why none of them needs a layer to provide it.
 
-## Scopes are not part of this package
+## Scopes work without layers
 
-Scopes and `acquireRelease` are core, and work without layers. See
+Scopes and `acquireRelease` do not need a layer. See
 [scopes and resources](/scopes/index.html).
 
 ## In this section

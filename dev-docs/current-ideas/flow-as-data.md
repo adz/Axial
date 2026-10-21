@@ -198,7 +198,7 @@ constructs `FromExecution` any more, it can be removed or kept as the interop es
 | 1 | Spike: abstract `Flow` with the core primitives, `ValueTask` runner with the synchronous fast path and continuation stack, build-time rewrites. **Go/no-go.** | 3–5 days |
 | 2 | Port Flow.fs combinators through `FromExecution` | 1–2 weeks |
 | 3 | Cancellation, scopes, finalizers, concurrency, Runtime, Schedule | 1–2 weeks |
-| 4 | Stream, Layers, Telemetry and the other satellite packages | ~1 week |
+| 4 | Stream and Layers (both core), then Telemetry and the satellite packages | ~1 week |
 | 5 | Fable runners (Promise, BEAM), AOT check, performance tuning | ~1 week |
 | 6 (optional) | A continuation-based runner in the FIO style, to prove the multiple-runtime goal | ~1 week |
 

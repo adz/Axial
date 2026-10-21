@@ -3,7 +3,7 @@
 ## Assumptions
 
 - [fixed] `README.md:33` — `checkoutOrder` pipes `checkout` through `Flow.retry` and `Flow.timeout`, both of which require `'env :> IHasClock`; `CheckoutEnv` had no clock, so the example did not compile. Added `Clock: IClock` and an `IHasClock` implementation to `CheckoutEnv`.
-- [fixed] `README.md:75` — The package family lists "layers" as part of core `Axial`, but layers ship in the separate `Axial.Layers` package, not in core `Axial`. Moved "layers" into the supporting-packages sentence.
+- [fixed] `README.md:75` — The package family lists "layers" as part of core `Axial`, but layers ship in the separate `Axial.Layers` package, not in core `Axial`. Moved "layers" into the supporting-packages sentence. (Superseded in 0.12.0: layers moved into core `Axial`.)
 
 - [fixed] `docs/http/04-testing.md:72` — `runUserLookup` uses a relative URL but does not configure `client.BaseAddress` until the later, separate `apiClient` snippet. Say the caller must supply a client with a base address or use an absolute URL.
 
@@ -206,7 +206,7 @@
 - [done] `docs/api/Axial.ScheduleModule.md:4` — `Schedule` is described as deciding after each run, but the page never explains what its input/output mean for `retry` versus `repeat`, or whether `recurs n` means n retries or n total runs; add a small counted example.
 - [done] `docs/api/Axial.State.SubscriptionRefModule.md:3` — The page promises every update to each running stream but does not explain what happens when a subscriber's chosen overflow strategy fills; qualify delivery guarantees by strategy and link to its behavior.
 
-- [done] `docs/15-notes/01-packages-and-platforms.md:12` — The platform table omits `Axial.Layers`, `Axial.Guardrails`, and both HTTP host adapters even though the dependency table or adjacent notes name them; include their runtime/build-time status or state why they are excluded.
+- [done] `docs/15-notes/01-packages-and-platforms.md:12` — The platform table omits `Axial.Layers` (now part of core `Axial`, 0.12.0), `Axial.Guardrails`, and both HTTP host adapters even though the dependency table or adjacent notes name them; include their runtime/build-time status or state why they are excluded.
 - [done] `docs/15-notes/03-guardrails.md:32` — No command or example shows how to confirm that a consumer project actually runs the analyzer and fails at error severity; provide a minimal deliberate diagnostic and expected build result.
 
 - [done] `docs/14-advanced/04-writing-effect-analyzers.md:79` — No test or build command checks that the analyzer catches a direct constructor call, honors a suppression, and fails a consuming build at error severity; add a minimal consumer verification path.
