@@ -21,23 +21,23 @@ let private config () =
 
 let private validate () = task {
     let cases = [
-        "Bang", Fio.Bang.effect 2 3, Axial.Bang.effect 2 3
-        "Big", Fio.Big.effect 3 2, Axial.Big.effect 3 2
-        "BoundedBuffer", Fio.BoundedBuffer.effect 2 2 2 4, Axial.BoundedBuffer.effect 2 2 2 4
-        "Chameneos", Fio.Chameneos.effect 3 5, Axial.Chameneos.effect 3 5
-        "Counting", Fio.Counting.effect 20, Axial.Counting.effect 20
-        "Fibonacci", Fio.Fibonacci.effect 10 5, Axial.Fibonacci.effect 10 5
-        "Fork", Fio.Fork.effect 10, Axial.Fork.effect 10
-        "Philosophers", Fio.Philosophers.effect 5 3, Axial.Philosophers.effect 5 3
-        "Pingpong", Fio.Pingpong.effect 10, Axial.Pingpong.effect 10
-        "Threadring", Fio.Threadring.effect 5 3, Axial.Threadring.effect 5 3
-        "Trapezoidal", Fio.Trapezoidal.effect 2 10000, Axial.Trapezoidal.effect 2 10000
-        "ZipRace", Fio.ZipRace.effect 5, Axial.ZipRace.effect 5 ]
-    for name, fioEffect, axialEffect in cases do
+        "Bang", Fio.Bang.effect 2 3, fun () -> RuntimeParam.runAxial (Axial.Bang.effect 2 3)
+        "Big", Fio.Big.effect 3 2, fun () -> RuntimeParam.runAxial (Axial.Big.effect 3 2)
+        "BoundedBuffer", Fio.BoundedBuffer.effect 2 2 2 4, fun () -> RuntimeParam.runAxial (Axial.BoundedBuffer.effect 2 2 2 4)
+        "Chameneos", Fio.Chameneos.effect 3 5, fun () -> RuntimeParam.runAxial (Axial.Chameneos.effect 3 5)
+        "Counting", Fio.Counting.effect 20, fun () -> RuntimeParam.runAxial (Axial.Counting.effect 20)
+        "Fibonacci", Fio.Fibonacci.effect 10 5, fun () -> RuntimeParam.runAxialClock (Axial.Fibonacci.effect 10 5)
+        "Fork", Fio.Fork.effect 10, fun () -> RuntimeParam.runAxialClock (Axial.Fork.effect 10)
+        "Philosophers", Fio.Philosophers.effect 5 3, fun () -> RuntimeParam.runAxial (Axial.Philosophers.effect 5 3)
+        "Pingpong", Fio.Pingpong.effect 10, fun () -> RuntimeParam.runAxial (Axial.Pingpong.effect 10)
+        "Threadring", Fio.Threadring.effect 5 3, fun () -> RuntimeParam.runAxial (Axial.Threadring.effect 5 3)
+        "Trapezoidal", Fio.Trapezoidal.effect 2 10000, fun () -> RuntimeParam.runAxialClock (Axial.Trapezoidal.effect 2 10000)
+        "ZipRace", Fio.ZipRace.effect 5, fun () -> RuntimeParam.runAxial (Axial.ZipRace.effect 5) ]
+    for name, fioEffect, runAxial in cases do
         use runtime = RuntimeParam.create "Direct"
         let operation = task {
             do! RuntimeParam.run runtime fioEffect
-            do! RuntimeParam.runAxial axialEffect
+            do! runAxial ()
         }
         let! winner = Task.WhenAny(operation, Task.Delay(TimeSpan.FromSeconds 30.0))
         if not (obj.ReferenceEquals(winner, operation)) then failwith $"{name}: timed out"
@@ -45,15 +45,15 @@ let private validate () = task {
         printfn "PASS %s (FIO Direct, Axial)" name
     use valueRuntime = RuntimeParam.create "Direct"
     let! fioFib = RuntimeParam.runValue valueRuntime (Fio.Validation.fibonacci 10 5)
-    let! axialFib = RuntimeParam.runAxialValue (Axial.Fibonacci.value 10 5)
+    let! axialFib = RuntimeParam.runAxialValue Axial.Common.clockEnvironment (Axial.Fibonacci.value 10 5)
     if fioFib <> axialFib || axialFib <> 55 then failwith $"Fibonacci mismatch: FIO={fioFib}, Axial={axialFib}"
 
     let! fioCount = RuntimeParam.runValue valueRuntime (Fio.Validation.counting 20)
-    let! axialCount = RuntimeParam.runAxialValue (Axial.Counting.value 20)
+    let! axialCount = RuntimeParam.runAxialValue () (Axial.Counting.value 20)
     if fioCount <> axialCount then failwith $"Counting mismatch: FIO={fioCount}, Axial={axialCount}"
 
     let! fioTrap = RuntimeParam.runValue valueRuntime (Fio.Validation.trapezoidal 2 10000)
-    let! axialTrap = RuntimeParam.runAxialValue (Axial.Trapezoidal.value 2 10000)
+    let! axialTrap = RuntimeParam.runAxialValue Axial.Common.clockEnvironment (Axial.Trapezoidal.value 2 10000)
     if abs (fioTrap - axialTrap) > 1e-12 then failwith $"Trapezoidal mismatch: FIO={fioTrap}, Axial={axialTrap}"
     printfn "PASS values (Fibonacci=%d, Counting=%d, Trapezoidal difference=%g)" axialFib axialCount (abs (fioTrap - axialTrap))
     printfn "Validation passed: 12 workloads"

@@ -10,7 +10,7 @@ open FIO.Runtime.Signaling
 open FIO.Runtime.WorkStealing
 
 open System
-open Axial
+open global.Axial
 
 let private defaultRuntimes =
     [| "Direct"; "Polling-12-200-1"; "Signaling-12-200-1"; "WorkStealing-12-200-1" |]
@@ -85,13 +85,15 @@ let run (runtime: FIORuntime) effect =
     }
 
 // Runs an Axial flow through its public Task boundary and preserves defects as exceptions.
-let runAxialValue (workflow: Flow<unit, exn, 'value>) =
+let runAxialValue environment (workflow: Flow<'env, exn, 'value>) =
     task {
-        match! Flow.startTask () workflow with
+        match! Flow.startTask environment workflow with
         | Exit.Success value -> return value
         | Exit.Failure (Cause.Fail error) -> return raise error
         | Exit.Failure (Cause.Die error) -> return raise error
         | Exit.Failure cause -> return raise (InvalidOperationException $"Axial workflow did not complete: {cause}")
     }
 
-let runAxial (workflow: Flow<unit, exn, unit>) = runAxialValue workflow
+let runAxial (workflow: Flow<unit, exn, unit>) = runAxialValue () workflow
+let runAxialClock (workflow: Flow<ClockEnvironment, exn, unit>) =
+    runAxialValue Axial.Comparative.Axial.Common.clockEnvironment workflow

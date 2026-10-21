@@ -1,6 +1,5 @@
 // Mirrors FIO Effects/Fibonacci.fs: defer leaves, fork left, evaluate right on this fiber, then join left.
 namespace Axial.Comparative.Axial
-open System
 open Axial
 [<RequireQualifiedAccess>]
 module internal Fibonacci =
@@ -10,11 +9,12 @@ module internal Fibonacci =
             Flow.delay (fun () -> Flow.succeed (sequential n))
         else
             flow {
-                let startLeft: Flow<ClockEnvironment, unit, Fiber<exn, int>> = Flow.fork (fib (n - 1) threshold)
-                let! left = startLeft |> Bind.error (InvalidOperationException "Fibonacci fork failed" :> exn)
+                // Fork records lifecycle timestamps and adapts the supplied clock as its scheduler time source.
+                let startLeft: Flow<ClockEnvironment, exn, Fiber<exn, int>> = Flow.fork (fib (n - 1) threshold)
+                let! left = startLeft
                 let! right = fib (n - 2) threshold
                 let! leftValue = Fiber.join left
                 return leftValue + right
             }
-    let value n threshold = fib n threshold |> Flow.localEnv (fun () -> Common.clockEnvironment)
+    let value n threshold = fib n threshold
     let effect n threshold = value n threshold |> Flow.ignore

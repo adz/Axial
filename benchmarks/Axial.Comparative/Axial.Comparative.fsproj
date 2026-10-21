@@ -11,9 +11,9 @@
     <ProjectReference Include="../../src/Axial/Axial.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Axial/Common.fs" />
     <Compile Include="RuntimeParam.fs" />
     <Compile Include="Fio/*.fs" />
-    <Compile Include="Axial/Common.fs" />
     <Compile Include="Axial/*.fs" Exclude="Axial/Common.fs" />
     <Compile Include="Benchmarks/*.fs" />
     <Compile Include="Program.fs" />

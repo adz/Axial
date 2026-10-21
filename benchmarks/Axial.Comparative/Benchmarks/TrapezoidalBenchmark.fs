@@ -15,7 +15,7 @@ open System
 type TrapezoidalBenchmark() =
     let mutable runtime = Unchecked.defaultof<_>
     let mutable effect = Unchecked.defaultof<_>
-    let mutable axialEffect: Flow<unit, exn, unit> = Unchecked.defaultof<_>
+    let mutable axialEffect: Flow<ClockEnvironment, exn, unit> = Unchecked.defaultof<_>
 
     member _.WorkerCounts =
         RuntimeParam.intParams "FIO_BENCH_TRAPEZOIDAL_WORKERS" [| 8; 16 |]
@@ -49,5 +49,5 @@ type TrapezoidalBenchmark() =
 
     [<Benchmark>]
     member this.Run () =
-        if this.Runtime = "Axial" then RuntimeParam.runAxial axialEffect
+        if this.Runtime = "Axial" then RuntimeParam.runAxialClock axialEffect
         else RuntimeParam.run runtime effect

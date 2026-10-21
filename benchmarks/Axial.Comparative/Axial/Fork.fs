@@ -3,19 +3,17 @@ namespace Axial.Comparative.Axial
 open Axial
 [<RequireQualifiedAccess>]
 module internal Fork =
-    let effect count : Flow<unit, exn, unit> =
-        let inner: Flow<ClockEnvironment, unit, unit> =
-            Flow.delay (fun () ->
-                flow {
-                    let items = [ 1 .. count ]
-                    let mutable fibers = []
-                    for _ in items do
-                        let start: Flow<ClockEnvironment, unit, Fiber<unit, unit>> = Flow.fork (Flow.succeed ())
-                        let! fiber = start
-                        fibers <- fiber :: fibers
-                    for fiber in List.rev fibers do
-                        do! Fiber.join fiber
-                })
-        inner
-        |> Flow.mapError (fun () -> System.InvalidOperationException "Fork failed" :> exn)
-        |> Flow.localEnv (fun () -> Common.clockEnvironment)
+    let effect count : Flow<ClockEnvironment, exn, unit> =
+        Flow.delay (fun () ->
+            flow {
+                let items = seq { 1 .. count } |> Seq.toArray
+                let mutable fibers = []
+                for _ in items do
+                    // Fork needs IHasClock for lifecycle timestamps and its scheduler time source.
+                    let child: Flow<ClockEnvironment, exn, unit> = Flow.succeed ()
+                    let start: Flow<ClockEnvironment, exn, Fiber<exn, unit>> = Flow.fork child
+                    let! fiber = start
+                    fibers <- fiber :: fibers
+                for fiber in List.rev fibers do
+                    do! Fiber.join fiber
+            })

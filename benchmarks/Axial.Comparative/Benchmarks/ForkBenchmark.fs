@@ -15,7 +15,7 @@ open System
 type ForkBenchmark() =
     let mutable runtime = Unchecked.defaultof<_>
     let mutable effect = Unchecked.defaultof<_>
-    let mutable axialEffect: Flow<unit, exn, unit> = Unchecked.defaultof<_>
+    let mutable axialEffect: Flow<ClockEnvironment, exn, unit> = Unchecked.defaultof<_>
 
     member _.ActorCounts =
         RuntimeParam.intParams "FIO_BENCH_FORK_ACTORS" [| 1_000; 10_000; 50_000 |]
@@ -43,5 +43,5 @@ type ForkBenchmark() =
 
     [<Benchmark>]
     member this.Run () =
-        if this.Runtime = "Axial" then RuntimeParam.runAxial axialEffect
+        if this.Runtime = "Axial" then RuntimeParam.runAxialClock axialEffect
         else RuntimeParam.run runtime effect

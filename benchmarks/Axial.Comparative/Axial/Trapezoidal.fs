@@ -4,7 +4,7 @@ open System
 open Axial
 [<RequireQualifiedAccess>]
 module internal Trapezoidal =
-    let value workers points : Flow<unit, exn, float> =
+    let value workers points : Flow<ClockEnvironment, exn, float> =
         let inner: Flow<ClockEnvironment, exn, float> = flow {
             let h = 1.0 / float points
             let chunk = points / workers
@@ -21,8 +21,9 @@ module internal Trapezoidal =
 
             let mutable fibers = []
             for worker in 0 .. workers - 1 do
-                let start: Flow<ClockEnvironment, unit, Fiber<exn, float>> = Flow.fork (partial worker)
-                let! fiber = start |> Bind.error (InvalidOperationException "Trapezoidal fork failed" :> exn)
+                // Fork needs IHasClock for lifecycle timestamps and its scheduler time source.
+                let start: Flow<ClockEnvironment, exn, Fiber<exn, float>> = Flow.fork (partial worker)
+                let! fiber = start
                 fibers <- fiber :: fibers
 
             let mutable values = []
@@ -32,7 +33,7 @@ module internal Trapezoidal =
 
             return List.sum values * h
         }
-        inner |> Flow.localEnv (fun () -> Common.clockEnvironment)
+        inner
 
     let effect workers points = flow {
         let! result = value workers points
