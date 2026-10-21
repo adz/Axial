@@ -139,6 +139,19 @@ type StopRequest =
         | CloseStdIn -> "CloseStdIn"
         | Signal number -> "Signal " + number.ToString(CultureInfo.InvariantCulture)
 
+/// Why a stop request did not succeed: the platform or stage cannot support it, or it was attempted and failed.
+[<RequireQualifiedAccess>]
+type StopRequestError =
+    /// The request is not supported by the platform, or the stage does not own the handle the request needs.
+    | Unsupported
+    /// The request was attempted but did not succeed; the message carries the OS or runtime reason.
+    | Failed of message: string
+
+    override this.ToString() =
+        match this with
+        | Unsupported -> "Unsupported"
+        | Failed message -> "Failed: " + message
+
 [<EditorBrowsable(EditorBrowsableState.Never)>]
 type IProcessStartedObserver =
     abstract Invoke:
@@ -146,7 +159,7 @@ type IProcessStartedObserver =
         processId: int *
         command: string *
         startedAt: DateTimeOffset *
-        close: (StopRequest -> Async<Result<unit, string>>) -> Async<Exit<unit, Never>>
+        close: (StopRequest -> Async<Result<unit, StopRequestError>>) -> Async<Exit<unit, Never>>
 
 [<RequireQualifiedAccess>]
 type internal ExecutionMode =
@@ -300,6 +313,7 @@ type ProcessError =
     | OutputTooLarge of ProcessOutputFailure
     | ObservationUnavailable of ProcessObservationFailure
     | StopFailed of ProcessStopFailure
+    | StopUnsupported of StopRequest
 
     override this.ToString() =
         match this with
@@ -339,6 +353,8 @@ type ProcessError =
             (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stage {0} {1} uses inherited handles and cannot be observed.", failure.Stage, channel))
         | StopFailed failure ->
             (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not send {0} to stage {1}: {2}", failure.Request, failure.Stage, failure.Message))
+        | StopUnsupported request ->
+            (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Stop request {0} is not supported by the platform or this stage.", request))
 
 /// A stage that has started and can receive cooperative stop requests.
 type ProcessStarted = {

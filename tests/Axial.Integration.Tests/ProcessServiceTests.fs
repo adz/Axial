@@ -881,8 +881,7 @@ module ProcessServiceTests =
             let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
             let! outcome = handle.Close StopRequest.CloseMainWindow |> fun workflow -> workflow.StartAsTask(())
             match outcome with
-            | Exit.Failure(Cause.Fail(ProcessError.StopFailed failure)) ->
-                test <@ failure.Message.Contains "only on Windows" @>
+            | Exit.Failure(Cause.Fail(ProcessError.StopUnsupported StopRequest.CloseMainWindow)) -> ()
             | other -> failwithf "Expected unsupported stop request, got %A" other
             rescue.Cancel()
             let! _ = running
@@ -1014,12 +1013,14 @@ module ProcessServiceTests =
             let specification =
                 shText ("trap 'echo term > " + marker + "; exit 0' TERM; echo ready; while :; do sleep 1; done")
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
-                |> Process.timeout (TimeSpan.FromMilliseconds 500.0)
+                |> Process.timeout (TimeSpan.FromSeconds 5.0)
                 |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 2.0 ]
             let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env ())
             try
+                // The trap is installed before `echo ready`, so observing `ready` proves the trap is in
+                // place before the (generous) 5s timeout can fire.
                 do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
-                let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+                let! outcome = running.WaitAsync(TimeSpan.FromSeconds 10.0)
                 match outcome with
                 | Exit.Failure(Cause.Fail(ProcessError.StageTimedOut _)) -> test <@ File.Exists marker @>
                 | other -> failwithf "Expected stage timeout, got %A" other
@@ -1063,6 +1064,86 @@ module ProcessServiceTests =
                 let! closeExit = handle.Close StopRequest.Terminate |> fun workflow -> workflow.StartAsTask(())
                 test <@ closeExit = Exit.Success () @>
         | other -> failwithf "Expected pipeline success, got %A" other
+    }
+
+    [<Fact>]
+    let ``CloseStdIn on a full pipe completes and the ladder reaches kill`` () = task {
+        if not (OperatingSystem.IsWindows()) then
+            use cancellation = new CancellationTokenSource()
+            let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let feeding = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            // 8 MiB in one write into a child that never reads stdin: the pipe fills and the feeder blocks.
+            let chunk = Array.zeroCreate<byte> (8 * 1024 * 1024)
+            let source =
+                FlowStream.fromFlow (
+                    Flow.fromAsync (async {
+                        feeding.TrySetResult() |> ignore
+                        return chunk
+                    })
+                )
+            let specification =
+                shText "trap '' TERM; exec sleep 30"
+                |> stdinFrom (Input.flowStream source)
+                |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+                |> stopGracefully [
+                    StopRequest.CloseStdIn, TimeSpan.FromMilliseconds 300.0
+                    StopRequest.Terminate, TimeSpan.FromMilliseconds 300.0
+                ]
+            let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
+            let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            do! feeding.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            do! Task.Run(fun () -> cancellation.Cancel())
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 10.0)
+            test <@ outcome = Exit.Failure Cause.Interrupt @>
+            test <@ processHasExited handle.ProcessId @>
+    }
+
+    [<Fact>]
+    let ``stop ladder runs once when cancellation races a stage timeout`` () = task {
+        if not (OperatingSystem.IsWindows()) then
+            let marker = Path.Combine(Path.GetTempPath(), "axial-ladder-once-" + Guid.NewGuid().ToString("N"))
+            use cancellation = new CancellationTokenSource()
+            let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let specification =
+                shText ("trap 'echo term >> " + marker + "' TERM; echo ready; while :; do sleep 0.05; done")
+                |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
+                |> Process.timeout (TimeSpan.FromMilliseconds 800.0)
+                |> stopGracefully [ StopRequest.Terminate, TimeSpan.FromSeconds 1.0 ]
+            let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
+            try
+                do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+                // Race the 800 ms stage timeout against cancellation; whichever wins, the ladder runs once.
+                do! Task.Delay(TimeSpan.FromMilliseconds 750.0)
+                do! Task.Run(fun () -> cancellation.Cancel())
+                let! outcome = running.WaitAsync(TimeSpan.FromSeconds 10.0)
+                match outcome with
+                | Exit.Failure Cause.Interrupt -> ()
+                | Exit.Failure(Cause.Fail(ProcessError.StageTimedOut _)) -> ()
+                | other -> failwithf "Expected interruption or stage timeout, got %A" other
+                let terms = if File.Exists marker then File.ReadAllLines marker |> Array.length else 0
+                test <@ terms = 1 @>
+            finally
+                if File.Exists marker then File.Delete marker
+    }
+
+    [<Fact>]
+    let ``pidfd signalling reaches a trapped stage on Linux`` () = task {
+        if OperatingSystem.IsLinux() && NativeProcess.pidfdAvailable () then
+            let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let specification =
+                shText "trap 'exit 7' TERM; echo ready; while :; do sleep 1; done"
+                |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
+                |> Process.successCodes (set [ 7 ])
+                |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
+            let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env ())
+            let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            test <@ NativeProcess.trySignalWithPidfd handle.ProcessId 15 = Ok () @>
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+            match outcome with
+            | Exit.Success result -> test <@ result.ExitCode = 7 @>
+            | other -> failwithf "Expected pidfd-terminated exit, got %A" other
     }
 
     [<Fact>]

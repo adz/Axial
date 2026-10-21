@@ -26,7 +26,7 @@ A completed `StageResult` also contains `ProcessId`, so batch and streaming exec
 - `CloseStdIn` closes stdin when Axial owns the redirected pipe.
 - `CloseMainWindow` asks a Windows GUI process to close its main window.
 
-A request that the platform or stage cannot support fails with `ProcessError.StopFailed`. .NET's `ProcessStartInfo` cannot create the new Windows process group required to target `GenerateConsoleCtrlEvent` safely. Axial therefore never sends a console event to group `0`: `Interrupt`, `Terminate`, `Hangup`, and raw numeric signals return `StopFailed` on Windows, allowing a graceful-stop ladder to continue to its next step. `CloseMainWindow` is the Windows graceful-stop path.
+A request the platform or stage cannot support fails with `ProcessError.StopUnsupported`, and a request that was attempted but failed fails with `ProcessError.StopFailed`. .NET's `ProcessStartInfo` cannot create the new Windows process group required to target `GenerateConsoleCtrlEvent` safely. Axial therefore never sends a console event to group `0`: `Interrupt`, `Terminate`, `Hangup`, and raw numeric signals return `StopUnsupported` on Windows; on Unix, `CloseMainWindow` returns `StopUnsupported`. A graceful-stop ladder skips unsupported steps, so it continues to its next step. `CloseMainWindow` is the Windows graceful-stop path.
 
 ## Escalation on interruption or timeout
 
@@ -43,5 +43,7 @@ let withGracefulStop (command: ProcessCommand) =
 ```
 
 For the common single-step policy, use `[ StopRequest.Terminate, grace ]`. Cancellation remains `Cause.Interrupt`; stage and overall timeouts retain their existing typed errors after graceful shutdown has had its opportunity to run.
+
+The ladder runs once per execution. If cancellation and a stage timeout both happen, the one observed first decides the result: a timeout recorded before cancellation keeps `StageTimedOut`, and otherwise the result is `Cause.Interrupt`. The later cause waits for the running ladder rather than killing early. `CloseStdIn` waits a short, fixed time for an in-flight write to stop, then closes the pipe, so a child that never reads its input cannot hold the ladder at that step.
 
 Axial.Process currently provides a live implementation only on .NET. The Fable build can type-check process specifications and test doubles, but it does not start Node child processes.

@@ -28,6 +28,47 @@ module internal NativeProcess =
     [<DllImport("libc", EntryPoint = "close", SetLastError = true)>]
     extern int private closeFd(int fd)
 
+    /// How long CloseStdIn waits for the stdin feeder to observe cancellation before it force-closes
+    /// the pipe. Keeps Close from hanging on a feeder blocked by a full pipe.
+    let private closeStdInFeederBound = TimeSpan.FromMilliseconds 250.0
+
+    /// Reports whether pidfd_open/pidfd_send_signal are usable on this Linux system. Tests use this to
+    /// assert the pidfd signalling path is active when the platform supports it.
+    let pidfdAvailable () =
+        if not (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) then
+            false
+        else
+            try
+                let fd = pidfd_open(Diagnostics.Process.GetCurrentProcess().Id, 0u)
+
+                if fd >= 0 then
+                    closeFd(fd) |> ignore
+                    true
+                else
+                    false
+            with :? EntryPointNotFoundException -> false
+
+    /// Sends a signal to a process through pidfd only (no kill fallback). Tests use this to prove the
+    /// pidfd path delivers a signal end-to-end on Linux.
+    let trySignalWithPidfd (pid: int) (signal: int) : Result<unit, string> =
+        if not (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) then
+            Error "pidfd signalling is available only on Linux."
+        else
+            try
+                let fd = pidfd_open(pid, 0u)
+
+                if fd < 0 then
+                    Error (System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()).Message)
+                else
+                    try
+                        if pidfd_send_signal(fd, signal, 0n, 0u) = 0 then
+                            Ok ()
+                        else
+                            Error (System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()).Message)
+                    finally
+                        closeFd(fd) |> ignore
+            with :? EntryPointNotFoundException -> Error "pidfd_open is not exported by this libc."
+
     let private inherited =
         function
         | OutputTarget.Inherit -> true
@@ -296,7 +337,7 @@ module internal NativeProcess =
                                         async {
                                             try
                                                 if stage < 0 || stage >= processIds.Length || processIds[stage] < 0 then
-                                                    return Error "The stage has not started."
+                                                    return Error (StopRequestError.Failed "The stage has not started.")
                                                 elif lock settled (fun () -> settled[stage]) then
                                                     return Ok ()
                                                 else
@@ -313,9 +354,18 @@ module internal NativeProcess =
                                                                         stdinCompleted[stage].TrySetResult() |> ignore
                                                                         false)
                                                         if shouldWait then
-                                                            do! stdinCompleted[stage].Task |> Async.AwaitTask
+                                                            // Bound the cooperative wait: a feeder blocked in a write on a full
+                                                            // pipe may not observe the cancellation token, so once the bound
+                                                            // expires force-close the pipe to unblock it.
+                                                            use closeTimer = new CancellationTokenSource()
+                                                            let timer = clock.Sleep(closeStdInFeederBound, closeTimer.Token)
+                                                            let! winner = Task.WhenAny(stdinCompleted[stage].Task, timer) |> Async.AwaitTask
+                                                            if not (obj.ReferenceEquals(winner, timer)) then
+                                                                closeTimer.Cancel()
+                                                            closeStdIns[stage] |> Option.iter (fun close -> close ())
+                                                            stdinCompleted[stage].TrySetResult() |> ignore
                                                         return Ok ()
-                                                    | StopRequest.CloseStdIn -> return Error "Standard input is not owned by Axial."
+                                                    | StopRequest.CloseStdIn -> return Error StopRequestError.Unsupported
                                                     | StopRequest.CloseMainWindow when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ->
                                                         let closed =
                                                             lock settled (fun () ->
@@ -323,8 +373,8 @@ module internal NativeProcess =
                                                                 else closeMainWindows[stage] |> Option.map (fun close -> close ()))
                                                         match closed with
                                                         | Some true -> return Ok ()
-                                                        | _ -> return Error "The process has no main window."
-                                                    | StopRequest.CloseMainWindow -> return Error "CloseMainWindow is supported only on Windows."
+                                                        | _ -> return Error (StopRequestError.Failed "The process has no main window.")
+                                                    | StopRequest.CloseMainWindow -> return Error StopRequestError.Unsupported
                                                     | StopRequest.Interrupt
                                                     | StopRequest.Terminate
                                                     | StopRequest.Hangup
@@ -350,18 +400,22 @@ module internal NativeProcess =
                                                                             if sent <> 0 then error <- Marshal.GetLastWin32Error()
                                                                         with :? EntryPointNotFoundException -> ()
 
+                                                                    // The kill fallback by PID is not atomic with the settled check: on platforms
+                                                                    // without pidfd (macOS, musl, glibc < 2.36, or any ENOSYS path) a child that
+                                                                    // exits and has its PID reused between the check and the kill can be signalled
+                                                                    // as an unrelated process. ESRCH is still treated as an already-exited success.
                                                                     if sent <> 0 && (pidfds[stage] < 0 || error = 38) then
                                                                         sent <- kill(processIds[stage], signal)
                                                                         if sent <> 0 then error <- Marshal.GetLastWin32Error()
 
                                                                     if sent = 0 || error = 3 then Ok ()
-                                                                    else Error (System.ComponentModel.Win32Exception(error).Message))
+                                                                    else Error (StopRequestError.Failed(System.ComponentModel.Win32Exception(error).Message)))
 
                                                         return result
                                                     | _ ->
-                                                        return Error "Interrupt, Terminate, Hangup, and Signal are unsupported on Windows."
+                                                        return Error StopRequestError.Unsupported
                                             with error ->
-                                                return Error error.Message
+                                                return Error (StopRequestError.Failed error.Message)
                                         }
 
                                     let terminate () =
@@ -385,6 +439,20 @@ module internal NativeProcess =
 
                                     let mutable stopping = false
                                     let mutable hadFailureWhenStopping = false
+                                    let mutable cancellationObserved = false
+                                    let mutable stopLadderTask: Task option = None
+
+                                    // The stop ladder runs at most once per execution. The first stop cause to be observed
+                                    // under errorGate decides the final result: a stage timeout recorded before cancellation
+                                    // is observed keeps StageTimedOut; a cancellation observed before any failure is recorded
+                                    // produces Cause.Interrupt.
+                                    // The ladder must not cancel I/O on its own thread: Cancel() runs the execution's
+                                    // continuations inline, and they reach the cleanup below, which waits for this ladder
+                                    // to finish. Queuing the cancellation lets the ladder complete first.
+                                    let cancelIoOffLadder () =
+                                        ThreadPool.QueueUserWorkItem(fun _ ->
+                                            try ioCancellation.Cancel() with :? ObjectDisposedException -> ())
+                                        |> ignore
 
                                     let runStopLadder () =
                                         task {
@@ -399,7 +467,8 @@ module internal NativeProcess =
                                                     let! result = closeStage stage request |> Async.StartAsTask
                                                     match result with
                                                     | Ok () -> sent <- true
-                                                    | Error _ -> ()
+                                                    | Error StopRequestError.Unsupported -> ()
+                                                    | Error (StopRequestError.Failed _) -> ()
 
                                                 if sent && live.Length > 0 && grace > TimeSpan.Zero then
                                                     use timerCancellation = new CancellationTokenSource()
@@ -414,18 +483,34 @@ module internal NativeProcess =
                                                         timerCancellation.Cancel()
 
                                             terminate ()
-                                            ioCancellation.Cancel()
+                                            cancelIoOffLadder ()
                                         }
 
+                                    // Every stop cause shares one ladder: a cause that arrives while the ladder runs
+                                    // waits for it instead of killing straight away, so grace periods are honoured.
+                                    let stopLadder = Lazy<Task>((fun () -> runStopLadder () :> Task), LazyThreadSafetyMode.ExecutionAndPublication)
+
+                                    let runStopLadderOnce () : Task = stopLadder.Value
+
                                     let stopOnCancellation () =
-                                        hadFailureWhenStopping <- lock errorGate (fun () -> firstFailure.IsSome)
+                                        let hadFailure =
+                                            lock errorGate (fun () ->
+                                                if firstFailure.IsNone then cancellationObserved <- true
+                                                firstFailure.IsSome)
+                                        hadFailureWhenStopping <- hadFailure
                                         stopping <- true
-                                        try
-                                            // Cancellation callbacks are synchronous; this is the live process boundary.
-                                            runStopLadder().GetAwaiter().GetResult() // axial-allow-effect: blocking
-                                        with _ ->
-                                            terminate ()
-                                            ioCancellation.Cancel()
+                                        // Never run the ladder synchronously inside the CancellationToken callback: the
+                                        // callback runs on the caller's Cancel() thread, and the ladder waits grace
+                                        // periods that would block it. Cancel() must return promptly.
+                                        stopLadderTask <-
+                                            Some (
+                                                Task.Run(fun () ->
+                                                    try
+                                                        runStopLadderOnce().GetAwaiter().GetResult() // axial-allow-effect: blocking
+                                                    with _ ->
+                                                        terminate ()
+                                                        cancelIoOffLadder ())
+                                            )
 
                                     let recordFailure (error: exn) =
                                         let first =
@@ -518,10 +603,13 @@ module internal NativeProcess =
                                                                 }
                                                             )
 
+                                                        // Record the timeout only if cancellation has not already been
+                                                        // observed: the first observed stop cause decides the final result.
                                                         lock errorGate (fun () ->
-                                                            if firstFailure.IsNone then firstFailure <- Some timeoutFailure)
+                                                            if not cancellationObserved && firstFailure.IsNone then
+                                                                firstFailure <- Some timeoutFailure)
                                                         stopping <- true
-                                                        do! runStopLadder ()
+                                                        do! runStopLadderOnce ()
                                                         return raise timeoutFailure // axial-allow-raise
 
                                                     do! wait
@@ -721,7 +809,12 @@ module internal NativeProcess =
                                                 lock processes (fun () -> processes.Add proc)
                                                 processIds[i] <- proc.Id
                                                 stdinOwned[i] <- redirectInput
-                                                closeStdIns[i] <- Some(fun () -> try proc.StandardInput.Close() with _ -> ())
+                                                closeStdIns[i] <-
+                                                    Some(fun () ->
+                                                        // Dispose the pipe handle directly (not through StreamWriter.Close,
+                                                        // which flushes first) so a feeder blocked on a full pipe is unblocked.
+                                                        try proc.StandardInput.BaseStream.Dispose() with _ -> ()
+                                                        try proc.StandardInput.Close() with _ -> ())
                                                 closeMainWindows[i] <- Some(fun () -> proc.CloseMainWindow())
                                                 if RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
                                                     try pidfds[i] <- pidfd_open(proc.Id, 0u)
@@ -906,6 +999,11 @@ module internal NativeProcess =
                                                             do! Task.WhenAll pumps
                                                         with
                                                         | :? OperationCanceledException when stdinStops[target].IsCancellationRequested -> ()
+                                                        | error when stdinStops[target].IsCancellationRequested ->
+                                                            // CloseStdIn forced the pipe closed while a write was in flight; that is an
+                                                            // expected outcome, not a fault.
+                                                            try processes[target].StandardInput.Close() with _ -> ()
+                                                            stdinCompleted[target].TrySetResult() |> ignore
                                                         | error ->
                                                             try processes[target].StandardInput.Close() with _ -> ()
                                                             stdinCompleted[target].TrySetResult() |> ignore
@@ -987,6 +1085,11 @@ module internal NativeProcess =
 
                                                                     with
                                                                     | :? OperationCanceledException when stdinStops[i].IsCancellationRequested -> ()
+                                                                    | error when stdinStops[i].IsCancellationRequested ->
+                                                                        // CloseStdIn forced the pipe closed while a write was in flight; that is an
+                                                                        // expected outcome, not a fault.
+                                                                        try processes[i].StandardInput.Close() with _ -> ()
+                                                                        stdinCompleted[i].TrySetResult() |> ignore
                                                                     | error ->
                                                                         try processes[i].StandardInput.Close() with _ -> ()
                                                                         stdinCompleted[i].TrySetResult() |> ignore
@@ -1276,6 +1379,16 @@ module internal NativeProcess =
                                         lock settled (fun () -> Array.fill settled 0 settled.Length true)
                                         for completion in stdinCompleted do completion.TrySetResult() |> ignore
 
+                                        // Wait for a background stop ladder (started by the cancellation callback) to
+                                        // finish before disposing the processes it may still be waiting on.
+                                        match stopLadderTask with
+                                        | Some task ->
+                                            try
+                                                task.GetAwaiter().GetResult() // axial-allow-effect: blocking
+                                            with _ ->
+                                                ()
+                                        | None -> ()
+
                                         for proc in processes do
                                             try
                                                 proc.WaitForExit()
@@ -1283,6 +1396,9 @@ module internal NativeProcess =
                                                 ()
 
                                             proc.Dispose()
+
+                                        for stop in stdinStops do
+                                            stop.Dispose()
 
                                         for index in 0 .. pidfds.Length - 1 do
                                             if pidfds[index] >= 0 then

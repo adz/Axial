@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ProcessTypes.fs" />
     <Compile Include="ProcessInfrastructure.fs" />
     <Compile Include="ProcessLive.fs" />

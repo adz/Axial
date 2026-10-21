@@ -472,7 +472,8 @@ module Process =
                     Flow.fromAsync (close request)
                     |> Flow.bind (function
                         | Ok () -> Flow.succeed ()
-                        | Error message ->
+                        | Error StopRequestError.Unsupported -> Flow.fail (ProcessError.StopUnsupported request)
+                        | Error (StopRequestError.Failed message) ->
                             Flow.fail (ProcessError.StopFailed { Stage = stage; Request = request; Message = message }))
 
                 let started = {
