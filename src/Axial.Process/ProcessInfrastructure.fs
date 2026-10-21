@@ -217,7 +217,7 @@ type TestProcess() =
                         match specification.OnStarted with
                         | Some handler ->
                             for stage, command in specification.Commands |> List.indexed do
-                                do!
+                                let! handlerExit =
                                     handler.Invoke(
                                         stage,
                                         processId + stage,
@@ -228,6 +228,8 @@ type TestProcess() =
                                             return Ok ()
                                         })
                                     )
+
+                                do! Flow.ofExit handlerExit |> Flow.widenError
                         | None -> ()
 
                         for output in outputs do

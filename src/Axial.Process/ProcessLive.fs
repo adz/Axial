@@ -19,6 +19,15 @@ module internal NativeProcess =
     [<DllImport("libc", SetLastError = true)>]
     extern int private kill(int pid, int signal)
 
+    [<DllImport("libc", SetLastError = true)>]
+    extern int private pidfd_open(int pid, uint flags)
+
+    [<DllImport("libc", SetLastError = true)>]
+    extern int private pidfd_send_signal(int pidfd, int signal, nativeint info, uint flags)
+
+    [<DllImport("libc", EntryPoint = "close", SetLastError = true)>]
+    extern int private closeFd(int fd)
+
     let private inherited =
         function
         | OutputTarget.Inherit -> true
@@ -119,6 +128,13 @@ module internal NativeProcess =
         | Cause.Traced(inner, _) -> firstDefect inner
         | _ -> None
 
+    let private raiseStartedHandlerFailure (token: CancellationToken) (cause: Cause<Never>) =
+        match firstDefect cause with
+        | Some error -> raise (ObserverDefectException error)
+        | None ->
+            token.ThrowIfCancellationRequested()
+            raise (OperationCanceledException token)
+
     // Raises the exception a failed user input or output flow maps to. Kept out of `runUserFlow`'s `task { }`: the
     // F# compiler in SDK 10.0.4xx emits invalid IL for local recursive functions inside that block.
     let private raiseUserFlowFailure (token: CancellationToken) input (cause: Cause<string>) : unit =
@@ -201,6 +217,15 @@ module internal NativeProcess =
                                     let token = ioCancellation.Token
                                     let commands = specification.Commands |> List.toArray
                                     let processes = ResizeArray<Diagnostics.Process>()
+                                    let settled = Array.create specification.Commands.Length false
+                                    let processIds = Array.create specification.Commands.Length -1
+                                    let pidfds = Array.create specification.Commands.Length -1
+                                    let stdinStops = Array.init specification.Commands.Length (fun _ -> new CancellationTokenSource())
+                                    let stdinCompleted = Array.init specification.Commands.Length (fun _ -> TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously))
+                                    let stdinStarted = Array.create specification.Commands.Length false
+                                    let stdinOwned = Array.create specification.Commands.Length false
+                                    let closeStdIns = Array.create specification.Commands.Length None
+                                    let closeMainWindows = Array.create specification.Commands.Length None
                                     let stdoutCap, stderrCap = specification.MaxOutputBytes
                                     for command in commands do
                                         if stdoutCap.IsSome && inherited command.StdOut.Value then
@@ -270,19 +295,35 @@ module internal NativeProcess =
                                     let closeStage stage request =
                                         async {
                                             try
-                                                let proc = lock processes (fun () -> if stage < processes.Count then Some processes[stage] else None)
-                                                match proc with
-                                                | None -> return Error "The stage has not started."
-                                                | Some proc when proc.HasExited -> return Ok ()
-                                                | Some proc ->
+                                                if stage < 0 || stage >= processIds.Length || processIds[stage] < 0 then
+                                                    return Error "The stage has not started."
+                                                elif lock settled (fun () -> settled[stage]) then
+                                                    return Ok ()
+                                                else
                                                     match request with
-                                                    | StopRequest.CloseStdIn when proc.StartInfo.RedirectStandardInput ->
-                                                        proc.StandardInput.Close()
+                                                    | StopRequest.CloseStdIn when stdinOwned[stage] ->
+                                                        let shouldWait =
+                                                            lock settled (fun () ->
+                                                                if settled[stage] then false
+                                                                else
+                                                                    stdinStops[stage].Cancel()
+                                                                    if stdinStarted[stage] then true
+                                                                    else
+                                                                        closeStdIns[stage] |> Option.iter (fun close -> close ())
+                                                                        stdinCompleted[stage].TrySetResult() |> ignore
+                                                                        false)
+                                                        if shouldWait then
+                                                            do! stdinCompleted[stage].Task |> Async.AwaitTask
                                                         return Ok ()
                                                     | StopRequest.CloseStdIn -> return Error "Standard input is not owned by Axial."
                                                     | StopRequest.CloseMainWindow when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ->
-                                                        if proc.CloseMainWindow() then return Ok ()
-                                                        else return Error "The process has no main window."
+                                                        let closed =
+                                                            lock settled (fun () ->
+                                                                if settled[stage] then Some true
+                                                                else closeMainWindows[stage] |> Option.map (fun close -> close ()))
+                                                        match closed with
+                                                        | Some true -> return Ok ()
+                                                        | _ -> return Error "The process has no main window."
                                                     | StopRequest.CloseMainWindow -> return Error "CloseMainWindow is supported only on Windows."
                                                     | StopRequest.Interrupt
                                                     | StopRequest.Terminate
@@ -295,9 +336,30 @@ module internal NativeProcess =
                                                             | StopRequest.Hangup -> 1
                                                             | StopRequest.Signal value -> value
                                                             | _ -> 0
-                                                        if kill(proc.Id, signal) = 0 then return Ok ()
-                                                        else return Error (System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()).Message)
-                                                    | _ -> return Error "This stop request is unsupported on Windows."
+
+                                                        let result =
+                                                            lock settled (fun () ->
+                                                                if settled[stage] then
+                                                                    Ok ()
+                                                                else
+                                                                    let mutable sent = -1
+                                                                    let mutable error = 38
+                                                                    if pidfds[stage] >= 0 then
+                                                                        try
+                                                                            sent <- pidfd_send_signal(pidfds[stage], signal, 0n, 0u)
+                                                                            if sent <> 0 then error <- Marshal.GetLastWin32Error()
+                                                                        with :? EntryPointNotFoundException -> ()
+
+                                                                    if sent <> 0 && (pidfds[stage] < 0 || error = 38) then
+                                                                        sent <- kill(processIds[stage], signal)
+                                                                        if sent <> 0 then error <- Marshal.GetLastWin32Error()
+
+                                                                    if sent = 0 || error = 3 then Ok ()
+                                                                    else Error (System.ComponentModel.Win32Exception(error).Message))
+
+                                                        return result
+                                                    | _ ->
+                                                        return Error "Interrupt, Terminate, Hangup, and Signal are unsupported on Windows."
                                             with error ->
                                                 return Error error.Message
                                         }
@@ -324,33 +386,46 @@ module internal NativeProcess =
                                     let mutable stopping = false
                                     let mutable hadFailureWhenStopping = false
 
-                                    let stopOnCancellation () =
-                                        hadFailureWhenStopping <- lock errorGate (fun () -> firstFailure.IsSome)
-                                        stopping <- true
-                                        try
+                                    let runStopLadder () =
+                                        task {
                                             for request, grace in specification.StopGracefully do
                                                 let live =
-                                                    lock processes (fun () ->
-                                                        processes
-                                                        |> Seq.mapi (fun stage proc -> stage, proc)
-                                                        |> Seq.filter (fun (_, proc) -> not proc.HasExited)
-                                                        |> Seq.toArray)
+                                                    lock settled (fun () ->
+                                                        [| for stage in 0 .. processes.Count - 1 do
+                                                               if not settled[stage] then yield stage |])
 
                                                 let mutable sent = false
-                                                for stage, _ in live do
-                                                    match closeStage stage request |> Async.RunSynchronously with
+                                                for stage in live do
+                                                    let! result = closeStage stage request |> Async.StartAsTask
+                                                    match result with
                                                     | Ok () -> sent <- true
                                                     | Error _ -> ()
 
                                                 if sent && live.Length > 0 && grace > TimeSpan.Zero then
-                                                    let exits = live |> Array.map (fun (_, proc) -> waitForExit proc CancellationToken.None)
-                                                    let delay = clock.Sleep(grace, CancellationToken.None)
-                                                    // Cancellation callbacks are synchronous; this is the live process boundary.
-                                                    Task.WhenAny(Task.WhenAll exits, delay).GetAwaiter().GetResult() |> ignore // axial-allow-effect: blocking
-                                        with _ -> ()
+                                                    use timerCancellation = new CancellationTokenSource()
+                                                    // Wait on the process exit directly, not the monitor task: the stage that
+                                                    // timed out is running this ladder from inside its own monitor, so waiting
+                                                    // on exitTasks would self-deadlock that step and leave the grace timer
+                                                    // permanently armed even after a cooperative exit.
+                                                    let exits = live |> Array.map (fun stage -> waitForExit processes[stage] CancellationToken.None)
+                                                    let timer = clock.Sleep(grace, timerCancellation.Token)
+                                                    let! winner = Task.WhenAny(Task.WhenAll exits, timer)
+                                                    if not (obj.ReferenceEquals(winner, timer)) then
+                                                        timerCancellation.Cancel()
 
-                                        terminate ()
-                                        ioCancellation.Cancel()
+                                            terminate ()
+                                            ioCancellation.Cancel()
+                                        }
+
+                                    let stopOnCancellation () =
+                                        hadFailureWhenStopping <- lock errorGate (fun () -> firstFailure.IsSome)
+                                        stopping <- true
+                                        try
+                                            // Cancellation callbacks are synchronous; this is the live process boundary.
+                                            runStopLadder().GetAwaiter().GetResult() // axial-allow-effect: blocking
+                                        with _ ->
+                                            terminate ()
+                                            ioCancellation.Cancel()
 
                                     let recordFailure (error: exn) =
                                         let first =
@@ -434,8 +509,7 @@ module internal NativeProcess =
                                                     if obj.ReferenceEquals(winner, timer) && not wait.IsCompleted then
                                                         do! timer
 
-                                                        // axial-allow-raise
-                                                        raise (
+                                                        let timeoutFailure =
                                                             ProcessFailureException(
                                                                 ProcessError.StageTimedOut {
                                                                     Stage = i
@@ -443,7 +517,12 @@ module internal NativeProcess =
                                                                     Timeout = after
                                                                 }
                                                             )
-                                                        ) // axial-allow-raise
+
+                                                        lock errorGate (fun () ->
+                                                            if firstFailure.IsNone then firstFailure <- Some timeoutFailure)
+                                                        stopping <- true
+                                                        do! runStopLadder ()
+                                                        return raise timeoutFailure // axial-allow-raise
 
                                                     do! wait
                                                 finally
@@ -451,6 +530,11 @@ module internal NativeProcess =
                                             | None -> do! wait
 
                                             elapsedEnds[i] <- Some(clock.Elapsed())
+                                            lock settled (fun () ->
+                                                settled[i] <- true
+                                                if pidfds[i] >= 0 then
+                                                    closeFd(pidfds[i]) |> ignore
+                                                    pidfds[i] <- -1)
 
                                             if not (command.SuccessCodes.Value.Contains processes[i].ExitCode) then
                                                 do! launchComplete.Task
@@ -635,6 +719,13 @@ module internal NativeProcess =
                                                     ) // axial-allow-raise
 
                                                 lock processes (fun () -> processes.Add proc)
+                                                processIds[i] <- proc.Id
+                                                stdinOwned[i] <- redirectInput
+                                                closeStdIns[i] <- Some(fun () -> try proc.StandardInput.Close() with _ -> ())
+                                                closeMainWindows[i] <- Some(fun () -> proc.CloseMainWindow())
+                                                if RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
+                                                    try pidfds[i] <- pidfd_open(proc.Id, 0u)
+                                                    with :? EntryPointNotFoundException -> pidfds[i] <- -1
                                                 let stageStartedAt = clock.UtcNow()
                                                 starts.Add(stageStartedAt)
                                                 elapsedStarts.Add(clock.Elapsed())
@@ -642,31 +733,45 @@ module internal NativeProcess =
 
                                                 match specification.OnStarted with
                                                 | Some handler ->
-                                                    do! handler.Invoke(i, proc.Id, Configuration.renderCommand command, stageStartedAt, closeStage i)
+                                                    let! handlerExit =
+                                                        Async.StartAsTask(
+                                                            handler.Invoke(i, proc.Id, Configuration.renderCommand command, stageStartedAt, closeStage i),
+                                                            cancellationToken = token
+                                                        )
+
+                                                    match handlerExit with
+                                                    | Exit.Success () -> ()
+                                                    | Exit.Failure cause -> raiseStartedHandlerFailure token cause
                                                 | None -> ()
 
                                             let copies =
                                                 specification.Connections
                                                 |> List.groupBy (fun (_, target, _) -> target)
                                                 |> List.map (fun (target, connections) ->
+                                                    lock settled (fun () -> stdinStarted[target] <- true)
                                                     (task {
                                                         use gate = new SemaphoreSlim(1, 1)
+                                                        use pipelineCancellation =
+                                                            CancellationTokenSource.CreateLinkedTokenSource(token, stdinStops[target].Token)
+                                                        let pipelineToken = pipelineCancellation.Token
 
-                                                        let write bytes =
-                                                            (task {
-                                                                do! gate.WaitAsync token
+                                                        try
+                                                            pipelineToken.ThrowIfCancellationRequested()
+                                                            let write bytes =
+                                                                (task {
+                                                                    do! gate.WaitAsync pipelineToken
 
-                                                                try
-                                                                    do!
-                                                                        processes[target]
-                                                                            .StandardInput.BaseStream
-                                                                            .WriteAsync(bytes, 0, bytes.Length, token)
-                                                                finally
-                                                                    gate.Release() |> ignore
-                                                            })
+                                                                    try
+                                                                        do!
+                                                                            processes[target]
+                                                                                .StandardInput.BaseStream
+                                                                                .WriteAsync(bytes, 0, bytes.Length, pipelineToken)
+                                                                    finally
+                                                                        gate.Release() |> ignore
+                                                                })
 
-                                                        let pump source channel (stream: Stream) =
-                                                            (task {
+                                                            let pump source channel (stream: Stream) =
+                                                                (task {
                                                                 let buffer = Array.zeroCreate<byte> 4096
                                                                 use pending = new MemoryStream()
 
@@ -779,28 +884,35 @@ module internal NativeProcess =
                                                                     else
                                                                         do! write buffer[.. count - 1]
                                                             })
-                                                            |> supervise
 
-                                                        let pumps = [|
-                                                            for source, _, both in connections do
-                                                                yield
-                                                                    pump
-                                                                        source
-                                                                        OutputChannel.StdOut
-                                                                        processes[source].StandardOutput.BaseStream
-                                                                    :> Task
-
-                                                                if both then
+                                                            let pumps = [|
+                                                                for source, _, both in connections do
                                                                     yield
                                                                         pump
                                                                             source
-                                                                            OutputChannel.StdErr
-                                                                            processes[source].StandardError.BaseStream
+                                                                            OutputChannel.StdOut
+                                                                            processes[source].StandardOutput.BaseStream
                                                                         :> Task
-                                                        |]
 
-                                                        do! Task.WhenAll pumps
-                                                        processes[target].StandardInput.Close()
+                                                                    if both then
+                                                                        yield
+                                                                            pump
+                                                                                source
+                                                                                OutputChannel.StdErr
+                                                                                processes[source].StandardError.BaseStream
+                                                                            :> Task
+                                                            |]
+
+                                                            do! Task.WhenAll pumps
+                                                        with
+                                                        | :? OperationCanceledException when stdinStops[target].IsCancellationRequested -> ()
+                                                        | error ->
+                                                            try processes[target].StandardInput.Close() with _ -> ()
+                                                            stdinCompleted[target].TrySetResult() |> ignore
+                                                            return raise error // axial-allow-raise
+
+                                                        try processes[target].StandardInput.Close() with _ -> ()
+                                                        stdinCompleted[target].TrySetResult() |> ignore
                                                     })
                                                     |> supervise
                                                     :> Task)
@@ -815,11 +927,16 @@ module internal NativeProcess =
                                                         match command.StdIn.Value with
                                                         | InputSource.Inherit -> ()
                                                         | source ->
+                                                            lock settled (fun () -> stdinStarted[i] <- true)
                                                             yield
                                                                 ((task {
                                                                     let target = processes[i].StandardInput.BaseStream
+                                                                    use inputCancellation =
+                                                                        CancellationTokenSource.CreateLinkedTokenSource(token, stdinStops[i].Token)
+                                                                    let inputToken = inputCancellation.Token
 
                                                                     try
+                                                                        inputToken.ThrowIfCancellationRequested()
                                                                         match source with
                                                                         | InputSource.Empty
                                                                         | InputSource.Inherit -> ()
@@ -829,7 +946,7 @@ module internal NativeProcess =
                                                                                     command.Encoding.Value.GetBytes text,
                                                                                     0,
                                                                                     command.Encoding.Value.GetByteCount text,
-                                                                                    token
+                                                                                    inputToken
                                                                                 )
                                                                         | InputSource.Bytes bytes ->
                                                                             do!
@@ -837,7 +954,7 @@ module internal NativeProcess =
                                                                                     bytes,
                                                                                     0,
                                                                                     bytes.Length,
-                                                                                    token
+                                                                                    inputToken
                                                                                 )
                                                                         | InputSource.File path ->
                                                                             use input =
@@ -848,28 +965,35 @@ module internal NativeProcess =
                                                                                     FileShare.Read
                                                                                 )
 
-                                                                            do! input.CopyToAsync(target, 81920, token)
+                                                                            do! input.CopyToAsync(target, 81920, inputToken)
                                                                         | InputSource.Stream source ->
-                                                                            use inputCancellation = CancellationTokenSource.CreateLinkedTokenSource(token)
+                                                                            use streamCancellation = CancellationTokenSource.CreateLinkedTokenSource(inputToken)
                                                                             let write bytes =
                                                                                 Flow.fromAsync (async {
                                                                                     let! cancellation = Async.CancellationToken
                                                                                     do! target.WriteAsync(bytes, 0, bytes.Length, cancellation) |> Async.AwaitTask
                                                                                 })
                                                                             let work = source |> FlowStream.runForEachFlow write
-                                                                            let pumping = runUserFlow inputCancellation.Token true work
+                                                                            let pumping = runUserFlow streamCancellation.Token true work
                                                                             let exiting = exitTasks[i] :> Task
                                                                             let! winner = Task.WhenAny(pumping :> Task, exiting)
                                                                             if obj.ReferenceEquals(winner, exiting) then
-                                                                                inputCancellation.Cancel()
+                                                                                streamCancellation.Cancel()
                                                                                 try
                                                                                     do! pumping
-                                                                                with :? OperationCanceledException when inputCancellation.IsCancellationRequested -> ()
+                                                                                with :? OperationCanceledException when streamCancellation.IsCancellationRequested -> ()
                                                                             else
                                                                                 do! pumping
 
-                                                                    finally
-                                                                        processes[i].StandardInput.Close()
+                                                                    with
+                                                                    | :? OperationCanceledException when stdinStops[i].IsCancellationRequested -> ()
+                                                                    | error ->
+                                                                        try processes[i].StandardInput.Close() with _ -> ()
+                                                                        stdinCompleted[i].TrySetResult() |> ignore
+                                                                        return raise error // axial-allow-raise
+
+                                                                    try processes[i].StandardInput.Close() with _ -> ()
+                                                                    stdinCompleted[i].TrySetResult() |> ignore
                                                                  })
                                                                  |> supervise
                                                                 :> Task)
@@ -1149,6 +1273,8 @@ module internal NativeProcess =
                                     finally
                                         ioCancellation.Cancel()
                                         terminate ()
+                                        lock settled (fun () -> Array.fill settled 0 settled.Length true)
+                                        for completion in stdinCompleted do completion.TrySetResult() |> ignore
 
                                         for proc in processes do
                                             try
@@ -1157,6 +1283,11 @@ module internal NativeProcess =
                                                 ()
 
                                             proc.Dispose()
+
+                                        for index in 0 .. pidfds.Length - 1 do
+                                            if pidfds[index] >= 0 then
+                                                closeFd(pidfds[index]) |> ignore
+                                                pidfds[index] <- -1
 
                                         for file in files.Values do
                                             file.Dispose()

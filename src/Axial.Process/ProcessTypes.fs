@@ -146,7 +146,7 @@ type IProcessStartedObserver =
         processId: int *
         command: string *
         startedAt: DateTimeOffset *
-        close: (StopRequest -> Async<Result<unit, string>>) -> Async<unit>
+        close: (StopRequest -> Async<Result<unit, string>>) -> Async<Exit<unit, Never>>
 
 [<RequireQualifiedAccess>]
 type internal ExecutionMode =

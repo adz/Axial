@@ -26,7 +26,7 @@ A completed `StageResult` also contains `ProcessId`, so batch and streaming exec
 - `CloseStdIn` closes stdin when Axial owns the redirected pipe.
 - `CloseMainWindow` asks a Windows GUI process to close its main window.
 
-A request that the platform or stage cannot support fails with `ProcessError.StopFailed`. Windows console control events are not currently available through `Close`; `Interrupt`, `Terminate`, `Hangup`, and raw numeric signals therefore return `StopFailed` on Windows.
+A request that the platform or stage cannot support fails with `ProcessError.StopFailed`. .NET's `ProcessStartInfo` cannot create the new Windows process group required to target `GenerateConsoleCtrlEvent` safely. Axial therefore never sends a console event to group `0`: `Interrupt`, `Terminate`, `Hangup`, and raw numeric signals return `StopFailed` on Windows, allowing a graceful-stop ladder to continue to its next step. `CloseMainWindow` is the Windows graceful-stop path.
 
 ## Escalation on interruption or timeout
 
@@ -42,4 +42,6 @@ let withGracefulStop (command: ProcessCommand) =
     |> Process.toFlow
 ```
 
-For the common single-step policy, use `[ StopRequest.Terminate, grace ]`. Cancellation remains `Cause.Interrupt`; an overall timeout remains `ProcessError.OverallTimedOut` after graceful shutdown has had its opportunity to run.
+For the common single-step policy, use `[ StopRequest.Terminate, grace ]`. Cancellation remains `Cause.Interrupt`; stage and overall timeouts retain their existing typed errors after graceful shutdown has had its opportunity to run.
+
+Axial.Process currently provides a live implementation only on .NET. The Fable build can type-check process specifications and test doubles, but it does not start Node child processes.

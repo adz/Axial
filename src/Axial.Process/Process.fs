@@ -483,10 +483,7 @@ module Process =
                     Close = closeFlow
                 }
 
-                let! outcome = Flow.toAsync () (handler started)
-                match outcome with
-                | Exit.Success () -> return ()
-                | Exit.Failure cause -> return failwith (cause.ToString())
+                return! Flow.toAsync () (handler started)
             }
 
         let observer =
