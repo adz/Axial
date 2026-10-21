@@ -76,6 +76,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! failFast = Flow.zipPar (Flow.fail "left") (Flow.never |> Flow.onInterrupt (Flow.delay (fun () -> otherInterrupted.Value <- true; Flow.ok ()))) |> exitOf
         let! bothFail = Flow.zipPar (Flow.sleep (ms 1.0) |> Flow.bind (fun () -> Flow.fail "a")) (Flow.fail "b") |> exitOf
         let! inOrder = [ for value in 1..20 -> Flow.sleep (ms (float (round.Next 3))) |> Flow.map (fun () -> value) ] |> Flow.sequencePar
+        let! runOnValue = Flow.ok 42 |> Flow.runOn RunOn.Inline |> Flow.onThreadPool
 
         // Races: the winner's value comes back, and both sides always finish: the winner completes, and the loser
         // completes or is interrupted, running its exit handler either way.
@@ -112,6 +113,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
               check "zipPar failed fast and interrupted the other side" (failFast = Exit.Failure(Cause.Fail "left") && otherInterrupted.Value)
               check "zipPar reported the failures that happened" (not failures.IsEmpty && failures |> List.forall (fun failure -> failure = "a" || failure = "b"))
               check "sequencePar kept input order" (inOrder = [ 1..20 ])
+              check "runOn preserved the branch value" (runOnValue = 42)
               check "every race returned a side's value" (winners |> List.forall (fun winner -> winner = "left" || winner = "right"))
               check "both sides of every race finished and ran their exit handler" (allSidesFinished && winners.Length = races) ]
     }

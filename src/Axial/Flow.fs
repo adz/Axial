@@ -546,6 +546,79 @@ module Flow =
 #endif
         )
 
+    /// <summary>Starts a flow at the requested execution location.</summary>
+    /// <remarks>
+    /// <para>
+    /// This changes only where the wrapped flow starts. It keeps the same environment, cancellation token, runtime,
+    /// and scope. Cancellation remains cooperative: the wrapped flow observes interruption at its normal check
+    /// points, such as <c>Flow.ensureNotCanceled</c>. If the token is already cancelled, the flow returns interruption
+    /// without scheduling the wrapped flow.
+    /// </para>
+    /// <para>
+    /// On .NET, <c>ThreadPool</c> uses <see cref="P:System.Threading.Tasks.TaskScheduler.Default" />.
+    /// <c>DedicatedThread</c> gives the synchronous part before the first incomplete await a dedicated thread; later
+    /// continuations normally resume on the thread pool. <c>Scheduler</c> captures the supplied scheduler across
+    /// awaits. On JavaScript every location runs inline because JavaScript has one thread.
+    /// </para>
+    /// </remarks>
+    /// <param name="location">Where the wrapped flow starts.</param>
+    /// <param name="source">The flow to start there.</param>
+    /// <returns>The wrapped flow, or <paramref name="source" /> unchanged for <c>Inline</c>.</returns>
+    /// <example>
+    /// <code>
+    /// let parallel = jobs |&gt; List.map (fun job -&gt; compute job |&gt; Flow.runOn RunOn.ThreadPool) |&gt; Flow.sequencePar
+    /// </code>
+    /// </example>
+    /// <platforms>Fable compatible; JavaScript runs every case inline. Custom schedulers are .NET only.</platforms>
+    let runOn (location: RunOn) (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+#if FABLE_COMPILER
+        source
+#else
+        match location with
+        | RunOn.Inline -> source
+        | RunOn.ThreadPool
+        | RunOn.DedicatedThread
+        | RunOn.Scheduler _ ->
+            Flow(fun environment cancellationToken ->
+                if cancellationToken.IsCancellationRequested then
+                    Execution.ofCause Cause.Interrupt
+                else
+                    let scheduler, options =
+                        match location with
+                        | RunOn.Inline -> TaskScheduler.Current, TaskCreationOptions.DenyChildAttach
+                        | RunOn.ThreadPool -> TaskScheduler.Default, TaskCreationOptions.DenyChildAttach
+                        | RunOn.DedicatedThread ->
+                            TaskScheduler.Default,
+                            TaskCreationOptions.DenyChildAttach ||| TaskCreationOptions.LongRunning
+                        | RunOn.Scheduler scheduler -> scheduler, TaskCreationOptions.DenyChildAttach
+
+                    let started =
+                        Task.Factory.StartNew<Task<Exit<'value, 'error>>>(
+                            (fun () -> (invoke source environment cancellationToken).AsTask()),
+                            CancellationToken.None,
+                            options,
+                            scheduler)
+                        |> fun outer -> outer.Unwrap()
+
+                    ValueTask<Exit<'value, 'error>>(started))
+#endif
+
+    /// <summary>Starts a flow on the .NET thread pool.</summary>
+    /// <remarks>
+    /// Same as <c>Flow.runOn RunOn.ThreadPool</c>. The flow keeps its environment, cancellation token, runtime, and
+    /// scope; cancellation is observed cooperatively. On JavaScript it runs inline.
+    /// </remarks>
+    /// <param name="source">The flow to start on the thread pool.</param>
+    /// <returns>A flow that schedules <paramref name="source" /> when run.</returns>
+    /// <example>
+    /// <code>
+    /// let cpuWork = calculate () |&gt; Flow.onThreadPool
+    /// </code>
+    /// </example>
+    /// <platforms>Fable compatible; JavaScript runs inline.</platforms>
+    let onThreadPool (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        runOn RunOn.ThreadPool source
+
     /// <summary>Creates a flow from synchronous, blocking work, such as a database driver or native library call.</summary>
     /// <remarks>
     /// On .NET the operation runs on the thread pool, so a blocking call does not stall the thread that runs the
@@ -1803,6 +1876,7 @@ module Flow =
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
     /// <para>If either flow fails, the other is interrupted immediately.</para>
+    /// <para>Branches start inline, like async methods passed to <c>Task.WhenAll</c>; wrap synchronous CPU-bound branches with <c>Flow.runOn</c> or <c>Flow.onThreadPool</c>.</para>
     /// <para>
     /// The two flows share a scope of their own. When both succeed, the scoped resources they acquired move to the
     /// caller's scope, as if the caller had acquired them, so <c>zipPar (scopeResource a) (scopeResource b)</c>
@@ -1829,7 +1903,7 @@ module Flow =
             Platform.zipParExecution (invoke left environment) (invoke right environment) source chooseParallelExit)
 
     /// <summary>Runs all flows concurrently and returns their values in input order.</summary>
-    /// <remarks>An empty input succeeds immediately. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>. Scoped resources follow <c>zipPar</c> too: when every flow succeeds they move to the caller's scope; when any fails, all of them are released before <c>sequencePar</c> returns.</remarks>
+    /// <remarks>An empty input succeeds immediately. Branches start inline, like async methods passed to <c>Task.WhenAll</c>; wrap synchronous CPU-bound branches with <c>Flow.runOn</c> or <c>Flow.onThreadPool</c>. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>. Scoped resources follow <c>zipPar</c> too: when every flow succeeds they move to the caller's scope; when any fails, all of them are released before <c>sequencePar</c> returns.</remarks>
     let sequencePar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
         // A balanced tree of zipPars, built once. Each node starts its two halves under the branch's shared source.
         let rec combine (flows: Flow<'env, 'error, 'value> list)

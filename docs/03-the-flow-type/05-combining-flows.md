@@ -28,6 +28,31 @@ use `Flow.zipPar` only when both branches are safe to run at the same time.
 
 Prefer `flow {}` for a longer dependent sequence and pipelines for a short transformation. Both create the same Flow.
 
+## Choosing where parallel branches start
+
+`Flow.zipPar` and `Flow.sequencePar` start each branch inline, as `Task.WhenAll` does when given calls to async
+methods. A branch runs on the current thread until it reaches an incomplete await. This keeps I/O and
+already-completed flows cheap, but a synchronous CPU-bound branch can finish before the next branch starts.
+
+Wrap only the CPU-bound branches that should start on the thread pool:
+
+```fsharp transcript
+> let cpuBranch value : Flow<string, int> = Flow.delay (fun () -> Flow.ok (value * value)) |> Flow.onThreadPool;;
+> [ 1; 2; 3 ] |> List.map cpuBranch |> Flow.sequencePar |> Flow.run ();;
+val it: Exit<int list,string> = Success [1; 4; 9]
+```
+
+`Flow.onThreadPool source` is `Flow.runOn RunOn.ThreadPool source`. `RunOn.Inline` leaves the flow unchanged.
+On .NET, `RunOn.Scheduler scheduler` starts the flow on a particular `TaskScheduler` and keeps continuations after
+awaits on that scheduler. `RunOn.DedicatedThread` gives a long blocking synchronous section a dedicated thread, but
+only until its first incomplete await; use `Flow.fromBlocking` instead when a blocking foreign call must run to
+completion after interruption.
+
+`runOn` does not turn interruption into preemption. The branch receives the same cancellation token and observes it
+at its normal checkpoints, such as `Flow.ensureNotCanceled`; parallel combinators still wait for branch cleanup.
+If the token is already cancelled, the branch is not scheduled. JavaScript has one thread, so every `RunOn` case
+runs inline when compiled with Fable.
+
 ## Related guides
 
 - [Composition reference](/api/) lists mapping, binding, recovery,

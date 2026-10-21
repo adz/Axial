@@ -1,6 +1,8 @@
 namespace Axial.Benchmarks
 
+open System
 open System.Threading
+open System.Threading.Tasks
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Order
 open Axial
@@ -295,6 +297,80 @@ type ParallelCompositionBenchmarks() =
     [<Benchmark(Description = "race x1000")>]
     member _.Race() =
         races.RunSynchronously(()) |> Shared.consumeExit
+
+/// Eight CPU-bound slices, comparing inline composition with the explicit scheduling choices.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(2)>]
+[<IterationCount(3)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type RunOnCpuBenchmarks() =
+    let sliceCount = 8
+    let iterations = 2_000_000
+
+    let work seed =
+        let mutable value = seed
+        for index in 1..iterations do
+            value <- (value + index) % 1_000_003
+        value
+
+    let environment = ClockEnvironment(ManualClock(DateTimeOffset.UnixEpoch))
+
+    let branches () : Flow<ClockEnvironment, string, int> list =
+        [ for seed in 1..sliceCount -> Flow.delay (fun () -> Flow.ok (work seed)) ]
+
+    let run source = source |> Flow.map List.sum |> fun current -> current.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Baseline = true, Description = "sequencePar CPU x8, inline")>]
+    member _.SequenceParInline() = branches () |> Flow.sequencePar |> run
+
+    [<Benchmark(Description = "sequencePar CPU x8, onThreadPool")>]
+    member _.SequenceParThreadPool() = branches () |> List.map Flow.onThreadPool |> Flow.sequencePar |> run
+
+    [<Benchmark(Description = "Flow.fork/join CPU x8")>]
+    member _.ForkJoin() =
+        flow {
+            let! fibers = branches () |> List.map Flow.fork |> Flow.sequence
+            let! values = fibers |> List.map Fiber.join |> Flow.sequence
+            return List.sum values
+        }
+        |> fun source -> source.RunSynchronously(environment)
+        |> Shared.consumeExit
+
+    [<Benchmark(Description = "Task.Run/WhenAll CPU x8")>]
+    member _.TaskRunWhenAll() =
+        [| for seed in 1..sliceCount -> Task.Run(fun () -> work seed) |]
+        |> Task.WhenAll
+        // axial-allow-effect: blocking (benchmark host boundary)
+        |> fun pending -> pending.GetAwaiter().GetResult()
+        |> Array.sum
+
+/// Scheduling overhead on a trivial successful operation.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type RunOnOverheadBenchmarks() =
+    let environment = ClockEnvironment(ManualClock(DateTimeOffset.UnixEpoch))
+    let trivial : Flow<ClockEnvironment, string, int> = Flow.ok 1
+    let onPool = trivial |> Flow.onThreadPool
+    let forkJoin : Flow<ClockEnvironment, string, int> =
+        flow {
+            let! fiber = Flow.fork trivial
+            return! Fiber.join fiber
+        }
+
+    [<Benchmark(Baseline = true, Description = "runOn ThreadPool, trivial Flow")>]
+    member _.RunOnThreadPool() = onPool.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Description = "Flow.fork/join, trivial Flow")>]
+    member _.ForkJoin() = forkJoin.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Description = "Task.Run, trivial function")>]
+    member _.TaskRun() =
+        // axial-allow-effect: blocking (benchmark host boundary)
+        Task.Run(fun () -> 1).GetAwaiter().GetResult()
 
 /// The cost of closing a scope: an empty scope (the allocation-free fast path in the runtime) and scopes that release
 /// registered resources.

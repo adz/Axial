@@ -19,6 +19,7 @@
     <Compile Include="TrampolineTests.fs" />
     <Compile Include="WorkflowConcurrencyTests.fs" />
     <Compile Include="WorkflowParallelTests.fs" />
+    <Compile Include="RunOnTests.fs" />
     <Compile Include="CacheTests.fs" />
     <Compile Include="WorkflowErrorTests.fs" />
     <Compile Include="WorkflowSchedulingTests.fs" />

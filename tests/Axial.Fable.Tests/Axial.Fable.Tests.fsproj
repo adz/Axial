@@ -18,6 +18,7 @@
     <Compile Include="TimingTests.fs" />
     <Compile Include="FiberTests.fs" />
     <Compile Include="QueueTests.fs" />
+    <Compile Include="RunOnTests.fs" />
     <!-- The torture scenarios from examples/Axial.TortureTest, run at a reduced size on Node. -->
     <Compile Include="../../examples/Axial.TortureTest/Scenario.fs" Link="TortureTest/Scenario.fs" />
     <Compile Include="../../examples/Axial.TortureTest/Pipeline.fs" Link="TortureTest/Pipeline.fs" />

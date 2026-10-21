@@ -815,6 +815,32 @@ module ColdTask =
 
 type internal Execution<'value, 'error> = Platform.Execution<'value, 'error>
 
+/// <summary>Specifies where a flow starts running.</summary>
+/// <remarks>
+/// On .NET, <c>ThreadPool</c> uses <see cref="P:System.Threading.Tasks.TaskScheduler.Default" /> and
+/// <c>DedicatedThread</c> uses a long-running task whose dedicated thread runs the synchronous part before the first
+/// incomplete await. <c>Scheduler</c> keeps captured continuations on the supplied scheduler. JavaScript has one
+/// thread, so every case runs inline there.
+/// </remarks>
+/// <example>
+/// <code>
+/// let parallelCpu = jobs |&gt; List.map (compute &gt;&gt; Flow.onThreadPool) |&gt; Flow.sequencePar
+/// </code>
+/// </example>
+/// <platforms>Fable compatible; JavaScript runs every case inline. Custom schedulers are .NET only.</platforms>
+[<RequireQualifiedAccess>]
+type RunOn =
+    /// <summary>Starts the flow on the current thread.</summary>
+    | Inline
+    /// <summary>Starts the flow on the .NET thread pool.</summary>
+    | ThreadPool
+    /// <summary>Starts the synchronous part of the flow on a dedicated .NET thread.</summary>
+    | DedicatedThread
+#if !FABLE_COMPILER
+    /// <summary>Starts the flow on the supplied task scheduler and captures it for continuations.</summary>
+    | Scheduler of TaskScheduler
+#endif
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module internal FiberId =
