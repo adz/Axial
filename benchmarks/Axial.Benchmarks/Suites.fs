@@ -676,7 +676,38 @@ type ProcessExecutionBenchmarks() =
         (shText "printf axial") => (cmd $"cat") => (cmd $"cat")
         |> Process.toFlow
 
-    [<Benchmark(Description = "Process true start to exit")>]
+    [<Benchmark(Baseline = true, Description = "Raw Process true start to exit")>]
+    member _.RawTrueStartToExit() =
+        task {
+            use child = new System.Diagnostics.Process()
+            child.StartInfo.FileName <- "true"
+            child.StartInfo.UseShellExecute <- false
+            // Benchmark control: direct process start is the behavior being compared.
+            if not (child.Start()) then failwith "Could not start true." // axial-allow-effect: process
+            do! child.WaitForExitAsync()
+            return child.ExitCode
+        }
+
+    [<Benchmark(Description = "Raw redirected Process true")>]
+    member _.RawRedirectedTrue() =
+        task {
+            use child = new System.Diagnostics.Process()
+            child.StartInfo.FileName <- "true"
+            child.StartInfo.UseShellExecute <- false
+            child.StartInfo.RedirectStandardInput <- true
+            child.StartInfo.RedirectStandardOutput <- true
+            child.StartInfo.RedirectStandardError <- true
+            if not (child.Start()) then failwith "Could not start true." // axial-allow-effect: process
+            child.StandardInput.Close()
+            let stdout = child.StandardOutput.ReadToEndAsync()
+            let stderr = child.StandardError.ReadToEndAsync()
+            do! child.WaitForExitAsync()
+            let! _ = stdout
+            let! _ = stderr
+            return child.ExitCode
+        }
+
+    [<Benchmark(Description = "Axial Process true start to exit")>]
     member _.TrueStartToExit() = start trueWorkflow
 
     [<Benchmark(Description = "Process capture 50 MB")>]
