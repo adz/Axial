@@ -2824,9 +2824,10 @@ module Flow =
     /// <summary>Maps values to flows and runs them with bounded concurrency, returning results in input order.</summary>
     /// <remarks>
     /// At most <paramref name="parallelism" /> mappings run at once; as each finishes, its worker starts the next
-    /// value. The first failure interrupts the mappings still running and waits for their cleanup before the flow
-    /// fails, so no sibling is left running in the background. Size CPU-bound work with
-    /// <c>Parallelism.ofProcessors</c>. When each worker needs its own connection or handle, use
+    /// value. Workers start mappings inline. For a synchronous CPU-bound mapping, wrap the returned flow with
+    /// <c>Flow.onThreadPool</c> so workers can overlap; size that work with <c>Parallelism.ofProcessors</c>. The first
+    /// failure interrupts the mappings still running and waits for their cleanup before the flow fails, so no sibling
+    /// is left running in the background. When each worker needs its own connection or handle, use
     /// <c>traverseParUsing</c>.
     /// Scoped resources follow <c>sequencePar</c>: when every mapping succeeds, what each one acquired moves to the
     /// caller's scope; when any fails, all of it is released before the traversal returns.
@@ -2852,8 +2853,9 @@ module Flow =
     /// Each worker acquires <paramref name="resource" /> when it starts and releases it when it has no values left,
     /// or when the traversal fails or is interrupted. At most <paramref name="parallelism" /> resources exist at
     /// once. Use it for work that needs an expensive handle per thread of work, such as a database connection or a
-    /// repository reader that is not safe to share. The worker's resource never reaches the caller; other scoped
-    /// resources the mapping acquires behave as in <c>traversePar</c>.
+    /// repository reader that is not safe to share. Workers start mappings inline; wrap a synchronous CPU-bound
+    /// mapping's returned flow with <c>Flow.onThreadPool</c>. The worker's resource never reaches the caller; other
+    /// scoped resources the mapping acquires behave as in <c>traversePar</c>.
     /// </remarks>
     /// <param name="parallelism">The maximum number of workers, and so of resources.</param>
     /// <param name="resource">The resource each worker acquires.</param>
@@ -2874,7 +2876,7 @@ module Flow =
         traverseWorkers parallelism (scopeResource resource |> map mapping) true values
 
     /// <summary>Runs a flow for each value with bounded concurrency, discarding the results.</summary>
-    /// <remarks>Runs like <c>traversePar</c>: at most <paramref name="parallelism" /> at once, the first failure interrupts the rest, and scoped resources move to the caller's scope only when every flow succeeds.</remarks>
+    /// <remarks>Runs like <c>traversePar</c>: at most <paramref name="parallelism" /> at once, the first failure interrupts the rest, and scoped resources move to the caller's scope only when every flow succeeds. Workers start actions inline; wrap a synchronous CPU-bound action's flow with <c>Flow.onThreadPool</c>.</remarks>
     /// <param name="parallelism">The maximum number of flows running at once.</param>
     /// <param name="action">The flow to run for each value.</param>
     /// <param name="values">The values to process.</param>
@@ -2893,7 +2895,7 @@ module Flow =
             invoke run environment cancellationToken)
 
     /// <summary>Like <c>forEachPar</c>, giving each worker its own resource, acquired once and reused for every value it processes.</summary>
-    /// <remarks>Resources are acquired and released as in <c>traverseParUsing</c>.</remarks>
+    /// <remarks>Resources are acquired and released as in <c>traverseParUsing</c>. Workers start actions inline; wrap a synchronous CPU-bound action's flow with <c>Flow.onThreadPool</c>.</remarks>
     /// <param name="parallelism">The maximum number of workers, and so of resources.</param>
     /// <param name="resource">The resource each worker acquires.</param>
     /// <param name="action">The flow to run for each value, given the worker's resource.</param>

@@ -345,6 +345,65 @@ type RunOnCpuBenchmarks() =
         |> fun pending -> pending.GetAwaiter().GetResult()
         |> Array.sum
 
+/// Bounded traversal worker placement: completed and yielding I/O-sized operations plus synchronous CPU work.
+[<MemoryDiagnoser>]
+[<InProcess>]
+[<WarmupCount(3)>]
+[<IterationCount(5)>]
+[<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
+type BoundedTraversalBenchmarks() =
+    let ten = [ 1..10 ]
+    let four = [ 1..4 ]
+    let parallelism = Parallelism.bounded 4
+
+    let consumeUnit (exit: Exit<unit, string>) =
+        match exit with
+        | Exit.Success() -> 1
+        | Exit.Failure _ -> -1
+
+    let completed value : Flow<unit, string, int> = Flow.ok (value + 1)
+    let completedUnit _ : Flow<unit, string, unit> = Flow.ok ()
+
+    let yielding value : Flow<unit, string, int> =
+        Flow.fromTask (fun _ ->
+            task {
+                do! Task.Yield()
+                return value + 1
+            })
+
+    let yieldingUnit _ : Flow<unit, string, unit> =
+        Flow.fromTask (fun _ ->
+            task {
+                do! Task.Yield()
+            })
+
+    let cpu value =
+        Flow.delay (fun () ->
+            let mutable result = value
+            for index in 1..2_000_000 do
+                result <- (result + index) % 1_000_003
+            Flow.ok result)
+
+    [<Benchmark(Description = "traversePar 10 completed")>]
+    member _.TraverseCompleted() =
+        ten |> Flow.traversePar parallelism completed |> Flow.map List.sum |> fun source -> source.RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "forEachPar 10 completed")>]
+    member _.ForEachCompleted() =
+        ten |> Flow.forEachPar parallelism completedUnit |> fun source -> source.RunSynchronously(()) |> consumeUnit
+
+    [<Benchmark(Description = "traversePar 10 yielding")>]
+    member _.TraverseYielding() =
+        ten |> Flow.traversePar parallelism yielding |> Flow.map List.sum |> fun source -> source.RunSynchronously(()) |> Shared.consumeExit
+
+    [<Benchmark(Description = "forEachPar 10 yielding")>]
+    member _.ForEachYielding() =
+        ten |> Flow.forEachPar parallelism yieldingUnit |> fun source -> source.RunSynchronously(()) |> consumeUnit
+
+    [<Benchmark(Description = "traversePar CPU x4")>]
+    member _.TraverseCpu() =
+        four |> Flow.traversePar parallelism cpu |> Flow.map List.sum |> fun source -> source.RunSynchronously(()) |> Shared.consumeExit
+
 /// Scheduling overhead on a trivial successful operation.
 [<MemoryDiagnoser>]
 [<InProcess>]

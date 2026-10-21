@@ -185,7 +185,31 @@ indexAll [ "b.fs"; "a.fs"; "c.fs" ] |> Flow.run (ClockEnvironment Clock.live) |>
 
 `traversePar` returns results in input order, whatever order the work finishes in.
 
-At most the given number of flows run at once, and each worker starts the next value as soon as it finishes one. The first failure interrupts the flows still running and waits for their cleanup, so no sibling keeps running after the traversal has failed. Size CPU-bound work with `Parallelism.ofProcessors`, which clamps to at least 1.
+At most the given number of flows run at once, and each worker starts the next value as soon as it finishes one. The
+workers start each mapping inline, which avoids a scheduler hop for ordinary I/O flows. A synchronous CPU-bound
+mapping must opt into the thread pool so that the first worker does not finish every item before the other workers
+start:
+
+```fsharp
+let calculate (value: int) : Flow<ClockEnvironment, string, int> =
+    Flow.delay (fun () -> Flow.ok (value * value))
+
+let calculatePar values =
+    values
+    |> Flow.traversePar (Parallelism.ofProcessors id) (fun value ->
+        calculate value |> Flow.onThreadPool)
+```
+
+```fsharp run
+calculatePar [ 1; 2; 3 ]
+|> Flow.run (ClockEnvironment Clock.live)
+|> shouldEqual (Exit.Success [ 1; 4; 9 ])
+```
+
+Use `Flow.onThreadPool` around the mapping flow, not around the whole traversal; this lets the bounded workers overlap
+while preserving the requested limit. `Parallelism.ofProcessors` clamps the bound to at least 1. The first failure
+interrupts the flows still running and waits for their cleanup, so no sibling keeps running after the traversal has
+failed.
 
 When each worker needs its own connection or handle, use `Flow.traverseParUsing` or `Flow.forEachParUsing` with a
 `Resource`. Each worker acquires the resource once when it starts, reuses it for every value it takes, and releases it
