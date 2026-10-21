@@ -1449,7 +1449,22 @@ module internal NativeProcess =
                                                 return Choice2Of3(ProcessError.IoFailed { Message = original.Message })
                                     finally
                                         cancelIgnoringCallbackErrors ioCancellation
-                                        terminate ()
+
+                                        let stageStillRunning =
+                                            processes
+                                            |> Seq.exists (fun proc ->
+                                                try
+                                                    not proc.HasExited
+                                                with _ ->
+                                                    true)
+
+                                        if stageStillRunning then
+                                            // Abnormal paths kill earlier, and cleanup still kills any live stage.
+                                            // A successful run drained every pipe to EOF, which also proves no
+                                            // descendant still holds one; scanning /proc to kill that exited tree
+                                            // would add substantial time and allocation to every normal execution.
+                                            terminate ()
+
                                         lock settled (fun () -> Array.fill settled 0 settled.Length true)
                                         for completion in stdinCompleted do completion.TrySetResult() |> ignore
 
