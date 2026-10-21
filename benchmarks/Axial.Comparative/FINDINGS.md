@@ -2,20 +2,24 @@
 
 ## `Flow.sequencePar` inline-starts synchronous CPU branches
 
-Measured on this development host with `Environment.ProcessorCount = 8`. The repro created eight flows; each flow deferred a loop of 20,000,000 integer multiply/add operations. It timed three forms after building Axial in Release:
+Measured on an 8-core host (`Environment.ProcessorCount = 8`), Release build, Axial at this branch. Eight flows each
+defer a loop of 100,000,000 integer add/modulo operations (`Flow.delay (fun () -> Flow.succeed (work ()))`). Four
+forms were timed, three runs each, wall clock in milliseconds:
 
-- one flow running all eight loops serially
-- `Flow.sequencePar` over the eight deferred slice flows
-- `Flow.fork` for every slice followed by `Fiber.join` for every fiber
+| Form | Run 1 | Run 2 | Run 3 |
+|---|---:|---:|---:|
+| One flow running the eight loops serially | 1677 | 1463 | 1079 |
+| Eight `Task.Run` calls and `Task.WhenAll` (reference) | 372 | 367 | 316 |
+| `Flow.sequencePar` over the eight flows | 1094 | 1060 | 995 |
+| `Flow.fork` each flow, then `Fiber.join` each fiber | 324 | 317 | 338 |
 
-The command was `dotnet fsi /tmp/zip-repro.fsx`, referencing the Release `Axial.dll`. Times in milliseconds were:
+`Flow.fork` runs the slices in parallel, as fast as `Task.Run`. `Flow.sequencePar` runs them one after another, as
+slowly as the serial loop: `Platform.zipParExecution` starts each branch inline, and a branch that never suspends
+finishes before the next one starts. The same applies to `Flow.zipPar`, which shares that path. Flows that suspend
+(on a queue, a timer or I/O) do overlap, so the message-passing workloads are unaffected.
 
-| Form | Run 1 | Run 2 | Run 3 | Median |
-|---|---:|---:|---:|---:|
-| Serial | 197.0 | 186.0 | 190.3 | 190.3 |
-| `sequencePar` | 409.1 | 408.6 | 419.9 | 409.1 |
-| Fork/join | 257.6 | 186.4 | 189.9 | 189.9 |
+The comparative Trapezoidal workload therefore forks every slice and joins every fiber, which is what FIO's
+`collectAllPar` does. Whether `zipPar`/`sequencePar` should start branches on the thread pool is a library question,
+recorded for the maintainer; the benchmark does not depend on the answer.
 
-`sequencePar` achieved no parallel execution of these synchronous branches. `Platform.zipParExecution` starts each operation inline, and a deferred CPU-only branch does not yield before completing, so the next branch starts afterward. Fork/join permits the slices to execute as scheduled fibers. The comparative Trapezoidal workload therefore explicitly forks every slice and joins every fiber rather than using `sequencePar`.
-
-These timings are a behavioural repro, not a general performance comparison; they include JIT, scheduler, and machine load effects.
+The probe was a throwaway console program; the first run of each form includes JIT and machine-load noise.
