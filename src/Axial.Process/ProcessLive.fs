@@ -108,7 +108,7 @@ module internal NativeProcess =
         | OutputTarget.Tee targets -> OutputTarget.Tee(List.map instantiate targets)
         | target -> target
 
-    let rec private openTargets (fileSystem: IFileSystem) (files: Dictionary<string * bool, FileStream>) =
+    let rec internal openTargets (fileSystem: IFileSystem) (files: Dictionary<string * bool, FileStream>) =
         function
         | OutputTarget.File path
         | OutputTarget.AppendFile path as target ->
@@ -232,7 +232,55 @@ module internal NativeProcess =
             | _ -> ()
         })
 
-    let rec private finishTarget (token: CancellationToken) target =
+    let internal writeCapturedTarget
+        (console: IConsole)
+        (files: Dictionary<string * bool, FileStream>)
+        (token: CancellationToken)
+        (gate: SemaphoreSlim)
+        channel
+        target
+        (capture: CaptureBuffer)
+        bytes
+        =
+        task {
+            do! gate.WaitAsync token
+
+            try
+                capture.Append bytes
+                do! writeTarget console files token channel target bytes
+            finally
+                gate.Release() |> ignore
+        }
+
+    let internal publishObservation
+        (clock: IClock)
+        (observe: ProcessOutput -> Async<unit>)
+        (observerGate: SemaphoreSlim)
+        (token: CancellationToken)
+        stage
+        original
+        observed
+        text
+        =
+        task {
+            do! observerGate.WaitAsync token
+
+            try
+                do!
+                    invokeCallback
+                        token
+                        (observe {
+                            Stage = stage
+                            OriginalChannel = original
+                            ObservedChannel = observed
+                            Text = text
+                            Timestamp = clock.UtcNow()
+                        })
+            finally
+                observerGate.Release() |> ignore
+        }
+
+    let rec internal finishTarget (token: CancellationToken) target =
         (task {
             match target with
             | OutputTarget.Sink(_, finish) -> do! runUserFlow token false (finish ())
@@ -241,6 +289,164 @@ module internal NativeProcess =
                     do! finishTarget token item
             | _ -> ()
         })
+
+    let internal prepareTargetsAndCaptures (specification: ProcessSpec) (commands: CommandDefinition array) =
+        let stdoutTargets = commands |> Array.map (fun command -> instantiate command.StdOut.Value)
+        let stderrTargets = commands |> Array.map (fun command -> instantiate command.StdErr.Value)
+
+        let stdout =
+            commands
+            |> Array.mapi (fun stage command ->
+                let available =
+                    not (inherited command.StdOut.Value)
+                    && not (
+                        specification.Connections
+                        |> List.exists (fun (source, _, _) -> source = stage)
+                    )
+
+                new CaptureBuffer(
+                    (if available then command.StdOutCapture.Value else OutputRetention.Nothing),
+                    available
+                ))
+
+        let stderr =
+            commands
+            |> Array.mapi (fun stage command ->
+                let available =
+                    not (inherited command.StdErr.Value)
+                    && not (
+                        specification.Connections
+                        |> List.exists (fun (source, _, both) -> source = stage && both)
+                    )
+                    && not (specification.MergeStdErr && specification.Leaves.Contains stage)
+
+                new CaptureBuffer(
+                    (if available then command.StdErrCapture.Value else OutputRetention.Nothing),
+                    available
+                ))
+
+        stdoutTargets, stderrTargets, stdout, stderr
+
+    let internal countBytes
+        (specification: ProcessSpec)
+        (commands: CommandDefinition array)
+        (byteCounts: int64 array array)
+        stage
+        channel
+        count
+        =
+        let index = if channel = OutputChannel.StdOut then 0 else 1
+        let stdoutLimit, stderrLimit = specification.MaxOutputBytes
+        let limit = if index = 0 then stdoutLimit else stderrLimit
+
+        lock byteCounts[stage] (fun () ->
+            let current = byteCounts[stage][index]
+
+            match limit with
+            | Some maximum when int64 count > maximum - current ->
+                raise (ProcessFailureException(ProcessError.OutputTooLarge { // axial-allow-AXG003: task interop reports foreign failure by exception
+                    Stage = stage
+                    Channel = channel
+                    Limit = maximum
+                    Command = Configuration.renderCommand commands[stage]
+                }))
+            | _ -> byteCounts[stage][index] <- current + int64 count)
+
+    let internal buildResult
+        (clock: IClock)
+        (specification: ProcessSpec)
+        (commands: CommandDefinition array)
+        (processes: ResizeArray<Diagnostics.Process>)
+        (starts: ResizeArray<DateTimeOffset>)
+        (elapsedStarts: ResizeArray<TimeSpan>)
+        (elapsedEnds: TimeSpan option array)
+        (stdout: CaptureBuffer array)
+        (stderr: CaptureBuffer array)
+        startedAt
+        startedElapsed
+        =
+        let final = Set.minElement specification.Leaves
+
+        let stages =
+            commands
+            |> Array.mapi (fun stage command ->
+                let exitCode =
+                    if stage < processes.Count && processes[stage].HasExited then
+                        processes[stage].ExitCode
+                    else
+                        -1
+
+                {
+                    Stage = stage
+                    ProcessId = (if stage < processes.Count then processes[stage].Id else -1)
+                    Command = Configuration.renderCommand command
+                    ExitCode = exitCode
+                    Succeeded = command.SuccessCodes.Value.Contains exitCode
+                    StartedAt = (if stage < starts.Count then starts[stage] else startedAt)
+                    Duration =
+                        (if stage < elapsedStarts.Count then
+                             (defaultArg elapsedEnds[stage] (clock.Elapsed())) - elapsedStarts[stage]
+                         else
+                             TimeSpan.Zero)
+                    StdOutCapture = stdout[stage].Finish command.Encoding.Value
+                    StdErrCapture = stderr[stage].Finish command.Encoding.Value
+                })
+            |> Array.toList
+
+        let contributors =
+            stages
+            |> List.filter (fun stage ->
+                not (
+                    specification.Connections
+                    |> List.exists (fun (source, _, both) -> source = stage.Stage && both)
+                )
+                && not (specification.MergeStdErr && stage.Stage = final))
+
+        let full =
+            contributors
+            |> List.forall (fun stage ->
+                commands[stage.Stage].StdErrCapture.Value = OutputRetention.All)
+
+        let parts =
+            contributors
+            |> List.map (fun stage -> commands[stage.Stage].Encoding.Value, stage.StdErrCapture)
+
+        let allBytes = parts |> List.sumBy (fun (_, capture) -> capture.Bytes.Length)
+        let mutable skip = if full then 0 else max 0 (allBytes - 65536)
+
+        let kept =
+            parts
+            |> List.map (fun (encoding, capture) ->
+                let removed = min skip capture.Bytes.Length
+                skip <- skip - removed
+
+                let bytes =
+                    if removed = capture.Bytes.Length then [||] else capture.Bytes[removed..]
+
+                encoding.GetString bytes, bytes)
+
+        let errorCapture = {
+            Text = kept |> List.map fst |> String.concat ""
+            Bytes = kept |> List.map snd |> Array.concat
+            Truncated =
+                (not full && allBytes > 65536)
+                || (contributors |> List.exists (fun stage -> stage.StdErrCapture.Truncated))
+            Available = contributors |> List.forall (fun stage -> stage.StdErrCapture.Available)
+        }
+
+        let outputCapture = stages[final].StdOutCapture
+
+        {
+            ExitCode = stages[final].ExitCode
+            ExitCodes = stages |> List.map _.ExitCode
+            StdOut = outputCapture.Text
+            StdErr = errorCapture.Text
+            StdOutCapture = outputCapture
+            StdErrCapture = errorCapture
+            Stages = stages
+            StartedAt = startedAt
+            Duration = clock.Elapsed() - startedElapsed
+        }
 
     /// Executes native processes; extra effects are explicit clock, filesystem and console services.
     let live (clock: IClock) (fileSystem: IFileSystem) (console: IConsole) : IProcess =
@@ -290,45 +496,8 @@ module internal NativeProcess =
                                     let outputGates = Array.init commands.Length (fun _ -> new SemaphoreSlim(1, 1))
                                     let errorGates = Array.init commands.Length (fun _ -> new SemaphoreSlim(1, 1))
                                     use observerGate = new SemaphoreSlim(1, 1)
-                                    let stdoutTargets = commands |> Array.map (fun c -> instantiate c.StdOut.Value)
-                                    let stderrTargets = commands |> Array.map (fun c -> instantiate c.StdErr.Value)
-
-                                    let stdout =
-                                        commands
-                                        |> Array.mapi (fun i c ->
-                                            let available =
-                                                not (inherited c.StdOut.Value)
-                                                && not (
-                                                    specification.Connections
-                                                    |> List.exists (fun (source, _, _) -> source = i)
-                                                )
-
-                                            new CaptureBuffer(
-                                                (if available then
-                                                     c.StdOutCapture.Value
-                                                 else
-                                                     OutputRetention.Nothing),
-                                                available
-                                            ))
-
-                                    let stderr =
-                                        commands
-                                        |> Array.mapi (fun i c ->
-                                            let available =
-                                                not (inherited c.StdErr.Value)
-                                                && not (
-                                                    specification.Connections
-                                                    |> List.exists (fun (source, _, both) -> source = i && both)
-                                                )
-                                                && not (specification.MergeStdErr && specification.Leaves.Contains i)
-
-                                            new CaptureBuffer(
-                                                (if available then
-                                                     c.StdErrCapture.Value
-                                                 else
-                                                     OutputRetention.Nothing),
-                                                available
-                                            ))
+                                    let stdoutTargets, stderrTargets, stdout, stderr =
+                                        prepareTargetsAndCaptures specification commands
 
                                     let startedAt = clock.UtcNow()
                                     let startedElapsed = clock.Elapsed()
@@ -569,21 +738,7 @@ module internal NativeProcess =
                                             terminate ()
 
                                     let byteCounts = Array.init commands.Length (fun _ -> Array.zeroCreate<int64> 2)
-                                    let countBytes stage channel count =
-                                        let index = if channel = OutputChannel.StdOut then 0 else 1
-                                        let stdoutLimit, stderrLimit = specification.MaxOutputBytes
-                                        let limit = if index = 0 then stdoutLimit else stderrLimit
-                                        lock byteCounts[stage] (fun () ->
-                                            let current = byteCounts[stage][index]
-                                            match limit with
-                                            | Some maximum when int64 count > maximum - current ->
-                                                raise (ProcessFailureException(ProcessError.OutputTooLarge { // axial-allow-AXG003: task interop reports foreign failure by exception
-                                                    Stage = stage
-                                                    Channel = channel
-                                                    Limit = maximum
-                                                    Command = Configuration.renderCommand commands[stage]
-                                                }))
-                                            | _ -> byteCounts[stage][index] <- current + int64 count)
+                                    let countBytes = countBytes specification commands byteCounts
 
                                     // A continuation rather than `task { try return! work with error -> ... }`: the
                                     // F# compiler in SDK 10.0.4xx emits invalid IL for that generic shape here
@@ -671,96 +826,18 @@ module internal NativeProcess =
                                         |> supervise
 
                                     let buildResult () =
-                                        let final = Set.minElement specification.Leaves
-
-                                        let stages =
+                                        buildResult
+                                            clock
+                                            specification
                                             commands
-                                            |> Array.mapi (fun i command ->
-                                                let exitCode =
-                                                    if i < processes.Count && processes[i].HasExited then
-                                                        processes[i].ExitCode
-                                                    else
-                                                        -1
-
-                                                {
-                                                    Stage = i
-                                                    ProcessId = (if i < processes.Count then processes[i].Id else -1)
-                                                    Command = Configuration.renderCommand command
-                                                    ExitCode = exitCode
-                                                    Succeeded = command.SuccessCodes.Value.Contains exitCode
-                                                    StartedAt = (if i < starts.Count then starts[i] else startedAt)
-                                                    Duration =
-                                                        (if i < elapsedStarts.Count then
-                                                             (defaultArg elapsedEnds[i] (clock.Elapsed()))
-                                                             - elapsedStarts[i]
-                                                         else
-                                                             TimeSpan.Zero)
-                                                    StdOutCapture = stdout[i].Finish command.Encoding.Value
-                                                    StdErrCapture = stderr[i].Finish command.Encoding.Value
-                                                })
-                                            |> Array.toList
-
-                                        let contributors =
-                                            stages
-                                            |> List.filter (fun stage ->
-                                                not (
-                                                    specification.Connections
-                                                    |> List.exists (fun (source, _, both) ->
-                                                        source = stage.Stage && both)
-                                                )
-                                                && not (specification.MergeStdErr && stage.Stage = final))
-
-                                        let full =
-                                            contributors
-                                            |> List.forall (fun stage ->
-                                                commands[stage.Stage].StdErrCapture.Value = OutputRetention.All)
-
-                                        let parts =
-                                            contributors
-                                            |> List.map (fun stage ->
-                                                commands[stage.Stage].Encoding.Value, stage.StdErrCapture)
-
-                                        let allBytes = parts |> List.sumBy (fun (_, capture) -> capture.Bytes.Length)
-                                        let mutable skip = if full then 0 else max 0 (allBytes - 65536)
-
-                                        let kept =
-                                            parts
-                                            |> List.map (fun (encoding, capture) ->
-                                                let removed = min skip capture.Bytes.Length
-                                                skip <- skip - removed
-
-                                                let bytes =
-                                                    if removed = capture.Bytes.Length then
-                                                        [||]
-                                                    else
-                                                        capture.Bytes[removed..]
-
-                                                encoding.GetString bytes, bytes)
-
-                                        let errorCapture = {
-                                            Text = kept |> List.map fst |> String.concat ""
-                                            Bytes = kept |> List.map snd |> Array.concat
-                                            Truncated =
-                                                (not full && allBytes > 65536)
-                                                || (contributors
-                                                    |> List.exists (fun stage -> stage.StdErrCapture.Truncated))
-                                            Available =
-                                                contributors |> List.forall (fun stage -> stage.StdErrCapture.Available)
-                                        }
-
-                                        let outputCapture = stages[final].StdOutCapture
-
-                                        {
-                                            ExitCode = stages[final].ExitCode
-                                            ExitCodes = stages |> List.map _.ExitCode
-                                            StdOut = outputCapture.Text
-                                            StdErr = errorCapture.Text
-                                            StdOutCapture = outputCapture
-                                            StdErrCapture = errorCapture
-                                            Stages = stages
-                                            StartedAt = startedAt
-                                            Duration = clock.Elapsed() - startedElapsed
-                                        }
+                                            processes
+                                            starts
+                                            elapsedStarts
+                                            elapsedEnds
+                                            stdout
+                                            stderr
+                                            startedAt
+                                            startedElapsed
 
                                     try
                                         try
@@ -1192,24 +1269,15 @@ module internal NativeProcess =
                                                         else
                                                             errorGates[stage]
 
-                                                    let publish text =
-                                                        (task {
-                                                            do! observerGate.WaitAsync token
-
-                                                            try
-                                                                do!
-                                                                    invokeCallback
-                                                                        token
-                                                                        (observe {
-                                                                            Stage = stage
-                                                                            OriginalChannel = original
-                                                                            ObservedChannel = observed
-                                                                            Text = text
-                                                                            Timestamp = clock.UtcNow()
-                                                                        })
-                                                            finally
-                                                                observerGate.Release() |> ignore
-                                                        })
+                                                    let publish =
+                                                        publishObservation
+                                                            clock
+                                                            observe
+                                                            observerGate
+                                                            token
+                                                            stage
+                                                            original
+                                                            observed
 
                                                     let decode bytes count flush =
                                                         (task {
@@ -1283,21 +1351,16 @@ module internal NativeProcess =
                                                             do! decode [||] 0 true
                                                         else
                                                             let bytes = buffer[.. count - 1]
-                                                            do! targetGate.WaitAsync token
-
-                                                            try
-                                                                capture.Append bytes
-
-                                                                do!
-                                                                    writeTarget
-                                                                        console
-                                                                        files
-                                                                        token
-                                                                        observed
-                                                                        target
-                                                                        bytes
-                                                            finally
-                                                                targetGate.Release() |> ignore
+                                                            do!
+                                                                writeCapturedTarget
+                                                                    console
+                                                                    files
+                                                                    token
+                                                                    targetGate
+                                                                    observed
+                                                                    target
+                                                                    capture
+                                                                    bytes
 
                                                             do! decode bytes count false
                                                 })

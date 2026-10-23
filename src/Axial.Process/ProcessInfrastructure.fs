@@ -250,7 +250,7 @@ type private StageExitException(stage: int) =
     inherit Exception("Stage exited unsuccessfully.")
     member _.Stage = stage
 
-type private CaptureBuffer(policy: OutputRetention, available: bool) =
+type internal CaptureBuffer(policy: OutputRetention, available: bool) =
     let gate = obj ()
     let mutable truncated = false
     let mutable tailBytes: byte array = [||]
