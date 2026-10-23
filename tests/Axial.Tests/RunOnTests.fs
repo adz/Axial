@@ -31,11 +31,16 @@ module RunOnTests =
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default)
 
-        let startedConcurrently = allStarted.Wait(TimeSpan.FromSeconds 20.0)
-        release.Set()
+        let startedConcurrently =
+            try
+                allStarted.Wait(TimeSpan.FromSeconds 20.0)
+            finally
+                release.Set()
+
+        let exit = running.WaitAsync(TimeSpan.FromSeconds 20.0).GetAwaiter().GetResult()
 
         test <@ startedConcurrently @>
-        test <@ running.GetAwaiter().GetResult() = Exit.Success(List.replicate 8 1) @>
+        test <@ exit = Exit.Success(List.replicate 8 1) @>
         test <@ threadIds.Count > 1 @>
 
     [<Fact>]
@@ -227,16 +232,30 @@ module RunOnTests =
 
         let raceLoserReleased = ref false
         use loserAcquired = new ManualResetEventSlim(false)
+        use loserReleased = new ManualResetEventSlim(false)
+        let raceLoserResource =
+            Resource.create
+                (Flow.delay (fun () -> loserAcquired.Set(); Flow.ok "resource"))
+                (fun _ ->
+                    Flow.delay (fun () ->
+                        raceLoserReleased.Value <- true
+                        loserReleased.Set()
+                        Flow.ok ()))
         let raceLoser =
             flow {
-                let! _ = Flow.scopeResource (resource raceLoserReleased (Some loserAcquired))
+                let! _ = Flow.scopeResource raceLoserResource
                 do! Flow.never
                 return "loser"
             }
             |> Flow.onThreadPool
         let raceLoserExit =
-            Flow.race raceLoser (Flow.delay (fun () -> loserAcquired.Wait(); Flow.ok "winner"))
+            Flow.race
+                raceLoser
+                (Flow.delay (fun () ->
+                    let acquired = loserAcquired.Wait(TimeSpan.FromSeconds 10.0)
+                    Flow.ok (if acquired then "winner" else "loser acquisition timed out")))
             |> Flow.runSync environment
+        let raceLoserReleasedEventually = loserReleased.Wait(TimeSpan.FromSeconds 10.0)
 
         let forkReleased = ref false
         let forkExit =
@@ -257,6 +276,7 @@ module RunOnTests =
         test <@ raceWinnerExit = Exit.Success("resource", false) @>
         test <@ raceWinnerReleased.Value @>
         test <@ raceLoserExit = Exit.Success "winner" @>
+        test <@ raceLoserReleasedEventually @>
         test <@ raceLoserReleased.Value @>
         test <@ forkExit = Exit.Success("resource", true) @>
 
