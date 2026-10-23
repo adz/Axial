@@ -239,11 +239,11 @@ type TestProcess() =
                     })
 
 #if !FABLE_COMPILER
-type private ProcessFailureException(error: ProcessError) =
+type internal ProcessFailureException(error: ProcessError) =
     inherit Exception(error.ToString())
     member _.Error = error
 
-type private ObserverDefectException(error: exn) =
+type internal ObserverDefectException(error: exn) =
     inherit Exception(error.Message, error)
 
 type private StageExitException(stage: int) =

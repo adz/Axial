@@ -968,7 +968,13 @@ module Process =
     let inline streamStderrLines source =
         lineStream (Some OutputChannel.StdErr) (toSpecification source)
 #if !FABLE_COMPILER
-    let live = NativeProcess.live
+    let live (clock: IClock) (fileSystem: IFileSystem) (console: IConsole) =
+        if ProcessRun.isEnabled () then
+            { new IProcess with
+                member _.Execute(specification, observe) =
+                    ProcessRun.execute clock fileSystem console specification observe }
+        else
+            NativeProcess.live clock fileSystem console
 #endif
 #if !FABLE_COMPILER
     [<EditorBrowsable(EditorBrowsableState.Never)>]

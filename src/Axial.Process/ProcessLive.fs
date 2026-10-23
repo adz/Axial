@@ -69,12 +69,12 @@ module internal NativeProcess =
                         closeFd(fd) |> ignore
             with :? EntryPointNotFoundException -> Error "pidfd_open is not exported by this libc."
 
-    let private inherited =
+    let internal inherited =
         function
         | OutputTarget.Inherit -> true
         | _ -> false
 
-    let private startInfo redirectInput redirectOutput redirectError (command: CommandDefinition) =
+    let internal startInfo redirectInput redirectOutput redirectError (command: CommandDefinition) =
         let info = ProcessStartInfo(command.FileName)
         command.Arguments |> List.iter info.ArgumentList.Add
 
@@ -94,7 +94,7 @@ module internal NativeProcess =
         info.CreateNoWindow <- true
         info
 
-    let private waitForExit (proc: Diagnostics.Process) token =
+    let internal waitForExit (proc: Diagnostics.Process) token =
 #if NETSTANDARD2_1
         Task.Run((fun () -> proc.WaitForExit()), token)
 #else
