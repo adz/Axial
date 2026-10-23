@@ -420,7 +420,10 @@ type RunOnOverheadBenchmarks() =
             return! Fiber.join fiber
         }
 
-    [<Benchmark(Baseline = true, Description = "runOn ThreadPool, trivial Flow")>]
+    [<Benchmark(Baseline = true, Description = "plain trivial Flow")>]
+    member _.PlainFlow() = trivial.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Description = "runOn ThreadPool, trivial Flow")>]
     member _.RunOnThreadPool() = onPool.RunSynchronously(environment) |> Shared.consumeExit
 
     [<Benchmark(Description = "Flow.fork/join, trivial Flow")>]

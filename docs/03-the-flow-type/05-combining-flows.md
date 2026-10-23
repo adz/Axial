@@ -43,15 +43,17 @@ val it: Exit<int list,string> = Success [1; 4; 9]
 ```
 
 `Flow.onThreadPool source` is `Flow.runOn RunOn.ThreadPool source`. `RunOn.Inline` leaves the flow unchanged.
-On .NET, `RunOn.Scheduler scheduler` starts the flow on a particular `TaskScheduler` and keeps continuations after
-awaits on that scheduler. `RunOn.DedicatedThread` gives a long blocking synchronous section a dedicated thread, but
+On .NET, `RunOn.Scheduler scheduler` starts the flow on a particular `TaskScheduler` and keeps the wrapped flow's
+continuations after awaits on that scheduler. The caller after `runOn` resumes on its original scheduler. Nested
+placement on the same exclusive scheduler yields rather than blocking it. `RunOn.DedicatedThread` gives a long
+blocking synchronous section a dedicated thread, but
 only until its first incomplete await; use `Flow.fromBlocking` instead when a blocking foreign call must run to
 completion after interruption.
 
 `runOn` does not turn interruption into preemption. The branch receives the same cancellation token and observes it
 at its normal checkpoints, such as `Flow.ensureNotCanceled`; parallel combinators still wait for branch cleanup.
-If the token is already cancelled, the branch is not scheduled. JavaScript has one thread, so every `RunOn` case
-runs inline when compiled with Fable.
+If the token is already cancelled, the branch is not scheduled. If it is cancelled while queued on a scheduler, the
+wrapped flow does not start. JavaScript has one thread, so every `RunOn` case runs inline when compiled with Fable.
 
 ## Related guides
 

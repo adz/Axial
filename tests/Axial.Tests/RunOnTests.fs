@@ -23,13 +23,18 @@ module RunOnTests =
                 Flow.ok 1)
             |> Flow.onThreadPool
 
-        let running = [ for _ in 1..8 -> branch () ] |> Flow.sequencePar |> fun source -> source.StartAsTask(())
+        let workflow = [ for _ in 1..8 -> branch () ] |> Flow.sequencePar
+        let running =
+            Task.Factory.StartNew(
+                (fun () -> workflow.RunSynchronously(())),
+                CancellationToken.None,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default)
 
-        try
-            test <@ allStarted.Wait(TimeSpan.FromSeconds 20.0) @>
-        finally
-            release.Set()
+        let startedConcurrently = allStarted.Wait(TimeSpan.FromSeconds 20.0)
+        release.Set()
 
+        test <@ startedConcurrently @>
         test <@ running.GetAwaiter().GetResult() = Exit.Success(List.replicate 8 1) @>
         test <@ threadIds.Count > 1 @>
 
@@ -90,6 +95,37 @@ module RunOnTests =
         test <@ not started.Value @>
 
     [<Fact>]
+    let ``cancellation after scheduling prevents the operation from starting`` () =
+        let pair = new ConcurrentExclusiveSchedulerPair()
+        let scheduler = pair.ExclusiveScheduler
+        use occupied = new ManualResetEventSlim(false)
+        use releaseScheduler = new ManualResetEventSlim(false)
+        use cts = new CancellationTokenSource()
+        let started = ref false
+
+        let blocker =
+            Task.Factory.StartNew(
+                (fun () -> occupied.Set(); releaseScheduler.Wait()),
+                CancellationToken.None,
+                TaskCreationOptions.DenyChildAttach,
+                scheduler)
+
+        test <@ occupied.Wait(TimeSpan.FromSeconds 10.0) @>
+
+        let running : Task<Exit<int, string>> =
+            Flow.delay (fun () -> started.Value <- true; Flow.ok 1)
+            |> Flow.runOn (RunOn.Scheduler scheduler)
+            |> fun source -> source.StartAsTask((), cancellationToken = cts.Token)
+
+        cts.Cancel()
+        releaseScheduler.Set()
+
+        test <@ running.GetAwaiter().GetResult() = Exit.Failure Cause.Interrupt @>
+        test <@ not started.Value @>
+        blocker.GetAwaiter().GetResult()
+        pair.Complete()
+
+    [<Fact>]
     let ``runOn keeps the environment and scoped resource ownership`` () =
         let released = ref false
 
@@ -142,6 +178,121 @@ module RunOnTests =
         test <@ peak.Value = 1 @>
         test <@ schedulers.Count = 4 @>
         test <@ schedulers |> Seq.forall (fun current -> obj.ReferenceEquals(current, scheduler)) @>
+
+    [<Fact>]
+    let ``runOn preserves resource ownership under parallel combinators and fork`` () =
+        let environment = TestSupport.clockEnv ()
+
+        let resource (released: bool ref) (acquired: ManualResetEventSlim option) =
+            Resource.create
+                (Flow.delay (fun () ->
+                    acquired |> Option.iter (fun gate -> gate.Set())
+                    Flow.ok "resource"))
+                (fun _ -> Flow.delay (fun () -> released.Value <- true; Flow.ok ()))
+
+        let zipReleased = ref false
+        let zipExit =
+            flow {
+                let! _, _ =
+                    Flow.zipPar
+                        (Flow.scopeResource (resource zipReleased None) |> Flow.onThreadPool)
+                        (Flow.ok 2)
+                return zipReleased.Value
+            }
+            |> Flow.scoped
+            |> Flow.runSync environment
+
+        let sequenceReleased = ref false
+        let sequenceExit =
+            flow {
+                let! _ =
+                    [ Flow.scopeResource (resource sequenceReleased None) |> Flow.onThreadPool ]
+                    |> Flow.sequencePar
+                return sequenceReleased.Value
+            }
+            |> Flow.scoped
+            |> Flow.runSync environment
+
+        let raceWinnerReleased = ref false
+        let raceWinnerExit =
+            flow {
+                let! value =
+                    Flow.race
+                        (Flow.scopeResource (resource raceWinnerReleased None) |> Flow.onThreadPool)
+                        Flow.never
+                return value, raceWinnerReleased.Value
+            }
+            |> Flow.scoped
+            |> Flow.runSync environment
+
+        let raceLoserReleased = ref false
+        use loserAcquired = new ManualResetEventSlim(false)
+        let raceLoser =
+            flow {
+                let! _ = Flow.scopeResource (resource raceLoserReleased (Some loserAcquired))
+                do! Flow.never
+                return "loser"
+            }
+            |> Flow.onThreadPool
+        let raceLoserExit =
+            Flow.race raceLoser (Flow.delay (fun () -> loserAcquired.Wait(); Flow.ok "winner"))
+            |> Flow.runSync environment
+
+        let forkReleased = ref false
+        let forkExit =
+            flow {
+                let! fiber =
+                    Flow.scopeResource (resource forkReleased None)
+                    |> Flow.onThreadPool
+                    |> Flow.fork
+                let! value = Fiber.join fiber
+                return value, forkReleased.Value
+            }
+            |> Flow.runSync environment
+
+        test <@ zipExit = Exit.Success false @>
+        test <@ zipReleased.Value @>
+        test <@ sequenceExit = Exit.Success false @>
+        test <@ sequenceReleased.Value @>
+        test <@ raceWinnerExit = Exit.Success("resource", false) @>
+        test <@ raceWinnerReleased.Value @>
+        test <@ raceLoserExit = Exit.Success "winner" @>
+        test <@ raceLoserReleased.Value @>
+        test <@ forkExit = Exit.Success("resource", true) @>
+
+    [<Fact>]
+    let ``runOn restores the caller scheduler and nested exclusive placement completes`` () =
+        let pair = new ConcurrentExclusiveSchedulerPair()
+        let scheduler = pair.ExclusiveScheduler
+        let inside = ref Unchecked.defaultof<TaskScheduler>
+        let after = ref Unchecked.defaultof<TaskScheduler>
+
+        let placed value =
+            Flow.delay (fun () -> inside.Value <- TaskScheduler.Current; Flow.ok value)
+            |> Flow.runOn (RunOn.Scheduler scheduler)
+
+        let workflow : Flow<unit, string, int> =
+            flow {
+                let! value = placed 1
+                after.Value <- TaskScheduler.Current
+
+                let! nested =
+                    flow {
+                        let! inner = placed 2
+                        return inner + 1
+                    }
+                    |> Flow.runOn (RunOn.Scheduler scheduler)
+
+                return value + nested
+            }
+
+        let running = workflow.StartAsTask(())
+        let exit = running.WaitAsync(TimeSpan.FromSeconds 10.0).GetAwaiter().GetResult()
+        pair.Complete()
+
+        test <@ exit = Exit.Success 4 @>
+        test <@ obj.ReferenceEquals(inside.Value, scheduler) @>
+        test <@ not (obj.ReferenceEquals(after.Value, scheduler)) @>
 
     [<Fact>]
     let ``DedicatedThread starts the synchronous part outside the pool`` () =

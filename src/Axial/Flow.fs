@@ -551,14 +551,15 @@ module Flow =
     /// <para>
     /// This changes only where the wrapped flow starts. It keeps the same environment, cancellation token, runtime,
     /// and scope. Cancellation remains cooperative: the wrapped flow observes interruption at its normal check
-    /// points, such as <c>Flow.ensureNotCanceled</c>. If the token is already cancelled, the flow returns interruption
-    /// without scheduling the wrapped flow.
+    /// points, such as <c>Flow.ensureNotCanceled</c>. If the token is cancelled before scheduling or while waiting in
+    /// the scheduler's queue, the flow returns interruption without starting the wrapped flow.
     /// </para>
     /// <para>
     /// On .NET, <c>ThreadPool</c> uses <see cref="P:System.Threading.Tasks.TaskScheduler.Default" />.
     /// <c>DedicatedThread</c> gives the synchronous part before the first incomplete await a dedicated thread; later
     /// continuations normally resume on the thread pool. <c>Scheduler</c> captures the supplied scheduler across
-    /// awaits. On JavaScript every location runs inline because JavaScript has one thread.
+    /// awaits inside the wrapped flow; the caller's continuation resumes on its original scheduler. On JavaScript
+    /// every location runs inline because JavaScript has one thread.
     /// </para>
     /// </remarks>
     /// <param name="location">Where the wrapped flow starts.</param>
@@ -574,33 +575,33 @@ module Flow =
 #if FABLE_COMPILER
         source
 #else
-        match location with
-        | RunOn.Inline -> source
-        | RunOn.ThreadPool
-        | RunOn.DedicatedThread
-        | RunOn.Scheduler _ ->
+        let schedule (options: TaskCreationOptions) (scheduler: TaskScheduler) =
             Flow(fun environment cancellationToken ->
                 if cancellationToken.IsCancellationRequested then
                     Execution.ofCause Cause.Interrupt
                 else
-                    let scheduler, options =
-                        match location with
-                        | RunOn.Inline -> TaskScheduler.Current, TaskCreationOptions.DenyChildAttach
-                        | RunOn.ThreadPool -> TaskScheduler.Default, TaskCreationOptions.DenyChildAttach
-                        | RunOn.DedicatedThread ->
-                            TaskScheduler.Default,
-                            TaskCreationOptions.DenyChildAttach ||| TaskCreationOptions.LongRunning
-                        | RunOn.Scheduler scheduler -> scheduler, TaskCreationOptions.DenyChildAttach
+                    let runScheduled () =
+                        if cancellationToken.IsCancellationRequested then
+                            Task.FromResult(Exit.Failure Cause.Interrupt)
+                        else
+                            (invoke source environment cancellationToken).AsTask()
 
-                    let started =
-                        Task.Factory.StartNew<Task<Exit<'value, 'error>>>(
-                            (fun () -> (invoke source environment cancellationToken).AsTask()),
-                            CancellationToken.None,
-                            options,
-                            scheduler)
-                        |> fun outer -> outer.Unwrap()
+                    Task.Factory.StartNew<Task<Exit<'value, 'error>>>(
+                        runScheduled,
+                        CancellationToken.None,
+                        options,
+                        scheduler)
+                    |> fun outer -> outer.Unwrap()
+                    |> ValueTask<Exit<'value, 'error>>)
 
-                    ValueTask<Exit<'value, 'error>>(started))
+        match location with
+        | RunOn.Inline -> source
+        | RunOn.ThreadPool -> schedule TaskCreationOptions.DenyChildAttach TaskScheduler.Default
+        | RunOn.DedicatedThread ->
+            schedule
+                (TaskCreationOptions.DenyChildAttach ||| TaskCreationOptions.LongRunning)
+                TaskScheduler.Default
+        | RunOn.Scheduler scheduler -> schedule TaskCreationOptions.DenyChildAttach scheduler
 #endif
 
     /// <summary>Starts a flow on the .NET thread pool.</summary>
