@@ -183,7 +183,7 @@ let private message (sourceText: ISourceText) (range: range) (ident: string) : M
               "Flags raise/failwith/failwithf/invalidOp/invalidArg called directly inside a flow { } "
               + "block, where it silently becomes an unhandled defect instead of routing through the "
               + "typed 'error channel.",
-              "https://github.com/adz/Axial/blob/main/docs/guardrails.md")>]
+              "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg003-return-typed-failures-from-workflows")>]
 let raiseInFlowAnalyzer: Analyzer<CliContext> =
     fun (ctx: CliContext) ->
         async {

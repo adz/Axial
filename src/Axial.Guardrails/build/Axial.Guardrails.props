@@ -1,6 +1,11 @@
 <Project>
 
   <PropertyGroup>
+    <!-- Read the process environment directly so CI can distinguish an environment bypass from a project property. -->
+    <_AxialGuardrailsEnabledEnvironment>$([System.Environment]::GetEnvironmentVariable('AxialGuardrailsEnabled'))</_AxialGuardrailsEnabledEnvironment>
+    <_AxialGuardrailsEnabledEnvironmentUpper>$([System.Environment]::GetEnvironmentVariable('AXIAL_GUARDRAILS_ENABLED'))</_AxialGuardrailsEnabledEnvironmentUpper>
+    <_AxialGuardrailsSeverityEnvironment>$([System.Environment]::GetEnvironmentVariable('AxialGuardrailsSeverity'))</_AxialGuardrailsSeverityEnvironment>
+    <_AxialGuardrailsSeverityEnvironmentUpper>$([System.Environment]::GetEnvironmentVariable('AXIAL_GUARDRAILS_SEVERITY'))</_AxialGuardrailsSeverityEnvironmentUpper>
     <!-- Set in a project file only when that project cannot run analyzers. CI rejects the environment-variable form. -->
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
     <!-- Findings are errors by default. A checked-in baseline is the only supported downgrade path. -->

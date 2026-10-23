@@ -200,6 +200,6 @@ let analyze (ctx: CliContext) : Message list =
 [<CliAnalyzer("ResourceFromFiber",
               "Flags a forked flow whose value is a scoped resource it acquired itself, which the fiber releases "
               + "before Fiber.join returns it.",
-              "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
+              "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg007-keep-resources-acquired-by-a-fiber")>]
 let resourceFromFiberAnalyzer: Analyzer<CliContext> =
     fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }

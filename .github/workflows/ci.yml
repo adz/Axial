@@ -20,6 +20,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check Guardrails baseline growth
+        run: bash scripts/check-guardrails-baseline-growth.sh
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v5

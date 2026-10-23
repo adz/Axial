@@ -1,5 +1,6 @@
 namespace Axial.Guardrails.Tests
 
+open System.IO
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Text
 open Axial.Guardrails
@@ -11,6 +12,18 @@ module HardeningTests =
         task {
             let! ctx = AnalyzerTestContext.create source
             return! analyzer ctx |> Async.StartAsTask
+        }
+
+    [<Fact>]
+    let ``suppression requires rule reason and declared boundary`` () =
+        task {
+            let! ctx = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock boundary\n"
+            let directives = Suppressions.validDirectives ctx.SourceText
+            let directive = Assert.Single directives
+            Assert.Equal(Some "AXG001", directive.RuleId)
+            Assert.Equal("live clock boundary", directive.Reason)
+            Assert.False(Suppressions.isAllowed Set.empty ctx.FileName ctx.SourceText 2 "AXG001")
+            Assert.True(Suppressions.isAllowed (Set.singleton ctx.FileName) ctx.FileName ctx.SourceText 2 "AXG001")
         }
 
     [<Fact>]
@@ -66,6 +79,13 @@ module HardeningTests =
                   Fixes = [] }
             let actual = GuardrailConfig.applyWith GuardrailConfig.defaults EffectCatalog.CoreGuardrail ctx [ diagnostic ]
             Assert.Equal(Severity.Error, (Assert.Single actual).Severity)
+
+            let file = Path.GetRelativePath(GuardrailConfig.defaults.BaselineRoot, ctx.FileName).Replace('\\', '/')
+            let hash = GuardrailConfig.fingerprint ctx.SourceText diagnostic
+            let baselined =
+                { GuardrailConfig.defaults with Baseline = Set.singleton(code, file, hash) }
+                |> fun config -> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ diagnostic ]
+            Assert.Equal(Severity.Warning, (Assert.Single baselined).Severity)
         }
 
     [<Fact>]

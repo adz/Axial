@@ -1,7 +1,7 @@
 /// The table of ambient .NET effects that Axial's packages ask callers not to use directly.
 ///
 /// Each rule belongs to a guardrail, named after the package whose service replaces the effect (`Axial.HttpClient`
-/// for `new HttpClient`). A rule names a category (used in `axial-allow-effect` suppression comments), a symbol match,
+/// for `new HttpClient`). A rule names a category for grouping/documentation, a symbol match,
 /// where the match applies, a human message, and the explicit replacement. Which guardrails run, and at which
 /// severity, comes from `GuardrailConfig`.
 module Axial.Guardrails.EffectCatalog

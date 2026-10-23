@@ -28,7 +28,8 @@ Each rule is one `<AxialGuardrailRule>` item:
 </ItemGroup>
 ```
 
-Findings are reported as `AXG001`, and `// axial-allow-effect: payments` allows an intentional use.
+Findings are reported as `AXG001`. In a file declared with `AxialGuardrailsBoundary`,
+`// axial-allow-AXG001: payments live implementation` allows an intentional use.
 
 ## Metadata
 
@@ -36,7 +37,7 @@ Findings are reported as `AXG001`, and `// axial-allow-effect: payments` allows 
 | --- | --- |
 | `Include` | A stable rule id, conventionally `{guardrail}.{name}`. |
 | `Guardrail` | The guardrail the rule belongs to, matching an `<AxialGuardrail>` item. |
-| `Category` | The effect category, used in `axial-allow-effect: <category>` suppressions. |
+| `Category` | The effect category used to group and document the contributed rule. |
 | `Match` | The symbol to flag; see the grammar below. |
 | `Scope` | `anywhere`, or `insideFlow` to report the call only inside `flow { }`. |
 | `Message` | The diagnostic text naming the direct call and what it bypasses. |

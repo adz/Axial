@@ -114,7 +114,7 @@ let private message (range: range) : Message =
               "Flags ColdTask/Flow.fromTask/Flow.fromTaskResult given a lambda that discards its "
               + "CancellationToken parameter, so cancelling the Flow cannot stop the underlying "
               + "operation.",
-              "https://github.com/adz/Axial/blob/main/docs/guardrails.md")>]
+              "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg005-preserve-cancellation-tokens")>]
 let discardedCancellationAnalyzer: Analyzer<CliContext> =
     fun (ctx: CliContext) ->
         async {

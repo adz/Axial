@@ -28,7 +28,7 @@ install, severity, and suppression choices; this page is the per-diagnostic refe
 | `blocking` | `Async.RunSynchronously`, `Task.Wait()`/`Wait(timeout)`, task/value-task `.Result`, and `.GetAwaiter().GetResult()` outside flows; task `.Result` and `.GetAwaiter().GetResult()` inside flows | Await asynchronously outside flows; `let!` on the task inside flows |
 | `scope` | A direct `Cache.make*`, `Hub.make`/`bounded`, or `Queue.bounded`/`unbounded` returned by a run | Use the service before the scope closes |
 
-Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are exempt when the same value's completion state is tested in the enclosing `if` branch or `when` guard, or when the value is the parameter of a `ContinueWith` callback. Other waits remain findings. Blocking waits outside flows can deadlock UI synchronization contexts. At a genuine synchronous entry point or test boundary, use `// axial-allow-effect: blocking`.
+Reads of `.Result` or `.GetAwaiter().GetResult()` on a task or value task are exempt when the same value's completion state is tested in the enclosing `if` branch or `when` guard, or when the value is the parameter of a `ContinueWith` callback. Other waits remain findings. Blocking waits outside flows can deadlock UI synchronization contexts.
 
 `TimeZoneInfo.ConvertTimeFromUtc(utc, zone)` is allowed when `zone` is supplied explicitly; reading
 `TimeZoneInfo.Local` to supply that argument is not. Pass the desired zone through configuration or `'env`.
@@ -37,40 +37,46 @@ The analyzer matches resolved `System.*` symbols, not source text. It does not f
 
 ### Allow an intentional effect boundary
 
-Live service implementations, process entry points, and the scheduler implement explicit effect boundaries.
+First replace the ambient call with the service named by the diagnostic. An automatic fix is not offered because
+introducing an explicit service usually changes the containing function's environment and often its return type.
 
-To allow one call, add a category-specific directive to the flagged line or the line immediately above it:
+If the file itself implements the boundary, declare it in MSBuild and give each suppression a non-empty reason:
+
+```xml
+<ItemGroup>
+  <AxialGuardrailsBoundary Include="LiveClock.fs" />
+</ItemGroup>
+```
 
 ```fsharp
 let live : IClock =
-    let stopwatch = System.Diagnostics.Stopwatch.StartNew() // axial-allow-effect: clock
+    let stopwatch = System.Diagnostics.Stopwatch.StartNew() // axial-allow-AXG001: live clock implementation
 
     { new IClock with
-        member _.UtcNow() = DateTimeOffset.UtcNow // axial-allow-effect: clock
+        member _.UtcNow() = DateTimeOffset.UtcNow // axial-allow-AXG001: live clock implementation
         member _.Elapsed() = stopwatch.Elapsed
         member _.Sleep(delay, token) = Task.Delay(delay, token) }
 ```
 
-To allow a category throughout a boundary implementation file, place a file directive in the leading comment block immediately before the `namespace` declaration:
+The file-wide form belongs in the leading comment block:
 
 ```fsharp
-// This file provides the live IConsole implementation.
-// axial-allow-effect-file: console
+// axial-allow-file-AXG001: this file provides the live console implementation
 ```
 
-A file directive allows only the named categories. For example, a `console` directive does not allow `System.Random()`.
-
-Each directive must name a category. There is no directive that allows every effect.
-
-For the exact matching and suppression rules, see [`EffectCatalog.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/EffectCatalog.fs) and [`Suppressions.fs`](https://github.com/adz/Axial/blob/main/src/Axial.Guardrails/Suppressions.fs) in `src/Axial.Guardrails`.
+A rule-specific suppression allows only that diagnostic. It does not allow other Guardrails findings in the file.
+Globs in `AxialGuardrailsBoundary` are expanded by MSBuild, so a project may declare a boundary folder deliberately;
+prefer exact files when only a few implement operational boundaries.
 
 ## AXG002: Remove invalid suppressions
 
-`AXG002` validates every `axial-allow-effect` and `axial-allow-effect-file` directive.
+`AXG002` validates every suppression. It reports legacy or malformed syntax, an unknown rule ID, a missing reason,
+a file-wide suppression outside the leading comment block, a suppression outside an `AxialGuardrailsBoundary` file,
+or a stale AXG001 suppression that covers no ambient-effect finding.
 
-It reports a directive when the category is unknown or when the directive does not suppress an `AXG001` finding. This check catches spelling errors and directives left behind after a refactoring. A directive whose guardrail is turned off suppresses nothing, so it is reported too.
-
-Remove an unused directive. Correct a category only when the associated call is an intentional effect boundary.
+Remove an invalid or unused directive. AXG002 offers an automatic removal when the directive occupies its own comment
+line. For an intentional boundary, declare the file and use a rule-specific comment such as
+`// axial-allow-AXG001: <reason>` with the ID of the finding being allowed.
 
 ## AXG003: Return typed failures from workflows
 
@@ -80,11 +86,14 @@ A `Flow<'env, 'error, 'value>` represents expected failures through its `'error`
 
 Use `return! Flow.fail error` for an expected failure. Use `Flow.die` when the failure is an unrecoverable defect.
 
-If a nearby `try/with` catches and translates the exception, add `axial-allow-raise` to the flagged line or the line immediately above it:
+For a standalone `raise`, `failwith`, `failwithf`, or `invalidOp`, AXG003 offers a `return! Flow.fail ...` fix. Calls
+embedded in a larger expression need a manual rewrite because inserting `return!` there would be invalid.
+
+If a nearby `try/with` catches and translates the exception, declare the file as a boundary and add a reason:
 
 ```fsharp
 let start (proc: System.Diagnostics.Process) =
-    if not (proc.Start()) then raise (Exception "Process did not start") // axial-allow-raise
+    if not (proc.Start()) then raise (Exception "Process did not start") // axial-allow-AXG003: caught and translated by caller
 ```
 
 Use this directive only when the same local boundary catches and translates the exception.
@@ -97,10 +106,11 @@ A module-level `let` value is initialized once and shared by every test in the m
 
 The analyzer excludes constants and point-free function definitions because they do not create the shared-state risk.
 
-Create fixtures inside each test or expose a function that returns a fresh fixture. For a safe immutable value, add `axial-allow-fixture` to the flagged line or the line immediately above it:
+Create fixtures inside each test or expose a function that returns a fresh fixture. There is no automatic fix because changing a value to a function requires updating all call sites. For a safe
+immutable value in a declared boundary test file, add a reason:
 
 ```fsharp
-let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-fixture
+let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-AXG004: immutable timestamp
 ```
 
 ## AXG005: Preserve cancellation tokens
@@ -111,13 +121,14 @@ Task adapters receive Flow's cancellation token. Discarding that token prevents 
 
 Use the cancellation-aware overload of the wrapped operation and pass the token to it.
 
-If a legacy API has no cancellation-aware overload, add `axial-allow-discarded-cancellation` to the flagged line or the line immediately above it:
+No automatic fix is offered because the analyzer cannot choose the foreign API's cancellation-aware overload or know
+where its token belongs. If a legacy API has no such overload, declare the adapter file as a boundary and add a reason:
 
 ```fsharp
 /// An API with no cancellation support.
 let legacyCall () : Task<int> = Task.FromResult 42
 
-let legacy = ColdTask(fun _ -> legacyCall ()) // axial-allow-discarded-cancellation
+let legacy = ColdTask(fun _ -> legacyCall ()) // axial-allow-AXG005: legacy API has no token overload
 ```
 
 This check does not run in test projects. Test adapters often wrap completed tasks that have no work to cancel.
@@ -159,12 +170,12 @@ Axial's own public unions render themselves this way, including `Exit`, `Cause`,
 rendered with its own `ToString`, so give your error types an override too. `Cause.prettyPrint` also accepts an
 explicit error renderer.
 
-If code never runs trimmed, such as a script or a test helper, add `axial-allow-reflection-format` to the flagged line
-or the line immediately above it:
+No automatic fix is offered because rendering is domain-specific. If code never runs trimmed, such as a script or a
+test helper, declare the file as a boundary and add a reason:
 
 ```fsharp
 let printDiagnostics (diagnostics: Map<string, int list>) =
-    printfn "%A" diagnostics // axial-allow-reflection-format
+    printfn "%A" diagnostics // axial-allow-AXG006: diagnostic helper never runs trimmed
 ```
 
 Axial's packable libraries are compiled with F#'s `--reflectionfree` option. This prevents the compiler from
@@ -226,9 +237,10 @@ let keptForUse =
 [Concurrency and scoped resources](/scopes/index.html#concurrency-and-scoped-resources) explains which scope owns a
 resource in each concurrent combinator.
 
-If the fiber's value is never used after the fiber settles, add `axial-allow-resource-from-fiber` to the flagged line
-or the line immediately above it.
+No automatic fix is offered because `forkResource`, `zipPar`, and keeping ownership inside the fiber have different
+semantics. If the fiber intentionally owns and consumes the resource, declare the file as a boundary and use
+`// axial-allow-AXG007: <reason>`.
 
 ## AXG008: Keep scope-owned services inside their run
 
-`Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning `Queue.makeScoped`, `Hub.makeScoped`, or `Hub.subscribe` directly leaves a shut-down service. Caches made by `Cache.make`, `makeBounded`, `makeBoundedWithExpiry`, or `makeRec` capture the creating runtime; closing its scope interrupts lookups. Use these services inside the flow or keep their owning scope open. `Queue.make` (and its `bounded`, `unbounded`, `dropping`, and `sliding` shorthands) and `Hub.make` do not register with the scope and may be returned. The syntax check sees direct calls and pipelines ending in a scoped constructor; the result-type check catches composed cache flows but does not flag Queue or Hub by type because it cannot distinguish scoped from unscoped construction. At an intentional boundary, add `// axial-allow-effect: scope`.
+`Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning `Queue.makeScoped`, `Hub.makeScoped`, or `Hub.subscribe` directly leaves a shut-down service. Caches made by `Cache.make`, `makeBounded`, `makeBoundedWithExpiry`, or `makeRec` capture the creating runtime; closing its scope interrupts lookups. Use these services inside the flow or keep their owning scope open. `Queue.make` (and its `bounded`, `unbounded`, `dropping`, and `sliding` shorthands) and `Hub.make` do not register with the scope and may be returned. The syntax check sees direct calls and pipelines ending in a scoped constructor; the result-type check catches composed cache flows but does not flag Queue or Hub by type because it cannot distinguish scoped from unscoped construction. No automatic fix is offered because the correct lifetime depends on the caller. At an intentional boundary, declare the file and use `// axial-allow-AXG008: <reason>`.

@@ -1,7 +1,7 @@
 /// The `EffectBoundary` analyzer: flags direct calls to ambient .NET effects (System.Random,
 /// DateTime.Now/UtcNow, Guid.NewGuid, Console, File/Directory, Environment, Process.Start,
 /// Thread.Sleep, new HttpClient, blocking task waits inside a flow) for every enabled guardrail,
-/// unless the call site carries an explicit `axial-allow-effect` comment naming the effect category.
+/// unless a declared boundary file carries a reasoned AXG001 suppression at the call site.
 ///
 /// This exists because Axial's architecture invariant — "operational effects are explicit,
 /// mockable dependencies visible in a signature" — was violated in practice (`Schedule.jittered`
@@ -120,7 +120,7 @@ let private completedReadRanges (ctx: CliContext) =
     | None -> []
 
 /// Every ambient-effect call site in the file for the enabled guardrails, regardless of suppression. Exposed so the
-/// suppression-integrity analyzer can cross-reference `axial-allow-effect` directives against the findings they're
+/// suppression-integrity analyzer can cross-reference AXG001 directives against the findings they're
 /// meant to cover, without re-implementing symbol matching.
 let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) list =
     let rules = (GuardrailConfig.load ()).Rules
@@ -152,7 +152,7 @@ let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : M
 [<CliAnalyzer("EffectBoundary",
               "Flags direct use of ambient .NET effects (clock, randomness, GUIDs, console, filesystem, "
               + "process, environment, HTTP clients, blocking waits) that bypass Axial's explicit service boundary.",
-              "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
+              "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg001-use-explicit-effect-services")>]
 let effectBoundaryAnalyzer: Analyzer<CliContext> =
     fun (ctx: CliContext) ->
         async {

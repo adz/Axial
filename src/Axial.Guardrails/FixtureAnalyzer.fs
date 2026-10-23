@@ -91,7 +91,7 @@ let rec private checkDecls (ctx: CliContext) (decls: SynModuleDecl list) : Messa
               "Flags a module-level `let` value (not a function) in a module that also contains an "
               + "xUnit Fact/Theory or FsCheck Property test - shared, computed-once state that's unsafe "
               + "under parallel test execution.",
-              "https://github.com/adz/Axial/blob/main/docs/guardrails.md")>]
+              "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg004-create-fresh-test-fixtures")>]
 let fixtureAnalyzer: Analyzer<CliContext> =
     fun (ctx: CliContext) ->
         async {

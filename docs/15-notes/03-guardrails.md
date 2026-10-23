@@ -23,29 +23,14 @@ dotnet add package Axial.Guardrails
 The package configures the analyzer without MSBuild edits or a separate command.
 Which rules run depends on the Axial packages the project references; see [Choose guardrails per package](#choose-guardrails-per-package).
 
-Findings are warnings by default. With error severity, the build shows the `AXG` findings and fails with
-`Axial.Guardrails reported findings above (see AXG codes).` A different analyzer CLI exit code reports a tool failure
-instead; neither case is reported as an `MSB3073` command failure.
+New findings are errors and fail the build. Existing findings can be checked into a baseline and are then reported
+as warnings; the baseline is the only severity downgrade path. The build reports analyzer tool failures separately
+from diagnostic findings.
 
-To make findings fail the build, set the severity to `error`:
-
-```xml
-<PropertyGroup>
-  <AxialGuardrailsSeverity>error</AxialGuardrailsSeverity>
-</PropertyGroup>
-```
-
-To downgrade findings to non-failing warnings during a migration, without editing each project, set
-`AXIAL_GUARDRAILS_SEVERITY=warning` in the environment, or pass `-p:AxialGuardrailsSeverity=warning` to `dotnet build`
-or `dotnet test`. A severity set in a project or with `-p:` wins over the environment variable.
-
-To disable the analyzer for one project, set:
-
-```xml
-<PropertyGroup>
-  <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>
-</PropertyGroup>
-```
+Do not set `AxialGuardrailsSeverity` or `AXIAL_GUARDRAILS_SEVERITY`; they no longer downgrade findings. When
+`CI=true`, an environment attempt to disable or downgrade Guardrails fails before compilation. A project that cannot
+run analyzers may set `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` in its project file, but ordinary
+adoption uses a baseline instead.
 
 For adoption guidance, see [Installation](/getting-started/installation.html#add-effect-boundary-guardrails-optional).
 
@@ -59,17 +44,41 @@ module Consumer
 let now () = System.DateTimeOffset.UtcNow
 ```
 
-Build with `<AxialGuardrailsSeverity>error</AxialGuardrailsSeverity>` set (or `AXIAL_GUARDRAILS_SEVERITY=error` in
-the environment). The build exits non-zero and reports the finding:
+Build the project. The build exits non-zero and reports the finding:
 
 ```text
 error AXG001: This call reads the ambient system clock through System.DateTimeOffset, which makes timing untestable.
 The Axial guardrail asks for an explicit, mockable alternative: use Axial.IClock (Axial.PlatformService.Clock.now).
 ```
 
-The same source built with `AXIAL_GUARDRAILS_SEVERITY=warning` succeeds and reports `warning AXG001` instead. If
-you see neither form, the analyzer is not running in that project: check the package reference and that the guardrail
-for the effect's package is enabled (the core `Axial` guardrail covers clock reads).
+If you see no finding, the analyzer is not running in that project: check the package reference and that the
+guardrail for the effect's package is enabled (the core `Axial` guardrail covers clock reads).
+
+## Adopt Guardrails with a baseline
+
+A baseline records violations that already exist when Guardrails is introduced. It has one tab-separated entry per
+finding:
+
+```text
+AXG001<TAB>src/Legacy.fs<TAB>6ea89f…
+```
+
+The fingerprint contains the rule ID, normalized offending text, and enclosing declaration signature. Moving a
+finding to another line does not invalidate it. Changing the offending expression or moving it to another declaration
+does. New findings remain errors.
+
+Generate a candidate for one project:
+
+```bash
+dotnet build MyApp.fsproj -p:AxialGuardrailsGenerateBaseline=true
+```
+
+The build prints the candidate path under the project's intermediate output directory. Review every entry, then copy
+approved entries into `Axial.Guardrails.baseline` beside the project. Set `AxialGuardrailsBaselineFile` when a solution
+uses one baseline in another location. Regenerate and review rather than hand-writing fingerprints.
+
+CI should run `scripts/check-guardrails-baseline-growth.sh` (or an equivalent comparison) against the base commit.
+Axial's CI and `scripts/verify.sh` do this automatically and fail when the baseline grows.
 
 ## Review the diagnostics
 
@@ -108,8 +117,6 @@ Change the set with ordinary MSBuild item operations in a project or `Directory.
 <ItemGroup>
   <!-- Turn a guardrail off -->
   <AxialGuardrail Remove="Axial.Console" />
-  <!-- Give one guardrail its own severity; the others use AxialGuardrailsSeverity -->
-  <AxialGuardrail Update="Axial.HttpClient" Severity="warning" />
   <!-- Turn one on without referencing its package -->
   <AxialGuardrail Include="Axial.FileSystem" />
 </ItemGroup>

@@ -59,7 +59,7 @@ module PackagePropsTests =
 
     type BuildResult = { ExitCode: int; Output: string }
 
-    let private runBuild (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) (ci: bool) (generateBaseline: bool) =
+    let private runBuild (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) (ci: bool) (generateBaseline: bool) (enabledEnv: string option) =
         let startInfo = ProcessStartInfo("dotnet")
         startInfo.ArgumentList.Add "build"
         startInfo.ArgumentList.Add project
@@ -87,6 +87,7 @@ module PackagePropsTests =
         | Some value -> startInfo.EnvironmentVariables["AXIAL_GUARDRAILS_SEVERITY"] <- value
         | None -> ()
         if ci then startInfo.EnvironmentVariables["CI"] <- "true"
+        enabledEnv |> Option.iter (fun value -> startInfo.EnvironmentVariables["AxialGuardrailsEnabled"] <- value)
         use child = Process.Start startInfo
         let stdout = child.StandardOutput.ReadToEndAsync()
         let stderr = child.StandardError.ReadToEndAsync()
@@ -104,7 +105,7 @@ module PackagePropsTests =
         Directory.CreateDirectory dir |> ignore
         try
             write dir
-            runBuild (Path.Combine(dir, "Consumer.fsproj")) None severityEnv severityProperty false false
+            runBuild (Path.Combine(dir, "Consumer.fsproj")) None severityEnv severityProperty false false None
         finally
             Directory.Delete(dir, true)
 
@@ -131,9 +132,13 @@ module PackagePropsTests =
         Directory.CreateDirectory dir |> ignore
         try
             writeConsumer dir
-            let result = runBuild (Path.Combine(dir, "Consumer.fsproj")) None (Some "warning") None true false
-            Assert.NotEqual(0, result.ExitCode)
-            Assert.Contains("cannot be disabled or downgraded through environment variables", result.Output)
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let severity = runBuild project None (Some "warning") None true false None
+            Assert.NotEqual(0, severity.ExitCode)
+            Assert.Contains("cannot be disabled or downgraded through environment variables", severity.Output)
+            let disabled = runBuild project None None None true false (Some "false")
+            Assert.NotEqual(0, disabled.ExitCode)
+            Assert.Contains("cannot be disabled or downgraded through environment variables", disabled.Output)
         finally
             Directory.Delete(dir, true)
 
@@ -143,7 +148,7 @@ module PackagePropsTests =
         Directory.CreateDirectory dir |> ignore
         try
             writeConsumer dir
-            let result = runBuild (Path.Combine(dir, "Consumer.fsproj")) None None None false true
+            let result = runBuild (Path.Combine(dir, "Consumer.fsproj")) None None None false true None
             Assert.Equal(0, result.ExitCode)
             let candidates = Directory.GetFiles(dir, "axial-guardrails.*.baseline", SearchOption.AllDirectories)
             Assert.Single(candidates) |> ignore
@@ -167,7 +172,7 @@ module PackagePropsTests =
             let bootstrapProject = Path.Combine(repoRoot (), "src", "Axial.Guardrails", "Axial.Guardrails.fsproj") |> xmlEscape
             let bootstrapElement = $"<_AxialGuardrailsBootstrapProject>{bootstrapProject}</_AxialGuardrailsBootstrapProject>"
             File.WriteAllText(project, xml.Replace(analyzersPath (), missing).Replace(bootstrapElement, "<_AxialGuardrailsBootstrapProject />"))
-            let result = runBuild project None None None false false
+            let result = runBuild project None None None false false None
             Assert.NotEqual(0, result.ExitCode)
             Assert.Contains("analyzer folder is missing", result.Output)
         finally
@@ -186,8 +191,8 @@ module PackagePropsTests =
         try
             write dir
             let project = Path.Combine(dir, "Consumer.fsproj")
-            let netstandard = runBuild project (Some "netstandard2.1") None None false false
-            let net10 = runBuild project (Some "net10.0") None None false false
+            let netstandard = runBuild project (Some "netstandard2.1") None None false false None
+            let net10 = runBuild project (Some "net10.0") None None false false None
 
             Assert.Equal(0, netstandard.ExitCode)
             Assert.DoesNotContain("AXG006", netstandard.Output)

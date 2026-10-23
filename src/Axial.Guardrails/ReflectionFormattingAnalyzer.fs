@@ -10,8 +10,7 @@
 /// Formatting a type parameter is flagged too: it is only as safe as whatever type is substituted, and a generic
 /// helper like `Cause.prettyPrint string` is exactly where a union slips in unnoticed.
 ///
-/// Render such values explicitly instead (a `describe`/`render` function or a hand-written `ToString` override), or
-/// mark a deliberate use with `// axial-allow-reflection-format` on the line or the line above.
+/// Render such values explicitly instead (a `describe`/`render` function or a hand-written `ToString` override).
 module Axial.Guardrails.ReflectionFormattingAnalyzer
 
 open System.Text.RegularExpressions
@@ -248,6 +247,6 @@ let analyze (ctx: CliContext) : Message list =
 [<CliAnalyzer("ReflectionFormatting",
               "Flags ToString, string, interpolation and %A formatting of F# unions, records and type parameters, "
               + "which relies on reflection that NativeAOT and trimming remove.",
-              "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
+              "https://github.com/adz/Axial/blob/main/docs/15-notes/04-guardrail-diagnostics.md#axg006-format-without-reflection")>]
 let reflectionFormattingAnalyzer: Analyzer<CliContext> =
     fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }
