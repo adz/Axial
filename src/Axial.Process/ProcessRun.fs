@@ -12,10 +12,18 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 
+type private StopCause =
+    | Interrupted
+    | StageTimeout of stage: int * after: TimeSpan
+    | OverallTimeout of after: TimeSpan
+    | DrainTimeout of after: TimeSpan
+    | WorkerFailure
+
 type private RunStage = {
     Process: Diagnostics.Process
     Pidfd: int
     Released: Deferred<Never, unit>
+    Exit: Deferred<Never, int>
     mutable Exited: bool
     mutable StdinClosed: bool
     mutable Feeder: Fiber<ProcessError, unit> option
@@ -24,16 +32,13 @@ type private RunStage = {
 type private RunCommand =
     | RegisterFeeder of stage: int * feeder: Fiber<ProcessError, unit>
     | Close of stage: int * request: StopRequest * reply: Deferred<StopRequestError, unit>
-    | Exited of stage: int
+    | Exited of stage: int * code: int
+    | Stop of cause: StopCause * reply: Deferred<Never, StopCause>
 
-/// Flow-based process engine under construction. The test-only switch keeps the shipped path on the legacy engine
-/// until timeout, cancellation, and graceful-stop slices are complete.
+/// Flow-based process execution with scoped processes, supervised pumps, and one stop coordinator.
 module internal ProcessRun =
-    let private flowEngineVariable = "AXIAL_PROCESS_ENGINE"
-
     let isEnabled () =
-        // Test-only migration switch; production selection does not depend on ambient environment configuration.
-        Environment.GetEnvironmentVariable(flowEngineVariable) = "flow" // axial-allow-effect: environment
+        Environment.GetEnvironmentVariable("AXIAL_PROCESS_ENGINE") = "flow" // axial-allow-effect: environment
 
     let private processError (command: CommandDefinition) (error: exn) =
         ProcessError.StartFailed {
@@ -200,6 +205,56 @@ module internal ProcessRun =
                             Flow.succeed ())
                     )
 
+                let! released =
+                    commands
+                    |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, unit> ())
+                    |> Flow.widenError
+                let! exits =
+                    commands
+                    |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, int> ())
+                    |> Flow.widenError
+                let! (commandsQueue: Queue<RunCommand>) = Queue.unbounded ()
+                let timerFibers = ResizeArray<Fiber<ProcessError, unit>>()
+
+                let postTimedStop cause error =
+                    flow {
+                        let! reply = Deferred.make<ClockEnvironment, Never, StopCause> () |> Flow.widenError
+                        let! _ = commandsQueue |> Queue.offer (Stop(cause, reply))
+                        let! winner = Deferred.await reply |> Flow.widenError
+                        if winner = cause then return! Flow.fail error
+                        else return! Flow.never<ClockEnvironment, ProcessError, unit>
+                    }
+
+                let sleepStartedNow delay =
+                    let cancellation = new CancellationTokenSource()
+                    let pending = clock.Sleep(delay, cancellation.Token)
+                    // The started sleep owns a CTS canceled by the Flow finalizer.
+                    Flow.fromTask (fun _ -> task { do! pending }) // axial-allow-discarded-cancellation
+                    |> Flow.ensuring (
+                        Flow.delay (fun () ->
+                            try cancellation.Cancel() with _ -> ()
+                            cancellation.Dispose()
+                            Flow.succeed ())
+                    )
+
+                let startTimer cause error delay =
+                    flow {
+                        do! sleepStartedNow delay
+                        return! postTimedStop cause error
+                    }
+
+                match specification.OverallTimeout with
+                | Some after ->
+                    let remaining = max TimeSpan.Zero (after - (clock.Elapsed() - startedElapsed))
+                    let error =
+                        ProcessError.OverallTimedOut {
+                            Specification = commands |> Array.map Configuration.renderCommand |> String.concat " | "
+                            Timeout = after
+                        }
+                    let! timer = startTimer (OverallTimeout after) error remaining |> Flow.forkNamed "process-overall-timeout"
+                    timerFibers.Add timer
+                | None -> ()
+
                 for stage, command in commands |> Array.indexed do
                     let pipedOut = specification.Connections |> List.exists (fun (source, _, _) -> source = stage)
                     let pipedError = specification.Connections |> List.exists (fun (source, _, both) -> source = stage && both)
@@ -223,10 +278,26 @@ module internal ProcessRun =
                     starts.Add stageStartedAt
                     elapsedStarts.Add(clock.Elapsed())
 
-                let! released =
-                    commands
-                    |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, unit> ())
-                    |> Flow.widenError
+                    match command.Timeout.Value with
+                    | Some after ->
+                        let timeout =
+                            Flow.race
+                                (Deferred.await exits[stage] |> Flow.widenError |> Flow.map (fun _ -> false))
+                                (sleepStartedNow after |> Flow.map (fun () -> true))
+                            |> Flow.bind (fun timedOut ->
+                                if timedOut then
+                                    postTimedStop
+                                        (StageTimeout(stage, after))
+                                        (ProcessError.StageTimedOut {
+                                            Stage = stage
+                                            Command = Configuration.renderCommand command
+                                            Timeout = after
+                                        })
+                                else
+                                    Flow.never<ClockEnvironment, ProcessError, unit>)
+                        let! timer = timeout |> Flow.forkNamed ("process-stage-timeout-" + string stage)
+                        timerFibers.Add timer
+                    | None -> ()
 
                 let stages =
                     processes
@@ -234,6 +305,7 @@ module internal ProcessRun =
                         Process = proc
                         Pidfd = NativeProcess.tryOpenPidfd proc.Id
                         Released = released[stage]
+                        Exit = exits[stage]
                         Exited = false
                         StdinClosed = false
                         Feeder = None
@@ -247,8 +319,6 @@ module internal ProcessRun =
                             Flow.succeed ())
                     )
 
-                let! (commandsQueue: Queue<RunCommand>) = Queue.unbounded ()
-
                 let closePipe (stage: RunStage) =
                     Flow.delay (fun () ->
                         stage.StdinClosed <- true
@@ -261,11 +331,15 @@ module internal ProcessRun =
                     flow {
                         match stage.Feeder with
                         | Some feeder ->
-                            do! Fiber.requestInterrupt feeder
-                            do!
-                                Flow.race
-                                    (Fiber.await feeder |> Flow.ignore)
-                                    (Flow.sleep (TimeSpan.FromMilliseconds 250.0))
+                            let! settled = Fiber.poll feeder
+                            match settled with
+                            | Some _ -> ()
+                            | None ->
+                                do! Fiber.requestInterrupt feeder
+                                do!
+                                    Flow.race
+                                        (Fiber.await feeder |> Flow.ignore)
+                                        (Flow.sleep (TimeSpan.FromMilliseconds 250.0))
                         | None -> ()
                         do! closePipe stage
                     }
@@ -275,6 +349,87 @@ module internal ProcessRun =
                     | Ok () -> Deferred.succeed () reply |> Flow.ignore
                     | Error error -> Deferred.fail error reply |> Flow.ignore
 
+                let isLive (stage: RunStage) =
+                    try not stage.Process.HasExited with _ -> false
+
+                let terminateAll () =
+                    flow {
+                        do!
+                            Flow.delay (fun () ->
+                                for stage in stages do
+                                    try
+#if NETSTANDARD2_1
+                                        stage.Process.Kill()
+#else
+                                        // A failed pump may race the direct child's exit while a descendant still
+                                        // owns its pipes, so abnormal termination always attempts the whole tree.
+                                        stage.Process.Kill(entireProcessTree = true)
+#endif
+                                    with _ -> ()
+                                    try
+                                        if stage.Process.StartInfo.RedirectStandardOutput then stage.Process.StandardOutput.BaseStream.Dispose()
+                                        if stage.Process.StartInfo.RedirectStandardError then stage.Process.StandardError.BaseStream.Dispose()
+                                    with _ -> ()
+                                Flow.succeed ())
+                        for stage in stages do
+                            if stage.Feeder.IsSome && not stage.StdinClosed then do! stopFeeder stage
+                    }
+
+                let sendRequest request (stage: RunStage) =
+                    flow {
+                        if request = StopRequest.CloseStdIn then
+                            if stage.Process.StartInfo.RedirectStandardInput then
+                                do! stopFeeder stage
+                                return true
+                            else
+                                return false
+                        else
+                            return NativeProcess.sendStopRequest stage.Process stage.Pidfd request = Ok ()
+                    }
+
+                let runStopLadder () =
+                    flow {
+                        for request, grace in specification.StopGracefully do
+                            let live = stages |> Array.filter isLive
+                            let! sent =
+                                live
+                                |> Array.map (sendRequest request)
+                                |> Array.toList
+                                |> Flow.sequencePar
+                            if sent |> List.exists id && live.Length > 0 && grace > TimeSpan.Zero then
+                                let exited =
+                                    live
+                                    |> Array.map (fun stage -> Deferred.await stage.Exit)
+                                    |> Array.toList
+                                    |> Flow.sequencePar
+                                    |> Flow.ignore
+                                do! Flow.race exited (Flow.sleep grace)
+                        do! terminateAll ()
+                    }
+
+                let mutable firstStop: StopCause option = None
+                let! stopFinished =
+                    Deferred.make<ClockEnvironment, Never, StopCause> ()
+                    |> Flow.widenError
+                let! ioStop =
+                    Deferred.make<ClockEnvironment, Never, unit> ()
+                    |> Flow.widenError
+
+                let stop cause reply =
+                    flow {
+                        match firstStop with
+                        | Some winner ->
+                            let! _ = Deferred.succeed winner reply
+                            ()
+                        | None ->
+                            firstStop <- Some cause
+                            Deferred.succeedNow () ioStop |> ignore
+                            do! runStopLadder ()
+                            let! _ = Deferred.succeed cause stopFinished
+                            let! _ = Deferred.succeed cause reply
+                            ()
+                    }
+
                 let rec coordinate () =
                     flow {
                         let! command = Dequeue.take commandsQueue
@@ -283,10 +438,13 @@ module internal ProcessRun =
                             let state = stages[stage]
                             state.Feeder <- Some feeder
                             if state.StdinClosed || state.Exited then do! stopFeeder state
-                        | Exited stage ->
+                        | Exited(stage, code) ->
                             let state = stages[stage]
                             state.Exited <- true
                             if state.Feeder.IsSome && not state.StdinClosed then do! stopFeeder state
+                            if not (commands[stage].SuccessCodes.Value.Contains code) then
+                                let! ignored = Deferred.make<ClockEnvironment, Never, StopCause> ()
+                                do! stop WorkerFailure ignored
                         | Close(stage, request, reply) ->
                             let state = stages[stage]
                             if state.Exited then
@@ -300,10 +458,26 @@ module internal ProcessRun =
                             else
                                 let result = NativeProcess.sendStopRequest state.Process state.Pidfd request
                                 do! completeClose result reply
+                        | Stop(cause, reply) -> do! stop cause reply
                         return! coordinate ()
                     }
 
-                let! coordinator = coordinate () |> Flow.forkNamed "process-coordinator"
+                // The coordinator must outlive caller cancellation long enough for Flow.onInterrupt to post and
+                // await the stop ladder. Scope close shuts its queue down after the handler has finished.
+                let! coordinator =
+                    coordinate ()
+                    |> Flow.forkGraceful (Dequeue.shutdown commandsQueue) (TimeSpan.FromSeconds 5.0)
+
+                let requestStop cause =
+                    flow {
+                        let! reply = Deferred.make<ClockEnvironment, Never, StopCause> ()
+                        let! offered =
+                            (commandsQueue |> Queue.offer (Stop(cause, reply)) |> Flow.map Some)
+                            |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed None)
+                        match offered with
+                        | Some _ -> return! Deferred.await reply
+                        | None -> return cause
+                    }
 
                 let closeCallback stage request = async {
                     let requestFlow =
@@ -336,15 +510,17 @@ module internal ProcessRun =
                                 closeCallback stage
                             )
                             |> Flow.fromAsync
+                            |> Flow.onInterrupt (requestStop Interrupted |> Flow.ignore)
                         do! Flow.ofExit handlerExit |> Flow.widenError
                 | None -> ()
 
                 let monitor stage =
                     waitForStage processes[stage]
-                    |> Flow.tap (fun _ ->
+                    |> Flow.tap (fun code ->
                         flow {
                             elapsedEnds[stage] <- Some(clock.Elapsed())
-                            let! _ = commandsQueue |> Queue.offer (Exited stage)
+                            Deferred.succeedNow code exits[stage] |> ignore
+                            let! _ = commandsQueue |> Queue.offer (Exited(stage, code))
                             return ()
                         })
 
@@ -400,7 +576,9 @@ module internal ProcessRun =
                                 do! decode [||] 0 true
                             else
                                 countBytes stage original count
-                                let bytes = buffer[.. count - 1]
+                                // Full reads can use the stable pump buffer directly. Avoiding one 4 KiB copy per
+                                // read materially reduces allocation for large captures.
+                                let bytes = if count = buffer.Length then buffer else buffer[.. count - 1]
                                 do!
                                     Flow.fromTask (fun token ->
                                         NativeProcess.writeCapturedTarget console files token gate observed target capture bytes)
@@ -462,7 +640,7 @@ module internal ProcessRun =
                                                 | Ok () -> ()
                                                 | Error error -> return! Flow.fail error
                                 elif count > 0 then
-                                    do! write buffer[.. count - 1]
+                                    do! write (if count = buffer.Length then buffer else buffer[.. count - 1])
                             }
 
                         let rec loop () =
@@ -494,6 +672,13 @@ module internal ProcessRun =
                             |> Flow.sequencePar
                             |> Flow.ignore
                     }
+                    |> Flow.foldCause
+                        Flow.succeed
+                        (fun cause ->
+                            match Cause.untraced cause with
+                            | Cause.Die (:? IOException as error) ->
+                                Flow.fail (ProcessError.IoFailed { Message = error.Message })
+                            | _ -> Flow.ofExit (Exit.Failure cause))
                     |> Flow.ensuring (
                         flow {
                             gate.Dispose()
@@ -546,10 +731,58 @@ module internal ProcessRun =
                                 do! input.CopyToAsync(processes[stage].StandardInput.BaseStream, 81920, token)
                             })
                         | InputSource.Stream source ->
-                            source
-                            |> FlowStream.runForEachFlow (writeInput stage >> Flow.localEnv (fun () -> clockEnvironment))
-                            |> mapInputFailure
-                            |> Flow.localEnv (fun (_: ClockEnvironment) -> ())
+                            let work =
+                                source
+                                |> FlowStream.runForEachFlow (writeInput stage >> Flow.localEnv (fun () -> clockEnvironment))
+                                |> mapInputFailure
+                                |> Flow.localEnv (fun (_: ClockEnvironment) -> ())
+
+                            // A foreign source may ignore interruption. Give it 250 ms to settle, then let the
+                            // feeder fiber finish while a continuation observes and disposes the detached run.
+                            Flow.fromTask (fun token -> task {
+                                let sourceCancellation = new CancellationTokenSource()
+                                let pumping =
+                                    Async.StartAsTask(
+                                        Flow.toAsync clockEnvironment work,
+                                        cancellationToken = sourceCancellation.Token
+                                    )
+                                let canceled = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                                use _registration = token.Register(fun () -> canceled.TrySetResult() |> ignore)
+                                let! first = Task.WhenAny(pumping :> Task, canceled.Task)
+                                if obj.ReferenceEquals(first, pumping) then
+                                    let! outcome =
+                                        if pumping.IsCanceled then
+                                            Task.FromResult(Exit.Failure Cause.Interrupt)
+                                        else
+                                            pumping
+                                    sourceCancellation.Dispose()
+                                    return outcome
+                                else
+                                    ThreadPool.QueueUserWorkItem(fun _ ->
+                                        try sourceCancellation.Cancel() with _ -> ())
+                                    |> ignore
+                                    let timer = clock.Sleep(TimeSpan.FromMilliseconds 250.0, CancellationToken.None)
+                                    let! settled = Task.WhenAny(pumping :> Task, timer)
+                                    if obj.ReferenceEquals(settled, pumping) then
+                                        let! outcome =
+                                            if pumping.IsCanceled then
+                                                Task.FromResult(Exit.Failure Cause.Interrupt)
+                                            else
+                                                pumping
+                                        sourceCancellation.Dispose()
+                                        return outcome
+                                    else
+                                        pumping.ContinueWith(
+                                            (fun (_: Task<Exit<unit, ProcessError>>) ->
+                                                sourceCancellation.Dispose()),
+                                            CancellationToken.None,
+                                            TaskContinuationOptions.ExecuteSynchronously,
+                                            TaskScheduler.Default
+                                        )
+                                        |> ignore
+                                        return Exit.Failure Cause.Interrupt
+                            })
+                            |> Flow.bind Flow.ofExit
 
                     pumping
                     |> Flow.foldCause
@@ -566,7 +799,13 @@ module internal ProcessRun =
                                 | _ -> false
                             if expectedPipeClose then Flow.succeed ()
                             else Flow.ofExit (Exit.Failure cause))
-                    |> Flow.ensuring (closeInput processes[stage] |> Flow.mapError Never.absurd)
+                    |> Flow.ensuring (
+                        flow {
+                            stages[stage].StdinClosed <- true
+                            do! closeInput processes[stage]
+                        }
+                        |> Flow.mapError Never.absurd
+                    )
 
                 let inputFibers = ResizeArray<Fiber<ProcessError, unit> * Deferred<Never, unit>>()
 
@@ -574,6 +813,9 @@ module internal ProcessRun =
                     if specification.Connections |> List.forall (fun (_, target, _) -> target <> stage) then
                         match command.StdIn.Value with
                         | InputSource.Inherit -> ()
+                        | InputSource.Empty ->
+                            stages[stage].StdinClosed <- true
+                            do! closeInput processes[stage]
                         | source ->
                             let! feeder = inputFeeder stage source |> Flow.forkNamed ("process-stdin-" + string stage)
                             inputFibers.Add(feeder, released[stage])
@@ -589,9 +831,33 @@ module internal ProcessRun =
                              | Exit.Failure cause -> Flow.ofExit (Exit.Failure cause)))
                         (Deferred.await detached |> Flow.widenError)
 
+                let tolerateStopPipeFailure source =
+                    source
+                    |> Flow.foldCause
+                        Flow.succeed
+                        (fun cause ->
+                            let expected =
+                                match firstStop, Cause.untraced cause with
+                                | Some _, Cause.Die error ->
+                                    error :? IOException
+                                    || error :? ObjectDisposedException
+                                    || error :? OperationCanceledException
+                                | _ -> false
+                            if expected then Flow.succeed ()
+                            else Flow.ofExit (Exit.Failure cause))
+
+                let stopIo source =
+                    Flow.race source (Deferred.await ioStop |> Flow.widenError)
+
+                let stopWorkerFailure =
+                    function
+                    | Exit.Failure cause when not (Cause.isInterrupted cause) ->
+                        requestStop WorkerFailure |> Flow.ignore
+                    | _ -> Flow.succeed ()
+
                 let! pumpFibers =
                     copies @ List.ofSeq reads
-                    |> Flow.traverse Flow.fork
+                    |> Flow.traverse (tolerateStopPipeFailure >> stopIo >> Flow.onExit stopWorkerFailure >> Flow.fork)
 
                 let io =
                     pumpFibers
@@ -603,36 +869,133 @@ module internal ProcessRun =
                             for stage in 0 .. stderrTargets.Length - 1 do
                                 if not (specification.MergeStdErr && stage = final) then
                                     do! Flow.fromTask (fun token -> NativeProcess.finishTarget token stderrTargets[stage])
-                        })
+                        }
+                        |> stopIo)
 
-                let! ioFiber = Flow.fork io
+                let! ioFiber =
+                    io
+                    |> Flow.onExit stopWorkerFailure
+                    |> Flow.forkNamed "process-io"
                 let! inputFiber =
                     inputFibers
                     |> Seq.map awaitInput
                     |> List.ofSeq
                     |> Flow.sequencePar
                     |> Flow.ignore
+                    |> Flow.onExit stopWorkerFailure
                     |> Flow.forkNamed "process-inputs"
                 let! monitorFibers =
                     [ 0 .. processes.Count - 1 ]
                     |> Flow.traverse (monitor >> Flow.fork)
-                let! exitCodes = monitorFibers |> Flow.traverse Fiber.join
-                do! Fiber.join ioFiber
-                do! Fiber.join inputFiber
+
+                let stopAndFail requested (error: ProcessError) =
+                    flow {
+                        let! winner = requestStop requested |> Flow.widenError
+                        if winner = requested then return! Flow.fail error
+                        else return! Flow.never<ClockEnvironment, ProcessError, _>
+                    }
+
+                let completeRun =
+                    flow {
+                        let! exitCodes = monitorFibers |> Flow.traverse Fiber.join
+
+                        let finishIo =
+                            flow {
+                                do! Fiber.join ioFiber
+                                do! Fiber.join inputFiber
+                            }
+
+                        match specification.DrainTimeout with
+                        | Some after ->
+                            let allEnded = elapsedEnds |> Array.choose id |> Array.max
+                            let remaining = max TimeSpan.Zero (after - (clock.Elapsed() - allEnded))
+                            do!
+                                Flow.race
+                                    finishIo
+                                    (flow {
+                                        do! Flow.sleep remaining
+                                        return!
+                                            stopAndFail
+                                                (DrainTimeout after)
+                                                (ProcessError.IoFailed {
+                                                    Message =
+                                                        String.Format(
+                                                            Globalization.CultureInfo.InvariantCulture,
+                                                            "Process I/O did not finish within {0} after all process stages exited.",
+                                                            after
+                                                        )
+                                                })
+                                    })
+                        | None -> do! finishIo
+
+                        match firstStop with
+                        | Some(StageTimeout(stage, after)) ->
+                            let! _ = Deferred.await stopFinished |> Flow.widenError
+                            return!
+                                Flow.fail (ProcessError.StageTimedOut {
+                                    Stage = stage
+                                    Command = Configuration.renderCommand commands[stage]
+                                    Timeout = after
+                                })
+                        | Some(OverallTimeout after) ->
+                            let! _ = Deferred.await stopFinished |> Flow.widenError
+                            return!
+                                Flow.fail (ProcessError.OverallTimedOut {
+                                    Specification =
+                                        commands
+                                        |> Array.map Configuration.renderCommand
+                                        |> String.concat " | "
+                                    Timeout = after
+                                })
+                        | Some(DrainTimeout after) ->
+                            let! _ = Deferred.await stopFinished |> Flow.widenError
+                            return!
+                                Flow.fail (ProcessError.IoFailed {
+                                    Message =
+                                        String.Format(
+                                            Globalization.CultureInfo.InvariantCulture,
+                                            "Process I/O did not finish within {0} after all process stages exited.",
+                                            after
+                                        )
+                                })
+                        | _ -> ()
+
+                        let result =
+                            NativeProcess.buildResult clock specification commands processes starts elapsedStarts elapsedEnds stdout stderr startedAt startedElapsed
+
+                        match
+                            exitCodes
+                            |> List.mapi (fun stage code -> stage, code)
+                            |> List.tryFind (fun (stage, code) -> not (commands[stage].SuccessCodes.Value.Contains code))
+                        with
+                        | Some(stage, _) ->
+                            return! Flow.fail (ProcessError.StageFailed { Stage = result.Stages[stage]; Result = result })
+                        | None -> return result
+                    }
+
+                let execution =
+                    if timerFibers.Count = 0 then
+                        completeRun
+                    else
+                        let timerFailure =
+                            timerFibers
+                            |> Seq.map Fiber.join
+                            |> List.ofSeq
+                            |> Flow.sequencePar
+                            |> Flow.bind (fun _ -> Flow.never<ClockEnvironment, ProcessError, ProcessResult>)
+                        Flow.race completeRun timerFailure
+
+                let! result =
+                    execution
+                    |> Flow.onExit (function
+                        | Exit.Failure cause when not (Cause.isInterrupted cause) ->
+                            requestStop WorkerFailure |> Flow.ignore
+                        | _ -> Flow.succeed ())
+                    |> Flow.onInterrupt (requestStop Interrupted |> Flow.ignore)
+
                 do! Dequeue.shutdown commandsQueue
                 let! _ = Fiber.await coordinator
-
-                let result =
-                    NativeProcess.buildResult clock specification commands processes starts elapsedStarts elapsedEnds stdout stderr startedAt startedElapsed
-
-                match
-                    exitCodes
-                    |> List.mapi (fun stage code -> stage, code)
-                    |> List.tryFind (fun (stage, code) -> not (commands[stage].SuccessCodes.Value.Contains code))
-                with
-                | Some(stage, _) ->
-                    return! Flow.fail (ProcessError.StageFailed { Stage = result.Stages[stage]; Result = result })
-                | None -> return result
+                return result
             }
             |> mapEngineFailure
             |> Flow.scoped
