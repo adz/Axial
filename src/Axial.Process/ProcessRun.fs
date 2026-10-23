@@ -12,8 +12,22 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 
+type private RunStage = {
+    Process: Diagnostics.Process
+    Pidfd: int
+    Released: Deferred<Never, unit>
+    mutable Exited: bool
+    mutable StdinClosed: bool
+    mutable Feeder: Fiber<ProcessError, unit> option
+}
+
+type private RunCommand =
+    | RegisterFeeder of stage: int * feeder: Fiber<ProcessError, unit>
+    | Close of stage: int * request: StopRequest * reply: Deferred<StopRequestError, unit>
+    | Exited of stage: int
+
 /// Flow-based process engine under construction. The test-only switch keeps the shipped path on the legacy engine
-/// until stdin, stop coordination, and timeout slices are complete.
+/// until timeout, cancellation, and graceful-stop slices are complete.
 module internal ProcessRun =
     let private flowEngineVariable = "AXIAL_PROCESS_ENGINE"
 
@@ -91,6 +105,24 @@ module internal ProcessRun =
             try proc.StandardInput.Close() with _ -> ()
             Flow.succeed ())
 
+    let rec private hasTypedFailure cause =
+        match cause with
+        | Cause.Fail _ -> true
+        | Cause.Then(left, right)
+        | Cause.Both(left, right) -> hasTypedFailure left || hasTypedFailure right
+        | Cause.Traced(inner, _) -> hasTypedFailure inner
+        | _ -> false
+
+    let private mapInputFailure (source: Flow<'env, string, unit>) =
+        source
+        |> Flow.foldCause
+            Flow.succeed
+            (fun cause ->
+                if hasTypedFailure cause then
+                    Flow.fail (ProcessError.InputFailed(cause.ToString()))
+                else
+                    Flow.ofExit (Exit.Failure(Cause.map ProcessError.InputFailed cause)))
+
     let private mapEngineFailure (source: Flow<ClockEnvironment, ProcessError, 'value>) =
         source
         |> Flow.foldCause
@@ -151,6 +183,7 @@ module internal ProcessRun =
                 let starts = ResizeArray<DateTimeOffset>()
                 let elapsedStarts = ResizeArray<TimeSpan>()
                 let elapsedEnds = Array.create commands.Length None
+                let stdinOwned = Array.create commands.Length false
                 let processes = ResizeArray<Diagnostics.Process>()
                 let outputGates = Array.init commands.Length (fun _ -> new SemaphoreSlim(1, 1))
                 let errorGates = Array.init commands.Length (fun _ -> new SemaphoreSlim(1, 1))
@@ -185,32 +218,135 @@ module internal ProcessRun =
                             releaseStage
 
                     processes.Add proc
+                    stdinOwned[stage] <- redirectInput
                     let stageStartedAt = clock.UtcNow()
                     starts.Add stageStartedAt
                     elapsedStarts.Add(clock.Elapsed())
 
-                    match specification.OnStarted with
-                    | Some handler ->
-                        let close request = async {
-                            if elapsedEnds[stage].IsSome then
-                                return Ok ()
+                let! released =
+                    commands
+                    |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, unit> ())
+                    |> Flow.widenError
+
+                let stages =
+                    processes
+                    |> Seq.mapi (fun stage proc -> {
+                        Process = proc
+                        Pidfd = NativeProcess.tryOpenPidfd proc.Id
+                        Released = released[stage]
+                        Exited = false
+                        StdinClosed = false
+                        Feeder = None
+                    })
+                    |> Seq.toArray
+
+                let! () =
+                    Flow.scopeFinalizer (
+                        Flow.delay (fun () ->
+                            for stage in stages do NativeProcess.closePidfd stage.Pidfd
+                            Flow.succeed ())
+                    )
+
+                let! (commandsQueue: Queue<RunCommand>) = Queue.unbounded ()
+
+                let closePipe (stage: RunStage) =
+                    Flow.delay (fun () ->
+                        stage.StdinClosed <- true
+                        try stage.Process.StandardInput.BaseStream.Dispose() with _ -> ()
+                        try stage.Process.StandardInput.Close() with _ -> ()
+                        Deferred.succeedNow () stage.Released |> ignore
+                        Flow.succeed ())
+
+                let stopFeeder (stage: RunStage) =
+                    flow {
+                        match stage.Feeder with
+                        | Some feeder ->
+                            do! Fiber.requestInterrupt feeder
+                            do!
+                                Flow.race
+                                    (Fiber.await feeder |> Flow.ignore)
+                                    (Flow.sleep (TimeSpan.FromMilliseconds 250.0))
+                        | None -> ()
+                        do! closePipe stage
+                    }
+
+                let completeClose result reply =
+                    match result with
+                    | Ok () -> Deferred.succeed () reply |> Flow.ignore
+                    | Error error -> Deferred.fail error reply |> Flow.ignore
+
+                let rec coordinate () =
+                    flow {
+                        let! command = Dequeue.take commandsQueue
+                        match command with
+                        | RegisterFeeder(stage, feeder) ->
+                            let state = stages[stage]
+                            state.Feeder <- Some feeder
+                            if state.StdinClosed || state.Exited then do! stopFeeder state
+                        | Exited stage ->
+                            let state = stages[stage]
+                            state.Exited <- true
+                            if state.Feeder.IsSome && not state.StdinClosed then do! stopFeeder state
+                        | Close(stage, request, reply) ->
+                            let state = stages[stage]
+                            if state.Exited then
+                                do! completeClose (Ok ()) reply
+                            elif request = StopRequest.CloseStdIn then
+                                if stdinOwned[stage] then
+                                    do! stopFeeder state
+                                    do! completeClose (Ok ()) reply
+                                else
+                                    do! completeClose (Error StopRequestError.Unsupported) reply
                             else
-                                try
-                                    if proc.HasExited then return Ok () else return Error StopRequestError.Unsupported
-                                with :? InvalidOperationException ->
-                                    // A retained handle outlived the stage's scoped Process object.
-                                    return Ok ()
+                                let result = NativeProcess.sendStopRequest state.Process state.Pidfd request
+                                do! completeClose result reply
+                        return! coordinate ()
+                    }
+
+                let! coordinator = coordinate () |> Flow.forkNamed "process-coordinator"
+
+                let closeCallback stage request = async {
+                    let requestFlow =
+                        flow {
+                            let! reply = Deferred.make<ClockEnvironment, StopRequestError, unit> ()
+                            let! _ = commandsQueue |> Queue.offer (Close(stage, request, reply))
+                            return!
+                                Deferred.await reply
+                                |> Flow.map (fun () -> Ok ())
+                                |> Flow.recover (Error >> Flow.succeed)
                         }
-                        let! handlerExit = handler.Invoke(stage, proc.Id, Configuration.renderCommand command, stageStartedAt, close) |> Flow.fromAsync
+                        |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed (Ok ()))
+
+                    let! exit = Flow.toAsync clockEnvironment requestFlow
+                    return
+                        match exit with
+                        | Exit.Success result -> result
+                        | Exit.Failure _ -> Ok ()
+                }
+
+                match specification.OnStarted with
+                | Some handler ->
+                    for stage, command in commands |> Array.indexed do
+                        let! handlerExit =
+                            handler.Invoke(
+                                stage,
+                                processes[stage].Id,
+                                Configuration.renderCommand command,
+                                starts[stage],
+                                closeCallback stage
+                            )
+                            |> Flow.fromAsync
                         do! Flow.ofExit handlerExit |> Flow.widenError
-                    | None -> ()
+                | None -> ()
 
                 let monitor stage =
                     waitForStage processes[stage]
                     |> Flow.tap (fun _ ->
-                        Flow.delay (fun () ->
+                        flow {
                             elapsedEnds[stage] <- Some(clock.Elapsed())
-                            Flow.succeed ()))
+                            let! _ = commandsQueue |> Queue.offer (Exited stage)
+                            return ()
+                        })
 
                 let publish stage original observed text =
                     Flow.fromTask (fun token ->
@@ -273,7 +409,7 @@ module internal ProcessRun =
                         }
                     loop ()
 
-                let pipelinePump target connections =
+                let pipelinePump target (connections: (int * int * bool) list) =
                     let gate = new SemaphoreSlim(1, 1)
                     let write bytes =
                         Flow.fromTask (fun token -> task {
@@ -286,15 +422,67 @@ module internal ProcessRun =
 
                     let copy source channel (stream: Stream) =
                         let buffer = Array.zeroCreate<byte> 4096
+                        let pending = new MemoryStream()
+                        let lineMode = connections.Length > 1 && specification.Framing = OutputFraming.Lines
+                        let decoder = commands[source].Encoding.Value.GetDecoder()
+                        let decoded = Array.zeroCreate<char>(commands[source].Encoding.Value.GetMaxCharCount 1)
+                        let singleByte = Array.zeroCreate<byte> 1
+                        let mutable lineLength = 0
+                        let mutable lastWasCR = false
+
+                        let checkLength () =
+                            if lineLength > specification.MaxLineLength
+                               && not (lineLength = specification.MaxLineLength + 1 && lastWasCR) then
+                                Error (ProcessError.LineTooLong {
+                                    Stage = source
+                                    OriginalChannel = channel
+                                    Limit = specification.MaxLineLength
+                                })
+                            else
+                                Ok ()
+
+                        let processChunk count =
+                            flow {
+                                if lineMode then
+                                    for index in 0 .. count - 1 do
+                                        let value = buffer[index]
+                                        pending.WriteByte value
+                                        singleByte[0] <- value
+                                        let length = decoder.GetChars(singleByte, 0, 1, decoded, 0, false)
+                                        for charIndex in 0 .. length - 1 do
+                                            if decoded[charIndex] = '\n' then
+                                                do! write (pending.ToArray())
+                                                pending.SetLength 0L
+                                                lineLength <- 0
+                                                lastWasCR <- false
+                                            else
+                                                lineLength <- lineLength + 1
+                                                lastWasCR <- decoded[charIndex] = '\r'
+                                                match checkLength () with
+                                                | Ok () -> ()
+                                                | Error error -> return! Flow.fail error
+                                elif count > 0 then
+                                    do! write buffer[.. count - 1]
+                            }
+
                         let rec loop () =
                             flow {
                                 let! count = readChunk stream buffer
-                                if count > 0 then
+                                if count = 0 then
+                                    if lineMode then
+                                        lineLength <- lineLength + decoder.GetChars([||], 0, 0, decoded, 0, true)
+                                        match checkLength () with
+                                        | Error error -> return! Flow.fail error
+                                        | Ok () when pending.Length > 0L -> do! write (pending.ToArray())
+                                        | Ok () -> ()
+                                else
                                     countBytes source channel count
-                                    do! write buffer[.. count - 1]
+                                    do! processChunk count
                                     return! loop ()
                             }
+
                         loop ()
+                        |> Flow.ensuring (Flow.delay (fun () -> pending.Dispose(); Flow.succeed ()))
 
                     flow {
                         do!
@@ -305,9 +493,14 @@ module internal ProcessRun =
                                       yield copy source OutputChannel.StdErr processes[source].StandardError.BaseStream ])
                             |> Flow.sequencePar
                             |> Flow.ignore
-                        gate.Dispose()
-                        do! closeInput processes[target]
                     }
+                    |> Flow.ensuring (
+                        flow {
+                            gate.Dispose()
+                            do! closeInput processes[target]
+                        }
+                        |> Flow.mapError Never.absurd
+                    )
 
                 let copies =
                     specification.Connections
@@ -334,13 +527,67 @@ module internal ProcessRun =
                                     (if merged then stdout[stage] else stderr[stage])
                                     processes[stage].StandardError.BaseStream)
 
-                // Slice B has no stdin feeders. Closing empty/unsupported redirected input prevents a basic child
-                // from waiting forever; later slices replace this with feeder fibers and the Close coordinator.
+                let writeInput stage bytes =
+                    Flow.fromTask (fun token -> task {
+                        do! processes[stage].StandardInput.BaseStream.WriteAsync(bytes, 0, bytes.Length, token)
+                        return ()
+                    })
+
+                let inputFeeder stage source =
+                    let pumping =
+                        match source with
+                        | InputSource.Empty -> Flow.succeed ()
+                        | InputSource.Inherit -> Flow.succeed ()
+                        | InputSource.Text text -> writeInput stage (commands[stage].Encoding.Value.GetBytes text)
+                        | InputSource.Bytes bytes -> writeInput stage bytes
+                        | InputSource.File path ->
+                            Flow.fromTask (fun token -> task {
+                                use input = fileSystem.OpenFile(path, FileMode.Open, FileAccess.Read, FileShare.Read)
+                                do! input.CopyToAsync(processes[stage].StandardInput.BaseStream, 81920, token)
+                            })
+                        | InputSource.Stream source ->
+                            source
+                            |> FlowStream.runForEachFlow (writeInput stage >> Flow.localEnv (fun () -> clockEnvironment))
+                            |> mapInputFailure
+                            |> Flow.localEnv (fun (_: ClockEnvironment) -> ())
+
+                    pumping
+                    |> Flow.foldCause
+                        Flow.succeed
+                        (fun cause ->
+                            let expectedPipeClose =
+                                match Cause.untraced cause with
+                                | Cause.Interrupt -> stages[stage].StdinClosed
+                                | Cause.Die error ->
+                                    stages[stage].StdinClosed
+                                    && (error :? ObjectDisposedException
+                                        || error :? IOException
+                                        || error :? OperationCanceledException)
+                                | _ -> false
+                            if expectedPipeClose then Flow.succeed ()
+                            else Flow.ofExit (Exit.Failure cause))
+                    |> Flow.ensuring (closeInput processes[stage] |> Flow.mapError Never.absurd)
+
+                let inputFibers = ResizeArray<Fiber<ProcessError, unit> * Deferred<Never, unit>>()
+
                 for stage, command in commands |> Array.indexed do
                     if specification.Connections |> List.forall (fun (_, target, _) -> target <> stage) then
                         match command.StdIn.Value with
                         | InputSource.Inherit -> ()
-                        | _ -> do! closeInput processes[stage]
+                        | source ->
+                            let! feeder = inputFeeder stage source |> Flow.forkNamed ("process-stdin-" + string stage)
+                            inputFibers.Add(feeder, released[stage])
+                            let! _ = commandsQueue |> Queue.offer (RegisterFeeder(stage, feeder))
+                            ()
+
+                let awaitInput (feeder, detached: Deferred<Never, unit>) =
+                    Flow.race
+                        (Fiber.await feeder
+                         |> Flow.bind (function
+                             | Exit.Success () -> Flow.succeed ()
+                             | Exit.Failure cause when Cause.isInterrupted cause -> Flow.succeed ()
+                             | Exit.Failure cause -> Flow.ofExit (Exit.Failure cause)))
+                        (Deferred.await detached |> Flow.widenError)
 
                 let! pumpFibers =
                     copies @ List.ofSeq reads
@@ -359,11 +606,21 @@ module internal ProcessRun =
                         })
 
                 let! ioFiber = Flow.fork io
+                let! inputFiber =
+                    inputFibers
+                    |> Seq.map awaitInput
+                    |> List.ofSeq
+                    |> Flow.sequencePar
+                    |> Flow.ignore
+                    |> Flow.forkNamed "process-inputs"
                 let! monitorFibers =
                     [ 0 .. processes.Count - 1 ]
                     |> Flow.traverse (monitor >> Flow.fork)
                 let! exitCodes = monitorFibers |> Flow.traverse Fiber.join
                 do! Fiber.join ioFiber
+                do! Fiber.join inputFiber
+                do! Dequeue.shutdown commandsQueue
+                let! _ = Fiber.await coordinator
 
                 let result =
                     NativeProcess.buildResult clock specification commands processes starts elapsedStarts elapsedEnds stdout stderr startedAt startedElapsed

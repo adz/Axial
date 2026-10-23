@@ -69,6 +69,56 @@ module internal NativeProcess =
                         closeFd(fd) |> ignore
             with :? EntryPointNotFoundException -> Error "pidfd_open is not exported by this libc."
 
+    let internal tryOpenPidfd pid =
+        if RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
+            try pidfd_open(pid, 0u)
+            with :? EntryPointNotFoundException -> -1
+        else
+            -1
+
+    let internal closePidfd fd =
+        if fd >= 0 then closeFd(fd) |> ignore
+
+    let internal sendStopRequest (proc: Diagnostics.Process) pidfd request =
+        if request = StopRequest.CloseMainWindow then
+            if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
+                try
+                    if proc.CloseMainWindow() then Ok ()
+                    else Error (StopRequestError.Failed "The process has no main window.")
+                with error -> Error (StopRequestError.Failed error.Message)
+            else
+                Error StopRequestError.Unsupported
+        elif RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
+            Error StopRequestError.Unsupported
+        else
+            let signal =
+                match request with
+                | StopRequest.Interrupt -> 2
+                | StopRequest.Terminate -> 15
+                | StopRequest.Hangup -> 1
+                | StopRequest.Signal value -> value
+                | _ -> 0
+
+            if signal = 0 then
+                Error StopRequestError.Unsupported
+            else
+                let mutable sent = -1
+                let mutable error = 38
+
+                if pidfd >= 0 then
+                    try
+                        sent <- pidfd_send_signal(pidfd, signal, 0n, 0u)
+                        if sent <> 0 then error <- Marshal.GetLastWin32Error()
+                    with :? EntryPointNotFoundException -> ()
+
+                // PID fallback has an unavoidable reuse window on platforms without pidfd support.
+                if sent <> 0 && (pidfd < 0 || error = 38) then
+                    sent <- kill(proc.Id, signal)
+                    if sent <> 0 then error <- Marshal.GetLastWin32Error()
+
+                if sent = 0 || error = 3 then Ok ()
+                else Error (StopRequestError.Failed(System.ComponentModel.Win32Exception(error).Message))
+
     let internal inherited =
         function
         | OutputTarget.Inherit -> true
