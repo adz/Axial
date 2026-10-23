@@ -11,9 +11,8 @@
     <_AxialGuardrailsAnalyzersPath Condition="'$(_AxialGuardrailsAnalyzersPath)' == ''">$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
     <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll&quot;</_AxialGuardrailsExe>
     <!--
-      Severity comes from the rules file written by AxialGuardrailsWriteConfig: each enabled guardrail carries its
-      own, defaulting to $(AxialGuardrailsSeverity). The analyzers report findings at that severity, and the CLI
-      exits non-zero only when one of them is an error, so no severity override flags are passed.
+      Findings are errors unless their stable fingerprint is in the checked-in baseline. There is no project-wide
+      severity downgrade: migrations generate a baseline instead of making new violations non-failing.
 
       Test projects run only the Fixture analyzer by default: the effect rules flag Thread.Sleep, File and
       DateTimeOffset that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
@@ -35,6 +34,8 @@
          concurrent analyzer processes contend over the same config and stamp. -->
     <_AxialGuardrailsStampFile>$(IntermediateOutputPath)axial-guardrails.$(TargetFramework).stamp</_AxialGuardrailsStampFile>
     <_AxialGuardrailsConfigFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).rules))</_AxialGuardrailsConfigFile>
+    <_AxialGuardrailsGeneratedBaseline>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).baseline))</_AxialGuardrailsGeneratedBaseline>
+    <_AxialGuardrailsBaselineRoot>$([System.IO.Path]::GetDirectoryName($([MSBuild]::NormalizePath($(AxialGuardrailsBaselineFile)))))</_AxialGuardrailsBaselineRoot>
   </PropertyGroup>
 
   <!--
@@ -46,7 +47,13 @@
   -->
   <ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
     <_AxialGuardrailsSourceInputs Include="@(Compile)" Exclude="$(IntermediateOutputPath)*" />
+    <_AxialGuardrailsSourceInputs Include="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')" />
   </ItemGroup>
+
+  <Target Name="AxialGuardrailsRejectCiEnvironmentBypass" BeforeTargets="Build"
+          Condition="'$(CI)' == 'true' and ('$(AXIAL_GUARDRAILS_ENABLED)' == 'false' or '$(AXIAL_GUARDRAILS_SEVERITY)' != '')">
+    <Error Text="Axial.Guardrails cannot be disabled or downgraded through environment variables when CI=true. Use a checked-in baseline for existing findings." />
+  </Target>
 
   <!--
     Self-heals the case the Exists() guard below exists for: a repo (like this one) pointing
@@ -83,12 +90,15 @@
   <Target Name="AxialGuardrailsWriteConfig"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
           Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <ReadLinesFromFile File="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')">
+      <Output TaskParameter="Lines" ItemName="_AxialGuardrailsBaselineEntry" />
+    </ReadLinesFromFile>
     <ItemGroup>
-      <_AxialGuardrailResolved Include="@(AxialGuardrail)" />
-      <_AxialGuardrailResolved Condition="'%(_AxialGuardrailResolved.Severity)' == ''">
-        <Severity>$(AxialGuardrailsSeverity)</Severity>
-      </_AxialGuardrailResolved>
-      <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailResolved->'guardrail&#9;%(Identity)&#9;%(Severity)')" />
+      <_AxialGuardrailsConfigLine Include="@(AxialGuardrail->'guardrail&#9;%(Identity)')" />
+      <_AxialGuardrailsConfigLine Include="@(AxialGuardrailsBoundary->'boundary&#9;%(FullPath)')" />
+      <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsBaselineEntry->'baseline&#9;%(Identity)')" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;baselineRoot&#9;$(_AxialGuardrailsBaselineRoot)" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;baselineOutput&#9;$(_AxialGuardrailsGeneratedBaseline)" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;true" Condition="'$(IsAotCompatible)' == 'true' or '$(PublishAot)' == 'true'" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;false" Condition="'$(IsAotCompatible)' != 'true' and '$(PublishAot)' != 'true'" />
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrailRule->'rule&#9;%(Identity)&#9;%(Guardrail)&#9;%(Category)&#9;%(Match)&#9;%(Scope)&#9;%(Message)&#9;%(Replacement)')" />
@@ -105,10 +115,13 @@
 
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
-          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and Exists('$(_AxialGuardrailsAnalyzersPath)')"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '')"
           Inputs="@(_AxialGuardrailsSourceInputs);$(_AxialGuardrailsConfigFile);@(_AxialGuardrailsAnalyzerAssemblies)"
           Outputs="$(_AxialGuardrailsStampFile)">
+    <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)')"
+           Text="Axial.Guardrails analyzer folder is missing: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
+    <Delete Files="$(_AxialGuardrailsGeneratedBaseline)" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'" />
     <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --property TargetFramework=$(TargetFramework) --configuration $(Configuration) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
           EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile)" IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="_AxialGuardrailsExit" />
@@ -118,6 +131,8 @@
            Text="Axial.Guardrails reported findings or failed; see the output above (AXG codes or tool errors)." />
     <Error Condition="'$(_AxialGuardrailsExit)' != '0' and '$(_AxialGuardrailsExit)' != '-2' and '$(_AxialGuardrailsExit)' != '254'"
            Text="Axial.Guardrails analyzer tool failed (exit code $(_AxialGuardrailsExit)); inspect the output above." />
+    <Message Importance="high" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
+             Text="Axial.Guardrails baseline candidate: $(_AxialGuardrailsGeneratedBaseline)" />
     <Touch Files="$(_AxialGuardrailsStampFile)" AlwaysCreate="true" />
   </Target>
 

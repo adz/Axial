@@ -137,17 +137,16 @@ let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) li
         |> Option.map (fun rule -> rule, symbolUse.Range))
     |> Seq.toList
 
-let private toMessage (severity: Severity) (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
+let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
     { Type = "Axial Effect Boundary"
       Message =
-        $"This call {rule.Message}. The {rule.Guardrail} guardrail asks for an explicit, mockable "
-        + $"alternative: use {rule.Replacement}. If this line *is* the intended boundary "
-        + $"implementation, mark it explicitly: `// axial-allow-effect: {rule.Category}` on this "
-        + "line or the line above, or `// axial-allow-effect-file: "
-        + $"{rule.Category}` in the file header if the whole file is the boundary."
+        $"This call {rule.Message}. Replace it with the explicit, mockable {rule.Replacement}. "
+        + "See the rule documentation when this file intentionally implements the effect boundary."
       Code = "AXG001"
-      Severity = severity
+      Severity = Severity.Error
       Range = range
+      // Introducing an explicit service changes the containing function's environment and often its return type;
+      // replacing only this expression is therefore not mechanically safe.
       Fixes = [] }
 
 [<CliAnalyzer("EffectBoundary",
@@ -158,15 +157,13 @@ let effectBoundaryAnalyzer: Analyzer<CliContext> =
     fun (ctx: CliContext) ->
         async {
             let config = GuardrailConfig.load ()
-            let fileCategories = fileLevelAllowedCategories ctx.SourceText
-
             let messages =
                 rawFindings ctx
-                |> Seq.filter (fun (rule, range) ->
-                    not (isAllowed ctx.SourceText fileCategories range.StartLine rule.Category))
-                |> Seq.map (fun (rule, range) ->
-                    toMessage (config.Severities.TryFind rule.Guardrail |> Option.defaultValue Severity.Warning) rule range)
-                |> Seq.toList
+                |> List.collect (fun (rule, range) ->
+                    if isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then
+                        []
+                    else
+                        GuardrailConfig.apply rule.Guardrail ctx [ toMessage rule range ])
 
             return messages
         }

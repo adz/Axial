@@ -14,7 +14,7 @@ let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
         // In production, map access and path exceptions separately at the boundary.
         do!
             // executable host boundary performs this effect.
-            // axial-allow-effect: filesystem
+            // axial-allow-AXG001: intentional filesystem host or live-service boundary
             if File.Exists path then
                 Ok()
             else
@@ -22,7 +22,7 @@ let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
 
         // executable host boundary performs this effect.
 
-        // axial-allow-effect: filesystem
+        // axial-allow-AXG001: intentional filesystem host or live-service boundary
         return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))
     }
 
@@ -43,7 +43,7 @@ let program : Flow<ReadmeEnv, FileReadError, string * string> =
 let main _ =
     let root =
         // executable host boundary performs this effect.
-        // axial-allow-effect: guid
+        // axial-allow-AXG001: intentional guid host or live-service boundary
         Path.Combine(Path.GetTempPath(), "Axial.ReadmeExample", Guid.NewGuid().ToString "N")
     let settingsPath = Path.Combine(root, "settings.json")
     let featureFlagsPath = Path.Combine(root, "feature-flags.json")
@@ -56,13 +56,13 @@ let main _ =
 
     // executable host boundary performs this effect.
 
-    // axial-allow-effect: filesystem
+    // axial-allow-AXG001: intentional filesystem host or live-service boundary
     Directory.CreateDirectory root |> ignore
     // executable host boundary performs this effect.
-    // axial-allow-effect: filesystem
+    // axial-allow-AXG001: intentional filesystem host or live-service boundary
     File.WriteAllText(settingsPath, """{"name":"Ada"}""")
     // executable host boundary performs this effect.
-    // axial-allow-effect: filesystem
+    // axial-allow-AXG001: intentional filesystem host or live-service boundary
     File.WriteAllText(featureFlagsPath, """{"darkMode":true}""")
 
     printfn "Config pair result (after files created): %s" ((readPairResult ()).ToString())

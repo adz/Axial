@@ -59,7 +59,7 @@ module PackagePropsTests =
 
     type BuildResult = { ExitCode: int; Output: string }
 
-    let private runBuild (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) =
+    let private runBuild (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) (ci: bool) (generateBaseline: bool) =
         let startInfo = ProcessStartInfo("dotnet")
         startInfo.ArgumentList.Add "build"
         startInfo.ArgumentList.Add project
@@ -78,6 +78,7 @@ module PackagePropsTests =
         match severityProperty with
         | Some value -> startInfo.ArgumentList.Add("-p:AxialGuardrailsSeverity=" + value)
         | None -> ()
+        if generateBaseline then startInfo.ArgumentList.Add("-p:AxialGuardrailsGenerateBaseline=true")
         startInfo.UseShellExecute <- false
         startInfo.RedirectStandardOutput <- true
         startInfo.RedirectStandardError <- true
@@ -85,6 +86,7 @@ module PackagePropsTests =
         match severityEnv with
         | Some value -> startInfo.EnvironmentVariables["AXIAL_GUARDRAILS_SEVERITY"] <- value
         | None -> ()
+        if ci then startInfo.EnvironmentVariables["CI"] <- "true"
         use child = Process.Start startInfo
         let stdout = child.StandardOutput.ReadToEndAsync()
         let stderr = child.StandardError.ReadToEndAsync()
@@ -102,7 +104,7 @@ module PackagePropsTests =
         Directory.CreateDirectory dir |> ignore
         try
             write dir
-            runBuild (Path.Combine(dir, "Consumer.fsproj")) None severityEnv severityProperty
+            runBuild (Path.Combine(dir, "Consumer.fsproj")) None severityEnv severityProperty false false
         finally
             Directory.Delete(dir, true)
 
@@ -110,23 +112,66 @@ module PackagePropsTests =
         buildConsumerInTemp writeConsumer severityEnv severityProperty
 
     [<Fact>]
-    let ``AXIAL_GUARDRAILS_SEVERITY maps to AxialGuardrailsSeverity in the package props`` () =
-        // `error` through the environment must turn the finding into a failing error.
-        let errorBuild = buildInTemp (Some "error") None
-        Assert.NotEqual(0, errorBuild.ExitCode)
-        Assert.Contains("error AXG001", errorBuild.Output)
+    let ``findings are errors and severity settings cannot downgrade them`` () =
+        let defaultBuild = buildInTemp None None
+        Assert.NotEqual(0, defaultBuild.ExitCode)
+        Assert.Contains("error AXG001", defaultBuild.Output)
 
-        // `warning` is the documented migration form: the finding stays a warning and the build succeeds.
-        let warningBuild = buildInTemp (Some "warning") None
-        Assert.Equal(0, warningBuild.ExitCode)
-        Assert.Contains("warning AXG001", warningBuild.Output)
-        Assert.DoesNotContain("error AXG001", warningBuild.Output)
+        let environmentAttempt = buildInTemp (Some "warning") None
+        Assert.NotEqual(0, environmentAttempt.ExitCode)
+        Assert.Contains("error AXG001", environmentAttempt.Output)
 
-        // A -p:AxialGuardrailsSeverity value wins over the environment variable.
-        let overridden = buildInTemp (Some "error") (Some "warning")
-        Assert.Equal(0, overridden.ExitCode)
-        Assert.Contains("warning AXG001", overridden.Output)
-        Assert.DoesNotContain("error AXG001", overridden.Output)
+        let propertyAttempt = buildInTemp None (Some "warning")
+        Assert.NotEqual(0, propertyAttempt.ExitCode)
+        Assert.Contains("error AXG001", propertyAttempt.Output)
+
+    [<Fact>]
+    let ``CI rejects an environment severity bypass`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            let result = runBuild (Path.Combine(dir, "Consumer.fsproj")) None (Some "warning") None true false
+            Assert.NotEqual(0, result.ExitCode)
+            Assert.Contains("cannot be disabled or downgraded through environment variables", result.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``baseline generation writes a stable candidate and lets the build finish`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            let result = runBuild (Path.Combine(dir, "Consumer.fsproj")) None None None false true
+            Assert.Equal(0, result.ExitCode)
+            let candidates = Directory.GetFiles(dir, "axial-guardrails.*.baseline", SearchOption.AllDirectories)
+            Assert.Single(candidates) |> ignore
+            let fields = File.ReadAllText(candidates[0]).Trim().Split('\t')
+            Assert.Equal(3, fields.Length)
+            Assert.Equal("AXG001", fields[0])
+            Assert.Equal("Program.fs", fields[1])
+            Assert.Matches("^[0-9a-f]{64}$", fields[2])
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``missing analyzer folder fails instead of silently skipping`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let xml = File.ReadAllText project
+            let missing = Path.Combine(dir, "missing-analyzers")
+            let bootstrapProject = Path.Combine(repoRoot (), "src", "Axial.Guardrails", "Axial.Guardrails.fsproj") |> xmlEscape
+            let bootstrapElement = $"<_AxialGuardrailsBootstrapProject>{bootstrapProject}</_AxialGuardrailsBootstrapProject>"
+            File.WriteAllText(project, xml.Replace(analyzersPath (), missing).Replace(bootstrapElement, "<_AxialGuardrailsBootstrapProject />"))
+            let result = runBuild project None None None false false
+            Assert.NotEqual(0, result.ExitCode)
+            Assert.Contains("analyzer folder is missing", result.Output)
+        finally
+            Directory.Delete(dir, true)
 
     [<Fact>]
     let ``analyzes code selected by every target framework`` () =
@@ -141,8 +186,8 @@ module PackagePropsTests =
         try
             write dir
             let project = Path.Combine(dir, "Consumer.fsproj")
-            let netstandard = runBuild project (Some "netstandard2.1") (Some "error") None
-            let net10 = runBuild project (Some "net10.0") (Some "error") None
+            let netstandard = runBuild project (Some "netstandard2.1") None None false false
+            let net10 = runBuild project (Some "net10.0") None None false false
 
             Assert.Equal(0, netstandard.ExitCode)
             Assert.DoesNotContain("AXG006", netstandard.Output)

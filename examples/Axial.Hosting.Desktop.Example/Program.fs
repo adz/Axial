@@ -22,12 +22,12 @@ let main _ =
 
     printfn "Press Enter to simulate the desktop framework's closing event."
     // executable host boundary performs this effect.
-    // axial-allow-effect: console
+    // axial-allow-AXG001: intentional console host or live-service boundary
     Console.ReadLine() |> ignore
 
     // A real closing handler awaits Stop before allowing framework shutdown.
     // executable host boundary performs this effect.
-    // axial-allow-effect: blocking
+    // axial-allow-AXG001: intentional blocking host or live-service boundary
     let exit = running.Stop() |> Async.RunSynchronously
     printfn "Framework may now exit. Final result: %s" (exit.ToString())
     0

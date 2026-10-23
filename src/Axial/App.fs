@@ -54,7 +54,7 @@ type AppHandle<'error, 'value> internal
     /// <returns>True if the application settled before the timeout.</returns>
     member _.StopAndWait(timeout: TimeSpan) : bool =
         requestStop ()
-        settledTask.Wait(timeout)  // axial-allow-effect: blocking (StopAndWait is the documented synchronous boundary)
+        settledTask.Wait(timeout)  // axial-allow-AXG001: StopAndWait is the documented synchronous boundary
 #endif
 
     interface IDisposable with

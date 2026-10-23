@@ -35,7 +35,7 @@ module SubscriptionTests =
         let source =
             Inbox.stream inbox
             |> FlowStream.mapFlow (fun value -> flow {
-                // axial-allow-discarded-cancellation
+                // axial-allow-AXG005: wrapped operation has no cancellation-token overload
                 do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> released.TrySetResult() |> ignore; Task.FromResult(())))
                 return value
             })

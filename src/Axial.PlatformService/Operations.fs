@@ -1,6 +1,6 @@
 // This file defines each service's Flow-facing operations alongside its `live` implementation (Clock.live,
 // Guid.live, ...): the ambient effects here are each service's own explicit, mockable boundary, not a leak.
-// axial-allow-effect-file: clock, guid
+// axial-allow-file-AXG001: this file implements the explicit clock, guid boundary
 namespace Axial.PlatformService
 
 open System
@@ -499,9 +499,9 @@ module SecureRandom =
 #else
         { new ISecureRandom with
             // The live ISecureRandom implementation is the explicit boundary for this ambient effect.
-            member _.Fill buffer = RandomNumberGenerator.Fill buffer // axial-allow-effect: secure-random
+            member _.Fill buffer = RandomNumberGenerator.Fill buffer // axial-allow-AXG001: intentional secure-random host or live-service boundary
             // The live ISecureRandom implementation is the explicit boundary for this ambient effect.
-            member _.GetInt32 minInclusive maxExclusive = RandomNumberGenerator.GetInt32(minInclusive, maxExclusive) // axial-allow-effect: secure-random
+            member _.GetInt32 minInclusive maxExclusive = RandomNumberGenerator.GetInt32(minInclusive, maxExclusive) // axial-allow-AXG001: intentional secure-random host or live-service boundary
         }
 #endif
 

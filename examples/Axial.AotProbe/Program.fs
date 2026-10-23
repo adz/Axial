@@ -25,22 +25,22 @@ let expect (name: string) (actual: string) (expected: string) =
     if actual <> expected then
         failures <- failures + 1
         // Probe reporting is an executable host-boundary console effect.
-        // axial-allow-effect: console
+        // axial-allow-AXG001: intentional console host or live-service boundary
         Console.Error.WriteLine(String.Concat("FAIL ", name, ": expected <", expected, "> got <", actual, ">"))
     else
         // Probe reporting is an executable host-boundary console effect.
-        // axial-allow-effect: console
+        // axial-allow-AXG001: intentional console host or live-service boundary
         Console.Out.WriteLine("ok   " + name)
 
 let expectContains (name: string) (actual: string) (fragment: string) =
     if not (actual.Contains fragment) then
         failures <- failures + 1
         // Probe reporting is an executable host-boundary console effect.
-        // axial-allow-effect: console
+        // axial-allow-AXG001: intentional console host or live-service boundary
         Console.Error.WriteLine(String.Concat("FAIL ", name, ": <", actual, "> does not contain <", fragment, ">"))
     else
         // Probe reporting is an executable host-boundary console effect.
-        // axial-allow-effect: console
+        // axial-allow-AXG001: intentional console host or live-service boundary
         Console.Out.WriteLine("ok   " + name)
 
 let guarded (name: string) (check: unit -> unit) =
@@ -49,7 +49,7 @@ let guarded (name: string) (check: unit -> unit) =
     with error ->
         failures <- failures + 1
         // Probe reporting is an executable host-boundary console effect.
-        // axial-allow-effect: console
+        // axial-allow-AXG001: intentional console host or live-service boundary
         Console.Error.WriteLine(String.Concat("FAIL ", name, " threw ", error.GetType().FullName, ": ", error.Message))
 
 [<EntryPoint>]
@@ -57,7 +57,7 @@ let main _ =
     guarded "flow result" (fun () ->
         let exit =
             // executable host boundary performs this effect.
-            // axial-allow-effect: blocking
+            // axial-allow-AXG001: intentional blocking host or live-service boundary
             (Flow.succeed 21 |> Flow.map ((*) 2)).StartAsTask(()).GetAwaiter().GetResult()
 
         expect "flow result" (exit.ToString()) "Success(42)")
@@ -90,11 +90,11 @@ let main _ =
         if not (rendered.StartsWith("Failure(Fail(") && rendered.EndsWith("PlainError))")) then
             failures <- failures + 1
             // Probe reporting is an executable host-boundary console effect.
-            // axial-allow-effect: console
+            // axial-allow-AXG001: intentional console host or live-service boundary
             Console.Error.WriteLine("FAIL Exit.ToString without own ToString: got <" + rendered + ">")
         else
             // Probe reporting is an executable host-boundary console effect.
-            // axial-allow-effect: console
+            // axial-allow-AXG001: intentional console host or live-service boundary
             Console.Out.WriteLine("ok   Exit.ToString without own ToString"))
 
     guarded "Exit.toResult composite" (fun () ->
@@ -104,7 +104,7 @@ let main _ =
 
             failures <- failures + 1
             // Probe reporting is an executable host-boundary console effect.
-            // axial-allow-effect: console
+            // axial-allow-AXG001: intentional console host or live-service boundary
             Console.Error.WriteLine("FAIL Exit.toResult composite: expected an exception")
         with :? InvalidOperationException as error ->
             expectContains "Exit.toResult composite" error.Message "Fail(Rejected 1)")
@@ -135,7 +135,7 @@ let main _ =
 
         // executable host boundary performs this effect.
 
-        // axial-allow-effect: blocking
+        // axial-allow-AXG001: intentional blocking host or live-service boundary
         match workflow.StartAsTask(ClockEnvironment(Clock.live)).GetAwaiter().GetResult() with
         | Exit.Success text -> expectContains "FiberRegistry.DumpAt" text "\"probe child\" Running"
         | other -> expect "fiber diagnostics exit" (other.ToString()) "Success")
@@ -155,7 +155,7 @@ let main _ =
         expect
             "200k synchronous loop"
             // executable host boundary performs this effect.
-            // axial-allow-effect: blocking
+            // axial-allow-AXG001: intentional blocking host or live-service boundary
             ((workflow.StartAsTask(()).GetAwaiter().GetResult()).ToString())
             "Success(200000)")
 
@@ -215,11 +215,11 @@ let main _ =
 
     if failures = 0 then
         // Probe reporting is an executable host-boundary console effect.
-        // axial-allow-effect: console
+        // axial-allow-AXG001: intentional console host or live-service boundary
         Console.Out.WriteLine("AOT probe passed.")
         0
     else
         // Probe reporting is an executable host-boundary console effect.
-        // axial-allow-effect: console
+        // axial-allow-AXG001: intentional console host or live-service boundary
         Console.Error.WriteLine("AOT probe: " + string failures + " failure(s).")
         1

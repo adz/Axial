@@ -14,17 +14,10 @@
     <!-- Build distributable F# libraries without generated reflection-based structural formatting. -->
     <OtherFlags Condition="$(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src')) and '$(MSBuildProjectName)' != 'Axial.Guardrails'">$(OtherFlags) --reflectionfree</OtherFlags>
 
-    <!--
-      Every project in Axial.slnx treats compiler and Guardrails warnings as errors. This keeps
-      examples and benchmarks subject to the same clean-build contract as libraries and tests.
-      AXIAL_GUARDRAILS_SEVERITY, if set in the environment, overrides the repository default; an
-      individual project can still override AxialGuardrailsEnabled/AxialGuardrailsSeverity itself,
-      the same way an external consumer would.
-    -->
+    <!-- Every new Guardrails finding is an error. Existing violations can be retained only in the baseline. -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
-    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == '' and '$(AXIAL_GUARDRAILS_SEVERITY)' != ''">$(AXIAL_GUARDRAILS_SEVERITY)</AxialGuardrailsSeverity>
-    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == ''">error</AxialGuardrailsSeverity>
+    <AxialGuardrailsBaselineFile>$(MSBuildThisFileDirectory)Axial.Guardrails.baseline</AxialGuardrailsBaselineFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -41,6 +34,11 @@
     project gets every guardrail, as a consumer referencing all the packages would.
   -->
   <ItemGroup>
+    <AxialGuardrailsBoundary Include="$(MSBuildThisFileDirectory)benchmarks/Axial.Benchmarks/Common.fs;$(MSBuildThisFileDirectory)benchmarks/Axial.Benchmarks/Suites.fs" />
+    <AxialGuardrailsBoundary Include="$(MSBuildThisFileDirectory)examples/Axial.AotProbe/Program.fs;$(MSBuildThisFileDirectory)examples/Axial.App.Example/Program.fs;$(MSBuildThisFileDirectory)examples/Axial.Comparisons/CheckoutCompensation.fs;$(MSBuildThisFileDirectory)examples/Axial.Comparisons/RetryBudget.fs;$(MSBuildThisFileDirectory)examples/Axial.Comparisons/ScopedWorkspace.fs;$(MSBuildThisFileDirectory)examples/Axial.Examples/Program.fs;$(MSBuildThisFileDirectory)examples/Axial.Examples/ServiceExamples.fs;$(MSBuildThisFileDirectory)examples/Axial.Hosting.Desktop.Example/Program.fs;$(MSBuildThisFileDirectory)examples/Axial.Hosting.DotNet.Example/Program.fs;$(MSBuildThisFileDirectory)examples/Axial.MaintenanceExamples/Program.fs;$(MSBuildThisFileDirectory)examples/Axial.ReadmeExample/Program.fs;$(MSBuildThisFileDirectory)examples/Axial.TortureTest/Interop.fs;$(MSBuildThisFileDirectory)examples/Axial.TortureTest/Scenario.fs" />
+    <AxialGuardrailsBoundary Include="$(MSBuildThisFileDirectory)src/Axial/App.fs;$(MSBuildThisFileDirectory)src/Axial.Console/Console.fs;$(MSBuildThisFileDirectory)src/Axial/Core.fs;$(MSBuildThisFileDirectory)src/Axial.ElmishFlows/Sub.fs;$(MSBuildThisFileDirectory)src/Axial.ElmishFlows/TestRuntime.fs;$(MSBuildThisFileDirectory)src/Axial.FileSystem/FileSystem.fs;$(MSBuildThisFileDirectory)src/Axial/Flow.fs;$(MSBuildThisFileDirectory)src/Axial.Hosting/Hosting.fs;$(MSBuildThisFileDirectory)src/Axial/Parallelism.fs;$(MSBuildThisFileDirectory)src/Axial/Platform.fs;$(MSBuildThisFileDirectory)src/Axial.PlatformService/Operations.fs;$(MSBuildThisFileDirectory)src/Axial.PlatformService/Platform.fs;$(MSBuildThisFileDirectory)src/Axial.Process/Process.fs;$(MSBuildThisFileDirectory)src/Axial.Process/ProcessLive.fs;$(MSBuildThisFileDirectory)src/Axial/Stream.fs;$(MSBuildThisFileDirectory)src/Axial.WebSocket/WebSocket.fs" />
+    <AxialGuardrailsBoundary Include="$(MSBuildThisFileDirectory)tests/Axial.ElmishFlows.Tests/SubscriptionTests.fs;$(MSBuildThisFileDirectory)tests/Axial.Fable.Tests/Harness.fs;$(MSBuildThisFileDirectory)tests/Axial.HttpClient.Tests/HttpServiceTests.fs;$(MSBuildThisFileDirectory)tests/Axial.Tests/ScopedResourceOwnershipTests.fs" />
+
     <AxialGuardrail Include="Axial" />
     <AxialGuardrail Include="Axial.PlatformService" />
     <AxialGuardrail Include="Axial.Console" />

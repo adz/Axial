@@ -22,7 +22,7 @@ let equal (label: string) (expected: 'value) (actual: 'value) : Check =
       Passed = passed
       // Rendered only on failure: structured formatting of large values is slow under JavaScript.
       // Fable renders %A with its own JavaScript formatter; this project is never compiled trimmed or AOT.
-      // axial-allow-reflection-format
+      // axial-allow-AXG006: test-only diagnostic formatting never runs trimmed
       Detail = if passed then "" else $"expected %A{expected}, got %A{actual}" }
 
 let isTrue (label: string) (condition: bool) : Check =

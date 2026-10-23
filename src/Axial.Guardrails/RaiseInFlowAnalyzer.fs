@@ -8,25 +8,13 @@
 /// (`Cause.Die`) instead, which callers matching on the `'error` type never see coming.
 module Axial.Guardrails.RaiseInFlowAnalyzer
 
-open System.Text.RegularExpressions
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
+open Axial.Guardrails.Suppressions
 
 let private bannedIdents =
     set [ "raise"; "failwith"; "failwithf"; "invalidOp"; "invalidArg"; "reraise" ]
-
-let private allowDirective =
-    Regex(@"axial-allow-raise\b", RegexOptions.Compiled)
-
-let private isAllowed (sourceText: ISourceText) (line1: int) : bool =
-    let textOfLine1 (n: int) =
-        if n >= 1 && n <= sourceText.GetLineCount() then
-            sourceText.GetLineString(n - 1)
-        else
-            ""
-
-    allowDirective.IsMatch(textOfLine1 line1) || allowDirective.IsMatch(textOfLine1 (line1 - 1))
 
 /// The identifier a `SynExpr.App` chain is ultimately applying, e.g. `raise` in `raise (Foo x)`
 /// or `failwithf "%s" x`. F# curries applications, so `SynExpr.App` nests: unwrap to the head.
@@ -159,18 +147,37 @@ let flowBodyRanges (ctx: CliContext) : range list =
         |> List.map _.Range
     | _ -> []
 
-let private message (range: range) (ident: string) : Message =
+let private textAtRange (sourceText: ISourceText) (range: range) =
+    if range.StartLine <> range.EndLine then None
+    else
+        let line = sourceText.GetLineString(range.StartLine - 1)
+        if range.StartColumn < 0 || range.EndColumn > line.Length || range.EndColumn <= range.StartColumn then None
+        else Some(line.Substring(range.StartColumn, range.EndColumn - range.StartColumn), line)
+
+let private mechanicalFix (sourceText: ISourceText) (range: range) (ident: string) =
+    match textAtRange sourceText range with
+    | Some(fromText, line)
+        when line.Substring(0, range.StartColumn).Trim() = ""
+             && (let suffix = line.Substring(range.EndColumn).TrimStart()
+                 suffix = "" || suffix.StartsWith("//"))
+             && Set.contains ident (set [ "raise"; "failwith"; "failwithf"; "invalidOp" ]) ->
+        let argument = fromText.Substring(ident.Length).Trim()
+        let failure = if ident = "failwithf" then $"(sprintf {argument})" else argument
+        Some { FromRange = range; FromText = fromText; ToText = $"return! Flow.fail {failure}" }
+    | _ -> None
+
+let private message (sourceText: ISourceText) (range: range) (ident: string) : Message =
     { Type = "Axial Raise In Flow"
       Message =
         $"`{ident}` is called directly inside a `flow {{ }}` block. Flow already has a typed 'error "
         + "channel for expected failures - an ordinary exception here silently becomes a defect "
-        + "(Cause.Die) instead, which callers matching on 'error never see. Use `return! Flow.fail err` "
-        + "(or `Flow.die`, if this really is meant to be an unrecoverable defect). If this call is "
-        + "intentional, mark it: `// axial-allow-raise` on this line or the line above."
+        + "(Cause.Die) instead, which callers matching on 'error never see. Replace it with "
+        + "`return! Flow.fail err` for an expected failure, or `return! Flow.die defect` for an "
+        + "unrecoverable defect."
       Code = "AXG003"
-      Severity = Severity.Warning
+      Severity = Severity.Error
       Range = range
-      Fixes = [] }
+      Fixes = mechanicalFix sourceText range ident |> Option.toList }
 
 [<CliAnalyzer("RaiseInFlow",
               "Flags raise/failwith/failwithf/invalidOp/invalidArg called directly inside a flow { } "
@@ -194,10 +201,9 @@ let raiseInFlowAnalyzer: Analyzer<CliContext> =
                 |> List.collect flowCeBodies
                 |> List.collect findRaises
                 |> List.choose (fun (range, ident) ->
-                    if isAllowed sourceText range.StartLine then
-                        None
-                    else
-                        Some(message range ident))
+                    let config = GuardrailConfig.load ()
+                    if isAllowed config.BoundaryFiles ctx.FileName sourceText range.StartLine "AXG003" then None
+                    else Some(message sourceText range ident))
 
-            return GuardrailConfig.applyCore messages
+            return GuardrailConfig.applyCore ctx messages
         }

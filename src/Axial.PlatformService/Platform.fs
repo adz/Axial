@@ -1,7 +1,7 @@
 // This file holds the `live` implementations of Axial.PlatformService's service interfaces (IRandom,
 // IEnvironment, ...): it is the explicit, mockable boundary those services exist to be, so the ambient
 // effects here are intentional rather than leaked.
-// axial-allow-effect-file: random, environment
+// axial-allow-file-AXG001: this file implements the explicit random, environment boundary
 namespace Axial.PlatformService
 
 open System

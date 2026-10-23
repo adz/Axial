@@ -35,7 +35,7 @@ module ReflectionFormattingAnalyzerTests =
                     + "let c = $\"count {3}.\"\n")
 
             test <@ found |> List.map (fun (line, code, _) -> line, code) = [ 1, "AXG006"; 2, "AXG006"; 3, "AXG006" ] @>
-            test <@ found |> List.forall (fun (_, _, message) -> message.Contains("Convert the hole with `string` or use String.Concat.")) @>
+            test <@ found |> List.forall (fun (_, _, message) -> message.Contains("Replace it with String.Concat or convert each hole explicitly with `string`.")) @>
         }
 
     [<Fact>]
@@ -106,7 +106,7 @@ module ReflectionFormattingAnalyzerTests =
                     + "let b = string C\n"
                     + "let c = sprintf \"%d %s\" r.X \"x\"\n"
                     + "let d = System.String.Concat(\"x\", box 3)\n"
-                    + "// axial-allow-reflection-format\n"
+                    + "// axial-allow-AXG006: diagnostic-only code never runs trimmed\n"
                     + "let e = string r\n"
                     + "let f = string System.DayOfWeek.Monday\n"
                     + "let g = System.String.Join(\", \", [ \"a\"; \"b\" ])\n")

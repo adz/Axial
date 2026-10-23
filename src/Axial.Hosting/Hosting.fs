@@ -317,7 +317,7 @@ module DotNetApp =
 
             // The console host's Ctrl+C wiring and final-error report are the OS-process entry point
             // boundary itself, not application logic; there is no environment to route them through.
-            Console.CancelKeyPress.AddHandler handler // axial-allow-effect: console
+            Console.CancelKeyPress.AddHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
 
             try
                 let! exit = running.Completion |> Async.StartAsTask
@@ -325,11 +325,11 @@ module DotNetApp =
                 match exit with
                 | Exit.Success _ -> ()
                 | Exit.Failure cause when Cause.isInterrupted cause -> ()
-                | Exit.Failure cause -> Console.Error.WriteLine(Cause.prettyPrint describeError cause) // axial-allow-effect: console
+                | Exit.Failure cause -> Console.Error.WriteLine(Cause.prettyPrint describeError cause) // axial-allow-AXG001: intentional console host or live-service boundary
 
                 return exitCode exit
             finally
-                Console.CancelKeyPress.RemoveHandler handler // axial-allow-effect: console
+                Console.CancelKeyPress.RemoveHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
         }
 
 /// <summary>Adapts Microsoft configuration to Axial's explicit environment-variable service.</summary>

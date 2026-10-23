@@ -32,7 +32,7 @@ module GuardrailConfigTests =
                   "setting\tnativeAot\ttrue"
                   "rule\tacme.clock\tAcme\tacme-clock\tmember:Acme.Clock::Now,Today\tinsideFlow\treads the Acme clock\tAcme.IClock" ]
 
-        test <@ config.Severities = Map.ofList [ "Axial", Severity.Error; "Axial.HttpClient", Severity.Warning ] @>
+        test <@ config.EnabledGuardrails = set [ "Axial"; "Axial.HttpClient" ] @>
         test <@ config.NativeAot @>
         test <@ config.Rules |> List.forall (fun rule -> rule.Guardrail = "Axial" || rule.Guardrail = "Axial.HttpClient") @>
         test <@ config.Rules |> List.exists (fun rule -> rule.Id = "http.new-client") @>
@@ -97,7 +97,7 @@ module GuardrailConfigTests =
                     + "let c (v: System.Threading.Tasks.ValueTask<int>) = v.Result\n"
                     + "let d (a: Async<int>) = Async.RunSynchronously a\n"
                     + "let e (t: System.Threading.Tasks.Task) = t.GetAwaiter().GetResult()\n"
-                    + "let f (t: System.Threading.Tasks.Task<int>) = t.Result // axial-allow-effect: blocking\n"
+                    + "let f (t: System.Threading.Tasks.Task<int>) = t.Result // axial-allow-AXG001: synchronous host boundary\n"
                     + "let g (x: int) = x\n")
             test <@ found = [ 1; 2; 3; 4; 5 ] @>
         }
@@ -132,9 +132,9 @@ module GuardrailConfigTests =
         task {
             let! found =
                 findings (
-                    "let create () = System.Security.Cryptography.RandomNumberGenerator.Create() // axial-allow-effect: secure-random\n"
+                    "let create () = System.Security.Cryptography.RandomNumberGenerator.Create() // axial-allow-AXG001: secure random live implementation\n"
                     + "let bytes (rng: System.Security.Cryptography.RandomNumberGenerator) (buffer: byte array) =\n"
-                    + "    rng.GetBytes buffer // axial-allow-effect: secure-random\n")
+                    + "    rng.GetBytes buffer // axial-allow-AXG001: secure random live implementation\n")
             test <@ found = [] @>
             let rule = builtInRules |> List.find (fun rule -> rule.Id = "random.cryptographic")
             test <@ rule.Guardrail = "Axial.PlatformService" @>

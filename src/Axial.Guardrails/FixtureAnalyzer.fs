@@ -7,24 +7,12 @@
 /// The analyzer catches violations before review.
 module Axial.Guardrails.FixtureAnalyzer
 
-open System.Text.RegularExpressions
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
+open Axial.Guardrails.Suppressions
 
 let private testAttributeNames = set [ "Fact"; "Theory"; "Property" ]
-
-let private allowDirective =
-    Regex(@"axial-allow-fixture\b", RegexOptions.Compiled)
-
-let private isAllowed (sourceText: ISourceText) (line1: int) : bool =
-    let textOfLine1 (n: int) =
-        if n >= 1 && n <= sourceText.GetLineCount() then
-            sourceText.GetLineString(n - 1)
-        else
-            ""
-
-    allowDirective.IsMatch(textOfLine1 line1) || allowDirective.IsMatch(textOfLine1 (line1 - 1))
 
 let private attributeShortName (attr: SynAttribute) : string =
     let name = attr.TypeName.LongIdent |> List.last |> (fun i -> i.idText)
@@ -57,16 +45,14 @@ let private message (range: range) : Message =
     { Type = "Axial Test Fixture"
       Message =
         "This module-level `let` value is shared by every test in this module (it's computed once, "
-        + "not per test), which is unsafe under xUnit's parallel test execution. Build the fixture "
-        + "inside each test, or expose it as a function so each caller gets a fresh value. If it's "
-        + "genuinely immutable and safe to share, mark it: `// axial-allow-fixture` on this line or "
-        + "the line above."
+        + "not per test), which is unsafe under xUnit's parallel test execution. Move the fixture "
+        + "inside each test, or replace the value with a function that returns a fresh fixture."
       Code = "AXG004"
-      Severity = Severity.Warning
+      Severity = Severity.Error
       Range = range
       Fixes = [] }
 
-let rec private checkDecls (sourceText: ISourceText) (decls: SynModuleDecl list) : Message list =
+let rec private checkDecls (ctx: CliContext) (decls: SynModuleDecl list) : Message list =
     let isTestModule =
         decls
         |> List.exists (fun decl ->
@@ -87,14 +73,16 @@ let rec private checkDecls (sourceText: ISourceText) (decls: SynModuleDecl list)
                     bindings
                     |> List.filter isFixtureRisk
                     |> List.choose (fun (SynBinding(range = range)) ->
-                        if isAllowed sourceText range.StartLine then None else Some(message range))
+                        let config = GuardrailConfig.load ()
+                        if isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG004" then None
+                        else Some(message range))
                 | _ -> [])
 
     let nestedFindings =
         decls
         |> List.collect (fun decl ->
             match decl with
-            | SynModuleDecl.NestedModule(decls = nested) -> checkDecls sourceText nested
+            | SynModuleDecl.NestedModule(decls = nested) -> checkDecls ctx nested
             | _ -> [])
 
     hereFindings @ nestedFindings
@@ -114,6 +102,6 @@ let fixtureAnalyzer: Analyzer<CliContext> =
 
             return
                 modules
-                |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> checkDecls ctx.SourceText decls)
-                |> GuardrailConfig.applyCore
+                |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> checkDecls ctx decls)
+                |> GuardrailConfig.applyCore ctx
         }

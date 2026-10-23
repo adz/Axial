@@ -1,14 +1,10 @@
 <Project>
 
   <PropertyGroup>
-    <!-- Set to false to skip the analyzer for this project entirely. -->
+    <!-- Set in a project file only when that project cannot run analyzers. CI rejects the environment-variable form. -->
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
-    <!-- "warning" (default) reports findings without failing the build; "error" fails it. -->
-    <!-- AXIAL_GUARDRAILS_SEVERITY, if set in the environment, overrides the default. It applies only
-         when AxialGuardrailsSeverity is still empty, so a project property or a -p:AxialGuardrailsSeverity
-         command-line property wins over the environment. -->
-    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == '' and '$(AXIAL_GUARDRAILS_SEVERITY)' != ''">$(AXIAL_GUARDRAILS_SEVERITY)</AxialGuardrailsSeverity>
-    <AxialGuardrailsSeverity Condition="'$(AxialGuardrailsSeverity)' == ''">warning</AxialGuardrailsSeverity>
+    <!-- Findings are errors by default. A checked-in baseline is the only supported downgrade path. -->
+    <AxialGuardrailsBaselineFile Condition="'$(AxialGuardrailsBaselineFile)' == ''">$(MSBuildProjectDirectory)\Axial.Guardrails.baseline</AxialGuardrailsBaselineFile>
   </PropertyGroup>
 
 </Project>

@@ -25,7 +25,7 @@ module Sub =
                     with error -> Diagnostics.exceptionFrom name runtime.Options error
                 let job : Flow<'env, Never, unit> =
                     flow {
-                        // axial-allow-discarded-cancellation
+                        // axial-allow-AXG005: wrapped operation has no cancellation-token overload
                         do! Flow.scopeFinalizer (Flow.fromTask (fun _ ->
                             ready.TrySetResult(None) |> ignore
                             finished.TrySetResult() |> ignore

@@ -70,7 +70,7 @@ module Ordinary =
                 | TransientTransportException message when attempt < maxAttempts ->
                     // An overly broad `with _ ->` here would also retry NullReferenceException.
                     // comparison intentionally demonstrates the ambient-effect alternative.
-                    // axial-allow-effect: clock
+                    // axial-allow-AXG001: intentional clock host or live-service boundary
                     do! Task.Delay(baseDelay * float (pown 2 (attempt - 1)), timeoutSource.Token)
                     attempt <- attempt + 1
                 | TransientTransportException message ->

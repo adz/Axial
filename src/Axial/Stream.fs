@@ -1136,7 +1136,7 @@ module FlowStream =
             ()
             : Execution<StreamStep<'value, 'error>, 'error> =
             Flow.invoke
-                // axial-allow-discarded-cancellation: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
+                // axial-allow-AXG005: wrapped operation has no cancellation-token overload: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
                 (Flow.fromTask (fun _ ->
                     task {
                         let! moved = enumerator.MoveNextAsync()

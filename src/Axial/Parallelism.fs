@@ -31,7 +31,7 @@ module Parallelism =
         let processors = 1
 #else
         // Sizing a worker pool is executor mechanics, like the thread pool reading the same value.
-        let processors = Environment.ProcessorCount // axial-allow-effect: environment
+        let processors = Environment.ProcessorCount // axial-allow-AXG001: intentional environment host or live-service boundary
 #endif
         Parallelism(max 1 (size processors))
 

@@ -10,27 +10,15 @@
 /// an acquisition. A flow built elsewhere and passed by name is not followed, which only costs a missed finding.
 module Axial.Guardrails.ResourceFromFiberAnalyzer
 
-open System.Text.RegularExpressions
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
+open Axial.Guardrails.Suppressions
 
 let private forkNames =
     set [ "fork"; "forkNamed"; "forkGraceful"; "forkDetached"; "forkReplacing"; "forkReplacingKey" ]
 
 let private acquisitionNames = set [ "scopeResource"; "scopeAcquireRelease" ]
-
-let private allowDirective =
-    Regex(@"axial-allow-resource-from-fiber\b", RegexOptions.Compiled)
-
-let private isAllowed (sourceText: ISourceText) (line1: int) : bool =
-    let textOfLine1 (n: int) =
-        if n >= 1 && n <= sourceText.GetLineCount() then
-            sourceText.GetLineString(n - 1)
-        else
-            ""
-
-    allowDirective.IsMatch(textOfLine1 line1) || allowDirective.IsMatch(textOfLine1 (line1 - 1))
 
 /// The identifier an application chain ultimately applies: `fork` in `Flow.forkNamed "x" body` is `forkNamed`.
 let rec headIdent (expr: SynExpr) : string option =
@@ -186,11 +174,9 @@ let private message (range: range) : Message =
         "This fiber returns a scoped resource it acquired itself. A forked fiber releases its scoped resources when "
         + "it settles, so Fiber.join would hand back a resource that is already released. Use "
         + "`Flow.forkResource resource` to acquire it in the background and keep it in the caller's scope, or "
-        + "`Flow.zipPar`/`Flow.sequencePar` to acquire several in parallel. If the fiber uses the resource itself "
-        + "and the returned value is never used after the fiber settles, mark it: "
-        + "`// axial-allow-resource-from-fiber` on this line or the line above."
+        + "`Flow.zipPar`/`Flow.sequencePar` to acquire several in parallel."
       Code = "AXG007"
-      Severity = Severity.Warning
+      Severity = Severity.Error
       Range = range
       Fixes = [] }
 
@@ -206,7 +192,9 @@ let analyze (ctx: CliContext) : Message list =
     moduleExprs
     |> List.collect findForkedResources
     |> List.distinctBy (fun range -> range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
-    |> List.filter (fun range -> not (isAllowed ctx.SourceText range.StartLine))
+    |> List.filter (fun range ->
+        let config = GuardrailConfig.load ()
+        not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG007"))
     |> List.map message
 
 [<CliAnalyzer("ResourceFromFiber",
@@ -214,4 +202,4 @@ let analyze (ctx: CliContext) : Message list =
               + "before Fiber.join returns it.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
 let resourceFromFiberAnalyzer: Analyzer<CliContext> =
-    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore }
+    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }

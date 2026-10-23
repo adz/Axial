@@ -26,7 +26,7 @@ type ReaderOverheadBenchmarks() =
     member _.ManualEnvPassingX10() =
         manualLocalEnv 0 Shared.noCancellation
         // benchmark measurement requires a synchronous host boundary.
-        // axial-allow-effect: blocking
+        // axial-allow-AXG001: intentional blocking host or live-service boundary
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> Shared.consumeResult
 
@@ -34,7 +34,7 @@ type ReaderOverheadBenchmarks() =
     member _.AsyncLocalUpdatesX10() =
         asyncLocalReader 0 Shared.noCancellation
         // benchmark measurement requires a synchronous host boundary.
-        // axial-allow-effect: blocking
+        // axial-allow-AXG001: intentional blocking host or live-service boundary
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> Shared.consumeResult
 
@@ -341,7 +341,7 @@ type RunOnCpuBenchmarks() =
     member _.TaskRunWhenAll() =
         [| for seed in 1..sliceCount -> Task.Run(fun () -> work seed) |]
         |> Task.WhenAll
-        // axial-allow-effect: blocking (benchmark host boundary)
+        // axial-allow-AXG001: benchmark host boundary
         |> fun pending -> pending.GetAwaiter().GetResult()
         |> Array.sum
 
@@ -431,7 +431,7 @@ type RunOnOverheadBenchmarks() =
 
     [<Benchmark(Description = "Task.Run, trivial function")>]
     member _.TaskRun() =
-        // axial-allow-effect: blocking (benchmark host boundary)
+        // axial-allow-AXG001: benchmark host boundary
         Task.Run(fun () -> 1).GetAwaiter().GetResult()
 
 /// The cost of closing a scope: an empty scope (the allocation-free fast path in the runtime) and scopes that release
@@ -585,7 +585,7 @@ type InteropCompletionBenchmarks() =
                     return! consume (remaining - 1) next
             }
         // benchmark measurement requires a synchronous host boundary.
-        // axial-allow-effect: blocking
+        // axial-allow-AXG001: intentional blocking host or live-service boundary
         consume 20 0 |> fun pending -> pending.GetAwaiter().GetResult() |> Shared.consumeResult
 
     [<Benchmark(Description = "Async<Result> x20")>]
@@ -598,7 +598,7 @@ type InteropCompletionBenchmarks() =
                     return! consume (remaining - 1) next
             }
         // benchmark measurement requires a synchronous host boundary.
-        // axial-allow-effect: blocking
+        // axial-allow-AXG001: intentional blocking host or live-service boundary
         consume 20 0 |> Async.RunSynchronously |> Shared.consumeResult
 
     [<Benchmark(Description = "Flow Task interop x20")>]

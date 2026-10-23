@@ -182,7 +182,7 @@ module WebSocket =
                     return! Flow.fromAsyncResult (async {
                         return! task {
                             // The live service owns native connections.
-                            // axial-allow-effect: websocket
+                            // axial-allow-AXG001: intentional websocket host or live-service boundary
                             let socket = new ClientWebSocket()
                             let mutable connectDefect: exn option = None
                             try

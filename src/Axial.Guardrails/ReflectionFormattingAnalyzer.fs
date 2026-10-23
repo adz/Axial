@@ -19,18 +19,7 @@ open FSharp.Analyzers.SDK
 open FSharp.Compiler.Symbols
 open FSharp.Compiler.Symbols.FSharpExprPatterns
 open FSharp.Compiler.Text
-
-let private allowDirective =
-    Regex(@"axial-allow-reflection-format\b", RegexOptions.Compiled)
-
-let private isAllowed (sourceText: ISourceText) (line1: int) : bool =
-    let textOfLine1 (n: int) =
-        if n >= 1 && n <= sourceText.GetLineCount() then
-            sourceText.GetLineString(n - 1)
-        else
-            ""
-
-    allowDirective.IsMatch(textOfLine1 line1) || allowDirective.IsMatch(textOfLine1 (line1 - 1))
+open Axial.Guardrails.Suppressions
 
 /// FSharp.Core types whose ToString overrides still print their contents with the structured printer.
 let private structuredCoreTypes =
@@ -227,17 +216,16 @@ let private toMessage = function
         { Type = "Axial Reflection Formatting"
           Message =
             $"This formats with F#'s reflection-based structured printer ({why}), which throws under NativeAOT and "
-            + "trimming. Render the value explicitly (a describe/render function or a hand-written ToString override). "
-            + "If this code never runs trimmed, mark it: `// axial-allow-reflection-format` on this line or the line above."
+            + "trimming. Replace it with explicit rendering: a describe/render function or a hand-written ToString override."
           Code = "AXG006"
-          Severity = Severity.Warning
+          Severity = Severity.Error
           Range = range
           Fixes = [] }
     | PrintfLowering range ->
         { Type = "Axial Reflection Formatting"
-          Message = "This formatting lowers to FSharp.Core printf, which is not compatible with NativeAOT. Convert the hole with `string` or use String.Concat."
+          Message = "This formatting lowers to FSharp.Core printf, which is not compatible with NativeAOT. Replace it with String.Concat or convert each hole explicitly with `string`."
           Code = "AXG006"
-          Severity = Severity.Warning
+          Severity = Severity.Error
           Range = range
           Fixes = [] }
 
@@ -249,7 +237,9 @@ let analyzeWithNativeAot nativeAot (ctx: CliContext) : Message list =
         |> List.distinctBy (fun finding ->
             let range = findingRange finding
             range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
-        |> List.filter (fun finding -> not (isAllowed ctx.SourceText (findingRange finding).StartLine))
+        |> List.filter (fun finding ->
+            let config = GuardrailConfig.load ()
+            not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText (findingRange finding).StartLine "AXG006"))
         |> List.map toMessage
 
 let analyze (ctx: CliContext) : Message list =
@@ -260,4 +250,4 @@ let analyze (ctx: CliContext) : Message list =
               + "which relies on reflection that NativeAOT and trimming remove.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
 let reflectionFormattingAnalyzer: Analyzer<CliContext> =
-    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore }
+    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }

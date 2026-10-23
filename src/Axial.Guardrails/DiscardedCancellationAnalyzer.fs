@@ -10,25 +10,13 @@
 /// to reproduce and easy to blame on something else.
 module Axial.Guardrails.DiscardedCancellationAnalyzer
 
-open System.Text.RegularExpressions
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
+open Axial.Guardrails.Suppressions
 
 let private targetNames =
     set [ "ColdTask"; "ColdTask.create"; "Flow.fromTask"; "Flow.fromTaskResult" ]
-
-let private allowDirective =
-    Regex(@"axial-allow-discarded-cancellation\b", RegexOptions.Compiled)
-
-let private isAllowed (sourceText: ISourceText) (line1: int) : bool =
-    let textOfLine1 (n: int) =
-        if n >= 1 && n <= sourceText.GetLineCount() then
-            sourceText.GetLineString(n - 1)
-        else
-            ""
-
-    allowDirective.IsMatch(textOfLine1 line1) || allowDirective.IsMatch(textOfLine1 (line1 - 1))
 
 let rec private qualifiedName (expr: SynExpr) : string option =
     match expr with
@@ -115,11 +103,10 @@ let private message (range: range) : Message =
       Message =
         "This lambda discards its CancellationToken parameter (`fun _ -> ...`), so cancelling the "
         + "Flow cannot stop the underlying operation - it keeps running until it finishes on its own. "
-        + "If the wrapped call has a cancellation-aware overload, thread the token through instead. "
-        + "If it's a legacy API that genuinely doesn't accept one, mark it: "
-        + "`// axial-allow-discarded-cancellation` on this line or the line above."
+        + "Replace the discard with a named token and pass it to the wrapped operation's "
+        + "cancellation-aware overload."
       Code = "AXG005"
-      Severity = Severity.Warning
+      Severity = Severity.Error
       Range = range
       Fixes = [] }
 
@@ -143,7 +130,9 @@ let discardedCancellationAnalyzer: Analyzer<CliContext> =
             return
                 moduleExprs
                 |> List.collect findDiscards
-                |> List.filter (fun range -> not (isAllowed sourceText range.StartLine))
+                |> List.filter (fun range ->
+                    let config = GuardrailConfig.load ()
+                    not (isAllowed config.BoundaryFiles ctx.FileName sourceText range.StartLine "AXG005"))
                 |> List.map message
-                |> GuardrailConfig.applyCore
+                |> GuardrailConfig.applyCore ctx
         }

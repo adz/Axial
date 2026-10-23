@@ -1,4 +1,4 @@
-// axial-allow-effect-file: blocking (runtime platform layer: reads results of tasks it has already checked are complete)
+// axial-allow-file-AXG001: this file implements the explicit blocking (runtime platform layer: reads results of tasks it has already checked are complete) boundary
 /// The package's platform-variant surface. This file holds the FABLE_COMPILER directives for every genuinely
 /// dual-bodied Flow primitive: each half declares the same names (and, where the shape itself differs between
 /// platforms, the same type aliases), so the rest of the code is platform-directive-free. (Fable 5's project
@@ -15,7 +15,7 @@
 /// This file also implements the executor mechanics behind timed flows. Timed operations receive the caller's
 /// IClock through their environment; this module adapts that clock to internal execution outcomes. The platform
 /// timer below is used by the named live clock implementation, not selected implicitly by a Flow.
-// axial-allow-effect-file: clock
+// axial-allow-file-AXG001: this file implements the explicit clock boundary
 ///
 /// <remarks>
 /// <b>Scope of the "Fable" half below: Fable's JavaScript target specifically, not Fable in general.</b> Fable
@@ -802,7 +802,7 @@ let monotonicNow () : TimeSpan =
     TimeSpan.FromMilliseconds(performanceNow ())
 #else
     // The runtime's own monotonic timer; applications measure durations through IClock.Elapsed.
-    let timestamp = System.Diagnostics.Stopwatch.GetTimestamp() // axial-allow-effect: clock
+    let timestamp = System.Diagnostics.Stopwatch.GetTimestamp() // axial-allow-AXG001: intentional clock host or live-service boundary
     TimeSpan.FromTicks(int64 (float timestamp * (float TimeSpan.TicksPerSecond / float System.Diagnostics.Stopwatch.Frequency)))
 #endif
 

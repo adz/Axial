@@ -1030,7 +1030,7 @@ type Scope() =
 
     interface IDisposable with
         member this.Dispose() =
-            this.Close(CancellationToken.None).GetAwaiter().GetResult()  // axial-allow-effect: blocking (IDisposable.Dispose is synchronous by contract)
+            this.Close(CancellationToken.None).GetAwaiter().GetResult()  // axial-allow-AXG001: IDisposable.Dispose is synchronous by contract
 #endif
 
 type internal FiberContext =
@@ -1351,7 +1351,7 @@ type Flow<'env, 'error, 'value> =
     member this.RunSynchronously(environment: 'env, ?cancellationToken: CancellationToken) : Exit<'value, 'error> =
         let pending = this.StartAsValueTask(environment, ?cancellationToken = cancellationToken)
         if pending.IsCompletedSuccessfully then pending.Result
-        else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-effect: blocking (RunSynchronously is the documented blocking runner)
+        else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-AXG001: RunSynchronously is the documented blocking runner
 #endif
 
 #if !FABLE_COMPILER

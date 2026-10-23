@@ -113,18 +113,19 @@ let rawRanges (ctx: CliContext) : range list =
     |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
 
 let analyze (ctx: CliContext) : Message list =
-    let allowed = fileLevelAllowedCategories ctx.SourceText
+    let config = GuardrailConfig.load ()
     rawRanges ctx
-    |> List.filter (fun r -> not (isAllowed ctx.SourceText allowed r.StartLine "scope"))
+    |> List.filter (fun r ->
+        not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText r.StartLine "AXG008"))
     |> List.map (fun r ->
         { Type = "Axial Scope From Run"
-          Message = "This run returns a scope-owned service that is closed when the run ends. Use the service inside the same flow, or keep its owning scope open. At an intentional boundary use `// axial-allow-effect: scope`."
+          Message = "This run returns a scope-owned service that is closed when the run ends. Move use of the service inside the same flow, or keep its owning scope open."
           Code = "AXG008"
-          Severity = Severity.Warning
+          Severity = Severity.Error
           Range = r
           Fixes = [] })
 
 [<CliAnalyzer("ScopeFromRun", "Flags scope-owned services returned by a completed Flow run.",
               "https://github.com/adz/Axial/blob/main/docs/15-notes/03-guardrails.md")>]
 let scopeFromRunAnalyzer: Analyzer<CliContext> =
-    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore }
+    fun ctx -> async { return analyze ctx |> GuardrailConfig.applyCore ctx }
