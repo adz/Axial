@@ -2843,7 +2843,7 @@ module Flow =
 
             let workers = min (Parallelism.value parallelism) items.Length
 
-            if not workerOwnsScope && workers = items.Length then
+            if items.Length > 0 && not workerOwnsScope && workers = items.Length then
                 // With one worker per item there is no queue to drain. Start mapped items as leaves of the parallel
                 // tree directly, avoiding a worker flow, loop, mapped Flow wrapper, and unit list per item.
                 invoke workerMapping environment cancellationToken
