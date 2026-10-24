@@ -1,3 +1,4 @@
+// axial-allow-file-AXG001: executable AOT probe performs console, process, and blocking host-boundary effects
 /// Runs under NativeAOT and fails loudly when a code path depends on metadata that AOT removes: F#'s reflection-based
 /// structural rendering, diagnostics rendering, and deep
 /// synchronous flow chains. `scripts/run-aot-probe.sh` publishes and runs it.
