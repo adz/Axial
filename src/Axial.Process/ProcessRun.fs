@@ -330,7 +330,7 @@ module internal ProcessRun =
                     flow {
                         let! exit = Fiber.awaitUnobserved feeder
                         match exit with
-                        | Exit.Failure cause when not (Cause.isInterrupted cause) ->
+                        | Exit.Failure cause when not (List.isEmpty (Cause.defects cause)) ->
                             do! Fiber.reportUnobserved feeder
                         | _ -> ()
                     }
@@ -815,6 +815,8 @@ module internal ProcessRun =
                             |> Flow.bind (fun () ->
                                 match exit with
                                 | Exit.Success () -> Flow.succeed ()
+                                | Exit.Failure cause when not (List.isEmpty (Cause.defects cause)) ->
+                                    Flow.ofExit (Exit.Failure cause)
                                 | Exit.Failure cause when Cause.isInterrupted cause -> Flow.succeed ()
                                 | Exit.Failure cause -> Flow.ofExit (Exit.Failure cause))
                         | Choice2Of2 () -> superviseDetachedFeeder stage feeder)

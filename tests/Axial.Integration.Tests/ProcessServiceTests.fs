@@ -96,6 +96,75 @@ module ProcessServiceTests =
     }
 
     [<Fact>]
+    let ``stdin interruption combined with a prompt finalizer defect fails the run`` () = task {
+        let entered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let defect = InvalidOperationException "prompt stdin finalizer defect"
+        let source =
+            Flow.fromAsync (async {
+                entered.TrySetResult() |> ignore
+                do! Async.Sleep 30000
+                return [||]
+            })
+            |> Flow.ensuring (Flow.die defect)
+            |> FlowStream.fromFlow
+        let running =
+            shText "sleep 0.1"
+            |> stdinFrom (Input.flowStream source)
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env ())
+
+        do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+        match outcome with
+        | Exit.Failure cause ->
+            test <@ Cause.isInterrupted cause @>
+            test <@ Cause.defects cause |> List.exists (fun error -> obj.ReferenceEquals(error, defect)) @>
+        | other -> failwithf "Expected combined interruption and defect, got %A" other
+    }
+
+    [<Fact>]
+    let ``detached stdin interruption combined with a late finalizer defect reports the defect`` () = task {
+        let entered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let reported = TaskCompletionSource<exn>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let defect = InvalidOperationException "late stdin finalizer defect"
+        let observer =
+            { FiberObserver.none with
+                OnUnobservedDefect = fun metadata error ->
+                    if obj.ReferenceEquals(error, defect)
+                       && (metadata |> Option.bind _.Name) = Some "process-stdin-0" then
+                        reported.TrySetResult(error) |> ignore }
+        let finalizer =
+            Flow.fromTask (fun _ -> release.Task)
+            |> Flow.bind (fun () -> Flow.die defect)
+        let source =
+            Flow.fromAsync (async {
+                entered.TrySetResult() |> ignore
+                do! Async.Sleep 30000
+                return [||]
+            })
+            |> Flow.ensuring finalizer
+            |> FlowStream.fromFlow
+        let running =
+            shText "sleep 0.1"
+            |> stdinFrom (Input.flowStream source)
+            |> toFlow
+            |> Flow.withFiberObserver observer
+            |> fun workflow -> workflow.StartAsTask(env ())
+
+        do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+        match outcome with
+        | Exit.Success result -> test <@ result.ExitCode = 0 @>
+        | other -> failwithf "Expected process completion after detaching the finalizer, got %A" other
+        test <@ not reported.Task.IsCompleted @>
+
+        release.TrySetResult() |> ignore
+        let! observed = reported.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        test <@ obj.ReferenceEquals(observed, defect) @>
+    }
+
+    [<Fact>]
     let ``typed input failure is process error and defect remains defect`` () =
         let failing = FlowStream.fromFlow (Flow.fail "bad input" : Flow<unit, string, byte array>)
         let outcome = cmd $"cat" |> stdinFrom (Input.flowStream failing) |> toFlow |> Flow.runSync (env ())
