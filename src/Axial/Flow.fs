@@ -1923,33 +1923,38 @@ module Flow =
     /// <summary>Runs all flows concurrently and returns their values in input order.</summary>
     /// <remarks>An empty input succeeds immediately. Branches start inline, like async methods passed to <c>Task.WhenAll</c>; use <c>Flow.runOn RunOn.ThreadPool</c> for synchronous CPU-heavy branches. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>. Scoped resources follow <c>zipPar</c> too: when every flow succeeds they move to the caller's scope; when any fails, all of them are released before <c>sequencePar</c> returns.</remarks>
     let sequencePar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
-        // A balanced tree of zipPars, built once. Each node starts its two halves under the branch's shared source.
-        let rec combine (flows: Flow<'env, 'error, 'value> list)
-            : CancellationTokenSource -> 'env -> CancellationToken -> Execution<'value list, 'error> =
-            match flows with
-            | [] -> fun _ _ _ -> Execution.ofValue []
-            | [ flow ] -> fun _ environment token -> invoke flow environment token |> Execution.map List.singleton
-            | _ ->
-                let midpoint = flows.Length / 2
-                let left, right = List.splitAt midpoint flows
-                let startLeft = combine left
-                let startRight = combine right
-
-                fun source environment _ ->
-                    Platform.zipParExecution
-                        (startLeft source environment)
-                        (startRight source environment)
-                        source
-                        chooseParallelExit
-                    |> Execution.map (fun (leftValues, rightValues) -> leftValues @ rightValues)
-
-        // Every flow shares one branch scope, as in zipPar: the caller receives all the values or none of them. A
-        // single flow runs in it too, so its failure releases what it acquired.
         match flows with
         | [] -> ok []
         | _ ->
-            let start = combine flows
-            parallelBranch (fun source environment -> start source environment source.Token)
+            // Write leaves directly into the result array. The former tree returned and concatenated a list at every
+            // node, allocating each successful value once per tree level.
+            let inputs = List.toArray flows
+
+            let rec combine first count
+                : CancellationTokenSource -> 'env -> CancellationToken -> 'value array -> Execution<unit, 'error> =
+                if count = 1 then
+                    fun _ environment token results ->
+                        invoke inputs[first] environment token
+                        |> Execution.map (fun value -> results[first] <- value)
+                else
+                    let leftCount = count / 2
+                    let startLeft = combine first leftCount
+                    let startRight = combine (first + leftCount) (count - leftCount)
+
+                    fun source environment _ results ->
+                        Platform.zipParExecution
+                            (fun token -> startLeft source environment token results)
+                            (fun token -> startRight source environment token results)
+                            source
+                            chooseParallelExit
+                        |> Execution.map ignore
+
+            let start = combine 0 inputs.Length
+
+            parallelBranch (fun source environment ->
+                let results = Array.zeroCreate inputs.Length
+                start source environment source.Token results
+                |> Execution.map (fun () -> List.ofArray results))
 
     /// <summary>Runs two flows concurrently and returns the result of the first one to complete.</summary>
     /// <remarks>
