@@ -138,18 +138,30 @@ module PackagePropsTests =
             Assert.Contains("cannot be disabled or downgraded through environment variables", severity.Output)
             let disabled = runBuild project None None None true false (Some "false")
             Assert.NotEqual(0, disabled.ExitCode)
-            Assert.Contains("cannot be disabled or downgraded through environment variables", disabled.Output)
+            Assert.Contains("must be enabled when CI=true", disabled.Output)
+
+            let projectText = File.ReadAllText project
+            File.WriteAllText(project, projectText.Replace("<OutputType>Library</OutputType>", "<OutputType>Library</OutputType><AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>"))
+            let propertyDisabled = runBuild project None None None true false None
+            Assert.NotEqual(0, propertyDisabled.ExitCode)
+            Assert.Contains("must be enabled when CI=true", propertyDisabled.Output)
+
+            writeConsumer dir
+            let generation = runBuild project None None None true true None
+            Assert.NotEqual(0, generation.ExitCode)
+            Assert.Contains("cannot run when CI=true", generation.Output)
         finally
             Directory.Delete(dir, true)
 
     [<Fact>]
-    let ``baseline generation writes a stable candidate and lets the build finish`` () =
+    let ``baseline generation writes a stable candidate and marks the build non-passing`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
             writeConsumer dir
             let result = runBuild (Path.Combine(dir, "Consumer.fsproj")) None None None false true None
-            Assert.Equal(0, result.ExitCode)
+            Assert.NotEqual(0, result.ExitCode)
+            Assert.Contains("generating a candidate baseline", result.Output)
             let candidates = Directory.GetFiles(dir, "axial-guardrails.*.baseline", SearchOption.AllDirectories)
             Assert.Single(candidates) |> ignore
             let fields = File.ReadAllText(candidates[0]).Trim().Split('\t')

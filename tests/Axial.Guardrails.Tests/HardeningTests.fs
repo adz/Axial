@@ -83,7 +83,7 @@ module HardeningTests =
             let file = Path.GetRelativePath(GuardrailConfig.defaults.BaselineRoot, ctx.FileName).Replace('\\', '/')
             let hash = GuardrailConfig.fingerprint ctx.SourceText diagnostic
             let baselined =
-                { GuardrailConfig.defaults with Baseline = Set.singleton(code, file, hash) }
+                { GuardrailConfig.defaults with Baseline = [ code, file, hash ] }
                 |> fun config -> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ diagnostic ]
             Assert.Equal(Severity.Warning, (Assert.Single baselined).Severity)
         }
@@ -106,4 +106,22 @@ module HardeningTests =
             let otherHash = GuardrailConfig.fingerprint other.SourceText (diagnostic other 2)
             test <@ firstHash = movedHash @>
             test <@ firstHash <> otherHash @>
+        }
+
+    [<Fact>]
+    let ``duplicate violations in one symbol have distinct stable fingerprints`` () =
+        task {
+            let! ctx =
+                AnalyzerTestContext.create
+                    "module M\nlet operation () =\n    let first = System.DateTime.UtcNow\n    System.DateTime.UtcNow\n"
+            let diagnostic line startColumn =
+                { Type = "test"
+                  Message = "use IClock"
+                  Code = "AXG001"
+                  Severity = Severity.Error
+                  Range = Range.mkRange ctx.FileName (Position.mkPos line startColumn) (Position.mkPos line (startColumn + 6))
+                  Fixes = [] }
+            let first = GuardrailConfig.fingerprint ctx.SourceText (diagnostic 3 32)
+            let second = GuardrailConfig.fingerprint ctx.SourceText (diagnostic 4 20)
+            test <@ first <> second @>
         }

@@ -50,9 +50,13 @@
     <_AxialGuardrailsSourceInputs Include="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')" />
   </ItemGroup>
 
-  <Target Name="AxialGuardrailsRejectCiEnvironmentBypass" BeforeTargets="Build"
-          Condition="'$(CI)' == 'true' and ('$(_AxialGuardrailsEnabledEnvironment)' != '' or '$(_AxialGuardrailsEnabledEnvironmentUpper)' != '' or '$(_AxialGuardrailsSeverityEnvironment)' != '' or '$(_AxialGuardrailsSeverityEnvironmentUpper)' != '')">
-    <Error Text="Axial.Guardrails cannot be disabled or downgraded through environment variables when CI=true. Use a checked-in baseline for existing findings." />
+  <Target Name="AxialGuardrailsRejectCiBypass" BeforeTargets="Build" Condition="'$(CI)' == 'true'">
+    <Error Condition="'$(AxialGuardrailsEnabled)' != 'true'"
+           Text="Axial.Guardrails must be enabled when CI=true. Use a checked-in baseline for existing findings." />
+    <Error Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
+           Text="Axial.Guardrails baseline generation is a local review command and cannot run when CI=true." />
+    <Error Condition="'$(_AxialGuardrailsEnabledEnvironment)' != '' or '$(_AxialGuardrailsEnabledEnvironmentUpper)' != '' or '$(_AxialGuardrailsSeverityEnvironment)' != '' or '$(_AxialGuardrailsSeverityEnvironmentUpper)' != ''"
+           Text="Axial.Guardrails cannot be disabled or downgraded through environment variables when CI=true. Use a checked-in baseline for existing findings." />
   </Target>
 
   <!--
@@ -122,6 +126,8 @@
            Text="Axial.Guardrails analyzer folder is missing: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <Delete Files="$(_AxialGuardrailsGeneratedBaseline)" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'" />
+    <Message Importance="high" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
+             Text="Axial.Guardrails is generating a candidate baseline. Diagnostics remain errors; review the candidate, and do not enable generation in normal builds." />
     <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --property TargetFramework=$(TargetFramework) --configuration $(Configuration) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
           EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile)" IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="_AxialGuardrailsExit" />
@@ -133,6 +139,8 @@
            Text="Axial.Guardrails analyzer tool failed (exit code $(_AxialGuardrailsExit)); inspect the output above." />
     <Message Importance="high" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
              Text="Axial.Guardrails baseline candidate: $(_AxialGuardrailsGeneratedBaseline)" />
+    <Error Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
+           Text="Axial.Guardrails baseline generation completed; this generation run is intentionally non-passing." />
     <Touch Files="$(_AxialGuardrailsStampFile)" AlwaysCreate="true" />
   </Target>
 

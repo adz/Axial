@@ -33,7 +33,7 @@ type Config =
       AllRules: EffectRule list
       BoundaryFiles: Set<string>
       BaselineRoot: string
-      Baseline: Set<string * string * string>
+      Baseline: (string * string * string) list
       BaselineOutput: string option }
 
     member this.Rules = this.AllRules |> List.filter (fun rule -> this.EnabledGuardrails.Contains rule.Guardrail)
@@ -52,7 +52,7 @@ let defaults: Config =
       // Direct analyzer hosts (not the MSBuild package) have no project item graph; preserve rule-unit-test support.
       BoundaryFiles = Set.singleton "*"
       BaselineRoot = Directory.GetCurrentDirectory()
-      Baseline = Set.empty
+      Baseline = []
       BaselineOutput = None }
 
 let parse (lines: string seq) : Config =
@@ -104,7 +104,6 @@ let parse (lines: string seq) : Config =
             | [| "baseline"; ruleId; file; fingerprint |] ->
                 Some(ruleId.Trim().ToUpperInvariant(), file.Trim().Replace('\\', '/'), fingerprint.Trim().ToLowerInvariant())
             | _ -> None)
-        |> Set.ofList
 
     { EnabledGuardrails = enabled
       NativeAot = nativeAot
@@ -154,14 +153,38 @@ let private enclosingAnchor (sourceText: ISourceText) line1 =
         let text = (lineText sourceText line).Trim()
         if text.StartsWith("let ") || text.StartsWith("member ") || text.StartsWith("type ") then
             let equals = text.IndexOf '='
-            Some(if equals >= 0 then text.Substring(0, equals) else text)
+            Some(line, if equals >= 0 then text.Substring(0, equals) else text)
         else
             None)
-    |> Option.defaultValue "<file>"
+    |> Option.defaultValue (1, "<file>")
+
+let private occurrenceIndex (sourceText: ISourceText) anchorLine (message: Message) (offending: string) =
+    let prefix =
+        [ for line in anchorLine .. message.Range.StartLine do
+              let text = lineText sourceText line
+              if line = message.Range.StartLine then
+                  yield text.Substring(0, min message.Range.EndColumn text.Length)
+              else
+                  yield text ]
+        |> String.concat "\n"
+        |> normalize
+
+    let mutable count = 0
+    let mutable offset = 0
+    while offset <= prefix.Length - offending.Length && offending.Length > 0 do
+        let found = prefix.IndexOf(offending, offset, StringComparison.Ordinal)
+        if found < 0 then offset <- prefix.Length + 1
+        else
+            count <- count + 1
+            offset <- found + offending.Length
+    max 1 count
 
 let fingerprint (sourceText: ISourceText) (message: Message) =
+    let anchorLine, anchor = enclosingAnchor sourceText message.Range.StartLine
+    let offending = normalize (offendingText sourceText message.Range)
+    let occurrence = occurrenceIndex sourceText anchorLine message offending
     let material =
-        String.concat "\n" [ message.Code.ToUpperInvariant(); normalize (enclosingAnchor sourceText message.Range.StartLine); normalize (offendingText sourceText message.Range) ]
+        String.concat "\n" [ message.Code.ToUpperInvariant(); normalize anchor; offending; string occurrence ]
     SHA256.HashData(Encoding.UTF8.GetBytes material)
     |> Convert.ToHexString
     |> _.ToLowerInvariant()
@@ -173,8 +196,7 @@ let private appendGenerated (output: string) (entry: BaselineEntry) =
     lock gate (fun () ->
         Directory.CreateDirectory(Path.GetDirectoryName output) |> ignore
         let line = $"{entry.RuleId}\t{entry.File}\t{entry.Fingerprint}"
-        let exists = File.Exists output && (File.ReadLines output |> Seq.exists ((=) line))
-        if not exists then File.AppendAllLines(output, [ line ]))
+        File.AppendAllLines(output, [ line ]))
 
 /// Applies the configured error severity, downgrading only checked-in baseline entries. In generation mode every
 /// finding is also written to the per-project candidate baseline and downgraded so the build can complete.
@@ -190,8 +212,8 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
                   Fingerprint = fingerprint ctx.SourceText message }
 
             config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)
-            let baselined = config.Baseline.Contains(entry.RuleId, entry.File, entry.Fingerprint)
-            { message with Severity = if baselined || config.BaselineOutput.IsSome then Severity.Warning else Severity.Error })
+            let baselined = config.Baseline |> List.contains (entry.RuleId, entry.File, entry.Fingerprint)
+            { message with Severity = if baselined then Severity.Warning else Severity.Error })
 
 let apply (guardrail: string) (ctx: CliContext) (messages: Message list) = applyWith (load ()) guardrail ctx messages
 

@@ -1,39 +1,84 @@
 #!/usr/bin/env bash
 
-# Fails when the checked-in Guardrails baseline contains more violations than the comparison commit.
-# Usage: scripts/check-guardrails-baseline-growth.sh [base-commit-or-ref]
+# Rejects malformed baseline entries and any entry newly added relative to the supplied base commit.
+# Usage: scripts/check-guardrails-baseline-growth.sh [base-sha]
 
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root_dir"
 
-if [[ $# -gt 0 ]]; then
-    base=$1
-elif [[ -n ${GITHUB_BASE_REF:-} ]] && git rev-parse --verify --quiet "origin/$GITHUB_BASE_REF" >/dev/null; then
-    base="origin/$GITHUB_BASE_REF"
-elif git rev-parse --verify --quiet HEAD^ >/dev/null; then
-    base=HEAD^
+zero_sha=0000000000000000000000000000000000000000
+base=${1:-${GUARDRAILS_BASE_SHA:-}}
+if [[ -z $base ]]; then
+    if git rev-parse --verify --quiet HEAD^ >/dev/null; then
+        base=HEAD^
+    else
+        base=$zero_sha
+    fi
+fi
+
+base_file=$(mktemp)
+trap 'rm -f "$base_file"' EXIT
+if [[ $base == "$zero_sha" ]]; then
+    : > "$base_file"
+elif git cat-file -e "$base:Axial.Guardrails.baseline" 2>/dev/null; then
+    git show "$base:Axial.Guardrails.baseline" > "$base_file"
+elif git cat-file -e "$base^{commit}" 2>/dev/null; then
+    : > "$base_file"
 else
-    echo "Guardrails baseline growth: skipped (no base commit)"
-    exit 0
+    echo "Guardrails baseline growth: base commit '$base' is unavailable; fetch the CI base SHA." >&2
+    exit 2
 fi
 
-count_entries() {
-    grep -cE '^AXG[0-9]{3}[[:space:]]' || true
-}
+python3 - "$base_file" Axial.Guardrails.baseline "$base" <<'PY'
+from collections import Counter
+from pathlib import PurePosixPath
+import re
+import sys
 
-current=$(count_entries < Axial.Guardrails.baseline)
-if git cat-file -e "$base:Axial.Guardrails.baseline" 2>/dev/null; then
-    previous=$(git show "$base:Axial.Guardrails.baseline" | count_entries)
-else
-    previous=0
-fi
+base_path, current_path, base_name = sys.argv[1:]
+syntax = re.compile(r"(AXG[0-9]{3})\t([^\t]+)\t([0-9a-f]{64})", re.IGNORECASE)
 
-if (( current > previous )); then
-    echo "Guardrails baseline grew from $previous to $current entries relative to $base." >&2
-    echo "Fix new violations; the baseline may retain existing violations but must not grow." >&2
-    exit 1
-fi
+def parse(path: str) -> Counter[tuple[str, str, str]]:
+    entries: Counter[tuple[str, str, str]] = Counter()
+    with open(path, encoding="utf-8") as stream:
+        for number, raw in enumerate(stream, 1):
+            line = raw.rstrip("\n")
+            if not line or line.startswith("#"):
+                continue
+            match = syntax.fullmatch(line)
+            if not match:
+                raise ValueError(f"{path}:{number}: non-canonical Guardrails baseline line")
+            rule_id, file_name, fingerprint = match.groups()
+            parts = PurePosixPath(file_name).parts
+            canonical = (
+                rule_id == rule_id.upper()
+                and fingerprint == fingerprint.lower()
+                and "\\" not in file_name
+                and not file_name.startswith("/")
+                and all(part not in ("", ".", "..") for part in parts)
+            )
+            if not canonical:
+                raise ValueError(f"{path}:{number}: non-canonical Guardrails baseline line")
+            entries[(rule_id, file_name, fingerprint)] += 1
+    return entries
 
-echo "Guardrails baseline growth: pass ($current entries; base $previous at $base)"
+try:
+    base = parse(base_path)
+    current = parse(current_path)
+except ValueError as error:
+    print(error, file=sys.stderr)
+    raise SystemExit(1)
+
+added = current - base
+if added:
+    print(f"Guardrails baseline grew relative to {base_name}:", file=sys.stderr)
+    for (rule_id, file_name, fingerprint), count in sorted(added.items()):
+        suffix = f" x{count}" if count > 1 else ""
+        print(f"  + {rule_id}\t{file_name}\t{fingerprint}{suffix}", file=sys.stderr)
+    print("Fix new violations; replacing or removing another entry does not permit new baseline debt.", file=sys.stderr)
+    raise SystemExit(1)
+
+print(f"Guardrails baseline growth: pass ({sum(current.values())} entries; base {sum(base.values())} at {base_name})")
+PY

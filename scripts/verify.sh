@@ -78,7 +78,7 @@ run_aot() {
 }
 
 run_docs() {
-    { bash scripts/check-docs-conventions.sh && bash scripts/check-source-inventory.sh && python3 scripts/check-package-maturity.py && bash scripts/check-guardrails-baseline-growth.sh; } >"$out_dir/docs.log" 2>&1 \
+    { bash scripts/check-docs-conventions.sh && bash scripts/check-source-inventory.sh && python3 scripts/check-package-maturity.py && bash scripts/test-guardrails-baseline-growth.sh && bash scripts/check-guardrails-baseline-growth.sh; } >"$out_dir/docs.log" 2>&1 \
         && echo "pass|docs conventions and source inventory" || echo "fail|$(tail -1 "$out_dir/docs.log")"
 }
 
