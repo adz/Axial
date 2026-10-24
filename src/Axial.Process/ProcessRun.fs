@@ -1,3 +1,4 @@
+// axial-allow-file-AXG001: ProcessRun is the live IProcess implementation and owns native process handles
 namespace Axial.Process
 
 open System
@@ -61,7 +62,6 @@ module internal ProcessRun =
             | Ok proc ->
                 try
                     // OS bridge: Process.Start is the process service's named operational boundary.
-                    // axial-allow-effect: process
                     if proc.Start() then
                         Flow.succeed proc
                     else
@@ -154,11 +154,9 @@ module internal ProcessRun =
 
                 for command in commands do
                     if stdoutLimit.IsSome && NativeProcess.inherited command.StdOut.Value then
-                        // axial-allow-raise
-                        invalidArg "specification" "A stdout byte cap cannot be enforced on inherited stdout."
+                        do! Flow.die (ArgumentException("A stdout byte cap cannot be enforced on inherited stdout.", "specification"))
                     if stderrLimit.IsSome && NativeProcess.inherited command.StdErr.Value then
-                        // axial-allow-raise
-                        invalidArg "specification" "A stderr byte cap cannot be enforced on inherited stderr."
+                        do! Flow.die (ArgumentException("A stderr byte cap cannot be enforced on inherited stderr.", "specification"))
 
                 let stdoutTargets, stderrTargets, stdout, stderr =
                     NativeProcess.prepareTargetsAndCaptures specification commands
@@ -229,7 +227,8 @@ module internal ProcessRun =
                     let cancellation = new CancellationTokenSource()
                     let pending = clock.Sleep(delay, cancellation.Token)
                     // The started sleep owns a CTS canceled by the Flow finalizer.
-                    Flow.fromTask (fun _ -> task { do! pending }) // axial-allow-discarded-cancellation
+                    // axial-allow-AXG005: the operation uses its own CTS so the finalizer controls its lifetime
+                    Flow.fromTask (fun _ -> task { do! pending })
                     |> Flow.ensuring (
                         Flow.delay (fun () ->
                             try cancellation.Cancel() with _ -> ()
@@ -576,12 +575,12 @@ module internal ProcessRun =
                                             pending.Append value |> ignore
                                             if pending.Length > specification.MaxLineLength
                                                && not (pending.Length = specification.MaxLineLength + 1 && value = '\r') then
-                                                // axial-allow-raise: task bridge translates this back to the typed channel
+                                                // axial-allow-AXG003: task bridge translates this back to the typed channel
                                                 raise (ProcessPumpFailure (ProcessError.LineTooLong {
                                                     Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
                                     if flush && pending.Length > 0 then
                                         if pending.Length > specification.MaxLineLength then
-                                            // axial-allow-raise: task bridge translates this back to the typed channel
+                                            // axial-allow-AXG003: task bridge translates this back to the typed channel
                                             raise (ProcessPumpFailure (ProcessError.LineTooLong {
                                                 Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
                                         do! publish (pending.ToString())

@@ -393,7 +393,7 @@ module internal NativeProcess =
 
             match limit with
             | Some maximum when int64 count > maximum - current ->
-                raise (ProcessFailureException(ProcessError.OutputTooLarge { // axial-allow-AXG003: task interop reports foreign failure by exception
+                raise (ProcessFailureException(ProcessError.OutputTooLarge {
                     Stage = stage
                     Channel = channel
                     Limit = maximum

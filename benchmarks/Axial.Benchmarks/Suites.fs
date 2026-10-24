@@ -682,8 +682,8 @@ type ProcessExecutionBenchmarks() =
             use child = new System.Diagnostics.Process()
             child.StartInfo.FileName <- "true"
             child.StartInfo.UseShellExecute <- false
-            // Benchmark control: direct process start is the behavior being compared.
-            if not (child.Start()) then failwith "Could not start true." // axial-allow-effect: process
+            // axial-allow-AXG001: benchmark control directly measures the native process baseline
+            if not (child.Start()) then failwith "Could not start true."
             do! child.WaitForExitAsync()
             return child.ExitCode
         }
@@ -697,7 +697,8 @@ type ProcessExecutionBenchmarks() =
             child.StartInfo.RedirectStandardInput <- true
             child.StartInfo.RedirectStandardOutput <- true
             child.StartInfo.RedirectStandardError <- true
-            if not (child.Start()) then failwith "Could not start true." // axial-allow-effect: process
+            // axial-allow-AXG001: benchmark control directly measures the redirected native process baseline
+            if not (child.Start()) then failwith "Could not start true."
             child.StandardInput.Close()
             let stdout = child.StandardOutput.ReadToEndAsync()
             let stderr = child.StandardError.ReadToEndAsync()
