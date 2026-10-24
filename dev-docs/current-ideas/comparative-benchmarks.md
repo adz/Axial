@@ -22,6 +22,18 @@ thread pool, Polling, Signaling, and a default WorkStealing scheduler) where Axi
 Its benchmark suite is public, BenchmarkDotNet-based, and drawn from the Savina actor suite. Porting that suite gives
 Axial concurrency numbers that a reader can check against a known, independent reference.
 
+The focused `FiberCostBenchmarks` suite in `benchmarks/Axial.Benchmarks` complements these application-sized
+workloads. It pairs trivial fork/join, scoped fork, parallel combinators, traversal, race, and
+`Flow.runOn RunOn.ThreadPool` with the closest `Task.Run`/`Task.WhenAll`/`Task.WhenAny` control. Run it with:
+
+```bash
+dotnet run -c Release --project benchmarks/Axial.Benchmarks -- --filter '*FiberCostBenchmarks*'
+```
+
+Use `dotnet-trace` with the `gc-verbose` profile around the `ForkJoin` and `SequencePar8` cases when investigating
+which runtime types account for their allocation; aggregate `GCAllocationTick` events by type rather than treating
+the benchmark's total bytes as an ownership profile.
+
 ## Principles
 
 - **Same machine, same session, same harness.** Published numbers from another machine are not comparable. Every
