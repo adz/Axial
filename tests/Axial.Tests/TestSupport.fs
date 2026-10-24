@@ -185,16 +185,21 @@ module TestSupport =
         let running = Task.Run(fun () -> Flow.runSync (ClockEnvironment(time :> IClock)) workflow)
         let mutable lastCount = -1
         let mutable stablePolls = 0
+        let mutable stableCompletedCount = ThreadPool.CompletedWorkItemCount
         let unchangedFor = Diagnostics.Stopwatch.StartNew()
 
         while not running.IsCompleted do
             let count = time.Sleepers
+            let completedCount = ThreadPool.CompletedWorkItemCount
 
-            if count > 0 && count = lastCount then
+            if count > 0 && count = lastCount && completedCount = stableCompletedCount then
                 stablePolls <- stablePolls + 1
             else
                 stablePolls <- 0
-                unchangedFor.Restart()
+                stableCompletedCount <- completedCount
+
+                if count <> lastCount then
+                    unchangedFor.Restart()
 
             lastCount <- count
             let poolIsEmpty = ThreadPool.PendingWorkItemCount = 0L
@@ -202,12 +207,14 @@ module TestSupport =
             if poolIsEmpty then
                 unchangedFor.Restart()
 
-            // A stable timer count is not quiescence while a continuation is still queued. The manual-time test
-            // collection runs without unrelated tests, so an empty process-wide queue means its fibers have settled.
-            if stablePolls >= 15 && poolIsEmpty then
+            // A stable timer count and empty queue are not quiescence if a pool work item completed during the
+            // observation window. The manual-time collection runs without unrelated tests, so these process-wide
+            // counters describe work from the current test.
+            if stablePolls >= 15 && poolIsEmpty && completedCount = stableCompletedCount then
                 time.AdvanceToNextDeadline() |> ignore
                 lastCount <- -1
                 stablePolls <- 0
+                stableCompletedCount <- ThreadPool.CompletedWorkItemCount
                 unchangedFor.Restart()
             elif count > 0 && unchangedFor.Elapsed >= TimeSpan.FromSeconds 10.0 then
                 failwith
