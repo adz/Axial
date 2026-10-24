@@ -100,8 +100,8 @@ module internal ProcessRun =
         })
 
     let private readChunk (stream: Stream) (buffer: byte array) =
-        // Task bridge: one asynchronous pipe read; looping stays in Flow.
-        Flow.fromTask (fun token -> stream.ReadAsync(buffer, 0, buffer.Length, token))
+        // ValueTask bridge avoids a Task allocation when the stream completes the read synchronously.
+        Flow.fromValueTask (fun token -> stream.ReadAsync(buffer.AsMemory(), token))
 
     let private closeInput (proc: Diagnostics.Process) =
         Flow.delay (fun () ->
