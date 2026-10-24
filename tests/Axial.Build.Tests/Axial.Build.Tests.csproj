@@ -4,7 +4,6 @@
     <IsPackable>false</IsPackable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Axial/Axial.fsproj" ReferenceOutputAssembly="false" />

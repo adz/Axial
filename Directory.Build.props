@@ -19,8 +19,9 @@
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
     <AxialGuardrailsBaselineFile>$(MSBuildThisFileDirectory)Axial.Guardrails.baseline</AxialGuardrailsBaselineFile>
 
-    <!-- Repo-internal analyzer infrastructure: these projects must not import or run Guardrails itself. -->
-    <_AxialRepoSkipGuardrails Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj' or '$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)tests/Axial.PrintfFixture/Axial.PrintfFixture.fsproj'">true</_AxialRepoSkipGuardrails>
+    <!-- Repo-internal projects that must not import Guardrails: the analyzer's own tests and fixture, and the
+         comparative benchmarks, whose plain-.NET implementations use ambient effects on purpose. -->
+    <_AxialRepoSkipGuardrails Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj' or '$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)tests/Axial.PrintfFixture/Axial.PrintfFixture.fsproj' or '$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)benchmarks/Axial.Comparative/Axial.Comparative.fsproj'">true</_AxialRepoSkipGuardrails>
   </PropertyGroup>
 
   <ItemGroup>
