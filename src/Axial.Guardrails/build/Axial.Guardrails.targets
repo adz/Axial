@@ -10,7 +10,9 @@
     -->
     <AxialGuardrailsBoundaryLimit Condition="'$(AxialGuardrailsBoundaryLimit)' == ''">64</AxialGuardrailsBoundaryLimit>
     <_AxialGuardrailsAnalyzersPath Condition="'$(_AxialGuardrailsAnalyzersPath)' == ''">$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
-    <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll&quot;</_AxialGuardrailsExe>
+    <_AxialGuardrailsToolPath Condition="'$(_AxialGuardrailsToolPath)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory)..\cli))</_AxialGuardrailsToolPath>
+    <_AxialGuardrailsToolAssembly Condition="'$(_AxialGuardrailsToolAssembly)' == ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsToolPath), FSharp.Analyzers.Cli.dll))</_AxialGuardrailsToolAssembly>
+    <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(_AxialGuardrailsToolAssembly)&quot;</_AxialGuardrailsExe>
     <!--
       Findings are errors unless their stable fingerprint is in the checked-in baseline. There is no project-wide
       severity downgrade: migrations generate a baseline instead of making new violations non-failing.
@@ -48,7 +50,8 @@
   -->
   <ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
     <_AxialGuardrailsSourceInputs Include="@(Compile)" Exclude="$(IntermediateOutputPath)*" />
-    <_AxialGuardrailsSourceInputs Include="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')" />
+    <_AxialGuardrailsPolicyInputs Include="$(MSBuildProjectFullPath);$(MSBuildAllProjects)" />
+    <_AxialGuardrailsPolicyInputs Include="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')" />
   </ItemGroup>
 
   <Target Name="AxialGuardrailsRejectCiBypass" BeforeTargets="Build" Condition="'$(CI)' == 'true'">
@@ -125,16 +128,19 @@
     <WriteLinesToFile File="$(_AxialGuardrailsConfigFile)" Lines="@(_AxialGuardrailsConfigLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
-  <!-- The analyzer assemblies are inputs too: without them a project whose sources did not change keeps its stamp
-       when the rules change, so a Guardrails upgrade (or a rule edit in this repository) never re-analyzes it. -->
-  <ItemGroup>
-    <_AxialGuardrailsAnalyzerAssemblies Include="$(_AxialGuardrailsAnalyzersPath)\*.dll" />
+  <!-- Analyzer and CLI assemblies are inputs too: an upgrade must invalidate a successful result even when the
+       project's sources and policy did not change. Package consumers use the bundled CLI path. This repository uses
+       the globally installed CLI, whose behavior is version-pinned by the analyzer SDK/package and whose path is not
+       available to MSBuild; its analyzer assemblies still invalidate rule changes. -->
+  <ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsAnalyzersPath)\*.dll" />
+    <_AxialGuardrailsToolInputs Include="$(_AxialGuardrailsToolPath)*.dll" Condition="Exists('$(_AxialGuardrailsToolPath)')" />
   </ItemGroup>
 
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '')"
-          Inputs="@(_AxialGuardrailsSourceInputs);$(_AxialGuardrailsConfigFile);@(_AxialGuardrailsAnalyzerAssemblies)"
+          Inputs="@(_AxialGuardrailsSourceInputs);@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsConfigFile);@(_AxialGuardrailsToolInputs)"
           Outputs="$(_AxialGuardrailsStampFile)">
     <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')"
            Text="Axial.Guardrails analyzer folder is missing or incomplete: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />
