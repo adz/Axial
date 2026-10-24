@@ -985,7 +985,7 @@ module Process =
     let unwrapRun =
         function
         | Exit.Success value -> value
-        | Exit.Failure cause -> raise (ProcessRunException cause) // axial-allow-AXG003: foreign API communicates failure by exception
+        | Exit.Failure cause -> raise (ProcessRunException cause)
 
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     type Runner =

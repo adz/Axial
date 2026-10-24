@@ -270,9 +270,9 @@ module internal NativeProcess =
                                     let stdoutCap, stderrCap = specification.MaxOutputBytes
                                     for command in commands do
                                         if stdoutCap.IsSome && inherited command.StdOut.Value then
-                                            invalidArg "specification" "A stdout byte cap cannot be enforced on inherited stdout." // axial-allow-AXG003: foreign API communicates failure by exception
+                                            invalidArg "specification" "A stdout byte cap cannot be enforced on inherited stdout." // axial-allow-AXG003: task interop reports foreign failure by exception
                                         if stderrCap.IsSome && inherited command.StdErr.Value then
-                                            invalidArg "specification" "A stderr byte cap cannot be enforced on inherited stderr." // axial-allow-AXG003: foreign API communicates failure by exception
+                                            invalidArg "specification" "A stderr byte cap cannot be enforced on inherited stderr." // axial-allow-AXG003: task interop reports foreign failure by exception
                                     let starts = ResizeArray<DateTimeOffset>()
                                     let elapsedStarts = ResizeArray<TimeSpan>()
                                     let exitTasks = ResizeArray<Task<unit>>()
@@ -540,13 +540,12 @@ module internal NativeProcess =
                                             let current = byteCounts[stage][index]
                                             match limit with
                                             | Some maximum when int64 count > maximum - current ->
-                                                // axial-allow-AXG003: foreign API communicates failure by exception
-                                                raise (ProcessFailureException(ProcessError.OutputTooLarge {
+                                                raise (ProcessFailureException(ProcessError.OutputTooLarge { // axial-allow-AXG003: task interop reports foreign failure by exception
                                                     Stage = stage
                                                     Channel = channel
                                                     Limit = maximum
                                                     Command = Configuration.renderCommand commands[stage]
-                                                })) // axial-allow-AXG003: foreign API communicates failure by exception
+                                                }))
                                             | _ -> byteCounts[stage][index] <- current + int64 count)
 
                                     // A continuation rather than `task { try return! work with error -> ... }`: the
@@ -610,7 +609,7 @@ module internal NativeProcess =
                                                                 firstFailure <- Some timeoutFailure)
                                                         stopping <- true
                                                         do! runStopLadderOnce ()
-                                                        return raise timeoutFailure // axial-allow-AXG003: foreign API communicates failure by exception
+                                                        return raise timeoutFailure // axial-allow-AXG003: task interop reports foreign failure by exception
 
                                                     do! wait
                                                 finally
@@ -779,32 +778,29 @@ module internal NativeProcess =
                                                                     command
                                                         )
                                                     with error ->
-                                                        // axial-allow-AXG003: foreign API communicates failure by exception
-                                                        raise (
+                                                        raise ( // axial-allow-AXG003: task interop reports foreign failure by exception
                                                             ProcessFailureException(
                                                                 ProcessError.StartFailed {
                                                                     Command = Configuration.renderCommand command
                                                                     Message = error.Message
                                                                 }
                                                             )
-                                                        ) // axial-allow-AXG003: foreign API communicates failure by exception
+                                                        )
 
                                                 try
                                                     if not (proc.Start()) then
-                                                        // axial-allow-AXG003: foreign API communicates failure by exception
-                                                        raise (Exception (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not start {0}.", command.FileName)))
+                                                        raise (Exception (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Could not start {0}.", command.FileName))) // axial-allow-AXG003: task interop reports foreign failure by exception
                                                 with error ->
                                                     proc.Dispose()
 
-                                                    // axial-allow-AXG003: foreign API communicates failure by exception
-                                                    raise (
+                                                    raise ( // axial-allow-AXG003: task interop reports foreign failure by exception
                                                         ProcessFailureException(
                                                             ProcessError.StartFailed {
                                                                 Command = Configuration.renderCommand command
                                                                 Message = error.Message
                                                             }
                                                         )
-                                                    ) // axial-allow-AXG003: foreign API communicates failure by exception
+                                                    )
 
                                                 lock processes (fun () -> processes.Add proc)
                                                 processIds[i] <- proc.Id
@@ -891,8 +887,7 @@ module internal NativeProcess =
                                                                             && lastWasCR
                                                                         )
                                                                     then
-                                                                        // axial-allow-AXG003: foreign API communicates failure by exception
-                                                                        raise (
+                                                                        raise ( // axial-allow-AXG003: task interop reports foreign failure by exception
                                                                             ProcessFailureException(
                                                                                 ProcessError.LineTooLong {
                                                                                     Stage = source
@@ -900,7 +895,7 @@ module internal NativeProcess =
                                                                                     Limit = specification.MaxLineLength
                                                                                 }
                                                                             )
-                                                                        ) // axial-allow-AXG003: foreign API communicates failure by exception
+                                                                        )
 
                                                                 let mutable reading = true
 
@@ -934,8 +929,7 @@ module internal NativeProcess =
                                                                                 lineLength >
                                                                                     specification.MaxLineLength
                                                                             then
-                                                                                // axial-allow-AXG003: foreign API communicates failure by exception
-                                                                                raise (
+                                                                                raise ( // axial-allow-AXG003: task interop reports foreign failure by exception
                                                                                     ProcessFailureException(
                                                                                         ProcessError.LineTooLong {
                                                                                             Stage = source
@@ -945,7 +939,7 @@ module internal NativeProcess =
                                                                                                     .MaxLineLength
                                                                                         }
                                                                                     )
-                                                                                ) // axial-allow-AXG003: foreign API communicates failure by exception
+                                                                                )
 
                                                                         if pending.Length > 0 then
                                                                             do! write (pending.ToArray())
@@ -1007,7 +1001,7 @@ module internal NativeProcess =
                                                         | error ->
                                                             try processes[target].StandardInput.Close() with _ -> ()
                                                             stdinCompleted[target].TrySetResult() |> ignore
-                                                            return raise error // axial-allow-AXG003: foreign API communicates failure by exception
+                                                            return raise error // axial-allow-AXG003: task interop reports foreign failure by exception
 
                                                         try processes[target].StandardInput.Close() with _ -> ()
                                                         stdinCompleted[target].TrySetResult() |> ignore
@@ -1093,7 +1087,7 @@ module internal NativeProcess =
                                                                     | error ->
                                                                         try processes[i].StandardInput.Close() with _ -> ()
                                                                         stdinCompleted[i].TrySetResult() |> ignore
-                                                                        return raise error // axial-allow-AXG003: foreign API communicates failure by exception
+                                                                        return raise error // axial-allow-AXG003: task interop reports foreign failure by exception
 
                                                                     try processes[i].StandardInput.Close() with _ -> ()
                                                                     stdinCompleted[i].TrySetResult() |> ignore
@@ -1178,8 +1172,7 @@ module internal NativeProcess =
                                                                                 && c = '\r'
                                                                             )
                                                                         then
-                                                                            // axial-allow-AXG003: foreign API communicates failure by exception
-                                                                            raise (
+                                                                            raise ( // axial-allow-AXG003: task interop reports foreign failure by exception
                                                                                 ProcessFailureException(
                                                                                     ProcessError.LineTooLong {
                                                                                         Stage = stage
@@ -1188,12 +1181,11 @@ module internal NativeProcess =
                                                                                             specification.MaxLineLength
                                                                                     }
                                                                                 )
-                                                                            ) // axial-allow-AXG003: foreign API communicates failure by exception
+                                                                            )
 
                                                                 if flush && pending.Length > 0 then
                                                                     if pending.Length > specification.MaxLineLength then
-                                                                        // axial-allow-AXG003: foreign API communicates failure by exception
-                                                                        raise (
+                                                                        raise ( // axial-allow-AXG003: task interop reports foreign failure by exception
                                                                             ProcessFailureException(
                                                                                 ProcessError.LineTooLong {
                                                                                     Stage = stage
@@ -1201,7 +1193,7 @@ module internal NativeProcess =
                                                                                     Limit = specification.MaxLineLength
                                                                                 }
                                                                             )
-                                                                        ) // axial-allow-AXG003: foreign API communicates failure by exception
+                                                                        )
 
                                                                     do! publish (pending.ToString())
                                                                     pending.Clear() |> ignore
@@ -1319,11 +1311,10 @@ module internal NativeProcess =
                                                             then
                                                                 do! timer
 
-                                                                // axial-allow-AXG003: foreign API communicates failure by exception
-                                                                raise (
+                                                                raise ( // axial-allow-AXG003: task interop reports foreign failure by exception
                                                                     IOException
                                                                         (System.String.Format(Globalization.CultureInfo.InvariantCulture, "Process I/O did not finish within {0} after all process stages exited.", after))
-                                                                ) // axial-allow-AXG003: foreign API communicates failure by exception
+                                                                )
                                                         finally
                                                             timerCancellation.Cancel()
                                                     | _ -> ()
@@ -1333,7 +1324,7 @@ module internal NativeProcess =
                                             do! Task.WhenAll [| io :> Task; drain :> Task |]
 
                                             match lock errorGate (fun () -> firstFailure) with
-                                            | Some error -> return raise error // axial-allow-AXG003: foreign API communicates failure by exception
+                                            | Some error -> return raise error // axial-allow-AXG003: task interop reports foreign failure by exception
                                             | None ->
                                                 cancellationToken.ThrowIfCancellationRequested()
                                                 return Choice1Of3(buildResult ())

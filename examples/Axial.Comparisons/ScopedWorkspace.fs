@@ -32,10 +32,8 @@ module Ordinary =
     let importBatch (records: string list) : Task<int> =
         task {
             // comparison intentionally demonstrates the ambient-effect alternative.
-            // axial-allow-AXG001: intentional guid host or live-service boundary
             let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
             // comparison intentionally demonstrates the ambient-effect alternative.
-            // axial-allow-AXG001: intentional filesystem host or live-service boundary
             Directory.CreateDirectory workspace |> ignore
 
             try
@@ -43,12 +41,10 @@ module Ordinary =
                     return raise (ImportFailed NoRecords)
                 else
                     // comparison intentionally demonstrates the ambient-effect alternative.
-                    // axial-allow-AXG001: intentional filesystem host or live-service boundary
                     File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                     return records.Length
             finally
                 // comparison intentionally demonstrates the ambient-effect alternative.
-                // axial-allow-AXG001: intentional filesystem host or live-service boundary
                 Directory.Delete(workspace, recursive = true)
         }
 
@@ -57,10 +53,8 @@ module Ordinary =
     let importBatchLeaky (records: string list) : Task<int> =
         task {
             // comparison intentionally demonstrates the ambient-effect alternative.
-            // axial-allow-AXG001: intentional guid host or live-service boundary
             let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
             // comparison intentionally demonstrates the ambient-effect alternative.
-            // axial-allow-AXG001: intentional filesystem host or live-service boundary
             Directory.CreateDirectory workspace |> ignore
 
             // Setup between acquisition and try/finally: throws with no owner to clean up.
@@ -69,12 +63,10 @@ module Ordinary =
 
             try
                 // comparison intentionally demonstrates the ambient-effect alternative.
-                // axial-allow-AXG001: intentional filesystem host or live-service boundary
                 File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                 return records.Length
             finally
                 // comparison intentionally demonstrates the ambient-effect alternative.
-                // axial-allow-AXG001: intentional filesystem host or live-service boundary
                 Directory.Delete(workspace, recursive = true)
         }
 
@@ -97,7 +89,6 @@ module WithFlow =
         let acquire: Flow<WorkspaceEnv, ImportError, string> =
             flow {
                 // comparison intentionally demonstrates the ambient-effect alternative.
-                // axial-allow-AXG001: intentional guid host or live-service boundary
                 let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
                 do! FileSystem.createDirectory workspace |> Flow.mapError (FileSystemError.describe >> UnreadableBatch)
                 return workspace
@@ -107,7 +98,6 @@ module WithFlow =
             Flow.scopeAcquireRelease
                 acquire
                 // comparison intentionally demonstrates the ambient-effect alternative.
-                // axial-allow-AXG001: intentional filesystem host or live-service boundary
                 (fun workspace -> Flow.fromBlocking (fun _ -> Directory.Delete(workspace, recursive = true)))
             |> Flow.bind (fun workspace ->
                 flow {

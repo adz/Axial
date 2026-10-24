@@ -87,6 +87,31 @@ let rec private checkDecls (ctx: CliContext) (decls: SynModuleDecl list) : Messa
 
     hereFindings @ nestedFindings
 
+let rec private rawDeclRanges (decls: SynModuleDecl list) =
+    let isTestModule =
+        decls
+        |> List.exists (function
+            | SynModuleDecl.Let(bindings = bindings) ->
+                bindings |> List.exists (fun (SynBinding(attributes = attrs)) -> hasTestAttribute attrs)
+            | _ -> false)
+    [ if isTestModule then
+          for declaration in decls do
+              match declaration with
+              | SynModuleDecl.Let(bindings = bindings) ->
+                  for (SynBinding(range = range) as binding) in bindings do
+                      if isFixtureRisk binding then yield range
+              | _ -> ()
+      for declaration in decls do
+          match declaration with
+          | SynModuleDecl.NestedModule(decls = nested) -> yield! rawDeclRanges nested
+          | _ -> () ]
+
+let rawRanges (ctx: CliContext) =
+    match ctx.ParseFileResults.ParseTree with
+    | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
+        modules |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> rawDeclRanges decls)
+    | _ -> []
+
 [<CliAnalyzer("Fixture",
               "Flags a module-level `let` value (not a function) in a module that also contains an "
               + "xUnit Fact/Theory or FsCheck Property test - shared, computed-once state that's unsafe "

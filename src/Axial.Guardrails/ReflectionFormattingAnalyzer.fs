@@ -228,7 +228,7 @@ let private toMessage = function
           Range = range
           Fixes = [] }
 
-let analyzeWithNativeAot nativeAot (ctx: CliContext) : Message list =
+let private rawFindingsWithNativeAot nativeAot (ctx: CliContext) =
     match (try ctx.TypedTree with _ -> None) with
     | None -> []
     | Some tree ->
@@ -236,6 +236,12 @@ let analyzeWithNativeAot nativeAot (ctx: CliContext) : Message list =
         |> List.distinctBy (fun finding ->
             let range = findingRange finding
             range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
+
+let rawRangesWithNativeAot nativeAot ctx =
+    rawFindingsWithNativeAot nativeAot ctx |> List.map findingRange
+
+let analyzeWithNativeAot nativeAot (ctx: CliContext) : Message list =
+    rawFindingsWithNativeAot nativeAot ctx
         |> List.filter (fun finding ->
             let config = GuardrailConfig.load ()
             not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText (findingRange finding).StartLine "AXG006"))

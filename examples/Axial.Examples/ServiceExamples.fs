@@ -68,10 +68,9 @@ type Env2 =
 module ServiceExamples =
     let run () =
         let mockRepo = MockRepo() :> IOrderRepo
-        // This is throwaway fixture data for the demo run below, not workflow logic — Axial.Guardrails
-        // still flags it, so it's marked explicitly rather than silently ignored. Application code that
-        // builds real orders should route this through Axial.PlatformService's IGuid instead.
-        let order = { Id = Guid.NewGuid(); Amount = 100m } // axial-allow-AXG001: intentional guid host or live-service boundary
+        // This is legacy fixture setup retained in the Guardrails baseline. Application code that builds real
+        // orders should route identifiers through Axial.PlatformService's IGuid instead.
+        let order = { Id = Guid.NewGuid(); Amount = 100m }
 
         // Level 1
         let env1 = { RecordExample.Repo = mockRepo }

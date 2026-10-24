@@ -8,6 +8,7 @@
       cli/ folders. Axial's own repo does exactly this in Directory.Build.targets, so its own
       build runs the identical check a package consumer gets, with no separate script.
     -->
+    <AxialGuardrailsBoundaryLimit Condition="'$(AxialGuardrailsBoundaryLimit)' == ''">64</AxialGuardrailsBoundaryLimit>
     <_AxialGuardrailsAnalyzersPath Condition="'$(_AxialGuardrailsAnalyzersPath)' == ''">$(MSBuildThisFileDirectory)..\analyzers</_AxialGuardrailsAnalyzersPath>
     <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(MSBuildThisFileDirectory)..\cli\FSharp.Analyzers.Cli.dll&quot;</_AxialGuardrailsExe>
     <!--
@@ -91,6 +92,19 @@
     GuardrailConfig.fs for the format). WriteOnlyWhenDifferent keeps its timestamp stable, so the check below reruns
     only when the configuration or the sources change. Metadata must not contain semicolons; escape them as %3B.
   -->
+  <Target Name="AxialGuardrailsValidateBoundaries"
+          BeforeTargets="AxialGuardrailsWriteConfig"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true'">
+    <ItemGroup>
+      <_AxialGuardrailsInvalidBoundary Include="@(AxialGuardrailsBoundary)"
+          Condition="'%(AxialGuardrailsBoundary.RecursiveDir)' != '' or $([System.String]::Copy('%(AxialGuardrailsBoundary.OriginalItemSpec)').Contains('*')) or $([System.String]::Copy('%(AxialGuardrailsBoundary.OriginalItemSpec)').Contains('?'))" />
+    </ItemGroup>
+    <Error Condition="'@(_AxialGuardrailsInvalidBoundary)' != ''"
+           Text="AxialGuardrailsBoundary requires explicit files; recursive, wildcard, and directory-wide declarations are not allowed: @(_AxialGuardrailsInvalidBoundary, ', ')" />
+    <Error Condition="@(AxialGuardrailsBoundary->Count()) &gt; $(AxialGuardrailsBoundaryLimit)"
+           Text="AxialGuardrailsBoundary contains @(AxialGuardrailsBoundary->Count()) files, exceeding AxialGuardrailsBoundaryLimit=$(AxialGuardrailsBoundaryLimit). Review and narrow the boundary list." />
+  </Target>
+
   <Target Name="AxialGuardrailsWriteConfig"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
           Condition="'$(AxialGuardrailsEnabled)' == 'true'">
@@ -137,10 +151,8 @@
            Text="Axial.Guardrails reported findings or failed; see the output above (AXG codes or tool errors)." />
     <Error Condition="'$(_AxialGuardrailsExit)' != '0' and '$(_AxialGuardrailsExit)' != '-2' and '$(_AxialGuardrailsExit)' != '254'"
            Text="Axial.Guardrails analyzer tool failed (exit code $(_AxialGuardrailsExit)); inspect the output above." />
-    <Message Importance="high" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
-             Text="Axial.Guardrails baseline candidate: $(_AxialGuardrailsGeneratedBaseline)" />
-    <Error Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
-           Text="Axial.Guardrails baseline generation completed; this generation run is intentionally non-passing." />
+    <Warning Code="AXGGEN" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
+             Text="Axial.Guardrails baseline candidate: $(_AxialGuardrailsGeneratedBaseline). This is a generation run, not normal verification." />
     <Touch Files="$(_AxialGuardrailsStampFile)" AlwaysCreate="true" />
   </Target>
 

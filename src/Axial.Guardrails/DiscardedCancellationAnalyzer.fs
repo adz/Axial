@@ -110,6 +110,14 @@ let private message (range: range) : Message =
       Range = range
       Fixes = [] }
 
+let rawRanges (ctx: CliContext) =
+    match ctx.ParseFileResults.ParseTree with
+    | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
+        modules
+        |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
+        |> List.collect findDiscards
+    | _ -> []
+
 [<CliAnalyzer("DiscardedCancellation",
               "Flags ColdTask/Flow.fromTask/Flow.fromTaskResult given a lambda that discards its "
               + "CancellationToken parameter, so cancelling the Flow cannot stop the underlying "
@@ -120,16 +128,8 @@ let discardedCancellationAnalyzer: Analyzer<CliContext> =
         async {
             let sourceText = ctx.SourceText
 
-            let moduleExprs =
-                match ctx.ParseFileResults.ParseTree with
-                | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
-                    modules
-                    |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
-                | _ -> []
-
             return
-                moduleExprs
-                |> List.collect findDiscards
+                rawRanges ctx
                 |> List.filter (fun range ->
                     let config = GuardrailConfig.load ()
                     not (isAllowed config.BoundaryFiles ctx.FileName sourceText range.StartLine "AXG005"))

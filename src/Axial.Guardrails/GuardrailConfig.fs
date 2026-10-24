@@ -204,6 +204,12 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
     if not (config.EnabledGuardrails.Contains guardrail) then
         []
     else
+        let remaining = Collections.Generic.Dictionary<string * string * string, int>()
+        for entry in config.Baseline do
+            match remaining.TryGetValue entry with
+            | true, count -> remaining[entry] <- count + 1
+            | _ -> remaining[entry] <- 1
+
         messages
         |> List.map (fun message ->
             let entry =
@@ -212,7 +218,13 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
                   Fingerprint = fingerprint ctx.SourceText message }
 
             config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)
-            let baselined = config.Baseline |> List.contains (entry.RuleId, entry.File, entry.Fingerprint)
+            let key = entry.RuleId, entry.File, entry.Fingerprint
+            let baselined =
+                match remaining.TryGetValue key with
+                | true, count when count > 0 ->
+                    remaining[key] <- count - 1
+                    true
+                | _ -> false
             { message with Severity = if baselined then Severity.Warning else Severity.Error })
 
 let apply (guardrail: string) (ctx: CliContext) (messages: Message list) = applyWith (load ()) guardrail ctx messages

@@ -180,18 +180,19 @@ let private message (range: range) : Message =
       Range = range
       Fixes = [] }
 
-/// Runs the check without applying guardrail configuration, for tests.
-let analyze (ctx: CliContext) : Message list =
+let rawRanges (ctx: CliContext) =
     let moduleExprs =
         match ctx.ParseFileResults.ParseTree with
         | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
-            modules
-            |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
+            modules |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
         | _ -> []
-
     moduleExprs
     |> List.collect findForkedResources
     |> List.distinctBy (fun range -> range.StartLine, range.StartColumn, range.EndLine, range.EndColumn)
+
+/// Runs the check without applying guardrail configuration, for tests.
+let analyze (ctx: CliContext) : Message list =
+    rawRanges ctx
     |> List.filter (fun range ->
         let config = GuardrailConfig.load ()
         not (isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG007"))

@@ -14,6 +14,20 @@ module HardeningTests =
             return! analyzer ctx |> Async.StartAsTask
         }
 
+    let private runWithAxial analyzer source =
+        task {
+            let! ctx = AnalyzerTestContext.createWithAxial true source
+            let! messages = analyzer ctx |> Async.StartAsTask
+            return ctx, messages
+        }
+
+    let private applyFix (source: string) (fix: Fix) =
+        let lines = source.Split('\n')
+        let index = fix.FromRange.StartLine - 1
+        let line = lines[index]
+        lines[index] <- line.Substring(0, fix.FromRange.StartColumn) + fix.ToText + line.Substring(fix.FromRange.EndColumn)
+        System.String.Join("\n", lines)
+
     [<Fact>]
     let ``suppression requires rule reason and declared boundary`` () =
         task {
@@ -24,6 +38,31 @@ module HardeningTests =
             Assert.Equal("live clock boundary", directive.Reason)
             Assert.False(Suppressions.isAllowed Set.empty ctx.FileName ctx.SourceText 2 "AXG001")
             Assert.True(Suppressions.isAllowed (Set.singleton ctx.FileName) ctx.FileName ctx.SourceText 2 "AXG001")
+        }
+
+    [<Fact>]
+    let ``suppression-like text in strings XML docs and block comments is ignored`` () =
+        task {
+            let! ctx =
+                AnalyzerTestContext.create
+                    "module M\nlet text = \"axial-allow-AXG003: example\"\n/// axial-allow-AXG004: docs\n(* axial-allow-AXG005: block *)\nlet value = 1\n"
+            Assert.Empty(Suppressions.allDirectives ctx.SourceText)
+        }
+
+    [<Theory>]
+    [<InlineData("AXG003")>]
+    [<InlineData("AXG004")>]
+    [<InlineData("AXG005")>]
+    [<InlineData("AXG006")>]
+    [<InlineData("AXG007")>]
+    [<InlineData("AXG008")>]
+    let ``AXG002 rejects stale suppressions for every structural rule`` ruleId =
+        task {
+            let source = $"module M\n// axial-allow-{ruleId}: obsolete boundary\nlet value = 1\n"
+            let! messages = run SuppressionIntegrityAnalyzer.suppressionIntegrityAnalyzer source
+            let message = Assert.Single messages
+            Assert.Equal("AXG002", message.Code)
+            Assert.Contains("stale suppression", message.Message)
         }
 
     [<Fact>]
@@ -39,23 +78,46 @@ module HardeningTests =
         }
 
     [<Fact>]
-    let ``AXG003 offers Flow fail for a standalone mechanical failure`` () =
+    let ``AXG003 offers a Flow fail fix only when the flow accepts the error and the result type-checks`` () =
         task {
             let source =
-                "module M\n"
-                + "type FlowBuilder() =\n"
-                + "    member _.Delay f = f ()\n"
-                + "    member _.Zero() = ()\n"
-                + "let flow = FlowBuilder()\n"
-                + "let operation =\n"
-                + "    flow {\n"
-                + "        failwith \"nope\"\n"
-                + "    }\n"
-            let! messages = run RaiseInFlowAnalyzer.raiseInFlowAnalyzer source
-            let message = Assert.Single messages
-            let fix = Assert.Single message.Fixes
-            Assert.Equal("failwith \"nope\"", fix.FromText)
+                "module M\nopen Axial\nlet operation : Flow<unit, string, int> =\n    flow {\n        failwith \"nope\"\n        return 1\n    }\n"
+            let! _, messages = runWithAxial RaiseInFlowAnalyzer.raiseInFlowAnalyzer source
+            let fix = (Assert.Single messages).Fixes |> Assert.Single
             Assert.Equal("return! Flow.fail \"nope\"", fix.ToText)
+            let fixedSource = applyFix source fix
+            let! _ = AnalyzerTestContext.createWithAxial true fixedSource
+            ()
+        }
+
+    [<Fact>]
+    let ``AXG003 uses Flow die for a proven exception and the result type-checks`` () =
+        task {
+            let source =
+                "module M\nopen System\nopen Axial\nlet operation (error: Exception) : Flow<unit, string, int> =\n    flow {\n        raise error\n        return 1\n    }\n"
+            let! _, messages = runWithAxial RaiseInFlowAnalyzer.raiseInFlowAnalyzer source
+            let fix = (Assert.Single messages).Fixes |> Assert.Single
+            Assert.Equal("return! Flow.die error", fix.ToText)
+            let! _ = AnalyzerTestContext.createWithAxial true (applyFix source fix)
+            ()
+        }
+
+    [<Fact>]
+    let ``AXG003 with a constrained non-string error has no fix`` () =
+        task {
+            let source =
+                "module M\nopen Axial\ntype DomainError = Bad\nlet operation : Flow<unit, DomainError, int> =\n    flow {\n        failwith \"nope\"\n        return 1\n    }\n"
+            let! _, messages = runWithAxial RaiseInFlowAnalyzer.raiseInFlowAnalyzer source
+            Assert.Empty((Assert.Single messages).Fixes)
+        }
+
+    [<Fact>]
+    let ``AXG003 inside a local try with has no fix`` () =
+        task {
+            let source =
+                "module M\nopen Axial\nlet operation : Flow<unit, string, int> =\n    flow {\n        try\n            failwith \"nope\"\n            return 0\n        with _ ->\n            return 1\n    }\n"
+            let! _, messages = runWithAxial RaiseInFlowAnalyzer.raiseInFlowAnalyzer source
+            Assert.Empty((Assert.Single messages).Fixes)
         }
 
     [<Theory>]
@@ -121,7 +183,15 @@ module HardeningTests =
                   Severity = Severity.Error
                   Range = Range.mkRange ctx.FileName (Position.mkPos line startColumn) (Position.mkPos line (startColumn + 6))
                   Fixes = [] }
-            let first = GuardrailConfig.fingerprint ctx.SourceText (diagnostic 3 32)
-            let second = GuardrailConfig.fingerprint ctx.SourceText (diagnostic 4 20)
+            let firstDiagnostic = diagnostic 3 32
+            let secondDiagnostic = diagnostic 4 20
+            let first = GuardrailConfig.fingerprint ctx.SourceText firstDiagnostic
+            let second = GuardrailConfig.fingerprint ctx.SourceText secondDiagnostic
             test <@ first <> second @>
+
+            let file = Path.GetRelativePath(GuardrailConfig.defaults.BaselineRoot, ctx.FileName).Replace('\\', '/')
+            let repeated =
+                { GuardrailConfig.defaults with Baseline = [ "AXG001", file, first ] }
+                |> fun config -> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ firstDiagnostic; firstDiagnostic ]
+            test <@ repeated |> List.map _.Severity = [ Severity.Warning; Severity.Error ] @>
         }

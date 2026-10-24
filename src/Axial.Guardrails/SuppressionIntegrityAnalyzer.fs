@@ -9,6 +9,17 @@ open Axial.Guardrails.GuardrailConfig
 open Axial.Guardrails.Suppressions
 open Axial.Guardrails.EffectBoundaryAnalyzer
 
+let private rangesForRule (ctx: CliContext) ruleId =
+    match ruleId with
+    | "AXG001" -> rawFindings ctx |> List.map snd
+    | "AXG003" -> RaiseInFlowAnalyzer.rawRanges ctx
+    | "AXG004" -> FixtureAnalyzer.rawRanges ctx
+    | "AXG005" -> DiscardedCancellationAnalyzer.rawRanges ctx
+    | "AXG006" -> ReflectionFormattingAnalyzer.rawRangesWithNativeAot (load ()).NativeAot ctx
+    | "AXG007" -> ResourceFromFiberAnalyzer.rawRanges ctx
+    | "AXG008" -> ScopeFromRunAnalyzer.rawRanges ctx
+    | _ -> []
+
 let private knownRuleIds = set [ for number in 1 .. 8 -> sprintf "AXG%03d" number ]
 
 let private message (sourceText: ISourceText) (range: range) (text: string) : Message =
@@ -54,15 +65,12 @@ let private findingForDirective (ctx: CliContext) directive =
         Some(report "Move this file-wide suppression into the leading comment block, before the first declaration.")
     | Some _ when not boundary ->
         Some(report "Remove this suppression: suppressions are allowed only in files declared with `AxialGuardrailsBoundary`.")
-    | Some "AXG001" ->
-        let raw = rawFindings ctx
+    | Some ruleId ->
         let covered =
-            raw
-            |> List.exists (fun (_, findingRange) ->
-                directive.FileWide || coversLine directive.Line findingRange.StartLine)
+            rangesForRule ctx ruleId
+            |> List.exists (fun findingRange -> directive.FileWide || coversLine directive.Line findingRange.StartLine)
         if covered then None
-        else Some(report "Remove this stale suppression or move it next to the ambient-effect finding it intentionally allows.")
-    | Some _ -> None
+        else Some(report $"Remove this stale suppression or move it next to the `{ruleId}` finding it intentionally allows.")
 
 [<CliAnalyzer("SuppressionIntegrity",
               "Flags malformed, unexplained, misplaced, undeclared, or stale Axial.Guardrails suppressions.",

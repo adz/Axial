@@ -10,6 +10,7 @@ module Axial.Guardrails.RaiseInFlowAnalyzer
 
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Syntax
+open FSharp.Compiler.Symbols
 open FSharp.Compiler.Text
 open Axial.Guardrails.Suppressions
 
@@ -35,13 +36,27 @@ let rec private headIdent (expr: SynExpr) : string option =
 /// A curried call `invalidArg "x" "y"` parses as nested `App(App(invalidArg, "x"), "y")`; both
 /// App nodes share the same head identifier, so this only recurses into the argument (never the
 /// function position) once a match is found, to report each call once instead of once per arg.
-let rec private findRaises (expr: SynExpr) : (range * string) list =
+type private RaiseFinding =
+    { Range: range
+      Ident: string
+      ArgumentRange: range
+      CaughtLocally: bool }
+
+let rec private findRaises caughtLocally (expr: SynExpr) : RaiseFinding list =
     match expr with
+    | SynExpr.TryWith(tryExpr, clauses, _, _, _, _) ->
+        findRaises true tryExpr
+        @ (clauses
+           |> List.collect (fun (SynMatchClause(resultExpr = resultExpr; whenExpr = whenExpr)) ->
+               findRaises caughtLocally resultExpr
+               @ (whenExpr |> Option.toList |> List.collect (findRaises caughtLocally))))
     | SynExpr.App(_, _, funcExpr, argExpr, range) ->
         match headIdent expr with
-        | Some ident when Set.contains ident bannedIdents -> (range, ident) :: findRaises argExpr
-        | _ -> findRaises funcExpr @ findRaises argExpr
-    | _ -> childExprs expr |> List.collect findRaises
+        | Some ident when Set.contains ident bannedIdents ->
+            { Range = range; Ident = ident; ArgumentRange = argExpr.Range; CaughtLocally = caughtLocally }
+            :: findRaises caughtLocally argExpr
+        | _ -> findRaises caughtLocally funcExpr @ findRaises caughtLocally argExpr
+    | _ -> childExprs expr |> List.collect (findRaises caughtLocally)
 
 and private childExprs (expr: SynExpr) : SynExpr list =
     match expr with
@@ -154,19 +169,87 @@ let private textAtRange (sourceText: ISourceText) (range: range) =
         if range.StartColumn < 0 || range.EndColumn > line.Length || range.EndColumn <= range.StartColumn then None
         else Some(line.Substring(range.StartColumn, range.EndColumn - range.StartColumn), line)
 
-let private mechanicalFix (sourceText: ISourceText) (range: range) (ident: string) =
-    match textAtRange sourceText range with
-    | Some(fromText, line)
+let private contains (outer: range) (inner: range) = FSharp.Compiler.Text.Range.rangeContainsRange outer inner
+
+let private allTypedExpressions (ctx: CliContext) =
+    let rec expressions (expression: FSharpExpr) =
+        expression :: (expression.ImmediateSubExpressions |> List.collect expressions)
+    let rec declarations (declaration: FSharpImplementationFileDeclaration) =
+        match declaration with
+        | FSharpImplementationFileDeclaration.Entity(_, nested) -> nested |> List.collect declarations
+        | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
+        | FSharpImplementationFileDeclaration.InitAction body -> expressions body
+    match (try ctx.TypedTree with _ -> None) with
+    | Some tree -> try tree.Declarations |> List.collect declarations with _ -> []
+    | None -> []
+
+let rec private entityFullName (typ: FSharpType) =
+    if typ.HasTypeDefinition then typ.TypeDefinition.TryFullName
+    elif typ.IsAbbreviation then entityFullName typ.AbbreviatedType
+    else None
+
+let rec private isExceptionEntity (entity: FSharpEntity) =
+    entity.TryFullName = Some "System.Exception"
+    || (entity.BaseType |> Option.exists (fun typ -> typ.HasTypeDefinition && isExceptionEntity typ.TypeDefinition))
+
+let private typeAtRange (typed: FSharpExpr list) (target: range) =
+    typed
+    |> List.filter (fun expression -> contains expression.Range target)
+    |> List.sortBy (fun expression ->
+        expression.Range.EndLine - expression.Range.StartLine,
+        expression.Range.EndColumn - expression.Range.StartColumn)
+    |> List.tryHead
+    |> Option.map _.Type
+
+let rec private flowErrorType (typ: FSharpType) =
+    match entityFullName typ with
+    | Some name when name.StartsWith("Axial.Flow", System.StringComparison.Ordinal) && typ.GenericArguments.Count = 3 ->
+        Some typ.GenericArguments[1]
+    | Some "Microsoft.FSharp.Core.FSharpFunc`2" when typ.GenericArguments.Count = 2 ->
+        flowErrorType typ.GenericArguments[1]
+    | _ -> None
+
+let private flowErrorTypeAtRange (typed: FSharpExpr list) (target: range) =
+    typed
+    |> List.choose (fun expression ->
+        flowErrorType expression.Type |> Option.map (fun errorType -> expression.Range, errorType))
+    |> List.filter (fun (range, _) -> contains range target)
+    |> List.sortBy (fun (range, _) -> range.EndLine - range.StartLine, range.EndColumn - range.StartColumn)
+    |> List.tryHead
+    |> Option.map snd
+
+let private mechanicalFix (ctx: CliContext) (finding: RaiseFinding) =
+    let sourceText = ctx.SourceText
+    let range = finding.Range
+    let ident = finding.Ident
+    let typed = allTypedExpressions ctx
+    let replacement =
+        if finding.CaughtLocally then None
+        elif ident = "raise" then
+            typeAtRange typed finding.ArgumentRange
+            |> Option.filter (fun typ -> typ.HasTypeDefinition && isExceptionEntity typ.TypeDefinition)
+            |> Option.map (fun _ -> "die")
+        elif Set.contains ident (set [ "failwith"; "failwithf"; "invalidOp" ]) then
+            flowErrorTypeAtRange typed range
+            |> Option.filter (fun typ ->
+                entityFullName typ = Some "System.String"
+                || string typ = "type Microsoft.FSharp.Core.string")
+            |> Option.map (fun _ -> "fail")
+        else None
+    match replacement, textAtRange sourceText range with
+    | Some operation, Some(fromText, line)
         when line.Substring(0, range.StartColumn).Trim() = ""
              && (let suffix = line.Substring(range.EndColumn).TrimStart()
                  suffix = "" || suffix.StartsWith("//"))
-             && Set.contains ident (set [ "raise"; "failwith"; "failwithf"; "invalidOp" ]) ->
+             ->
         let argument = fromText.Substring(ident.Length).Trim()
-        let failure = if ident = "failwithf" then $"(sprintf {argument})" else argument
-        Some { FromRange = range; FromText = fromText; ToText = $"return! Flow.fail {failure}" }
+        let value = if ident = "failwithf" then $"(sprintf {argument})" else argument
+        Some { FromRange = range; FromText = fromText; ToText = $"return! Flow.{operation} {value}" }
     | _ -> None
 
-let private message (sourceText: ISourceText) (range: range) (ident: string) : Message =
+let private message (ctx: CliContext) (finding: RaiseFinding) : Message =
+    let range = finding.Range
+    let ident = finding.Ident
     { Type = "Axial Raise In Flow"
       Message =
         $"`{ident}` is called directly inside a `flow {{ }}` block. Flow already has a typed 'error "
@@ -177,7 +260,17 @@ let private message (sourceText: ISourceText) (range: range) (ident: string) : M
       Code = "AXG003"
       Severity = Severity.Error
       Range = range
-      Fixes = mechanicalFix sourceText range ident |> Option.toList }
+      Fixes = mechanicalFix ctx finding |> Option.toList }
+
+let rawRanges (ctx: CliContext) =
+    match ctx.ParseFileResults.ParseTree with
+    | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
+        modules
+        |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
+        |> List.collect flowCeBodies
+        |> List.collect (findRaises false)
+        |> List.map _.Range
+    | _ -> []
 
 [<CliAnalyzer("RaiseInFlow",
               "Flags raise/failwith/failwithf/invalidOp/invalidArg called directly inside a flow { } "
@@ -189,21 +282,17 @@ let raiseInFlowAnalyzer: Analyzer<CliContext> =
         async {
             let sourceText = ctx.SourceText
 
-            let moduleExprs =
-                match ctx.ParseFileResults.ParseTree with
-                | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
-                    modules
-                    |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
-                | _ -> []
-
             let messages =
-                moduleExprs
-                |> List.collect flowCeBodies
-                |> List.collect findRaises
-                |> List.choose (fun (range, ident) ->
+                let moduleExprs =
+                    match ctx.ParseFileResults.ParseTree with
+                    | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
+                        modules |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
+                    | _ -> []
+                moduleExprs |> List.collect flowCeBodies |> List.collect (findRaises false)
+                |> List.choose (fun finding ->
                     let config = GuardrailConfig.load ()
-                    if isAllowed config.BoundaryFiles ctx.FileName sourceText range.StartLine "AXG003" then None
-                    else Some(message sourceText range ident))
+                    if isAllowed config.BoundaryFiles ctx.FileName sourceText finding.Range.StartLine "AXG003" then None
+                    else Some(message ctx finding))
 
             return GuardrailConfig.applyCore ctx messages
         }

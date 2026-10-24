@@ -10,6 +10,7 @@
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
     <!-- Findings are errors by default. A checked-in baseline is the only supported downgrade path. -->
     <AxialGuardrailsBaselineFile Condition="'$(AxialGuardrailsBaselineFile)' == ''">$(MSBuildProjectDirectory)\Axial.Guardrails.baseline</AxialGuardrailsBaselineFile>
+    <AxialGuardrailsBoundaryLimit Condition="'$(AxialGuardrailsBoundaryLimit)' == ''">64</AxialGuardrailsBoundaryLimit>
   </PropertyGroup>
 
 </Project>

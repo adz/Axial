@@ -173,6 +173,23 @@ module PackagePropsTests =
             Directory.Delete(dir, true)
 
     [<Fact>]
+    let ``boundary declarations require explicit files`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            Directory.CreateDirectory(Path.Combine(dir, "Nested")) |> ignore
+            File.WriteAllText(Path.Combine(dir, "Nested", "Boundary.fs"), "module Boundary")
+            let xml = File.ReadAllText project
+            File.WriteAllText(project, xml.Replace("<AxialGuardrail Include=\"Axial\" />", "<AxialGuardrail Include=\"Axial\" /><AxialGuardrailsBoundary Include=\"**/*.fs\" />"))
+            let result = runBuild project None None None false false None
+            Assert.NotEqual(0, result.ExitCode)
+            Assert.Contains("requires explicit files", result.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
     let ``missing analyzer folder fails instead of silently skipping`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
