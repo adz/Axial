@@ -1217,6 +1217,46 @@ let zipParExecution
         | Ok rightRun -> awaitBoth cts leftRun rightRun
 #endif
 
+/// Unit-specialized parallel composition. Synchronously successful branches avoid constructing a tuple exit and a
+/// mapping continuation at every internal node of sequencePar's balanced tree.
+let zipParUnitExecution
+    (leftOp: CancellationToken -> Execution<unit, 'error>)
+    (rightOp: CancellationToken -> Execution<unit, 'error>)
+    (source: CancellationTokenSource)
+    (chooseParallel: Exit<unit, 'error> -> Exit<unit, 'error> -> Exit<unit * unit, 'error>)
+    : Execution<unit, 'error> =
+#if FABLE_COMPILER
+    async {
+        let! exit = zipParExecution leftOp rightOp source chooseParallel
+        return match exit with Exit.Success _ -> Exit.Success() | Exit.Failure cause -> Exit.Failure cause
+    }
+#else
+    match startOperation leftOp source.Token with
+    | Error error ->
+        source.Cancel()
+        faultedExecution error
+    | Ok leftRun ->
+        match startOperation rightOp source.Token with
+        | Error error ->
+            source.Cancel()
+            faultedExecution error
+        | Ok rightRun when leftRun.IsCompletedSuccessfully && rightRun.IsCompletedSuccessfully ->
+            match leftRun.Result, rightRun.Result with
+            | Exit.Failure cause, rightExit ->
+                source.Cancel()
+                match failedAfterCancel true cause rightExit with
+                | Exit.Failure combined -> ValueTask<Exit<unit, 'error>>(Exit.Failure combined)
+                | Exit.Success _ -> ValueTask<Exit<unit, 'error>>(Exit.Success())
+            | Exit.Success _, Exit.Success _ -> ValueTask<Exit<unit, 'error>>(Exit.Success())
+            | Exit.Success _, Exit.Failure cause -> ValueTask<Exit<unit, 'error>>(Exit.Failure cause)
+        | Ok rightRun ->
+            ValueTask<Exit<unit, 'error>>(
+                task {
+                    let! exit = zipParExecution (fun _ -> leftRun) (fun _ -> rightRun) source chooseParallel
+                    return match exit with Exit.Success _ -> Exit.Success() | Exit.Failure cause -> Exit.Failure cause
+                })
+#endif
+
 /// Runs two operations concurrently, waits for both regardless of failure (catching any exception either one
 /// raises as a defect), and folds their exits with <paramref name="chooseParallel" />. Used by
 /// <c>Layer.zipPar</c>, which -- unlike <c>Flow.zipPar</c> -- has no "cancel the loser" behavior because

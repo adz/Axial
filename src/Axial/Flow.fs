@@ -1942,12 +1942,11 @@ module Flow =
                     let startRight = combine (first + leftCount) (count - leftCount)
 
                     fun source environment _ results ->
-                        Platform.zipParExecution
+                        Platform.zipParUnitExecution
                             (fun token -> startLeft source environment token results)
                             (fun token -> startRight source environment token results)
                             source
                             chooseParallelExit
-                        |> Execution.map ignore
 
             let start = combine 0 inputs.Length
 
