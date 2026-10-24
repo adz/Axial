@@ -610,9 +610,10 @@ module Flow =
                 | 2 -> invoke threadPool environment cancellationToken
                 | _ ->
                     let started = Platform.monotonicNow ()
-                    let execution = invoke source environment cancellationToken
-                    state.Observe(Platform.monotonicNow () - started)
-                    execution)
+                    try
+                        invoke source environment cancellationToken
+                    finally
+                        state.Observe(Platform.monotonicNow () - started))
 #endif
 
     /// <summary>Creates a flow from synchronous, blocking work, such as a database driver or native library call.</summary>

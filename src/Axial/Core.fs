@@ -817,9 +817,9 @@ type internal Execution<'value, 'error> = Platform.Execution<'value, 'error>
 
 /// <summary>Options for adaptive flow placement.</summary>
 type AdaptiveRunOnOptions =
-    { /// <summary>The mean synchronous hold time above which later runs use the thread pool.</summary>
+    { /// <summary>The minimum sampled synchronous hold time above which later runs use the thread pool.</summary>
       Threshold: TimeSpan
-      /// <summary>The positive number of runs sampled before placement is decided.</summary>
+      /// <summary>The positive number of invocation attempts sampled before placement is decided. Failed and interrupted attempts count as samples.</summary>
       Samples: int }
 
 #if !FABLE_COMPILER
@@ -827,7 +827,7 @@ type AdaptiveRunOnState internal (options: AdaptiveRunOnOptions) =
     let gate = obj ()
     let mutable decision = 0
     let mutable samples = 0
-    let mutable elapsed = TimeSpan.Zero
+    let mutable minimum = TimeSpan.MaxValue
 
     member internal _.Decision = System.Threading.Volatile.Read(&decision)
 
@@ -836,9 +836,9 @@ type AdaptiveRunOnState internal (options: AdaptiveRunOnOptions) =
             lock gate (fun () ->
                 if decision = 0 then
                     samples <- samples + 1
-                    elapsed <- elapsed + duration
+                    minimum <- min minimum duration
                     if samples >= options.Samples then
-                        decision <- if elapsed / float samples > options.Threshold then 2 else 1)
+                        decision <- if minimum > options.Threshold then 2 else 1)
 #endif
 
 /// <summary>Specifies where a flow starts running.</summary>
@@ -865,15 +865,15 @@ type RunOn =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module RunOn =
-    /// <summary>Creates a placement that samples one run, then permanently selects inline or thread-pool execution.</summary>
+    /// <summary>Creates a placement that samples three invocation attempts, then permanently selects inline or thread-pool execution from their minimum synchronous hold time.</summary>
     let adaptive () =
 #if FABLE_COMPILER
         RunOn.Adaptive
 #else
-        RunOn.Adaptive(AdaptiveRunOnState { Threshold = TimeSpan.FromTicks 500L; Samples = 1 })
+        RunOn.Adaptive(AdaptiveRunOnState { Threshold = TimeSpan.FromTicks 500L; Samples = 3 })
 #endif
 
-    /// <summary>Creates a placement that samples the requested number of runs before deciding once.</summary>
+    /// <summary>Creates a placement that samples the requested number of invocation attempts before deciding once from their minimum synchronous hold time. Failed and interrupted attempts count as samples.</summary>
     let adaptiveWith options =
         if options.Threshold < TimeSpan.Zero then invalidArg (nameof options) "Threshold must not be negative."
         if options.Samples <= 0 then invalidArg (nameof options) "Samples must be positive."

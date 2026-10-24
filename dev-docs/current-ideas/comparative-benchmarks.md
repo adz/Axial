@@ -7,8 +7,8 @@ later, optional step.
 Status: steps 1–4 of the order of work are implemented in `benchmarks/Axial.Comparative` (all twelve workloads, with
 `--validate` checking both libraries compute the same results). Not done: a full recorded run on an idle machine and
 the performance page. What the work has taught so far is in `benchmarks/Axial.Comparative/FINDINGS.md`, for example
-that `Flow.zipPar`/`sequencePar` start branches inline, so CPU-bound branches need `Flow.runOn`/`Flow.runOn RunOn.ThreadPool`
-or `Flow.fork` to run in parallel.
+that `Flow.zipPar`/`sequencePar` start branches inline, so CPU-bound branches need `Flow.runOn RunOn.ThreadPool`
+or a parallel traversal with `Parallelism.cpu` to run in parallel.
 
 ## Why
 

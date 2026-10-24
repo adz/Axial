@@ -10,8 +10,8 @@ open Xunit
 
 module RunOnTests =
     [<Fact>]
-    let ``adaptive places later CPU work on the thread pool`` () =
-        let placement = RunOn.adaptiveWith { Threshold = TimeSpan.Zero; Samples = 1 }
+    let ``default adaptive places consistently CPU-heavy work on the thread pool`` () =
+        let placement = RunOn.adaptive ()
         let caller = Thread.CurrentThread.ManagedThreadId
         let threads = ConcurrentQueue<int>()
         let operation : Flow<unit, string, unit> =
@@ -21,29 +21,65 @@ module RunOnTests =
                 Flow.ok ())
             |> Flow.runOn placement
 
-        test <@ operation.RunSynchronously(()) = Exit.Success() @>
-        test <@ operation.RunSynchronously(()) = Exit.Success() @>
+        for _ in 1..4 do
+            test <@ operation.RunSynchronously(()) = Exit.Success() @>
         let observed = threads.ToArray()
-        test <@ observed[0] = caller @>
-        test <@ observed[1] <> caller @>
+        test <@ observed[0..2] |> Array.forall ((=) caller) @>
+        test <@ observed[3] <> caller @>
 
     [<Fact>]
-    let ``adaptive stays inline for cheap and waiting work and its decision sticks`` () =
-        let placement = RunOn.adaptiveWith { Threshold = TimeSpan.FromSeconds 1.0; Samples = 1 }
+    let ``default adaptive keeps a cold waiting operation inline`` () =
+        let placement = RunOn.adaptive ()
         let caller = Thread.CurrentThread.ManagedThreadId
         let threads = ConcurrentQueue<int>()
         let operation : Flow<unit, string, unit> =
-            flow {
+            Flow.fromTask (fun _ ->
                 threads.Enqueue Thread.CurrentThread.ManagedThreadId
-                do! Flow.fromTask (fun _ -> task { do! Task.Delay 1 })
-                threads.Enqueue Thread.CurrentThread.ManagedThreadId
-            }
+                let completion = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                ThreadPool.QueueUserWorkItem(fun _ -> completion.SetResult()) |> ignore
+                completion.Task)
             |> Flow.runOn placement
 
-        test <@ operation.RunSynchronously(()) = Exit.Success() @>
-        test <@ operation.RunSynchronously(()) = Exit.Success() @>
-        let observed = threads.ToArray()
-        test <@ observed[0] = caller && observed[2] = caller @>
+        for _ in 1..4 do
+            test <@ operation.RunSynchronously(()) = Exit.Success() @>
+        test <@ threads.ToArray() |> Array.forall ((=) caller) @>
+
+    [<Fact>]
+    let ``default adaptive ignores one slow first sample when later samples are cheap`` () =
+        let placement = RunOn.adaptive ()
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let mutable invocation = 0
+        let threads = ConcurrentQueue<int>()
+        let operation : Flow<unit, string, unit> =
+            Flow.delay (fun () ->
+                invocation <- invocation + 1
+                if invocation = 1 then Thread.Sleep 10
+                threads.Enqueue Thread.CurrentThread.ManagedThreadId
+                Flow.ok ())
+            |> Flow.runOn placement
+
+        for _ in 1..4 do
+            test <@ operation.RunSynchronously(()) = Exit.Success() @>
+        test <@ threads.ToArray() |> Array.forall ((=) caller) @>
+
+    [<Fact>]
+    let ``adaptive counts synchronously defecting invocation attempts`` () =
+        let placement = RunOn.adaptive ()
+        let state =
+            match placement with
+            | RunOn.Adaptive state -> state
+            | _ -> failwith "Expected adaptive placement"
+        let operation : Flow<unit, string, unit> =
+            Flow.delay (fun () ->
+                Thread.SpinWait 100_000
+                raise (InvalidOperationException "sample"))
+            |> Flow.runOn placement
+
+        for _ in 1..3 do
+            match operation.RunSynchronously(()) with
+            | Exit.Failure(Cause.Die defect) -> test <@ defect.Message = "sample" @>
+            | exit -> failwithf "Expected defect, got %A" exit
+        test <@ state.Decision = 2 @>
 
     [<Fact>]
     let ``adaptive sampling is safe when first calls are concurrent`` () =

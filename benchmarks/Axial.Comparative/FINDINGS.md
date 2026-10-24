@@ -27,7 +27,7 @@ A later idle-machine run with the same eight-slice shape measured `Flow.sequence
 confirms that the difference is branch placement rather than the parallel result-combination path.
 
 `Flow.sequencePar` and `Flow.zipPar` deliberately retain inline start and their allocation-free synchronous fast
-path. Wrap CPU-bound branches in `Flow.runOn RunOn.ThreadPool` (or `Flow.runOn RunOn.ThreadPool`) when they should use multiple
+path. Wrap CPU-bound branches in `Flow.runOn RunOn.ThreadPool`, or use a parallel traversal with `Parallelism.cpu`, when they should use multiple
 cores. `RunOn.Scheduler` selects a custom .NET scheduler, while `RunOn.DedicatedThread` dedicates a thread only to
 the synchronous prefix before the first incomplete await. Use `Flow.fromBlocking` for a blocking foreign call: it
 also starts on the pool, but once started it runs to completion and the flow waits for it after interruption.

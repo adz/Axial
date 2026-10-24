@@ -144,11 +144,11 @@ module WorkflowParallelTests =
                     Interlocked.Increment(&inlineRuns.contents) |> ignore
                 Thread.SpinWait 50_000
                 Flow.ok value)
-        let traversal = [ 1..3 ] |> Flow.traversePar (Parallelism.adaptive 1) mapping
+        let traversal = [ 1..4 ] |> Flow.traversePar (Parallelism.adaptive 1) mapping
 
-        test <@ traversal.RunSynchronously(()) = Exit.Success [ 1..3 ] @>
-        test <@ traversal.RunSynchronously(()) = Exit.Success [ 1..3 ] @>
-        test <@ inlineRuns.Value = 2 @>
+        test <@ traversal.RunSynchronously(()) = Exit.Success [ 1..4 ] @>
+        test <@ traversal.RunSynchronously(()) = Exit.Success [ 1..4 ] @>
+        test <@ inlineRuns.Value = 6 @>
 
     [<Fact>]
     let ``sequenceParWith bounds work and applies its placement`` () =
