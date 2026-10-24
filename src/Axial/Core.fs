@@ -1211,7 +1211,10 @@ module internal RuntimeState =
         Platform.withCell currentRuntime runtime operation
 #else
     let withRuntime (runtime: RuntimeContext) (operation: unit -> 'value) : 'value =
-        Platform.withCell currentRuntime runtime operation
+        // Scheduling flows the ExecutionContext. When it already carries this immutable runtime record, avoid an
+        // AsyncLocal write/restore pair (and the copy-on-write ExecutionContext state those writes create).
+        if obj.ReferenceEquals(currentRuntime.Current.Value, runtime) then operation ()
+        else Platform.withCell currentRuntime runtime operation
 
     /// Makes <paramref name="runtime" /> current without restoring the previous one. Only for callers that restore
     /// the whole <c>ExecutionContext</c> themselves, which costs one allocation instead of two.
