@@ -63,6 +63,7 @@
 
   <ItemGroup>
     <Compile Include="EffectCatalog.fs" />
+    <Compile Include="Policy.fs" />
     <Compile Include="GuardrailConfig.fs" />
     <Compile Include="Suppressions.fs" />
     <Compile Include="RaiseInFlowAnalyzer.fs" />

@@ -18,6 +18,7 @@
     <Compile Include="ResourceFromFiberAnalyzerTests.fs" />
     <Compile Include="ScopeFromRunAnalyzerTests.fs" />
     <Compile Include="GuardrailConfigTests.fs" />
+    <Compile Include="PolicyTests.fs" />
     <Compile Include="PackagePropsTests.fs" />
   </ItemGroup>
 
