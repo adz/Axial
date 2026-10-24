@@ -24,7 +24,8 @@ let EnvironmentVariable = "AXIAL_GUARDRAILS_CONFIG"
 type BaselineEntry =
     { RuleId: string
       File: string
-      Fingerprint: string }
+      Fingerprint: string
+      Count: int }
 
 type Config =
     { /// Enabled guardrails. Findings are errors unless present in Baseline.
@@ -33,7 +34,7 @@ type Config =
       AllRules: EffectRule list
       BoundaryFiles: Set<string>
       BaselineRoot: string
-      Baseline: (string * string * string) list
+      Baseline: BaselineEntry list
       BaselineOutput: string option }
 
     member this.Rules = this.AllRules |> List.filter (fun rule -> this.EnabledGuardrails.Contains rule.Guardrail)
@@ -56,20 +57,20 @@ let defaults: Config =
       BaselineOutput = None }
 
 let parse (lines: string seq) : Config =
-    let entries = lines |> Seq.map (fun line -> line.Split('\t')) |> Seq.toList
+    let entries = lines |> Seq.mapi (fun index line -> index + 1, line, line.Split('\t')) |> Seq.toList
 
     let enabled =
         entries
         |> List.choose (function
-            | [| "guardrail"; name |]
-            | [| "guardrail"; name; _ |] -> Some(name.Trim())
+            | _, _, [| "guardrail"; name |]
+            | _, _, [| "guardrail"; name; _ |] -> Some(name.Trim())
             | _ -> None)
         |> Set.ofList
 
     let contributed =
         entries
         |> List.choose (function
-            | [| "rule"; id; guardrail; category; matching; scope; message; replacement |] ->
+            | _, _, [| "rule"; id; guardrail; category; matching; scope; message; replacement |] ->
                 parseMatch matching
                 |> Option.map (fun parsed ->
                     { Id = id.Trim()
@@ -84,7 +85,7 @@ let parse (lines: string seq) : Config =
     let setting name =
         entries
         |> List.tryPick (function
-            | [| "setting"; key; value |] when key = name -> Some(value.Trim())
+            | _, _, [| "setting"; key; value |] when key = name -> Some(value.Trim())
             | _ -> None)
 
     let nativeAot =
@@ -94,30 +95,38 @@ let parse (lines: string seq) : Config =
     let boundaries =
         entries
         |> List.choose (function
-            | [| "boundary"; path |] when path.Trim() <> "" -> Some(Path.GetFullPath(path.Trim()))
+            | _, _, [| "boundary"; path |] when path.Trim() <> "" -> Some(Path.GetFullPath(path.Trim()))
             | _ -> None)
         |> Set.ofList
 
-    let baselinePattern = Regex(@"^([0-9a-f]{64})(?: x([2-9][0-9]*))?$")
+    let baselinePattern = Regex(@"^([0-9a-f]{64})(?: x([2-9]|[1-9][0-9]{1,3}|10000))?$")
+    let ruleIdPattern = Regex(@"^AXG[0-9]{3}$")
     let mutable baselineKeys = Set.empty
+    let malformed lineNumber =
+        invalidArg "lines" $"Non-canonical Guardrails baseline line {lineNumber}"
     let baseline =
         entries
-        |> List.collect (function
-            | [| "baseline"; ruleId; file; fingerprintAndCount |] ->
-                let id = ruleId.Trim()
-                let path = file.Trim()
-                let value = fingerprintAndCount.Trim()
-                let matched = baselinePattern.Match value
-                if not matched.Success || id <> id.ToUpperInvariant() || path.Contains('\\') || Path.IsPathRooted path then
-                    invalidArg "lines" $"Non-canonical Guardrails baseline entry: {id}\t{path}\t{value}"
+        |> List.choose (function
+            | _, _, [| "baseline"; value |] when value = "" || value.StartsWith("#", StringComparison.Ordinal) -> None
+            | lineNumber, _, [| "baseline"; ruleId; file; fingerprintAndCount |] ->
+                let matched = baselinePattern.Match fingerprintAndCount
+                let pathSegments = file.Split('/')
+                if not matched.Success
+                   || not (ruleIdPattern.IsMatch ruleId)
+                   || file.StartsWith("/", StringComparison.Ordinal)
+                   || file.Contains('\\')
+                   || file |> Seq.exists Char.IsWhiteSpace
+                   || pathSegments |> Array.exists (fun segment -> segment = "" || segment = "." || segment = "..") then
+                    malformed lineNumber
                 let fingerprint = matched.Groups[1].Value
                 let count = if matched.Groups[2].Success then Int32.Parse matched.Groups[2].Value else 1
-                let key = id, path, fingerprint
+                let key = ruleId, file, fingerprint
                 if baselineKeys.Contains key then
-                    invalidArg "lines" $"Duplicate Guardrails baseline entry; use a trailing count: {id}\t{path}\t{fingerprint}"
+                    invalidArg "lines" $"Duplicate Guardrails baseline entry on line {lineNumber}; use a trailing count"
                 baselineKeys <- baselineKeys.Add key
-                List.replicate count key
-            | _ -> [])
+                Some { RuleId = ruleId; File = file; Fingerprint = fingerprint; Count = count }
+            | lineNumber, _, fields when fields.Length > 0 && fields[0] = "baseline" -> malformed lineNumber
+            | _ -> None)
 
     { EnabledGuardrails = enabled
       NativeAot = nativeAot
@@ -211,9 +220,7 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
     else
         let remaining = Collections.Generic.Dictionary<string * string * string, int>()
         for entry in config.Baseline do
-            match remaining.TryGetValue entry with
-            | true, count -> remaining[entry] <- count + 1
-            | _ -> remaining[entry] <- 1
+            remaining[(entry.RuleId, entry.File, entry.Fingerprint)] <- entry.Count
 
         let findings =
             messages
@@ -221,7 +228,8 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
                 let entry =
                     { RuleId = message.Code.ToUpperInvariant()
                       File = relativeFile config ctx.FileName
-                      Fingerprint = fingerprint ctx.SourceText message }
+                      Fingerprint = fingerprint ctx.SourceText message
+                      Count = 1 }
                 message, entry)
 
         let foundCounts =
@@ -238,9 +246,10 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
             if baselined then remaining[key] <- baselineCount - 1
             let foundCount = foundCounts[key]
             let text =
-                if not baselined && baselineCount = 0 && config.Baseline |> List.exists ((=) key) then
-                    $"{message.Message} ({config.Baseline |> List.filter ((=) key) |> List.length} baselined, {foundCount} found)"
-                else message.Message
+                match config.Baseline |> List.tryFind (fun entry -> (entry.RuleId, entry.File, entry.Fingerprint) = key) with
+                | Some entry when not baselined && baselineCount = 0 ->
+                    $"{message.Message} ({entry.Count} baselined, {foundCount} found)"
+                | _ -> message.Message
             { message with Message = text; Severity = if baselined then Severity.Warning else Severity.Error })
 
 let apply (guardrail: string) (ctx: CliContext) (messages: Message list) = applyWith (load ()) guardrail ctx messages

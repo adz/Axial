@@ -37,12 +37,30 @@ if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
     exit 1
 fi
 
-# Counts are canonical: x1 and duplicate lines are rejected.
-printf '# baseline\nAXG001\tsrc/Old.fs\t%064d x1\n' 0 > Axial.Guardrails.baseline
-if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
-    echo 'non-canonical baseline count unexpectedly passed' >&2
-    exit 1
-fi
+# The script and analyzer reject the same malformed grammar matrix.
+hash=$(printf '%064d' 0)
+invalid_lines=(
+    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x0"
+    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x1"
+    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x01"
+    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x10001"
+    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x2147483648"
+    " AXG001"$'\t'"src/Old.fs"$'\t'"$hash"
+    "AXG001"$'\t'"src/Old.fs "$'\t'"$hash"
+    "AXG001"$'\t'"src/Old.fs"$'\t'" $hash"
+    "AXG001 src/Old.fs $hash"
+    "AXG01"$'\t'"src/Old.fs"$'\t'"$hash"
+    "AXG001"$'\t'"./src/Old.fs"$'\t'"$hash"
+    "AXG001"$'\t'"src/../Old.fs"$'\t'"$hash"
+)
+for invalid in "${invalid_lines[@]}"; do
+    printf '# baseline\n%s\n' "$invalid" > Axial.Guardrails.baseline
+    if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
+        echo "malformed baseline line unexpectedly passed: $invalid" >&2
+        exit 1
+    fi
+done
+
 printf '# baseline\nAXG001\tsrc/Old.fs\t%064d\nAXG001\tsrc/Old.fs\t%064d\n' 0 0 > Axial.Guardrails.baseline
 if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
     echo 'duplicate baseline lines unexpectedly passed' >&2

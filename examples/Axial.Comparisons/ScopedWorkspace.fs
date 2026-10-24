@@ -1,4 +1,3 @@
-// axial-allow-file-AXG001: ordinary .NET comparison intentionally demonstrates ambient effects; WithFlow uses IFileSystem
 /// Scenario 4 — a scoped temporary workspace.
 ///
 /// Create a temporary directory, perform several fallible steps inside it, and remove it exactly
@@ -32,20 +31,21 @@ module Ordinary =
     /// The correct shape: create, then immediately enter try/finally.
     let importBatch (records: string list) : Task<int> =
         task {
-            // comparison intentionally demonstrates the ambient-effect alternative.
-            let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
-            // comparison intentionally demonstrates the ambient-effect alternative.
+            let workspace =
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+                Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+            // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
             Directory.CreateDirectory workspace |> ignore
 
             try
                 if List.isEmpty records then
                     return raise (ImportFailed NoRecords)
                 else
-                    // comparison intentionally demonstrates the ambient-effect alternative.
+                    // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                     File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                     return records.Length
             finally
-                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 Directory.Delete(workspace, recursive = true)
         }
 
@@ -53,9 +53,10 @@ module Ordinary =
     /// into the try/finally. The directory survives the exception.
     let importBatchLeaky (records: string list) : Task<int> =
         task {
-            // comparison intentionally demonstrates the ambient-effect alternative.
-            let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
-            // comparison intentionally demonstrates the ambient-effect alternative.
+            let workspace =
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+                Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+            // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
             Directory.CreateDirectory workspace |> ignore
 
             // Setup between acquisition and try/finally: throws with no owner to clean up.
@@ -63,11 +64,11 @@ module Ordinary =
                 raise (ImportFailed NoRecords)
 
             try
-                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 File.WriteAllLines(Path.Combine(workspace, "batch.csv"), records)
                 return records.Length
             finally
-                // comparison intentionally demonstrates the ambient-effect alternative.
+                // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
                 Directory.Delete(workspace, recursive = true)
         }
 

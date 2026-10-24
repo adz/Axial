@@ -33,12 +33,11 @@ fi
 
 python3 - "$base_file" Axial.Guardrails.baseline "$base" <<'PY'
 from collections import Counter
-from pathlib import PurePosixPath
 import re
 import sys
 
 base_path, current_path, base_name = sys.argv[1:]
-syntax = re.compile(r"(AXG[0-9]{3})\t([^\t]+)\t([0-9a-f]{64})(?: x([2-9][0-9]*))?", re.IGNORECASE)
+syntax = re.compile(r"(AXG[0-9]{3})\t([^\t]+)\t([0-9a-f]{64})(?: x([2-9]|[1-9][0-9]{1,3}|10000))?")
 
 def parse(path: str, require_counted_duplicates: bool) -> Counter[tuple[str, str, str]]:
     entries: Counter[tuple[str, str, str]] = Counter()
@@ -52,11 +51,10 @@ def parse(path: str, require_counted_duplicates: bool) -> Counter[tuple[str, str
                 raise ValueError(f"{path}:{number}: non-canonical Guardrails baseline line")
             rule_id, file_name, fingerprint, count_text = match.groups()
             count = int(count_text) if count_text else 1
-            parts = PurePosixPath(file_name).parts
+            parts = file_name.split("/")
             canonical = (
-                rule_id == rule_id.upper()
-                and fingerprint == fingerprint.lower()
-                and "\\" not in file_name
+                "\\" not in file_name
+                and not any(character.isspace() for character in file_name)
                 and not file_name.startswith("/")
                 and all(part not in ("", ".", "..") for part in parts)
             )

@@ -145,7 +145,7 @@ module HardeningTests =
             let file = Path.GetRelativePath(GuardrailConfig.defaults.BaselineRoot, ctx.FileName).Replace('\\', '/')
             let hash = GuardrailConfig.fingerprint ctx.SourceText diagnostic
             let baselined =
-                { GuardrailConfig.defaults with Baseline = [ code, file, hash ] }
+                { GuardrailConfig.defaults with Baseline = [ { RuleId = code; File = file; Fingerprint = hash; Count = 1 } ] }
                 |> fun config -> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ diagnostic ]
             Assert.Equal(Severity.Warning, (Assert.Single baselined).Severity)
         }
@@ -190,7 +190,7 @@ module HardeningTests =
 
             let file = Path.GetRelativePath(GuardrailConfig.defaults.BaselineRoot, ctx.FileName).Replace('\\', '/')
             let config =
-                { GuardrailConfig.defaults with Baseline = [ "AXG001", file, hash; "AXG001", file, hash ] }
+                { GuardrailConfig.defaults with Baseline = [ { RuleId = "AXG001"; File = file; Fingerprint = hash; Count = 2 } ] }
 
             let two = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ firstDiagnostic; secondDiagnostic ]
             test <@ two |> List.map _.Severity = [ Severity.Warning; Severity.Warning ] @>
@@ -205,7 +205,28 @@ module HardeningTests =
         }
 
     [<Fact>]
-    let ``counted baseline entries parse as a multiset`` () =
+    let ``counted baseline entries retain bounded multiplicity`` () =
         let hash = String.replicate 64 "a"
-        let config = GuardrailConfig.parse [ $"baseline\tAXG001\tsrc/File.fs\t{hash} x2" ]
-        test <@ config.Baseline = [ ("AXG001", "src/File.fs", hash); ("AXG001", "src/File.fs", hash) ] @>
+        let config = GuardrailConfig.parse [ $"baseline\tAXG001\tsrc/File.fs\t{hash} x10000" ]
+        test <@ config.Baseline = [ { RuleId = "AXG001"; File = "src/File.fs"; Fingerprint = hash; Count = 10000 } ] @>
+
+    [<Theory>]
+    [<InlineData("AXG001\tsrc/File.fs\t{hash} x0")>]
+    [<InlineData("AXG001\tsrc/File.fs\t{hash} x1")>]
+    [<InlineData("AXG001\tsrc/File.fs\t{hash} x01")>]
+    [<InlineData("AXG001\tsrc/File.fs\t{hash} x10001")>]
+    [<InlineData("AXG001\tsrc/File.fs\t{hash} x2147483648")>]
+    [<InlineData(" AXG001\tsrc/File.fs\t{hash}")>]
+    [<InlineData("AXG001\tsrc/File.fs \t{hash}")>]
+    [<InlineData("AXG001\tsrc/File.fs\t {hash}")>]
+    [<InlineData("AXG001 src/File.fs {hash}")>]
+    [<InlineData("AXG01\tsrc/File.fs\t{hash}")>]
+    [<InlineData("AXG001\t./src/File.fs\t{hash}")>]
+    [<InlineData("AXG001\tsrc/../File.fs\t{hash}")>]
+    let ``malformed baseline lines report their config line`` (template: string) =
+        let hash = String.replicate 64 "a"
+        let line = template.Replace("{hash}", hash)
+        let error =
+            Assert.Throws<System.ArgumentException>(fun () ->
+                GuardrailConfig.parse [ "guardrail\tAxial"; "baseline\t" + line ] |> ignore)
+        Assert.Contains("line 2", error.Message)
