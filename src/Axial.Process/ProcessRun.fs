@@ -13,6 +13,8 @@ open Axial.FileSystem
 open Axial.PlatformService
 
 #if !FABLE_COMPILER
+exception private ProcessPumpFailure of ProcessError
+
 type private StopCause =
     | Interrupted
     | StageTimeout of stage: int * after: TimeSpan
@@ -100,7 +102,6 @@ module internal ProcessRun =
         })
 
     let private readChunk (stream: Stream) (buffer: byte array) =
-        // ValueTask bridge avoids a Task allocation when the stream completes the read synchronously.
         Flow.fromValueTask (fun token -> stream.ReadAsync(buffer.AsMemory(), token))
 
     let private closeInput (proc: Diagnostics.Process) =
@@ -523,70 +524,77 @@ module internal ProcessRun =
                             return ()
                         })
 
-                let publish stage original observed text =
-                    Flow.fromTask (fun token ->
-                        NativeProcess.publishObservation clock observe observerGate token stage original observed text)
-
                 let outputPump stage original observed target (capture: CaptureBuffer) (stream: Stream) =
-                    let buffer = Array.zeroCreate<byte> 4096
-                    let decoder = commands[stage].Encoding.Value.GetDecoder()
-                    let chars = Array.zeroCreate<char>(commands[stage].Encoding.Value.GetMaxCharCount buffer.Length)
-                    let pending = StringBuilder()
-                    let gate = if observed = OutputChannel.StdOut then outputGates[stage] else errorGates[stage]
+                    // OS I/O bridge: one task owns the pipe read loop; Flow owns cancellation and failure handling.
+                    Flow.fromTask (fun token -> task {
+                        let buffer = Buffers.ArrayPool<byte>.Shared.Rent 81920
+                        let mutable rentedChars: char array = null
+                        try
+                            let decoding = observesOutput || specification.Framing = OutputFraming.Lines
+                            let decoder = if decoding then commands[stage].Encoding.Value.GetDecoder() else null
+                            let chars =
+                                if decoding then
+                                    rentedChars <- Buffers.ArrayPool<char>.Shared.Rent(commands[stage].Encoding.Value.GetMaxCharCount buffer.Length)
+                                    rentedChars
+                                else null
+                            let pending = if decoding then StringBuilder() else null
+                            let gate = if observed = OutputChannel.StdOut then outputGates[stage] else errorGates[stage]
 
-                    let decode bytes count flush =
-                        flow {
-                            let length = decoder.GetChars(bytes, 0, count, chars, 0, flush)
-                            match specification.Framing with
-                            | OutputFraming.Chunks ->
-                                if length > 0 then do! publish stage original observed (String(chars, 0, length))
-                            | OutputFraming.Lines ->
-                                for index in 0 .. length - 1 do
-                                    let value = chars[index]
-                                    if value = '\n' then
-                                        if pending.Length > 0 && pending[pending.Length - 1] = '\r' then
-                                            pending.Length <- pending.Length - 1
-                                        do! publish stage original observed (pending.ToString())
+                            let publish text =
+                                NativeProcess.publishObservation clock observe observerGate token stage original observed text
+
+                            let decode count flush = task {
+                                let length = decoder.GetChars(buffer, 0, count, chars, 0, flush)
+                                match specification.Framing with
+                                | OutputFraming.Chunks ->
+                                    if length > 0 then do! publish (String(chars, 0, length))
+                                | OutputFraming.Lines ->
+                                    for index in 0 .. length - 1 do
+                                        let value = chars[index]
+                                        if value = '\n' then
+                                            if pending.Length > 0 && pending[pending.Length - 1] = '\r' then
+                                                pending.Length <- pending.Length - 1
+                                            do! publish (pending.ToString())
+                                            pending.Clear() |> ignore
+                                        else
+                                            pending.Append value |> ignore
+                                            if pending.Length > specification.MaxLineLength
+                                               && not (pending.Length = specification.MaxLineLength + 1 && value = '\r') then
+                                                // axial-allow-raise: task bridge translates this back to the typed channel
+                                                raise (ProcessPumpFailure (ProcessError.LineTooLong {
+                                                    Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
+                                    if flush && pending.Length > 0 then
+                                        if pending.Length > specification.MaxLineLength then
+                                            // axial-allow-raise: task bridge translates this back to the typed channel
+                                            raise (ProcessPumpFailure (ProcessError.LineTooLong {
+                                                Stage = stage; OriginalChannel = original; Limit = specification.MaxLineLength }))
+                                        do! publish (pending.ToString())
                                         pending.Clear() |> ignore
-                                    else
-                                        pending.Append value |> ignore
-                                        if pending.Length > specification.MaxLineLength
-                                           && not (pending.Length = specification.MaxLineLength + 1 && value = '\r') then
-                                            return! Flow.fail (ProcessError.LineTooLong {
-                                                Stage = stage
-                                                OriginalChannel = original
-                                                Limit = specification.MaxLineLength
-                                            })
-                                if flush && pending.Length > 0 then
-                                    if pending.Length > specification.MaxLineLength then
-                                        return! Flow.fail (ProcessError.LineTooLong {
-                                            Stage = stage
-                                            OriginalChannel = original
-                                            Limit = specification.MaxLineLength
-                                        })
-                                    do! publish stage original observed (pending.ToString())
-                                    pending.Clear() |> ignore
-                        }
+                            }
 
-                    let rec loop () =
-                        flow {
-                            let! count = readChunk stream buffer
-                            if count = 0 then
-                                if observesOutput || specification.Framing = OutputFraming.Lines then
-                                    do! decode [||] 0 true
-                            else
-                                countBytes stage original count
-                                // Full reads can use the stable pump buffer directly. Avoiding one 4 KiB copy per
-                                // read materially reduces allocation for large captures.
-                                let bytes = if count = buffer.Length then buffer else buffer[.. count - 1]
-                                do!
-                                    Flow.fromTask (fun token ->
-                                        NativeProcess.writeCapturedTarget console files token gate observed target capture bytes)
-                                if observesOutput || specification.Framing = OutputFraming.Lines then
-                                    do! decode bytes count false
-                                return! loop ()
-                        }
-                    loop ()
+                            let mutable reading = true
+                            while reading do
+                                let! count = stream.ReadAsync(buffer.AsMemory(0, buffer.Length), token)
+                                if count = 0 then
+                                    reading <- false
+                                    if observesOutput || specification.Framing = OutputFraming.Lines then
+                                        do! decode 0 true
+                                else
+                                    countBytes stage original count
+                                    let bytes =
+                                        if count = buffer.Length then buffer
+                                        else buffer[.. count - 1]
+                                    do! NativeProcess.writeCapturedTarget console files token gate observed target capture bytes
+                                    if observesOutput || specification.Framing = OutputFraming.Lines then
+                                        do! decode count false
+                        finally
+                            if not (isNull rentedChars) then Buffers.ArrayPool<char>.Shared.Return rentedChars
+                            Buffers.ArrayPool<byte>.Shared.Return buffer
+                    })
+                    |> Flow.foldCause Flow.succeed (fun cause ->
+                        match Cause.untraced cause with
+                        | Cause.Die (ProcessPumpFailure error) -> Flow.fail error
+                        | _ -> Flow.ofExit (Exit.Failure cause))
 
                 let pipelinePump target (connections: (int * int * bool) list) =
                     let gate = new SemaphoreSlim(1, 1)
@@ -600,7 +608,7 @@ module internal ProcessRun =
                         })
 
                     let copy source channel (stream: Stream) =
-                        let buffer = Array.zeroCreate<byte> 4096
+                        let buffer = Buffers.ArrayPool<byte>.Shared.Rent 81920
                         let pending = new MemoryStream()
                         let lineMode = connections.Length > 1 && specification.Framing = OutputFraming.Lines
                         let decoder = commands[source].Encoding.Value.GetDecoder()
@@ -661,7 +669,11 @@ module internal ProcessRun =
                             }
 
                         loop ()
-                        |> Flow.ensuring (Flow.delay (fun () -> pending.Dispose(); Flow.succeed ()))
+                        |> Flow.ensuring (
+                            Flow.delay (fun () ->
+                                pending.Dispose()
+                                Buffers.ArrayPool<byte>.Shared.Return buffer
+                                Flow.succeed ()))
 
                     flow {
                         do!
