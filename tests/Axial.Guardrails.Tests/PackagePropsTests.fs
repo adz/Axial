@@ -46,6 +46,7 @@ module PackagePropsTests =
   <ItemGroup>
     <Compile Include="Program.fs" />
     <AxialGuardrail Include="Axial" />
+    <_AxialGuardrailsConfiguredToolInput Include="{xmlEscape (cliDll ())}" />
   </ItemGroup>
   <Import Project="{xmlEscape (Path.Combine(repoRoot (), "src", "Axial.Guardrails", "build", "Axial.Guardrails.props"))}" />
   <Import Project="{xmlEscape (Path.Combine(repoRoot (), "src", "Axial.Guardrails", "build", "Axial.Guardrails.targets"))}" />
@@ -59,7 +60,7 @@ module PackagePropsTests =
 
     type BuildResult = { ExitCode: int; Output: string }
 
-    let private runBuild (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) (ci: bool) (generateBaseline: bool) (enabledEnv: string option) =
+    let private runBuildWithArgs (extraArguments: string list) (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) (ci: bool) (generateBaseline: bool) (enabledEnv: string option) =
         let startInfo = ProcessStartInfo("dotnet")
         startInfo.ArgumentList.Add "build"
         startInfo.ArgumentList.Add project
@@ -70,6 +71,7 @@ module PackagePropsTests =
         startInfo.ArgumentList.Add "--nologo"
         startInfo.ArgumentList.Add "-nodeReuse:false"
         startInfo.ArgumentList.Add "-m:1"
+        extraArguments |> List.iter startInfo.ArgumentList.Add
         match framework with
         | Some value ->
             startInfo.ArgumentList.Add "-f"
@@ -100,6 +102,9 @@ module PackagePropsTests =
         let output = stdout.Result + "\n" + stderr.Result
         Assert.True(exited, "Consumer build timed out and its process tree was killed:\n" + output)
         { ExitCode = child.ExitCode; Output = output }
+
+    let private runBuild project framework severityEnv severityProperty ci generateBaseline enabledEnv =
+        runBuildWithArgs [] project framework severityEnv severityProperty ci generateBaseline enabledEnv
 
     let private buildConsumerInTemp write severityEnv severityProperty =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
@@ -228,5 +233,51 @@ module PackagePropsTests =
             Assert.DoesNotContain("AXG006", netstandard.Output)
             Assert.True(net10.ExitCode <> 0, net10.Output)
             Assert.Contains("error AXG006", net10.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    let private assertAnalysisRan expected (result: BuildResult) =
+        Assert.Equal(0, result.ExitCode)
+        if expected then Assert.Contains("Running Axial.Guardrails analysis", result.Output)
+        else Assert.DoesNotContain("Running Axial.Guardrails analysis", result.Output)
+
+    [<Fact>]
+    let ``cache keys generated sources compiler properties references and overridden tool inputs`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-cache-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet value = 1\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let reference = Path.Combine(dir, "Dependency.dll")
+            File.Copy(cliDll (), reference)
+            let toolMarker = Path.Combine(dir, "tool.marker")
+            File.WriteAllText(toolMarker, "v1")
+            let generated = Path.Combine(dir, "obj", "Generated.fs")
+            Directory.CreateDirectory(Path.GetDirectoryName generated) |> ignore
+            File.WriteAllText(generated, "module Generated\nlet value = \"one\"\n")
+            let xml = File.ReadAllText project
+            let additions =
+                $"""    <Reference Include="CacheDependency"><HintPath>{xmlEscape reference}</HintPath></Reference>
+    <_AxialGuardrailsConfiguredToolInput Include="{xmlEscape toolMarker}" />
+    <Compile Include="{xmlEscape generated}" />
+  </ItemGroup>
+  <ItemGroup>"""
+            File.WriteAllText(project, xml.Replace("  </ItemGroup>\n  <Import Project=", additions + "\n  </ItemGroup>\n  <Import Project="))
+
+            let build args = runBuildWithArgs args project None None None false false None
+            assertAnalysisRan true (build [])
+            assertAnalysisRan false (build [])
+            assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+            File.WriteAllText(generated, "module Generated\nlet value = \"two\"\n")
+            assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+            assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+
+            File.SetLastWriteTimeUtc(reference, DateTime.UtcNow.AddSeconds(2.0))
+            assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+            assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+
+            File.WriteAllText(toolMarker, "v2")
+            assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+            assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
         finally
             Directory.Delete(dir, true)

@@ -36,6 +36,11 @@
     <_AxialGuardrailsBootstrapProject>$(MSBuildThisFileDirectory)src\Axial.Guardrails\Axial.Guardrails.fsproj</_AxialGuardrailsBootstrapProject>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
+    <_AxialGuardrailsConfiguredToolInput Include="$(MSBuildThisFileDirectory).config\dotnet-tools.json" />
+    <_AxialGuardrailsConfiguredToolInput Include="$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\*.*" />
+  </ItemGroup>
+
   <!-- Guardrails is an F# analyzer; other project types never import it. -->
   <Import Project="$(MSBuildThisFileDirectory)src\Axial.Guardrails\build\Axial.Guardrails.targets"
           Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'" />
