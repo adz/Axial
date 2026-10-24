@@ -28,6 +28,30 @@ module WorkflowSchedulingTests =
         sleeping.GetAwaiter().GetResult()
 
     [<Fact>]
+    let ``manual time does not overtake queued work under sustained thread-pool load`` () =
+        let stopAt = Diagnostics.Stopwatch.GetTimestamp() + Diagnostics.Stopwatch.Frequency
+        use drained = new CountdownEvent(64)
+
+        let rec keepPoolBusy () =
+            ThreadPool.QueueUserWorkItem(fun _ ->
+                if Diagnostics.Stopwatch.GetTimestamp() < stopAt then
+                    keepPoolBusy ()
+                    Thread.Sleep 2
+                else
+                    drained.Signal() |> ignore)
+            |> ignore
+
+        for _ in 1..64 do
+            keepPoolBusy ()
+
+        let started = Diagnostics.Stopwatch.StartNew()
+        let result = Flow.sleep (TimeSpan.FromMilliseconds 1.0) |> runOnManualTime
+        let elapsedWhenVirtualTimeAdvanced = started.Elapsed
+        test <@ drained.Wait(TimeSpan.FromSeconds 5.0) @>
+        test <@ result = Exit.Success() @>
+        test <@ elapsedWhenVirtualTimeAdvanced >= TimeSpan.FromMilliseconds 700.0 @>
+
+    [<Fact>]
     let ``Scheduling: retry failing flow`` () =
         let mutable attempts = 0
         let workflow : Flow<ClockEnvironment, string, string> =

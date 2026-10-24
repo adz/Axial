@@ -196,10 +196,11 @@ module TestSupport =
 
             lastCount <- count
 
-            // Unchanged polls with no queued thread-pool work mean no fiber is still running towards a new, possibly
-            // earlier, deadline. Other tests running in parallel keep the pool busy, so a long enough stable stretch
-            // also counts.
-            if stablePolls >= 15 && (ThreadPool.PendingWorkItemCount = 0L || stablePolls >= 200) then
+            // A stable timer count is not quiescence while a continuation is still queued. In particular, the
+            // producer behind a timed stream can have been released at an earlier instant but still be waiting to
+            // hand its value to the consumer. Under sustained unrelated pool activity use a deliberately long
+            // starvation escape hatch instead of treating 200 ms of load as quiescence.
+            if stablePolls >= 15 && (ThreadPool.PendingWorkItemCount = 0L || stablePolls >= 500) then
                 time.AdvanceToNextDeadline() |> ignore
                 lastCount <- -1
                 stablePolls <- 0
