@@ -14,10 +14,12 @@ let tests =
                       Flow.ok name)
 
               let! first = step "inline" |> Flow.runOn RunOn.Inline
-              let! second = step "pool" |> Flow.onThreadPool
+              let! second = step "pool" |> Flow.runOn RunOn.ThreadPool
               let! third = step "dedicated" |> Flow.runOn RunOn.DedicatedThread
+              let! fourth = step "adaptive" |> Flow.runOn (RunOn.adaptive ())
+              let! batch = [ step "batch-a"; step "batch-b" ] |> Flow.sequenceParWith (Parallelism.adaptive 2)
 
               return
-                  [ equal "values are preserved" [ "inline"; "pool"; "dedicated" ] [ first; second; third ]
-                    equal "every location ran in call order" [ "inline"; "pool"; "dedicated" ] (List.ofSeq events) ]
+                  [ equal "values are preserved" [ "inline"; "pool"; "dedicated"; "adaptive"; "batch-a"; "batch-b" ] [ first; second; third; fourth; yield! batch ]
+                    equal "every location ran in call order" [ "inline"; "pool"; "dedicated"; "adaptive"; "batch-a"; "batch-b" ] (List.ofSeq events) ]
           }) ]

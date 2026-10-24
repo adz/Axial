@@ -134,6 +134,46 @@ module WorkflowParallelTests =
         test <@ empty = Exit.Success () @>
         test <@ emptyTraversal = Exit.Success [] @>
 
+    [<Fact>]
+    let ``Parallelism adaptive creates a fresh learner for every traversal run`` () =
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let inlineRuns = ref 0
+        let mapping value : Flow<unit, string, int> =
+            Flow.delay (fun () ->
+                if Thread.CurrentThread.ManagedThreadId = caller then
+                    Interlocked.Increment(&inlineRuns.contents) |> ignore
+                Thread.SpinWait 50_000
+                Flow.ok value)
+        let traversal = [ 1..3 ] |> Flow.traversePar (Parallelism.adaptive 1) mapping
+
+        test <@ traversal.RunSynchronously(()) = Exit.Success [ 1..3 ] @>
+        test <@ traversal.RunSynchronously(()) = Exit.Success [ 1..3 ] @>
+        test <@ inlineRuns.Value = 2 @>
+
+    [<Fact>]
+    let ``sequenceParWith bounds work and applies its placement`` () =
+        let active = ref 0
+        let peak = ref 0
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let callerRuns = ref 0
+        let operation value : Flow<unit, string, int> =
+            Flow.delay (fun () ->
+                if Thread.CurrentThread.ManagedThreadId = caller then
+                    Interlocked.Increment(&callerRuns.contents) |> ignore
+                let now = Interlocked.Increment(&active.contents)
+                let mutable seen = peak.Value
+                while now > seen && Interlocked.CompareExchange(&peak.contents, now, seen) <> seen do
+                    seen <- peak.Value
+                Thread.Sleep 10
+                Interlocked.Decrement(&active.contents) |> ignore
+                Flow.ok value)
+        let policy = Parallelism.bounded 2 |> Parallelism.runOn RunOn.ThreadPool
+        let result = [ 1..8 ] |> List.map operation |> Flow.sequenceParWith policy |> Flow.runSync ()
+
+        test <@ result = Exit.Success [ 1..8 ] @>
+        test <@ peak.Value = 2 @>
+        test <@ callerRuns.Value = 0 @>
+
     let private countingResource (acquired: int ref) (released: int ref) : Resource<ClockEnvironment, string, int> =
         Resource.create
             (Flow.delay (fun () -> Flow.ok (Interlocked.Increment(&acquired.contents))))

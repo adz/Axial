@@ -10,7 +10,57 @@ open Xunit
 
 module RunOnTests =
     [<Fact>]
-    let ``onThreadPool lets eight synchronous sequencePar branches start concurrently`` () =
+    let ``adaptive places later CPU work on the thread pool`` () =
+        let placement = RunOn.adaptiveWith { Threshold = TimeSpan.Zero; Samples = 1 }
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let threads = ConcurrentQueue<int>()
+        let operation : Flow<unit, string, unit> =
+            Flow.delay (fun () ->
+                Thread.SpinWait 100_000
+                threads.Enqueue Thread.CurrentThread.ManagedThreadId
+                Flow.ok ())
+            |> Flow.runOn placement
+
+        test <@ operation.RunSynchronously(()) = Exit.Success() @>
+        test <@ operation.RunSynchronously(()) = Exit.Success() @>
+        let observed = threads.ToArray()
+        test <@ observed[0] = caller @>
+        test <@ observed[1] <> caller @>
+
+    [<Fact>]
+    let ``adaptive stays inline for cheap and waiting work and its decision sticks`` () =
+        let placement = RunOn.adaptiveWith { Threshold = TimeSpan.FromSeconds 1.0; Samples = 1 }
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let threads = ConcurrentQueue<int>()
+        let operation : Flow<unit, string, unit> =
+            flow {
+                threads.Enqueue Thread.CurrentThread.ManagedThreadId
+                do! Flow.fromTask (fun _ -> task { do! Task.Delay 1 })
+                threads.Enqueue Thread.CurrentThread.ManagedThreadId
+            }
+            |> Flow.runOn placement
+
+        test <@ operation.RunSynchronously(()) = Exit.Success() @>
+        test <@ operation.RunSynchronously(()) = Exit.Success() @>
+        let observed = threads.ToArray()
+        test <@ observed[0] = caller && observed[2] = caller @>
+
+    [<Fact>]
+    let ``adaptive sampling is safe when first calls are concurrent`` () =
+        let placement = RunOn.adaptiveWith { Threshold = TimeSpan.Zero; Samples = 8 }
+        let operation : Flow<unit, string, int> =
+            Flow.delay (fun () -> Thread.SpinWait 50_000; Flow.ok Thread.CurrentThread.ManagedThreadId)
+            |> Flow.runOn placement
+        let callers = [| for _ in 1..8 -> Task.Run(fun () -> operation.RunSynchronously(())) |]
+        Task.WhenAll(callers).GetAwaiter().GetResult() |> ignore
+        let caller = Thread.CurrentThread.ManagedThreadId
+        let next = operation.RunSynchronously(())
+        match next with
+        | Exit.Success thread -> test <@ thread <> caller @>
+        | failure -> failwithf "Expected success, got %A" failure
+
+    [<Fact>]
+    let ``runOn ThreadPool lets eight synchronous sequencePar branches start concurrently`` () =
         use allStarted = new CountdownEvent(8)
         use release = new ManualResetEventSlim(false)
         let threadIds = ConcurrentDictionary<int, byte>()
@@ -21,7 +71,7 @@ module RunOnTests =
                 allStarted.Signal() |> ignore
                 release.Wait(TimeSpan.FromSeconds 20.0) |> ignore
                 Flow.ok 1)
-            |> Flow.onThreadPool
+            |> Flow.runOn RunOn.ThreadPool
 
         let workflow = [ for _ in 1..8 -> branch () ] |> Flow.sequencePar
         let running =
@@ -59,7 +109,7 @@ module RunOnTests =
         test <@ source.RunSynchronously(()) = Exit.Success(caller + caller + 1) @>
 
     [<Fact>]
-    let ``a sibling failure interrupts onThreadPool at a checkpoint and zipPar waits for cleanup`` () =
+    let ``a sibling failure interrupts runOn ThreadPool at a checkpoint and zipPar waits for cleanup`` () =
         use started = new ManualResetEventSlim(false)
         let cleaned = ref false
         let slices = ref 0
@@ -76,7 +126,7 @@ module RunOnTests =
         let worker =
             cpu ()
             |> Flow.ensuring (Flow.delay (fun () -> cleaned.Value <- true; Flow.ok ()))
-            |> Flow.onThreadPool
+            |> Flow.runOn RunOn.ThreadPool
 
         let failure = Flow.delay (fun () -> started.Wait(); Flow.fail "boom")
         let exit = Flow.zipPar worker failure |> Flow.runSync ()
@@ -93,7 +143,7 @@ module RunOnTests =
 
         let exit : Exit<int, string> =
             Flow.delay (fun () -> started.Value <- true; Flow.ok 1)
-            |> Flow.onThreadPool
+            |> Flow.runOn RunOn.ThreadPool
             |> Flow.runSyncWithToken () cts.Token
 
         test <@ exit = Exit.Failure Cause.Interrupt @>
@@ -141,7 +191,7 @@ module RunOnTests =
 
         let workflow =
             flow {
-                let! value = Flow.scopeResource resource |> Flow.onThreadPool
+                let! value = Flow.scopeResource resource |> Flow.runOn RunOn.ThreadPool
                 return value, released.Value
             }
             |> Flow.scoped
@@ -200,7 +250,7 @@ module RunOnTests =
             flow {
                 let! _, _ =
                     Flow.zipPar
-                        (Flow.scopeResource (resource zipReleased None) |> Flow.onThreadPool)
+                        (Flow.scopeResource (resource zipReleased None) |> Flow.runOn RunOn.ThreadPool)
                         (Flow.ok 2)
                 return zipReleased.Value
             }
@@ -211,7 +261,7 @@ module RunOnTests =
         let sequenceExit =
             flow {
                 let! _ =
-                    [ Flow.scopeResource (resource sequenceReleased None) |> Flow.onThreadPool ]
+                    [ Flow.scopeResource (resource sequenceReleased None) |> Flow.runOn RunOn.ThreadPool ]
                     |> Flow.sequencePar
                 return sequenceReleased.Value
             }
@@ -223,7 +273,7 @@ module RunOnTests =
             flow {
                 let! value =
                     Flow.race
-                        (Flow.scopeResource (resource raceWinnerReleased None) |> Flow.onThreadPool)
+                        (Flow.scopeResource (resource raceWinnerReleased None) |> Flow.runOn RunOn.ThreadPool)
                         Flow.never
                 return value, raceWinnerReleased.Value
             }
@@ -247,7 +297,7 @@ module RunOnTests =
                 do! Flow.never
                 return "loser"
             }
-            |> Flow.onThreadPool
+            |> Flow.runOn RunOn.ThreadPool
         let raceLoserExit =
             Flow.race
                 raceLoser
@@ -262,7 +312,7 @@ module RunOnTests =
             flow {
                 let! fiber =
                     Flow.scopeResource (resource forkReleased None)
-                    |> Flow.onThreadPool
+                    |> Flow.runOn RunOn.ThreadPool
                     |> Flow.fork
                 let! value = Fiber.join fiber
                 return value, forkReleased.Value
@@ -325,10 +375,10 @@ module RunOnTests =
 
     [<Fact>]
     let ``runOn preserves typed failures and defects`` () =
-        let typed : Exit<int, string> = Flow.fail "no" |> Flow.onThreadPool |> Flow.runSync ()
+        let typed : Exit<int, string> = Flow.fail "no" |> Flow.runOn RunOn.ThreadPool |> Flow.runSync ()
         let defect : Exit<int, string> =
             Flow.delay (fun () -> raise (InvalidOperationException "broken"))
-            |> Flow.onThreadPool
+            |> Flow.runOn RunOn.ThreadPool
             |> Flow.runSync ()
 
         test <@ typed = Exit.Failure(Cause.Fail "no") @>

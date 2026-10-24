@@ -2,30 +2,24 @@ namespace Axial
 
 open System
 
-/// <summary>A validated upper bound for concurrent Flow operations.</summary>
-type Parallelism = private Parallelism of int
+/// <summary>A validated concurrency bound and placement for parallel Flow operations.</summary>
+type Parallelism =
+    private
+        { Count: int
+          Placement: unit -> RunOn }
 
-/// <summary>Creates <see cref="T:Axial.Parallelism" /> bounds for parallel Flow and stream operators.</summary>
+/// <summary>Creates concurrency and placement policies for parallel Flow and stream operators.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module Parallelism =
-    /// <summary>Creates a positive concurrency bound.</summary>
-    /// <exception cref="T:System.ArgumentOutOfRangeException">Thrown when <paramref name="count"/> is not positive.</exception>
-    let bounded count =
+    let private create count placement =
         if count <= 0 then invalidArg (nameof count) "Parallelism must be positive."
-        Parallelism count
+        { Count = count; Placement = placement }
 
-    /// <summary>Sizes a concurrency bound from the number of processors available to the process.</summary>
-    /// <remarks>
-    /// Use this for CPU-bound work. The result is clamped to at least 1, so <c>fun n -> n / 2</c> is safe on a
-    /// single-core machine. The processor count is read once, when this is called. On JavaScript the count is 1.
-    /// </remarks>
-    /// <param name="size">Computes the bound from the processor count.</param>
-    /// <example>
-    /// <code>
-    /// files |&gt; Flow.traversePar (Parallelism.ofProcessors id) hashFile
-    /// </code>
-    /// </example>
+    /// <summary>Creates a positive concurrency bound whose work starts inline.</summary>
+    let bounded count = create count (fun () -> RunOn.Inline)
+
+    /// <summary>Sizes an inline concurrency bound from the number of processors available to the process.</summary>
     let ofProcessors (size: int -> int) =
 #if FABLE_COMPILER
         let processors = 1
@@ -33,6 +27,22 @@ module Parallelism =
         // Sizing a worker pool is executor mechanics, like the thread pool reading the same value.
         let processors = Environment.ProcessorCount // axial-allow-AXG001: intentional environment host or live-service boundary
 #endif
-        Parallelism(max 1 (size processors))
+        create (max 1 (size processors)) (fun () -> RunOn.Inline)
 
-    let internal value (Parallelism count) = count
+    /// <summary>Runs every item using <paramref name="placement"/>, preserving the concurrency bound.</summary>
+    let runOn placement parallelism = { parallelism with Placement = fun () -> placement }
+
+    /// <summary>Uses one thread-pool worker per available processor for CPU-heavy work.</summary>
+    let cpu = ofProcessors id |> runOn RunOn.ThreadPool
+
+    /// <summary>Runs up to <paramref name="count"/> waiting operations inline.</summary>
+    let io count = bounded count
+
+    /// <summary>Runs up to <paramref name="count"/> blocking operations on dedicated threads.</summary>
+    let blocking count = bounded count |> runOn RunOn.DedicatedThread
+
+    /// <summary>Creates a fresh adaptive learner for each traversal run.</summary>
+    let adaptive count = create count RunOn.adaptive
+
+    let internal value parallelism = parallelism.Count
+    let internal placement parallelism = parallelism.Placement()

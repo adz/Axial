@@ -602,23 +602,18 @@ module Flow =
                 (TaskCreationOptions.DenyChildAttach ||| TaskCreationOptions.LongRunning)
                 TaskScheduler.Default
         | RunOn.Scheduler scheduler -> schedule TaskCreationOptions.DenyChildAttach scheduler
+        | RunOn.Adaptive state ->
+            let threadPool = schedule TaskCreationOptions.DenyChildAttach TaskScheduler.Default
+            Flow(fun environment cancellationToken ->
+                match state.Decision with
+                | 1 -> invoke source environment cancellationToken
+                | 2 -> invoke threadPool environment cancellationToken
+                | _ ->
+                    let started = Platform.monotonicNow ()
+                    let execution = invoke source environment cancellationToken
+                    state.Observe(Platform.monotonicNow () - started)
+                    execution)
 #endif
-
-    /// <summary>Starts a flow on the .NET thread pool.</summary>
-    /// <remarks>
-    /// Same as <c>Flow.runOn RunOn.ThreadPool</c>. The flow keeps its environment, cancellation token, runtime, and
-    /// scope; cancellation is observed cooperatively. On JavaScript it runs inline.
-    /// </remarks>
-    /// <param name="source">The flow to start on the thread pool.</param>
-    /// <returns>A flow that schedules <paramref name="source" /> when run.</returns>
-    /// <example>
-    /// <code>
-    /// let cpuWork = calculate () |&gt; Flow.onThreadPool
-    /// </code>
-    /// </example>
-    /// <platforms>Fable compatible; JavaScript runs inline.</platforms>
-    let onThreadPool (source: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
-        runOn RunOn.ThreadPool source
 
     /// <summary>Creates a flow from synchronous, blocking work, such as a database driver or native library call.</summary>
     /// <remarks>
@@ -1877,7 +1872,7 @@ module Flow =
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
     /// <para>If either flow fails, the other is interrupted immediately.</para>
-    /// <para>Branches start inline, like async methods passed to <c>Task.WhenAll</c>; wrap synchronous CPU-bound branches with <c>Flow.runOn</c> or <c>Flow.onThreadPool</c>.</para>
+    /// <para>Branches start inline, like async methods passed to <c>Task.WhenAll</c>; use <c>Flow.runOn RunOn.ThreadPool</c> for synchronous CPU-heavy branches.</para>
     /// <para>
     /// The two flows share a scope of their own. When both succeed, the scoped resources they acquired move to the
     /// caller's scope, as if the caller had acquired them, so <c>zipPar (scopeResource a) (scopeResource b)</c>
@@ -1904,7 +1899,7 @@ module Flow =
             Platform.zipParExecution (invoke left environment) (invoke right environment) source chooseParallelExit)
 
     /// <summary>Runs all flows concurrently and returns their values in input order.</summary>
-    /// <remarks>An empty input succeeds immediately. Branches start inline, like async methods passed to <c>Task.WhenAll</c>; wrap synchronous CPU-bound branches with <c>Flow.runOn</c> or <c>Flow.onThreadPool</c>. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>. Scoped resources follow <c>zipPar</c> too: when every flow succeeds they move to the caller's scope; when any fails, all of them are released before <c>sequencePar</c> returns.</remarks>
+    /// <remarks>An empty input succeeds immediately. Branches start inline, like async methods passed to <c>Task.WhenAll</c>; use <c>Flow.runOn RunOn.ThreadPool</c> for synchronous CPU-heavy branches. If any flow fails, remaining flows are interrupted through the same structured parallel composition as <c>zipPar</c>. Scoped resources follow <c>zipPar</c> too: when every flow succeeds they move to the caller's scope; when any fails, all of them are released before <c>sequencePar</c> returns.</remarks>
     let sequencePar (flows: Flow<'env, 'error, 'value> list) : Flow<'env, 'error, 'value list> =
         // A balanced tree of zipPars, built once. Each node starts its two halves under the branch's shared source.
         let rec combine (flows: Flow<'env, 'error, 'value> list)
@@ -2759,6 +2754,7 @@ module Flow =
         : Flow<'env, 'error, unit> =
         Flow(fun environment cancellationToken ->
             let next = ref -1L
+            let placement = Parallelism.placement parallelism
 
             // A loop rather than recursion, so a worker that processes many items runs in constant memory.
             let drain
@@ -2772,7 +2768,7 @@ module Flow =
                     if index >= items.Length then
                         Execution.ofValue (Platform.Break())
                     else
-                        let item = mapping items[index]
+                        let item = mapping items[index] |> runOn placement
 
                         let running =
                             match itemRuntime with
@@ -2825,8 +2821,7 @@ module Flow =
     /// <summary>Maps values to flows and runs them with bounded concurrency, returning results in input order.</summary>
     /// <remarks>
     /// At most <paramref name="parallelism" /> mappings run at once; as each finishes, its worker starts the next
-    /// value. Workers start mappings inline. For a synchronous CPU-bound mapping, wrap the returned flow with
-    /// <c>Flow.onThreadPool</c> so workers can overlap; size that work with <c>Parallelism.ofProcessors</c>. The first
+    /// value. The policy places each mapping; use <c>Parallelism.cpu</c> for synchronous CPU-heavy work. The first
     /// failure interrupts the mappings still running and waits for their cleanup before the flow fails, so no sibling
     /// is left running in the background. When each worker needs its own connection or handle, use
     /// <c>traverseParUsing</c>.
@@ -2849,13 +2844,21 @@ module Flow =
         : Flow<'env, 'error, 'next list> =
         traverseWorkers parallelism (ok mapping) false values
 
+    /// <summary>Runs flows with bounded concurrency and the placement carried by <paramref name="parallelism"/>.</summary>
+    /// <remarks>Results preserve input order. Failure, interruption, and scoped resources behave as in <c>sequencePar</c>.</remarks>
+    let sequenceParWith
+        (parallelism: Parallelism)
+        (flows: seq<Flow<'env, 'error, 'value>>)
+        : Flow<'env, 'error, 'value list> =
+        traversePar parallelism id flows
+
     /// <summary>Like <c>traversePar</c>, giving each worker its own resource, acquired once and reused for every value it maps.</summary>
     /// <remarks>
     /// Each worker acquires <paramref name="resource" /> when it starts and releases it when it has no values left,
     /// or when the traversal fails or is interrupted. At most <paramref name="parallelism" /> resources exist at
     /// once. Use it for work that needs an expensive handle per thread of work, such as a database connection or a
-    /// repository reader that is not safe to share. Workers start mappings inline; wrap a synchronous CPU-bound
-    /// mapping's returned flow with <c>Flow.onThreadPool</c>. The worker's resource never reaches the caller; other
+    /// repository reader that is not safe to share. The policy places each mapping; use <c>Parallelism.cpu</c> for
+    /// synchronous CPU-heavy work. The worker's resource never reaches the caller; other
     /// scoped resources the mapping acquires behave as in <c>traversePar</c>.
     /// </remarks>
     /// <param name="parallelism">The maximum number of workers, and so of resources.</param>
@@ -2877,7 +2880,7 @@ module Flow =
         traverseWorkers parallelism (scopeResource resource |> map mapping) true values
 
     /// <summary>Runs a flow for each value with bounded concurrency, discarding the results.</summary>
-    /// <remarks>Runs like <c>traversePar</c>: at most <paramref name="parallelism" /> at once, the first failure interrupts the rest, and scoped resources move to the caller's scope only when every flow succeeds. Workers start actions inline; wrap a synchronous CPU-bound action's flow with <c>Flow.onThreadPool</c>.</remarks>
+    /// <remarks>Runs like <c>traversePar</c>: at most <paramref name="parallelism" /> at once, the first failure interrupts the rest, and scoped resources move to the caller's scope only when every flow succeeds. The policy places each action.</remarks>
     /// <param name="parallelism">The maximum number of flows running at once.</param>
     /// <param name="action">The flow to run for each value.</param>
     /// <param name="values">The values to process.</param>
@@ -2896,7 +2899,7 @@ module Flow =
             invoke run environment cancellationToken)
 
     /// <summary>Like <c>forEachPar</c>, giving each worker its own resource, acquired once and reused for every value it processes.</summary>
-    /// <remarks>Resources are acquired and released as in <c>traverseParUsing</c>. Workers start actions inline; wrap a synchronous CPU-bound action's flow with <c>Flow.onThreadPool</c>.</remarks>
+    /// <remarks>Resources are acquired and released as in <c>traverseParUsing</c>. The policy places each action.</remarks>
     /// <param name="parallelism">The maximum number of workers, and so of resources.</param>
     /// <param name="resource">The resource each worker acquires.</param>
     /// <param name="action">The flow to run for each value, given the worker's resource.</param>

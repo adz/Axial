@@ -815,30 +815,72 @@ module ColdTask =
 
 type internal Execution<'value, 'error> = Platform.Execution<'value, 'error>
 
+/// <summary>Options for adaptive flow placement.</summary>
+type AdaptiveRunOnOptions =
+    { /// <summary>The mean synchronous hold time above which later runs use the thread pool.</summary>
+      Threshold: TimeSpan
+      /// <summary>The positive number of runs sampled before placement is decided.</summary>
+      Samples: int }
+
+#if !FABLE_COMPILER
+type AdaptiveRunOnState internal (options: AdaptiveRunOnOptions) =
+    let gate = obj ()
+    let mutable decision = 0
+    let mutable samples = 0
+    let mutable elapsed = TimeSpan.Zero
+
+    member internal _.Decision = System.Threading.Volatile.Read(&decision)
+
+    member internal _.Observe(duration: TimeSpan) =
+        if System.Threading.Volatile.Read(&decision) = 0 then
+            lock gate (fun () ->
+                if decision = 0 then
+                    samples <- samples + 1
+                    elapsed <- elapsed + duration
+                    if samples >= options.Samples then
+                        decision <- if elapsed / float samples > options.Threshold then 2 else 1)
+#endif
+
 /// <summary>Specifies where a flow starts running.</summary>
-/// <remarks>
-/// On .NET, <c>ThreadPool</c> uses <see cref="P:System.Threading.Tasks.TaskScheduler.Default" /> and
-/// <c>DedicatedThread</c> uses a long-running task whose dedicated thread runs the synchronous part before the first
-/// incomplete await. <c>Scheduler</c> keeps captured continuations on the supplied scheduler. JavaScript has one
-/// thread, so every case runs inline there.
-/// </remarks>
-/// <example>
-/// <code>
-/// let parallelCpu = jobs |&gt; List.map (compute &gt;&gt; Flow.onThreadPool) |&gt; Flow.sequencePar
-/// </code>
-/// </example>
-/// <platforms>Fable compatible; JavaScript runs every case inline. Custom schedulers are .NET only.</platforms>
+/// <remarks>JavaScript has one thread, so every placement runs inline there.</remarks>
 [<RequireQualifiedAccess>]
 type RunOn =
-    /// <summary>Starts the flow on the current thread.</summary>
+    /// <summary>Starts work on the calling thread.</summary>
     | Inline
-    /// <summary>Starts the flow on the .NET thread pool.</summary>
+    /// <summary>Starts work on the .NET thread pool.</summary>
     | ThreadPool
-    /// <summary>Starts the synchronous part of the flow on a dedicated .NET thread.</summary>
+    /// <summary>Starts work on a dedicated .NET thread.</summary>
     | DedicatedThread
 #if !FABLE_COMPILER
-    /// <summary>Starts the flow on the supplied task scheduler and captures it for continuations.</summary>
+    /// <summary>Starts work on the supplied .NET task scheduler.</summary>
     | Scheduler of TaskScheduler
+    /// <summary>An adaptive placement created by <c>RunOn.adaptive</c> or <c>RunOn.adaptiveWith</c>.</summary>
+    | Adaptive of AdaptiveRunOnState
+#else
+    /// <summary>An adaptive placement created by <c>RunOn.adaptive</c> or <c>RunOn.adaptiveWith</c>.</summary>
+    | Adaptive
+#endif
+
+/// <summary>Creates adaptive flow placements.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module RunOn =
+    /// <summary>Creates a placement that samples one run, then permanently selects inline or thread-pool execution.</summary>
+    let adaptive () =
+#if FABLE_COMPILER
+        RunOn.Adaptive
+#else
+        RunOn.Adaptive(AdaptiveRunOnState { Threshold = TimeSpan.FromTicks 500L; Samples = 1 })
+#endif
+
+    /// <summary>Creates a placement that samples the requested number of runs before deciding once.</summary>
+    let adaptiveWith options =
+        if options.Threshold < TimeSpan.Zero then invalidArg (nameof options) "Threshold must not be negative."
+        if options.Samples <= 0 then invalidArg (nameof options) "Samples must be positive."
+#if FABLE_COMPILER
+        RunOn.Adaptive
+#else
+        RunOn.Adaptive(AdaptiveRunOnState options)
 #endif
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
