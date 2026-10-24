@@ -327,6 +327,17 @@ module internal ProcessRun =
                         Deferred.succeedNow () stage.Released |> ignore
                         Flow.succeed ())
 
+                let superviseDetachedFeeder (stage: int) (feeder: Fiber<ProcessError, unit>) =
+                    flow {
+                        let! exit = Fiber.awaitUnobserved feeder
+                        match exit with
+                        | Exit.Failure cause when not (Cause.isInterrupted cause) ->
+                            do! Fiber.reportUnobserved feeder
+                        | _ -> ()
+                    }
+                    |> Flow.forkUnownedDetachedNamed ("process-stdin-supervisor-" + string stage)
+                    |> Flow.ignore
+
                 let stopFeeder (stage: RunStage) =
                     flow {
                         match stage.Feeder with
@@ -336,10 +347,15 @@ module internal ProcessRun =
                             | Some _ -> ()
                             | None ->
                                 do! Fiber.requestInterrupt feeder
-                                do!
+                                let! outcome =
                                     Flow.race
-                                        (Fiber.await feeder |> Flow.ignore)
-                                        (Flow.sleep (TimeSpan.FromMilliseconds 250.0))
+                                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2)
+                                        (Flow.sleep (TimeSpan.FromMilliseconds 250.0) |> Flow.map Choice2Of2)
+                                match outcome with
+                                | Choice1Of2 _ -> do! Fiber.markObserved feeder
+                                | Choice2Of2 _ ->
+                                    let stageIndex = stages |> Array.findIndex (fun candidate -> obj.ReferenceEquals(candidate, stage))
+                                    do! superviseDetachedFeeder stageIndex feeder
                         | None -> ()
                         do! closePipe stage
                     }
@@ -775,7 +791,7 @@ module internal ProcessRun =
                         |> Flow.mapError Never.absurd
                     )
 
-                let inputFibers = ResizeArray<Fiber<ProcessError, unit> * Deferred<Never, unit>>()
+                let inputFibers = ResizeArray<int * Fiber<ProcessError, unit> * Deferred<Never, unit>>()
 
                 for stage, command in commands |> Array.indexed do
                     if specification.Connections |> List.forall (fun (_, target, _) -> target <> stage) then
@@ -786,18 +802,23 @@ module internal ProcessRun =
                             do! closeInput processes[stage]
                         | source ->
                             let! feeder = inputFeeder stage source |> Flow.forkUnownedNamed ("process-stdin-" + string stage)
-                            inputFibers.Add(feeder, released[stage])
+                            inputFibers.Add(stage, feeder, released[stage])
                             let! _ = commandsQueue |> Queue.offer (RegisterFeeder(stage, feeder))
                             ()
 
-                let awaitInput (feeder, detached: Deferred<Never, unit>) =
+                let awaitInput (stage, feeder, detached: Deferred<Never, unit>) =
                     Flow.race
-                        (Fiber.await feeder
-                         |> Flow.bind (function
-                             | Exit.Success () -> Flow.succeed ()
-                             | Exit.Failure cause when Cause.isInterrupted cause -> Flow.succeed ()
-                             | Exit.Failure cause -> Flow.ofExit (Exit.Failure cause)))
-                        (Deferred.await detached |> Flow.widenError)
+                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2)
+                        (Deferred.await detached |> Flow.widenError |> Flow.map Choice2Of2)
+                    |> Flow.bind (function
+                        | Choice1Of2 exit ->
+                            Fiber.markObserved feeder
+                            |> Flow.bind (fun () ->
+                                match exit with
+                                | Exit.Success () -> Flow.succeed ()
+                                | Exit.Failure cause when Cause.isInterrupted cause -> Flow.succeed ()
+                                | Exit.Failure cause -> Flow.ofExit (Exit.Failure cause))
+                        | Choice2Of2 () -> superviseDetachedFeeder stage feeder)
 
                 let tolerateStopPipeFailure source =
                     source

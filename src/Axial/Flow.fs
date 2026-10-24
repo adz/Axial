@@ -1613,8 +1613,15 @@ module Flow =
     let forkNamed (name: string) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
         forkWith true (Some name) None flow
 
-    /// Starts an observed fiber whose lifetime is explicitly managed by its caller instead of the caller's scope.
+    /// Starts a fiber whose lifetime is explicitly managed by its caller instead of the caller's scope.
     let internal forkUnownedNamed (name: string) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
+        forkWith false (Some name) None flow
+
+    /// Starts an observed, unowned fiber for internal supervisors that deliberately consume no public handle.
+    let internal forkUnownedDetachedNamed
+        (name: string)
+        (flow: Flow<'env, 'error, 'value>)
+        : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
             invoke (forkWith false (Some name) None flow) environment cancellationToken
             |> Execution.map (fun (fiber: Fiber<'error, 'value>) ->
@@ -3050,6 +3057,22 @@ module Fiber =
         Flow(fun _ _ ->
             fiber.MarkObserved()
             Platform.awaitExitTaskAsSuccess fiber.ExitTask)
+
+    /// Waits without consuming the outcome so an internal supervisor can decide whether to report its defect.
+    let internal awaitUnobserved (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
+        Flow(fun _ _ -> Platform.awaitExitTaskAsSuccess fiber.ExitTask)
+
+    /// Marks an outcome consumed by internal supervision after an unobserved wait wins its race.
+    let internal markObserved (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, unit> =
+        Flow(fun _ _ ->
+            fiber.MarkObserved()
+            Execution.ofValue ())
+
+    /// Reports a settled defect exactly once when no consumer observed the fiber's outcome.
+    let internal reportUnobserved (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, unit> =
+        Flow(fun _ _ ->
+            fiber.ReportUnobserved()
+            Execution.ofValue ())
 
     /// <summary>Returns the fiber's exit if it has settled, without waiting.</summary>
     /// <remarks>A settled fiber read this way is not marked observed; use <c>await</c> to consume its outcome.</remarks>

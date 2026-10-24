@@ -737,6 +737,9 @@ type Fiber<'error, 'value>
     /// Marks the fiber's outcome as consumed; see <c>FiberDefectTracker.MarkObserved</c>.
     member internal _.MarkObserved() = tracker.MarkObserved()
 
+    /// Reports the fiber's settled defect if its outcome was not consumed.
+    member internal _.ReportUnobserved() = tracker.TryReport()
+
     /// The fiber's exit once it has settled.
     member internal _.Settled = settled.Value
 

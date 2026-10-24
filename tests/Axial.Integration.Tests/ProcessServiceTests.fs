@@ -58,6 +58,44 @@ module ProcessServiceTests =
         test <@ Encoding.UTF8.GetString(received.ToArray()) = result.StdOut @>
 
     [<Fact>]
+    let ``detached stdin feeder reports a late foreign defect`` () = task {
+        let entered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let reported = TaskCompletionSource<exn>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let defect = InvalidOperationException "late stdin defect"
+        let observer =
+            { FiberObserver.none with
+                OnUnobservedDefect = fun metadata error ->
+                    if obj.ReferenceEquals(error, defect)
+                       && (metadata |> Option.bind _.Name) = Some "process-stdin-0" then
+                        reported.TrySetResult(error) |> ignore }
+        let source =
+            Flow.fromTask (fun _ -> task {
+                entered.TrySetResult() |> ignore
+                do! release.Task
+                return raise defect
+            })
+            |> FlowStream.fromFlow
+        let running =
+            shText "sleep 0.1"
+            |> stdinFrom (Input.flowStream source)
+            |> toFlow
+            |> Flow.withFiberObserver observer
+            |> fun workflow -> workflow.StartAsTask(env ())
+
+        do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+        match outcome with
+        | Exit.Success result -> test <@ result.ExitCode = 0 @>
+        | other -> failwithf "Expected process completion before the foreign source settled, got %A" other
+        test <@ not reported.Task.IsCompleted @>
+
+        release.TrySetResult() |> ignore
+        let! observed = reported.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        test <@ obj.ReferenceEquals(observed, defect) @>
+    }
+
+    [<Fact>]
     let ``typed input failure is process error and defect remains defect`` () =
         let failing = FlowStream.fromFlow (Flow.fail "bad input" : Flow<unit, string, byte array>)
         let outcome = cmd $"cat" |> stdinFrom (Input.flowStream failing) |> toFlow |> Flow.runSync (env ())
@@ -81,22 +119,21 @@ module ProcessServiceTests =
         | other -> failwithf "Expected output failure, got %A" other
 
     [<Fact>]
-    let ``plain command interruption kills the child and releases its scope promptly`` () = task {
+    let ``plain command interruption routes a stop without an optional coordinator trigger`` () = task {
         use cancellation = new CancellationTokenSource()
         let pidPath = Path.GetTempFileName()
-        let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         try
+            // Keep this a coordinator-less specification under a76da5b2b: one stage, empty stdin, no timeout,
+            // observer, output policy, onStarted handler, or graceful-stop policy.
             let running =
                 shText $"echo $$ > '{pidPath}'; exec sleep 30"
                 |> toFlow
-                |> Flow.ensuring (Flow.fromAsync (async { released.TrySetResult(()) |> ignore }))
                 |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
             test <@ waitUntil (TimeSpan.FromSeconds 3.0) (fun () -> File.ReadAllText(pidPath).Trim() <> "") @>
             let childPid = File.ReadAllText(pidPath).Trim() |> Int32.Parse
             cancellation.Cancel()
             let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
             test <@ outcome = Exit.Failure Cause.Interrupt @>
-            do! released.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
             test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> processHasExited childPid) @>
         finally
             cancellation.Cancel()
