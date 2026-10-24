@@ -2827,19 +2827,28 @@ module Flow =
             let workers = min (Parallelism.value parallelism) items.Length
 
             if not workerOwnsScope && workers = items.Length then
-                // With one worker per item there is no queue to drain. Start the mapped flows directly, avoiding a
-                // loop, worker flow, and two continuation layers per item.
+                // With one worker per item there is no queue to drain. Start mapped items as leaves of the parallel
+                // tree directly, avoiding a worker flow, loop, mapped Flow wrapper, and unit list per item.
                 invoke workerMapping environment cancellationToken
                 |> Execution.bind (fun mapping ->
-                    items
-                    |> Array.mapi (fun index item ->
-                        mapping item
-                        |> runOn placement
-                        |> map (fun mapped -> store index mapped))
-                    |> Array.toList
-                    |> sequencePar
-                    |> fun source -> invoke source environment cancellationToken)
-                |> Execution.map (fun (_: unit list) -> ())
+                    let rec combine first count source token =
+                        if count = 1 then
+                            let item = mapping items[first] |> runOn placement
+                            invoke item environment token
+                            |> Execution.map (fun mapped -> store first mapped)
+                        else
+                            let leftCount = count / 2
+
+                            Platform.zipParUnitExecution
+                                (combine first leftCount source)
+                                (combine (first + leftCount) (count - leftCount) source)
+                                source
+                                chooseParallelExit
+
+                    invoke
+                        (parallelBranch (fun source _ -> combine 0 items.Length source source.Token))
+                        environment
+                        cancellationToken)
             else
                 invoke (sequencePar (List.replicate workers worker)) environment cancellationToken
                 |> Execution.map (fun (_: unit list) -> ()))
