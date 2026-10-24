@@ -213,13 +213,41 @@ module internal ProcessRun =
                     commands
                     |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, int> ())
                     |> Flow.widenError
-                let! (commandsQueue: Queue<RunCommand>) = Queue.unbounded ()
+                let needsCoordinator =
+                    commands.Length > 1
+                    || specification.OnStarted.IsSome
+                    || specification.OverallTimeout.IsSome
+                    || specification.DrainTimeout.IsSome
+                    || not specification.StopGracefully.IsEmpty
+                    || (commands |> Array.exists (fun command -> command.Timeout.Value.IsSome))
+                    || (commands
+                        |> Array.exists (fun command ->
+                            match command.StdIn.Value with
+                            | InputSource.Inherit
+                            | InputSource.Empty -> false
+                            | _ -> true))
+                    || stdoutLimit.IsSome
+                    || stderrLimit.IsSome
+                    || observesOutput
+
+                let createCommandsQueue : Flow<ClockEnvironment, Never, Queue<RunCommand> option> =
+                    Queue.unbounded () |> Flow.map Some
+
+                let! commandsQueue =
+                    if needsCoordinator then createCommandsQueue |> Flow.widenError
+                    else Flow.succeed None
+
+                let offerCommand command =
+                    match commandsQueue with
+                    | Some queue -> queue |> Queue.offer command
+                    | None -> Flow.succeed true
+
                 let timerFibers = ResizeArray<Fiber<ProcessError, unit>>()
 
                 let postTimedStop cause error =
                     flow {
                         let! reply = Deferred.make<ClockEnvironment, Never, StopCause> () |> Flow.widenError
-                        let! _ = commandsQueue |> Queue.offer (Stop(cause, reply))
+                        let! _ = offerCommand (Stop(cause, reply))
                         let! winner = Deferred.await reply |> Flow.widenError
                         if winner = cause then return! Flow.fail error
                         else return! Flow.never<ClockEnvironment, ProcessError, unit>
@@ -432,7 +460,7 @@ module internal ProcessRun =
 
                 let rec coordinate () =
                     flow {
-                        let! command = Dequeue.take commandsQueue
+                        let! command = Dequeue.take commandsQueue.Value
                         match command with
                         | RegisterFeeder(stage, feeder) ->
                             let state = stages[stage]
@@ -463,16 +491,20 @@ module internal ProcessRun =
                     }
 
                 // The coordinator must outlive caller cancellation long enough for Flow.onInterrupt to post and
-                // await the stop ladder. Scope close shuts its queue down after the handler has finished.
+                // await the stop ladder. Simple runs have no commands to coordinate and avoid this fiber entirely.
                 let! coordinator =
-                    coordinate ()
-                    |> Flow.forkGraceful (Dequeue.shutdown commandsQueue) (TimeSpan.FromSeconds 5.0)
+                    match commandsQueue with
+                    | Some queue ->
+                        coordinate ()
+                        |> Flow.forkGraceful (Dequeue.shutdown queue) (TimeSpan.FromSeconds 5.0)
+                        |> Flow.map Some
+                    | None -> Flow.succeed None
 
                 let requestStop cause =
                     flow {
                         let! reply = Deferred.make<ClockEnvironment, Never, StopCause> ()
                         let! offered =
-                            (commandsQueue |> Queue.offer (Stop(cause, reply)) |> Flow.map Some)
+                            (offerCommand (Stop(cause, reply)) |> Flow.map Some)
                             |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed None)
                         match offered with
                         | Some _ -> return! Deferred.await reply
@@ -483,7 +515,7 @@ module internal ProcessRun =
                     let requestFlow =
                         flow {
                             let! reply = Deferred.make<ClockEnvironment, StopRequestError, unit> ()
-                            let! _ = commandsQueue |> Queue.offer (Close(stage, request, reply))
+                            let! _ = offerCommand (Close(stage, request, reply))
                             return!
                                 Deferred.await reply
                                 |> Flow.map (fun () -> Ok ())
@@ -520,7 +552,7 @@ module internal ProcessRun =
                         flow {
                             elapsedEnds[stage] <- Some(clock.Elapsed())
                             Deferred.succeedNow code exits[stage] |> ignore
-                            let! _ = commandsQueue |> Queue.offer (Exited(stage, code))
+                            let! _ = offerCommand (Exited(stage, code))
                             return ()
                         })
 
@@ -832,7 +864,7 @@ module internal ProcessRun =
                         | source ->
                             let! feeder = inputFeeder stage source |> Flow.forkNamed ("process-stdin-" + string stage)
                             inputFibers.Add(feeder, released[stage])
-                            let! _ = commandsQueue |> Queue.offer (RegisterFeeder(stage, feeder))
+                            let! _ = offerCommand (RegisterFeeder(stage, feeder))
                             ()
 
                 let awaitInput (feeder, detached: Deferred<Never, unit>) =
@@ -1012,8 +1044,14 @@ module internal ProcessRun =
                         | _ -> Flow.succeed ())
                     |> Flow.onInterrupt (requestStop Interrupted |> Flow.ignore)
 
-                do! Dequeue.shutdown commandsQueue
-                let! _ = Fiber.await coordinator
+                match commandsQueue with
+                | Some queue -> do! Dequeue.shutdown queue
+                | None -> ()
+                match coordinator with
+                | Some running ->
+                    let! _ = Fiber.await running
+                    ()
+                | None -> ()
                 return result
             }
             |> mapEngineFailure
