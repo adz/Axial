@@ -1404,13 +1404,12 @@ module Flow =
             let tracker = FiberDefectTracker(metadata, observer)
 
             // Everything the fiber acquires belongs to its own scope, which closes when the fiber settles. An owned
-            // fiber's scope is a child of the forking scope; an explicitly unowned internal fiber is managed by the
-            // caller through its handle and keeps an independent scope.
-            let fiberScope =
-                if owned then
-                    parentRuntime.Scope.TryAddChild() |> ValueOption.defaultWith (fun () -> new Scope())
-                else
-                    new Scope()
+            // fiber is supervised by the forking scope: the supervision finalizer registered below interrupts the
+            // fiber and waits for that close, so the fiber scope itself is not also registered as a child (the
+            // lazy-scope path for resource-free fibers; Scope allocates finalizer storage only on first use). An
+            // explicitly unowned internal fiber is managed by the caller through its handle and registers with an
+            // independent scope.
+            let fiberScope = new Scope()
 
             let registrationScope =
                 if owned then parentRuntime.Scope else new Scope()
