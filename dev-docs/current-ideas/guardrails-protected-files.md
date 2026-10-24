@@ -1,124 +1,196 @@
-# Guardrails v2: checked-in policy and signed protected files
+# Guardrails v2: locked policy, roles, and agent hooks
 
 ## Decision
 
-Guardrails behavior comes only from checked-in files. Replace MSBuild/environment policy switches with one repository file, `Axial.Guardrails.toml`, and one signed approval record, `Axial.Guardrails.approvals`. The build always runs Guardrails when the package is installed. A protected file is accepted only when its current SHA-256 appears in the approval record and that canonical record has a valid signature from a checked-in human key.
+Guardrails v2 uses Rust-like lint policy: the repository declares intent; the analyzer does not infer whether a project is domain code, a host, or an operational boundary. Policy has three checked-in files:
 
-Use OpenSSH signatures first: `ssh-keygen -Y sign` works offline, is widely installed, and supports a hardware-backed SSH key whose touch requirement the agent cannot satisfy. Ship an `axial-guardrails approve <paths...>` command which canonicalizes paths, hashes files, updates the record, and invokes the key for one touch-to-sign operation. Verification uses `ssh-keygen -Y verify` semantics in the packaged tool, against `Axial.Guardrails.allowed_signers`.
-
-The minimum model is:
-
-1. rules produce errors and may offer mechanical fixes;
-2. a baseline records accepted findings as warnings;
-3. explicit files are effect boundaries where reasoned suppressions may occur;
-4. one config selects rules and lists boundaries and protected files;
-5. one human-signed record approves the exact bytes of protected files.
-
-There is no machine-dependent mode. Local builds, CI, forks, and offline builds evaluate the same files.
-
-## Files and verification
-
-`Axial.Guardrails.toml` contains a format version, enabled rule IDs or rule groups, explicit boundary paths, protected paths, and the baseline path. Package-contributed rules remain possible, but a repository explicitly selects them in this file rather than through mutable MSBuild items. Paths are repository-relative, slash-normalized, case-sensitive identifiers; the verifier resolves and containment-checks them with platform path APIs.
-
-The default protected set is:
-
-- `Axial.Guardrails.toml`, `Axial.Guardrails.baseline`, and `Axial.Guardrails.allowed_signers`;
-- `Directory.Build.props`, `Directory.Build.targets`, Guardrails package props/targets, analyzer source, and the approval/check implementation;
-- `.github/workflows/**`, `scripts/verify.sh`, and Guardrails check/test scripts;
-- every file declared as an effect boundary;
-- test inventory/ratchet records; and
-- project-added security-sensitive paths.
-
-The config may only add protected paths. The packaged verifier has the mandatory list above built in, preventing a config edit from unprotecting its own trust files. Projects may add exact paths or narrow checked-in globs for workflows and analyzer implementation; boundary declarations remain exact files.
-
-The approval record is deterministic text: format version, signer namespace, sorted `SHA256  path` lines, then one armored SSH signature over the complete canonical payload. Approval removes stale entries and refuses untracked files, symlinks escaping the repository, dirty unrelated protected files, unknown paths, or keys without a hardware-backed/touch-required policy where the platform can attest it. Verification checks canonical form, hashes, signature, allowed principal, and that every required/protected path has an entry. It performs file reads and SHA-256 only: expected warm cost is under 20 ms for normal repositories and under 100 ms for Axial; no Git history walk, network call, project reload, or type-check is added.
-
-The current repo-internal exemption in `Directory.Build.props` compares paths containing `/`; that comparison is Windows-unsafe. V2 removes path-based repo exemptions. Until then it should use normalized platform paths rather than slash spelling.
-
-### The trust boundary is not the repository alone
-
-A repository cannot prove its own verifier ran to an attacker who can edit the verifier, targets, workflow, and commit. Signed hashes prevent an agent from forging human approval, but the agent could delete the check. Therefore:
-
-- local builds run the packaged verifier before analysis and fail closed; this gives fast feedback and catches ordinary mistakes;
-- the protected branch requires an **external, non-repository-controlled** status (a small GitHub App or centrally pinned reusable workflow whose configuration the repository token cannot alter) which runs the released verifier and checks the mandatory protected set;
-- the ruleset disallows bypass, direct pushes, and ruleset administration by the agent token.
-
-Without that external anchor, this design is tamper-evident rather than tamper-proof. That limitation must be stated rather than hidden behind `CI=true` logic. For a single developer, the GitHub App is small operational overhead but is the only option here that prevents a repository-writing token from approving its own bypass.
-
-## Approval mechanisms considered
-
-| Mechanism | Verdict | Reason |
-| --- | --- | --- |
-| Signed content-hash record with hardware SSH key | **Use** | Approves exact bytes, works offline and in forks, survives rebases, and requires physical touch. A single signature makes review and verification cheap. |
-| Signed commits checked with `git verify-commit` | Fallback | Familiar, but approves an entire commit, becomes awkward across fixups/rebases, requires ancestry/history policy, and does not prove that each protected file's current bytes were reviewed. Merge/squash semantics complicate CI. |
-| CODEOWNERS plus branch protection | Defense in depth | Good review UX, but weak for a single developer and local/offline work. A broad `gh` token may approve or merge unless permissions and non-bypass rules are carefully separated. It does not make local builds deterministic. |
-| GitHub environment reviewers | Reject for this use | Gates deployments/jobs, not arbitrary protected-file content; no offline story. The agent's web/token permissions determine whether the gate is meaningful. |
-| Sigstore/gitsign browser OIDC | Optional fallback | Browser presence can exclude the agent and transparency logs improve auditability, but verification commonly needs network identity/rekor policy and credentials expire. SSH hardware signing is simpler and fully offline. |
-
-If OpenSSH is unavailable, the tool may support minisign as a format-versioned alternative. Signed commits are the migration fallback, not a second simultaneous requirement.
-
-### UX and environments
-
-Normal edits need no action. A protected edit fails with the changed path and the exact `axial-guardrails approve path` command. The human reviews the diff, inserts/touches the key, and commits both file and approval record. The approval record is self-authenticating; it does not need to list its own hash. Changing `allowed_signers` must be signed by a currently allowed key, providing key rotation. Initial trust is established when installing the external check with the initial signer fingerprint.
-
-Offline/local verification and approval both work. CI only verifies and never possesses a signing key. Forks verify upstream approvals unchanged; a fork owner who changes policy must establish a fork trust root and external check, or cannot merge protected changes under upstream policy. Read-only builds of unmodified forks continue to pass.
-
-## Baselines, boundaries, and disabling
-
-Baseline additions and all boundary changes are ordinary protected edits. Human signature replaces the baseline-growth comparison, boundary-count limit, and special governance prose: a human can approve debt or a genuine boundary, while an agent cannot. Keep baseline fingerprint/count validation and stale suppression diagnostics because they detect malformed or obsolete entries, not authorization.
-
-There is no disable property, environment variable, severity property, test mode, or CI mode. To disable Guardrails for a repository, a human approves a config change. To exempt a project or rule, a human approves its explicit config selection. Tests receive explicit selected rules in config rather than `IsTestProject`-driven behavior; the standard template selects test rules for test projects by checked-in path/project mapping.
-
-## Simplification inventory
-
-| Current concept | Action |
+| File | Purpose |
 | --- | --- |
-| Typed analyzers, effect catalog, diagnostics, fixes | Keep |
-| Built-in and package-contributed rules | Merge into rules selected by one config |
-| `AxialGuardrail` / `AxialGuardrailRule` MSBuild items | Delete as policy inputs; package metadata only discovers available rules |
-| `AxialGuardrailsBoundary` items | Merge into config exact paths |
-| Suppression comments with rule ID and reason | Keep |
-| Suppression integrity/stale checks | Keep |
-| Baseline fingerprints and duplicate counts | Keep |
-| Candidate baseline generation | Keep as an explicit tool command, not a build property |
-| Baseline growth script and its test | Delete; baseline is protected |
-| Boundary wildcard rejection and boundary-count limit | Delete; exact paths plus signed review replace both |
-| `AxialGuardrailsEnabled`, severity variables, and environment-variable probes | Delete |
-| `AxialGuardrailsGenerateBaseline` | Delete; use `axial-guardrails baseline` |
-| `AxialGuardrailsInTests`, `IsTestProject` inference | Delete; checked-in config selects behavior |
-| `CI=true` bypass rejection and CI-only branches | Delete |
-| `nativeAot` setting inferred from MSBuild | Replace with explicit checked-in project selection, or make the rule universally precise |
-| Per-build generated rules file and `AXIAL_GUARDRAILS_CONFIG` | Delete; read config directly |
-| Baseline file/root/output MSBuild properties | Delete |
-| Analyzer bootstrap/path/executable internals | Keep as packaging implementation, not user policy |
-| Incremental stamp and analyzer assembly/source inputs | Keep for speed |
-| Repository-internal “enable every guardrail” exemption | Delete |
-| Protected-file check scripts | Merge into packaged `verify`/`approve` commands |
-| Workflow baseline-growth step | Replace with external protected-file status |
+| `Axial.Guardrails.toml` | Rule levels, project roles, role rule sets, exact boundary files, baseline path, and protected-file additions |
+| `Axial.Guardrails.baseline` | Existing findings accepted only for migration; entries may disappear but never be added |
+| `Axial.Guardrails.lock` | SHA-256 checksums of policy-bearing files plus test-ratchet counts |
 
-## Rules for LLM-generated code
+Use **TOML**, not JSON, for the config. TOML supports comments, readable tables, and small hand-edited diffs without inventing a JSON comment convention. The parser accepts one versioned, closed schema: unknown keys, duplicate declarations, unknown rules, unmatched project paths, and invalid levels fail the build.
 
-Ranked candidates:
+There is no signing, approval file, `CI=true` behavior, environment switch, or MSBuild switch. Local builds and CI read the same files and enforce the same policy. An agent can run the lock command; the design does not pretend otherwise. Its purpose is to make policy changes conspicuous, make accidental edits fail immediately, and give agent hooks a simple set of files to block before editing.
 
-| Rank | Rule | Failure prevented | Precision / fix / expected false positives |
-| --- | --- | --- | --- |
-| 1 | Discarded effect value | `Flow`, `Task`, `ValueTask`, `Async`, or `Result` is piped to `ignore`, left unbound, or fire-and-forget | Typed analysis is precise; suggest `let!`, `do!`, return, join, or scoped fork, but no universal fix. Low FP; allow explicit boundary suppression. |
-| 2 | Swallowed failure | `with _ -> ()`, catch-all returning success, or `Flow.catchAll` discarding cause | Typed AST identifies handlers and result type. No safe fix beyond preserving/rethrowing/cause mapping. Low-medium FP, mostly boundary code. |
-| 3 | Shipped placeholder | `NotImplementedException`, TODO `failwith`, and TODO/FIXME markers under production paths | Syntax/text is precise when paths are explicit. Mechanical removal is unsafe. Very low FP. |
-| 4 | Blocking or unbounded work in Flow | `.Result`, `.Wait`, `Thread.Sleep`, input-sized unbounded parallel traversal, or retry recursion without schedule/budget | Blocking calls are already precise and should be extended; parallel/budget analysis needs Axial API symbols and conservative data flow. Fix blocking sleep to Clock APIs where mechanical. Low FP for blocking, medium for bounds. |
-| 5 | Test integrity ratchet | Fewer discovered tests/assertions, assertion-free tests, skipped tests, or weakened assertion calls | Typed analysis catches assertion-free/skip attributes; a signed inventory records counts per project. “Weakened” semantics are not reliably inferable. No safe fix. Low-medium FP. Inventory decrease is a protected edit. |
-| 6 | Unsafe shared mutation | mutable/ref captured and written by parallel branches | Requires closure and concurrency data flow; useful but costly and aliasing causes misses/FPs. No fix. Medium FP. |
-| 7 | Library error-channel smell | `exn` or `string` used as public `Flow` error | Signature analysis is precise, but adapters and tiny libraries have legitimate uses. Suggest a domain DU, no automatic fix. Medium FP. |
-| 8 | Brittle union wildcard | wildcard match over a project-owned DU | Typed analysis is precise; replace with explicit cases only when generated safely. Medium FP because intentional defaults exist. |
-| 9 | Nondeterministic tests | real clock/sleep or waits without timeout in tests | Symbol matching is precise for known calls; boundedness needs local flow analysis. Replace sleeps with test clock when obvious. Low-medium FP. |
+## Policy model
 
-Build ranks 1–4 first, then rank 5. They cover the highest-impact agent behaviors—ignored work, hidden failures, placeholders, hangs/resource blowups—and mostly rely on typed symbols rather than naming heuristics. Delay shared-mutation and semantic assertion weakening until data-flow prototypes show acceptable precision. Test deletion itself cannot be inferred reliably from one tree; the signed test inventory makes a decrease visible and human-approved without pretending to understand intent.
+### Rule levels
+
+| Level | Build behavior | Source suppression |
+| --- | --- | --- |
+| `allow` | Rule does not report | Not applicable |
+| `warn` | Diagnostic is a warning | Allowed only under the suppression rules below |
+| `deny` | Diagnostic fails the build | Allowed only under the suppression rules below |
+| `forbid` | Diagnostic fails the build and cannot be suppressed in source | Never allowed |
+
+Precedence is deliberately small: a project receives its role's rule set, then an explicit per-project override may make a rule stricter or looser. `forbid` is terminal: no project override, baseline entry, or source comment lowers it. Every effective level is explainable from the config; project names, references, output type, test SDK, and directory names never infer a role.
+
+### Roles and projects
+
+Typical roles are `domain`, `boundary`, `host`, and `test`, but names are repository-defined. Each project is assigned exactly one role by repository-relative project path. Shared defaults can be expressed once in a role table.
+
+```toml
+version = 2
+baseline = "Axial.Guardrails.baseline"
+
+[roles.domain.rules]
+"effects.ambient" = "forbid"
+"domain.async-return" = "deny"
+"domain.whole-environment" = "deny"
+"domain.service-provider" = "deny"
+"domain.boolean-blindness" = "warn"
+
+[roles.boundary.rules]
+"effects.ambient" = "deny"
+"domain.boolean-blindness" = "warn"
+
+[roles.host.rules]
+"effects.ambient" = "deny"
+
+[roles.test.rules]
+"effects.ambient" = "warn"
+"test.integrity" = "deny"
+
+[projects."src/Orders/Orders.fsproj"]
+role = "domain"
+
+[projects."src/Orders.Sql/Orders.Sql.fsproj"]
+role = "boundary"
+boundary_files = ["Repository.fs"]
+
+[projects."src/App/App.fsproj"]
+role = "host"
+boundary_files = ["Program.fs"]
+```
+
+Paths are slash-normalized, repository-relative, case-sensitive identifiers. Project declarations and boundary entries are exact paths, not globs. The tool resolves paths and rejects repository escapes and symlinks that escape the root.
+
+### Role allowlists
+
+Role checks operate at both project-reference and typed-symbol levels so aliases and fully qualified names behave identically.
+
+| Constraint | Enforcement |
+| --- | --- |
+| Only `boundary` and `host` projects may reference `System.IO`, `System.Net`, or configured database-client assemblies | Inspect resolved compiler references; report the project file and disallowed assembly. Also inspect typed symbols so framework facade references do not hide usage. |
+| `domain` projects may not return `Task`, `ValueTask`, or `Async` from public or internal functions/members | Typed signature analysis, including abbreviations and generic nesting; `Flow` remains the workflow return type. |
+| `domain` projects may not call `Flow.env` | Resolved-symbol match. `Flow.envWith` remains the narrow projection API. |
+| `domain` projects may not call `ServiceProvider.get` | Resolved-symbol match. Dynamic lookup remains a host-boundary escape hatch. |
+
+The assembly list is explicit and extensible. Initial database entries cover `System.Data.Common`, `System.Data.SqlClient`, `Microsoft.Data.SqlClient`, `Npgsql`, and other configured providers. A domain project cannot evade the rule by using `DbConnection` instead of a concrete provider.
+
+### Suppressions and baseline
+
+Suppression syntax remains expect-style: `// axial-allow-AXG001: live clock implementation` or the rule's future stable ID. Every directive requires an exact rule ID and non-empty reason. It is accepted only in an exact `boundary_files` entry. The analyzer emits an error for malformed, unknown, misplaced, non-boundary, or stale suppressions. `forbid` findings reject suppressions even in boundary files.
+
+The baseline stores canonical rule ID, repository-relative file, stable finding fingerprint, and duplicate count. A baseline finding is downgraded to a warning so debt remains visible. The analyzer errors on stale or malformed entries. `axial-guardrails lock` may preserve or remove baseline entries but refuses any new fingerprint or increased count relative to the existing lock. Initial v2 migration is the one bootstrap operation that records existing debt; after that, the baseline can only shrink.
+
+## Policy lock
+
+`Axial.Guardrails.lock` contains a format version, sorted `SHA256  path` records, the baseline fingerprint/count set, and test counts by project. It is deterministic and has no signature or identity data.
+
+The mandatory protected set is:
+
+| Protected input | Why it is policy-bearing |
+| --- | --- |
+| `Axial.Guardrails.toml` and `Axial.Guardrails.baseline` | Selects policy, roles, boundaries, suppressible debt |
+| `Directory.Build.props` and `Directory.Build.targets` | Can remove or bypass analyzer execution |
+| Repository and project `.editorconfig` files | Can change diagnostic severity |
+| Analyzer config files (`*.globalconfig`, configured analyzer files) | Can change analyzer behavior or severity |
+| Every project file that builds Guardrails tests | Can remove tests or fixtures from the safety net |
+| Additional exact paths declared in TOML | Lets a repository protect its own enforcement inputs |
+
+The config can add protected paths but cannot remove the mandatory set. The lock does not checksum source boundary files: adding a boundary or suppression changes TOML or suppression totals and appears in the policy summary, while ordinary implementation edits remain ordinary edits.
+
+Before analyzer execution, the packaged build target hashes the protected set and compares it with the lock. Missing, extra, or changed records fail the build. The failure prints a loud, deterministic summary rather than only “checksum mismatch”:
+
+```text
+AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED
+  rules downgraded:       domain / domain.async-return: deny -> warn
+  baseline entries added: 1 (not permitted)
+  suppressions added:     2
+  boundaries added:       src/Orders.Sql/Unsafe.fs
+  protected files changed: Axial.Guardrails.toml, Orders.Guardrails.Tests.fsproj
+Review with a human; then run: axial-guardrails lock
+```
+
+`axial-guardrails lock` parses old and new policy, type-checks its invariants, scans suppressions, counts tests, prints the same summary, and asks for explicit confirmation when interactive (or requires `--accept-policy-change` when non-interactive). It **never** accepts baseline growth or a test-count decrease. It then atomically rewrites the lock. Rule downgrades, new boundaries, and new suppressions are permitted only through this explicit command and stay prominent in its output and diff.
+
+CI runs the normal build check and always reports total suppression count, broken down by rule and project. The count is informational; new suppressions are governed by the changed lock and summary, not by CI-only logic.
+
+## Rules, ordered by benefit versus cost
+
+Implement rules in this order. “Typed” means resolved F# symbols or checked signatures, not source-name matching.
+
+| Rank | Rule | Precision and implementation | Fix availability | Expected cost |
+| ---: | --- | --- | --- | --- |
+| 1 | Ambient I/O catalog expansion | Typed constructor/member matches for path-based `FileStream`, `StreamReader`, `StreamWriter`; `NetworkStream`; `Socket`, `TcpClient`, `UdpClient`, `TcpListener`; `DbConnection` and provider connections including `SqlConnection` and `NpgsqlConnection`. Match inheritance where appropriate. | Suggest the owning explicit service; no general rewrite because dependency plumbing changes signatures. | One symbol walk already shared with AXG001; low. |
+| 2 | Role assembly allowlists | Compiler-reference check plus typed usage check for `System.IO`, `System.Net`, and database clients. Exact role comes from config. | Remove the reference or move the adapter to a boundary/host project; no automatic move. | Reference scan is near-zero; symbol check reuses rank 1. |
+| 3 | Discarded computations | Typed detection when `Flow`, `Task`, `ValueTask`, `Async`, or `Result` is piped to `ignore`, used as a statement, or otherwise discarded. Exclude explicit ownership APIs. | Contextual suggestions: `let!`, `do!`, return, join, or scoped fork; no universal edit. | Low; local typed expressions. |
+| 4 | Domain return and access bans | Typed signatures detect domain functions/members returning `Task`/`ValueTask`/`Async`; resolved calls detect `Flow.env` and `ServiceProvider.get`. | Suggest `Flow`, `Flow.envWith`, or explicit host wiring. Signature conversion is manual. | Low. |
+| 5 | Swallowed failures | Typed handler analysis for `with _ -> ()`, catch-all success, ignored `Result.Error`, and `Flow.catchAll` handlers that erase the cause. Restrict to provable success/ignore shapes. | Suggest rethrow, typed failure, or cause mapping; no safe automatic edit. | Low-medium; local control flow. |
+| 6 | Shipped placeholders | Syntax plus source trivia for `NotImplementedException`, placeholder `failwith`/`failwithf`, and TODO/FIXME in production-role projects. Avoid ordinary descriptive comments by requiring configured markers or known placeholder expressions. | No safe fix. | Very low. |
+| 7 | Raise through helper from Flow | Build a per-project call graph from each `flow {}` body. Follow statically resolved same-project functions/members up to 3 edges; report paths ending in `raise`, `reraise`, `failwith`, `failwithf`, `invalidArg`, or `invalidOp`. Do not chase interfaces, virtual dispatch, function values, or other assemblies. Cache summaries per declaration. | Suggest `Flow.fail`/`Flow.die` at the source; automatic fix only for direct standalone calls already handled by AXG003. | Medium but bounded; no whole-solution fixed point. |
+| 8 | Construction bypasses | Typed/syntax checks for `Unchecked.defaultof`, `FSharpValue.Make*`, `[<CLIMutable>]` on domain types, and mutable fields in domain records/classes/unions. Allow compiler/generated code by explicit path, not inference. | Remove bypass, expose a smart constructor, or move serialization DTO to a boundary; no automatic rewrite. | Low-medium. |
+| 9 | Blocking and unbounded work | Extend typed blocking checks; detect known unbounded parallel traversal over input-sized collections and retry recursion lacking a `Schedule`, bound, timeout, or decreasing constant. Keep speculative cases at `warn`. | Mechanical replacement for `Thread.Sleep` where context supports `Flow.sleep`; otherwise guidance only. | Low for blocking, medium for bounded local data flow. |
+| 10 | Boolean blindness | Warning for domain records with at least two `bool` fields, or several `option` fields used predominantly as presence flags. Require evidence from field types/usages; do not flag configuration/DTO roles. | Suggest a named union with explicit states; no automatic schema rewrite. | Low-medium; one type/use index. |
+| 11 | Test integrity ratchet | Detect skipped tests and assertion-free test bodies using known test/assertion symbols. Store discovered test and assertion counts per test project in the lock; lock refuses decreases. | Remove skip/add assertions; count changes are manual. | Low; test projects only. |
+
+Rules 1–6 provide the best precision and feedback per millisecond. Rules 7, 9's boundedness checks, and 10 ship initially as warnings until corpus measurements establish false-positive rates. Test “weakening” beyond known removed assertions is not inferred; the count ratchet exposes a decrease without claiming to understand intent.
+
+## Agent pack
+
+The NuGet package includes templates and `axial-guardrails agents install [claude|codex|pi|all]`. Installation merges tool-native configuration where supported, writes a small versioned hook script under `.axial/guardrails/`, and prints the exact files changed. Re-running is idempotent; `--check` reports drift without editing.
+
+| Agent | Installed integration | Behavior before an edit |
+| --- | --- | --- |
+| Claude Code | `.claude/settings.json` `PreToolUse` hooks for edit/write and shell commands | Rejects direct edits to protected paths and shell redirections/moves that target them. |
+| Codex | Repository-supported command/hook configuration plus the shared blocker script | Rejects protected-path writes before tool execution; where a Codex version lacks pre-tool hooks, install instructions require its sandbox deny list and state that coverage is weaker. |
+| pi | A packaged pi extension registering the pre-tool-call hook | Rejects edit/write calls and obvious shell writes to protected paths. |
+| All | An `AGENTS.md` section generated between stable markers | Tells agents not to edit policy files, to ask the human, and names `axial-guardrails lock` as a human-reviewed operation. |
+
+The rejection says: `Guardrails policy file <path> is human-controlled. Do not edit or run axial-guardrails lock; explain the required policy change to the human.` Hooks also block invoking `axial-guardrails lock` by default. A human can temporarily disable or bypass an agent hook according to that agent's own mechanism.
+
+Hooks are convenience controls, not a security boundary: shell parsing is incomplete, agents change, and an agent may alter hook configuration. They block common mistakes earlier; the packaged build checksum check remains authoritative.
+
+## Current-state transition
+
+| Current item | Today | V2 action |
+| --- | --- | --- |
+| AXG001 | Typed ambient-effect catalog: random/secure random, GUID, clocks/time zone, environment, delays/sleep, blocking waits, console, `File`/`Directory`/watcher, process start, WebSocket, `HttpClient`, scope marker | **Keep and widen** with stream, socket/network, and database construction; split stable rule IDs where levels need independent control. |
+| AXG002 | Validates rule-specific reasoned suppressions, declared boundaries, placement, and staleness | **Keep**, add `forbid` rejection and TOML exact-boundary source. |
+| AXG003 | Detects direct raise/fail helpers inside flow expressions | **Keep and extend** with bounded same-project helper-call analysis. |
+| AXG004 | Rejects shared module-level test fixtures | **Keep**, select through the explicit test role rather than inferred test-project state. |
+| AXG005 | Detects discarded cancellation tokens in task adapters; currently omitted in tests | **Keep**, make applicability part of role policy rather than `IsTestProject` inference. |
+| AXG006 | Detects reflection-dependent formatting for NativeAOT/trimming | **Keep**, remove MSBuild `nativeAot` policy input; configure level by role/project. |
+| AXG007 | Detects resources acquired and returned from a settling fiber | **Keep** unchanged apart from common policy/suppression plumbing. |
+| AXG008 | Detects scope-owned services returned after a run closes | **Keep** unchanged apart from common policy/suppression plumbing. |
+| Built-in effect catalog and package guardrail groups | Rules enabled by `AxialGuardrail`/`AxialGuardrailRule` MSBuild items | **Merge** into the versioned catalog selected by TOML rule IDs and role sets; package metadata may discover rules but cannot set policy. |
+| Boundary declarations | `AxialGuardrailsBoundary` MSBuild items; globs can expand | **Merge** into exact TOML project-relative files; delete the MSBuild item as policy. |
+| Baseline | Stable fingerprints/counts; matched findings become warnings | **Keep** format semantics; lock bootstrap records the initial set, then growth is impossible. |
+| Candidate baseline generation | MSBuild generation mode and output properties | **Replace** with explicit `axial-guardrails baseline` migration command; unavailable after lock bootstrap except to remove stale entries. |
+| Baseline growth CI script/test | Compares current baseline with a Git base | **Merge** invariant into lock verification; delete history-dependent script and CI step. |
+| Suppressions | Rule ID plus reason, boundary-only; AXG002 checks stale entries | **Keep**, count in lock summary and CI report. |
+| Severity/enabled/test/AOT switches | MSBuild properties, generated TSV config, `AXIAL_GUARDRAILS_CONFIG`, and some inferred project state | **Delete** as policy inputs; TOML is the only source. Keep only private packaging paths needed to launch the analyzer. |
+| CI checks | Normal builds run analyzer; CI separately checks baseline growth; verification tests grammar and package wiring | **Merge** into identical local/CI lock validation plus analyzer execution; CI additionally prints suppression totals. |
+| Incremental analyzer inputs | Targets fingerprint analyzer/config inputs to avoid unnecessary runs | **Keep**, adding TOML, baseline, lock, and protected hashes as deterministic inputs. |
+
+## Delivery plan and performance budget
+
+| Phase | Work | Exit criteria | Added warm-build cost target |
+| --- | --- | --- | ---: |
+| 1 — core simplification | Add strict TOML schema and roles; add deterministic lock command/check; move levels, boundaries, baseline, test selection, and AOT selection out of MSBuild/environment state; preserve AXG001–AXG008; delete old switches and baseline-growth script after dual-run migration. | Identical policy locally and in CI; lock mismatch summary covers downgrades, baseline/suppression/boundary changes; baseline growth is rejected. | Hashing/parsing under 25 ms typical, under 100 ms for Axial; no extra project type-check. |
+| 2 — rules | Implement ranks 1–6, then 7–11. Reuse one typed walk and declaration summary index. Measure warning candidates on Axial and downstream repos before raising defaults. | Every rule has positive/negative tests, role tests, suppression tests, measured false positives, and documented fix guidance. | Ranks 1–6 under 5% analyzer-time increase; all rules under 15%, with no additional compiler invocation. |
+| 3 — agent pack and ratchet | Ship Claude/Codex/pi installers and AGENTS section; lock test/assertion counts; CI suppression report; test hook messages and idempotent installation. | Common policy edits are blocked before execution, build still catches bypasses, test decreases fail lock generation, install/check works offline. | Hooks under 50 ms per tool call; count/suppression scans folded into lock/analyzer pass, under 25 ms warm. |
 
 ## Migration
 
-1. Release the verifier and config schema; generate config and initial approval records with the owner's hardware key.
-2. Install the external status/ruleset before deleting existing checks. Run both for one release.
-3. Convert boundaries, enabled package guardrails, baseline location, test selection, and AOT selection into config; then delete old knobs/scripts.
-4. For **gitkay**, remove its severity pin, migrate its 17 suppressions to rule-specific reasons, classify exact boundaries, baseline remaining adoption debt, and sign config/baseline/boundary hashes.
-5. For **LogDug**, remove its severity pin, migrate the two suppressions in `Program.fs` and `Runtime.fs`, declare only genuine boundaries, baseline the rest, and sign.
-6. Each downstream repository establishes its own signer identity and external trust anchor; do not copy Axial's authority unless the same human intentionally owns policy for all three.
+| Repository | Migration steps |
+| --- | --- |
+| Axial | Generate explicit role assignments for every project; translate enabled guardrails and exact boundaries; create the one-time baseline bootstrap; lock mandatory policy/test files; run old and new checks together for one phase; then remove MSBuild/environment policy and baseline-growth CI. |
+| gitkay | Remove severity pins; assign domain/boundary/host/test roles; convert its 17 suppressions to exact IDs with reasons and exact boundary files; bootstrap existing findings once; install all applicable agent hooks. |
+| LogDug | Remove severity pins; classify `Program.fs` and `Runtime.fs` rather than automatically treating both as boundaries; migrate the two suppressions with reasons; bootstrap remaining debt; install hooks. |
+| validstate template | Ship TOML with explicit template project roles, an empty baseline, generated lock, Guardrails test project, agent-pack installation instructions, and no machine-dependent switches. Generated applications replace template paths during creation and run `axial-guardrails lock` once. |
+
+Migration tooling may create the first lock from an existing baseline and test inventory. That bootstrap is explicit and noisy, but it is not a permanent escape hatch. After bootstrap, baseline debt only moves downward and test counts do not move downward; intentional structural policy changes remain possible through the explicit lock command and visible summary.
