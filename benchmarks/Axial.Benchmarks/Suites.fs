@@ -382,7 +382,7 @@ type BoundedTraversalBenchmarks() =
     let cpu value =
         Flow.delay (fun () ->
             let mutable result = value
-            for index in 1..2_000_000 do
+            for index in 1..350_000 do
                 result <- (result + index) % 1_000_003
             Flow.ok result)
 
