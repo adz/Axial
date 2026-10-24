@@ -50,9 +50,11 @@ Durable decisions remain in `dev-docs/decisions/README.md`; current work belongs
   tail. Readable unmerged stderr uses separate 64 KiB diagnostic tails. Stdout helpers affect stdout only; stderr has
   named helpers. `mergeStderr` is explicit. Connected and inherited channels have unavailable capture metadata.
 - `IProcess.Execute` is the one mockable effect, with awaited output observation and final completion. The live
-  implementation injects clock, filesystem, and console services. Timers and durations use the injected clock;
-  stage deadlines start at individual native launch and end at native exit, overall deadlines cover drain and
-  completion-aware callbacks, and drain deadlines start when all directly managed processes exit.
+  implementation is a scoped Flow program with one queue-driven coordinator owning stop state and the escalation
+  ladder; process monitors, timers, stdin feeders, and output pumps are supervised fibers. It injects clock,
+  filesystem, and console services. Timers and durations use the injected clock; stage deadlines start at individual
+  native launch and end at native exit, overall deadlines cover drain and completion-aware callbacks, and drain
+  deadlines start when all directly managed processes exit.
 - `ProcessStream` wraps FlowStream with completion tracking and uses Axial's existing supervised runtime. Its
   constructors require `IHasProcess` and `IHasClock`. Natural completion is `Completed result`; owned prefix stopping
   awaits cleanup and returns `StoppedEarly`; caller cancellation stays interruption. Effectful terminals preserve
