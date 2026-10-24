@@ -375,17 +375,25 @@ module WorkflowConcurrencyTests =
 
     [<Fact>]
     let ``Blocking work runs to completion when interrupted and reports the interruption`` () =
-        use cts = new CancellationTokenSource(TimeSpan.FromMilliseconds 20.0)
+        use cts = new CancellationTokenSource()
+        use started = new ManualResetEventSlim(false)
         let finished = ref false
 
-        let exit : Exit<unit, string> =
-            Flow.fromBlocking (fun token ->
-                while not token.IsCancellationRequested do
-                    Thread.Sleep 5
+        let running =
+            Task.Run(fun () ->
+                Flow.fromBlocking (fun token ->
+                    started.Set()
 
-                finished.Value <- true
-                token.ThrowIfCancellationRequested())
-            |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token
+                    while not token.IsCancellationRequested do
+                        Thread.Sleep 5
+
+                    finished.Value <- true
+                    token.ThrowIfCancellationRequested())
+                |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cts.Token)
+
+        test <@ started.Wait(TimeSpan.FromSeconds 10.0) @>
+        cts.Cancel()
+        let exit : Exit<unit, string> = running.GetAwaiter().GetResult()
 
         test <@ exit = Exit.Failure Cause.Interrupt @>
         test <@ finished.Value @>
