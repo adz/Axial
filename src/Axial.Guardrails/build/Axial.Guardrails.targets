@@ -66,6 +66,11 @@
     <GetFileHash Files="@(_AxialGuardrailsVolatileSource)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsVolatileSource)' != ''">
       <Output TaskParameter="Items" ItemName="_AxialGuardrailsVolatileSourceHash" />
     </GetFileHash>
+    <!-- Reference outputs may be rewritten with a fresh timestamp by an otherwise no-op project-reference build.
+         Hash their deterministic contents so that such rewrites do not invalidate the analysis result. -->
+    <GetFileHash Files="@(_AxialGuardrailsReferenceInputs)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsReferenceInputs)' != ''">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsReferenceHash" />
+    </GetFileHash>
     <ItemGroup>
       <_AxialGuardrailsFingerprintLine Include="TargetFramework=$(TargetFramework)" />
       <_AxialGuardrailsFingerprintLine Include="DefineConstants=$(DefineConstants)" />
@@ -75,7 +80,7 @@
       <_AxialGuardrailsFingerprintLine Include="WarningsNotAsErrors=$(WarningsNotAsErrors)" />
       <_AxialGuardrailsFingerprintLine Include="NoWarn=$(NoWarn)" />
       <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsSourceInputs->'source=%(FullPath)')" />
-      <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsReferenceInputs->'reference=%(FullPath)|%(ModifiedTime)')" />
+      <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsReferenceHash->'reference=%(FullPath)|%(FileHash)')" />
       <_AxialGuardrailsFingerprintLine Include="@(EditorConfigFiles->'analyzerConfig=%(FullPath)')" />
       <_AxialGuardrailsFingerprintLine Include="@(AnalyzerConfigFiles->'analyzerConfig=%(FullPath)')" />
       <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsVolatileSourceHash->'volatileSource=%(FullPath)|%(FileHash)')" />
@@ -168,7 +173,7 @@
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '')"
-          Inputs="@(_AxialGuardrailsSourceInputs);@(_AxialGuardrailsReferenceInputs);@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsConfigFile);$(_AxialGuardrailsFingerprintFile);@(_AxialGuardrailsToolInputs)"
+          Inputs="@(_AxialGuardrailsSourceInputs);@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsConfigFile);$(_AxialGuardrailsFingerprintFile);@(_AxialGuardrailsToolInputs)"
           Outputs="$(_AxialGuardrailsStampFile)">
     <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')"
            Text="Axial.Guardrails analyzer folder is missing or incomplete: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />

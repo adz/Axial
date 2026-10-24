@@ -273,11 +273,52 @@ module PackagePropsTests =
             assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
 
             File.SetLastWriteTimeUtc(reference, DateTime.UtcNow.AddSeconds(2.0))
+            assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+            File.Copy(Path.Combine(analyzersPath (), "Axial.Guardrails.Analyzers.dll"), reference, true)
             assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
             assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
 
             File.WriteAllText(toolMarker, "v2")
             assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
             assertAnalysisRan false (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``project reference content invalidates analysis without volatile timestamp invalidation`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-project-reference-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            let dependencyDir = Path.Combine(dir, "Dependency")
+            let consumerDir = Path.Combine(dir, "Consumer")
+            Directory.CreateDirectory dependencyDir |> ignore
+            Directory.CreateDirectory consumerDir |> ignore
+            File.WriteAllText(
+                Path.Combine(dependencyDir, "Dependency.fsproj"),
+                "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>\n  <ItemGroup><Compile Include=\"Dependency.fs\" /></ItemGroup>\n  <!-- Model project outputs whose build rewrites their timestamp despite identical deterministic bytes. -->\n  <Target Name=\"RewriteOutputTimestamp\" AfterTargets=\"Build\"><Touch Files=\"$(TargetPath)\" /></Target>\n</Project>\n")
+            let dependencySource = Path.Combine(dependencyDir, "Dependency.fs")
+            File.WriteAllText(dependencySource, "namespace Dependency\nmodule Values =\n    let answer () = 1\n")
+            writeConsumerProject consumerDir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet value = Dependency.Values.answer ()\n"
+            let consumerProject = Path.Combine(consumerDir, "Consumer.fsproj")
+            let xml = File.ReadAllText consumerProject
+            let dependencyProject = Path.Combine(dependencyDir, "Dependency.fsproj") |> xmlEscape
+            let projectReference =
+                $"    <ProjectReference Include=\"{dependencyProject}\" />\n"
+            File.WriteAllText(consumerProject, xml.Replace("    <Compile Include=\"Program.fs\" />", "    <Compile Include=\"Program.fs\" />\n" + projectReference))
+
+            let build () = runBuild consumerProject None None None false false None
+            assertAnalysisRan true (build ())
+            // Dependency.dll is rewritten by the project-reference build, but identical deterministic bytes keep the cache stable.
+            assertAnalysisRan false (build ())
+
+            File.WriteAllText(dependencySource, "namespace Dependency\nmodule Values =\n    let answer () = 1\n    let publicValue = 2\n")
+            assertAnalysisRan true (build ())
+            assertAnalysisRan false (build ())
+
+            // A body-only edit also changes the implementation assembly hash. Reanalysis is intentionally conservative:
+            // inline/member bodies and other implementation metadata can affect F# type checking and analyzer behaviour.
+            File.WriteAllText(dependencySource, "namespace Dependency\nmodule Values =\n    let answer () = 2\n    let publicValue = 2\n")
+            assertAnalysisRan true (build ())
+            assertAnalysisRan false (build ())
         finally
             Directory.Delete(dir, true)
