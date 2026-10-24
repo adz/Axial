@@ -878,13 +878,17 @@ module internal ProcessRun =
                     |> Flow.onExit stopWorkerFailure
                     |> Flow.forkNamed "process-io"
                 let! inputFiber =
-                    inputFibers
-                    |> Seq.map awaitInput
-                    |> List.ofSeq
-                    |> Flow.sequencePar
-                    |> Flow.ignore
-                    |> Flow.onExit stopWorkerFailure
-                    |> Flow.forkNamed "process-inputs"
+                    if inputFibers.Count = 0 then
+                        Flow.succeed None
+                    else
+                        inputFibers
+                        |> Seq.map awaitInput
+                        |> List.ofSeq
+                        |> Flow.sequencePar
+                        |> Flow.ignore
+                        |> Flow.onExit stopWorkerFailure
+                        |> Flow.forkNamed "process-inputs"
+                        |> Flow.map Some
                 let! monitorFibers =
                     [ 0 .. processes.Count - 1 ]
                     |> Flow.traverse (monitor >> Flow.fork)
@@ -903,7 +907,9 @@ module internal ProcessRun =
                         let finishIo =
                             flow {
                                 do! Fiber.join ioFiber
-                                do! Fiber.join inputFiber
+                                match inputFiber with
+                                | Some feeder -> do! Fiber.join feeder
+                                | None -> ()
                             }
 
                         match specification.DrainTimeout with

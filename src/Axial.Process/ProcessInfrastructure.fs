@@ -257,14 +257,18 @@ type internal CaptureBuffer(policy: OutputRetention, available: bool) =
     let gate = obj ()
     let mutable truncated = false
     let mutable tailBytes: byte array = [||]
-    let stream = new MemoryStream()
+    let stream =
+        match policy with
+        | OutputRetention.All -> Some(new MemoryStream())
+        | _ -> None
 
     member _.Append(chunk: byte array) =
         lock gate (fun () ->
-            match policy with
-            | OutputRetention.All -> stream.Write(chunk, 0, chunk.Length)
-            | OutputRetention.Nothing -> truncated <- truncated || chunk.Length > 0
-            | OutputRetention.Tail limit ->
+            match policy, stream with
+            | OutputRetention.All, Some output -> output.Write(chunk, 0, chunk.Length)
+            | OutputRetention.All, None -> ()
+            | OutputRetention.Nothing, _ -> truncated <- truncated || chunk.Length > 0
+            | OutputRetention.Tail limit, _ ->
                 if chunk.Length >= limit then
                     truncated <- truncated || tailBytes.Length + chunk.Length > limit
                     tailBytes <- if limit = 0 then [||] else chunk[chunk.Length - limit ..]
@@ -284,7 +288,7 @@ type internal CaptureBuffer(policy: OutputRetention, available: bool) =
         lock gate (fun () ->
             let bytes =
                 match policy with
-                | OutputRetention.All -> stream.ToArray()
+                | OutputRetention.All -> stream.Value.ToArray()
                 | _ -> tailBytes
 
             {
@@ -295,7 +299,7 @@ type internal CaptureBuffer(policy: OutputRetention, available: bool) =
             })
 
     interface IDisposable with
-        member _.Dispose() = stream.Dispose()
+        member _.Dispose() = stream |> Option.iter _.Dispose()
 #endif
 
 #endif
