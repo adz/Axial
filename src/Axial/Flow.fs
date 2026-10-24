@@ -1375,6 +1375,7 @@ module Flow =
     type private GracefulStop<'env> = { Stop: Flow<'env, Never, unit>; Grace: TimeSpan }
 
     let private forkWith<'env, 'error, 'value, 'none when 'env :> IHasClock>
+        (owned: bool)
         (name: string option)
         (graceful: GracefulStop<'env> option)
         (flow: Flow<'env, 'error, 'value>)
@@ -1402,13 +1403,17 @@ module Flow =
 
             let tracker = FiberDefectTracker(metadata, observer)
 
-            // Everything the fiber acquires belongs to its own scope, which closes when the fiber settles, so a
-            // forked consumer's subscriptions and resources end with it. The scope is a child of the forking scope,
-            // registered before the fiber's interruption below: closing the parent interrupts the fiber first, then
-            // closes the fiber's scope if the fiber has not already done so. A parent that has already closed
-            // leaves the fiber a scope of its own.
+            // Everything the fiber acquires belongs to its own scope, which closes when the fiber settles. An owned
+            // fiber's scope is a child of the forking scope; an explicitly unowned internal fiber is managed by the
+            // caller through its handle and keeps an independent scope.
             let fiberScope =
-                parentRuntime.Scope.TryAddChild() |> ValueOption.defaultWith (fun () -> new Scope())
+                if owned then
+                    parentRuntime.Scope.TryAddChild() |> ValueOption.defaultWith (fun () -> new Scope())
+                else
+                    new Scope()
+
+            let registrationScope =
+                if owned then parentRuntime.Scope else new Scope()
 
             let childRuntime =
                 parentRuntime
@@ -1427,7 +1432,7 @@ module Flow =
 
             let releaseRegistration () =
                 match registration.Value with
-                | ValueSome key -> parentRuntime.Scope.Unregister key
+                | ValueSome key -> registrationScope.Unregister key
                 | ValueNone -> ()
 
             // A graceful fiber is not tied to the forking flow's cancellation: its stop runs when the forking scope
@@ -1483,7 +1488,7 @@ module Flow =
             try
 #if FABLE_COMPILER
                 let key =
-                    parentRuntime.Scope.Register(fun _ -> async {
+                    registrationScope.Register(fun _ -> async {
                         let stopFailure = ref None
 
                         match graceful with
@@ -1521,7 +1526,7 @@ module Flow =
                 let weakTracker = WeakReference<FiberDefectTracker>(tracker)
 
                 let key =
-                    parentRuntime.Scope.Register(fun _ -> task {
+                    registrationScope.Register(fun _ -> task {
                         let mutable stopFailure = None
 
                         match graceful with
@@ -1595,7 +1600,7 @@ module Flow =
     /// <param name="flow">The flow to fork.</param>
     /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
     let fork (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
-        forkWith None None flow
+        forkWith true None None flow
 
     /// <summary>Starts a flow in a new fiber carrying a diagnostic name.</summary>
     /// <remarks>
@@ -1606,7 +1611,15 @@ module Flow =
     /// <param name="flow">The flow to fork.</param>
     /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
     let forkNamed (name: string) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
-        forkWith (Some name) None flow
+        forkWith true (Some name) None flow
+
+    /// Starts an observed fiber whose lifetime is explicitly managed by its caller instead of the caller's scope.
+    let internal forkUnownedNamed (name: string) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
+        Flow(fun environment cancellationToken ->
+            invoke (forkWith false (Some name) None flow) environment cancellationToken
+            |> Execution.map (fun (fiber: Fiber<'error, 'value>) ->
+                fiber.MarkObserved()
+                fiber))
 
     /// <summary>
     /// Starts a flow in a new fiber that, when its forking scope closes, is asked to stop and given time to finish
@@ -1651,7 +1664,7 @@ module Flow =
         if grace < TimeSpan.Zero then
             invalidArg (nameof grace) "A grace period cannot be negative."
 
-        forkWith None (Some { Stop = stop; Grace = grace }) flow
+        forkWith true None (Some { Stop = stop; Grace = grace }) flow
 
     /// <summary>Starts a flow in a new fiber that is deliberately never awaited.</summary>
     /// <remarks>

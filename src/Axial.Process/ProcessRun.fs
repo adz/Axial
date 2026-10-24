@@ -213,41 +213,13 @@ module internal ProcessRun =
                     commands
                     |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, int> ())
                     |> Flow.widenError
-                let needsCoordinator =
-                    commands.Length > 1
-                    || specification.OnStarted.IsSome
-                    || specification.OverallTimeout.IsSome
-                    || specification.DrainTimeout.IsSome
-                    || not specification.StopGracefully.IsEmpty
-                    || (commands |> Array.exists (fun command -> command.Timeout.Value.IsSome))
-                    || (commands
-                        |> Array.exists (fun command ->
-                            match command.StdIn.Value with
-                            | InputSource.Inherit
-                            | InputSource.Empty -> false
-                            | _ -> true))
-                    || stdoutLimit.IsSome
-                    || stderrLimit.IsSome
-                    || observesOutput
-
-                let createCommandsQueue : Flow<ClockEnvironment, Never, Queue<RunCommand> option> =
-                    Queue.unbounded () |> Flow.map Some
-
-                let! commandsQueue =
-                    if needsCoordinator then createCommandsQueue |> Flow.widenError
-                    else Flow.succeed None
-
-                let offerCommand command =
-                    match commandsQueue with
-                    | Some queue -> queue |> Queue.offer command
-                    | None -> Flow.succeed true
-
+                let! (commandsQueue: Queue<RunCommand>) = Queue.unbounded ()
                 let timerFibers = ResizeArray<Fiber<ProcessError, unit>>()
 
                 let postTimedStop cause error =
                     flow {
                         let! reply = Deferred.make<ClockEnvironment, Never, StopCause> () |> Flow.widenError
-                        let! _ = offerCommand (Stop(cause, reply))
+                        let! _ = commandsQueue |> Queue.offer (Stop(cause, reply))
                         let! winner = Deferred.await reply |> Flow.widenError
                         if winner = cause then return! Flow.fail error
                         else return! Flow.never<ClockEnvironment, ProcessError, unit>
@@ -460,7 +432,7 @@ module internal ProcessRun =
 
                 let rec coordinate () =
                     flow {
-                        let! command = Dequeue.take commandsQueue.Value
+                        let! command = Dequeue.take commandsQueue
                         match command with
                         | RegisterFeeder(stage, feeder) ->
                             let state = stages[stage]
@@ -491,20 +463,16 @@ module internal ProcessRun =
                     }
 
                 // The coordinator must outlive caller cancellation long enough for Flow.onInterrupt to post and
-                // await the stop ladder. Simple runs have no commands to coordinate and avoid this fiber entirely.
+                // await the stop ladder. Scope close shuts its queue down after the handler has finished.
                 let! coordinator =
-                    match commandsQueue with
-                    | Some queue ->
-                        coordinate ()
-                        |> Flow.forkGraceful (Dequeue.shutdown queue) (TimeSpan.FromSeconds 5.0)
-                        |> Flow.map Some
-                    | None -> Flow.succeed None
+                    coordinate ()
+                    |> Flow.forkGraceful (Dequeue.shutdown commandsQueue) (TimeSpan.FromSeconds 5.0)
 
                 let requestStop cause =
                     flow {
                         let! reply = Deferred.make<ClockEnvironment, Never, StopCause> ()
                         let! offered =
-                            (offerCommand (Stop(cause, reply)) |> Flow.map Some)
+                            (commandsQueue |> Queue.offer (Stop(cause, reply)) |> Flow.map Some)
                             |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed None)
                         match offered with
                         | Some _ -> return! Deferred.await reply
@@ -515,7 +483,7 @@ module internal ProcessRun =
                     let requestFlow =
                         flow {
                             let! reply = Deferred.make<ClockEnvironment, StopRequestError, unit> ()
-                            let! _ = offerCommand (Close(stage, request, reply))
+                            let! _ = commandsQueue |> Queue.offer (Close(stage, request, reply))
                             return!
                                 Deferred.await reply
                                 |> Flow.map (fun () -> Ok ())
@@ -552,7 +520,7 @@ module internal ProcessRun =
                         flow {
                             elapsedEnds[stage] <- Some(clock.Elapsed())
                             Deferred.succeedNow code exits[stage] |> ignore
-                            let! _ = offerCommand (Exited(stage, code))
+                            let! _ = commandsQueue |> Queue.offer (Exited(stage, code))
                             return ()
                         })
 
@@ -782,52 +750,7 @@ module internal ProcessRun =
                                 |> mapInputFailure
                                 |> Flow.localEnv (fun (_: ClockEnvironment) -> ())
 
-                            // A foreign source may ignore interruption. Give it 250 ms to settle, then let the
-                            // feeder fiber finish while a continuation observes and disposes the detached run.
-                            Flow.fromTask (fun token -> task {
-                                let sourceCancellation = new CancellationTokenSource()
-                                let pumping =
-                                    Async.StartAsTask(
-                                        Flow.toAsync clockEnvironment work,
-                                        cancellationToken = sourceCancellation.Token
-                                    )
-                                let canceled = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-                                use _registration = token.Register(fun () -> canceled.TrySetResult() |> ignore)
-                                let! first = Task.WhenAny(pumping :> Task, canceled.Task)
-                                if obj.ReferenceEquals(first, pumping) then
-                                    let! outcome =
-                                        if pumping.IsCanceled then
-                                            Task.FromResult(Exit.Failure Cause.Interrupt)
-                                        else
-                                            pumping
-                                    sourceCancellation.Dispose()
-                                    return outcome
-                                else
-                                    ThreadPool.QueueUserWorkItem(fun _ ->
-                                        try sourceCancellation.Cancel() with _ -> ())
-                                    |> ignore
-                                    let timer = clock.Sleep(TimeSpan.FromMilliseconds 250.0, CancellationToken.None)
-                                    let! settled = Task.WhenAny(pumping :> Task, timer)
-                                    if obj.ReferenceEquals(settled, pumping) then
-                                        let! outcome =
-                                            if pumping.IsCanceled then
-                                                Task.FromResult(Exit.Failure Cause.Interrupt)
-                                            else
-                                                pumping
-                                        sourceCancellation.Dispose()
-                                        return outcome
-                                    else
-                                        pumping.ContinueWith(
-                                            (fun (_: Task<Exit<unit, ProcessError>>) ->
-                                                sourceCancellation.Dispose()),
-                                            CancellationToken.None,
-                                            TaskContinuationOptions.ExecuteSynchronously,
-                                            TaskScheduler.Default
-                                        )
-                                        |> ignore
-                                        return Exit.Failure Cause.Interrupt
-                            })
-                            |> Flow.bind Flow.ofExit
+                            work
 
                     pumping
                     |> Flow.foldCause
@@ -862,9 +785,9 @@ module internal ProcessRun =
                             stages[stage].StdinClosed <- true
                             do! closeInput processes[stage]
                         | source ->
-                            let! feeder = inputFeeder stage source |> Flow.forkNamed ("process-stdin-" + string stage)
+                            let! feeder = inputFeeder stage source |> Flow.forkUnownedNamed ("process-stdin-" + string stage)
                             inputFibers.Add(feeder, released[stage])
-                            let! _ = offerCommand (RegisterFeeder(stage, feeder))
+                            let! _ = commandsQueue |> Queue.offer (RegisterFeeder(stage, feeder))
                             ()
 
                 let awaitInput (feeder, detached: Deferred<Never, unit>) =
@@ -1044,14 +967,8 @@ module internal ProcessRun =
                         | _ -> Flow.succeed ())
                     |> Flow.onInterrupt (requestStop Interrupted |> Flow.ignore)
 
-                match commandsQueue with
-                | Some queue -> do! Dequeue.shutdown queue
-                | None -> ()
-                match coordinator with
-                | Some running ->
-                    let! _ = Fiber.await running
-                    ()
-                | None -> ()
+                do! Dequeue.shutdown commandsQueue
+                let! _ = Fiber.await coordinator
                 return result
             }
             |> mapEngineFailure

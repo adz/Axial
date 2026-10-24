@@ -81,6 +81,71 @@ module ProcessServiceTests =
         | other -> failwithf "Expected output failure, got %A" other
 
     [<Fact>]
+    let ``plain command interruption kills the child and releases its scope promptly`` () = task {
+        use cancellation = new CancellationTokenSource()
+        let pidPath = Path.GetTempFileName()
+        let released = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        try
+            let running =
+                shText $"echo $$ > '{pidPath}'; exec sleep 30"
+                |> toFlow
+                |> Flow.ensuring (Flow.fromAsync (async { released.TrySetResult(()) |> ignore }))
+                |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
+            test <@ waitUntil (TimeSpan.FromSeconds 3.0) (fun () -> File.ReadAllText(pidPath).Trim() <> "") @>
+            let childPid = File.ReadAllText(pidPath).Trim() |> Int32.Parse
+            cancellation.Cancel()
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            test <@ outcome = Exit.Failure Cause.Interrupt @>
+            do! released.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            test <@ waitUntil (TimeSpan.FromSeconds 2.0) (fun () -> processHasExited childPid) @>
+        finally
+            cancellation.Cancel()
+            File.Delete pidPath
+    }
+
+    [<Fact>]
+    let ``single stage destination failures stop promptly and preserve the original error`` () = task {
+        let cases =
+            [ "callback", OutputTarget.Callback(fun _ -> Flow.fail "callback failed"), "callback failed"
+              "sink write", OutputTarget.Sink((fun _ -> Flow.fail "sink write failed"), (fun () -> Flow.ok ())), "sink write failed"
+              "file", Output.file "/dev/full", "No space left on device" ]
+        for name, target, expected in cases do
+            use rescue = new CancellationTokenSource()
+            let producer =
+                if name = "file" then shText "head -c 1048576 /dev/zero; exec sleep 30"
+                else shText "printf ready; exec sleep 30"
+            let running =
+                producer
+                |> stdoutTo target
+                |> toFlow
+                |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+            try
+                let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+                match outcome with
+                | Exit.Failure cause -> test <@ cause.ToString().Contains expected @>
+                | other -> failwithf "Expected %s failure, got %A" name other
+            finally
+                rescue.Cancel()
+    }
+
+    [<Fact>]
+    let ``single stage sink completion failure is returned promptly`` () = task {
+        use rescue = new CancellationTokenSource()
+        let running =
+            cmd $"printf ready"
+            |> stdoutTo (OutputTarget.Sink((fun _ -> Flow.ok ()), (fun () -> Flow.fail "sink completion failed")))
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env (), rescue.Token)
+        try
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
+            match outcome with
+            | Exit.Failure cause -> test <@ cause.ToString().Contains "sink completion failed" @>
+            | other -> failwithf "Expected sink completion failure, got %A" other
+        finally
+            rescue.Cancel()
+    }
+
+    [<Fact>]
     let ``exiting child cancels infinite input and runs its finalizer`` () = task {
         let finalized = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let source =
