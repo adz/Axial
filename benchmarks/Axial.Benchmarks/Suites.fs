@@ -324,8 +324,8 @@ type RunOnCpuBenchmarks() =
     [<Benchmark(Baseline = true, Description = "sequencePar CPU x8, inline")>]
     member _.SequenceParInline() = branches () |> Flow.sequencePar |> run
 
-    [<Benchmark(Description = "sequencePar CPU x8, onThreadPool")>]
-    member _.SequenceParThreadPool() = branches () |> List.map Flow.onThreadPool |> Flow.sequencePar |> run
+    [<Benchmark(Description = "sequencePar CPU x8, runOn ThreadPool")>]
+    member _.SequenceParThreadPool() = branches () |> List.map (Flow.runOn RunOn.ThreadPool) |> Flow.sequencePar |> run
 
     [<Benchmark(Description = "Flow.fork/join CPU x8")>]
     member _.ForkJoin() =
@@ -353,8 +353,10 @@ type RunOnCpuBenchmarks() =
 [<Orderer(SummaryOrderPolicy.FastestToSlowest)>]
 type BoundedTraversalBenchmarks() =
     let ten = [ 1..10 ]
-    let four = [ 1..4 ]
-    let parallelism = Parallelism.bounded 4
+    let eight = [ 1..8 ]
+    let inlinePolicy = Parallelism.bounded 4
+    let threadPoolPolicy = inlinePolicy |> Parallelism.runOn RunOn.ThreadPool
+    let adaptivePolicy = Parallelism.adaptive 4
 
     let consumeUnit (exit: Exit<unit, string>) =
         match exit with
@@ -384,25 +386,29 @@ type BoundedTraversalBenchmarks() =
                 result <- (result + index) % 1_000_003
             Flow.ok result)
 
-    [<Benchmark(Description = "traversePar 10 completed")>]
-    member _.TraverseCompleted() =
-        ten |> Flow.traversePar parallelism completed |> Flow.map List.sum |> fun source -> source.RunSynchronously(()) |> Shared.consumeExit
+    let run policy values mapping =
+        values |> Flow.traversePar policy mapping |> Flow.map List.sum |> fun source -> source.RunSynchronously(()) |> Shared.consumeExit
 
-    [<Benchmark(Description = "forEachPar 10 completed")>]
-    member _.ForEachCompleted() =
-        ten |> Flow.forEachPar parallelism completedUnit |> fun source -> source.RunSynchronously(()) |> consumeUnit
+    [<Benchmark(Baseline = true, Description = "traversePar cheap x10, Inline")>]
+    member _.CheapInline() = run inlinePolicy ten completed
+    [<Benchmark(Description = "traversePar cheap x10, ThreadPool")>]
+    member _.CheapThreadPool() = run threadPoolPolicy ten completed
+    [<Benchmark(Description = "traversePar cheap x10, adaptive")>]
+    member _.CheapAdaptive() = run adaptivePolicy ten completed
 
-    [<Benchmark(Description = "traversePar 10 yielding")>]
-    member _.TraverseYielding() =
-        ten |> Flow.traversePar parallelism yielding |> Flow.map List.sum |> fun source -> source.RunSynchronously(()) |> Shared.consumeExit
+    [<Benchmark(Description = "traversePar waiting x10, Inline")>]
+    member _.WaitingInline() = run inlinePolicy ten yielding
+    [<Benchmark(Description = "traversePar waiting x10, ThreadPool")>]
+    member _.WaitingThreadPool() = run threadPoolPolicy ten yielding
+    [<Benchmark(Description = "traversePar waiting x10, adaptive")>]
+    member _.WaitingAdaptive() = run adaptivePolicy ten yielding
 
-    [<Benchmark(Description = "forEachPar 10 yielding")>]
-    member _.ForEachYielding() =
-        ten |> Flow.forEachPar parallelism yieldingUnit |> fun source -> source.RunSynchronously(()) |> consumeUnit
-
-    [<Benchmark(Description = "traversePar CPU x4")>]
-    member _.TraverseCpu() =
-        four |> Flow.traversePar parallelism cpu |> Flow.map List.sum |> fun source -> source.RunSynchronously(()) |> Shared.consumeExit
+    [<Benchmark(Description = "traversePar CPU x8, Inline")>]
+    member _.CpuInline() = run inlinePolicy eight cpu
+    [<Benchmark(Description = "traversePar CPU x8, ThreadPool")>]
+    member _.CpuThreadPool() = run threadPoolPolicy eight cpu
+    [<Benchmark(Description = "traversePar CPU x8, adaptive")>]
+    member _.CpuAdaptive() = run adaptivePolicy eight cpu
 
 /// Scheduling overhead on a trivial successful operation.
 [<MemoryDiagnoser>]
@@ -413,7 +419,10 @@ type BoundedTraversalBenchmarks() =
 type RunOnOverheadBenchmarks() =
     let environment = ClockEnvironment(ManualClock(DateTimeOffset.UnixEpoch))
     let trivial : Flow<ClockEnvironment, string, int> = Flow.ok 1
-    let onPool = trivial |> Flow.onThreadPool
+    let onPool = trivial |> Flow.runOn RunOn.ThreadPool
+    let adaptiveInline =
+        trivial
+        |> Flow.runOn (RunOn.adaptiveWith { Threshold = TimeSpan.MaxValue; Samples = 1 })
     let forkJoin : Flow<ClockEnvironment, string, int> =
         flow {
             let! fiber = Flow.fork trivial
@@ -425,6 +434,9 @@ type RunOnOverheadBenchmarks() =
 
     [<Benchmark(Description = "runOn ThreadPool, trivial Flow")>]
     member _.RunOnThreadPool() = onPool.RunSynchronously(environment) |> Shared.consumeExit
+
+    [<Benchmark(Description = "runOn adaptive decided Inline, trivial Flow")>]
+    member _.RunOnAdaptiveInline() = adaptiveInline.RunSynchronously(environment) |> Shared.consumeExit
 
     [<Benchmark(Description = "Flow.fork/join, trivial Flow")>]
     member _.ForkJoin() = forkJoin.RunSynchronously(environment) |> Shared.consumeExit
