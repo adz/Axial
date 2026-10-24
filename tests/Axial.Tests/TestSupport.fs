@@ -185,6 +185,7 @@ module TestSupport =
         let running = Task.Run(fun () -> Flow.runSync (ClockEnvironment(time :> IClock)) workflow)
         let mutable lastCount = -1
         let mutable stablePolls = 0
+        let unchangedFor = Diagnostics.Stopwatch.StartNew()
 
         while not running.IsCompleted do
             let count = time.Sleepers
@@ -193,17 +194,24 @@ module TestSupport =
                 stablePolls <- stablePolls + 1
             else
                 stablePolls <- 0
+                unchangedFor.Restart()
 
             lastCount <- count
+            let poolIsEmpty = ThreadPool.PendingWorkItemCount = 0L
 
-            // A stable timer count is not quiescence while a continuation is still queued. In particular, the
-            // producer behind a timed stream can have been released at an earlier instant but still be waiting to
-            // hand its value to the consumer. Under sustained unrelated pool activity use a deliberately long
-            // starvation escape hatch instead of treating 200 ms of load as quiescence.
-            if stablePolls >= 15 && (ThreadPool.PendingWorkItemCount = 0L || stablePolls >= 500) then
+            if poolIsEmpty then
+                unchangedFor.Restart()
+
+            // A stable timer count is not quiescence while a continuation is still queued. The manual-time test
+            // collection runs without unrelated tests, so an empty process-wide queue means its fibers have settled.
+            if stablePolls >= 15 && poolIsEmpty then
                 time.AdvanceToNextDeadline() |> ignore
                 lastCount <- -1
                 stablePolls <- 0
+                unchangedFor.Restart()
+            elif count > 0 && unchangedFor.Elapsed >= TimeSpan.FromSeconds 10.0 then
+                failwith
+                    $"Manual time could not reach quiescence: {count} sleeper(s) remained unchanged while the thread-pool queue stayed non-empty for 10 seconds."
             else
                 Thread.Sleep 1
 

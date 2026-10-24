@@ -9,6 +9,7 @@ open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
 
+[<Collection("Process-wide measurements")>]
 module WorkflowSchedulingTests =
     [<Fact>]
     let ``ManualClock drains a due sleep continuation before advance returns`` () =

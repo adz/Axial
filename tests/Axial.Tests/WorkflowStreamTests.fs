@@ -9,6 +9,7 @@ open Axial.Tests.TestSupport
 open Swensen.Unquote
 open Xunit
 
+[<Collection("Process-wide measurements")>]
 module WorkflowStreamTests =
     [<Fact>]
     let ``FlowStream: consumes sequence correctly`` () =
