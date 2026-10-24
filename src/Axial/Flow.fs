@@ -488,13 +488,23 @@ module Flow =
                     unlink ()
                     reraise ()
 
-            running
-            |> Platform.afterSettled unlink
-            |> Execution.fold
-                (fun value ->
+            let settled = running |> Platform.afterSettled unlink
+
+#if !FABLE_COMPILER
+            if settled.IsCompletedSuccessfully then
+                match settled.Result with
+                | Exit.Success value ->
                     keepBranch branchScope
-                    Execution.ofValue value)
-                (fun cause -> closeScopes cancellationToken [ branchScope ] (Exit.Failure cause)))
+                    Execution.ofValue value
+                | Exit.Failure cause -> closeScopes cancellationToken [ branchScope ] (Exit.Failure cause)
+            else
+#endif
+                settled
+                |> Execution.fold
+                    (fun value ->
+                        keepBranch branchScope
+                        Execution.ofValue value)
+                    (fun cause -> closeScopes cancellationToken [ branchScope ] (Exit.Failure cause)))
 
     /// <summary>Creates a flow from a raw async operation.</summary>
     /// <remarks>Thrown exceptions are recorded as defects (<c>Cause.Die</c>). Cancellation is recorded as interruption when the runtime token requested it, and as a defect otherwise. Use <c>attemptAsync</c> when expected exceptions should enter the typed error channel.</remarks>
