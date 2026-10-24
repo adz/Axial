@@ -1415,10 +1415,12 @@ module Flow =
             let registrationScope =
                 if owned then parentRuntime.Scope else new Scope()
 
+            // Copy the immutable inherited runtime once. Chaining record helpers rebuilt the full record twice for
+            // every fork even though only the fiber identity and scope differ from the parent.
             let childRuntime =
-                parentRuntime
-                |> RuntimeContext.withFiberId metadata.Id
-                |> RuntimeContext.withScope fiberScope
+                { parentRuntime with
+                    FiberId = metadata.Id
+                    Scope = fiberScope }
 
             FiberObserver.notifyStart observer metadata
 
