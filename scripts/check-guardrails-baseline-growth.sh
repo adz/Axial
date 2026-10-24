@@ -38,9 +38,9 @@ import re
 import sys
 
 base_path, current_path, base_name = sys.argv[1:]
-syntax = re.compile(r"(AXG[0-9]{3})\t([^\t]+)\t([0-9a-f]{64})", re.IGNORECASE)
+syntax = re.compile(r"(AXG[0-9]{3})\t([^\t]+)\t([0-9a-f]{64})(?: x([2-9][0-9]*))?", re.IGNORECASE)
 
-def parse(path: str) -> Counter[tuple[str, str, str]]:
+def parse(path: str, require_counted_duplicates: bool) -> Counter[tuple[str, str, str]]:
     entries: Counter[tuple[str, str, str]] = Counter()
     with open(path, encoding="utf-8") as stream:
         for number, raw in enumerate(stream, 1):
@@ -50,7 +50,8 @@ def parse(path: str) -> Counter[tuple[str, str, str]]:
             match = syntax.fullmatch(line)
             if not match:
                 raise ValueError(f"{path}:{number}: non-canonical Guardrails baseline line")
-            rule_id, file_name, fingerprint = match.groups()
+            rule_id, file_name, fingerprint, count_text = match.groups()
+            count = int(count_text) if count_text else 1
             parts = PurePosixPath(file_name).parts
             canonical = (
                 rule_id == rule_id.upper()
@@ -61,12 +62,16 @@ def parse(path: str) -> Counter[tuple[str, str, str]]:
             )
             if not canonical:
                 raise ValueError(f"{path}:{number}: non-canonical Guardrails baseline line")
-            entries[(rule_id, file_name, fingerprint)] += 1
+            key = (rule_id, file_name, fingerprint)
+            if key in entries and require_counted_duplicates:
+                raise ValueError(f"{path}:{number}: duplicate Guardrails baseline entry; use a trailing count")
+            entries[key] += count
     return entries
 
 try:
-    base = parse(base_path)
-    current = parse(current_path)
+    # Historical bases may use the former repeated-line multiset form; only the current file must be canonical.
+    base = parse(base_path, False)
+    current = parse(current_path, True)
 except ValueError as error:
     print(error, file=sys.stderr)
     raise SystemExit(1)

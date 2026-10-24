@@ -68,9 +68,7 @@ type Env2 =
 module ServiceExamples =
     let run () =
         let mockRepo = MockRepo() :> IOrderRepo
-        // This is legacy fixture setup retained in the Guardrails baseline. Application code that builds real
-        // orders should route identifiers through Axial.PlatformService's IGuid instead.
-        let order = { Id = Guid.NewGuid(); Amount = 100m }
+        let order = { Id = Guid.Parse "7b63d894-1f9e-4d67-92a9-6efb512b63e0"; Amount = 100m }
 
         // Level 1
         let env1 = { RecordExample.Repo = mockRepo }

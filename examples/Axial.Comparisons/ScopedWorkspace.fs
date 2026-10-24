@@ -1,3 +1,4 @@
+// axial-allow-file-AXG001: ordinary .NET comparison intentionally demonstrates ambient effects; WithFlow uses IFileSystem
 /// Scenario 4 — a scoped temporary workspace.
 ///
 /// Create a temporary directory, perform several fallible steps inside it, and remove it exactly
@@ -88,8 +89,9 @@ module WithFlow =
         // <snippet:compare-workspace>
         let acquire: Flow<WorkspaceEnv, ImportError, string> =
             flow {
-                // comparison intentionally demonstrates the ambient-effect alternative.
-                let workspace = Path.Combine(Path.GetTempPath(), "axial-workspace-" + Guid.NewGuid().ToString "N")
+                let! tempPath = FileSystem.getTempPath |> Bind.mapError (FileSystemError.describe >> UnreadableBatch)
+                let! name = FileSystem.getRandomFileName |> Bind.mapError (FileSystemError.describe >> UnreadableBatch)
+                let workspace = Path.Combine(tempPath, "axial-workspace-" + name)
                 do! FileSystem.createDirectory workspace |> Flow.mapError (FileSystemError.describe >> UnreadableBatch)
                 return workspace
             }
@@ -97,8 +99,11 @@ module WithFlow =
         Flow.scoped (
             Flow.scopeAcquireRelease
                 acquire
-                // comparison intentionally demonstrates the ambient-effect alternative.
-                (fun workspace -> Flow.fromBlocking (fun _ -> Directory.Delete(workspace, recursive = true)))
+                (fun workspace ->
+                    flow {
+                        let! fileSystem = FileSystem.service
+                        fileSystem.DeleteDirectory(workspace, recursive = true)
+                    })
             |> Flow.bind (fun workspace ->
                 flow {
                     // Every step here — including this gate that fails before any file exists —

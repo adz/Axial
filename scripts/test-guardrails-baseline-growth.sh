@@ -30,10 +30,22 @@ if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
     exit 1
 fi
 
-# Duplicate lines are a multiset: one extra occurrence is growth.
+# Counted entries are a multiset: one extra occurrence is growth.
+printf '# baseline\nAXG001\tsrc/Old.fs\t%064d x2\n' 0 > Axial.Guardrails.baseline
+if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
+    echo 'increased baseline count unexpectedly passed' >&2
+    exit 1
+fi
+
+# Counts are canonical: x1 and duplicate lines are rejected.
+printf '# baseline\nAXG001\tsrc/Old.fs\t%064d x1\n' 0 > Axial.Guardrails.baseline
+if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
+    echo 'non-canonical baseline count unexpectedly passed' >&2
+    exit 1
+fi
 printf '# baseline\nAXG001\tsrc/Old.fs\t%064d\nAXG001\tsrc/Old.fs\t%064d\n' 0 0 > Axial.Guardrails.baseline
 if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
-    echo 'duplicate baseline entry unexpectedly passed' >&2
+    echo 'duplicate baseline lines unexpectedly passed' >&2
     exit 1
 fi
 

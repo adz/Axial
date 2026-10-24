@@ -56,16 +56,19 @@ guardrail for the effect's package is enabled (the core `Axial` guardrail covers
 
 ## Adopt Guardrails with a baseline
 
-A baseline records violations that already exist when Guardrails is introduced. It has one tab-separated entry per
-finding:
+A baseline records violations that already exist when Guardrails is introduced. It uses tab-separated entries:
 
 ```text
 AXG001<TAB>src/Legacy.fs<TAB>6ea89f…
+AXG001<TAB>src/Duplicates.fs<TAB>218f34… x2
 ```
 
-The fingerprint contains the rule ID, normalized offending text, and enclosing declaration signature. Moving a
-finding to another line does not invalidate it. Changing the offending expression or moving it to another declaration
-does. New findings remain errors.
+The optional trailing count represents multiple diagnostics with the same fingerprint. It is omitted for one and must
+be at least two when present; duplicate lines are not canonical. The fingerprint contains the rule ID, normalized
+offending text, and enclosing declaration signature. Moving a finding to another line, inserting matching text in a
+comment or string, or removing an earlier duplicate does not invalidate it. Changing the offending expression or
+moving it to another declaration does. If diagnostics exceed the recorded count, the later diagnostics are errors and
+report the baseline and actual counts.
 
 Generate a candidate for one project:
 

@@ -69,7 +69,7 @@ module Ordinary =
                     outcome <- Some(Error TimedOut)
                 | TransientTransportException message when attempt < maxAttempts ->
                     // An overly broad `with _ ->` here would also retry NullReferenceException.
-                    // comparison intentionally demonstrates the ambient-effect alternative.
+                    // axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient Task.Delay
                     do! Task.Delay(baseDelay * float (pown 2 (attempt - 1)), timeoutSource.Token)
                     attempt <- attempt + 1
                 | TransientTransportException message ->

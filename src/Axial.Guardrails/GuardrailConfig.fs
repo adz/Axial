@@ -4,7 +4,7 @@
 ///
 ///   guardrail  <name>
 ///   boundary   <absolute file path>
-///   baseline   <rule id>  <repository-relative file>  <fingerprint>
+///   baseline   <rule id>  <repository-relative file>  <fingerprint>[ x<count>]
 ///   setting    baselineRoot|baselineOutput|nativeAot  <value>
 ///   rule       <id>  <guardrail>  <category>  <match>  <scope>  <message>  <replacement>
 module Axial.Guardrails.GuardrailConfig
@@ -98,12 +98,26 @@ let parse (lines: string seq) : Config =
             | _ -> None)
         |> Set.ofList
 
+    let baselinePattern = Regex(@"^([0-9a-f]{64})(?: x([2-9][0-9]*))?$")
+    let mutable baselineKeys = Set.empty
     let baseline =
         entries
-        |> List.choose (function
-            | [| "baseline"; ruleId; file; fingerprint |] ->
-                Some(ruleId.Trim().ToUpperInvariant(), file.Trim().Replace('\\', '/'), fingerprint.Trim().ToLowerInvariant())
-            | _ -> None)
+        |> List.collect (function
+            | [| "baseline"; ruleId; file; fingerprintAndCount |] ->
+                let id = ruleId.Trim()
+                let path = file.Trim()
+                let value = fingerprintAndCount.Trim()
+                let matched = baselinePattern.Match value
+                if not matched.Success || id <> id.ToUpperInvariant() || path.Contains('\\') || Path.IsPathRooted path then
+                    invalidArg "lines" $"Non-canonical Guardrails baseline entry: {id}\t{path}\t{value}"
+                let fingerprint = matched.Groups[1].Value
+                let count = if matched.Groups[2].Success then Int32.Parse matched.Groups[2].Value else 1
+                let key = id, path, fingerprint
+                if baselineKeys.Contains key then
+                    invalidArg "lines" $"Duplicate Guardrails baseline entry; use a trailing count: {id}\t{path}\t{fingerprint}"
+                baselineKeys <- baselineKeys.Add key
+                List.replicate count key
+            | _ -> [])
 
     { EnabledGuardrails = enabled
       NativeAot = nativeAot
@@ -158,33 +172,11 @@ let private enclosingAnchor (sourceText: ISourceText) line1 =
             None)
     |> Option.defaultValue (1, "<file>")
 
-let private occurrenceIndex (sourceText: ISourceText) anchorLine (message: Message) (offending: string) =
-    let prefix =
-        [ for line in anchorLine .. message.Range.StartLine do
-              let text = lineText sourceText line
-              if line = message.Range.StartLine then
-                  yield text.Substring(0, min message.Range.EndColumn text.Length)
-              else
-                  yield text ]
-        |> String.concat "\n"
-        |> normalize
-
-    let mutable count = 0
-    let mutable offset = 0
-    while offset <= prefix.Length - offending.Length && offending.Length > 0 do
-        let found = prefix.IndexOf(offending, offset, StringComparison.Ordinal)
-        if found < 0 then offset <- prefix.Length + 1
-        else
-            count <- count + 1
-            offset <- found + offending.Length
-    max 1 count
-
 let fingerprint (sourceText: ISourceText) (message: Message) =
-    let anchorLine, anchor = enclosingAnchor sourceText message.Range.StartLine
+    let _, anchor = enclosingAnchor sourceText message.Range.StartLine
     let offending = normalize (offendingText sourceText message.Range)
-    let occurrence = occurrenceIndex sourceText anchorLine message offending
     let material =
-        String.concat "\n" [ message.Code.ToUpperInvariant(); normalize anchor; offending; string occurrence ]
+        String.concat "\n" [ message.Code.ToUpperInvariant(); normalize anchor; offending ]
     SHA256.HashData(Encoding.UTF8.GetBytes material)
     |> Convert.ToHexString
     |> _.ToLowerInvariant()
@@ -195,8 +187,21 @@ let private relativeFile (config: Config) fileName =
 let private appendGenerated (output: string) (entry: BaselineEntry) =
     lock gate (fun () ->
         Directory.CreateDirectory(Path.GetDirectoryName output) |> ignore
-        let line = $"{entry.RuleId}\t{entry.File}\t{entry.Fingerprint}"
-        File.AppendAllLines(output, [ line ]))
+        let prefix = $"{entry.RuleId}\t{entry.File}\t{entry.Fingerprint}"
+        let lines = if File.Exists output then File.ReadAllLines output |> Array.toList else []
+        let mutable found = false
+        let updated =
+            lines
+            |> List.map (fun line ->
+                if line = prefix then
+                    found <- true
+                    prefix + " x2"
+                elif line.StartsWith(prefix + " x", StringComparison.Ordinal) then
+                    found <- true
+                    let count = Int32.Parse(line.Substring(prefix.Length + 2))
+                    prefix + $" x{count + 1}"
+                else line)
+        File.WriteAllLines(output, if found then updated else updated @ [ prefix ]))
 
 /// Applies the configured error severity, downgrading only checked-in baseline entries. In generation mode every
 /// finding is also written to the per-project candidate baseline and downgraded so the build can complete.
@@ -210,22 +215,33 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
             | true, count -> remaining[entry] <- count + 1
             | _ -> remaining[entry] <- 1
 
-        messages
-        |> List.map (fun message ->
-            let entry =
-                { RuleId = message.Code.ToUpperInvariant()
-                  File = relativeFile config ctx.FileName
-                  Fingerprint = fingerprint ctx.SourceText message }
+        let findings =
+            messages
+            |> List.map (fun message ->
+                let entry =
+                    { RuleId = message.Code.ToUpperInvariant()
+                      File = relativeFile config ctx.FileName
+                      Fingerprint = fingerprint ctx.SourceText message }
+                message, entry)
 
+        let foundCounts =
+            findings
+            |> List.countBy (fun (_, entry) -> entry.RuleId, entry.File, entry.Fingerprint)
+            |> Map.ofList
+
+        findings
+        |> List.map (fun (message, entry) ->
             config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)
             let key = entry.RuleId, entry.File, entry.Fingerprint
-            let baselined =
-                match remaining.TryGetValue key with
-                | true, count when count > 0 ->
-                    remaining[key] <- count - 1
-                    true
-                | _ -> false
-            { message with Severity = if baselined then Severity.Warning else Severity.Error })
+            let baselineCount = remaining.TryGetValue key |> function | true, count -> count | _ -> 0
+            let baselined = baselineCount > 0
+            if baselined then remaining[key] <- baselineCount - 1
+            let foundCount = foundCounts[key]
+            let text =
+                if not baselined && baselineCount = 0 && config.Baseline |> List.exists ((=) key) then
+                    $"{message.Message} ({config.Baseline |> List.filter ((=) key) |> List.length} baselined, {foundCount} found)"
+                else message.Message
+            { message with Message = text; Severity = if baselined then Severity.Warning else Severity.Error })
 
 let apply (guardrail: string) (ctx: CliContext) (messages: Message list) = applyWith (load ()) guardrail ctx messages
 

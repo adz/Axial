@@ -2,9 +2,14 @@ open System
 open System.IO
 open System.Threading
 open Axial
+open Axial.FileSystem
 
 type ReadmeEnv =
-    { Root: string }
+    { Root: string
+      FileSystem: IFileSystem }
+
+    interface IHasFileSystem with
+        member this.FileSystem = this.FileSystem
 
 type FileReadError =
     | NotFound of path: string
@@ -12,13 +17,9 @@ type FileReadError =
 let readTextFile (path: string) : Flow<ReadmeEnv, FileReadError, string> =
     flow {
         // In production, map access and path exceptions separately at the boundary.
-        do!
-            if File.Exists path then
-                Ok()
-            else
-                Error(NotFound path)
-
-        return! ColdTask(fun ct -> File.ReadAllTextAsync(path, ct))
+        let! exists = FileSystem.exists path |> Bind.mapError (FileSystemError.describe >> NotFound)
+        do! if exists then Flow.succeed () else Flow.fail (NotFound path)
+        return! FileSystem.readAllTextAsync path |> Flow.mapError (FileSystemError.describe >> NotFound)
     }
 
 let program : Flow<ReadmeEnv, FileReadError, string * string> =
@@ -36,20 +37,20 @@ let program : Flow<ReadmeEnv, FileReadError, string * string> =
 
 [<EntryPoint>]
 let main _ =
-    let root =
-        Path.Combine(Path.GetTempPath(), "Axial.ReadmeExample", Guid.NewGuid().ToString "N")
+    let fileSystem = FileSystem.live
+    let root = Path.Combine(fileSystem.GetTempPath(), "Axial.ReadmeExample", fileSystem.GetRandomFileName())
     let settingsPath = Path.Combine(root, "settings.json")
     let featureFlagsPath = Path.Combine(root, "feature-flags.json")
 
     let readPairResult () =
-        program.RunSynchronously({ Root = root })
+        program.RunSynchronously({ Root = root; FileSystem = fileSystem })
 
     printfn "Config pair result (before files exist): %s" ((readPairResult ()).ToString())
     // Config pair result: Failure (Fail (NotFound ".../settings.json"))
 
-    Directory.CreateDirectory root |> ignore
-    File.WriteAllText(settingsPath, """{"name":"Ada"}""")
-    File.WriteAllText(featureFlagsPath, """{"darkMode":true}""")
+    fileSystem.CreateDirectory root
+    fileSystem.WriteAllText(settingsPath, """{"name":"Ada"}""")
+    fileSystem.WriteAllText(featureFlagsPath, """{"darkMode":true}""")
 
     printfn "Config pair result (after files created): %s" ((readPairResult ()).ToString())
     // Config pair result: Success ("{\"name\":\"Ada\"}", "{\"darkMode\":true}")

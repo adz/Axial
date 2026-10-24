@@ -171,27 +171,41 @@ module HardeningTests =
         }
 
     [<Fact>]
-    let ``duplicate violations in one symbol have distinct stable fingerprints`` () =
+    let ``duplicate baseline matching counts diagnostics and ignores source occurrences`` () =
         task {
             let! ctx =
                 AnalyzerTestContext.create
-                    "module M\nlet operation () =\n    let first = System.DateTime.UtcNow\n    System.DateTime.UtcNow\n"
-            let diagnostic line startColumn =
+                    "module M\nlet operation () =\n    // unrelated System.DateTime.UtcNow text\n    System.DateTime.UtcNow, System.DateTime.UtcNow\n"
+            let diagnostic startColumn =
                 { Type = "test"
                   Message = "use IClock"
                   Code = "AXG001"
                   Severity = Severity.Error
-                  Range = Range.mkRange ctx.FileName (Position.mkPos line startColumn) (Position.mkPos line (startColumn + 6))
+                  Range = Range.mkRange ctx.FileName (Position.mkPos 4 startColumn) (Position.mkPos 4 (startColumn + 22))
                   Fixes = [] }
-            let firstDiagnostic = diagnostic 3 32
-            let secondDiagnostic = diagnostic 4 20
-            let first = GuardrailConfig.fingerprint ctx.SourceText firstDiagnostic
-            let second = GuardrailConfig.fingerprint ctx.SourceText secondDiagnostic
-            test <@ first <> second @>
+            let firstDiagnostic = diagnostic 4
+            let secondDiagnostic = diagnostic 28
+            let hash = GuardrailConfig.fingerprint ctx.SourceText firstDiagnostic
+            test <@ hash = GuardrailConfig.fingerprint ctx.SourceText secondDiagnostic @>
 
             let file = Path.GetRelativePath(GuardrailConfig.defaults.BaselineRoot, ctx.FileName).Replace('\\', '/')
-            let repeated =
-                { GuardrailConfig.defaults with Baseline = [ "AXG001", file, first ] }
-                |> fun config -> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ firstDiagnostic; firstDiagnostic ]
-            test <@ repeated |> List.map _.Severity = [ Severity.Warning; Severity.Error ] @>
+            let config =
+                { GuardrailConfig.defaults with Baseline = [ "AXG001", file, hash; "AXG001", file, hash ] }
+
+            let two = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ firstDiagnostic; secondDiagnostic ]
+            test <@ two |> List.map _.Severity = [ Severity.Warning; Severity.Warning ] @>
+
+            let thirdDiagnostic = { secondDiagnostic with Range = Range.mkRange ctx.FileName (Position.mkPos 4 28) (Position.mkPos 4 50) }
+            let three = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ firstDiagnostic; secondDiagnostic; thirdDiagnostic ]
+            test <@ three |> List.map _.Severity = [ Severity.Warning; Severity.Warning; Severity.Error ] @>
+            Assert.Contains("2 baselined, 3 found", three[2].Message)
+
+            let one = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ secondDiagnostic ]
+            test <@ one |> List.map _.Severity = [ Severity.Warning ] @>
         }
+
+    [<Fact>]
+    let ``counted baseline entries parse as a multiset`` () =
+        let hash = String.replicate 64 "a"
+        let config = GuardrailConfig.parse [ $"baseline\tAXG001\tsrc/File.fs\t{hash} x2" ]
+        test <@ config.Baseline = [ ("AXG001", "src/File.fs", hash); ("AXG001", "src/File.fs", hash) ] @>
