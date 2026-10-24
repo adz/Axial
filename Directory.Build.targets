@@ -36,10 +36,25 @@
     <_AxialGuardrailsBootstrapProject>$(MSBuildThisFileDirectory)src\Axial.Guardrails\Axial.Guardrails.fsproj</_AxialGuardrailsBootstrapProject>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
+    <_AxialGuardrailsToolManifest>$(MSBuildThisFileDirectory).config\dotnet-tools.json</_AxialGuardrailsToolManifest>
+    <_AxialGuardrailsToolVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_AxialGuardrailsToolManifest)')), '&quot;fsharp-analyzers&quot;\s*:\s*\{[^}]*&quot;version&quot;\s*:\s*&quot;([^&quot;]+)&quot;').Groups[1].Value)</_AxialGuardrailsToolVersion>
+    <_AxialGuardrailsConfiguredToolAssembly>$([MSBuild]::NormalizePath($(NuGetPackageRoot), fsharp-analyzers, $(_AxialGuardrailsToolVersion), tools, net8.0, any, FSharp.Analyzers.Cli.dll))</_AxialGuardrailsConfiguredToolAssembly>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
-    <_AxialGuardrailsConfiguredToolInput Include="$(MSBuildThisFileDirectory).config\dotnet-tools.json" />
-    <_AxialGuardrailsConfiguredToolInput Include="$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\*.*" />
+    <_AxialGuardrailsConfiguredToolInput Include="$(_AxialGuardrailsToolManifest)" />
+    <_AxialGuardrailsConfiguredToolInput Include="$([System.IO.Path]::GetDirectoryName('$(_AxialGuardrailsConfiguredToolAssembly)'))\*.*" />
   </ItemGroup>
+
+  <Target Name="AxialGuardrailsValidateConfiguredTool"
+          BeforeTargets="AxialGuardrailsWriteInputFingerprint"
+          Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
+    <Error Condition="'$(_AxialGuardrailsToolVersion)' == ''"
+           Text="Could not find the fsharp-analyzers version in $(_AxialGuardrailsToolManifest)." />
+    <Error Condition="!Exists('$(_AxialGuardrailsConfiguredToolAssembly)')"
+           Text="The fsharp-analyzers CLI declared by $(_AxialGuardrailsToolManifest) was not restored at $(_AxialGuardrailsConfiguredToolAssembly). Run 'dotnet tool restore'." />
+  </Target>
 
   <!-- Guardrails is an F# analyzer; other project types never import it. -->
   <Import Project="$(MSBuildThisFileDirectory)src\Axial.Guardrails\build\Axial.Guardrails.targets"
