@@ -2827,8 +2827,23 @@ module Flow =
 
             let workers = min (Parallelism.value parallelism) items.Length
 
-            invoke (sequencePar (List.replicate workers worker)) environment cancellationToken
-            |> Execution.map (fun (_: unit list) -> ()))
+            if not workerOwnsScope && workers = items.Length then
+                // With one worker per item there is no queue to drain. Start the mapped flows directly, avoiding a
+                // loop, worker flow, and two continuation layers per item.
+                invoke workerMapping environment cancellationToken
+                |> Execution.bind (fun mapping ->
+                    items
+                    |> Array.mapi (fun index item ->
+                        mapping item
+                        |> runOn placement
+                        |> map (fun mapped -> store index mapped))
+                    |> Array.toList
+                    |> sequencePar
+                    |> fun source -> invoke source environment cancellationToken)
+                |> Execution.map (fun (_: unit list) -> ())
+            else
+                invoke (sequencePar (List.replicate workers worker)) environment cancellationToken
+                |> Execution.map (fun (_: unit list) -> ()))
 
     let private traverseWorkers
         parallelism
