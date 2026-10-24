@@ -86,7 +86,8 @@ module PackagePropsTests =
         match severityEnv with
         | Some value -> startInfo.EnvironmentVariables["AXIAL_GUARDRAILS_SEVERITY"] <- value
         | None -> ()
-        if ci then startInfo.EnvironmentVariables["CI"] <- "true"
+        // Never inherit CI from the machine running the tests: GitHub runners set CI=true.
+        if ci then startInfo.EnvironmentVariables["CI"] <- "true" else startInfo.EnvironmentVariables.Remove "CI"
         enabledEnv |> Option.iter (fun value -> startInfo.EnvironmentVariables["AxialGuardrailsEnabled"] <- value)
         use child = Process.Start startInfo
         let stdout = child.StandardOutput.ReadToEndAsync()
