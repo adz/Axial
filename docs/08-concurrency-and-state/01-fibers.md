@@ -197,7 +197,7 @@ let calculate (value: int) : Flow<ClockEnvironment, string, int> =
 let calculatePar values =
     values
     |> Flow.traversePar (Parallelism.ofProcessors id) (fun value ->
-        calculate value |> Flow.onThreadPool)
+        calculate value |> Flow.runOn RunOn.ThreadPool)
 ```
 
 ```fsharp run
@@ -206,7 +206,7 @@ calculatePar [ 1; 2; 3 ]
 |> shouldEqual (Exit.Success [ 1; 4; 9 ])
 ```
 
-Use `Flow.onThreadPool` around the mapping flow, not around the whole traversal; this lets the bounded workers overlap
+Use `Flow.runOn RunOn.ThreadPool` around the mapping flow, not around the whole traversal; this lets the bounded workers overlap
 while preserving the requested limit. `Parallelism.ofProcessors` clamps the bound to at least 1. The first failure
 interrupts the flows still running and waits for their cleanup, so no sibling keeps running after the traversal has
 failed.

@@ -37,12 +37,12 @@ already-completed flows cheap, but a synchronous CPU-bound branch can finish bef
 Wrap only the CPU-bound branches that should start on the thread pool:
 
 ```fsharp transcript
-> let cpuBranch value : Flow<string, int> = Flow.delay (fun () -> Flow.ok (value * value)) |> Flow.onThreadPool;;
+> let cpuBranch value : Flow<string, int> = Flow.delay (fun () -> Flow.ok (value * value)) |> Flow.runOn RunOn.ThreadPool;;
 > [ 1; 2; 3 ] |> List.map cpuBranch |> Flow.sequencePar |> Flow.run ();;
 val it: Exit<int list,string> = Success [1; 4; 9]
 ```
 
-`Flow.onThreadPool source` is `Flow.runOn RunOn.ThreadPool source`. `RunOn.Inline` leaves the flow unchanged.
+`Flow.runOn RunOn.ThreadPool source` moves a CPU-heavy flow to the thread pool. `RunOn.Inline` leaves the flow unchanged. See [Where work runs](/concurrency-and-state/where-work-runs.html) for parallel policies and adaptive placement.
 On .NET, `RunOn.Scheduler scheduler` starts the flow on a particular `TaskScheduler` and keeps the wrapped flow's
 continuations after awaits on that scheduler. The caller after `runOn` resumes on its original scheduler. Nested
 placement on the same exclusive scheduler yields rather than blocking it. `RunOn.DedicatedThread` gives a long
