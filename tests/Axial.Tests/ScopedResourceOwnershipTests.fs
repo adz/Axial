@@ -360,6 +360,75 @@ module ScopedResourceOwnershipTests =
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt) @>
 
     [<Fact>]
+    let ``A fiber closes a finalizer registered after it starts`` () =
+        let finalized = ref 0
+
+        let workflow : Flow<ClockEnvironment, string, int> =
+            flow {
+                let! proceed = Deferred.make<ClockEnvironment, string, unit> ()
+
+                let child =
+                    flow {
+                        do! Deferred.await proceed
+                        do! Flow.scopeFinalizer (Flow.delay (fun () -> finalized.Value <- finalized.Value + 1; Flow.succeed ()))
+                    }
+
+                let! fiber = Flow.fork child
+                do! Deferred.succeed () proceed |> Flow.ignore
+                do! Fiber.join fiber
+                return finalized.Value
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 1 @>
+
+    [<Fact>]
+    let ``Interrupting a fiber before it registers a finalizer leaves nothing to release`` () =
+        let finalized = ref 0
+
+        let workflow : Flow<ClockEnvironment, string, Exit<unit, string> * int> =
+            flow {
+                let! proceed = Deferred.make<ClockEnvironment, string, unit> ()
+
+                let child =
+                    flow {
+                        do! Deferred.await proceed
+                        do! Flow.scopeFinalizer (Flow.delay (fun () -> finalized.Value <- finalized.Value + 1; Flow.succeed ()))
+                    }
+
+                let! fiber = Flow.fork child
+                let! interrupted = Fiber.interrupt fiber
+                return interrupted, finalized.Value
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, 0) @>
+
+    [<Fact>]
+    let ``Interrupting a fiber after it registers a finalizer releases it once`` () =
+        let finalized = ref 0
+
+        let workflow : Flow<ClockEnvironment, string, Exit<unit, string> * int> =
+            flow {
+                let! registered = Deferred.make<ClockEnvironment, string, unit> ()
+
+                let child =
+                    flow {
+                        do! Flow.scopeFinalizer (Flow.delay (fun () -> finalized.Value <- finalized.Value + 1; Flow.succeed ()))
+                        do! Deferred.succeed () registered |> Flow.ignore
+                        do! Flow.never
+                    }
+
+                let! fiber = Flow.fork child
+                do! Deferred.await registered
+                let! interrupted = Fiber.interrupt fiber
+                return interrupted, finalized.Value
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(Exit.Failure Cause.Interrupt, 1) @>
+
+    [<Fact>]
     let ``A resource returned from a plain fork is already released when join returns it`` () =
         let events = ResizeArray<string>()
 

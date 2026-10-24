@@ -554,8 +554,8 @@ module WorkflowResourceTests =
             }
             |> Flow.scoped
 
-        // A running fiber holds two registrations, its interruption and its own scope; settling releases both.
-        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(2, 0) @>
+        // Supervision is the running fiber's only parent registration; settling releases it.
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(1, 0) @>
 
     [<Fact>]
     let ``A forked fiber releases what it acquired when it settles, not when its parent scope closes`` () =
