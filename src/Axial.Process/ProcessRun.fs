@@ -37,9 +37,6 @@ type private RunCommand =
 
 /// Flow-based process execution with scoped processes, supervised pumps, and one stop coordinator.
 module internal ProcessRun =
-    let isEnabled () =
-        Environment.GetEnvironmentVariable("AXIAL_PROCESS_ENGINE") = "flow" // axial-allow-effect: environment
-
     let private processError (command: CommandDefinition) (error: exn) =
         ProcessError.StartFailed {
             Command = Configuration.renderCommand command
@@ -146,6 +143,7 @@ module internal ProcessRun =
         (observe: ProcessOutput -> Async<unit>)
         : Flow<unit, ProcessError, ProcessResult> =
         let clockEnvironment = ClockEnvironment clock
+        let observesOutput = not (obj.ReferenceEquals(observe, ProcessObserver.ignore))
 
         let run : Flow<ClockEnvironment, ProcessError, ProcessResult> =
             flow {
@@ -573,7 +571,8 @@ module internal ProcessRun =
                         flow {
                             let! count = readChunk stream buffer
                             if count = 0 then
-                                do! decode [||] 0 true
+                                if observesOutput || specification.Framing = OutputFraming.Lines then
+                                    do! decode [||] 0 true
                             else
                                 countBytes stage original count
                                 // Full reads can use the stable pump buffer directly. Avoiding one 4 KiB copy per
@@ -582,7 +581,8 @@ module internal ProcessRun =
                                 do!
                                     Flow.fromTask (fun token ->
                                         NativeProcess.writeCapturedTarget console files token gate observed target capture bytes)
-                                do! decode bytes count false
+                                if observesOutput || specification.Framing = OutputFraming.Lines then
+                                    do! decode bytes count false
                                 return! loop ()
                         }
                     loop ()

@@ -778,7 +778,7 @@ module Process =
                 let! processes = service
 
                 return!
-                    processes.Execute(configured, fun _ -> async.Return())
+                    processes.Execute(configured, ProcessObserver.ignore)
                     |> Flow.localEnv (fun _ -> ())
             })
 
@@ -969,12 +969,9 @@ module Process =
         lineStream (Some OutputChannel.StdErr) (toSpecification source)
 #if !FABLE_COMPILER
     let live (clock: IClock) (fileSystem: IFileSystem) (console: IConsole) =
-        if ProcessRun.isEnabled () then
-            { new IProcess with
-                member _.Execute(specification, observe) =
-                    ProcessRun.execute clock fileSystem console specification observe }
-        else
-            NativeProcess.live clock fileSystem console
+        { new IProcess with
+            member _.Execute(specification, observe) =
+                ProcessRun.execute clock fileSystem console specification observe }
 #endif
 #if !FABLE_COMPILER
     [<EditorBrowsable(EditorBrowsableState.Never)>]

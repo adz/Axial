@@ -246,6 +246,9 @@ type internal ProcessFailureException(error: ProcessError) =
 type internal ObserverDefectException(error: exn) =
     inherit Exception(error.Message, error)
 
+module internal ProcessObserver =
+    let ignore (_: ProcessOutput) = async.Return()
+
 type private StageExitException(stage: int) =
     inherit Exception("Stage exited unsuccessfully.")
     member _.Stage = stage
