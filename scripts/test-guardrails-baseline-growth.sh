@@ -5,8 +5,9 @@ set -euo pipefail
 source_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-mkdir -p "$tmp/scripts"
+mkdir -p "$tmp/scripts" "$tmp/tests/Axial.Guardrails.Tests"
 cp "$source_root/scripts/check-guardrails-baseline-growth.sh" "$tmp/scripts/"
+cp "$source_root/tests/Axial.Guardrails.Tests/baseline-grammar-vectors.tsv" "$tmp/tests/Axial.Guardrails.Tests/"
 cd "$tmp"
 git init -q
 git config user.name test
@@ -37,29 +38,35 @@ if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
     exit 1
 fi
 
-# The script and analyzer reject the same malformed grammar matrix.
+# Exercise every shared grammar vector against the shell parser.
 hash=$(printf '%064d' 0)
-invalid_lines=(
-    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x0"
-    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x1"
-    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x01"
-    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x10001"
-    "AXG001"$'\t'"src/Old.fs"$'\t'"$hash x2147483648"
-    " AXG001"$'\t'"src/Old.fs"$'\t'"$hash"
-    "AXG001"$'\t'"src/Old.fs "$'\t'"$hash"
-    "AXG001"$'\t'"src/Old.fs"$'\t'" $hash"
-    "AXG001 src/Old.fs $hash"
-    "AXG01"$'\t'"src/Old.fs"$'\t'"$hash"
-    "AXG001"$'\t'"./src/Old.fs"$'\t'"$hash"
-    "AXG001"$'\t'"src/../Old.fs"$'\t'"$hash"
-)
-for invalid in "${invalid_lines[@]}"; do
-    printf '# baseline\n%s\n' "$invalid" > Axial.Guardrails.baseline
-    if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
-        echo "malformed baseline line unexpectedly passed: $invalid" >&2
-        exit 1
-    fi
-done
+while IFS=$'\t' read -r name expectation encoded_record expected; do
+    [[ -z $name || $name == \#* ]] && continue
+    record=${encoded_record//\{hash\}/$hash}
+    record=${record//\\s/ }
+    record=${record//\\t/$'\t'}
+    record=${record//\\\\/\\}
+    printf '# baseline\n%s\n' "$record" > Axial.Guardrails.baseline
+
+    case $expectation:$expected in
+        valid:*'|'*)
+            git add Axial.Guardrails.baseline
+            git commit -qm "valid vector: $name"
+            scripts/check-guardrails-baseline-growth.sh HEAD >/dev/null
+            git reset -q --hard "$base"
+            ;;
+        invalid:error)
+            if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then
+                echo "invalid baseline vector unexpectedly passed: $name" >&2
+                exit 1
+            fi
+            ;;
+        *)
+            echo "baseline vector has invalid expectation: $name" >&2
+            exit 1
+            ;;
+    esac
+done < tests/Axial.Guardrails.Tests/baseline-grammar-vectors.tsv
 
 printf '# baseline\nAXG001\tsrc/Old.fs\t%064d\nAXG001\tsrc/Old.fs\t%064d\n' 0 0 > Axial.Guardrails.baseline
 if scripts/check-guardrails-baseline-growth.sh "$base" >/dev/null 2>&1; then

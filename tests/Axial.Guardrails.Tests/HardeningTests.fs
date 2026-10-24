@@ -205,28 +205,28 @@ module HardeningTests =
         }
 
     [<Fact>]
-    let ``counted baseline entries retain bounded multiplicity`` () =
+    let ``shared baseline grammar vectors match the analyzer parser`` () =
         let hash = String.replicate 64 "a"
-        let config = GuardrailConfig.parse [ $"baseline\tAXG001\tsrc/File.fs\t{hash} x10000" ]
-        test <@ config.Baseline = [ { RuleId = "AXG001"; File = "src/File.fs"; Fingerprint = hash; Count = 10000 } ] @>
+        let vectorPath = Path.Combine(__SOURCE_DIRECTORY__, "baseline-grammar-vectors.tsv")
 
-    [<Theory>]
-    [<InlineData("AXG001\tsrc/File.fs\t{hash} x0")>]
-    [<InlineData("AXG001\tsrc/File.fs\t{hash} x1")>]
-    [<InlineData("AXG001\tsrc/File.fs\t{hash} x01")>]
-    [<InlineData("AXG001\tsrc/File.fs\t{hash} x10001")>]
-    [<InlineData("AXG001\tsrc/File.fs\t{hash} x2147483648")>]
-    [<InlineData(" AXG001\tsrc/File.fs\t{hash}")>]
-    [<InlineData("AXG001\tsrc/File.fs \t{hash}")>]
-    [<InlineData("AXG001\tsrc/File.fs\t {hash}")>]
-    [<InlineData("AXG001 src/File.fs {hash}")>]
-    [<InlineData("AXG01\tsrc/File.fs\t{hash}")>]
-    [<InlineData("AXG001\t./src/File.fs\t{hash}")>]
-    [<InlineData("AXG001\tsrc/../File.fs\t{hash}")>]
-    let ``malformed baseline lines report their config line`` (template: string) =
-        let hash = String.replicate 64 "a"
-        let line = template.Replace("{hash}", hash)
-        let error =
-            Assert.Throws<System.ArgumentException>(fun () ->
-                GuardrailConfig.parse [ "guardrail\tAxial"; "baseline\t" + line ] |> ignore)
-        Assert.Contains("line 2", error.Message)
+        for raw in File.ReadLines vectorPath do
+            if not (raw.StartsWith("#")) && raw <> "" then
+                let fields = raw.Split('\t')
+                Assert.Equal(4, fields.Length)
+                let name, expectation, encodedRecord, encodedExpected = fields[0], fields[1], fields[2], fields[3]
+                let record = encodedRecord.Replace("\\t", "\t").Replace("\\s", " ").Replace("\\\\", "\\").Replace("{hash}", hash)
+                let expected = encodedExpected.Replace("{hash}", hash)
+
+                match expectation with
+                | "valid" ->
+                    let parsed = GuardrailConfig.parse [ "baseline\t" + record ]
+                    let entry = Assert.Single parsed.Baseline
+                    let actual = sprintf "%s|%s|%s|%d" entry.RuleId entry.File entry.Fingerprint entry.Count
+                    Assert.Equal(expected, actual)
+                | "invalid" ->
+                    let error =
+                        Assert.Throws<System.ArgumentException>(fun () ->
+                            GuardrailConfig.parse [ "guardrail\tAxial"; "baseline\t" + record ] |> ignore)
+                    Assert.Contains("line 2", error.Message)
+                    Assert.Equal("error", expected)
+                | value -> Assert.Fail($"Vector '{name}' has unknown expectation '{value}'")
