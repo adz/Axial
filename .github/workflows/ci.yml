@@ -47,7 +47,9 @@ jobs:
 
       - name: Build
         # Also runs Axial.Guardrails (see Directory.Build.targets) against every project it builds.
-        run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
+        run: |
+          bash scripts/ensure-guardrails-built.sh Release
+          dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
 
       - name: Test
         run: dotnet test Axial.slnx --configuration Release --no-build --nologo -v minimal

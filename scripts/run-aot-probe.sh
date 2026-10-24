@@ -7,6 +7,8 @@ project="$root_dir/examples/Axial.AotProbe/Axial.AotProbe.fsproj"
 publish_dir="$root_dir/artifacts/publish/Axial.AotProbe/linux-x64"
 publish_log="$root_dir/artifacts/publish/Axial.AotProbe/publish.log"
 
+bash "$root_dir/scripts/ensure-guardrails-built.sh" Release
+
 mkdir -p "$(dirname "$publish_log")"
 dotnet publish "$project" -c Release -r linux-x64 -o "$publish_dir" 2>&1 | tee "$publish_log"
 

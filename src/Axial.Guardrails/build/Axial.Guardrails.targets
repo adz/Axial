@@ -73,7 +73,7 @@
   -->
   <Target Name="AxialGuardrailsEnsureBuilt"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
-          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsBootstrapProject)' != '' and !Exists('$(_AxialGuardrailsAnalyzersPath)')">
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsBootstrapProject)' != '' and !Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')">
     <Exec Command="dotnet build &quot;$(_AxialGuardrailsBootstrapProject)&quot; --nologo -v quiet" />
   </Target>
 
@@ -136,8 +136,8 @@
           Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '')"
           Inputs="@(_AxialGuardrailsSourceInputs);$(_AxialGuardrailsConfigFile);@(_AxialGuardrailsAnalyzerAssemblies)"
           Outputs="$(_AxialGuardrailsStampFile)">
-    <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)')"
-           Text="Axial.Guardrails analyzer folder is missing: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />
+    <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')"
+           Text="Axial.Guardrails analyzer folder is missing or incomplete: $(_AxialGuardrailsAnalyzersPath). Restore/reinstall the package or fix the configured analyzer path." />
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <Delete Files="$(_AxialGuardrailsGeneratedBaseline)" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'" />
     <Message Importance="high" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"

@@ -5,7 +5,6 @@
     <IsPackable>false</IsPackable>
     <GenerateProgramFile>false</GenerateProgramFile>
     <OutputType>Library</OutputType>
-    <AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>
     <!-- F# emits FS0988 for this xUnit library despite OutputType=Library; there is intentionally no entry point.
          NU1605 is expected because analyzer tests must load the exact FSharp.Core used by FCS, while their Axial
          fixture reference was built by the current SDK and advertises its newer FSharp.Core. -->

@@ -32,7 +32,9 @@ jobs:
       - run: dotnet restore
       - name: Build
         if: github.event_name != 'workflow_dispatch'
-        run: dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
+        run: |
+          bash scripts/ensure-guardrails-built.sh Release
+          dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal
       - name: Check documentation conventions
         if: github.event_name != 'workflow_dispatch'
         run: bash scripts/check-docs-conventions.sh

@@ -7,6 +7,8 @@ cd "$root_dir"
 
 output_dir="artifacts/package"
 
+bash scripts/ensure-guardrails-built.sh Release
+
 mkdir -p "$output_dir"
 find "$output_dir" -maxdepth 1 -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -delete
 

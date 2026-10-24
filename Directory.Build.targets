@@ -27,7 +27,7 @@
     with a plain `dotnet build`, the first time any project finds its output missing - self-healing
     without a graph edge, and near-free on every build after the first.
   -->
-  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails'">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true'">
     <!-- The analyzer's own build output, not the packaged analyzers/ folder these paths default to. -->
     <_AxialGuardrailsAnalyzersPath>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Guardrails\$(Configuration.ToLower())</_AxialGuardrailsAnalyzersPath>
     <!-- The fsharp-analyzers local tool from .config/dotnet-tools.json, not a packaged cli/ copy. -->
@@ -37,6 +37,6 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)src\Axial.Guardrails\build\Axial.Guardrails.targets"
-          Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails'" />
+          Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true'" />
 
 </Project>

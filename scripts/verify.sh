@@ -34,9 +34,17 @@ record() {
 }
 
 run_build() {
-    # --no-incremental: an up-to-date project skips the Guardrails analyzer, which let new AXG findings reach CI.
-    timeout 1800 dotnet build Axial.slnx -c Release --no-incremental >"$out_dir/build.log" 2>&1
+    # Start as CI entry points do: no analyzer output is available yet. The two probes prevent AOT and package
+    # entry points from regressing independently of the solution build.
+    rm -rf artifacts/bin/Axial.Guardrails
+    timeout 1800 bash scripts/ensure-guardrails-built.sh Release >"$out_dir/build.log" 2>&1
     local code=$?
+    timeout 600 dotnet build examples/Axial.AotProbe/Axial.AotProbe.fsproj -c Release --nologo -v quiet >>"$out_dir/build.log" 2>&1 || code=$?
+    rm -rf artifacts/bin/Axial.Guardrails
+    timeout 600 bash scripts/ensure-guardrails-built.sh Release >>"$out_dir/build.log" 2>&1 || code=$?
+    timeout 600 dotnet pack src/Axial/Axial.fsproj -c Release --nologo -v quiet -o artifacts/verify/package-probe >>"$out_dir/build.log" 2>&1 || code=$?
+    # --no-incremental: an up-to-date project skips the Guardrails analyzer, which let new AXG findings reach CI.
+    timeout 1800 dotnet build Axial.slnx -c Release --no-incremental >>"$out_dir/build.log" 2>&1 || code=$?
     local errors
     errors=$(grep -c " error " "$out_dir/build.log")
     [[ $code -eq 0 ]] && echo "pass|0 errors" || echo "fail|exit $code, $errors error lines"
