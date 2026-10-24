@@ -28,9 +28,9 @@ as warnings; the baseline is the only severity downgrade path. The build reports
 from diagnostic findings.
 
 Do not set `AxialGuardrailsSeverity` or `AXIAL_GUARDRAILS_SEVERITY`; they no longer downgrade findings. When
-`CI=true`, an environment attempt to disable or downgrade Guardrails fails before compilation. A project that cannot
-run analyzers may set `<AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>` in its project file, but ordinary
-adoption uses a baseline instead.
+`CI=true`, the effective build properties cannot disable Guardrails or enable baseline generation. For local
+troubleshooting only, pass `-p:AxialGuardrailsEnabled=false` on the command line; do not store that setting in a
+project or shared build file. Ordinary adoption uses a baseline instead.
 
 For adoption guidance, see [Installation](/getting-started/installation.html#add-effect-boundary-guardrails-optional).
 
@@ -77,8 +77,11 @@ The build prints the candidate path under the project's intermediate output dire
 approved entries into `Axial.Guardrails.baseline` beside the project. Set `AxialGuardrailsBaselineFile` when a solution
 uses one baseline in another location. Regenerate and review rather than hand-writing fingerprints.
 
-CI should run `scripts/check-guardrails-baseline-growth.sh` (or an equivalent comparison) against the base commit.
-Axial's CI and `scripts/verify.sh` do this automatically and fail when the baseline grows.
+CI should run `scripts/check-guardrails-baseline-growth.sh` (or an equivalent comparison) against the pull request
+base SHA or the push's pre-push SHA. Axial's CI and `scripts/verify.sh` do this automatically and fail when the
+baseline gains any entry, even when another entry is removed. Because a branch can change both a baseline and its
+check, approval is a repository-governance decision rather than a guarantee the branch's code can enforce; in this
+single-developer repository, the coordinator reviews such changes.
 
 ## Review the diagnostics
 
@@ -111,7 +114,9 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 | `Axial.Process` | `Process.Start` |
 | `Axial.HttpClient` | `new HttpClient` |
 
-Change the set with ordinary MSBuild item operations in a project or `Directory.Build.props`:
+Change the set with ordinary MSBuild item operations in a project or `Directory.Build.props`. Removing an item is
+an explicit choice not to run that package's rule set; it is not a severity downgrade for findings from enabled
+rules:
 
 ```xml
 <ItemGroup>

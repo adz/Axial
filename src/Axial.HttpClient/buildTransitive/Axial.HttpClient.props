@@ -1,7 +1,6 @@
 <Project>
   <!-- Referencing Axial.HttpClient turns on its Axial.Guardrails guardrail; its rules ship in Axial.Guardrails.
-       Remove it with <AxialGuardrail Remove="Axial.HttpClient" />, or set its severity with
-       <AxialGuardrail Update="Axial.HttpClient" Severity="warning" />. -->
+       Remove it with <AxialGuardrail Remove="Axial.HttpClient" /> to opt out of that package-specific rule set. -->
   <ItemGroup>
     <AxialGuardrail Include="Axial.HttpClient" />
   </ItemGroup>
