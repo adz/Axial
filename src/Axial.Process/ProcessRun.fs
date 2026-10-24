@@ -12,6 +12,7 @@ open Axial.Console
 open Axial.FileSystem
 open Axial.PlatformService
 
+#if !FABLE_COMPILER
 type private StopCause =
     | Interrupted
     | StageTimeout of stage: int * after: TimeSpan
@@ -1001,3 +1002,4 @@ module internal ProcessRun =
             |> Flow.scoped
 
         run |> Flow.localEnv (fun () -> clockEnvironment)
+#endif

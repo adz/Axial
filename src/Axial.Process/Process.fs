@@ -778,7 +778,14 @@ module Process =
                 let! processes = service
 
                 return!
-                    processes.Execute(configured, ProcessObserver.ignore)
+                    processes.Execute(
+                        configured,
+#if FABLE_COMPILER
+                        (fun _ -> async.Return())
+#else
+                        ProcessObserver.ignore
+#endif
+                    )
                     |> Flow.localEnv (fun _ -> ())
             })
 
