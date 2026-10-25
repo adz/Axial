@@ -1,0 +1,5 @@
+version = 2
+baseline = "Axial.Guardrails.baseline"
+
+[default]
+role = "domain"

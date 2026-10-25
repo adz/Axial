@@ -19,6 +19,7 @@
     <Compile Include="ScopeFromRunAnalyzerTests.fs" />
     <Compile Include="GuardrailConfigTests.fs" />
     <Compile Include="PolicyTests.fs" />
+    <Compile Include="PolicyLockTests.fs" />
     <Compile Include="PackagePropsTests.fs" />
   </ItemGroup>
 
@@ -36,6 +37,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Axial.Guardrails\Axial.Guardrails.fsproj" />
+    <ProjectReference Include="..\..\src\Axial.Tool\Axial.Tool.fsproj" />
     <ProjectReference Include="..\..\src\Axial\Axial.fsproj" />
   </ItemGroup>
 

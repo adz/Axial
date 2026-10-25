@@ -127,9 +127,12 @@ module Policy =
         else Ok normalized
 
     let private filesUnder root =
-        Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
-        |> Seq.map (fun path -> Path.GetRelativePath(root, path).Replace('\\', '/'))
-        |> Seq.toArray
+        let skipped = set [ ".git"; ".livedocs"; "artifacts"; "bin"; "obj"; "output" ]
+        let rec walk directory = seq {
+            yield! Directory.EnumerateFiles(directory)
+            for child in Directory.EnumerateDirectories(directory) do
+                if not(skipped.Contains(Path.GetFileName child)) then yield! walk child }
+        walk root |> Seq.map (fun path -> Path.GetRelativePath(root, path).Replace('\\', '/')) |> Seq.toArray
 
     let private validatePattern root allFiles allowEmpty pattern =
         normalizePath "policy" pattern
@@ -173,7 +176,8 @@ module Policy =
                     match parseRole defaultName with
                     | Error e -> fail e
                     | Ok defaultRole ->
-                        let allFiles = filesUnder repositoryRoot
+                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths")
+                        let allFiles = if needsFiles then filesUnder repositoryRoot else [||]
                         let assignments prefix allowEffectsEmpty =
                             entries |> Map.toList |> List.choose (fun (key, value) ->
                                 if key.StartsWith(prefix + ".") then Some(key.Substring(prefix.Length + 1), value) else None)

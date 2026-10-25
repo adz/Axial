@@ -1,0 +1,106 @@
+version = 1
+SHA256  2b078d571a2415b4395d0b789a67fdb6e5020af0f84926f2f61d34c71fad1cee  .editorconfig
+SHA256  cc8a1c075025701e675b9fdb4331bace6421ac1bf71111f91c7772992624c3f5  Axial.Guardrails.baseline
+SHA256  f9dfc3b1af39e4abb8179a7cf983abf4275c414981407b212a495cce00ff2bc1  Axial.Guardrails.toml
+SHA256  fd65f3d07b33c402e8824c15beda55c630855ab29cddc79876415b4f16f23422  Directory.Build.props
+SHA256  e547a7035ff2e907fde4611c0960f5d2b9bae404e53572036243f71401250ddd  Directory.Build.targets
+SHA256  55e88c31de7c0fa41c77bd86f7847362fc6df1355e63f36b78b98ab87202fd3a  tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj
+TEST  tests/Axial.Comparisons.Tests/Axial.Comparisons.Tests.fsproj	23	39
+TEST  tests/Axial.ElmishFlows.Tests/Axial.ElmishFlows.Tests.fsproj	27	91
+TEST  tests/Axial.Fable.Tests/Axial.Fable.Tests.fsproj	0	0
+TEST  tests/Axial.FileSystem.Tests/Axial.FileSystem.Tests.fsproj	17	68
+TEST  tests/Axial.Files.Tests/Axial.Files.Tests.fsproj	30	77
+TEST  tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj	63	151
+TEST  tests/Axial.Hosting.Http.Tests/Axial.Hosting.Http.Tests.fsproj	10	20
+TEST  tests/Axial.Hosting.Tests/Axial.Hosting.Tests.fsproj	17	51
+TEST  tests/Axial.HttpClient.Tests/Axial.HttpClient.Tests.fsproj	32	53
+TEST  tests/Axial.Integration.Tests/Axial.Integration.Tests.fsproj	115	254
+TEST  tests/Axial.PlatformService.Tests/Axial.PlatformService.Tests.fsproj	40	125
+TEST  tests/Axial.PrintfFixture/Axial.PrintfFixture.fsproj	0	0
+TEST  tests/Axial.Telemetry.Tests/Axial.Telemetry.Tests.fsproj	18	55
+TEST  tests/Axial.Tests/Axial.Tests.fsproj	450	945
+TEST  tests/Axial.WebSocket.Tests/Axial.WebSocket.Tests.fsproj	19	33
+SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs:56:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs:63:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs:70:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs:85:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Common.fs:92:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/FiberCostBenchmarks.fs:101:// axial-allow-AXG001: benchmark host boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/FiberCostBenchmarks.fs:81:// axial-allow-AXG001: benchmark host boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/FiberCostBenchmarks.fs:84:// axial-allow-AXG001: benchmark host boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs:349:// axial-allow-AXG001: benchmark host boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs:34:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs:42:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs:451:// axial-allow-AXG001: benchmark host boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs:605:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs:618:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs:685:// axial-allow-AXG001: benchmark control directly measures the native process baseline
+SUPPRESSION  benchmarks/Axial.Benchmarks/Suites.fs:700:// axial-allow-AXG001: benchmark control directly measures the redirected native process baseline
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:108:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:139:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:159:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:219:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:224:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:29:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:33:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:40:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:44:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:53:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:61:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:94:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.AotProbe/Program.fs:98:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.App.Example/Program.fs:23:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  examples/Axial.Comparisons/CheckoutCompensation.fs:144:// axial-allow-AXG005: wrapped operation has no cancellation-token overload
+SUPPRESSION  examples/Axial.Comparisons/RetryBudget.fs:72:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient Task.Delay
+SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs:35:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs:37:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs:44:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs:48:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs:57:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs:59:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs:67:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+SUPPRESSION  examples/Axial.Comparisons/ScopedWorkspace.fs:71:// axial-allow-AXG001: ordinary .NET comparison intentionally demonstrates ambient filesystem access
+SUPPRESSION  examples/Axial.Examples/Program.fs:15:match Environment.GetEnvironmentVariable "AXIAL_EXAMPLE" with // axial-allow-AXG001: intentional environment host or live-service boundary
+SUPPRESSION  examples/Axial.Hosting.Desktop.Example/Program.fs:25:// axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  examples/Axial.Hosting.Desktop.Example/Program.fs:30:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  examples/Axial.Hosting.DotNet.Example/Program.fs:47:// axial-allow-AXG001: intentional blocking host or live-service boundary
+SUPPRESSION  examples/Axial.MaintenanceExamples/Program.fs:39:// axial-allow-AXG005: wrapped operation has no cancellation-token overload
+SUPPRESSION  examples/Axial.TortureTest/Interop.fs:127:let! viaTask = Flow.fromTask (fun _ -> Flow.startTask clockEnvironment sample) // axial-allow-AXG005: wrapped operation has no cancellation-token overload
+SUPPRESSION  examples/Axial.TortureTest/Interop.fs:42:| Thrown -> return raise (InvalidOperationException "thrown") // axial-allow-AXG003: foreign API communicates failure by exception
+SUPPRESSION  examples/Axial.TortureTest/Interop.fs:59:| Thrown -> raise (InvalidOperationException "thrown") // axial-allow-AXG003: foreign API communicates failure by exception
+SUPPRESSION  examples/Axial.TortureTest/Scenario.fs:75:let watch = System.Diagnostics.Stopwatch.StartNew() // axial-allow-AXG001: intentional clock host or live-service boundary
+SUPPRESSION  examples/Axial.TortureTest/Scenario.fs:76:fun () -> watch.Elapsed // axial-allow-AXG001: intentional clock host or live-service boundary
+SUPPRESSION  src/Axial.ElmishFlows/Sub.fs:28:// axial-allow-AXG005: wrapped operation has no cancellation-token overload
+SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs:44:let watch = Stopwatch.StartNew() // axial-allow-AXG001: wall-clock test timeout, independent of manual workflow clock
+SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs:46:while not quiet && watch.Elapsed < timeout do // axial-allow-AXG001: wall-clock test timeout
+SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs:49:if not quiet then Thread.Sleep(1) // axial-allow-AXG001: test-thread polling, not a workflow delay
+SUPPRESSION  src/Axial.Guardrails/Suppressions.fs:5:///   // axial-allow-AXG003: foreign callback translates this exception
+SUPPRESSION  src/Axial.Hosting/Hosting.fs:320:Console.CancelKeyPress.AddHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  src/Axial.Hosting/Hosting.fs:328:| Exit.Failure cause -> Console.Error.WriteLine(Cause.prettyPrint describeError cause) // axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  src/Axial.Hosting/Hosting.fs:332:Console.CancelKeyPress.RemoveHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  src/Axial.PlatformService/Operations.fs:502:member _.Fill buffer = RandomNumberGenerator.Fill buffer // axial-allow-AXG001: intentional secure-random host or live-service boundary
+SUPPRESSION  src/Axial.PlatformService/Operations.fs:504:member _.GetInt32 minInclusive maxExclusive = RandomNumberGenerator.GetInt32(minInclusive, maxExclusive) // axial-allow-AXG001: intentional secure-random host or live-service boundary
+SUPPRESSION  src/Axial.Process/ProcessRun.fs:230:// axial-allow-AXG005: the operation uses its own CTS so the finalizer controls its lifetime
+SUPPRESSION  src/Axial.Process/ProcessRun.fs:578:// axial-allow-AXG003: task bridge translates this back to the typed channel
+SUPPRESSION  src/Axial.Process/ProcessRun.fs:583:// axial-allow-AXG003: task bridge translates this back to the typed channel
+SUPPRESSION  src/Axial.WebSocket/WebSocket.fs:185:// axial-allow-AXG001: intentional websocket host or live-service boundary
+SUPPRESSION  src/Axial/App.fs:57:settledTask.Wait(timeout)  // axial-allow-AXG001: StopAndWait is the documented synchronous boundary
+SUPPRESSION  src/Axial/Core.fs:1078:this.Close(CancellationToken.None).GetAwaiter().GetResult()  // axial-allow-AXG001: IDisposable.Dispose is synchronous by contract
+SUPPRESSION  src/Axial/Core.fs:1399:else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-AXG001: RunSynchronously is the documented blocking runner
+SUPPRESSION  src/Axial/Flow.fs:16:match source.Result with  // axial-allow-AXG001: task already awaited
+SUPPRESSION  src/Axial/Parallelism.fs:28:let processors = Environment.ProcessorCount // axial-allow-AXG001: intentional environment host or live-service boundary
+SUPPRESSION  src/Axial/Platform.fs:805:let timestamp = System.Diagnostics.Stopwatch.GetTimestamp() // axial-allow-AXG001: intentional clock host or live-service boundary
+SUPPRESSION  src/Axial/Stream.fs:1139:// axial-allow-AXG005: wrapped operation has no cancellation-token overload: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
+SUPPRESSION  tests/Axial.ElmishFlows.Tests/SubscriptionTests.fs:38:// axial-allow-AXG005: wrapped operation has no cancellation-token overload
+SUPPRESSION  tests/Axial.Fable.Tests/Harness.fs:25:// axial-allow-AXG006: test-only diagnostic formatting never runs trimmed
+SUPPRESSION  tests/Axial.Guardrails.Tests/GuardrailConfigTests.fs:100:+ "let f (t: System.Threading.Tasks.Task<int>) = t.Result // axial-allow-AXG001: synchronous host boundary\n"
+SUPPRESSION  tests/Axial.Guardrails.Tests/GuardrailConfigTests.fs:135:"let create () = System.Security.Cryptography.RandomNumberGenerator.Create() // axial-allow-AXG001: secure random live implementation\n"
+SUPPRESSION  tests/Axial.Guardrails.Tests/GuardrailConfigTests.fs:137:+ "    rng.GetBytes buffer // axial-allow-AXG001: secure random live implementation\n")
+SUPPRESSION  tests/Axial.Guardrails.Tests/HardeningTests.fs:34:let! ctx = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock boundary\n"
+SUPPRESSION  tests/Axial.Guardrails.Tests/HardeningTests.fs:48:"module M\nlet text = \"axial-allow-AXG003: example\"\n/// axial-allow-AXG004: docs\n(* axial-allow-AXG005: block *)\nlet value = 1\n"
+SUPPRESSION  tests/Axial.Guardrails.Tests/PolicyLockTests.fs:25:Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: reason"] }
+SUPPRESSION  tests/Axial.Guardrails.Tests/ReflectionFormattingAnalyzerTests.fs:109:+ "// axial-allow-AXG006: diagnostic-only code never runs trimmed\n"
+SUPPRESSION  tests/Axial.Guardrails.Tests/ResourceFromFiberAnalyzerTests.fs:91:"// axial-allow-AXG007: fixture intentionally demonstrates fiber ownership\n"
+SUPPRESSION  tests/Axial.Guardrails.Tests/ScopeFromRunAnalyzerTests.fs:95:+ "let c = Flow.run (Cache.make 4) // axial-allow-AXG008: scope intentionally remains open\n")
+SUPPRESSION  tests/Axial.HttpClient.Tests/HttpServiceTests.fs:24:let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-AXG004: immutable value is safe to share between tests
+SUPPRESSION  tests/Axial.Tests/ScopedResourceOwnershipTests.fs:437:let! fiber = acquire events "db" |> Flow.fork // axial-allow-AXG007: test intentionally demonstrates fiber-owned resource release
