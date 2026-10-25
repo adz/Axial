@@ -43,22 +43,23 @@ module WorkflowParallelTests =
 
     [<Fact>]
     let ``Flow: race returns first result and interrupts loser`` () =
+        let loserStarted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let mutable loserExecuted = false
         let workflow =
             Flow.race
-                (flow { 
-                    do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
-                    return 1 
+                (flow {
+                    do! Flow.fromTask (fun _ -> loserStarted.Task)
+                    return 1
                 })
-                (flow { 
-                    do! Flow.sleep (TimeSpan.FromMilliseconds 500.0)
+                (flow {
+                    loserStarted.TrySetResult(()) |> ignore
+                    do! Flow.fromTask (fun token -> task { do! Task.Delay(Timeout.Infinite, token) })
                     loserExecuted <- true
-                    return 2 
+                    return 2
                 })
 
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success 1 @>
-        // Give it a bit more time to potentially execute (though it shouldn't)
-        Thread.Sleep(500)
+        test <@ loserStarted.Task.IsCompletedSuccessfully @>
         test <@ loserExecuted = false @>
 
     [<Fact>]
