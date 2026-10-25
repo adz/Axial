@@ -223,24 +223,38 @@ module internal ProcessRun =
                         else return! Flow.never<ClockEnvironment, ProcessError, unit>
                     }
 
-                let sleepStartedNow delay =
+                let sleepStartedNow (delay: TimeSpan) =
                     let cancellation = new CancellationTokenSource()
                     let pending = clock.Sleep(delay, cancellation.Token)
-                    // The started sleep owns a CTS canceled by the Flow finalizer.
-                    // axial-allow-AXG005: the operation uses its own CTS so the finalizer controls its lifetime
-                    Flow.fromTask (fun _ -> task { do! pending })
-                    |> Flow.ensuring (
+                    let cancel =
                         Flow.delay (fun () ->
                             try cancellation.Cancel() with _ -> ()
-                            cancellation.Dispose()
                             Flow.succeed ())
-                    )
+                    let sleeping =
+                        Flow.fromTask (fun token -> task {
+                            let interrupted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                            use _registration = token.Register(fun () -> interrupted.TrySetResult() |> ignore)
+                            let! first = Task.WhenAny(pending, interrupted.Task)
+                            if obj.ReferenceEquals(first, interrupted.Task) then cancellation.Cancel()
+                            try
+                                do! pending
+                                return true
+                            with :? OperationCanceledException when cancellation.IsCancellationRequested ->
+                                return false
+                        })
+                        |> Flow.ensuring (
+                            Flow.delay (fun () ->
+                                try cancellation.Cancel() with _ -> ()
+                                cancellation.Dispose()
+                                Flow.succeed ())
+                        )
+                    sleeping, cancel
 
-                let startTimer cause error delay =
-                    flow {
-                        do! sleepStartedNow delay
-                        return! postTimedStop cause error
-                    }
+                let startTimer cause error sleeping =
+                    sleeping
+                    |> Flow.bind (fun timedOut ->
+                        if timedOut then postTimedStop cause error
+                        else Flow.succeed ())
 
                 match specification.OverallTimeout with
                 | Some after ->
@@ -250,7 +264,8 @@ module internal ProcessRun =
                             Specification = commands |> Array.map Configuration.renderCommand |> String.concat " | "
                             Timeout = after
                         }
-                    let! timer = startTimer (OverallTimeout after) error remaining |> Flow.forkNamed "process-overall-timeout"
+                    let sleeping, _ = sleepStartedNow remaining
+                    let! timer = startTimer (OverallTimeout after) error sleeping |> Flow.forkNamed "process-overall-timeout"
                     timerFibers.Add timer
                 | None -> ()
 
@@ -279,10 +294,14 @@ module internal ProcessRun =
 
                     match command.Timeout.Value with
                     | Some after ->
+                        let sleeping, cancelSleep = sleepStartedNow after
                         let timeout =
                             Flow.race
-                                (Deferred.await exits[stage] |> Flow.widenError |> Flow.map (fun _ -> false))
-                                (sleepStartedNow after |> Flow.map (fun () -> true))
+                                (Deferred.await exits[stage]
+                                 |> Flow.widenError
+                                 |> Flow.ensuring cancelSleep
+                                 |> Flow.map (fun _ -> false))
+                                sleeping
                             |> Flow.bind (fun timedOut ->
                                 if timedOut then
                                     postTimedStop
@@ -293,7 +312,7 @@ module internal ProcessRun =
                                             Timeout = after
                                         })
                                 else
-                                    Flow.never<ClockEnvironment, ProcessError, unit>)
+                                    Flow.succeed ())
                         let! timer = timeout |> Flow.forkNamed ("process-stage-timeout-" + string stage)
                         timerFibers.Add timer
                     | None -> ()
@@ -348,7 +367,9 @@ module internal ProcessRun =
                                 do! Fiber.requestInterrupt feeder
                                 let! outcome =
                                     Flow.race
-                                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2)
+                                        // Forced close is bounded first. If the feeder ignores interruption after
+                                        // that bound, disconnect only this wait so CloseStdIn can finish promptly.
+                                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2 |> Flow.disconnect)
                                         (Flow.sleep (TimeSpan.FromMilliseconds 250.0) |> Flow.map Choice2Of2)
                                 match outcome with
                                 | Choice1Of2 _ -> do! Fiber.markObserved feeder
@@ -807,7 +828,9 @@ module internal ProcessRun =
 
                 let awaitInput (stage, feeder, detached: Deferred<Never, unit>) =
                     Flow.race
-                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2)
+                        // `detached` is completed only after stopFeeder's bounded wait and forced pipe close.
+                        // Disconnect this wait at that boundary; the supervisor below owns the late outcome.
+                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2 |> Flow.disconnect)
                         (Deferred.await detached |> Flow.widenError |> Flow.map Choice2Of2)
                     |> Flow.bind (function
                         | Choice1Of2 exit ->

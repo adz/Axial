@@ -1578,6 +1578,24 @@ let awaitExitTaskAsSuccess (exitTask: ExitTask<'value, 'error>) : Execution<Exit
     }
     |> ofAwaitable
 
+/// Invokes a callback when a fiber settles without consuming its outcome.
+let observeExitTask (exitTask: ExitTask<'value, 'error>) (observer: Exit<'value, 'error> -> unit) : unit =
+#if FABLE_COMPILER
+    startImmediate
+        (async {
+            let! exit = exitTask
+            observer exit
+        })
+        None
+#else
+    exitTask.ContinueWith(
+        (fun (completed: Task<Exit<'value, 'error>>) -> observer completed.Result),
+        CancellationToken.None,
+        TaskContinuationOptions.ExecuteSynchronously,
+        TaskScheduler.Default)
+    |> ignore
+#endif
+
 // ---------------------------------------------------------------------------------------------
 // Signal: a single-assignment async rendezvous cell shared by Concurrency.fs (Deferred, Semaphore)
 // and State.fs (the STM retry/commit wait).

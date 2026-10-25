@@ -150,6 +150,7 @@ Use parallel combinators when they express the whole relationship:
 
 - `Flow.zipPar`: Runs two flows concurrently and waits for both.
 - `Flow.race`: Runs two flows concurrently, interrupts and awaits the loser, closes its scope, then returns the winner's result. A loser defect becomes part of the returned cause.
+- `Flow.disconnect`: Makes interruption stop waiting promptly while the interrupted work finishes in a detached owned fiber. Its lifecycle is still observed, and a late defect is reported once as unobserved. Use it only after a bounded structured wait at a forced-close boundary where foreign work may ignore interruption.
 - `Flow.traversePar`: Maps many values with bounded concurrency and returns the results in input order.
 - `Flow.forEachPar`: Runs a flow for each value with bounded concurrency, discarding the results.
 

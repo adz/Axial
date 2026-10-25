@@ -936,9 +936,16 @@ module Process =
             let guard =
                 flow {
                     let! token = Flow.cancellationToken
-                    let! cause = deadline.Wait token
-                    pendingFailure <- None
-                    return! Flow.ofExit (Exit.Failure cause)
+                    let! outcome = deadline.Wait token |> Async.Catch |> Flow.fromAsync
+
+                    match outcome with
+                    | Choice1Of2 cause ->
+                        pendingFailure <- None
+                        return! Flow.ofExit (Exit.Failure cause)
+                    | Choice2Of2 _ when token.IsCancellationRequested ->
+                        return! Flow.ofExit (Exit.Failure Cause.Interrupt)
+                    | Choice2Of2 error ->
+                        return! Flow.die error
                 }
 
             selected, (fun () -> completion), guard, (fun () -> pendingFailure))

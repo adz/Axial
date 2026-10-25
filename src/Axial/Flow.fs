@@ -1709,6 +1709,50 @@ module Flow =
                     Execution.ofValue fiber)
                 Execution.ofCause)
 
+    /// <summary>Lets interruption stop waiting for a flow without waiting for that flow to settle.</summary>
+    /// <remarks>
+    /// <para>
+    /// The source runs in an owned fiber. If the caller is interrupted, <c>disconnect</c> promptly returns
+    /// <c>Cause.Interrupt</c> while the source continues settling in its detached fiber. Its scope remains alive until
+    /// it settles, and its lifecycle observer receives the eventual outcome. An eventual defect is additionally
+    /// reported through <c>OnUnobservedDefect</c> exactly once because no caller can consume it.
+    /// </para>
+    /// <para>
+    /// This is an explicit escape hatch for foreign operations that may ignore interruption. Prefer structured
+    /// combinators, which wait for child cleanup. At a bounded shutdown boundary, wait first and apply
+    /// <c>disconnect</c> only to the forced-close operation whose cleanup may remain running.
+    /// </para>
+    /// </remarks>
+    /// <param name="flow">The flow whose settlement may outlive an interrupted caller.</param>
+    /// <returns>A flow with the source outcome unless the caller is interrupted first.</returns>
+    let disconnect (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            invoke (forkWith false (Some "flow-disconnect") None flow) environment cancellationToken
+            |> Execution.bind (fun (fiber: Fiber<'error, 'value>) ->
+                let settled = Platform.newSignal<Exit<'value, 'error>> ()
+                let gate = obj()
+                let mutable disconnected = false
+
+                Platform.observeExitTask fiber.ExitTask (fun exit ->
+                    Platform.resolveSignal settled exit |> ignore
+
+                    if Platform.lock gate (fun () -> disconnected) then
+                        fiber.ReportUnobserved())
+
+                Platform.awaitSignal settled cancellationToken
+                |> Execution.fold
+                    (fun exit ->
+                        fiber.MarkObserved()
+                        Execution.ofExit exit)
+                    (fun cause ->
+                        Platform.lock gate (fun () -> disconnected <- true)
+
+                        match fiber.Settled with
+                        | Some _ -> fiber.ReportUnobserved()
+                        | None -> ()
+
+                        Execution.ofCause cause)))
+
     /// <summary>Starts acquiring a resource in a new fiber, keeping the resource in the caller's scope.</summary>
     /// <remarks>
     /// <para>

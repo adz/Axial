@@ -27,6 +27,11 @@ if git -C "$scratch/tree" diff --quiet HEAD -- src; then
 fi
 
 cd "$scratch/tree"
+bash scripts/ensure-guardrails-built.sh >"$scratch/guardrails.log" 2>&1 || {
+    echo "Guardrails analyzer bootstrap failed." >&2
+    tail -20 "$scratch/guardrails.log" >&2
+    exit 2
+}
 timeout 1800 dotnet test "$project" -c Release --filter "$filter" >"$scratch/test.log" 2>&1
 code=$?
 

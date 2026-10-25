@@ -130,6 +130,40 @@ module FiberObserverTests =
         test <@ recording.Unobserved = [] @>
 
     [<Fact>]
+    let ``disconnect returns interruption promptly and reports a late defect exactly once`` () =
+        let recording = Recording()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        use cancellation = new CancellationTokenSource()
+
+        let stubborn : Flow<ClockEnvironment, string, unit> =
+            Flow(fun _ _ ->
+                Platform.ofAwaitable (task {
+                    started.TrySetResult() |> ignore
+                    do! release.Task
+                    return Exit.Failure(Cause.Die(InvalidOperationException "late disconnected defect"))
+                }))
+
+        let running =
+            Task.Run(fun () ->
+                stubborn
+                |> Flow.disconnect
+                |> Flow.withFiberObserver recording.Observer
+                |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellation.Token)
+
+        test <@ started.Task.Wait(TimeSpan.FromSeconds 5.0) @>
+        cancellation.Cancel()
+        test <@ running.Wait(TimeSpan.FromSeconds 1.0) @>
+        test <@ running.Result = Exit.Failure Cause.Interrupt @>
+        test <@ recording.Ends = [] @>
+
+        release.TrySetResult() |> ignore
+        waitUntil (fun () -> recording.Unobserved.Length = 1)
+
+        test <@ recording.Ends |> List.map (fun (_, defect) -> defect |> Option.map _.Message) = [ Some "late disconnected defect" ] @>
+        test <@ recording.Unobserved |> List.map (fun (_, defect) -> defect.Message) = [ "late disconnected defect" ] @>
+
+    [<Fact>]
     let ``Interrupted fiber ends with interrupted status and no defect`` () =
         let recording = Recording()
 
