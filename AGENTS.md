@@ -95,7 +95,7 @@ and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICA
 - When changing an API, update source comments and any `docs/api/{EntityId}.md` enrichment page, then rebuild with FsLiveDocs. Do not commit generated reference pages.
 - Use numbered task folders under `docs/`; FsLiveDocs strips ordering prefixes from generated URLs.
 - When documentation claims observable runtime output, use a `fsharp transcript` (or a `fsharp run` block when exact output is not part of the claim). Never type a separate illustrative output block that FsLiveDocs does not generate and verify. Run `dotnet livedocs test --warn-as-error`, not only `build`, after adding or changing executable examples.
-- For small checkbox tasks, defer `dotnet livedocs test --warn-as-error` until the phase end or a release/deploy checkpoint. `dev-docs/**` idea/planning notes do not require validation.
+- `scripts/verify.sh` runs `dotnet livedocs test --warn-as-error` as its `livedocs` stage. While iterating on a small task, run only the stages you need; a slice is not done until every stage passes. `dev-docs/**` idea/planning notes do not require validation.
 
 ## Versioning and Compatibility
 
@@ -107,7 +107,7 @@ and prove new tests can fail; see [`dev-docs/VERIFICATION.md`](dev-docs/VERIFICA
 
 ## Documentation Integrity
 
-- **Validate At Phase Or Release Boundaries:** For small checkbox tasks, defer `dotnet livedocs test --warn-as-error` until phase end or a release/deploy checkpoint, even after changes to user-facing docs, public API signatures, XML comments, examples, reference enrichment, `llms.txt`, or site content. `dev-docs/**` idea/planning notes and code-only changes with no public-doc impact do not require validation. Use `dotnet livedocs watch` only when a live server is needed for browser review or screenshots.
+- **Validate Before Merge:** `scripts/verify.sh` (all stages, including `livedocs`) must pass before a slice merges, including after changes to user-facing docs, public API signatures, XML comments, examples, reference enrichment, `llms.txt`, or site content. While iterating, run only the stages you need. `dev-docs/**` idea/planning notes do not require validation. Use `dotnet livedocs watch` only when a live server is needed for browser review or screenshots.
 - **Preview Lifecycle:** Stop `dotnet livedocs watch` with `SIGHUP`, `TERM`, or `INT`.
 - **Link Integrity:** Ensure that all cross-references between guides and reference pages are valid. Broken links degrade the experience for both humans and AI agents.
 - **Code Highlighting:** Ensure all code examples are wrapped in triple-backticks with the `fsharp` language hint for proper syntax highlighting.

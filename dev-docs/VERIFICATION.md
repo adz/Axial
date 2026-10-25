@@ -14,6 +14,7 @@ Run `scripts/verify.sh` (all stages) or name stages: `scripts/verify.sh build te
 | `fable` | `scripts/run-fable-tests.sh`, then the compiled suite again until it has run `FABLE_RUNS` times (default 3) |
 | `aot` | `scripts/run-aot-probe.sh` |
 | `docs` | `scripts/check-docs-conventions.sh` and `scripts/check-source-inventory.sh` |
+| `livedocs` | `dotnet livedocs test --warn-as-error`, using the Release build from `build` |
 
 It writes `artifacts/verify/result.json` (commit, dirty flag, per-stage status, seconds, and summary) plus one log
 per stage. A task is verified when `"passed": true` for the stages it touches. Quote the summary lines in reports.
@@ -22,7 +23,9 @@ Do not treat "passed on rerun" as passing: a stage that needed a rerun is a flak
 On Linux with a user systemd session, run `scripts/check-systemd-watchdog.sh` manually. It verifies steady operation, SIGKILL restart, and watchdog timeout of a transient user unit; it is not run in CI. On machines without a user session it prints `skipped`.
 
 The Fable stage runs three times because a single pass hid a deterministic-under-load stall introduced by T1.
-`dotnet livedocs test --warn-as-error` stays a phase or release step (see AGENTS.md), not part of `verify.sh`.
+The `livedocs` stage compiles and runs every checked documentation example. It joined the default stages after a
+slice removed a `let!` overload while three docs pages still showed it, and every stage passed. While iterating on a
+small task, name the stages you need (`scripts/verify.sh build test`); a slice is not done until all stages pass.
 
 ## Build with the SDK CI uses
 
