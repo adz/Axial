@@ -10,6 +10,10 @@ open Swensen.Unquote
 open Xunit
 
 module WorkflowErrorTests =
+    type private DomainError =
+        | MissingValue
+        | UpstreamError of string
+
     [<Fact>]
     let ``fold lets interruption pass through without running the typed error handler`` () =
         let mutable handlerRan = false
@@ -593,6 +597,29 @@ module WorkflowErrorTests =
         test <@ flowResult = Exit.Success 52 @>
         test <@ asyncFlowResult = Exit.Success 52 @>
         test <@ taskFlowResult = Exit.Success 60 @>
+
+    [<Fact>]
+    let ``Bind adapters retain their public BindError type and route errors`` () =
+        let requireValue (source: int option) : BindError<unit, DomainError, int> =
+            source |> Bind.error MissingValue
+
+        let mapFailure (source: Result<int, string>) : BindError<unit, DomainError, int> =
+            source |> Bind.mapError UpstreamError
+
+        let missingWorkflow : Flow<unit, DomainError, int> =
+            flow {
+                let! value = requireValue None
+                return value
+            }
+
+        let upstreamWorkflow : Flow<unit, DomainError, int> =
+            flow {
+                let! value = mapFailure (Error "denied")
+                return value
+            }
+
+        test <@ Flow.runSync () missingWorkflow = Exit.Failure(Cause.Fail MissingValue) @>
+        test <@ Flow.runSync () upstreamWorkflow = Exit.Failure(Cause.Fail(UpstreamError "denied")) @>
 
     [<Fact>]
     let ``Flow async syntax uses Bind assignment and mapping`` () =
