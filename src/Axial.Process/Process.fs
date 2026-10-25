@@ -862,7 +862,7 @@ module Process =
                             let publish outcome =
                                 flow {
                                     let! token = Flow.cancellationToken
-                                    do! events.Put(Choice2Of2 outcome, token) |> Flow.fromAsync
+                                    do! events.Put(Choice2Of2 outcome, token)
                                 }
 
                             let producer =
@@ -912,7 +912,7 @@ module Process =
                                     }))
 
                         let! token = Flow.cancellationToken
-                        let! item, acknowledgment = events.Take token |> Flow.fromAsync
+                        let! item, acknowledgment = events.Take token
 
                         match item with
                         | Choice1Of2 output ->
@@ -936,7 +936,7 @@ module Process =
             let guard =
                 flow {
                     let! token = Flow.cancellationToken
-                    let! cause = deadline.Wait token |> Flow.fromAsync
+                    let! cause = deadline.Wait token
                     pendingFailure <- None
                     return! Flow.ofExit (Exit.Failure cause)
                 }

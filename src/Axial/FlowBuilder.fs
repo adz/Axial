@@ -29,7 +29,53 @@ module internal FlowBuilderRuntime =
         TaskInterop.from Exit.fromResult operation
 #endif
 
+/// <exclude/>
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+type FlowBindable =
+    | FlowBindable
+
+    static member inline Convert(_: FlowBindable, source: Flow<'env, 'error, 'value>) = source
+
+    static member inline Convert(_: FlowBindable, source: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
+        Flow.fromResult source
+
+    static member inline Convert(_: FlowBindable, source: 'value option) : Flow<'env, unit, 'value> =
+        Flow.fromOption () source
+
+    static member inline Convert(_: FlowBindable, source: 'value voption) : Flow<'env, unit, 'value> =
+        Flow.fromValueOption () source
+
+    static member inline Convert(_: FlowBindable, source: BindError<'env, 'error, 'value>) =
+        Bind.toFlow source
+
+    static member inline Convert(_: FlowBindable, source: Async<'value>) : Flow<'env, 'error, 'value> =
+        Flow.fromAsync source
+
+    static member inline Convert(_: FlowBindable, source: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+        Flow.fromAsyncResult source
+
+#if !FABLE_COMPILER
+    static member inline Convert(_: FlowBindable, source: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+        Flow.fromColdTask source
+
+    static member inline Convert(_: FlowBindable, source: ColdTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+        Flow.fromColdTaskResult source
+#endif
+
+    static member inline Convert(_: FlowBindable, source: seq<'value>) : seq<'value> = source
+    static member inline Convert(_: FlowBindable, source: 'value list) : seq<'value> = source
+    static member inline Convert(_: FlowBindable, source: 'value array) : seq<'value> = source
+
+/// <exclude/>
+[<EditorBrowsable(EditorBrowsableState.Never)>]
+module FlowBuilderSource =
+    let inline toFlow (witness: ^witness) (source: ^source) : ^result =
+        ((^witness or ^source) : (static member Convert: ^witness * ^source -> ^result) (witness, source))
+
 type FlowBuilder() =
+    member inline _.Source(source) =
+        FlowBuilderSource.toFlow FlowBindable source
+
     member _.Return(value: 'value) : Flow<'env, 'error, 'value> =
         Flow.ok value
 

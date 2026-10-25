@@ -11,7 +11,7 @@ let application : Flow<DesktopEnvironment, string, unit> =
         let! environment = Flow.env
         // The framework closing path below waits for this root cleanup before approving exit.
         do! Flow.scopeFinalizer (Flow.fromAsync (async { printfn "Saving state and releasing application resources." }))
-        do! async { printfn "%s application scope started." environment.WindowName } |> Flow.fromAsync
+        do! async { printfn "%s application scope started." environment.WindowName }
         do! Flow.sleep(TimeSpan.FromDays 1.0)
     }
 

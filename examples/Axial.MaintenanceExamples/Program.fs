@@ -28,7 +28,7 @@ let syncExample : Flow<int, string, int> =
 
 let asyncExample : Flow<int, string, int> =
     flow {
-        let! value = async { return 21 } |> Flow.fromAsync
+        let! value = async { return 21 }
         return value * 2
     }
 
@@ -37,7 +37,7 @@ let taskExample : Flow<int, string, int> =
         let! env = Flow.envWith id
         // executable host boundary performs this effect.
         // axial-allow-AXG005: wrapped operation has no cancellation-token overload
-        let! suffix = ColdTask(fun _ -> Task.FromResult 5) |> Flow.fromColdTask
+        let! suffix = ColdTask(fun _ -> Task.FromResult 5)
         return env + suffix
     }
 

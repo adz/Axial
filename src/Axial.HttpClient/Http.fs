@@ -498,7 +498,7 @@ module Http =
         : Flow<'env, HttpError, 'value> =
         flow {
             let! response = send request
-            return! Response.json decode response |> Flow.fromResult
+            return! Response.json decode response
         }
 
     /// Sends a GET request and returns the response body, mirroring <c>HttpClient.GetStringAsync</c>.

@@ -22,8 +22,8 @@ let application : Flow<AppEnv, AppError, unit> =
         let! environment = Flow.env
         // Root-scope cleanup must complete before NodeApp publishes the process exit code.
         do! Flow.scopeFinalizer (Flow.fromAsync (async { printfn "Node root cleanup finished." }))
-        do! async { printfn "%s Arguments: %s" environment.Greeting (String.concat ", " environment.Arguments) } |> Flow.fromAsync
-        do! async { printfn "Press Ctrl+C to request coordinated shutdown." } |> Flow.fromAsync
+        do! async { printfn "%s Arguments: %s" environment.Greeting (String.concat ", " environment.Arguments) }
+        do! async { printfn "Press Ctrl+C to request coordinated shutdown." }
         do! Flow.sleep(TimeSpan.FromDays 1.0)
     }
 

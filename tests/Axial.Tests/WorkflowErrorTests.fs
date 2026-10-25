@@ -308,14 +308,14 @@ module WorkflowErrorTests =
 
         let asyncDefect =
             flow {
-                let! value = async { return raise defect } |> Flow.fromAsync
+                let! value = (async { return raise defect } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
 
         let asyncCanceled =
             flow {
-                let! value = async { return raise canceled } |> Flow.fromAsync
+                let! value = (async { return raise canceled } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
@@ -385,7 +385,7 @@ module WorkflowErrorTests =
 
         let asyncBoundaryResult =
             flow {
-                let! value = async { return raise defect } |> Flow.fromAsync
+                let! value = (async { return raise defect } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
@@ -458,52 +458,52 @@ module WorkflowErrorTests =
         let syncSome : Flow<int, unit, int> =
             flow {
                 let! env = Flow.env
-                let! value = Some(env + 1) |> Flow.fromOption ()
+                let! value = Some(env + 1)
                 return value * 2
             }
 
         let syncNone : Flow<int, unit, int> =
             flow {
                 let! env = Flow.env
-                let! value = None |> Flow.fromOption ()
+                let! value = None
                 return env + value
             }
 
         let syncValueSome : Flow<int, unit, int> =
             flow {
                 let! env = Flow.env
-                let! value = ValueSome(env + 1) |> Flow.fromValueOption ()
+                let! value = ValueSome(env + 1)
                 return value * 2
             }
 
         let syncValueNone : Flow<int, unit, int> =
             flow {
                 let! env = Flow.env
-                let! value = ValueNone |> Flow.fromValueOption ()
+                let! value = ValueNone
                 return env + value
             }
 
         let asyncWorkflow : Flow<int, unit, int> =
             flow {
                 let! env = Flow.env
-                let! value = Some(env + 1) |> Flow.fromOption ()
-                let! extra = ValueSome(value + 1) |> Flow.fromValueOption ()
+                let! value = Some(env + 1)
+                let! extra = ValueSome(value + 1)
                 return extra * 2
             }
 
         let asyncReturnFromNone : Flow<ClockEnvironment, unit, int> =
-            flow { return! None |> Flow.fromOption () }
+            flow { return! None }
 
         let taskWorkflow : Flow<int, unit, int> =
             flow {
                 let! env = Flow.env
-                let! value = Some(env + 1) |> Flow.fromOption ()
-                let! extra = ValueSome(value + 1) |> Flow.fromValueOption ()
+                let! value = Some(env + 1)
+                let! extra = ValueSome(value + 1)
                 return extra * 2
             }
 
         let taskReturnFromValueNone : Flow<ClockEnvironment, unit, int> =
-            flow { return! ValueNone |> Flow.fromValueOption () }
+            flow { return! ValueNone }
 
         test <@ Flow.runSync 20 syncSome = Exit.Success 42 @>
         test <@ Flow.runSync 20 syncNone = Exit.Failure (Cause.Fail ()) @>

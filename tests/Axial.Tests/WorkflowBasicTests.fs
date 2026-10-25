@@ -125,13 +125,13 @@ module WorkflowBasicTests =
 
         let workflow : Flow<ClockEnvironment, string, int> =
             flow {
-                let! value = Flow.fromColdTask load
+                let! value = load
                 return value * 2
             }
 
         let returned : Flow<ClockEnvironment, string, int> =
             flow {
-                return! Flow.fromColdTask load
+                return! load
             }
 
         use cts = new CancellationTokenSource()
@@ -148,13 +148,17 @@ module WorkflowBasicTests =
     let ``flow lifts ColdTask Result through let and return`` () =
         let succeeds : Flow<ClockEnvironment, string, int> =
             flow {
-                let! value = ColdTask(fun _ -> Task.FromResult(Ok 41)) |> Flow.fromColdTaskResult
+                let! value =
+                    ColdTask(fun _ -> Task.FromResult(Ok 41 : Result<int, string>))
+                    |> Flow.fromColdTaskResult
                 return value + 1
             }
 
         let fails : Flow<ClockEnvironment, string, int> =
             flow {
-                return! ColdTask(fun _ -> Task.FromResult(Error "unavailable")) |> Flow.fromColdTaskResult
+                return!
+                    ColdTask(fun _ -> Task.FromResult(Error "unavailable"))
+                    |> Flow.fromColdTaskResult
             }
 
         test <@ Flow.runSync (TestSupport.clockEnv ()) succeeds = Exit.Success 42 @>

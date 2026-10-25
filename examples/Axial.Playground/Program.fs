@@ -15,11 +15,10 @@ let greetingAsync : Flow<AppEnv, string, string> =
     flow {
         let! greeting = greetingFlow
         let! (checkedGreeting: string) =
-            (if String.IsNullOrWhiteSpace greeting then
-                 Error "Blank greeting"
-             else
-                 Ok greeting)
-            |> Flow.fromResult
+            if String.IsNullOrWhiteSpace greeting then
+                Error "Blank greeting"
+            else
+                Ok greeting
 
         return checkedGreeting.ToUpperInvariant()
     }
