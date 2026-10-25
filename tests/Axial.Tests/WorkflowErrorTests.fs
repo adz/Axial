@@ -640,11 +640,12 @@ module WorkflowErrorTests =
                 else
                     let sourceType = parameters.[1].ParameterType
 
-                    sourceType.IsGenericType
-                    && sourceType.GetGenericTypeDefinition() = carrier
-                    && let innerType = sourceType.GetGenericArguments().[0]
-                       innerType.IsGenericType
-                       && innerType.GetGenericTypeDefinition() = typedefof<Result<_, _>>)
+                    if sourceType.IsGenericType && sourceType.GetGenericTypeDefinition() = carrier then
+                        let innerType = sourceType.GetGenericArguments().[0]
+                        innerType.IsGenericType
+                        && innerType.GetGenericTypeDefinition() = typedefof<Result<_, _>>
+                    else
+                        false)
 
         let sourceCount =
             typeof<FlowBuilder>.GetMethods()
