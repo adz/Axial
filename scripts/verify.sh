@@ -21,6 +21,11 @@ stages=("$@")
 mkdir -p "$out_dir"
 cd "$root_dir"
 
+# Concurrent verification used to corrupt shared logs and let one run publish another run's result.
+if [[ ${AXIAL_VERIFY_LOCKED:-0} != 1 ]]; then
+    exec flock "$out_dir/run.lock" env AXIAL_VERIFY_LOCKED=1 "$0" "$@"
+fi
+
 results=()
 failed=0
 
@@ -56,14 +61,14 @@ run_test() {
     # The shipped-assembly scan is outside Axial.slnx because it builds every shipped project, HTTP adapters included.
     timeout 1200 dotnet test tests/Axial.Build.Tests -c Release >>"$out_dir/test.log" 2>&1 || code=$?
     local passed failed_count projects
-    passed=$(grep -oE "Passed: +[0-9]+" "$out_dir/test.log" | awk '{s+=$2} END {print s+0}')
-    failed_count=$(grep -oE "Failed: +[0-9]+" "$out_dir/test.log" | awk '{s+=$2} END {print s+0}')
-    projects=$(grep -cE "^(Passed|Failed)!" "$out_dir/test.log")
-    if [[ $code -eq 0 && $failed_count -eq 0 && $projects -gt 0 ]]; then
+    # VSTest reports "Passed! - Failed: N, Passed: N"; Microsoft.Testing.Platform reports
+    # "Test summary: total: N, failed: N, succeeded: N, skipped: N".
+    read -r passed failed_count projects < <(python3 scripts/parse-test-summary.py "$out_dir/test.log")
+    if [[ $code -eq 0 && $failed_count -eq 0 && $projects -gt 0 && $passed -gt 0 ]]; then
         echo "pass|$passed passed, 0 failed, $projects projects"
     else
         local names
-        names=$(grep -E "^\s+Failed .*\[[0-9.]+ m?s\]$" "$out_dir/test.log" | sed -E 's/^ *Failed //; s/ \[[0-9.]+ m?s\]$//' | sort -u | head -5 | paste -sd';' -)
+        names=$(grep -aE "^\s+Failed .*\[[0-9.]+ m?s\]$" "$out_dir/test.log" | sed -E 's/^ *Failed //; s/ \[[0-9.]+ m?s\]$//' | sort -u | head -5 | paste -sd';' -)
         echo "fail|exit $code, $passed passed, $failed_count failed, $projects projects; failing: ${names:-see log}"
     fi
 }
@@ -86,7 +91,7 @@ run_aot() {
 }
 
 run_docs() {
-    { bash scripts/check-docs-conventions.sh && bash scripts/check-source-inventory.sh && python3 scripts/check-package-maturity.py && bash scripts/test-guardrails-baseline-growth.sh && bash scripts/check-guardrails-baseline-growth.sh; } >"$out_dir/docs.log" 2>&1 \
+    { bash scripts/check-docs-conventions.sh && bash scripts/check-source-inventory.sh && python3 scripts/check-package-maturity.py && bash scripts/test-verify-summary.sh && bash scripts/test-guardrails-baseline-growth.sh && bash scripts/check-guardrails-baseline-growth.sh; } >"$out_dir/docs.log" 2>&1 \
         && echo "pass|docs conventions and source inventory" || echo "fail|$(tail -1 "$out_dir/docs.log")"
 }
 

@@ -6,11 +6,6 @@ open System.Diagnostics
 open System.Security.Cryptography
 open System.Text
 open System.Text.RegularExpressions
-open System.Collections
-open Microsoft.FSharp.Reflection
-open FSharp.Compiler.CodeAnalysis
-open FSharp.Compiler.Syntax
-open FSharp.Compiler.Text
 open Axial.Guardrails.Policy
 
 module PolicyLock =
@@ -83,77 +78,40 @@ module PolicyLock =
         let explicitFiles = Regex.Matches(File.ReadAllText project, "Compile\\s+Include=\"([^\"]+\\.fs)\"") |> Seq.cast<Match> |> Seq.map (fun m -> Path.GetFullPath(Path.Combine(directory,m.Groups[1].Value))) |> Seq.filter File.Exists |> Seq.toArray
         if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.TopDirectoryOnly)
 
-    // FCS's untyped parser removes comments, strings, and inactive conditional branches without type-checking.
-    // Calls are counted only below test bodies. Direct aliases are syntax aliases, not arbitrary wrappers.
-    let private checker = lazy FSharpChecker.Create()
+    // FCS lives in a helper process so the no-change path neither loads it nor prevents native-AOT publishing.
+    let private parseCount fileName defines =
+        let local=Path.Combine(AppContext.BaseDirectory,"Axial.Tool.Parser.dll")
+        let parser =
+            if File.Exists local then local
+            else
+                let rec findArtifacts directory =
+                    let candidate=Path.Combine(directory,"artifacts","bin","Axial.Tool.Parser")
+                    if Directory.Exists candidate then Some candidate
+                    else match Directory.GetParent directory with null -> None | parent -> findArtifacts parent.FullName
+                match findArtifacts AppContext.BaseDirectory with
+                | Some artifacts -> Directory.GetFiles(artifacts,"Axial.Tool.Parser.dll",SearchOption.AllDirectories) |> Array.tryHead |> Option.defaultValue local
+                | None -> local
+        if not(File.Exists parser) then failwith $"test parser not found at '{parser}'"
+        let start=ProcessStartInfo("dotnet")
+        start.UseShellExecute<-false
+        start.RedirectStandardOutput<-true
+        start.RedirectStandardError<-true
+        start.Environment["DOTNET_ROLL_FORWARD"]<-"Major"
+        start.ArgumentList.Add parser
+        start.ArgumentList.Add fileName
+        start.ArgumentList.Add(String.concat "," defines)
+        use child=Process.Start start
+        let output=child.StandardOutput.ReadToEnd()
+        let error=child.StandardError.ReadToEnd()
+        child.WaitForExit()
+        match child.ExitCode,output.Trim().Split('\t') with
+        | 0,[|tests;assertions|] -> Int32.Parse tests,Int32.Parse assertions
+        | _ -> failwith $"test parser failed for '{fileName}': {error.Trim()}"
 
-    let private children (value: obj) =
-        if isNull value || value :? string then [||]
-        elif value :? IEnumerable then (value :?> IEnumerable) |> Seq.cast<obj> |> Seq.toArray
-        else
-            let t=value.GetType()
-            if FSharpType.IsUnion(t,true) then FSharpValue.GetUnionFields(value,t,true) |> snd
-            elif FSharpType.IsRecord(t,true) then FSharpValue.GetRecordFields(value,true)
-            elif t.Namespace<>null && t.Namespace.StartsWith("FSharp.Compiler.Syntax",StringComparison.Ordinal) then
-                t.GetProperties() |> Array.filter _.CanRead |> Array.choose(fun p->try Some(p.GetValue value) with _->None)
-            else [||]
-
-    let private descendants<'a> (value: obj) =
-        let found=ResizeArray<'a>()
-        let rec walk (item: obj) =
-            if not(isNull item) then
-                match item with :? 'a as x -> found.Add x | _ -> ()
-                for child in children item do walk child
-        walk value
-        found |> Seq.toList
-
-    let rec private headName = function
-        | SynExpr.Ident id -> Some id.idText
-        | SynExpr.LongIdent(longDotId=ids) -> ids.LongIdent |> List.map _.idText |> String.concat "." |> Some
-        | SynExpr.App(funcExpr=f) | SynExpr.TypeApp(expr=f) | SynExpr.Paren(expr=f) | SynExpr.Typed(expr=f) -> headName f
-        | _ -> None
-
-    let private bindingName (SynBinding(headPat=pattern)) =
-        descendants<Ident>(box pattern) |> List.tryLast |> Option.map _.idText
-
-    let private attributeNames (SynBinding(attributes=attributes)) =
-        descendants<Ident>(box attributes) |> List.map _.idText |> Set.ofList
-
-    let private countParsed (tree: ParsedInput) =
-        let bindings=descendants<SynBinding>(box tree)
-        let aliases =
-            bindings |> List.choose(fun (SynBinding(expr=expr) as binding) ->
-                match bindingName binding, headName expr with
-                | Some name, Some target when target.StartsWith("Assert.") || target.StartsWith("Expect.") -> Some name
-                | _ -> None) |> Set.ofList
-        let assertion expr =
-            match expr with
-            | SynExpr.App _ ->
-                match headName expr with
-                | Some name when name.StartsWith("Assert.") || name.StartsWith("Expect.") || Set.contains name aliases || name="test" -> true
-                | _ -> false
-            | _ -> false
-        let countBody body =
-            descendants<SynExpr>(box body) |> List.filter assertion
-            |> List.distinctBy(fun expr -> headName expr,expr.Range.StartLine,expr.Range.StartColumn)
-            |> List.length
-        let attributed =
-            bindings |> List.choose(fun (SynBinding(expr=body) as binding) ->
-                let attrs=attributeNames binding
-                if ["Fact";"FactAttribute";"Theory";"TheoryAttribute";"Test";"TestAttribute";"Property";"PropertyAttribute"] |> List.exists attrs.Contains
-                then Some body else None)
-        let expecto =
-            descendants<SynExpr>(box tree)
-            |> List.choose(fun expr -> match headName expr with Some "testCase" | Some "testList" -> Some expr | _ -> None)
-        let bodies=attributed @ expecto
-        bodies.Length, bodies |> List.sumBy countBody
-
-    let private parseCount fileName defines text =
-        let options={ FSharpParsingOptions.Default with SourceFiles=[|fileName|]; ConditionalDefines=defines }
-        let parsed=checker.Value.ParseFile(fileName,SourceText.ofString text,options) |> Async.RunSynchronously
-        countParsed parsed.ParseTree
-
-    let countTestSource text = parseCount "PolicyLockTests.fs" [] text
+    let countTestSource text =
+        let path=Path.Combine(Path.GetTempPath(),$"axial-test-{Guid.NewGuid():N}.fs")
+        try File.WriteAllText(path,text); parseCount path []
+        finally File.Delete path
 
     let private testCounts root (files: string array) =
         let cachePath=Path.Combine(root,"artifacts","guardrails-test-counts.tsv")
@@ -169,11 +127,10 @@ module PolicyLock =
             else Map.empty
         let mutable updated=cache
         let countFile defines file =
-            let text=File.ReadAllText file
             let key=sha256 file+":"+String.concat "," defines
             match cache.TryFind key with
             | Some counts -> counts
-            | None -> let counts=parseCount file defines text in updated<-updated.Add(key,counts); counts
+            | None -> let counts=parseCount file defines in updated<-updated.Add(key,counts); counts
         let counts =
             files |> Seq.filter (fun p -> p.EndsWith(".fsproj",StringComparison.Ordinal))
             |> Seq.filter (fun p -> relative root p |> fun x -> x.StartsWith("tests/"))

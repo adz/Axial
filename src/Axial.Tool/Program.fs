@@ -2,7 +2,7 @@ namespace Axial.Tool
 
 open System
 open System.IO
-open System.Text.Json
+open System.Text.Encodings.Web
 open Axial.Tool.PolicyLock
 
 module Program =
@@ -14,7 +14,10 @@ module Program =
 The lock is a workflow guard, not a security boundary. Direct lock edits remain visible in Git; phase 3 agent hooks will block them.
 HUMAN DECISION — agents must not run policy approval commands; ask the user."""
     let private policyWarning = "HUMAN DECISION — agents must not run this; ask the user."
-    let private json value = JsonSerializer.Serialize(value,JsonSerializerOptions(WriteIndented=true))
+    let private jsonString (value: string) = "\"" + JavaScriptEncoder.Default.Encode(value) + "\""
+    let private jsonArray values = values |> List.map jsonString |> String.concat "," |> fun content -> "[" + content + "]"
+    let private jsonBaseline values =
+        values |> List.map(fun entry -> "{\"rule\":" + jsonString entry.Rule + ",\"file\":" + jsonString entry.File + ",\"fingerprint\":" + jsonString entry.Fingerprint + ",\"count\":" + string entry.Count + "}") |> String.concat "," |> fun content -> "[" + content + "]"
     let mutable private commandName = "help"
     let private jsonChanges (changes: ChangeSummary option) =
         let c=defaultArg changes {RulesDowngraded=[];BaselineAdded=[];SuppressionsAdded=[];BoundariesAdded=[];ProtectedChanged=[];TestsRemoved=[]}
@@ -33,7 +36,16 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
             elif changes |> Option.exists(isEmpty >> not) then "AXIAL_POLICY_CHANGED"
             else "AXIAL_MALFORMED_CONFIG"
         let categorized = jsonChanges changes
-        if asJson then printfn "%s" (json {| schema="axial.policy.v1"; command=commandName; status=status; errorCode=errorCode; changes=categorized; message=message |})
+        if asJson then
+            let errorJson = if isNull errorCode then "null" else jsonString errorCode
+            let fields =
+                [ "\"rulesDowngraded\":" + jsonArray categorized.rulesDowngraded
+                  "\"baselineAdded\":" + jsonBaseline categorized.baselineAdded
+                  "\"suppressionsAdded\":" + jsonArray categorized.suppressionsAdded
+                  "\"boundariesAdded\":" + jsonArray categorized.boundariesAdded
+                  "\"protectedChanged\":" + jsonArray categorized.protectedChanged
+                  "\"testsRemoved\":" + jsonArray categorized.testsRemoved ] |> String.concat ","
+            Console.WriteLine("{\"schema\":\"axial.policy.v1\",\"command\":" + jsonString commandName + ",\"status\":" + jsonString status + ",\"errorCode\":" + errorJson + ",\"changes\":{" + fields + "},\"message\":" + jsonString message + "}")
         else (if ok then printfn "%s" message else eprintfn "%s" message)
         if ok then 0 else 1
     let private emit asJson ok message = emitWith None asJson ok message
