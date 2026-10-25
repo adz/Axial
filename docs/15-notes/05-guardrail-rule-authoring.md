@@ -28,8 +28,9 @@ Each rule is one `<AxialGuardrailRule>` item:
 </ItemGroup>
 ```
 
-Findings are reported as `AXG001`. In a file declared with `AxialGuardrailsBoundary`,
-`// axial-allow-AXG001: payments live implementation` allows an intentional use.
+Findings are reported as `AXG001`. Put normal live implementations in a TOML `capabilities` role glob. In an
+exceptional exact file listed under `[boundaries].files`, `// axial-allow-AXG001: payments live implementation`
+allows an intentional use unless the rule level is `forbid`.
 
 ## Metadata
 
