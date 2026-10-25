@@ -25,7 +25,7 @@ Axial is the workflow product. Core is `src/Axial`; focused operational and host
 
 ## Validation
 
-- `scripts/verify.sh [build test fable aot docs]` runs the stages below with timeouts and writes
+- `scripts/verify.sh [build test fable aot docs livedocs]` runs the stages below with timeouts and writes
   `artifacts/verify/result.json`; report that file. Checkpoint with `scripts/checkpoint.sh`, and prove new tests fail
   without the fix with `scripts/check-tests-fail-without-fix.sh` ([`VERIFICATION.md`](VERIFICATION.md)).
 - `bash scripts/check-source-inventory.sh`
