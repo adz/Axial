@@ -308,14 +308,14 @@ module WorkflowErrorTests =
 
         let asyncDefect =
             flow {
-                let! value = (async { return raise defect } : Async<int>)
+                let! value = async { return raise defect }
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
 
         let asyncCanceled =
             flow {
-                let! value = (async { return raise canceled } : Async<int>)
+                let! value = async { return raise canceled }
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
@@ -385,7 +385,7 @@ module WorkflowErrorTests =
 
         let asyncBoundaryResult =
             flow {
-                let! value = (async { return raise defect } : Async<int>)
+                let! value = async { return raise defect }
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())

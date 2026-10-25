@@ -51,15 +51,9 @@ type FlowBindable =
     static member inline Convert(_: FlowBindable, source: Async<'value>) : Flow<'env, 'error, 'value> =
         Flow.fromAsync source
 
-    static member inline Convert(_: FlowBindable, source: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
-        Flow.fromAsyncResult source
-
 #if !FABLE_COMPILER
     static member inline Convert(_: FlowBindable, source: ColdTask<'value>) : Flow<'env, 'error, 'value> =
         Flow.fromColdTask source
-
-    static member inline Convert(_: FlowBindable, source: ColdTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
-        Flow.fromColdTaskResult source
 #endif
 
     static member inline Convert(_: FlowBindable, source: seq<'value>) : seq<'value> = source
