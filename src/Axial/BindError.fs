@@ -267,7 +267,7 @@ type BindErrorMap =
             Unchecked.defaultof<BindError<'env, 'error2, 'value>>
         )
 
-/// <summary>Creates error-adaptation markers for <c>let!</c>, <c>do!</c>, and <c>return!</c> in <c>flow { }</c>.</summary>
+/// <summary>Creates error-adaptation values for <c>let!</c>, <c>do!</c>, and <c>return!</c> in <c>flow { }</c>.</summary>
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Bind =
     [<EditorBrowsable(EditorBrowsableState.Never)>]
@@ -277,7 +277,7 @@ module Bind =
     /// <summary>Assigns an error to a missing or unit-error source at a <c>flow { }</c> bind site.</summary>
     /// <param name="failure">The error to use if the source fails.</param>
     /// <param name="source">The source to adapt.</param>
-    /// <returns>A Flow whose missing or unit error is replaced by <paramref name="failure"/>.</returns>
+    /// <returns>A bind-site adapter whose missing or unit error is replaced by <paramref name="failure"/>.</returns>
     /// <example>
     /// <code>
     /// flow {
@@ -286,13 +286,13 @@ module Bind =
     /// }
     /// </code>
     /// </example>
-    let inline error (failure: 'error) (source: 'source) : Flow<'env, 'error, 'value> =
-        BindErrorWithError.Invoke failure source |> toFlow
+    let inline error (failure: 'error) (source: 'source) : BindError<'env, 'error, 'value> =
+        BindErrorWithError.Invoke failure source
 
     /// <summary>Maps an existing source error at a <c>flow { }</c> bind site.</summary>
     /// <param name="mapper">The error mapping function.</param>
     /// <param name="source">The source to adapt.</param>
-    /// <returns>A Flow whose error is transformed by <paramref name="mapper"/>.</returns>
+    /// <returns>A bind-site adapter whose error is transformed by <paramref name="mapper"/>.</returns>
     /// <example>
     /// <code>
     /// flow {
@@ -300,5 +300,5 @@ module Bind =
     /// }
     /// </code>
     /// </example>
-    let inline mapError (mapper: 'error1 -> 'error2) (source: 'source) : Flow<'env, 'error2, 'value> =
-        BindErrorMap.Invoke mapper source |> toFlow
+    let inline mapError (mapper: 'error1 -> 'error2) (source: 'source) : BindError<'env, 'error2, 'value> =
+        BindErrorMap.Invoke mapper source

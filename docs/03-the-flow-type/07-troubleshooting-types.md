@@ -82,7 +82,20 @@ let annotated : Flow<unit, string, int> =
 annotated |> Flow.run () |> shouldEqual (Exit.Success 42)
 ```
 
-Use `Async<Result<int,string>>` instead when an `Error` should enter the typed error channel.
+Use `Flow.fromAsyncResult` when an `Error` should enter the typed error channel:
+
+```fsharp
+let nestedError : Flow<unit, string, int> =
+    flow {
+        let source : Async<Result<int, string>> = async { return Error "not found" }
+        let! value = source |> Flow.fromAsyncResult
+        return value
+    }
+```
+
+```fsharp run
+nestedError |> Flow.run () |> shouldEqual (Exit.Failure (Cause.Fail "not found"))
+```
 
 ## Error: The Flow Requires A Different Environment Type
 
