@@ -306,6 +306,9 @@ module PackagePropsTests =
             assertAnalysisRan true (build ())
             assertAnalysisRan false (build ())
 
+            let stamp = Directory.GetFiles(dir, "axial-guardrails.*.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
+            File.WriteAllText(stamp, "corrupt cache")
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
             File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet value = System.DateTimeOffset.UtcNow\n")
             let finding = build ()
             Assert.NotEqual(0, finding.ExitCode)
