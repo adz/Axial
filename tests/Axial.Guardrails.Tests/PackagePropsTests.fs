@@ -295,6 +295,26 @@ module PackagePropsTests =
         else Assert.DoesNotContain("Running Axial.Guardrails analysis", result.Output)
 
     [<Fact>]
+    let ``incremental builds skip unchanged analysis but never skip a new finding`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-incremental-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet value = 1\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let build () = runBuild project None None None false false None
+
+            assertAnalysisRan true (build ())
+            assertAnalysisRan false (build ())
+
+            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet value = System.DateTimeOffset.UtcNow\n")
+            let finding = build ()
+            Assert.NotEqual(0, finding.ExitCode)
+            Assert.Contains("error AXG001", finding.Output)
+            Assert.Contains("Running Axial.Guardrails analysis", finding.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
     let ``cache keys generated sources compiler properties references and overridden tool inputs`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-cache-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
