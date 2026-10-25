@@ -109,10 +109,31 @@ role = "domain"
     [<Fact>]
     let ``rejects repository escapes`` () =
         withRepository (fun root ->
-            let actual = parse root """version = 2
+            let pathEscape = parse root """version = 2
 [default]
 role = "domain"
 [files]
 host = ["../Program.fs"]
 """
-            test <@ actual = Error [ "policy path '../Program.fs' escapes the repository root" ] @>)
+            let baselineEscape = parse root "version = 2\nbaseline = \"../outside\"\n[default]\nrole = \"domain\""
+            test <@ Result.isError pathEscape @>
+            test <@ baselineEscape = Error [ "baseline path '../outside' must be a canonical repository-relative path with no '..' or backslashes" ] @>)
+
+    [<Fact>]
+    let ``rejects unknown and redefined tables with their lines`` () =
+        withRepository (fun root ->
+            test <@ parse root "version = 2\n[default]\nrole = \"domain\"\n[unknown]" = Error [ "line 4: unknown policy table 'unknown'" ] @>
+            test <@ parse root "version = 2\n[default]\nrole = \"domain\"\n[default]" = Error [ "line 4: table 'default' is already declared; combine its entries under one declaration" ] @>)
+
+    [<Fact>]
+    let ``directory symlinks are not followed`` () =
+        withRepository (fun root ->
+            let outside=Path.Combine(Path.GetTempPath(),Guid.NewGuid().ToString("N"))
+            Directory.CreateDirectory outside |> ignore
+            File.WriteAllText(Path.Combine(outside,"Escaped.fs"),"module Escaped")
+            let link=Path.Combine(root,"src","linked")
+            try
+                Directory.CreateSymbolicLink(link,outside) |> ignore
+                let actual=parse root "version = 2\n[default]\nrole = \"domain\"\n[files]\nhost = [\"src/linked/**\"]"
+                test <@ actual = Error [ "policy path 'src/linked/**' matches nothing" ] @>
+            finally Directory.Delete(outside,true))

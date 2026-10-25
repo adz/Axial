@@ -76,6 +76,7 @@ module Policy =
 
     let private parseDocument (text: string) =
         let mutable table = ""
+        let mutable tables = Set.empty
         let mutable entries = Map.empty
         let mutable error = None
         for number, original in text.Replace("\r", "").Split('\n') |> Array.indexed do
@@ -84,7 +85,13 @@ module Policy =
             if error.IsNone && line <> "" then
                 if line.StartsWith("[") && line.EndsWith("]") then
                     table <- line.Substring(1, line.Length - 2).Trim()
+                    let allowedTable =
+                        table = "default" || table = "projects" || table = "files" || table = "protected"
+                        || (table.StartsWith("roles.") && table.EndsWith(".rules") && table.Split('.').Length = 3)
                     if table = "" then error <- Some $"line {lineNumber}: empty table name"
+                    elif not allowedTable then error <- Some $"line {lineNumber}: unknown policy table '{table}'"
+                    elif tables.Contains table then error <- Some $"line {lineNumber}: table '{table}' is already declared; combine its entries under one declaration"
+                    else tables <- tables.Add table
                 else
                     let separator = line.IndexOf('=')
                     if separator < 1 then error <- Some $"line {lineNumber}: expected key = value"
@@ -121,33 +128,37 @@ module Policy =
         Regex(output.Append('$').ToString(), RegexOptions.CultureInvariant)
 
     let private normalizePath name (path: string) =
-        let normalized = path.Replace('\\', '/').TrimStart('/')
-        if Path.IsPathRooted path || normalized.Split('/') |> Array.exists ((=) "..") then
-            Error $"{name} path '{path}' escapes the repository root"
+        let normalized = path.Replace('\\', '/')
+        if Path.IsPathRooted path || path.Contains('\\') || normalized.StartsWith('/') || normalized.Split('/') |> Array.exists (fun part -> part = ".." || part = "") then
+            Error $"{name} path '{path}' must be a canonical repository-relative path with no '..' or backslashes"
         else Ok normalized
+
+    let private canonicalRoot root = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + string Path.DirectorySeparatorChar
+    let private insideRoot root path =
+        let candidate = Path.GetFullPath(path)
+        candidate = canonicalRoot(root).TrimEnd(Path.DirectorySeparatorChar) || candidate.StartsWith(canonicalRoot root, StringComparison.Ordinal)
+    let private resolvedInsideRoot root path =
+        let info : FileSystemInfo = if Directory.Exists path then DirectoryInfo(path) else FileInfo(path)
+        let resolved = info.ResolveLinkTarget(true)
+        insideRoot root (if isNull resolved then info.FullName else resolved.FullName)
 
     let private filesUnder root =
         let skipped = set [ ".git"; ".livedocs"; "artifacts"; "bin"; "obj"; "output" ]
         let rec walk directory = seq {
             yield! Directory.EnumerateFiles(directory)
             for child in Directory.EnumerateDirectories(directory) do
-                if not(skipped.Contains(Path.GetFileName child)) then yield! walk child }
-        walk root |> Seq.map (fun path -> Path.GetRelativePath(root, path).Replace('\\', '/')) |> Seq.toArray
+                let info = DirectoryInfo child
+                if not(skipped.Contains info.Name) && not(info.Attributes.HasFlag FileAttributes.ReparsePoint) then yield! walk child }
+        walk root |> Seq.map (fun path -> Path.GetRelativePath(root, path).Replace('\\', '/')) |> Seq.sort |> Seq.toArray
 
     let private validatePattern root allFiles allowEmpty pattern =
         normalizePath "policy" pattern
         |> Result.bind (fun normalized ->
-            let prefix = normalized.Split([| '*'; '?' |], 2)[0]
-            let candidate = Path.GetFullPath(Path.Combine(root, prefix.Replace('/', Path.DirectorySeparatorChar)))
-            let physical =
-                if File.Exists candidate then FileInfo(candidate).ResolveLinkTarget(true)
-                elif Directory.Exists candidate then DirectoryInfo(candidate).ResolveLinkTarget(true)
-                else null
-            if not (isNull physical) && not (physical.FullName.StartsWith(Path.GetFullPath(root) + string Path.DirectorySeparatorChar, StringComparison.Ordinal)) then
-                Error $"policy path '{pattern}' follows a symlink outside the repository root"
-            elif not allowEmpty && not (allFiles |> Array.exists (fun (path: string) -> (globRegex normalized).IsMatch(path))) then
-                Error $"policy path '{pattern}' matches nothing"
-            else Ok normalized)
+            let matches = allFiles |> Array.filter (fun (path: string) -> (globRegex normalized).IsMatch(path))
+            match matches |> Array.tryFind (fun path -> not(resolvedInsideRoot root (Path.Combine(root, path.Replace('/', Path.DirectorySeparatorChar))))) with
+            | Some escaped -> Error $"policy path '{pattern}' matches '{escaped}', which resolves outside the repository root"
+            | None when not allowEmpty && matches.Length = 0 -> Error $"policy path '{pattern}' matches nothing"
+            | None -> Ok normalized)
 
     let parse (repositoryRoot: string) (knownRuleIds: Set<string>) (text: string) : Result<Config, string list> =
         let fail message = Error [ message ]
@@ -173,9 +184,18 @@ module Policy =
                 match version, getString "default.role" true, getString "baseline" false, getStrings "protected.paths" with
                 | Error e, _, _, _ | _, Error e, _, _ | _, _, Error e, _ | _, _, _, Error e -> fail e
                 | Ok version, Ok(Some defaultName), Ok baseline, Ok protectedPaths ->
-                    match parseRole defaultName with
-                    | Error e -> fail e
-                    | Ok defaultRole ->
+                    let baselineResult =
+                        match baseline with
+                        | None -> Ok None
+                        | Some path ->
+                            normalizePath "baseline" path
+                            |> Result.bind (fun normalized ->
+                                let target = Path.Combine(repositoryRoot, normalized.Replace('/', Path.DirectorySeparatorChar))
+                                if not(insideRoot repositoryRoot target) || (File.Exists target && not(resolvedInsideRoot repositoryRoot target)) then Error $"baseline path '{path}' resolves outside the repository root"
+                                else Ok(Some normalized))
+                    match parseRole defaultName, baselineResult with
+                    | Error e, _ | _, Error e -> fail e
+                    | Ok defaultRole, Ok baseline ->
                         let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths")
                         let allFiles = if needsFiles then filesUnder repositoryRoot else [||]
                         let assignments prefix allowEffectsEmpty =
