@@ -76,16 +76,47 @@ module PolicyLock =
     let private sourceFilesForProject (project: string) =
         let directory = Path.GetDirectoryName project
         let explicitFiles = Regex.Matches(File.ReadAllText project, "Compile\\s+Include=\"([^\"]+\\.fs)\"") |> Seq.cast<Match> |> Seq.map (fun m -> Path.GetFullPath(Path.Combine(directory,m.Groups[1].Value))) |> Seq.filter File.Exists |> Seq.toArray
-        if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.AllDirectories)
+        if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.TopDirectoryOnly)
+
+    // An untyped lexical pass is used here rather than type-checking every test project: it keeps `axial check`
+    // below its 100 ms budget. It removes comments, strings, and inactive `#if false` regions, then follows direct
+    // `let alias = Assert.member`/`Expect.member` aliases. Arbitrary user wrappers are intentionally not assertions.
+    let private activeCode (text: string) =
+        let output=StringBuilder(text.Length)
+        let mutable blockDepth=0
+        let mutable inString=false
+        let mutable i=0
+        let mutable active=true
+        while i<text.Length do
+            if not inString && blockDepth=0 && (i=0 || text[i-1]='\n') && text.AsSpan(i).StartsWith("#if false".AsSpan(),StringComparison.OrdinalIgnoreCase) then active<-false
+            elif not inString && blockDepth=0 && (i=0 || text[i-1]='\n') && text.AsSpan(i).StartsWith("#endif".AsSpan(),StringComparison.OrdinalIgnoreCase) then active<-true
+            if not active then output.Append(if text[i]='\n' then '\n' else ' ') |> ignore; i<-i+1
+            elif blockDepth>0 then
+                if i+1<text.Length && text[i]='(' && text[i+1]='*' then blockDepth<-blockDepth+1; output.Append("  ")|>ignore;i<-i+2
+                elif i+1<text.Length && text[i]='*' && text[i+1]=')' then blockDepth<-blockDepth-1; output.Append("  ")|>ignore;i<-i+2
+                else output.Append(if text[i]='\n' then '\n' else ' ')|>ignore;i<-i+1
+            elif not inString && i+1<text.Length && text[i]='/' && text[i+1]='/' then
+                while i<text.Length && text[i]<>'\n' do output.Append(' ')|>ignore;i<-i+1
+            elif not inString && i+1<text.Length && text[i]='(' && text[i+1]='*' then blockDepth<-1;output.Append("  ")|>ignore;i<-i+2
+            elif text[i]='"' then inString<-not inString;output.Append(' ')|>ignore;i<-i+1
+            elif inString then output.Append(if text[i]='\n' then '\n' else ' ')|>ignore;i<-i+1
+            else output.Append(text[i])|>ignore;i<-i+1
+        output.ToString()
+
+    let countTestSource text =
+        let text=activeCode text
+        let aliases = Regex.Matches(text,"(?m)\\blet\\s+([A-Za-z_][A-Za-z0-9_']*)\\s*=\\s*(?:Assert|Expect)\\.[A-Za-z_][A-Za-z0-9_']*") |> Seq.cast<Match> |> Seq.map(fun m->m.Groups[1].Value) |> Seq.distinct |> Seq.toArray
+        let direct=Regex.Matches(text,"\\b(?:Assert|Expect)\\.[A-Za-z_][A-Za-z0-9_']*\\s*(?:<|\\()").Count + Regex.Matches(text,"\\btest\\s*<@").Count
+        let aliasCalls=aliases |> Array.sumBy(fun name->Regex.Matches(text,$"\\b{Regex.Escape name}\\s*(?:<|\\()").Count)
+        Regex.Matches(text,"\\[<\\s*(?:Fact|Theory|Test|TestCase)(?:Attribute)?(?:\\([^>]*\\))?\\s*>\\]").Count, direct+aliasCalls
 
     let private testCounts root (files: string array) =
         files |> Seq.filter (fun p -> p.EndsWith(".fsproj",StringComparison.Ordinal))
         |> Seq.filter (fun p -> relative root p |> fun x -> x.StartsWith("tests/"))
         |> Seq.map (fun project ->
-            let text = sourceFilesForProject project |> Seq.map File.ReadAllText |> String.concat "\n"
-            { Project=relative root project
-              Tests=Regex.Matches(text,"\[<(?:Fact|Theory|Test|TestCase)(?:Attribute)?(?:\\([^>]*\\))?>\]").Count
-              Assertions=Regex.Matches(text,"(?:Assert\\.|test\\s*<@|Expect\\.)").Count })
+            let text = sourceFilesForProject project |> Seq.map (File.ReadAllText >> activeCode) |> String.concat "\n"
+            let tests,assertions=countTestSource text
+            { Project=relative root project; Tests=tests; Assertions=assertions })
         |> Seq.sortBy _.Project |> Seq.toList
 
     let private suppressions root (files: string array) =
@@ -95,10 +126,16 @@ module PolicyLock =
         |> Set.ofSeq
 
     let private mandatoryPaths root (files: string array) baseline config =
+        let relativeFiles = files |> Array.map(relative root)
+        let guardrailTestDirs = relativeFiles |> Array.filter(fun p->p.EndsWith(".fsproj") && p.StartsWith("tests/Axial.Guardrails")) |> Array.map(fun p->Path.GetDirectoryName(p).Replace('\\','/'))
         seq {
-            yield ConfigName; yield baseline; yield "Directory.Build.props"; yield "Directory.Build.targets"
-            yield! files |> Seq.filter (fun p -> Path.GetFileName(p)=".editorconfig") |> Seq.map (relative root)
-            yield! files |> Seq.filter (fun p -> p.EndsWith(".fsproj",StringComparison.Ordinal) && (relative root p).StartsWith("tests/Axial.Guardrails")) |> Seq.map (relative root)
+            yield ConfigName; yield baseline
+            yield! relativeFiles |> Seq.filter(fun p ->
+                let name=Path.GetFileName p
+                name=".editorconfig" || name.EndsWith(".globalconfig",StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith("Directory.Build.",StringComparison.Ordinal)
+                || p.EndsWith(".props",StringComparison.Ordinal) || p.EndsWith(".targets",StringComparison.Ordinal)
+                || ((p.EndsWith(".fsproj") || p.EndsWith(".fs")) && guardrailTestDirs |> Array.exists(fun d->p.StartsWith(d+"/",StringComparison.Ordinal))))
             for pattern in config.Protected do
                 let rx = "^" + Regex.Escape(pattern).Replace("\\*\\*",".*").Replace("\\*","[^/]*").Replace("\\?","[^/]") + "$"
                 yield! files |> Seq.map (relative root) |> Seq.filter (fun p -> Regex.IsMatch(p,rx)) }
@@ -137,17 +174,40 @@ module PolicyLock =
     let parseLock path =
         try
             if not(File.Exists path) then Error $"{LockName} not found; run 'axial init'" else
+            let lines=File.ReadAllLines path
+            let fail line message = failwith $"{path}:{line}: {message}; regenerate the lock with 'axial policy approve' after review"
+            if lines.Length=0 || lines[0]<>"version = 1" then fail 1 "the first record must be exactly 'version = 1'"
             let mutable s={ Hashes=Map.empty; Baseline=[]; Tests=[]; Rules=Map.empty; Effects=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
-            for line in File.ReadLines path do
-                if line="version = 1" then ()
-                elif line.StartsWith("SHA256  ") then let p=line.Split("  ",3,StringSplitOptions.None) in s <- {s with Hashes=s.Hashes.Add(p[2],p[1])}
-                elif line.StartsWith("BASELINE  ") then let p=line.Substring(10).Split('\t') in s <- {s with Baseline={Rule=p[0];File=p[1];Fingerprint=p[2];Count=int p[3]}::s.Baseline}
-                elif line.StartsWith("TEST  ") then let p=line.Substring(6).Split('\t') in s <- {s with Tests={Project=p[0];Tests=int p[1];Assertions=int p[2]}::s.Tests}
-                elif line.StartsWith("POLICY  ") then let p=line.Substring(8).Split('\t') in s <- {s with Rules=s.Rules.Add(p[0],p[1])}
-                elif line.StartsWith("EFFECT  ") then s <- {s with Effects=s.Effects.Add(line.Substring(8))}
-                elif line.StartsWith("BOUNDARY  ") then s <- {s with Boundaries=s.Boundaries.Add(line.Substring(10))}
-                elif line.StartsWith("SUPPRESSION  ") then s <- {s with Suppressions=s.Suppressions.Add(line.Substring(13))}
-                elif line.Trim()<>"" then failwith $"malformed lock record: {line}"
+            let unique line kind key exists = if exists then fail line $"duplicate {kind} record '{key}'"
+            for index in 1..lines.Length-1 do
+                let lineNumber=index+1
+                let line=lines[index]
+                if line="version = 1" || line.StartsWith("version = ") then fail lineNumber "duplicate or unsupported version record"
+                elif line.StartsWith("SHA256  ") then
+                    let p=line.Split("  ",StringSplitOptions.None)
+                    if p.Length<>3 || p[1].Length<>64 || p[1] |> Seq.exists(fun c->not(Uri.IsHexDigit c)) then fail lineNumber "SHA256 requires exactly a 64-hex hash and path"
+                    unique lineNumber "SHA256" p[2] (s.Hashes.ContainsKey p[2]); s <- {s with Hashes=s.Hashes.Add(p[2],p[1])}
+                elif line.StartsWith("BASELINE  ") then
+                    let p=line.Substring(10).Split('\t')
+                    if p.Length<>4 then fail lineNumber "BASELINE requires exactly rule, file, fingerprint, and count fields"
+                    let ok,count=Int32.TryParse p[3]
+                    if not ok || count<1 then fail lineNumber "BASELINE count must be a positive integer"
+                    unique lineNumber "BASELINE" (String.concat "/" p[0..2]) (s.Baseline|>List.exists(fun x->x.Rule=p[0]&&x.File=p[1]&&x.Fingerprint=p[2])); s <- {s with Baseline={Rule=p[0];File=p[1];Fingerprint=p[2];Count=count}::s.Baseline}
+                elif line.StartsWith("TEST  ") then
+                    let p=line.Substring(6).Split('\t')
+                    if p.Length<>3 then fail lineNumber "TEST requires exactly project, tests, and assertions fields"
+                    let okT,tests=Int32.TryParse p[1]
+                    let okA,assertions=Int32.TryParse p[2]
+                    if not okT || not okA || tests<0 || assertions<0 then fail lineNumber "TEST counts must be non-negative integers"
+                    unique lineNumber "TEST" p[0] (s.Tests|>List.exists(fun x->x.Project=p[0])); s <- {s with Tests={Project=p[0];Tests=tests;Assertions=assertions}::s.Tests}
+                elif line.StartsWith("POLICY  ") then
+                    let p=line.Substring(8).Split('\t')
+                    if p.Length<>2 || not(set["allow";"warn";"deny";"forbid"]|>Set.contains p[1]) then fail lineNumber "POLICY requires exactly rule and allow/warn/deny/forbid fields"
+                    unique lineNumber "POLICY" p[0] (s.Rules.ContainsKey p[0]); s <- {s with Rules=s.Rules.Add(p[0],p[1])}
+                elif line.StartsWith("EFFECT  ") then let value=line.Substring(8) in unique lineNumber "EFFECT" value (s.Effects.Contains value); s <- {s with Effects=s.Effects.Add value}
+                elif line.StartsWith("BOUNDARY  ") then let value=line.Substring(10) in unique lineNumber "BOUNDARY" value (s.Boundaries.Contains value); s <- {s with Boundaries=s.Boundaries.Add value}
+                elif line.StartsWith("SUPPRESSION  ") then let value=line.Substring(13) in unique lineNumber "SUPPRESSION" value (s.Suppressions.Contains value); s <- {s with Suppressions=s.Suppressions.Add value}
+                elif line.Trim()<>"" then fail lineNumber "unknown or malformed lock record"
             Ok {s with Baseline=List.sortBy (fun x->x.Rule,x.File,x.Fingerprint) s.Baseline; Tests=List.sortBy _.Project s.Tests}
         with ex -> Error ex.Message
 
@@ -162,7 +222,7 @@ module PolicyLock =
             if now.Tests<o.Tests || now.Assertions<o.Assertions then Some $"{o.Project}: tests {o.Tests} -> {now.Tests}, assertions {o.Assertions} -> {now.Assertions}" else None)
         { RulesDowngraded=downgraded; BaselineAdded=baselineAdded; SuppressionsAdded=Set.difference current.Suppressions old.Suppressions|>Set.toList
           BoundariesAdded=Set.union (Set.difference current.Effects old.Effects) (Set.difference current.Boundaries old.Boundaries)|>Set.toList
-          ProtectedChanged=Set.union (old.Hashes |> Map.keys |> Set.ofSeq) (current.Hashes |> Map.keys |> Set.ofSeq) |> Set.filter(fun p->old.Hashes.TryFind p<>current.Hashes.TryFind p)|>Set.toList; TestsRemoved=removed }
+          ProtectedChanged=(Set.union (old.Hashes |> Map.keys |> Set.ofSeq) (current.Hashes |> Map.keys |> Set.ofSeq) |> Set.filter(fun p->old.Hashes.TryFind p<>current.Hashes.TryFind p)|>Set.toList) @ (if downgraded.IsEmpty && baselineAdded.IsEmpty && removed.IsEmpty && old.Suppressions=current.Suppressions && old.Effects=current.Effects && old.Boundaries=current.Boundaries then [] else [LockName]); TestsRemoved=removed }
 
     let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.ProtectedChanged.IsEmpty && x.TestsRemoved.IsEmpty
     let formatSummary x =
@@ -180,8 +240,11 @@ module PolicyLock =
         elif not changes.BaselineAdded.IsEmpty then
             match approval with
             | BaselineRule rule ->
-                let hasRule (snapshot: Snapshot) = snapshot.Rules |> Map.exists (fun key _ -> key.EndsWith("/"+rule, StringComparison.Ordinal))
-                let newlyEnabled = not(hasRule old) && hasRule current
+                let reporting = function "warn"|"deny"|"forbid" -> true | _ -> false
+                let newlyEnabled =
+                    current.Rules |> Map.exists(fun key level ->
+                        key.EndsWith("/"+rule,StringComparison.Ordinal) && reporting level
+                        && (old.Rules.TryFind key |> Option.forall(reporting >> not)))
                 if not newlyEnabled then Error $"baseline growth refused: rule '{rule}' was not newly enabled"
                 elif changes.BaselineAdded |> List.exists(fun x->x.Rule<>rule) then Error "baseline growth refused: entries exist outside the selected rule"
                 else Ok()

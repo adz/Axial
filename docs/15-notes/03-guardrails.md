@@ -6,6 +6,12 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 # Effect-boundary guardrails
 
+## Repository policy lock
+
+`axial check` compares the repository policy, baseline, analyzer configuration, Guardrails test inputs, and test/assertion counts with `Axial.Guardrails.lock`. The lock is a workflow guard, not a security boundary: direct edits remain visible in Git, and agent hooks that block lock edits arrive in phase 3.
+
+Test counts come from active F# source after comments, strings, and inactive `#if false` regions are removed. Assertion counts include direct xUnit `Assert`, Expecto `Expect`, Unquote `test <@`, and direct aliases such as `let verify = Assert.True`; arbitrary user-defined wrappers do not count. This untyped pass avoids loading and type-checking every test project during `axial check`.
+
 Axial models operational effects as explicit, mockable dependencies. Direct access to ambient state can bypass those dependencies without changing a function's signature.
 
 `Schedule.jittered` once created its own `System.Random`, and `FiberDump` once read `DateTimeOffset.UtcNow` directly. Both compiled because the build did not enforce the effect boundary.
