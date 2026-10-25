@@ -1,0 +1,10 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/missing-clock.fsx(6,18): error FS0041: A unique overload for method 'Source' could not be determined based on type information prior to this program point. A type annotation may be needed.
+
+Known type of argument: Flow<'a,'b,int> when 'a :> IHasClock
+
+Candidates:
+ - member FlowBuilder.Source: _source: 'source -> Flow<'env,'error,'value>
+ - member FlowBuilder.Source: flow: Flow<'env,'error,'value> -> Flow<'env,'error,'value>
+

@@ -30,6 +30,13 @@ module internal FlowBuilderRuntime =
 #endif
 
 type FlowBuilder() =
+    member _.Source(flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> = flow
+
+
+    [<CompilerMessage("flow { let! ... } accepts Flow values. Convert this expression explicitly (for example with Flow.fromResult or Flow.fromAsync), and ensure the Flow environment and error types match the surrounding workflow.", 1200, IsError = true)>]
+    member _.Source(_source: 'source) : Flow<'env, 'error, 'value> =
+        failwith "compiler-only fallback"
+
     member _.Return(value: 'value) : Flow<'env, 'error, 'value> =
         Flow.ok value
 
@@ -45,33 +52,6 @@ type FlowBuilder() =
             binder: 'value -> Flow<'env, 'error, 'next>
         ) : Flow<'env, 'error, 'next> =
         Flow.bind binder flow
-
-
-    member this.Bind(result: Result<'value, 'error>, binder: 'value -> Flow<'env, 'error, 'next>) =
-        this.Bind(FlowBuilderRuntime.fromResult result, binder)
-
-    member this.Bind(option: 'value option, binder: 'value -> Flow<'env, unit, 'next>) =
-        this.Bind(option |> OptionFlow.toUnitResult |> FlowBuilderRuntime.fromResult, binder)
-
-    member this.Bind(option: 'value voption, binder: 'value -> Flow<'env, unit, 'next>) =
-        this.Bind(option |> OptionFlow.toUnitResultValueOption |> FlowBuilderRuntime.fromResult, binder)
-
-    member this.Bind(source: BindError<'env, 'error, 'value>, binder: 'value -> Flow<'env, 'error, 'next>) =
-        this.Bind(Bind.toFlow source, binder)
-
-    member this.Bind(operation: Async<Result<'value, 'error>>, binder: 'value -> Flow<'env, 'error, 'next>) =
-        this.Bind(FlowBuilderRuntime.fromAsyncResult operation, binder)
-
-    member this.Bind(operation: Async<'value>, binder: 'value -> Flow<'env, 'error, 'next>) =
-        this.Bind(FlowBuilderRuntime.fromAsync operation, binder)
-
-#if !FABLE_COMPILER
-    member this.Bind(operation: ColdTask<Result<'value, 'error>>, binder: 'value -> Flow<'env, 'error, 'next>) =
-        this.Bind(FlowBuilderRuntime.fromColdTaskResult operation, binder)
-
-    member this.Bind(operation: ColdTask<'value>, binder: 'value -> Flow<'env, 'error, 'next>) =
-        this.Bind(FlowBuilderRuntime.fromColdTask operation, binder)
-#endif
 
     member _.Delay(factory: unit -> Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         Flow.delay factory
@@ -138,3 +118,41 @@ type FlowBuilder() =
             fun enumerator -> this.While(enumerator.MoveNext, this.Delay(fun () -> binder enumerator.Current))
         )
 
+
+/// <exclude/>
+[<AutoOpen; EditorBrowsable(EditorBrowsableState.Never)>]
+module FlowBuilderSources =
+    type FlowBuilder with
+        member _.Source(result: Result<'value, 'error>) : Flow<'env, 'error, 'value> =
+            FlowBuilderRuntime.fromResult result
+
+        member _.Source(option: 'value option) : Flow<'env, unit, 'value> =
+            option |> OptionFlow.toUnitResult |> FlowBuilderRuntime.fromResult
+
+        member _.Source(option: 'value voption) : Flow<'env, unit, 'value> =
+            option |> OptionFlow.toUnitResultValueOption |> FlowBuilderRuntime.fromResult
+
+        member _.Source(source: BindError<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+            Bind.toFlow source
+
+        member _.Source(operation: Async<'value>) : Flow<'env, 'error, 'value> =
+            FlowBuilderRuntime.fromAsync operation
+
+#if !FABLE_COMPILER
+        member _.Source(operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+            FlowBuilderRuntime.fromColdTask operation
+#endif
+
+        member _.Source(sequence: #seq<'value>) : #seq<'value> = sequence
+
+/// <exclude/>
+[<AutoOpen; EditorBrowsable(EditorBrowsableState.Never)>]
+module FlowBuilderResultSources =
+    type FlowBuilder with
+        member _.Source(operation: Async<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+            FlowBuilderRuntime.fromAsyncResult operation
+
+#if !FABLE_COMPILER
+        member _.Source(operation: ColdTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+            FlowBuilderRuntime.fromColdTaskResult operation
+#endif
