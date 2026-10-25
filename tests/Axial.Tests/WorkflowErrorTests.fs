@@ -630,6 +630,25 @@ module WorkflowErrorTests =
 
     [<Fact>]
     let ``Nested carrier results enter the typed error channel`` () =
+        let hasNestedConversion (carrier: Type) =
+            typeof<FlowBindable>.GetMethods()
+            |> Array.exists (fun methodInfo ->
+                let parameters = methodInfo.GetParameters()
+
+                if methodInfo.Name <> "Convert" || parameters.Length <> 2 then
+                    false
+                else
+                    let sourceType = parameters.[1].ParameterType
+
+                    sourceType.IsGenericType
+                    && sourceType.GetGenericTypeDefinition() = carrier
+                    && let innerType = sourceType.GetGenericArguments().[0]
+                       innerType.IsGenericType
+                       && innerType.GetGenericTypeDefinition() = typedefof<Result<_, _>>)
+
+        test <@ hasNestedConversion typedefof<Async<_>> @>
+        test <@ hasNestedConversion typedefof<ColdTask<_>> @>
+
         let asyncSource : Async<Result<int, string>> = async { return Error "async-error" }
 
         let coldTaskSource : ColdTask<Result<int, string>> =
