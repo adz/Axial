@@ -704,16 +704,18 @@ module Flow =
 
     /// <summary>Creates a flow from an existing cold task value.</summary>
     /// <remarks>The operation runs on each execution. Thrown exceptions are recorded as defects.</remarks>
+    /// <param name="operation">The cold task to run on each execution.</param>
     /// <platforms>.NET only</platforms>
-    let fromColdTask (ColdTask factory: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+    let fromColdTask (operation: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+        let (ColdTask factory) = operation
         TaskInterop.from Exit.Success factory
 
     /// <summary>Creates a flow from an existing cold task value whose <c>Error</c> enters the typed error channel.</summary>
     /// <remarks>The operation runs on each execution. Thrown exceptions are recorded as defects.</remarks>
+    /// <param name="operation">The cold task to run on each execution.</param>
     /// <platforms>.NET only</platforms>
-    let fromColdTaskResult
-        (ColdTask factory: ColdTask<Result<'value, 'error>>)
-        : Flow<'env, 'error, 'value> =
+    let fromColdTaskResult (operation: ColdTask<Result<'value, 'error>>) : Flow<'env, 'error, 'value> =
+        let (ColdTask factory) = operation
         TaskInterop.from Exit.fromResult factory
 
     /// <summary>Creates a flow from a cancellable task factory and treats thrown exceptions as recoverable typed errors.</summary>

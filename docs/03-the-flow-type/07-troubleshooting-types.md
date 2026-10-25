@@ -57,33 +57,23 @@ loadSettings<IHasFileSystem> |> Flow.run env |> shouldEqual (Exit.Success { Name
 
 ## Error: A Unique Overload For Method `Bind` Could Not Be Determined
 
-The compiler cannot determine which wrapper shape a `let!` value should use.
+An underconstrained `Async` expression can match either `Async<'value>` or `Async<Result<'value,'error>>`. For example,
+the exception gives `raise` no inner result type from which the compiler can select an overload:
 
-Example:
-
-```fsharp
-let nested : Async<Async<Result<int, string>>> =
-    async {
-        return async { return Ok 42 }
-    }
-
-let workflow : Flow<unit, string, int> =
+```fsharp no-check reason="Intentionally demonstrates an ambiguous Flow builder source"
+let ambiguous : Flow<unit, string, int> =
     flow {
-        let! next = nested
-        let! value = next
+        let! value = async { return raise (InvalidOperationException "boom") }
         return value
     }
 ```
 
-The second `let!` is ambiguous.
-
-Fix it with a type annotation:
+Annotate the `Async` expression's inner type:
 
 ```fsharp
 let annotated : Flow<unit, string, int> =
     flow {
-        let! next = nested
-        let! (value: int) = next
+        let! value = (async { return 42 } : Async<int>)
         return value
     }
 ```
@@ -91,6 +81,8 @@ let annotated : Flow<unit, string, int> =
 ```fsharp run
 annotated |> Flow.run () |> shouldEqual (Exit.Success 42)
 ```
+
+Use `Async<Result<int,string>>` instead when an `Error` should enter the typed error channel.
 
 ## Error: The Flow Requires A Different Environment Type
 

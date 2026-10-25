@@ -308,14 +308,14 @@ module WorkflowErrorTests =
 
         let asyncDefect =
             flow {
-                let! value = async { return raise defect }
+                let! value = (async { return raise defect } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
 
         let asyncCanceled =
             flow {
-                let! value = async { return raise canceled }
+                let! value = (async { return raise canceled } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
@@ -385,7 +385,7 @@ module WorkflowErrorTests =
 
         let asyncBoundaryResult =
             flow {
-                let! value = async { return raise defect }
+                let! value = (async { return raise defect } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
@@ -627,6 +627,31 @@ module WorkflowErrorTests =
         test <@ success = Exit.Success "token-alice" @>
         test <@ authFailure = Exit.Failure (Cause.Fail (Unauthorized "denied")) @>
         test <@ tokenFailure = Exit.Failure (Cause.Fail (TokenErr "token-expired")) @>
+
+    [<Fact>]
+    let ``Nested carrier results enter the typed error channel`` () =
+        let asyncSource : Async<Result<int, string>> = async { return Error "async-error" }
+
+        let coldTaskSource : ColdTask<Result<int, string>> =
+            ColdTask(fun _ -> Task.FromResult(Error "cold-task-error"))
+
+        let asyncWorkflow : Flow<ClockEnvironment, string, int> =
+            flow {
+                let! value = asyncSource |> Flow.fromAsyncResult
+                return value
+            }
+
+        let coldTaskWorkflow : Flow<ClockEnvironment, string, int> =
+            flow {
+                let! value = coldTaskSource |> Flow.fromColdTaskResult
+                return value
+            }
+
+        let asyncResult = Flow.runSync (TestSupport.clockEnv ()) asyncWorkflow
+        let coldTaskResult = Flow.runSync (TestSupport.clockEnv ()) coldTaskWorkflow
+
+        test <@ asyncResult = Exit.Failure (Cause.Fail "async-error") @>
+        test <@ coldTaskResult = Exit.Failure (Cause.Fail "cold-task-error") @>
 
     [<Fact>]
     let ``Bind mapError stays symmetric across flow families`` () =

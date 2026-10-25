@@ -83,8 +83,12 @@ type CustomerRepository =
 
 let loadCustomerFlow (repository: CustomerRepository) customerId : Flow<CustomerError, Customer * Address> =
     flow {
-        let! customer = ColdTask(fun _ -> repository.Find customerId)
-        let! address = ColdTask(fun _ -> repository.LoadAddress customer.AddressId)
+        let! customer =
+            ColdTask(fun _ -> repository.Find customerId)
+            |> Flow.fromColdTaskResult
+        let! address =
+            ColdTask(fun _ -> repository.LoadAddress customer.AddressId)
+            |> Flow.fromColdTaskResult
         return customer, address
     }
 ```
@@ -139,8 +143,10 @@ let checkout customerId : Flow<CheckoutEnv, CustomerError, Receipt> =
     flow {
         let! customers = Flow.envWith _.Customers
         let! payments = Flow.envWith _.Payments
-        let! customer = ColdTask(fun _ -> customers.Find customerId)
-        let! receipt = payments.Charge customer
+        let! customer =
+            ColdTask(fun _ -> customers.Find customerId)
+            |> Flow.fromColdTaskResult
+        let! receipt = payments.Charge customer |> Flow.fromAsyncResult
         return receipt
     }
 ```
@@ -154,7 +160,8 @@ instead of sharing the task's exception channel.
 ## Use them together
 
 Adoption does not require rewriting FsToolkit.ErrorHandling functions. The Flow computation expression binds
-`Result<'value, 'error>` and `Async<Result<'value, 'error>>` directly, and `Task<Result<'value, 'error>>` through
+`Result<'value, 'error>` directly, `Async<Result<'value, 'error>>` through `Flow.fromAsyncResult`, and
+`Task<Result<'value, 'error>>` through
 `ColdTask`. All of them continue on `Ok` and short-circuit the Flow on `Error`.
 
 For example, an existing eligibility check can remain an `asyncResult` function:
@@ -180,11 +187,11 @@ let prepareOrder customerId : Flow<OrderEnv, CustomerError, Order> =
             ColdTask(fun _ ->
                 loadCustomer repository customerId)
 
-        do! verifyCustomer customer // Async<Result<_, _>>
+        do! verifyCustomer customer |> Flow.fromAsyncResult
         return createOrder customer address
     }
 ```
 
-Leaf functions can keep returning `Result`, `Async<Result<_, _>>`, or `Task<Result<_, _>>` through FsToolkit.ErrorHandling.
+Leaf functions can keep returning `Result`, `Async<Result<_, _>>`, or `Task<Result<_, _>>` through FsToolkit.ErrorHandling; adapt nested asynchronous results when binding them into Flow.
 At composition, `flow { }` binds these values (tasks through `ColdTask`) and handles dependencies, cancellation,
 timeouts, retries, and parallel work.

@@ -6,7 +6,7 @@ variant=${1:-baseline}
 dotnet=${DOTNET:-dotnet}
 out="$root/experiments/flow-errors/golden/$variant"
 mkdir -p "$out"
-for source in missing-clock missing-service wrong-error non-flow mixed-envs envwith-missing-member forgot-return; do
+for source in missing-clock missing-service wrong-error non-flow mixed-envs envwith-missing-member forgot-return underconstrained-async; do
   if "$dotnet" fsi --nologo --exec "$source.fsx" >"$out/$source.txt" 2>&1; then
     echo "ERROR: $source unexpectedly compiled" >&2
     exit 1
