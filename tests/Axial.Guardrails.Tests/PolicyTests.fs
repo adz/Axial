@@ -10,10 +10,13 @@ open Xunit
 module PolicyTests =
     let private withRepository action =
         let root = Path.Combine(Path.GetTempPath(), "Axial.Policy.Tests", Guid.NewGuid().ToString("N"))
-        Directory.CreateDirectory(Path.Combine(root, "src", "App", "Effects")) |> ignore
+        Directory.CreateDirectory(Path.Combine(root, "src", "App", "Capabilities")) |> ignore
         Directory.CreateDirectory(Path.Combine(root, "tests")) |> ignore
         File.WriteAllText(Path.Combine(root, "src", "App", "App.fsproj"), "<Project />")
         File.WriteAllText(Path.Combine(root, "src", "App", "Domain.fs"), "module Domain")
+        Directory.CreateDirectory(Path.Combine(root, "src", "App", "Services")) |> ignore
+        File.WriteAllText(Path.Combine(root, "src", "App", "Services", "Orders.fs"), "module Orders")
+        File.WriteAllText(Path.Combine(root, "src", "App", "Boundary.fs"), "module Boundary")
         File.WriteAllText(Path.Combine(root, "tests", "App.Tests.fsproj"), "<Project />")
         try action root finally Directory.Delete(root, true)
 
@@ -29,11 +32,14 @@ role = "domain"
 [projects]
 test = ["tests/**/*.fsproj"]
 [files]
-effects = ["src/App/Effects/**"]
+capabilities = ["src/App/Capabilities/**"]
+services = ["src/App/Services/**"]
+[boundaries]
+files = ["src/App/Boundary.fs"]
 [roles.domain.rules]
 "effects.ambient" = "forbid"
 "domain.async-return" = "deny"
-[roles.effects.rules]
+[roles.capabilities.rules]
 "effects.ambient" = "allow"
 [roles.test.rules]
 "effects.ambient" = "warn"
@@ -41,27 +47,29 @@ effects = ["src/App/Effects/**"]
             test <@ Result.isOk actual @>
             let policy = Result.toOption actual |> Option.get
             test <@ policy.Version = 2 && policy.DefaultRole = Domain @>
+            test <@ policy.Files |> List.exists (fun assignment -> assignment.Role = Services) @>
+            test <@ policy.Boundaries = [ "src/App/Boundary.fs" ] @>
             test <@ policy.Rules[Domain]["effects.ambient"] = Forbid @>
-            test <@ policy.Rules[Effects]["effects.ambient"] = Allow @>
+            test <@ policy.Rules[Capabilities]["effects.ambient"] = Allow @>
             test <@ policy.Rules[Test]["effects.ambient"] = Warn @>)
 
     [<Fact>]
     let ``file role overrides project role which overrides default`` () =
         withRepository (fun root ->
-            let text = "version = 2\n[default]\nrole = \"domain\"\n[projects]\nhost = [\"src/App/App.fsproj\"]\n[files]\neffects = [\"src/App/Effects/**\"]"
+            let text = "version = 2\n[default]\nrole = \"domain\"\n[projects]\nhost = [\"src/App/App.fsproj\"]\n[files]\ncapabilities = [\"src/App/Capabilities/**\"]"
             let policy = parse root text |> Result.toOption |> Option.get
             test <@ (Policy.resolve policy "src/App/App.fsproj" "src/App/Domain.fs" |> Result.toOption |> Option.get).Role = Host @>
-            test <@ (Policy.resolve policy "src/App/App.fsproj" "src/App/Effects/Sql.fs" |> Result.toOption |> Option.get).Role = Effects @>
+            test <@ (Policy.resolve policy "src/App/App.fsproj" "src/App/Capabilities/Sql.fs" |> Result.toOption |> Option.get).Role = Capabilities @>
             test <@ (Policy.resolve policy "other/Other.fsproj" "other/File.fs" |> Result.toOption |> Option.get).Role = Domain @>)
 
     [<Fact>]
-    let ``empty declared effects folder is valid but other unmatched paths fail`` () =
+    let ``empty declared capabilities folder is valid but other unmatched paths fail`` () =
         withRepository (fun root ->
-            let effects = parse root """version = 2
+            let capabilities = parse root """version = 2
 [default]
 role = "domain"
 [files]
-effects = ["src/App/Effects/**"]
+capabilities = ["src/App/Capabilities/**"]
 """
             let unmatched = parse root """version = 2
 [default]
@@ -69,20 +77,20 @@ role = "domain"
 [files]
 host = ["missing/**"]
 """
-            test <@ Result.isOk effects @>
+            test <@ Result.isOk capabilities @>
             test <@ unmatched = Error [ "policy path 'missing/**' matches nothing" ] @>)
 
     [<Fact>]
     let ``same-precedence overlapping assignments to different roles fail resolution`` () =
         withRepository (fun root ->
-            let text = "version = 2\n[default]\nrole = \"domain\"\n[files]\neffects = [\"src/App/**\"]\nhost = [\"src/App/Domain.fs\"]"
+            let text = "version = 2\n[default]\nrole = \"domain\"\n[files]\ncapabilities = [\"src/App/**\"]\nhost = [\"src/App/Domain.fs\"]"
             let policy = parse root text |> Result.toOption |> Option.get
             let actual = Policy.resolve policy "src/App/App.fsproj" "src/App/Domain.fs"
-            test <@ actual = Error "conflicting file role assignments for 'src/App/Domain.fs': effects, host" @>)
+            test <@ actual = Error "conflicting file role assignments for 'src/App/Domain.fs': capabilities, host" @>)
 
     [<Theory>]
     [<InlineData("version = 3\n[default]\nrole = \"domain\"", "unsupported policy version 3; expected 2")>]
-    [<InlineData("version = 2\n[default]\nrole = \"magic\"", "unknown role 'magic'; expected domain, effects, host, or test")>]
+    [<InlineData("version = 2\n[default]\nrole = \"magic\"", "unknown role 'magic'; expected capabilities, services, domain, host, or test")>]
     [<InlineData("version = 2\nwat = \"x\"\n[default]\nrole = \"domain\"", "unknown policy key 'wat'")>]
     [<InlineData("version = 2\nversion = 2\n[default]\nrole = \"domain\"", "line 2: duplicate declaration 'version'")>]
     let ``rejects invalid versions roles unknown keys and duplicates`` text expected =

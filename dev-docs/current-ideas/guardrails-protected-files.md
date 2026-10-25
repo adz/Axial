@@ -2,7 +2,7 @@
 
 ## Decision
 
-Guardrails v2 uses Rust-like lint policy: the repository declares intent; the analyzer never infers whether code is domain, effects, host, or test code. Policy has three checked-in files:
+Guardrails v2 uses Rust-like lint policy: the repository declares intent; the analyzer never infers whether code is domain, capabilities, host, or test code. Policy has three checked-in files:
 
 | File | Purpose |
 | --- | --- |
@@ -25,7 +25,7 @@ There is no signing, approval file, `CI=true` behavior, environment switch, or M
 | `deny` | Diagnostic fails the build | Allowed only under the suppression rules below |
 | `forbid` | Diagnostic fails the build and cannot be suppressed | Never allowed |
 
-`forbid` is terminal: no override, baseline entry, effects declaration, or source comment lowers it. Every effective level is explainable from checked-in config.
+`forbid` is terminal: no override, baseline entry, capabilities declaration, or source comment lowers it. Every effective level is explainable from checked-in config.
 
 ### Roles for projects, folders, and files
 
@@ -44,7 +44,7 @@ Assignments may cover a whole project or file/folder globs within a project. Thi
 | 2 | Matching `[projects]` entry | Applies to files in that project not matched by `[files]` |
 | 3 | `[default]` | Strict fallback, always `domain` unless explicitly changed |
 
-At the same precedence, overlapping assignments to different roles are an error rather than an ordering rule. Paths are slash-normalized, repository-relative, case-sensitive globs. The tool rejects repository escapes, symlinks escaping the root, and globs that currently match nothing. Explicit globs express influence, not inference: a declared `src/App/Effects/**` controls future files because policy names the folder, not because the analyzer guesses from `Effects`.
+At the same precedence, overlapping assignments to different roles are an error rather than an ordering rule. Paths are slash-normalized, repository-relative, case-sensitive globs. The tool rejects repository escapes, symlinks escaping the root, and globs that currently match nothing. Explicit globs express influence, not inference: a declared `src/App/Capabilities/**` controls future files because policy names the folder, not because the analyzer guesses from `Capabilities`.
 
 A minimal single-project policy has two assignment lines (under the required tables):
 
@@ -55,7 +55,7 @@ version = 2
 role = "domain"
 
 [files]
-effects = ["src/App/Effects/**"]
+capabilities = ["src/App/Capabilities/**"]
 host = ["src/App/Program.fs"]
 ```
 
@@ -69,13 +69,17 @@ baseline = "Axial.Guardrails.baseline"
 role = "domain"
 
 [projects]
-effects = ["src/Orders.Sql/Orders.Sql.fsproj"]
+capabilities = ["src/Orders.Sql/Orders.Sql.fsproj"]
+services = ["src/Orders.Services/Orders.Services.fsproj"]
 host = ["src/Orders.Host/Orders.Host.fsproj"]
 test = ["tests/**/*.fsproj"]
 
 [files]
-effects = ["src/Orders/Effects/**"]
+capabilities = ["src/Orders/Capabilities/**"]
 host = ["src/Orders/Program.fs"]
+
+[boundaries]
+files = ["src/Orders/VendorBoundary.fs"]
 
 [roles.domain.rules]
 "effects.ambient" = "forbid"
@@ -83,7 +87,7 @@ host = ["src/Orders/Program.fs"]
 "domain.whole-environment" = "deny"
 "domain.service-provider" = "deny"
 
-[roles.effects.rules]
+[roles.capabilities.rules]
 "effects.ambient" = "allow"
 
 [roles.test.rules]
@@ -92,16 +96,17 @@ host = ["src/Orders/Program.fs"]
 
 A role supplies its rule set; an explicit project/file rule override may make a rule stricter or looser unless the inherited level is `forbid`.
 
-### Domain and effects boundary
+### Domain and capabilities boundary
 
 | Code role | Allowed | Rejected |
 | --- | --- | --- |
+| `services` | Domain-facing gateways built on explicit capabilities | Ambient I/O; direct infrastructure access |
 | `domain` | Calls explicit services obtained by narrow environment projection | Ambient I/O; typed use of `System.IO`, `System.Net`, or configured DB clients; returning `Task`, `ValueTask`, or `Async`; calls to `Flow.env` or `ServiceProvider.get` |
-| `effects` | Live adapters may use ambient effects and reference `System.IO`, `System.Net`, and DB clients | Policy violations unrelated to the declared effect boundary |
+| `capabilities` | Live adapters may use ambient effects and reference `System.IO`, `System.Net`, and DB clients | Policy violations unrelated to the declared effect boundary |
 | `host` | Composition and startup operations selected by host policy | Domain logic that bypasses explicit services |
 | `test` | Test framework, fakes, and configured test operations | Skipped/assertion-free tests covered by the ratchet |
 
-Ambient effects in a declared effects glob need no per-line suppression. Declaring `Effects/**` once means adding `Effects/Stripe.fs` requires no policy edit, while the new live adapter remains visible in the source diff. This is the normal boundary mechanism.
+Ambient effects in a declared capabilities glob need no per-line suppression. Declaring `Capabilities/**` once means adding `Capabilities/Stripe.fs` requires no policy edit, while the new live adapter remains visible in the source diff. This is the normal boundary mechanism.
 
 Exact one-off boundaries remain available for exceptional files. They require an exact file declaration and expect-style suppression with a stable rule ID and reason, for example `// axial-allow-AXG001: vendor callback must construct its SDK client here`. The analyzer errors on malformed, unknown, misplaced, or stale suppressions.
 
@@ -112,10 +117,10 @@ Every ambient-effect diagnostic gives the next actionable design step in this or
 | Step | Condition | Required message |
 | ---: | --- | --- |
 | 1 | The versioned Axial catalog owns the effect | Name the concrete package and service, for example: `Use IFileSystem from Axial.FileSystem; add it to your env.` |
-| 2 | No Axial service exists | `Define a service for this in your env and put its live implementation in an effects file (Effects/...); domain code calls the service.` Link to [`docs/15-notes/03-guardrails.md#defining-an-effect-service`](../../docs/15-notes/03-guardrails.md#defining-an-effect-service), which provides a short how-to and service/live/fake template. |
-| 3 | The finding is already in declared effects code | Do not emit the ambient-effect diagnostic and do not require per-line suppression. |
+| 2 | No Axial service exists | `Define a service for this in your env and put its live implementation in a capabilities file (Capabilities/...); domain code calls the service.` Link to [`docs/15-notes/03-guardrails.md#defining-an-effect-service`](../../docs/15-notes/03-guardrails.md#defining-an-effect-service), which provides a short how-to and service/live/fake template. |
+| 3 | The finding is already in declared capabilities code | Do not emit the ambient-effect diagnostic and do not require per-line suppression. |
 
-The error is ambient I/O inline in domain code. Its guidance should drive an agent to create or use a service and place the live adapter in a separately visible effects file. `axial new effect <Name>` automates that shape.
+The error is ambient I/O inline in domain code. Its guidance should drive an agent to create or use a service and place the live adapter in a separately visible capabilities file. `axial new effect <Name>` automates that shape.
 
 ## Suppressions, baselines, and lock
 
@@ -139,7 +144,7 @@ The baseline stores rule ID, repository-relative file, stable fingerprint, and d
 | Project files that build Guardrails tests | Can remove tests or fixtures |
 | Additional exact paths declared in TOML | Protect repository-specific enforcement inputs |
 
-The config may add protected paths but not remove the mandatory set. Protected-input discovery is a heuristic, not evaluated MSBuild: it covers repository `.editorconfig`/`.globalconfig` files, `Directory.Build.*`, all `.props`/`.targets`, and `.fsproj`/`.fs` files physically under `tests/Axial.Guardrails*`; linked sources and transitive project inputs outside those directories are not discovered. Source effects files are not checksummed: role globs are locked, while normal implementation edits remain normal edits.
+The config may add protected paths but not remove the mandatory set. Protected-input discovery is a heuristic, not evaluated MSBuild: it covers repository `.editorconfig`/`.globalconfig` files, `Directory.Build.*`, all `.props`/`.targets`, and `.fsproj`/`.fs` files physically under `tests/Axial.Guardrails*`; linked sources and transitive project inputs outside those directories are not discovered. Source capabilities files are not checksummed: role globs are locked, while normal implementation edits remain normal edits.
 
 Before analysis, `axial guardrails check` hashes the protected set and validates policy, baseline monotonicity, and test counts. A mismatch prints a deterministic summary:
 
@@ -148,7 +153,7 @@ AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED
   rules downgraded:       domain / domain.async-return: deny -> warn
   baseline entries added: 1 (not permitted; use baseline --rule only for a new rule)
   suppressions added:     2
-  effects globs added:    src/App/Effects/**
+  capabilities globs added:    src/App/Capabilities/**
   test count decreased:   3 (requires lock --accept-test-decrease)
   protected files changed: Axial.Guardrails.toml, Orders.Guardrails.Tests.fsproj
 Review with a human; then run the applicable axial guardrails command.
@@ -167,7 +172,7 @@ Guardrails ships as a .NET tool whose executable is `axial`. Grouped commands le
 | `axial guardrails check` | Validate protected hashes, config, monotonic baselines, suppressions, and test ratchets |
 | `axial guardrails lock` | Review and record allowed policy changes; dedicated flags make exceptional changes loud |
 | `axial guardrails baseline --rule <id>` | Bootstrap findings for one newly introduced rule; that rule then only shrinks |
-| `axial new effect <Name>` | Generate a service type, live implementation under the configured effects folder, and test fake |
+| `axial new effect <Name>` | Generate a service type, live implementation under the configured capabilities folder, and test fake |
 | `axial agents install claude\|codex\|pi\|all` | Install idempotent protected-file hooks and agent guidance |
 | Future: `axial new app` | Application template entry point |
 | Future: `axial serve` | Persistent analyzer host if startup cost later justifies one |
@@ -179,7 +184,7 @@ The NuGet analyzer package still runs during ordinary builds. The tool provides 
 | Rank | Rule | Precision and fix guidance | Cost |
 | ---: | --- | --- | --- |
 | 1 | Ambient I/O catalog | Typed constructors/members for files, streams, sockets, network, process, clocks, randomness, environment, HTTP, and DB clients. Apply the diagnostic ladder. | One shared symbol walk; low. |
-| 2 | Role assembly/type allowlists | Resolved references and symbols enforce domain/effects separation; aliases cannot evade it. | Reuses rank 1. |
+| 2 | Role assembly/type allowlists | Resolved references and symbols enforce domain/capabilities separation; aliases cannot evade it. | Reuses rank 1. |
 | 3 | Discarded computations | Detect discarded `Flow`, `Task`, `ValueTask`, `Async`, or `Result`; suggest `let!`, `do!`, return, join, or scoped fork. | Low. |
 | 4 | Domain return/access bans | Detect async carrier returns, `Flow.env`, and `ServiceProvider.get`; suggest `Flow`, `Flow.envWith`, or host wiring. | Low. |
 | 5 | Swallowed failures | Restrict to provable catch-all success/ignore shapes and ignored errors. | Low-medium. |
@@ -187,7 +192,7 @@ The NuGet analyzer package still runs during ordinary builds. The tool provides 
 | 7 | Raise through helper from Flow | Bounded same-project call graph, maximum three static edges; no dynamic dispatch. | Medium, bounded. |
 | 8 | Construction bypasses | Typed/syntax checks for reflection construction, mutable domain types, and `Unchecked.defaultof`. | Low-medium. |
 | 9 | Blocking/unbounded work | Typed blocking checks and conservative unbounded parallel/retry analysis. | Low-medium. |
-| 10 | Boolean blindness | Warning for evidence-backed flag clusters; exclude effects/host DTO policy. | Low-medium. |
+| 10 | Boolean blindness | Warning for evidence-backed flag clusters; exclude capabilities/host DTO policy. | Low-medium. |
 | 11 | Test integrity ratchet | Known test/assertion symbols, skipped tests, and locked test/assertion counts. | Low; tests only. |
 
 Ranks 1–6 ship first. Rules 7, 9 boundedness, and 10 begin as warnings until corpus measurements establish precision.
@@ -210,10 +215,10 @@ Hooks block `axial guardrails lock` and `baseline` by default for agents. Their 
 | Current item | V2 action |
 | --- | --- |
 | AXG001 effect catalog | Widen to streams/network/database; split stable IDs where independent policy is useful; add service-first diagnostic ladder. |
-| AXG002 suppressions/boundaries | Keep reason/staleness checks; add effects globs for normal adapters and exact files for rare one-offs. |
+| AXG002 suppressions/boundaries | Keep reason/staleness checks; add capabilities globs for normal adapters and exact files for rare one-offs. |
 | AXG003–AXG008 | Keep behavior; route applicability through explicit roles, never inferred project state. |
 | Package guardrail groups | Merge into versioned catalog selected by TOML rule IDs; package metadata may discover rules, not set policy. |
-| `AxialGuardrailsBoundary` MSBuild items | Replace with TOML effects globs plus exceptional exact boundaries. |
+| `AxialGuardrailsBoundary` MSBuild items | Replace with TOML capabilities globs plus exceptional exact boundaries. |
 | Baseline generation/growth CI | Replace with `axial guardrails baseline --rule <id>` bootstrap and lock-enforced per-rule shrinkage. |
 | Test-count ratchet | Permit intentional decrease only with `lock --accept-test-decrease`, visibly recorded in summary. |
 | Severity/test/AOT MSBuild and environment switches | Delete as policy inputs; TOML is the only source. |
@@ -225,14 +230,14 @@ Hooks block `axial guardrails lock` and `baseline` by default for agents. Their 
 | Phase | Work | Exit criteria / budget |
 | --- | --- | --- |
 | 1 — policy core | Strict schema, default domain role, project/file precedence, deterministic check/lock, baseline/test exceptions. | Local/CI parity; hashing/parsing under 25 ms typical and 100 ms for Axial. |
-| 2 — effects and rules | Effects globs, diagnostic ladder, `new effect`, ranks 1–6 then 7–11. | Positive/negative/role tests; one typed walk; under 15% total analyzer-time increase. |
+| 2 — capabilities and rules | Capabilities globs, diagnostic ladder, `new effect`, ranks 1–6 then 7–11. | Positive/negative/role tests; one typed walk; under 15% total analyzer-time increase. |
 | 3 — agents and rollout | Agent installers, reports, migrate repositories, remove old switches/scripts/CLI references. | Hooks under 50 ms; offline idempotent installation; old/new checks dual-run for one phase. |
 
 | Repository | Migration steps |
 | --- | --- |
-| Axial | Set `[default]` to domain; explicitly assign effects/host/test projects and file globs; translate boundaries; bootstrap current baseline; bootstrap each newly introduced rule separately; lock policy/test files; remove old MSBuild/environment policy after dual-run. |
-| gitkay | Default to domain; assign effects/host/test regions; convert 17 suppressions to effects globs or reasoned exact one-offs; bootstrap rules individually; install agent hooks. |
+| Axial | Set `[default]` to domain; explicitly assign capabilities/host/test projects and file globs; translate boundaries; bootstrap current baseline; bootstrap each newly introduced rule separately; lock policy/test files; remove old MSBuild/environment policy after dual-run. |
+| gitkay | Default to domain; assign capabilities/host/test regions; convert 17 suppressions to capabilities globs or reasoned exact one-offs; bootstrap rules individually; install agent hooks. |
 | LogDug | Default to domain; explicitly assign `Program.fs` as host and `Runtime.fs` according to actual responsibility; migrate two suppressions; bootstrap rule debt; install hooks. |
-| validstate template | Ship default-domain TOML, explicit `Effects/**`, `Program.fs`, and tests, empty baseline, generated lock, Guardrails tests, and agent-install instructions. Generated apps run `axial guardrails lock` once. |
+| validstate template | Ship default-domain TOML, explicit `Capabilities/**`, `Program.fs`, and tests, empty baseline, generated lock, Guardrails tests, and agent-install instructions. Generated apps run `axial guardrails lock` once. |
 
 Migration bootstrap is explicit and noisy, not a permanent escape hatch. After a rule is bootstrapped, its baseline only shrinks. Test counts only decrease through the dedicated acceptance flag, and the lock records the decrease prominently.

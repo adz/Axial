@@ -35,7 +35,10 @@ type Config =
       BoundaryFiles: Set<string>
       BaselineRoot: string
       Baseline: BaselineEntry list
-      BaselineOutput: string option }
+      BaselineOutput: string option
+      Policy: Policy.Config option
+      PolicyRoot: string option
+      ProjectPath: string option }
 
     member this.Rules = this.AllRules |> List.filter (fun rule -> this.EnabledGuardrails.Contains rule.Guardrail)
     member this.KnownCategories = this.AllRules |> List.map _.Category |> Set.ofList
@@ -54,7 +57,10 @@ let defaults: Config =
       BoundaryFiles = Set.singleton "*"
       BaselineRoot = Directory.GetCurrentDirectory()
       Baseline = []
-      BaselineOutput = None }
+      BaselineOutput = None
+      Policy = None
+      PolicyRoot = None
+      ProjectPath = None }
 
 let parse (lines: string seq) : Config =
     let entries = lines |> Seq.mapi (fun index line -> index + 1, line, line.Split('\t')) |> Seq.toList
@@ -128,13 +134,29 @@ let parse (lines: string seq) : Config =
             | lineNumber, _, fields when fields.Length > 0 && fields[0] = "baseline" -> malformed lineNumber
             | _ -> None)
 
+    let policyRoot = setting "policyRoot" |> Option.filter ((<>) "")
+    let policy =
+        match policyRoot, setting "policyFile" with
+        | Some root, Some path when File.Exists path ->
+            let known = set [ "effects.ambient"; "domain.async-return"; "domain.whole-environment"; "domain.service-provider"; "test.integrity" ]
+            match Policy.parse root known (File.ReadAllText path) with
+            | Ok parsed -> Some parsed
+            | Error errors -> invalidArg "lines" (String.concat Environment.NewLine errors)
+        | _ -> None
+
     { EnabledGuardrails = enabled
       NativeAot = nativeAot
       AllRules = builtInRules @ contributed
-      BoundaryFiles = boundaries
+      BoundaryFiles =
+        match policy, policyRoot with
+        | Some parsed, Some root -> parsed.Boundaries |> List.map (fun path -> Path.GetFullPath(Path.Combine(root, path))) |> Set.ofList
+        | _ -> boundaries
       BaselineRoot = setting "baselineRoot" |> Option.defaultValue (Directory.GetCurrentDirectory())
       Baseline = baseline
-      BaselineOutput = setting "baselineOutput" |> Option.filter ((<>) "") }
+      BaselineOutput = setting "baselineOutput" |> Option.filter ((<>) "")
+      Policy = policy
+      PolicyRoot = policyRoot
+      ProjectPath = setting "projectPath" |> Option.filter ((<>) "") }
 
 let private gate = obj ()
 let mutable private cached: (string * DateTime * Config) option = None
@@ -214,7 +236,18 @@ let private appendGenerated (output: string) (entry: BaselineEntry) =
 
 /// Applies the configured error severity, downgrading only checked-in baseline entries. In generation mode every
 /// finding is also written to the per-project candidate baseline and downgraded so the build can complete.
+let resolvedPolicy (config: Config) (ctx: CliContext) =
+    match config.Policy, config.PolicyRoot, config.ProjectPath with
+    | Some policy, Some root, Some project ->
+        let relative path = Path.GetRelativePath(root, Path.GetFullPath path).Replace('\\', '/')
+        match Policy.resolve policy (relative project) (relative ctx.FileName) with
+        | Ok resolved -> Some resolved
+        | Error error -> invalidArg "policy" error
+    | _ -> None
+
 let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: Message list) : Message list =
+    let policy = resolvedPolicy config ctx
+    let level = policy |> Option.bind (fun resolved -> resolved.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
     if not (config.EnabledGuardrails.Contains guardrail) then
         []
     else
@@ -250,7 +283,11 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
                 | Some entry when not baselined && baselineCount = 0 ->
                     $"{message.Message} ({entry.Count} baselined, {foundCount} found)"
                 | _ -> message.Message
-            { message with Message = text; Severity = if baselined then Severity.Warning else Severity.Error })
+            let ambient = message.Code = "AXG001"
+            let severity =
+                if baselined || (ambient && level = Policy.Warn) then Severity.Warning else Severity.Error
+            { message with Message = text; Severity = severity })
+        |> List.filter (fun message -> message.Code <> "AXG001" || level <> Policy.Allow)
 
 let apply (guardrail: string) (ctx: CliContext) (messages: Message list) = applyWith (load ()) guardrail ctx messages
 

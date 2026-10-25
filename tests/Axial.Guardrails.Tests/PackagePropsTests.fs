@@ -30,6 +30,35 @@ module PackagePropsTests =
     let private cliDll () =
         Path.Combine(nuGetRoot (), "fsharp-analyzers", "0.37.2", "tools", "net8.0", "any", "FSharp.Analyzers.Cli.dll")
 
+    let private policyToolDll () =
+        Path.Combine(repoRoot (), "artifacts", "bin", "Axial.Tool", configuration (), "Axial.Tool.dll")
+
+    let private dotnetHost () =
+        match Environment.GetEnvironmentVariable "DOTNET_ROOT" with
+        | null | "" -> "dotnet"
+        | root -> Path.Combine(root, "dotnet")
+
+    let private runPolicyTool dir arguments =
+        let startInfo = ProcessStartInfo(dotnetHost ())
+        startInfo.WorkingDirectory <- dir
+        startInfo.ArgumentList.Add(policyToolDll ())
+        arguments |> List.iter startInfo.ArgumentList.Add
+        startInfo.UseShellExecute <- false
+        startInfo.EnvironmentVariables["DOTNET_ROLL_FORWARD"] <- "Major"
+        startInfo.RedirectStandardOutput <- true
+        startInfo.RedirectStandardError <- true
+        use child = Process.Start startInfo
+        let output = child.StandardOutput.ReadToEnd() + child.StandardError.ReadToEnd()
+        child.WaitForExit()
+        Assert.True(child.ExitCode = 0, output)
+
+    let private writeV2Policy dir role level =
+        runPolicyTool dir [ "init" ]
+        File.WriteAllText(
+            Path.Combine(dir, "Axial.Guardrails.toml"),
+            $"version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n\n[default]\nrole = \"{role}\"\n\n[roles.domain.rules]\n\"effects.ambient\" = \"{level}\"\n")
+        runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+
     let private xmlEscape (value: string) =
         value.Replace("&", "&amp;").Replace("\"", "&quot;").Replace("<", "&lt;").Replace(">", "&gt;")
 
@@ -42,6 +71,7 @@ module PackagePropsTests =
     <_AxialGuardrailsAnalyzersPath>{xmlEscape (analyzersPath ())}</_AxialGuardrailsAnalyzersPath>
     <_AxialGuardrailsExe>dotnet &quot;{xmlEscape (cliDll ())}&quot;</_AxialGuardrailsExe>
     <_AxialGuardrailsBootstrapProject>{xmlEscape (Path.Combine(repoRoot (), "src", "Axial.Guardrails", "Axial.Guardrails.fsproj"))}</_AxialGuardrailsBootstrapProject>
+    <_AxialGuardrailsPolicyToolAssembly>{xmlEscape (policyToolDll ())}</_AxialGuardrailsPolicyToolAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />
@@ -61,7 +91,7 @@ module PackagePropsTests =
     type BuildResult = { ExitCode: int; Output: string }
 
     let private runBuildWithArgs (extraArguments: string list) (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) (ci: bool) (generateBaseline: bool) (enabledEnv: string option) =
-        let startInfo = ProcessStartInfo("dotnet")
+        let startInfo = ProcessStartInfo(dotnetHost ())
         startInfo.ArgumentList.Add "build"
         startInfo.ArgumentList.Add project
         startInfo.ArgumentList.Add "-c"
@@ -119,10 +149,33 @@ module PackagePropsTests =
         buildConsumerInTemp writeConsumer severityEnv severityProperty
 
     [<Fact>]
+    let ``v2 policy roles levels and lock are enforced before analysis`` () =
+        let build role level mutateAfterLock =
+            buildConsumerInTemp
+                (fun dir ->
+                    writeConsumer dir
+                    writeV2Policy dir role level
+                    if mutateAfterLock then File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "# drift\n"))
+                None None
+
+        let capability = build "capabilities" "deny" false
+        Assert.True(capability.ExitCode = 0, capability.Output)
+        Assert.DoesNotContain("AXG001", capability.Output)
+
+        let warning = build "domain" "warn" false
+        Assert.True(warning.ExitCode = 0, warning.Output)
+        Assert.Contains("warning AXG001", warning.Output)
+
+        let drift = build "domain" "deny" true
+        Assert.NotEqual(0, drift.ExitCode)
+        Assert.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED", drift.Output)
+        Assert.Contains("protected files changed:", drift.Output)
+
+    [<Fact>]
     let ``findings are errors and severity settings cannot downgrade them`` () =
         let defaultBuild = buildInTemp None None
         Assert.NotEqual(0, defaultBuild.ExitCode)
-        Assert.Contains("error AXG001", defaultBuild.Output)
+        Assert.True(defaultBuild.Output.Contains("error AXG001"), defaultBuild.Output)
 
         let environmentAttempt = buildInTemp (Some "warning") None
         Assert.NotEqual(0, environmentAttempt.ExitCode)

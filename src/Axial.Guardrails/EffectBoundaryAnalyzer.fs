@@ -140,8 +140,9 @@ let rawFindings (ctx: CliContext) : (EffectRule * FSharp.Compiler.Text.range) li
 let private toMessage (rule: EffectRule) (range: FSharp.Compiler.Text.Range) : Message =
     { Type = "Axial Effect Boundary"
       Message =
-        $"This call {rule.Message}. Replace it with the explicit, mockable {rule.Replacement}. "
-        + "See the rule documentation when this file intentionally implements the effect boundary."
+        $"This call {rule.Message}. (1) Use {rule.Replacement}; add the Axial capability/service to your env. "
+        + "(2) If Axial has no service for this effect, create a service built on capabilities with 'axial add service <Name>'. "
+        + "(3) Only genuinely new raw I/O belongs in a capability under Capabilities/."
       Code = "AXG001"
       Severity = Severity.Error
       Range = range
@@ -157,10 +158,14 @@ let effectBoundaryAnalyzer: Analyzer<CliContext> =
     fun (ctx: CliContext) ->
         async {
             let config = GuardrailConfig.load ()
+            let resolved = GuardrailConfig.resolvedPolicy config ctx
+            let capabilityFile = resolved |> Option.exists (fun policy -> policy.Role = Policy.Capabilities)
+            let level = resolved |> Option.bind (fun policy -> policy.Rules.TryFind "effects.ambient") |> Option.defaultValue Policy.Deny
             let messages =
+                if capabilityFile then [] else
                 rawFindings ctx
                 |> List.collect (fun (rule, range) ->
-                    if isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then
+                    if level <> Policy.Forbid && isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText range.StartLine "AXG001" then
                         []
                     else
                         GuardrailConfig.apply rule.Guardrail ctx [ toMessage rule range ])

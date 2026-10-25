@@ -34,6 +34,7 @@
     <_AxialGuardrailsExe>dotnet fsharp-analyzers</_AxialGuardrailsExe>
     <!-- Only this repo sets this; a real package consumer never needs to bootstrap-build anything. -->
     <_AxialGuardrailsBootstrapProject>$(MSBuildThisFileDirectory)src\Axial.Guardrails\Axial.Guardrails.fsproj</_AxialGuardrailsBootstrapProject>
+    <_AxialGuardrailsPolicyToolAssembly>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Tool\$(Configuration.ToLower())\Axial.Tool.dll</_AxialGuardrailsPolicyToolAssembly>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
@@ -46,6 +47,12 @@
     <_AxialGuardrailsConfiguredToolInput Include="$(_AxialGuardrailsToolManifest)" />
     <_AxialGuardrailsConfiguredToolInput Include="$([System.IO.Path]::GetDirectoryName('$(_AxialGuardrailsConfiguredToolAssembly)'))\*.*" />
   </ItemGroup>
+
+  <Target Name="AxialGuardrailsEnsurePolicyTool"
+          BeforeTargets="AxialGuardrailsCheckPolicy"
+          Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and !Exists('$(_AxialGuardrailsPolicyToolAssembly)')">
+    <Exec Command="dotnet build &quot;$(MSBuildThisFileDirectory)src\Axial.Tool\Axial.Tool.fsproj&quot; -c $(Configuration) --nologo -v quiet" />
+  </Target>
 
   <Target Name="AxialGuardrailsValidateConfiguredTool"
           BeforeTargets="AxialGuardrailsWriteInputFingerprint"

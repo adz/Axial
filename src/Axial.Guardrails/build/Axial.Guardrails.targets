@@ -41,17 +41,46 @@
     <_AxialGuardrailsGeneratedBaseline>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).baseline))</_AxialGuardrailsGeneratedBaseline>
     <_AxialGuardrailsFingerprintFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).inputs))</_AxialGuardrailsFingerprintFile>
     <_AxialGuardrailsBaselineRoot>$([System.IO.Path]::GetDirectoryName($([MSBuild]::NormalizePath($(AxialGuardrailsBaselineFile)))))</_AxialGuardrailsBaselineRoot>
+    <_AxialGuardrailsPolicyRoot Condition="'$(AxialGuardrailsUseLegacyPolicy)' != 'true'">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Axial.Guardrails.toml))</_AxialGuardrailsPolicyRoot>
+    <_AxialGuardrailsPolicyFile Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsPolicyRoot), Axial.Guardrails.toml))</_AxialGuardrailsPolicyFile>
+    <_AxialGuardrailsLockFile Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsPolicyRoot), Axial.Guardrails.lock))</_AxialGuardrailsLockFile>
+    <_AxialGuardrailsV2BaselineRelative Condition="Exists('$(_AxialGuardrailsPolicyFile)')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_AxialGuardrailsPolicyFile)')), '(?m)^\s*baseline\s*=\s*&quot;([^&quot;]+)&quot;\s*$').Groups[1].Value)</_AxialGuardrailsV2BaselineRelative>
+    <AxialGuardrailsBaselineFile Condition="'$(_AxialGuardrailsV2BaselineRelative)' != ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsPolicyRoot), $(_AxialGuardrailsV2BaselineRelative)))</AxialGuardrailsBaselineFile>
+    <_AxialGuardrailsBaselineRoot Condition="'$(_AxialGuardrailsV2BaselineRelative)' != ''">$([System.IO.Path]::GetDirectoryName($([MSBuild]::NormalizePath($(AxialGuardrailsBaselineFile)))))</_AxialGuardrailsBaselineRoot>
+    <_AxialGuardrailsPolicyGlobRoot Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">$(_AxialGuardrailsPolicyRoot)</_AxialGuardrailsPolicyGlobRoot>
+    <_AxialGuardrailsPolicyGlobRoot Condition="'$(_AxialGuardrailsPolicyGlobRoot)' == ''">$(MSBuildProjectDirectory)</_AxialGuardrailsPolicyGlobRoot>
+    <_AxialGuardrailsPolicyCheckStamp>$(IntermediateOutputPath)axial-guardrails-policy.$(TargetFramework).stamp</_AxialGuardrailsPolicyCheckStamp>
+    <_AxialGuardrailsPolicyToolAssembly Condition="'$(_AxialGuardrailsPolicyToolAssembly)' == ''">$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory)..\policy\Axial.Tool.dll))</_AxialGuardrailsPolicyToolAssembly>
+    <_AxialGuardrailsDotNetHost Condition="'$(_AxialGuardrailsDotNetHost)' == '' and '$(DotNetHostPath)' != ''">&quot;$(DotNetHostPath)&quot;</_AxialGuardrailsDotNetHost>
+    <_AxialGuardrailsDotNetHost Condition="'$(_AxialGuardrailsDotNetHost)' == ''">dotnet</_AxialGuardrailsDotNetHost>
+    <_AxialGuardrailsPolicyExe Condition="'$(_AxialGuardrailsPolicyExe)' == ''">$(_AxialGuardrailsDotNetHost) --roll-forward Major &quot;$(_AxialGuardrailsPolicyToolAssembly)&quot;</_AxialGuardrailsPolicyExe>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
     <_AxialGuardrailsPolicyInputs Include="$(MSBuildProjectFullPath);$(MSBuildAllProjects)" />
     <_AxialGuardrailsPolicyInputs Include="$(AxialGuardrailsBaselineFile)" Condition="Exists('$(AxialGuardrailsBaselineFile)')" />
+    <_AxialGuardrailsPolicyInputs Include="$(_AxialGuardrailsPolicyFile);$(_AxialGuardrailsLockFile)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
+    <_AxialGuardrailsProtectedInputs Include="$(_AxialGuardrailsPolicyGlobRoot)\Directory.Build.props;$(_AxialGuardrailsPolicyGlobRoot)\Directory.Build.targets;$(_AxialGuardrailsPolicyGlobRoot)\**\*.props;$(_AxialGuardrailsPolicyGlobRoot)\**\*.targets;$(_AxialGuardrailsPolicyGlobRoot)\**\.editorconfig;$(_AxialGuardrailsPolicyGlobRoot)\**\*.globalconfig;$(_AxialGuardrailsPolicyGlobRoot)\tests\Axial.Guardrails*\**\*.fs;$(_AxialGuardrailsPolicyGlobRoot)\tests\Axial.Guardrails*\**\*.fsproj" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" Exclude="$(_AxialGuardrailsPolicyGlobRoot)\**\bin\**;$(_AxialGuardrailsPolicyGlobRoot)\**\obj\**;$(_AxialGuardrailsPolicyGlobRoot)\artifacts\**" />
+    <_AxialGuardrailsPolicyInputs Include="@(_AxialGuardrailsProtectedInputs)" />
     <_AxialGuardrailsPolicyInputs Include="$(ProjectAssetsFile)" Condition="Exists('$(ProjectAssetsFile)')" />
     <_AxialGuardrailsPolicyInputs Include="@(EditorConfigFiles);@(AnalyzerConfigFiles)" />
   </ItemGroup>
 
   <!-- Capture these after Build: generators and reference resolution can add items after project evaluation. The two
        SDK assembly-attribute files are timestamp-volatile but semantically represented by the fingerprint below. -->
+  <!-- V2 policy is authoritative when present. The lock check runs before analyzer configuration and emits the
+       same loud categorized summary locally and in CI. Repositories without TOML temporarily retain the v1
+       MSBuild-item path so they can migrate explicitly. -->
+  <Target Name="AxialGuardrailsCheckPolicy"
+          BeforeTargets="AxialGuardrailsWriteConfig"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and '$(_AxialGuardrailsPolicyRoot)' != ''"
+          Inputs="@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsPolicyToolAssembly)"
+          Outputs="$(_AxialGuardrailsPolicyCheckStamp)">
+    <Error Condition="!Exists('$(_AxialGuardrailsPolicyToolAssembly)')" Text="Axial.Guardrails policy tool is missing: $(_AxialGuardrailsPolicyToolAssembly). Restore/reinstall the package." />
+    <Exec Command="$(_AxialGuardrailsPolicyExe) check" WorkingDirectory="$(_AxialGuardrailsPolicyRoot)" />
+    <Touch Files="$(_AxialGuardrailsPolicyCheckStamp)" AlwaysCreate="true" />
+  </Target>
+
   <Target Name="AxialGuardrailsWriteInputFingerprint"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
           Condition="'$(AxialGuardrailsEnabled)' == 'true'">
@@ -153,6 +182,9 @@
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrailsBoundary->'boundary&#9;%(FullPath)')" />
       <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsBaselineEntry->'baseline&#9;%(Identity)')" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineRoot&#9;$(_AxialGuardrailsBaselineRoot)" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;policyRoot&#9;$(_AxialGuardrailsPolicyRoot)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;policyFile&#9;$(_AxialGuardrailsPolicyFile)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;projectPath&#9;$(MSBuildProjectFullPath)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineOutput&#9;$(_AxialGuardrailsGeneratedBaseline)" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;true" Condition="'$(IsAotCompatible)' == 'true' or '$(PublishAot)' == 'true'" />
       <_AxialGuardrailsConfigLine Include="setting&#9;nativeAot&#9;false" Condition="'$(IsAotCompatible)' != 'true' and '$(PublishAot)' != 'true'" />

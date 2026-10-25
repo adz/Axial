@@ -7,7 +7,7 @@ open System.Text.RegularExpressions
 
 /// The closed, versioned Guardrails v2 repository policy.
 module Policy =
-    type Role = Domain | Effects | Host | Test
+    type Role = Domain | Capabilities | Services | Host | Test
     type RuleLevel = Allow | Warn | Deny | Forbid
 
     type Assignment =
@@ -21,7 +21,8 @@ module Policy =
           Projects: Assignment list
           Files: Assignment list
           Rules: Map<Role, Map<string, RuleLevel>>
-          Protected: string list }
+          Protected: string list
+          Boundaries: string list }
 
     type ResolvedFile =
         { Role: Role
@@ -29,12 +30,12 @@ module Policy =
 
     type private Value = String of string | Integer of int | Strings of string list
 
-    let private roleName = function Domain -> "domain" | Effects -> "effects" | Host -> "host" | Test -> "test"
+    let private roleName = function Domain -> "domain" | Capabilities -> "capabilities" | Services -> "services" | Host -> "host" | Test -> "test"
 
     let private parseRole value =
         match value with
-        | "domain" -> Ok Domain | "effects" -> Ok Effects | "host" -> Ok Host | "test" -> Ok Test
-        | _ -> Error $"unknown role '{value}'; expected domain, effects, host, or test"
+        | "domain" -> Ok Domain | "capabilities" -> Ok Capabilities | "services" -> Ok Services | "host" -> Ok Host | "test" -> Ok Test
+        | _ -> Error $"unknown role '{value}'; expected capabilities, services, domain, host, or test"
 
     let private parseLevel value =
         match value with
@@ -86,7 +87,7 @@ module Policy =
                 if line.StartsWith("[") && line.EndsWith("]") then
                     table <- line.Substring(1, line.Length - 2).Trim()
                     let allowedTable =
-                        table = "default" || table = "projects" || table = "files" || table = "protected"
+                        table = "default" || table = "projects" || table = "files" || table = "protected" || table = "boundaries"
                         || (table.StartsWith("roles.") && table.EndsWith(".rules") && table.Split('.').Length = 3)
                     if table = "" then error <- Some $"line {lineNumber}: empty table name"
                     elif not allowedTable then error <- Some $"line {lineNumber}: unknown policy table '{table}'"
@@ -175,7 +176,7 @@ module Policy =
         | Error message -> fail message
         | Ok entries ->
             let allowed path =
-                path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths"
+                path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "boundaries.files"
                 || path.StartsWith("projects.") || path.StartsWith("files.")
                 || (path.StartsWith("roles.") && path.Contains(".rules."))
             match entries |> Map.toSeq |> Seq.tryFind (fst >> allowed >> not) with
@@ -190,9 +191,9 @@ module Policy =
                 let getStrings key =
                     match entries.TryFind key with None -> Ok [] | Some(Strings values) -> Ok values | _ -> Error $"'{key}' must be an array of strings"
                 let version = match entries.TryFind "version" with Some(Integer 2) -> Ok 2 | Some(Integer value) -> Error $"unsupported policy version {value}; expected 2" | Some _ -> Error "'version' must be integer 2" | None -> Error "missing required key 'version'"
-                match version, getString "default.role" true, getString "baseline" false, getStrings "protected.paths" with
-                | Error e, _, _, _ | _, Error e, _, _ | _, _, Error e, _ | _, _, _, Error e -> fail e
-                | Ok version, Ok(Some defaultName), Ok baseline, Ok protectedPaths ->
+                match version, getString "default.role" true, getString "baseline" false, getStrings "protected.paths", getStrings "boundaries.files" with
+                | Error e, _, _, _, _ | _, Error e, _, _, _ | _, _, Error e, _, _ | _, _, _, Error e, _ | _, _, _, _, Error e -> fail e
+                | Ok version, Ok(Some defaultName), Ok baseline, Ok protectedPaths, Ok boundaryPaths ->
                     let baselineResult =
                         match baseline with
                         | None -> Ok None
@@ -205,9 +206,9 @@ module Policy =
                     match parseRole defaultName, baselineResult with
                     | Error e, _ | _, Error e -> fail e
                     | Ok defaultRole, Ok baseline ->
-                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths")
+                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "boundaries.files")
                         let allFiles = if needsFiles then filesUnder repositoryRoot else [||]
-                        let assignments prefix allowEffectsEmpty =
+                        let assignments prefix allowCapabilitiesEmpty =
                             entries |> Map.toList |> List.choose (fun (key, value) ->
                                 if key.StartsWith(prefix + ".") then Some(key.Substring(prefix.Length + 1), value) else None)
                             |> List.fold (fun state (name, value) ->
@@ -215,7 +216,7 @@ module Policy =
                                 | Error e, _, _ -> Error e
                                 | _, Error e, _ -> Error e
                                 | _, _, Strings patterns ->
-                                    patterns |> List.fold (fun paths pattern -> paths |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles (allowEffectsEmpty && name = "effects") pattern |> Result.map (fun p -> p :: xs))) (Ok [])
+                                    patterns |> List.fold (fun paths pattern -> paths |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles (allowCapabilitiesEmpty && name = "capabilities") pattern |> Result.map (fun p -> p :: xs))) (Ok [])
                                     |> Result.bind (fun paths -> state |> Result.map (fun xs -> { Role = (parseRole name |> function Ok role -> role | Error _ -> failwith "validated role"); Patterns = List.rev paths } :: xs))
                                 | _, _, _ -> Error $"'{prefix}.{name}' must be an array of strings") (Ok [])
                             |> Result.map List.rev
@@ -237,9 +238,13 @@ module Policy =
                             match rulesResult with
                             | Error e -> fail e
                             | Ok rules ->
-                                protectedPaths |> List.fold (fun state p -> state |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles false p |> Result.map (fun x -> x::xs))) (Ok [])
-                                |> Result.mapError List.singleton
-                                |> Result.map (fun validatedPaths -> { Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = List.rev validatedPaths })
+                                let validatePaths kind paths =
+                                    paths |> List.fold (fun state p -> state |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles false p |> Result.map (fun x -> x::xs))) (Ok [])
+                                    |> Result.map List.rev
+                                match validatePaths "protected" protectedPaths, validatePaths "boundary" boundaryPaths with
+                                | Error e, _ | _, Error e -> fail e
+                                | Ok protectedFiles, Ok boundaries ->
+                                    Ok { Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; Boundaries = boundaries }
                 | _ -> fail "invalid policy"
 
     let private matchingRoles (path: string) assignments =

@@ -87,11 +87,14 @@
     analyzers path flag at it directly. Runs at pack time, after Build has populated $(TargetDir).
   -->
   <Target Name="_AxialGuardrailsPackAnalyzerOutput" BeforeTargets="_GetPackageFiles" DependsOnTargets="Build">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\Axial.Tool\Axial.Tool.fsproj" Targets="Build" Properties="Configuration=$(Configuration)" />
     <ItemGroup>
       <_AxialGuardrailsAnalyzerFile Include="$(TargetDir)*.dll" />
       <None Include="@(_AxialGuardrailsAnalyzerFile)" Pack="true" PackagePath="analyzers\%(Filename)%(Extension)" />
       <_AxialGuardrailsCliFile Include="$(NuGetPackageRoot)fsharp-analyzers\0.37.2\tools\net8.0\any\*.*" />
       <None Include="@(_AxialGuardrailsCliFile)" Pack="true" PackagePath="cli\%(Filename)%(Extension)" />
+      <_AxialGuardrailsPolicyToolFile Include="$(MSBuildThisFileDirectory)..\..\artifacts\bin\Axial.Tool\$([System.String]::Copy('$(Configuration)').ToLowerInvariant())\**\*.*" />
+      <None Include="@(_AxialGuardrailsPolicyToolFile)" Pack="true" PackagePath="policy\%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 

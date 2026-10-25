@@ -18,6 +18,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AxialGuardrailsEnabled Condition="'$(AxialGuardrailsEnabled)' == ''">true</AxialGuardrailsEnabled>
     <AxialGuardrailsBaselineFile>$(MSBuildThisFileDirectory)Axial.Guardrails.baseline</AxialGuardrailsBaselineFile>
+    <!-- Temporary through Guardrails v2 slice 1d: this repository still uses its v1 MSBuild policy. -->
+    <AxialGuardrailsUseLegacyPolicy>true</AxialGuardrailsUseLegacyPolicy>
 
     <!-- Repo-internal projects that must not import Guardrails: the analyzer's own tests and fixture, and the
          comparative benchmarks, whose plain-.NET implementations use ambient effects on purpose. -->

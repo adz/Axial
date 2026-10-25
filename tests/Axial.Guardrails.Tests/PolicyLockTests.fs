@@ -9,7 +9,7 @@ open Xunit
 module PolicyLockTests =
     let private empty =
         { Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Tests=[]; Rules=Map.empty
-          Effects=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
+          Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
 
     [<Fact>]
     let ``policy summary reports every reviewed change category`` () =
@@ -22,7 +22,7 @@ module PolicyLockTests =
                          Rules=Map ["domain/effects.ambient","warn"]
                          Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]
                          Tests=[{Project="tests/App.Tests/App.Tests.fsproj";Tests=2;Assertions=3}]
-                         Effects=set ["src/Effects/**"]
+                         Capabilities=set ["src/Capabilities/**"]
                          Boundaries=set ["vendor.props"]
                          Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: reason"] }
         let changes=diff old current
@@ -108,16 +108,16 @@ let live () = Assert.True(true)
             test <@ match parseLock path with Error e -> e.Contains(":2:") && e.Contains("duplicate") | _ -> false @>
             File.WriteAllText(path,"version = 1\nTEST  p\t1\t2\nTEST  p\t1\t2\n")
             test <@ match parseLock path with Error e -> e.Contains("duplicate TEST") | _ -> false @>
-            for malformed in ["SHA256  "+String.replicate 64 "a"+"  "; "BASELINE  \tfile\tfingerprint\t1"; "TEST  \t1\t2"; "POLICY  \tdeny"; "EFFECT  "; "BOUNDARY  "; "SUPPRESSION  "] do
+            for malformed in ["SHA256  "+String.replicate 64 "a"+"  "; "BASELINE  \tfile\tfingerprint\t1"; "TEST  \t1\t2"; "POLICY  \tdeny"; "CAPABILITY  "; "BOUNDARY  "; "SUPPRESSION  "] do
                 File.WriteAllText(path,"version = 1\n"+malformed+"\n")
                 test <@ parseLock path |> Result.isError @>
         finally File.Delete path
 
     [<Fact>]
     let ``lock serialization is deterministic and sorted`` () =
-        let snapshot={empty with Hashes=Map ["z","2";"a","1"]; Effects=set ["z/**";"a/**"]}
+        let snapshot={empty with Hashes=Map ["z","2";"a","1"]; Capabilities=set ["z/**";"a/**"]}
         let first=serialize snapshot
         let second=serialize snapshot
         test <@ first=second @>
         test <@ first.IndexOf("a  a") < first.IndexOf("2  z") @>
-        test <@ first.IndexOf("EFFECT  a/**") < first.IndexOf("EFFECT  z/**") @>
+        test <@ first.IndexOf("CAPABILITY  a/**") < first.IndexOf("CAPABILITY  z/**") @>
