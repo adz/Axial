@@ -143,7 +143,7 @@ module Flow =
         | Exit.Success _, Exit.Failure cause ->
             Exit.Failure cause
 
-    /// Reports every defect inside a runtime-discarded exit (a race or timeout loser) as unobserved.
+    /// Reports every defect inside a runtime-discarded exit (for example, a timeout loser) as unobserved.
     /// Such exits are dropped without a fiber handle, so nobody can ever observe them.
     let private reportDiscardedExit (observer: FiberObserver) (exit: Exit<'value, 'error>) : unit =
         match exit with
@@ -1974,11 +1974,12 @@ module Flow =
 
     /// <summary>Runs two flows concurrently and returns the result of the first one to complete.</summary>
     /// <remarks>
-    /// <para>The "loser" flow is interrupted immediately.</para>
+    /// <para>The "loser" flow is interrupted, awaited, and its scope is closed before <c>race</c> returns.</para>
     /// <para>
     /// Each flow runs in its own scope. If the winner succeeds, its scoped resources move to the caller's scope, so
-    /// racing two connection attempts keeps the connection that won. The loser's scoped resources are released once
-    /// it has been interrupted, which may be after <c>race</c> returns; a winner that fails has its scoped resources released before <c>race</c> returns.
+    /// racing two connection attempts keeps the connection that won. A defect from the loser or its cleanup is
+    /// combined with a failing winner, or becomes the race failure when the winner succeeded. Typed loser failures
+    /// and the interruption requested by <c>race</c> do not replace the winner's result.
     /// </para>
     /// </remarks>
     /// <param name="left">The first flow to run.</param>
@@ -1996,31 +1997,47 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             let parent = RuntimeState.current()
-            let observer = parent.Observer
             let struct (leftScope, leftOp) = branchIn parent cancellationToken left environment
             let struct (rightScope, rightOp) = branchIn parent cancellationToken right environment
-            // Set by raceExecution before it returns the winner's exit or reports the loser.
             let leftWon = ref false
+            let loserExit = ref None
             let winnerScope () = if leftWon.Value then leftScope else rightScope
             let loserScope () = if leftWon.Value then rightScope else leftScope
 
-            // Nobody receives the loser's value, so its scope closes as soon as it settles. The race does not wait
-            // for that; if the caller's scope closes first, it closes the loser's scope itself.
-            let closeLoser (loserExit: Exit<'value, 'error> option) =
-                loserExit |> Option.iter (reportDiscardedExit observer)
-
-                let scope = loserScope ()
-
-                Platform.startDeed
-                    (fun () -> scope.Close CancellationToken.None)
-                    (FiberObserver.notifyUnobservedDefect observer None)
-
-            Platform.raceExecution leftOp rightOp cancellationToken (fun won -> leftWon.Value <- won) closeLoser
-            |> Execution.fold
-                (fun value ->
+            let finishWinner winnerExit =
+                match winnerExit with
+                | Exit.Success value ->
                     keepBranch (winnerScope ())
-                    Execution.ofValue value)
-                (fun cause -> closeScopes cancellationToken [ winnerScope () ] (Exit.Failure cause)))
+                    Execution.ofValue value
+                | Exit.Failure cause -> closeScopes cancellationToken [ winnerScope () ] (Exit.Failure cause)
+
+            let settle winnerExit =
+                let loserOutcome =
+                    match loserExit.Value with
+                    | Some(Exit.Failure cause) -> Exit.Failure cause
+                    | _ -> Exit.Success()
+
+                closeScopes CancellationToken.None [ loserScope () ] loserOutcome
+                |> Execution.fold
+                    (fun () -> finishWinner winnerExit)
+                    (fun loserCause ->
+                        match Cause.defects loserCause with
+                        | [] -> finishWinner winnerExit
+                        | defects ->
+                            let defectCause = defects |> List.map Cause.Die |> List.reduce Cause.both
+
+                            match winnerExit with
+                            | Exit.Success _ -> finishWinner (Exit.Failure defectCause)
+                            | Exit.Failure winnerCause ->
+                                finishWinner (Exit.Failure(Cause.both winnerCause defectCause)))
+
+            Platform.raceExecution
+                leftOp
+                rightOp
+                cancellationToken
+                (fun won -> leftWon.Value <- won)
+                (fun exit -> loserExit.Value <- exit)
+            |> Execution.fold (Exit.Success >> settle) (Exit.Failure >> settle))
 
     /// <summary>Lifts an option into a synchronous flow with the supplied error.</summary>
     /// <param name="error">The error to return if the option is <c>None</c>.</param>

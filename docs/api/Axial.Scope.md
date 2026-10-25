@@ -48,7 +48,7 @@ when it settles. `Flow.zipPar`, `Flow.sequencePar`, and `Flow.traversePar` run t
 value the caller receives stays open: it moves to the caller's scope and closes with it, so its resources live as if
 the caller had acquired them. Any other scope is released — a failed parallel group or a failed race winner closes
 before the combinator returns, a timed flow that fails or times out closes before the combinator returns (on timeout,
-before the fallback runs), and a race loser closes once it is interrupted, which may be after `race` returns.
+before the fallback runs), and a race loser closes after interruption and before `race` returns.
 
 This runtime lifetime differs from F# `use` and `use!`, which dispose when their lexical computation-expression body
 exits. A Flow scope can span functions, subflows, stream pulls, and child fibers.
@@ -61,7 +61,7 @@ low-level members listed below.
 | Combinator | What happens to its scoped resources |
 | --- | --- |
 | `Flow.zipPar`, `Flow.sequencePar`, `Flow.traversePar`, `Flow.forEachPar` | Move to the caller's scope when every flow succeeds. Released before it returns when any flow fails. |
-| `Flow.race` | The winner's move to the caller's scope if it succeeds. The loser's are released once it has been interrupted. |
+| `Flow.race` | The winner's move to the caller's scope if it succeeds. The loser's are released after interruption and before the race returns. |
 | `Flow.timeout`, `Flow.timeoutToOk`, `Flow.timeoutWith` | Move to the caller's scope when the flow succeeds in time. Released when it fails or times out. |
 | `Flow.fork` and its variants | Stay with the fiber and are released when it settles. `Fiber.join` gives you the value, not the resources. |
 | `Flow.forkResource` | The resource is acquired in a fiber and its release goes to the caller's scope. |

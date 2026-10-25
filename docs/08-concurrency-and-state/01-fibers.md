@@ -149,13 +149,14 @@ On .NET, a fiber wraps a `Task<Exit<'value, 'error>>`, a `CancellationTokenSourc
 Use parallel combinators when they express the whole relationship:
 
 - `Flow.zipPar`: Runs two flows concurrently and waits for both.
-- `Flow.race`: Runs two flows concurrently and returns the result of the winner, interrupting the loser.
+- `Flow.race`: Runs two flows concurrently, interrupts and awaits the loser, closes its scope, then returns the winner's result. A loser defect becomes part of the returned cause.
 - `Flow.traversePar`: Maps many values with bounded concurrency and returns the results in input order.
 - `Flow.forEachPar`: Runs a flow for each value with bounded concurrency, discarding the results.
 
 Unlike `Flow.fork`, these return values, and scoped resources come with the values: what a flow acquires moves to the
 caller's scope when you receive its value, and is released when you don't (a race loser, or every branch of a
-`zipPar` or traversal that failed). So `Flow.zipPar (Flow.scopeResource a) (Flow.scopeResource b)` opens two resources
+`zipPar` or traversal that failed). `Flow.race` does not return until loser cleanup finishes, so replacement work may
+immediately reuse an exclusive resource. `Flow.zipPar (Flow.scopeResource a) (Flow.scopeResource b)` opens two resources
 in parallel and both stay open until the caller's scope closes.
 
 ```fsharp

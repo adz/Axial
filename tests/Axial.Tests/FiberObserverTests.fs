@@ -163,7 +163,7 @@ module FiberObserverTests =
         | other -> failwithf "Expected one unobserved defect without metadata, got %A" other
 
     [<Fact>]
-    let ``Race loser defect is reported without fiber metadata`` () =
+    let ``Race loser defect is returned and not observer-reported`` () =
         let recording = Recording()
 
         let result =
@@ -171,14 +171,11 @@ module FiberObserverTests =
             |> Flow.withFiberObserver recording.Observer
             |> Flow.runSync (TestSupport.clockEnv ())
 
-        test <@ result = Exit.Success () @>
+        match result with
+        | Exit.Failure(Cause.Die defect) -> test <@ defect.Message = "race loser" @>
+        | other -> failwithf "Expected the loser defect as the race failure, got %A" other
 
-        // The loser settles asynchronously after the race returns.
-        waitUntil (fun () -> not (List.isEmpty recording.Unobserved))
-
-        match recording.Unobserved with
-        | [ None, defect ] -> test <@ defect.Message = "race loser" @>
-        | other -> failwithf "Expected one unobserved defect without metadata, got %A" other
+        test <@ recording.Unobserved = [] @>
 
     [<Fact>]
     let ``Observer hooks that throw do not alter outcomes`` () =

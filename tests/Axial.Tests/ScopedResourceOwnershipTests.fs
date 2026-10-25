@@ -1,6 +1,9 @@
 namespace Axial.Tests
 
 open System
+open System.Net
+open System.Net.Sockets
+open System.Threading
 open System.Threading.Tasks
 open Axial
 open Swensen.Unquote
@@ -119,14 +122,93 @@ module ScopedResourceOwnershipTests =
                     }
 
                 let! won = Flow.race loser winner
-                // The race returns without waiting for the interrupted loser's cleanup.
-                do! eventually (fun () -> released events = [ "loser:released" ]) 400
                 return won, released events
             }
             |> Flow.scoped
 
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success("winner", [ "loser:released" ]) @>
         test <@ released events = [ "loser:released"; "winner:released" ] @>
+
+    [<Fact>]
+    let ``race closes a right loser's scope before returning`` () =
+        let events = ResizeArray<string>()
+
+        let workflow : Flow<ClockEnvironment, string, string list> =
+            flow {
+                let! loserAcquired = Deferred.make<ClockEnvironment, string, unit> ()
+
+                let loser =
+                    flow {
+                        let! _ = acquire events "right"
+                        do! Deferred.succeed () loserAcquired |> Flow.ignore
+                        return! Flow.never
+                    }
+
+                let winner = Deferred.await loserAcquired |> Flow.map (fun () -> "left")
+                let! _ = Flow.race winner loser
+                return released events
+            }
+            |> Flow.scoped
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ "right:released" ] @>
+
+    [<Fact>]
+    let ``race releases an exclusive socket before returning`` () =
+        let endpoint = ref None
+
+        let loser : Flow<ClockEnvironment, string, unit> =
+            flow {
+                let socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                socket.ExclusiveAddressUse <- true
+                socket.Bind(IPEndPoint(IPAddress.Loopback, 0))
+                socket.Listen()
+                endpoint.Value <- Some(socket.LocalEndPoint :?> IPEndPoint)
+                do! Flow.scopeDisposable socket
+                return! Flow.never
+            }
+
+        let winner =
+            let rec wait () =
+                match endpoint.Value with
+                | Some _ -> Flow.succeed ()
+                | None -> Flow.sleep (TimeSpan.FromMilliseconds 1.0) |> Flow.bind wait
+            wait ()
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) (Flow.race loser winner) = Exit.Success() @>
+
+        use replacement = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+        replacement.ExclusiveAddressUse <- true
+        replacement.Bind(endpoint.Value.Value)
+        replacement.Listen()
+
+    [<Fact>]
+    let ``an interrupted race closes both branch scopes before returning`` () =
+        use started = new CountdownEvent(2)
+        use source = new CancellationTokenSource()
+        let mutable releasedCount = 0
+
+        let branch : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do!
+                    Flow.scopeFinalizer (
+                        Flow.delay (fun () ->
+                            Interlocked.Increment(&releasedCount) |> ignore
+                            Flow.succeed ())
+                    )
+
+                started.Signal() |> ignore
+                return! Flow.never
+            }
+
+        let running =
+            Task.Run(fun () ->
+                Flow.race branch branch
+                |> Flow.runSyncWithToken (TestSupport.clockEnv ()) source.Token)
+
+        test <@ started.Wait(TimeSpan.FromSeconds 10.0) @>
+        source.Cancel()
+        test <@ running.Result = Exit.Failure Cause.Interrupt @>
+        test <@ releasedCount = 2 @>
 
     [<Fact>]
     let ``traversePar keeps each item's scoped resources after its worker finishes`` () =
