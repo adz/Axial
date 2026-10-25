@@ -1083,27 +1083,47 @@ module ProcessServiceTests =
     [<Theory>]
     [<InlineData("INT", 2, 4)>]
     [<InlineData("HUP", 1, 5)>]
-    let ``Unix close signals reach a trapped stage`` signalName signalNumber exitCode = task {
+    let ``Unix close signals reach a trapped stage without leaving a child`` signalName signalNumber exitCode = task {
         if not (OperatingSystem.IsWindows()) then
+            use cancellation = new CancellationTokenSource()
             let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
             let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
             let request = if signalNumber = 2 then StopRequest.Interrupt else StopRequest.Hangup
+            let script = "trap 'echo trapped; exit " + string exitCode + "' " + signalName + "; echo ready; while :; do sleep 1; done"
             let specification =
-                shText ("trap 'echo trapped; exit " + string exitCode + "' " + signalName + "; echo ready; while :; do sleep 1; done")
+                // Detached verification runs under nohup, whose ignored SIGHUP disposition survives exec.
+                // Reset both tested signals before the shell installs its traps.
+                Process.commandArgs "env" [ "--default-signal=HUP,INT"; "sh"; "-c"; script ]
                 |> stdoutTo (Output.callback (fun _ -> Flow.fromAsync (async { ready.TrySetResult() |> ignore })))
                 |> Process.successCodes (set [ exitCode ])
                 |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
-            let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env ())
+            let running = specification |> toFlow |> fun workflow -> workflow.StartAsTask(env (), cancellation.Token)
             let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
-            do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
-            let! closeExit = handle.Close request |> fun workflow -> workflow.StartAsTask(())
-            test <@ closeExit = Exit.Success () @>
-            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
-            match outcome with
-            | Exit.Success result ->
-                test <@ result.ExitCode = exitCode @>
-                test <@ result.StdOut.Contains "trapped" @>
-            | other -> failwithf "Expected trapped signal, got %A" other
+            let mutable testFailure: exn option = None
+            try
+                do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+                let! closeExit = handle.Close request |> fun workflow -> workflow.StartAsTask(())
+                test <@ closeExit = Exit.Success () @>
+                let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+                match outcome with
+                | Exit.Success result ->
+                    test <@ result.ExitCode = exitCode @>
+                    test <@ result.StdOut.Contains "trapped" @>
+                | other -> failwithf "Expected trapped signal, got %A" other
+            with error ->
+                testFailure <- Some error
+
+            if not running.IsCompleted then cancellation.Cancel()
+            let! _ = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+            let childSurvives =
+                try
+                    use child = Diagnostics.Process.GetProcessById handle.ProcessId
+                    not child.HasExited
+                with :? ArgumentException -> false
+            test <@ not childSurvives @>
+            match testFailure with
+            | Some error -> return raise error
+            | None -> ()
     }
 
     [<Fact>]
