@@ -13,6 +13,10 @@
     <_AxialRepoSkipGuardrails>true</_AxialRepoSkipGuardrails>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="10.1.201" PrivateAssets="all" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.12.201" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="../Axial.Guardrails/Policy.fs" Link="Policy.fs" />
     <Compile Include="PolicyLock.fs" />
     <Compile Include="Program.fs" />

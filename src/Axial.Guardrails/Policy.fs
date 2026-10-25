@@ -138,9 +138,18 @@ module Policy =
         let candidate = Path.GetFullPath(path)
         candidate = canonicalRoot(root).TrimEnd(Path.DirectorySeparatorChar) || candidate.StartsWith(canonicalRoot root, StringComparison.Ordinal)
     let private resolvedInsideRoot root path =
-        let info : FileSystemInfo = if Directory.Exists path then DirectoryInfo(path) else FileInfo(path)
-        let resolved = info.ResolveLinkTarget(true)
-        insideRoot root (if isNull resolved then info.FullName else resolved.FullName)
+        let canonicalRootPath = canonicalRoot root |> _.TrimEnd(Path.DirectorySeparatorChar)
+        let relative = Path.GetRelativePath(canonicalRootPath, Path.GetFullPath path)
+        let mutable current = canonicalRootPath
+        let mutable escaped = false
+        for segment in relative.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries) do
+            current <- Path.Combine(current, segment)
+            let info : FileSystemInfo = if Directory.Exists current then DirectoryInfo(current) else FileInfo(current)
+            if info.Exists && info.Attributes.HasFlag FileAttributes.ReparsePoint then
+                let resolved = info.ResolveLinkTarget(true)
+                if not(isNull resolved) then current <- resolved.FullName
+            if not(insideRoot canonicalRootPath current) then escaped <- true
+        not escaped && insideRoot canonicalRootPath current
 
     let private filesUnder root =
         let skipped = set [ ".git"; ".livedocs"; "artifacts"; "bin"; "obj"; "output" ]
@@ -191,7 +200,7 @@ module Policy =
                             normalizePath "baseline" path
                             |> Result.bind (fun normalized ->
                                 let target = Path.Combine(repositoryRoot, normalized.Replace('/', Path.DirectorySeparatorChar))
-                                if not(insideRoot repositoryRoot target) || (File.Exists target && not(resolvedInsideRoot repositoryRoot target)) then Error $"baseline path '{path}' resolves outside the repository root"
+                                if not(insideRoot repositoryRoot target) || not(resolvedInsideRoot repositoryRoot target) then Error $"baseline path '{path}' resolves outside the repository root"
                                 else Ok(Some normalized))
                     match parseRole defaultName, baselineResult with
                     | Error e, _ | _, Error e -> fail e

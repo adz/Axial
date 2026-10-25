@@ -12,7 +12,7 @@ Guardrails v2 uses Rust-like lint policy: the repository declares intent; the an
 
 Use **TOML**, not JSON. The parser accepts one versioned, closed schema: unknown keys, duplicate declarations, unknown roles/rules, unmatched paths, conflicting same-precedence assignments, and invalid levels fail the build.
 
-There is no signing, approval file, `CI=true` behavior, environment switch, or MSBuild policy switch. Local builds and CI enforce the same files. The lock makes changes conspicuous and gives agent hooks a small protected set; it is not an identity or security mechanism.
+There is no signing, approval file, `CI=true` behavior, environment switch, or MSBuild policy switch. Local builds and CI enforce the same files. Direct lock edits are tamper-evident, not tamper-proof; phase 3 adds agent hooks, but the lock is not an identity or security mechanism.
 
 ## Policy model
 
@@ -139,7 +139,7 @@ The baseline stores rule ID, repository-relative file, stable fingerprint, and d
 | Project files that build Guardrails tests | Can remove tests or fixtures |
 | Additional exact paths declared in TOML | Protect repository-specific enforcement inputs |
 
-The config may add protected paths but not remove the mandatory set. Source effects files are not checksummed: role globs are locked, while normal implementation edits remain normal edits.
+The config may add protected paths but not remove the mandatory set. Protected-input discovery is a heuristic, not evaluated MSBuild: it covers repository `.editorconfig`/`.globalconfig` files, `Directory.Build.*`, all `.props`/`.targets`, and `.fsproj`/`.fs` files physically under `tests/Axial.Guardrails*`; linked sources and transitive project inputs outside those directories are not discovered. Source effects files are not checksummed: role globs are locked, while normal implementation edits remain normal edits.
 
 Before analysis, `axial guardrails check` hashes the protected set and validates policy, baseline monotonicity, and test counts. A mismatch prints a deterministic summary:
 

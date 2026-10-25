@@ -126,6 +126,18 @@ host = ["../Program.fs"]
             test <@ parse root "version = 2\n[default]\nrole = \"domain\"\n[default]" = Error [ "line 4: table 'default' is already declared; combine its entries under one declaration" ] @>)
 
     [<Fact>]
+    let ``baseline paths reject symlinked parent directories`` () =
+        withRepository (fun root ->
+            let outside=Path.Combine(Path.GetTempPath(),Guid.NewGuid().ToString("N"))
+            Directory.CreateDirectory outside |> ignore
+            let link=Path.Combine(root,"linked")
+            try
+                Directory.CreateSymbolicLink(link,outside) |> ignore
+                let actual=parse root "version = 2\nbaseline = \"linked/baseline\"\n[default]\nrole = \"domain\""
+                test <@ actual = Error [ "baseline path 'linked/baseline' resolves outside the repository root" ] @>
+            finally Directory.Delete(outside,true))
+
+    [<Fact>]
     let ``directory symlinks are not followed`` () =
         withRepository (fun root ->
             let outside=Path.Combine(Path.GetTempPath(),Guid.NewGuid().ToString("N"))

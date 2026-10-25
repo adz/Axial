@@ -8,7 +8,7 @@ open Xunit
 
 module PolicyLockTests =
     let private empty =
-        { Hashes=Map.empty; Baseline=[]; Tests=[]; Rules=Map.empty
+        { Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Tests=[]; Rules=Map.empty
           Effects=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
 
     [<Fact>]
@@ -43,15 +43,17 @@ module PolicyLockTests =
 
     [<Fact>]
     let ``baseline approval accepts only the selected newly enabled rule`` () =
-        let current={empty with Rules=Map ["domain/effects.ambient","deny"]; Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]}
+        let current={empty with Rules=Map ["domain/effects.ambient","deny"]; Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]; BaselineRoles=Map ["src/App.fs","domain"]}
         let changes=diff empty current
         test <@ validateApproval (BaselineRule "effects.ambient") empty current changes = Ok () @>
         let established={empty with Rules=current.Rules}
-        test <@ validateApproval (BaselineRule "effects.ambient") established current changes = Error "baseline growth refused: rule 'effects.ambient' was not newly enabled" @>
+        test <@ validateApproval (BaselineRule "effects.ambient") established current changes = Error "baseline growth refused: rule 'effects.ambient' was not newly enabled for every affected file's effective role" @>
         let allowed={empty with Rules=Map ["host/effects.ambient","allow"]}
         test <@ validateApproval (BaselineRule "effects.ambient") empty allowed (diff empty {allowed with Baseline=current.Baseline}) |> Result.isError @>
-        let secondRole={established with Rules=established.Rules.Add("host/effects.ambient","warn");Baseline=current.Baseline}
+        let secondRole={established with Rules=established.Rules.Add("host/effects.ambient","warn");Baseline=current.Baseline;BaselineRoles=Map ["src/App.fs","host"]}
         test <@ validateApproval (BaselineRule "effects.ambient") established secondRole (diff established secondRole) = Ok () @>
+        let testOnly={current with Rules=Map ["test/effects.ambient","deny"];BaselineRoles=Map ["src/App.fs","domain"]}
+        test <@ validateApproval (BaselineRule "effects.ambient") empty testOnly (diff empty testOnly) |> Result.isError @>
 
     [<Fact>]
     let ``test decreases need their dedicated acceptance`` () =
@@ -89,8 +91,9 @@ let text = "[<Fact>] Assert.True(false)"
 let dead () = Assert.True(false)
 #endif
 let verify = Assert.True
+let neverCalled () = verify(true)
 [<Fact>]
-let live () = verify(true)
+let live () = Assert.True(true)
 """
         test <@ countTestSource source = (1,1) @>
 
@@ -105,6 +108,9 @@ let live () = verify(true)
             test <@ match parseLock path with Error e -> e.Contains(":2:") && e.Contains("duplicate") | _ -> false @>
             File.WriteAllText(path,"version = 1\nTEST  p\t1\t2\nTEST  p\t1\t2\n")
             test <@ match parseLock path with Error e -> e.Contains("duplicate TEST") | _ -> false @>
+            for malformed in ["SHA256  "+String.replicate 64 "a"+"  "; "BASELINE  \tfile\tfingerprint\t1"; "TEST  \t1\t2"; "POLICY  \tdeny"; "EFFECT  "; "BOUNDARY  "; "SUPPRESSION  "] do
+                File.WriteAllText(path,"version = 1\n"+malformed+"\n")
+                test <@ parseLock path |> Result.isError @>
         finally File.Delete path
 
     [<Fact>]
