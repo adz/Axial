@@ -272,6 +272,9 @@ module ProcessServiceTests =
 
     [<Fact>]
     let ``compound input failure remains typed`` () =
+        let compound = Cause.Then(Cause.Interrupt, Cause.Fail(ProcessError.InputFailed "compound input"))
+        // Exercise the settlement decision directly so process scheduling cannot hide the failure branch.
+        test <@ ProcessRun.classifyInputExit (Exit.Failure compound) = Exit.Failure compound @>
         let source =
             Flow.ofExit (Exit.Failure (Cause.Then(Cause.Interrupt, Cause.Fail "compound input")))
             |> FlowStream.fromFlow

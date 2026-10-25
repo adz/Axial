@@ -41,6 +41,14 @@ type private RunCommand =
 
 /// Flow-based process execution with scoped processes, supervised pumps, and one stop coordinator.
 module internal ProcessRun =
+    let internal classifyInputExit =
+        function
+        | Exit.Success () -> Exit.Success ()
+        | Exit.Failure cause when not (List.isEmpty (Cause.defects cause)) -> Exit.Failure cause
+        | Exit.Failure cause when not (List.isEmpty (Cause.failures cause)) -> Exit.Failure cause
+        | Exit.Failure cause when Cause.isInterrupted cause -> Exit.Success ()
+        | Exit.Failure cause -> Exit.Failure cause
+
     let private processError (command: CommandDefinition) (error: exn) =
         ProcessError.StartFailed {
             Command = Configuration.renderCommand command
@@ -858,13 +866,7 @@ module internal ProcessRun =
                     |> Flow.bind (function
                         | Choice1Of2 exit ->
                             Fiber.markObserved feeder
-                            |> Flow.bind (fun () ->
-                                match exit with
-                                | Exit.Success () -> Flow.succeed ()
-                                | Exit.Failure cause when not (List.isEmpty (Cause.defects cause)) ->
-                                    Flow.ofExit (Exit.Failure cause)
-                                | Exit.Failure cause when Cause.isInterrupted cause -> Flow.succeed ()
-                                | Exit.Failure cause -> Flow.ofExit (Exit.Failure cause))
+                            |> Flow.bind (fun () -> Flow.ofExit (classifyInputExit exit))
                         | Choice2Of2 () -> superviseDetachedFeeder stage feeder)
 
                 let tolerateStopPipeFailure source =
