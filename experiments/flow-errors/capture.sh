@@ -18,3 +18,10 @@ path = pathlib.Path(output)
 path.write_text(path.read_text().replace(root, "<ROOT>"))
 PY
 done
+"$dotnet" fsi --nologo --exec for-loops.fsx >"$out/for-loops.txt" 2>&1
+python3 - "$root" "$out/for-loops.txt" <<'PY'
+import pathlib, sys
+root, output = sys.argv[1:]
+path = pathlib.Path(output)
+path.write_text(path.read_text().replace(root, "<ROOT>"))
+PY

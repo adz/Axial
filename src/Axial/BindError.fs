@@ -5,14 +5,9 @@ namespace Axial
 open System.ComponentModel
 open System.Threading.Tasks
 
-/// <summary>
-/// Marks a source whose error is adapted at a <c>flow { }</c> bind site.
-/// </summary>
-/// <remarks>
-/// This value is consumed by <c>let!</c>, <c>do!</c>, or <c>return!</c> in the Flow computation expression. It is not
-/// a general-purpose Flow or Result transformation. Use <c>Bind.error</c> for sources that fail with missingness or
-/// <c>unit</c>. Use <c>Bind.mapError</c> for sources that already carry a meaningful error.
-/// </remarks>
+/// <summary>Internal dispatch result used by <c>Bind.error</c> and <c>Bind.mapError</c>.</summary>
+/// <exclude/>
+[<EditorBrowsable(EditorBrowsableState.Never)>]
 type BindError<'env, 'error, 'value> =
     private
     | BindError of Flow<'env, 'error, 'value>
@@ -276,13 +271,13 @@ type BindErrorMap =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Bind =
     [<EditorBrowsable(EditorBrowsableState.Never)>]
-    let internal toFlow (BindError flow: BindError<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+    let toFlow (BindError flow: BindError<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
         flow
 
     /// <summary>Assigns an error to a missing or unit-error source at a <c>flow { }</c> bind site.</summary>
     /// <param name="failure">The error to use if the source fails.</param>
     /// <param name="source">The source to adapt.</param>
-    /// <returns>A marker to use directly with <c>let!</c>, <c>do!</c>, or <c>return!</c> in <c>flow { }</c>.</returns>
+    /// <returns>A Flow whose missing or unit error is replaced by <paramref name="failure"/>.</returns>
     /// <example>
     /// <code>
     /// flow {
@@ -291,13 +286,13 @@ module Bind =
     /// }
     /// </code>
     /// </example>
-    let inline error (failure: 'error) (source: 'source) : BindError<'env, 'error, 'value> =
-        BindErrorWithError.Invoke failure source
+    let inline error (failure: 'error) (source: 'source) : Flow<'env, 'error, 'value> =
+        BindErrorWithError.Invoke failure source |> toFlow
 
     /// <summary>Maps an existing source error at a <c>flow { }</c> bind site.</summary>
     /// <param name="mapper">The error mapping function.</param>
     /// <param name="source">The source to adapt.</param>
-    /// <returns>A marker to use directly with <c>let!</c>, <c>do!</c>, or <c>return!</c> in <c>flow { }</c>.</returns>
+    /// <returns>A Flow whose error is transformed by <paramref name="mapper"/>.</returns>
     /// <example>
     /// <code>
     /// flow {
@@ -305,5 +300,5 @@ module Bind =
     /// }
     /// </code>
     /// </example>
-    let inline mapError (mapper: 'error1 -> 'error2) (source: 'source) : BindError<'env, 'error2, 'value> =
-        BindErrorMap.Invoke mapper source
+    let inline mapError (mapper: 'error1 -> 'error2) (source: 'source) : Flow<'env, 'error2, 'value> =
+        BindErrorMap.Invoke mapper source |> toFlow
