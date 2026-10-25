@@ -14,6 +14,7 @@ Run `scripts/verify.sh` (all stages) or name stages: `scripts/verify.sh build te
 | `fable` | `scripts/run-fable-tests.sh`, then the compiled suite again until it has run `FABLE_RUNS` times (default 3) |
 | `aot` | `scripts/run-aot-probe.sh` |
 | `docs` | `scripts/check-docs-conventions.sh` and `scripts/check-source-inventory.sh` |
+| `livedocs` | `dotnet livedocs test --warn-as-error`, using the Release build from `build` |
 
 It writes `artifacts/verify/result.json` (commit, dirty flag, per-stage status, seconds, and summary) plus one log
 per stage. A task is verified when `"passed": true` for the stages it touches. Quote the summary lines in reports.
@@ -22,7 +23,9 @@ Do not treat "passed on rerun" as passing: a stage that needed a rerun is a flak
 On Linux with a user systemd session, run `scripts/check-systemd-watchdog.sh` manually. It verifies steady operation, SIGKILL restart, and watchdog timeout of a transient user unit; it is not run in CI. On machines without a user session it prints `skipped`.
 
 The Fable stage runs three times because a single pass hid a deterministic-under-load stall introduced by T1.
-`dotnet livedocs test --warn-as-error` stays a phase or release step (see AGENTS.md), not part of `verify.sh`.
+The `livedocs` stage compiles and runs every checked documentation example. It joined the default stages after a
+slice removed a `let!` overload while three docs pages still showed it, and every stage passed. While iterating on a
+small task, name the stages you need (`scripts/verify.sh build test`); a slice is not done until all stages pass.
 
 ## Build with the SDK CI uses
 
@@ -85,3 +88,4 @@ Record a test here the first time it fails and then passes unchanged; fix or del
 | `SubscriptionTests.manual clock search pipeline dispatches only the latest query` | 2026-10-18, T13 run | A fixed 50 ms sleep let the debounce arm on "a" before the burst drained | Fixed: waits for an empty inbox and an armed timer |
 | `CrashTests.atomic target is always a complete payload after process kills` | 0.11 dogfood verify run | `Probe did not write an atomic target`: the probe could be killed before its first `writeAtomic` completed | Fixed: the probe prints `wrote` after each write and the test waits for the first `wrote` line before the random kill |
 | `WorkflowConcurrencyTests.Blocking work runs to completion when interrupted and reports the interruption` | Guardrails review-fix verify run | A 20 ms cancellation could occur before the blocking delegate started, leaving the `finished` assertion false | Fixed: a start gate proves the delegate is running before the test cancels it |
+| `FiberObserverTests.Discarded fork defect is reported as unobserved when the scope closes` | 2026-10-25 reference-assembly verify run | Expected one unobserved defect after the fiber reported a settled status, but the observer list was still empty | Unidentified; the reference-assembly build changes do not touch fiber runtime behavior |

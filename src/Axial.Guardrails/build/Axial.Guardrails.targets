@@ -90,7 +90,8 @@
       <_AxialGuardrailsSourceInputs Include="@(Compile)" />
       <_AxialGuardrailsSourceInputs Remove="$(GeneratedAssemblyInfoFile);$(TargetFrameworkMonikerAssemblyAttributesPath)" />
       <_AxialGuardrailsVolatileSource Include="$(GeneratedAssemblyInfoFile);$(TargetFrameworkMonikerAssemblyAttributesPath)" Condition="Exists('%(Identity)')" />
-      <_AxialGuardrailsReferenceInputs Include="@(ReferencePath)" />
+      <!-- Match CoreCompile's inputs: project references use stable reference assemblies when available. -->
+      <_AxialGuardrailsReferenceInputs Include="@(ReferencePathWithRefAssemblies)" />
     </ItemGroup>
     <GetFileHash Files="@(_AxialGuardrailsVolatileSource)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsVolatileSource)' != ''">
       <Output TaskParameter="Items" ItemName="_AxialGuardrailsVolatileSourceHash" />

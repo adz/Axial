@@ -2,6 +2,10 @@
   <PropertyGroup>
     <UseArtifactsOutput>true</UseArtifactsOutput>
 
+    <!-- The SDK enables F# reference assemblies for net7.0+, but not netstandard. Axial multi-targets both;
+         enabling them consistently keeps body-only changes from invalidating downstream project references. -->
+    <ProduceReferenceAssembly Condition="'$(MSBuildProjectExtension)' == '.fsproj'">true</ProduceReferenceAssembly>
+
     <!-- Local/dev default only; the release workflow stamps the real version via -p:Version from the release tag. -->
     <VersionPrefix>0.7.1</VersionPrefix>
     <ReifiedVersion Condition="'$(ReifiedVersion)' == ''">0.11.0</ReifiedVersion>
