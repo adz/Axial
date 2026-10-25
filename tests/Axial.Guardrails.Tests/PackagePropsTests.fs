@@ -295,6 +295,27 @@ module PackagePropsTests =
         else Assert.DoesNotContain("Running Axial.Guardrails analysis", result.Output)
 
     [<Fact>]
+    let ``a corrupt policy cache cannot hide policy drift`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-policy-cache-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            writeV2Policy dir "capabilities" "deny"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let initial = runBuild project None None None false false None
+            Assert.True(initial.ExitCode = 0, initial.Output)
+
+            let stamp = Directory.GetFiles(dir, "axial-guardrails-policy.*.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
+            File.WriteAllText(stamp, "corrupt cache")
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
+            File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "# drift\n")
+            let drift = runBuild project None None None false false None
+            Assert.NotEqual(0, drift.ExitCode)
+            Assert.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED", drift.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
     let ``incremental builds skip unchanged analysis but never skip a new finding`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-incremental-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
@@ -306,7 +327,7 @@ module PackagePropsTests =
             assertAnalysisRan true (build ())
             assertAnalysisRan false (build ())
 
-            let stamp = Directory.GetFiles(dir, "axial-guardrails.*.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
+            let stamp = Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
             File.WriteAllText(stamp, "corrupt cache")
             File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
             File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet value = System.DateTimeOffset.UtcNow\n")
