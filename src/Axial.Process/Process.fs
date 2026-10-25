@@ -47,6 +47,9 @@ type ProcessRunException<'error>(cause: Cause<'error>) =
 
 [<RequireQualifiedAccess>]
 module Process =
+    let internal classifyDeadlineWaitFailure (token: CancellationToken) (error: exn) : Cause<ProcessError> =
+        if ForeignCancellation.isOurs token error then Cause.Interrupt else Cause.Die error
+
     [<EditorBrowsable(EditorBrowsableState.Never)>]
     let inline toSpecification (source: ^source) : ProcessSpec =
         ((^source or ProcessInput): (static member ToSpecification: ^source -> ProcessSpec) source)
@@ -942,10 +945,8 @@ module Process =
                     | Choice1Of2 cause ->
                         pendingFailure <- None
                         return! Flow.ofExit (Exit.Failure cause)
-                    | Choice2Of2 _ when token.IsCancellationRequested ->
-                        return! Flow.ofExit (Exit.Failure Cause.Interrupt)
                     | Choice2Of2 error ->
-                        return! Flow.die error
+                        return! Flow.ofExit (Exit.Failure(classifyDeadlineWaitFailure token error))
                 }
 
             selected, (fun () -> completion), guard, (fun () -> pendingFailure))

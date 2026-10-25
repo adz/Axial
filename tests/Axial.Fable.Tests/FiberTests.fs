@@ -115,6 +115,37 @@ let tests : Test list =
                     (releasedNow ()) ]
       })
 
+      test "Flow.disconnect reports a late defect exactly once" (flow {
+          let! observed = Deferred.make<Axial.ClockEnvironment, Never, exn> ()
+          let count = ref 0
+          let started = ref false
+          let mutable release = fun () -> ()
+          let defect = InvalidOperationException "late disconnected Fable defect"
+
+          let observer =
+              { FiberObserver.none with
+                  OnUnobservedDefect = fun _ error ->
+                      count.Value <- count.Value + 1
+                      Deferred.succeedNow error observed |> ignore }
+
+          let stubborn : Flow<Axial.ClockEnvironment, Never, unit> =
+              Async.FromContinuations(fun (_, error, _) ->
+                  started.Value <- true
+                  release <- fun () -> error defect)
+              |> Flow.fromAsync
+
+          let! fiber = stubborn |> Flow.disconnect |> Flow.withFiberObserver observer |> Flow.fork
+          let! interrupted = Fiber.interrupt fiber
+          release ()
+          let! reported = Deferred.await observed
+
+          return
+              [ isTrue "the disconnected operation started" started.Value
+                isTrue "its caller was interrupted" (match interrupted with Exit.Failure cause -> Cause.isInterrupted cause | _ -> false)
+                isTrue "the late defect was preserved" (obj.ReferenceEquals(defect, reported))
+                equal "the observer saw it once" 1 count.Value ]
+      })
+
       test "Flow.forkGraceful lets a consumer drain its queue when the scope closes" (flow {
           let written = ResizeArray<int>()
 

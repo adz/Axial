@@ -357,27 +357,50 @@ module internal ProcessRun =
                     |> Flow.ignore
 
                 let stopFeeder (stage: RunStage) =
+                    let rec waitWithinBound attempts (feeder: Fiber<ProcessError, unit>) =
+                        flow {
+                            let! settled = Fiber.poll feeder
+                            match settled with
+                            | Some _ -> return true
+                            | None when attempts > 0 ->
+                                do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
+                                return! waitWithinBound (attempts - 1) feeder
+                            | None -> return false
+                        }
+
                     flow {
                         match stage.Feeder with
                         | Some feeder ->
-                            let! settled = Fiber.poll feeder
-                            match settled with
-                            | Some _ -> ()
-                            | None ->
-                                do! Fiber.requestInterrupt feeder
-                                let! outcome =
-                                    Flow.race
-                                        // Forced close is bounded first. If the feeder ignores interruption after
-                                        // that bound, disconnect only this wait so CloseStdIn can finish promptly.
-                                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2 |> Flow.disconnect)
-                                        (Flow.sleep (TimeSpan.FromMilliseconds 250.0) |> Flow.map Choice2Of2)
-                                match outcome with
-                                | Choice1Of2 _ -> do! Fiber.markObserved feeder
-                                | Choice2Of2 _ ->
-                                    let stageIndex = stages |> Array.findIndex (fun candidate -> obj.ReferenceEquals(candidate, stage))
-                                    do! superviseDetachedFeeder stageIndex feeder
-                        | None -> ()
-                        do! closePipe stage
+                            let mutable handedOff = false
+
+                            let closeThenOwn =
+                                flow {
+                                    // Closing the pipe is the migration boundary: only after it is closed may a
+                                    // still-running feeder be handed to the detached supervisor.
+                                    do! closePipe stage
+                                    let! settled = Fiber.poll feeder
+                                    if settled.IsSome then
+                                        let! _ = Fiber.awaitUnobserved feeder
+                                        do! Fiber.markObserved feeder
+                                    else
+                                        let stageIndex = stages |> Array.findIndex (fun candidate -> obj.ReferenceEquals(candidate, stage))
+                                        do! superviseDetachedFeeder stageIndex feeder
+                                    handedOff <- true
+                                }
+
+                            do!
+                                flow {
+                                    let! settled = Fiber.poll feeder
+                                    if settled.IsNone then
+                                        do! Fiber.requestInterrupt feeder
+                                        let! _ = waitWithinBound 25 feeder
+                                        ()
+                                }
+                                |> Flow.ensuring closeThenOwn
+
+                            // The finalizer owns every normal, failing, and interrupted exit path.
+                            if not handedOff then return! Flow.die (InvalidOperationException "stdin feeder ownership handoff did not run")
+                        | None -> do! closePipe stage
                     }
 
                 let completeClose result reply =
