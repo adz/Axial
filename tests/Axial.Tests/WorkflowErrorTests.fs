@@ -646,6 +646,12 @@ module WorkflowErrorTests =
                        innerType.IsGenericType
                        && innerType.GetGenericTypeDefinition() = typedefof<Result<_, _>>)
 
+        let sourceCount =
+            typeof<FlowBuilder>.GetMethods()
+            |> Array.filter (fun methodInfo -> methodInfo.Name = "Source")
+            |> Array.length
+
+        test <@ sourceCount = 1 @>
         test <@ hasNestedConversion typedefof<Async<_>> @>
         test <@ hasNestedConversion typedefof<ColdTask<_>> @>
 
