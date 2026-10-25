@@ -702,6 +702,20 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         TaskInterop.from Exit.fromResult factory
 
+    /// <summary>Creates a flow from an existing cold task value.</summary>
+    /// <remarks>The operation runs on each execution. Thrown exceptions are recorded as defects.</remarks>
+    /// <platforms>.NET only</platforms>
+    let fromColdTask (ColdTask factory: ColdTask<'value>) : Flow<'env, 'error, 'value> =
+        TaskInterop.from Exit.Success factory
+
+    /// <summary>Creates a flow from an existing cold task value whose <c>Error</c> enters the typed error channel.</summary>
+    /// <remarks>The operation runs on each execution. Thrown exceptions are recorded as defects.</remarks>
+    /// <platforms>.NET only</platforms>
+    let fromColdTaskResult
+        (ColdTask factory: ColdTask<Result<'value, 'error>>)
+        : Flow<'env, 'error, 'value> =
+        TaskInterop.from Exit.fromResult factory
+
     /// <summary>Creates a flow from a cancellable task factory and treats thrown exceptions as recoverable typed errors.</summary>
     /// <remarks>Successful completion returns <c>Exit.Success</c>. <c>OperationCanceledException</c> returns <c>Cause.Interrupt</c> when the runtime token requested it. Other exceptions, including cancellation the operation raised for its own reasons, return <c>Cause.Fail exn</c>.</remarks>
     /// <param name="factory">Starts the operation, observing the supplied cancellation token.</param>

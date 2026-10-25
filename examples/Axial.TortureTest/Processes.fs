@@ -23,8 +23,10 @@ let run (round: Round) : Flow<ClockEnvironment, Never, Check list> =
             member _.Execute(_,observe) = flow {
                 runs <- runs+1
                 for item in input do
-                    do! observe {Stage=0;ObservedChannel=OutputChannel.StdOut;OriginalChannel=OutputChannel.StdOut
+                    do!
+                        observe {Stage=0;ObservedChannel=OutputChannel.StdOut;OriginalChannel=OutputChannel.StdOut
                                  Text=string item;Timestamp=DateTimeOffset(1970,1,1,0,0,0,TimeSpan.Zero)}
+                        |> Flow.fromAsync
                 return result
             }}
     let env = {Process=service;Clock=Axial.PlatformService.Clock.live}

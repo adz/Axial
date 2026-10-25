@@ -228,12 +228,13 @@ type TestProcess() =
                                             return Ok ()
                                         })
                                     )
+                                    |> Flow.fromAsync
 
                                 do! Flow.ofExit handlerExit |> Flow.widenError
                         | None -> ()
 
                         for output in outputs do
-                            do! observe output
+                            do! observe output |> Flow.fromAsync
 
                         return resultHandler specification
                     })

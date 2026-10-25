@@ -34,7 +34,7 @@ let renderTrace : Flow<RequestEnv, string, string> =
     flow {
         let! env = Flow.env // Flow<RequestEnv, string, RequestEnv>
         let! user = loadUser // Flow<RequestEnv, string, User>
-        let! validName = validateName user.Name // Flow<RequestEnv, string, string>
+        let! validName = validateName user.Name |> Flow.fromResult // Flow<RequestEnv, string, string>
         return $"{env.Prefix} [{env.TraceId}] {validName}"
     }
 

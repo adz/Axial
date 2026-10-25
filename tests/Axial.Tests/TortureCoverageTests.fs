@@ -24,7 +24,8 @@ module TortureCoverageTests =
 
     /// Members deliberately left out, each with the reason.
     let private excluded () : Map<string, string> =
-        [ "Deferred.fromTask", "BCL interop bridge, covered by BclInteropTests."
+        [ "Bind.toFlow", "Compiler-facing helper used by the inline Bind adapters."
+          "Deferred.fromTask", "BCL interop bridge, covered by BclInteropTests."
           "Deferred.toTask", "BCL interop bridge, covered by BclInteropTests." ]
         |> Map.ofList
 

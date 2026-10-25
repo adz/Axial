@@ -119,9 +119,16 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
               ColdTask.awaitStartedValueTask (Tasks.ValueTask<int>(6)) ]
 
         let startedBeforeBinding = startedCold.Value
-        let! coldValues = cold |> Flow.traverse (fun coldTask -> flow { let! value = coldTask in return value })
+        let! coldValues = cold |> Flow.traverse (fun coldTask -> Flow.fromColdTask coldTask)
         let! runValue = Flow.fromTask (fun token -> ColdTask.run token (List.head cold))
-        let coldAsExpected = startedBeforeBinding = 0 && coldValues = [ 1..6 ] && runValue = 1 && startedCold.Value = 5
+        // axial-allow-AXG005: completed probe task has no cancellable work
+        let! coldResult = ColdTask.create (fun _ -> Tasks.Task.FromResult(Ok 7)) |> Flow.fromColdTaskResult
+        let coldAsExpected =
+            startedBeforeBinding = 0
+            && coldValues = [ 1..6 ]
+            && runValue = 1
+            && coldResult = 7
+            && startedCold.Value = 5
 
         // startTask runs the flow to completion by itself, so there is no token to pass on.
         let! viaTask = Flow.fromTask (fun _ -> Flow.startTask clockEnvironment sample) // axial-allow-AXG005: wrapped operation has no cancellation-token overload
