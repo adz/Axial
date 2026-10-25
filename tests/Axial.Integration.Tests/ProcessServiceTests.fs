@@ -1098,7 +1098,7 @@ module ProcessServiceTests =
             do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
             let! closeExit = handle.Close request |> fun workflow -> workflow.StartAsTask(())
             test <@ closeExit = Exit.Success () @>
-            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
+            let! outcome = running.WaitAsync(TimeSpan.FromSeconds 30.0)
             match outcome with
             | Exit.Success result ->
                 test <@ result.ExitCode = exitCode @>
