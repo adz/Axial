@@ -1,0 +1,17 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/non-flow.fsx(7,12): error FS0041: No overloads match for method 'Bind'.
+
+Known types of arguments: int * ('a -> Flow<'b,'c,'a>)
+
+Available overloads:
+ - member FlowBuilder.Bind: flow: Flow<'env,'error,'value> * binder: ('value -> Flow<'env,'error,'next>) -> Flow<'env,'error,'next> // Argument 'flow' doesn't match
+ - member FlowBuilder.Bind: operation: Async<'value> * binder: ('value -> Flow<'env,'error,'next>) -> Flow<'env,'error,'next> // Argument 'operation' doesn't match
+ - member FlowBuilder.Bind: operation: Async<Result<'value,'error>> * binder: ('value -> Flow<'env,'error,'next>) -> Flow<'env,'error,'next> // Argument 'operation' doesn't match
+ - member FlowBuilder.Bind: operation: ColdTask<'value> * binder: ('value -> Flow<'env,'error,'next>) -> Flow<'env,'error,'next> // Argument 'operation' doesn't match
+ - member FlowBuilder.Bind: operation: ColdTask<Result<'value,'error>> * binder: ('value -> Flow<'env,'error,'next>) -> Flow<'env,'error,'next> // Argument 'operation' doesn't match
+ - member FlowBuilder.Bind: option: 'value option * binder: ('value -> Flow<'env,unit,'next>) -> Flow<'env,unit,'next> // Argument 'option' doesn't match
+ - member FlowBuilder.Bind: option: 'value voption * binder: ('value -> Flow<'env,unit,'next>) -> Flow<'env,unit,'next> // Argument 'option' doesn't match
+ - member FlowBuilder.Bind: result: Result<'value,'error> * binder: ('value -> Flow<'env,'error,'next>) -> Flow<'env,'error,'next> // Argument 'result' doesn't match
+ - member FlowBuilder.Bind: source: BindError<'env,'error,'value> * binder: ('value -> Flow<'env,'error,'next>) -> Flow<'env,'error,'next> // Argument 'source' doesn't match
+
