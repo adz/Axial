@@ -1,0 +1,4 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/envwith-missing-member.fsx(6,20): error FS0039: The type 'PricingEnv' does not define a field, constructor, or member named 'Clock'.
+

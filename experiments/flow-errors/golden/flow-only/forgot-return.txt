@@ -1,0 +1,4 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/forgot-return.fsx(6,5): error FS0588: The block following this 'let' is unfinished. Every code block is an expression and must have a result. 'let' cannot be the final code element in a block. Consider giving this block an explicit result.
+

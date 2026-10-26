@@ -68,7 +68,7 @@ type QuoteApp = { ExchangeRates: IExchangeRates }
 let quoteAud (usd: decimal) : Flow<QuoteApp, QuoteError, decimal> =
     flow {
         let! rates = Flow.envWith _.ExchangeRates
-        let! rate = ColdTask rates.UsdToAud
+        let! rate = ColdTask rates.UsdToAud |> Flow.fromColdTaskResult
         return Math.Round(usd * rate, 2)
     }
 ```

@@ -1,0 +1,4 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/non-flow.fsx(6,18): error FS1200: flow { let! ... } accepts Flow values. Convert this expression explicitly (for example with Flow.fromResult or Flow.fromAsync), and ensure the Flow environment and error types match the surrounding workflow.
+

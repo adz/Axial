@@ -1,0 +1,8 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/mixed-envs.fsx(9,18): error FS0001: Type mismatch. Expecting a
+    'Flow<PricingEnv,string,'a>'    
+but given a
+    'Flow<CheckoutEnv,string,string>'    
+The type 'PricingEnv' does not match the type 'CheckoutEnv'
+

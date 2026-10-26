@@ -1,0 +1,4 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/missing-service.fsx(6,21): error FS0001: The type 'PricingEnv' is not compatible with the type 'IHasPayments'
+

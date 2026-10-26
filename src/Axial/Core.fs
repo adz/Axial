@@ -749,7 +749,7 @@ type Fiber<'error, 'value>
 /// </summary>
 /// <remarks>
 /// Bind a cold task directly in <c>flow { }</c>. When the task produces <c>Result&lt;'value,'error&gt;</c>,
-/// the builder places <c>Error</c> in Flow's typed error channel for both <c>let!</c> and <c>return!</c>.
+/// use <c>Flow.fromColdTaskResult</c> to place <c>Error</c> in Flow's typed error channel.
 /// A raw, already-started <c>Task</c> is not a Flow builder source.
 /// </remarks>
 /// <typeparam name="value">The type of the produced task value.</typeparam>
