@@ -16,8 +16,6 @@ set -uo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out_dir="$root_dir/artifacts/verify"
 fable_runs="${FABLE_RUNS:-3}"
-stages=("$@")
-[[ ${#stages[@]} -eq 0 ]] && stages=(build test fable aot docs livedocs)
 
 mkdir -p "$out_dir"
 cd "$root_dir"
@@ -28,6 +26,8 @@ if [[ ${1:-} != --verify-lock-held ]]; then
     exec flock -o "$out_dir/run.lock" "$0" --verify-lock-held "$@"
 fi
 shift
+stages=("$@")
+[[ ${#stages[@]} -eq 0 ]] && stages=(build test fable aot docs livedocs)
 
 results=()
 failed=0
