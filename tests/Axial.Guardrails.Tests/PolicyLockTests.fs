@@ -108,6 +108,33 @@ domain = ["src/Domain/*.fsproj"]
         finally Directory.Delete(root,true)
 
     [<Fact>]
+    let ``baseline growth must be authorized for every project role of a shared file`` () =
+        let root=Path.Combine(Path.GetTempPath(),"Axial.Lock.Tests",Guid.NewGuid().ToString("N"))
+        try
+            Directory.CreateDirectory(Path.Combine(root,"src","A")) |> ignore
+            Directory.CreateDirectory(Path.Combine(root,"src","Z")) |> ignore
+            File.WriteAllText(Path.Combine(root,ConfigName),"""version = 2
+baseline = "Axial.Guardrails.baseline"
+[default]
+role = "domain"
+[projects]
+host = ["src/Z/*.fsproj"]
+[roles.host.rules]
+"effects.ambient" = "deny"
+            """)
+            File.WriteAllText(Path.Combine(root,DefaultBaseline),"effects.ambient\tsrc/Shared.fs\tabc\n")
+            File.WriteAllText(Path.Combine(root,"src","Shared.fs"),"module Shared")
+            let project="<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><Compile Include=\"../Shared.fs\" /></ItemGroup></Project>"
+            File.WriteAllText(Path.Combine(root,"src","A","App.fsproj"),project)
+            File.WriteAllText(Path.Combine(root,"src","Z","App.fsproj"),project)
+            let snapshot=inspect root |> function Ok value -> value | Error error -> failwith error
+            let roleRecords = serialize snapshot |> fun text -> Text.RegularExpressions.Regex.Matches(text,"(?m)^BASELINE_ROLE  src/Shared\\.fs\\t").Count
+            test <@ roleRecords = 2 @>
+            let changes=diff empty snapshot
+            test <@ validateApproval (BaselineRule "effects.ambient") empty snapshot changes |> Result.isError @>
+        finally Directory.Delete(root,true)
+
+    [<Fact>]
     let ``strict lock parser requires one first version and unique exact records`` () =
         let path=Path.GetTempFileName()
         try
