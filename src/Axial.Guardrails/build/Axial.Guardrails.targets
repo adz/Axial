@@ -106,6 +106,7 @@
 
   <Target Name="AxialGuardrailsWriteInputFingerprint"
           BeforeTargets="AxialGuardrailsEffectBoundaryCheck"
+          DependsOnTargets="AxialGuardrailsWriteConfig"
           Condition="'$(AxialGuardrailsEnabled)' == 'true'">
     <Error Condition="'$(_AxialGuardrailsUsesPackagedTool)' != 'true' and '@(_AxialGuardrailsConfiguredToolInput)' == ''"
            Text="An overridden _AxialGuardrailsExe requires _AxialGuardrailsConfiguredToolInput items naming its manifest and assemblies." />
@@ -128,6 +129,12 @@
       <Output TaskParameter="Items" ItemName="_AxialGuardrailsReferenceHash" />
     </GetFileHash>
     <ItemGroup>
+      <_AxialGuardrailsContentInputs Include="@(_AxialGuardrailsPolicyInputs);@(EditorConfigFiles);@(AnalyzerConfigFiles);$(_AxialGuardrailsConfigFile);@(_AxialGuardrailsToolInputs)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+    <GetFileHash Files="@(_AxialGuardrailsContentInputs)" Algorithm="SHA256" Condition="'@(_AxialGuardrailsContentInputs)' != ''">
+      <Output TaskParameter="Items" ItemName="_AxialGuardrailsContentHash" />
+    </GetFileHash>
+    <ItemGroup>
       <_AxialGuardrailsFingerprintLine Include="TargetFramework=$(TargetFramework)" />
       <_AxialGuardrailsFingerprintLine Include="DefineConstants=$(DefineConstants)" />
       <_AxialGuardrailsFingerprintLine Include="LangVersion=$(LangVersion)" />
@@ -137,8 +144,7 @@
       <_AxialGuardrailsFingerprintLine Include="NoWarn=$(NoWarn)" />
       <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsSourceHash->'source=%(FullPath)|%(FileHash)')" />
       <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsReferenceHash->'reference=%(FullPath)|%(FileHash)')" />
-      <_AxialGuardrailsFingerprintLine Include="@(EditorConfigFiles->'analyzerConfig=%(FullPath)')" />
-      <_AxialGuardrailsFingerprintLine Include="@(AnalyzerConfigFiles->'analyzerConfig=%(FullPath)')" />
+      <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsContentHash->'content=%(FullPath)|%(FileHash)')" />
       <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsVolatileSourceHash->'volatileSource=%(FullPath)|%(FileHash)')" />
     </ItemGroup>
     <WriteLinesToFile File="$(_AxialGuardrailsFingerprintFile)" Lines="@(_AxialGuardrailsFingerprintLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />

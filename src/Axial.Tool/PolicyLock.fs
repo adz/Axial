@@ -78,72 +78,21 @@ module PolicyLock =
         let explicitFiles = Regex.Matches(File.ReadAllText project, "Compile\\s+Include=\"([^\"]+\\.fs)\"") |> Seq.cast<Match> |> Seq.map (fun m -> Path.GetFullPath(Path.Combine(directory,m.Groups[1].Value))) |> Seq.filter File.Exists |> Seq.toArray
         if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.TopDirectoryOnly)
 
-    // FCS lives in a helper process so the no-change path neither loads it nor prevents native-AOT publishing.
-    let private parseCount fileName defines =
-        let local=Path.Combine(AppContext.BaseDirectory,"Axial.Tool.Parser.dll")
-        let parser =
-            if File.Exists local then local
-            else
-                let rec findArtifacts directory =
-                    let candidate=Path.Combine(directory,"artifacts","bin","Axial.Tool.Parser")
-                    if Directory.Exists candidate then Some candidate
-                    else match Directory.GetParent directory with null -> None | parent -> findArtifacts parent.FullName
-                match findArtifacts AppContext.BaseDirectory with
-                | Some artifacts -> Directory.GetFiles(artifacts,"Axial.Tool.Parser.dll",SearchOption.AllDirectories) |> Array.tryHead |> Option.defaultValue local
-                | None -> local
-        if not(File.Exists parser) then failwith $"test parser not found at '{parser}'"
-        let start=ProcessStartInfo("dotnet")
-        start.UseShellExecute<-false
-        start.RedirectStandardOutput<-true
-        start.RedirectStandardError<-true
-        start.Environment["DOTNET_ROLL_FORWARD"]<-"Major"
-        start.ArgumentList.Add parser
-        start.ArgumentList.Add fileName
-        start.ArgumentList.Add(String.concat "," defines)
-        use child=Process.Start start
-        let output=child.StandardOutput.ReadToEnd()
-        let error=child.StandardError.ReadToEnd()
-        child.WaitForExit()
-        match child.ExitCode,output.Trim().Split('\t') with
-        | 0,[|tests;assertions|] -> Int32.Parse tests,Int32.Parse assertions
-        | _ -> failwith $"test parser failed for '{fileName}': {error.Trim()}"
-
-    let countTestSource text =
-        let path=Path.Combine(Path.GetTempPath(),$"axial-test-{Guid.NewGuid():N}.fs")
-        try File.WriteAllText(path,text); parseCount path []
-        finally File.Delete path
-
-    let private testCounts root (files: string array) =
-        let cachePath=Path.Combine(root,"artifacts","guardrails-test-counts.tsv")
-        let cache =
-            if File.Exists cachePath then
-                File.ReadLines cachePath |> Seq.choose(fun line ->
-                    match line.Split('\t') with
-                    | [|key;t;a|] ->
-                        match Int32.TryParse t,Int32.TryParse a with
-                        | (true,tests),(true,assertions) -> Some(key,(tests,assertions))
-                        | _ -> None
-                    | _ -> None) |> Map.ofSeq
-            else Map.empty
-        let mutable updated=cache
-        let countFile defines file =
-            let key=sha256 file+":"+String.concat "," defines
-            match cache.TryFind key with
-            | Some counts -> counts
-            | None -> let counts=parseCount file defines in updated<-updated.Add(key,counts); counts
-        let counts =
-            files |> Seq.filter (fun p -> p.EndsWith(".fsproj",StringComparison.Ordinal))
-            |> Seq.filter (fun p -> relative root p |> fun x -> x.StartsWith("tests/"))
-            |> Seq.map (fun project ->
-                // DefineConstants from all property groups are unioned. This is conservative for multi-target projects.
-                let defines = Regex.Matches(File.ReadAllText project,"<DefineConstants>([^<]*)</DefineConstants>") |> Seq.cast<Match> |> Seq.collect(fun m->m.Groups[1].Value.Split([|';';',';' '|],StringSplitOptions.RemoveEmptyEntries)) |> Seq.distinct |> Seq.toList
-                let tests,assertions = sourceFilesForProject project |> Seq.map(countFile defines) |> Seq.fold(fun (ta,aa) (t,a)->ta+t,aa+a) (0,0)
-                { Project=relative root project; Tests=tests; Assertions=assertions })
-            |> Seq.sortBy _.Project |> Seq.toList
-        if updated<>cache then
-            Directory.CreateDirectory(Path.GetDirectoryName cachePath) |> ignore
-            updated |> Seq.map(fun x->let t,a=x.Value in $"{x.Key}\t{t}\t{a}") |> String.concat "\n" |> fun text->File.WriteAllText(cachePath,text)
-        counts
+    // Test counts are ratcheted from the completed test run by scripts/check-test-ratchet.py.
+    // Preserve the approved baseline here; policy inspection must not infer execution from source syntax.
+    let private testCounts root =
+        let lockPath=Path.Combine(root,LockName)
+        if not(File.Exists lockPath) then [] else
+        File.ReadLines lockPath
+        |> Seq.choose(fun line ->
+            if not(line.StartsWith("TEST  ",StringComparison.Ordinal)) then None else
+            match line.Substring(6).Split('\t') with
+            | [|project;tests;assertions|] ->
+                match Int32.TryParse tests,Int32.TryParse assertions with
+                | (true,t),(true,a) -> Some {Project=project;Tests=t;Assertions=a}
+                | _ -> None
+            | _ -> None)
+        |> Seq.sortBy _.Project |> Seq.toList
 
     let private suppressions root (files: string array) =
         files |> Seq.filter (fun p -> p.EndsWith(".fs",StringComparison.Ordinal))
@@ -184,8 +133,19 @@ module PolicyLock =
                 let boundaries = config.Boundaries |> Set.ofList
                 let baselineEntries = baselineEntries(Path.Combine(root,baseline))
                 let roleName = function Domain->"domain" | Capabilities->"capabilities" | Services->"services" | Host->"host" | Test->"test"
-                let baselineRoles = baselineEntries |> Seq.choose(fun entry -> resolve config "unassigned.fsproj" entry.File |> Result.toOption |> Option.map(fun resolved->entry.File,roleName resolved.Role)) |> Map.ofSeq
-                Ok { Hashes=hashes; Baseline=baselineEntries; BaselineRoles=baselineRoles; Tests=testCounts root files; Rules=policyRules config; Capabilities=capabilities; Boundaries=boundaries; Suppressions=suppressions root files }
+                let sourceProjects =
+                    files
+                    |> Seq.filter (fun path -> path.EndsWith(".fsproj",StringComparison.Ordinal))
+                    |> Seq.collect (fun project -> sourceFilesForProject project |> Seq.map (fun source -> relative root source, relative root project))
+                    |> Map.ofSeq
+                let baselineRoles =
+                    baselineEntries
+                    |> Seq.choose(fun entry ->
+                        sourceProjects.TryFind entry.File
+                        |> Option.bind(fun project -> resolve config project entry.File |> Result.toOption)
+                        |> Option.map(fun resolved->entry.File,roleName resolved.Role))
+                    |> Map.ofSeq
+                Ok { Hashes=hashes; Baseline=baselineEntries; BaselineRoles=baselineRoles; Tests=testCounts root; Rules=policyRules config; Capabilities=capabilities; Boundaries=boundaries; Suppressions=suppressions root files }
         with ex -> Error ex.Message
 
     let serialize snapshot =

@@ -23,9 +23,11 @@ mkdir -p "$out_dir"
 cd "$root_dir"
 
 # Concurrent verification used to corrupt shared logs and let one run publish another run's result.
-if [[ ${AXIAL_VERIFY_LOCKED:-0} != 1 ]]; then
-    exec flock "$out_dir/run.lock" env AXIAL_VERIFY_LOCKED=1 "$0" "$@"
+# Close the lock descriptor in children so a surviving test process cannot wedge later runs.
+if [[ ${1:-} != --verify-lock-held ]]; then
+    exec flock -o "$out_dir/run.lock" "$0" --verify-lock-held "$@"
 fi
+shift
 
 results=()
 failed=0
@@ -65,6 +67,7 @@ run_test() {
     # VSTest reports "Passed! - Failed: N, Passed: N"; Microsoft.Testing.Platform reports
     # "Test summary: total: N, failed: N, succeeded: N, skipped: N".
     read -r passed failed_count projects < <(python3 scripts/parse-test-summary.py "$out_dir/test.log")
+    python3 scripts/check-test-ratchet.py Axial.Guardrails.lock "$out_dir/test.log" >>"$out_dir/test.log" 2>&1 || code=$?
     if [[ $code -eq 0 && $failed_count -eq 0 && $projects -gt 0 && $passed -gt 0 ]]; then
         echo "pass|$passed passed, 0 failed, $projects projects"
     else
@@ -92,7 +95,7 @@ run_aot() {
 }
 
 run_docs() {
-    { bash scripts/check-docs-conventions.sh && bash scripts/check-source-inventory.sh && bash experiments/flow-errors/check.sh && python3 scripts/check-package-maturity.py && bash scripts/test-verify-summary.sh && bash scripts/test-guardrails-v2-migration.sh; } >"$out_dir/docs.log" 2>&1 \
+    { bash scripts/check-docs-conventions.sh && bash scripts/check-source-inventory.sh && bash experiments/flow-errors/check.sh && python3 scripts/check-package-maturity.py && bash scripts/test-verify-summary.sh && bash scripts/test-verify-lock.sh && bash scripts/test-test-ratchet.sh && bash scripts/test-guardrails-v2-migration.sh; } >"$out_dir/docs.log" 2>&1 \
         && echo "pass|docs conventions and source inventory" || echo "fail|$(tail -1 "$out_dir/docs.log")"
 }
 

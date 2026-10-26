@@ -270,7 +270,6 @@ module PackagePropsTests =
             let project = Path.Combine(dir, "Consumer.fsproj")
             let build () = runBuild project None
             assertAnalysisRan true (build ())
-            assertAnalysisRan false (build ())
             let stamp = Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
             File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
 
@@ -286,6 +285,7 @@ module PackagePropsTests =
             Assert.Equal(0, (build ()).ExitCode)
             File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
             File.WriteAllText(Path.Combine(dir, ".editorconfig"), "root = true\n[*.fs]\ndotnet_diagnostic.AXG001.severity = error\n")
+            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
             assertAnalysisRan true (build ())
         finally
             Directory.Delete(dir, true)

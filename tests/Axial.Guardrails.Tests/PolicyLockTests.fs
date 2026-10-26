@@ -91,47 +91,21 @@ module PolicyLockTests =
 baseline = "Axial.Guardrails.baseline"
 [default]
 role = "test"
-[[projects]]
-glob = "src/Domain/*.fsproj"
-role = "domain"
+[projects]
+domain = ["src/Domain/*.fsproj"]
 [roles.domain.rules]
 "effects.ambient" = "deny"
-""")
+            """)
             File.WriteAllText(Path.Combine(root,DefaultBaseline),"effects.ambient\tsrc/Domain/App.fs\tabc\n")
             File.WriteAllText(Path.Combine(root,"src","Domain","App.fs"),"module App")
             File.WriteAllText(Path.Combine(root,"src","Domain","App.fsproj"),"<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><Compile Include=\"App.fs\" /></ItemGroup></Project>")
-            let snapshot=inspect root |> Result.toOption |> Option.get
+            let snapshot=inspect root |> function Ok value -> value | Error error -> failwith error
             test <@ snapshot.BaselineRoles["src/Domain/App.fs"] = "domain" @>
             let changes=diff empty snapshot
             test <@ validateApproval (BaselineRule "effects.ambient") empty snapshot changes = Ok () @>
             let established={empty with Rules=Map ["domain/effects.ambient","deny"]}
             test <@ validateApproval (BaselineRule "effects.ambient") established snapshot changes |> Result.isError @>
         finally Directory.Delete(root,true)
-
-    [<Fact>]
-    let ``test ratchet ignores trivia strings and inactive code and counts assertion aliases`` () =
-        let source="""// [<Fact>] Assert.True(false)
-let text = "[<Fact>] Assert.True(false)"
-#if false
-[<Fact>]
-let dead () = Assert.True(false)
-#endif
-let verify = Assert.True
-let neverCalled () = verify(true)
-[<Fact>]
-let live () = Assert.True(true)
-"""
-        test <@ countTestSource source = (1,1) @>
-
-    [<Fact>]
-    let ``syntactic fake facts and testList containers are not tests`` () =
-        let source="""type FactAttribute() =
-    inherit System.Attribute()
-[<Fact>]
-let fake () = ()
-let unused = testList "container" []
-"""
-        test <@ countTestSource source = (0,0) @>
 
     [<Fact>]
     let ``strict lock parser requires one first version and unique exact records`` () =
