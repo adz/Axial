@@ -261,6 +261,36 @@ module PackagePropsTests =
             Directory.Delete(dir, true)
 
     [<Fact>]
+    let ``future dated stamp cannot hide policy or analyzer config changes`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-content-cache-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            writeV2Policy dir "domain" "allow"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let build () = runBuild project None
+            assertAnalysisRan true (build ())
+            assertAnalysisRan false (build ())
+            let stamp = Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
+
+            let policy = Path.Combine(dir, "Axial.Guardrails.toml")
+            File.WriteAllText(policy, File.ReadAllText(policy).Replace("\"effects.ambient\" = \"allow\"", "\"effects.ambient\" = \"deny\""))
+            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+            let denied = build ()
+            Assert.NotEqual(0, denied.ExitCode)
+            Assert.Contains("error AXG001", denied.Output)
+
+            File.WriteAllText(policy, File.ReadAllText(policy).Replace("\"effects.ambient\" = \"deny\"", "\"effects.ambient\" = \"allow\""))
+            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+            Assert.Equal(0, (build ()).ExitCode)
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
+            File.WriteAllText(Path.Combine(dir, ".editorconfig"), "root = true\n[*.fs]\ndotnet_diagnostic.AXG001.severity = error\n")
+            assertAnalysisRan true (build ())
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
     let ``incremental builds skip unchanged analysis but never skip a new finding`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-incremental-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore

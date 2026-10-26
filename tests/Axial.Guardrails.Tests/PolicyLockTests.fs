@@ -83,6 +83,32 @@ module PolicyLockTests =
         finally Directory.Delete(root,true)
 
     [<Fact>]
+    let ``baseline roles use the project assignment before file overrides`` () =
+        let root=Path.Combine(Path.GetTempPath(),"Axial.Lock.Tests",Guid.NewGuid().ToString("N"))
+        try
+            Directory.CreateDirectory(Path.Combine(root,"src","Domain")) |> ignore
+            File.WriteAllText(Path.Combine(root,ConfigName),"""version = 2
+baseline = "Axial.Guardrails.baseline"
+[default]
+role = "test"
+[[projects]]
+glob = "src/Domain/*.fsproj"
+role = "domain"
+[roles.domain.rules]
+"effects.ambient" = "deny"
+""")
+            File.WriteAllText(Path.Combine(root,DefaultBaseline),"effects.ambient\tsrc/Domain/App.fs\tabc\n")
+            File.WriteAllText(Path.Combine(root,"src","Domain","App.fs"),"module App")
+            File.WriteAllText(Path.Combine(root,"src","Domain","App.fsproj"),"<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><Compile Include=\"App.fs\" /></ItemGroup></Project>")
+            let snapshot=inspect root |> Result.toOption |> Option.get
+            test <@ snapshot.BaselineRoles["src/Domain/App.fs"] = "domain" @>
+            let changes=diff empty snapshot
+            test <@ validateApproval (BaselineRule "effects.ambient") empty snapshot changes = Ok () @>
+            let established={empty with Rules=Map ["domain/effects.ambient","deny"]}
+            test <@ validateApproval (BaselineRule "effects.ambient") established snapshot changes |> Result.isError @>
+        finally Directory.Delete(root,true)
+
+    [<Fact>]
     let ``test ratchet ignores trivia strings and inactive code and counts assertion aliases`` () =
         let source="""// [<Fact>] Assert.True(false)
 let text = "[<Fact>] Assert.True(false)"
@@ -96,6 +122,16 @@ let neverCalled () = verify(true)
 let live () = Assert.True(true)
 """
         test <@ countTestSource source = (1,1) @>
+
+    [<Fact>]
+    let ``syntactic fake facts and testList containers are not tests`` () =
+        let source="""type FactAttribute() =
+    inherit System.Attribute()
+[<Fact>]
+let fake () = ()
+let unused = testList "container" []
+"""
+        test <@ countTestSource source = (0,0) @>
 
     [<Fact>]
     let ``strict lock parser requires one first version and unique exact records`` () =
