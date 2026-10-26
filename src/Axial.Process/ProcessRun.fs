@@ -122,7 +122,7 @@ module internal ProcessRun =
         |> Flow.foldCause
             Flow.succeed
             (fun cause ->
-                if hasTypedFailure cause then
+                if hasTypedFailure cause && (Cause.defects cause |> List.isEmpty) then
                     Flow.fail (ProcessError.InputFailed(cause.ToString()))
                 else
                     Flow.ofExit (Exit.Failure(Cause.map ProcessError.InputFailed cause)))
