@@ -30,6 +30,7 @@ type private RunStage = {
     Exit: Deferred<Never, int>
     mutable Exited: bool
     mutable StdinClosed: bool
+    mutable FeederClosedPipe: bool
     mutable Feeder: Fiber<ProcessError, unit> option
 }
 
@@ -334,6 +335,7 @@ module internal ProcessRun =
                         Exit = exits[stage]
                         Exited = false
                         StdinClosed = false
+                        FeederClosedPipe = false
                         Feeder = None
                     })
                     |> Seq.toArray
@@ -365,26 +367,20 @@ module internal ProcessRun =
                     |> Flow.ignore
 
                 let stopFeeder (stage: RunStage) =
-                    let rec waitWithinBound attempts (feeder: Fiber<ProcessError, unit>) =
-                        flow {
-                            let! settled = Fiber.poll feeder
-                            match settled with
-                            | Some _ -> return true
-                            | None when attempts > 0 ->
-                                do! Flow.sleep (TimeSpan.FromMilliseconds 1.0)
-                                return! waitWithinBound (attempts - 1) feeder
-                            | None -> return false
-                        }
-
                     flow {
                         match stage.Feeder with
+                        | Some feeder when stage.FeederClosedPipe ->
+                            // The feeder closes stdin before its exit is recorded. Once that fact is visible,
+                            // await the exit without a deadline so awaitInput can classify its failure.
+                            let! _ = Fiber.awaitUnobserved feeder
+                            ()
                         | Some feeder ->
                             let mutable handedOff = false
 
                             let closeThenOwn =
                                 flow {
-                                    // Closing the pipe is the migration boundary: only after it is closed may a
-                                    // still-running feeder be handed to the detached supervisor.
+                                    // The child exited with stdin still open, so it did not need the remaining
+                                    // input. Close the pipe and hand any late feeder outcome to its supervisor.
                                     do! closePipe stage
                                     let! settled = Fiber.poll feeder
                                     if settled.IsSome then
@@ -396,15 +392,7 @@ module internal ProcessRun =
                                     handedOff <- true
                                 }
 
-                            do!
-                                flow {
-                                    let! settled = Fiber.poll feeder
-                                    if settled.IsNone then
-                                        do! Fiber.requestInterrupt feeder
-                                        let! _ = waitWithinBound 25 feeder
-                                        ()
-                                }
-                                |> Flow.ensuring closeThenOwn
+                            do! Fiber.requestInterrupt feeder |> Flow.ensuring closeThenOwn
 
                             // The finalizer owns every normal, failing, and interrupted exit path.
                             if not handedOff then return! Flow.die (InvalidOperationException "stdin feeder ownership handoff did not run")
@@ -835,10 +823,13 @@ module internal ProcessRun =
                             if expectedPipeClose then Flow.succeed ()
                             else Flow.ofExit (Exit.Failure cause))
                     |> Flow.ensuring (
-                        flow {
+                        Flow.delay (fun () ->
+                            // This fact is published in the same finalizer step that closes the pipe. The
+                            // enclosing fiber records its success or failure only after this step completes.
+                            stages[stage].FeederClosedPipe <- true
                             stages[stage].StdinClosed <- true
-                            do! closeInput processes[stage]
-                        }
+                            try processes[stage].StandardInput.Close() with _ -> ()
+                            Flow.succeed ())
                         |> Flow.mapError Never.absurd
                     )
 
@@ -859,8 +850,8 @@ module internal ProcessRun =
 
                 let awaitInput (stage, feeder, detached: Deferred<Never, unit>) =
                     Flow.race
-                        // `detached` is completed only after stopFeeder's bounded wait and forced pipe close.
-                        // Disconnect this wait at that boundary; the supervisor below owns the late outcome.
+                        // `detached` is completed when stopFeeder closes a pipe that the feeder still owned.
+                        // Disconnect at that factual boundary; the supervisor below owns the late outcome.
                         (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2 |> Flow.disconnect)
                         (Deferred.await detached |> Flow.widenError |> Flow.map Choice2Of2)
                     |> Flow.bind (function

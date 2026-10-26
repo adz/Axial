@@ -109,9 +109,16 @@ module ProcessServiceTests =
     }
 
     [<Fact>]
-    let ``stdin interruption combined with a prompt finalizer defect fails the run`` () = task {
+    let ``stdin interruption reports a finalizer defect after the child stopped reading`` () = task {
         let entered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let reported = TaskCompletionSource<exn>(TaskCreationOptions.RunContinuationsAsynchronously)
         let defect = InvalidOperationException "prompt stdin finalizer defect"
+        let observer =
+            { FiberObserver.none with
+                OnUnobservedDefect = fun metadata error ->
+                    if obj.ReferenceEquals(error, defect)
+                       && (metadata |> Option.bind _.Name) = Some "process-stdin-0" then
+                        reported.TrySetResult(error) |> ignore }
         let source =
             Flow.fromAsync (async {
                 entered.TrySetResult() |> ignore
@@ -124,15 +131,16 @@ module ProcessServiceTests =
             shText "sleep 0.1"
             |> stdinFrom (Input.flowStream source)
             |> toFlow
+            |> Flow.withFiberObserver observer
             |> fun workflow -> workflow.StartAsTask(env ())
 
         do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
         let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
         match outcome with
-        | Exit.Failure cause ->
-            test <@ Cause.isInterrupted cause @>
-            test <@ Cause.defects cause |> List.exists (fun error -> obj.ReferenceEquals(error, defect)) @>
-        | other -> failwithf "Expected combined interruption and defect, got %A" other
+        | Exit.Success result -> test <@ result.ExitCode = 0 @>
+        | other -> failwithf "Expected process success after it stopped reading, got %A" other
+        let! observed = reported.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        test <@ obj.ReferenceEquals(observed, defect) @>
     }
 
     [<Fact>]
@@ -1326,10 +1334,17 @@ module ProcessServiceTests =
     }
 
     [<Fact>]
-    let ``CloseStdIn preserves a user input defect raised during cancellation`` () = task {
+    let ``CloseStdIn reports a later input defect through the fiber observer`` () = task {
         let started = TaskCompletionSource<ProcessStarted>(TaskCreationOptions.RunContinuationsAsynchronously)
         let sourceEntered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let reported = TaskCompletionSource<exn>(TaskCreationOptions.RunContinuationsAsynchronously)
         let defect = InvalidOperationException "input cancellation defect"
+        let observer =
+            { FiberObserver.none with
+                OnUnobservedDefect = fun metadata error ->
+                    if obj.ReferenceEquals(error, defect)
+                       && (metadata |> Option.bind _.Name) = Some "process-stdin-0" then
+                        reported.TrySetResult(error) |> ignore }
         let source =
             Flow.fromTask (fun token -> task {
                 sourceEntered.TrySetResult() |> ignore
@@ -1345,6 +1360,7 @@ module ProcessServiceTests =
             |> stdinFrom (Input.flowStream source)
             |> onStarted (fun handle -> Flow.fromAsync (async { started.TrySetResult handle |> ignore }))
             |> toFlow
+            |> Flow.withFiberObserver observer
             |> fun workflow -> workflow.StartAsTask(env ())
         let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
         do! sourceEntered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
@@ -1352,8 +1368,10 @@ module ProcessServiceTests =
         test <@ closeExit = Exit.Success () @>
         let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
         match outcome with
-        | Exit.Failure(Cause.Die error) -> test <@ obj.ReferenceEquals(error, defect) @>
-        | other -> failwithf "Expected input defect, got %A" other
+        | Exit.Success result -> test <@ result.ExitCode = 0 @>
+        | other -> failwithf "Expected process success after stdin was closed, got %A" other
+        let! observed = reported.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        test <@ obj.ReferenceEquals(observed, defect) @>
     }
 
     [<Fact>]
