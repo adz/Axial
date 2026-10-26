@@ -377,8 +377,9 @@ returns a live resource. In Axial a forked fiber owns its scope, like `ZIO.scope
 `Flow.forkResource` for that pattern.
 
 `zipPar`, `race`, and the parallel traversals behave as in ZIO and Effect for values you receive. What a race loser or
-a failed branch acquired is released as soon as Axial discards that flow, not when the scope closes. If the flow
-stored the resource somewhere else first, such as in a `Ref`, that reference points at a released resource.
+a failed branch acquired is released as soon as Axial discards that flow, not when the caller's scope closes. A race
+interrupts and awaits its loser and closes the loser's branch scope before returning. If the flow stored the resource
+somewhere else first, such as in a `Ref`, that reference points at a released resource.
 
 ### Nested scopes
 

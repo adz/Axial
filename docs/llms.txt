@@ -77,6 +77,11 @@
 - Cap backoff with `Schedule.exponential d |> Schedule.union (Schedule.spaced cap)`; bound attempts with
   `Schedule.recurs n |> Schedule.intersect (Schedule.exponential d)`. Use `Schedule.fixedRate period` for drift-free
   periodic work; `Schedule.spaced` waits after each run instead.
+- When a flow returns, everything it started has finished and released its resources (`race` waits for the loser,
+  `forkReplacing` for the replaced fiber, Process runs for stdin feeders). `Flow.disconnect` is the one way to stop
+  waiting for interruption-insensitive work; the root run still waits for it. Every defect is returned or reported
+  once to the fiber observer. Rules: `/concurrency-and-state/guarantees.html`. In tests, wait on a `Deferred` or
+  `TaskCompletionSource`, never a sleep.
 - The torture tests (`/concurrency-and-state/torture-tests/index.html`, runnable from `examples/Axial.TortureTest`)
   are worked examples of every concurrency construct under interruption, failure, and shutdown. Each page lists the
   invariants the construct guarantees.

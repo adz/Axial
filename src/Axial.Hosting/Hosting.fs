@@ -147,16 +147,39 @@ type FlowHostedService<'env, 'error>
             with error ->
                 Task.FromException error
 
+        // Waits for the root application and every finalizer. The host's token ends the wait only when the host's
+        // own shutdown timeout expires; cleanup still running then is reported, never silently abandoned.
         member _.StopAsync(cancellationToken: CancellationToken) =
             match running with
             | None -> monitor
             | Some handle ->
-                async {
-                    let! _ = handle.Stop()
-                    do! Async.AwaitTask monitor
-                }
-                |> fun work -> Async.StartAsTask(work, cancellationToken = cancellationToken)
-                :> Task
+                let stopped =
+                    async {
+                        let! _ = handle.Stop()
+                        do! Async.AwaitTask monitor
+                    }
+                    |> Async.StartAsTask
+                    :> Task
+
+                let abandoned = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                let registration = cancellationToken.Register(fun () -> abandoned.TrySetResult() |> ignore)
+
+                Task.WhenAny(stopped, abandoned.Task)
+                    .ContinueWith(
+                        (fun (first: Task<Task>) ->
+                            registration.Dispose()
+
+                            if obj.ReferenceEquals(first.Result, stopped) then
+                                stopped
+                            else
+                                logger.LogWarning(
+                                    "Axial root application cleanup was still running when the host shutdown timeout expired; the process may exit before its finalizers finish"
+                                )
+
+                                Task.CompletedTask),
+                        TaskScheduler.Default
+                    )
+                    .Unwrap()
 
 /// <summary>Transport for systemd notification datagrams.</summary>
 type ISystemdNotifier =

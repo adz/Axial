@@ -94,7 +94,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                         | 0 -> do! nest (depth + 1) |> Flow.orElse (Flow.ok ())
                         | 1 ->
                             let! child = nest (depth + 1) |> Flow.fork
-                            let! _ = Fiber.await child
+                            let! _ = Fiber.awaitExit child
                             ()
                         | 2 ->
                             let! child = nest (depth + 1) |> Flow.fork
@@ -118,7 +118,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         // The whole tree runs as a fiber that is sometimes interrupted part way.
         let! root = nest 0 |> Flow.fork
         if round.Chance 50 then do! Flow.sleep (TimeSpan.FromMilliseconds(float (round.Next 4)))
-        let! _ = if round.Chance 40 then Fiber.interrupt root else Fiber.await root
+        let! _ = if round.Chance 40 then Fiber.interrupt root else Fiber.awaitExit root
 
         let log = lock events (fun () -> List.ofSeq events)
         let acquiredIds = log |> List.choose (function Acquired(_, id) -> Some id | _ -> None)

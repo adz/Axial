@@ -26,10 +26,10 @@ type private StopCause =
 type private RunStage = {
     Process: Diagnostics.Process
     Pidfd: int
-    Released: Deferred<Never, unit>
     Exit: Deferred<Never, int>
     mutable Exited: bool
     mutable StdinClosed: bool
+    mutable FeederClosedPipe: bool
     mutable Feeder: Fiber<ProcessError, unit> option
 }
 
@@ -41,6 +41,14 @@ type private RunCommand =
 
 /// Flow-based process execution with scoped processes, supervised pumps, and one stop coordinator.
 module internal ProcessRun =
+    let internal classifyInputExit =
+        function
+        | Exit.Success () -> Exit.Success ()
+        | Exit.Failure cause when not (List.isEmpty (Cause.defects cause)) -> Exit.Failure cause
+        | Exit.Failure cause when not (List.isEmpty (Cause.failures cause)) -> Exit.Failure cause
+        | Exit.Failure cause when Cause.isInterrupted cause -> Exit.Success ()
+        | Exit.Failure cause -> Exit.Failure cause
+
     let private processError (command: CommandDefinition) (error: exn) =
         ProcessError.StartFailed {
             Command = Configuration.renderCommand command
@@ -203,10 +211,6 @@ module internal ProcessRun =
                             Flow.succeed ())
                     )
 
-                let! released =
-                    commands
-                    |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, unit> ())
-                    |> Flow.widenError
                 let! exits =
                     commands
                     |> Flow.traverse (fun _ -> Deferred.make<ClockEnvironment, Never, int> ())
@@ -223,24 +227,38 @@ module internal ProcessRun =
                         else return! Flow.never<ClockEnvironment, ProcessError, unit>
                     }
 
-                let sleepStartedNow delay =
+                let sleepStartedNow (delay: TimeSpan) =
                     let cancellation = new CancellationTokenSource()
                     let pending = clock.Sleep(delay, cancellation.Token)
-                    // The started sleep owns a CTS canceled by the Flow finalizer.
-                    // axial-allow-AXG005: the operation uses its own CTS so the finalizer controls its lifetime
-                    Flow.fromTask (fun _ -> task { do! pending })
-                    |> Flow.ensuring (
+                    let cancel =
                         Flow.delay (fun () ->
                             try cancellation.Cancel() with _ -> ()
-                            cancellation.Dispose()
                             Flow.succeed ())
-                    )
+                    let sleeping =
+                        Flow.fromTask (fun token -> task {
+                            let interrupted = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                            use _registration = token.Register(fun () -> interrupted.TrySetResult() |> ignore)
+                            let! first = Task.WhenAny(pending, interrupted.Task)
+                            if obj.ReferenceEquals(first, interrupted.Task) then cancellation.Cancel()
+                            try
+                                do! pending
+                                return true
+                            with :? OperationCanceledException when cancellation.IsCancellationRequested ->
+                                return false
+                        })
+                        |> Flow.ensuring (
+                            Flow.delay (fun () ->
+                                try cancellation.Cancel() with _ -> ()
+                                cancellation.Dispose()
+                                Flow.succeed ())
+                        )
+                    sleeping, cancel
 
-                let startTimer cause error delay =
-                    flow {
-                        do! sleepStartedNow delay
-                        return! postTimedStop cause error
-                    }
+                let startTimer cause error sleeping =
+                    sleeping
+                    |> Flow.bind (fun timedOut ->
+                        if timedOut then postTimedStop cause error
+                        else Flow.succeed ())
 
                 match specification.OverallTimeout with
                 | Some after ->
@@ -250,7 +268,8 @@ module internal ProcessRun =
                             Specification = commands |> Array.map Configuration.renderCommand |> String.concat " | "
                             Timeout = after
                         }
-                    let! timer = startTimer (OverallTimeout after) error remaining |> Flow.forkNamed "process-overall-timeout"
+                    let sleeping, _ = sleepStartedNow remaining
+                    let! timer = startTimer (OverallTimeout after) error sleeping |> Flow.forkNamed "process-overall-timeout"
                     timerFibers.Add timer
                 | None -> ()
 
@@ -279,10 +298,14 @@ module internal ProcessRun =
 
                     match command.Timeout.Value with
                     | Some after ->
+                        let sleeping, cancelSleep = sleepStartedNow after
                         let timeout =
                             Flow.race
-                                (Deferred.await exits[stage] |> Flow.widenError |> Flow.map (fun _ -> false))
-                                (sleepStartedNow after |> Flow.map (fun () -> true))
+                                (Deferred.await exits[stage]
+                                 |> Flow.widenError
+                                 |> Flow.ensuring cancelSleep
+                                 |> Flow.map (fun _ -> false))
+                                sleeping
                             |> Flow.bind (fun timedOut ->
                                 if timedOut then
                                     postTimedStop
@@ -293,7 +316,7 @@ module internal ProcessRun =
                                             Timeout = after
                                         })
                                 else
-                                    Flow.never<ClockEnvironment, ProcessError, unit>)
+                                    Flow.succeed ())
                         let! timer = timeout |> Flow.forkNamed ("process-stage-timeout-" + string stage)
                         timerFibers.Add timer
                     | None -> ()
@@ -303,10 +326,10 @@ module internal ProcessRun =
                     |> Seq.mapi (fun stage proc -> {
                         Process = proc
                         Pidfd = NativeProcess.tryOpenPidfd proc.Id
-                        Released = released[stage]
                         Exit = exits[stage]
                         Exited = false
                         StdinClosed = false
+                        FeederClosedPipe = false
                         Feeder = None
                     })
                     |> Seq.toArray
@@ -323,40 +346,21 @@ module internal ProcessRun =
                         stage.StdinClosed <- true
                         try stage.Process.StandardInput.BaseStream.Dispose() with _ -> ()
                         try stage.Process.StandardInput.Close() with _ -> ()
-                        Deferred.succeedNow () stage.Released |> ignore
                         Flow.succeed ())
 
-                let superviseDetachedFeeder (stage: int) (feeder: Fiber<ProcessError, unit>) =
-                    flow {
-                        let! exit = Fiber.awaitUnobserved feeder
-                        match exit with
-                        | Exit.Failure cause when not (List.isEmpty (Cause.defects cause)) ->
-                            do! Fiber.reportUnobserved feeder
-                        | _ -> ()
-                    }
-                    |> Flow.forkUnownedDetachedNamed ("process-stdin-supervisor-" + string stage)
-                    |> Flow.ignore
-
+                // Stops input to a stage without waiting: the coordinator must stay responsive. The feeder is
+                // asked to stop and its pipe is closed, which also releases a write blocked on a full pipe. Whoever
+                // owns the feeder's outcome waits for it: awaitInput while the run is live, the run's scope
+                // finalizer otherwise. Interruption and the pipe-closed errors this causes are not failures (see
+                // inputFeeder); any other failure or defect the feeder settles with is reported.
                 let stopFeeder (stage: RunStage) =
                     flow {
                         match stage.Feeder with
-                        | Some feeder ->
-                            let! settled = Fiber.poll feeder
-                            match settled with
-                            | Some _ -> ()
-                            | None ->
-                                do! Fiber.requestInterrupt feeder
-                                let! outcome =
-                                    Flow.race
-                                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2)
-                                        (Flow.sleep (TimeSpan.FromMilliseconds 250.0) |> Flow.map Choice2Of2)
-                                match outcome with
-                                | Choice1Of2 _ -> do! Fiber.markObserved feeder
-                                | Choice2Of2 _ ->
-                                    let stageIndex = stages |> Array.findIndex (fun candidate -> obj.ReferenceEquals(candidate, stage))
-                                    do! superviseDetachedFeeder stageIndex feeder
-                        | None -> ()
-                        do! closePipe stage
+                        | Some feeder when not stage.FeederClosedPipe ->
+                            do! Fiber.requestInterrupt feeder
+                            do! closePipe stage
+                        | Some _ -> ()
+                        | None -> do! closePipe stage
                     }
 
                 let completeClose result reply =
@@ -477,11 +481,24 @@ module internal ProcessRun =
                         return! coordinate ()
                     }
 
-                // The coordinator must outlive caller cancellation long enough for Flow.onInterrupt to post and
-                // await the stop ladder. Scope close shuts its queue down after the handler has finished.
+                // The coordinator must outlive caller cancellation so Flow.onInterrupt can post and await the stop
+                // ladder, so it is not interrupted by scope close. Scope close shuts its queue down and waits for the
+                // command in progress to finish, however long the configured stop grace makes it: no fixed bound
+                // can cut a stop ladder short.
+                // It runs without the caller's token (cancelling the run must not kill the coordinator that runs
+                // the stop ladder); shutting its queue down is how it stops.
                 let! coordinator =
-                    coordinate ()
-                    |> Flow.forkGraceful (Dequeue.shutdown commandsQueue) (TimeSpan.FromSeconds 5.0)
+                    Flow(fun environment _ -> (coordinate ()).Invoke(environment, CancellationToken.None))
+                    |> Flow.forkUnownedNamed "process-coordinator"
+
+                let! () =
+                    Flow.scopeFinalizer (
+                        flow {
+                            do! Dequeue.shutdown commandsQueue
+                            let! _ = Fiber.awaitUnobserved coordinator
+                            do! Fiber.reportUnobserved coordinator
+                        }
+                    )
 
                 let requestStop cause =
                     flow {
@@ -783,14 +800,17 @@ module internal ProcessRun =
                             if expectedPipeClose then Flow.succeed ()
                             else Flow.ofExit (Exit.Failure cause))
                     |> Flow.ensuring (
-                        flow {
+                        Flow.delay (fun () ->
+                            // This fact is published in the same finalizer step that closes the pipe. The
+                            // enclosing fiber records its success or failure only after this step completes.
+                            stages[stage].FeederClosedPipe <- true
                             stages[stage].StdinClosed <- true
-                            do! closeInput processes[stage]
-                        }
+                            try processes[stage].StandardInput.Close() with _ -> ()
+                            Flow.succeed ())
                         |> Flow.mapError Never.absurd
                     )
 
-                let inputFibers = ResizeArray<int * Fiber<ProcessError, unit> * Deferred<Never, unit>>()
+                let inputFibers = ResizeArray<int * Fiber<ProcessError, unit>>()
 
                 for stage, command in commands |> Array.indexed do
                     if specification.Connections |> List.forall (fun (_, target, _) -> target <> stage) then
@@ -801,25 +821,35 @@ module internal ProcessRun =
                             do! closeInput processes[stage]
                         | source ->
                             let! feeder = inputFeeder stage source |> Flow.forkUnownedNamed ("process-stdin-" + string stage)
-                            inputFibers.Add(stage, feeder, released[stage])
+                            inputFibers.Add(stage, feeder)
                             let! _ = commandsQueue |> Queue.offer (RegisterFeeder(stage, feeder))
                             ()
 
-                let awaitInput (stage, feeder, detached: Deferred<Never, unit>) =
-                    Flow.race
-                        (Fiber.awaitUnobserved feeder |> Flow.map Choice1Of2)
-                        (Deferred.await detached |> Flow.widenError |> Flow.map Choice2Of2)
-                    |> Flow.bind (function
-                        | Choice1Of2 exit ->
-                            Fiber.markObserved feeder
-                            |> Flow.bind (fun () ->
-                                match exit with
-                                | Exit.Success () -> Flow.succeed ()
-                                | Exit.Failure cause when not (List.isEmpty (Cause.defects cause)) ->
-                                    Flow.ofExit (Exit.Failure cause)
-                                | Exit.Failure cause when Cause.isInterrupted cause -> Flow.succeed ()
-                                | Exit.Failure cause -> Flow.ofExit (Exit.Failure cause))
-                        | Choice2Of2 () -> superviseDetachedFeeder stage feeder)
+                // Waits for a feeder without a deadline, like the process itself: a run never returns while
+                // its input is still being written. A source that ignores interruption keeps the run waiting;
+                // wrap such a source in Flow.disconnect to let the run return without it.
+                let awaitInput (_stage: int, feeder) =
+                    Fiber.awaitUnobserved feeder
+                    |> Flow.bind (fun exit ->
+                        Fiber.markObserved feeder
+                        |> Flow.bind (fun () -> Flow.ofExit (classifyInputExit exit)))
+
+                // On every exit path, including interruption, stop each feeder and wait for it before the run's
+                // scope closes. A defect that no awaitInput consumed is reported once.
+                let! () =
+                    Flow.scopeFinalizer (
+                        Flow.delay (fun () ->
+                            inputFibers
+                            |> Seq.map (fun (stage, feeder) ->
+                                flow {
+                                    do! stopFeeder stages[stage]
+                                    let! _ = Fiber.awaitUnobserved feeder
+                                    do! Fiber.reportUnobserved feeder
+                                })
+                            |> List.ofSeq
+                            |> Flow.sequence
+                            |> Flow.ignore)
+                    )
 
                 let tolerateStopPipeFailure source =
                     source
@@ -990,7 +1020,7 @@ module internal ProcessRun =
                     |> Flow.onInterrupt (requestStop Interrupted |> Flow.ignore)
 
                 do! Dequeue.shutdown commandsQueue
-                let! _ = Fiber.await coordinator
+                let! _ = Fiber.awaitExit coordinator
                 return result
             }
             |> mapEngineFailure

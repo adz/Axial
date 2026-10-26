@@ -1313,22 +1313,20 @@ let zipParAllExecution
 #endif
 
 #if !FABLE_COMPILER
-/// Hands the race loser's exit to <paramref name="onLoserSettled" /> once it settles, or <c>None</c> when it faulted
-/// or was cancelled without producing one.
-let private reportLoser
+/// Awaits a race loser and reports its outcome without allowing a faulted task to bypass structured settlement.
+let private awaitRaceLoser
     (losing: Task<Exit<'value, 'error>>)
     (onLoserSettled: Exit<'value, 'error> option -> unit)
-    : unit =
-    losing.ContinueWith(
-        (fun (settled: Task<Exit<'value, 'error>>) ->
-            if settled.IsCompletedSuccessfully then
-                onLoserSettled (Some settled.Result)
-            else
-                onLoserSettled None),
-        TaskContinuationOptions.ExecuteSynchronously)
-    |> ignore
+    : Task =
+    task {
+        try
+            let! exit = losing
+            onLoserSettled (Some exit)
+        with _ ->
+            onLoserSettled None
+    }
 
-/// Settles a race whose winner has already completed: cancels the loser and returns the winner's exit.
+/// Settles a race whose winner has already completed: cancels and awaits the loser before returning the winner.
 let private decideRace
     (cts: CancellationTokenSource)
     (unlink: unit -> unit)
@@ -1344,10 +1342,13 @@ let private decideRace
 
     if loser.IsCompletedSuccessfully then
         onLoserSettled (Some loser.Result)
+        ValueTask<Exit<'value, 'error>>(winner.Result)
     else
-        reportLoser (loser.AsTask()) onLoserSettled
-
-    ValueTask<Exit<'value, 'error>>(winner.Result)
+        ValueTask<Exit<'value, 'error>>(
+            task {
+                do! awaitRaceLoser (loser.AsTask()) onLoserSettled
+                return winner.Result
+            })
 
 /// The asynchronous half of <c>raceExecution</c>: waits for the first operation to settle, then cancels the other.
 let private awaitRace
@@ -1367,20 +1368,18 @@ let private awaitRace
             cts.Cancel()
             unlink ()
 
-            // The loser's exit is dropped without ever being awaited, so hand it to the caller once the loser
-            // settles.
             let leftWon = obj.ReferenceEquals(completed, leftFiberTask)
             onDecided leftWon
-            reportLoser (if leftWon then rightFiberTask else leftFiberTask) onLoserSettled
+            do! awaitRaceLoser (if leftWon then rightFiberTask else leftFiberTask) onLoserSettled
 
             return completed.GetAwaiter().GetResult()
         })
 
 #endif
-/// Runs two operations concurrently and returns whichever settles first, cancelling the loser.
-/// <paramref name="onDecided" /> is told whether the left operation won before the winner's exit is returned.
-/// <paramref name="onLoserSettled" /> is called once the loser settles, which may be after the race has returned,
-/// with its exit, or with <c>None</c> when the loser faulted or was cancelled without producing one.
+/// Runs two operations concurrently and returns whichever settles first, cancelling and awaiting the loser.
+/// <paramref name="onDecided" /> is told whether the left operation won before the loser is awaited.
+/// <paramref name="onLoserSettled" /> is called before the race returns, with the loser's exit, or with <c>None</c>
+/// when the loser faulted or was cancelled without producing one.
 let raceExecution
     (leftOp: CancellationToken -> Execution<'value, 'error>)
     (rightOp: CancellationToken -> Execution<'value, 'error>)
@@ -1399,17 +1398,18 @@ let raceExecution
         unlinkLeft ()
         unlinkRight ()
 
-        // The loser is cancelled and not awaited; its exit goes to the caller once it settles.
         match first with
         | Choice1Of2 exit ->
             rightSource.Cancel()
             onDecided true
-            right.OnSettled(Some >> onLoserSettled)
+            let! loserExit = awaitBranch right
+            onLoserSettled (Some loserExit)
             return exit
         | Choice2Of2 exit ->
             leftSource.Cancel()
             onDecided false
-            left.OnSettled(Some >> onLoserSettled)
+            let! loserExit = awaitBranch left
+            onLoserSettled (Some loserExit)
             return exit
     }
 #else
@@ -1430,7 +1430,13 @@ let raceExecution
         | Error error ->
             cts.Cancel()
             unlink ()
-            faultedExecution error
+            onDecided false
+
+            ValueTask<Exit<'value, 'error>>(
+                task {
+                    do! awaitRaceLoser (leftRun.AsTask()) onLoserSettled
+                    return raise error
+                })
         | Ok rightRun when leftRun.IsCompletedSuccessfully ->
             decideRace cts unlink true leftRun rightRun onDecided onLoserSettled
         | Ok rightRun when not leftRun.IsCompleted && rightRun.IsCompletedSuccessfully ->
@@ -1571,6 +1577,24 @@ let awaitExitTaskAsSuccess (exitTask: ExitTask<'value, 'error>) : Execution<Exit
         return Exit.Success exit
     }
     |> ofAwaitable
+
+/// Invokes a callback when a fiber settles without consuming its outcome.
+let observeExitTask (exitTask: ExitTask<'value, 'error>) (observer: Exit<'value, 'error> -> unit) : unit =
+#if FABLE_COMPILER
+    startImmediate
+        (async {
+            let! exit = exitTask
+            observer exit
+        })
+        None
+#else
+    exitTask.ContinueWith(
+        (fun (completed: Task<Exit<'value, 'error>>) -> observer completed.Result),
+        CancellationToken.None,
+        TaskContinuationOptions.ExecuteSynchronously,
+        TaskScheduler.Default)
+    |> ignore
+#endif
 
 // ---------------------------------------------------------------------------------------------
 // Signal: a single-assignment async rendezvous cell shared by Concurrency.fs (Deferred, Semaphore)

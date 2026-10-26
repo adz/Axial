@@ -50,7 +50,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
         let! exits, () =
             Flow.zipPar
-                (callers |> Flow.traverse (fun (key, fiber) -> (if round.Chance 20 then Fiber.interrupt fiber else Fiber.await fiber) |> Flow.map (fun exit -> key, exit)))
+                (callers |> Flow.traverse (fun (key, fiber) -> (if round.Chance 20 then Fiber.interrupt fiber else Fiber.awaitExit fiber) |> Flow.map (fun exit -> key, exit)))
                 invalidator
 
         // With the invalidator done, each key is looked up at most once more, then served from the cache.

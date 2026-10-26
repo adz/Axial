@@ -30,7 +30,7 @@ api:
     - id: concurrency
       title: Run concurrently
       order: 50
-      members: ["supervise", "fork", "forkNamed", "forkGraceful", "forkDetached", "forkResource", "memoize", "forkReplacing", "forkReplacingKey", "zipPar", "sequencePar", "sequenceParWith", "race", "runOn"]
+      members: ["supervise", "fork", "forkNamed", "forkGraceful", "forkDetached", "forkResource", "memoize", "forkReplacing", "forkReplacingKey", "zipPar", "sequencePar", "sequenceParWith", "race", "disconnect", "runOn"]
       facets:
         task: [concurrency]
     - id: resources

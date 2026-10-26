@@ -22,13 +22,16 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let requests = round.Size 60
 
     flow {
-        // Latest wins: each request replaces the one before it. Only the last is sure to finish; every other one
-        // either finished first or was interrupted, and every one of them cleaned up.
+        // Latest wins: each request replaces the one before it, starting only after that one has cleaned up. Only
+        // the last is sure to finish; every other one finished first, was interrupted, or was replaced before it
+        // started, and every one that started cleaned up.
+        let! started = Ref.make 0
         let! cleanedUp = Ref.make 0
         let! slot = FiberSlot.make ()
 
         let search query =
             flow {
+                do! started |> Ref.update ((+) 1)
                 do! Flow.sleep (TimeSpan.FromMilliseconds(float (round.Next 3)))
                 return query
             }
@@ -37,9 +40,10 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! searches = [ 1..requests ] |> Flow.traverse (fun query -> slot |> Flow.forkReplacing <| search query)
         let! lastResult = searches |> List.last |> Fiber.join
         do! FiberSlot.interrupt slot
-        let! searchExits = searches |> Flow.traverse Fiber.await
+        let! searchExits = searches |> Flow.traverse Fiber.awaitExit
         let! polled = searches |> Flow.traverse Fiber.poll
         let! cleaned = Ref.get cleanedUp
+        let! startedCount = Ref.get started
 
         // Keyed slots: the same rule per key, and interruptAll leaves nothing running.
         let! keyed = FiberSlot.makeKeyed ()
@@ -49,11 +53,11 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
             |> Flow.traverse (fun (key, index) -> keyed |> Flow.forkReplacingKey key <| search index)
 
         let lastPerKey = [ for key in 0..4 -> previews |> List.indexed |> List.filter (fun (index, _) -> (index + 1) % 5 = key) |> List.last |> snd ]
-        let! lastPreviews = lastPerKey |> Flow.traverse Fiber.await
+        let! lastPreviews = lastPerKey |> Flow.traverse Fiber.awaitExit
         do! FiberSlot.interruptAll keyed
         let! remaining = FiberSlot.count keyed
-        // A replaced preview is signalled to stop but not waited for, so wait for every one before polling.
-        let! _ = previews |> Flow.traverse Fiber.await
+        // interruptAll waited for the current fibers; a replaced preview was waited for by its replacement.
+        let! _ = previews |> Flow.traverse Fiber.awaitExit
         let! previewPolls = previews |> Flow.traverse Fiber.poll
 
         // Annotations, the trace id, and the environment are inherited by forked fibers, and siblings do not see
@@ -95,7 +99,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         return
             [ check "the last request's result is delivered" (lastResult = requests)
               check "every replaced request finished or was interrupted, and none is left running" (polled |> List.forall settledOk)
-              check "every request cleaned up" (cleaned = requests && searchExits.Length = requests)
+              check "every request that started cleaned up" (cleaned = startedCount && startedCount >= 1 && searchExits.Length = requests)
               check "the last preview per key finished, and interruptAll left none running" (lastPreviews |> List.forall (function Exit.Success _ -> true | _ -> false) && remaining = 0 && previewPolls |> List.forall settledOk)
               check "forked fibers inherit annotations, the trace id, and the environment, but not their siblings' annotations" annotationsHeld
               check "every fiber has its own id" (distinctIds = 10)
@@ -133,7 +137,7 @@ let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list>
 
                 let! requested = Flow.never |> Flow.forkNamed "requested"
                 do! Fiber.requestInterrupt requested
-                let! requestedExit = Fiber.await requested
+                let! requestedExit = Fiber.awaitExit requested
                 let requestedStopped =
                     match requestedExit with
                     | Exit.Failure cause -> Cause.isInterrupted cause
@@ -143,7 +147,7 @@ let diagnostics (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list>
                 let firstSleeper = List.head sleepers
                 let interruptedOne = registry.Interrupt (Fiber.dump firstSleeper).Id
                 let interruptedByName = registry.InterruptByName "sleeper"
-                let! exits = fibers |> Flow.traverse (function Choice1Of2 fiber -> Fiber.await fiber |> Flow.map ignore | Choice2Of2 fiber -> Fiber.await fiber |> Flow.map ignore)
+                let! exits = fibers |> Flow.traverse (function Choice1Of2 fiber -> Fiber.awaitExit fiber |> Flow.map ignore | Choice2Of2 fiber -> Fiber.awaitExit fiber |> Flow.map ignore)
 
                 // A discarded fiber that dies is reported when its scope closes; a detached one is not.
                 do!

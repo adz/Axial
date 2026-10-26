@@ -345,6 +345,47 @@ module HostingTests =
         test <@ finalized.Task.IsCompletedSuccessfully @>
 
     [<Fact>]
+    let ``Generic Host shutdown timeout reports cleanup still running instead of abandoning it silently`` () =
+        let logger = RecordingLogger()
+        let lifetime = RecordingLifetime()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finalizing = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let releaseFinalizer = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let application : Flow<ClockEnvironment, string, unit> =
+            flow {
+                do! Flow.scopeFinalizer(Flow.fromTask (fun _ -> task { finalizing.TrySetResult() |> ignore; do! releaseFinalizer.Task }))
+                started.TrySetResult() |> ignore
+                do! Flow.sleep(TimeSpan.FromSeconds 30.0)
+            }
+
+        let hosted =
+            new FlowHostedService<ClockEnvironment, string>(
+                null,
+                (fun _ -> ClockEnvironment(Clock.live)),
+                id,
+                application,
+                TypedLogger<FlowHostedService<ClockEnvironment, string>>(logger) :> ILogger<_>,
+                lifetime,
+                { StopHostOnCompletion = false })
+            :> IHostedService
+
+        try
+            hosted.StartAsync(CancellationToken.None).GetAwaiter().GetResult()
+            test <@ started.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+            use shutdownTimeout = new CancellationTokenSource()
+            let stopping = hosted.StopAsync(shutdownTimeout.Token)
+            test <@ finalizing.Task.Wait(TimeSpan.FromSeconds 2.0) @>
+            // The finalizer is still running, so stopping waits for it.
+            test <@ not stopping.IsCompleted @>
+
+            shutdownTimeout.Cancel()
+            test <@ stopping.Wait(TimeSpan.FromSeconds 2.0) @>
+            test <@ logger.Entries |> List.exists (fun (level, message, _) -> level = Microsoft.Extensions.Logging.LogLevel.Warning && message.Contains "still running") @>
+        finally
+            releaseFinalizer.TrySetResult() |> ignore
+
+    [<Fact>]
     let ``standalone exit codes distinguish failure defects and interruption`` () =
         test <@ DotNetApp.exitCode (Exit.Success 1 : Exit<int, string>) = 0 @>
         test <@ DotNetApp.exitCode (Exit.Failure(Cause.Fail "bad") : Exit<int, string>) = 1 @>

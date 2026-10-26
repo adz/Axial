@@ -77,6 +77,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! bothFail = Flow.zipPar (Flow.sleep (ms 1.0) |> Flow.bind (fun () -> Flow.fail "a")) (Flow.fail "b") |> exitOf
         let! inOrder = [ for value in 1..20 -> Flow.sleep (ms (float (round.Next 3))) |> Flow.map (fun () -> value) ] |> Flow.sequencePar
         let! runOnValue = Flow.ok 42 |> Flow.runOn RunOn.Inline |> Flow.runOn RunOn.ThreadPool
+        let! disconnectedValue = Flow.ok 43 |> Flow.disconnect
         let policies =
             [ Parallelism.cpu
               Parallelism.io 2
@@ -123,6 +124,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
               check "zipPar reported the failures that happened" (not failures.IsEmpty && failures |> List.forall (fun failure -> failure = "a" || failure = "b"))
               check "sequencePar kept input order" (inOrder = [ 1..20 ])
               check "runOn preserved the branch value" (runOnValue = 42)
+              check "disconnect preserved an uninterrupted value" (disconnectedValue = 43)
               check "parallel placements preserved bounded batch values" (placed |> List.forall ((=) [ 1; 2 ]))
               check "every race returned a side's value" (winners |> List.forall (fun winner -> winner = "left" || winner = "right"))
               check "both sides of every race finished and ran their exit handler" (allSidesFinished && winners.Length = races) ]

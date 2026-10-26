@@ -79,7 +79,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
         let! runner = work |> Layer.provide services |> Flow.localEnv (fun (_: ClockEnvironment) -> "eu") |> Flow.fork
         if round.Chance 30 then do! Flow.sleep (TimeSpan.FromMilliseconds(float (round.Next 3)))
-        let! outcome = if round.Chance 30 then Fiber.interrupt runner else Fiber.await runner
+        let! outcome = if round.Chance 30 then Fiber.interrupt runner else Fiber.awaitExit runner
         let! length = Flow.ok () |> Flow.map (fun () -> 0) |> Layer.provide (applied |> Layer.map id) |> Flow.localEnv (fun (_: ClockEnvironment) -> "eu") |> exitOf
 
         let acquiredNames, releasedNames = lock gate (fun () -> List.ofSeq acquired, List.ofSeq released)

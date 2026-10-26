@@ -37,19 +37,13 @@ module ExecutionTests =
 
     [<Fact>]
     let ``Flow.toAsync observes ambient cancellation`` () =
-        let cts = new CancellationTokenSource()
+        use cts = new CancellationTokenSource()
         let flow = Flow.sleep (TimeSpan.FromSeconds 10.0)
-        
-        let operation = async {
-            let! _ = flow.ToAsync(TestSupport.clockEnv ())
-            return ()
-        }
-        
-        Async.Start(operation, cts.Token)
+        let running = Async.StartAsTask(flow.ToAsync(TestSupport.clockEnv ()), cancellationToken = cts.Token)
+
         cts.Cancel()
-        
-        // Wait a bit for cancellation to propagate
-        Thread.Sleep(100)
-        // If it didn't observe cancellation, it would still be sleeping.
-        // We can't easily assert here without more complex setup, 
-        // but this verifies it compiles and runs.
+
+        // A sleep that ignored the token would still be running when this deadline expires.
+        let settled = (running :> Task).ContinueWith(fun (_: Task) -> ()).Wait(TimeSpan.FromSeconds 5.0)
+        Assert.True(settled)
+        Assert.True(running.IsCanceled || (running.IsCompletedSuccessfully && running.Result = Exit.Failure Cause.Interrupt))

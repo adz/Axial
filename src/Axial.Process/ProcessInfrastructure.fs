@@ -75,7 +75,7 @@ type internal AsyncCell<'value>() =
                             if removed then
                                 finish (fun () ->
 #if FABLE_COMPILER
-                                    error (OperationCanceledException())
+                                    error (ForeignCancellation.runtimeCancellationException ())
 #else
                                     cancel (OperationCanceledException token)
 #endif

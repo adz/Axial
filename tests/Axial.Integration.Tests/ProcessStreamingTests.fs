@@ -11,6 +11,19 @@ open Axial.PlatformService
 open Xunit
 
 module ProcessStreamingTests =
+    [<Fact>]
+    let ``stream deadline guard preserves a defect that races runtime cancellation`` () =
+        use cancellation = new CancellationTokenSource()
+        cancellation.Cancel()
+        let defect = InvalidOperationException "deadline wait defect"
+
+        match Process.classifyDeadlineWaitFailure cancellation.Token defect with
+        | Cause.Die error -> Assert.Same(defect, error)
+        | other -> failwithf "Expected racing defect, got %A" other
+
+        let canceled = OperationCanceledException(cancellation.Token)
+        Assert.Equal(Cause.Interrupt, Process.classifyDeadlineWaitFailure cancellation.Token canceled)
+
     let private succeeded =
         function
         | Exit.Success value -> value

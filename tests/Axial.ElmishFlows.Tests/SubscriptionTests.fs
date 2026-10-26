@@ -61,8 +61,13 @@ module SubscriptionTests =
             do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
             return $"result-{query}"
         }
+        // Inbox.stream, with each pull counted: the fourth pull starts only after the third query was handed on.
+        let pulls = ref 0
+        let fourthPull = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let source =
-            Inbox.stream inbox
+            FlowStream.repeatFlow (Flow.delay (fun () ->
+                if Interlocked.Increment(&pulls.contents) = 4 then fourthPull.TrySetResult() |> ignore
+                Dequeue.take inbox.Queue))
             |> FlowStream.debounce (TimeSpan.FromMilliseconds 300.0)
             |> FlowStream.switchMapFlow search
             |> FlowStream.map (fun result -> $"found:{result}")
@@ -71,19 +76,10 @@ module SubscriptionTests =
         Assert.True(Inbox.post "a" inbox)
         Assert.True(Inbox.post "ab" inbox)
         Assert.True(Inbox.post "abc" inbox)
-        // The debounce re-arms per item, so wait until the whole burst has left the inbox, then for its timer.
-        // A fixed sleep here raced the stream under full-suite load and let "a" debounce on its own.
-        let queued () =
-            match (Dequeue.size inbox.Queue).RunSynchronously(()) with
-            | Exit.Success count -> count
-            | _ -> -1
-        let drained = SpinWait.SpinUntil((fun () -> queued () = 0 && clock.Sleepers > 0), 5000)
-        Assert.True(drained, $"queued={queued ()} sleepers={clock.Sleepers} size={(Dequeue.size inbox.Queue).RunSynchronously(())}")
-        // The debounce's timer cannot fire while the manual clock is still, so let any in-flight stream pull hand
-        // the last item to the debounce before advancing. Without this, a full-suite run could advance while the
-        // last item was still between the inbox and the debounce and then wait on a search that never started.
-        Thread.Sleep(100)
-        Assert.True(SpinWait.SpinUntil((fun () -> queued () = 0 && clock.Sleepers > 0), 5000))
+        // The debounce re-arms per item. The fourth pull proves the whole burst was handed to the debounce, and the
+        // armed timer proves it is now waiting out the quiet period for the last query.
+        Assert.True(fourthPull.Task.Wait(5000))
+        Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))
         clock.AdvanceBy(TimeSpan.FromMilliseconds 300.0)
         Assert.True(searching.Task.Wait(5000))
         Assert.True(SpinWait.SpinUntil((fun () -> clock.Sleepers > 0), 5000))

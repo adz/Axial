@@ -83,7 +83,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 #endif
 
         let! fibers = [ 1..calls ] |> Flow.traverse (adapted >> Flow.fork)
-        let! exits = fibers |> Flow.traverse (fun fiber -> if round.Chance 33 then Fiber.interrupt fiber else Fiber.await fiber)
+        let! exits = fibers |> Flow.traverse (fun fiber -> if round.Chance 33 then Fiber.interrupt fiber else Fiber.awaitExit fiber)
 
         // Every outcome is a value, a typed failure, a defect from a thrown exception, or an interruption.
         let wellFormed =

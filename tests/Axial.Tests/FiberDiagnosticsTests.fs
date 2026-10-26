@@ -165,8 +165,8 @@ module FiberDiagnosticsTests =
                 let! other = Flow.forkNamed "worker" (Flow.sleep (TimeSpan.FromSeconds 30.0))
                 let byId = registry.Interrupt (Fiber.dump other).Id
                 let byName = registry.InterruptByName "stuck"
-                let! stuckExit = Fiber.await stuck
-                let! otherExit = Fiber.await other
+                let! stuckExit = Fiber.awaitExit stuck
+                let! otherExit = Fiber.awaitExit other
                 let again = registry.Interrupt (Fiber.dump other).Id
                 return byId, byName, stuckExit, otherExit, again
             }
@@ -185,10 +185,10 @@ module FiberDiagnosticsTests =
                 let! failed = Flow.forkNamed "load" (Flow.fail "not found" : Flow<ClockEnvironment, string, int>)
                 let! died = Flow.forkNamed "save" (Flow.die (InvalidOperationException "disk full") : Flow<ClockEnvironment, string, int>)
                 let! stuck = Flow.forkNamed "save" (Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> 0))
-                let! _ = Fiber.await ok1
-                let! _ = Fiber.await ok2
-                let! _ = Fiber.await failed
-                let! _ = Fiber.await died
+                let! _ = Fiber.awaitExit ok1
+                let! _ = Fiber.awaitExit ok2
+                let! _ = Fiber.awaitExit failed
+                let! _ = Fiber.awaitExit died
                 let! _ = Fiber.interrupt stuck
                 return ()
             }
@@ -231,7 +231,7 @@ module FiberDiagnosticsTests =
         let workflow : Flow<ClockEnvironment, Never, unit> =
             flow {
                 let! fiber = Flow.forkNamed "clock-jump" (Flow.ok ())
-                let! _ = Fiber.await fiber
+                let! _ = Fiber.awaitExit fiber
                 return ()
             }
             |> Flow.withFiberRegistry registry
@@ -249,7 +249,7 @@ module FiberDiagnosticsTests =
             flow {
                 for index in 1..10 do
                     let! fiber = Flow.forkNamed $"job-{index}" (Flow.ok index)
-                    let! _ = Fiber.await fiber
+                    let! _ = Fiber.awaitExit fiber
                     ()
             }
             |> Flow.withFiberRegistry registry

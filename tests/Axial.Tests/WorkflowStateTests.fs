@@ -122,6 +122,8 @@ module WorkflowStateTests =
                 | Ok value -> value
                 | Error error -> failwithf "Expected TRef creation to succeed, got %A" error
 
+        let before = STM.pendingRetries ()
+
         let waiter =
             Task.Run(fun () ->
                 Flow.runSync (TestSupport.clockEnv ()) (
@@ -133,7 +135,9 @@ module WorkflowStateTests =
                     }
                     |> STM.atomically))
 
-        Thread.Sleep 50
+        // Wait for the fact itself: the waiter has registered its retry.
+        let registered = SpinWait.SpinUntil((fun () -> STM.pendingRetries () > before), TimeSpan.FromSeconds 5.0)
+        test <@ registered @>
         test <@ waiter.IsCompleted = false @>
 
         let setter =

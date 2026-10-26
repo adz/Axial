@@ -136,6 +136,46 @@ module FiberObserverTests =
         test <@ recording.Unobserved = [] @>
 
     [<Fact>]
+    let ``disconnect returns interruption promptly and reports a late defect exactly once`` () =
+        let recording = Recording()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        use cancellation = new CancellationTokenSource()
+
+        let stubborn : Flow<ClockEnvironment, string, unit> =
+            Flow(fun _ _ ->
+                Platform.ofAwaitable (task {
+                    started.TrySetResult() |> ignore
+                    do! release.Task
+                    return Exit.Failure(Cause.Die(InvalidOperationException "late disconnected defect"))
+                }))
+
+        let callerDone = TaskCompletionSource<Exit<unit, string>>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+        let running =
+            Task.Run(fun () ->
+                stubborn
+                |> Flow.disconnect
+                |> Flow.onExit (fun exit -> Flow.delay (fun () -> callerDone.TrySetResult exit |> ignore; Flow.succeed ()))
+                |> Flow.withFiberObserver recording.Observer
+                |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellation.Token)
+
+        test <@ started.Task.Wait(TimeSpan.FromSeconds 5.0) @>
+        cancellation.Cancel()
+        // The caller stops waiting at once; the root run owns the detached work and waits for it.
+        test <@ callerDone.Task.Wait(TimeSpan.FromSeconds 1.0) @>
+        test <@ callerDone.Task.Result = Exit.Failure Cause.Interrupt @>
+        test <@ not running.IsCompleted @>
+        test <@ recording.Ends = [] @>
+
+        release.TrySetResult() |> ignore
+        test <@ running.Wait(TimeSpan.FromSeconds 5.0) @>
+        test <@ running.Result = Exit.Failure Cause.Interrupt @>
+
+        test <@ recording.Ends |> List.map (fun (_, defect) -> defect |> Option.map _.Message) = [ Some "late disconnected defect" ] @>
+        test <@ recording.Unobserved |> List.map (fun (_, defect) -> defect.Message) = [ "late disconnected defect" ] @>
+
+    [<Fact>]
     let ``Interrupted fiber ends with interrupted status and no defect`` () =
         let recording = Recording()
 
@@ -169,7 +209,7 @@ module FiberObserverTests =
         | other -> failwithf "Expected one unobserved defect without metadata, got %A" other
 
     [<Fact>]
-    let ``Race loser defect is reported without fiber metadata`` () =
+    let ``Race loser defect is returned and not observer-reported`` () =
         let recording = Recording()
 
         let result =
@@ -177,14 +217,11 @@ module FiberObserverTests =
             |> Flow.withFiberObserver recording.Observer
             |> Flow.runSync (TestSupport.clockEnv ())
 
-        test <@ result = Exit.Success () @>
+        match result with
+        | Exit.Failure(Cause.Die defect) -> test <@ defect.Message = "race loser" @>
+        | other -> failwithf "Expected the loser defect as the race failure, got %A" other
 
-        // The loser settles asynchronously after the race returns.
-        waitUntil (fun () -> not (List.isEmpty recording.Unobserved))
-
-        match recording.Unobserved with
-        | [ None, defect ] -> test <@ defect.Message = "race loser" @>
-        | other -> failwithf "Expected one unobserved defect without metadata, got %A" other
+        test <@ recording.Unobserved = [] @>
 
     [<Fact>]
     let ``Observer hooks that throw do not alter outcomes`` () =
@@ -290,3 +327,25 @@ module FiberObserverTests =
             test <@ defect.Message = "collected" @>
             test <@ metadata.Id = FiberId 1001L @>
         | other -> failwithf "Expected one unobserved defect from the GC net, got %A" other
+
+    [<Fact>]
+    let ``settled disconnected fibers do not stay registered with the root scope`` () =
+        let rootRegistrations : Flow<ClockEnvironment, string, int> =
+            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().RootScope.RegisteredCount))
+
+        let defective : Flow<ClockEnvironment, string, unit> =
+            Flow.die (InvalidOperationException "disconnected defect")
+            |> Flow.disconnect
+            |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed ())
+
+        let workflow =
+            flow {
+                let! before = rootRegistrations
+                let! _ = List.replicate 100 defective |> Flow.sequence
+                let! after = rootRegistrations
+                return before, after
+            }
+
+        match Flow.runSync (TestSupport.clockEnv ()) workflow with
+        | Exit.Success(before, after) -> test <@ after = before @>
+        | other -> failwithf "Expected success, got %A" other

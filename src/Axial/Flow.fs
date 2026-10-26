@@ -143,7 +143,7 @@ module Flow =
         | Exit.Success _, Exit.Failure cause ->
             Exit.Failure cause
 
-    /// Reports every defect inside a runtime-discarded exit (a race or timeout loser) as unobserved.
+    /// Reports every defect inside a runtime-discarded exit (for example, a timeout loser) as unobserved.
     /// Such exits are dropped without a fiber handle, so nobody can ever observe them.
     let private reportDiscardedExit (observer: FiberObserver) (exit: Exit<'value, 'error>) : unit =
         match exit with
@@ -1407,8 +1407,18 @@ module Flow =
     /// A graceful fiber's stop request and how long to wait after it before interrupting.
     type private GracefulStop<'env> = { Stop: Flow<'env, Never, unit>; Grace: TimeSpan }
 
+    /// Which scope supervises a fiber: closing it interrupts the fiber and waits for its cleanup.
+    [<RequireQualifiedAccess>]
+    type private ForkOwner =
+        /// The forking scope (Flow.fork).
+        | Caller
+        /// The root run's scope (Flow.disconnect): the caller does not wait, the application does.
+        | Root
+        /// No scope; an internal caller manages the fiber through its handle.
+        | Unowned
+
     let private forkWith<'env, 'error, 'value, 'none when 'env :> IHasClock>
-        (owned: bool)
+        (owner: ForkOwner)
         (name: string option)
         (graceful: GracefulStop<'env> option)
         (flow: Flow<'env, 'error, 'value>)
@@ -1445,7 +1455,10 @@ module Flow =
             let fiberScope = new Scope()
 
             let registrationScope =
-                if owned then parentRuntime.Scope else new Scope()
+                match owner with
+                | ForkOwner.Caller -> parentRuntime.Scope
+                | ForkOwner.Root -> parentRuntime.RootScope
+                | ForkOwner.Unowned -> new Scope()
 
             // Copy the immutable inherited runtime once. Chaining record helpers rebuilt the full record twice for
             // every fork even though only the fiber identity and scope differ from the parent.
@@ -1502,7 +1515,10 @@ module Flow =
                                     try registry.RecordFailure metadata text with _ -> ()
                             | Exit.Success _ -> ()
 
-                        if defect.IsNone then
+                        // A defect keeps the registration so the scope's close can report it deterministically. A
+                        // root-owned (disconnected) fiber's outcome is always consumed by its caller or reported by
+                        // disconnect, so it never needs the scope for that and must not accumulate in the root scope.
+                        if defect.IsNone || owner = ForkOwner.Root then
                             Platform.lock registrationGate (fun () ->
                                 settledClean.Value <- true
                                 releaseRegistration ())
@@ -1621,7 +1637,7 @@ module Flow =
     /// Forking turns a cold flow description into hot child work and returns a handle
     /// that can later be joined or interrupted. Prefer <c>zipPar</c> or <c>race</c>
     /// when the caller only needs a simple parallel composition. Wait for the handle with <c>Fiber.join</c> or
-    /// <c>Fiber.await</c>, and stop it with <c>Fiber.interrupt</c>.
+    /// <c>Fiber.awaitExit</c>, and stop it with <c>Fiber.interrupt</c>.
     /// </para>
     /// <para>
     /// The fiber runs in its own scope and releases its scoped resources (anything registered with a scope, such as
@@ -1634,7 +1650,7 @@ module Flow =
     /// <param name="flow">The flow to fork.</param>
     /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
     let fork (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
-        forkWith true None None flow
+        forkWith ForkOwner.Caller None None flow
 
     /// <summary>Starts a flow in a new fiber carrying a diagnostic name.</summary>
     /// <remarks>
@@ -1645,11 +1661,11 @@ module Flow =
     /// <param name="flow">The flow to fork.</param>
     /// <returns>A flow that produces a <see cref="T:Axial.Fiber`2" /> handle.</returns>
     let forkNamed (name: string) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
-        forkWith true (Some name) None flow
+        forkWith ForkOwner.Caller (Some name) None flow
 
     /// Starts a fiber whose lifetime is explicitly managed by its caller instead of the caller's scope.
     let internal forkUnownedNamed (name: string) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
-        forkWith false (Some name) None flow
+        forkWith ForkOwner.Unowned (Some name) None flow
 
     /// Starts an observed, unowned fiber for internal supervisors that deliberately consume no public handle.
     let internal forkUnownedDetachedNamed
@@ -1657,7 +1673,7 @@ module Flow =
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'none, Fiber<'error, 'value>> =
         Flow(fun environment cancellationToken ->
-            invoke (forkWith false (Some name) None flow) environment cancellationToken
+            invoke (forkWith ForkOwner.Unowned (Some name) None flow) environment cancellationToken
             |> Execution.map (fun (fiber: Fiber<'error, 'value>) ->
                 fiber.MarkObserved()
                 fiber))
@@ -1705,7 +1721,7 @@ module Flow =
         if grace < TimeSpan.Zero then
             invalidArg (nameof grace) "A grace period cannot be negative."
 
-        forkWith true None (Some { Stop = stop; Grace = grace }) flow
+        forkWith ForkOwner.Caller None (Some { Stop = stop; Grace = grace }) flow
 
     /// <summary>Starts a flow in a new fiber that is deliberately never awaited.</summary>
     /// <remarks>
@@ -1724,6 +1740,54 @@ module Flow =
                     fiber.MarkObserved()
                     Execution.ofValue fiber)
                 Execution.ofCause)
+
+    /// <summary>Lets interruption stop waiting for a flow without waiting for that flow to settle.</summary>
+    /// <remarks>
+    /// <para>
+    /// The source runs in its own fiber. If the caller is interrupted, <c>disconnect</c> promptly returns
+    /// <c>Cause.Interrupt</c> while the source continues settling in its detached fiber, and its lifecycle observer
+    /// receives the eventual outcome. An eventual defect is additionally reported through <c>OnUnobservedDefect</c>
+    /// exactly once because no caller can consume it.
+    /// </para>
+    /// <para>
+    /// The caller stops waiting, but the application does not: the detached fiber belongs to the root run's scope
+    /// (<c>Flow.run</c>, <c>App.start</c>), which interrupts it and waits for it when the application finishes.
+    /// </para>
+    /// <para>
+    /// This is an explicit escape hatch for foreign operations that may ignore interruption. Prefer structured
+    /// combinators, which wait for child cleanup. At a bounded shutdown boundary, wait first and apply
+    /// <c>disconnect</c> only to the forced-close operation whose cleanup may remain running.
+    /// </para>
+    /// </remarks>
+    /// <param name="flow">The flow whose settlement may outlive an interrupted caller.</param>
+    /// <returns>A flow with the source outcome unless the caller is interrupted first.</returns>
+    let disconnect (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'error, 'value> =
+        Flow(fun environment cancellationToken ->
+            invoke (forkWith ForkOwner.Root (Some "flow-disconnect") None flow) environment cancellationToken
+            |> Execution.bind (fun (fiber: Fiber<'error, 'value>) ->
+                let settled = Platform.newSignal<Exit<'value, 'error>> ()
+                let gate = obj()
+                let mutable disconnected = false
+
+                Platform.observeExitTask fiber.ExitTask (fun exit ->
+                    Platform.resolveSignal settled exit |> ignore
+
+                    if Platform.lock gate (fun () -> disconnected) then
+                        fiber.ReportUnobserved())
+
+                Platform.awaitSignal settled cancellationToken
+                |> Execution.fold
+                    (fun exit ->
+                        fiber.MarkObserved()
+                        Execution.ofExit exit)
+                    (fun cause ->
+                        Platform.lock gate (fun () -> disconnected <- true)
+
+                        match fiber.Settled with
+                        | Some _ -> fiber.ReportUnobserved()
+                        | None -> ()
+
+                        Execution.ofCause cause)))
 
     /// <summary>Starts acquiring a resource in a new fiber, keeping the resource in the caller's scope.</summary>
     /// <remarks>
@@ -1865,20 +1929,49 @@ module Flow =
 
             Execution.ofValue shared)
 
-    // Signals a superseded fiber to stop without waiting for it: the newest request should not queue behind the
-    // cleanup of the one it replaced. The superseded outcome is marked observed because nobody will read it.
-    let private supersede (previous: Fiber<'error, 'value> option) =
-        match previous with
-        | Some fiber ->
-            fiber.MarkObserved()
-            fiber.InterruptSource.Cancel()
-        | None -> ()
+    // Runs `flow` only after the fiber it replaces has settled, so a replacement never overlaps the cleanup of the
+    // work it replaced. The wait ignores the replacement's own interruption: a replacement superseded while waiting
+    // still waits, which keeps a chain of rapid replacements serialised. A replaced fiber's defect is reported once
+    // through the fiber observer unless someone else consumed its outcome.
+    let private afterReplaced (previous: Platform.Signal<Fiber<'error, 'value> option>) (flow: Flow<'env, 'error, 'value>) =
+        Flow(fun environment cancellationToken ->
+            Platform.awaitSignal previous CancellationToken.None
+            |> Execution.bind (fun (replaced: Fiber<'error, 'value> option) ->
+                match replaced with
+                | Some fiber ->
+                    fiber.InterruptSource.Cancel()
+
+                    Platform.awaitExitTaskAsSuccess fiber.ExitTask
+                    |> Execution.map (fun _ -> fiber.ReportUnobserved())
+                | None -> Execution.ofValue ())
+            |> Execution.bind (fun () ->
+                if cancellationToken.IsCancellationRequested then
+                    Execution.ofCause Cause.Interrupt
+                else
+                    invoke flow environment cancellationToken))
+
+    // Forks the replacement first so its handle can enter the slot atomically, then tells it which fiber it replaced.
+    let private forkReplacingWith (replace: Fiber<'error, 'value> -> Fiber<'error, 'value> option) flow =
+        Flow(fun environment cancellationToken ->
+            let previous = Platform.newSignal<Fiber<'error, 'value> option> ()
+
+            invoke (fork (afterReplaced previous flow)) environment cancellationToken
+            |> Execution.map (fun fiber ->
+                Platform.resolveSignal previous (replace fiber) |> ignore
+                fiber))
 
     /// <summary>Starts a flow in a new fiber held by <paramref name="slot" />, interrupting the fiber it replaces.</summary>
     /// <remarks>
-    /// Latest wins: the previous fiber in the slot is signalled to stop and is not waited for, so the new request
-    /// starts at once. Its outcome is marked observed. Use this for UI requests where a result for stale input is
-    /// worthless, such as search-as-you-type.
+    /// <para>
+    /// Latest wins: the previous fiber in the slot is interrupted, and the new flow starts only after the previous
+    /// fiber has settled and released its scoped resources, so the two never overlap. A replacement that is itself
+    /// replaced before it starts never runs. Use this for requests where a result for stale input is worthless, such
+    /// as search-as-you-type.
+    /// </para>
+    /// <para>
+    /// A replaced fiber's outcome is not returned to anyone. A defect it settles with is reported through the
+    /// fiber observer exactly once, unless the caller consumed it with <c>Fiber.join</c> or <c>Fiber.awaitExit</c>.
+    /// </para>
     /// </remarks>
     /// <param name="slot">The slot that holds the current fiber.</param>
     /// <param name="flow">The flow to run.</param>
@@ -1890,16 +1983,13 @@ module Flow =
     /// </code>
     /// </example>
     let forkReplacing (slot: FiberSlot<'error, 'value>) (flow: Flow<'env, 'error, 'value>) : Flow<'env, 'none, Fiber<'error, 'value>> =
-        Flow(fun environment cancellationToken ->
-            invoke (fork flow) environment cancellationToken
-            |> Execution.map (fun fiber ->
-                supersede (slot.Replace fiber)
-                fiber))
+        forkReplacingWith slot.Replace flow
 
     /// <summary>Starts a flow in a new fiber held under <paramref name="key" />, interrupting that key's previous fiber.</summary>
     /// <remarks>
-    /// Like <c>forkReplacing</c>, per key: fibers for other keys keep running. A key's entry is removed when its
-    /// fiber settles, so the slot does not grow with every key ever used.
+    /// Like <c>forkReplacing</c>, per key: the new flow starts after that key's previous fiber has settled, while
+    /// fibers for other keys keep running. A key's entry is removed when its fiber settles, so the slot does not grow
+    /// with every key ever used.
     /// </remarks>
     /// <param name="key">The key whose previous fiber is replaced.</param>
     /// <param name="slots">The keyed slot that holds the current fibers.</param>
@@ -1915,14 +2005,14 @@ module Flow =
         (slots: KeyedFiberSlot<'key, 'error, 'value>)
         (flow: Flow<'env, 'error, 'value>)
         : Flow<'env, 'none, Fiber<'error, 'value>> =
-        Flow(fun environment cancellationToken ->
-            invoke (fork flow) environment cancellationToken
-            |> Execution.map (fun fiber ->
+        forkReplacingWith
+            (fun fiber ->
                 let marker = obj ()
-                supersede (slots.Replace(key, marker, fiber))
+                let previous = slots.Replace(key, marker, fiber)
                 // Registered only after the fiber is recorded, so a fiber that settles at once still removes itself.
                 Platform.whenSettled fiber.ExitTask (fun () -> slots.Remove(key, marker))
-                fiber))
+                previous)
+            flow
 
     /// <summary>Combines two flows into a tuple of their values, running them concurrently.</summary>
     /// <remarks>
@@ -1990,11 +2080,12 @@ module Flow =
 
     /// <summary>Runs two flows concurrently and returns the result of the first one to complete.</summary>
     /// <remarks>
-    /// <para>The "loser" flow is interrupted immediately.</para>
+    /// <para>The "loser" flow is interrupted, awaited, and its scope is closed before <c>race</c> returns.</para>
     /// <para>
     /// Each flow runs in its own scope. If the winner succeeds, its scoped resources move to the caller's scope, so
-    /// racing two connection attempts keeps the connection that won. The loser's scoped resources are released once
-    /// it has been interrupted, which may be after <c>race</c> returns; a winner that fails has its scoped resources released before <c>race</c> returns.
+    /// racing two connection attempts keeps the connection that won. A defect from the loser or its cleanup is
+    /// combined with a failing winner, or becomes the race failure when the winner succeeded. Typed loser failures
+    /// and the interruption requested by <c>race</c> do not replace the winner's result.
     /// </para>
     /// </remarks>
     /// <param name="left">The first flow to run.</param>
@@ -2012,31 +2103,47 @@ module Flow =
         : Flow<'env, 'error, 'value> =
         Flow(fun environment cancellationToken ->
             let parent = RuntimeState.current()
-            let observer = parent.Observer
             let struct (leftScope, leftOp) = branchIn parent cancellationToken left environment
             let struct (rightScope, rightOp) = branchIn parent cancellationToken right environment
-            // Set by raceExecution before it returns the winner's exit or reports the loser.
             let leftWon = ref false
+            let loserExit = ref None
             let winnerScope () = if leftWon.Value then leftScope else rightScope
             let loserScope () = if leftWon.Value then rightScope else leftScope
 
-            // Nobody receives the loser's value, so its scope closes as soon as it settles. The race does not wait
-            // for that; if the caller's scope closes first, it closes the loser's scope itself.
-            let closeLoser (loserExit: Exit<'value, 'error> option) =
-                loserExit |> Option.iter (reportDiscardedExit observer)
-
-                let scope = loserScope ()
-
-                Platform.startDeed
-                    (fun () -> scope.Close CancellationToken.None)
-                    (FiberObserver.notifyUnobservedDefect observer None)
-
-            Platform.raceExecution leftOp rightOp cancellationToken (fun won -> leftWon.Value <- won) closeLoser
-            |> Execution.fold
-                (fun value ->
+            let finishWinner winnerExit =
+                match winnerExit with
+                | Exit.Success value ->
                     keepBranch (winnerScope ())
-                    Execution.ofValue value)
-                (fun cause -> closeScopes cancellationToken [ winnerScope () ] (Exit.Failure cause)))
+                    Execution.ofValue value
+                | Exit.Failure cause -> closeScopes cancellationToken [ winnerScope () ] (Exit.Failure cause)
+
+            let settle winnerExit =
+                let loserOutcome =
+                    match loserExit.Value with
+                    | Some(Exit.Failure cause) -> Exit.Failure cause
+                    | _ -> Exit.Success()
+
+                closeScopes CancellationToken.None [ loserScope () ] loserOutcome
+                |> Execution.fold
+                    (fun () -> finishWinner winnerExit)
+                    (fun loserCause ->
+                        match Cause.defects loserCause with
+                        | [] -> finishWinner winnerExit
+                        | defects ->
+                            let defectCause = defects |> List.map Cause.Die |> List.reduce Cause.both
+
+                            match winnerExit with
+                            | Exit.Success _ -> finishWinner (Exit.Failure defectCause)
+                            | Exit.Failure winnerCause ->
+                                finishWinner (Exit.Failure(Cause.both winnerCause defectCause)))
+
+            Platform.raceExecution
+                leftOp
+                rightOp
+                cancellationToken
+                (fun won -> leftWon.Value <- won)
+                (fun exit -> loserExit.Value <- exit)
+            |> Execution.fold (Exit.Success >> settle) (Exit.Failure >> settle))
 
     /// <summary>Lifts an option into a synchronous flow with the supplied error.</summary>
     /// <param name="error">The error to return if the option is <c>None</c>.</param>
@@ -2332,8 +2439,13 @@ module Flow =
 
     /// <summary>Folds both the successful value and the full failure cause into a new flow.</summary>
     /// <remarks>
-    /// The failure handler sees typed failures, defects, and interruption. Unless the caller owns the cancellation,
-    /// it must re-raise <c>Cause.Interrupt</c> rather than recover from it.
+    /// <para>
+    /// An expert escape hatch. The failure handler sees typed failures, defects, and interruption, and whatever flow
+    /// it returns replaces them: a handler that returns success swallows an interruption (the flow keeps running
+    /// after its owner asked it to stop) or a defect (a bug disappears). Unless the caller owns the cancellation, the
+    /// handler must re-raise <c>Cause.Interrupt</c>, and it should re-raise or report every <c>Cause.Die</c>.
+    /// </para>
+    /// <para>For typed errors only, use <c>Flow.fold</c>, <c>Flow.recover</c>, or <c>Flow.orElseWith</c>, which never see interruption or defects.</para>
     /// </remarks>
     /// <param name="onSuccess">A function that returns a new flow from the success value.</param>
     /// <param name="onFailure">A function that returns a new flow from the failure cause.</param>
@@ -3074,7 +3186,7 @@ module Fiber =
     /// <summary>Waits for a fiber and returns its value, failing the same way the fiber failed.</summary>
     /// <remarks>
     /// Joining preserves the child's error channel: a <c>Cause.Fail</c> becomes the same typed error, and
-    /// interruption and defects remain interruption and defects. Use <c>await</c> to inspect the outcome instead.
+    /// interruption and defects remain interruption and defects. Use <c>awaitExit</c> to inspect the outcome instead.
     /// </remarks>
     /// <param name="fiber">The fiber to join.</param>
     /// <returns>A flow that completes with the fiber's value.</returns>
@@ -3109,13 +3221,13 @@ module Fiber =
     /// <example>
     /// <code>
     /// flow {
-    ///     match! Fiber.await fiber with
+    ///     match! Fiber.awaitExit fiber with
     ///     | Exit.Success value -> return Some value
     ///     | Exit.Failure _ -> return None
     /// }
     /// </code>
     /// </example>
-    let await (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
+    let awaitExit (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error>> =
         Flow(fun _ _ ->
             fiber.MarkObserved()
             Platform.awaitExitTaskAsSuccess fiber.ExitTask)
@@ -3137,7 +3249,7 @@ module Fiber =
             Execution.ofValue ())
 
     /// <summary>Returns the fiber's exit if it has settled, without waiting.</summary>
-    /// <remarks>A settled fiber read this way is not marked observed; use <c>await</c> to consume its outcome.</remarks>
+    /// <remarks>A settled fiber read this way is not marked observed; use <c>awaitExit</c> to consume its outcome.</remarks>
     /// <param name="fiber">The fiber to check.</param>
     /// <returns>A flow that succeeds with <c>Some exit</c> once the fiber has settled, otherwise <c>None</c>.</returns>
     let poll (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, Exit<'value, 'error> option> =
@@ -3148,7 +3260,7 @@ module Fiber =
     /// Cancellation is requested asynchronously, so a blocking cancellation callback cannot hold the caller.
     /// Exceptions raised by cancellation callbacks are contained and reported to the ambient fiber observer as
     /// unobserved defects associated with the target fiber. This operation does not consume the fiber's outcome;
-    /// use <c>await</c>, <c>join</c>, or <c>interrupt</c> when the outcome matters.
+    /// use <c>awaitExit</c>, <c>join</c>, or <c>interrupt</c> when the outcome matters.
     /// </remarks>
     /// <param name="fiber">The fiber to ask to stop.</param>
     let requestInterrupt (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, unit> =
@@ -3207,19 +3319,29 @@ module FiberSlot =
     let makeKeyed<'env, 'none, 'key, 'error, 'value when 'key: equality> () : Flow<'env, 'none, KeyedFiberSlot<'key, 'error, 'value>> =
         Flow(fun _ _ -> Execution.ofValue (KeyedFiberSlot()))
 
+    // Slots discard the exit, so a defect the fiber settled with is reported instead of consumed.
+    let private interruptReporting (fiber: Fiber<'error, 'value>) : Flow<'env, 'none, unit> =
+        Flow(fun _ _ ->
+            fiber.InterruptSource.Cancel()
+
+            Platform.awaitExitTaskAsSuccess fiber.ExitTask
+            |> Execution.map (fun _ -> fiber.ReportUnobserved()))
+
     /// <summary>Interrupts the slot's fiber, if any, and waits for its cleanup.</summary>
+    /// <remarks>A defect the fiber settles with is reported through the fiber observer exactly once.</remarks>
     /// <param name="slot">The slot to clear.</param>
     let interrupt (slot: FiberSlot<'error, 'value>) : Flow<'env, 'none, unit> =
         Flow(fun environment cancellationToken ->
             match slot.Take() with
-            | Some fiber -> Flow.invoke (Fiber.interrupt fiber) environment cancellationToken |> Execution.map (fun _ -> ())
+            | Some fiber -> Flow.invoke (interruptReporting fiber) environment cancellationToken
             | None -> Execution.ofValue ())
 
     /// <summary>Interrupts every fiber in a keyed slot and waits for their cleanup.</summary>
+    /// <remarks>A defect any fiber settles with is reported through the fiber observer exactly once.</remarks>
     /// <param name="slots">The keyed slot to clear.</param>
     let interruptAll (slots: KeyedFiberSlot<'key, 'error, 'value>) : Flow<'env, 'none, unit> =
         Flow(fun environment cancellationToken ->
-            Flow.invoke (slots.TakeAll() |> List.map Fiber.interrupt |> Flow.sequence) environment cancellationToken
+            Flow.invoke (slots.TakeAll() |> List.map interruptReporting |> Flow.sequence) environment cancellationToken
             |> Execution.map (fun _ -> ()))
 
     /// <summary>Returns the number of keys whose fiber is still running.</summary>

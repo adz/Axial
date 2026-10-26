@@ -7,8 +7,20 @@ open System.Threading
 /// when the runtime's own token asked for it; a library that cancels for its own reasons (an internal timeout, a
 /// disposed client) has failed, and reporting that as an interruption nobody requested would hide it.
 module internal ForeignCancellation =
+#if FABLE_COMPILER
+    // Fable erases a directly constructed OperationCanceledException to Exception. Keep one private marker so
+    // internal cancellation continuations retain identity without classifying any foreign exception as ours.
+    let private runtimeCancellation = Exception "Axial runtime cancellation"
+    let runtimeCancellationException () : exn = runtimeCancellation
+#endif
+
     let isOurs (cancellationToken: CancellationToken) (error: exn) =
-        error :? OperationCanceledException && cancellationToken.IsCancellationRequested
+        let isCancellation =
+            error :? OperationCanceledException
+#if FABLE_COMPILER
+            || obj.ReferenceEquals(error, runtimeCancellation)
+#endif
+        isCancellation && cancellationToken.IsCancellationRequested
 
     let causeOf (cancellationToken: CancellationToken) (error: exn) : Cause<'error> =
         if isOurs cancellationToken error then Cause.Interrupt else Cause.Die error

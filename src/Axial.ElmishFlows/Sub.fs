@@ -36,7 +36,7 @@ module Sub =
                             |> Flow.annotate "elmish.subscription" name
                         let! fiber = Flow.forkNamed name work
                         ready.TrySetResult(Some fiber.Metadata.Id) |> ignore
-                        let! outcome = Fiber.await fiber
+                        let! outcome = Fiber.awaitExit fiber
                         if Volatile.Read(&stopped) = 0 then
                             match outcome with
                             | Exit.Success () -> ()

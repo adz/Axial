@@ -243,12 +243,12 @@ module FlowStream =
 
     // Takes a fed queue until it is shut down and drained, then ends or fails with the recorded producer failure.
     // The failure is recorded before the queue shuts down, and both sides meet under the queue's gate.
-    let private drainFed (queue: Queue<'value>) (failure: Cause<'error> option ref) cancellationToken =
+    let private drainFed (queue: Queue<'value>) (takeFailure: unit -> Cause<'error> option) cancellationToken =
         let rec pull () : Execution<StreamStep<'value, 'error>, 'error> =
             QueueCore.take
                 queue
                 (fun () ->
-                    match failure.Value with
+                    match takeFailure () with
                     | Some cause -> Execution.ofCause cause
                     | None -> Execution.ofValue Done)
                 (fun value -> Execution.ofValue (Next(value, pull)))
@@ -282,13 +282,15 @@ module FlowStream =
                     QueueCore.shutdown queue
 
                 feed queue stream ended env cancellationToken
-                |> Execution.bind (fun () -> drainFed queue failure cancellationToken))
+                |> Execution.bind (fun () -> drainFed queue (fun () -> failure.Value) cancellationToken))
 
     /// <summary>Runs several streams concurrently and emits their values as they arrive.</summary>
     /// <remarks>
     /// Each stream keeps its own order; values from different streams interleave in arrival order. The merged stream
     /// ends when every stream has ended. The first failure is delivered after the values already buffered, and the
-    /// other streams are interrupted. When the consumer stops early, every stream is interrupted.
+    /// other streams are interrupted. A defect from another stream that settles while they stop is combined into that
+    /// failure rather than dropped; one that settles after the failure was delivered is reported through the fiber
+    /// observer. When the consumer stops early, every stream is interrupted.
     /// </remarks>
     /// <example><code>[ readerA; readerB; readerC ] |&gt; FlowStream.mergePar |&gt; FlowStream.runIntoQueue controlInputs</code></example>
     let mergePar (streams: FlowStream<'env, 'error, 'value> list) : FlowStream<'env, 'error, 'value> =
@@ -300,29 +302,51 @@ module FlowStream =
                 let gate = obj ()
                 let remaining = ref streams.Length
                 let failure = ref None
+                let taken = ref false
+                let observer = RuntimeState.current().Observer
 
                 let ended outcome =
-                    let finished =
+                    let finished, late =
                         Platform.lock gate (fun () ->
                             match outcome with
                             | Some cause ->
-                                if failure.Value.IsNone then
+                                match failure.Value with
+                                | None ->
                                     failure.Value <- Some cause
+                                    true, []
+                                | Some _ when taken.Value ->
+                                    // The consumer already received the failure; a defect settling now is reported.
+                                    true, Cause.defects cause
+                                | Some first ->
+                                    // A later stream's typed failure or interruption follows from the first failure,
+                                    // but a defect is a separate bug: keep it alongside the first failure.
+                                    failure.Value <-
+                                        Cause.defects cause
+                                        |> List.fold (fun combined defect -> Cause.Both(combined, Cause.Die defect)) first
+                                        |> Some
 
-                                true
+                                    true, []
                             | None ->
                                 remaining.Value <- remaining.Value - 1
-                                remaining.Value = 0)
+                                remaining.Value = 0, [])
+
+                    for defect in late do
+                        FiberObserver.notifyUnobservedDefect observer None defect
 
                     if finished then
                         QueueCore.shutdown queue
+
+                let takeFailure () =
+                    Platform.lock gate (fun () ->
+                        taken.Value <- true
+                        failure.Value)
 
                 Execution.loop streams (fun pending ->
                     match pending with
                     | [] -> Execution.ofValue (Platform.Break())
                     | stream :: rest ->
                         feed queue stream ended env cancellationToken |> Execution.map (fun () -> Platform.Continue rest))
-                |> Execution.bind (fun () -> drainFed queue failure cancellationToken))
+                |> Execution.bind (fun () -> drainFed queue takeFailure cancellationToken))
 
     /// <summary>Creates a stream from a synchronous sequence of values.</summary>
     /// <param name="values">The sequence of values to be emitted by the stream.</param>
@@ -770,7 +794,7 @@ module FlowStream =
                         |> Execution.bind (fun event ->
                             match event with
                             | Some item -> Execution.ofValue (Choice1Of2 item)
-                            | None -> Flow.invoke (Fiber.await fiber) env ct |> Execution.map Choice2Of2)
+                            | None -> Flow.invoke (Fiber.awaitExit fiber) env ct |> Execution.map Choice2Of2)
                         |> Execution.bind (function
                             | Choice1Of2(Pumped.Item value) when preferCompleted &&
 #if FABLE_COMPILER
@@ -779,7 +803,7 @@ module FlowStream =
                                 fiber.ExitTask.IsCompleted ->
 #endif
                                 // A settled result belongs to the current run even if the wake was dequeued first.
-                                Flow.invoke (Fiber.await fiber) env ct
+                                Flow.invoke (Fiber.awaitExit fiber) env ct
                                 |> Execution.bind (function
                                     | Exit.Success result -> Execution.ofValue (Platform.Break(Next(result, idle)))
                                     | Exit.Failure cause -> Execution.ofCause cause)
@@ -788,7 +812,7 @@ module FlowStream =
                                 |> Execution.bind (fun _ -> start value)
                                 |> Execution.map Platform.Continue
                             | Choice1Of2 Pumped.Ended ->
-                                Flow.invoke (Fiber.await fiber) env ct
+                                Flow.invoke (Fiber.awaitExit fiber) env ct
                                 |> Execution.bind (function
                                     | Exit.Success result -> Execution.ofValue (Platform.Break(Next(result, finished)))
                                     | Exit.Failure cause -> Execution.ofCause cause)
