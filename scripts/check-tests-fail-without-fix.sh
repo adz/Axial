@@ -27,7 +27,7 @@ if git -C "$scratch/tree" diff --quiet HEAD -- src; then
 fi
 
 cd "$scratch/tree"
-timeout 1800 dotnet test "$project" -c Release --filter "$filter" >"$scratch/test.log" 2>&1
+timeout 1800 dotnet test "$project" -c Release -p:_AxialRepoSkipGuardrails=true --filter "$filter" >"$scratch/test.log" 2>&1
 code=$?
 
 if grep -qE "error FS|error CS" "$scratch/test.log"; then

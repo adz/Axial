@@ -10,6 +10,10 @@ open Swensen.Unquote
 open Xunit
 
 module WorkflowErrorTests =
+    type private DomainError =
+        | MissingValue
+        | UpstreamError of string
+
     [<Fact>]
     let ``fold lets interruption pass through without running the typed error handler`` () =
         let mutable handlerRan = false
@@ -308,14 +312,14 @@ module WorkflowErrorTests =
 
         let asyncDefect =
             flow {
-                let! value = async { return raise defect }
+                let! value = (async { return raise defect } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
 
         let asyncCanceled =
             flow {
-                let! value = async { return raise canceled }
+                let! value = (async { return raise canceled } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
@@ -385,7 +389,7 @@ module WorkflowErrorTests =
 
         let asyncBoundaryResult =
             flow {
-                let! value = async { return raise defect }
+                let! value = (async { return raise defect } : Async<int>)
                 return value
             }
             |> Flow.runSync (TestSupport.clockEnv ())
@@ -595,6 +599,29 @@ module WorkflowErrorTests =
         test <@ taskFlowResult = Exit.Success 60 @>
 
     [<Fact>]
+    let ``Bind adapters retain their public BindError type and route errors`` () =
+        let requireValue (source: int option) : BindError<unit, DomainError, int> =
+            source |> Bind.error MissingValue
+
+        let mapFailure (source: Result<int, string>) : BindError<unit, DomainError, int> =
+            source |> Bind.mapError UpstreamError
+
+        let missingWorkflow : Flow<unit, DomainError, int> =
+            flow {
+                let! value = requireValue None
+                return value
+            }
+
+        let upstreamWorkflow : Flow<unit, DomainError, int> =
+            flow {
+                let! value = mapFailure (Error "denied")
+                return value
+            }
+
+        test <@ Flow.runSync () missingWorkflow = Exit.Failure(Cause.Fail MissingValue) @>
+        test <@ Flow.runSync () upstreamWorkflow = Exit.Failure(Cause.Fail(UpstreamError "denied")) @>
+
+    [<Fact>]
     let ``Flow async syntax uses Bind assignment and mapping`` () =
         let tryGetUser username = async { return if username = "missing" then None else Some username }
         let isPwdValid password user = password = $"{user}-pwd"
@@ -627,6 +654,57 @@ module WorkflowErrorTests =
         test <@ success = Exit.Success "token-alice" @>
         test <@ authFailure = Exit.Failure (Cause.Fail (Unauthorized "denied")) @>
         test <@ tokenFailure = Exit.Failure (Cause.Fail (TokenErr "token-expired")) @>
+
+    [<Fact>]
+    let ``Nested carrier results enter the typed error channel`` () =
+        let hasNestedConversion (carrier: Type) =
+            typeof<FlowBindable>.GetMethods()
+            |> Array.exists (fun methodInfo ->
+                let parameters = methodInfo.GetParameters()
+
+                if methodInfo.Name <> "Convert" || parameters.Length <> 2 then
+                    false
+                else
+                    let sourceType = parameters.[1].ParameterType
+
+                    if sourceType.IsGenericType && sourceType.GetGenericTypeDefinition() = carrier then
+                        let innerType = sourceType.GetGenericArguments().[0]
+                        innerType.IsGenericType
+                        && innerType.GetGenericTypeDefinition() = typedefof<Result<_, _>>
+                    else
+                        false)
+
+        let sourceCount =
+            typeof<FlowBuilder>.GetMethods()
+            |> Array.filter (fun methodInfo -> methodInfo.Name = "Source")
+            |> Array.length
+
+        test <@ sourceCount = 1 @>
+        test <@ hasNestedConversion typedefof<Async<_>> @>
+        test <@ hasNestedConversion typedefof<ColdTask<_>> @>
+
+        let asyncSource : Async<Result<int, string>> = async { return Error "async-error" }
+
+        let coldTaskSource : ColdTask<Result<int, string>> =
+            ColdTask(fun _ -> Task.FromResult(Error "cold-task-error"))
+
+        let asyncWorkflow : Flow<ClockEnvironment, string, int> =
+            flow {
+                let! value = asyncSource |> Flow.fromAsyncResult
+                return value
+            }
+
+        let coldTaskWorkflow : Flow<ClockEnvironment, string, int> =
+            flow {
+                let! value = coldTaskSource |> Flow.fromColdTaskResult
+                return value
+            }
+
+        let asyncResult = Flow.runSync (TestSupport.clockEnv ()) asyncWorkflow
+        let coldTaskResult = Flow.runSync (TestSupport.clockEnv ()) coldTaskWorkflow
+
+        test <@ asyncResult = Exit.Failure (Cause.Fail "async-error") @>
+        test <@ coldTaskResult = Exit.Failure (Cause.Fail "cold-task-error") @>
 
     [<Fact>]
     let ``Bind mapError stays symmetric across flow families`` () =

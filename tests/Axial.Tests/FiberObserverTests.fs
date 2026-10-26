@@ -73,15 +73,21 @@ module FiberObserverTests =
     [<Fact>]
     let ``Discarded fork defect is reported as unobserved when the scope closes`` () =
         let recording = Recording()
+        // Keep the handle alive until runSync has closed the scope. Otherwise the GC net can win
+        // before scope close, and finalizer scheduling—not scope reporting—determines this test.
+        let retained = ref None
 
         let result =
             flow {
                 let! fiber = Flow.fork (Flow.die (InvalidOperationException "silent crash") : Flow<ClockEnvironment, string, int>)
+                retained.Value <- Some fiber
                 do! waitForSettled fiber
                 return "done"
             }
             |> Flow.withFiberObserver recording.Observer
             |> Flow.runSync (TestSupport.clockEnv ())
+
+        retained.Value <- None
 
         test <@ result = Exit.Success "done" @>
 

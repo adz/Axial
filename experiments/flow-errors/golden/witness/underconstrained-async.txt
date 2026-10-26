@@ -1,0 +1,12 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/underconstrained-async.fsx(8,22): error FS0043: A unique overload for method 'Convert' could not be determined based on type information prior to this program point. A type annotation may be needed.
+
+Known return type: Flow<unit,string,int>
+
+Known type parameters: < FlowBindable , Async<'a> >
+
+Candidates:
+ - static member FlowBindable.Convert: FlowBindable * source: Async<'value> -> Flow<'env,'error,'value>
+ - static member FlowBindable.Convert: FlowBindable * source: Async<Result<'value,'error>> -> Flow<'env,'error,'value>
+

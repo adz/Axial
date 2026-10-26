@@ -1,0 +1,10 @@
+
+
+<ROOT>/experiments/flow-errors/snippets/wrong-error.fsx(7,18): error FS0041: A unique overload for method 'Source' could not be determined based on type information prior to this program point. A type annotation may be needed.
+
+Known type of argument: Flow<PricingEnv,int,int>
+
+Candidates:
+ - member FlowBuilder.Source: _source: 'source -> Flow<'env,'error,'value>
+ - member FlowBuilder.Source: flow: Flow<'env,'error,'value> -> Flow<'env,'error,'value>
+

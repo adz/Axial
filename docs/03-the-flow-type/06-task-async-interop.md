@@ -14,9 +14,9 @@ channel.
 | Source | Use | Behavior |
 | --- | --- | --- |
 | `Async<'value>` | Bind directly in `flow { }` | Cold and rerunnable; the value is successful output |
-| `Async<Result<'value,'error>>` | Bind directly in `flow { }` | Cold and rerunnable; `Error` enters the typed error channel |
+| `Async<Result<'value,'error>>` | `Flow.fromAsyncResult` | Cold and rerunnable; `Error` enters the typed error channel |
 | `ColdTask<'value>` | Bind directly in `flow { }` | Cold task factory; receives Flow's cancellation token |
-| `ColdTask<Result<'value,'error>>` | Bind directly in `flow { }` | Cold task factory; `Error` enters the typed error channel |
+| `ColdTask<Result<'value,'error>>` | `Flow.fromColdTaskResult` | Cold task factory; `Error` enters the typed error channel |
 | `CancellationToken -> Task<'value>` | `Flow.fromTask` | Creates a cold Flow whose task value is successful output |
 | `CancellationToken -> Task<Result<'value,'error>>` | `Flow.fromTaskResult` | Creates a cold Flow whose `Error` enters the typed error channel |
 | Already-running `Task<'value>` | `Flow.awaitStartedTask` | Awaits the existing operation; Flow cannot retroactively supply its cancellation token |
@@ -97,11 +97,12 @@ let repository = UserRepository()
 
 let userName (id: int) : Flow<LoadUserError, string> =
     flow {
-        let! user = repository.LoadUser id
+        let! user = repository.LoadUser id |> Flow.fromAsyncResult
         return user.Name
     }
 
-let loadUser (id: int) : Flow<LoadUserError, User> = flow { return! repository.LoadUser id }
+let loadUser (id: int) : Flow<LoadUserError, User> =
+    flow { return! repository.LoadUser id |> Flow.fromAsyncResult }
 ```
 
 ```fsharp run
@@ -116,7 +117,7 @@ Use `Flow.fromAsync` or `Flow.fromAsyncResult` when composing without `flow { }`
 ## Bind cold Task work
 
 A `Task` starts when the method that returns it runs. Wrap the call in `ColdTask` so the method runs only when the Flow
-runs. `ColdTask<Result<_,_>>` lifts its outer `Result` for both `let!` and `return!`:
+runs. `Flow.fromColdTaskResult` lifts the outer `Result`:
 
 ```fsharp
 let loadUserCold (id: int) : ColdTask<Result<User, LoadUserError>> =
@@ -124,7 +125,7 @@ let loadUserCold (id: int) : ColdTask<Result<User, LoadUserError>> =
 
 let coldName (id: int) : Flow<LoadUserError, string> =
     flow {
-        let! user = loadUserCold id
+        let! user = loadUserCold id |> Flow.fromColdTaskResult
         return user.Name
     }
 ```
@@ -259,7 +260,8 @@ let inspect (id: int) : ColdTask<Result<Result<User, LoadUserError>, Never>> =
             return (Ok result: Result<_, Never>)
         })
 
-let lookup (id: int) : Flow<Result<User, LoadUserError>> = flow { return! inspect id }
+let lookup (id: int) : Flow<Result<User, LoadUserError>> =
+    flow { return! inspect id |> Flow.fromColdTaskResult }
 ```
 
 ```fsharp run

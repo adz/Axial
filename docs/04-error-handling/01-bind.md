@@ -58,7 +58,7 @@ let authorizeForLogin (user: string) : Async<Result<unit, SessionError>> =
 
 let signIn (user: string) : Flow<SessionError, string> =
     flow {
-        do! authorizeForLogin user
+        do! authorizeForLogin user |> Flow.fromAsyncResult
         return user
     }
 ```
