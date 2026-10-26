@@ -27,15 +27,25 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# A caller-supplied former bypass must still wait behind the real run lock.
-printf 'untouched\n' > "$root/artifacts/verify/docs.log"
-flock "$root/artifacts/verify/run.lock" bash -c 'touch "$1"; sleep 5' _ "$tmp/held" &
+# Exercise a disposable verify tree so this test can itself run inside verification's lock.
+fixture="$tmp/root"
+mkdir -p "$fixture/scripts" "$fixture/experiments/flow-errors" "$fixture/artifacts/verify"
+cp "$verify" "$fixture/scripts/verify.sh"
+for script in check-docs-conventions.sh check-source-inventory.sh test-verify-summary.sh test-verify-lock.sh test-test-ratchet.sh test-guardrails-v2-migration.sh; do
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$fixture/scripts/$script"
+done
+printf '#!/usr/bin/env bash\nexit 0\n' > "$fixture/experiments/flow-errors/check.sh"
+printf 'raise SystemExit(0)\n' > "$fixture/scripts/check-package-maturity.py"
+
+# A caller-supplied former bypass must still wait behind the fixture's real run lock.
+printf 'untouched\n' > "$fixture/artifacts/verify/docs.log"
+flock "$fixture/artifacts/verify/run.lock" bash -c 'touch "$1"; sleep 5' _ "$tmp/held" &
 holder_pid=$!
 while [[ ! -e $tmp/held ]]; do sleep 0.02; done
-setsid bash "$verify" --verify-lock-held docs >"$tmp/verify.out" 2>&1 &
+setsid bash "$fixture/scripts/verify.sh" --verify-lock-held docs >"$tmp/verify.out" 2>&1 &
 verify_pid=$!
 sleep 0.3
-[[ $(cat "$root/artifacts/verify/docs.log") == untouched ]] || {
+[[ $(cat "$fixture/artifacts/verify/docs.log") == untouched ]] || {
   echo 'former argument bypass started a stage while the lock was held' >&2
   exit 1
 }
