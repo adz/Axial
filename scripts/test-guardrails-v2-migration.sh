@@ -11,7 +11,7 @@ if grep -qE 'test-guardrails-baseline-growth|check-guardrails-baseline-growth' s
     fail "verify.sh still invokes legacy baseline-growth scripts"
 fi
 
-if grep -R -nE 'AxialGuardrailsUseLegacyPolicy|AxialGuardrailsSeverity|AxialGuardrailsGenerateBaseline|GetEnvironmentVariable\(.?(AxialGuardrails|AXIAL_GUARDRAILS)|CI=true' \
+if grep -R -nE 'AxialGuardrailsUseLegacyPolicy|AxialGuardrailsSeverity|AxialGuardrailsGenerateBaseline|GetEnvironmentVariable\(.?(AxialGuardrailsEnabled|AXIAL_GUARDRAILS_ENABLED|AxialGuardrailsSeverity|AXIAL_GUARDRAILS_SEVERITY)|CI=true' \
     Directory.Build.props Directory.Build.targets src/Axial.Guardrails/build src/Axial.Guardrails/*.fs >/dev/null; then
     fail "legacy policy, severity, baseline-generation, or environment switches remain"
 fi

@@ -115,9 +115,14 @@ let live () = Assert.True(true)
 
     [<Fact>]
     let ``lock serialization is deterministic and sorted`` () =
-        let snapshot={empty with Hashes=Map ["z","2";"a","1"]; Capabilities=set ["z/**";"a/**"]}
+        let snapshot={empty with Hashes=Map ["z",String.replicate 64 "2";"a",String.replicate 64 "1"]; Capabilities=set ["z/**";"a/**"]; Boundaries=set ["src/Host.fs"]; Suppressions=set ["src/Host.fs:1:// axial-allow-AXG001: host boundary"]}
         let first=serialize snapshot
         let second=serialize snapshot
         test <@ first=second @>
-        test <@ first.IndexOf("a  a") < first.IndexOf("2  z") @>
+        test <@ first.IndexOf("  a") < first.IndexOf("  z") @>
         test <@ first.IndexOf("CAPABILITY  a/**") < first.IndexOf("CAPABILITY  z/**") @>
+        let path=Path.GetTempFileName()
+        try
+            File.WriteAllText(path,first)
+            test <@ parseLock path = Ok snapshot @>
+        finally File.Delete path

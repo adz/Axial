@@ -238,9 +238,21 @@ module PolicyLock =
                     let p=line.Substring(8).Split('\t')
                     if p.Length<>2 || String.IsNullOrWhiteSpace p[0] || not(set["allow";"warn";"deny";"forbid"]|>Set.contains p[1]) then fail lineNumber "POLICY requires a non-empty rule and allow/warn/deny/forbid field"
                     unique lineNumber "POLICY" p[0] (s.Rules.ContainsKey p[0]); s <- {s with Rules=s.Rules.Add(p[0],p[1])}
-                elif line.StartsWith("CAPABILITY  ") then let value=line.Substring(12) in if String.IsNullOrWhiteSpace value then fail lineNumber "CAPABILITY requires a non-empty value"; unique lineNumber "CAPABILITY" value (s.Capabilities.Contains value); s <- {s with Capabilities=s.Capabilities.Add value}
-                elif line.StartsWith("BOUNDARY  ") then let value=line.Substring(10) in if String.IsNullOrWhiteSpace value then fail lineNumber "BOUNDARY requires a non-empty value"; unique lineNumber "BOUNDARY" value (s.Boundaries.Contains value); s <- {s with Boundaries=s.Boundaries.Add value}
-                elif line.StartsWith("SUPPRESSION  ") then let value=line.Substring(13) in if String.IsNullOrWhiteSpace value then fail lineNumber "SUPPRESSION requires a non-empty value"; unique lineNumber "SUPPRESSION" value (s.Suppressions.Contains value); s <- {s with Suppressions=s.Suppressions.Add value}
+                elif line.StartsWith("CAPABILITY  ") then
+                    let value=line.Substring(12)
+                    if String.IsNullOrWhiteSpace value then fail lineNumber "CAPABILITY requires a non-empty value"
+                    unique lineNumber "CAPABILITY" value (s.Capabilities.Contains value)
+                    s <- {s with Capabilities=s.Capabilities.Add value}
+                elif line.StartsWith("BOUNDARY  ") then
+                    let value=line.Substring(10)
+                    if String.IsNullOrWhiteSpace value then fail lineNumber "BOUNDARY requires a non-empty value"
+                    unique lineNumber "BOUNDARY" value (s.Boundaries.Contains value)
+                    s <- {s with Boundaries=s.Boundaries.Add value}
+                elif line.StartsWith("SUPPRESSION  ") then
+                    let value=line.Substring(13)
+                    if String.IsNullOrWhiteSpace value then fail lineNumber "SUPPRESSION requires a non-empty value"
+                    unique lineNumber "SUPPRESSION" value (s.Suppressions.Contains value)
+                    s <- {s with Suppressions=s.Suppressions.Add value}
                 elif line.Trim()<>"" then fail lineNumber "unknown or malformed lock record"
             Ok {s with Baseline=List.sortBy (fun x->x.Rule,x.File,x.Fingerprint) s.Baseline; Tests=List.sortBy _.Project s.Tests}
         with ex -> Error ex.Message

@@ -106,11 +106,9 @@ axial policy baseline --rule effects.ambient
 Review every entry written to the baseline path declared in TOML. Regenerate and review rather than hand-writing
 fingerprints, then approve the resulting policy state with the applicable `axial` workflow.
 
-CI should run `scripts/check-guardrails-baseline-growth.sh` (or an equivalent comparison) against the pull request
-base SHA or the push's pre-push SHA. Axial's CI and `scripts/verify.sh` do this automatically and fail when the
-baseline gains any entry, even when another entry is removed. Because a branch can change both a baseline and its
-check, approval is a repository-governance decision rather than a guarantee the branch's code can enforce; in this
-single-developer repository, the coordinator reviews such changes.
+`axial check` rejects baseline growth against the approved lock during local and CI builds. To adopt a newly enabled
+rule with existing findings, run `axial policy baseline --rule <id>`, review the candidate entries, and approve the
+policy change. Ordinary policy approval refuses baseline growth.
 
 ## Review the diagnostics
 
