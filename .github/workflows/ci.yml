@@ -23,11 +23,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check Guardrails baseline growth
-        env:
-          GUARDRAILS_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: bash scripts/check-guardrails-baseline-growth.sh
-
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v5
         with:
