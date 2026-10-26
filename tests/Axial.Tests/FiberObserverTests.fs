@@ -150,21 +150,27 @@ module FiberObserverTests =
                     return Exit.Failure(Cause.Die(InvalidOperationException "late disconnected defect"))
                 }))
 
+        let callerDone = TaskCompletionSource<Exit<unit, string>>(TaskCreationOptions.RunContinuationsAsynchronously)
+
         let running =
             Task.Run(fun () ->
                 stubborn
                 |> Flow.disconnect
+                |> Flow.onExit (fun exit -> Flow.delay (fun () -> callerDone.TrySetResult exit |> ignore; Flow.succeed ()))
                 |> Flow.withFiberObserver recording.Observer
                 |> Flow.runSyncWithToken (TestSupport.clockEnv ()) cancellation.Token)
 
         test <@ started.Task.Wait(TimeSpan.FromSeconds 5.0) @>
         cancellation.Cancel()
-        test <@ running.Wait(TimeSpan.FromSeconds 1.0) @>
-        test <@ running.Result = Exit.Failure Cause.Interrupt @>
+        // The caller stops waiting at once; the root run owns the detached work and waits for it.
+        test <@ callerDone.Task.Wait(TimeSpan.FromSeconds 1.0) @>
+        test <@ callerDone.Task.Result = Exit.Failure Cause.Interrupt @>
+        test <@ not running.IsCompleted @>
         test <@ recording.Ends = [] @>
 
         release.TrySetResult() |> ignore
-        waitUntil (fun () -> recording.Unobserved.Length = 1)
+        test <@ running.Wait(TimeSpan.FromSeconds 5.0) @>
+        test <@ running.Result = Exit.Failure Cause.Interrupt @>
 
         test <@ recording.Ends |> List.map (fun (_, defect) -> defect |> Option.map _.Message) = [ Some "late disconnected defect" ] @>
         test <@ recording.Unobserved |> List.map (fun (_, defect) -> defect.Message) = [ "late disconnected defect" ] @>

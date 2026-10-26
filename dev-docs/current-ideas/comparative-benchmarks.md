@@ -53,7 +53,7 @@ the benchmark's total bytes as an ownership profile.
 ## The workloads
 
 FIO's twelve workloads, parameters (environment variable defaults), and the Axial primitives each maps to. Names are
-Axial's current API: `Flow.fork` returns a `Fiber`; `Fiber.join`/`Fiber.await` wait for it; message passing uses
+Axial's current API: `Flow.fork` returns a `Fiber`; `Fiber.join`/`Fiber.awaitExit` wait for it; message passing uses
 `Queue` (`Queue.unbounded`, `Queue.bounded`, `Queue.offer`, `Queue.take`); one-shot replies use `Deferred`.
 
 | Workload | Measures | FIO defaults | Axial mapping |

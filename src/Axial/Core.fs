@@ -667,7 +667,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
     static let sentinels = System.Runtime.CompilerServices.ConditionalWeakTable<obj, FiberDefectTracker>()
 #endif
 
-    /// Records that the fiber's outcome was consumed (<c>Fiber.join</c>, <c>Fiber.await</c>, <c>Fiber.interrupt</c>)
+    /// Records that the fiber's outcome was consumed (<c>Fiber.join</c>, <c>Fiber.awaitExit</c>, <c>Fiber.interrupt</c>)
     /// or deliberately detached at birth (<c>Flow.forkDetached</c>), so its defect is never reported as unobserved.
     member _.MarkObserved() =
         lock gate (fun () -> observed <- true)
@@ -710,7 +710,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
 /// </summary>
 /// <remarks>
 /// A fiber is the hot counterpart to a cold <c>Flow</c>, returned by <c>Flow.fork</c>. Wait for it with
-/// <c>Fiber.join</c> (its value, re-raising its failure) or <c>Fiber.await</c> (its <c>Exit</c>), check it with
+/// <c>Fiber.join</c> (its value, re-raising its failure) or <c>Fiber.awaitExit</c> (its <c>Exit</c>), check it with
 /// <c>Fiber.poll</c>, and stop it with <c>Fiber.interrupt</c>.
 /// </remarks>
 /// <typeparam name="error">The failure type of the running workflow.</typeparam>
@@ -1091,6 +1091,9 @@ module internal FiberContext =
 type internal RuntimeContext =
     {
         Scope: Scope
+        /// The scope of the root run (Flow.run, App). Work started with Flow.disconnect registers here: its caller
+        /// does not wait for it, but the root does, so nothing outlives the application unreported.
+        RootScope: Scope
         Context: FiberContext
         AnnotationSink: string -> string -> unit
         TelemetryContext: Axial.Telemetry.TelemetryContext
@@ -1116,6 +1119,7 @@ module internal RuntimeContext =
     let create (scope: Scope) : RuntimeContext =
         {
             Scope = scope
+            RootScope = scope
             Context = FiberContext.empty
             AnnotationSink = fun _ _ -> ()
             TelemetryContext = Axial.Telemetry.TelemetryContext Map.empty

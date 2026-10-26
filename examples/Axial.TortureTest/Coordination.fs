@@ -33,7 +33,7 @@ let semaphores (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> 
         // Interrupt a random third of the workers, whether they are waiting for a permit or holding one.
         let! exits =
             fibers
-            |> Flow.traverse (fun fiber -> if round.Chance 33 then Fiber.interrupt fiber else Fiber.await fiber)
+            |> Flow.traverse (fun fiber -> if round.Chance 33 then Fiber.interrupt fiber else Fiber.awaitExit fiber)
 
         let! finalActive = Ref.get active
         let! mostAtOnce = Ref.get busiest
@@ -113,7 +113,7 @@ let deferreds (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
         // Interrupt a random half of the early awaiters while the completers race.
         let interrupter =
-            early |> Flow.traverse (fun fiber -> if round.Chance 50 then Fiber.interrupt fiber else Fiber.await fiber)
+            early |> Flow.traverse (fun fiber -> if round.Chance 50 then Fiber.interrupt fiber else Fiber.awaitExit fiber)
 
         let! won, earlyExits = Flow.zipPar (attempts |> Flow.traversePar (Parallelism.bounded 10) attempt) interrupter
         let! late = deferred |> Deferred.await |> exitOf

@@ -435,7 +435,7 @@ module ScopedResourceOwnershipTests =
 
                 let! _ = Flow.race loser winner
                 let! fiber = Deferred.await forked
-                return! Fiber.await fiber
+                return! Fiber.awaitExit fiber
             }
             |> Flow.scoped
 

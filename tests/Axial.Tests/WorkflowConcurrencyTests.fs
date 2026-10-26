@@ -231,15 +231,17 @@ module WorkflowConcurrencyTests =
         let mutable executed = false
         let workflow =
             flow {
-                let! (fiber: Fiber<string, int>) = 
+                let! entered = Deferred.make ()
+                let! (fiber: Fiber<string, int>) =
                     flow {
-                        do! Flow.sleep (TimeSpan.FromMilliseconds 500.0)
+                        let! _ = Deferred.succeed () entered
+                        do! Flow.never
                         executed <- true
                         return 42
                     }
                     |> Flow.fork
-                
-                do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
+
+                do! Deferred.await entered
                 let! exit = fiber |> Fiber.interrupt
                 return exit
             }
@@ -297,13 +299,13 @@ module WorkflowConcurrencyTests =
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success(true, true) @>
 
     [<Fact>]
-    let ``Fiber.await returns the exit without failing`` () =
+    let ``Fiber.awaitExit returns the exit without failing`` () =
         let workflow : Flow<ClockEnvironment, string, Exit<int, string> * Exit<int, string>> =
             flow {
                 let! failing = Flow.fork (Flow.fail "boom")
                 let! succeeding = Flow.fork (Flow.ok 7)
-                let! failed = Fiber.await failing
-                let! succeeded = Fiber.await succeeding
+                let! failed = Fiber.awaitExit failing
+                let! succeeded = Fiber.awaitExit succeeding
                 return failed, succeeded
             }
 
@@ -317,7 +319,7 @@ module WorkflowConcurrencyTests =
                 let! fiber = Flow.fork (Deferred.await gate)
                 let! before = Fiber.poll fiber
                 let! _ = Deferred.succeed () gate
-                let! _ = Fiber.await fiber
+                let! _ = Fiber.awaitExit fiber
                 let! after = Fiber.poll fiber
                 return before, after
             }
@@ -347,7 +349,7 @@ module WorkflowConcurrencyTests =
                 do! Fiber.requestInterrupt fiber
                 requested.TrySetResult() |> ignore
                 do! Flow.fromTask (fun _ -> finish.Task)
-                return! Fiber.await fiber
+                return! Fiber.awaitExit fiber
             }
             |> Flow.startTask (TestSupport.clockEnv ())
 
@@ -378,7 +380,7 @@ module WorkflowConcurrencyTests =
                 let! fiber = Flow.fork work
                 do! Flow.fromTask (fun _ -> registered.Task)
                 do! Fiber.requestInterrupt fiber
-                let! _ = Fiber.await fiber
+                let! _ = Fiber.awaitExit fiber
                 return ()
             }
             |> Flow.withFiberObserver observer
@@ -473,8 +475,8 @@ module WorkflowConcurrencyTests =
                 let! slot = FiberSlot.make ()
                 let! first = Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> "first") |> Flow.forkReplacing slot
                 let! second = Flow.ok "second" |> Flow.forkReplacing slot
-                let! firstExit = Fiber.await first
-                let! secondExit = Fiber.await second
+                let! firstExit = Fiber.awaitExit first
+                let! secondExit = Fiber.awaitExit second
                 return firstExit, secondExit
             }
 
@@ -488,11 +490,11 @@ module WorkflowConcurrencyTests =
                 let slowly value = Flow.sleep (TimeSpan.FromMilliseconds 50.0) |> Flow.map (fun () -> value)
                 let! a1 = Flow.sleep (TimeSpan.FromSeconds 30.0) |> Flow.map (fun () -> 1) |> Flow.forkReplacingKey "a" slots
                 let! a2 = slowly 2 |> Flow.forkReplacingKey "a" slots
-                let! _ = slowly 3 |> Flow.forkReplacingKey "b" slots
+                let! b = slowly 3 |> Flow.forkReplacingKey "b" slots
                 let! running = FiberSlot.count slots
-                let! a1Exit = Fiber.await a1
-                let! a2Exit = Fiber.await a2
-                do! Flow.sleep (TimeSpan.FromMilliseconds 100.0)
+                let! a1Exit = Fiber.awaitExit a1
+                let! a2Exit = Fiber.awaitExit a2
+                let! _ = Fiber.awaitExit b
                 let! remaining = FiberSlot.count slots
                 return a1Exit, a2Exit, running, remaining
             }
@@ -523,7 +525,7 @@ module WorkflowConcurrencyTests =
                         let work = if key % 2 = 0 then Flow.ok key else Flow.delay (fun () -> failwith "thrown")
                         work |> Flow.forkReplacingKey key slots)
 
-                let! _ = fibers |> Flow.traverse Fiber.await
+                let! _ = fibers |> Flow.traverse Fiber.awaitExit
                 return! settledCount slots 100
             }
 
@@ -536,17 +538,139 @@ module WorkflowConcurrencyTests =
         let workflow : Flow<ClockEnvironment, string, bool> =
             flow {
                 let! slot = FiberSlot.make ()
+                let! entered = Deferred.make ()
 
                 let! _ =
-                    Flow.sleep (TimeSpan.FromSeconds 30.0)
+                    Deferred.succeed () entered
+                    |> Flow.bind (fun _ -> Flow.sleep (TimeSpan.FromSeconds 30.0))
                     |> Flow.foldCause Flow.ok (fun cause ->
                         cleaned.Value <- true
                         Flow.ofExit (Exit.Failure cause))
                     |> Flow.forkReplacing slot
 
-                do! Flow.sleep (TimeSpan.FromMilliseconds 10.0)
+                do! Deferred.await entered
                 do! FiberSlot.interrupt slot
                 return cleaned.Value
             }
 
         test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success true @>
+
+    let private defectsReportedTo (reported: Collections.Concurrent.ConcurrentQueue<exn>) =
+        { FiberObserver.none with OnUnobservedDefect = fun _ error -> reported.Enqueue error }
+
+    [<Fact>]
+    let ``forkReplacing starts the replacement only after the replaced fiber's cleanup`` () =
+        let events = Collections.Concurrent.ConcurrentQueue<string>()
+
+        let workflow : Flow<ClockEnvironment, string, string list> =
+            flow {
+                let! slot = FiberSlot.make ()
+                let! entered = Deferred.make ()
+                let! releaseCleanup = Deferred.make<ClockEnvironment, Never, unit> () |> Flow.widenError
+
+                let! _ =
+                    flow {
+                        let! _ = Deferred.succeed () entered
+                        do! Flow.never
+                        return "first"
+                    }
+                    |> Flow.ensuring (Deferred.await releaseCleanup |> Flow.map (fun () -> events.Enqueue "first cleaned"))
+                    |> Flow.forkReplacing slot
+
+                do! Deferred.await entered
+                let! second = Flow.delay (fun () -> events.Enqueue "second started"; Flow.ok "second") |> Flow.forkReplacing slot
+                events.Enqueue "replacement forked"
+                let! _ = Deferred.succeed () releaseCleanup
+                let! _ = Fiber.join second
+                return List.ofSeq events
+            }
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success [ "replacement forked"; "first cleaned"; "second started" ] @>
+
+    [<Fact>]
+    let ``forkReplacing reports a replaced fiber's defect exactly once`` () =
+        let reported = Collections.Concurrent.ConcurrentQueue<exn>()
+        let defect = InvalidOperationException "replaced fiber cleanup defect"
+
+        let workflow : Flow<ClockEnvironment, string, string> =
+            flow {
+                let! slot = FiberSlot.make ()
+                let! entered = Deferred.make ()
+
+                let! _ =
+                    flow {
+                        let! _ = Deferred.succeed () entered
+                        do! Flow.never
+                        return "first"
+                    }
+                    |> Flow.ensuring (Flow.die defect)
+                    |> Flow.forkReplacing slot
+
+                do! Deferred.await entered
+                let! second = Flow.ok "second" |> Flow.forkReplacing slot
+                return! Fiber.join second
+            }
+            |> Flow.withFiberObserver (defectsReportedTo reported)
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success "second" @>
+        test <@ List.ofSeq reported |> List.map (fun error -> obj.ReferenceEquals(error, defect)) = [ true ] @>
+
+    [<Fact>]
+    let ``FiberSlot.interrupt reports the interrupted fiber's defect exactly once`` () =
+        let reported = Collections.Concurrent.ConcurrentQueue<exn>()
+        let defect = InvalidOperationException "slot fiber cleanup defect"
+
+        let workflow : Flow<ClockEnvironment, string, unit> =
+            flow {
+                let! slot = FiberSlot.make ()
+                let! entered = Deferred.make ()
+
+                let! _ =
+                    flow {
+                        let! _ = Deferred.succeed () entered
+                        do! Flow.never
+                    }
+                    |> Flow.ensuring (Flow.die defect)
+                    |> Flow.forkReplacing slot
+
+                do! Deferred.await entered
+                do! FiberSlot.interrupt slot
+            }
+            |> Flow.withFiberObserver (defectsReportedTo reported)
+
+        test <@ Flow.runSync (TestSupport.clockEnv ()) workflow = Exit.Success () @>
+        test <@ List.ofSeq reported |> List.map (fun error -> obj.ReferenceEquals(error, defect)) = [ true ] @>
+
+    [<Fact>]
+    let ``mergePar keeps a defect from a stream stopped by another stream's failure`` () =
+        let reported = Collections.Concurrent.ConcurrentQueue<exn>()
+        let defect = InvalidOperationException "sibling cleanup defect"
+
+        let workflow : Flow<ClockEnvironment, string, int list> =
+            flow {
+                let! entered = Deferred.make ()
+
+                let stopped =
+                    flow {
+                        let! _ = Deferred.succeed () entered
+                        do! Flow.never
+                        return 0
+                    }
+                    |> Flow.ensuring (Flow.die defect)
+                    |> FlowStream.fromFlow
+
+                let failing = Deferred.await entered |> Flow.bind (fun () -> Flow.fail "boom") |> FlowStream.fromFlow
+                return! [ stopped; failing ] |> FlowStream.mergePar |> FlowStream.runCollect
+            }
+            |> Flow.withFiberObserver (defectsReportedTo reported)
+
+        let outcome = Flow.runSync (TestSupport.clockEnv ()) workflow
+
+        let defectSeen =
+            match outcome with
+            | Exit.Failure cause -> Cause.defects cause |> List.exists (fun error -> obj.ReferenceEquals(error, defect))
+            | Exit.Success _ -> false
+
+        test <@ Cause.failures (match outcome with Exit.Failure cause -> cause | _ -> Cause.Interrupt) = [ "boom" ] @>
+        // Delivered with the failure when it settled first, otherwise reported; never lost, never twice.
+        test <@ (if defectSeen then 1 else 0) + (reported |> Seq.filter (fun error -> obj.ReferenceEquals(error, defect)) |> Seq.length) = 1 @>

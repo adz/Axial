@@ -65,7 +65,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         // Branches run concurrently; each one's outcome must survive being forked, joined, and classified.
         let kinds = [ for _ in 1..branches -> round.Next 15 ]
         let! fibers = kinds |> Flow.traverse (produce >> Flow.fork)
-        let! exits = fibers |> Flow.traverse Fiber.await
+        let! exits = fibers |> Flow.traverse Fiber.awaitExit
         let classified = exits |> List.map classify
 
         // Recovery combinators turn every outcome into a value without losing which one it was.

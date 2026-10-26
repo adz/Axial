@@ -22,6 +22,8 @@ module WebSocketTests =
     type private Server(abortAfterEcho: bool) =
         let listener = new HttpListener()
         let closed = TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously)
+        // Released by the test once it has received the echo, so the abort can never overtake it.
+        let abortAllowed = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let mutable accepted: WebSocket = null
         let endpoint = sprintf "http://127.0.0.1:%d/" (port ())
         do listener.Prefixes.Add endpoint; listener.Start()
@@ -41,7 +43,7 @@ module WebSocketTests =
                     else
                         do! accepted.SendAsync(ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None)
                         if abortAfterEcho then
-                            do! Task.Delay 100
+                            do! abortAllowed.Task
                             accepted.Abort()
                             accepted.Dispose()
                             running <- false
@@ -49,10 +51,12 @@ module WebSocketTests =
         }
         member _.Url = endpoint.Replace("http:", "ws:")
         member _.Closed = closed.Task
+        member _.AllowAbort() = abortAllowed.TrySetResult() |> ignore
         interface IDisposable with
             member _.Dispose() =
                 listener.Stop()
                 listener.Close()
+                abortAllowed.TrySetResult() |> ignore
                 if not (isNull accepted) then accepted.Dispose()
                 try worker.Wait(TimeSpan.FromSeconds 2.) |> ignore with _ -> ()
 
@@ -90,6 +94,7 @@ module WebSocketTests =
         use session = connect server.Url
         Assert.Equal(Exit.Success (), (session |> WebSocket.sendText "first").RunSynchronously(()))
         Assert.Equal(Exit.Success [WebSocketMessage.Text "first"], (session |> WebSocket.messages |> FlowStream.take 1 |> FlowStream.runCollect).RunSynchronously(()))
+        server.AllowAbort()
         match session.Receive().RunSynchronously(()) with
         | Exit.Failure(Cause.Fail(WebSocketError.ConnectionLost _)) -> ()
         | other -> failwithf "expected ConnectionLost: %A" other

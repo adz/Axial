@@ -171,14 +171,19 @@ type FilesTests() =
         Directory.CreateDirectory nested |> ignore
         try
             let target = Path.Combine(nested, "created.txt")
-            let producer = System.Threading.Tasks.Task.Run(fun () ->
-                System.Threading.Thread.Sleep 300
-                File.WriteAllText(target, "hello"))
             let consumer = System.Threading.Tasks.Task.Run(fun () ->
                 Files.watch true root
                 |> FlowStream.filter (fun change -> change.Kind = FileSystemChangeKind.Created && change.Path = target)
                 |> FlowStream.runTryHead
                 |> Flow.run { new IHasFileSystem with member _.FileSystem = FileSystem.live })
+            // The watcher's start is not observable, so recreate the file until the consumer sees a creation: each
+            // attempt is a real event, and the 50 ms interval only paces the retries.
+            let producer = System.Threading.Tasks.Task.Run(fun () ->
+                let deadline = DateTime.UtcNow + TimeSpan.FromSeconds 30.
+                while not consumer.IsCompleted && DateTime.UtcNow < deadline do
+                    if File.Exists target then File.Delete target
+                    File.WriteAllText(target, "hello")
+                    consumer.Wait(TimeSpan.FromMilliseconds 50.) |> ignore)
             Assert.True(consumer.Wait(TimeSpan.FromSeconds 30.), $"Timed out waiting for creation of {target}")
             let result = consumer.Result
             producer.GetAwaiter().GetResult()

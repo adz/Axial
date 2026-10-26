@@ -434,16 +434,25 @@ module StmTests =
             flow {
                 let! inventory = WithFlow.createInventory 0 0
 
+                let before = Axial.State.STM.pendingRetries ()
                 let! waiting = Flow.fork (WithFlow.reserve inventory)
-                do! Flow.sleep (System.TimeSpan.FromMilliseconds 50.0)
+                // Replenish only once the reservation has really suspended on STM.retry.
+                let rec untilSuspended remaining =
+                    flow {
+                        if Axial.State.STM.pendingRetries () = before && remaining > 0 then
+                            do! Flow.sleep (System.TimeSpan.FromMilliseconds 1.0)
+                            return! untilSuspended (remaining - 1)
+                    }
+                do! untilSuspended 5000
+                let suspended = Axial.State.STM.pendingRetries () > before
                 do! WithFlow.replenish Regional 1 inventory
 
                 let! warehouse = Fiber.join waiting
                 let! (_, regionalLeft, reservations) = WithFlow.snapshot inventory
-                return warehouse, regionalLeft, reservations
+                return suspended, warehouse, regionalLeft, reservations
             }
 
-        test <@ Flow.runSync (ClockEnvironment(Clock.live)) program = Exit.Success(Regional, 0, 1) @>
+        test <@ Flow.runSync (ClockEnvironment(Clock.live)) program = Exit.Success(true, Regional, 0, 1) @>
 
     [<Fact>]
     let ``ordinary lock-based inventory also works but each guarantee is hand-maintained`` () =

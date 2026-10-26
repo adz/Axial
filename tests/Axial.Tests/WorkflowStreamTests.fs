@@ -438,11 +438,10 @@ module WorkflowStreamTests =
             |> FlowStream.runCollect
             |> runOnManualTime
 
-        let pulledAtEnd = pulled.Value
-        Thread.Sleep 100
-
+        // The run returns only after the throttle's producer fiber has settled, so the count is final: at most the
+        // three values taken plus the one pull the producer had in flight.
         test <@ first = Exit.Success [ 0; 1; 2 ] @>
-        test <@ pulled.Value - pulledAtEnd <= 1 @>
+        test <@ pulled.Value <= 4 @>
 
     [<Fact>]
     let ``repeatFlow runs its flow once per pull`` () =

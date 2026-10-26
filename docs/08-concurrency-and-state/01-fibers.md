@@ -63,7 +63,7 @@ Fiber operations:
 - `Flow.forkResource`: starts acquiring a `Resource` in the background; joining the fiber returns the resource, still
   open and owned by the caller's scope.
 - [**`Fiber.join`**](/api/): waits for the fiber and resumes with its successful value or typed failure.
-- [**`Fiber.await`**](/api/): waits for the fiber and returns its `Exit` without failing, for callers that decide what the outcome means.
+- [**`Fiber.awaitExit`**](/api/): waits for the fiber and returns its `Exit` without failing, for callers that decide what the outcome means.
 - `Fiber.poll`: returns the fiber's `Exit` if it has settled, without waiting.
 - `Fiber.requestInterrupt`: asks the fiber to stop and returns immediately. Use it before a bounded race when foreign work may ignore interruption. Cancellation-callback exceptions are contained and reported through the fiber observer.
 - [**`Fiber.interrupt`**](/api/): asks the fiber to stop, then waits for the child workflow to report its final `Exit`.
@@ -256,8 +256,9 @@ Use explicit fibers when the parent workflow needs to start child work, do somet
 ## Latest Wins
 
 When only the newest request matters, such as a search box or autocomplete, hold the running fiber in a `FiberSlot` and
-fork with `Flow.forkReplacing`. Each fork signals the previous fiber in the slot to stop and does not wait for it, so
-the new request starts at once:
+fork with `Flow.forkReplacing`. Each fork interrupts the previous fiber in the slot, and the new request starts as
+soon as that fiber has finished its cleanup, so the two never overlap. A request that is itself replaced before it
+starts never runs:
 
 ```fsharp
 let search (query: string) : Flow<ClockEnvironment, string, string> =
@@ -269,7 +270,7 @@ let typeAhead (queries: string list) : Flow<ClockEnvironment, string, string * b
         let! slot = FiberSlot.make ()
         let! searches = queries |> Flow.traverse (fun query -> search query |> Flow.forkReplacing slot)
         let! last = searches |> List.last |> Fiber.join
-        let! earlier = searches |> List.take (searches.Length - 1) |> Flow.traverse Fiber.await
+        let! earlier = searches |> List.take (searches.Length - 1) |> Flow.traverse Fiber.awaitExit
         return last, earlier |> List.map (fun exit -> match exit with Exit.Failure cause -> Cause.isInterrupted cause | _ -> false)
     }
 ```
@@ -281,7 +282,8 @@ typeAhead [ "a"; "ax"; "axi" ] |> Flow.run (ClockEnvironment Clock.live) |> shou
 `Flow.forkReplacingKey key slots` does the same per key, with a slot from `FiberSlot.makeKeyed`, so a new preview for
 one document replaces only that document's previous load. A key's entry is removed when its fiber settles.
 `FiberSlot.interrupt` and `FiberSlot.interruptAll` stop what is running and wait for its cleanup, for example on
-shutdown. `FiberSlot.count` returns how many keyed fibers are running. For a stream of inputs,
+shutdown. A defect in a replaced or interrupted fiber is reported once to the fiber observer, because no caller reads
+its outcome. `FiberSlot.count` returns how many keyed fibers are running. For a stream of inputs,
 `FlowStream.switchMapFlow` applies the same rule inside the stream.
 
 ## Stopping a consumer gracefully

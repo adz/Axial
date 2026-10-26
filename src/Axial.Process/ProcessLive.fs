@@ -27,10 +27,6 @@ module internal NativeProcess =
     [<DllImport("libc", EntryPoint = "close", SetLastError = true)>]
     extern int private closeFd(int fd)
 
-    /// How long CloseStdIn waits for the stdin feeder to observe cancellation before it force-closes
-    /// the pipe. Keeps Close from hanging on a feeder blocked by a full pipe.
-    let private closeStdInFeederBound = TimeSpan.FromMilliseconds 250.0
-
     /// Reports whether pidfd_open/pidfd_send_signal are usable on this Linux system. Tests use this to
     /// assert the pidfd signalling path is active when the platform supports it.
     let pidfdAvailable () =
