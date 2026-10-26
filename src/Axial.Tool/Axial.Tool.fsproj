@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>axial</ToolCommandName>
+    <PackageId>Axial.Tool</PackageId>
+    <Description>Axial repository policy and project tooling.</Description>
+    <PackageMaturity>Experimental</PackageMaturity>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <IsPackable>true</IsPackable>
+    <!-- Slice 1c wires the v2 role-aware analyzer; this host/effects tool cannot satisfy v1 per-line boundaries. -->
+    <_AxialRepoSkipGuardrails>true</_AxialRepoSkipGuardrails>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Axial.Guardrails/Policy.fs" Link="Policy.fs" />
+    <Compile Include="PolicyLock.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+</Project>

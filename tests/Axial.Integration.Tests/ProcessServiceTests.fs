@@ -362,6 +362,17 @@ module ProcessServiceTests =
         | other -> failwithf "Expected compound input failure, got %A" other
 
     [<Fact>]
+    let ``typed input failure alongside a defect keeps the same defect`` () =
+        let defect = InvalidOperationException "mixed input defect"
+        let source =
+            Flow.ofExit (Exit.Failure (Cause.Both(Cause.Fail "input rejected", Cause.Die defect)))
+            |> FlowStream.fromFlow
+        match cmd $"cat" |> stdinFrom (Input.flowStream source) |> toFlow |> Flow.runSync (env ()) with
+        | Exit.Failure cause ->
+            test <@ Cause.defects cause |> List.exists (fun error -> obj.ReferenceEquals(error, defect)) @>
+        | other -> failwithf "Expected compound input failure, got %A" other
+
+    [<Fact>]
     let ``input captures its environment before construction`` () =
         let source =
             Flow.envWith (fun (value: string) -> Encoding.UTF8.GetBytes value)

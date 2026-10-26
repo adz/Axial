@@ -6,6 +6,12 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 # Effect-boundary guardrails
 
+## Repository policy lock
+
+`axial check` compares the repository policy, baseline, analyzer configuration, and Guardrails test inputs with `Axial.Guardrails.lock`. The lock is a workflow guard, not a security boundary: direct edits remain visible in Git, and agent hooks that block lock edits arrive in phase 3.
+
+Test counts come from active F# source after comments, strings, and inactive `#if false` regions are removed. Assertion counts include direct xUnit `Assert`, Expecto `Expect`, Unquote `test <@`, and direct aliases such as `let verify = Assert.True`; arbitrary user-defined wrappers do not count. This untyped pass avoids loading and type-checking every test project during `axial check`.
+
 Axial models operational effects as explicit, mockable dependencies. Direct access to ambient state can bypass those dependencies without changing a function's signature.
 
 `Schedule.jittered` once created its own `System.Random`, and `FiberDump` once read `DateTimeOffset.UtcNow` directly. Both compiled because the build did not enforce the effect boundary.
@@ -20,17 +26,38 @@ Add the package to your project:
 dotnet add package Axial.Guardrails
 ```
 
-The package configures the analyzer without MSBuild edits or a separate command.
-Which rules run depends on the Axial packages the project references; see [Choose guardrails per package](#choose-guardrails-per-package).
+The package configures the analyzer and runs `axial check` before analysis. Put `Axial.Guardrails.toml`,
+`Axial.Guardrails.lock`, and the configured baseline at the repository root. Which rules run also depends on the Axial
+packages the project references; see [Choose guardrails per package](#choose-guardrails-per-package).
 
-New findings are errors and fail the build. Existing findings can be checked into a baseline and are then reported
-as warnings; the baseline is the only severity downgrade path. The build reports analyzer tool failures separately
-from diagnostic findings.
+A minimal policy defaults source to the `domain` role and declares capability implementations explicitly:
 
-Do not set `AxialGuardrailsSeverity` or `AXIAL_GUARDRAILS_SEVERITY`; they no longer downgrade findings. When
-`CI=true`, the effective build properties cannot disable Guardrails or enable baseline generation. For local
+```toml
+version = 2
+baseline = "Axial.Guardrails.baseline"
+
+[default]
+role = "domain"
+
+[files]
+capabilities = ["src/App/Capabilities/**"]
+services = ["src/App/Services/**"]
+
+[roles.domain.rules]
+"effects.ambient" = "deny"
+
+[roles.capabilities.rules]
+"effects.ambient" = "allow"
+```
+
+The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. File assignments override project
+assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
+suppressed. Run `axial policy approve` after reviewing an intentional policy change. The build fails with a categorized
+summary while TOML, lockfile, protected inputs, baseline, or suppressions differ.
+
+Do not set Guardrails policy through MSBuild severity, boundary, baseline-path, or test-policy settings. For local
 troubleshooting only, pass `-p:AxialGuardrailsEnabled=false` on the command line; do not store that setting in a
-project or shared build file. Ordinary adoption uses a baseline instead.
+project or shared build file.
 
 For adoption guidance, see [Installation](/getting-started/installation.html#add-effect-boundary-guardrails-optional).
 
@@ -70,21 +97,18 @@ comment or string, or removing an earlier duplicate does not invalidate it. Chan
 moving it to another declaration does. If diagnostics exceed the recorded count, the later diagnostics are errors and
 report the baseline and actual counts.
 
-Generate a candidate for one project:
+Generate a candidate for one newly introduced rule:
 
 ```bash
-dotnet build MyApp.fsproj -p:AxialGuardrailsGenerateBaseline=true
+axial policy baseline --rule effects.ambient
 ```
 
-The build prints the candidate path under the project's intermediate output directory. Review every entry, then copy
-approved entries into `Axial.Guardrails.baseline` beside the project. Set `AxialGuardrailsBaselineFile` when a solution
-uses one baseline in another location. Regenerate and review rather than hand-writing fingerprints.
+Review every entry written to the baseline path declared in TOML. Regenerate and review rather than hand-writing
+fingerprints, then approve the resulting policy state with the applicable `axial` workflow.
 
-CI should run `scripts/check-guardrails-baseline-growth.sh` (or an equivalent comparison) against the pull request
-base SHA or the push's pre-push SHA. Axial's CI and `scripts/verify.sh` do this automatically and fail when the
-baseline gains any entry, even when another entry is removed. Because a branch can change both a baseline and its
-check, approval is a repository-governance decision rather than a guarantee the branch's code can enforce; in this
-single-developer repository, the coordinator reviews such changes.
+`axial check` rejects baseline growth against the approved lock during local and CI builds. To adopt a newly enabled
+rule with existing findings, run `axial policy baseline --rule <id>`, review the candidate entries, and approve the
+policy change. Ordinary policy approval refuses baseline growth.
 
 ## Review the diagnostics
 

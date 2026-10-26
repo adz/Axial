@@ -52,6 +52,7 @@ Typed HTTP workflows with request construction, response handling, reliability p
 | `Axial.Telemetry` | Experimental | .NET tracing and OpenTelemetry integration. | [Observability](/observability/) |
 | `Axial.Telemetry.JavaScript` | Experimental | Fable JavaScript span export. | [JavaScript telemetry](/observability/telemetry/javascript.html) |
 | `Axial.Guardrails` | Incubating | Build-time analyzer that flags direct ambient effects. | [Guardrails](/notes/guardrails.html) |
+| `Axial.Tool` | Experimental | The `axial` command for initializing, checking, and approving Guardrails policy. | [Guardrails](/notes/guardrails.html) |
 
 See [Package maturity](/notes/package-maturity.html) for evidence and promotion criteria.
 

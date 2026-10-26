@@ -43,6 +43,7 @@ projects=(
   "src/Axial.Telemetry/Axial.Telemetry.fsproj"
   "src/Axial.Telemetry.JavaScript/Axial.Telemetry.JavaScript.fsproj"
   "src/Axial.Guardrails/Axial.Guardrails.fsproj"
+  "src/Axial.Tool/Axial.Tool.fsproj"
 )
 
 echo "Packing projects to $output_dir..."

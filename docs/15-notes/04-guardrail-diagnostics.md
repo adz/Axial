@@ -40,12 +40,19 @@ The analyzer matches resolved `System.*` symbols, not source text. It does not f
 First replace the ambient call with the service named by the diagnostic. An automatic fix is not offered because
 introducing an explicit service usually changes the containing function's environment and often its return type.
 
-If the file itself implements the boundary, declare it in MSBuild and give each suppression a non-empty reason:
+A normal live implementation belongs in a file assigned the `capabilities` role and needs no suppression:
 
-```xml
-<ItemGroup>
-  <AxialGuardrailsBoundary Include="LiveClock.fs" />
-</ItemGroup>
+```toml
+[files]
+capabilities = ["src/App/Capabilities/**"]
+```
+
+For an exceptional one-off boundary outside that role, declare the exact file in policy and give each suppression a
+non-empty reason:
+
+```toml
+[boundaries]
+files = ["src/App/LiveClock.fs"]
 ```
 
 ```fsharp
@@ -65,13 +72,13 @@ The file-wide form belongs in the leading comment block:
 ```
 
 A rule-specific suppression allows only that diagnostic. It does not allow other Guardrails findings in the file.
-Globs in `AxialGuardrailsBoundary` are expanded by MSBuild, so a project may declare a boundary folder deliberately;
-prefer exact files when only a few implement operational boundaries.
+Capability-role globs are the normal home for raw I/O. `[boundaries].files` contains exact exceptional files; it is
+not a second capability-folder mechanism. A `forbid` rule cannot be suppressed even in a declared boundary.
 
 ## AXG002: Remove invalid suppressions
 
 `AXG002` validates every suppression. It reports legacy or malformed syntax, an unknown rule ID, a missing reason,
-a file-wide suppression outside the leading comment block, a suppression outside an `AxialGuardrailsBoundary` file,
+a file-wide suppression outside the leading comment block, a suppression outside a TOML-declared boundary file,
 or a stale AXG001 suppression that covers no ambient-effect finding.
 
 Remove an invalid or unused directive. AXG002 offers an automatic removal when the directive occupies its own comment

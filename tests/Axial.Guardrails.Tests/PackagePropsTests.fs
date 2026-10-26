@@ -30,6 +30,35 @@ module PackagePropsTests =
     let private cliDll () =
         Path.Combine(nuGetRoot (), "fsharp-analyzers", "0.37.2", "tools", "net8.0", "any", "FSharp.Analyzers.Cli.dll")
 
+    let private policyToolDll () =
+        Path.Combine(repoRoot (), "artifacts", "bin", "Axial.Tool", configuration (), "Axial.Tool.dll")
+
+    let private dotnetHost () =
+        match Environment.GetEnvironmentVariable "DOTNET_ROOT" with
+        | null | "" -> "dotnet"
+        | root -> Path.Combine(root, "dotnet")
+
+    let private runPolicyTool dir arguments =
+        let startInfo = ProcessStartInfo(dotnetHost ())
+        startInfo.WorkingDirectory <- dir
+        startInfo.ArgumentList.Add(policyToolDll ())
+        arguments |> List.iter startInfo.ArgumentList.Add
+        startInfo.UseShellExecute <- false
+        startInfo.EnvironmentVariables["DOTNET_ROLL_FORWARD"] <- "Major"
+        startInfo.RedirectStandardOutput <- true
+        startInfo.RedirectStandardError <- true
+        use child = Process.Start startInfo
+        let output = child.StandardOutput.ReadToEnd() + child.StandardError.ReadToEnd()
+        child.WaitForExit()
+        Assert.True(child.ExitCode = 0, output)
+
+    let private writeV2Policy dir role level =
+        runPolicyTool dir [ "init" ]
+        File.WriteAllText(
+            Path.Combine(dir, "Axial.Guardrails.toml"),
+            $"version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n\n[default]\nrole = \"{role}\"\n\n[roles.domain.rules]\n\"effects.ambient\" = \"{level}\"\n")
+        runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+
     let private xmlEscape (value: string) =
         value.Replace("&", "&amp;").Replace("\"", "&quot;").Replace("<", "&lt;").Replace(">", "&gt;")
 
@@ -42,6 +71,7 @@ module PackagePropsTests =
     <_AxialGuardrailsAnalyzersPath>{xmlEscape (analyzersPath ())}</_AxialGuardrailsAnalyzersPath>
     <_AxialGuardrailsExe>dotnet &quot;{xmlEscape (cliDll ())}&quot;</_AxialGuardrailsExe>
     <_AxialGuardrailsBootstrapProject>{xmlEscape (Path.Combine(repoRoot (), "src", "Axial.Guardrails", "Axial.Guardrails.fsproj"))}</_AxialGuardrailsBootstrapProject>
+    <_AxialGuardrailsPolicyToolAssembly>{xmlEscape (policyToolDll ())}</_AxialGuardrailsPolicyToolAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />
@@ -60,8 +90,8 @@ module PackagePropsTests =
 
     type BuildResult = { ExitCode: int; Output: string }
 
-    let private runBuildWithArgs (extraArguments: string list) (project: string) (framework: string option) (severityEnv: string option) (severityProperty: string option) (ci: bool) (generateBaseline: bool) (enabledEnv: string option) =
-        let startInfo = ProcessStartInfo("dotnet")
+    let private runBuildWithArgs (extraArguments: string list) (project: string) (framework: string option) =
+        let startInfo = ProcessStartInfo(dotnetHost ())
         startInfo.ArgumentList.Add "build"
         startInfo.ArgumentList.Add project
         startInfo.ArgumentList.Add "-c"
@@ -77,20 +107,10 @@ module PackagePropsTests =
             startInfo.ArgumentList.Add "-f"
             startInfo.ArgumentList.Add value
         | None -> ()
-        match severityProperty with
-        | Some value -> startInfo.ArgumentList.Add("-p:AxialGuardrailsSeverity=" + value)
-        | None -> ()
-        if generateBaseline then startInfo.ArgumentList.Add("-p:AxialGuardrailsGenerateBaseline=true")
         startInfo.UseShellExecute <- false
         startInfo.RedirectStandardOutput <- true
         startInfo.RedirectStandardError <- true
         startInfo.EnvironmentVariables["MSBUILDDISABLENODEREUSE"] <- "1"
-        match severityEnv with
-        | Some value -> startInfo.EnvironmentVariables["AXIAL_GUARDRAILS_SEVERITY"] <- value
-        | None -> ()
-        // Never inherit CI from the machine running the tests: GitHub runners set CI=true.
-        if ci then startInfo.EnvironmentVariables["CI"] <- "true" else startInfo.EnvironmentVariables.Remove "CI"
-        enabledEnv |> Option.iter (fun value -> startInfo.EnvironmentVariables["AxialGuardrailsEnabled"] <- value)
         use child = Process.Start startInfo
         let stdout = child.StandardOutput.ReadToEndAsync()
         let stderr = child.StandardError.ReadToEndAsync()
@@ -103,97 +123,54 @@ module PackagePropsTests =
         Assert.True(exited, "Consumer build timed out and its process tree was killed:\n" + output)
         { ExitCode = child.ExitCode; Output = output }
 
-    let private runBuild project framework severityEnv severityProperty ci generateBaseline enabledEnv =
-        runBuildWithArgs [] project framework severityEnv severityProperty ci generateBaseline enabledEnv
+    let private runBuild project framework =
+        runBuildWithArgs [] project framework
 
-    let private buildConsumerInTemp write severityEnv severityProperty =
+    let private buildConsumerInTemp write =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
             write dir
-            runBuild (Path.Combine(dir, "Consumer.fsproj")) None severityEnv severityProperty false false None
-        finally
-            Directory.Delete(dir, true)
-
-    let private buildInTemp severityEnv severityProperty =
-        buildConsumerInTemp writeConsumer severityEnv severityProperty
-
-    [<Fact>]
-    let ``findings are errors and severity settings cannot downgrade them`` () =
-        let defaultBuild = buildInTemp None None
-        Assert.NotEqual(0, defaultBuild.ExitCode)
-        Assert.Contains("error AXG001", defaultBuild.Output)
-
-        let environmentAttempt = buildInTemp (Some "warning") None
-        Assert.NotEqual(0, environmentAttempt.ExitCode)
-        Assert.Contains("error AXG001", environmentAttempt.Output)
-
-        let propertyAttempt = buildInTemp None (Some "warning")
-        Assert.NotEqual(0, propertyAttempt.ExitCode)
-        Assert.Contains("error AXG001", propertyAttempt.Output)
-
-    [<Fact>]
-    let ``CI rejects an environment severity bypass`` () =
-        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
-        Directory.CreateDirectory dir |> ignore
-        try
-            writeConsumer dir
-            let project = Path.Combine(dir, "Consumer.fsproj")
-            let severity = runBuild project None (Some "warning") None true false None
-            Assert.NotEqual(0, severity.ExitCode)
-            Assert.Contains("cannot be disabled or downgraded through environment variables", severity.Output)
-            let disabled = runBuild project None None None true false (Some "false")
-            Assert.NotEqual(0, disabled.ExitCode)
-            Assert.Contains("must be enabled when CI=true", disabled.Output)
-
-            let projectText = File.ReadAllText project
-            File.WriteAllText(project, projectText.Replace("<OutputType>Library</OutputType>", "<OutputType>Library</OutputType><AxialGuardrailsEnabled>false</AxialGuardrailsEnabled>"))
-            let propertyDisabled = runBuild project None None None true false None
-            Assert.NotEqual(0, propertyDisabled.ExitCode)
-            Assert.Contains("must be enabled when CI=true", propertyDisabled.Output)
-
-            writeConsumer dir
-            let generation = runBuild project None None None true true None
-            Assert.NotEqual(0, generation.ExitCode)
-            Assert.Contains("cannot run when CI=true", generation.Output)
+            runBuild (Path.Combine(dir, "Consumer.fsproj")) None
         finally
             Directory.Delete(dir, true)
 
     [<Fact>]
-    let ``baseline generation writes a stable candidate and marks the build non-passing`` () =
-        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
-        Directory.CreateDirectory dir |> ignore
-        try
-            writeConsumer dir
-            let result = runBuild (Path.Combine(dir, "Consumer.fsproj")) None None None false true None
-            Assert.NotEqual(0, result.ExitCode)
-            Assert.Contains("generating a candidate baseline", result.Output)
-            let candidates = Directory.GetFiles(dir, "axial-guardrails.*.baseline", SearchOption.AllDirectories)
-            Assert.Single(candidates) |> ignore
-            let fields = File.ReadAllText(candidates[0]).Trim().Split('\t')
-            Assert.Equal(3, fields.Length)
-            Assert.Equal("AXG001", fields[0])
-            Assert.Equal("Program.fs", fields[1])
-            Assert.Matches("^[0-9a-f]{64}$", fields[2])
-        finally
-            Directory.Delete(dir, true)
+    let ``package build imports expose only v2 policy controls`` () =
+        let buildDir = Path.Combine(repoRoot (), "src", "Axial.Guardrails", "build")
+        let imports =
+            [ "Axial.Guardrails.props"; "Axial.Guardrails.targets" ]
+            |> List.map (fun file -> File.ReadAllText(Path.Combine(buildDir, file)))
+            |> String.concat "\n"
+        for removed in
+            [ "AxialGuardrailsUseLegacyPolicy"
+              "AxialGuardrailsSeverity"
+              "AxialGuardrailsGenerateBaseline"
+              "AxialGuardrailsBoundary" ] do
+            Assert.DoesNotContain(removed, imports)
 
     [<Fact>]
-    let ``boundary declarations require explicit files`` () =
-        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
-        Directory.CreateDirectory dir |> ignore
-        try
-            writeConsumer dir
-            let project = Path.Combine(dir, "Consumer.fsproj")
-            Directory.CreateDirectory(Path.Combine(dir, "Nested")) |> ignore
-            File.WriteAllText(Path.Combine(dir, "Nested", "Boundary.fs"), "module Boundary")
-            let xml = File.ReadAllText project
-            File.WriteAllText(project, xml.Replace("<AxialGuardrail Include=\"Axial\" />", "<AxialGuardrail Include=\"Axial\" /><AxialGuardrailsBoundary Include=\"**/*.fs\" />"))
-            let result = runBuild project None None None false false None
-            Assert.NotEqual(0, result.ExitCode)
-            Assert.Contains("requires explicit files", result.Output)
-        finally
-            Directory.Delete(dir, true)
+    let ``v2 policy roles levels and lock are enforced before analysis`` () =
+        let build role level mutateAfterLock =
+            buildConsumerInTemp
+                (fun dir ->
+                    writeConsumer dir
+                    writeV2Policy dir role level
+                    if mutateAfterLock then File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "# drift\n"))
+
+
+        let capability = build "capabilities" "deny" false
+        Assert.True(capability.ExitCode = 0, capability.Output)
+        Assert.DoesNotContain("AXG001", capability.Output)
+
+        let warning = build "domain" "warn" false
+        Assert.True(warning.ExitCode = 0, warning.Output)
+        Assert.Contains("warning AXG001", warning.Output)
+
+        let drift = build "domain" "deny" true
+        Assert.NotEqual(0, drift.ExitCode)
+        Assert.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED", drift.Output)
+        Assert.Contains("protected files changed:", drift.Output)
 
     [<Fact>]
     let ``missing analyzer folder fails instead of silently skipping`` () =
@@ -207,7 +184,7 @@ module PackagePropsTests =
             let bootstrapProject = Path.Combine(repoRoot (), "src", "Axial.Guardrails", "Axial.Guardrails.fsproj") |> xmlEscape
             let bootstrapElement = $"<_AxialGuardrailsBootstrapProject>{bootstrapProject}</_AxialGuardrailsBootstrapProject>"
             File.WriteAllText(project, xml.Replace(analyzersPath (), missing).Replace(bootstrapElement, "<_AxialGuardrailsBootstrapProject />"))
-            let result = runBuild project None None None false false None
+            let result = runBuild project None
             Assert.NotEqual(0, result.ExitCode)
             Assert.Contains("analyzer folder is missing", result.Output)
         finally
@@ -226,8 +203,8 @@ module PackagePropsTests =
         try
             write dir
             let project = Path.Combine(dir, "Consumer.fsproj")
-            let netstandard = runBuild project (Some "netstandard2.1") None None false false None
-            let net10 = runBuild project (Some "net10.0") None None false false None
+            let netstandard = runBuild project (Some "netstandard2.1")
+            let net10 = runBuild project (Some "net10.0")
 
             Assert.Equal(0, netstandard.ExitCode)
             Assert.DoesNotContain("AXG006", netstandard.Output)
@@ -236,10 +213,105 @@ module PackagePropsTests =
         finally
             Directory.Delete(dir, true)
 
+    [<Fact>]
+    let ``a designated target framework is the only analyzed target`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-designated-tfm-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject
+                dir
+                "<TargetFrameworks>netstandard2.1;net10.0</TargetFrameworks><_AxialGuardrailsDesignatedTargetFramework>net10.0</_AxialGuardrailsDesignatedTargetFramework>"
+                "module Consumer\nlet value = System.DateTimeOffset.UtcNow\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let netstandard = runBuild project (Some "netstandard2.1")
+            Assert.Equal(0, netstandard.ExitCode)
+            Assert.DoesNotContain("Running Axial.Guardrails analysis", netstandard.Output)
+
+            let net10 = runBuild project (Some "net10.0")
+            Assert.NotEqual(0, net10.ExitCode)
+            Assert.Contains("error AXG001", net10.Output)
+            Assert.Contains("Running Axial.Guardrails analysis", net10.Output)
+        finally
+            Directory.Delete(dir, true)
+
     let private assertAnalysisRan expected (result: BuildResult) =
         Assert.Equal(0, result.ExitCode)
         if expected then Assert.Contains("Running Axial.Guardrails analysis", result.Output)
         else Assert.DoesNotContain("Running Axial.Guardrails analysis", result.Output)
+
+    [<Fact>]
+    let ``a corrupt policy cache cannot hide policy drift`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-policy-cache-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            writeV2Policy dir "capabilities" "deny"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let initial = runBuild project None
+            Assert.True(initial.ExitCode = 0, initial.Output)
+
+            let stamp = Directory.GetFiles(dir, "axial-guardrails-policy.*.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
+            File.WriteAllText(stamp, "corrupt cache")
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
+            File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "# drift\n")
+            let drift = runBuild project None
+            Assert.NotEqual(0, drift.ExitCode)
+            Assert.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED", drift.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``future dated stamp cannot hide policy or analyzer config changes`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-content-cache-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumer dir
+            writeV2Policy dir "domain" "allow"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let build () = runBuild project None
+            assertAnalysisRan true (build ())
+            let stamp = Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
+
+            let policy = Path.Combine(dir, "Axial.Guardrails.toml")
+            File.WriteAllText(policy, File.ReadAllText(policy).Replace("\"effects.ambient\" = \"allow\"", "\"effects.ambient\" = \"deny\""))
+            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+            let denied = build ()
+            Assert.NotEqual(0, denied.ExitCode)
+            Assert.Contains("error AXG001", denied.Output)
+
+            File.WriteAllText(policy, File.ReadAllText(policy).Replace("\"effects.ambient\" = \"deny\"", "\"effects.ambient\" = \"allow\""))
+            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+            Assert.Equal(0, (build ()).ExitCode)
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
+            File.WriteAllText(Path.Combine(dir, ".editorconfig"), "root = true\n[*.fs]\ndotnet_diagnostic.AXG001.severity = error\n")
+            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+            assertAnalysisRan true (build ())
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``incremental builds skip unchanged analysis but never skip a new finding`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-incremental-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet value = 1\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let build () = runBuild project None
+
+            assertAnalysisRan true (build ())
+            assertAnalysisRan false (build ())
+
+            let stamp = Directory.GetFiles(dir, "axial-guardrails.net10.0.stamp", SearchOption.AllDirectories) |> Array.exactlyOne
+            File.WriteAllText(stamp, "corrupt cache")
+            File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
+            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet value = System.DateTimeOffset.UtcNow\n")
+            let finding = build ()
+            Assert.NotEqual(0, finding.ExitCode)
+            Assert.Contains("error AXG001", finding.Output)
+            Assert.Contains("Running Axial.Guardrails analysis", finding.Output)
+        finally
+            Directory.Delete(dir, true)
 
     [<Fact>]
     let ``cache keys generated sources compiler properties references and overridden tool inputs`` () =
@@ -264,7 +336,7 @@ module PackagePropsTests =
   <ItemGroup>"""
             File.WriteAllText(project, xml.Replace("  </ItemGroup>\n  <Import Project=", additions + "\n  </ItemGroup>\n  <Import Project="))
 
-            let build args = runBuildWithArgs args project None None None false false None
+            let build args = runBuildWithArgs args project None
             assertAnalysisRan true (build [])
             assertAnalysisRan false (build [])
             assertAnalysisRan true (build [ "-p:DefineConstants=CACHE_KEY_TEST" ])
@@ -306,7 +378,7 @@ module PackagePropsTests =
                 $"    <ProjectReference Include=\"{dependencyProject}\" />\n"
             File.WriteAllText(consumerProject, xml.Replace("    <Compile Include=\"Program.fs\" />", "    <Compile Include=\"Program.fs\" />\n" + projectReference))
 
-            let build () = runBuild consumerProject None None None false false None
+            let build () = runBuild consumerProject None
             assertAnalysisRan true (build ())
             // Dependency.dll is rewritten by the project-reference build, but identical deterministic bytes keep the cache stable.
             assertAnalysisRan false (build ())

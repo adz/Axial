@@ -34,6 +34,11 @@
     <_AxialGuardrailsExe>dotnet fsharp-analyzers</_AxialGuardrailsExe>
     <!-- Only this repo sets this; a real package consumer never needs to bootstrap-build anything. -->
     <_AxialGuardrailsBootstrapProject>$(MSBuildThisFileDirectory)src\Axial.Guardrails\Axial.Guardrails.fsproj</_AxialGuardrailsBootstrapProject>
+    <!-- Policy state is configuration-independent. Use one Release tool so Debug documentation builds cannot pick up a stale binary. -->
+    <_AxialGuardrailsPolicyToolAssembly>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Tool\release\Axial.Tool.dll</_AxialGuardrailsPolicyToolAssembly>
+    <!-- Axial's rules see the same active source in both TFMs (its conditionals distinguish only Fable).
+         net8.0 also enables the stricter NativeAOT reflection rule, so its findings are a superset. -->
+    <_AxialGuardrailsDesignatedTargetFramework Condition="'$(MSBuildProjectName)' == 'Axial'">net8.0</_AxialGuardrailsDesignatedTargetFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">
@@ -46,6 +51,12 @@
     <_AxialGuardrailsConfiguredToolInput Include="$(_AxialGuardrailsToolManifest)" />
     <_AxialGuardrailsConfiguredToolInput Include="$([System.IO.Path]::GetDirectoryName('$(_AxialGuardrailsConfiguredToolAssembly)'))\*.*" />
   </ItemGroup>
+
+  <Target Name="AxialGuardrailsEnsurePolicyTool"
+          BeforeTargets="AxialGuardrailsCheckPolicy"
+          Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and !Exists('$(_AxialGuardrailsPolicyToolAssembly)')">
+    <Exec Command="dotnet build &quot;$(MSBuildThisFileDirectory)src\Axial.Tool\Axial.Tool.fsproj&quot; -c Release --nologo -v quiet" />
+  </Target>
 
   <Target Name="AxialGuardrailsValidateConfiguredTool"
           BeforeTargets="AxialGuardrailsWriteInputFingerprint"
