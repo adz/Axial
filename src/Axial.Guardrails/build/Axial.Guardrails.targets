@@ -40,6 +40,9 @@
     <_AxialGuardrailsConfigFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).rules))</_AxialGuardrailsConfigFile>
     <_AxialGuardrailsGeneratedBaseline>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).baseline))</_AxialGuardrailsGeneratedBaseline>
     <_AxialGuardrailsFingerprintFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).inputs))</_AxialGuardrailsFingerprintFile>
+    <_AxialGuardrailsFscArgsFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(IntermediateOutputPath), axial-guardrails.$(TargetFramework).fscargs))</_AxialGuardrailsFscArgsFile>
+    <!-- Reuse the command line CoreCompile already resolved instead of making the analyzer CLI evaluate MSBuild again. -->
+    <ProvideCommandLineArgs>true</ProvideCommandLineArgs>
     <_AxialGuardrailsBaselineRoot>$([System.IO.Path]::GetDirectoryName($([MSBuild]::NormalizePath($(AxialGuardrailsBaselineFile)))))</_AxialGuardrailsBaselineRoot>
     <_AxialGuardrailsPolicyRoot Condition="'$(AxialGuardrailsUseLegacyPolicy)' != 'true'">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Axial.Guardrails.toml))</_AxialGuardrailsPolicyRoot>
     <_AxialGuardrailsPolicyFile Condition="'$(_AxialGuardrailsPolicyRoot)' != ''">$([MSBuild]::NormalizePath($(_AxialGuardrailsPolicyRoot), Axial.Guardrails.toml))</_AxialGuardrailsPolicyFile>
@@ -143,6 +146,7 @@
       <_AxialGuardrailsFingerprintLine Include="@(_AxialGuardrailsVolatileSourceHash->'volatileSource=%(FullPath)|%(FileHash)')" />
     </ItemGroup>
     <WriteLinesToFile File="$(_AxialGuardrailsFingerprintFile)" Lines="@(_AxialGuardrailsFingerprintLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_AxialGuardrailsFscArgsFile)" Lines="@(FscCommandLineArgs)" Overwrite="true" WriteOnlyWhenDifferent="true" Condition="'@(FscCommandLineArgs)' != ''" />
     <GetFileHash Files="$(_AxialGuardrailsFingerprintFile)" Algorithm="SHA256">
       <Output TaskParameter="Items" ItemName="_AxialGuardrailsFingerprintHash" />
     </GetFileHash>
@@ -252,7 +256,11 @@
     <Delete Files="$(_AxialGuardrailsGeneratedBaseline)" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'" />
     <Message Importance="high" Condition="'$(AxialGuardrailsGenerateBaseline)' == 'true'"
              Text="Axial.Guardrails is generating a candidate baseline. Diagnostics remain errors; review the candidate, and do not enable generation in normal builds." />
-    <Exec Command="$(_AxialGuardrailsExe) --project &quot;$(MSBuildProjectFullPath)&quot; --property TargetFramework=$(TargetFramework) --configuration $(Configuration) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
+    <PropertyGroup>
+      <_AxialGuardrailsAnalysisInput Condition="'@(FscCommandLineArgs)' != ''">--fsc-args-file &quot;$(_AxialGuardrailsFscArgsFile)&quot;</_AxialGuardrailsAnalysisInput>
+      <_AxialGuardrailsAnalysisInput Condition="'@(FscCommandLineArgs)' == ''">--project &quot;$(MSBuildProjectFullPath)&quot; --property TargetFramework=$(TargetFramework) --configuration $(Configuration)</_AxialGuardrailsAnalysisInput>
+    </PropertyGroup>
+    <Exec Command="$(_AxialGuardrailsExe) $(_AxialGuardrailsAnalysisInput) --analyzers-path &quot;$(_AxialGuardrailsAnalyzersPath)&quot; $(_AxialGuardrailsIncludeAnalyzersFlag) --code-root &quot;$(MSBuildProjectDirectory)&quot;"
           EnvironmentVariables="AXIAL_GUARDRAILS_CONFIG=$(_AxialGuardrailsConfigFile)" IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="_AxialGuardrailsExit" />
     </Exec>
