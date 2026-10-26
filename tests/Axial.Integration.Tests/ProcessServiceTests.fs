@@ -62,6 +62,16 @@ module ProcessServiceTests =
         let entered = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let reported = TaskCompletionSource<exn>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let mutable feederCleanupSleeps = 0
+        let clock =
+            { new IClock with
+                member _.UtcNow() = Clock.live.UtcNow()
+                member _.Elapsed() = Clock.live.Elapsed()
+                member _.Sleep(delay, cancellationToken) =
+                    if delay = TimeSpan.FromMilliseconds 1.0 then
+                        Interlocked.Increment(&feederCleanupSleeps) |> ignore
+                    Clock.live.Sleep(delay, cancellationToken) }
+        let testEnv = { Process = Process.live clock FileSystem.live Console.live; Clock = clock }
         let defect = InvalidOperationException "late stdin defect"
         let observer =
             { FiberObserver.none with
@@ -70,18 +80,20 @@ module ProcessServiceTests =
                        && (metadata |> Option.bind _.Name) = Some "process-stdin-0" then
                         reported.TrySetResult(error) |> ignore }
         let source =
-            Flow.fromTask (fun _ -> task {
-                entered.TrySetResult() |> ignore
-                do! release.Task
-                return raise defect
-            })
-            |> FlowStream.fromFlow
+            FlowStream.fromFlow (Flow.succeed (Encoding.UTF8.GetBytes "first\n"))
+            |> FlowStream.append (
+                Flow.fromTask (fun _ -> task {
+                    entered.TrySetResult() |> ignore
+                    do! release.Task
+                    return raise defect
+                })
+                |> FlowStream.fromFlow)
         let running =
-            shText "sleep 0.1"
+            shText "head -1"
             |> stdinFrom (Input.flowStream source)
             |> toFlow
             |> Flow.withFiberObserver observer
-            |> fun workflow -> workflow.StartAsTask(env ())
+            |> fun workflow -> workflow.StartAsTask(testEnv)
 
         do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
         let! outcome = running.WaitAsync(TimeSpan.FromSeconds 3.0)
@@ -89,6 +101,7 @@ module ProcessServiceTests =
         | Exit.Success result -> test <@ result.ExitCode = 0 @>
         | other -> failwithf "Expected process completion before the foreign source settled, got %A" other
         test <@ not reported.Task.IsCompleted @>
+        test <@ feederCleanupSleeps = 0 @>
 
         release.TrySetResult() |> ignore
         let! observed = reported.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
@@ -178,21 +191,31 @@ module ProcessServiceTests =
         | other -> failwithf "Expected defect, got %A" other
 
     [<Fact>]
-    let ``input failure after child exit remains typed`` () = task {
-        let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-        let source =
-            Flow.fromTask (fun token -> gate.Task.WaitAsync(token))
-            |> Flow.map (fun () -> Array.empty<byte>)
-            |> Flow.foldCause Flow.succeed (fun _ -> Flow.fail "input failed after exit")
+    let ``input failure after a partial write remains typed when the child reads to EOF`` () = task {
+        let failureReady = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let releaseFailure = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let failingTail =
+            Flow.fromTask (fun token -> task {
+                failureReady.TrySetResult() |> ignore
+                do! releaseFailure.Task.WaitAsync(token)
+                return Array.empty<byte>
+            })
+            |> Flow.bind (fun _ -> Flow.fail "input failed before EOF")
             |> FlowStream.fromFlow
-        let! outcome =
-            cmd $"true"
+        let source =
+            FlowStream.fromFlow (Flow.succeed (Encoding.UTF8.GetBytes "partial input"))
+            |> FlowStream.append failingTail
+        let running =
+            cmd $"cat"
             |> stdinFrom (Input.flowStream source)
             |> toFlow
             |> fun workflow -> workflow.StartAsTask(env ())
-            |> fun running -> running.WaitAsync(TimeSpan.FromSeconds 5.0)
+
+        do! failureReady.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+        releaseFailure.TrySetResult() |> ignore
+        let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
         match outcome with
-        | Exit.Failure(Cause.Fail(ProcessError.InputFailed text)) -> test <@ text.Contains "input failed after exit" @>
+        | Exit.Failure(Cause.Fail(ProcessError.InputFailed text)) -> test <@ text.Contains "input failed before EOF" @>
         | other -> failwithf "Expected input failure, got %A" other
     }
 
