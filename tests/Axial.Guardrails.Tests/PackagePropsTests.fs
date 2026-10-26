@@ -289,6 +289,27 @@ module PackagePropsTests =
         finally
             Directory.Delete(dir, true)
 
+    [<Fact>]
+    let ``a designated target framework is the only analyzed target`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-designated-tfm-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject
+                dir
+                "<TargetFrameworks>netstandard2.1;net10.0</TargetFrameworks><_AxialGuardrailsDesignatedTargetFramework>net10.0</_AxialGuardrailsDesignatedTargetFramework>"
+                "module Consumer\nlet value = System.DateTimeOffset.UtcNow\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let netstandard = runBuild project (Some "netstandard2.1") None None false false None
+            Assert.Equal(0, netstandard.ExitCode)
+            Assert.DoesNotContain("Running Axial.Guardrails analysis", netstandard.Output)
+
+            let net10 = runBuild project (Some "net10.0") None None false false None
+            Assert.NotEqual(0, net10.ExitCode)
+            Assert.Contains("error AXG001", net10.Output)
+            Assert.Contains("Running Axial.Guardrails analysis", net10.Output)
+        finally
+            Directory.Delete(dir, true)
+
     let private assertAnalysisRan expected (result: BuildResult) =
         Assert.Equal(0, result.ExitCode)
         if expected then Assert.Contains("Running Axial.Guardrails analysis", result.Output)

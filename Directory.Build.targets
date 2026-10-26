@@ -35,6 +35,9 @@
     <!-- Only this repo sets this; a real package consumer never needs to bootstrap-build anything. -->
     <_AxialGuardrailsBootstrapProject>$(MSBuildThisFileDirectory)src\Axial.Guardrails\Axial.Guardrails.fsproj</_AxialGuardrailsBootstrapProject>
     <_AxialGuardrailsPolicyToolAssembly>$(MSBuildThisFileDirectory)artifacts\bin\Axial.Tool\$(Configuration.ToLower())\Axial.Tool.dll</_AxialGuardrailsPolicyToolAssembly>
+    <!-- Axial's rules see the same active source in both TFMs (its conditionals distinguish only Fable).
+         net8.0 also enables the stricter NativeAOT reflection rule, so its findings are a superset. -->
+    <_AxialGuardrailsDesignatedTargetFramework Condition="'$(MSBuildProjectName)' == 'Axial'">net8.0</_AxialGuardrailsDesignatedTargetFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Axial.Guardrails' and '$(_AxialRepoSkipGuardrails)' != 'true' and '$(MSBuildProjectExtension)' == '.fsproj'">

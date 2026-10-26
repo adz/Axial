@@ -242,7 +242,7 @@
 
   <Target Name="AxialGuardrailsEffectBoundaryCheck"
           AfterTargets="Build"
-          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '')"
+          Condition="'$(AxialGuardrailsEnabled)' == 'true' and ('$(TargetFrameworks)' == '' or '$(TargetFramework)' != '') and ('$(_AxialGuardrailsDesignatedTargetFramework)' == '' or '$(TargetFramework)' == '$(_AxialGuardrailsDesignatedTargetFramework)')"
           Inputs="@(_AxialGuardrailsSourceInputs);@(_AxialGuardrailsPolicyInputs);$(_AxialGuardrailsConfigFile);$(_AxialGuardrailsFingerprintFile);@(_AxialGuardrailsToolInputs)"
           Outputs="$(_AxialGuardrailsStampFile)">
     <Error Condition="!Exists('$(_AxialGuardrailsAnalyzersPath)\Axial.Guardrails.Analyzers.dll')"
