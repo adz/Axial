@@ -178,6 +178,25 @@ module ProcessServiceTests =
         | other -> failwithf "Expected defect, got %A" other
 
     [<Fact>]
+    let ``input failure after child exit remains typed`` () = task {
+        let gate = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let source =
+            Flow.fromTask (fun token -> gate.Task.WaitAsync(token))
+            |> Flow.map (fun () -> Array.empty<byte>)
+            |> Flow.foldCause Flow.succeed (fun _ -> Flow.fail "input failed after exit")
+            |> FlowStream.fromFlow
+        let! outcome =
+            cmd $"true"
+            |> stdinFrom (Input.flowStream source)
+            |> toFlow
+            |> fun workflow -> workflow.StartAsTask(env ())
+            |> fun running -> running.WaitAsync(TimeSpan.FromSeconds 5.0)
+        match outcome with
+        | Exit.Failure(Cause.Fail(ProcessError.InputFailed text)) -> test <@ text.Contains "input failed after exit" @>
+        | other -> failwithf "Expected input failure, got %A" other
+    }
+
+    [<Fact>]
     let ``typed output failure is a process error`` () =
         let outcome =
             cmd $"printf sample"
