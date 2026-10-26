@@ -113,22 +113,21 @@ SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs:44:let watch = Stopwatch.Start
 SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs:46:while not quiet && watch.Elapsed < timeout do // axial-allow-AXG001: wall-clock test timeout
 SUPPRESSION  src/Axial.ElmishFlows/TestRuntime.fs:49:if not quiet then Thread.Sleep(1) // axial-allow-AXG001: test-thread polling, not a workflow delay
 SUPPRESSION  src/Axial.Guardrails/Suppressions.fs:5:///   // axial-allow-AXG003: foreign callback translates this exception
-SUPPRESSION  src/Axial.Hosting/Hosting.fs:320:Console.CancelKeyPress.AddHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
-SUPPRESSION  src/Axial.Hosting/Hosting.fs:328:| Exit.Failure cause -> Console.Error.WriteLine(Cause.prettyPrint describeError cause) // axial-allow-AXG001: intentional console host or live-service boundary
-SUPPRESSION  src/Axial.Hosting/Hosting.fs:332:Console.CancelKeyPress.RemoveHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  src/Axial.Hosting/Hosting.fs:343:Console.CancelKeyPress.AddHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  src/Axial.Hosting/Hosting.fs:351:| Exit.Failure cause -> Console.Error.WriteLine(Cause.prettyPrint describeError cause) // axial-allow-AXG001: intentional console host or live-service boundary
+SUPPRESSION  src/Axial.Hosting/Hosting.fs:355:Console.CancelKeyPress.RemoveHandler handler // axial-allow-AXG001: intentional console host or live-service boundary
 SUPPRESSION  src/Axial.PlatformService/Operations.fs:502:member _.Fill buffer = RandomNumberGenerator.Fill buffer // axial-allow-AXG001: intentional secure-random host or live-service boundary
 SUPPRESSION  src/Axial.PlatformService/Operations.fs:504:member _.GetInt32 minInclusive maxExclusive = RandomNumberGenerator.GetInt32(minInclusive, maxExclusive) // axial-allow-AXG001: intentional secure-random host or live-service boundary
-SUPPRESSION  src/Axial.Process/ProcessRun.fs:230:// axial-allow-AXG005: the operation uses its own CTS so the finalizer controls its lifetime
-SUPPRESSION  src/Axial.Process/ProcessRun.fs:578:// axial-allow-AXG003: task bridge translates this back to the typed channel
-SUPPRESSION  src/Axial.Process/ProcessRun.fs:583:// axial-allow-AXG003: task bridge translates this back to the typed channel
+SUPPRESSION  src/Axial.Process/ProcessRun.fs:595:// axial-allow-AXG003: task bridge translates this back to the typed channel
+SUPPRESSION  src/Axial.Process/ProcessRun.fs:600:// axial-allow-AXG003: task bridge translates this back to the typed channel
 SUPPRESSION  src/Axial.WebSocket/WebSocket.fs:185:// axial-allow-AXG001: intentional websocket host or live-service boundary
 SUPPRESSION  src/Axial/App.fs:57:settledTask.Wait(timeout)  // axial-allow-AXG001: StopAndWait is the documented synchronous boundary
 SUPPRESSION  src/Axial/Core.fs:1078:this.Close(CancellationToken.None).GetAwaiter().GetResult()  // axial-allow-AXG001: IDisposable.Dispose is synchronous by contract
-SUPPRESSION  src/Axial/Core.fs:1399:else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-AXG001: RunSynchronously is the documented blocking runner
+SUPPRESSION  src/Axial/Core.fs:1403:else pending.AsTask().GetAwaiter().GetResult()  // axial-allow-AXG001: RunSynchronously is the documented blocking runner
 SUPPRESSION  src/Axial/Flow.fs:16:match source.Result with  // axial-allow-AXG001: task already awaited
 SUPPRESSION  src/Axial/Parallelism.fs:28:let processors = Environment.ProcessorCount // axial-allow-AXG001: intentional environment host or live-service boundary
 SUPPRESSION  src/Axial/Platform.fs:805:let timestamp = System.Diagnostics.Stopwatch.GetTimestamp() // axial-allow-AXG001: intentional clock host or live-service boundary
-SUPPRESSION  src/Axial/Stream.fs:1139:// axial-allow-AXG005: wrapped operation has no cancellation-token overload: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
+SUPPRESSION  src/Axial/Stream.fs:1163:// axial-allow-AXG005: wrapped operation has no cancellation-token overload: MoveNextAsync has no token overload; the enumerator observes the GetAsyncEnumerator token.
 SUPPRESSION  tests/Axial.ElmishFlows.Tests/SubscriptionTests.fs:38:// axial-allow-AXG005: wrapped operation has no cancellation-token overload
 SUPPRESSION  tests/Axial.Fable.Tests/Harness.fs:25:// axial-allow-AXG006: test-only diagnostic formatting never runs trimmed
 SUPPRESSION  tests/Axial.Guardrails.Tests/GuardrailConfigTests.fs:100:+ "let f (t: System.Threading.Tasks.Task<int>) = t.Result // axial-allow-AXG001: synchronous host boundary\n"
@@ -142,4 +141,4 @@ SUPPRESSION  tests/Axial.Guardrails.Tests/ReflectionFormattingAnalyzerTests.fs:1
 SUPPRESSION  tests/Axial.Guardrails.Tests/ResourceFromFiberAnalyzerTests.fs:91:"// axial-allow-AXG007: fixture intentionally demonstrates fiber ownership\n"
 SUPPRESSION  tests/Axial.Guardrails.Tests/ScopeFromRunAnalyzerTests.fs:95:+ "let c = Flow.run (Cache.make 4) // axial-allow-AXG008: scope intentionally remains open\n")
 SUPPRESSION  tests/Axial.HttpClient.Tests/HttpServiceTests.fs:24:let private syntheticTime = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) // axial-allow-AXG004: immutable value is safe to share between tests
-SUPPRESSION  tests/Axial.Tests/ScopedResourceOwnershipTests.fs:437:let! fiber = acquire events "db" |> Flow.fork // axial-allow-AXG007: test intentionally demonstrates fiber-owned resource release
+SUPPRESSION  tests/Axial.Tests/ScopedResourceOwnershipTests.fs:519:let! fiber = acquire events "db" |> Flow.fork // axial-allow-AXG007: test intentionally demonstrates fiber-owned resource release
