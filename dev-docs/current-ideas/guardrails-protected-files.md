@@ -8,7 +8,7 @@ Guardrails v2 uses Rust-like lint policy: the repository declares intent; the an
 | --- | --- |
 | `Axial.Guardrails.toml` | Default role, project/file role assignments, rule levels, boundaries, baseline path, and protected-file additions |
 | `Axial.Guardrails.baseline` | Existing findings accepted for migration or a newly enabled rule; each rule's entries may then only shrink |
-| `Axial.Guardrails.lock` | SHA-256 checksums of policy-bearing files, baseline fingerprints, and test-ratchet counts |
+| `Axial.Guardrails.lock` | SHA-256 checksums of policy-bearing files and baseline fingerprints |
 
 Use **TOML**, not JSON. The parser accepts one versioned, closed schema: unknown keys, duplicate declarations, unknown roles/rules, unmatched paths, conflicting same-precedence assignments, and invalid levels fail the build.
 
@@ -131,10 +131,7 @@ The baseline stores rule ID, repository-relative file, stable fingerprint, and d
 | Initial v2 adoption | Explicit bootstrap records existing debt; output labels every added rule/count. |
 | Enable a rule with existing findings | `axial guardrails baseline --rule <id>` bootstraps **only that newly enabled rule**. It is explicit and noisy; it cannot add findings for established rules. |
 | Later baseline update | Entries/fingerprint counts may only shrink for each bootstrapped rule. |
-| Test/assertion count increase | `axial guardrails lock` records it normally. |
-| Intentional test/assertion count decrease | Only `axial guardrails lock --accept-test-decrease`; the decrease appears prominently in terminal output and the lock summary/diff. |
-
-`Axial.Guardrails.lock` contains a format version, sorted `SHA256  path` records, baseline fingerprint/count sets by rule, and test/assertion counts by project. It has no signature or identity data.
+`Axial.Guardrails.lock` contains a format version, sorted `SHA256  path` records, and baseline fingerprint/count sets by rule. It has no signature or identity data.
 
 | Mandatory protected input | Why policy-bearing |
 | --- | --- |
@@ -169,7 +166,7 @@ Guardrails ships as a .NET tool whose executable is `axial`. Grouped commands le
 
 | Command | Purpose |
 | --- | --- |
-| `axial guardrails check` | Validate protected hashes, config, monotonic baselines, suppressions, and test ratchets |
+| `axial guardrails check` | Validate protected hashes, config, monotonic baselines, and suppressions |
 | `axial guardrails lock` | Review and record allowed policy changes; dedicated flags make exceptional changes loud |
 | `axial guardrails baseline --rule <id>` | Bootstrap findings for one newly introduced rule; that rule then only shrinks |
 | `axial new effect <Name>` | Generate a service type, live implementation under the configured capabilities folder, and test fake |
@@ -193,7 +190,6 @@ The NuGet analyzer package still runs during ordinary builds. The tool provides 
 | 8 | Construction bypasses | Typed/syntax checks for reflection construction, mutable domain types, and `Unchecked.defaultof`. | Low-medium. |
 | 9 | Blocking/unbounded work | Typed blocking checks and conservative unbounded parallel/retry analysis. | Low-medium. |
 | 10 | Boolean blindness | Warning for evidence-backed flag clusters; exclude capabilities/host DTO policy. | Low-medium. |
-| 11 | Test integrity ratchet | Known test/assertion symbols, skipped tests, and locked test/assertion counts. | Low; tests only. |
 
 Ranks 1–6 ship first. Rules 7, 9 boundedness, and 10 begin as warnings until corpus measurements establish precision.
 

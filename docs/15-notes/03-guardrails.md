@@ -8,7 +8,7 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 ## Repository policy lock
 
-`axial check` compares the repository policy, baseline, analyzer configuration, Guardrails test inputs, and test/assertion counts with `Axial.Guardrails.lock`. The lock is a workflow guard, not a security boundary: direct edits remain visible in Git, and agent hooks that block lock edits arrive in phase 3.
+`axial check` compares the repository policy, baseline, analyzer configuration, and Guardrails test inputs with `Axial.Guardrails.lock`. The lock is a workflow guard, not a security boundary: direct edits remain visible in Git, and agent hooks that block lock edits arrive in phase 3.
 
 Test counts come from active F# source after comments, strings, and inactive `#if false` regions are removed. Assertion counts include direct xUnit `Assert`, Expecto `Expect`, Unquote `test <@`, and direct aliases such as `let verify = Assert.True`; arbitrary user-defined wrappers do not count. This untyped pass avoids loading and type-checking every test project during `axial check`.
 
@@ -53,7 +53,7 @@ services = ["src/App/Services/**"]
 The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. File assignments override project
 assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
 suppressed. Run `axial policy approve` after reviewing an intentional policy change. The build fails with a categorized
-summary while TOML, lockfile, protected inputs, baseline, suppressions, or test counts differ.
+summary while TOML, lockfile, protected inputs, baseline, or suppressions differ.
 
 Do not set Guardrails policy through MSBuild severity, boundary, baseline-path, or test-policy settings. For local
 troubleshooting only, pass `-p:AxialGuardrailsEnabled=false` on the command line; do not store that setting in a

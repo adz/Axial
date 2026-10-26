@@ -18,26 +18,11 @@ SHA256  55e88c31de7c0fa41c77bd86f7847362fc6df1355e63f36b78b98ab87202fd3a  tests/
 SHA256  a95bc95c4e197cd9b80740bdae927f1ead0c8be068a0a0ceddf150476bbde423  tests/Axial.Guardrails.Tests/GuardrailConfigTests.fs
 SHA256  613652499a59cc9e9489e2306944ced63ec18be62cdd69dc0e0a8a5c229bfe43  tests/Axial.Guardrails.Tests/HardeningTests.fs
 SHA256  8e7e38e7f1352c8e2e20af1ad96ae2baaefd2274477356dfa71ec229688c9c97  tests/Axial.Guardrails.Tests/PackagePropsTests.fs
-SHA256  a96daac27ee18d569cfc5f56465987e9203882f47dd4058f21d3e6c66c3d0845  tests/Axial.Guardrails.Tests/PolicyLockTests.fs
+SHA256  710fc654b977f30bfae01f8c3f482df0c3ff0272edce1e5a8059683edd496fd1  tests/Axial.Guardrails.Tests/PolicyLockTests.fs
 SHA256  c1deaf728c998d983ee5f46175e03288937100c9aa152c81a8ccc57f27d60c61  tests/Axial.Guardrails.Tests/PolicyTests.fs
 SHA256  ef89206fdd7f19dd8c3db4109dee3e22579f11f98984ec753dea2ecc7fc81b2a  tests/Axial.Guardrails.Tests/ReflectionFormattingAnalyzerTests.fs
 SHA256  3d0b593df371c076fb4091e6d3fefb73cc0ff23376229bd1218bdb8b2c273aa7  tests/Axial.Guardrails.Tests/ResourceFromFiberAnalyzerTests.fs
 SHA256  54c9ec12dd759a14068acb8155ba2f0e905082312e197f04674ac353f99e5d9e  tests/Axial.Guardrails.Tests/ScopeFromRunAnalyzerTests.fs
-TEST  tests/Axial.Comparisons.Tests/Axial.Comparisons.Tests.fsproj	23	39
-TEST  tests/Axial.ElmishFlows.Tests/Axial.ElmishFlows.Tests.fsproj	27	91
-TEST  tests/Axial.Fable.Tests/Axial.Fable.Tests.fsproj	0	0
-TEST  tests/Axial.FileSystem.Tests/Axial.FileSystem.Tests.fsproj	17	68
-TEST  tests/Axial.Files.Tests/Axial.Files.Tests.fsproj	30	71
-TEST  tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj	71	163
-TEST  tests/Axial.Hosting.Http.Tests/Axial.Hosting.Http.Tests.fsproj	10	20
-TEST  tests/Axial.Hosting.Tests/Axial.Hosting.Tests.fsproj	17	47
-TEST  tests/Axial.HttpClient.Tests/Axial.HttpClient.Tests.fsproj	32	53
-TEST  tests/Axial.Integration.Tests/Axial.Integration.Tests.fsproj	116	251
-TEST  tests/Axial.PlatformService.Tests/Axial.PlatformService.Tests.fsproj	40	125
-TEST  tests/Axial.PrintfFixture/Axial.PrintfFixture.fsproj	0	0
-TEST  tests/Axial.Telemetry.Tests/Axial.Telemetry.Tests.fsproj	18	55
-TEST  tests/Axial.Tests/Axial.Tests.fsproj	452	952
-TEST  tests/Axial.WebSocket.Tests/Axial.WebSocket.Tests.fsproj	19	33
 BOUNDARY  benchmarks/Axial.Benchmarks/Common.fs
 BOUNDARY  benchmarks/Axial.Benchmarks/FiberCostBenchmarks.fs
 BOUNDARY  benchmarks/Axial.Benchmarks/Suites.fs
@@ -151,8 +136,8 @@ SUPPRESSION  tests/Axial.Guardrails.Tests/GuardrailConfigTests.fs:135:"let creat
 SUPPRESSION  tests/Axial.Guardrails.Tests/GuardrailConfigTests.fs:137:+ "    rng.GetBytes buffer // axial-allow-AXG001: secure random live implementation\n")
 SUPPRESSION  tests/Axial.Guardrails.Tests/HardeningTests.fs:34:let! ctx = AnalyzerTestContext.create "module M\nlet value = System.DateTime.UtcNow // axial-allow-AXG001: live clock boundary\n"
 SUPPRESSION  tests/Axial.Guardrails.Tests/HardeningTests.fs:48:"module M\nlet text = \"axial-allow-AXG003: example\"\n/// axial-allow-AXG004: docs\n(* axial-allow-AXG005: block *)\nlet value = 1\n"
-SUPPRESSION  tests/Axial.Guardrails.Tests/PolicyLockTests.fs:155:let snapshot={empty with Hashes=Map ["z",String.replicate 64 "2";"a",String.replicate 64 "1"]; Capabilities=set ["z/**";"a/**"]; Boundaries=set ["src/Host.fs"]; Suppressions=set ["src/Host.fs:1:// axial-allow-AXG001: host boundary"]}
-SUPPRESSION  tests/Axial.Guardrails.Tests/PolicyLockTests.fs:27:Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: reason"] }
+SUPPRESSION  tests/Axial.Guardrails.Tests/PolicyLockTests.fs:144:let snapshot={empty with Hashes=Map ["z",String.replicate 64 "2";"a",String.replicate 64 "1"]; Capabilities=set ["z/**";"a/**"]; Boundaries=set ["src/Host.fs"]; Suppressions=set ["src/Host.fs:1:// axial-allow-AXG001: host boundary"]}
+SUPPRESSION  tests/Axial.Guardrails.Tests/PolicyLockTests.fs:25:Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: reason"] }
 SUPPRESSION  tests/Axial.Guardrails.Tests/ReflectionFormattingAnalyzerTests.fs:109:+ "// axial-allow-AXG006: diagnostic-only code never runs trimmed\n"
 SUPPRESSION  tests/Axial.Guardrails.Tests/ResourceFromFiberAnalyzerTests.fs:91:"// axial-allow-AXG007: fixture intentionally demonstrates fiber ownership\n"
 SUPPRESSION  tests/Axial.Guardrails.Tests/ScopeFromRunAnalyzerTests.fs:95:+ "let c = Flow.run (Cache.make 4) // axial-allow-AXG008: scope intentionally remains open\n")

@@ -13,23 +13,8 @@
     <_AxialRepoSkipGuardrails>true</_AxialRepoSkipGuardrails>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Axial.Tool.Parser/Axial.Tool.Parser.fsproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="../Axial.Guardrails/Policy.fs" Link="Policy.fs" />
     <Compile Include="PolicyLock.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-  <Target Name="CopyTestParser" AfterTargets="Build">
-    <ItemGroup>
-      <_TestParserFile Include="$(MSBuildThisFileDirectory)../../artifacts/bin/Axial.Tool.Parser/$([System.String]::Copy('$(Configuration)').ToLowerInvariant())/**/*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_TestParserFile)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
-  </Target>
-  <Target Name="PublishTestParser" AfterTargets="Publish">
-    <ItemGroup>
-      <_PublishedTestParserFile Include="$(MSBuildThisFileDirectory)../../artifacts/bin/Axial.Tool.Parser/$([System.String]::Copy('$(Configuration)').ToLowerInvariant())/**/*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_PublishedTestParserFile)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
-  </Target>
 </Project>

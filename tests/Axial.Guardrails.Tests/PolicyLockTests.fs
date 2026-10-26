@@ -8,20 +8,18 @@ open Xunit
 
 module PolicyLockTests =
     let private empty =
-        { Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Tests=[]; Rules=Map.empty
+        { Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty
           Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
 
     [<Fact>]
     let ``policy summary reports every reviewed change category`` () =
         let old =
             { empty with Hashes=Map ["Directory.Build.props","old"]
-                         Rules=Map ["domain/effects.ambient","deny"]
-                         Tests=[{Project="tests/App.Tests/App.Tests.fsproj";Tests=3;Assertions=4}] }
+                         Rules=Map ["domain/effects.ambient","deny"] }
         let current =
             { empty with Hashes=Map ["Directory.Build.props","new"]
                          Rules=Map ["domain/effects.ambient","warn"]
                          Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]
-                         Tests=[{Project="tests/App.Tests/App.Tests.fsproj";Tests=2;Assertions=3}]
                          Capabilities=set ["src/Capabilities/**"]
                          Boundaries=set ["vendor.props"]
                          Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: reason"] }
@@ -32,7 +30,6 @@ module PolicyLockTests =
         test <@ changes.SuppressionsAdded.Length=1 @>
         test <@ changes.BoundariesAdded.Length=2 @>
         test <@ changes.ProtectedChanged=["Directory.Build.props";LockName] @>
-        test <@ changes.TestsRemoved.Length=1 @>
         test <@ summary.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED") @>
 
     [<Fact>]
@@ -43,25 +40,17 @@ module PolicyLockTests =
 
     [<Fact>]
     let ``baseline approval accepts only the selected newly enabled rule`` () =
-        let current={empty with Rules=Map ["domain/effects.ambient","deny"]; Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]; BaselineRoles=Map ["src/App.fs","domain"]}
+        let current={empty with Rules=Map ["domain/effects.ambient","deny"]; Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]; BaselineRoles=Map ["src/App.fs",set ["domain"]]}
         let changes=diff empty current
         test <@ validateApproval (BaselineRule "effects.ambient") empty current changes = Ok () @>
         let established={empty with Rules=current.Rules}
         test <@ validateApproval (BaselineRule "effects.ambient") established current changes = Error "baseline growth refused: rule 'effects.ambient' was not newly enabled for every affected file's effective role" @>
         let allowed={empty with Rules=Map ["host/effects.ambient","allow"]}
         test <@ validateApproval (BaselineRule "effects.ambient") empty allowed (diff empty {allowed with Baseline=current.Baseline}) |> Result.isError @>
-        let secondRole={established with Rules=established.Rules.Add("host/effects.ambient","warn");Baseline=current.Baseline;BaselineRoles=Map ["src/App.fs","host"]}
+        let secondRole={established with Rules=established.Rules.Add("host/effects.ambient","warn");Baseline=current.Baseline;BaselineRoles=Map ["src/App.fs",set ["host"]]}
         test <@ validateApproval (BaselineRule "effects.ambient") established secondRole (diff established secondRole) = Ok () @>
-        let testOnly={current with Rules=Map ["test/effects.ambient","deny"];BaselineRoles=Map ["src/App.fs","domain"]}
+        let testOnly={current with Rules=Map ["test/effects.ambient","deny"];BaselineRoles=Map ["src/App.fs",set ["domain"]]}
         test <@ validateApproval (BaselineRule "effects.ambient") empty testOnly (diff empty testOnly) |> Result.isError @>
-
-    [<Fact>]
-    let ``test decreases need their dedicated acceptance`` () =
-        let old={empty with Tests=[{Project="tests/App.Tests/App.Tests.fsproj";Tests=3;Assertions=4}]}
-        let current={empty with Tests=[{Project="tests/App.Tests/App.Tests.fsproj";Tests=2;Assertions=3}]}
-        let changes=diff old current
-        test <@ Result.isError(validateApproval Normal old current changes) @>
-        test <@ validateApproval AcceptRemovedTests old current changes = Ok () @>
 
     [<Fact>]
     let ``protected hashes include analyzer configs and Guardrails test build inputs`` () =
@@ -100,7 +89,7 @@ domain = ["src/Domain/*.fsproj"]
             File.WriteAllText(Path.Combine(root,"src","Domain","App.fs"),"module App")
             File.WriteAllText(Path.Combine(root,"src","Domain","App.fsproj"),"<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><Compile Include=\"App.fs\" /></ItemGroup></Project>")
             let snapshot=inspect root |> function Ok value -> value | Error error -> failwith error
-            test <@ snapshot.BaselineRoles["src/Domain/App.fs"] = "domain" @>
+            test <@ snapshot.BaselineRoles["src/Domain/App.fs"] = set ["domain"] @>
             let changes=diff empty snapshot
             test <@ validateApproval (BaselineRule "effects.ambient") empty snapshot changes = Ok () @>
             let established={empty with Rules=Map ["domain/effects.ambient","deny"]}
@@ -143,9 +132,9 @@ host = ["src/Z/*.fsproj"]
             test <@ match missing with Error e -> e.Contains(":1:") && e.Contains("first record") | _ -> false @>
             File.WriteAllText(path,"version = 1\nversion = 1\n")
             test <@ match parseLock path with Error e -> e.Contains(":2:") && e.Contains("duplicate") | _ -> false @>
-            File.WriteAllText(path,"version = 1\nTEST  p\t1\t2\nTEST  p\t1\t2\n")
-            test <@ match parseLock path with Error e -> e.Contains("duplicate TEST") | _ -> false @>
-            for malformed in ["SHA256  "+String.replicate 64 "a"+"  "; "BASELINE  \tfile\tfingerprint\t1"; "TEST  \t1\t2"; "POLICY  \tdeny"; "CAPABILITY  "; "BOUNDARY  "; "SUPPRESSION  "] do
+            File.WriteAllText(path,"version = 1\nBASELINE_ROLE  src/App.fs\tdomain\nBASELINE_ROLE  src/App.fs\tdomain\n")
+            test <@ match parseLock path with Error e -> e.Contains("duplicate BASELINE_ROLE") | _ -> false @>
+            for malformed in ["SHA256  "+String.replicate 64 "a"+"  "; "BASELINE  \tfile\tfingerprint\t1"; "POLICY  \tdeny"; "CAPABILITY  "; "BOUNDARY  "; "SUPPRESSION  "] do
                 File.WriteAllText(path,"version = 1\n"+malformed+"\n")
                 test <@ parseLock path |> Result.isError @>
         finally File.Delete path

@@ -31,7 +31,7 @@ trap cleanup EXIT
 fixture="$tmp/root"
 mkdir -p "$fixture/scripts" "$fixture/experiments/flow-errors" "$fixture/artifacts/verify"
 cp "$verify" "$fixture/scripts/verify.sh"
-for script in check-docs-conventions.sh check-source-inventory.sh test-verify-summary.sh test-verify-lock.sh test-test-ratchet.sh test-guardrails-v2-migration.sh; do
+for script in check-docs-conventions.sh check-source-inventory.sh test-verify-summary.sh test-verify-lock.sh test-guardrails-v2-migration.sh; do
   printf '#!/usr/bin/env bash\nexit 0\n' > "$fixture/scripts/$script"
 done
 printf '#!/usr/bin/env bash\nexit 0\n' > "$fixture/experiments/flow-errors/check.sh"

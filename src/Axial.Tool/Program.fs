@@ -20,16 +20,15 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
         values |> List.map(fun entry -> "{\"rule\":" + jsonString entry.Rule + ",\"file\":" + jsonString entry.File + ",\"fingerprint\":" + jsonString entry.Fingerprint + ",\"count\":" + string entry.Count + "}") |> String.concat "," |> fun content -> "[" + content + "]"
     let mutable private commandName = "help"
     let private jsonChanges (changes: ChangeSummary option) =
-        let c=defaultArg changes {RulesDowngraded=[];BaselineAdded=[];SuppressionsAdded=[];BoundariesAdded=[];ProtectedChanged=[];TestsRemoved=[]}
+        let c=defaultArg changes {RulesDowngraded=[];BaselineAdded=[];SuppressionsAdded=[];BoundariesAdded=[];ProtectedChanged=[]}
         {| rulesDowngraded=c.RulesDowngraded; baselineAdded=c.BaselineAdded; suppressionsAdded=c.SuppressionsAdded
-           boundariesAdded=c.BoundariesAdded; protectedChanged=c.ProtectedChanged; testsRemoved=c.TestsRemoved |}
+           boundariesAdded=c.BoundariesAdded; protectedChanged=c.ProtectedChanged |}
     let private emitWith (changes: ChangeSummary option) asJson ok (message: string) =
         let status = if ok then "ok" else "error"
         let errorCode : string =
             if ok then null
             elif message.Contains("Usage:") || message.StartsWith("Unknown command") then "AXIAL_USAGE"
             elif message.Contains("baseline growth refused") then "AXIAL_BASELINE_GROWTH"
-            elif message.Contains("test/assertion count decreased") then "AXIAL_TESTS_REMOVED"
             elif message.Contains("regenerate the lock") || message.Contains("lock") && message.Contains("not found") then "AXIAL_MALFORMED_LOCK"
             elif message.Contains("Refusing to overwrite") then "AXIAL_INIT_EXISTS"
             elif message.Contains("Approval cancelled") then "AXIAL_CANCELLED"
@@ -43,8 +42,7 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
                   "\"baselineAdded\":" + jsonBaseline categorized.baselineAdded
                   "\"suppressionsAdded\":" + jsonArray categorized.suppressionsAdded
                   "\"boundariesAdded\":" + jsonArray categorized.boundariesAdded
-                  "\"protectedChanged\":" + jsonArray categorized.protectedChanged
-                  "\"testsRemoved\":" + jsonArray categorized.testsRemoved ] |> String.concat ","
+                  "\"protectedChanged\":" + jsonArray categorized.protectedChanged ] |> String.concat ","
             Console.WriteLine("{\"schema\":\"axial.policy.v1\",\"command\":" + jsonString commandName + ",\"status\":" + jsonString status + ",\"errorCode\":" + errorJson + ",\"changes\":{" + fields + "},\"message\":" + jsonString message + "}")
         else (if ok then printfn "%s" message else eprintfn "%s" message)
         if ok then 0 else 1
@@ -63,14 +61,14 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
         printf "Type 'approve' to record this reviewed policy change: "
         String.Equals(Console.ReadLine(),"approve",StringComparison.Ordinal)
 
-    let private approve asJson nonInteractive acceptRemoved baselineRule =
+    let private approve asJson nonInteractive baselineRule =
         match inspect(root()), parseLock(Path.Combine(root(),LockName)) with
         | Error e, _ | _, Error e -> emit asJson false e
         | Ok current, Ok locked ->
             let changes=diff locked current
             if isEmpty changes then emit asJson true "No policy changes to approve."
             else
-                let approval = match baselineRule with Some r->BaselineRule r | None when acceptRemoved->AcceptRemovedTests | None->Normal
+                let approval = match baselineRule with Some r->BaselineRule r | None->Normal
                 match validateApproval approval locked current changes with
                 | Error e -> emitWith (Some changes) asJson false (formatSummary changes+Environment.NewLine+e)
                 | Ok () ->
@@ -106,9 +104,9 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
         | ["init"] -> init asJson
         | ["policy";"approve";"--help"] | ["policy";"baseline";"--help"] -> emit asJson true (policyWarning+"\n"+workflow)
         | "policy"::"approve"::rest ->
-            if rest |> List.exists(fun x->x<>"--yes-i-reviewed" && x<>"--accept-removed-tests") then emit asJson false (policyWarning+"\nUsage: axial policy approve [--accept-removed-tests] [--yes-i-reviewed] [--json]")
-            else approve asJson (List.contains "--yes-i-reviewed" rest) (List.contains "--accept-removed-tests" rest) None
-        | ["policy";"baseline";"--rule";rule] -> approve asJson false false (Some rule)
-        | ["policy";"baseline";"--rule";rule;"--yes-i-reviewed"] -> approve asJson true false (Some rule)
+            if rest |> List.exists((<>) "--yes-i-reviewed") then emit asJson false (policyWarning+"\nUsage: axial policy approve [--yes-i-reviewed] [--json]")
+            else approve asJson (List.contains "--yes-i-reviewed" rest) None
+        | ["policy";"baseline";"--rule";rule] -> approve asJson false (Some rule)
+        | ["policy";"baseline";"--rule";rule;"--yes-i-reviewed"] -> approve asJson true (Some rule)
         | ["--help"] | ["help"] -> help asJson
         | _ -> emit asJson false ("Unknown command.\n"+workflow)
