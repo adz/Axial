@@ -16,18 +16,16 @@ set -uo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out_dir="$root_dir/artifacts/verify"
 fable_runs="${FABLE_RUNS:-3}"
+stages=("$@")
+[[ ${#stages[@]} -eq 0 ]] && stages=(build test fable aot docs livedocs)
 
 mkdir -p "$out_dir"
 cd "$root_dir"
 
 # Concurrent verification used to corrupt shared logs and let one run publish another run's result.
-# Close the lock descriptor in children so a surviving test process cannot wedge later runs.
-if [[ ${1:-} != --verify-lock-held ]]; then
-    exec flock -o "$out_dir/run.lock" "$0" --verify-lock-held "$@"
-fi
-shift
-stages=("$@")
-[[ ${#stages[@]} -eq 0 ]] && stages=(build test fable aot docs livedocs)
+# The original shell owns the lock; each stage closes fd 9 before starting any children.
+exec 9>"$out_dir/run.lock"
+flock 9
 
 results=()
 failed=0
@@ -112,7 +110,7 @@ for stage in "${stages[@]}"; do
         *) echo "Unknown stage: $stage" >&2; exit 2 ;;
     esac
     started=$SECONDS
-    outcome=$("run_$stage")
+    outcome=$("run_$stage" 9>&-)
     record "$stage" "${outcome%%|*}" $((SECONDS - started)) "${outcome#*|}"
 done
 
