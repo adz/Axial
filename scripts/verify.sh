@@ -61,6 +61,8 @@ run_build() {
 run_test() {
     timeout 2400 dotnet test Axial.slnx -c Release --no-build >"$out_dir/test.log" 2>&1
     local code=$?
+    # HTTP hosting tests are intentionally outside Axial.slnx because they depend on Reified adapters.
+    timeout 1200 dotnet test tests/Axial.Hosting.Http.Tests -c Release --no-build >>"$out_dir/test.log" 2>&1 || code=$?
     # The shipped-assembly scan is outside Axial.slnx because it builds every shipped project, HTTP adapters included.
     timeout 1200 dotnet test tests/Axial.Build.Tests -c Release >>"$out_dir/test.log" 2>&1 || code=$?
     local passed failed_count projects
