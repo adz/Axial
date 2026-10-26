@@ -327,3 +327,25 @@ module FiberObserverTests =
             test <@ defect.Message = "collected" @>
             test <@ metadata.Id = FiberId 1001L @>
         | other -> failwithf "Expected one unobserved defect from the GC net, got %A" other
+
+    [<Fact>]
+    let ``settled disconnected fibers do not stay registered with the root scope`` () =
+        let rootRegistrations : Flow<ClockEnvironment, string, int> =
+            Flow(fun _ _ -> Execution.ofValue (RuntimeState.current().RootScope.RegisteredCount))
+
+        let defective : Flow<ClockEnvironment, string, unit> =
+            Flow.die (InvalidOperationException "disconnected defect")
+            |> Flow.disconnect
+            |> Flow.foldCause Flow.succeed (fun _ -> Flow.succeed ())
+
+        let workflow =
+            flow {
+                let! before = rootRegistrations
+                let! _ = List.replicate 100 defective |> Flow.sequence
+                let! after = rootRegistrations
+                return before, after
+            }
+
+        match Flow.runSync (TestSupport.clockEnv ()) workflow with
+        | Exit.Success(before, after) -> test <@ after = before @>
+        | other -> failwithf "Expected success, got %A" other

@@ -1515,7 +1515,10 @@ module Flow =
                                     try registry.RecordFailure metadata text with _ -> ()
                             | Exit.Success _ -> ()
 
-                        if defect.IsNone then
+                        // A defect keeps the registration so the scope's close can report it deterministically. A
+                        // root-owned (disconnected) fiber's outcome is always consumed by its caller or reported by
+                        // disconnect, so it never needs the scope for that and must not accumulate in the root scope.
+                        if defect.IsNone || owner = ForkOwner.Root then
                             Platform.lock registrationGate (fun () ->
                                 settledClean.Value <- true
                                 releaseRegistration ())
