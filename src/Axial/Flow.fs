@@ -2170,11 +2170,16 @@ module Flow =
                 if closing.IsCompletedSuccessfully then
                     Platform.guardStack (fun () -> finishLoser winnerExit closing.Result)
                 else
-#endif
                     closing
                     |> Execution.fold
                         (fun () -> finishLoser winnerExit (Exit.Success ()))
                         (fun cause -> finishLoser winnerExit (Exit.Failure cause))
+#else
+                closing
+                |> Execution.fold
+                    (fun () -> finishLoser winnerExit (Exit.Success ()))
+                    (fun cause -> finishLoser winnerExit (Exit.Failure cause))
+#endif
 
             let settled =
                 Platform.raceExecution
@@ -2187,8 +2192,11 @@ module Flow =
             if settled.IsCompletedSuccessfully then
                 Platform.guardStack (fun () -> settle settled.Result)
             else
+                settled |> Execution.fold (Exit.Success >> settle) (Exit.Failure >> settle)
+#else
+            settled |> Execution.fold (Exit.Success >> settle) (Exit.Failure >> settle)
 #endif
-                settled |> Execution.fold (Exit.Success >> settle) (Exit.Failure >> settle))
+            )
 
     /// <summary>Lifts an option into a synchronous flow with the supplied error.</summary>
     /// <param name="error">The error to return if the option is <c>None</c>.</param>

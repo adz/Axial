@@ -2,14 +2,21 @@
 
 ## Phase 3 scope and final verification procedure
 
-Checkpoint: `restore=0ea0b3d40`; clean `perf/race-alloc`. No source, tests, examples, policy, lock or verification
+Checkpoint: `restore=0ea0b3d40`; clean `perf/race-alloc`. No tests, examples, policy, lock or verification
 scripts changed in phase 3. Chose the brief's permitted torture waiver, recorded in ignored
 `artifacts/verify/torture-waiver.txt`: `parallel` stresses repeated race scheduling and both exit handlers, but its
 post-race finish gates do not pin return ordering. The unchanged committed ownership/settlement/observer tests
 supply that boundary coverage, including the phase-2 deliberate-mutation failure. No new tests means the done-check
 correctly skips baseline fail-first; do not manufacture a failing behavior test for unchanged semantics.
 
-This handover is committed before verification so all stages can certify the final clean HEAD. Run detached
+First full verification at `8cb609ac8`: build passed (0 errors), test passed (941 passed, 0 failed,
+14 projects), AOT/docs/livedocs passed; Fable failed compilation. Fable's parser rejected the extra indentation
+left by removing the .NET-only `if/else` in race's two synchronous fast paths. Corrected `src/Axial/Flow.fs`
+with explicit `#else` fold expressions at the enclosing indentation. Neither target's execution path changes;
+.NET allocation machinery remains identical. This is a verification repair, not a new optimization or behavior
+change. The failed result and logs are preserved externally as `race-alloc-verify-first-*`.
+
+This handover is committed before final verification so all stages can certify the final clean HEAD. Run detached
 `setsid -f axial-verify` with the persistent log `race-alloc-verify.log`, then the coordinator's done-check.
 Final results, exact verified commit and any failures/reruns are recorded in the external persistent report
 `/home/adam/projects/scratch/axial-coord/pi/race-alloc.report.md` and `artifacts/verify/result.json`, not backfilled
