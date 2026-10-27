@@ -1071,11 +1071,11 @@ type Scope() =
 #if !FABLE_COMPILER
     interface IAsyncDisposable with
         member this.DisposeAsync() =
-            ValueTask(this.Close(CancellationToken.None))
+            ValueTask(Platform.Cancellation.uninterruptible this.Close)
 
     interface IDisposable with
         member this.Dispose() =
-            this.Close(CancellationToken.None).GetAwaiter().GetResult()  // axial-allow-AXG001: IDisposable.Dispose is synchronous by contract
+            (Platform.Cancellation.uninterruptible this.Close).GetAwaiter().GetResult()  // axial-allow-AXG001: IDisposable.Dispose is synchronous by contract
 #endif
 
 type internal FiberContext =
@@ -1128,8 +1128,8 @@ module internal RuntimeContext =
             Observer = FiberObserver.none
             Registries = []
             Tracer = None
-            BranchToken = CancellationToken.None
-            OuterToken = CancellationToken.None
+            BranchToken = Platform.Cancellation.uninterruptible id
+            OuterToken = Platform.Cancellation.uninterruptible id
         }
 
     let detached : RuntimeContext =
@@ -1375,26 +1375,26 @@ type Flow<'env, 'error, 'value> =
     /// <summary>Starts the workflow immediately and returns a value-task handle for its final exit.</summary>
     /// <remarks>The work is already in flight when this returns. Use <c>ToAsync</c> for a cold handle.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
-    /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
+    /// <param name="cancellationToken">The optional cancellation token. Defaults to a non-cancelable token.</param>
     /// <returns>A value task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.StartAsValueTask(environment: 'env, ?cancellationToken: CancellationToken) : ValueTask<Exit<'value, 'error>> =
-        this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None)
+        this.ToExecution(environment, defaultArg cancellationToken (Platform.Cancellation.uninterruptible id))
 
     /// <summary>Starts the workflow immediately and returns a task handle for its final exit.</summary>
     /// <remarks>The work is already in flight when this returns. Use <c>ToAsync</c> for a cold handle.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
-    /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
+    /// <param name="cancellationToken">The optional cancellation token. Defaults to a non-cancelable token.</param>
     /// <returns>A task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.StartAsTask(environment: 'env, ?cancellationToken: CancellationToken) : Task<Exit<'value, 'error>> =
-        this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None).AsTask()
+        this.ToExecution(environment, defaultArg cancellationToken (Platform.Cancellation.uninterruptible id)).AsTask()
 
     /// <summary>Starts the workflow and blocks until the final exit is available.</summary>
     /// <remarks>To bound how long the workflow may run, apply <c>Flow.timeout</c> to it: that interrupts the work
     /// and waits for its cleanup, where abandoning a blocked wait would leave it running.</remarks>
     /// <param name="environment">The environment used by the workflow.</param>
-    /// <param name="cancellationToken">The optional cancellation token. Defaults to <see cref="F:System.Threading.CancellationToken.None" />.</param>
+    /// <param name="cancellationToken">The optional cancellation token. Defaults to a non-cancelable token.</param>
     /// <returns>The final workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.RunSynchronously(environment: 'env, ?cancellationToken: CancellationToken) : Exit<'value, 'error> =

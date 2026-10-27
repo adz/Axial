@@ -8,7 +8,7 @@ open Xunit
 
 module UninterruptibleCleanupTests =
     let private signal () = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-    let private deadline = TimeSpan.FromSeconds 10.0
+    let private deadline () = TimeSpan.FromSeconds 10.0
 
     [<Fact>]
     let ``internal cleanup runner supplies an inert token and preserves the operation`` () =
@@ -54,20 +54,20 @@ module UninterruptibleCleanupTests =
             let source : Flow<ClockEnvironment, string, unit> =
                 if resource then
                     flow {
-                        use! _value = Resource.create (Flow.ok 1) (fun _ -> cleanup)
+                        let! _value = Flow.scopeAcquireRelease (Flow.ok 1) (fun _ -> cleanup)
                         return! Flow.fail "original"
                     }
                 else
                     Flow.fail "original" |> Flow.ensuring cleanup
             let running = source.StartAsTask(TestSupport.clockEnv (), caller.Token)
             try
-                do! started.Task.WaitAsync(deadline)
+                do! started.Task.WaitAsync(deadline ())
                 caller.Cancel()
                 Assert.False(running.IsCompleted)
                 Assert.False(finished.Task.IsCompleted)
             finally
                 resume.TrySetResult() |> ignore
-            let! exit = running.WaitAsync(deadline)
+            let! exit = running.WaitAsync(deadline ())
             Assert.Equal<Exit<unit, string>>(Exit.Failure(Cause.Fail "original"), exit)
             Assert.True(finished.Task.IsCompletedSuccessfully)
         }
@@ -79,7 +79,7 @@ module UninterruptibleCleanupTests =
             let acquired, started, resume, finished = signal (), signal (), signal (), signal ()
             let loser : Flow<ClockEnvironment, string, int> =
                 flow {
-                    use! _value = Resource.create (Flow.ok 1) (fun _ -> suspendedCleanup started resume finished)
+                    let! _value = Flow.scopeAcquireRelease (Flow.ok 1) (fun _ -> suspendedCleanup started resume finished)
                     acquired.SetResult()
                     return! Flow.never
                 }
@@ -90,13 +90,13 @@ module UninterruptibleCleanupTests =
                 }
             let running = Flow.race loser winner |> fun source -> source.StartAsTask(TestSupport.clockEnv (), caller.Token)
             try
-                do! started.Task.WaitAsync(deadline)
+                do! started.Task.WaitAsync(deadline ())
                 caller.Cancel()
                 Assert.False(running.IsCompleted)
                 Assert.False(finished.Task.IsCompleted)
             finally
                 resume.TrySetResult() |> ignore
-            let! exit = running.WaitAsync(deadline)
+            let! exit = running.WaitAsync(deadline ())
             Assert.Equal<Exit<int, string>>(Exit.Success 42, exit)
             Assert.True(finished.Task.IsCompletedSuccessfully)
         }
@@ -116,12 +116,12 @@ module UninterruptibleCleanupTests =
                 } :> Task)
             let closing = (scope :> IAsyncDisposable).DisposeAsync().AsTask()
             try
-                do! started.Task.WaitAsync(deadline)
+                do! started.Task.WaitAsync(deadline ())
                 caller.Cancel()
                 Assert.False(closing.IsCompleted)
             finally
                 resume.TrySetResult() |> ignore
-            do! closing.WaitAsync(deadline)
+            do! closing.WaitAsync(deadline ())
             Assert.True(finished.Task.IsCompletedSuccessfully)
             Assert.Equal(0, scope.RegisteredCount)
         }

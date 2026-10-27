@@ -233,7 +233,8 @@ module Flow =
         | ValueNone ->
             let releasing = new Scope()
             releasing.AddFinalizer finalizer
-            closeScopes CancellationToken.None [ releasing ] (Exit.Failure Cause.Interrupt)
+            Platform.Cancellation.uninterruptible (fun token ->
+                closeScopes token [ releasing ] (Exit.Failure Cause.Interrupt))
 
     // A release that ended in failure, as the exception the scope's finalizer raises. The scope folds it back into
     // the closing flow's cause as a defect.
@@ -248,7 +249,7 @@ module Flow =
     let private runRelease (runtime: RuntimeContext) (environment: 'env) (release: unit -> Flow<'env, Never, unit>) =
         try
             Platform.restoreAmbient (box runtime)
-            invoke (release ()) environment CancellationToken.None
+            Platform.Cancellation.uninterruptible (invoke (release ()) environment)
         with error ->
             Platform.ofExit (Exit.Failure(Cause.Die error))
 
@@ -264,13 +265,13 @@ module Flow =
             let runtime =
                 { acquiredIn with
                     Scope = scope
-                    BranchToken = CancellationToken.None
-                    OuterToken = CancellationToken.None }
+                    BranchToken = Platform.Cancellation.uninterruptible id
+                    OuterToken = Platform.Cancellation.uninterruptible id }
             let previous = RuntimeState.current ()
             let execution =
                 try
                     RuntimeState.enter runtime
-                    try invoke (release value) environment CancellationToken.None
+                    try Platform.Cancellation.uninterruptible (invoke (release value) environment)
                     with error -> Platform.ofExit (Exit.Failure(Cause.Die error))
                 finally RuntimeState.enter previous
             let finish (exit: Exit<unit, Never>) (closing: Platform.Deed) : Platform.Deed =
@@ -284,7 +285,7 @@ module Flow =
                 } :> Task
             if execution.IsCompletedSuccessfully then
                 let exit = execution.Result
-                let closing = scope.Close CancellationToken.None
+                let closing = Platform.Cancellation.uninterruptible scope.Close
                 if closing.IsCompletedSuccessfully then
                     match exit with
                     | Exit.Success() -> Task.CompletedTask
@@ -293,7 +294,7 @@ module Flow =
             else
                 task {
                     let! exit = execution
-                    return! finish exit (scope.Close CancellationToken.None)
+                    return! finish exit (Platform.Cancellation.uninterruptible scope.Close)
                 } :> Task
 #endif
 
@@ -312,8 +313,8 @@ module Flow =
             let runtime =
                 { acquiredIn with
                     Scope = scope
-                    BranchToken = CancellationToken.None
-                    OuterToken = CancellationToken.None }
+                    BranchToken = Platform.Cancellation.uninterruptible id
+                    OuterToken = Platform.Cancellation.uninterruptible id }
 
             let finish (exit: Exit<unit, Never>) (closing: Platform.Deed) : Platform.Deed =
                 Platform.execution {
@@ -335,7 +336,7 @@ module Flow =
                 let captured = Platform.captureAmbient ()
                 let! exit = runRelease runtime environment (fun () -> release value)
                 Platform.restoreAmbient captured
-                return! finish exit (scope.Close CancellationToken.None)
+                return! finish exit (Platform.Cancellation.uninterruptible scope.Close)
             }
 #endif
 
@@ -587,7 +588,7 @@ module Flow =
 #if FABLE_COMPILER
                 Execution.ofExit (run ())
 #else
-                ValueTask<Exit<'value, 'error>>(Task.Run(run, CancellationToken.None))
+                ValueTask<Exit<'value, 'error>>(Task.Run(run, Platform.Cancellation.uninterruptible id))
 #endif
         )
 
@@ -633,7 +634,7 @@ module Flow =
 
                     Task.Factory.StartNew<Task<Exit<'value, 'error>>>(
                         runScheduled,
-                        CancellationToken.None,
+                        Platform.Cancellation.uninterruptible id,
                         options,
                         scheduler)
                     |> fun outer -> outer.Unwrap()
@@ -1514,7 +1515,7 @@ module Flow =
             // closes, which also happens when the forking flow is interrupted.
             let parentToken =
                 match graceful with
-                | Some _ -> CancellationToken.None
+                | Some _ -> Platform.Cancellation.uninterruptible id
                 | None -> RuntimeContext.forkToken parentRuntime cancellationToken
 
             let cts, exitTask =
@@ -1571,7 +1572,7 @@ module Flow =
 
                         match graceful with
                         | Some request ->
-                            let! stopExit = invoke request.Stop environment CancellationToken.None
+                            let! stopExit = Platform.Cancellation.uninterruptible (invoke request.Stop environment)
 
                             match stopExit with
                             | Exit.Failure cause -> stopFailure.Value <- Cause.defects cause |> List.tryHead
@@ -1609,7 +1610,7 @@ module Flow =
 
                         match graceful with
                         | Some request ->
-                            let! stopExit = (invoke request.Stop environment CancellationToken.None).AsTask()
+                            let! stopExit = (Platform.Cancellation.uninterruptible (invoke request.Stop environment)).AsTask()
 
                             match stopExit with
                             | Exit.Failure cause ->
@@ -1880,7 +1881,7 @@ module Flow =
 
         let start () =
             RuntimeState.withRuntime owner (fun () ->
-                invoke (forkDetached publisher) environment CancellationToken.None)
+                Platform.Cancellation.uninterruptible (invoke (forkDetached publisher) environment))
             |> Execution.map (fun (_: Fiber<Never, unit>) -> ())
 
         signal, start
@@ -1963,7 +1964,7 @@ module Flow =
     // through the fiber observer unless someone else consumed its outcome.
     let private afterReplaced (previous: Platform.Signal<Fiber<'error, 'value> option>) (flow: Flow<'env, 'error, 'value>) =
         Flow(fun environment cancellationToken ->
-            Platform.awaitSignal previous CancellationToken.None
+            Platform.Cancellation.uninterruptible (Platform.awaitSignal previous)
             |> Execution.bind (fun (replaced: Fiber<'error, 'value> option) ->
                 match replaced with
                 | Some fiber ->
@@ -2165,7 +2166,8 @@ module Flow =
                     | Some(Exit.Failure cause) -> Exit.Failure cause
                     | _ -> Exit.Success()
 
-                let closing = closeRaceScope CancellationToken.None (loserScope ()) loserOutcome
+                let closing = Platform.Cancellation.uninterruptible (fun token ->
+                    closeRaceScope token (loserScope ()) loserOutcome)
 #if !FABLE_COMPILER
                 if closing.IsCompletedSuccessfully then
                     Platform.guardStack (fun () -> finishLoser winnerExit closing.Result)
@@ -2555,7 +2557,7 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let finish (exit: Exit<'value, 'error>) : Execution<'value, 'error> =
                 Platform.tryExecution
-                    (fun () -> invoke (handler exit) environment CancellationToken.None)
+                    (fun () -> Platform.Cancellation.uninterruptible (invoke (handler exit) environment))
                     (fun error -> Platform.ofExit (Exit.Failure(Cause.Die error)))
                 |> Execution.fold
                     (fun () -> Execution.ofExit exit)

@@ -1,136 +1,98 @@
-# Guardrails primitives handover — Phase 1
+# Guardrails primitives handover — Phase 2
 
-## State and constraints
+## State
 
-- Completed inventory/design only; STOP before Phase 2.
-- Branch/worktree: `feature/flow-uninterruptible`, `/home/adam/projects/Axial/feature/flow-uninterruptible`.
-- Starting HEAD and origin/main: `f76d8476ccf800a00710a34422fde79e0a10ce43`.
-- Initial worktree clean. No source/test changes. No dotnet, builds, tests, benchmarks, agent runs, or verification executed: a quiet-machine benchmark is running.
-- Full report: `/home/adam/projects/scratch/axial-coord/pi/guardrails-primitives.report.md`.
-- Brief: `/home/adam/projects/scratch/axial-coord/pi/guardrails-primitives.md`.
-- First read `/home/adam/projects/scratch/axial-coord/pi/TOKEN-RULES.md` and the full design `/home/adam/projects/Axial/main/dev-docs/current-ideas/guardrails-exceptionless.md`.
-- Commit, no push. Never modify guardrail TOML/lock/baseline, scripts/verify.sh, or analyzers.
+Phase 2 complete; STOP before Phase 3. Commit only, no push.
 
-## Proposed design
+- Worktree: `/home/adam/projects/Axial/feature/flow-uninterruptible`, branch `feature/flow-uninterruptible`.
+- Original source baseline: origin/main `f76d8476ccf800a00710a34422fde79e0a10ce43`.
+- Phase 1 inventory commit: `0e49db564`.
+- Tests-first commits: `e960fd166`, `9673ecf68`; implementation and final test-authoring corrections follow these commits.
+- Brief: `/home/adam/projects/scratch/axial-coord/pi/guardrails-primitives.md`. Its final OWNER DIRECTION overrides earlier requirements and Phase 1 proposals.
+- Full report (including complete inventories and before/after per-case allocations): `/home/adam/projects/scratch/axial-coord/pi/guardrails-primitives.report.md`.
+- Dotnet allowed again. Shared dotnet wrapper serializes machine activity; lock queueing can take several minutes. Run long operations detached rather than allowing a tool timeout to kill them.
+- No forbidden files changed: guardrail TOML/lock/baseline, scripts/verify.sh, analyzers. No existing tests edited.
 
-In the existing internal `Axial.Platform` module (Platform.fs compiles before Core.fs):
+Read TOKEN-RULES.md beside the brief and the full design `/home/adam/projects/Axial/main/dev-docs/current-ideas/guardrails-exceptionless.md` before resuming. No delegated agents were run.
+
+## Implementation
+
+Only new runtime primitive, internal to existing `Axial.Platform`:
 
 ```fsharp
 module Cancellation =
-    let never : CancellationToken = CancellationToken.None
-
-module Report =
-    let inline safely (notify: unit -> unit) : unit =
-        try notify () with _ -> ()
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)>]
+    let uninterruptible (cleanup: CancellationToken -> 'value) : 'value =
+        cleanup CancellationToken.None
 ```
 
-Use `Platform.Cancellation.never` at all existing token sites without changing invocation/runtime/ownership semantics. This names a non-cancelable token, covering cleanup, roots, scheduling, and lifetime waits; it does not pretend to implement whole-region masking. Keep releaseFinalizer's existing BranchToken/OuterToken masking intact. Update XML references to prose so exactly one literal remains in src.
+`src/Axial/Platform.fs:49` is now the ONLY literal occurrence under src (including XML). All 30 old code uses are replaced; three XML references now say non-cancelable token.
 
-**Public Flow.uninterruptible deferred.** Invocation-token substitution alone does not settle ambient fork-token masking, structured scope ownership, pending cancellation on entry/exit, or ownership of a value/resource produced inside a masked region. Existing ensuring/acquireRelease/onExit already promise uninterrupted cleanup. The lane brief permits the internal-only choice; do not add an underspecified public API just to name token substitutions.
+Cleanup sites pass the existing invoke/close operation. Root, scheduling and runtime-token fields use `Platform.Cancellation.uninterruptible id`; no second token primitive. This is token substitution, not dynamic masking of arbitrary flows. Existing release runtime BranchToken/OuterToken masking, ambient restoration, scope ownership, and failure composition remain intact.
 
-`Report.safely` replaces existing synchronous best-effort reporting catches, each composed sink independently. Preserve silent sink-failure behavior: recursively reporting sink failures risks recursion; a new counter adds state/hot-path work and changes observability. Inline proposed to avoid new thunk allocations; benchmarks must prove no B/op increase.
+F# `inline` failed at the Process friend/reference-assembly boundary (FS1116/FS1118); ordinary function plus JIT inlining attribute compiled and benchmarks show no allocation increases. No new public API or release note. Changed source files: Axial/{Platform,Flow,Core,Concurrency,App}.fs and Axial.Process/ProcessRun.fs.
 
-Add `InternalsVisibleTo("Axial.ElmishFlows")` for Diagnostics.fs helper reuse; Process already has friend access. Do not expose these helpers publicly.
+Owner supersession applied:
+- No public Flow.uninterruptible, reporting helper, Ref.Sync, Counter, or new interop function.
+- Observer/sink catches unchanged (including direct telemetry sink's existing propagation behavior).
+- Optional Random.Shared deferred; all five random locks remain unchanged.
+- Adapter inventory ONLY: 36 locks, 12 Interlocked operations, 6 TCS declarations, 0 Monitor operations across 13 files; unchanged before/after. Report lists EVERY line, callback→Queue→owner feasibility, synchronous-boundary constraints, and estimated conversion costs. No adapter conversions performed.
 
-### Behavior conflict — do not silently fix
+## Tests and proof
 
-`src/Axial/Runtime.fs:65` directly invokes `current.TelemetrySink item`: a sink installed by Telemetry.withSink can currently fault the workflow. Composed telemetry sinks are already safe. Guarding the direct call changes a previously surfaced defect into success, forbidden by TOKEN-RULES without explicit approval. Preserve it and report the limitation, or obtain coordinator/owner approval for an explicit behavior change with tests/release note. ProcessLive callbacks intentionally propagate ObserverDefectException too; those are operational callbacks, not diagnostic sinks.
+New `tests/Axial.Tests/UninterruptibleCleanupTests.fs` (five cases):
+- Internal runner uses inert token, invokes once, preserves return and thrown exception identity.
+- Ensuring and scoped acquire/release: suspend cleanup, cancel caller, prove owner waits, resume cleanup, preserve original failure.
+- Race loser: suspend release, cancel caller, prove race waits, resume, preserve winner success.
+- Explicit async Scope disposal: suspend finalizer, cancel external caller, prove disposal waits and scope empties.
 
-## Complete token inventory (original line numbers)
+All gates have bounded 10-second waits; no timing sleeps or shared module-level fixtures. New tests use Flow.scopeAcquireRelease and cold Flow.fromTask bridges, not Resource use! or hot Task binds.
 
-33 matching lines: 30 code uses, 3 XML references. Paths below begin under `src/`.
+Artifacts under `artifacts/verify/`:
+- `guardrails-tests-red.log`: new tests fail against original src, FS0039 missing internal Cancellation module. This is compile-red, NOT claimed as original behavioral failure: original public cleanup already behaved correctly.
+- `guardrails-tests-mutant.log`: deliberately replaced helper's sole token with `CancellationToken(true)`; **all 5 failed**. Direct runner assertion fails behaviorally; other cases can fail their bounded entry gates because roots/cleanup see a canceled token. Mutation fully restored before green validation/benchmarks.
+- `guardrails-focused.log`: **151 passed / 0 failed**, covering new tests, resources, structured ownership, concurrency, scopes, observers, diagnostics, runtime semantics.
+- `guardrails-app-execution.log`: **16 passed / 0 failed**.
+- `guardrails-process.log`: **79 passed / 0 failed**, ProcessServiceTests in Axial.Integration.Tests.
+- Total distinct focused cases: **246 passed / 0 failed**. No unchanged timing-sensitive failure/rerun.
 
-| File | Lines | Category |
-|---|---|---|
-| Axial/Platform.fs | 1593 | Exit-observation continuation scheduling |
-| Axial/Flow.fs | 236 | Release after registration loses to closed scope |
-| Axial/Flow.fs | 251 | Fable release invocation |
-| Axial/Flow.fs | 267,268 | .NET release runtime BranchToken/OuterToken |
-| Axial/Flow.fs | 273 | .NET release invocation |
-| Axial/Flow.fs | 287,296 | .NET release scope close |
-| Axial/Flow.fs | 315,316 | Fable release runtime BranchToken/OuterToken |
-| Axial/Flow.fs | 338 | Fable release scope close |
-| Axial/Flow.fs | 590,636 | Task.Run/StartNew scheduling; delegate returns Exit rather than canceled Task |
-| Axial/Flow.fs | 1517 | Graceful fiber parent-token detachment |
-| Axial/Flow.fs | 1574,1612 | Graceful stop request, Fable/.NET |
-| Axial/Flow.fs | 1883 | Shared publisher follows owner scope, not waiting caller |
-| Axial/Flow.fs | 1966 | Replacement handover ordering despite cancellation |
-| Axial/Flow.fs | 2168 | Race loser scope close |
-| Axial/Flow.fs | 2558 | onExit handler |
-| Axial/Core.fs | 1074,1078 | Scope async/sync disposal |
-| Axial/Core.fs | 1131,1132 | Default/root runtime tokens |
-| Axial/Core.fs | 1382,1391 | Default optional root execution token |
-| Axial/Core.fs | 1378,1387,1397 | XML references, not code |
-| Axial/Concurrency.fs | 312 | Deferred.toTask lifetime wait |
-| Axial/App.fs | 236 | Stop/cleanup before caller cancellation continuation |
-| Axial/App.fs | 242 | Independent publication observation |
-| Axial.Process/ProcessRun.fs | 491 | Stop-ladder coordinator outlives caller cancellation |
+## Benchmarks
 
-## Complete diagnostic-sink catch inventory
+Both existing classes only, 20/20 cases each run, no concurrent dotnet jobs during measurement:
 
-Paths begin under `src/`; numbers identify catch sites.
-
-| File | Lines | Category |
-|---|---|---|
-| Axial/Core.fs | 421,422 | Composed OnStart |
-| Axial/Core.fs | 425,426 | Composed OnEnd |
-| Axial/Core.fs | 429,430 | Composed unobserved-defect sinks |
-| Axial/Core.fs | 434,437,444 | Observer notifyStart/notifyEnd/notifyUnobservedDefect |
-| Axial/Core.fs | 705 | GC finalizer reporting boundary |
-| Axial/Core.fs | 1175,1176 | Composed annotation sinks |
-| Axial/Core.fs | 1190,1191 | Composed telemetry sinks |
-| Axial/Flow.fs | 1023 | Annotation emission |
-| Axial/Flow.fs | 1543 | Registry failure text |
-| Axial/Platform.fs | 1074 | Timeout discarded-exit notification AND task-await catch |
-| Axial.ElmishFlows/Diagnostics.fs | 8 | OnDefect sink |
-
-Important exclusions:
-- Platform.fs:1074 must retain protection against faulted awaited tasks in addition to safe callback invocation.
-- Platform.fs:1325 converts faulted race-loser task into onLoserSettled None; not a diagnostic swallow.
-- Flow.fs:1643 is scope registration close-race recovery; Flow.fs:515 unlinks then rethrows.
-- Outcome.fs:43 and ElmishFlows/Diagnostics.fs:13,19 return rendering fallbacks, not sink notifications.
-- ElmishFlows/Sub.fs:24,25,46 and Cmd.fs:31,32 catch delivery failures and report them; preserve that reporting.
-- Process cleanup, Files temp deletion, HTTP decoding, and analyzer recovery catches are not sink sites.
-- Platform.observeExitTask callbacks can be state transitions; do not indiscriminately suppress them.
-
-## Random
-
-PlatformService targets `netstandard2.1;net8.0` (fsproj:4). Its Platform.fs:14–35 has FIVE locked methods. Use three branches:
-1. Fable: existing Random()/byte-loop unchanged.
-2. NETSTANDARD2_1: existing Random()/gate/five locks unchanged.
-3. net8: System.Random.Shared, direct forwarding, no Random() construction, gate, or locks.
-
-## Task/Deferred interop inventory and recommendation
-
-All TCS declarations under src at inventory time:
-- Axial/Platform.fs:1615,1623: existing Signal alias/factory; 1690: cancellation-aware signal wait; 1894: Async startup bridge.
-- Axial/Concurrency.fs:294: existing public Deferred.toTask conversion (retain typed failure/defect/interruption mapping).
-- Axial/App.fs:81: settled signal; 190: publication/failure race.
-- Axial.Process/ProcessLive.fs:180: Async callback bridge with ObserverDefectException mapping.
-- Axial.Process/ProcessRun.fs:239: interruptible stdin wait.
-- Axial.Hosting/Hosting.fs:164: host shutdown timeout wait without canceling cleanup.
-- Axial.ElmishFlows/TestRuntime.fs:88: provisioning publication/error.
-- Axial.ElmishFlows/Sub.fs:17,18: startup/completion handoffs.
-
-Propose only (do not implement unless subsequently shown small/obviously correct):
-
-```fsharp
-val taskOfAsyncWithError : CancellationToken -> (exn -> exn) -> Async<'a> -> Task<'a>
-val waitTaskOrCancellation : CancellationToken -> Task -> Task<bool>
+```bash
+dotnet run -c Release --no-build --no-restore --project benchmarks/Axial.Benchmarks -- \
+  --filter '*FiberCostBenchmarks*' '*ParallelCompositionBenchmarks*' \
+  --artifacts artifacts/benchmarks/guardrails-before # then guardrails-after
 ```
 
-First classifies owned cancellation before mapping exceptions (ProcessLive). Second waits without canceling the operation, returning true for settlement and false for cancellation of the wait (Process stdin/Hosting; retain site-specific policy/logging). Specify completion/cancellation tie priority and registration disposal before implementing. Elmish handoffs should consider existing Platform.Signal rather than invent another TCS constructor. Broad bridge migration is deferred: fault/cancellation Task status, ties and Fable semantics need separate tests.
+Before runtime source identical to origin/main; after is implemented source. Existing definitions unchanged. SDK 10.0.402, .NET 10.0.13, BDN 0.15.8. Logs and CSV/Markdown reports under `artifacts/benchmarks/guardrails-{before,after}/`; both exit files contain 0.
 
-## Resume Phase 2
+FiberCost Axial B/op before→after:
+- ForkJoin 2815→2812; ForkResource 4592→4590.
+- ZipPar2 1280→1280; SequencePar8 3704→3704; SequencePar64 22296→22296.
+- Race 1784→1784; TraversePar64 39360→39360; RunOnThreadPool 1181→1181.
+- All Task controls unchanged.
 
-1. Re-read brief/rules/report; confirm machine permission before any dotnet activity. Do not infer permission from this handover.
-2. Tests first, commit tests before implementation; preserve all existing tests. Relevant files: WorkflowResourceTests.fs, WorkflowConcurrencyTests.fs, FiberObserverTests.fs, FiberDiagnosticsTests.fs, RuntimeSemanticsTests.fs.
-3. Gate suspended cleanup, cancel caller mid-cleanup, assert completion waits for cleanup in acquireRelease, ensuring, race loser, explicit scope close; preserve defect composition. Primitive tests must prove behavior, not just fail compilation on a missing name. Existing behavior already passes many cleanup cases; capture behavioral failure using a broken primitive/caller-token propagation as required.
-4. Throw OnStart/OnEnd/OnUnobservedDefect; check composition continues after first throws, sinks/registry/Elmish where feasible, and stable success/error/interrupt/defect exits.
-5. Implement centralized tokens/reporting and target-specific Random.Shared. Avoid broad runtime refactoring and new per-call allocations.
-6. Benchmark only FiberCostBenchmarks and ParallelCompositionBenchmarks against origin/main; record per-case B/op before/after. Measurements currently UNMEASURED, deliberately.
-7. Handover, commit, reply PHASE 2 DONE, stop.
+ParallelComposition raw GC allocated bytes / operation count before→after:
+- traversePar 10k / parallelism 8: 2887536→2887536.
+- zipPar x1000: 1121214.84→1121214.84.
+- sequencePar 10 flows x100: 563611.42→563611.42.
+- race x1000: 1721214.84→1721214.84.
 
-## Phase 3 remaining
+No measured B/op increases. Timing indicative only: ForkResource mean 5328.9→6263.8 ns (~18% higher); no timing improvement claimed. Full timing/control table in report.
 
-Extend torture Scopes.fs/Fibers.fs for mid-cleanup cancellation and throwing observers; register any new scenario. All verification stages, fail-first artifact, clean HEAD-matching result.json, and done-check remain mandatory for implementation completion. Use detached `setsid -f axial-verify` per TOKEN-RULES; no verification was run or claimed during Phase 1.
+## Phase 3 remaining — do not claim slice verified yet
+
+1. Add/tighten torture coverage under examples/Axial.TortureTest for caller cancellation mid-cleanup and throwing observers. No new torture scenario or waiver yet; concurrency-source invariant still outstanding.
+2. Final fail-first artifact after final Phase 3 commit:
+   ```bash
+   { git rev-parse --short HEAD; scripts/check-tests-fail-without-fix.sh origin/main tests/Axial.Tests 'FullyQualifiedName~UninterruptibleCleanupTests'; } > artifacts/verify/fail-first.txt
+   ```
+   Expect compile-red for the new internal primitive; keep the behavioral mutant evidence distinct. A stronger caller-token-propagation mutant can be added if desired, without altering original semantics.
+3. Commit clean final state, then full detached verification per TOKEN-RULES:
+   `setsid -f axial-verify > /home/adam/projects/scratch/axial-coord/pi/guardrails-primitives-verify.log 2>&1`.
+   Poll with sleep 300; timeout/timing failures rerun once per rules before debugging.
+4. Report `artifacts/verify/result.json` matching clean final HEAD. Fable, AOT, full solution build/test, docs and livedocs have NOT run in Phase 2. No result.json exists from Phase 2; focused test logs are not a substitute.
+5. Run `/home/adam/projects/scratch/axial-coord/done-check.sh "$PWD"`; record DONE-CHECK PASS only when actually green.
+6. Update handover/report, commit (no push), reply PHASE 3 DONE and stop.

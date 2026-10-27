@@ -41,6 +41,13 @@ open System.Threading.Tasks
 open Fable.Core
 #endif
 
+// Token substitution only: callers that run a Flow finalizer must also retain its existing runtime masking.
+// Roots and scheduling operations use `uninterruptible id` when they have no cancelable parent.
+module Cancellation =
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)>]
+    let uninterruptible (cleanup: CancellationToken -> 'value) : 'value =
+        cleanup CancellationToken.None
+
 // ---------------------------------------------------------------------------------------------
 // Execution<'value, 'error>: the workflow's core awaitable outcome type.
 // ---------------------------------------------------------------------------------------------
@@ -1590,7 +1597,7 @@ let observeExitTask (exitTask: ExitTask<'value, 'error>) (observer: Exit<'value,
 #else
     exitTask.ContinueWith(
         (fun (completed: Task<Exit<'value, 'error>>) -> observer completed.Result),
-        CancellationToken.None,
+        Cancellation.uninterruptible id,
         TaskContinuationOptions.ExecuteSynchronously,
         TaskScheduler.Default)
     |> ignore
