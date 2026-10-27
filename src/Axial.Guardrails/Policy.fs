@@ -22,7 +22,8 @@ module Policy =
           Files: Assignment list
           Rules: Map<Role, Map<string, RuleLevel>>
           Protected: string list
-          Boundaries: string list }
+          Boundaries: string list
+          Runtime: string list }
 
     type ResolvedFile =
         { Role: Role
@@ -87,7 +88,7 @@ module Policy =
                 if line.StartsWith("[") && line.EndsWith("]") then
                     table <- line.Substring(1, line.Length - 2).Trim()
                     let allowedTable =
-                        table = "default" || table = "projects" || table = "files" || table = "protected" || table = "boundaries"
+                        table = "default" || table = "projects" || table = "files" || table = "protected" || table = "boundaries" || table = "runtime"
                         || (table.StartsWith("roles.") && table.EndsWith(".rules") && table.Split('.').Length = 3)
                     if table = "" then error <- Some $"line {lineNumber}: empty table name"
                     elif not allowedTable then error <- Some $"line {lineNumber}: unknown policy table '{table}'"
@@ -176,7 +177,7 @@ module Policy =
         | Error message -> fail message
         | Ok entries ->
             let allowed path =
-                path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "boundaries.files"
+                path = "version" || path = "baseline" || path = "default.role" || path = "protected.paths" || path = "boundaries.files" || path = "runtime.files"
                 || path.StartsWith("projects.") || path.StartsWith("files.")
                 || (path.StartsWith("roles.") && path.Contains(".rules."))
             match entries |> Map.toSeq |> Seq.tryFind (fst >> allowed >> not) with
@@ -206,7 +207,7 @@ module Policy =
                     match parseRole defaultName, baselineResult with
                     | Error e, _ | _, Error e -> fail e
                     | Ok defaultRole, Ok baseline ->
-                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "boundaries.files")
+                        let needsFiles = entries |> Map.exists (fun key _ -> key.StartsWith("projects.") || key.StartsWith("files.") || key = "protected.paths" || key = "boundaries.files" || key = "runtime.files")
                         let allFiles = if needsFiles then filesUnder repositoryRoot else [||]
                         let assignments prefix allowCapabilitiesEmpty =
                             entries |> Map.toList |> List.choose (fun (key, value) ->
@@ -239,12 +240,12 @@ module Policy =
                             | Error e -> fail e
                             | Ok rules ->
                                 let validatePaths kind paths =
-                                    paths |> List.fold (fun state p -> state |> Result.bind (fun xs -> validatePattern repositoryRoot allFiles false p |> Result.map (fun x -> x::xs))) (Ok [])
+                                    paths |> List.fold (fun state p -> state |> Result.bind (fun xs -> (if kind = "runtime" && (p.Contains('*') || p.Contains('?')) then Error "runtime.files requires exact file paths, not globs" else validatePattern repositoryRoot allFiles false p) |> Result.map (fun x -> x::xs))) (Ok [])
                                     |> Result.map List.rev
-                                match validatePaths "protected" protectedPaths, validatePaths "boundary" boundaryPaths with
-                                | Error e, _ | _, Error e -> fail e
-                                | Ok protectedFiles, Ok boundaries ->
-                                    Ok { Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; Boundaries = boundaries }
+                                match validatePaths "protected" protectedPaths, validatePaths "boundary" boundaryPaths, (getStrings "runtime.files" |> Result.bind (validatePaths "runtime")) with
+                                | Error e, _, _ | _, Error e, _ | _, _, Error e -> fail e
+                                | Ok protectedFiles, Ok boundaries, Ok runtime ->
+                                    Ok { Version = version; Baseline = baseline; DefaultRole = defaultRole; Projects = projects; Files = files; Rules = rules; Protected = protectedFiles; Boundaries = boundaries; Runtime = runtime }
                 | _ -> fail "invalid policy"
 
     let private matchingRoles (path: string) assignments =

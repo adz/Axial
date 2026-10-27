@@ -113,7 +113,8 @@ module PolicyLock =
                 if not missing.IsEmpty then Error $"protected file not found: {missing.Head}" else
                 let hashes = protectedPaths |> Seq.map (fun p -> p,sha256(Path.Combine(root,p))) |> Map.ofSeq
                 let capabilities = config.Files |> List.filter (fun x -> x.Role=Capabilities) |> List.collect _.Patterns |> Set.ofList
-                let boundaries = config.Boundaries |> Set.ofList
+                // Runtime exemptions are approval-sensitive like boundary declarations.
+                let boundaries = (config.Boundaries @ (config.Runtime |> List.map (fun path -> "runtime:" + path))) |> Set.ofList
                 let baselineEntries = baselineEntries(Path.Combine(root,baseline))
                 let roleName = function Domain->"domain" | Capabilities->"capabilities" | Services->"services" | Host->"host" | Test->"test"
                 let sourceProjects =

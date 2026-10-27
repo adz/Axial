@@ -112,7 +112,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("AXG010", "let value () = try failwith \"bad\" with _ -> ()")>]
     [<InlineData("AXG011", "let value = CancellationToken.None")>]
     [<InlineData("AXG012", "let value () = Task.FromResult 1 |> ignore")>]
-    let ``a reason suppresses exactly the adjacent site`` code site =
+    let ``a reason suppresses exactly the adjacent site`` code (site: string) =
         task {
             let other = site.Replace("value", "other")
             let source = $"// axial-allow-{code}: deliberate test witness of an OS bridge\n{site}\n{other}"

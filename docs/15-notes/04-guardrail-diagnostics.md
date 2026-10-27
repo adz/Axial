@@ -251,3 +251,66 @@ semantics. If the fiber intentionally owns and consumes the resource, declare th
 ## AXG008: Keep scope-owned services inside their run
 
 `Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning `Queue.makeScoped`, `Hub.makeScoped`, or `Hub.subscribe` directly leaves a shut-down service. Caches made by `Cache.make`, `makeBounded`, `makeBoundedWithExpiry`, or `makeRec` capture the creating runtime; closing its scope interrupts lookups. Use these services inside the flow or keep their owning scope open. `Queue.make` (and its `bounded`, `unbounded`, `dropping`, and `sliding` shorthands) and `Hub.make` do not register with the scope and may be returned. The syntax check sees direct calls and pipelines ending in a scoped constructor; the result-type check catches composed cache flows but does not flag Queue or Hub by type because it cannot distinguish scoped from unscoped construction. No automatic fix is offered because the correct lifetime depends on the caller. At an intentional boundary, declare the file and use `// axial-allow-AXG008: <reason>`.
+
+## AXG009: Keep raw concurrency inside the runtime
+
+Reports `TaskCompletionSource`, `Interlocked`, F# `lock`, `Monitor`, `CancellationTokenSource` construction,
+`Task.Run`, `Task.Factory.StartNew`, `ContinueWith`, `Thread` construction, and `ThreadPool` calls.
+Prefer Flow concurrency; raw coordination belongs at an OS bridge, not throughout an adapter.
+
+```fsharp
+// Reported: scheduling bypasses Flow ownership.
+let rawWork () = System.Threading.Tasks.Task.Run(fun () -> 1)
+// Fixed: the caller runs and owns the workflow.
+let ownedWork () = Flow.succeed 1
+```
+
+A bridge can use `// axial-allow-AXG009: <specific reason>` on the site or preceding line.
+Exact repository-relative paths in `[runtime].files` exempt runtime implementations from AXG009 only.
+This approval-sensitive list is protected by the policy lock; `[boundaries].files` does not exempt raw concurrency.
+
+## AXG010: Do not silently swallow exceptions
+
+Reports a `try/with` handler that neither uses its bound exception nor calls `raise`, `reraise`, or a reporting
+function. The reporting heuristic accepts call names containing `Report`, `notify`, `Observer`, `Log`, or `Record`
+(case-insensitive). It is not proof that logging succeeds or that every control-flow path reports. Returning or
+recording the bound exception also counts; wildcard handlers returning a fallback value are still reported.
+
+```fsharp
+let swallowed () = try failwith "failed" with _ -> ()
+let propagated () = try failwith "failed" with _ -> reraise ()
+```
+
+When an exception is intentionally irrelevant, use `// axial-allow-AXG010: <specific reason>` at that handler.
+
+## AXG011: Explain uncancellable work
+
+Every `CancellationToken.None` needs a per-site reason, including inside runtime files. Pass the owner's token
+unless cancellation would violate the operation's contract.
+
+```fsharp
+let unownedToken = System.Threading.CancellationToken.None
+let ownedToken (token: System.Threading.CancellationToken) = token
+```
+
+For example, an uncancellable cleanup bridge can use
+`// axial-allow-AXG011: final cleanup must finish after caller cancellation` beside the token expression.
+
+## AXG012: Retain ownership of concurrent work
+
+Reports discarded Task, ValueTask, and Fiber values in wildcard bindings, statements, and pipelines to `ignore`.
+The typed check follows type abbreviations and catches aliased task factories. Direct `Flow.fork ... |> ignore`
+and `Async.Start` / `Async.StartImmediate` are also reported. Retaining a value alone does not prove it will be
+awaited: this rule detects local discards, not whole-program ownership.
+
+```fsharp
+let discarded () = System.Threading.Tasks.Task.FromResult 1 |> ignore
+let retained () = System.Threading.Tasks.Task.FromResult 1
+```
+
+Await the task or retain and join the fiber. A foreign callback with an explicit external owner can use
+`// axial-allow-AXG012: <specific ownership reason>` at the discard.
+
+AXG009–AXG012 are errors for every policy role except `test`. Their per-site allowances do not require boundary
+membership. File-wide allowances are rejected by AXG002, as are missing reasons and stale allowances. No automatic
+fix is offered: choosing ownership, cancellation, or exception reporting changes behavior.
