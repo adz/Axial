@@ -18,7 +18,7 @@ module PolicyLock =
 
     type BaselineEntry = { Rule: string; File: string; Fingerprint: string; Count: int }
     type Snapshot =
-        { Hashes: Map<string,string>; Baseline: BaselineEntry list; BaselineRoles: Map<string,Set<string>>
+        { Version: int; BaselinePath: string; Hashes: Map<string,string>; Baseline: BaselineEntry list; BaselineRoles: Map<string,Set<string>>
           Rules: Map<string,string>; Capabilities: Set<string>; Boundaries: Set<string>; Suppressions: Set<string> }
     type ChangeSummary =
         { RulesDowngraded: string list; BaselineAdded: BaselineEntry list; SuppressionsAdded: string list
@@ -77,23 +77,29 @@ module PolicyLock =
         let explicitFiles = Regex.Matches(File.ReadAllText project, "Compile\\s+Include=\"([^\"]+\\.fs)\"") |> Seq.cast<Match> |> Seq.map (fun m -> Path.GetFullPath(Path.Combine(directory,m.Groups[1].Value))) |> Seq.filter File.Exists |> Seq.toArray
         if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.TopDirectoryOnly)
 
-    let private suppressions root (files: string array) =
-        files |> Seq.filter (fun p -> p.EndsWith(".fs",StringComparison.Ordinal))
-        |> Seq.collect (fun path -> File.ReadLines path |> Seq.mapi (fun i line -> path,i+1,line))
-        |> Seq.choose (fun (path,line,text) -> if Regex.IsMatch(text,"//\\s*axial-allow-AXG[0-9]+:") then Some $"{relative root path}:{line}:{text.Trim()}" else None)
+    let private suppressions root ignores (files: string array) =
+        files |> Seq.filter (fun p ->
+            p.EndsWith(".fs",StringComparison.Ordinal)
+            && not (ignores |> List.exists (fun pattern -> matchesGlob pattern (relative root p))))
+        |> Seq.collect (fun path ->
+            File.ReadLines path
+            |> Seq.choose (fun text ->
+                let matched=Regex.Match(text,"//\\s*axial-allow-(AXG[0-9]+):(.*)$")
+                if matched.Success then Some $"// axial-allow-{matched.Groups[1].Value}:{matched.Groups[2].Value.Trim()}" else None)
+            |> Seq.countBy id
+            |> Seq.collect (fun (text,count) ->
+                seq { for occurrence in 1..count -> $"{relative root path}\t{occurrence}\t{text}" }))
         |> Set.ofSeq
 
     let private mandatoryPaths root (files: string array) baseline config =
         let relativeFiles = files |> Array.map(relative root)
-        let guardrailTestDirs = relativeFiles |> Array.filter(fun p->p.EndsWith(".fsproj") && p.StartsWith("tests/Axial.Guardrails")) |> Array.map(fun p->Path.GetDirectoryName(p).Replace('\\','/'))
         seq {
             yield ConfigName; yield baseline
             yield! relativeFiles |> Seq.filter(fun p ->
                 let name=Path.GetFileName p
                 name=".editorconfig" || name.EndsWith(".globalconfig",StringComparison.OrdinalIgnoreCase)
                 || name.StartsWith("Directory.Build.",StringComparison.Ordinal)
-                || p.EndsWith(".props",StringComparison.Ordinal) || p.EndsWith(".targets",StringComparison.Ordinal)
-                || ((p.EndsWith(".fsproj") || p.EndsWith(".fs")) && guardrailTestDirs |> Array.exists(fun d->p.StartsWith(d+"/",StringComparison.Ordinal))))
+                || p.EndsWith(".props",StringComparison.Ordinal) || p.EndsWith(".targets",StringComparison.Ordinal))
             for pattern in config.Protected do
                 let rx = "^" + Regex.Escape(pattern).Replace("\\*\\*",".*").Replace("\\*","[^/]*").Replace("\\?","[^/]") + "$"
                 yield! files |> Seq.map (relative root) |> Seq.filter (fun p -> Regex.IsMatch(p,rx)) }
@@ -134,12 +140,13 @@ module PolicyLock =
                             |> Seq.map(fun resolved -> roleName resolved.Role)
                             |> Set.ofSeq))
                     |> Map.ofSeq
-                Ok { Hashes=hashes; Baseline=baselineEntries; BaselineRoles=baselineRoles; Rules=policyRules config; Capabilities=capabilities; Boundaries=boundaries; Suppressions=suppressions root files }
+                Ok { Version=2; BaselinePath=baseline; Hashes=hashes; Baseline=baselineEntries; BaselineRoles=baselineRoles; Rules=policyRules config; Capabilities=capabilities; Boundaries=boundaries; Suppressions=suppressions root config.SuppressionIgnores files }
         with ex -> Error ex.Message
 
     let serialize snapshot =
         seq {
-            yield "version = 1"
+            yield "version = 2"
+            yield $"BASELINE_PATH  {snapshot.BaselinePath}"
             for KeyValue(path,hash) in snapshot.Hashes do yield $"SHA256  {hash}  {path}"
             for x in snapshot.Baseline do yield $"BASELINE  {x.Rule}\t{x.File}\t{x.Fingerprint}\t{x.Count}"
             for KeyValue(file,roles) in snapshot.BaselineRoles do
@@ -155,13 +162,20 @@ module PolicyLock =
             if not(File.Exists path) then Error $"{LockName} not found; run 'axial init'" else
             let lines=File.ReadAllLines path
             let fail line message = failwith $"{path}:{line}: {message}; regenerate the lock with 'axial policy approve' after review"
-            if lines.Length=0 || lines[0]<>"version = 1" then fail 1 "the first record must be exactly 'version = 1'"
-            let mutable s={ Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty; Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
+            if lines.Length=0 || not (set ["version = 1"; "version = 2"] |> Set.contains lines[0]) then fail 1 "the first record must be exactly 'version = 1' or 'version = 2'"
+            let mutable baselinePathSeen=false
+            let mutable s={ Version=(if lines[0]="version = 1" then 1 else 2); BaselinePath=DefaultBaseline; Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty; Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
             let unique line kind key exists = if exists then fail line $"duplicate {kind} record '{key}'"
             for index in 1..lines.Length-1 do
                 let lineNumber=index+1
                 let line=lines[index]
                 if line="version = 1" || line.StartsWith("version = ") then fail lineNumber "duplicate or unsupported version record"
+                elif line.StartsWith("BASELINE_PATH  ") then
+                    let value=line.Substring(15)
+                    if String.IsNullOrWhiteSpace value then fail lineNumber "BASELINE_PATH requires a non-empty path"
+                    unique lineNumber "BASELINE_PATH" value baselinePathSeen
+                    baselinePathSeen <- true
+                    s <- {s with BaselinePath=value}
                 elif line.StartsWith("SHA256  ") then
                     let p=line.Split("  ",StringSplitOptions.None)
                     if p.Length<>3 || p[1].Length<>64 || String.IsNullOrWhiteSpace p[2] || p[1] |> Seq.exists(fun c->not(Uri.IsHexDigit c)) then fail lineNumber "SHA256 requires exactly a 64-hex hash and non-empty path"
@@ -208,7 +222,12 @@ module PolicyLock =
         let baselineAdded=current.Baseline |> List.filter(fun x -> x.Count > (oldBase.TryFind(x.Rule,x.File,x.Fingerprint) |> Option.defaultValue 0))
         { RulesDowngraded=downgraded; BaselineAdded=baselineAdded; SuppressionsAdded=Set.difference current.Suppressions old.Suppressions|>Set.toList
           BoundariesAdded=Set.union (Set.difference current.Capabilities old.Capabilities) (Set.difference current.Boundaries old.Boundaries)|>Set.toList
-          ProtectedChanged=(Set.union (old.Hashes |> Map.keys |> Set.ofSeq) (current.Hashes |> Map.keys |> Set.ofSeq) |> Set.filter(fun p->old.Hashes.TryFind p<>current.Hashes.TryFind p)|>Set.toList) @ (if downgraded.IsEmpty && baselineAdded.IsEmpty && old.Suppressions=current.Suppressions && old.Capabilities=current.Capabilities && old.Boundaries=current.Boundaries then [] else [LockName]) }
+          ProtectedChanged=(Set.union (old.Hashes |> Map.keys |> Set.ofSeq) (current.Hashes |> Map.keys |> Set.ofSeq)
+              |> Set.filter(fun p ->
+                  old.Hashes.TryFind p<>current.Hashes.TryFind p
+                  && not (p=old.BaselinePath && p=current.BaselinePath && old.Baseline<>current.Baseline && baselineAdded.IsEmpty))
+              |> Set.toList)
+              @ (if old.Version=2 && downgraded.IsEmpty && baselineAdded.IsEmpty && Set.isSubset current.Suppressions old.Suppressions && old.Capabilities=current.Capabilities && old.Boundaries=current.Boundaries then [] else [LockName]) }
 
     let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.ProtectedChanged.IsEmpty
     let formatSummary x =
