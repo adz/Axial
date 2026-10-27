@@ -103,6 +103,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () =\n    let mutable recorded = None\n    try failwith \"bad\" with ex -> recorded <- Some ex")>]
     [<InlineData("let f () =\n    let recorded = ref None\n    try failwith \"bad\" with ex -> recorded.Value <- Some ex")>]
     [<InlineData("let f () = try failwith \"bad\" with ex when ex :? OperationCanceledException -> Error () | ex -> Error ()")>]
+    [<InlineData("let f () = try failwith \"bad\" with ex -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex).Throw()")>]
     let ``AXG010 accepts exception recording assignments and guarded classification`` body =
         task {
             // The second handler still discards its unclassified exception.
