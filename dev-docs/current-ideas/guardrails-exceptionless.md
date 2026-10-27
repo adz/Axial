@@ -75,3 +75,9 @@ call this an uninterruptible region. User code and adapters use `ensuring`/`acqu
 
 Build order: (1) primitives, with benchmarks and torture; (2) narrow the rules as above; (3) the guide-not-block
 model, and removal of the suppression lock machinery.
+
+Owner refinement: block wherever the rule is certain; guide where it is a heuristic. Errors (scoped by role, no
+notes): AXG011 `CancellationToken.None` outside the uninterruptible primitive; AXG009 raw TCS/Task.Run/ContinueWith/
+Thread/CTS outside runtime-core and capability modules; AXG012 typed discarded Task/Fiber; AXG013 `Thread.Sleep`
+in tests. Guide (warning, `axial-note` acknowledges, checkpoint enforces): AXG010 swallowed exceptions, and AXG013
+awaited finite delays.
