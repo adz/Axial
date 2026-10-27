@@ -171,7 +171,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("AXG010")>]
     [<InlineData("AXG011")>]
     [<InlineData("AXG012")>]
-    let ``AXG002 rejects new rule suppressions without a reason`` code =
+    let ``AXG002 rejects new rule suppressions without a reason`` (code: string) =
         task {
             let! messages = findings "AXG002" $"// axial-allow-{code}:\nlet value = 1"
             let message = Assert.Single messages
@@ -183,7 +183,7 @@ type ConcurrencyPolicyEnvironmentCollection() = class end
 
 [<Collection("Concurrency policy environment")>]
 type ConcurrencyHazardsPolicyTests() =
-    let runWith role runtime boundary project source code =
+    let runWith (role: string) runtime boundary project source code =
         task {
             let! ctx = AnalyzerTestContext.createWithAxial true source
             let root = System.IO.Path.GetDirectoryName ctx.FileName
