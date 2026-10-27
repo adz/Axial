@@ -47,6 +47,7 @@ module PolicyLockTests =
             Directory.CreateDirectory(fixtureDirectory) |> ignore
             let fixture=Path.Combine(fixtureDirectory,"Fixture.fs")
             File.WriteAllText(fixture,"module Fixture\n")
+            File.AppendAllText(Path.Combine(root,ConfigName),"\n[suppressions]\nignore = [\"tests/Axial.Guardrails*/**\", \"tests/Axial.PrintfFixture/**\", \"benchmarks/Axial.Comparative/**\"]\n")
             let old=approved ()
             let text="let fixture = \"// axial-allow-AXG001: x\"\n"
             File.AppendAllText(fixture,text)
@@ -55,6 +56,15 @@ module PolicyLockTests =
             let changes=diff old (current ())
             test <@ changes.SuppressionsAdded.Length=1 @>
             test <@ not (isEmpty changes) @>)
+
+    [<Fact>]
+    let ``fixture text without configured ignore is a suppression`` () =
+        withSuppressionRepository (fun root _ current approved ->
+            let directory=Path.Combine(root,"tests/Axial.Guardrails.Tests")
+            Directory.CreateDirectory(directory) |> ignore
+            let old=approved ()
+            File.WriteAllText(Path.Combine(directory,"Fixture.fs"),"let fixture = \"// axial-allow-AXG001: x\"\n")
+            test <@ (diff old (current ())).SuppressionsAdded.Length=1 @>)
 
     [<Fact>]
     let ``new suppression requires approval`` () =
