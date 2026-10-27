@@ -173,6 +173,22 @@ module PackagePropsTests =
         Assert.Contains("protected files changed:", drift.Output)
 
     [<Fact>]
+    let ``default test builds report guessed waits without enabling ambient effect rules`` () =
+        let build source =
+            buildConsumerInTemp (fun dir ->
+                writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject>" source
+                writeV2Policy dir "test" "deny")
+
+        let ambient = build "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
+        Assert.True(ambient.ExitCode = 0, ambient.Output)
+        Assert.DoesNotContain("AXG001", ambient.Output)
+
+        let guessedWait =
+            build "module Consumer\nlet wait () = task { do! System.Threading.Tasks.Task.Delay 10 }\n"
+        Assert.True(guessedWait.ExitCode <> 0, guessedWait.Output)
+        Assert.Contains("error AXG013", guessedWait.Output)
+
+    [<Fact>]
     let ``missing analyzer folder fails instead of silently skipping`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guardrails-consumer-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore

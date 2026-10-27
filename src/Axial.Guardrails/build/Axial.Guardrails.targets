@@ -17,11 +17,11 @@
       Findings are errors unless their stable fingerprint is in the checked-in baseline. There is no project-wide
       severity downgrade: migrations generate a baseline instead of making new violations non-failing.
 
-      Test projects run only the Fixture analyzer by default: the effect rules flag Thread.Sleep, File and
-      DateTimeOffset that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
+      Test projects run Fixture and WaitForFacts by default: ambient effect rules flag File and DateTimeOffset
+      that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
       run every enabled guardrail in a test project. $(IsTestProject) is set by Microsoft.NET.Test.Sdk.
     -->
-    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture</_AxialGuardrailsIncludeAnalyzersFlag>
+    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture WaitForFacts</_AxialGuardrailsIncludeAnalyzersFlag>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">

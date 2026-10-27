@@ -20,9 +20,10 @@ let private rangesForRule (ctx: CliContext) ruleId =
     | "AXG007" -> ResourceFromFiberAnalyzer.rawRanges ctx
     | "AXG008" -> ScopeFromRunAnalyzer.rawRanges ctx
     | "AXG009" | "AXG010" | "AXG011" | "AXG012" -> ConcurrencyHazardsAnalyzer.rawRanges ruleId ctx
+    | "AXG013" -> WaitForFactsAnalyzer.rawRanges ctx
     | _ -> []
 
-let private knownRuleIds = set [ for number in 1 .. 12 -> sprintf "AXG%03d" number ]
+let private knownRuleIds = set [ for number in 1 .. 13 -> sprintf "AXG%03d" number ]
 
 let private message (sourceText: ISourceText) (range: range) (text: string) : Message =
     let line = sourceText.GetLineString(range.StartLine - 1)

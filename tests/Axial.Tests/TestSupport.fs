@@ -19,6 +19,20 @@ module TestExtensions =
             flow.RunSynchronously(environment, cancellationToken = cancellationToken)
 
 module TestSupport =
+    /// Polls a fact for at most the supplied duration; false means the failure deadline expired.
+    let waitUntil (condition: unit -> bool) (deadline: TimeSpan) =
+        if deadline < TimeSpan.Zero then
+            invalidArg (nameof deadline) "A polling deadline must be finite and non-negative."
+
+        let elapsed = Stopwatch.StartNew()
+        let mutable ready = condition ()
+
+        while not ready && elapsed.Elapsed < deadline do
+            Thread.Sleep 1
+            ready <- condition ()
+
+        ready
+
     let clockEnv () = ClockEnvironment(Clock.live)
     type Address =
         { City: string }
