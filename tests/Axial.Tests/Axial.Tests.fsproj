@@ -28,6 +28,7 @@
     <Compile Include="FiberDiagnosticsTests.fs" />
     <Compile Include="FiberLocalTests.fs" />
     <Compile Include="WorkflowResourceTests.fs" />
+    <Compile Include="UninterruptibleCleanupTests.fs" />
     <Compile Include="ScopedResourceOwnershipTests.fs" />
     <Compile Include="ScopeConcurrencyTests.fs" />
     <Compile Include="ParallelSettlementTests.fs" />

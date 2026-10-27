@@ -4,6 +4,7 @@ module Axial.TortureTest.Scopes
 open System
 open System.Threading
 open Axial
+open Axial.State
 open Axial.TortureTest.Scenario
 
 /// What happened to one resource, in the order it happened.
@@ -21,6 +22,65 @@ type private Disposable(onDispose: unit -> unit) =
             onDispose ()
             Tasks.ValueTask()
 #endif
+
+let private throwingObserver (starts: int ref) (ends: int ref) =
+    { FiberObserver.none with
+        OnStart = fun _ -> increment starts |> ignore; raise (InvalidOperationException "observer start")
+        OnEnd = fun _ _ -> increment ends |> ignore; raise (InvalidOperationException "observer end") }
+
+// Gates force interruption into suspended cleanup rather than relying on a scheduling delay.
+let private interruptedCleanup () : Flow<ClockEnvironment, Never, Check list> =
+    [ 0; 1; 2 ]
+    |> Flow.traverse (fun mode ->
+        flow {
+            let! started = Deferred.make<ClockEnvironment, Never, unit> ()
+            let! resume = Deferred.make<ClockEnvironment, Never, unit> ()
+            let! acquired = Deferred.make<ClockEnvironment, Never, unit> ()
+            let! finished = Ref.make 0
+            let starts, ends = ref 0, ref 0
+            let observer = throwingObserver starts ends
+            let cleanup =
+                flow {
+                    do! Deferred.succeed () started |> Flow.ignore
+                    do! Deferred.await resume
+                    do! Flow.ensureNotCanceled
+                    do! finished |> Ref.update ((+) 1)
+                }
+            let resource : Flow<ClockEnvironment, string, unit> =
+                flow {
+                    let! _ = Flow.scopeAcquireRelease (Flow.ok ()) (fun _ -> cleanup)
+                    if mode = 2 then
+                        do! Deferred.succeed () acquired |> Flow.ignore
+                        return! Flow.never
+                    else
+                        return! Flow.fail "original"
+                }
+                |> Flow.scoped
+            let source =
+                match mode with
+                | 0 -> Flow.fail "original" |> Flow.ensuring cleanup
+                | 1 -> resource
+                | _ -> Flow.race resource (Deferred.await acquired |> Flow.widenError)
+            let! owner = source |> Flow.fork |> Flow.withFiberObserver observer
+            let bounded source =
+                source |> Flow.timeoutWith (TimeSpan.FromSeconds 10.0) (fun () -> Flow.die (TimeoutException "cleanup gate"))
+            let! waiting =
+                flow {
+                    do! Deferred.await started |> bounded
+                    do! Fiber.requestInterrupt owner
+                    return! Fiber.poll owner
+                }
+                |> Flow.ensuring (Deferred.succeed () resume |> Flow.ignore)
+            let! exit = Fiber.awaitExit owner |> bounded
+            let! completed = Ref.get finished
+            let preserved =
+                if mode = 2 then exit = Exit.Success ()
+                else exit = Exit.Failure(Cause.Fail "original")
+            return
+                [ check $"cleanup {mode}: caller interruption waited for suspended cleanup" (waiting.IsNone && completed = 1)
+                  check $"cleanup {mode}: throwing observers preserved the original exit" (preserved && starts.Value = ends.Value && starts.Value > 0) ]
+        })
+    |> Flow.map List.concat
 
 // <snippet:torture-scopes>
 let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
@@ -139,7 +199,10 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                 | Released(scope, id) -> position (Acquired(scope, id)) < position (Released(scope, id))
                 | Acquired _ -> true)
 
+        let! cleanupChecks = interruptedCleanup ()
+
         return
+            cleanupChecks @
             [ check "every acquired resource was released exactly once" (List.sort acquiredIds = List.sort releasedIds && List.distinct releasedIds = releasedIds)
               check "each scope released its resources in reverse order" reverseOrderPerScope
               check "every resource was released after it was acquired" releasedAfterAcquired
