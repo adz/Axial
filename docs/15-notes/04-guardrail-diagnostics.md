@@ -292,8 +292,9 @@ token. A tokenless infinite `Task.Delay` and any `Thread.Sleep`, even an infinit
 reported: counting iterations is a guessed duration, and unbounded polling can hang. In Axial's own tests,
 `Axial.Tests.TestSupport.waitUntil condition deadline` is the approved bounded polling helper; only its
 implementation may contain polling sleeps. Its `TimeSpan` deadline is a failure bound and it returns `false`
-on expiry. Finite waits elsewhere remain reported even when they simulate slow work, generate load, or
-schedule cancellation.
+on expiry. `Axial.Tests.TestSupport.occupyThread duration` is the one approved way to simulate work by blocking a
+thread (a slow handler, a loaded pool); it is never a wait for a fact. Finite waits elsewhere remain reported even
+when they generate load or schedule cancellation.
 The analyzer checks direct awaited delay calls, not aliases or data flow through helper functions.
 `Flow.sleep` and `Clock.sleep` are out of scope: their syntax does not establish whether the environment supplies
 live or controlled time. Manual-clock advance operations are also allowed. No automatic fix is offered because

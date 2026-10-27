@@ -124,3 +124,20 @@ No source, TOML, lock or baseline changes; no approvals or bypass properties.
 Runtime-core `[runtime] files` added (protected TOML); AXG012 now exempt there too; sync findings exempt in test role;
 6 of 9 Thread.Sleep sites fixed, 3 left (RunOnTests:56, WorkflowParallelTests:168, WorkflowSchedulingTests:40: sleep is simulated work).
 Analyzer tests green (see report "Phase 5"). Touched tests not run (lock). After human approval: build, run touched files 20x, `setsid -f axial-verify`, done-check.
+
+## Phase 6 (pre-approval, done): name simulated work
+
+Merged origin/main (flow-uninterruptible; no conflicts). AXG013 exempts `Axial.Tests.TestSupport.occupyThread` by symbol like
+`waitUntil` (test written first, red then green; analyzer runner 205/0). Converted RunOnTests, WorkflowSchedulingTests,
+HttpServiceTests, CrashTests (random pre-kill delay) to `occupyThread`; FiberMetricsTests poll loop to `waitUntil`;
+WorkflowParallelTests overlap to a fact-wait (until peak >= 2 or all entered). Projects without a TestSupport module
+(Files, HttpClient, Telemetry) link `tests/Shared/SimulatedWork.fs`.
+NOT RUN (lock): Axial.Tests {RunOnTests, WorkflowSchedulingTests, WorkflowParallelTests}, HttpClient HttpServiceTests,
+Files CrashTests, Telemetry FiberMetricsTests; none of these projects compiled.
+
+### Exact steps after the human approves the protected files
+1. Full build: `dotnet build Axial.sln -c Release` (confirm no Thread.Sleep AXG013 errors remain anywhere, incl. the 8 previously unanalyzed test projects).
+2. Each touched test file 20x (filter by class): RunOnTests, WorkflowSchedulingTests, WorkflowParallelTests, HttpServiceTests, CrashTests, FiberMetricsTests, plus earlier phase-5 files (FiberObserverTests, WorkflowConcurrencyTests, ProcessServiceTests, ProcessStreamingTests).
+3. `setsid -f /home/adam/projects/scratch/axial-coord/limits/bin/axial-verify > /home/adam/projects/scratch/axial-coord/pi/guardrails-guide-verify.log 2>&1`; poll artifacts/verify/result.json (HEAD, dirty=false).
+4. `/home/adam/projects/scratch/axial-coord/done-check.sh $PWD` must print DONE-CHECK PASS.
+5. Fail-first on the final commit: `{ git rev-parse --short HEAD; scripts/check-tests-fail-without-fix.sh origin/main <project> "<filter>"; } > artifacts/verify/fail-first.txt`.
