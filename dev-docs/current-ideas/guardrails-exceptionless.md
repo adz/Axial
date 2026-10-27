@@ -95,3 +95,12 @@ uses safe primitives, and the raw use is a certain error there.
 - **Exactly-once:** use `Deferred`, not a hand-rolled `Interlocked.Exchange` flag.
 - Then lock/Monitor/Interlocked appear only inside Ref/Counter/Deferred, and "no raw lock outside runtime-core" is
   certain. This replaces the earlier "allow lock in services/capabilities" refinement.
+
+## Simpler core (owner direction, 2026-10-27) — supersedes Ref.Sync / Counter / Report.safely above
+No new public primitives. Flow, Ref, Queue, Deferred and scopes cover it:
+- Native callbacks only post: `Queue.tryOffer` is already synchronous, the single entry point into Flow.
+- One fiber owns the state (plain values or a Ref), so there are no locks. Counters live there or come from Queue stats.
+- One internal addition: an uninterruptible-cleanup function, the only home of `CancellationToken.None`.
+- Observer/sink try/withs are runtime internals; fix them in place.
+- Adapters convert one at a time, with benchmarks. An adapter not worth converting keeps a small declared
+  unsafe bridge file instead of gaining a primitive.
