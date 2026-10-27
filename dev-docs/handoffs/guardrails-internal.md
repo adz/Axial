@@ -1,71 +1,88 @@
-# Guardrails internal — phase 2 handover
+# Guardrails internal — executable validation handover
 
-## State and coordinator override
+## Phase state
 
-Phase 2 implementation and docs written WITHOUT running dotnet, builds, tests, or verification.
-Compilation and focused green tests are NOT established. Fail-first proof remains pending.
-The coordinator decision at the end of `/home/adam/projects/scratch/axial-coord/pi/guardrails-internal.md`
-explicitly supersedes phase 1's instruction to wait before implementing.
+Merged `origin/main` at `99fa396f13e1ecab53029712a577040d7c5f7e4f` in merge commit `050abac57`.
+The coordinator's final **unblocked** instruction has been followed. Focused tests and fail-first are now established;
+this supersedes the previous handover's unrun/wait instructions. This is a phase boundary, NOT final slice completion.
+No push. No runtime behavior changes, repository suppressions, baseline generation, policy approval, or lock edits.
 
-Tests must remain unrun until the coordinator says the lock fix is on main and instructs this lane to merge
-`origin/main`. Do not bypass `axial check`, edit the lock, approve policy, or generate/approve baselines.
-Phase 1 tests: `f3be1dbc2`; checkpoint before phase 1: `acca6316e`; previous handover: `0fd7a3f1c`.
-No push. No runtime behavior changes, per-site allowances, or baseline changes.
+## Changes this phase
 
-## Implementation / decisions
+- Merge resolution preserves BOTH `Policy.Config.Runtime` and main's `SuppressionIgnores`, including parsing and
+  validation. The repository `Axial.Guardrails.toml` now matches main exactly: `[runtime]` is deliberately absent
+  until phase 3. The previous handover said it was deferred, but the actual phase-2 commit still contained it;
+  this merge really removes it. Keep runtime parser, lock handling and fixture tests.
+- Preserved both release-note entries (AXG009–AXG012 and lock version 2).
+- Added `string list` annotation to runtime path validation to fix FS0072 compilation errors.
+- Fixed test plugin discovery: CLI analyzer bindings compile as attributed static METHODS, not properties.
+  Tests invoke every `CliAnalyzerAttribute` method, then filter diagnostics by code. The original reflection
+  helper found no plugins, so its initial failures were fixture failures, not meaningful analyzer RED evidence.
+- Fix commit: `e3f9e3dca`.
 
-- `src/Axial.Guardrails/ConcurrencyHazardsAnalyzer.fs`: four registered CLI analyzers, AXG009–AXG012.
-  Symbol identity detects raw primitives, CancellationToken.None, and Async.Start/StartImmediate.
-  Syntax detects unhandled catch clauses and local discards; typed expression ranges detect Task/ValueTask/Fiber
-  discards (including abbreviations and aliased task factories). Direct discarded fork flows are also detected.
-- All four exempt the resolved `test` role; every other role gets errors. With no policy they run by default.
-- AXG010 treats bound exception use as recording; accepts raise/reraise and call names containing Report, notify,
-  Observer, Log, Record, case-insensitive. This is intentionally heuristic, not path-sensitive proof.
-- All four allow reasoned per-site comments without boundary membership. AXG002 rejects file-wide allowances,
-  absent reasons, and stale directives, using the new rules' raw ranges. Prior rules retain their existing behavior.
-- `Policy.Config.Runtime` parses `[runtime].files`, validates existing in-root paths, and rejects globs.
-  Runtime exemptions affect AXG009 only; adapter boundary membership does not exempt it.
-- `Axial.Guardrails.toml` proposes only App/Cache/Core/Flow/Hub/Parallelism/Platform/Queue/Ref/Stream runtime files.
-  No adapters are included. This policy change is deliberately UNAPPROVED.
-- `PolicyLock.inspect` tracks runtime exemptions in its existing approval-sensitive boundary set with a
-  `runtime:` prefix (also reflected in boundary-change summaries); the policy file hash protects all edits.
-- Catalog category entries, fsproj compilation registration, diagnostic reference sections, and 0.12.0 migration
-  notes updated. No AXG013 changes; that belongs to another lane.
+## Actual validation
 
-## Tests / validation status
+All logs below are local generated files in `artifacts/verify/` and remain untracked.
 
-Existing phase 1 test file covers primitive forms, handlers, discarded work, adjacent suppression, malformed reasons,
-roles, runtime exemption, and boundary non-exemption. Its `(site: string)` inference annotation was already dirty on
-session entry and is retained in this phase's commit.
-Added a policy-lock test proving runtime list growth appears as an approval-sensitive boundary change and policy hash
-change. That test is also UNRUN. No fail-first claim can be made for it.
+- `dotnet build src/Axial.Tool/Axial.Tool.fsproj -c Release -v q -nologo`: passed, no warnings/errors.
+  Important after merging: the initially cached Release policy tool did not understand `[suppressions]`.
+  Rebuilding it resolves that; do not bypass policy checks.
+- `dotnet --roll-forward Major artifacts/bin/Axial.Tool/release/Axial.Tool.dll check`: passed.
+- `dotnet build src/Axial.Guardrails/Axial.Guardrails.fsproj -v q -nologo`: passed, no warnings/errors
+  (`internal-analyzer-build.log`).
+- Focused Debug tests: **76 passed**, filter
+  `FullyQualifiedName~ConcurrencyHazards|FullyQualifiedName~PolicyLockTests`, with
+  `-p:BuildProjectReferences=false` (`internal-tests.log`). This builds/runs the analyzer test project using
+  already compiled project-reference outputs; it does not disable the policy check or any analyzer.
+- Full **Release** Guardrails test suite: **159 passed, 0 failed, 0 skipped**, using
+  `dotnet test tests/Axial.Guardrails.Tests -c Release --nologo -v q -p:BuildProjectReferences=false`
+  (`internal-release-tests.log`). Release is the repository verification configuration.
+- Fail-first script against `origin/main`, same focused filter: **OK: the tests fail**, with actual assertion
+  failures for AXG009–AXG012, suppression/role witnesses, runtime exemption and runtime lock protection.
+  `fail-first.txt` records HEAD and the script result; it is regenerated after the handover commit.
+- Full Debug suite additionally tried: 158 passed, one failure in the unchanged
+  `PackagePropsTests.project reference content invalidates analysis without volatile timestamp invalidation`.
+  Reproduces alone at line 393 (body-only dependency edit did not trigger analysis). Both that test and its
+  targets are identical to main. The same test passed against main's sources in Release, and the full current
+  Release suite passed. Do not describe the Debug suite as green. Details: `internal-package-detail.log`.
 
-No dotnet command was executed in phase 2. Only static inspection and `git diff --check` were used.
-`artifacts/verify/result.json` does not validate this work. Full verify and done-check remain pending.
+## Remaining build/approval boundary
 
-## Exact next steps
+Both normal Debug and Release `dotnet build Axial.slnx` compile the implementation, run the policy check, then
+FAIL on existing-source AXG009–AXG012 findings: 157 build errors including analyzer-failure summaries. Logs:
+`internal-build.log`, `internal-release-build.log`. Debug log has 148 distinct file/line/column/rule/message sites:
+AXG009 93, AXG010 21, AXG011 24, AXG012 10 (some constructor symbol ranges produce multiple diagnostics on one
+line). This is a PARTIAL inventory: failing project dependencies prevent the solution from analyzing everything.
+Do NOT treat these counts as the classification or proposed baseline counts. No baseline/suppression was added
+just to make the build green. Finishing the solution build requires the separately authorized phase-3 work.
 
-1. Stop at this phase boundary. Wait for coordinator's explicit lock-fix-on-main notification.
-2. When instructed, merge `origin/main` (never checkout/switch or bypass the lock); resolve any AXG013 integration
-   in suppression registration / catalog / project compilation while retaining both lanes.
-3. Establish fail-first evidence against the pre-implementation analyzer using the approved procedure. Tests have
-   not yet even compiled. Fix fixture/compiler issues and record actual assertion failures, not lock failures.
-4. Run focused tests:
-   `dotnet test tests/Axial.Guardrails.Tests --nologo -v q --filter 'FullyQualifiedName~ConcurrencyHazards|FullyQualifiedName~PolicyLockTests'`
-   Address compiler/behavior failures; do not infer green from this handover.
-5. Phase 3: classify EVERY src finding in the external report, with file:line/rule/class/reason. Add only specific,
-   true legitimate per-site reasons. Suspicious/unjustified sites remain unfixed and need proposed baseline counts.
-   STOP for human approval before any `axial policy baseline` / `axial policy approve` command.
-6. Phase 4: approval-dependent full verification, final fail-first artifact, clean HEAD-matching result.json,
-   done-check. Do not claim final completion before those pass.
+`artifacts/verify/result.json` does not exist for this phase. Full `axial-verify` and done-check have NOT passed;
+they remain approval-dependent. The phase's green result is the full Release analyzer suite, not the solution.
 
-## Remaining review points
+## Existing implementation decisions retained
 
-- Static implementation only: confirm FCS symbol names and typed-range correspondence against executable tests,
-  especially F# lock and implicit task statements. Tighten Fiber statement/ignore witnesses if necessary.
-- Syntax traversal shares ResourceFromFiberAnalyzer's walker; it is a local heuristic, not whole-program analysis.
-- Runtime entries are exact paths, not pattern expansion. Lock wire format reuses BOUNDARY entries with `runtime:`
-  prefix rather than adding a new snapshot field; no lock was regenerated.
-- User docs show diagnostic examples without claiming observable output. FsLiveDocs validation is pending.
+- Four analyzers AXG009–AXG012; all exempt resolved `test` role, all other roles report errors.
+- AXG010 is a documented heuristic: bound exception use, raise/reraise, or call names containing
+  Report/notify/Observer/Log/Record count as handling; not path-sensitive proof.
+- Reasoned per-site allowances need no boundary membership; AXG002 validates reason, locality and staleness.
+- `[runtime].files` accepts exact existing in-root paths, no globs; exempts AXG009 only. Adapter boundary membership
+  never exempts AXG009. PolicyLock tracks runtime entries as `runtime:`-prefixed boundary entries.
+- No AXG013 changes; another lane owns that rule.
 
-External report: `/home/adam/projects/scratch/axial-coord/pi/guardrails-internal.report.md`.
+## Exact next phase: classification and approval preparation
+
+1. Read the external brief including its final coordinator decisions. Phase 3 is now next, not more waiting for
+   lock-format approval. Re-add the proposed runtime list in the SAME approval batch as source suppressions and
+   baseline preparation. Allowed proposed exact files:
+   `src/Axial/{App,Cache,Core,Flow,Hub,Parallelism,Platform,Queue,Ref,Stream}.fs`.
+   No operational adapters. Re-adding policy entries intentionally makes the lock stale until human approval.
+2. Classify EVERY finding in `src/` in
+   `/home/adam/projects/scratch/axial-coord/pi/guardrails-internal.report.md` as a table of file:line, rule,
+   legitimate/suspicious, and a specific true reason. The current build logs are only a starting inventory.
+   Add per-site suppressions only for justified legitimate sites. Do not fix runtime behavior in this slice.
+3. Suspicious/unjustifiable sites need proposed shrink-only baseline counts. **STOP before running either
+   `axial policy baseline` or `axial policy approve`**; those are human decisions. Never bypass `axial check`.
+4. After coordinator/human approval, complete solution build, full `axial-verify`, HEAD-matching fail-first
+   artifact, clean `result.json`, done-check. Shared dotnet commands serialize; use detached processes for long
+   waits (one full verification in another lane held the lock for ~20 minutes during this phase).
+5. Update/commit this handover at each phase boundary; keep it until all useful content is captured elsewhere.
