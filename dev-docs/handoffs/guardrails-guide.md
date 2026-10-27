@@ -98,3 +98,23 @@ work; propose a shrink-only to-do baseline only if they cannot move in this slic
 hiding into the new tier logic. Do not change runtime adapters or promote AXG011/synchronization ahead of the
 primitives merge. Preserve the lock blocker and report all protected changes for the human's final approval.
 Do not start phase 5 or claim DONE for the full slice.
+
+## Phase 4 inventory (done)
+
+Full tables and per-file lists: `/home/adam/projects/scratch/axial-coord/pi/guardrails-guide.report.md`, section "Phase 4 inventory".
+Evidence: `/home/adam/projects/scratch/axial-coord/pi/guardrails-guide-phase4*` (script, per-project logs/SARIF, rows JSON).
+No source, TOML, lock or baseline changes; no approvals or bypass properties.
+
+| Rule | Error | Warning |
+|---|---|---|
+| AXG009 raw task/TCS/CTS/thread | 25 | 0 |
+| AXG009 lock/Monitor/Interlocked | 0 | 102 |
+| AXG010 | 0 | 24 |
+| AXG011 | 0 | 24 (about 0 after feature/flow-uninterruptible merges) |
+| AXG012 | 5 | 0 |
+| AXG013 | 9 (Thread.Sleep) | 9 (awaited delay) |
+
+- Block-tier errors all sit in `src/Axial` runtime files (AXG009 25, AXG012 5) and `Thread.Sleep` in tests (9). They fail a normal build now.
+  AXG009/AXG012 are not removed by feature/flow-uninterruptible; AXG009 needs exact-file runtime declaration (protected toml) or bridge moves; AXG012 and Thread.Sleep need code fixes.
+- Gap: 8 test projects (and net8.0 of ElmishFlows/Telemetry/WebSocket) cannot be type-checked: their referenced libraries have no built output and a normal build fails on the errors above. Grep estimates are in the report.
+- Next: phase 5 (verify, done-check) after human approves protected files.
