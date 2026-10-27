@@ -10,7 +10,8 @@ module WaitForFactsAnalyzerTests =
     let private findings role body : System.Threading.Tasks.Task<Message list> =
         task {
             let! ctx = AnalyzerTestContext.createWithAxial true (
-                "module M\nopen System\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\n" + body)
+                (if body.StartsWith("namespace ") then body
+                 else "module M\nopen System\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\n" + body))
             let root = System.IO.Path.GetDirectoryName ctx.FileName
             System.IO.Directory.CreateDirectory root |> ignore
             System.IO.File.WriteAllText(ctx.FileName, ctx.SourceText.ToString())
@@ -107,10 +108,42 @@ module WaitForFactsAnalyzerTests =
     [<InlineData("let check ready = async {\n    while not (ready ()) do\n        let! result = Async.Sleep 10\n        ignore result\n}")>]
     [<InlineData("let check ready =\n    for i in 1..2 do\n        while not (ready ()) do\n            Thread.Sleep 10")>]
     [<InlineData("let check ready =\n    while not (ready ()) do\n        if ready () then () else Thread.Sleep 10")>]
-    let ``nearest while loop permits condition polling`` body =
+    [<InlineData("let check () =\n    let mutable count = 0\n    while count < 10 do\n        Thread.Sleep 10\n        count <- count + 1")>]
+    let ``bare while sleeps require an approved helper`` body =
         task {
             let! found = findings Policy.Test body
-            test <@ found = [] @>
+            test <@ found |> List.map _.Code = [ "AXG013" ] @>
+        }
+
+    [<Theory>]
+    [<InlineData("Thread.Sleep 1")>]
+    [<InlineData("task { do! Task.Delay 1 } |> ignore")>]
+    [<InlineData("async { do! Async.Sleep 1 } |> ignore")>]
+    let ``only the named test support helper may contain polling sleeps`` statement =
+        task {
+            let source moduleName =
+                "namespace Axial.Tests\nopen System\nopen System.Threading\nopen System.Threading.Tasks\nmodule " + moduleName + " =\n"
+                + "    let waitUntil (condition: unit -> bool) (deadline: TimeSpan) =\n"
+                + "        let elapsed = Diagnostics.Stopwatch.StartNew()\n"
+                + "        while not (condition ()) && elapsed.Elapsed < deadline do\n"
+                + "            " + statement + "\n"
+            let! allowed = findings Policy.Test (source "TestSupport")
+            test <@ allowed = [] @>
+            let! lookalike = findings Policy.Test (source "OtherSupport")
+            test <@ lookalike |> List.map _.Code = [ "AXG013" ] @>
+        }
+
+    [<Fact>]
+    let ``helper exemption does not leak to siblings or local lookalikes`` () =
+        task {
+            let! found = findings Policy.Test (
+                "namespace Axial.Tests\nopen System.Threading\nmodule TestSupport =\n"
+                + "    let waitUntil condition deadline = Thread.Sleep 1\n"
+                + "    let other () = Thread.Sleep 1\n"
+                + "module Other =\n    let check () =\n"
+                + "        let waitUntil condition deadline = Thread.Sleep 1\n"
+                + "        waitUntil () ()\n")
+            test <@ found |> List.map _.Code = [ "AXG013"; "AXG013" ] @>
         }
 
     [<Theory>]
