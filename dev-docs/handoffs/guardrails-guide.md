@@ -1,76 +1,100 @@
-# Guardrails guide — phase 2 handoff
+# Guardrails guide — phase 3 handoff
 
-STOP after phase 2. Fresh context for phase 3. This is phase completion, not whole-slice verification.
+STOP after phase 3. Fresh context for phase 4. This is phase completion, not whole-slice verification.
 
 ## Context
 
 - Worktree: `/home/adam/projects/Axial/feature/guardrails-guide`, branch `feature/guardrails-guide`.
-- Phase-2 checkpoint: `766ed97ff` (phase-1 merge/revert/design checkpoint).
-- Tests-first commits: `f06cf0da7`, string input correction `b3e53736c`, overload/ignore coverage `c0af0421a`,
-  synchronization scope `e19c09aaa`, nested-ignore witness `4798cb319`. Implementation follows these commits.
-- Brief: `/home/adam/projects/scratch/axial-coord/pi/guardrails-guide.md`; its coordinator/owner sections override
-  the phase-1 proposal. Full current report: `guardrails-guide.report.md` beside that brief.
-- No runtime/service source changes, policy/lock/baseline edits, approvals, bypass properties or push.
+- Phase-2 checkpoint: `75946fffd`. Phase-3 implementation: `969a4bc49`.
+- Tests-first commits: `fc8ba85c1`, input-type corrections `f759a5ea7` / `d322bc339`, expanded tests `0325b27d8`,
+  repeated-checkpoint regression `3fa6726e4`.
+- Brief: `/home/adam/projects/scratch/axial-coord/pi/guardrails-guide.md`; final owner decisions override earlier text.
+- Report: `/home/adam/projects/scratch/axial-coord/pi/guardrails-guide.report.md`.
+- No runtime/service source changes, TOML/lock/baseline edits, approvals, bypass properties, or push.
 
-## Phase-2 behavior
+## Implemented phase-3 behavior
 
-- AXG009 uses exact BCL owners, includes Task construction, and exempts capability-role task bridges and declared
-  runtime files. Test and host-tooling roles remain exempt for task bridges. Tooling means host-role projects under
-  `src/Axial.Guardrails` or `src/Axial.Tool*`, not every host.
-- Latest synchronization refinement wins: lock/Monitor/Interlocked warn everywhere except declared runtime files,
-  including tests, capabilities and host tooling. Error promotion waits for the primitives lane; no optional
-  callback-under-lock heuristic added.
-- AXG010 reports only catch-all handlers ignoring the exception, resolving `exn`/System.Exception type aliases and
-  excluding narrower exception types. Existing exception uses/guards/propagation count. Reporting-like function
-  names alone no longer exempt a handler.
-- AXG011 matching is unchanged, but severity is temporarily Warning until primitives merge. Existing runtime
-  declarations do not yet exempt CancellationToken.None; the eventual exception must be the ONE primitive.
-- AXG012 detects typed Task/ValueTask/Fiber discards only; Async.Start/StartImmediate no longer reported. Direct and
-  piped F# ignore resolve by symbol; same-named user functions and nested ignore calls in retaining lambdas do not
-  trigger. Cold Flow descriptions and awaited work remain out of scope.
-- AXG013: infinite Thread.Sleep and tokenless infinite Task.Delay report. Infinite Async.Sleep and Task.Delay
-  overloads with a cancellation-token parameter are allowed (including TimeProvider + token, not TimeProvider
-  alone). Bounded SpinUntil overloads/alias, bare-loop sleeps, and the one symbol-qualified
-  Axial.Tests.TestSupport.waitUntil helper are tested. The helper's exemption is its symbol and binding-body range.
-- Diagnostic guide and 0.12.0 release notes updated; executable examples unchanged.
+| Finding | Ordinary build | Checkpoint | Notes |
+|---|---|---|---|
+| AXG009 raw Task/TCS/CTS/Thread/ThreadPool/Run/StartNew/ContinueWith | Error | Error | Not accepted |
+| AXG009 lock/Monitor/Interlocked | Warning, temporarily | Warning | Not accepted |
+| AXG010 ignored catch-all exception | Warning | Error | Valid note keeps visible Info with reason |
+| AXG011 CancellationToken.None | Warning, temporarily | Warning | Not accepted |
+| AXG012 typed Task/ValueTask/Fiber discard | Error | Error | Not accepted |
+| AXG013 Thread.Sleep in tests | Error | Error | Not accepted |
+| AXG013 directly awaited delay in tests | Warning | Error | Valid note keeps visible Info with reason |
+| AXG002 invalid note | Warning | Error | Malformed/empty/unknown/stale/misplaced/block-target note |
 
-## Tests / blocker
+- Phase-2 role/runtime/helper scopes are preserved. AXG009 task bridges exempt declared runtime files,
+  capability roles, tests and host tooling. Synchronization exempts ONLY declared runtime files, including when
+  encountered in test/capability/tooling roles. Other AXG010–012 test/host-tooling exemptions remain.
+- AXG011 and synchronization MUST remain warnings until the primitives lane merges; this session did not merge it.
+  AXG011 still has no runtime-file exception: the eventual exception must be the ONE cleanup primitive.
+- Guide syntax: `// axial-note AXG010: reason` or `// axial-note AXG013: reason`, on the finding's first line or
+  immediately preceding line. Only ordinary line comments count. String/XML/block-comment lookalikes do not.
+  Live guide coverage is checked after role/guardrail scoping. No boundary declaration or finding approval needed.
+- AXG009–013 no longer honor `axial-allow` hiding or baseline severity downgrades. AXG002 rejects their legacy
+  allowances. The old test.wait-for-facts allow/warn/deny override does not alter AXG013 tiers.
+- AXG001–008 allowance/baseline behavior is unchanged. Note diagnostics use AXG002 without inheriting baseline
+  downgrades; legacy AXG002 diagnostics retain their old behavior.
+- Test-project default analyzer selection now includes Fixture, WaitForFacts, RawConcurrency, SuppressionIntegrity.
+- No optional callback-under-lock heuristic, review command, collector, snapshot, or manifest was added.
 
-- Source-test runner using the built live analyzer and current test sources: initial red **112 passed / 21 failed**;
-  additional overload/identity red **134 / 4**; synchronization red **135 / 3**; nested-ignore filtered red **12 / 1**.
-- Final green: **139 passed / 0 failed**. Final current-tests-without-fix replay: **114 passed / 25 behavioral
-  failures** (exit 1). Only the two implementation files were shelved; committed tests stayed in place. Both files
-  were restored unchanged afterward. No implementation changed after the green run.
-- Persistent runner/logs: `/home/adam/projects/scratch/axial-coord/pi/guardrails-guide-phase2-*`.
-  FSI loads current AnalyzerTestContext + both test files, built SDK/xUnit/Axial fixture dependencies from the earlier
-  test-waits lane, and this worktree's current analyzer. This is not a normal compiled project test run.
-- SDK fixture options emit caught StructuredLogger binlog/cast messages in FSI; fixtures then use loaded runtime
-  references and are typechecked with no accepted fixture errors.
-- Analyzer project builds normally. Docs conventions and `git diff --check` passed.
-- Normal filtered dotnet test is blocked by policy check. Direct `dotnet --roll-forward Major
-  artifacts/bin/Axial.Tool/release/Axial.Tool.dll check` identifies only the inherited protected change:
-  `src/Axial.Guardrails/build/Axial.Guardrails.targets`. No downgrade/baseline/suppression/boundary additions.
-  Human approves once at the end; do not self-approve or bypass.
-- No new `artifacts/verify/result.json`; all-stage verify, livedocs, standard final fail-first script and done-check
-  remain for phase 5, after policy approval. Do not claim this phase proves the full slice.
+## Checkpoint mechanism and CLI constraint
 
-## Phase 3 only, next session
+ONE MSBuild property: `AxialGuardrailsCheckpoint=true`, set by scripts/verify.sh's build commands and the release
+workflow build. Ordinary Release builds are not checkpoints. Release also builds with --no-incremental.
 
-Implement the simpler owner-approved tier/notes/checkpoint model with tests first:
+The bundled CLI's `--treat-as-error` explicitly changes ALL severities for a code, including Info. It cannot
+preserve noted Info or distinguish warning-level AXG002 notes from legacy AXG002. The implementation therefore
+uses the equivalent targets path: serialize the property into the existing rules file (`setting checkpoint`),
+and resolve only guide/invalid-note severity in the analyzer. No new environment variable or separate state file.
+The existing AXIAL_GUARDRAILS_CONFIG transport is unchanged. This adaptation is recorded in the report.
 
-- Guide tier = AXG010 and awaited-delay AXG013. Warning without a note, visible Info with reason for a valid note;
-  checkpoint promotes unacknowledged guide findings using the analyzer CLI option, behind ONE property set only
-  by checked-in verify/release scripts. Build output is the review list; no snapshots/collector/manifests.
-- Block tier = raw-task AXG009, typed AXG012, Thread.Sleep AXG013, and (after primitives merge) AXG011 and
-  synchronization AXG009. No axial-note exemptions for block findings. Keep the two temporary warning groups
-  temporary until the primitives lane merges; do not promote them through the guide checkpoint switch.
-- AXG002 validates guide notes, live finding coverage and nonempty reason. Invalid notes warn in development and
-  fail checkpoint. Preserve AXG001–008 behavior.
-- Imported AXG009–013 legacy allowance/baseline hiding and old advice/severity messages still need replacement in
-  phase 3. Block rules must be role-scoped, not downgraded by allowances, baselines or the old test.wait-for-facts
-  allow/warn override. AXG010 and awaited AXG013 retain imported severity in this narrowing-only phase.
-- Test-project targets currently select Fixture + WaitForFacts only. Include RawConcurrency in the phase-3 wiring
-  so the latest synchronization scope also runs in normal test builds.
-- List protected target changes for human approval; do not approve/baseline/bypass.
+Build output IS the review list. The checkpoint deletes only the analysis stamp so every checkpoint re-emits Info,
+even if otherwise up-to-date. A committed consumer regression FAILED before this fix: --no-incremental alone is
+not sufficient to guarantee a full review list with the existing content-based analyzer cache.
 
-Do not start phase 4 inventory or phase 5 verification in this session.
+## Validation and fail-first evidence
+
+Evidence: `/home/adam/projects/scratch/axial-coord/pi/guardrails-guide-phase3-*`.
+
+- Analyzer project builds normally (0 warnings/errors).
+- Final source-test runner: **204 passed / 0 failed**, `final-green.log`.
+  Loads current concurrency, wait, hardening and config test sources with built SDK/xUnit/Axial dependencies from
+  the earlier test-waits lane. Registered analyzer plugins are exercised; fixture type errors are rejected.
+- Two real MSBuild + bundled CLI consumer tests: **2 passed / 0 failed**, `package-final-green.log`.
+  Check development warnings, unnoted checkpoint errors, noted Info + reason, repeated checkpoint review output,
+  invalid-note checkpoint errors, cache transition, and test-project RawConcurrency/SuppressionIntegrity selection.
+  Consumers have no policy file: no policy approval or bypass is used. The FSI adapter only replaces repo-root and
+  configuration discovery (AppContext.BaseDirectory differs); assertions and fixture builds are unchanged.
+- Final committed tests replayed with ONLY phase-3 analyzer/targets changes shelved: **165 passed / 39 behavioral
+  failures**, `replay-red.log` (exit 1), and **0 / 2 consumer tests**, `package-replay-red.log` (exit 1).
+  Implementation was restored and rebuilt, followed by the final green runs. Replay script is beside these logs.
+- Initial red evidence and separately committed repeated-checkpoint red: `red.log`, `notes-red.log`,
+  `package-red.log`, `repeat-red.log`. Early unconstrained theory inputs were corrected before implementation;
+  final replay contains behavioral failures, not generic reflection failures.
+- Expanded FSI runner handles existing generic string theories and synchronous Facts. SDK fixture setup emits
+  caught StructuredLogger/binlog cast warnings in FSI; no fixture typechecking errors are accepted.
+- One combined final command hit its outer 300-second timeout after the first consumer test while sharing the
+  dotnet lock. Rerun with a larger outer timeout passed both unchanged; not a test assertion failure.
+- Docs conventions, bash -n scripts/verify.sh, and git diff --check passed. Executable docs examples unchanged.
+
+## Protected-file blocker — human approval required, never bypass
+
+Normal filtered dotnet test is blocked by axial check. Direct built-tool check reports exactly:
+`src/Axial.Guardrails/build/Axial.Guardrails.targets` under protected files changed. Other categories are none.
+This file contains inherited wiring plus phase-3 default analyzer selection, checkpoint rules setting, and forced
+checkpoint analysis. No approval/baseline command was run. scripts/verify.sh and .github/workflows/release.yml
+also changed to select checkpoints; the current policy check does not list them as protected.
+
+No new artifacts/verify/result.json. Full verify/livedocs, the standard final fail-first script, and done-check
+remain for phase 5 after human approval. Do not claim the whole slice passes.
+
+## Phase 4 only, next session
+
+Inventory findings in src/ and tests/ per rule/file. Include raw-task hits in services/host/domain code as bridge
+work; propose a shrink-only to-do baseline only if they cannot move in this slice, without introducing baseline
+hiding into the new tier logic. Do not change runtime adapters or promote AXG011/synchronization ahead of the
+primitives merge. Preserve the lock blocker and report all protected changes for the human's final approval.
+Do not start phase 5 or claim DONE for the full slice.
