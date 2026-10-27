@@ -41,6 +41,15 @@ open System.Threading.Tasks
 open Fable.Core
 #endif
 
+module Cancellation =
+    // Roots without a parent and scheduling operations need an inert token, not a cleanup region.
+    let never: CancellationToken = CancellationToken.None
+
+    // Token substitution only: Flow finalizers must also retain their existing runtime masking.
+    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)>]
+    let uninterruptible (cleanup: CancellationToken -> 'value) : 'value =
+        cleanup never
+
 // ---------------------------------------------------------------------------------------------
 // Execution<'value, 'error>: the workflow's core awaitable outcome type.
 // ---------------------------------------------------------------------------------------------
@@ -1590,7 +1599,7 @@ let observeExitTask (exitTask: ExitTask<'value, 'error>) (observer: Exit<'value,
 #else
     exitTask.ContinueWith(
         (fun (completed: Task<Exit<'value, 'error>>) -> observer completed.Result),
-        CancellationToken.None,
+        Cancellation.never,
         TaskContinuationOptions.ExecuteSynchronously,
         TaskScheduler.Default)
     |> ignore

@@ -75,3 +75,32 @@ call this an uninterruptible region. User code and adapters use `ensuring`/`acqu
 
 Build order: (1) primitives, with benchmarks and torture; (2) narrow the rules as above; (3) the guide-not-block
 model, and removal of the suppression lock machinery.
+
+Owner refinement: block wherever the rule is certain; guide where it is a heuristic. Errors (scoped by role, no
+notes): AXG011 `CancellationToken.None` outside the uninterruptible primitive; AXG009 raw TCS/Task.Run/ContinueWith/
+Thread/CTS outside runtime-core and capability modules; AXG012 typed discarded Task/Fiber; AXG013 `Thread.Sleep`
+in tests. Guide (warning, `axial-note` acknowledges, checkpoint enforces): AXG010 swallowed exceptions, and AXG013
+awaited finite delays.
+
+## Rust-style split: safe primitives, small unsafe modules (owner-approved 2026-10-27)
+The structure follows Rust's `unsafe`: raw primitives (lock/Monitor/Interlocked, TaskCompletionSource,
+CancellationTokenSource, `CancellationToken.None`, Task.Run/ContinueWith, Thread, ambient effects) live only in
+declared runtime-core and capability-bridge files. Each states its invariants and has torture coverage. Everything else
+uses safe primitives, and the raw use is a certain error there.
+- **`Ref` is the `Mutex<T>`:** it already owns a cell and its lock, so the data is unreachable without the lock.
+  Add a synchronous face (e.g. `Ref.Sync`) over the same core for bridge code running in native callbacks
+  outside a fiber. `Ref` keeps its Flow API. Prefer immutable values swapped by `update`, so reading a snapshot
+  needs no lock and callbacks are never invoked under a lock.
+- **`Counter`:** zero-allocation increment/add/read for hot-path counters (drops, heartbeats, byte caps).
+- **Exactly-once:** use `Deferred`, not a hand-rolled `Interlocked.Exchange` flag.
+- Then lock/Monitor/Interlocked appear only inside Ref/Counter/Deferred, and "no raw lock outside runtime-core" is
+  certain. This replaces the earlier "allow lock in services/capabilities" refinement.
+
+## Simpler core (owner direction, 2026-10-27) — supersedes Ref.Sync / Counter / Report.safely above
+No new public primitives. Flow, Ref, Queue, Deferred and scopes cover it:
+- Native callbacks only post: `Queue.tryOffer` is already synchronous, the single entry point into Flow.
+- One fiber owns the state (plain values or a Ref), so there are no locks. Counters live there or come from Queue stats.
+- One internal addition: an uninterruptible-cleanup function, the only home of `CancellationToken.None`.
+- Observer/sink try/withs are runtime internals; fix them in place.
+- Adapters convert one at a time, with benchmarks. An adapter not worth converting keeps a small declared
+  unsafe bridge file instead of gaining a primitive.

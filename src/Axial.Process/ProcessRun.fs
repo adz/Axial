@@ -488,7 +488,8 @@ module internal ProcessRun =
                 // It runs without the caller's token (cancelling the run must not kill the coordinator that runs
                 // the stop ladder); shutting its queue down is how it stops.
                 let! coordinator =
-                    Flow(fun environment _ -> (coordinate ()).Invoke(environment, CancellationToken.None))
+                    Flow(fun environment _ ->
+                        (coordinate ()).Invoke(environment, Platform.Cancellation.never))
                     |> Flow.forkUnownedNamed "process-coordinator"
 
                 let! () =
