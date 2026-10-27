@@ -192,6 +192,34 @@ module Flow =
         }
         |> Platform.ofAwaitable
 
+    // Race closes one scope at a time. Keep an inline close inline rather than allocating the list traversal
+    // and completed task used by closeScopes; a suspended or faulted close still observes the same cleanup cause.
+    let private closeRaceScope
+        (cancellationToken: CancellationToken)
+        (scope: Scope)
+        (exit: Exit<'value, 'error>)
+        : Execution<'value, 'error> =
+#if FABLE_COMPILER
+        closeScopes cancellationToken [ scope ] exit
+#else
+        try
+            let closing = scope.Close cancellationToken
+            if closing.IsCompletedSuccessfully then
+                Platform.ofExit exit
+            else
+                task {
+                    try
+                        do! closing
+                        return exit
+                    with error ->
+                        return combineCleanup (Some error) None (Some exit) "Branch cleanup produced no outcome."
+                }
+                |> Platform.ofAwaitable
+        with error ->
+            combineCleanup (Some error) None (Some exit) "Branch cleanup produced no outcome."
+            |> Platform.ofExit
+#endif
+
     // Registers a finalizer with `scope` and succeeds with `value`. A scope that has closed can no longer run the
     // finalizer, and whoever owned it has finished (a race loser that acquires after the race returned), so the
     // finalizer runs now and the flow is interrupted.
@@ -2110,40 +2138,65 @@ module Flow =
             let winnerScope () = if leftWon.Value then leftScope else rightScope
             let loserScope () = if leftWon.Value then rightScope else leftScope
 
-            let finishWinner winnerExit =
+            let finishWinner (winnerExit: Exit<'value, 'error>) : Execution<'value, 'error> =
                 match winnerExit with
                 | Exit.Success value ->
                     keepBranch (winnerScope ())
                     Execution.ofValue value
-                | Exit.Failure cause -> closeScopes cancellationToken [ winnerScope () ] (Exit.Failure cause)
+                | Exit.Failure _ -> closeRaceScope cancellationToken (winnerScope ()) winnerExit
 
-            let settle winnerExit =
+            let finishLoser (winnerExit: Exit<'value, 'error>) (loserOutcome: Exit<unit, 'error>) : Execution<'value, 'error> =
+                match loserOutcome with
+                | Exit.Success () -> finishWinner winnerExit
+                | Exit.Failure loserCause ->
+                    match Cause.defects loserCause with
+                    | [] -> finishWinner winnerExit
+                    | defects ->
+                        let defectCause = defects |> List.map Cause.Die |> List.reduce Cause.both
+
+                        match winnerExit with
+                        | Exit.Success _ -> finishWinner (Exit.Failure defectCause)
+                        | Exit.Failure winnerCause ->
+                            finishWinner (Exit.Failure(Cause.both winnerCause defectCause))
+
+            let settle (winnerExit: Exit<'value, 'error>) : Execution<'value, 'error> =
                 let loserOutcome =
                     match loserExit.Value with
                     | Some(Exit.Failure cause) -> Exit.Failure cause
                     | _ -> Exit.Success()
 
-                closeScopes CancellationToken.None [ loserScope () ] loserOutcome
+                let closing = closeRaceScope CancellationToken.None (loserScope ()) loserOutcome
+#if !FABLE_COMPILER
+                if closing.IsCompletedSuccessfully then
+                    Platform.guardStack (fun () -> finishLoser winnerExit closing.Result)
+                else
+                    closing
+                    |> Execution.fold
+                        (fun () -> finishLoser winnerExit (Exit.Success ()))
+                        (fun cause -> finishLoser winnerExit (Exit.Failure cause))
+#else
+                closing
                 |> Execution.fold
-                    (fun () -> finishWinner winnerExit)
-                    (fun loserCause ->
-                        match Cause.defects loserCause with
-                        | [] -> finishWinner winnerExit
-                        | defects ->
-                            let defectCause = defects |> List.map Cause.Die |> List.reduce Cause.both
+                    (fun () -> finishLoser winnerExit (Exit.Success ()))
+                    (fun cause -> finishLoser winnerExit (Exit.Failure cause))
+#endif
 
-                            match winnerExit with
-                            | Exit.Success _ -> finishWinner (Exit.Failure defectCause)
-                            | Exit.Failure winnerCause ->
-                                finishWinner (Exit.Failure(Cause.both winnerCause defectCause)))
-
-            Platform.raceExecution
-                leftOp
-                rightOp
-                cancellationToken
-                (fun won -> leftWon.Value <- won)
-                (fun exit -> loserExit.Value <- exit)
-            |> Execution.fold (Exit.Success >> settle) (Exit.Failure >> settle))
+            let settled =
+                Platform.raceExecution
+                    leftOp
+                    rightOp
+                    cancellationToken
+                    (fun won -> leftWon.Value <- won)
+                    (fun exit -> loserExit.Value <- exit)
+#if !FABLE_COMPILER
+            if settled.IsCompletedSuccessfully then
+                Platform.guardStack (fun () -> settle settled.Result)
+            else
+                settled |> Execution.fold (Exit.Success >> settle) (Exit.Failure >> settle)
+#else
+            settled |> Execution.fold (Exit.Success >> settle) (Exit.Failure >> settle)
+#endif
+            )
 
     /// <summary>Lifts an option into a synchronous flow with the supplied error.</summary>
     /// <param name="error">The error to return if the option is <c>None</c>.</param>
