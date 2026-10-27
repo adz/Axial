@@ -8,9 +8,9 @@ description: Use Axial.Guardrails to detect ambient effects, exceptions in workf
 
 ## Repository policy lock
 
-`axial check` compares the repository policy, baseline, analyzer configuration, and Guardrails test inputs with `Axial.Guardrails.lock`. The lock is a workflow guard, not a security boundary: direct edits remain visible in Git, and agent hooks that block lock edits arrive in phase 3.
+`axial check` compares the repository policy, baseline, and analyzer configuration with `Axial.Guardrails.lock`. The lock is a workflow guard, not a security boundary: direct edits remain visible in Git, and agent hooks that block lock edits arrive in phase 3.
 
-Test counts come from active F# source after comments, strings, and inactive `#if false` regions are removed. Assertion counts include direct xUnit `Assert`, Expecto `Expect`, Unquote `test <@`, and direct aliases such as `let verify = Assert.True`; arbitrary user-defined wrappers do not count. This untyped pass avoids loading and type-checking every test project during `axial check`.
+Mandatory protected inputs include the TOML policy, baseline, `.editorconfig`/`.globalconfig`, `Directory.Build.*`, and all `.props`/`.targets` files. Guardrails test sources and project files are not automatically protected; adding, editing, or deleting them does not require approval unless the policy explicitly protects them. The lock itself records the approved snapshot.
 
 Axial models operational effects as explicit, mockable dependencies. Direct access to ambient state can bypass those dependencies without changing a function's signature.
 

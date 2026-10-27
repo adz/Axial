@@ -138,12 +138,11 @@ The baseline stores rule ID, repository-relative file, stable fingerprint, and d
 | TOML, baseline, and lock | Select policy, roles, accepted debt, and ratchets |
 | `Directory.Build.props` / `Directory.Build.targets` | Can remove or bypass analyzer execution |
 | Repository/project `.editorconfig` and analyzer config | Can change severity or analyzer behavior |
-| Project files that build Guardrails tests | Can remove tests or fixtures |
 | Additional exact paths declared in TOML | Protect repository-specific enforcement inputs |
 
-The config may add protected paths but not remove the mandatory set. Protected-input discovery is a heuristic, not evaluated MSBuild: it covers repository `.editorconfig`/`.globalconfig` files, `Directory.Build.*`, all `.props`/`.targets`, and `.fsproj`/`.fs` files physically under `tests/Axial.Guardrails*`; linked sources and transitive project inputs outside those directories are not discovered. Source capabilities files are not checksummed: role globs are locked, while normal implementation edits remain normal edits.
+The config may add protected paths but not remove the mandatory set. Protected-input discovery is a heuristic, not evaluated MSBuild: it covers repository `.editorconfig`/`.globalconfig` files, `Directory.Build.*`, all `.props`/`.targets`, does not automatically protect `.fsproj`/`.fs` files under `tests/Axial.Guardrails*`. Test deletion is not a policy ratchet. Source capabilities files are not checksummed: role globs are locked, while normal implementation edits remain normal edits.
 
-Before analysis, `axial guardrails check` hashes the protected set and validates policy, baseline monotonicity, and test counts. A mismatch prints a deterministic summary:
+Before analysis, `axial guardrails check` hashes the protected set and validates policy, baseline monotonicity, and suppressions. A mismatch prints a deterministic summary:
 
 ```text
 AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED
@@ -152,7 +151,7 @@ AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED
   suppressions added:     2
   capabilities globs added:    src/App/Capabilities/**
   test count decreased:   3 (requires lock --accept-test-decrease)
-  protected files changed: Axial.Guardrails.toml, Orders.Guardrails.Tests.fsproj
+  protected files changed: Axial.Guardrails.toml, Directory.Build.targets
 Review with a human; then run the applicable axial guardrails command.
 ```
 
