@@ -1128,8 +1128,8 @@ module internal RuntimeContext =
             Observer = FiberObserver.none
             Registries = []
             Tracer = None
-            BranchToken = Platform.Cancellation.uninterruptible id
-            OuterToken = Platform.Cancellation.uninterruptible id
+            BranchToken = Platform.Cancellation.never
+            OuterToken = Platform.Cancellation.never
         }
 
     let detached : RuntimeContext =
@@ -1379,7 +1379,7 @@ type Flow<'env, 'error, 'value> =
     /// <returns>A value task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.StartAsValueTask(environment: 'env, ?cancellationToken: CancellationToken) : ValueTask<Exit<'value, 'error>> =
-        this.ToExecution(environment, defaultArg cancellationToken (Platform.Cancellation.uninterruptible id))
+        this.ToExecution(environment, defaultArg cancellationToken Platform.Cancellation.never)
 
     /// <summary>Starts the workflow immediately and returns a task handle for its final exit.</summary>
     /// <remarks>The work is already in flight when this returns. Use <c>ToAsync</c> for a cold handle.</remarks>
@@ -1388,7 +1388,7 @@ type Flow<'env, 'error, 'value> =
     /// <returns>A task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.StartAsTask(environment: 'env, ?cancellationToken: CancellationToken) : Task<Exit<'value, 'error>> =
-        this.ToExecution(environment, defaultArg cancellationToken (Platform.Cancellation.uninterruptible id)).AsTask()
+        this.ToExecution(environment, defaultArg cancellationToken Platform.Cancellation.never).AsTask()
 
     /// <summary>Starts the workflow and blocks until the final exit is available.</summary>
     /// <remarks>To bound how long the workflow may run, apply <c>Flow.timeout</c> to it: that interrupts the work

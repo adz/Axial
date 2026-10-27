@@ -489,7 +489,7 @@ module internal ProcessRun =
                 // the stop ladder); shutting its queue down is how it stops.
                 let! coordinator =
                     Flow(fun environment _ ->
-                        Platform.Cancellation.uninterruptible (fun token -> (coordinate ()).Invoke(environment, token)))
+                        (coordinate ()).Invoke(environment, Platform.Cancellation.never))
                     |> Flow.forkUnownedNamed "process-coordinator"
 
                 let! () =

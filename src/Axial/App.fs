@@ -233,13 +233,13 @@ module App =
                             (fun _ -> if won then finish (fun () -> cancelled (OperationCanceledException("startWith was cancelled", callerToken)))),
                             (fun error -> if won then finish (fun () -> failure error)),
                             (fun error -> if won then finish (fun () -> cancelled error)),
-                            cancellationToken = Platform.Cancellation.uninterruptible id)))
+                            cancellationToken = Platform.Cancellation.never)))
                     Async.StartWithContinuations(
                         async { return! published.Task |> Async.AwaitTask },
                         (fun exit -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> success exit)),
                         (fun error -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> failure error)),
                         (fun error -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> cancelled error)),
-                        cancellationToken = Platform.Cancellation.uninterruptible id))
+                        cancellationToken = Platform.Cancellation.never))
             match outcome with
             | Exit.Success services -> return Ok(running, services)
             | exit ->

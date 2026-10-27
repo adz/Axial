@@ -265,8 +265,8 @@ module Flow =
             let runtime =
                 { acquiredIn with
                     Scope = scope
-                    BranchToken = Platform.Cancellation.uninterruptible id
-                    OuterToken = Platform.Cancellation.uninterruptible id }
+                    BranchToken = Platform.Cancellation.never
+                    OuterToken = Platform.Cancellation.never }
             let previous = RuntimeState.current ()
             let execution =
                 try
@@ -313,8 +313,8 @@ module Flow =
             let runtime =
                 { acquiredIn with
                     Scope = scope
-                    BranchToken = Platform.Cancellation.uninterruptible id
-                    OuterToken = Platform.Cancellation.uninterruptible id }
+                    BranchToken = Platform.Cancellation.never
+                    OuterToken = Platform.Cancellation.never }
 
             let finish (exit: Exit<unit, Never>) (closing: Platform.Deed) : Platform.Deed =
                 Platform.execution {
@@ -588,7 +588,7 @@ module Flow =
 #if FABLE_COMPILER
                 Execution.ofExit (run ())
 #else
-                ValueTask<Exit<'value, 'error>>(Task.Run(run, Platform.Cancellation.uninterruptible id))
+                ValueTask<Exit<'value, 'error>>(Task.Run(run, Platform.Cancellation.never))
 #endif
         )
 
@@ -634,7 +634,7 @@ module Flow =
 
                     Task.Factory.StartNew<Task<Exit<'value, 'error>>>(
                         runScheduled,
-                        Platform.Cancellation.uninterruptible id,
+                        Platform.Cancellation.never,
                         options,
                         scheduler)
                     |> fun outer -> outer.Unwrap()
@@ -1515,7 +1515,7 @@ module Flow =
             // closes, which also happens when the forking flow is interrupted.
             let parentToken =
                 match graceful with
-                | Some _ -> Platform.Cancellation.uninterruptible id
+                | Some _ -> Platform.Cancellation.never
                 | None -> RuntimeContext.forkToken parentRuntime cancellationToken
 
             let cts, exitTask =
@@ -1881,7 +1881,7 @@ module Flow =
 
         let start () =
             RuntimeState.withRuntime owner (fun () ->
-                Platform.Cancellation.uninterruptible (invoke (forkDetached publisher) environment))
+                invoke (forkDetached publisher) environment Platform.Cancellation.never)
             |> Execution.map (fun (_: Fiber<Never, unit>) -> ())
 
         signal, start
@@ -1964,7 +1964,7 @@ module Flow =
     // through the fiber observer unless someone else consumed its outcome.
     let private afterReplaced (previous: Platform.Signal<Fiber<'error, 'value> option>) (flow: Flow<'env, 'error, 'value>) =
         Flow(fun environment cancellationToken ->
-            Platform.Cancellation.uninterruptible (Platform.awaitSignal previous)
+            Platform.awaitSignal previous Platform.Cancellation.never
             |> Execution.bind (fun (replaced: Fiber<'error, 'value> option) ->
                 match replaced with
                 | Some fiber ->
