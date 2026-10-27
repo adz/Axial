@@ -70,6 +70,7 @@
     <Compile Include="EffectBoundaryAnalyzer.fs" />
     <Compile Include="ResourceFromFiberAnalyzer.fs" />
     <Compile Include="ScopeFromRunAnalyzer.fs" />
+    <Compile Include="WaitForFactsAnalyzer.fs" />
     <Compile Include="FixtureAnalyzer.fs" />
     <Compile Include="DiscardedCancellationAnalyzer.fs" />
     <Compile Include="ReflectionFormattingAnalyzer.fs" />

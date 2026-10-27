@@ -18,9 +18,10 @@ let private rangesForRule (ctx: CliContext) ruleId =
     | "AXG006" -> ReflectionFormattingAnalyzer.rawRangesWithNativeAot (load ()).NativeAot ctx
     | "AXG007" -> ResourceFromFiberAnalyzer.rawRanges ctx
     | "AXG008" -> ScopeFromRunAnalyzer.rawRanges ctx
+    | "AXG013" -> WaitForFactsAnalyzer.rawRanges ctx
     | _ -> []
 
-let private knownRuleIds = set [ for number in 1 .. 8 -> sprintf "AXG%03d" number ]
+let private knownRuleIds = Set.add "AXG013" (set [ for number in 1 .. 8 -> sprintf "AXG%03d" number ])
 
 let private message (sourceText: ISourceText) (range: range) (text: string) : Message =
     let line = sourceText.GetLineString(range.StartLine - 1)

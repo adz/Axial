@@ -248,6 +248,44 @@ No automatic fix is offered because `forkResource`, `zipPar`, and keeping owners
 semantics. If the fiber intentionally owns and consumes the resource, declare the file as a boundary and use
 `// axial-allow-AXG007: <reason>`.
 
+## AXG013: Wait for facts, not time
+
+In policy role `test`, `test.wait-for-facts` defaults to `deny`. `AXG013` reports `Thread.Sleep`
+and directly awaited `Task.Delay` or `Async.Sleep` (`do!` or `let!`). A guessed pause does not prove
+that background work reached the point an assertion needs.
+
+Reported:
+
+```fsharp
+open System.Threading.Tasks
+
+let guessedWait (assertReady: unit -> unit) = task {
+    do! Task.Delay 10
+    assertReady ()
+}
+```
+
+Fixed: the worker completes the gate at the point the test needs to observe. The timeout is only a failure deadline.
+
+```fsharp
+open System
+open System.Threading.Tasks
+
+let waitForReady (ready: TaskCompletionSource<unit>) (assertReady: unit -> unit) = task {
+    do! ready.Task.WaitAsync(TimeSpan.FromSeconds 30.)
+    assertReady ()
+}
+```
+
+A `Deferred` completed by the worker serves the same purpose. For scheduling behavior, step a test clock instead.
+`Task.WhenAny(work, Task.Delay duration)` (including array arms or a locally bound deadline), fact-based
+`Wait(timeout)` / `WaitAsync(timeout)`, and `SpinWait.SpinUntil(predicate, timeout)` are allowed.
+The analyzer checks direct awaited delay calls, not aliases or data flow through helper functions.
+`Flow.sleep` and `Clock.sleep` are out of scope: their syntax does not establish whether the environment supplies
+live or controlled time. Manual-clock advance operations are also allowed. No automatic fix is offered because
+only the test author knows which fact must be observed. An intentional foreign-delay test can declare its file
+as a boundary and use `// axial-allow-AXG013: <reason>` at that site; AXG002 validates the directive.
+
 ## AXG008: Keep scope-owned services inside their run
 
 `Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning `Queue.makeScoped`, `Hub.makeScoped`, or `Hub.subscribe` directly leaves a shut-down service. Caches made by `Cache.make`, `makeBounded`, `makeBoundedWithExpiry`, or `makeRec` capture the creating runtime; closing its scope interrupts lookups. Use these services inside the flow or keep their owning scope open. `Queue.make` (and its `bounded`, `unbounded`, `dropping`, and `sliding` shorthands) and `Hub.make` do not register with the scope and may be returned. The syntax check sees direct calls and pipelines ending in a scoped constructor; the result-type check catches composed cache flows but does not flag Queue or Hub by type because it cannot distinguish scoped from unscoped construction. No automatic fix is offered because the correct lifetime depends on the caller. At an intentional boundary, declare the file and use `// axial-allow-AXG008: <reason>`.

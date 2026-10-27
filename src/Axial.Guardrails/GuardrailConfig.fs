@@ -138,7 +138,7 @@ let parse (lines: string seq) : Config =
     let policy =
         match policyRoot, setting "policyFile" with
         | Some root, Some path when File.Exists path ->
-            let known = set [ "effects.ambient"; "domain.async-return"; "domain.whole-environment"; "domain.service-provider"; "test.integrity" ]
+            let known = set [ "effects.ambient"; "domain.async-return"; "domain.whole-environment"; "domain.service-provider"; "test.integrity"; "test.wait-for-facts" ]
             match Policy.parse root known (File.ReadAllText path) with
             | Ok parsed -> Some parsed
             | Error errors -> invalidArg "lines" (String.concat Environment.NewLine errors)

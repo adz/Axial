@@ -162,6 +162,11 @@ let builtInRules: EffectRule list =
             "blocks the calling thread waiting for a task"
             "await the task asynchronously" with Scope = OutsideFlow }
 
+      // AXG013 is structural; no ambient-effect symbol match is registered here.
+      rule "test.wait-for-facts" CoreGuardrail "test-wait" (MembersOf("Axial.__WaitForFacts", []))
+          "Wait for a fact, not elapsed time."
+          "Complete a Deferred or TaskCompletionSource and wait with a deadline, or step the test clock."
+
       // AXG008 is syntactic; this entry registers its suppression category.
       rule "scope.run" CoreGuardrail "scope" (MembersOf("Axial.__ScopeFromRun", []))
           "returns a scope-owned service" "use the service within its run"

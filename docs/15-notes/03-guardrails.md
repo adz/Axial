@@ -120,6 +120,7 @@ policy change. Ordinary policy approval refuses baseline growth.
 | `AXG004` | `Fixture` | Shared module-level values in xUnit test modules |
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
 | `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
+| `AXG013` | `WaitForFacts` | Guessed waits in test-role code; wait for a fact with a failure deadline instead |
 | `AXG007` | `ResourceFromFiber` | A forked flow that returns a scoped resource it acquired, which the fiber releases before `Fiber.join` returns it |
 | `AXG008` | `ScopeFromRun` | A run returning a scope-owned `Queue.makeScoped`, `Hub.makeScoped` or `Hub.subscribe` result, or a cache tied to its creating runtime |
 
@@ -173,4 +174,5 @@ intentional boundary — is on the [diagnostics reference](guardrail-diagnostics
 - [`AXG005`](guardrail-diagnostics.html#axg005-preserve-cancellation-tokens): task adapters that drop their token.
 - [`AXG006`](guardrail-diagnostics.html#axg006-format-without-reflection): reflection-dependent formatting.
 - [`AXG007`](guardrail-diagnostics.html#axg007-keep-resources-acquired-by-a-fiber): resources returned from fibers.
+- [`AXG013`](guardrail-diagnostics.html#axg013-wait-for-facts-not-time): guessed test waits. Runs only in policy role `test`; `test.wait-for-facts` defaults to `deny`. Workflow clock sleeps are out of scope.
 - [`AXG008`](guardrail-diagnostics.html#axg008-keep-scope-owned-services-inside-their-run): scoped queues and hubs, subscriptions, and caches returned by a run. Unscoped `Queue.make` (including its shorthands) and `Hub.make` are allowed.

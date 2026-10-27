@@ -15,7 +15,7 @@ module WaitForFactsAnalyzerTests =
             System.IO.Directory.CreateDirectory root |> ignore
             let policyFile = System.IO.Path.Combine(root, "Axial.Guardrails.toml")
             let roleName = string role |> fun value -> value.ToLowerInvariant()
-            System.IO.File.WriteAllText(policyFile, $"version = 2\n[default]\nrole = \"{roleName}\"\n")
+            System.IO.File.WriteAllText(policyFile, $"version = 2\n[default]\nrole = \"{roleName}\"\n[boundaries]\nfiles = [\"{System.IO.Path.GetFileName ctx.FileName}\"]\n")
             try
                 // Axial.Tool also compiles Policy.fs; parsing avoids mixing assembly-local types.
                 let project = System.IO.Path.ChangeExtension(ctx.FileName, ".fsproj")
@@ -98,9 +98,9 @@ module WaitForFactsAnalyzerTests =
     let ``suppression applies only to its site`` () =
         task {
             let! found = findings Policy.Test (
-                "let check () =\n    Thread.Sleep 10 // axial-allow-AXG013: exercises the foreign blocking boundary\n    Thread.Sleep 20\n    ignore 42")
+                "let check () =\n    Thread.Sleep 10 // axial-allow-AXG013: exercises the foreign blocking boundary\n\n    Thread.Sleep 20\n    ignore 42")
             test <@ found |> List.map _.Code = [ "AXG013" ] @>
-            test <@ found.Head.Range.StartLine = 8 @>
+            test <@ found.Head.Range.StartLine = 9 @>
         }
 
     [<Fact>]
