@@ -176,6 +176,22 @@ Guardrails ships as a .NET tool whose executable is `axial`. Grouped commands le
 
 The NuGet analyzer package still runs during ordinary builds. The tool provides policy workflows, scaffolding, and explicit checks; users do not need a second Guardrails-specific executable.
 
+## Review, 2026-10-27: guard the bugs we actually had
+
+Phase 1 shipped the lock, roles and baseline ratchets; ranks 3 (discarded computations) and 5 (swallowed failures)
+below did not ship. Over 19–26 October the days were spent on bugs no rule covered, all inside Axial's own adapters
+and runtime: Process stdin/stop coordination (~6 days), race/forkReplacing/mergePar/disconnect cleanup, App.startWith
+and runOn cancellation, and sleep-based flaky tests. Whole adapter files sat on `[boundaries]`, exempt from AXG001.
+
+Decisions:
+- Add rules for those classes: AXG009 raw concurrency primitives outside declared runtime-core files, AXG010
+  swallowed exceptions, AXG011 `CancellationToken.None` without a reason, AXG012 discarded fibers/tasks, AXG013 tests
+  that wait for time instead of facts.
+- Suppressions are identified in the lock by file and text, not line number, so moving code needs no approval.
+- No further anti-tamper hardening. The policy lock and the verify lock are enough; new guardrails work goes to rules
+  that catch defects.
+- Every concurrency fix brings a torture scenario (see `dev-docs/VERIFICATION.md`).
+
 ## Rules, ordered by benefit versus cost
 
 | Rank | Rule | Precision and fix guidance | Cost |
