@@ -36,6 +36,26 @@ module PolicyLockTests =
             write "App.fs" source
             test <@ diff old (current ()) |> isEmpty @>)
 
+    [<Theory>]
+    [<InlineData("tests/Axial.Guardrails.Tests")>]
+    [<InlineData("tests/Axial.Guardrails.Consumer")>]
+    [<InlineData("tests/Axial.PrintfFixture")>]
+    [<InlineData("benchmarks/Axial.Comparative")>]
+    let ``fixture suppression text in skipped projects does not require approval`` directory =
+        withSuppressionRepository (fun root write current approved ->
+            let fixtureDirectory=Path.Combine(root,directory)
+            Directory.CreateDirectory(fixtureDirectory) |> ignore
+            let fixture=Path.Combine(fixtureDirectory,"Fixture.fs")
+            File.WriteAllText(fixture,"module Fixture\n")
+            let old=approved ()
+            let text="let fixture = \"// axial-allow-AXG001: x\"\n"
+            File.AppendAllText(fixture,text)
+            test <@ diff old (current ()) |> isEmpty @>
+            write "App.fs" text
+            let changes=diff old (current ())
+            test <@ changes.SuppressionsAdded.Length=1 @>
+            test <@ not (isEmpty changes) @>)
+
     [<Fact>]
     let ``new suppression requires approval`` () =
         withSuppressionRepository (fun _ write current approved ->
