@@ -301,6 +301,26 @@ type ConcurrencyHazardsPolicyTests() =
         }
 
     [<Theory>]
+    [<InlineData("AXG009")>]
+    [<InlineData("AXG012")>]
+    member _.``benchmark projects permit measured raw concurrency baselines`` code =
+        task {
+            let! messages = runWith "host" false false "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" source code
+            Assert.Empty messages
+            let! outside = runWith "host" false false "samples/benchmarks/Axial.Benchmarks.fsproj" source code
+            Assert.NotEmpty outside
+        }
+
+    [<Theory>]
+    [<InlineData("AXG010")>]
+    [<InlineData("AXG011")>]
+    member _.``benchmark projects retain exception and cancellation checks`` code =
+        task {
+            let! messages = runWith "host" false false "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" source code
+            Assert.NotEmpty messages
+        }
+
+    [<Theory>]
     [<InlineData("services", "src/Axial.Tool/Axial.Tool.fsproj")>]
     [<InlineData("host", "samples/Axial.Tool/Axial.Tool.fsproj")>]
     [<InlineData("host", "src/Axial.Guardrails.Consumer/Axial.Guardrails.Consumer.fsproj")>]
