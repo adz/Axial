@@ -75,6 +75,8 @@ module WaitForFactsAnalyzerTests =
     [<InlineData("let check (work: Task) = work.Wait(1000)")>]
     [<InlineData("let check (work: Task) = task { do! work.WaitAsync(TimeSpan.FromSeconds 1.) }")>]
     [<InlineData("let check (ready: unit -> bool) = SpinWait.SpinUntil(Func<bool>(ready), 1000)")>]
+    [<InlineData("let check (ready: unit -> bool) = SpinWait.SpinUntil(Func<bool>(ready), TimeSpan.FromSeconds 1.)")>]
+    [<InlineData("type Poll = System.Threading.SpinWait\nlet check (ready: unit -> bool) = Poll.SpinUntil(Func<bool>(ready), 1000)")>]
     [<InlineData("let rec waitUntil ready (deadline: DateTimeOffset) =\n    if ready () then true\n    elif DateTimeOffset.UtcNow >= deadline then false\n    else Thread.Yield() |> ignore; waitUntil ready deadline")>]
     [<InlineData("let check () =\n    flow {\n        do! Flow.sleep (TimeSpan.FromSeconds 1.)\n        return 42\n    } |> Flow.timeout (TimeSpan.FromSeconds 2.)")>]
     [<InlineData("let check () = Flow.race (Flow.ok ()) (Flow.sleep (TimeSpan.FromSeconds 1.))")>]
@@ -85,9 +87,6 @@ module WaitForFactsAnalyzerTests =
         }
 
     [<Theory>]
-    [<InlineData("Thread.Sleep Timeout.Infinite")>]
-    [<InlineData("Thread.Sleep Timeout.InfiniteTimeSpan")>]
-    [<InlineData("Thread.Sleep -1")>]
     [<InlineData("do! Task.Delay(Timeout.Infinite, token)")>]
     [<InlineData("do! Task.Delay(Timeout.InfiniteTimeSpan, token)")>]
     [<InlineData("do! Task.Delay(-1, token)")>]
@@ -100,6 +99,19 @@ module WaitForFactsAnalyzerTests =
             let builder = if statement.Contains("Async.Sleep") then "async" else "task"
             let! found = findings Policy.Test ("let check (token: CancellationToken) = " + builder + " {\n    " + statement + "\n}")
             test <@ found = [] @>
+        }
+
+    [<Theory>]
+    [<InlineData("Thread.Sleep Timeout.Infinite")>]
+    [<InlineData("Thread.Sleep Timeout.InfiniteTimeSpan")>]
+    [<InlineData("Thread.Sleep -1")>]
+    [<InlineData("do! Task.Delay Timeout.Infinite")>]
+    [<InlineData("do! Task.Delay Timeout.InfiniteTimeSpan")>]
+    [<InlineData("do! Task.Delay -1")>]
+    let ``infinite blocking sleeps and tokenless task delays are not cancellation waits`` (statement: string) =
+        task {
+            let! found = findings Policy.Test ("let check () = task {\n    " + statement + "\n}")
+            test <@ found |> List.map _.Code = [ "AXG013" ] @>
         }
 
     [<Theory>]

@@ -38,9 +38,8 @@ module ConcurrencyHazardsAnalyzerTests =
 
     [<Theory>]
     [<InlineData("let x = TaskCompletionSource<int>()")>]
-    [<InlineData("let mutable n = 0\nlet x = Interlocked.Increment(&n)")>]
-    [<InlineData("let x = lock (obj()) (fun () -> 1)")>]
-    [<InlineData("let x = Monitor.Enter(obj())")>]
+    [<InlineData("let x = new Task(fun () -> ())")>]
+    [<InlineData("let x = new Task<int>(fun () -> 1)")>]
     [<InlineData("let x = new CancellationTokenSource()")>]
     [<InlineData("let x = Task.Run(fun () -> 1)")>]
     [<InlineData("let x = Task.Factory.StartNew(fun () -> 1)")>]
@@ -57,7 +56,8 @@ module ConcurrencyHazardsAnalyzerTests =
     [<Theory>]
     [<InlineData("let f () = try failwith \"bad\" with _ -> ()")>]
     [<InlineData("let f () = try failwith \"bad\" with ex -> ()")>]
-    [<InlineData("let f () = try failwith \"bad\" with :? InvalidOperationException -> ()")>]
+    [<InlineData("let f () = try failwith \"bad\" with :? exn -> ()")>]
+    [<InlineData("let f () = try failwith \"bad\" with :? exn as error -> ()")>]
     [<InlineData("let f () = try failwith \"bad\" with _ -> 42")>]
     let ``AXG010 reports swallowed exceptions including fallback values`` body =
         task {
@@ -70,15 +70,24 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () = try failwith \"bad\" with ex -> raise ex")>]
     [<InlineData("let f () = try failwith \"bad\" with ex -> Error ex")>]
     [<InlineData("let f () = try failwith \"bad\" with ex -> Some ex")>]
-    [<InlineData("let Report () = ()\nlet f () = try failwith \"bad\" with _ -> Report()")>]
-    [<InlineData("let notify () = ()\nlet f () = try failwith \"bad\" with _ -> notify()")>]
-    [<InlineData("let Observer () = ()\nlet f () = try failwith \"bad\" with _ -> Observer()")>]
-    [<InlineData("let Log () = ()\nlet f () = try failwith \"bad\" with _ -> Log()")>]
-    [<InlineData("let Record () = ()\nlet f () = try failwith \"bad\" with _ -> Record()")>]
-    let ``AXG010 accepts propagation recording and named reporting`` body =
+    [<InlineData("let f () = try failwith \"bad\" with :? InvalidOperationException -> ()")>]
+    [<InlineData("let f () = try failwith \"bad\" with :? OperationCanceledException as error -> ()")>]
+    [<InlineData("type Failure = System.InvalidOperationException\nlet f () = try failwith \"bad\" with :? Failure -> ()")>]
+    let ``AXG010 accepts propagation and specific exception handlers`` body =
         task {
             let! messages = findings "AXG010" body
             Assert.Empty messages
+        }
+
+    [<Theory>]
+    [<InlineData("let Log () = ()\nlet f () = try failwith \"bad\" with _ -> Log()")>]
+    [<InlineData("type Failure = exn\nlet f () = try failwith \"bad\" with :? Failure -> ()")>]
+    [<InlineData("let f () = try failwith \"bad\" with :? System.Exception as error -> ()")>]
+    [<InlineData("let f () = try failwith \"bad\" with (:? InvalidOperationException | _) -> ()")>]
+    let ``AXG010 catch alls cannot hide behind type aliases or reporting names`` body =
+        task {
+            let! messages = findings "AXG010" body
+            Assert.Single(messages) |> ignore
         }
 
     [<Fact>]
@@ -96,8 +105,6 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () = (Task.FromResult 1 :> Task) |> ignore")>]
     [<InlineData("let f () = ValueTask<int>(1) |> ignore")>]
     [<InlineData("let f () =\n    Task.FromResult 1\n    ()")>]
-    [<InlineData("let f () = Async.Start(async { return () })")>]
-    [<InlineData("let f () = Async.StartImmediate(async { return () })")>]
     let ``AXG012 reports discarded concurrent work`` body =
         task {
             let! messages = findings "AXG012" body
@@ -120,6 +127,8 @@ module ConcurrencyHazardsAnalyzerTests =
         }
 
     [<Theory>]
+    [<InlineData("let f () = Async.Start(async { return () })")>]
+    [<InlineData("let f () = Async.StartImmediate(async { return () })")>]
     [<InlineData("let f () = Flow.fork (Flow.succeed 1) |> ignore")>]
     [<InlineData("let f () = let _ = Flow.fork (Flow.succeed 1) in ()")>]
     [<InlineData("let fork x = x\nlet f () = fork 42 |> ignore")>]
@@ -174,10 +183,9 @@ type ConcurrencyPolicyEnvironmentCollection() = class end
 
 [<Collection("Concurrency policy environment")>]
 type ConcurrencyHazardsPolicyTests() =
-    let run role runtime boundary code =
+    let runWith role runtime boundary project source code =
         task {
-            let! ctx = AnalyzerTestContext.createWithAxial true
-                           "module M\nopen System.Threading\nopen System.Threading.Tasks\nlet source = TaskCompletionSource<int>()\nlet token = CancellationToken.None\nlet swallowed () = try failwith \"bad\" with _ -> ()\nlet discarded () = Task.FromResult 1 |> ignore\n"
+            let! ctx = AnalyzerTestContext.createWithAxial true source
             let root = System.IO.Path.GetDirectoryName ctx.FileName
             System.IO.Directory.CreateDirectory root |> ignore
             let policyPath = System.IO.Path.Combine(root, "Axial.Guardrails.toml")
@@ -185,13 +193,15 @@ type ConcurrencyHazardsPolicyTests() =
             let runtimeTable = if runtime then "\n[runtime]\nfiles = [\"Fixture.fs\"]\n" else ""
             let boundaryTable = if boundary then "\n[boundaries]\nfiles = [\"Fixture.fs\"]\n" else ""
             System.IO.File.WriteAllText(ctx.FileName, ctx.SourceText.ToString())
-            System.IO.File.WriteAllText(System.IO.Path.Combine(root, "Fixture.fsproj"), "<Project />")
+            let projectPath = System.IO.Path.Combine(root, project)
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName projectPath) |> ignore
+            System.IO.File.WriteAllText(projectPath, "<Project />")
             System.IO.File.WriteAllText(policyPath, $"version = 2\n[default]\nrole = \"{role}\"\n" + runtimeTable + boundaryTable)
             System.IO.File.WriteAllLines(configPath,
                 [| "guardrail\tAxial"
                    "setting\tpolicyRoot\t" + root
                    "setting\tpolicyFile\t" + policyPath
-                   "setting\tprojectPath\t" + System.IO.Path.Combine(root, "Fixture.fsproj") |])
+                   "setting\tprojectPath\t" + projectPath |])
             let previous = Environment.GetEnvironmentVariable GuardrailConfig.EnvironmentVariable
             try
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, configPath)
@@ -201,9 +211,11 @@ type ConcurrencyHazardsPolicyTests() =
                 System.IO.Directory.Delete(root, true)
         }
 
+    let source = "module M\nopen System.Threading\nopen System.Threading.Tasks\nlet source = TaskCompletionSource<int>()\nlet token = CancellationToken.None\nlet swallowed () = try failwith \"bad\" with _ -> ()\nlet discarded () = Task.FromResult 1 |> ignore\n"
+    let run role runtime boundary code = runWith role runtime boundary "Fixture.fsproj" source code
+
     [<Theory>]
     [<InlineData("domain")>]
-    [<InlineData("capabilities")>]
     [<InlineData("services")>]
     [<InlineData("host")>]
     member _.``all non-test roles report concurrency hazards`` role =
@@ -231,6 +243,53 @@ type ConcurrencyHazardsPolicyTests() =
             Assert.Empty raw
             let! uncancellable = run "services" true false "AXG011"
             Assert.Single(uncancellable) |> ignore
+        }
+
+    [<Fact>]
+    member _.``capability role owns raw task bridges but not discarded work`` () =
+        task {
+            let! raw = run "capabilities" false false "AXG009"
+            Assert.Empty raw
+            for code in [ "AXG010"; "AXG011"; "AXG012" ] do
+                let! messages = run "capabilities" false false code
+                Assert.NotEmpty messages
+        }
+
+    [<Theory>]
+    [<InlineData("src/Axial.Guardrails/Axial.Guardrails.fsproj")>]
+    [<InlineData("src/Axial.Tool/Axial.Tool.fsproj")>]
+    [<InlineData("src/Axial.Tool.TestsSupport/Axial.Tool.TestsSupport.fsproj")>]
+    member _.``host tooling projects are exempt from concurrency rules`` project =
+        task {
+            for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
+                let! messages = runWith "host" false false project source code
+                Assert.Empty messages
+        }
+
+    [<Theory>]
+    [<InlineData("services", "src/Axial.Tool/Axial.Tool.fsproj")>]
+    [<InlineData("host", "samples/Axial.Tool/Axial.Tool.fsproj")>]
+    [<InlineData("host", "src/Axial.Guardrails.Consumer/Axial.Guardrails.Consumer.fsproj")>]
+    member _.``tooling exemption requires both host role and tooling project path`` role project =
+        task {
+            for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
+                let! messages = runWith role false false project source code
+                Assert.NotEmpty messages
+        }
+
+    [<Theory>]
+    [<InlineData("let mutable n = 0\nlet x = Interlocked.Increment(&n)")>]
+    [<InlineData("let x = lock (obj()) (fun () -> 1)")>]
+    [<InlineData("let x = Monitor.Enter(obj())")>]
+    member _.``synchronization warns outside runtime including capabilities until primitives land`` body =
+        task {
+            for role in [ "domain"; "services"; "capabilities"; "host" ] do
+                let input = "module M\nopen System.Threading\n" + body
+                let! messages = runWith role false false "Fixture.fsproj" input "AXG009"
+                let message = Assert.Single messages
+                Assert.Equal(Severity.Warning, message.Severity)
+                let! runtime = runWith role true false "Fixture.fsproj" input "AXG009"
+                Assert.Empty runtime
         }
 
     [<Fact>]
