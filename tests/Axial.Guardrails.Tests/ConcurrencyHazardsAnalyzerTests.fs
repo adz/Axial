@@ -343,7 +343,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("AXG012", "let f () = System.Threading.Tasks.Task.FromResult 1 |> ignore", "Error")>]
     [<InlineData("AXG011", "let x = System.Threading.CancellationToken.None", "Warning")>]
     [<InlineData("AXG009", "let x = lock (obj()) (fun () -> 1)", "Warning")>]
-    member _.``block and deferred block findings cannot be noted or checkpoint promoted`` code body expected =
+    member _.``block and deferred block findings cannot be noted or checkpoint promoted`` (code: string) (body: string) (expected: string) =
         task {
             for checkpoint in [ "false"; "true" ] do
                 let input = $"module M\n// axial-note {code}: intentional witness\n{body}"
@@ -359,7 +359,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("// axial-note AXG001: not a guide")>]
     [<InlineData("// axial-note: malformed")>]
     [<InlineData("// axial-note AXG010: stale\nlet unrelated = 1")>]
-    member _.``invalid notes warn and fail checkpoints`` note =
+    member _.``invalid notes warn and fail checkpoints`` (note: string) =
         task {
             for checkpoint in [ "false"; "true" ] do
                 let input = $"module M\n{note}\nlet value = 1"
