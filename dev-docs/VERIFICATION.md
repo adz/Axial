@@ -55,6 +55,14 @@ It restores `src/` from `<base>` in a temporary worktree, keeps the new tests, a
 compile there. Use it for bug fixes and behaviour changes; for new APIs, compiling against old `src/` fails trivially,
 so the review must check the assertions instead.
 
+## Bring a torture scenario with every concurrency fix
+
+The torture runs (`examples/Axial.TortureTest`, run by `TortureTests`) caught the structured-cancellation bugs; the
+analyzers did not. A slice that changes concurrency source (`src/Axial/{Core,Flow,Stream,Queue,Hub,Ref,Cache,App,
+Platform,Parallelism}.fs`, Process, Hosting, ElmishFlows, WebSocket, Files) adds or tightens a torture scenario
+invariant that would have caught the bug under interruption, failure, or shutdown. A slice with no behaviour change
+writes `artifacts/verify/torture-waiver.txt` saying why none applies; the coordinator's done-check fails otherwise.
+
 ## Size tasks so one run can finish
 
 Broad tasks ("make every async service member a flow") came back with no changes; the same work split into slices of

@@ -131,19 +131,18 @@ The baseline stores rule ID, repository-relative file, stable fingerprint, and d
 | Initial v2 adoption | Explicit bootstrap records existing debt; output labels every added rule/count. |
 | Enable a rule with existing findings | `axial guardrails baseline --rule <id>` bootstraps **only that newly enabled rule**. It is explicit and noisy; it cannot add findings for established rules. |
 | Later baseline update | Entries/fingerprint counts may only shrink for each bootstrapped rule. |
-`Axial.Guardrails.lock` contains a format version, sorted `SHA256  path` records, and baseline fingerprint/count sets by rule. It has no signature or identity data.
+`Axial.Guardrails.lock` version 2 contains sorted `SHA256  hash  path` records, a `BASELINE_PATH` record, baseline fingerprint/count sets by rule, and suppression identities. Each `SUPPRESSION` record stores tab-separated repository-relative file, occurrence number, and normalized comment text (not a line number). Duplicate comments remain distinct occurrences. Version-1 locks parse but require one reviewed reapproval; no legacy snapshot is silently trusted. Suppression removal and baseline shrinkage do not block checking. The lock has no signature or approver identity data.
 
 | Mandatory protected input | Why policy-bearing |
 | --- | --- |
 | TOML, baseline, and lock | Select policy, roles, accepted debt, and ratchets |
 | `Directory.Build.props` / `Directory.Build.targets` | Can remove or bypass analyzer execution |
 | Repository/project `.editorconfig` and analyzer config | Can change severity or analyzer behavior |
-| Project files that build Guardrails tests | Can remove tests or fixtures |
 | Additional exact paths declared in TOML | Protect repository-specific enforcement inputs |
 
-The config may add protected paths but not remove the mandatory set. Protected-input discovery is a heuristic, not evaluated MSBuild: it covers repository `.editorconfig`/`.globalconfig` files, `Directory.Build.*`, all `.props`/`.targets`, and `.fsproj`/`.fs` files physically under `tests/Axial.Guardrails*`; linked sources and transitive project inputs outside those directories are not discovered. Source capabilities files are not checksummed: role globs are locked, while normal implementation edits remain normal edits.
+The config may add protected paths but not remove the mandatory set. Protected-input discovery is a heuristic, not evaluated MSBuild: it covers repository `.editorconfig`/`.globalconfig` files, `Directory.Build.*`, all `.props`/`.targets`. It does not automatically protect `.fsproj`/`.fs` files under `tests/Axial.Guardrails*`. Test deletion is not a policy ratchet. Source capabilities files are not checksummed: role globs are locked, while normal implementation edits remain normal edits.
 
-Before analysis, `axial guardrails check` hashes the protected set and validates policy, baseline monotonicity, and test counts. A mismatch prints a deterministic summary:
+Before analysis, `axial guardrails check` hashes the protected set and validates policy, baseline monotonicity, and suppressions. A mismatch prints a deterministic summary:
 
 ```text
 AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED
@@ -152,7 +151,7 @@ AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED
   suppressions added:     2
   capabilities globs added:    src/App/Capabilities/**
   test count decreased:   3 (requires lock --accept-test-decrease)
-  protected files changed: Axial.Guardrails.toml, Orders.Guardrails.Tests.fsproj
+  protected files changed: Axial.Guardrails.toml, Directory.Build.targets
 Review with a human; then run the applicable axial guardrails command.
 ```
 
@@ -175,6 +174,22 @@ Guardrails ships as a .NET tool whose executable is `axial`. Grouped commands le
 | Future: `axial serve` | Persistent analyzer host if startup cost later justifies one |
 
 The NuGet analyzer package still runs during ordinary builds. The tool provides policy workflows, scaffolding, and explicit checks; users do not need a second Guardrails-specific executable.
+
+## Review, 2026-10-27: guard the bugs we actually had
+
+Phase 1 shipped the lock, roles and baseline ratchets; ranks 3 (discarded computations) and 5 (swallowed failures)
+below did not ship. Over 19–26 October the days were spent on bugs no rule covered, all inside Axial's own adapters
+and runtime: Process stdin/stop coordination (~6 days), race/forkReplacing/mergePar/disconnect cleanup, App.startWith
+and runOn cancellation, and sleep-based flaky tests. Whole adapter files sat on `[boundaries]`, exempt from AXG001.
+
+Decisions:
+- Add rules for those classes: AXG009 raw concurrency primitives outside declared runtime-core files, AXG010
+  swallowed exceptions, AXG011 `CancellationToken.None` without a reason, AXG012 discarded fibers/tasks, AXG013 tests
+  that wait for time instead of facts.
+- Suppressions are identified in the lock by file and text, not line number, so moving code needs no approval.
+- No further anti-tamper hardening. The policy lock and the verify lock are enough; new guardrails work goes to rules
+  that catch defects.
+- Every concurrency fix brings a torture scenario (see `dev-docs/VERIFICATION.md`).
 
 ## Rules, ordered by benefit versus cost
 

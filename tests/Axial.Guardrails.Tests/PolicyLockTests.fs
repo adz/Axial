@@ -8,8 +8,145 @@ open Xunit
 
 module PolicyLockTests =
     let private empty =
-        { Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty
+        { Version=2; BaselinePath=DefaultBaseline; Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty
           Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
+
+    let private withSuppressionRepository action =
+        let root=Path.Combine(Path.GetTempPath(),"Axial.Lock.Tests",Guid.NewGuid().ToString("N"))
+        try
+            Directory.CreateDirectory(Path.Combine(root,"src")) |> ignore
+            File.WriteAllText(Path.Combine(root,ConfigName),"version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n[default]\nrole = \"domain\"")
+            File.WriteAllText(Path.Combine(root,DefaultBaseline),"")
+            let write name (text: string) = File.WriteAllText(Path.Combine(root,"src",name),text)
+            let inspectCurrent () = inspect root |> function Ok value -> value | Error error -> failwith error
+            let approved () =
+                let path=Path.Combine(root,LockName)
+                File.WriteAllText(path,serialize (inspectCurrent ()))
+                parseLock path |> function Ok value -> value | Error error -> failwith error
+            action root write inspectCurrent approved
+        finally Directory.Delete(root,true)
+
+    [<Theory>]
+    [<InlineData("module App\n// axial-allow-AXG001: live boundary\n")>]
+    [<InlineData("module App\n\n\n\n// axial-allow-AXG001: live boundary\n")>]
+    let ``suppression line movement does not require approval`` source =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" source
+            test <@ diff old (current ()) |> isEmpty @>)
+
+    [<Theory>]
+    [<InlineData("tests/Axial.Guardrails.Tests")>]
+    [<InlineData("tests/Axial.Guardrails.Consumer")>]
+    [<InlineData("tests/Axial.PrintfFixture")>]
+    [<InlineData("benchmarks/Axial.Comparative")>]
+    let ``fixture suppression text in skipped projects does not require approval`` directory =
+        withSuppressionRepository (fun root write current approved ->
+            let fixtureDirectory=Path.Combine(root,directory)
+            Directory.CreateDirectory(fixtureDirectory) |> ignore
+            let fixture=Path.Combine(fixtureDirectory,"Fixture.fs")
+            File.WriteAllText(fixture,"module Fixture\n")
+            File.AppendAllText(Path.Combine(root,ConfigName),"\n[suppressions]\nignore = [\"tests/Axial.Guardrails*/**\", \"tests/Axial.PrintfFixture/**\", \"benchmarks/Axial.Comparative/**\"]\n")
+            let old=approved ()
+            let text="let fixture = \"// axial-allow-AXG001: x\"\n"
+            File.AppendAllText(fixture,text)
+            test <@ diff old (current ()) |> isEmpty @>
+            write "App.fs" text
+            let changes=diff old (current ())
+            test <@ changes.SuppressionsAdded.Length=1 @>
+            test <@ not (isEmpty changes) @>)
+
+    [<Fact>]
+    let ``fixture text without configured ignore is a suppression`` () =
+        withSuppressionRepository (fun root _ current approved ->
+            let directory=Path.Combine(root,"tests/Axial.Guardrails.Tests")
+            Directory.CreateDirectory(directory) |> ignore
+            let old=approved ()
+            File.WriteAllText(Path.Combine(directory,"Fixture.fs"),"let fixture = \"// axial-allow-AXG001: x\"\n")
+            test <@ (diff old (current ())).SuppressionsAdded.Length=1 @>)
+
+    [<Fact>]
+    let ``new suppression requires approval`` () =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n"
+            let old=approved ()
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let changes=diff old (current ())
+            test <@ changes.SuppressionsAdded.Length=1 @>
+            test <@ not (isEmpty changes) @>)
+
+    [<Fact>]
+    let ``second identical suppression counts as an addition without counting line movement`` () =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" "module App\n\n// axial-allow-AXG001: live boundary\n\n// axial-allow-AXG001: live boundary\n"
+            let changes=diff old (current ())
+            test <@ changes.SuppressionsAdded.Length=1 @>
+            test <@ not (isEmpty changes) @>)
+
+    [<Theory>]
+    [<InlineData("// axial-allow-AXG002: live boundary")>]
+    [<InlineData("// axial-allow-AXG001: different reason")>]
+    let ``changed suppression rule or reason replaces the reviewed identity`` replacement =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" ("module App\n"+replacement+"\n")
+            let snapshot=current ()
+            let changes=diff old snapshot
+            test <@ Set.difference old.Suppressions snapshot.Suppressions |> Set.count = 1 @>
+            test <@ changes.SuppressionsAdded.Length=1 @>
+            test <@ not (isEmpty changes) @>)
+
+    [<Fact>]
+    let ``moving suppression to another file requires approval`` () =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" "module App\n"
+            write "Other.fs" "module Other\n// axial-allow-AXG001: live boundary\n"
+            let snapshot=current ()
+            test <@ Set.difference old.Suppressions snapshot.Suppressions |> Set.count = 1 @>
+            test <@ (diff old snapshot).SuppressionsAdded.Length=1 @>
+            test <@ diff old snapshot |> isEmpty |> not @>)
+
+    [<Fact>]
+    let ``removing suppression strengthens policy without approval`` () =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" "module App\n"
+            let snapshot=current ()
+            let changes=diff old snapshot
+            test <@ changes.SuppressionsAdded.IsEmpty @>
+            test <@ isEmpty changes @>
+            test <@ validateApproval Normal old snapshot changes = Ok () @>)
+
+    [<Fact>]
+    let ``shrinking baseline strengthens policy without approval`` () =
+        withSuppressionRepository (fun root _ current approved ->
+            let path=Path.Combine(root,DefaultBaseline)
+            File.WriteAllText(path,"effects.ambient\tsrc/App.fs\tabc x2\n")
+            let old=approved ()
+            File.WriteAllText(path,"effects.ambient\tsrc/App.fs\tabc\n")
+            test <@ diff old (current ()) |> isEmpty @>
+            File.WriteAllText(path,"")
+            test <@ diff old (current ()) |> isEmpty @>)
+
+    [<Fact>]
+    let ``legacy line numbered suppression lock is readable but requires reapproval`` () =
+        withSuppressionRepository (fun root write current _ ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let snapshot=current ()
+            let legacy={snapshot with Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: live boundary"]}
+            let path=Path.Combine(root,LockName)
+            // Literal version 1 header keeps this a legacy fixture after the writer migrates.
+            let records=(serialize legacy).Split('\n') |> Array.skip 1 |> String.concat "\n"
+            File.WriteAllText(path,"version = 1\n"+records)
+            let parsed=parseLock path |> function Ok value -> value | Error error -> failwith error
+            test <@ diff parsed snapshot |> isEmpty |> not @>)
 
     [<Fact>]
     let ``policy summary reports every reviewed change category`` () =
@@ -71,7 +208,7 @@ module PolicyLockTests =
         test <@ validateApproval (BaselineRule "effects.ambient") empty testOnly (diff empty testOnly) |> Result.isError @>
 
     [<Fact>]
-    let ``protected hashes include analyzer configs and Guardrails test build inputs`` () =
+    let ``protected hashes include analyzer configs but exclude Guardrails test build inputs`` () =
         let root=Path.Combine(Path.GetTempPath(),"Axial.Lock.Tests",Guid.NewGuid().ToString("N"))
         try
             Directory.CreateDirectory(Path.Combine(root,"tests","Axial.Guardrails.Tests")) |> ignore
@@ -85,8 +222,22 @@ module PolicyLockTests =
             File.WriteAllText(Path.Combine(root,"tests","Axial.Guardrails.Tests","Tests.fs"),"module Tests")
             File.WriteAllText(Path.Combine(root,"tests","Axial.Guardrails.Tests","Axial.Guardrails.Tests.fsproj"),"<Project />")
             let snapshot=inspect root |> Result.toOption |> Option.get
-            for path in ["nested.globalconfig";"build/Imported.targets";"tests/Axial.Guardrails.Tests/Tests.fs"] do
+            for path in ["nested.globalconfig";"build/Imported.targets";"Directory.Build.targets"] do
                 test <@ snapshot.Hashes.ContainsKey path @>
+            let current () = inspect root |> Result.toOption |> Option.get
+            let source=Path.Combine(root,"tests","Axial.Guardrails.Tests","Tests.fs")
+            let project=Path.ChangeExtension(source,"fsproj")
+            test <@ not (snapshot.Hashes.ContainsKey "tests/Axial.Guardrails.Tests/Tests.fs") @>
+            File.WriteAllText(source,"module Edited")
+            test <@ diff snapshot (current ()) |> isEmpty @>
+            File.WriteAllText(project,"<Project />")
+            test <@ diff snapshot (current ()) |> isEmpty @>
+            File.Delete source
+            File.Delete project
+            File.Delete(Path.Combine(root,"tests","Axial.Guardrails.Tests","Axial.Guardrails.Tests.fsproj"))
+            test <@ diff snapshot (current ()) |> isEmpty @>
+            File.WriteAllText(Path.Combine(root,"Directory.Build.targets"),"<Project><!-- changed --></Project>")
+            test <@ (diff snapshot (current ())).ProtectedChanged=["Directory.Build.targets"] @>
         finally Directory.Delete(root,true)
 
     [<Fact>]
