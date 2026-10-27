@@ -27,11 +27,11 @@ module internal Platform =
         let gate = obj()
 
         { new IRandom with
-            member _.Next() = lock gate rng.Next
-            member _.NextMax maxExclusive = lock gate (fun () -> rng.Next maxExclusive)
-            member _.NextInt minInclusive maxExclusive = lock gate (fun () -> rng.Next(minInclusive, maxExclusive))
-            member _.NextDouble() = lock gate rng.NextDouble
-            member _.NextBytes buffer = lock gate (fun () -> rng.NextBytes buffer) }
+            member _.Next() = lock gate rng.Next // axial-allow-AXG009: The live Random instance is shared; its synchronous Next operation must serialize access.
+            member _.NextMax maxExclusive = lock gate (fun () -> rng.Next maxExclusive) // axial-allow-AXG009: NextMax uses the same shared Random state as the other synchronous service members.
+            member _.NextInt minInclusive maxExclusive = lock gate (fun () -> rng.Next(minInclusive, maxExclusive)) // axial-allow-AXG009: NextInt must advance the shared Random state atomically with its bounded draw.
+            member _.NextDouble() = lock gate rng.NextDouble // axial-allow-AXG009: NextDouble cannot race another draw on the service-owned Random instance.
+            member _.NextBytes buffer = lock gate (fun () -> rng.NextBytes buffer) } // axial-allow-AXG009: NextBytes must fill a caller buffer without racing the shared generator state.
         #endif
 
     let private dictionary (values: seq<string * string>) =

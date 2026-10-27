@@ -9,8 +9,8 @@ open global.Elmish
 type Inbox<'value> internal (queue: Queue<'value>) =
     let mutable dropped = 0L
     member internal _.Queue = queue
-    member internal _.CountDrop() = Interlocked.Increment(&dropped) |> ignore
-    member _.Dropped = Interlocked.Read(&dropped)
+    member internal _.CountDrop() = Interlocked.Increment(&dropped) |> ignore // axial-allow-AXG009: Synchronous host dispatch can drop inbox messages on multiple threads; count each drop atomically.
+    member _.Dropped = Interlocked.Read(&dropped) // axial-allow-AXG009: The synchronous Dropped property reads the 64-bit callback counter without tearing.
 
 [<RequireQualifiedAccess>]
 module Inbox =

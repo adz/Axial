@@ -73,6 +73,7 @@
     <Compile Include="FixtureAnalyzer.fs" />
     <Compile Include="DiscardedCancellationAnalyzer.fs" />
     <Compile Include="ReflectionFormattingAnalyzer.fs" />
+    <Compile Include="ConcurrencyHazardsAnalyzer.fs" />
     <Compile Include="SuppressionIntegrityAnalyzer.fs" />
   </ItemGroup>
 

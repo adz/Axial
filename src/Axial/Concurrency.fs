@@ -275,7 +275,7 @@ module Deferred =
         Flow(fun _ _ ->
             let deferred = Deferred(Platform.newSignal ())
 
-            task.ContinueWith(fun (completed: System.Threading.Tasks.Task<'value>) ->
+            task.ContinueWith(fun (completed: System.Threading.Tasks.Task<'value>) -> // axial-allow-AXG009: The .NET Task-to-Deferred bridge translates the foreign completion into the signal exit.
                 if completed.IsCanceled then
                     interruptNow deferred |> ignore
                 elif completed.IsFaulted then
@@ -291,7 +291,7 @@ module Deferred =
         let (Deferred signal) = deferred
 
         let tcs =
-            System.Threading.Tasks.TaskCompletionSource<'value>(
+            System.Threading.Tasks.TaskCompletionSource<'value>( // axial-allow-AXG009: Deferred-to-Task interop needs a completion source to return the BCL task handle.
                 System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
 
         let complete (exit: Exit<'value, 'error>) =
@@ -309,7 +309,7 @@ module Deferred =
                         | [] -> tcs.SetException(Exception("Deferred failed."))
 
         task {
-            let! outer = (Platform.awaitSignal signal System.Threading.CancellationToken.None).AsTask()
+            let! outer = (Platform.awaitSignal signal System.Threading.CancellationToken.None).AsTask() // axial-allow-AXG011: Deferred-to-Task completion must keep observing the deferred; cancellation is encoded in its exit, not an external waiter token.
 
             match outer with
             | Exit.Success exit -> complete exit

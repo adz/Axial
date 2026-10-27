@@ -97,7 +97,7 @@ let rec private typedDeclarations declaration =
     | FSharpImplementationFileDeclaration.Entity(_, declarations) -> declarations |> List.collect typedDeclarations
     | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
     | FSharpImplementationFileDeclaration.InitAction body ->
-        try typedFindings body with _ -> []
+        try typedFindings body with _ -> [] // axial-allow-AXG010: An unreadable recovered typed declaration is skipped; syntax run-boundary checks still run.
 
 let rawRanges (ctx: CliContext) : range list =
     let expressions =
@@ -106,8 +106,8 @@ let rawRanges (ctx: CliContext) : range list =
             modules |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
         | _ -> []
     let typed =
-        match (try ctx.TypedTree with _ -> None) with
-        | Some tree -> (try tree.Declarations |> List.collect typedDeclarations with _ -> [])
+        match (try ctx.TypedTree with _ -> None) with // axial-allow-AXG010: FCS may not expose a typed tree for a recovered file; syntax run-boundary checks are retained.
+        | Some tree -> (try tree.Declarations |> List.collect typedDeclarations with _ -> []) // axial-allow-AXG010: Recovered typed declarations can be unreadable; syntax run-boundary findings are retained.
         | None -> []
     (expressions |> List.collect (find ctx)) @ typed
     |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)

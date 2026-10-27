@@ -161,10 +161,10 @@ type FlowHostedService<'env, 'error>
                     |> Async.StartAsTask
                     :> Task
 
-                let abandoned = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                let abandoned = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously) // axial-allow-AXG009: IHostedService.StopAsync must stop waiting at the host timeout while root cleanup continues and is reported.
                 let registration = cancellationToken.Register(fun () -> abandoned.TrySetResult() |> ignore)
 
-                Task.WhenAny(stopped, abandoned.Task)
+                Task.WhenAny(stopped, abandoned.Task) // axial-allow-AXG009: The host-boundary continuation returns either completed root cleanup or the logged shutdown-timeout outcome.
                     .ContinueWith(
                         (fun (first: Task<Task>) ->
                             registration.Dispose()
@@ -238,20 +238,20 @@ module Hosting =
                         let rec heartbeat () = flow {
                             do! Flow.sleep heartbeatInterval
                             do! heartbeatGate
-                            Interlocked.Increment(&progress) |> ignore
+                            Interlocked.Increment(&progress) |> ignore // axial-allow-AXG009: The heartbeat fiber publishes progress to the independent watchdog fiber through an atomic counter.
                             return! heartbeat ()
                         }
                         let! fiber = Flow.fork (heartbeat ())
                         try
                             let rec ping last = flow {
                                 do! Flow.sleep interval
-                                let current = Interlocked.Read(&progress)
+                                let current = Interlocked.Read(&progress) // axial-allow-AXG009: The watchdog compares the heartbeat counter without taking a lock across notifier IO.
                                 if current <> last then
                                     let! healthy = isHealthy
                                     if healthy then notifier.Notify "WATCHDOG=1"
                                 return! ping current
                             }
-                            return! ping (Interlocked.Read(&progress))
+                            return! ping (Interlocked.Read(&progress)) // axial-allow-AXG009: The initial watchdog snapshot must observe the same atomic counter as subsequent heartbeats.
                         finally
                             // The fork belongs to this Flow scope and is interrupted on cancellation.
                             ignore fiber

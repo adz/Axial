@@ -552,7 +552,7 @@ module Http =
                 value.Split(';')
                 |> Array.tryPick (fun part ->
                     let part = part.Trim()
-                    if part.StartsWith("charset=", StringComparison.OrdinalIgnoreCase) then
+                    if part.StartsWith("charset=", StringComparison.OrdinalIgnoreCase) then // axial-allow-AXG010: Unsupported or malformed charset metadata falls back to UTF8 when decoding the response body.
                         try Some(Encoding.GetEncoding(part.Substring(8).Trim('"'))) with _ -> None
                     else None))
             |> Option.defaultValue Encoding.UTF8

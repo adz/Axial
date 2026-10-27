@@ -1,5 +1,6 @@
 /// Validates every Axial.Guardrails suppression comment. Suppressions are accepted only when they
-/// identify one rule, include a reason, live in a declared boundary file, and cover a finding.
+/// identify one rule, include a reason, and cover a finding. AXG009–AXG012 permit only per-site
+/// allowances without boundary membership; earlier rules require declared boundary files.
 module Axial.Guardrails.SuppressionIntegrityAnalyzer
 
 open System.IO
@@ -18,9 +19,10 @@ let private rangesForRule (ctx: CliContext) ruleId =
     | "AXG006" -> ReflectionFormattingAnalyzer.rawRangesWithNativeAot (load ()).NativeAot ctx
     | "AXG007" -> ResourceFromFiberAnalyzer.rawRanges ctx
     | "AXG008" -> ScopeFromRunAnalyzer.rawRanges ctx
+    | "AXG009" | "AXG010" | "AXG011" | "AXG012" -> ConcurrencyHazardsAnalyzer.rawRanges ruleId ctx
     | _ -> []
 
-let private knownRuleIds = set [ for number in 1 .. 8 -> sprintf "AXG%03d" number ]
+let private knownRuleIds = set [ for number in 1 .. 12 -> sprintf "AXG%03d" number ]
 
 let private message (sourceText: ISourceText) (range: range) (text: string) : Message =
     let line = sourceText.GetLineString(range.StartLine - 1)
@@ -63,7 +65,9 @@ let private findingForDirective (ctx: CliContext) directive =
         Some(report "Add a non-empty reason explaining why this intentional boundary cannot use the recommended API.")
     | Some _ when directive.FileWide && not (isLeadingComment ctx.SourceText directive.Line) ->
         Some(report "Move this file-wide suppression into the leading comment block, before the first declaration.")
-    | Some _ when not boundary ->
+    | Some ruleId when Set.contains ruleId (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ]) && directive.FileWide ->
+        Some(report "Use a per-site suppression for this concurrency rule, not a file-wide suppression.")
+    | Some ruleId when not boundary && not (Set.contains ruleId (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ])) ->
         Some(report "Remove this suppression: suppressions are allowed only in files declared with `AxialGuardrailsBoundary`.")
     | Some ruleId ->
         let covered =
