@@ -69,10 +69,22 @@ Repository `Axial.Guardrails.lock` is untouched. Stop after this phase.
   and done-check remain phase 4 work; no full-verification claim is made for this phase.
 - This supersedes phase 2b's decision to keep a local hardcoded exclusion list.
 
-## Exact next step (fresh session, phase 3)
+## Historical next step (phase 3; superseded below)
 
 Read the brief and this handover. Perform classification/approval preparation only. The repository lock is still version 1 and will require human approval under the new reader; hashes also still include formerly mandatory test files. Do NOT run `axial policy approve` or edit the lock. If checking confirms approval is the only blocker, report it to the coordinator and stop per the brief. Update/commit this handover and reply PHASE 3 DONE. Phase 4 owns full verification and done-check after coordination of approval.
 
 ## Open questions / constraints
 
-No unresolved design questions. Human lock approval remains outstanding. Do not mistake focused tests using `_AxialRepoSkipGuardrails=true` for a full verified repository build; that override only isolates these policy tests from the intentionally unapproved repository lock.
+No unresolved design questions. Human lock approval was committed as `ae061b69c`. Do not mistake focused tests using `_AxialRepoSkipGuardrails=true` for a full verified repository build; that override only isolated those policy tests from the then-unapproved repository lock.
+
+## Phase 4 — final verification
+
+Human approval is committed (`ae061b69c`); no further approval or lock edits are authorized or needed by this phase.
+Phase 4 changes only this handover, preserving the historical test-first evidence above. After committing it:
+
+1. Record HEAD and run `scripts/check-tests-fail-without-fix.sh origin/main tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj "FullyQualifiedName~PolicyLockTests"` into `artifacts/verify/fail-first.txt`.
+2. Run all verification stages detached with `setsid -f axial-verify`; inspect `artifacts/verify/result.json` for this clean HEAD.
+3. Run `/home/adam/projects/scratch/axial-coord/done-check.sh "$PWD"`.
+4. Record actual outcomes in `/home/adam/projects/scratch/axial-coord/pi/policy-lock-by-text.report.md`, then stop. No push.
+
+The external report and ignored verification artifacts carry the final results so no post-verification commit invalidates the verified HEAD. Keep this handover: it retains test-first evidence and migration decisions not fully captured elsewhere.
