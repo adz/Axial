@@ -13,8 +13,17 @@ module WaitForFactsAnalyzerTests =
                 "module M\nopen System\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\n" + body)
             let root = System.IO.Path.GetDirectoryName ctx.FileName
             System.IO.Directory.CreateDirectory root |> ignore
+            System.IO.File.WriteAllText(ctx.FileName, ctx.SourceText.ToString())
+            let errors = ctx.CheckFileResults.Diagnostics |> Array.filter (fun diagnostic -> diagnostic.Severity = FSharp.Compiler.Diagnostics.FSharpDiagnosticSeverity.Error)
+            Assert.True(Array.isEmpty errors, sprintf "%A" errors)
             let policyFile = System.IO.Path.Combine(root, "Axial.Guardrails.toml")
-            let roleName = string role |> fun value -> value.ToLowerInvariant()
+            let roleName =
+                match role with
+                | Policy.Test -> "test"
+                | Policy.Domain -> "domain"
+                | Policy.Capabilities -> "capabilities"
+                | Policy.Services -> "services"
+                | Policy.Host -> "host"
             System.IO.File.WriteAllText(policyFile, $"version = 2\n[default]\nrole = \"{roleName}\"\n[boundaries]\nfiles = [\"{System.IO.Path.GetFileName ctx.FileName}\"]\n")
             try
                 // Axial.Tool also compiles Policy.fs; parsing avoids mixing assembly-local types.
@@ -30,12 +39,12 @@ module WaitForFactsAnalyzerTests =
         }
 
     [<Theory>]
-    [<InlineData("let check () = Thread.Sleep 10\n               ignore 42")>]
-    [<InlineData("let check () = task { do! Task.Delay 10\n                            return 42 }")>]
-    [<InlineData("let check () = task { let! result = Task.Delay 10\n                            return result }")>]
-    [<InlineData("let check () = async { do! Async.Sleep 10\n                             return 42 }")>]
-    [<InlineData("let check () = async { let! result = Async.Sleep 10\n                             return result }")>]
-    [<InlineData("let check () = System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds 10.)\n               ignore 42")>]
+    [<InlineData("let check () =\n    Thread.Sleep 10\n    ignore 42")>]
+    [<InlineData("let check () = task {\n    do! Task.Delay 10\n    return 42\n}")>]
+    [<InlineData("let check () = task {\n    let! result = Task.Delay 10\n    return result\n}")>]
+    [<InlineData("let check () = async {\n    do! Async.Sleep 10\n    return 42\n}")>]
+    [<InlineData("let check () = async {\n    let! result = Async.Sleep 10\n    return result\n}")>]
+    [<InlineData("let check () =\n    System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds 10.)\n    ignore 42")>]
     let ``guessed waits are denied only in the test role`` body =
         task {
             let! reported = findings Policy.Test body
@@ -49,7 +58,7 @@ module WaitForFactsAnalyzerTests =
     [<Fact>]
     let ``diagnostic explains the fact gate deadline and controlled clock alternatives`` () =
         task {
-            let! found = findings Policy.Test "let check () = task { do! Task.Delay 10\n                            return 42 }"
+            let! found = findings Policy.Test "let check () = task {\n    do! Task.Delay 10\n    return 42\n}"
             test <@ found.Length = 1 @>
             let message = found.Head.Message
             test <@ message.Contains("Deferred") @>
@@ -59,14 +68,14 @@ module WaitForFactsAnalyzerTests =
         }
 
     [<Theory>]
-    [<InlineData("let check (work: Task) = task { let! winner = Task.WhenAny(work, Task.Delay 1000)\n                                       return winner }")>]
-    [<InlineData("let check (work: Task) = task { let deadline = Task.Delay 1000\n                                       let! winner = Task.WhenAny(work, deadline)\n                                       return winner }")>]
-    [<InlineData("let check (work: Task) = task { let! winner = Task.WhenAny [| work; Task.Delay 1000 |]\n                                       return winner }")>]
+    [<InlineData("let check (work: Task) = task {\n    let! winner = Task.WhenAny(work, Task.Delay 1000)\n    return winner\n}")>]
+    [<InlineData("let check (work: Task) = task {\n    let deadline = Task.Delay 1000\n    let! winner = Task.WhenAny(work, deadline)\n    return winner\n}")>]
+    [<InlineData("let check (work: Task) = task {\n    let! winner = Task.WhenAny [| work; Task.Delay 1000 |]\n    return winner\n}")>]
     [<InlineData("let check (work: Task) = work.Wait(1000)")>]
     [<InlineData("let check (work: Task) = task { do! work.WaitAsync(TimeSpan.FromSeconds 1.) }")>]
     [<InlineData("let check (ready: unit -> bool) = SpinWait.SpinUntil(Func<bool>(ready), 1000)")>]
     [<InlineData("let rec waitUntil ready (deadline: DateTimeOffset) =\n    if ready () then true\n    elif DateTimeOffset.UtcNow >= deadline then false\n    else Thread.Yield() |> ignore; waitUntil ready deadline")>]
-    [<InlineData("let check () = flow { do! Flow.sleep (TimeSpan.FromSeconds 1.)\n                            return 42 } |> Flow.timeout (TimeSpan.FromSeconds 2.)")>]
+    [<InlineData("let check () =\n    flow {\n        do! Flow.sleep (TimeSpan.FromSeconds 1.)\n        return 42\n    } |> Flow.timeout (TimeSpan.FromSeconds 2.)")>]
     [<InlineData("let check () = Flow.race (Flow.ok ()) (Flow.sleep (TimeSpan.FromSeconds 1.))")>]
     let ``failure deadlines and fact polling are allowed`` body =
         task {
@@ -77,7 +86,7 @@ module WaitForFactsAnalyzerTests =
     // A flow does not syntactically reveal whether its environment supplies a live or manual clock.
     // AXG013 therefore deliberately leaves Flow.sleep and Clock.sleep out of scope.
     [<Theory>]
-    [<InlineData("let check () = flow { do! Flow.sleep (TimeSpan.FromSeconds 1.)\n                            return 42 }")>]
+    [<InlineData("let check () = flow {\n    do! Flow.sleep (TimeSpan.FromSeconds 1.)\n    return 42\n}")>]
     let ``clock dependent sleeps stay out of scope rather than rejecting controlled time`` body =
         task {
             let! found = findings Policy.Test body
@@ -90,7 +99,7 @@ module WaitForFactsAnalyzerTests =
     let ``reasoned site suppression permits an intentional wait`` expression =
         task {
             let! found = findings Policy.Test (
-                "let check () = " + expression + " // axial-allow-AXG013: exercises the foreign blocking boundary\n               ignore 42")
+                "let check () =\n    " + expression + " // axial-allow-AXG013: exercises the foreign blocking boundary\n    ignore 42")
             test <@ found = [] @>
         }
 
@@ -106,6 +115,6 @@ module WaitForFactsAnalyzerTests =
     [<Fact>]
     let ``unrelated sleep lookalikes are not reported`` () =
         task {
-            let! found = findings Policy.Test "module Local =\n    let Sleep (_: int) = ()\nlet check () = Local.Sleep 10\n               ignore 42"
+            let! found = findings Policy.Test "module Local =\n    let Sleep (_: int) = ()\nlet check () =\n    Local.Sleep 10\n    ignore 42"
             test <@ found = [] @>
         }
