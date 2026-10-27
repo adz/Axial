@@ -7,7 +7,7 @@ open Xunit
 
 module WaitForFactsAnalyzerTests =
     // Explicit roles avoid inferring policy from a filename or an xUnit attribute.
-    let private findingsWith settings level role (body: string) : System.Threading.Tasks.Task<Message list> =
+    let private findingsWith (settings: string list) (level: string) role (body: string) : System.Threading.Tasks.Task<Message list> =
         task {
             let! ctx = AnalyzerTestContext.createWithAxial true (
                 (if body.StartsWith("namespace ") then body

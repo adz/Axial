@@ -210,7 +210,7 @@ type ConcurrencyPolicyEnvironmentCollection() = class end
 
 [<Collection("Concurrency policy environment")>]
 type ConcurrencyHazardsPolicyTests() =
-    let runWithSettings settings (role: string) runtime boundary project source code =
+    let runWithSettings (settings: string list) (role: string) runtime boundary project source code =
         task {
             let! ctx = AnalyzerTestContext.createWithAxial true source
             let root = System.IO.Path.GetDirectoryName ctx.FileName
@@ -328,7 +328,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData(true, "", "Error")>]
     [<InlineData(false, "// axial-note AXG010: foreign observer is best effort\n", "Info")>]
     [<InlineData(true, "// axial-note AXG010: foreign observer is best effort\n", "Info")>]
-    member _.``guide findings remain visible and checkpoints reject only unacknowledged sites`` checkpoint note expected =
+    member _.``guide findings remain visible and checkpoints reject only unacknowledged sites`` (checkpoint: bool) (note: string) (expected: string) =
         task {
             let input = "module M\n" + note + "let f () = try failwith \"bad\" with _ -> ()"
             let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint.ToString().ToLowerInvariant()}" ] "services" false false "Fixture.fsproj" input "AXG010"
