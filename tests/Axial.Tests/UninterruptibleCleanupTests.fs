@@ -24,8 +24,8 @@ module UninterruptibleCleanupTests =
         Assert.Equal(42, result)
         Assert.Equal(1, calls)
         let defect = InvalidOperationException("cleanup defect")
-        let raised = Assert.Throws<InvalidOperationException>(fun () ->
-            Platform.Cancellation.uninterruptible (fun _ -> raise defect))
+        let raised = Assert.Throws<InvalidOperationException>(Action(fun () ->
+            Platform.Cancellation.uninterruptible (fun _ -> raise defect)))
         Assert.Same(defect, raised)
 
     // The first gate proves cancellation happens during cleanup, not before acquisition or after settlement.
@@ -85,7 +85,7 @@ module UninterruptibleCleanupTests =
                 }
             let winner : Flow<ClockEnvironment, string, int> =
                 flow {
-                    do! acquired.Task
+                    do! Flow.fromTask (fun token -> acquired.Task.WaitAsync(token))
                     return 42
                 }
             let running = Flow.race loser winner |> fun source -> source.StartAsTask(TestSupport.clockEnv (), caller.Token)
