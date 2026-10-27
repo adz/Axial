@@ -94,7 +94,7 @@ module WaitForFactsAnalyzerTests =
     [<InlineData("do! Async.Sleep Timeout.Infinite")>]
     [<InlineData("do! Async.Sleep Timeout.InfiniteTimeSpan")>]
     [<InlineData("do! Async.Sleep -1")>]
-    let ``cancellation waits are allowed`` statement =
+    let ``cancellation waits are allowed`` (statement: string) =
         task {
             let builder = if statement.Contains("Async.Sleep") then "async" else "task"
             let! found = findings Policy.Test ("let check (token: CancellationToken) = " + builder + " {\n    " + statement + "\n}")
