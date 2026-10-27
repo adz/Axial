@@ -85,7 +85,6 @@ module ConcurrencyHazardsAnalyzerTests =
         }
 
     [<Theory>]
-    [<InlineData("let f () = Flow.fork (Flow.succeed 1) |> ignore")>]
     [<InlineData("let f () = let _ = Task.FromResult 1 in ()")>]
     [<InlineData("let f () = let _ = ValueTask<int>(1) in ()")>]
     [<InlineData("let f (fiber: Fiber<string, int>) = let _ = fiber in ()")>]
@@ -98,6 +97,31 @@ module ConcurrencyHazardsAnalyzerTests =
         task {
             let! messages = findings "AXG012" body
             Assert.NotEmpty messages
+        }
+
+    [<Theory>]
+    [<InlineData("let f () =\n    let mutable recorded = None\n    try failwith \"bad\" with ex -> recorded <- Some ex")>]
+    [<InlineData("let f () =\n    let recorded = ref None\n    try failwith \"bad\" with ex -> recorded.Value <- Some ex")>]
+    [<InlineData("let f () = try failwith \"bad\" with ex when ex :? OperationCanceledException -> Error () | ex -> Error ()")>]
+    let ``AXG010 accepts exception recording assignments and guarded classification`` body =
+        task {
+            // The second handler still discards its unclassified exception.
+            let! messages = findings "AXG010" body
+            if body.Contains("when") then Assert.Single(messages) |> ignore
+            else Assert.Empty messages
+        }
+
+    [<Theory>]
+    [<InlineData("let f () = Flow.fork (Flow.succeed 1) |> ignore")>]
+    [<InlineData("let f () = let _ = Flow.fork (Flow.succeed 1) in ()")>]
+    [<InlineData("let fork x = x\nlet f () = fork 42 |> ignore")>]
+    [<InlineData("let f () = task { let! completed = Task.WhenAny(Task.CompletedTask, Task.CompletedTask) in return () }")>]
+    [<InlineData("let f () = task { let! _ = Task.WhenAny(Task.CompletedTask, Task.CompletedTask) in return () }")>]
+    [<InlineData("let f (pending: Task<Task>) = task { let! _ = pending in return () }")>]
+    let ``AXG012 leaves cold descriptions and awaited work alone`` body =
+        task {
+            let! messages = findings "AXG012" body
+            Assert.Empty messages
         }
 
     [<Fact>]
