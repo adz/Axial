@@ -127,6 +127,54 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! viaTask = Flow.fromTask (fun _ -> Flow.startTask clockEnvironment sample) // axial-allow-AXG005: wrapped operation has no cancellation-token overload
 #endif
 
+
+
+        // Adapter shutdown: a callback can signal before the owning fiber starts, and abandoning a wait
+        // must not cancel the cleanup that is still running behind it.
+        let! shutdownChecks =
+            [ 1 .. round.Size 20 ]
+            |> Flow.traverse (fun _ -> flow {
+                let! stop = Deferred.make ()
+                let! started = Deferred.make ()
+                let! finalizing = Deferred.make ()
+                let! release = Deferred.make ()
+                let! finished = Deferred.make ()
+                let! stopped = Deferred.make ()
+                let early = round.Chance 50
+                if early then Deferred.succeedNow () stop |> ignore
+                let! owner = Flow.fork (flow {
+                    let! child = Flow.fork (flow {
+                        do! Flow.scopeFinalizer (flow {
+                            do! Deferred.succeed () finalizing |> Flow.ignore
+                            do! Deferred.await release
+                            do! Deferred.succeed () finished |> Flow.ignore
+                        })
+                        do! Deferred.succeed () started |> Flow.ignore
+                        return! Flow.never
+                    })
+                    do! Deferred.await started
+                    do! Deferred.await stop
+                    let! _ = Fiber.interrupt child
+                    do! Deferred.succeed () stopped |> Flow.ignore
+                })
+                if not early then
+                    do! Deferred.await started
+                    Deferred.succeedNow () stop |> ignore
+                do! Deferred.await finalizing
+                let! abandoned = Deferred.make ()
+                Deferred.succeedNow () abandoned |> ignore
+                let! completedFirst =
+                    Flow.race
+                        (Deferred.await stopped |> Flow.map (fun () -> true))
+                        (Deferred.await abandoned |> Flow.map (fun () -> false))
+                let! pending = Fiber.poll owner
+                do! Deferred.succeed () release |> Flow.ignore
+                let! exit = Fiber.awaitExit owner
+                do! Deferred.await finished
+                return check "callback shutdown survives early signals and abandoned waits without losing cleanup"
+                    (not completedFirst && pending.IsNone && exit = Exit.Success ())
+            })
+
         // A flow that checks the runtime's token stops when interrupted, even while it never suspends.
         let spins = ref 0
         let spinnerToken = ref CancellationToken.None
@@ -148,6 +196,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let! spinExit = Fiber.interrupt spinning
 
         return
+            shutdownChecks @
             [ check "every adapted call produced a value, a typed failure, a defect, or an interruption" wellFormed
               check "a flow run as a task or an async has the same exit" (viaAsync = direct && viaTask = direct && viaRun = direct)
               check "cold tasks started only when bound, once per binding" coldAsExpected

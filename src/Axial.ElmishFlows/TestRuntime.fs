@@ -4,7 +4,6 @@ open System
 open System.Collections.Concurrent
 open System.Diagnostics
 open System.Threading
-open System.Threading.Tasks
 open Axial
 open global.Elmish
 
@@ -85,13 +84,14 @@ module ElmishRuntime =
         : Async<Result<ElmishRuntime<'env>, 'error>> =
         async {
             let runtime = new ElmishRuntime<'env>(options)
-            let ready = TaskCompletionSource<Result<ElmishRuntime<'env>, 'error>>(TaskCreationOptions.RunContinuationsAsynchronously)
+            let ready : Deferred<Never, Result<ElmishRuntime<'env>, 'error>> =
+                Deferred.make () |> Flow.run () |> Exit.toResult |> Result.defaultWith Never.absurd
 
             let root : Flow<'input, 'error, unit> =
                 Layer.provide layer (flow {
                     let! environment = Flow.env
                     runtime.SetEnvironment(environment)
-                    ready.TrySetResult(Ok runtime) |> ignore
+                    Deferred.succeedNow (Ok runtime) ready |> ignore
                     return! runtime.Pump() |> Flow.widenError
                 })
                 |> Flow.onExit (fun exit ->
@@ -99,17 +99,17 @@ module ElmishRuntime =
                     | Exit.Success () -> Flow.ok ()
                     | Exit.Failure cause ->
                         match Cause.failures cause with
-                        | error :: _ -> ready.TrySetResult(Error error) |> ignore
+                        | error :: _ -> Deferred.succeedNow (Error error) ready |> ignore
                         | [] ->
                             match Cause.defects cause with
-                            | defect :: _ -> ready.TrySetException(defect) |> ignore
-                            | [] -> ready.TrySetException(OperationCanceledException("Elmish runtime provisioning was interrupted.")) |> ignore
+                            | defect :: _ -> Deferred.dieNow defect ready |> ignore
+                            | [] -> Deferred.dieNow (OperationCanceledException("Elmish runtime provisioning was interrupted.")) ready |> ignore
                         Flow.ok ())
                 |> Flow.withFiberRegistry runtime.Registry
 
             let handle = App.start input root
             runtime.Attach(handle)
-            return! ready.Task |> Async.AwaitTask
+            return! Deferred.toTask Never.absurd ready |> Async.AwaitTask
         }
 
     /// Creates a runtime with queued dispatch and captured defects for tests.

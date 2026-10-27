@@ -167,3 +167,29 @@ Steps 2-5 not run. Because ElmishFlows/Hosting fail, dependent test projects sti
 - Adapter test runs were attempted on unchanged Sub/TestRuntime/StopAsync implementations, but compilation is blocked by the existing AXG009 errors (Sub 17/18/59, TestRuntime 88, Hosting 164/167). Hosting no longer reports AXG012. No bypass or protected edits used. New adapter test execution must be completed before/alongside phase 2; passing on the old adapter implementation has NOT been established.
 - No adapter conversion, full solution build, 20x runs, full verify, done-check, or final fail-first script run in this phase. No result.json exists from this phase. Those final gates remain phase 3. Torture waiver records that the phase-1 Hosting edit changes only the unused bind; phase 2 still requires a torture scenario.
 - Logs and phase report: `/home/adam/projects/scratch/axial-coord/pi/adapters-*.log`, `guardrails-adapters.report.md`. Stop here; phase 2 needs fresh context.
+
+### Phase 2 (complete; stop before phase 3)
+
+- Coordinator's old-adapter proof completed first: throwaway detached worktree at origin/main e7a1befea,
+  copied only SubscriptionTests.fs and HostingTests.fs. Built its analyzer normally, then SubscriptionTests **6/6**,
+  HostingTests **18/18** passed. Restored copied tests and removed the clean worktree. Logs: adapters-old-*.log.
+- Sub uses a Deferred stop signal and scoped watcher fiber. Disposal signals synchronously without blocking;
+  early signals are retained until startup, and the owning scope waits for stream finalizers. Removed unused
+  completion bookkeeping and raw TCS/ContinueWith. Dispatch suppression remains atomic.
+- startLayer uses Deferred completion and Deferred.toTask; provisioning failures, defects and interruption
+  retain their existing boundary behavior. No public API or policy change.
+- Hosting StopAsync races Deferred waits: the already-started stop operation retains cleanup ownership.
+  Deferred.fromTask observes its completion; cancelling the losing wait cannot cancel or join ongoing cleanup.
+  Abandonment still logs the warning. Faults remain defects and propagate at the Task boundary.
+- Torture interop extended with callback-before-start and gated-cleanup/abandoned-wait invariants.
+  Initial scenario hung: seed 1 reached the abandonment race, whose Fiber.awaitExit loser ignores cancellation;
+  Flow.race waits for its loser, while the finalizer gate was released only after that race. This was a scenario
+  deadlock, not evidence of a lost wake-up. Reproduced under timeout (exit 124; adapters-hang-repro.log),
+  then replaced the uncancellable observer with a Deferred completion signal (same approach as Hosting).
+  No runtime semantics changed or invariant weakened. Debug probes removed. Interop **10/10 rounds** pass.
+- Final validation: ElmishFlows full suite **29/29**, HostingTests **18/18**; full
+  `dotnet build Axial.slnx -c Release` succeeds with **0 errors** (8 warnings in incremental final run).
+  git diff --check passes. All subsequent test/torture runs use timeout; keep that in phase 3.
+- Phase 3 still owns 20x runs, full detached axial-verify, done-check and final fail-first proof.
+  No new artifacts/verify/result.json; no full-slice verification claim. No protected edits, approvals,
+  baseline changes, suppressions, new runtime files, or push. STOP after this phase's commit.
