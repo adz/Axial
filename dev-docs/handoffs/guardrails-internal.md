@@ -47,9 +47,9 @@ this phase's normally built Release analyzer.
 | AXG012 | 13 | 3 | 10 | 0 | 10 |
 | Total | 162 | 15 | 147 | 84 | 63 |
 
-The first narrowed scan returned exactly the 63 suspicious sites, no missing or extra sites. A final repeat after
-cast-range handling is being collected in `guardrails-internal-narrowed-*.sarif` and `*-status.json`; reconcile it
-before treating those final files as complete. Counts are finding sites, not generated fingerprint rows: identical
+Both narrowed scans returned exactly the 63 suspicious sites, no missing or extra sites. The final repeat after
+cast-range handling completed all 29 project/target runs. Evidence: `guardrails-internal-narrowed-*.sarif`, both
+narrowed status JSON files, and `guardrails-internal-final-sites.json`. Counts are finding sites, not generated fingerprint rows: identical
 fingerprints may require `xN` baseline counts. No baseline has been generated.
 
 Removed AXG010 sites: assignment recording (5), cancellation guards (2), chained exception rethrow (4), typed
@@ -79,8 +79,10 @@ blocked. Do not disable checks for any other project.
   downgrades (`internal-phase3-policy-check.log`).
 - No phase-3 `artifacts/verify/result.json`, full axial-verify or done-check pass. Full solution build/verification
   is approval-dependent. The torture waiver is local `artifacts/verify/torture-waiver.txt` (comments-only changes).
-- Narrowing-specific fail-first against pre-phase source still needs the implementation checkpoint and execution;
-  preserve actual assertion-failure evidence, not policy-lock failures.
+- Narrowing-specific fail-first against pre-phase source `be0e59fa9`: passed (script exit 0), with actual AXG010
+  and AXG012 assertion failures. `internal-phase3-fail-first.txt` records implementation checkpoint `1810f3415`;
+  `.exit` records success. This is not a policy-lock or compilation failure. The final-HEAD origin/main proof is
+  still required in phase 4.
 
 ## Important integration observations
 
@@ -97,8 +99,7 @@ blocked. Do not disable checks for any other project.
 
 ## Exact next step
 
-1. Finish the final inventory repeat and implementation-checkpoint fail-first evidence, update this handover/report,
-   commit the phase, then STOP at the approval boundary. Do not generate or approve policy/baseline changes.
+1. Phase 3 is complete at the approval boundary. STOP; do not generate or approve policy/baseline changes.
 2. Coordinator/human reviews the report table, 10 runtime entries, 84 specific allowance reasons and 63 suspicious
    baseline candidates (AXG009 36 / AXG010 17 / AXG011 0 / AXG012 10). They own baseline/approval commands and
    combining this batch with any other lane's policy changes. Do not baseline all findings indiscriminately.
