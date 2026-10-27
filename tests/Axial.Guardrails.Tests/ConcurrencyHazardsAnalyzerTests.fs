@@ -29,6 +29,10 @@ module ConcurrencyHazardsAnalyzerTests =
         task {
             let source = "module M\nopen System\nopen System.Threading\nopen System.Threading.Tasks\nopen Axial\n" + body + "\n"
             let! ctx = AnalyzerTestContext.createWithAxial true source
+            let errors =
+                Array.append ctx.ParseFileResults.Diagnostics ctx.CheckFileResults.Diagnostics
+                |> Array.filter (fun diagnostic -> diagnostic.Severity = FSharp.Compiler.Diagnostics.FSharpDiagnosticSeverity.Error)
+            Assert.True(Array.isEmpty errors, sprintf "Invalid analyzer fixture: %A" errors)
             return! runContext code ctx
         }
 
@@ -103,7 +107,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<Theory>]
     [<InlineData("let f () =\n    let mutable recorded = None\n    try failwith \"bad\" with ex -> recorded <- Some ex")>]
     [<InlineData("let f () =\n    let recorded = ref None\n    try failwith \"bad\" with ex -> recorded.Value <- Some ex")>]
-    [<InlineData("let f () = try failwith \"bad\" with ex when ex :? OperationCanceledException -> Error () | ex -> Error ()")>]
+    [<InlineData("let f () = try failwith \"bad\" with ex when (ex :? OperationCanceledException) -> Error () | ex -> Error ()")>]
     [<InlineData("let isOwned (error: exn) = error :? OperationCanceledException\nlet f () = try failwith \"bad\" with ex when isOwned ex -> Error () | ex -> Error ()")>]
     [<InlineData("let f () = try failwith \"bad\" with ex -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex).Throw()")>]
     [<InlineData("type Failure = { Message: string }\nlet f () = try failwith \"bad\" with ex -> Error { Message = ex.Message }")>]
