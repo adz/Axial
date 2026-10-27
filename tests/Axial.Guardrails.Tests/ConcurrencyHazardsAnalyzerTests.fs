@@ -12,13 +12,15 @@ module ConcurrencyHazardsAnalyzerTests =
         task {
             let plugins =
                 typeof<GuardrailConfig.Config>.Assembly.GetTypes()
-                |> Array.collect (fun t -> t.GetProperties(BindingFlags.Public ||| BindingFlags.Static))
-                |> Array.filter (fun p -> p.PropertyType = typeof<Analyzer<CliContext>>)
+                |> Array.collect (fun t -> t.GetMethods(BindingFlags.Public ||| BindingFlags.Static))
+                |> Array.filter (fun methodInfo ->
+                    methodInfo.GetCustomAttributes(false)
+                    |> Array.exists (fun attribute -> attribute.GetType().Name = "CliAnalyzerAttribute"))
             Assert.NotEmpty plugins
             let mutable messages = []
             for plugin in plugins do
-                let analyzer = plugin.GetValue(null) :?> Analyzer<CliContext>
-                let! found = analyzer ctx |> Async.StartAsTask
+                let analysis = plugin.Invoke(null, [| box ctx |]) :?> Async<Message list>
+                let! found = analysis |> Async.StartAsTask
                 messages <- messages @ found
             return messages |> List.filter (fun m -> m.Code = code)
         }

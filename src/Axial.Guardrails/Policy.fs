@@ -243,7 +243,7 @@ module Policy =
                             match rulesResult with
                             | Error e -> fail e
                             | Ok rules ->
-                                let validatePaths kind paths =
+                                let validatePaths kind (paths: string list) =
                                     paths |> List.fold (fun state p -> state |> Result.bind (fun xs -> (if kind = "runtime" && (p.Contains('*') || p.Contains('?')) then Error "runtime.files requires exact file paths, not globs" else validatePattern repositoryRoot allFiles false p) |> Result.map (fun x -> x::xs))) (Ok [])
                                     |> Result.map List.rev
                                 let ignores =
