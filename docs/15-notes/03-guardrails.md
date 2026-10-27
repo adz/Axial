@@ -53,7 +53,16 @@ services = ["src/App/Services/**"]
 The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. File assignments override project
 assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
 suppressed. Run `axial policy approve` after reviewing an intentional policy change. The build fails with a categorized
-summary while TOML, lockfile, protected inputs, baseline, or suppressions differ.
+summary when protected inputs change or policy weakens. Removing suppressions or shrinking baseline entries does not
+require approval; the next approval refreshes the snapshot.
+
+Lock format version 2 records each suppression by repository-relative file, normalized comment text, and occurrence
+number, not source line. Normalization selects the `// axial-allow-AXGnnn:` comment, canonicalizes spacing before the
+rule, and trims the reason's outer whitespace; internal reason text remains significant. Moving a comment within
+its file does not require approval. Adding a duplicate, changing its rule or reason, or moving it to another file does.
+`SUPPRESSION` records contain tab-separated file, occurrence number, and comment text. `BASELINE_PATH` records the
+configured baseline path. Version-1 locks remain readable but always require one reviewed `axial policy approve`
+to migrate; they are never silently trusted.
 
 Do not set Guardrails policy through MSBuild severity, boundary, baseline-path, or test-policy settings. For local
 troubleshooting only, pass `-p:AxialGuardrailsEnabled=false` on the command line; do not store that setting in a

@@ -1,29 +1,42 @@
-# Policy lock by text — phase 1
+# Policy lock by text — phase 2 complete
 
 ## Scope and state
 
-Brief: `/home/adam/projects/scratch/axial-coord/pi/policy-lock-by-text.md`.
+Brief: `/home/adam/projects/scratch/axial-coord/pi/policy-lock-by-text.md` (including coordinator additions).
 Branch/worktree: `fix/policy-lock-by-text`, `/home/adam/projects/Axial/fix/policy-lock-by-text`.
-Phase 1 adds tests only; production code and the repository lock are untouched. Stop after this phase.
+Phase 2 implementation and docs are complete; focused PolicyLockTests pass. No push or lock approval was run.
+Repository `Axial.Guardrails.lock` is untouched. Stop after this phase.
 
-## Decisions and evidence
+## Decisions
 
-- Tests exercise `inspect`, serialization/parser round-trip, and `diff` against temporary repositories, rather than constructing the proposed new identity format.
-- Require line insertion/removal to yield an empty diff. Duplicate test moves the original while adding another identical comment, requiring exactly one addition.
-- Rule/reason changes and cross-file movement assert removal of the old identity and one added identity.
-- Migration choice: accept legacy version-1 line-numbered records but require review/reapproval, even when source lines still match. The legacy fixture pins the version header and old identity explicitly.
-- Brief invariant 6 conflicts with existing behavior: removal produces no `SuppressionsAdded`, but does produce `ProtectedChanged = [LockName]`, so `isEmpty` is false and check blocks. The characterization test preserves that behavior and verifies ordinary approval accepts the removal. Do not silently make removals pass; coordinator should resolve if a behavior change is desired.
-- No lock approval has been run or authorized.
+- FIRST removed mandatory hashing of `.fs`/`.fsproj` under `tests/Axial.Guardrails*`, with a separate implementation commit (`62bfd0aa1`) before suppression identity work. Explicit protected globs still apply. Enforcement config remains protected.
+- Suppressions use file + normalized comment text + occurrence number, stored as a set of occurrence identities. Normalization extracts the suppression comment, canonicalizes its prefix, trims outer reason whitespace, and preserves internal reason text. Line movement is ignored; duplicate additions, changed rules/reasons, and cross-file movement remain additions.
+- Writer emits format version 2. `SUPPRESSION` records contain tab-separated file, occurrence number, comment. `BASELINE_PATH` records the configured baseline file. Snapshot carries Version and BaselinePath for comparison.
+- Version-1 locks remain parseable but always produce a lock-review change, even without suppressions. A human must review and reapprove once. No automatic migration/trust.
+- Coordinator resolved invariant 6: suppression removal and baseline shrinkage strengthen policy and pass without approval. Supersedes phase-1 characterization. Baseline hash differences are waived only for the same baseline path when parsed entries changed with no additions/count growth; other protected-file changes still block. Next approval refreshes the snapshot.
 
 ## Files touched
 
-- `tests/Axial.Guardrails.Tests/PolicyLockTests.fs`: fixtures and tests for all seven brief invariants.
+- `src/Axial.Tool/PolicyLock.fs`
+- `tests/Axial.Guardrails.Tests/PolicyLockTests.fs`
+- `docs/15-notes/03-guardrails.md`
+- `dev-docs/current-ideas/guardrails-protected-files.md`
+- `dev-docs/releases/0.12.0.md`
 - This handover.
 
-## Exact next step (fresh session, phase 2)
+## Test-first evidence
 
-Read the brief and this handover, then implement text-based occurrence-aware suppression identity in `src/Axial.Tool/PolicyLock.fs`. Keep legacy parsing readable but untrusted pending reapproval. Update relevant format docs (search `docs/` and `dev-docs/` for `Guardrails.lock`, reading `dev-docs/DOCS.md` first) and `dev-docs/releases/0.12.0.md`. Run focused PolicyLockTests until passing. Do not refresh `Axial.Guardrails.lock`. Update/commit this handover with phase 2 and STOP.
+- Commit `a52597fd5`: protected-input regression test committed first, then failed 1/1 against old hashing. Log: `/home/adam/projects/scratch/axial-coord/pi/policy-lock-phase2-protected-red.log`. After first implementation commit, passed 1/1.
+- Commit `35db864ea`: updated suppression-removal test and added baseline-shrink regression before implementation. Full PolicyLockTests run failed 6, passed 12 (line movement twice, duplicate-plus-movement, legacy review, suppression removal, baseline shrinkage). Log: `/home/adam/projects/scratch/axial-coord/pi/policy-lock-phase2-red.log`.
+- After implementation, focused tests passed 18/18. Log: `/home/adam/projects/scratch/axial-coord/pi/policy-lock-phase2-green.log`.
+- Command: `dotnet test tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj -c Release -p:_AxialRepoSkipGuardrails=true --filter FullyQualifiedName~PolicyLockTests --nologo -v q`.
+- `bash scripts/check-docs-conventions.sh` passed; `git diff --check` passed.
+- Full verification, livedocs execution, final fail-first artifact, result.json, and done-check remain phase 4 work. No current phase-2 result.json is claimed.
 
-## Verification
+## Exact next step (fresh session, phase 3)
 
-Committed tests were run against unchanged production code: 17 total, 13 passed, 4 failed (both line-movement cases, duplicate-plus-movement, legacy reapproval). Command: `dotnet test tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj -c Release -p:_AxialRepoSkipGuardrails=true --filter FullyQualifiedName~PolicyLockTests --nologo -v q`. Exit 1 reflects assertion failures, not compilation failure. Log: `/home/adam/projects/scratch/axial-coord/pi/policy-lock-text-phase1-tests.log`. The external lane report also records this result. Full verification/result.json and done-check are deferred to phase 4, per the brief. Passing characterization tests are expected; the regression suite must be red against unchanged production code.
+Read the brief and this handover. Perform classification/approval preparation only. The repository lock is still version 1 and will require human approval under the new reader; hashes also still include formerly mandatory test files. Do NOT run `axial policy approve` or edit the lock. If checking confirms approval is the only blocker, report it to the coordinator and stop per the brief. Update/commit this handover and reply PHASE 3 DONE. Phase 4 owns full verification and done-check after coordination of approval.
+
+## Open questions / constraints
+
+No unresolved design questions. Human lock approval remains outstanding. Do not mistake focused tests using `_AxialRepoSkipGuardrails=true` for a full verified repository build; that override only isolates these policy tests from the intentionally unapproved repository lock.

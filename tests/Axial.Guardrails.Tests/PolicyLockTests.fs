@@ -8,7 +8,7 @@ open Xunit
 
 module PolicyLockTests =
     let private empty =
-        { Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty
+        { Version=2; BaselinePath=DefaultBaseline; Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty
           Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
 
     let private withSuppressionRepository action =
