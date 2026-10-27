@@ -280,8 +280,9 @@ let waitForReady (ready: TaskCompletionSource<unit>) (assertReady: unit -> unit)
 A `Deferred` completed by the worker serves the same purpose. For scheduling behavior, step a test clock instead.
 `Task.WhenAny(work, Task.Delay duration)` (including array arms or a locally bound deadline), fact-based
 `Wait(timeout)` / `WaitAsync(timeout)`, and `SpinWait.SpinUntil(predicate, timeout)` are allowed.
-A duration of `Timeout.Infinite`, `Timeout.InfiniteTimeSpan`, or literal `-1` is also allowed: completion
-waits for cancellation rather than elapsed time. A bare sleep inside a `while` or `for` loop is still
+An infinite `Async.Sleep`, or `Task.Delay` with an explicit cancellation-token parameter, is also allowed
+(`Timeout.Infinite`, `Timeout.InfiniteTimeSpan`, or literal `-1`). Async workflows supply their own cancellation
+token. A tokenless infinite `Task.Delay` and any `Thread.Sleep`, even an infinite one, remain reported. A bare sleep inside a `while` or `for` loop is still
 reported: counting iterations is a guessed duration, and unbounded polling can hang. In Axial's own tests,
 `Axial.Tests.TestSupport.waitUntil condition deadline` is the approved bounded polling helper; only its
 implementation may contain polling sleeps. Its `TimeSpan` deadline is a failure bound and it returns `false`
@@ -299,9 +300,11 @@ as a boundary and use `// axial-allow-AXG013: <reason>` at that site; AXG002 val
 
 ## AXG009: Keep raw concurrency inside the runtime
 
-Reports `TaskCompletionSource`, `Interlocked`, F# `lock`, `Monitor`, `CancellationTokenSource` construction,
-`Task.Run`, `Task.Factory.StartNew`, `ContinueWith`, `Thread` construction, and `ThreadPool` calls.
-Prefer Flow concurrency; raw coordination belongs at an OS bridge, not throughout an adapter.
+Reports `Task`, `TaskCompletionSource`, and `CancellationTokenSource` construction, `Task.Run`,
+`Task.Factory.StartNew`, `ContinueWith`, `Thread` construction, and `ThreadPool` calls outside runtime files
+and the `capabilities` role. Prefer Flow concurrency; raw coordination belongs at an OS bridge, not throughout
+an adapter. `Interlocked`, F# `lock`, and `Monitor` are reported as warnings outside declared runtime files,
+including in capability, host-tooling, and test code.
 
 ```fsharp
 // Reported: scheduling bypasses Flow ownership.
@@ -316,13 +319,13 @@ This approval-sensitive list is protected by the policy lock; `[boundaries].file
 
 ## AXG010: Do not silently swallow exceptions
 
-Reports a `try/with` handler that neither uses its bound exception nor calls `raise`, `reraise`, or a reporting
-function. The reporting heuristic accepts call names containing `Report`, `notify`, `Observer`, `Log`, or `Record`
-(case-insensitive). It is not proof that logging succeeds or that every control-flow path reports. Returning or
-recording the bound exception also counts, including assignments, error-record fields, and chained calls such as
-`ExceptionDispatchInfo.Capture(error).Throw()`. A guard that inspects the bound exception counts as classification.
-Wildcard handlers returning a fallback value are still reported; returning `Error` or `Exit.Failure` alone does not
-prove the exception was handled.
+Reports only catch-all `try/with` handlers (`_`, a bound exception, or a type test for `exn` / `System.Exception`)
+that neither use the exception nor call `raise` or `reraise`. Handlers for narrower exception types are not reported;
+type abbreviations are resolved. Returning or recording the bound exception counts as use, including assignments,
+error-record fields, and chained calls such as `ExceptionDispatchInfo.Capture(error).Throw()`.
+A guard that inspects the bound exception counts as classification. A reporting function's name alone does not
+establish exception use. Wildcard handlers returning a fallback value are still reported; returning `Error` or
+`Exit.Failure` alone does not prove the exception was handled.
 
 ```fsharp
 let swallowed () = try failwith "failed" with _ -> ()
@@ -347,8 +350,9 @@ For example, an uncancellable cleanup bridge can use
 ## AXG012: Retain ownership of concurrent work
 
 Reports discarded Task, ValueTask, and Fiber values in wildcard bindings, statements, and pipelines to `ignore`.
-The typed check follows type abbreviations and catches aliased task factories. `Async.Start` / `Async.StartImmediate`
-are also reported. Awaited `let!` / `do!` expressions and array/list elements retained in a collection are not
+The typed check follows type abbreviations and catches aliased task factories. Both direct calls and pipelines
+to F#'s `ignore` count; a same-named user function does not. `Async.Start` / `Async.StartImmediate` return unit and
+are out of scope. Awaited `let!` / `do!` expressions and array/list elements retained in a collection are not
 discarded statements. Explicit casts do not hide a discarded Task. A discarded `Flow.fork` description is cold:
 without executing the returned Flow, no fiber starts, so AXG012 does not report it.
 Retaining a value alone does not prove it will be
@@ -362,6 +366,7 @@ let retained () = System.Threading.Tasks.Task.FromResult 1
 Await the task or retain and join the fiber. A foreign callback with an explicit external owner can use
 `// axial-allow-AXG012: <specific ownership reason>` at the discard.
 
-AXG009–AXG012 are errors for every policy role except `test`. Their per-site allowances do not require boundary
-membership. File-wide allowances are rejected by AXG002, as are missing reasons and stale allowances. No automatic
+Except for AXG009 synchronization findings, AXG009–AXG012 exempt the `test` role and host-role tooling
+projects under `src/Axial.Guardrails` or `src/Axial.Tool*`; an ordinary host is not exempt.
+Findings are errors except AXG011 and AXG009 synchronization findings, which are warnings. Their per-site allowances do not require boundary membership. File-wide allowances are rejected by AXG002, as are missing reasons and stale allowances. No automatic
 fix is offered: choosing ownership, cancellation, or exception reporting changes behavior.

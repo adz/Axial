@@ -60,11 +60,32 @@ let rec private infiniteArgument (ctx: CliContext) expr =
                         && (field.DeclaringEntity |> Option.exists (fun owner -> owner.TryFullName = Some "System.Threading.Timeout"))
                     | _ -> false))
 
+let private hasCancellationParameter (ctx: CliContext) expr =
+    match headRange expr with
+    | None -> false
+    | Some location ->
+        ctx.GetAllSymbolUsesOfFile()
+        |> Seq.exists (fun site ->
+            site.Range.End = location.End && site.Range.StartLine = location.StartLine
+            && site.Range.StartColumn <= location.StartColumn
+            && (match site.Symbol with
+                | :? FSharpMemberOrFunctionOrValue as value ->
+                    value.CurriedParameterGroups |> Seq.collect id |> Seq.tryLast
+                    |> Option.exists (fun parameter ->
+                        parameter.Type.HasTypeDefinition
+                        && parameter.Type.TypeDefinition.TryFullName = Some "System.Threading.CancellationToken")
+                | _ -> false))
+
 let rec private waitsForCancellation ctx expr =
     match expr with
     | SynExpr.Paren(inner, _, _, _)
     | SynExpr.Typed(inner, _, _) -> waitsForCancellation ctx inner
-    | SynExpr.App(argExpr = argument) -> infiniteArgument ctx argument
+    | SynExpr.App(argExpr = argument) ->
+        if matches ctx "Microsoft.FSharp.Control.FSharpAsync" "Sleep" expr then
+            infiniteArgument ctx argument // Async.Sleep observes the async workflow's cancellation token.
+        elif matches ctx "System.Threading.Tasks.Task" "Delay" expr then
+            hasCancellationParameter ctx expr && infiniteArgument ctx argument
+        else false
     | _ -> false
 
 // Only this shared helper owns the bounded polling implementation. A same-named local or another module

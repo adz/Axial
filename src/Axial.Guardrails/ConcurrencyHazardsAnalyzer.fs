@@ -34,6 +34,10 @@ let rec private handlerExpressions expr =
 
 let private key (r: range) = r.StartLine, r.StartColumn, r.EndLine, r.EndColumn
 
+let private synchronization owner name =
+    Set.contains owner (set [ "System.Threading.Interlocked"; "System.Threading.Monitor" ])
+    || (owner = "Microsoft.FSharp.Core.Operators" && (name = "Lock" || name = "lock"))
+
 let private symbolRanges code (ctx: CliContext) =
     ctx.GetAllSymbolUsesOfFile()
     |> Seq.choose (fun site ->
@@ -41,19 +45,22 @@ let private symbolRanges code (ctx: CliContext) =
         | :? FSharpMemberOrFunctionOrValue as value ->
             let owner = value.DeclaringEntity |> Option.bind _.TryFullName |> Option.defaultValue ""
             let name = value.CompiledName
+            let taskType = Set.contains owner (set [ "System.Threading.Tasks.Task"; "System.Threading.Tasks.Task`1" ])
+            let taskFactory = Set.contains owner (set [ "System.Threading.Tasks.TaskFactory"; "System.Threading.Tasks.TaskFactory`1" ])
             let raw =
-                (owner.StartsWith("System.Threading.Tasks.TaskCompletionSource", StringComparison.Ordinal) && value.IsConstructor)
+                (Set.contains owner (set [ "System.Threading.Tasks.TaskCompletionSource"; "System.Threading.Tasks.TaskCompletionSource`1" ]) && value.IsConstructor)
+                || (taskType && value.IsConstructor)
                 || (owner = "System.Threading.CancellationTokenSource" && value.IsConstructor)
                 || (owner = "System.Threading.Thread" && value.IsConstructor)
-                || Set.contains owner (set [ "System.Threading.Interlocked"; "System.Threading.Monitor"; "System.Threading.ThreadPool" ])
-                || (owner.StartsWith("System.Threading.Tasks.Task", StringComparison.Ordinal)
-                    && Set.contains name (set [ "Run"; "StartNew"; "ContinueWith" ]))
-                || (owner.StartsWith("Microsoft.FSharp.Core.Operators", StringComparison.Ordinal) && (name = "Lock" || name = "lock"))
+                || owner = "System.Threading.ThreadPool"
+                || synchronization owner name
+                || (taskType && Set.contains name (set [ "Run"; "ContinueWith" ]))
+                || (taskFactory && name = "StartNew")
             let matches =
                 match code with
                 | "AXG009" -> raw
                 | "AXG011" -> owner = "System.Threading.CancellationToken" && (name = "get_None" || name = "None")
-                | "AXG012" -> owner.StartsWith("Microsoft.FSharp.Control.FSharpAsync", StringComparison.Ordinal) && Set.contains name (set [ "Start"; "StartImmediate" ])
+                | "synchronization" -> synchronization owner name
                 | _ -> false
             if matches then Some site.Range else None
         | _ -> None)
@@ -66,7 +73,29 @@ let rec private boundNames pat =
     | SynPat.As(left, right, _) -> boundNames left @ boundNames right
     | _ -> []
 
-let private swallowed expr =
+let rec private baseExceptionType (t: FSharpType) =
+    if t.IsAbbreviation then baseExceptionType t.AbbreviatedType
+    else t.HasTypeDefinition && t.TypeDefinition.TryFullName = Some "System.Exception"
+
+let rec private catchAll (ctx: CliContext) pat =
+    match pat with
+    | SynPat.Wild _ | SynPat.Named _ -> true
+    | SynPat.Paren(inner, _) | SynPat.Typed(inner, _, _)
+    | SynPat.Attrib(inner, _, _) | SynPat.As(inner, _, _) -> catchAll ctx inner
+    | SynPat.Or(left, right, _, _) -> catchAll ctx left || catchAll ctx right
+    | SynPat.Ands(patterns, _) -> patterns |> List.forall (catchAll ctx)
+    | SynPat.IsInst(targetType, _) ->
+        ctx.GetAllSymbolUsesOfFile()
+        |> Seq.exists (fun site ->
+            Range.rangeContainsRange targetType.Range site.Range
+            && (match site.Symbol with
+                | :? FSharpEntity as entity ->
+                    if entity.IsFSharpAbbreviation then baseExceptionType entity.AbbreviatedType
+                    else entity.TryFullName = Some "System.Exception"
+                | _ -> false))
+    | _ -> false
+
+let private swallowed ctx expr =
     match expr with
     | SynExpr.TryWith(_, clauses, _, _, _, _) ->
         clauses |> List.choose (fun (SynMatchClause(pat = pat; resultExpr = body; whenExpr = guard)) ->
@@ -78,10 +107,9 @@ let private swallowed expr =
                     | SynExpr.LongIdent(_, ids, _, _) when ids.LongIdent |> List.exists (fun id -> names.Contains id.idText) -> true
                     | SynExpr.App _ ->
                         headIdent node |> Option.exists (fun name ->
-                            name = "raise" || name = "reraise"
-                            || ([ "Report"; "notify"; "Observer"; "Log"; "Record" ] |> List.exists (fun part -> name.Contains(part, StringComparison.OrdinalIgnoreCase))))
+                            name = "raise" || name = "reraise")
                     | _ -> false)
-            if handled then None else Some body.Range)
+            if not (catchAll ctx pat) || handled then None else Some body.Range)
     | _ -> []
 
 let rec private concurrentType (t: FSharpType) =
@@ -108,7 +136,7 @@ let rawRanges code (ctx: CliContext) =
     let nodes = expressions ctx |> List.collect walk
     let syntactic =
         match code with
-        | "AXG010" -> nodes |> List.collect swallowed
+        | "AXG010" -> nodes |> List.collect (swallowed ctx)
         | "AXG012" ->
             let typed = typedConcurrentRanges ctx
             // Array/list syntax uses Sequential for retained elements, not discarded statements.
@@ -127,9 +155,23 @@ let rawRanges code (ctx: CliContext) =
                     | SynExpr.Upcast(inner, _, _) | SynExpr.Downcast(inner, _, _)
                     | SynExpr.InferredUpcast(inner, _) | SynExpr.InferredDowncast(inner, _) -> discarded inner
                     | _ -> false)
+            let rec ignores (target: SynExpr) =
+                match target with
+                | SynExpr.Paren(inner, _, _, _) | SynExpr.Typed(inner, _, _)
+                | SynExpr.TypeApp(inner, _, _, _, _, _, _) -> ignores inner
+                | SynExpr.Ident _ | SynExpr.LongIdent _ ->
+                    ctx.GetAllSymbolUsesOfFile()
+                    |> Seq.exists (fun site ->
+                        Range.rangeContainsRange target.Range site.Range
+                        && (match site.Symbol with
+                            | :? FSharpMemberOrFunctionOrValue as value ->
+                                value.CompiledName = "Ignore"
+                                && (value.DeclaringEntity |> Option.bind _.TryFullName) = Some "Microsoft.FSharp.Core.Operators"
+                            | _ -> false))
+                | _ -> false
             nodes |> List.collect (fun node ->
                 match pipe node with
-                | Some(value, target) when headIdent target = Some "ignore" && discarded value -> [ value.Range ]
+                | Some(value, target) when ignores target && discarded value -> [ value.Range ]
                 | _ ->
                     match node with
                     | SynExpr.LetOrUse binding ->
@@ -142,6 +184,7 @@ let rawRanges code (ctx: CliContext) =
                                 | _ -> None)
                     | SynExpr.Sequential(_, _, first, _, _, _) when not (collectionElements.Contains(key first.Range)) && discarded first -> [ first.Range ]
                     | SynExpr.Do(inner, _) when discarded inner -> [ inner.Range ]
+                    | SynExpr.App(_, false, target, value, _) when ignores target && discarded value -> [ value.Range ]
                     | _ -> [])
         | _ -> []
     symbolRanges code ctx @ syntactic |> List.distinctBy key
@@ -154,14 +197,25 @@ let private descriptions =
 
 let private analyze code (ctx: CliContext) =
     let config = GuardrailConfig.load ()
-    let test = GuardrailConfig.resolvedPolicy config ctx |> Option.exists (fun policy -> policy.Role = Policy.Test)
+    let role = GuardrailConfig.resolvedPolicy config ctx |> Option.map _.Role
+    let tooling =
+        match role, config.PolicyRoot, config.ProjectPath with
+        | Some Policy.Host, Some root, Some project ->
+            match Path.GetRelativePath(root, Path.GetFullPath project).Replace('\\', '/').Split('/') with
+            | [| "src"; folder; _ |] -> folder = "Axial.Guardrails" || folder.StartsWith("Axial.Tool", StringComparison.Ordinal)
+            | _ -> false
+        | _ -> false
     let runtime =
         match config.Policy, config.PolicyRoot with
         | Some policy, Some root -> policy.Runtime |> List.exists (fun path -> Path.GetFullPath(Path.Combine(root, path)) = Path.GetFullPath ctx.FileName)
         | _ -> false
-    if test || (code = "AXG009" && runtime) then []
+    if code = "AXG009" && runtime then []
     else
+        let synchronizationSites = symbolRanges "synchronization" ctx |> List.map key |> Set.ofList
         rawRanges code ctx
+        |> List.filter (fun r ->
+            if code = "AXG009" && synchronizationSites.Contains(key r) then true
+            else role <> Some Policy.Test && not tooling && (code <> "AXG009" || role <> Some Policy.Capabilities))
         |> List.filter (fun r ->
             Suppressions.allDirectives ctx.SourceText
             |> List.exists (fun d -> d.RuleId = Some code && d.Reason <> "" && not d.FileWide
@@ -171,6 +225,11 @@ let private analyze code (ctx: CliContext) =
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]
               Severity = Severity.Error; Range = r; Fixes = [] })
         |> GuardrailConfig.applyCore ctx
+        // Temporary until the primitives lane removes adapter synchronization and all other None sites.
+        |> List.map (fun message ->
+            if code = "AXG011" || (code = "AXG009" && synchronizationSites.Contains(key message.Range)) then
+                { message with Severity = Severity.Warning }
+            else message)
 
 [<CliAnalyzer("RawConcurrency", "Flags raw concurrency outside the runtime.", "https://github.com/adz/Axial")>]
 let rawConcurrencyAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyze "AXG009" ctx }
