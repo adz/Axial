@@ -83,7 +83,7 @@ module PolicyLockTests =
             test <@ diff old snapshot |> isEmpty |> not @>)
 
     [<Fact>]
-    let ``removing suppression preserves existing lock review without reporting weakening`` () =
+    let ``removing suppression strengthens policy without approval`` () =
         withSuppressionRepository (fun _ write current approved ->
             write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
             let old=approved ()
@@ -91,8 +91,19 @@ module PolicyLockTests =
             let snapshot=current ()
             let changes=diff old snapshot
             test <@ changes.SuppressionsAdded.IsEmpty @>
-            test <@ changes.ProtectedChanged=[LockName] @>
+            test <@ isEmpty changes @>
             test <@ validateApproval Normal old snapshot changes = Ok () @>)
+
+    [<Fact>]
+    let ``shrinking baseline strengthens policy without approval`` () =
+        withSuppressionRepository (fun root _ current approved ->
+            let path=Path.Combine(root,DefaultBaseline)
+            File.WriteAllText(path,"effects.ambient\tsrc/App.fs\tabc x2\n")
+            let old=approved ()
+            File.WriteAllText(path,"effects.ambient\tsrc/App.fs\tabc\n")
+            test <@ diff old (current ()) |> isEmpty @>
+            File.WriteAllText(path,"")
+            test <@ diff old (current ()) |> isEmpty @>)
 
     [<Fact>]
     let ``legacy line numbered suppression lock is readable but requires reapproval`` () =
