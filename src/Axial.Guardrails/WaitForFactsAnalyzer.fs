@@ -67,8 +67,30 @@ let rec private waitsForCancellation ctx expr =
     | SynExpr.App(argExpr = argument) -> infiniteArgument ctx argument
     | _ -> false
 
-let rec private find ctx inWhile expr : range list =
-    let report delay = not inWhile && not (waitsForCancellation ctx delay)
+// Only this shared helper owns the bounded polling implementation. A same-named local or another module
+// must not turn arbitrary sleeps into fact waits.
+let rec private approvedHelperBodies (ctx: CliContext) decls =
+    decls
+    |> List.collect (function
+        | SynModuleDecl.NestedModule(decls = nested) -> approvedHelperBodies ctx nested
+        | SynModuleDecl.Let(bindings = bindings) ->
+            bindings |> List.choose (fun (SynBinding(headPat = pattern; expr = body)) ->
+                let approved =
+                    ctx.GetAllSymbolUsesOfFile()
+                    |> Seq.exists (fun site ->
+                        site.IsFromDefinition && Range.rangeContainsRange pattern.Range site.Range
+                        && (match site.Symbol with
+                            | :? FSharpMemberOrFunctionOrValue as value ->
+                                value.DisplayName = "waitUntil"
+                                && (value.DeclaringEntity |> Option.exists (fun owner -> owner.TryFullName = Some "Axial.Tests.TestSupport"))
+                            | _ -> false))
+                if approved then Some body.Range else None)
+        | _ -> [])
+
+let rec private find ctx approvedBodies expr : range list =
+    let report (delay: SynExpr) =
+        not (approvedBodies |> List.exists (fun body -> Range.rangeContainsRange body delay.Range))
+        && not (waitsForCancellation ctx delay)
     let here =
         match expr with
         | SynExpr.App _ when matches ctx "System.Threading.Thread" "Sleep" expr && report expr -> [ expr.Range ]
@@ -77,16 +99,11 @@ let rec private find ctx inWhile expr : range list =
             bindings.Bindings
             |> List.choose (fun (SynBinding(expr = rhs)) -> if directDelay ctx rhs && report rhs then Some rhs.Range else None)
         | _ -> []
-    // The nearest loop decides: a nested for must not inherit a surrounding while's exemption.
     let nested =
         match expr with
-        | SynExpr.While(whileExpr = condition; doExpr = body) ->
-            find ctx true condition @ find ctx true body
         | SynExpr.For(identBody = first; toBody = last; doBody = body) ->
-            [ first; last; body ] |> List.collect (find ctx false)
-        | SynExpr.ForEach(enumExpr = items; bodyExpr = body) ->
-            [ items; body ] |> List.collect (find ctx false)
-        | _ -> childExprs expr |> List.collect (find ctx inWhile)
+            [ first; last; body ] |> List.collect (find ctx approvedBodies)
+        | _ -> childExprs expr |> List.collect (find ctx approvedBodies)
     here @ nested
 
 /// Raw sites also serve AXG002's stale-suppression validation, independently of policy role.
@@ -94,8 +111,9 @@ let rawRanges (ctx: CliContext) =
     match ctx.ParseFileResults.ParseTree with
     | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
         modules
-        |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
-        |> List.collect (find ctx false)
+        |> List.collect (fun (SynModuleOrNamespace(decls = decls)) ->
+            let approvedBodies = approvedHelperBodies ctx decls
+            allExprsInModule decls |> List.collect (find ctx approvedBodies))
         |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
     | _ -> []
 
