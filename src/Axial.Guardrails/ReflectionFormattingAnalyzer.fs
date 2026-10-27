@@ -199,7 +199,7 @@ let rec private findings (nativeAot: bool) (e: FSharpExpr) : Finding list =
 /// Typed-tree translation throws ("error recovery at ...") for code the checker recovered from, and the analyzer CLI
 /// treats an unhandled exception as a failed run. Skip what can't be translated rather than fail the build.
 let private tolerant (f: unit -> Finding list) =
-    try f () with _ -> [] // axial-allow-AXG010: FCS typed-expression recovery can throw; an unreadable fragment is skipped instead of crashing analysis.
+    try f () with _ -> []
 
 let rec private declarationFindings nativeAot (declaration: FSharpImplementationFileDeclaration) =
     match declaration with
@@ -229,7 +229,7 @@ let private toMessage = function
           Fixes = [] }
 
 let private rawFindingsWithNativeAot nativeAot (ctx: CliContext) =
-    match (try ctx.TypedTree with _ -> None) with // axial-allow-AXG010: A recovered file without a typed tree has no type-based formatting facts to inspect.
+    match (try ctx.TypedTree with _ -> None) with
     | None -> []
     | Some tree ->
         tolerant (fun () -> tree.Declarations |> List.collect (declarationFindings nativeAot))

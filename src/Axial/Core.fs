@@ -431,17 +431,17 @@ module FiberObserver =
         }
 
     let internal notifyStart (observer: FiberObserver) (metadata: FiberMetadata) : unit =
-        try observer.OnStart metadata with _ -> () // axial-allow-AXG010: Observer OnStart is diagnostic-only; its failure must not prevent starting the fiber.
+        try observer.OnStart metadata with _ -> ()
 
     let internal notifyEnd (observer: FiberObserver) (metadata: FiberMetadata) (defect: exn option) : unit =
-        try observer.OnEnd metadata defect with _ -> () // axial-allow-AXG010: Observer OnEnd must not replace the settled fiber outcome.
+        try observer.OnEnd metadata defect with _ -> ()
 
     let internal notifyUnobservedDefect
         (observer: FiberObserver)
         (metadata: FiberMetadata option)
         (defect: exn)
         : unit =
-        try observer.OnUnobservedDefect metadata defect with _ -> () // axial-allow-AXG010: The unobserved-defect sink has no further reporting destination and must not recursively report itself.
+        try observer.OnUnobservedDefect metadata defect with _ -> ()
 
 /// <summary>A forked fiber that has settled, as recorded by a <see cref="T:Axial.FiberRegistry" />.</summary>
 type SettledFiber =
@@ -702,7 +702,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
         sentinels.Add(fiberHandle, tracker)
 
     override this.Finalize() =
-        try this.TryReport() with _ -> () // axial-allow-AXG010: The GC finalizer cannot let a defect-reporting callback exception escape onto the finalizer thread.
+        try this.TryReport() with _ -> ()
 #endif
 
 /// <summary>
@@ -1071,11 +1071,10 @@ type Scope() =
 #if !FABLE_COMPILER
     interface IAsyncDisposable with
         member this.DisposeAsync() =
-            ValueTask(this.Close(CancellationToken.None)) // axial-allow-AXG011: IAsyncDisposable has no caller token; scope finalizers must complete rather than inherit ambient cancellation.
+            ValueTask(this.Close(CancellationToken.None))
 
     interface IDisposable with
         member this.Dispose() =
-            // axial-allow-AXG011: IDisposable has no cancellation token and must finish closing every owned resource.
             this.Close(CancellationToken.None).GetAwaiter().GetResult()  // axial-allow-AXG001: IDisposable.Dispose is synchronous by contract
 #endif
 
@@ -1129,8 +1128,8 @@ module internal RuntimeContext =
             Observer = FiberObserver.none
             Registries = []
             Tracer = None
-            BranchToken = CancellationToken.None // axial-allow-AXG011: A fresh detached context has no branch owner until invocation installs its cancellation token.
-            OuterToken = CancellationToken.None // axial-allow-AXG011: The default runtime context has no outer run whose cancellation it could inherit.
+            BranchToken = CancellationToken.None
+            OuterToken = CancellationToken.None
         }
 
     let detached : RuntimeContext =
@@ -1380,7 +1379,7 @@ type Flow<'env, 'error, 'value> =
     /// <returns>A value task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.StartAsValueTask(environment: 'env, ?cancellationToken: CancellationToken) : ValueTask<Exit<'value, 'error>> =
-        this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None) // axial-allow-AXG011: The public ValueTask interop API defaults to an uncancelled root only when its caller omits the token.
+        this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None)
 
     /// <summary>Starts the workflow immediately and returns a task handle for its final exit.</summary>
     /// <remarks>The work is already in flight when this returns. Use <c>ToAsync</c> for a cold handle.</remarks>
@@ -1389,7 +1388,7 @@ type Flow<'env, 'error, 'value> =
     /// <returns>A task that completes with the workflow exit.</returns>
     /// <platforms>.NET only</platforms>
     member this.StartAsTask(environment: 'env, ?cancellationToken: CancellationToken) : Task<Exit<'value, 'error>> =
-        this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None).AsTask() // axial-allow-AXG011: The public Task interop API honors an explicit caller token and otherwise starts an uncancelled root.
+        this.ToExecution(environment, defaultArg cancellationToken CancellationToken.None).AsTask()
 
     /// <summary>Starts the workflow and blocks until the final exit is available.</summary>
     /// <remarks>To bound how long the workflow may run, apply <c>Flow.timeout</c> to it: that interrupts the work

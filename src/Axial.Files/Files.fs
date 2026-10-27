@@ -62,7 +62,7 @@ module Files =
                                 stream <- fs.OpenFile(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None)
                                 owned <- true
                                 opened <- true
-                            with :? IOException when fs.FileExists temporary && attempts < 5 -> () // axial-allow-AXG010: A colliding temporary filename is retried at most five times; other IO failures still escape.
+                            with :? IOException when fs.FileExists temporary && attempts < 5 -> ()
                         do
                             use output = stream
                             output.Write(contents, 0, contents.Length)

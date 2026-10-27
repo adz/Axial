@@ -244,7 +244,7 @@ module internal ProcessRun =
                                 do! pending
                                 return true
                             with :? OperationCanceledException when cancellation.IsCancellationRequested ->
-                                return false // axial-allow-AXG010: The owned timer cancellation is converted to the sleep-completed boolean used by the stop ladder.
+                                return false
                         })
                         |> Flow.ensuring (
                             Flow.delay (fun () ->
@@ -488,7 +488,7 @@ module internal ProcessRun =
                 // It runs without the caller's token (cancelling the run must not kill the coordinator that runs
                 // the stop ladder); shutting its queue down is how it stops.
                 let! coordinator =
-                    Flow(fun environment _ -> (coordinate ()).Invoke(environment, CancellationToken.None)) // axial-allow-AXG011: The coordinator owns the stop ladder and must survive caller cancellation; queue shutdown terminates it after stage cleanup.
+                    Flow(fun environment _ -> (coordinate ()).Invoke(environment, CancellationToken.None))
                     |> Flow.forkUnownedNamed "process-coordinator"
 
                 let! () =

@@ -169,7 +169,7 @@ let load () : Config =
     | path ->
         let stamp = File.GetLastWriteTimeUtc path
 
-        lock gate (fun () -> // axial-allow-AXG009: Compiler analyzer callbacks share the policy cache; serialize replacement of its path and timestamp snapshot.
+        lock gate (fun () ->
             match cached with
             | Some(cachedPath, cachedStamp, config) when cachedPath = path && cachedStamp = stamp -> config
             | _ ->
@@ -216,7 +216,7 @@ let private relativeFile (config: Config) fileName =
     Path.GetRelativePath(config.BaselineRoot, Path.GetFullPath fileName).Replace('\\', '/')
 
 let private appendGenerated (output: string) (entry: BaselineEntry) =
-    lock gate (fun () -> // axial-allow-AXG009: Parallel analyzer callbacks append baseline candidates to the same output file; serialize read-modify-write.
+    lock gate (fun () ->
         Directory.CreateDirectory(Path.GetDirectoryName output) |> ignore
         let prefix = $"{entry.RuleId}\t{entry.File}\t{entry.Fingerprint}"
         let lines = if File.Exists output then File.ReadAllLines output |> Array.toList else []

@@ -419,7 +419,7 @@ module QueueMetrics =
     let private sources = ResizeArray<string * (unit -> QueueStats)>()
 
     let private measure (select: QueueStats -> int64 option) () : System.Diagnostics.Metrics.Measurement<int64> seq =
-        let snapshot = lock gate (fun () -> sources.ToArray()) // axial-allow-AXG009: The Metrics callback snapshots registered queue readers before invoking them outside the registry lock.
+        let snapshot = lock gate (fun () -> sources.ToArray())
 
         [ for name, read in snapshot do
               match select (read ()) with
@@ -466,10 +466,10 @@ module QueueMetrics =
     let observe (name: string) (queue: Dequeue<'a>) : Flow<'env, 'error, unit> =
         Flow(fun _ _ ->
             let entry = name, (fun () -> QueueCore.stats queue)
-            lock gate (fun () -> sources.Add entry) // axial-allow-AXG009: Queue metric registration publishes a synchronous reader atomically against Metrics callbacks.
+            lock gate (fun () -> sources.Add entry)
 
             RuntimeState.current().Scope.AddFinalizer(fun _ ->
-                lock gate (fun () -> sources.Remove entry |> ignore) // axial-allow-AXG009: Scope cleanup removes the queue reader atomically against Metrics callback snapshots.
+                lock gate (fun () -> sources.Remove entry |> ignore)
                 Platform.completedDeed ())
 
             Execution.ofValue ())

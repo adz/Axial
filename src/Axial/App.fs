@@ -233,13 +233,13 @@ module App =
                             (fun _ -> if won then finish (fun () -> cancelled (OperationCanceledException("startWith was cancelled", callerToken)))),
                             (fun error -> if won then finish (fun () -> failure error)),
                             (fun error -> if won then finish (fun () -> cancelled error)),
-                            cancellationToken = CancellationToken.None))) // axial-allow-AXG011: Caller cancellation must wait for running.Stop and root finalizers before completing the cancellation continuation.
+                            cancellationToken = CancellationToken.None)))
                     Async.StartWithContinuations(
                         async { return! published.Task |> Async.AwaitTask },
                         (fun exit -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> success exit)),
                         (fun error -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> failure error)),
                         (fun error -> if not callerToken.IsCancellationRequested then finishOnce (fun () -> cancelled error)),
-                        cancellationToken = CancellationToken.None)) // axial-allow-AXG011: The publication waiter must reach its continuation even if the startup caller cancels; that continuation arbitrates completion.
+                        cancellationToken = CancellationToken.None))
             match outcome with
             | Exit.Success services -> return Ok(running, services)
             | exit ->

@@ -263,7 +263,7 @@ type internal CaptureBuffer(policy: OutputRetention, available: bool) =
         | _ -> None
 
     member _.Append(chunk: byte array) =
-        lock gate (fun () -> // axial-allow-AXG009: Native stdout and stderr callbacks append to the service-owned retention buffer synchronously.
+        lock gate (fun () ->
             match policy, stream with
             | OutputRetention.All, Some output -> output.Write(chunk, 0, chunk.Length)
             | OutputRetention.All, None -> ()
@@ -285,7 +285,7 @@ type internal CaptureBuffer(policy: OutputRetention, available: bool) =
                             chunk)
 
     member _.Finish(encoding: Encoding) : CapturedOutput =
-        lock gate (fun () -> // axial-allow-AXG009: Output capture takes a consistent final byte-buffer snapshot against native append callbacks.
+        lock gate (fun () ->
             let bytes =
                 match policy with
                 | OutputRetention.All -> stream.Value.ToArray()

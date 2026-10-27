@@ -119,7 +119,7 @@ module Request =
                         let! parsed = SchemaRequest.json schema request cancellationToken
                         return Ok parsed
                     with :? JsonException ->
-                        return Error ProblemDetails.malformedJson // axial-allow-AXG010: JsonException is translated to the endpoint malformedJson problem rather than leaking parser internals.
+                        return Error ProblemDetails.malformedJson
                 })
             |> Flow.bind (function
                 | Ok parsed -> fromParsed parsed

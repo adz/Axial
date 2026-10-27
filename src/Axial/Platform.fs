@@ -1590,7 +1590,7 @@ let observeExitTask (exitTask: ExitTask<'value, 'error>) (observer: Exit<'value,
 #else
     exitTask.ContinueWith(
         (fun (completed: Task<Exit<'value, 'error>>) -> observer completed.Result),
-        CancellationToken.None, // axial-allow-AXG011: The settlement observer must run even when the fiber was cancelled so its exit is still recorded.
+        CancellationToken.None,
         TaskContinuationOptions.ExecuteSynchronously,
         TaskScheduler.Default)
     |> ignore

@@ -179,8 +179,8 @@ let private allTypedExpressions (ctx: CliContext) =
         | FSharpImplementationFileDeclaration.Entity(_, nested) -> nested |> List.collect declarations
         | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
         | FSharpImplementationFileDeclaration.InitAction body -> expressions body
-    match (try ctx.TypedTree with _ -> None) with // axial-allow-AXG010: FCS may have no translatable typed tree during error recovery; syntax raise checks still run.
-    | Some tree -> try tree.Declarations |> List.collect declarations with _ -> [] // axial-allow-AXG010: Unreadable recovered typed declarations are skipped while syntax raise checks remain available.
+    match (try ctx.TypedTree with _ -> None) with
+    | Some tree -> try tree.Declarations |> List.collect declarations with _ -> []
     | None -> []
 
 let rec private entityFullName (typ: FSharpType) =
