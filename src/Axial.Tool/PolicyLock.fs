@@ -230,7 +230,7 @@ module PolicyLock =
               @ (if old.Version=2 && downgraded.IsEmpty && baselineAdded.IsEmpty && Set.isSubset current.Suppressions old.Suppressions && old.Capabilities=current.Capabilities && old.Boundaries=current.Boundaries then [] else [LockName]) }
 
     let isEmpty x = x.RulesDowngraded.IsEmpty && x.BaselineAdded.IsEmpty && x.SuppressionsAdded.IsEmpty && x.BoundariesAdded.IsEmpty && x.ProtectedChanged.IsEmpty
-    let formatSummary x =
+    let formatJsonSummary x =
         let show label values =
             let joined = String.concat "; " values
             if List.isEmpty values then $"  {label,-24} none" else $"  {label,-24} {joined}"
@@ -239,6 +239,28 @@ module PolicyLock =
           show "baseline entries added:" (x.BaselineAdded|>List.map(fun b -> $"{b.Rule}/{b.File}/{b.Fingerprint} x{b.Count}"))
           show "suppressions added:" x.SuppressionsAdded; show "boundaries added:" x.BoundariesAdded
           show "protected files changed:" x.ProtectedChanged ] |> String.concat Environment.NewLine
+
+    let formatSummary x =
+        let show label values =
+            if List.isEmpty values then [$"  {label,-24} none"]
+            else ("  " + label) :: (values |> List.map (fun value -> "    " + value))
+        let grouped label values =
+            if List.isEmpty values then show label []
+            else
+                ("  " + label) ::
+                    (values |> List.groupBy fst |> List.collect (fun (file, entries) ->
+                        ("    " + file) :: (entries |> List.map (fun (_, value) -> "      " + value))))
+        let suppression (value: string) =
+            match value.Split([|'\t'|], 3) with
+            | [|file; occurrence; comment|] -> file, $"#{occurrence}  {comment}"
+            | _ -> value, value
+        [ ["AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED"]
+          show "rules downgraded:" x.RulesDowngraded
+          grouped "baseline entries added:" (x.BaselineAdded |> List.map (fun b -> b.File, $"{b.Rule}/{b.Fingerprint} x{b.Count}"))
+          grouped "suppressions added:" (x.SuppressionsAdded |> List.map suppression)
+          show "boundaries added:" x.BoundariesAdded
+          show "protected files changed:" x.ProtectedChanged ]
+        |> List.concat |> String.concat Environment.NewLine
 
     let validateApproval approval old current changes =
         if not changes.BaselineAdded.IsEmpty then

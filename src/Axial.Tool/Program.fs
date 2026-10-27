@@ -55,7 +55,7 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
         | Ok current, Ok locked ->
             let changes=diff locked current
             if isEmpty changes then emit asJson true ("Axial policy check passed.\nThe lock is a workflow guard, not a security boundary; direct edits remain visible in Git.")
-            else emitWith (Some changes) asJson false (formatSummary changes+"\nThe lock is a workflow guard, not a security boundary; direct edits remain visible in Git.")
+            else emitWith (Some changes) asJson false ((if asJson then formatJsonSummary changes else formatSummary changes)+"\nThe lock is a workflow guard, not a security boundary; direct edits remain visible in Git.")
 
     let private confirm () =
         printf "Type 'approve' to record this reviewed policy change: "
@@ -70,9 +70,9 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
             else
                 let approval = match baselineRule with Some r->BaselineRule r | None->Normal
                 match validateApproval approval locked current changes with
-                | Error e -> emitWith (Some changes) asJson false (formatSummary changes+Environment.NewLine+e)
+                | Error e -> emitWith (Some changes) asJson false ((if asJson then formatJsonSummary changes else formatSummary changes)+Environment.NewLine+e)
                 | Ok () ->
-                    let summary=formatSummary changes
+                    let summary=if asJson then formatJsonSummary changes else formatSummary changes
                     if not asJson then printfn "%s\n%s" policyWarning summary
                     if nonInteractive || (not asJson && confirm()) then
                         writeAtomic (Path.Combine(root(),LockName)) (serialize current)

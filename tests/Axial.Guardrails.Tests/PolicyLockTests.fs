@@ -191,6 +191,18 @@ module PolicyLockTests =
         test <@ lines |> Array.exists (fun line -> line.Trim() = "baseline entries added:  none") @>
 
     [<Fact>]
+    let ``readable summary keeps JSON message formatting unchanged`` () =
+        let changes = { diff empty empty with SuppressionsAdded=["a.fs\t1\tcomment";"a.fs\t2\tcomment"] }
+        let expected =
+            [ "AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED"
+              "  rules downgraded:        none"
+              "  baseline entries added:  none"
+              "  suppressions added:      a.fs\t1\tcomment; a.fs\t2\tcomment"
+              "  boundaries added:        none"
+              "  protected files changed: none" ] |> String.concat System.Environment.NewLine
+        test <@ formatJsonSummary changes = expected @>
+
+    [<Fact>]
     let ``ordinary approval refuses baseline growth`` () =
         let current={empty with Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]}
         let changes=diff empty current

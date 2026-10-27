@@ -53,7 +53,9 @@ services = ["src/App/Services/**"]
 The five roles are `capabilities`, `services`, `domain`, `host`, and `test`. File assignments override project
 assignments, which override the default. Rule levels are `allow`, `warn`, `deny`, and `forbid`; `forbid` cannot be
 suppressed. Run `axial policy approve` after reviewing an intentional policy change. The build fails with a categorized
-summary when protected inputs change or policy weakens. Removing suppressions or shrinking baseline entries does not
+summary when protected inputs change or policy weakens. Each item appears on its own indented line;
+suppressions and baseline entries are grouped by file, with suppression occurrence numbers and comments beneath it.
+The summary lists all items and shows `none` beside empty categories. JSON output is unchanged. Removing suppressions or shrinking baseline entries does not
 require approval; the next approval refreshes the snapshot.
 
 Use `[suppressions]` with `ignore = ["tests/AnalyzerFixtures/**"]` to exclude fixture sources from the policy
