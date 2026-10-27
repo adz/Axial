@@ -1,8 +1,95 @@
-# race-alloc — phase 1 handover
+# race-alloc — phase 2 handover
 
-## State and boundary
+## Current state: phase 2 complete; phase 3 not started
 
-Phase 1 (measurement and diagnosis) complete. **No source or test changes. Stop here.**
+Checkpoint before phase 2: `restore=2aa0b40f0`. Work remains on `perf/race-alloc`; commit locally, **no push**.
+Only `src/Axial/Flow.fs` and this handover changed. No public API or observable behavior change is intended;
+no release-note change. Policy, lock, analyzer configuration, and verification scripts are untouched.
+
+### Implementation and decisions
+
+- Explicitly constrain race's local settlement functions to the enclosing value/error types. Release inspection
+  no longer finds the generalized `settle` type-function factory or its `Specialize` chain.
+- Add private `closeRaceScope`: .NET returns the original exit directly when `Scope.Close` completes successfully;
+  otherwise await the close and combine cleanup exceptions using the existing `combineCleanup` rules. Catch
+  synchronous close exceptions too. This avoids the singleton list, result ref, list enumerator and completed task.
+  Fable delegates to the existing `closeScopes`, preserving its cleanup implementation.
+- Factor `finishLoser` and use guarded synchronous continuations instead of allocating both outer/nested fold
+  continuations on the inline path. Suspended paths still use `Execution.fold`. Both existing stack-guard boundaries
+  remain. `Platform.raceExecution`, loser interruption/awaiting, runtime installation, scopes and ownership are unchanged.
+- Always close the loser with `CancellationToken.None`. Keep a successful winner's scope; close a failing winner's.
+  Preserve typed loser failure/interruption filtering and loser/cleanup defect combination.
+- Leave RuntimeContext/RootScope layout and unrelated combinators alone. Combined measured saving: **648 B/race**;
+  do not treat this as an independently measured per-edit attribution.
+
+### Focused correctness evidence
+
+No duplicate test was added: the brief explicitly permits citing existing committed invariant-1 tests.
+`ScopedResourceOwnershipTests.race closes a right loser's scope before returning` inspects release **inside** the
+caller scope immediately after race. Before implementing the fix, deliberately replaced the loser's `closeScopes`
+call with `Platform.ofExit loserOutcome`. The unchanged test **failed (1 failed, 0 passed, exit 1)**. Restored the
+required closure as part of the implementation; the deliberate mutation is not retained.
+
+```bash
+dotnet test tests/Axial.Tests -c Release --nologo -v q --filter 'FullyQualifiedName~ScopedResourceOwnershipTests&DisplayName~race closes a right'
+dotnet test tests/Axial.Tests -c Release --nologo -v q --filter 'FullyQualifiedName~ScopedResourceOwnershipTests|FullyQualifiedName~ParallelSettlementTests|FullyQualifiedName~FiberObserverTests|FullyQualifiedName~WorkflowParallelTests|FullyQualifiedName~WorkflowConcurrencyTests'
+dotnet test tests/Axial.Tests -c Release --no-build --nologo -v q --filter 'FullyQualifiedName~StackSafetyTests|FullyQualifiedName~ScopeConcurrencyTests|FullyQualifiedName~WorkflowResourceTests'
+```
+
+Final focused runs: **89 passed**, then **57 passed**; existing tests unchanged. The first set includes both winner
+orientations, winner resource ownership, cancellation, exclusive socket release, forked loser fibers, suspended
+selection, startup defects and loser-defect observation. The second checks scope/resource handling and stack safety.
+Normal Release builds ran guardrails; no check was bypassed.
+
+Additional persistent (uncommitted, outside-repo) probe `race-alloc-phase2-cleanup.fsx` forces loser scope closing
+behind a TaskCompletionSource gate: **8 combinations passed**, covering either losing side, successful/failing
+winner, and successful/defective asynchronous cleanup. It checks release completion, winner failure retention and
+cleanup exception identity. This supplements, not replaces, the committed ordering tests.
+
+### Phase-2 MemoryDiagnoser results
+
+Same SDK/runtime/environment and commands as phase 1, with artifact suffixes `phase2-core`, `phase2-parallel`,
+`phase2-comparative`. Only the filtered benchmark classes ran. Times remain indicative only on the shared machine.
+
+| FiberCost case | Phase 1 B/op | Phase 2 B/op |
+|---|---:|---:|
+| ForkJoin | 2810.843 raw | 2806.252 raw |
+| ForkResource | 4592 display | 4590.796 raw |
+| ZipPar2 | 1280 | 1280 |
+| SequencePar8 | 3704 | 3704 |
+| SequencePar64 | 22296 | 22296 |
+| **Race** | **2432** | **1784 exact** |
+| TraversePar64 | 39360 | 39360 |
+| RunOnThreadPool | 1181.344 raw | 1181.999 raw |
+
+Race meets **<= 1800 B/op**, recovering 648 B (26.6%). All synchronous non-race allocation counts are unchanged.
+Asynchronous scheduler/GC bookkeeping varies fractionally: RunOnThreadPool displays 1182 versus 1181, a raw
+**+0.655 B/op**. A focused repeat measured 1181.759 B/op (+0.415); no deterministic new object or changed code path
+in that case was identified. Report this variance rather than claiming exact equality for asynchronous cases.
+ForkJoin/ForkResource moved downward. If the coordinator needs a strict numerical comparison for RunOnThreadPool,
+repeat matched baseline/fix runs in isolation; do not alter its implementation to chase sub-byte scheduler noise.
+
+| ParallelComposition case | Phase 1 raw B/op | Phase 2 raw B/op |
+|---|---:|---:|
+| sequencePar 10 flows x100 | 563610.109375 | 563610.109375 |
+| zipPar x1000 | 1121212.21875 | 1121212.21875 |
+| race x1000 | 2369216.4375 | 1721212.21875 |
+| traversePar 10k, parallelism 8 | 2887536.046875 | 2887536 |
+
+Comparative ZipRace exact B/op: **3353024 -> 2705024** (1000 rounds),
+**33521024 -> 27041024** (10000 rounds). Saves exactly 648 B per round; neither case regresses.
+
+Persistent logs in `/home/adam/projects/scratch/axial-coord/pi/`: `race-alloc-phase2-{mutant,focused,resource-stack,core,parallel,comparative,threadpool-repeat,inspect,cleanup}.log`.
+Probe script: `race-alloc-phase2-cleanup.fsx`. Generated reports:
+`artifacts/benchmarks/race-alloc/phase2-{core,parallel,comparative,threadpool-repeat}/results/`.
+
+**Full verification, torture decision, final fail-first artifact and done-check are intentionally deferred to phase 3.**
+No `scripts/verify.sh` run or phase-2 `artifacts/verify/result.json` is claimed. This phase completion is not a claim
+that the full implementation slice meets the final Definition of done.
+
+## Historical phase 1 state and boundary
+
+Phase 1 (measurement and diagnosis) completed without source or test changes.
 Worktree `/home/adam/projects/Axial/perf/race-alloc`, branch `perf/race-alloc`.
 Measured HEAD and `origin/main` were both `22717db2be72e209f8c7457a4c1480520a9d6e6d`.
 Checkpoint: `scripts/checkpoint.sh 'race-alloc phase 1 measurement'` returned `restore=22717db2b`.
@@ -181,11 +268,26 @@ No full `scripts/verify.sh`, fail-first proof, torture edit, or implementation d
 phase; the brief explicitly assigns final verification and done-check to phase 3. Maintainer planning notes alone
 are exempt from full verification. Phase 1 is not a claim that the implementation slice is done.
 
-## Exact next step (fresh session, phase 2)
+## Exact next step (fresh session, phase 3 only)
 
-Read the brief, TOKEN-RULES, and this handover; confirm clean `perf/race-alloc` and checkpoint. Cite the existing
-ordering tests above, or commit a strengthened async-cleanup test and demonstrate red on a broken variant **before**
-changing the implementation. Then apply the typed-helper/single-scope plan incrementally and rerun the same
-filtered BDN commands, comparing every table above. Keep raw logs persistent. Update this handover with changes,
-fail-first evidence, results, remaining risks, and the phase-3 verification instructions; commit, reply
-`PHASE 2 DONE`, and stop. Do not push or start phase 3 in that session.
+1. Read the brief, TOKEN-RULES and this handover; confirm clean `perf/race-alloc`, checkpoint.
+2. Make the required torture decision **before final verification**: tighten `examples/Axial.TortureTest/Parallel.fs`
+   to observe loser cleanup immediately at race return (including asynchronous scoped cleanup), or write
+   `artifacts/verify/torture-waiver.txt` naming the existing `parallel` scenario and explaining why its stress plus
+   committed ordering tests suffice for this allocation-only change. The current scenario awaits finish gates after
+   racing, so do not falsely claim it independently pins the race-return boundary. The brief explicitly permits a waiver.
+3. Existing invariant tests were cited, not changed: the normal fail-without-fix script against origin/main would
+   pass because this optimization intentionally preserves behavior. Preserve the mutation-test log as ordering proof.
+   The done-check skips fail-first when tests/examples are unchanged. If phase 3 changes tests/torture, record honest
+   fail-first evidence and coordinate the behavior-preserving optimization exception rather than fabricating a red run.
+4. Commit any tracked changes/handover update before verification. Run **all stages** via
+   `setsid -f axial-verify > /home/adam/projects/scratch/axial-coord/pi/race-alloc-verify.log 2>&1`, then poll
+   `artifacts/verify/result.json` (sleep 300). Never use nohup. Ensure HEAD and dirty=false match; rerun after later commits.
+   Phase 3 must check Fable and AOT as well as solution build/tests/docs/livedocs. On timeout (124) or a timing-sensitive
+   test, rerun axial-verify once per the brief before debugging. Do not modify policy, lock or scripts/verify.sh.
+5. Run `/home/adam/projects/scratch/axial-coord/done-check.sh "$PWD"`; report its outcome and result.json. Note the
+   RunOnThreadPool sub-byte variance explicitly if not remeasured. Update the persistent external report with final
+   commit, evidence and results. Update/commit this handover as required, reverify that final HEAD if it changed.
+6. Commit locally, no push; reply `PHASE 3 DONE` only when that phase's required checks pass, and stop.
+
+**Phase 2 stops here. Do not start phase 3 in the phase-2 session.**
