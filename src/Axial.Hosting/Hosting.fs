@@ -241,20 +241,17 @@ module Hosting =
                             Interlocked.Increment(&progress) |> ignore
                             return! heartbeat ()
                         }
-                        let! fiber = Flow.fork (heartbeat ())
-                        try
-                            let rec ping last = flow {
-                                do! Flow.sleep interval
-                                let current = Interlocked.Read(&progress)
-                                if current <> last then
-                                    let! healthy = isHealthy
-                                    if healthy then notifier.Notify "WATCHDOG=1"
-                                return! ping current
-                            }
-                            return! ping (Interlocked.Read(&progress))
-                        finally
-                            // The fork belongs to this Flow scope and is interrupted on cancellation.
-                            ignore fiber
+                        // The enclosing Flow scope owns and interrupts the heartbeat on cancellation.
+                        let! _ = Flow.fork (heartbeat ())
+                        let rec ping last = flow {
+                            do! Flow.sleep interval
+                            let current = Interlocked.Read(&progress)
+                            if current <> last then
+                                let! healthy = isHealthy
+                                if healthy then notifier.Notify "WATCHDOG=1"
+                            return! ping current
+                        }
+                        return! ping (Interlocked.Read(&progress))
         }
 
     /// <summary>Runs the scheduler heartbeat with an application-owned progress check; use this to detect stalled work.</summary>

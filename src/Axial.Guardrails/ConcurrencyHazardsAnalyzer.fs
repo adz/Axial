@@ -204,11 +204,16 @@ let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
             | [| "src"; folder; _ |] -> folder = "Axial.Guardrails" || folder.StartsWith("Axial.Tool", StringComparison.Ordinal)
             | _ -> false
         | _ -> false
+    let benchmark =
+        match role, config.PolicyRoot, config.ProjectPath with
+        | Some Policy.Host, Some root, Some project ->
+            Path.GetRelativePath(root, Path.GetFullPath project).Replace('\\', '/').StartsWith("benchmarks/", StringComparison.Ordinal)
+        | _ -> false
     let runtime =
         match config.Policy, config.PolicyRoot with
         | Some policy, Some root -> policy.Runtime |> List.exists (fun path -> Path.GetFullPath(Path.Combine(root, path)) = Path.GetFullPath ctx.FileName)
         | _ -> false
-    if (code = "AXG009" || code = "AXG012") && runtime then []
+    if (code = "AXG009" || code = "AXG012") && (runtime || benchmark) then []
     else
         let synchronizationSites = symbolRanges "synchronization" ctx |> List.map key |> Set.ofList
         rawRanges code ctx

@@ -309,6 +309,8 @@ type ConcurrencyHazardsPolicyTests() =
             Assert.Empty messages
             let! outside = runWith "host" false false "samples/benchmarks/Axial.Benchmarks.fsproj" source code
             Assert.NotEmpty outside
+            let! service = runWith "services" false false "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" source code
+            Assert.NotEmpty service
         }
 
     [<Theory>]

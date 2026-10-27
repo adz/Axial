@@ -153,3 +153,17 @@ and need either a protected declaration or bridge moves into capability-role mod
 - AXG002 stale suppression at line 519 of an Axial.Tests file (file not named in the message; not reachable until the build gets further)
 Fixed: FS0041 in tests/Axial.Integration.Tests/ProcessServiceTests.fs (annotate `timeout: TimeSpan`).
 Steps 2-5 not run. Because ElmishFlows/Hosting fail, dependent test projects still cannot be built.
+
+## Phase 8: adapters
+
+### Phase 1 (implementation complete; adapter test validation blocked)
+
+- Tests-first checkpoint: `5f6a526e5` adds subscription disposal tests and benchmark analyzer tests.
+- Benchmark host projects under root `benchmarks/` now exempt AXG009/AXG012 only. Tests prove nested lookalikes and services roles remain checked, as do AXG010/AXG011. Red: 2 failures / 2 passes before fix; green: all 112 ConcurrencyHazards tests pass.
+- Subscription tests pin non-blocking disposal with a gated finalizer, interruption of a started fiber, eventual finalizer completion, and immediate disposal before startup settles. Existing subscription delivery tests remain.
+- Hosting shutdown test now covers both gated cleanup completion and abandoned-token completion, checking that only abandonment logs a warning.
+- AXG012: heartbeat fork uses an anonymous CE bind; the same enclosing Flow scope owns it. Removed the no-op `finally ignore fiber`, not ownership or cancellation.
+- AXG002: removed stale inline AXG007 comment at ScopedResourceOwnershipTests.fs:519. All 23 ScopedResourceOwnershipTests pass.
+- Adapter test runs were attempted on unchanged Sub/TestRuntime/StopAsync implementations, but compilation is blocked by the existing AXG009 errors (Sub 17/18/59, TestRuntime 88, Hosting 164/167). Hosting no longer reports AXG012. No bypass or protected edits used. New adapter test execution must be completed before/alongside phase 2; passing on the old adapter implementation has NOT been established.
+- No adapter conversion, full solution build, 20x runs, full verify, done-check, or final fail-first script run in this phase. No result.json exists from this phase. Those final gates remain phase 3. Torture waiver records that the phase-1 Hosting edit changes only the unused bind; phase 2 still requires a torture scenario.
+- Logs and phase report: `/home/adam/projects/scratch/axial-coord/pi/adapters-*.log`, `guardrails-adapters.report.md`. Stop here; phase 2 needs fresh context.

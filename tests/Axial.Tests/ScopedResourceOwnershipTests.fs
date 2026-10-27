@@ -516,7 +516,7 @@ module ScopedResourceOwnershipTests =
 
         let workflow : Flow<ClockEnvironment, string, string * string list> =
             flow {
-                let! fiber = acquire events "db" |> Flow.fork // axial-allow-AXG007: test intentionally demonstrates fiber-owned resource release
+                let! fiber = acquire events "db" |> Flow.fork
                 let! name = Fiber.join fiber
                 return name, released events
             }

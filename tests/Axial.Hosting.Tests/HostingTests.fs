@@ -344,8 +344,10 @@ module HostingTests =
         hosted.StopAsync(CancellationToken.None).GetAwaiter().GetResult()
         test <@ finalized.Task.IsCompletedSuccessfully @>
 
-    [<Fact>]
-    let ``Generic Host shutdown timeout reports cleanup still running instead of abandoning it silently`` () =
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``Generic Host shutdown waits for cleanup unless its token abandons the wait`` abandon =
         let logger = RecordingLogger()
         let lifetime = RecordingLifetime()
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -379,9 +381,11 @@ module HostingTests =
             // The finalizer is still running, so stopping waits for it.
             test <@ not stopping.IsCompleted @>
 
-            shutdownTimeout.Cancel()
+            if abandon then shutdownTimeout.Cancel()
+            else releaseFinalizer.TrySetResult() |> ignore
             test <@ stopping.Wait(TimeSpan.FromSeconds 2.0) @>
-            test <@ logger.Entries |> List.exists (fun (level, message, _) -> level = Microsoft.Extensions.Logging.LogLevel.Warning && message.Contains "still running") @>
+            let warned = logger.Entries |> List.exists (fun (level, message, _) -> level = Microsoft.Extensions.Logging.LogLevel.Warning && message.Contains "still running")
+            test <@ warned = abandon @>
         finally
             releaseFinalizer.TrySetResult() |> ignore
 
