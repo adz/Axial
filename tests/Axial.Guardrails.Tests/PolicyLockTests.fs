@@ -170,6 +170,27 @@ module PolicyLockTests =
         test <@ summary.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED") @>
 
     [<Fact>]
+    let ``readable summary groups suppressions and lists every item without a diff command`` () =
+        let items = [ for n in 1..74 -> $"src/App.fs\t{n}\t// axial-allow-AXG001: reason" ]
+        let changes = { diff empty empty with SuppressionsAdded=items @ ["src/Other.fs\t1\t// axial-allow-AXG002: other"] }
+        let summary = formatSummary changes
+        let lines = summary.Split(System.Environment.NewLine)
+        test <@ lines |> Array.filter ((=) "    src/App.fs") |> Array.length = 1 @>
+        test <@ lines |> Array.contains "      #1  // axial-allow-AXG001: reason" @>
+        test <@ lines |> Array.contains "      #74  // axial-allow-AXG001: reason" @>
+        test <@ lines |> Array.contains "    src/Other.fs" @>
+        test <@ not (summary.Contains("and ")) @>
+        test <@ changes.SuppressionsAdded = items @ ["src/Other.fs\t1\t// axial-allow-AXG002: other"] @>
+
+    [<Fact>]
+    let ``readable summary puts other category items on separate indented lines`` () =
+        let changes = { diff empty empty with RulesDowngraded=["rule A";"rule B"]; ProtectedChanged=["a.props";"b.props"]; BoundariesAdded=["src/**";"vendor/**"] }
+        let lines = (formatSummary changes).Split(System.Environment.NewLine)
+        for item in ["rule A";"rule B";"a.props";"b.props";"src/**";"vendor/**"] do
+            test <@ lines |> Array.contains ("    " + item) @>
+        test <@ lines |> Array.exists (fun line -> line.Trim() = "baseline entries added:  none") @>
+
+    [<Fact>]
     let ``ordinary approval refuses baseline growth`` () =
         let current={empty with Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]}
         let changes=diff empty current
