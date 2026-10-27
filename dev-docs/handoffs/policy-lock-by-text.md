@@ -1,4 +1,4 @@
-# Policy lock by text — phase 2 complete
+# Policy lock by text — phase 2b complete
 
 ## Scope and state
 
@@ -32,6 +32,22 @@ Repository `Axial.Guardrails.lock` is untouched. Stop after this phase.
 - Command: `dotnet test tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj -c Release -p:_AxialRepoSkipGuardrails=true --filter FullyQualifiedName~PolicyLockTests --nologo -v q`.
 - `bash scripts/check-docs-conventions.sh` passed; `git diff --check` passed.
 - Full verification, livedocs execution, final fail-first artifact, result.json, and done-check remain phase 4 work. No current phase-2 result.json is claimed.
+
+## Phase 2b — skipped-project fixture text
+
+- Coordinator merged origin/main before this session. Added a four-case regression theory in commit
+  `b63ce0c0c` before changing implementation. All four cases failed against the unfixed code.
+- `PolicyLock.suppressions` now excludes `tests/Axial.Guardrails*/`, `tests/Axial.PrintfFixture/`, and
+  `benchmarks/Axial.Comparative/`. The test checks that adding fixture-string suppression text in each directory
+  leaves the diff empty, then adding the same text under `src/` adds exactly one suppression.
+- The exclusion list stays local to PolicyLock with a pointer to Directory.Build.props. Evaluating MSBuild project
+  conditions inside the standalone policy scanner would introduce disproportionate complexity; these directory
+  exclusions implement the coordinator's specified scope (including all Guardrails fixture projects).
+- Focused PolicyLockTests: 22 passed, 0 failed. Same command as phase 2 above. Logs:
+  `/home/adam/projects/scratch/axial-coord/pi/policy-lock-phase2b-red.log` (4 failed),
+  `/home/adam/projects/scratch/axial-coord/pi/policy-lock-phase2b-green.log` (22 passed).
+- Updated the 0.12.0 Changed notes. No lock approval, lock edits, or push. Full verify/result.json and done-check
+  remain phase 4 work; this phase does not claim full verification.
 
 ## Exact next step (fresh session, phase 3)
 

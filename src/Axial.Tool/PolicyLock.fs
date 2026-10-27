@@ -78,7 +78,15 @@ module PolicyLock =
         if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.TopDirectoryOnly)
 
     let private suppressions root (files: string array) =
-        files |> Seq.filter (fun p -> p.EndsWith(".fs",StringComparison.Ordinal))
+        // Fixture projects skip analysis in Directory.Build.props (_AxialRepoSkipGuardrails).
+        // Their suppression-like strings are analyzer inputs, not reviewed suppressions.
+        let isFixture path =
+            let p = relative root path
+            p.StartsWith("tests/Axial.Guardrails",StringComparison.Ordinal)
+            && p.Substring("tests/".Length).Contains('/')
+            || p.StartsWith("tests/Axial.PrintfFixture/",StringComparison.Ordinal)
+            || p.StartsWith("benchmarks/Axial.Comparative/",StringComparison.Ordinal)
+        files |> Seq.filter (fun p -> p.EndsWith(".fs",StringComparison.Ordinal) && not (isFixture p))
         |> Seq.collect (fun path ->
             File.ReadLines path
             |> Seq.choose (fun text ->
