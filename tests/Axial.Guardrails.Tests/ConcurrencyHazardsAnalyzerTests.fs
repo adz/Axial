@@ -287,13 +287,14 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("let x = Monitor.Enter(obj())")>]
     member _.``synchronization warns outside runtime including capabilities until primitives land`` body =
         task {
-            for role in [ "domain"; "services"; "capabilities"; "host" ] do
-                let input = "module M\nopen System.Threading\n" + body
-                let! messages = runWith role false false "Fixture.fsproj" input "AXG009"
-                let message = Assert.Single messages
-                Assert.Equal(Severity.Warning, message.Severity)
-                let! runtime = runWith role true false "Fixture.fsproj" input "AXG009"
-                Assert.Empty runtime
+            for role in [ "domain"; "services"; "capabilities"; "host"; "test" ] do
+                for project in [ "Fixture.fsproj"; "src/Axial.Tool/Axial.Tool.fsproj" ] do
+                    let input = "module M\nopen System.Threading\n" + body
+                    let! messages = runWith role false false project input "AXG009"
+                    let message = Assert.Single messages
+                    Assert.Equal(Severity.Warning, message.Severity)
+                    let! runtime = runWith role true false project input "AXG009"
+                    Assert.Empty runtime
         }
 
     [<Fact>]
