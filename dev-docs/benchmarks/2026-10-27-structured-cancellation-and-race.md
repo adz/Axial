@@ -48,3 +48,18 @@ Race is back below its pre-structured-cancellation allocation (1,728 B) and stil
 
 1. Queue hand-off study (Pingpong/Threadring ~1.5× FIO).
 2. To claim a time change, rerun the case in the same session as its baseline.
+
+## Final run: after the cancellation primitives (main `a88ca6dfd`, 2026-10-28)
+
+Same quiet-machine setup and suites. The change is behaviour-preserving: `CancellationToken.None` is routed through
+`Cancellation.never` and `Cancellation.uninterruptible`.
+
+- Allocation is unchanged against the after-race run in every FiberCost case (ForkJoin 2,812, ForkResource 4,592,
+  ZipPar2 1,280, SequencePar8 3,704, SequencePar64 22,296, Race 1,784, TraversePar64 39,360,
+  RunOnThreadPool 1,182 B/op). Against the morning baseline, the only movement is Race −27%; the rest are within ±0.2%.
+- Comparative Axial cases: time moved −13% to −35% on Chameneos/Counting/Trapezoidal. That is cross-session noise in
+  our favour; the code path is unchanged. Chameneos 200×1000 allocation +6% is contended-scheduling variance, as noted above.
+- `Flow bind x100`: 31.11 KB, after 32.69 and 34.96/34.43 KB on earlier runs. That confirms the earlier bind
+  "regression" was noise.
+
+Net for the day: Race −27% allocation and −26% time. No case regressed in allocation beyond run-to-run variance.
