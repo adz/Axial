@@ -1,65 +1,80 @@
-# AXG013 — phase 2 handover
+# AXG013 — unblocked execution phase handover
 
 ## State
 
-Phase 2 implements AXG013 and docs. No dotnet command was run in phase 2, per the coordinator's lock decision.
-No merge, push, baseline edit, baseline generation, or approval command was performed.
 Worktree: `/home/adam/projects/Axial/feature/guardrails-test-waits`.
-Brief: `/home/adam/projects/scratch/axial-coord/pi/guardrails-test-waits.md` (read its Coordinator decision and TOKEN-RULES.md).
+Branch: `feature/guardrails-test-waits`. Commit locally; do not push.
+Read `/home/adam/projects/scratch/axial-coord/pi/guardrails-test-waits.md`, including its final unblocked section,
+and TOKEN-RULES.md before continuing.
 
-## Implementation and decisions
+Merged `origin/main` at `c394a4807` in merge commit `a18c754f9`. The release-note conflict retained both AXG013 and
+lock-format-v2 breaking changes. Analyzer tests now execute under the approved v2 lock without bypassing policy.
+Fixture corrections committed as `64799d315`; no implementation change was needed to make the analyzer suite green.
+No baseline edit/generation, approval command, push, existing-test rewrite, or full verify was performed.
 
-- `WaitForFactsAnalyzer.analyzeWithConfig config ctx` resolves effective policy role, runs only in `test`, and
-  uses rule key `test.wait-for-facts`, default deny. Explicit allow/warn are honored; deny/forbid produce errors.
-- Symbol identity distinguishes BCL Thread.Sleep, Task.Delay and FSharpAsync.Sleep from lookalikes.
-  Thread.Sleep calls are reported; Task.Delay/Async.Sleep are reported only as direct `do!`/`let!` sources.
-  Parenthesized/typed direct sources are recognized. No helper/alias data flow analysis is claimed.
-- Deadline arms are naturally excluded: awaiting WhenAny is not directly awaiting Delay. A separately bound
-  delay is not itself awaited. Fact waits and condition polling are not targets.
-- Flow.sleep / Clock.sleep deliberately remain out of scope: syntax cannot determine the supplied clock.
-- Shared shrink-only baseline application is retained, as are boundary-file/site suppression checks. AXG002
-  recognizes AXG013 and uses its raw ranges to reject stale directives.
-- Catalog uses an inert structural-rule entry, as AXG008 does. Both analyzer and CLI policy allowlists register
-  the new policy key. Registration changes stay small because another lane owns AXG009–AXG012.
-- Corrected two phase-1 fixture setup issues without relaxing expected behavior: temporary policy now declares
-  the fixture boundary file, and the site-locality test puts a blank line after the first suppressed site because
-  existing suppression machinery intentionally covers the immediately following line too (expected line now 9).
+## Fixes and evidence
 
-## Files touched in phase 2
+`tests/Axial.Guardrails.Tests/WaitForFactsAnalyzerTests.fs`:
+- Explicitly serialize all five role cases. `string role` had emitted `Axial.Guardrails.Policy+Role`, not `test`.
+- Materialize the fixture source so policy boundary-path validation finds `Fixture.fs`.
+- Correct F# fixture indentation (CE steps and ordinary statements); keep every behavioral assertion.
+- Assert typecheck diagnostics contain no errors, including in allowed fixtures, so unresolved symbols cannot
+  produce false-green absence checks.
 
-- `src/Axial.Guardrails/WaitForFactsAnalyzer.fs` (new).
-- `src/Axial.Guardrails/Axial.Guardrails.fsproj`, `EffectCatalog.fs`, `GuardrailConfig.fs`,
-  `SuppressionIntegrityAnalyzer.fs`.
-- `src/Axial.Tool/PolicyLock.fs`.
-- `tests/Axial.Guardrails.Tests/WaitForFactsAnalyzerTests.fs` (fixture corrections above).
-- `docs/15-notes/03-guardrails.md`, `docs/15-notes/04-guardrail-diagnostics.md` (index, scope, reported/fixed examples).
-- `dev-docs/releases/0.12.0.md`, this handover.
+`dotnet test tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj -c Release --nologo -v q`:
+**128 passed, 0 failed** (entire Guardrails suite, including all 21 AXG013 cases).
+Log: `/home/adam/projects/scratch/axial-coord/pi/guardrails-test-waits-suite.log`.
 
-## Verification / fail-first
+Requested fail-first command succeeded against `origin/main` with filter
+`FullyQualifiedName~WaitForFactsAnalyzerTests`. Its result is a compile failure because the base lacks the analyzer
+API, not a behavioral red; the tests themselves assert reported forms, allowed forms, role gating, message guidance,
+and suppression locality. `artifacts/verify/fail-first.txt` records the command and commit, refreshed after this
+handover commit. This is the coordinator-prescribed script; no independent policy-check bypass was added.
 
-FAIL-FIRST AND GREEN TESTS PENDING. No phase-2 compilation, test, livedocs execution or verify run.
-No phase-2 `artifacts/verify/result.json` exists. Only static diff checks are available; do not treat this as passing.
+## Solution build: expected baseline blocker, plus wiring gap
 
-Phase 1's normal run stopped at policy check MSB3073 before tests. A pre-clarification bypass run failed FS0039
-for missing WaitForFactsAnalyzer, but is NOT accepted proof and must not be repeated. That run also exposed a
-Policy.Config assembly-local type mismatch, already fixed by parsing policy via GuardrailConfig.
-Phase-1 logs remain under `/home/adam/projects/scratch/axial-coord/pi/`:
-`guardrails-test-waits-phase1-test.log`, `guardrails-test-waits-phase1-red.log`, `guardrails-test-waits-policy.log`.
+Final `dotnet build Axial.slnx -v minimal -nologo` exited 1 after 4m50s:
+- AXG013 at `examples/Axial.TortureTest/Interop.fs:35:20`, compiled as a linked file by
+  `tests/Axial.Fable.Tests/Axial.Fable.Tests.fsproj`.
+- The second build error is the enclosing analyzer target reporting that finding.
+- No compiler errors or other diagnostics remain in that build.
 
-## Exact next step
+Log: `/home/adam/projects/scratch/axial-coord/pi/guardrails-test-waits-build.log`.
+Exit marker: `/home/adam/projects/scratch/axial-coord/pi/guardrails-test-waits-build.exit`.
+An earlier quiet build failed at policy invocation, but a direct `dotnet --roll-forward Major ... check` passed
+and subsequent normal test/build commands passed policy checking unchanged. An intervening build attempt timed out
+waiting for the shared dotnet lock; the final attempt ran detached and completed. Do not confuse that queue timeout
+with the final baseline finding.
 
-STOP after phase 2 commit. Wait for coordinator instruction after the lock-fix lane lands and human lock approval.
-Only then merge origin/main as instructed and run focused tests WITHOUT bypassing policy. Inspect compiler
-syntax/type errors in every source fixture, not merely analyzer results; allowed fixtures must typecheck too.
-Check FCS symbol identity for Async.Sleep and all awaited forms. Preserve behavioral expectations.
-Fail-first evidence still needs an approved run against unfixed source; implementation existence alone is not proof.
+**WIRING GAP FOUND, NOT FIXED:** `src/Axial.Guardrails/build/Axial.Guardrails.targets:20–24` selects only
+`--include-analyzers Fixture` for ordinary `IsTestProject=true` projects. Thus AXG013 currently runs in the Fable
+project (which lacks that flag), but is filtered out of normal xUnit project builds. Analyzer unit tests do run it
+explicitly. Before preparing the actual baseline count, include WaitForFacts in the default test analyzer filter
+using the CLI's supported multi-pattern syntax, add a package/build-wiring regression test, and check whether the
+build-target change needs human lock approval. Do not disable policy checking, generate a lock, or infer that the
+single current build finding is the complete baseline inventory. Leave unrelated effect analyzers excluded by default.
 
-Phase 3: classify existing violations and report per-file counts without rewriting repository tests. STOP before
-`axial policy baseline --rule AXG013`: baseline generation is a HUMAN DECISION. Full verify, fail-first artifact and
-done-check belong to phase 4, after approval. Never bypass the lock check or report full completion prematurely.
+## Existing implementation decisions
 
-## Open questions / risks for execution phase
+- `WaitForFactsAnalyzer.analyzeWithConfig` runs only for resolved policy role `test`, key `test.wait-for-facts`,
+  default deny; honors allow/warn/deny/forbid and shared baseline/site suppression machinery.
+- Symbol identities distinguish Thread.Sleep, Task.Delay, FSharpAsync.Sleep from unrelated lookalikes.
+  Thread.Sleep calls are reported; Task.Delay/Async.Sleep only as direct do!/let! sources. Wrapped direct sources
+  are recognized; no helper/alias data-flow analysis is claimed.
+- Deadline arms are not direct awaited delays, so remain allowed. Fact waits/polling are not targets.
+- Flow.sleep / Clock.sleep are deliberately out of scope because syntax does not identify the supplied clock.
+- AXG002 recognizes AXG013 and uses raw sites to validate suppressions. Catalog and both policy allowlists register
+  the rule. Docs/index/release notes were added in phase 2; executable docs remain unverified.
 
-- All implementation and documentation examples are uncompiled under the explicit no-dotnet instruction.
-- Existing fixtures may have F# indentation/type diagnostics; validate them when permitted.
-- Baseline counts and approval are not prepared yet (phase 3); no existing test violations were rewritten.
+## Exact next phase / stopping boundary
+
+1. Fix and test the default test-build analyzer wiring above; if protected-target changes invalidate the approved
+   lock, stop for the coordinator/human rather than bypassing the check or approving it yourself.
+2. Prepare phase-3 classification and **per-file AXG013 counts**, including linked sources, with actual analyzer
+   coverage of normal test projects. Do not rewrite existing tests in this slice.
+3. STOP before `axial policy baseline --rule AXG013`; baseline generation is a HUMAN DECISION. No baseline approval
+   has been requested or granted yet. Write the count/report to
+   `/home/adam/projects/scratch/axial-coord/pi/guardrails-test-waits.report.md`.
+4. After human approval only: baseline/merge as directed, full `axial-verify` (all stages including livedocs), final
+   fail-first artifact, clean-HEAD `artifacts/verify/result.json`, and coordinator done-check. No result.json was
+   produced in this focused phase. This handover reports phase completion, not full slice verification.
