@@ -141,3 +141,15 @@ Files CrashTests, Telemetry FiberMetricsTests; none of these projects compiled.
 3. `setsid -f /home/adam/projects/scratch/axial-coord/limits/bin/axial-verify > /home/adam/projects/scratch/axial-coord/pi/guardrails-guide-verify.log 2>&1`; poll artifacts/verify/result.json (HEAD, dirty=false).
 4. `/home/adam/projects/scratch/axial-coord/done-check.sh $PWD` must print DONE-CHECK PASS.
 5. Fail-first on the final commit: `{ git rev-parse --short HEAD; scripts/check-tests-fail-without-fix.sh origin/main <project> "<filter>"; } > artifacts/verify/fail-first.txt`.
+
+## Phase 7 (post-approval): BLOCKED at step 1
+
+`dotnet build Axial.slnx -c Release` (the repo has no Axial.sln) fails with 31 errors (15 unique AXG009, 1 AXG012, 1 AXG002, 1 FS0041).
+The approved toml declares `[runtime]` only for src/Axial files; these services/host/benchmark files still raise AXG009 (raw TCS/Task.ContinueWith/WhenAny)
+and need either a protected declaration or bridge moves into capability-role modules:
+- src/Axial.ElmishFlows/Sub.fs (17, 18, 59), src/Axial.ElmishFlows/TestRuntime.fs (88)
+- src/Axial.Hosting/Hosting.fs (164, 167; AXG012 at 257 `ignore fiber`)
+- benchmarks/Axial.Benchmarks/FiberCostBenchmarks.fs (90-100), Suites.fs (347, 452)
+- AXG002 stale suppression at line 519 of an Axial.Tests file (file not named in the message; not reachable until the build gets further)
+Fixed: FS0041 in tests/Axial.Integration.Tests/ProcessServiceTests.fs (annotate `timeout: TimeSpan`).
+Steps 2-5 not run. Because ElmishFlows/Hosting fail, dependent test projects still cannot be built.
