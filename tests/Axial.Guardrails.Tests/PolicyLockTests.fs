@@ -11,6 +11,102 @@ module PolicyLockTests =
         { Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty
           Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
 
+    let private withSuppressionRepository action =
+        let root=Path.Combine(Path.GetTempPath(),"Axial.Lock.Tests",Guid.NewGuid().ToString("N"))
+        try
+            Directory.CreateDirectory(Path.Combine(root,"src")) |> ignore
+            File.WriteAllText(Path.Combine(root,ConfigName),"version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n[default]\nrole = \"domain\"")
+            File.WriteAllText(Path.Combine(root,DefaultBaseline),"")
+            let write name (text: string) = File.WriteAllText(Path.Combine(root,"src",name),text)
+            let inspectCurrent () = inspect root |> function Ok value -> value | Error error -> failwith error
+            let approved () =
+                let path=Path.Combine(root,LockName)
+                File.WriteAllText(path,serialize (inspectCurrent ()))
+                parseLock path |> function Ok value -> value | Error error -> failwith error
+            action root write inspectCurrent approved
+        finally Directory.Delete(root,true)
+
+    [<Theory>]
+    [<InlineData("module App\n// axial-allow-AXG001: live boundary\n")>]
+    [<InlineData("module App\n\n\n\n// axial-allow-AXG001: live boundary\n")>]
+    let ``suppression line movement does not require approval`` source =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" source
+            test <@ diff old (current ()) |> isEmpty @>)
+
+    [<Fact>]
+    let ``new suppression requires approval`` () =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n"
+            let old=approved ()
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let changes=diff old (current ())
+            test <@ changes.SuppressionsAdded.Length=1 @>
+            test <@ not (isEmpty changes) @>)
+
+    [<Fact>]
+    let ``second identical suppression counts as an addition without counting line movement`` () =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" "module App\n\n// axial-allow-AXG001: live boundary\n\n// axial-allow-AXG001: live boundary\n"
+            let changes=diff old (current ())
+            test <@ changes.SuppressionsAdded.Length=1 @>
+            test <@ not (isEmpty changes) @>)
+
+    [<Theory>]
+    [<InlineData("// axial-allow-AXG002: live boundary")>]
+    [<InlineData("// axial-allow-AXG001: different reason")>]
+    let ``changed suppression rule or reason replaces the reviewed identity`` replacement =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" ("module App\n"+replacement+"\n")
+            let snapshot=current ()
+            let changes=diff old snapshot
+            test <@ Set.difference old.Suppressions snapshot.Suppressions |> Set.count = 1 @>
+            test <@ changes.SuppressionsAdded.Length=1 @>
+            test <@ not (isEmpty changes) @>)
+
+    [<Fact>]
+    let ``moving suppression to another file requires approval`` () =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" "module App\n"
+            write "Other.fs" "module Other\n// axial-allow-AXG001: live boundary\n"
+            let snapshot=current ()
+            test <@ Set.difference old.Suppressions snapshot.Suppressions |> Set.count = 1 @>
+            test <@ (diff old snapshot).SuppressionsAdded.Length=1 @>
+            test <@ diff old snapshot |> isEmpty |> not @>)
+
+    [<Fact>]
+    let ``removing suppression preserves existing lock review without reporting weakening`` () =
+        withSuppressionRepository (fun _ write current approved ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let old=approved ()
+            write "App.fs" "module App\n"
+            let snapshot=current ()
+            let changes=diff old snapshot
+            test <@ changes.SuppressionsAdded.IsEmpty @>
+            test <@ changes.ProtectedChanged=[LockName] @>
+            test <@ validateApproval Normal old snapshot changes = Ok () @>)
+
+    [<Fact>]
+    let ``legacy line numbered suppression lock is readable but requires reapproval`` () =
+        withSuppressionRepository (fun root write current _ ->
+            write "App.fs" "module App\n// axial-allow-AXG001: live boundary\n"
+            let snapshot=current ()
+            let legacy={snapshot with Suppressions=set ["src/App.fs:2:// axial-allow-AXG001: live boundary"]}
+            let path=Path.Combine(root,LockName)
+            // Literal version 1 header keeps this a legacy fixture after the writer migrates.
+            let records=(serialize legacy).Split('\n') |> Array.skip 1 |> String.concat "\n"
+            File.WriteAllText(path,"version = 1\n"+records)
+            let parsed=parseLock path |> function Ok value -> value | Error error -> failwith error
+            test <@ diff parsed snapshot |> isEmpty |> not @>)
+
     [<Fact>]
     let ``policy summary reports every reviewed change category`` () =
         let old =
