@@ -136,6 +136,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () = let _ = Flow.fork (Flow.succeed 1) in ()")>]
     [<InlineData("let fork x = x\nlet f () = fork 42 |> ignore")>]
     [<InlineData("let ignore (pending: Task<int>) = pending\nlet f () = Task.FromResult 1 |> ignore")>]
+    [<InlineData("let f () = Task.FromResult 1 |> (fun pending -> ignore 1; pending)")>]
     [<InlineData("let f () = [| Task.FromResult 1 :> Task; Task.CompletedTask |]")>]
     [<InlineData("let f () = [ Task.FromResult 1; Task.FromResult 2 ]")>]
     [<InlineData("let f () = task { let! completed = Task.WhenAny(Task.CompletedTask, Task.CompletedTask) in return () }")>]
@@ -222,7 +223,7 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("domain")>]
     [<InlineData("services")>]
     [<InlineData("host")>]
-    member _.``all non-test roles report concurrency hazards`` role =
+    member _.``domain services and ordinary hosts report concurrency hazards`` role =
         task {
             for code in [ "AXG009"; "AXG010"; "AXG011"; "AXG012" ] do
                 let! messages = run role false false code
