@@ -56,6 +56,7 @@ module HardeningTests =
     [<InlineData("AXG006")>]
     [<InlineData("AXG007")>]
     [<InlineData("AXG008")>]
+    [<InlineData("AXG013")>]
     let ``AXG002 rejects stale suppressions for every structural rule`` ruleId =
         task {
             let source = $"module M\n// axial-allow-{ruleId}: obsolete boundary\nlet value = 1\n"
