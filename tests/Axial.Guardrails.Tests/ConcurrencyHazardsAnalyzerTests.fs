@@ -367,6 +367,22 @@ type ConcurrencyHazardsPolicyTests() =
                 Assert.Equal((if checkpoint = "true" then Severity.Error else Severity.Warning), (Assert.Single messages).Severity)
         }
 
+    [<Theory>]
+    [<InlineData("let f () = task { do! System.Threading.Tasks.Task.Delay 10 } // axial-note AXG013: simulates latency", true)>]
+    [<InlineData("// axial-note AXG013: simulates latency\nlet f () = task { do! System.Threading.Tasks.Task.Delay 10 }", true)>]
+    [<InlineData("let f () = System.Threading.Thread.Sleep 10 // axial-note AXG013: blocking is not a guide", false)>]
+    [<InlineData("// axial-note AXG013: too far away\nlet unrelated = 1\nlet f () = task { do! System.Threading.Tasks.Task.Delay 10 }", false)>]
+    member _.``AXG002 distinguishes live delay notes from blocking and misplaced notes`` (body: string) valid =
+        task {
+            let input = "module M\n" + body
+            let! messages = runWith "test" false false "Fixture.fsproj" input "AXG002"
+            if valid then Assert.Empty messages
+            else Assert.Equal(Severity.Warning, (Assert.Single messages).Severity)
+            let! findings = runWith "test" false false "Fixture.fsproj" input "AXG013"
+            Assert.Single findings |> ignore
+            if valid then Assert.Equal(Severity.Info, findings.Head.Severity)
+        }
+
     [<Fact>]
     member _.``notes must cover live scoped findings`` () =
         task {
