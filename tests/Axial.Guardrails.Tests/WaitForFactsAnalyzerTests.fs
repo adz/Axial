@@ -83,6 +83,50 @@ module WaitForFactsAnalyzerTests =
             test <@ found = [] @>
         }
 
+    [<Theory>]
+    [<InlineData("Thread.Sleep Timeout.Infinite")>]
+    [<InlineData("Thread.Sleep Timeout.InfiniteTimeSpan")>]
+    [<InlineData("Thread.Sleep -1")>]
+    [<InlineData("do! Task.Delay(Timeout.Infinite, token)")>]
+    [<InlineData("do! Task.Delay(Timeout.InfiniteTimeSpan, token)")>]
+    [<InlineData("do! Task.Delay(-1, token)")>]
+    [<InlineData("let! result = Task.Delay(Timeout.Infinite, token)\n    return result")>]
+    [<InlineData("do! Async.Sleep Timeout.Infinite")>]
+    [<InlineData("do! Async.Sleep Timeout.InfiniteTimeSpan")>]
+    [<InlineData("do! Async.Sleep -1")>]
+    let ``cancellation waits are allowed`` statement =
+        task {
+            let builder = if statement.Contains("Async.Sleep") then "async" else "task"
+            let! found = findings Policy.Test ("let check (token: CancellationToken) = " + builder + " {\n    " + statement + "\n}")
+            test <@ found = [] @>
+        }
+
+    [<Theory>]
+    [<InlineData("let check ready =\n    while not (ready ()) do\n        Thread.Sleep 10")>]
+    [<InlineData("let check ready = task {\n    while not (ready ()) do\n        do! Task.Delay 10\n}")>]
+    [<InlineData("let check ready = async {\n    while not (ready ()) do\n        let! result = Async.Sleep 10\n        ignore result\n}")>]
+    [<InlineData("let check ready =\n    for i in 1..2 do\n        while not (ready ()) do\n            Thread.Sleep 10")>]
+    [<InlineData("let check ready =\n    while not (ready ()) do\n        if ready () then () else Thread.Sleep 10")>]
+    let ``nearest while loop permits condition polling`` body =
+        task {
+            let! found = findings Policy.Test body
+            test <@ found = [] @>
+        }
+
+    [<Theory>]
+    [<InlineData("let check () =\n    for i in 1..2 do\n        Thread.Sleep 10")>]
+    [<InlineData("let check ready = task {\n    while not (ready ()) do\n        for i in 1..2 do\n            do! Task.Delay 10\n}")>]
+    [<InlineData("let check ready =\n    while not (ready ()) do\n        for item in [1; 2] do\n            Thread.Sleep 10")>]
+    [<InlineData("let check ready =\n    while not (ready ()) do\n        ignore 42\n    Thread.Sleep 10")>]
+    [<InlineData("let check () = task {\n    do! Task.Delay 10000\n}")>]
+    [<InlineData("let check () =\n    let milliseconds = 10\n    Thread.Sleep milliseconds")>]
+    [<InlineData("module Local =\n    let Infinite = 10\nlet check () = Thread.Sleep Local.Infinite")>]
+    let ``finite simulations and non polling waits remain reported`` body =
+        task {
+            let! found = findings Policy.Test body
+            test <@ found |> List.map _.Code = [ "AXG013" ] @>
+        }
+
     // A flow does not syntactically reveal whether its environment supplies a live or manual clock.
     // AXG013 therefore deliberately leaves Flow.sleep and Clock.sleep out of scope.
     [<Theory>]
