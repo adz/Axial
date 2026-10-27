@@ -155,6 +155,10 @@ module PackagePropsTests =
             Assert.Contains("info axg010", noted.Output.ToLowerInvariant())
             Assert.Contains("best effort observer", noted.Output)
             Assert.DoesNotContain("AXG002", noted.Output)
+            let repeated = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            Assert.True(repeated.ExitCode = 0, repeated.Output)
+            Assert.Contains("info axg010", repeated.Output.ToLowerInvariant())
+            Assert.Contains("best effort observer", repeated.Output)
             File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\n// axial-note AXG010: stale\nlet value = 1\n")
             let invalid = runBuild project None
             Assert.True(invalid.ExitCode = 0, invalid.Output)
