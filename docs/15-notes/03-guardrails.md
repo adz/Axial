@@ -101,7 +101,7 @@ guardrail for the effect's package is enabled (the core `Axial` guardrail covers
 
 ## Adopt Guardrails with a baseline
 
-A baseline records violations that already exist when Guardrails is introduced. It uses tab-separated entries:
+For AXG001–008, a baseline records violations that already exist when Guardrails is introduced. It uses tab-separated entries:
 
 ```text
 AXG001<TAB>src/Legacy.fs<TAB>6ea89f…
@@ -133,16 +133,30 @@ policy change. Ordinary policy approval refuses baseline growth.
 | Code | Name | Detects |
 | --- | --- | --- |
 | `AXG001` | `EffectBoundary` | Direct calls to ambient .NET effects |
-| `AXG002` | `SuppressionIntegrity` | Invalid or unused effect suppressions |
+| `AXG002` | `SuppressionIntegrity` | Invalid or unused effect suppressions and guide notes |
 | `AXG003` | `RaiseInFlow` | Direct exception-raising calls inside `flow { }` |
 | `AXG004` | `Fixture` | Shared module-level values in xUnit test modules |
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
 | `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
-| `AXG013` | `WaitForFacts` | Guessed waits in test-role code; wait for a fact with a failure deadline instead |
+| `AXG009` | `RawConcurrency` | Raw task bridges and synchronization outside their allowed roles/files |
+| `AXG010` | `SwallowedException` | Catch-all handlers ignoring the exception (guide) |
+| `AXG011` | `UncancellableWork` | `CancellationToken.None` outside the cleanup primitive (temporarily warning) |
+| `AXG012` | `DiscardedWork` | Typed Task/ValueTask/Fiber discards |
+| `AXG013` | `WaitForFacts` | Blocking sleeps (error) and directly awaited delays (guide) in test-role code |
 | `AXG007` | `ResourceFromFiber` | A forked flow that returns a scoped resource it acquired, which the fiber releases before `Fiber.join` returns it |
 | `AXG008` | `ScopeFromRun` | A run returning a scope-owned `Queue.makeScoped`, `Hub.makeScoped` or `Hub.subscribe` result, or a cache tied to its creating runtime |
 
-`AXG001`, `AXG002`, `AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
+`AXG001`, `AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
+
+`AXG002`, `RawConcurrency`, and `WaitForFacts` also run in test projects by default. Raw task bridges remain
+exempt in the test role, but synchronization outside declared runtime files is reported.
+
+Guide findings (AXG010 and awaited-delay AXG013) warn in ordinary builds. A valid
+`// axial-note AXGnnn: <reason>` on the finding's line or the preceding line changes a guide finding to visible Info.
+Invalid notes warn under AXG002. Verification and release builds set `AxialGuardrailsCheckpoint=true` to reject
+unacknowledged guides and invalid notes; noted findings remain Info. Ordinary Release builds are not checkpoints.
+Block findings do not accept notes or baseline downgrades; AXG011 and AXG009 synchronization remain temporary warnings
+pending runtime consolidation. AXG001–008 retain their existing allowance/baseline behavior.
 
 `AXG004` runs only in projects where MSBuild sets `IsTestProject`. It checks a test-specific risk and does not apply to application or library projects.
 
@@ -153,7 +167,7 @@ Referencing a package turns its guardrail on: a rule that recommends `IHttp` is 
 
 | Guardrail | Rules |
 | --- | --- |
-| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking waits, and `AXG002`–`AXG008` |
+| `Axial` | Ambient clock reads, `Stopwatch`, `Task.Delay`, `Thread.Sleep`, `Environment.ProcessorCount`, blocking waits, and `AXG002`–`AXG013` |
 | `Axial.PlatformService` | Ordinary randomness (`random`), cryptographic randomness (`secure-random`), GUIDs, environment state, and `TimeZoneInfo.Local` |
 | `Axial.Console` | `System.Console` |
 | `Axial.FileSystem` | `System.IO.File` and `System.IO.Directory` |
@@ -182,8 +196,8 @@ grammar.
 
 ## Diagnostic reference
 
-Each diagnostic's contract — what it detects, what to use instead, and the suppression directive that allows an
-intentional boundary — is on the [diagnostics reference](guardrail-diagnostics.html):
+Each diagnostic's contract — what it detects, what to use instead, and whether it permits a boundary allowance
+or a visible guide acknowledgement — is on the [diagnostics reference](guardrail-diagnostics.html):
 
 - [`AXG001`](guardrail-diagnostics.html#axg001-use-explicit-effect-services): ambient .NET effects.
 - [`AXG002`](guardrail-diagnostics.html#axg002-remove-invalid-suppressions): invalid or unused suppressions.
@@ -192,5 +206,5 @@ intentional boundary — is on the [diagnostics reference](guardrail-diagnostics
 - [`AXG005`](guardrail-diagnostics.html#axg005-preserve-cancellation-tokens): task adapters that drop their token.
 - [`AXG006`](guardrail-diagnostics.html#axg006-format-without-reflection): reflection-dependent formatting.
 - [`AXG007`](guardrail-diagnostics.html#axg007-keep-resources-acquired-by-a-fiber): resources returned from fibers.
-- [`AXG013`](guardrail-diagnostics.html#axg013-wait-for-facts-not-time): guessed test waits. Runs only in policy role `test`; `test.wait-for-facts` defaults to `deny`. Workflow clock sleeps are out of scope.
+- [`AXG013`](guardrail-diagnostics.html#axg013-wait-for-facts-not-time): blocking test sleeps (error) and awaited delays (guide). Runs only in policy role `test`; legacy `test.wait-for-facts` levels do not change the tiers. Workflow clock sleeps are out of scope.
 - [`AXG008`](guardrail-diagnostics.html#axg008-keep-scope-owned-services-inside-their-run): scoped queues and hubs, subscriptions, and caches returned by a run. Unscoped `Queue.make` (including its shorthands) and `Hub.make` are allowed.

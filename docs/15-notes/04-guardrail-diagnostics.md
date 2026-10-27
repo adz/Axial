@@ -79,7 +79,12 @@ not a second capability-folder mechanism. A `forbid` rule cannot be suppressed e
 
 `AXG002` validates every suppression. It reports legacy or malformed syntax, an unknown rule ID, a missing reason,
 a file-wide suppression outside the leading comment block, a suppression outside a TOML-declared boundary file,
-or a stale AXG001 suppression that covers no ambient-effect finding.
+or a stale suppression that covers no finding. AXG009–013 allowances are invalid: these rules cannot be suppressed.
+
+It also validates `axial-note` acknowledgements for guide findings (AXG010 and awaited-delay AXG013).
+A note needs a non-empty reason and a live guide finding on the same or following line. Notes for block findings,
+unknown rule IDs, malformed notes, and stale notes warn during development and become errors at checkpoints.
+Valid notes leave their guide finding visible as Info; they never hide it.
 
 Remove an invalid or unused directive. AXG002 offers an automatic removal when the directive occupies its own comment
 line. For an intentional boundary, declare the file and use a rule-specific comment such as
@@ -250,8 +255,9 @@ semantics. If the fiber intentionally owns and consumes the resource, declare th
 
 ## AXG013: Wait for facts, not time
 
-In policy role `test`, `test.wait-for-facts` defaults to `deny`. `AXG013` reports `Thread.Sleep`
-and directly awaited `Task.Delay` or `Async.Sleep` (`do!` or `let!`). A guessed pause does not prove
+In policy role `test`, `AXG013` reports `Thread.Sleep` as an error and directly awaited
+`Task.Delay` or `Async.Sleep` (`do!` or `let!`) as guide warnings. The legacy `test.wait-for-facts`
+level does not change these tiers. A guessed pause does not prove
 that background work reached the point an assertion needs.
 
 Reported:
@@ -291,8 +297,9 @@ schedule cancellation.
 The analyzer checks direct awaited delay calls, not aliases or data flow through helper functions.
 `Flow.sleep` and `Clock.sleep` are out of scope: their syntax does not establish whether the environment supplies
 live or controlled time. Manual-clock advance operations are also allowed. No automatic fix is offered because
-only the test author knows which fact must be observed. An intentional foreign-delay test can declare its file
-as a boundary and use `// axial-allow-AXG013: <reason>` at that site; AXG002 validates the directive.
+only the test author knows which fact must be observed. For an intentional awaited delay, put
+`// axial-note AXG013: <reason>` on the finding's line or the preceding line. It stays visible as Info,
+including at checkpoints. `Thread.Sleep` cannot be acknowledged or suppressed.
 
 ## AXG008: Keep scope-owned services inside their run
 
@@ -313,7 +320,8 @@ let rawWork () = System.Threading.Tasks.Task.Run(fun () -> 1)
 let ownedWork () = Flow.succeed 1
 ```
 
-A bridge can use `// axial-allow-AXG009: <specific reason>` on the site or preceding line.
+Raw task findings are errors and cannot be acknowledged or suppressed; move bridges into capability-role modules.
+Synchronization findings remain warnings until runtime consolidation; notes do not downgrade them.
 Exact repository-relative paths in `[runtime].files` exempt runtime implementations from AXG009 only.
 This approval-sensitive list is protected by the policy lock; `[boundaries].files` does not exempt raw concurrency.
 
@@ -332,20 +340,22 @@ let swallowed () = try failwith "failed" with _ -> ()
 let propagated () = try failwith "failed" with _ -> reraise ()
 ```
 
-When an exception is intentionally irrelevant, use `// axial-allow-AXG010: <specific reason>` at that handler.
+This is a guide warning. When an exception is intentionally irrelevant, put
+`// axial-note AXG010: <specific reason>` on the handler body's first line or the preceding line.
+The finding stays visible as Info with the reason. An unacknowledged finding becomes an error at a checkpoint.
 
 ## AXG011: Explain uncancellable work
 
-Every `CancellationToken.None` needs a per-site reason, including inside runtime files. Pass the owner's token
-unless cancellation would violate the operation's contract.
+`CancellationToken.None` is temporarily a warning, including inside runtime files. Pass the owner's token;
+cleanup that must finish after cancellation belongs in the runtime's uninterruptible cleanup primitive.
+It is intended to become an error after that consolidation, with one exact runtime primitive exempt.
 
 ```fsharp
 let unownedToken = System.Threading.CancellationToken.None
 let ownedToken (token: System.Threading.CancellationToken) = token
 ```
 
-For example, an uncancellable cleanup bridge can use
-`// axial-allow-AXG011: final cleanup must finish after caller cancellation` beside the token expression.
+Neither `axial-allow` nor `axial-note` exempts this finding. Checkpoints do not promote this temporary warning.
 
 ## AXG012: Retain ownership of concurrent work
 
@@ -363,10 +373,17 @@ let discarded () = System.Threading.Tasks.Task.FromResult 1 |> ignore
 let retained () = System.Threading.Tasks.Task.FromResult 1
 ```
 
-Await the task or retain and join the fiber. A foreign callback with an explicit external owner can use
-`// axial-allow-AXG012: <specific ownership reason>` at the discard.
+This is an error. Await the task or retain and join the fiber; neither `axial-allow` nor `axial-note` exempts it.
 
 Except for AXG009 synchronization findings, AXG009–AXG012 exempt the `test` role and host-role tooling
 projects under `src/Axial.Guardrails` or `src/Axial.Tool*`; an ordinary host is not exempt.
-Findings are errors except AXG011 and AXG009 synchronization findings, which are warnings. Their per-site allowances do not require boundary membership. File-wide allowances are rejected by AXG002, as are missing reasons and stale allowances. No automatic
-fix is offered: choosing ownership, cancellation, or exception reporting changes behavior.
+AXG001–008 retain their boundary-allowance and baseline behavior. AXG009–013 do not accept allowances or baseline
+severity downgrades. Only guide findings (AXG010 and awaited-delay AXG013) accept `axial-note`; no boundary
+membership or finding approval is needed. AXG002 warns about malformed, empty, unknown, misplaced, or stale notes,
+and notes on block findings. Invalid notes become errors at checkpoints. No automatic fix is offered: choosing
+ownership, cancellation, or exception reporting changes behavior.
+
+The verification build and release workflow set `AxialGuardrailsCheckpoint=true`. Ordinary builds, including
+ordinary Release builds, do not enable it automatically. At checkpoints, unacknowledged guide findings become errors;
+acknowledged findings remain Info with their reasons. Build output is the review list; there is no separate snapshot
+or review manifest. The existing policy lock still protects roles and enforcement configuration.

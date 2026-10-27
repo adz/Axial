@@ -75,7 +75,7 @@ jobs:
       - name: Build
         run: |
           bash scripts/ensure-guardrails-built.sh Release
-          dotnet build Axial.slnx --configuration Release --no-restore --nologo -v minimal -p:Version="${{ steps.version.outputs.value }}"
+          dotnet build Axial.slnx --configuration Release --no-restore --no-incremental --nologo -v minimal -p:AxialGuardrailsCheckpoint=true -p:Version="${{ steps.version.outputs.value }}"
 
       - name: Check documentation conventions
         run: bash scripts/check-docs-conventions.sh

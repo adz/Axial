@@ -190,13 +190,12 @@ let rawRanges code (ctx: CliContext) =
     symbolRanges code ctx @ syntactic |> List.distinctBy key
 
 let private descriptions =
-    Map.ofList [ "AXG009", "Use Flow concurrency rather than raw TPL coordination; an OS bridge needs a per-site reason."
-                 "AXG010", "This handler discards an exception. Propagate, record, or report it."
-                 "AXG011", "CancellationToken.None requires a per-site reason explaining why this work must not be cancellable."
+    Map.ofList [ "AXG009", "Use Flow concurrency rather than raw TPL coordination; move an OS bridge into a capability-role module."
+                 "AXG010", "Consider propagating, recording, or reporting this exception; this catch-all handler ignores it."
+                 "AXG011", "Use the runtime's uninterruptible cleanup primitive instead of CancellationToken.None."
                  "AXG012", "Concurrent work is discarded. Await it or retain and join its owning fiber." ]
 
-let private analyze code (ctx: CliContext) =
-    let config = GuardrailConfig.load ()
+let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
     let role = GuardrailConfig.resolvedPolicy config ctx |> Option.map _.Role
     let tooling =
         match role, config.PolicyRoot, config.ProjectPath with
@@ -216,15 +215,11 @@ let private analyze code (ctx: CliContext) =
         |> List.filter (fun r ->
             if code = "AXG009" && synchronizationSites.Contains(key r) then true
             else role <> Some Policy.Test && not tooling && (code <> "AXG009" || role <> Some Policy.Capabilities))
-        |> List.filter (fun r ->
-            Suppressions.allDirectives ctx.SourceText
-            |> List.exists (fun d -> d.RuleId = Some code && d.Reason <> "" && not d.FileWide
-                                    && (d.Line = r.StartLine || d.Line + 1 = r.StartLine))
-            |> not)
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]
               Severity = Severity.Error; Range = r; Fixes = [] })
-        |> GuardrailConfig.applyCore ctx
+        |> List.map (fun message -> if code = "AXG010" then Suppressions.guideMessage config ctx message else message)
+        |> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx
         // Temporary until the primitives lane removes adapter synchronization and all other None sites.
         |> List.map (fun message ->
             if code = "AXG011" || (code = "AXG009" && synchronizationSites.Contains(key message.Range)) then
@@ -232,13 +227,13 @@ let private analyze code (ctx: CliContext) =
             else message)
 
 [<CliAnalyzer("RawConcurrency", "Flags raw concurrency outside the runtime.", "https://github.com/adz/Axial")>]
-let rawConcurrencyAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyze "AXG009" ctx }
+let rawConcurrencyAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG009" ctx }
 
 [<CliAnalyzer("SwallowedException", "Flags unreported exceptions.", "https://github.com/adz/Axial")>]
-let swallowedExceptionAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyze "AXG010" ctx }
+let swallowedExceptionAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG010" ctx }
 
-[<CliAnalyzer("UncancellableWork", "Requires reasons for CancellationToken.None.", "https://github.com/adz/Axial")>]
-let uncancellableWorkAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyze "AXG011" ctx }
+[<CliAnalyzer("UncancellableWork", "Flags CancellationToken.None outside runtime cleanup.", "https://github.com/adz/Axial")>]
+let uncancellableWorkAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG011" ctx }
 
 [<CliAnalyzer("DiscardedWork", "Flags discarded concurrent work.", "https://github.com/adz/Axial")>]
-let discardedWorkAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyze "AXG012" ctx }
+let discardedWorkAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG012" ctx }

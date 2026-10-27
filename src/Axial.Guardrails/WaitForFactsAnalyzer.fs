@@ -108,17 +108,17 @@ let rec private approvedHelperBodies (ctx: CliContext) decls =
                 if approved then Some body.Range else None)
         | _ -> [])
 
-let rec private find ctx approvedBodies expr : range list =
+let rec private find ctx approvedBodies expr : (range * bool) list =
     let report (delay: SynExpr) =
         not (approvedBodies |> List.exists (fun body -> Range.rangeContainsRange body delay.Range))
         && not (waitsForCancellation ctx delay)
     let here =
         match expr with
-        | SynExpr.App _ when matches ctx "System.Threading.Thread" "Sleep" expr && report expr -> [ expr.Range ]
-        | SynExpr.DoBang(inner, _, _) when directDelay ctx inner && report inner -> [ inner.Range ]
+        | SynExpr.App _ when matches ctx "System.Threading.Thread" "Sleep" expr && report expr -> [ expr.Range, false ]
+        | SynExpr.DoBang(inner, _, _) when directDelay ctx inner && report inner -> [ inner.Range, true ]
         | SynExpr.LetOrUse bindings when bindings.IsBang ->
             bindings.Bindings
-            |> List.choose (fun (SynBinding(expr = rhs)) -> if directDelay ctx rhs && report rhs then Some rhs.Range else None)
+            |> List.choose (fun (SynBinding(expr = rhs)) -> if directDelay ctx rhs && report rhs then Some(rhs.Range, true) else None)
         | _ -> []
     let nested =
         match expr with
@@ -128,35 +128,35 @@ let rec private find ctx approvedBodies expr : range list =
     here @ nested
 
 /// Raw sites also serve AXG002's stale-suppression validation, independently of policy role.
-let rawRanges (ctx: CliContext) =
+let private rawSites (ctx: CliContext) =
     match ctx.ParseFileResults.ParseTree with
     | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
         modules
         |> List.collect (fun (SynModuleOrNamespace(decls = decls)) ->
             let approvedBodies = approvedHelperBodies ctx decls
             allExprsInModule decls |> List.collect (find ctx approvedBodies))
-        |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
+        |> List.distinctBy (fun (r, _) -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
     | _ -> []
+
+let rawRanges ctx = rawSites ctx |> List.map fst
+
+/// Only awaited delays are heuristic; Thread.Sleep is always a blocking finding.
+let guideRanges ctx = rawSites ctx |> List.choose (fun (r, guide) -> if guide then Some r else None)
 
 let analyzeWithConfig (config: GuardrailConfig.Config) (ctx: CliContext) : Message list =
     match GuardrailConfig.resolvedPolicy config ctx with
     | Some policy when policy.Role = Policy.Test ->
-        let level = policy.Rules.TryFind "test.wait-for-facts" |> Option.defaultValue Policy.Deny
-        if level = Policy.Allow then []
-        else
-            rawRanges ctx
-            |> List.filter (fun r ->
-                not (Suppressions.isAllowed config.BoundaryFiles ctx.FileName ctx.SourceText r.StartLine "AXG013"))
-            |> List.map (fun r ->
+        rawSites ctx
+        |> List.map (fun (r, guide) ->
+            let message =
                 { Type = "Axial Wait For Facts"
                   Code = "AXG013"
-                  Message = "Wait for a fact, not elapsed time: complete a Deferred or TaskCompletionSource when the work reaches the point you care about, then wait on it with a failure deadline; or step the test clock."
+                  Message = "Consider waiting for a fact, not elapsed time: complete a Deferred or TaskCompletionSource when the work reaches the point you care about, then wait on it with a failure deadline; or step the test clock."
                   Severity = Severity.Error
                   Range = r
-                  Fixes = [] })
-            |> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx
-            |> List.map (fun message ->
-                if level = Policy.Warn then { message with Severity = Severity.Warning } else message)
+                  Fixes = [] }
+            if guide then Suppressions.guideMessage config ctx message else message)
+        |> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx
     | _ -> []
 
 [<CliAnalyzer("WaitForFacts", "Flags guessed waits in test-role code.",
