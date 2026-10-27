@@ -41,7 +41,7 @@ module internal OutcomeText =
             try
                 other.ToString()
             with _ ->
-                "<" + other.GetType().Name + ">"
+                "<" + other.GetType().Name + ">" // axial-allow-AXG010: A throwing user ToString falls back to its type name so failure rendering can complete.
 #endif
 
     /// Like <c>plain</c>, with strings quoted so they read as values inside a rendered cause or exit.

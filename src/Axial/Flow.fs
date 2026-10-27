@@ -233,7 +233,7 @@ module Flow =
         | ValueNone ->
             let releasing = new Scope()
             releasing.AddFinalizer finalizer
-            closeScopes CancellationToken.None [ releasing ] (Exit.Failure Cause.Interrupt)
+            closeScopes CancellationToken.None [ releasing ] (Exit.Failure Cause.Interrupt) // axial-allow-AXG011: An acquisition interrupted before finalizer registration must still release the acquired resource.
 
     // A release that ended in failure, as the exception the scope's finalizer raises. The scope folds it back into
     // the closing flow's cause as a defect.
@@ -264,13 +264,13 @@ module Flow =
             let runtime =
                 { acquiredIn with
                     Scope = scope
-                    BranchToken = CancellationToken.None
-                    OuterToken = CancellationToken.None }
+                    BranchToken = CancellationToken.None // axial-allow-AXG011: Resource release runs in its own branch whose cleanup cannot inherit the cancelled acquiring branch.
+                    OuterToken = CancellationToken.None } // axial-allow-AXG011: The release runtime masks outer cancellation so release code can finish its cleanup scope.
             let previous = RuntimeState.current ()
             let execution =
                 try
                     RuntimeState.enter runtime
-                    try invoke (release value) environment CancellationToken.None
+                    try invoke (release value) environment CancellationToken.None // axial-allow-AXG011: Invoking a registered resource release must not be cancelled by the operation it is cleaning up.
                     with error -> Platform.ofExit (Exit.Failure(Cause.Die error))
                 finally RuntimeState.enter previous
             let finish (exit: Exit<unit, Never>) (closing: Platform.Deed) : Platform.Deed =
@@ -284,7 +284,7 @@ module Flow =
                 } :> Task
             if execution.IsCompletedSuccessfully then
                 let exit = execution.Result
-                let closing = scope.Close CancellationToken.None
+                let closing = scope.Close CancellationToken.None // axial-allow-AXG011: A synchronously settled release still must close its nested cleanup scope after caller cancellation.
                 if closing.IsCompletedSuccessfully then
                     match exit with
                     | Exit.Success() -> Task.CompletedTask
@@ -293,7 +293,7 @@ module Flow =
             else
                 task {
                     let! exit = execution
-                    return! finish exit (scope.Close CancellationToken.None)
+                    return! finish exit (scope.Close CancellationToken.None) // axial-allow-AXG011: An asynchronously settled release must also finish closing nested resources after caller cancellation.
                 } :> Task
 #endif
 
@@ -587,7 +587,7 @@ module Flow =
 #if FABLE_COMPILER
                 Execution.ofExit (run ())
 #else
-                ValueTask<Exit<'value, 'error>>(Task.Run(run, CancellationToken.None))
+                ValueTask<Exit<'value, 'error>>(Task.Run(run, CancellationToken.None)) // axial-allow-AXG011: Blocking work must enter the delegate even after cancellation so its started work can settle and be joined.
 #endif
         )
 
@@ -633,7 +633,7 @@ module Flow =
 
                     Task.Factory.StartNew<Task<Exit<'value, 'error>>>(
                         runScheduled,
-                        CancellationToken.None,
+                        CancellationToken.None, // axial-allow-AXG011: runOn must execute the scheduled delegate to perform its own cancellation classification rather than cancel the scheduler task.
                         options,
                         scheduler)
                     |> fun outer -> outer.Unwrap()
@@ -1020,7 +1020,7 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let currentRuntime = RuntimeState.current()
             // A diagnostics sink must never fail the workflow that annotated.
-            (try currentRuntime.AnnotationSink name value with _ -> ())
+            (try currentRuntime.AnnotationSink name value with _ -> ()) // axial-allow-AXG010: Annotation sinks are diagnostic-only and must not fail the annotated workflow.
             let runtime = currentRuntime |> RuntimeContext.withAnnotation name value
 
             RuntimeState.withRuntime runtime (fun () -> invoke flow environment cancellationToken))
@@ -1514,7 +1514,7 @@ module Flow =
             // closes, which also happens when the forking flow is interrupted.
             let parentToken =
                 match graceful with
-                | Some _ -> CancellationToken.None
+                | Some _ -> CancellationToken.None // axial-allow-AXG011: A graceful fiber is stopped by its closing scope protocol, not immediately by the parent token.
                 | None -> RuntimeContext.forkToken parentRuntime cancellationToken
 
             let cts, exitTask =
@@ -1540,7 +1540,7 @@ module Flow =
                                 let text = Cause.prettyPrint (fun error -> OutcomeText.plain (box error)) cause
 
                                 for registry in parentRuntime.Registries do
-                                    try registry.RecordFailure metadata text with _ -> ()
+                                    try registry.RecordFailure metadata text with _ -> () // axial-allow-AXG010: Registry reporting is best-effort diagnostics; one registry must not prevent notifying the others.
                             | Exit.Success _ -> ()
 
                         // A defect keeps the registration so the scope's close can report it deterministically. A
@@ -1609,7 +1609,7 @@ module Flow =
 
                         match graceful with
                         | Some request ->
-                            let! stopExit = (invoke request.Stop environment CancellationToken.None).AsTask()
+                            let! stopExit = (invoke request.Stop environment CancellationToken.None).AsTask() // axial-allow-AXG011: The graceful Stop flow must run before cancellation is requested from the child fiber.
 
                             match stopExit with
                             | Exit.Failure cause ->
@@ -1880,7 +1880,7 @@ module Flow =
 
         let start () =
             RuntimeState.withRuntime owner (fun () ->
-                invoke (forkDetached publisher) environment CancellationToken.None)
+                invoke (forkDetached publisher) environment CancellationToken.None) // axial-allow-AXG011: A shared publisher belongs to the shared owner, not the first waiter whose cancellation must not cancel all waiters.
             |> Execution.map (fun (_: Fiber<Never, unit>) -> ())
 
         signal, start
@@ -1963,7 +1963,7 @@ module Flow =
     // through the fiber observer unless someone else consumed its outcome.
     let private afterReplaced (previous: Platform.Signal<Fiber<'error, 'value> option>) (flow: Flow<'env, 'error, 'value>) =
         Flow(fun environment cancellationToken ->
-            Platform.awaitSignal previous CancellationToken.None
+            Platform.awaitSignal previous CancellationToken.None // axial-allow-AXG011: Replacement startup must wait for the previous slot publication even if this replacement is already interrupted.
             |> Execution.bind (fun (replaced: Fiber<'error, 'value> option) ->
                 match replaced with
                 | Some fiber ->
@@ -2165,7 +2165,7 @@ module Flow =
                     | Some(Exit.Failure cause) -> Exit.Failure cause
                     | _ -> Exit.Success()
 
-                let closing = closeRaceScope CancellationToken.None (loserScope ()) loserOutcome
+                let closing = closeRaceScope CancellationToken.None (loserScope ()) loserOutcome // axial-allow-AXG011: The losing race scope must finish its cleanup before the winner is returned, even after caller cancellation.
 #if !FABLE_COMPILER
                 if closing.IsCompletedSuccessfully then
                     Platform.guardStack (fun () -> finishLoser winnerExit closing.Result)
@@ -2555,7 +2555,7 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let finish (exit: Exit<'value, 'error>) : Execution<'value, 'error> =
                 Platform.tryExecution
-                    (fun () -> invoke (handler exit) environment CancellationToken.None)
+                    (fun () -> invoke (handler exit) environment CancellationToken.None) // axial-allow-AXG011: The exit finalizer runs after interruption and must be able to report or finish cleanup without that cancelled token.
                     (fun error -> Platform.ofExit (Exit.Failure(Cause.Die error)))
                 |> Execution.fold
                     (fun () -> Execution.ofExit exit)

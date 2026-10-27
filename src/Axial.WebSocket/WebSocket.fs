@@ -252,7 +252,7 @@ module WebSocket =
                                 let sendGate = new SemaphoreSlim(1, 1)
                                 let mutable disposed = 0
                                 let dispose () =
-                                    if Interlocked.Exchange(&disposed, 1) = 0 then
+                                    if Interlocked.Exchange(&disposed, 1) = 0 then // axial-allow-AXG009: Transport close and scope cleanup can both dispose the native socket; only one may dispose its send gate.
                                         socket.Dispose()
                                         sendGate.Dispose()
                                 let transport (operation: CancellationToken -> Task<'a>) =

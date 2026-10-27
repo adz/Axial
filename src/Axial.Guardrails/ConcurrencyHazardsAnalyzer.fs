@@ -5,6 +5,7 @@ open System
 open System.IO
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Syntax
+open FSharp.Compiler.SyntaxTrivia
 open FSharp.Compiler.Symbols
 open FSharp.Compiler.Symbols.FSharpExprPatterns
 open FSharp.Compiler.Text
@@ -17,6 +18,20 @@ let private expressions (ctx: CliContext) =
     | _ -> []
 
 let rec private walk expr = expr :: (childExprs expr |> List.collect walk)
+
+let rec private handlerExpressions expr =
+    let children =
+        match expr with
+        // Recording an exception in mutable state is handling it, too.
+        | SynExpr.Record(_, _, fields, _) ->
+            fields |> List.choose (fun (SynExprRecordField(expr = value)) -> value)
+        | SynExpr.DotGet(target, _, _, _) -> [ target ]
+        | SynExpr.TypeTest(value, _, _) -> [ value ]
+        | SynExpr.LongIdentSet(_, value, _) -> [ value ]
+        | SynExpr.DotSet(target, _, value, _) | SynExpr.Set(target, value, _) -> [ target; value ]
+        | _ -> childExprs expr
+    expr :: (children |> List.collect handlerExpressions)
+
 let private key (r: range) = r.StartLine, r.StartColumn, r.EndLine, r.EndColumn
 
 let private symbolRanges code (ctx: CliContext) =
@@ -54,10 +69,10 @@ let rec private boundNames pat =
 let private swallowed expr =
     match expr with
     | SynExpr.TryWith(_, clauses, _, _, _, _) ->
-        clauses |> List.choose (fun (SynMatchClause(pat = pat; resultExpr = body)) ->
+        clauses |> List.choose (fun (SynMatchClause(pat = pat; resultExpr = body; whenExpr = guard)) ->
             let names = boundNames pat |> Set.ofList
             let handled =
-                walk body |> List.exists (fun node ->
+                (handlerExpressions body @ (guard |> Option.toList |> List.collect handlerExpressions)) |> List.exists (fun node ->
                     match node with
                     | SynExpr.Ident id when names.Contains id.idText -> true
                     | SynExpr.LongIdent(_, ids, _, _) when ids.LongIdent |> List.exists (fun id -> names.Contains id.idText) -> true
@@ -96,22 +111,36 @@ let rawRanges code (ctx: CliContext) =
         | "AXG010" -> nodes |> List.collect swallowed
         | "AXG012" ->
             let typed = typedConcurrentRanges ctx
-            let discarded (expr: SynExpr) =
+            // Array/list syntax uses Sequential for retained elements, not discarded statements.
+            let rec elements expr =
+                match expr with
+                | SynExpr.Sequential(_, _, first, next, _, _) -> elements first @ elements next
+                | _ -> [ key expr.Range ]
+            let collectionElements =
+                nodes |> List.collect (function SynExpr.ArrayOrListComputed(_, inner, _) -> elements inner | _ -> [])
+                |> Set.ofList
+            let rec discarded (expr: SynExpr) =
                 typed.Contains(key expr.Range)
-                || (match pipe expr with
-                    | Some(_, target) -> headIdent target = Some "fork"
-                    | None -> headIdent expr = Some "fork")
+                || (match expr with
+                    // Typed lowering can erase the source range of an explicit task cast.
+                    | SynExpr.Paren(inner, _, _, _) | SynExpr.Typed(inner, _, _)
+                    | SynExpr.Upcast(inner, _, _) | SynExpr.Downcast(inner, _, _)
+                    | SynExpr.InferredUpcast(inner, _) | SynExpr.InferredDowncast(inner, _) -> discarded inner
+                    | _ -> false)
             nodes |> List.collect (fun node ->
                 match pipe node with
                 | Some(value, target) when headIdent target = Some "ignore" && discarded value -> [ value.Range ]
                 | _ ->
                     match node with
                     | SynExpr.LetOrUse binding ->
-                        binding.Bindings |> List.choose (fun (SynBinding(headPat = pat; expr = rhs)) ->
-                            match pat with
-                            | SynPat.Wild _ when discarded rhs -> Some rhs.Range
-                            | _ -> None)
-                    | SynExpr.Sequential(_, _, first, _, _, _) when discarded first -> [ first.Range ]
+                        binding.Bindings |> List.choose (fun (SynBinding(headPat = pat; expr = rhs; trivia = trivia)) ->
+                            match trivia.LeadingKeyword with
+                            | SynLeadingKeyword.LetBang _ | SynLeadingKeyword.UseBang _ | SynLeadingKeyword.AndBang _ -> None
+                            | _ ->
+                                match pat with
+                                | SynPat.Wild _ when discarded rhs -> Some rhs.Range
+                                | _ -> None)
+                    | SynExpr.Sequential(_, _, first, _, _, _) when not (collectionElements.Contains(key first.Range)) && discarded first -> [ first.Range ]
                     | SynExpr.Do(inner, _) when discarded inner -> [ inner.Range ]
                     | _ -> [])
         | _ -> []

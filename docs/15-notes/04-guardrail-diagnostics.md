@@ -274,7 +274,10 @@ This approval-sensitive list is protected by the policy lock; `[boundaries].file
 Reports a `try/with` handler that neither uses its bound exception nor calls `raise`, `reraise`, or a reporting
 function. The reporting heuristic accepts call names containing `Report`, `notify`, `Observer`, `Log`, or `Record`
 (case-insensitive). It is not proof that logging succeeds or that every control-flow path reports. Returning or
-recording the bound exception also counts; wildcard handlers returning a fallback value are still reported.
+recording the bound exception also counts, including assignments, error-record fields, and chained calls such as
+`ExceptionDispatchInfo.Capture(error).Throw()`. A guard that inspects the bound exception counts as classification.
+Wildcard handlers returning a fallback value are still reported; returning `Error` or `Exit.Failure` alone does not
+prove the exception was handled.
 
 ```fsharp
 let swallowed () = try failwith "failed" with _ -> ()
@@ -299,8 +302,11 @@ For example, an uncancellable cleanup bridge can use
 ## AXG012: Retain ownership of concurrent work
 
 Reports discarded Task, ValueTask, and Fiber values in wildcard bindings, statements, and pipelines to `ignore`.
-The typed check follows type abbreviations and catches aliased task factories. Direct `Flow.fork ... |> ignore`
-and `Async.Start` / `Async.StartImmediate` are also reported. Retaining a value alone does not prove it will be
+The typed check follows type abbreviations and catches aliased task factories. `Async.Start` / `Async.StartImmediate`
+are also reported. Awaited `let!` / `do!` expressions and array/list elements retained in a collection are not
+discarded statements. Explicit casts do not hide a discarded Task. A discarded `Flow.fork` description is cold:
+without executing the returned Flow, no fiber starts, so AXG012 does not report it.
+Retaining a value alone does not prove it will be
 awaited: this rule detects local discards, not whole-program ownership.
 
 ```fsharp

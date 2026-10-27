@@ -41,7 +41,7 @@ module internal NativeProcess =
                     true
                 else
                     false
-            with :? EntryPointNotFoundException -> false
+            with :? EntryPointNotFoundException -> false // axial-allow-AXG010: A libc without pidfd exports reports pidfd capability as unavailable.
 
     /// Sends a signal to a process through pidfd only (no kill fallback). Tests use this to prove the
     /// pidfd path delivers a signal end-to-end on Linux.
@@ -62,12 +62,12 @@ module internal NativeProcess =
                             Error (System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()).Message)
                     finally
                         closeFd(fd) |> ignore
-            with :? EntryPointNotFoundException -> Error "pidfd_open is not exported by this libc."
+            with :? EntryPointNotFoundException -> Error "pidfd_open is not exported by this libc." // axial-allow-AXG010: A missing pidfd export is returned as the explicit unsupported-platform error.
 
     let internal tryOpenPidfd pid =
         if RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
             try pidfd_open(pid, 0u)
-            with :? EntryPointNotFoundException -> -1
+            with :? EntryPointNotFoundException -> -1 // axial-allow-AXG010: A missing pidfd_open export selects the documented non-pidfd path.
         else
             -1
 
@@ -104,7 +104,7 @@ module internal NativeProcess =
                     try
                         sent <- pidfd_send_signal(pidfd, signal, 0n, 0u)
                         if sent <> 0 then error <- Marshal.GetLastWin32Error()
-                    with :? EntryPointNotFoundException -> ()
+                    with :? EntryPointNotFoundException -> () // axial-allow-AXG010: Missing pidfd_send_signal falls through to the kill fallback below.
 
                 // PID fallback has an unavoidable reuse window on platforms without pidfd support.
                 if sent <> 0 && (pidfd < 0 || error = 38) then
@@ -177,7 +177,7 @@ module internal NativeProcess =
 
     let private invokeCallback (token: CancellationToken) (work: Async<unit>) =
         let result =
-            TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+            TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously) // axial-allow-AXG009: Foreign Async stdin callbacks must expose a Task completion result to the native stream bridge.
 
         let fail (error: exn) =
             match error with
@@ -384,7 +384,7 @@ module internal NativeProcess =
         let stdoutLimit, stderrLimit = specification.MaxOutputBytes
         let limit = if index = 0 then stdoutLimit else stderrLimit
 
-        lock byteCounts[stage] (fun () ->
+        lock byteCounts[stage] (fun () -> // axial-allow-AXG009: Native output callbacks must atomically reserve bytes against the per-stage output cap.
             let current = byteCounts[stage][index]
 
             match limit with

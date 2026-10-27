@@ -514,9 +514,9 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
             && wildcard pattern (Path.GetFileName dir))
         |> Seq.map id
 
-    member _.ActiveWatchers = lock watchers (fun () -> watchers.Count)
+    member _.ActiveWatchers = lock watchers (fun () -> watchers.Count) // axial-allow-AXG009: The in-memory filesystem exposes a synchronous watcher-count snapshot alongside callback-driven subscriptions.
     member _.RaiseChange(change: FileSystemChange) =
-        let subscriptions = lock watchers (fun () -> watchers.Values |> Seq.toArray)
+        let subscriptions = lock watchers (fun () -> watchers.Values |> Seq.toArray) // axial-allow-AXG009: Snapshot watcher callbacks before invoking them so callbacks may unsubscribe without mutating enumeration.
         for root, recursive, callback, _ in subscriptions do
             let target = Path.GetFullPath change.Path
             let root = Path.GetFullPath root
@@ -526,17 +526,17 @@ type TestFileSystem(?initial: seq<string * string>, ?readAllTextAsync: string ->
                || (not recursive && String.Equals(parent, root, StringComparison.OrdinalIgnoreCase)) then
                 callback change
     member _.RaiseWatchError(error: exn) =
-        let subscriptions = lock watchers (fun () -> watchers.Values |> Seq.toArray)
+        let subscriptions = lock watchers (fun () -> watchers.Values |> Seq.toArray) // axial-allow-AXG009: Snapshot error callbacks before invoking them so errors may trigger unsubscription safely.
         for _, _, _, callback in subscriptions do callback error
 
 
     interface IFileSystem with
         member _.Watch(path, recursive, onChange, onError) =
-            let id = lock watchers (fun () ->
+            let id = lock watchers (fun () -> // axial-allow-AXG009: The synchronous Watch boundary must allocate an ID and publish its callback as one operation.
                 nextWatcher <- nextWatcher + 1
                 watchers[nextWatcher] <- (path, recursive, onChange, onError)
                 nextWatcher)
-            { new IDisposable with member _.Dispose() = lock watchers (fun () -> watchers.Remove id |> ignore) }
+            { new IDisposable with member _.Dispose() = lock watchers (fun () -> watchers.Remove id |> ignore) } // axial-allow-AXG009: IDisposable unsubscription removes its watcher atomically against synchronous RaiseChange snapshots.
         member _.ReadAllText(path) = requireFile path |> Encoding.UTF8.GetString
         member _.ReadAllText(path, encoding) = requireFile path |> encoding.GetString
         member _.ReadAllTextAsync(path) =

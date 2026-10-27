@@ -83,7 +83,7 @@ let private completedReadRanges (ctx: CliContext) =
     // for executables) throw when their patterns are read. Skip them: an unreadable expression only loses its
     // exemptions, so the finding stays, and the analyzer never crashes the build.
     let rec walk guarded continuation expr =
-        try walkChecked guarded continuation expr with _ -> []
+        try walkChecked guarded continuation expr with _ -> [] // axial-allow-AXG010: Unreadable compiler-generated typed expressions lose guarded-read exemptions rather than crashing AXG001.
     and walkChecked guarded continuation expr =
         let here =
             match readReceiver expr with
@@ -114,9 +114,9 @@ let private completedReadRanges (ctx: CliContext) =
         match declaration with
         | FSharpImplementationFileDeclaration.Entity(_, members) -> members |> List.collect declarations
         | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(_, _, body)
-        | FSharpImplementationFileDeclaration.InitAction body -> (try walk [] [] body with _ -> [])
-    match (try ctx.TypedTree with _ -> None) with
-    | Some tree -> (try tree.Declarations |> List.collect declarations with _ -> [])
+        | FSharpImplementationFileDeclaration.InitAction body -> (try walk [] [] body with _ -> []) // axial-allow-AXG010: FCS recovery can make a declaration unreadable; syntax-level ambient-call diagnostics remain active.
+    match (try ctx.TypedTree with _ -> None) with // axial-allow-AXG010: A missing recoverable typed tree disables guarded-read exemptions, not syntax ambient-call detection.
+    | Some tree -> (try tree.Declarations |> List.collect declarations with _ -> []) // axial-allow-AXG010: Typed declaration recovery failure leaves ambient-call findings without exemptions.
     | None -> []
 
 /// Every ambient-effect call site in the file for the enabled guardrails, regardless of suppression. Exposed so the
