@@ -151,6 +151,21 @@ module WaitForFactsAnalyzerTests =
         }
 
     [<Fact>]
+    let ``occupyThread is exempt by symbol only inside TestSupport`` () =
+        task {
+            let source moduleName =
+                "namespace Axial.Tests\nopen System\nopen System.Threading\nmodule " + moduleName + " =\n"
+                + "    let occupyThread (duration: TimeSpan) = Thread.Sleep duration\n"
+            let! allowed = findings Policy.Test (source "TestSupport")
+            test <@ allowed = [] @>
+            let! lookalike = findings Policy.Test (source "OtherSupport")
+            test <@ lookalike |> List.map _.Code = [ "AXG013" ] @>
+            let! sibling = findings Policy.Test (
+                source "TestSupport" + "    let other () = Thread.Sleep 1\n")
+            test <@ sibling |> List.map _.Code = [ "AXG013" ] @>
+        }
+
+    [<Fact>]
     let ``helper exemption does not leak to siblings or local lookalikes`` () =
         task {
             let! found = findings Policy.Test (

@@ -33,6 +33,10 @@ module TestSupport =
 
         ready
 
+    /// Blocks the calling thread for the duration to simulate work (a slow sample, a loaded pool).
+    /// The one allowed Thread.Sleep for simulated work; never use it to wait for a fact.
+    let occupyThread (duration: TimeSpan) = Thread.Sleep duration
+
     let clockEnv () = ClockEnvironment(Clock.live)
     type Address =
         { City: string }

@@ -58,11 +58,7 @@ module FiberMetricsTests =
         }
 
     let private waitUntil (condition: unit -> bool) =
-        let mutable remaining = 500
-
-        while not (condition ()) && remaining > 0 do
-            remaining <- remaining - 1
-            System.Threading.Thread.Sleep 10
+        TestSupport.waitUntil condition (System.TimeSpan.FromSeconds 5.) |> ignore
 
     [<Fact>]
     let ``fiber metrics count starts, settles with status, and net live fibers`` () =

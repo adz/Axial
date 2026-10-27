@@ -344,7 +344,7 @@ module HttpServiceTests =
     let ``live service enforces per-request timeouts as typed errors`` () =
         withServer
             (fun context ->
-                Thread.Sleep 2000
+                TestSupport.occupyThread (TimeSpan.FromSeconds 2.)
                 context.Response.StatusCode <- 200)
             (fun root ->
                 let error =

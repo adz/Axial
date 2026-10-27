@@ -37,7 +37,7 @@ module WorkflowSchedulingTests =
             ThreadPool.QueueUserWorkItem(fun _ ->
                 if Diagnostics.Stopwatch.GetTimestamp() < stopAt then
                     keepPoolBusy ()
-                    Thread.Sleep 2
+                    TestSupport.occupyThread (TimeSpan.FromMilliseconds 2.)
                 else
                     drained.Signal() |> ignore)
             |> ignore

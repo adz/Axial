@@ -88,7 +88,7 @@ let rec private waitsForCancellation ctx expr =
         else false
     | _ -> false
 
-// Only this shared helper owns the bounded polling implementation. A same-named local or another module
+// Only these two shared helpers own the bounded polling (waitUntil) and the simulated-work (occupyThread) sleeps. A same-named local or another module
 // must not turn arbitrary sleeps into fact waits.
 let rec private approvedHelperBodies (ctx: CliContext) decls =
     decls
@@ -102,7 +102,7 @@ let rec private approvedHelperBodies (ctx: CliContext) decls =
                         site.IsFromDefinition && Range.rangeContainsRange pattern.Range site.Range
                         && (match site.Symbol with
                             | :? FSharpMemberOrFunctionOrValue as value ->
-                                value.DisplayName = "waitUntil"
+                                (value.DisplayName = "waitUntil" || value.DisplayName = "occupyThread")
                                 && (value.DeclaringEntity |> Option.exists (fun owner -> owner.TryFullName = Some "Axial.Tests.TestSupport"))
                             | _ -> false))
                 if approved then Some body.Range else None)

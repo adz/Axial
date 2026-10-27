@@ -53,7 +53,7 @@ module RunOnTests =
         let operation : Flow<unit, string, unit> =
             Flow.delay (fun () ->
                 invocation <- invocation + 1
-                if invocation = 1 then Thread.Sleep 10
+                if invocation = 1 then TestSupport.occupyThread (TimeSpan.FromMilliseconds 10.)
                 threads.Enqueue Thread.CurrentThread.ManagedThreadId
                 Flow.ok ())
             |> Flow.runOn placement

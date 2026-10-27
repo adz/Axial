@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\SimulatedWork.fs" Link="SimulatedWork.fs" />
     <Compile Include="FilesTests.fs" />
     <Compile Include="AppendLogTests.fs" />
     <Compile Include="CrashTests.fs" />
