@@ -77,16 +77,10 @@ module PolicyLock =
         let explicitFiles = Regex.Matches(File.ReadAllText project, "Compile\\s+Include=\"([^\"]+\\.fs)\"") |> Seq.cast<Match> |> Seq.map (fun m -> Path.GetFullPath(Path.Combine(directory,m.Groups[1].Value))) |> Seq.filter File.Exists |> Seq.toArray
         if explicitFiles.Length > 0 then explicitFiles else Directory.GetFiles(directory,"*.fs",SearchOption.TopDirectoryOnly)
 
-    let private suppressions root (files: string array) =
-        // Fixture projects skip analysis in Directory.Build.props (_AxialRepoSkipGuardrails).
-        // Their suppression-like strings are analyzer inputs, not reviewed suppressions.
-        let isFixture path =
-            let p = relative root path
-            p.StartsWith("tests/Axial.Guardrails",StringComparison.Ordinal)
-            && p.Substring("tests/".Length).Contains('/')
-            || p.StartsWith("tests/Axial.PrintfFixture/",StringComparison.Ordinal)
-            || p.StartsWith("benchmarks/Axial.Comparative/",StringComparison.Ordinal)
-        files |> Seq.filter (fun p -> p.EndsWith(".fs",StringComparison.Ordinal) && not (isFixture p))
+    let private suppressions root ignores (files: string array) =
+        files |> Seq.filter (fun p ->
+            p.EndsWith(".fs",StringComparison.Ordinal)
+            && not (ignores |> List.exists (fun pattern -> matchesGlob pattern (relative root p))))
         |> Seq.collect (fun path ->
             File.ReadLines path
             |> Seq.choose (fun text ->
@@ -146,7 +140,7 @@ module PolicyLock =
                             |> Seq.map(fun resolved -> roleName resolved.Role)
                             |> Set.ofSeq))
                     |> Map.ofSeq
-                Ok { Version=2; BaselinePath=baseline; Hashes=hashes; Baseline=baselineEntries; BaselineRoles=baselineRoles; Rules=policyRules config; Capabilities=capabilities; Boundaries=boundaries; Suppressions=suppressions root files }
+                Ok { Version=2; BaselinePath=baseline; Hashes=hashes; Baseline=baselineEntries; BaselineRoles=baselineRoles; Rules=policyRules config; Capabilities=capabilities; Boundaries=boundaries; Suppressions=suppressions root config.SuppressionIgnores files }
         with ex -> Error ex.Message
 
     let serialize snapshot =

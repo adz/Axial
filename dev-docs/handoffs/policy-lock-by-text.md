@@ -1,4 +1,4 @@
-# Policy lock by text — phase 2b complete
+# Policy lock by text — phase 2c complete
 
 ## Scope and state
 
@@ -48,6 +48,26 @@ Repository `Axial.Guardrails.lock` is untouched. Stop after this phase.
   `/home/adam/projects/scratch/axial-coord/pi/policy-lock-phase2b-green.log` (22 passed).
 - Updated the 0.12.0 Changed notes. No lock approval, lock edits, or push. Full verify/result.json and done-check
   remain phase 4 work; this phase does not claim full verification.
+
+## Phase 2c — policy-configured suppression exclusions
+
+- Replaced hardcoded repository fixture paths with optional `[suppressions].ignore` globs parsed by
+  `src/Axial.Guardrails/Policy.fs` into `Config.SuppressionIgnores`. The scanner uses the policy glob matcher;
+  absent configuration means no exclusions. Patterns are canonical repository-relative paths, may match nothing,
+  and receive the same outside-root validation as other policy globs.
+- Moved this repository's three fixture patterns into protected `Axial.Guardrails.toml`. No lock approval or lock
+  modification was performed. Changing this list requires human approval because the TOML is hashed.
+- Updated the TOML reference in `docs/15-notes/03-guardrails.md` and the 0.12 Changed notes.
+- Test-first commit: `aa0bc0e1e` (`test: require policy-configured suppression scan exclusions`).
+  Before implementation, focused tests failed 5, passed 18: four configured-ignore cases rejected the new setting,
+  and the unconfigured fixture case exposed the hardcoded exclusion. Red log:
+  `/home/adam/projects/scratch/axial-coord/pi/policy-lock-phase2c-red.log`.
+- After implementation, PolicyLockTests plus PolicyTests passed 36/36. Green log:
+  `/home/adam/projects/scratch/axial-coord/pi/policy-lock-phase2c-green.log`.
+  Command: `dotnet test tests/Axial.Guardrails.Tests/Axial.Guardrails.Tests.fsproj -c Release -p:_AxialRepoSkipGuardrails=true --filter 'FullyQualifiedName~PolicyLockTests|FullyQualifiedName~PolicyTests' --nologo -v q`.
+- Docs conventions and whitespace checks passed. Full verification/result.json, livedocs, final fail-first artifact,
+  and done-check remain phase 4 work; no full-verification claim is made for this phase.
+- This supersedes phase 2b's decision to keep a local hardcoded exclusion list.
 
 ## Exact next step (fresh session, phase 3)
 

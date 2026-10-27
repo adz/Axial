@@ -56,6 +56,13 @@ suppressed. Run `axial policy approve` after reviewing an intentional policy cha
 summary when protected inputs change or policy weakens. Removing suppressions or shrinking baseline entries does not
 require approval; the next approval refreshes the snapshot.
 
+Use `[suppressions]` with `ignore = ["tests/AnalyzerFixtures/**"]` to exclude fixture sources from the policy
+lock's suppression scan. Without this optional setting, every repository `.fs` file is scanned; no project paths
+are excluded automatically. Patterns use the same repository-relative glob syntax as project and boundary paths:
+`*` matches within a path segment, `**` crosses directories, and `?` matches one non-separator character.
+Ignore patterns may match no files. This setting affects only lock scanning, not analyzer execution. The TOML is
+protected, so changing the ignore list requires reviewed approval.
+
 Lock format version 2 records each suppression by repository-relative file, normalized comment text, and occurrence
 number, not source line. Normalization selects the `// axial-allow-AXGnnn:` comment, canonicalizes spacing before the
 rule, and trims the reason's outer whitespace; internal reason text remains significant. Moving a comment within
