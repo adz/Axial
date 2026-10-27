@@ -1,6 +1,23 @@
-# race-alloc — phase 2 handover
+# race-alloc — phase 3 verification handover
 
-## Current state: phase 2 complete; phase 3 not started
+## Phase 3 scope and final verification procedure
+
+Checkpoint: `restore=0ea0b3d40`; clean `perf/race-alloc`. No source, tests, examples, policy, lock or verification
+scripts changed in phase 3. Chose the brief's permitted torture waiver, recorded in ignored
+`artifacts/verify/torture-waiver.txt`: `parallel` stresses repeated race scheduling and both exit handlers, but its
+post-race finish gates do not pin return ordering. The unchanged committed ownership/settlement/observer tests
+supply that boundary coverage, including the phase-2 deliberate-mutation failure. No new tests means the done-check
+correctly skips baseline fail-first; do not manufacture a failing behavior test for unchanged semantics.
+
+This handover is committed before verification so all stages can certify the final clean HEAD. Run detached
+`setsid -f axial-verify` with the persistent log `race-alloc-verify.log`, then the coordinator's done-check.
+Final results, exact verified commit and any failures/reruns are recorded in the external persistent report
+`/home/adam/projects/scratch/axial-coord/pi/race-alloc.report.md` and `artifacts/verify/result.json`, not backfilled
+here after verification (which would invalidate the certified HEAD). If verification fails, phase 3 remains
+incomplete; repair/report without weakening checks. After all stages and done-check pass, phase 3 ends: no push
+and no further phase. Allocation results and the RunOnThreadPool fractional variance below remain unchanged.
+
+## Inherited state: phase 2 complete
 
 Checkpoint before phase 2: `restore=2aa0b40f0`. Work remains on `perf/race-alloc`; commit locally, **no push**.
 Only `src/Axial/Flow.fs` and this handover changed. No public API or observable behavior change is intended;
