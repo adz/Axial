@@ -18,8 +18,13 @@ module TortureTests =
 
         for seed in 1..10 do
             let violated =
-                match (scenario.Run(Round(seed, 100))) |> Flow.runSync (TestSupport.clockEnv ()) with
-                | Exit.Success checks -> checks |> List.filter (fun check -> not check.Held) |> List.map _.Invariant
-                | Exit.Failure cause -> [ $"the round completed (it ended with {cause})" ]
+                // The watchdog reports a stalled round with its live fiber tree instead of hanging the test run.
+                let said = System.Collections.Concurrent.ConcurrentQueue<string>()
+                match Program.watchRound said.Enqueue scenario seed |> Flow.runSync (TestSupport.clockEnv ()) with
+                | Exit.Success(Some checks) ->
+                    let violated = checks |> List.filter (fun check -> not check.Held) |> List.map _.Invariant
+                    if List.isEmpty violated then [] else violated @ List.ofSeq said
+                | Exit.Success None -> "the stalled round ignored interruption" :: List.ofSeq said
+                | Exit.Failure cause -> [ $"the round's watchdog completed (it ended with {cause})" ]
 
             test <@ (seed, violated) = (seed, []) @>
