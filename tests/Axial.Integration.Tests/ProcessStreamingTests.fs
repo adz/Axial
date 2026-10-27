@@ -89,8 +89,7 @@ module ProcessStreamingTests =
             Diagnostics.Process.GetProcessesByName "yes"
             |> Array.filter (fun proc ->
                 try IO.File.ReadAllText($"/proc/{proc.Id}/cmdline").Contains marker with _ -> false)
-        let deadline = DateTime.UtcNow.AddSeconds 5.
-        while survivors().Length > 0 && DateTime.UtcNow < deadline do Threading.Thread.Sleep 50
+        Threading.SpinWait.SpinUntil((fun () -> survivors().Length = 0), TimeSpan.FromSeconds 5.) |> ignore
         Assert.Empty(survivors ())
 
     [<Fact>]

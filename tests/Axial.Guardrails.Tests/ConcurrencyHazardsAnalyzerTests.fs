@@ -267,10 +267,14 @@ type ConcurrencyHazardsPolicyTests() =
         }
 
     [<Fact>]
-    member _.``runtime list exempts raw primitives but not uncancellable work`` () =
+    member _.``runtime list exempts raw primitives and discarded work but not uncancellable work`` () =
         task {
             let! raw = run "services" true false "AXG009"
             Assert.Empty raw
+            let! discarded = run "services" true false "AXG012"
+            Assert.Empty discarded
+            let! discardedOutside = run "services" false false "AXG012"
+            Assert.NotEmpty discardedOutside
             let! uncancellable = run "services" true false "AXG011"
             Assert.Single(uncancellable) |> ignore
         }
@@ -311,14 +315,16 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("let mutable n = 0\nlet x = Interlocked.Increment(&n)")>]
     [<InlineData("let x = lock (obj()) (fun () -> 1)")>]
     [<InlineData("let x = Monitor.Enter(obj())")>]
-    member _.``synchronization warns outside runtime including capabilities until primitives land`` body =
+    member _.``synchronization warns outside runtime and tests including capabilities until primitives land`` body =
         task {
             for role in [ "domain"; "services"; "capabilities"; "host"; "test" ] do
                 for project in [ "Fixture.fsproj"; "src/Axial.Tool/Axial.Tool.fsproj" ] do
                     let input = "module M\nopen System.Threading\n" + body
                     let! messages = runWith role false false project input "AXG009"
-                    let message = Assert.Single messages
-                    Assert.Equal(Severity.Warning, message.Severity)
+                    if role = "test" then Assert.Empty messages
+                    else
+                        let message = Assert.Single messages
+                        Assert.Equal(Severity.Warning, message.Severity)
                     let! runtime = runWith role true false project input "AXG009"
                     Assert.Empty runtime
         }

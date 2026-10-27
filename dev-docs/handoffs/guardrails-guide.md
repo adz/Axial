@@ -118,3 +118,9 @@ No source, TOML, lock or baseline changes; no approvals or bypass properties.
   AXG009/AXG012 are not removed by feature/flow-uninterruptible; AXG009 needs exact-file runtime declaration (protected toml) or bridge moves; AXG012 and Thread.Sleep need code fixes.
 - Gap: 8 test projects (and net8.0 of ElmishFlows/Telemetry/WebSocket) cannot be type-checked: their referenced libraries have no built output and a normal build fails on the errors above. Grep estimates are in the report.
 - Next: phase 5 (verify, done-check) after human approves protected files.
+
+## Phase 5 (pre-approval, done)
+
+Runtime-core `[runtime] files` added (protected TOML); AXG012 now exempt there too; sync findings exempt in test role;
+6 of 9 Thread.Sleep sites fixed, 3 left (RunOnTests:56, WorkflowParallelTests:168, WorkflowSchedulingTests:40: sleep is simulated work).
+Analyzer tests green (see report "Phase 5"). Touched tests not run (lock). After human approval: build, run touched files 20x, `setsid -f axial-verify`, done-check.

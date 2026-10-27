@@ -208,12 +208,12 @@ let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
         match config.Policy, config.PolicyRoot with
         | Some policy, Some root -> policy.Runtime |> List.exists (fun path -> Path.GetFullPath(Path.Combine(root, path)) = Path.GetFullPath ctx.FileName)
         | _ -> false
-    if code = "AXG009" && runtime then []
+    if (code = "AXG009" || code = "AXG012") && runtime then []
     else
         let synchronizationSites = symbolRanges "synchronization" ctx |> List.map key |> Set.ofList
         rawRanges code ctx
         |> List.filter (fun r ->
-            if code = "AXG009" && synchronizationSites.Contains(key r) then true
+            if code = "AXG009" && synchronizationSites.Contains(key r) then role <> Some Policy.Test
             else role <> Some Policy.Test && not tooling && (code <> "AXG009" || role <> Some Policy.Capabilities))
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]

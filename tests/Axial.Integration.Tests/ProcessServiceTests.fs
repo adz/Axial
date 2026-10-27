@@ -26,10 +26,7 @@ module ProcessServiceTests =
     let private env () = { Process = Process.live Clock.live FileSystem.live Console.live; Clock = Clock.live }
 
     let private waitUntil timeout predicate =
-        let deadline = DateTime.UtcNow + timeout
-        while not (predicate ()) && DateTime.UtcNow < deadline do
-            Thread.Sleep 20
-        predicate ()
+        SpinWait.SpinUntil((fun () -> predicate ()), timeout)
 
     let private processHasExited pid =
         try

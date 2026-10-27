@@ -38,11 +38,7 @@ module FiberObserverTests =
             }))
 
     let private waitUntil (condition: unit -> bool) =
-        let mutable remaining = 500
-
-        while not (condition ()) && remaining > 0 do
-            remaining <- remaining - 1
-            Thread.Sleep 10
+        TestSupport.waitUntil condition (TimeSpan.FromSeconds 5.0) |> ignore
 
     /// Waits for a fiber to settle without consuming its outcome, so it stays unobserved.
     /// Deterministic replacement for fixed sleeps, which race the thread pool under load.

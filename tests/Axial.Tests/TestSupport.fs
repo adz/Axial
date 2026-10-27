@@ -234,7 +234,11 @@ module TestSupport =
                 failwith
                     $"Manual time could not reach quiescence: {count} sleeper(s) remained unchanged while the thread-pool queue stayed non-empty for 10 seconds."
             else
-                Thread.Sleep 1
+                // Re-poll as soon as any observed fact changes; otherwise after the 1 ms observation window.
+                waitUntil
+                    (fun () -> time.Sleepers <> count || ThreadPool.CompletedWorkItemCount <> completedCount)
+                    (TimeSpan.FromMilliseconds 1.0)
+                |> ignore
 
         running.Result
 
