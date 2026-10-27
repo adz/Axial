@@ -22,14 +22,19 @@ let watchRound (say: string -> unit) (scenario: Scenario) (seed: int) : Flow<Clo
     let rec settle round (deadline: System.TimeSpan) =
         flow {
             match! Fiber.poll round with
-            | Some exit -> return Some exit
+            | Some _ ->
+                let! exit = Fiber.awaitExit round
+                return Some exit
             | None when clock.Elapsed() >= deadline -> return None
             | None ->
                 do! Flow.sleep (System.TimeSpan.FromMilliseconds 50.0)
                 return! settle round deadline
         }
     flow {
-        let! round = Flow.forkDetached (Flow.withFiberRegistry registry (scenario.Run(Round(seed, 100))))
+        // The round's own fiber is forked under the registry, so the dump shows it as the root of the tree.
+        let! round =
+            Flow.forkNamed $"{scenario.Name} seed {seed}" (scenario.Run(Round(seed, 100)))
+            |> Flow.withFiberRegistry registry
         let started = clock.Elapsed()
         let rec watch () =
             flow {
