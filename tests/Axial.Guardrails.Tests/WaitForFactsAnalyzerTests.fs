@@ -115,6 +115,8 @@ module WaitForFactsAnalyzerTests =
 
     [<Theory>]
     [<InlineData("let check () =\n    for i in 1..2 do\n        Thread.Sleep 10")>]
+    [<InlineData("let check () =\n    for i = 1 to 2 do\n        Thread.Sleep 10")>]
+    [<InlineData("let check ready =\n    while not (ready ()) do\n        for i = 1 to 2 do\n            Thread.Sleep 10")>]
     [<InlineData("let check ready = task {\n    while not (ready ()) do\n        for i in 1..2 do\n            do! Task.Delay 10\n}")>]
     [<InlineData("let check ready =\n    while not (ready ()) do\n        for item in [1; 2] do\n            Thread.Sleep 10")>]
     [<InlineData("let check ready =\n    while not (ready ()) do\n        ignore 42\n    Thread.Sleep 10")>]
