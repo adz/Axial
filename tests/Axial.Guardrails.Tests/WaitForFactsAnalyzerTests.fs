@@ -89,6 +89,7 @@ module WaitForFactsAnalyzerTests =
     [<Theory>]
     [<InlineData("do! Task.Delay(Timeout.Infinite, token)")>]
     [<InlineData("do! Task.Delay(Timeout.InfiniteTimeSpan, token)")>]
+    [<InlineData("do! Task.Delay(Timeout.InfiniteTimeSpan, TimeProvider.System, token)")>]
     [<InlineData("do! Task.Delay(-1, token)")>]
     [<InlineData("let! result = Task.Delay(Timeout.Infinite, token)\n    return result")>]
     [<InlineData("do! Async.Sleep Timeout.Infinite")>]
@@ -107,6 +108,7 @@ module WaitForFactsAnalyzerTests =
     [<InlineData("Thread.Sleep -1")>]
     [<InlineData("do! Task.Delay Timeout.Infinite")>]
     [<InlineData("do! Task.Delay Timeout.InfiniteTimeSpan")>]
+    [<InlineData("do! Task.Delay(Timeout.InfiniteTimeSpan, TimeProvider.System)")>]
     [<InlineData("do! Task.Delay -1")>]
     let ``infinite blocking sleeps and tokenless task delays are not cancellation waits`` (statement: string) =
         task {

@@ -43,6 +43,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let x = new CancellationTokenSource()")>]
     [<InlineData("let x = Task.Run(fun () -> 1)")>]
     [<InlineData("let x = Task.Factory.StartNew(fun () -> 1)")>]
+    [<InlineData("let x = Task<int>.Factory.StartNew(fun () -> 1)")>]
     [<InlineData("let x = Task.CompletedTask.ContinueWith(fun (_: Task) -> ())")>]
     [<InlineData("let x = new Thread(ThreadStart(fun () -> ()))")>]
     [<InlineData("let x = ThreadPool.QueueUserWorkItem(WaitCallback(fun _ -> ()))")>]
@@ -94,7 +95,8 @@ module ConcurrencyHazardsAnalyzerTests =
     let ``AXG011 reports CancellationToken None`` () =
         task {
             let! messages = findings "AXG011" "let token = CancellationToken.None"
-            Assert.Single(messages) |> ignore
+            let message = Assert.Single messages
+            Assert.Equal(Severity.Warning, message.Severity)
         }
 
     [<Theory>]
@@ -102,6 +104,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () = let _ = ValueTask<int>(1) in ()")>]
     [<InlineData("let f (fiber: Fiber<string, int>) = let _ = fiber in ()")>]
     [<InlineData("let f () = Task.FromResult 1 |> ignore")>]
+    [<InlineData("let f () = ignore (Task.FromResult 1)")>]
     [<InlineData("let f () = (Task.FromResult 1 :> Task) |> ignore")>]
     [<InlineData("let f () = ValueTask<int>(1) |> ignore")>]
     [<InlineData("let f () =\n    Task.FromResult 1\n    ()")>]
@@ -132,6 +135,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () = Flow.fork (Flow.succeed 1) |> ignore")>]
     [<InlineData("let f () = let _ = Flow.fork (Flow.succeed 1) in ()")>]
     [<InlineData("let fork x = x\nlet f () = fork 42 |> ignore")>]
+    [<InlineData("let ignore (pending: Task<int>) = pending\nlet f () = Task.FromResult 1 |> ignore")>]
     [<InlineData("let f () = [| Task.FromResult 1 :> Task; Task.CompletedTask |]")>]
     [<InlineData("let f () = [ Task.FromResult 1; Task.FromResult 2 ]")>]
     [<InlineData("let f () = task { let! completed = Task.WhenAny(Task.CompletedTask, Task.CompletedTask) in return () }")>]
