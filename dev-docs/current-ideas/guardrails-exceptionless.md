@@ -50,3 +50,28 @@ exception needs a reason, a lock, an approval ceremony and review. The AXG009–
 - `host` role allows ambient effects (principle 2 already).
 - The AXG009–AXG013 analyzers and their tests (demoted per principle 5).
 - The readable `axial check` summary.
+
+## Review of the halted batch's exceptions (2026-10-27, owner-directed)
+
+Owner decisions: build it. Rules guide rather than block: during development they are warnings with advice
+("consider X"). An inline `// axial-note AXGnnn: <reason>` acknowledges a finding but keeps it in the review list.
+At checkpoints (release build, pre-release verify), a report lists every finding and acknowledgement, and the
+release fails only on unreviewed findings. There is no lock or approval ceremony for findings.
+
+Why each group of exceptions existed, and how it goes away:
+
+| Rule | Sites | Reason given | Resolution |
+|---|---|---|---|
+| AXG009 | ~20 | lock/Interlocked around counters and callback snapshots | Drop lock/Interlocked/Monitor from AXG009; our bugs were TCS/Task.Run/ContinueWith/CTS lifetimes |
+| AXG009 | 4 | lock around a shared Random | Use `Random.Shared`; delete the locks |
+| AXG009 | ~5 | Task↔Deferred bridges, Hosting StopAsync timeout | Runtime interop primitives used by adapters |
+| AXG010 | ~10 | Guardrails analyzer recovering from FCS failures | Tooling is host role; rule does not apply |
+| AXG010 | ~10 | specific exception converted to a value (JsonException, missing pidfd, temp-name retry) | Only flag catch-all handlers that ignore the exception |
+| AXG010 | ~6 | observer/defect/annotation sink failure must not change the outcome | One `Report.safely` primitive |
+| AXG011 | 25 | cleanup must finish after caller cancellation; roots without a parent | `Flow.uninterruptible` (the only `CancellationToken.None` in the code base) and a named root token |
+
+`CancellationToken.None` is needed only to run cleanup after the caller's token has been cancelled. Effect libraries
+call this an uninterruptible region. User code and adapters use `ensuring`/`acquireRelease`/`uninterruptible`.
+
+Build order: (1) primitives, with benchmarks and torture; (2) narrow the rules as above; (3) the guide-not-block
+model, and removal of the suppression lock machinery.
