@@ -40,16 +40,54 @@ let rec private directDelay ctx expr =
         || matches ctx "Microsoft.FSharp.Control.FSharpAsync" "Sleep" expr
     | _ -> false
 
-let rec private find ctx expr : range list =
+let rec private infiniteArgument (ctx: CliContext) expr =
+    match expr with
+    | SynExpr.Paren(inner, _, _, _)
+    | SynExpr.Typed(inner, _, _) -> infiniteArgument ctx inner
+    | SynExpr.Tuple(exprs = first :: _) -> infiniteArgument ctx first
+    | SynExpr.Const(SynConst.Int32 -1, _) -> true
+    | _ ->
+        match headRange expr with
+        | None -> false
+        | Some location ->
+            ctx.GetAllSymbolUsesOfFile()
+            |> Seq.exists (fun site ->
+                site.Range.End = location.End && site.Range.StartLine = location.StartLine
+                && site.Range.StartColumn <= location.StartColumn
+                && (match site.Symbol with
+                    | :? FSharpField as field ->
+                        (field.Name = "Infinite" || field.Name = "InfiniteTimeSpan")
+                        && (field.DeclaringEntity |> Option.exists (fun owner -> owner.TryFullName = Some "System.Threading.Timeout"))
+                    | _ -> false))
+
+let rec private waitsForCancellation ctx expr =
+    match expr with
+    | SynExpr.Paren(inner, _, _, _)
+    | SynExpr.Typed(inner, _, _) -> waitsForCancellation ctx inner
+    | SynExpr.App(argExpr = argument) -> infiniteArgument ctx argument
+    | _ -> false
+
+let rec private find ctx inWhile expr : range list =
+    let report delay = not inWhile && not (waitsForCancellation ctx delay)
     let here =
         match expr with
-        | SynExpr.App _ when matches ctx "System.Threading.Thread" "Sleep" expr -> [ expr.Range ]
-        | SynExpr.DoBang(inner, _, _) when directDelay ctx inner -> [ inner.Range ]
+        | SynExpr.App _ when matches ctx "System.Threading.Thread" "Sleep" expr && report expr -> [ expr.Range ]
+        | SynExpr.DoBang(inner, _, _) when directDelay ctx inner && report inner -> [ inner.Range ]
         | SynExpr.LetOrUse bindings when bindings.IsBang ->
             bindings.Bindings
-            |> List.choose (fun (SynBinding(expr = rhs)) -> if directDelay ctx rhs then Some rhs.Range else None)
+            |> List.choose (fun (SynBinding(expr = rhs)) -> if directDelay ctx rhs && report rhs then Some rhs.Range else None)
         | _ -> []
-    here @ (childExprs expr |> List.collect (find ctx))
+    // The nearest loop decides: a nested for must not inherit a surrounding while's exemption.
+    let nested =
+        match expr with
+        | SynExpr.While(whileExpr = condition; doExpr = body) ->
+            find ctx true condition @ find ctx true body
+        | SynExpr.For(identBody = first; toBody = last; doBody = body) ->
+            [ first; last; body ] |> List.collect (find ctx false)
+        | SynExpr.ForEach(enumExpr = items; bodyExpr = body) ->
+            [ items; body ] |> List.collect (find ctx false)
+        | _ -> childExprs expr |> List.collect (find ctx inWhile)
+    here @ nested
 
 /// Raw sites also serve AXG002's stale-suppression validation, independently of policy role.
 let rawRanges (ctx: CliContext) =
@@ -57,7 +95,7 @@ let rawRanges (ctx: CliContext) =
     | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->
         modules
         |> List.collect (fun (SynModuleOrNamespace(decls = decls)) -> allExprsInModule decls)
-        |> List.collect (find ctx)
+        |> List.collect (find ctx false)
         |> List.distinctBy (fun r -> r.StartLine, r.StartColumn, r.EndLine, r.EndColumn)
     | _ -> []
 

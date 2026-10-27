@@ -280,6 +280,10 @@ let waitForReady (ready: TaskCompletionSource<unit>) (assertReady: unit -> unit)
 A `Deferred` completed by the worker serves the same purpose. For scheduling behavior, step a test clock instead.
 `Task.WhenAny(work, Task.Delay duration)` (including array arms or a locally bound deadline), fact-based
 `Wait(timeout)` / `WaitAsync(timeout)`, and `SpinWait.SpinUntil(predicate, timeout)` are allowed.
+A duration of `Timeout.Infinite`, `Timeout.InfiniteTimeSpan`, or literal `-1` is also allowed: completion
+waits for cancellation rather than elapsed time. Sleeps whose nearest enclosing loop is a `while` are
+allowed as condition polls; a nested `for` loop removes that exemption. Finite straight-line or `for`-loop
+waits remain reported even when they simulate slow work, generate load, or schedule cancellation.
 The analyzer checks direct awaited delay calls, not aliases or data flow through helper functions.
 `Flow.sleep` and `Clock.sleep` are out of scope: their syntax does not establish whether the environment supplies
 live or controlled time. Manual-clock advance operations are also allowed. No automatic fix is offered because

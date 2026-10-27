@@ -1,94 +1,85 @@
-# AXG013 — wiring and classification handover
+# AXG013 — narrowed before baseline
 
 ## State / stopping boundary
 
 Worktree `/home/adam/projects/Axial/feature/guardrails-test-waits`, branch `feature/guardrails-test-waits`.
-Commit locally; **do not push**. Read the coordinator brief and TOKEN-RULES under
+Commit locally; **do not push**. Read coordinator brief and TOKEN-RULES under
 `/home/adam/projects/scratch/axial-coord/pi/` before continuing.
 
-Completed the requested exact-next-phase steps 1–3: default test-build wiring fix + regression test, direct
-analyzer inventory with per-file counts including linked sources, external report. **Stopped before baseline
-or repository lock approval.** No existing tests rewritten; no baseline or lock changed.
-
-Full report (counts, line numbers, classification cautions, commands/evidence):
+Completed the brief's final section, “narrow before baseline”. **Stop before any baseline or repository policy
+approval.** No existing tests rewritten; no baseline/lock changed. Full report:
 `/home/adam/projects/scratch/axial-coord/pi/guardrails-test-waits.report.md`.
 
-## Changes / evidence
+## Narrowing decisions / changes
 
-- Test-first commit `c38d2dd23` adds
-  `PackagePropsTests.default test builds report guessed waits without enabling ambient effect rules`.
-  It builds isolated test-role consumers and checks UtcNow remains permitted while awaited Task.Delay fails AXG013.
-  Normal focused test run against the unfixed targets: **1 failed** (delay incorrectly built successfully).
-- `src/Axial.Guardrails/build/Axial.Guardrails.targets` default test filter now uses the CLI's supported multi-value
-  syntax: `--include-analyzers Fixture WaitForFacts`. Other effect analyzers remain excluded; `all` is unchanged.
-- Normal post-fix test build is blocked by `axial check` because the target is protected. Direct check reports
-  only `src/Axial.Guardrails/build/Axial.Guardrails.targets` under protected changes; all other categories `none`.
-  This was expected and explicitly permitted by the coordinator's current instruction; no bypass flags used.
-- Ran the already-built test-first assembly directly using `dotnet vstest` (not a build claiming policy passed).
-  Consumer fixture builds import the changed targets normally. Focused regression: **1 passed**;
-  full Guardrails assembly: **129 passed, 0 failed**, duration 3m23s.
-  Existing fixture helpers approve only isolated temporary consumer policies, not this repository's lock.
-- No full verify / `result.json` for this phase. Build and baseline approval remain prerequisites.
+- `src/Axial.Guardrails/WaitForFactsAnalyzer.fs`: allow infinite duration (`Timeout.Infinite`,
+  `Timeout.InfiniteTimeSpan`, literal `-1`) because completion waits for cancellation. Timeout fields resolve by
+  symbol identity; similarly named user symbols do not qualify.
+- Allow direct waits whose nearest enclosing loop is a while. For/foreach resets that exemption; a while inside
+  a for allows polling again. Added numeric `for i = ... to ...` traversal, missing from the shared child walker,
+  locally in this analyzer rather than changing other rules.
+- Finite simulations, slow work, load generation and cancellation-deadline scheduling stay reported as directed.
+  No aliases/data-flow analysis. Flow.sleep/Clock.sleep still out of scope (supplied clock unknown syntactically).
+- `tests/Axial.Guardrails.Tests/WaitForFactsAnalyzerTests.fs`: tests first in commits `c031aa3b1`,
+  `ef9776d0c` (type constraint correction), `2558d207f` (numeric-for coverage). Tests cover Thread/Task/Async,
+  all infinite durations, bound waits, loop nesting both ways, post-loop waits, finite simulations and lookalikes.
+- `docs/15-notes/04-guardrail-diagnostics.md` and `dev-docs/releases/0.12.0.md`: document the narrower rule.
 
-Logs under `/home/adam/projects/scratch/axial-coord/pi/`:
-`guardrails-test-waits-wiring-red.log`, `guardrails-test-waits-wiring-green.log` (policy blocker),
-`guardrails-test-waits-wiring-direct.log`, `guardrails-test-waits-suite-direct.log`,
-`guardrails-test-waits-policy.log`, `guardrails-test-waits-cli-help.log`.
+## Evidence / policy blocker
 
-## Actual AXG013 inventory
+Normal focused `dotnet test` still fails `axial check` because the previous wiring change touches protected
+`src/Axial.Guardrails/build/Axial.Guardrails.targets`. No bypass flags or approval commands used.
+The analyzer project **does build normally**:
+`dotnet build src/Axial.Guardrails/Axial.Guardrails.fsproj -c Release --nologo -v q`.
 
-**43 diagnostics across 13 source files**, 43 unique sites. All 15 `tests/*/*.fsproj` projects inventoried.
-Project totals: Axial.Tests 21; Axial.Integration.Tests 19; Axial.Fable.Tests 1;
-Axial.HttpClient.Tests 1; Axial.Telemetry.Tests 1; all ten others zero.
-The Fable finding is linked `examples/Axial.TortureTest/Interop.fs:35` (not a test-role examples project finding).
-Per-file counts and source lines are in the external report; do not infer inventory from the previous build's
-single Fable finding.
+Used FSI to load the new test source against the built analyzer and existing test dependencies/context helper,
+then invoked its Fact/Theory cases. **Before fix: 28 passed, 17 failed. After fix: 45 passed, 0 failed.**
+This is behavioral red/green; fixture snippets are typechecked/analyzed, not executed.
+Runner and evidence under the coordinator directory:
+- `guardrails-test-waits-narrow-tests.fsx`
+- `guardrails-test-waits-narrow-red.log` (normal test build blocker)
+- `guardrails-test-waits-narrow-red-direct.log`, `guardrails-test-waits-narrow-green-direct.log`
+- `guardrails-test-waits-narrow-analyzer-build.log`
 
-Method: invoke Release analyzer directly with `dotnet fsharp-analyzers --include-analyzers WaitForFacts`,
-existing generated `.rules` / `.fscargs`, and SARIF output. **Run from each project directory:** compiler source
-paths are relative. A root-directory trial gave a false empty result; it was discarded/replaced by the correct
-Axial.Tests run. Projects without generated args were loaded directly using `--project` and inventory-only rules
-pointing at checked-in policy/baseline. No build/check override or baseline generation involved.
-Saved inventory script, statuses, per-project SARIF/logs all live in coordinator directory:
-`guardrails-test-waits-inventory.py`, `guardrails-test-waits-inventory-status.json`,
-`guardrails-test-waits-<Project>.sarif`, `guardrails-test-waits-<Project>.inventory.log`.
-Axial.Tests was run separately first, so is absent from the script's status JSON.
+Copied rebuilt analyzer DLL into generated test output; ran the existing Guardrails assembly with `dotnet vstest`:
+**129 passed, 0 failed** (3m). This assembly excludes new tests; those are covered separately by FSI.
+Log `guardrails-test-waits-narrow-suite-direct.log`. Docs conventions passed (`guardrails-test-waits-narrow-docs.log`).
+No full verify or new `artifacts/verify/result.json`; approvals still block whole-slice verification.
 
-### Classification questions — do not blindly approve all findings
+## Inventory: 43 → 25 sites
 
-Current rule reports direct waits syntactically, not only proven readiness guesses:
-- 12 findings are infinite token-cancelled suspension.
-- `ProcessStreamingTests.fs:93` is a fact-poll with deadline, permitted by the brief but reported because its body
-  contains Thread.Sleep. Existing analyzer does not infer surrounding polling semantics. This discrepancy needs
-  coordinator/human direction before blanket baselining.
-- `TestSupport.fs:223` belongs to the manual-time driver.
-- `HttpServiceTests.fs:347` simulates slow server work; `WorkflowSchedulingTests.fs:40` generates pool load;
-  `ProcessServiceTests.fs:1564` schedules cancellation at a timeout deadline.
-- Clear guess: `ProcessServiceTests.fs:1533,1535`, two 500ms sleeps before comparing progress.
+Re-ran the exact prior direct analyzer method: per-project cwd, Release analyzer, `--include-analyzers WaitForFacts`,
+existing generated `.fscargs`/`.rules`; projects without args use direct `--project` with inventory-only rules
+pointing to checked-in policy/baseline. All 15 test projects inventoried. No build/check override or baseline generation.
 
-These were recorded, not rewritten or suppressed. Flow.sleep/Clock.sleep remain intentionally out of scope:
-syntax cannot identify the supplied clock. Race arms, fact Wait/WaitAsync deadlines, and SpinUntil remain allowed.
+25 diagnostics / 25 unique sites in 8 files (was 43 in 13); no new sites. Drops:
+- 12 infinite cancellation waits.
+- 6 while-loop polls: ProcessServiceTests:31, ProcessStreamingTests:93, FiberMetricsTests:65,
+  FiberObserverTests:45, TestSupport:223, WorkflowConcurrencyTests:453.
 
-## Earlier phase context worth retaining
+Project totals: Axial.Tests 21 → 8; Integration 19 → 15; Telemetry 1 → 0; Fable 1 → 1; HttpClient 1 → 1;
+all ten other projects remain zero. Fable's finding is linked `examples/Axial.TortureTest/Interop.fs:35`.
+Full per-file old → new table, remaining lines and every dropped site/reason are in the external report.
+Intentional slow-server/load/deadline sites remain as directed, as do the two 500ms progress guesses at
+ProcessServiceTests:1533,1535.
 
-Merged origin/main `c394a4807` in `a18c754f9`; fixture fixes `64799d315` made 128 existing Guardrails tests pass.
-Previous coordinator-prescribed fail-first script against origin/main produced a compile red because main lacks
-the AXG013 API, not behavioral red (`artifacts/verify/fail-first.txt`). This phase's new wiring test has a genuine
-behavioral red and green in persistent logs. Policy role serialization, materialized fixture sources, corrected
-indentation and assertions of successful typechecking prevent false-green analyzer fixtures.
+Persistent artifacts under coordinator directory:
+`guardrails-test-waits-<Project>.before-narrow.sarif` preserves old inventory;
+`guardrails-test-waits-<Project>.sarif` / `.inventory.log` now contain narrowed inventory.
+`guardrails-test-waits-narrow-inventory.py` repeats old script with Axial.Tests included in the loop (previously
+run separately). `guardrails-test-waits-inventory-status.json` covers all 15 projects: exit 254 with findings,
+0 otherwise; no non-AXG013 errors found.
 
-Implementation uses symbol identities, test-role policy gating, shared baseline/suppression machinery and AXG002
-registration. No alias/data-flow analysis is claimed. Docs/catalog/policy lists and release notes were added in
-prior phases; executable docs still await full verification.
+## Earlier context / exact next step
 
-## Exact next phase
+Previous wiring fix sets default test analyzer filter to `--include-analyzers Fixture WaitForFacts`, preserving
+exclusion of ambient-effect rules; `all` is unchanged. Consumer regression `c38d2dd23` proved behavioral red/green.
+That protected target needs human approval; the initial main merge was `a18c754f9` from `c394a4807`.
 
-1. Coordinator/human reviews report and classification discrepancies. Any semantic narrowing is a separate,
-   test-first change; do not silently rewrite existing tests or blanket-baseline permitted polling.
-2. Batch human approval of the protected target change with AXG013 baseline adoption as directed.
+1. Coordinator/human reviews narrowed 25-site inventory and authorizes next phase.
+2. Batch protected-target approval and AXG013 baseline adoption only as directed.
    **Do not run `axial policy baseline --rule AXG013` or repository `policy approve` without authorization.**
-3. Once approvals/classification are settled, run normal build/test and all stages via `axial-verify`, including
-   livedocs; capture clean-HEAD `artifacts/verify/result.json`, refresh required final fail-first artifact,
-   then coordinator done-check. Do not claim whole-slice completion before those pass.
+3. Once authorized/settled, run normal build/test and all `axial-verify` stages including livedocs, refresh final
+   fail-first artifact and clean-HEAD `artifacts/verify/result.json`, then coordinator done-check.
 
-This handover records phase completion only. No push; stop for fresh coordinator context.
+No push. This is phase completion only; stop for fresh coordinator context.
