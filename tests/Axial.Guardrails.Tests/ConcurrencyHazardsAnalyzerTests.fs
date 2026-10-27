@@ -163,12 +163,12 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("AXG010", "let value () = try failwith \"bad\" with _ -> ()")>]
     [<InlineData("AXG011", "let value = CancellationToken.None")>]
     [<InlineData("AXG012", "let value () = Task.FromResult 1 |> ignore")>]
-    let ``a reason suppresses exactly the adjacent site`` code (site: string) =
+    let ``legacy allowances no longer hide tiered findings`` code (site: string) =
         task {
             let other = site.Replace("value", "other")
             let source = $"// axial-allow-{code}: deliberate test witness of an OS bridge\n{site}\n{other}"
             let! messages = findings code source
-            Assert.Single(messages) |> ignore
+            Assert.Equal(2, messages.Length)
         }
 
     [<Theory>]
@@ -183,12 +183,34 @@ module ConcurrencyHazardsAnalyzerTests =
             Assert.Contains("reason", message.Message, StringComparison.OrdinalIgnoreCase)
         }
 
+    [<Theory>]
+    [<InlineData("AXG009", "Error")>]
+    [<InlineData("AXG010", "Info")>]
+    [<InlineData("AXG011", "Warning")>]
+    [<InlineData("AXG012", "Error")>]
+    [<InlineData("AXG013", "Error")>]
+    let ``baselines cannot change tiered severity`` code expected =
+        task {
+            let! ctx = AnalyzerTestContext.createWithAxial true "module M\nlet value = 1"
+            let severity = if expected = "Info" then Severity.Info elif expected = "Warning" then Severity.Warning else Severity.Error
+            let message: Message =
+                { Type = "witness"; Code = code; Message = "witness"; Severity = severity
+                  Range = ctx.ParseFileResults.ParseTree.Range; Fixes = [] }
+            let entry: GuardrailConfig.BaselineEntry =
+                { RuleId = code; File = System.IO.Path.GetFileName ctx.FileName
+                  Fingerprint = GuardrailConfig.fingerprint ctx.SourceText message; Count = 1 }
+            let config =
+                { GuardrailConfig.defaults with BaselineRoot = System.IO.Path.GetDirectoryName ctx.FileName; Baseline = [ entry ] }
+            let actual = GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx [ message ] |> Assert.Single
+            Assert.Equal(severity, actual.Severity)
+        }
+
 [<CollectionDefinition("Concurrency policy environment", DisableParallelization = true)>]
 type ConcurrencyPolicyEnvironmentCollection() = class end
 
 [<Collection("Concurrency policy environment")>]
 type ConcurrencyHazardsPolicyTests() =
-    let runWith (role: string) runtime boundary project source code =
+    let runWithSettings settings (role: string) runtime boundary project source code =
         task {
             let! ctx = AnalyzerTestContext.createWithAxial true source
             let root = System.IO.Path.GetDirectoryName ctx.FileName
@@ -206,7 +228,8 @@ type ConcurrencyHazardsPolicyTests() =
                 [| "guardrail\tAxial"
                    "setting\tpolicyRoot\t" + root
                    "setting\tpolicyFile\t" + policyPath
-                   "setting\tprojectPath\t" + projectPath |])
+                   "setting\tprojectPath\t" + projectPath
+                   yield! settings |])
             let previous = Environment.GetEnvironmentVariable GuardrailConfig.EnvironmentVariable
             try
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, configPath)
@@ -215,6 +238,8 @@ type ConcurrencyHazardsPolicyTests() =
                 Environment.SetEnvironmentVariable(GuardrailConfig.EnvironmentVariable, previous)
                 System.IO.Directory.Delete(root, true)
         }
+
+    let runWith role runtime boundary project source code = runWithSettings [] role runtime boundary project source code
 
     let source = "module M\nopen System.Threading\nopen System.Threading.Tasks\nlet source = TaskCompletionSource<int>()\nlet token = CancellationToken.None\nlet swallowed () = try failwith \"bad\" with _ -> ()\nlet discarded () = Task.FromResult 1 |> ignore\n"
     let run role runtime boundary code = runWith role runtime boundary "Fixture.fsproj" source code
@@ -296,6 +321,73 @@ type ConcurrencyHazardsPolicyTests() =
                     Assert.Equal(Severity.Warning, message.Severity)
                     let! runtime = runWith role true false project input "AXG009"
                     Assert.Empty runtime
+        }
+
+    [<Theory>]
+    [<InlineData(false, "", "Warning")>]
+    [<InlineData(true, "", "Error")>]
+    [<InlineData(false, "// axial-note AXG010: foreign observer is best effort\n", "Info")>]
+    [<InlineData(true, "// axial-note AXG010: foreign observer is best effort\n", "Info")>]
+    member _.``guide findings remain visible and checkpoints reject only unacknowledged sites`` checkpoint note expected =
+        task {
+            let input = "module M\n" + note + "let f () = try failwith \"bad\" with _ -> ()"
+            let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint.ToString().ToLowerInvariant()}" ] "services" false false "Fixture.fsproj" input "AXG010"
+            let message = Assert.Single messages
+            Assert.Equal(expected, string message.Severity)
+            Assert.Contains("Consider", message.Message)
+            if note <> "" then Assert.Contains("foreign observer is best effort", message.Message)
+        }
+
+    [<Theory>]
+    [<InlineData("AXG009", "let x = System.Threading.Tasks.TaskCompletionSource<int>()", "Error")>]
+    [<InlineData("AXG012", "let f () = System.Threading.Tasks.Task.FromResult 1 |> ignore", "Error")>]
+    [<InlineData("AXG011", "let x = System.Threading.CancellationToken.None", "Warning")>]
+    [<InlineData("AXG009", "let x = lock (obj()) (fun () -> 1)", "Warning")>]
+    member _.``block and deferred block findings cannot be noted or checkpoint promoted`` code body expected =
+        task {
+            for checkpoint in [ "false"; "true" ] do
+                let input = $"module M\n// axial-note {code}: intentional witness\n{body}"
+                let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false false "Fixture.fsproj" input code
+                Assert.Equal(expected, string (Assert.Single messages).Severity)
+                let! invalid = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false false "Fixture.fsproj" input "AXG002"
+                Assert.Equal((if checkpoint = "true" then Severity.Error else Severity.Warning), (Assert.Single invalid).Severity)
+        }
+
+    [<Theory>]
+    [<InlineData("// axial-note AXG010:")>]
+    [<InlineData("// axial-note AXG999: unknown")>]
+    [<InlineData("// axial-note AXG001: not a guide")>]
+    [<InlineData("// axial-note: malformed")>]
+    [<InlineData("// axial-note AXG010: stale\nlet unrelated = 1")>]
+    member _.``invalid notes warn and fail checkpoints`` note =
+        task {
+            for checkpoint in [ "false"; "true" ] do
+                let input = $"module M\n{note}\nlet value = 1"
+                let! messages = runWithSettings [ $"setting\tcheckpoint\t{checkpoint}" ] "services" false false "Fixture.fsproj" input "AXG002"
+                Assert.Equal((if checkpoint = "true" then Severity.Error else Severity.Warning), (Assert.Single messages).Severity)
+        }
+
+    [<Fact>]
+    member _.``notes must cover live scoped findings`` () =
+        task {
+            let input = "module M\n// axial-note AXG010: irrelevant in test role\nlet f () = try failwith \"bad\" with _ -> ()"
+            let! invalid = runWith "test" false false "Fixture.fsproj" input "AXG002"
+            Assert.Equal(Severity.Warning, (Assert.Single invalid).Severity)
+            let! valid = runWith "services" false false "Fixture.fsproj" input "AXG002"
+            Assert.Empty valid
+        }
+
+    [<Theory>]
+    [<InlineData("let text = \"// axial-note AXG010: not a comment\"")>]
+    [<InlineData("(* // axial-note AXG010: block comment *)")>]
+    [<InlineData("/// axial-note AXG010: documentation")>]
+    member _.``quoted notes never acknowledge findings or produce invalid note diagnostics`` prefix =
+        task {
+            let input = "module M\n" + prefix + "\nlet f () = try failwith \"bad\" with _ -> ()"
+            let! findings = runWith "services" false false "Fixture.fsproj" input "AXG010"
+            Assert.Equal(Severity.Warning, (Assert.Single findings).Severity)
+            let! invalid = runWith "services" false false "Fixture.fsproj" input "AXG002"
+            Assert.Empty invalid
         }
 
     [<Fact>]

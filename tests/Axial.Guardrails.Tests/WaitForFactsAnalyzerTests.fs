@@ -7,7 +7,7 @@ open Xunit
 
 module WaitForFactsAnalyzerTests =
     // Explicit roles avoid inferring policy from a filename or an xUnit attribute.
-    let private findings role (body: string) : System.Threading.Tasks.Task<Message list> =
+    let private findingsWith settings level role (body: string) : System.Threading.Tasks.Task<Message list> =
         task {
             let! ctx = AnalyzerTestContext.createWithAxial true (
                 (if body.StartsWith("namespace ") then body
@@ -25,7 +25,7 @@ module WaitForFactsAnalyzerTests =
                 | Policy.Capabilities -> "capabilities"
                 | Policy.Services -> "services"
                 | Policy.Host -> "host"
-            System.IO.File.WriteAllText(policyFile, $"version = 2\n[default]\nrole = \"{roleName}\"\n[boundaries]\nfiles = [\"{System.IO.Path.GetFileName ctx.FileName}\"]\n")
+            System.IO.File.WriteAllText(policyFile, $"version = 2\n[default]\nrole = \"{roleName}\"\n[boundaries]\nfiles = [\"{System.IO.Path.GetFileName ctx.FileName}\"]\n[roles.test.rules]\n\"test.wait-for-facts\" = \"{level}\"\n")
             try
                 // Axial.Tool also compiles Policy.fs; parsing avoids mixing assembly-local types.
                 let project = System.IO.Path.ChangeExtension(ctx.FileName, ".fsproj")
@@ -33,11 +33,14 @@ module WaitForFactsAnalyzerTests =
                     "guardrail\tAxial"
                     $"setting\tpolicyRoot\t{root}"
                     $"setting\tpolicyFile\t{policyFile}"
-                    $"setting\tprojectPath\t{project}" ]
+                    $"setting\tprojectPath\t{project}"
+                    yield! settings ]
                 return WaitForFactsAnalyzer.analyzeWithConfig config ctx
             finally
                 System.IO.Directory.Delete(root, true)
         }
+
+    let private findings role body = findingsWith [] "deny" role body
 
     [<Theory>]
     [<InlineData("let check () =\n    Thread.Sleep 10\n    ignore 42")>]
@@ -50,7 +53,7 @@ module WaitForFactsAnalyzerTests =
         task {
             let! reported = findings Policy.Test body
             test <@ reported |> List.map _.Code = [ "AXG013" ] @>
-            test <@ reported |> List.forall (fun message -> message.Severity = Severity.Error) @>
+            Assert.Equal((if body.Contains("Thread.Sleep") then Severity.Error else Severity.Warning), reported.Head.Severity)
             for role in [ Policy.Domain; Policy.Capabilities; Policy.Services; Policy.Host ] do
                 let! allowed = findings role body
                 test <@ allowed = [] @>
@@ -189,20 +192,38 @@ module WaitForFactsAnalyzerTests =
     [<Theory>]
     [<InlineData("Thread.Sleep 10")>]
     [<InlineData("System.Threading.Thread.Sleep 10")>]
-    let ``reasoned site suppression permits an intentional wait`` expression =
+    let ``legacy suppression cannot hide a blocking wait`` expression =
         task {
             let! found = findings Policy.Test (
                 "let check () =\n    " + expression + " // axial-allow-AXG013: exercises the foreign blocking boundary\n    ignore 42")
-            test <@ found = [] @>
+            Assert.Equal(Severity.Error, (Assert.Single found).Severity)
         }
 
     [<Fact>]
-    let ``suppression applies only to its site`` () =
+    let ``legacy suppression cannot hide either site`` () =
         task {
             let! found = findings Policy.Test (
                 "let check () =\n    Thread.Sleep 10 // axial-allow-AXG013: exercises the foreign blocking boundary\n\n    Thread.Sleep 20\n    ignore 42")
-            test <@ found |> List.map _.Code = [ "AXG013" ] @>
-            test <@ found.Head.Range.StartLine = 9 @>
+            Assert.Equal(2, found.Length)
+        }
+
+    [<Theory>]
+    [<InlineData("allow")>]
+    [<InlineData("warn")>]
+    [<InlineData("deny")>]
+    let ``tiered waits ignore the legacy policy level and preserve noted info at checkpoints`` level =
+        task {
+            for checkpoint in [ "false"; "true" ] do
+                let settings = [ $"setting\tcheckpoint\t{checkpoint}" ]
+                let! blocked = findingsWith settings level Policy.Test "let f () = Thread.Sleep 10 // axial-note AXG013: a simulation"
+                Assert.Equal(Severity.Error, (Assert.Single blocked).Severity)
+                let! guide = findingsWith settings level Policy.Test "let f () = task { do! Task.Delay 10 }"
+                Assert.Equal((if checkpoint = "true" then Severity.Error else Severity.Warning), (Assert.Single guide).Severity)
+                let! noted = findingsWith settings level Policy.Test "let f () = task { do! Task.Delay 10 } // axial-note AXG013: a simulation"
+                let message = Assert.Single noted
+                Assert.Equal(Severity.Info, message.Severity)
+                Assert.Contains("a simulation", message.Message)
+                Assert.Contains("Consider", message.Message)
         }
 
     [<Fact>]
