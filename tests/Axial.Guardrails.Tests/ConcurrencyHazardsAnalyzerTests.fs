@@ -104,6 +104,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () =\n    let mutable recorded = None\n    try failwith \"bad\" with ex -> recorded <- Some ex")>]
     [<InlineData("let f () =\n    let recorded = ref None\n    try failwith \"bad\" with ex -> recorded.Value <- Some ex")>]
     [<InlineData("let f () = try failwith \"bad\" with ex when ex :? OperationCanceledException -> Error () | ex -> Error ()")>]
+    [<InlineData("let isOwned (error: exn) = error :? OperationCanceledException\nlet f () = try failwith \"bad\" with ex when isOwned ex -> Error () | ex -> Error ()")>]
     [<InlineData("let f () = try failwith \"bad\" with ex -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex).Throw()")>]
     [<InlineData("type Failure = { Message: string }\nlet f () = try failwith \"bad\" with ex -> Error { Message = ex.Message }")>]
     let ``AXG010 accepts exception recording assignments and guarded classification`` body =
@@ -123,6 +124,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<InlineData("let f () = task { let! completed = Task.WhenAny(Task.CompletedTask, Task.CompletedTask) in return () }")>]
     [<InlineData("let f () = task { let! _ = Task.WhenAny(Task.CompletedTask, Task.CompletedTask) in return () }")>]
     [<InlineData("let f (pending: Task<Task>) = task { let! _ = pending in return () }")>]
+    [<InlineData("let f (pending: Task<Task>) = task {\n    let! _ = Task.WhenAny(pending :> Task, Task.CompletedTask)\n    let! _ = pending\n    return ()\n}")>]
     let ``AXG012 leaves cold descriptions and awaited work alone`` body =
         task {
             let! messages = findings "AXG012" body
