@@ -96,7 +96,7 @@ module ConcurrencyHazardsAnalyzerTests =
         task {
             let! messages = findings "AXG011" "let token = CancellationToken.None"
             let message = Assert.Single messages
-            Assert.Equal(Severity.Warning, message.Severity)
+            Assert.Equal(Severity.Error, message.Severity)
         }
 
     [<Theory>]
