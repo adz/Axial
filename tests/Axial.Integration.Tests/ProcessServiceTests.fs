@@ -25,11 +25,8 @@ type ProcessTestEnv =
 module ProcessServiceTests =
     let private env () = { Process = Process.live Clock.live FileSystem.live Console.live; Clock = Clock.live }
 
-    let private waitUntil timeout predicate =
-        let deadline = DateTime.UtcNow + timeout
-        while not (predicate ()) && DateTime.UtcNow < deadline do
-            Thread.Sleep 20
-        predicate ()
+    let private waitUntil (timeout: TimeSpan) predicate =
+        SpinWait.SpinUntil((fun () -> predicate ()), timeout)
 
     let private processHasExited pid =
         try
@@ -125,6 +122,7 @@ module ProcessServiceTests =
         let source =
             Flow.fromAsync (async {
                 entered.TrySetResult() |> ignore
+                // axial-note AXG013: hold the feeder until interruption so the test observes the finalizer defect, not normal input completion.
                 do! Async.Sleep 30000
                 return [||]
             })
@@ -160,6 +158,7 @@ module ProcessServiceTests =
         let source =
             Flow.fromAsync (async {
                 entered.TrySetResult() |> ignore
+                // axial-note AXG013: keep input suspended until shutdown invokes the gated slow finalizer.
                 do! Async.Sleep 30000
                 return [||]
             })
@@ -337,6 +336,7 @@ module ProcessServiceTests =
             FlowStream.fromFlow (Flow.succeed (Encoding.UTF8.GetBytes "first"))
             |> FlowStream.append (FlowStream.repeatFlow (
                 Flow.fromAsync (async {
+                    // axial-note AXG013: model a suspended next input chunk so CloseStdIn must interrupt the feeder rather than wait for input.
                     do! Async.Sleep 30000
                     return Encoding.UTF8.GetBytes "again"
                 })
@@ -391,6 +391,7 @@ module ProcessServiceTests =
                 let! () = Flow.scopeFinalizer (Flow.fromAsync (async { finalized.TrySetResult(()) |> ignore }))
                 let! () = Flow.fromAsync (async {
                     entered.TrySetResult(0) |> ignore
+                    // axial-note AXG013: hold the feeder after its entry fact so shutdown, not elapsed time, must run the finalizer.
                     do! Async.Sleep 30000
                 })
                 return Encoding.UTF8.GetBytes "late"
@@ -848,6 +849,7 @@ module ProcessServiceTests =
         let stopped = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let callback (bytes: byte array) = async {
             entered.TrySetResult(Encoding.UTF8.GetString(bytes) |> Int32.Parse) |> ignore
+            // axial-note AXG013: this callback stays suspended until cancellation; stopped proves its finalizer ran.
             try do! Async.Sleep 30000
             finally stopped.TrySetResult(()) |> ignore
         }
@@ -1026,6 +1028,7 @@ module ProcessServiceTests =
         let host = { Process = Process.live clock FileSystem.live Console.live; Clock = clock }
         let finish () = async {
             finishing.TrySetResult(()) |> ignore
+            // axial-note AXG013: keep finish active after its entry fact so cancellation must execute its finalizer.
             try do! Async.Sleep 30000
             finally stopped.TrySetResult(()) |> ignore
         }
@@ -1101,6 +1104,7 @@ module ProcessServiceTests =
             shText "exec sleep 30"
             |> onStarted (fun _ -> Flow.fromAsync (async {
                 entered.TrySetResult() |> ignore
+                // axial-note AXG013: keep onStarted active so cancellation must interrupt it; entered gates the test.
                 do! Async.Sleep 30000
             }))
             |> toFlow
@@ -1117,6 +1121,7 @@ module ProcessServiceTests =
         let running =
             cmd $"cat"
             |> stdinFrom (Input.flowStream (FlowStream.repeatFlow (Flow.fromAsync (async {
+                // axial-note AXG013: stdin remains suspended while the process receives its close signal; no readiness assertion depends on this duration.
                 do! Async.Sleep 30000
                 return [||]
             }))))
@@ -1246,6 +1251,7 @@ module ProcessServiceTests =
             use cancellation = new CancellationTokenSource()
             let ready = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
             let source = FlowStream.repeatFlow (Flow.fromAsync (async {
+                // axial-note AXG013: keep stdin open during the EOF-to-TERM escalation; the stdout ready gate orders the test.
                 do! Async.Sleep 30000
                 return [||]
             }))
@@ -1530,8 +1536,10 @@ module ProcessServiceTests =
             let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
             do! ready.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
             do! feeding.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
+            // axial-note AXG013: allow the OS pipe buffer to fill before sampling backpressure; feeding already proves startup.
             do! Task.Delay(TimeSpan.FromMilliseconds 500.0)
             let blockedAt = Volatile.Read(&chunksRequested)
+            // axial-note AXG013: measure absence of further source pulls over a bounded observation window, not startup readiness.
             do! Task.Delay(TimeSpan.FromMilliseconds 500.0)
             let stillBlockedAt = Volatile.Read(&chunksRequested)
             test <@ blockedAt > 0 && stillBlockedAt = blockedAt @>
@@ -1561,6 +1569,7 @@ module ProcessServiceTests =
                 // Both causes use the process start timestamp as their reference point.
                 let remaining = max TimeSpan.Zero (raceAfter - (DateTimeOffset.UtcNow - handle.StartedAt))
                 let cancelAtDeadline = task {
+                    // axial-note AXG013: schedule external cancellation at the same absolute deadline as the process timeout to exercise the race.
                     do! Task.Delay remaining
                     cancellation.Cancel()
                 }

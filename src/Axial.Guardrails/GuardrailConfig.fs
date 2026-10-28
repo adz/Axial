@@ -5,7 +5,7 @@
 ///   guardrail  <name>
 ///   boundary   <absolute file path>
 ///   baseline   <rule id>  <repository-relative file>  <fingerprint>[ x<count>]
-///   setting    baselineRoot|baselineOutput|nativeAot  <value>
+///   setting    baselineRoot|baselineOutput|nativeAot|checkpoint  <value>
 ///   rule       <id>  <guardrail>  <category>  <match>  <scope>  <message>  <replacement>
 module Axial.Guardrails.GuardrailConfig
 
@@ -28,9 +28,10 @@ type BaselineEntry =
       Count: int }
 
 type Config =
-    { /// Enabled guardrails. Findings are errors unless present in Baseline.
+    { /// Enabled guardrails. AXG001–008 use Baseline; tiered findings keep their analyzer severity.
       EnabledGuardrails: Set<string>
       NativeAot: bool
+      Checkpoint: bool
       AllRules: EffectRule list
       BoundaryFiles: Set<string>
       BaselineRoot: string
@@ -52,6 +53,7 @@ let private parseScope (text: string) =
 let defaults: Config =
     { EnabledGuardrails = builtInGuardrails
       NativeAot = false
+      Checkpoint = false
       AllRules = builtInRules
       // Direct analyzer hosts (not the MSBuild package) have no project item graph; preserve rule-unit-test support.
       BoundaryFiles = Set.singleton "*"
@@ -138,7 +140,7 @@ let parse (lines: string seq) : Config =
     let policy =
         match policyRoot, setting "policyFile" with
         | Some root, Some path when File.Exists path ->
-            let known = set [ "effects.ambient"; "domain.async-return"; "domain.whole-environment"; "domain.service-provider"; "test.integrity" ]
+            let known = set [ "effects.ambient"; "domain.async-return"; "domain.whole-environment"; "domain.service-provider"; "test.integrity"; "test.wait-for-facts" ]
             match Policy.parse root known (File.ReadAllText path) with
             | Ok parsed -> Some parsed
             | Error errors -> invalidArg "lines" (String.concat Environment.NewLine errors)
@@ -146,6 +148,7 @@ let parse (lines: string seq) : Config =
 
     { EnabledGuardrails = enabled
       NativeAot = nativeAot
+      Checkpoint = setting "checkpoint" |> Option.exists (fun value -> String.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
       AllRules = builtInRules @ contributed
       BoundaryFiles =
         match policy, policyRoot with
@@ -234,8 +237,8 @@ let private appendGenerated (output: string) (entry: BaselineEntry) =
                 else line)
         File.WriteAllLines(output, if found then updated else updated @ [ prefix ]))
 
-/// Applies the configured error severity, downgrading only checked-in baseline entries. In generation mode every
-/// finding is also written to the per-project candidate baseline and downgraded so the build can complete.
+/// Applies the enabled guardrail and legacy baseline policy. Tiered findings and note validation retain their
+/// resolved severity and never generate baseline entries.
 let resolvedPolicy (config: Config) (ctx: CliContext) =
     match config.Policy, config.PolicyRoot, config.ProjectPath with
     | Some policy, Some root, Some project ->
@@ -272,7 +275,8 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
 
         findings
         |> List.map (fun (message, entry) ->
-            config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)
+            let tiered = Set.contains message.Code (set [ "AXG009"; "AXG010"; "AXG011"; "AXG012"; "AXG013" ]) || message.Type = "Axial Note Integrity"
+            if not tiered then config.BaselineOutput |> Option.iter (fun output -> appendGenerated output entry)
             let key = entry.RuleId, entry.File, entry.Fingerprint
             let baselineCount = remaining.TryGetValue key |> function | true, count -> count | _ -> 0
             let baselined = baselineCount > 0
@@ -285,8 +289,9 @@ let applyWith (config: Config) (guardrail: string) (ctx: CliContext) (messages: 
                 | _ -> message.Message
             let ambient = message.Code = "AXG001"
             let severity =
-                if baselined || (ambient && level = Policy.Warn) then Severity.Warning else Severity.Error
-            { message with Message = text; Severity = severity })
+                if tiered then message.Severity
+                elif baselined || (ambient && level = Policy.Warn) then Severity.Warning else Severity.Error
+            { message with Message = (if tiered then message.Message else text); Severity = severity })
         |> List.filter (fun message -> message.Code <> "AXG001" || level <> Policy.Allow)
 
 let apply (guardrail: string) (ctx: CliContext) (messages: Message list) = applyWith (load ()) guardrail ctx messages

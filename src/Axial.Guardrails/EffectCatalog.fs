@@ -162,6 +162,20 @@ let builtInRules: EffectRule list =
             "blocks the calling thread waiting for a task"
             "await the task asynchronously" with Scope = OutsideFlow }
 
+      // Dedicated analyzers implement AXG009–AXG012; catalog entries register their categories.
+      rule "concurrency.raw" CoreGuardrail "concurrency" (MembersOf("Axial.__RawConcurrency", []))
+          "uses raw concurrency" "Flow concurrency or a reasoned OS bridge"
+      rule "exception.swallowed" CoreGuardrail "exception" (MembersOf("Axial.__SwallowedException", []))
+          "discards an exception" "propagate, record, or report the exception"
+      rule "cancellation.none" CoreGuardrail "cancellation" (MembersOf("Axial.__UncancellableWork", []))
+          "disables cancellation" "the owning cancellation token"
+      rule "concurrency.discarded" CoreGuardrail "concurrency" (MembersOf("Axial.__DiscardedWork", []))
+          "discards concurrent work" "await or retain ownership"
+      // AXG013 is structural; no ambient-effect symbol match is registered here.
+      rule "test.wait-for-facts" CoreGuardrail "test-wait" (MembersOf("Axial.__WaitForFacts", []))
+          "Wait for a fact, not elapsed time."
+          "Complete a Deferred or TaskCompletionSource and wait with a deadline, or step the test clock."
+
       // AXG008 is syntactic; this entry registers its suppression category.
       rule "scope.run" CoreGuardrail "scope" (MembersOf("Axial.__ScopeFromRun", []))
           "returns a scope-owned service" "use the service within its run"

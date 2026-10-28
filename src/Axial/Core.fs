@@ -431,9 +431,11 @@ module FiberObserver =
         }
 
     let internal notifyStart (observer: FiberObserver) (metadata: FiberMetadata) : unit =
+        // axial-note AXG010: an observer's OnStart failure must not prevent the observed fiber from starting.
         try observer.OnStart metadata with _ -> ()
 
     let internal notifyEnd (observer: FiberObserver) (metadata: FiberMetadata) (defect: exn option) : unit =
+        // axial-note AXG010: OnEnd is diagnostic; its failure must not replace the fiber's already settled exit.
         try observer.OnEnd metadata defect with _ -> ()
 
     let internal notifyUnobservedDefect
@@ -441,6 +443,7 @@ module FiberObserver =
         (metadata: FiberMetadata option)
         (defect: exn)
         : unit =
+        // axial-note AXG010: the unobserved-defect sink is the last reporting destination; recursively reporting its failure would call the same sink.
         try observer.OnUnobservedDefect metadata defect with _ -> ()
 
 /// <summary>A forked fiber that has settled, as recorded by a <see cref="T:Axial.FiberRegistry" />.</summary>
@@ -702,6 +705,7 @@ type internal FiberDefectTracker(metadata: FiberMetadata, observer: FiberObserve
         sentinels.Add(fiberHandle, tracker)
 
     override this.Finalize() =
+        // axial-note AXG010: GC finalization must not terminate the process if the last-chance defect reporter fails.
         try this.TryReport() with _ -> ()
 #endif
 

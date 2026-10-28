@@ -31,6 +31,8 @@ while IFS= read -r project; do
   { grep -o '<Compile Include="[^"]*\.fs"' "$project" || true; } \
     | sed 's/^<Compile Include="//; s/"$//' \
     | while IFS= read -r include_path; do
+        # MSBuild accepts either separator, including linked files on Unix.
+        include_path="${include_path//\\//}"
         if [[ "$include_path" == ..* ]]; then
           realpath --relative-to="$root_dir" "$project_dir/$include_path"
         else

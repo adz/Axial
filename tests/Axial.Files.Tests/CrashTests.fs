@@ -38,7 +38,7 @@ type CrashTests() =
                 let wrote = child.StandardOutput.ReadLineAsync()
                 Assert.True(wrote.Wait(10000), "Probe never completed a write")
                 Assert.Equal("wrote", wrote.Result)
-                Thread.Sleep(Random.Shared.Next(50, 301))
+                Axial.Tests.TestSupport.occupyThread (TimeSpan.FromMilliseconds(float (Random.Shared.Next(50, 301))))
                 if not child.HasExited then child.Kill(entireProcessTree = true)
                 Assert.True(child.WaitForExit(5000), "Probe failed to exit after kill")
             finally

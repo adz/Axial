@@ -37,7 +37,7 @@ module WorkflowSchedulingTests =
             ThreadPool.QueueUserWorkItem(fun _ ->
                 if Diagnostics.Stopwatch.GetTimestamp() < stopAt then
                     keepPoolBusy ()
-                    Thread.Sleep 2
+                    TestSupport.occupyThread (TimeSpan.FromMilliseconds 2.)
                 else
                     drained.Signal() |> ignore)
             |> ignore
@@ -351,6 +351,7 @@ module WorkflowSchedulingTests =
                     Flow.scopeFinalizer (
                         Flow.fromAsync (
                             async {
+                                // axial-note AXG013: suspend inside cleanup to prove scope shutdown awaits asynchronous finalizers.
                                 do! Async.Sleep 10
                                 cleanedUp.Value <- true
                             }

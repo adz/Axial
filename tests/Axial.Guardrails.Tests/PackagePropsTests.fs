@@ -136,6 +136,60 @@ module PackagePropsTests =
             Directory.Delete(dir, true)
 
     [<Fact>]
+    let ``guide checkpoint switches invalidate cached analysis and retain noted Info`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guide-checkpoint-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            // No policy file: this fixture tests the package's checkpoint, not policy approval.
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework>" "module Consumer\nlet f () = try failwith \"bad\" with _ -> ()\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let normal = runBuild project None
+            Assert.True(normal.ExitCode = 0, normal.Output)
+            Assert.Contains("warning AXG010", normal.Output)
+            let checkpoint = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            Assert.NotEqual(0, checkpoint.ExitCode)
+            Assert.Contains("error AXG010", checkpoint.Output)
+            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\nlet f () = try failwith \"bad\" with _ -> () // axial-note AXG010: best effort observer\n")
+            let noted = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            Assert.True(noted.ExitCode = 0, noted.Output)
+            Assert.Contains("info axg010", noted.Output.ToLowerInvariant())
+            Assert.Contains("best effort observer", noted.Output)
+            Assert.DoesNotContain("AXG002", noted.Output)
+            let repeated = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            Assert.True(repeated.ExitCode = 0, repeated.Output)
+            Assert.Contains("info axg010", repeated.Output.ToLowerInvariant())
+            Assert.Contains("best effort observer", repeated.Output)
+            File.WriteAllText(Path.Combine(dir, "Program.fs"), "module Consumer\n// axial-note AXG010: stale\nlet value = 1\n")
+            let invalid = runBuild project None
+            Assert.True(invalid.ExitCode = 0, invalid.Output)
+            Assert.Contains("warning AXG002", invalid.Output)
+            let invalidCheckpoint = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            Assert.NotEqual(0, invalidCheckpoint.ExitCode)
+            Assert.Contains("error AXG002", invalidCheckpoint.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
+    let ``test project defaults run synchronization and note integrity without promoting deferred blocks`` () =
+        let dir = Path.Combine(Path.GetTempPath(), "axial-guide-test-defaults-" + Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory dir |> ignore
+        try
+            writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject>" "module Consumer\nlet x = lock (obj()) (fun () -> 1)\n"
+            let project = Path.Combine(dir, "Consumer.fsproj")
+            let checkpoint = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            Assert.True(checkpoint.ExitCode = 0, checkpoint.Output)
+            Assert.Contains("warning AXG009", checkpoint.Output)
+            File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-note AXG010: stale\n")
+            let invalid = runBuild project None
+            Assert.True(invalid.ExitCode = 0, invalid.Output)
+            Assert.Contains("warning AXG002", invalid.Output)
+            let rejected = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
+            Assert.NotEqual(0, rejected.ExitCode)
+            Assert.Contains("error AXG002", rejected.Output)
+        finally
+            Directory.Delete(dir, true)
+
+    [<Fact>]
     let ``package build imports expose only v2 policy controls`` () =
         let buildDir = Path.Combine(repoRoot (), "src", "Axial.Guardrails", "build")
         let imports =
@@ -171,6 +225,31 @@ module PackagePropsTests =
         Assert.NotEqual(0, drift.ExitCode)
         Assert.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED", drift.Output)
         Assert.Contains("protected files changed:", drift.Output)
+
+    [<Fact>]
+    let ``default test builds report guessed waits without enabling ambient effect rules`` () =
+        let build source =
+            buildConsumerInTemp (fun dir ->
+                writeConsumerProject dir "<TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject>" source
+                writeV2Policy dir "test" "deny")
+
+        let ambient = build "module Consumer\nlet now () = System.DateTimeOffset.UtcNow\n"
+        Assert.True(ambient.ExitCode = 0, ambient.Output)
+        Assert.DoesNotContain("AXG001", ambient.Output)
+
+        let guessedWait =
+            build "module Consumer\nlet wait () = task { do! System.Threading.Tasks.Task.Delay 10 }\n"
+        Assert.True(guessedWait.ExitCode = 0, guessedWait.Output)
+        Assert.Contains("warning AXG013", guessedWait.Output)
+
+        let checkpoint =
+            buildConsumerInTemp (fun dir ->
+                writeConsumerProject dir
+                    "<TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject><AxialGuardrailsCheckpoint>true</AxialGuardrailsCheckpoint>"
+                    "module Consumer\nlet wait () = task { do! System.Threading.Tasks.Task.Delay 10 }\n"
+                writeV2Policy dir "test" "deny")
+        Assert.True(checkpoint.ExitCode <> 0, checkpoint.Output)
+        Assert.Contains("error AXG013", checkpoint.Output)
 
     [<Fact>]
     let ``missing analyzer folder fails instead of silently skipping`` () =

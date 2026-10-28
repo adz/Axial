@@ -14,14 +14,16 @@
     <_AxialGuardrailsUsesPackagedTool Condition="'$(_AxialGuardrailsExe)' == ''">true</_AxialGuardrailsUsesPackagedTool>
     <_AxialGuardrailsExe Condition="'$(_AxialGuardrailsExe)' == ''">dotnet &quot;$(_AxialGuardrailsToolAssembly)&quot;</_AxialGuardrailsExe>
     <!--
-      Findings are errors unless their stable fingerprint is in the checked-in baseline. There is no project-wide
-      severity downgrade: migrations generate a baseline instead of making new violations non-failing.
+      AXG001–008 retain their baseline behavior. Tiered rules are scoped by role: block findings are errors;
+      guide findings warn, or remain visible as Info when acknowledged. Checked-in verification/release scripts
+      set AxialGuardrailsCheckpoint to reject unacknowledged guides and invalid notes. The CLI's treat-as-error
+      option would also promote acknowledged Info, so severity is resolved in the analyzer using the rules file.
 
-      Test projects run only the Fixture analyzer by default: the effect rules flag Thread.Sleep, File and
-      DateTimeOffset that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
+      Test projects run Fixture, WaitForFacts, RawConcurrency and SuppressionIntegrity by default: ambient effect rules flag File and DateTimeOffset
+      that tests legitimately use for setup and assertions. Set AxialGuardrailsInTests to all to
       run every enabled guardrail in a test project. $(IsTestProject) is set by Microsoft.NET.Test.Sdk.
     -->
-    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture</_AxialGuardrailsIncludeAnalyzersFlag>
+    <_AxialGuardrailsIncludeAnalyzersFlag Condition="'$(IsTestProject)' == 'true' and '$(AxialGuardrailsInTests)' != 'all'">--include-analyzers Fixture WaitForFacts RawConcurrency SuppressionIntegrity</_AxialGuardrailsIncludeAnalyzersFlag>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'">
@@ -155,6 +157,8 @@
     <ReadLinesFromFile File="$(_AxialGuardrailsStampFile)" Condition="Exists('$(_AxialGuardrailsStampFile)')">
       <Output TaskParameter="Lines" ItemName="_AxialGuardrailsCachedFingerprintHash" />
     </ReadLinesFromFile>
+    <!-- A checkpoint's review list must include Info even on an otherwise up-to-date build. -->
+    <Delete Files="$(_AxialGuardrailsStampFile)" Condition="'$(AxialGuardrailsCheckpoint)' == 'true'" />
     <!-- A stamp is only trusted when it contains the hash of the current complete fingerprint. A truncated,
          edited, or future-dated cache file is a miss, never permission to hide a finding. -->
     <Delete Files="$(_AxialGuardrailsStampFile)"
@@ -202,6 +206,7 @@
     <ItemGroup>
       <_AxialGuardrailsConfigLine Include="@(AxialGuardrail->'guardrail&#9;%(Identity)')" />
       <_AxialGuardrailsConfigLine Include="@(_AxialGuardrailsBaselineEntry->'baseline&#9;%(Identity)')" />
+      <_AxialGuardrailsConfigLine Include="setting&#9;checkpoint&#9;$(AxialGuardrailsCheckpoint)" />
       <_AxialGuardrailsConfigLine Include="setting&#9;baselineRoot&#9;$(_AxialGuardrailsBaselineRoot)" />
       <_AxialGuardrailsConfigLine Include="setting&#9;policyRoot&#9;$(_AxialGuardrailsPolicyRoot)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />
       <_AxialGuardrailsConfigLine Include="setting&#9;policyFile&#9;$(_AxialGuardrailsPolicyFile)" Condition="'$(_AxialGuardrailsPolicyRoot)' != ''" />

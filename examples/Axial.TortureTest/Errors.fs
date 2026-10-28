@@ -114,7 +114,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                     try
                         Exit.toResult mapped |> ignore
                         false
-                    with _ ->
+                    with :? InvalidOperationException ->
                         true)
 
         // Applicative and monadic combinators over concurrent forks agree with plain arithmetic.

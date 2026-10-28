@@ -53,7 +53,7 @@ module RunOnTests =
         let operation : Flow<unit, string, unit> =
             Flow.delay (fun () ->
                 invocation <- invocation + 1
-                if invocation = 1 then Thread.Sleep 10
+                if invocation = 1 then TestSupport.occupyThread (TimeSpan.FromMilliseconds 10.)
                 threads.Enqueue Thread.CurrentThread.ManagedThreadId
                 Flow.ok ())
             |> Flow.runOn placement
@@ -257,6 +257,7 @@ module RunOnTests =
         let branch () : Flow<unit, string, unit> =
             flow {
                 do! phase ()
+                // axial-note AXG013: force an asynchronous suspension between phases to test scheduler resumption, not elapsed-time readiness.
                 do! Flow.fromTask (fun _ -> task { do! Task.Delay 10 })
                 do! phase ()
             }

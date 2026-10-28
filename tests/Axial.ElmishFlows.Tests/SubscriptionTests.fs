@@ -51,6 +51,45 @@ module SubscriptionTests =
         Assert.True(released.Task.Wait(TimeSpan.FromSeconds 5.0))
 
     [<Fact>]
+    let ``dispose returns while interrupted subscription finalizer is still running`` () =
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finalizing = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let finished = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        use runtime = owner (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        let source : FlowStream<ClockEnvironment, string, int> =
+            FlowStream.repeatFlow (flow {
+                do! Flow.scopeFinalizer (Flow.fromTask (fun _ -> task {
+                    finalizing.TrySetResult() |> ignore
+                    do! release.Task
+                    finished.TrySetResult() |> ignore
+                }))
+                started.TrySetResult() |> ignore
+                do! Flow.sleep (TimeSpan.FromDays 1.0)
+                return 1
+            })
+        use active = snd (List.head (Sub.OfFlowStream.subscribe ["gated-cleanup"] runtime source (fun _ -> -1))) ignore
+        Assert.True(started.Task.Wait(TimeSpan.FromSeconds 5.0))
+        try
+            let disposing = Task.Run(fun () -> active.Dispose())
+            Assert.True(disposing.Wait(TimeSpan.FromSeconds 5.0), "Dispose blocked on cleanup")
+            Assert.True(finalizing.Task.Wait(TimeSpan.FromSeconds 5.0), "Dispose did not interrupt the started fiber")
+            Assert.False(finished.Task.IsCompleted)
+        finally
+            release.TrySetResult() |> ignore
+        Assert.True(finished.Task.Wait(TimeSpan.FromSeconds 5.0))
+
+    [<Fact>]
+    let ``immediate disposal interrupts a subscription once it starts`` () =
+        use runtime = owner (fun callback -> callback ()) (fun defect -> failwith defect.Rendered)
+        for index in 1 .. 50 do
+            let inbox = Inbox.create 1 runtime
+            let subscription = Sub.OfFlowStream.subscribe [string index] runtime (Inbox.stream inbox) (fun (_: string) -> -1)
+            let active = snd (List.head subscription) (fun _ -> failwith "disposed subscription dispatched")
+            active.Dispose()
+        Assert.True(SpinWait.SpinUntil((fun () -> runtime.Pending = 0), 5000), "Disposed subscription fibers did not settle")
+
+    [<Fact>]
     let ``manual clock search pipeline dispatches only the latest query`` () =
         let clock = ManualClock(DateTimeOffset.UnixEpoch)
         use test = ElmishRuntime.test (ClockEnvironment(clock))

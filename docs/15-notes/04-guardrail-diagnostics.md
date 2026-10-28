@@ -79,7 +79,12 @@ not a second capability-folder mechanism. A `forbid` rule cannot be suppressed e
 
 `AXG002` validates every suppression. It reports legacy or malformed syntax, an unknown rule ID, a missing reason,
 a file-wide suppression outside the leading comment block, a suppression outside a TOML-declared boundary file,
-or a stale AXG001 suppression that covers no ambient-effect finding.
+or a stale suppression that covers no finding. AXG009–013 allowances are invalid: these rules cannot be suppressed.
+
+It also validates `axial-note` acknowledgements for guide findings (AXG010 and awaited-delay AXG013).
+A note needs a non-empty reason and a live guide finding on the same or following line. Notes for block findings,
+unknown rule IDs, malformed notes, and stale notes warn during development and become errors at checkpoints.
+Valid notes leave their guide finding visible as Info; they never hide it.
 
 Remove an invalid or unused directive. AXG002 offers an automatic removal when the directive occupies its own comment
 line. For an intentional boundary, declare the file and use a rule-specific comment such as
@@ -248,6 +253,141 @@ No automatic fix is offered because `forkResource`, `zipPar`, and keeping owners
 semantics. If the fiber intentionally owns and consumes the resource, declare the file as a boundary and use
 `// axial-allow-AXG007: <reason>`.
 
+## AXG013: Wait for facts, not time
+
+In policy role `test`, `AXG013` reports `Thread.Sleep` as an error and directly awaited
+`Task.Delay` or `Async.Sleep` (`do!` or `let!`) as guide warnings. The legacy `test.wait-for-facts`
+level does not change these tiers. A guessed pause does not prove
+that background work reached the point an assertion needs.
+
+Reported:
+
+```fsharp
+open System.Threading.Tasks
+
+let guessedWait (assertReady: unit -> unit) = task {
+    do! Task.Delay 10
+    assertReady ()
+}
+```
+
+Fixed: the worker completes the gate at the point the test needs to observe. The timeout is only a failure deadline.
+
+```fsharp
+open System
+open System.Threading.Tasks
+
+let waitForReady (ready: TaskCompletionSource<unit>) (assertReady: unit -> unit) = task {
+    let! completed = Task.WhenAny(ready.Task :> Task, Task.Delay(TimeSpan.FromSeconds 30.))
+    if not (obj.ReferenceEquals(completed, ready.Task)) then
+        raise (TimeoutException("Worker did not become ready"))
+    do! ready.Task
+    assertReady ()
+}
+```
+
+A `Deferred` completed by the worker serves the same purpose. For scheduling behavior, step a test clock instead.
+`Task.WhenAny(work, Task.Delay duration)` (including array arms or a locally bound deadline), fact-based
+`Wait(timeout)` / `WaitAsync(timeout)`, and `SpinWait.SpinUntil(predicate, timeout)` are allowed.
+An infinite `Async.Sleep`, or `Task.Delay` with an explicit cancellation-token parameter, is also allowed
+(`Timeout.Infinite`, `Timeout.InfiniteTimeSpan`, or literal `-1`). Async workflows supply their own cancellation
+token. A tokenless infinite `Task.Delay` and any `Thread.Sleep`, even an infinite one, remain reported. A bare sleep inside a `while` or `for` loop is still
+reported: counting iterations is a guessed duration, and unbounded polling can hang. In Axial's own tests,
+`Axial.Tests.TestSupport.waitUntil condition deadline` is the approved bounded polling helper; only its
+implementation may contain polling sleeps. Its `TimeSpan` deadline is a failure bound and it returns `false`
+on expiry. `Axial.Tests.TestSupport.occupyThread duration` is the one approved way to simulate work by blocking a
+thread (a slow handler, a loaded pool); it is never a wait for a fact. Finite waits elsewhere remain reported even
+when they generate load or schedule cancellation.
+The analyzer checks direct awaited delay calls, not aliases or data flow through helper functions.
+`Flow.sleep` and `Clock.sleep` are out of scope: their syntax does not establish whether the environment supplies
+live or controlled time. Manual-clock advance operations are also allowed. No automatic fix is offered because
+only the test author knows which fact must be observed. For an intentional awaited delay, put
+`// axial-note AXG013: <reason>` on the finding's line or the preceding line. It stays visible as Info,
+including at checkpoints. `Thread.Sleep` cannot be acknowledged or suppressed.
+
 ## AXG008: Keep scope-owned services inside their run
 
 `Flow.run`, `Flow.runSync`, `Flow.RunSynchronously`, and `StartAsTask` close their scope after completion. Returning `Queue.makeScoped`, `Hub.makeScoped`, or `Hub.subscribe` directly leaves a shut-down service. Caches made by `Cache.make`, `makeBounded`, `makeBoundedWithExpiry`, or `makeRec` capture the creating runtime; closing its scope interrupts lookups. Use these services inside the flow or keep their owning scope open. `Queue.make` (and its `bounded`, `unbounded`, `dropping`, and `sliding` shorthands) and `Hub.make` do not register with the scope and may be returned. The syntax check sees direct calls and pipelines ending in a scoped constructor; the result-type check catches composed cache flows but does not flag Queue or Hub by type because it cannot distinguish scoped from unscoped construction. No automatic fix is offered because the correct lifetime depends on the caller. At an intentional boundary, declare the file and use `// axial-allow-AXG008: <reason>`.
+
+## AXG009: Keep raw concurrency inside the runtime
+
+Reports `Task`, `TaskCompletionSource`, and `CancellationTokenSource` construction, `Task.Run`,
+`Task.Factory.StartNew`, `ContinueWith`, `Thread` construction, and `ThreadPool` calls outside runtime files
+and the `capabilities` role. Prefer Flow concurrency; raw coordination belongs at an OS bridge, not throughout
+an adapter. `Interlocked`, F# `lock`, and `Monitor` are reported as warnings outside declared runtime files,
+including in capability, host-tooling, and test code.
+
+```fsharp
+// Reported: scheduling bypasses Flow ownership.
+let rawWork () = System.Threading.Tasks.Task.Run(fun () -> 1)
+// Fixed: the caller runs and owns the workflow.
+let ownedWork () = Flow.succeed 1
+```
+
+Raw task findings are errors and cannot be acknowledged or suppressed; move bridges into capability-role modules.
+Synchronization findings remain warnings until runtime consolidation; notes do not downgrade them.
+Exact repository-relative paths in `[runtime].files` exempt runtime implementations from AXG009 only.
+This approval-sensitive list is protected by the policy lock; `[boundaries].files` does not exempt raw concurrency.
+
+## AXG010: Do not silently swallow exceptions
+
+Reports only catch-all `try/with` handlers (`_`, a bound exception, or a type test for `exn` / `System.Exception`)
+that neither use the exception nor call `raise` or `reraise`. Handlers for narrower exception types are not reported;
+type abbreviations are resolved. Returning or recording the bound exception counts as use, including assignments,
+error-record fields, and chained calls such as `ExceptionDispatchInfo.Capture(error).Throw()`.
+A guard that inspects the bound exception counts as classification. A reporting function's name alone does not
+establish exception use. Wildcard handlers returning a fallback value are still reported; returning `Error` or
+`Exit.Failure` alone does not prove the exception was handled.
+
+```fsharp
+let swallowed () = try failwith "failed" with _ -> ()
+let propagated () = try failwith "failed" with _ -> reraise ()
+```
+
+This is a guide warning. When an exception is intentionally irrelevant, put
+`// axial-note AXG010: <specific reason>` on the handler body's first line or the preceding line.
+The finding stays visible as Info with the reason. An unacknowledged finding becomes an error at a checkpoint.
+
+## AXG011: Explain uncancellable work
+
+`CancellationToken.None` is temporarily a warning, including inside runtime files. Pass the owner's token;
+cleanup that must finish after cancellation belongs in the runtime's uninterruptible cleanup primitive.
+It is intended to become an error after that consolidation, with one exact runtime primitive exempt.
+
+```fsharp
+let unownedToken = System.Threading.CancellationToken.None
+let ownedToken (token: System.Threading.CancellationToken) = token
+```
+
+Neither `axial-allow` nor `axial-note` exempts this finding. Checkpoints do not promote this temporary warning.
+
+## AXG012: Retain ownership of concurrent work
+
+Reports discarded Task, ValueTask, and Fiber values in wildcard bindings, statements, and pipelines to `ignore`.
+The typed check follows type abbreviations and catches aliased task factories. Both direct calls and pipelines
+to F#'s `ignore` count; a same-named user function does not. `Async.Start` / `Async.StartImmediate` return unit and
+are out of scope. Awaited `let!` / `do!` expressions and array/list elements retained in a collection are not
+discarded statements. Explicit casts do not hide a discarded Task. A discarded `Flow.fork` description is cold:
+without executing the returned Flow, no fiber starts, so AXG012 does not report it.
+Retaining a value alone does not prove it will be
+awaited: this rule detects local discards, not whole-program ownership.
+
+```fsharp
+let discarded () = System.Threading.Tasks.Task.FromResult 1 |> ignore
+let retained () = System.Threading.Tasks.Task.FromResult 1
+```
+
+This is an error. Await the task or retain and join the fiber; neither `axial-allow` nor `axial-note` exempts it.
+
+Except for AXG009 synchronization findings, AXG009–AXG012 exempt the `test` role and host-role tooling
+projects under `src/Axial.Guardrails` or `src/Axial.Tool*`; an ordinary host is not exempt.
+AXG001–008 retain their boundary-allowance and baseline behavior. AXG009–013 do not accept allowances or baseline
+severity downgrades. Only guide findings (AXG010 and awaited-delay AXG013) accept `axial-note`; no boundary
+membership or finding approval is needed. AXG002 warns about malformed, empty, unknown, misplaced, or stale notes,
+and notes on block findings. Invalid notes become errors at checkpoints. No automatic fix is offered: choosing
+ownership, cancellation, or exception reporting changes behavior.
+
+The verification build and release workflow set `AxialGuardrailsCheckpoint=true`. Ordinary builds, including
+ordinary Release builds, do not enable it automatically. At checkpoints, unacknowledged guide findings become errors;
+acknowledged findings remain Info with their reasons. Build output is the review list; there is no separate snapshot
+or review manifest. The existing policy lock still protects roles and enforcement configuration.

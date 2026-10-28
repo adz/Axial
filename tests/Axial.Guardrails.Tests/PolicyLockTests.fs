@@ -203,6 +203,24 @@ module PolicyLockTests =
         test <@ formatJsonSummary changes = expected @>
 
     [<Fact>]
+    let ``runtime exemptions require lock approval`` () =
+        let root = Path.Combine(Path.GetTempPath(), "Axial.Runtime.Lock.Tests", Guid.NewGuid().ToString("N"))
+        try
+            Directory.CreateDirectory root |> ignore
+            File.WriteAllText(Path.Combine(root, DefaultBaseline), "")
+            File.WriteAllText(Path.Combine(root, "Runtime.fs"), "module Runtime")
+            let policy = "version = 2\n[default]\nrole = \"domain\"\n"
+            File.WriteAllText(Path.Combine(root, ConfigName), policy)
+            let before = inspect root |> Result.toOption |> Option.get
+            File.WriteAllText(Path.Combine(root, ConfigName), policy + "[runtime]\nfiles = [\"Runtime.fs\"]\n")
+            let after = inspect root |> Result.toOption |> Option.get
+            let changes = diff before after
+            test <@ changes.BoundariesAdded = [ "runtime:Runtime.fs" ] @>
+            test <@ not (isEmpty changes) @>
+            test <@ changes.ProtectedChanged |> List.contains ConfigName @>
+        finally Directory.Delete(root, true)
+
+    [<Fact>]
     let ``ordinary approval refuses baseline growth`` () =
         let current={empty with Baseline=[{Rule="effects.ambient";File="src/App.fs";Fingerprint="abc";Count=1}]}
         let changes=diff empty current

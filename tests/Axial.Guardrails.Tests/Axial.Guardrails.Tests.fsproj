@@ -14,9 +14,11 @@
   <ItemGroup>
     <Compile Include="AnalyzerTestContext.fs" />
     <Compile Include="HardeningTests.fs" />
+    <Compile Include="ConcurrencyHazardsAnalyzerTests.fs" />
     <Compile Include="ReflectionFormattingAnalyzerTests.fs" />
     <Compile Include="ResourceFromFiberAnalyzerTests.fs" />
     <Compile Include="ScopeFromRunAnalyzerTests.fs" />
+    <Compile Include="WaitForFactsAnalyzerTests.fs" />
     <Compile Include="GuardrailConfigTests.fs" />
     <Compile Include="PolicyTests.fs" />
     <Compile Include="PolicyLockTests.fs" />

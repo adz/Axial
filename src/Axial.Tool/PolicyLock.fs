@@ -26,7 +26,7 @@ module PolicyLock =
     type Approval = Normal | BaselineRule of string
 
     let knownRules = set [
-        "effects.ambient"; "domain.async-return"; "domain.whole-environment"; "domain.service-provider"; "test.integrity"
+        "effects.ambient"; "domain.async-return"; "domain.whole-environment"; "domain.service-provider"; "test.integrity"; "test.wait-for-facts"
         "blocking.async"; "blocking.get-result"; "blocking.get-result-outside"; "blocking.get-result-unit"; "blocking.get-result-unit-outside"
         "blocking.task-result"; "blocking.task-result-outside"; "blocking.task-wait"; "blocking.value-task-result"; "clock.datetime"
         "clock.datetimeoffset"; "clock.local-timezone"; "clock.stopwatch"; "clock.task-delay"; "console.any"; "environment.processor-count"
@@ -119,7 +119,8 @@ module PolicyLock =
                 if not missing.IsEmpty then Error $"protected file not found: {missing.Head}" else
                 let hashes = protectedPaths |> Seq.map (fun p -> p,sha256(Path.Combine(root,p))) |> Map.ofSeq
                 let capabilities = config.Files |> List.filter (fun x -> x.Role=Capabilities) |> List.collect _.Patterns |> Set.ofList
-                let boundaries = config.Boundaries |> Set.ofList
+                // Runtime exemptions are approval-sensitive like boundary declarations.
+                let boundaries = (config.Boundaries @ (config.Runtime |> List.map (fun path -> "runtime:" + path))) |> Set.ofList
                 let baselineEntries = baselineEntries(Path.Combine(root,baseline))
                 let roleName = function Domain->"domain" | Capabilities->"capabilities" | Services->"services" | Host->"host" | Test->"test"
                 let sourceProjects =

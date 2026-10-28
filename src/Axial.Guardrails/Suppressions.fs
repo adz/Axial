@@ -94,6 +94,30 @@ let allDirectives (sourceText: ISourceText) : Directive list =
     commentsByLine sourceText
     |> List.choose (fun (line1, comment) -> comment |> Option.bind (parseComment line1))
 
+let private notePattern =
+    Regex(@"\baxial-note\s+(AXG[0-9]{3})\s*:\s*(.*)$", RegexOptions.Compiled ||| RegexOptions.IgnoreCase)
+
+/// Notes acknowledge guide findings, never suppress them. Reuse the ordinary-comment lexer so quoted
+/// documentation and string contents cannot acknowledge a finding.
+let allNotes (sourceText: ISourceText) : Directive list =
+    commentsByLine sourceText
+    |> List.choose (fun (line, comment) ->
+        comment |> Option.bind (fun text ->
+            if not (text.Contains("axial-note", StringComparison.OrdinalIgnoreCase)) then None
+            else
+                let matched = notePattern.Match text
+                Some { Line = line
+                       RuleId = if matched.Success then Some(matched.Groups[1].Value.ToUpperInvariant()) else None
+                       Reason = if matched.Success then matched.Groups[2].Value.Trim() else ""
+                       FileWide = false; Raw = text.Trim() }))
+
+let guideMessage (config: GuardrailConfig.Config) (ctx: FSharp.Analyzers.SDK.CliContext) (message: FSharp.Analyzers.SDK.Message) =
+    match allNotes ctx.SourceText |> List.tryFind (fun note ->
+        note.RuleId = Some message.Code && note.Reason <> ""
+        && (note.Line = message.Range.StartLine || note.Line + 1 = message.Range.StartLine)) with
+    | Some note -> { message with Severity = FSharp.Analyzers.SDK.Severity.Info; Message = $"{message.Message} Acknowledged: {note.Reason}" }
+    | None -> { message with Severity = if config.Checkpoint then FSharp.Analyzers.SDK.Severity.Error else FSharp.Analyzers.SDK.Severity.Warning }
+
 let private isInLeadingCommentBlock (sourceText: ISourceText) line1 =
     let ordinaryComments = commentsByLine sourceText |> Map.ofList
     [ 1 .. line1 ]

@@ -159,27 +159,30 @@ type FlowHostedService<'env, 'error>
                         do! Async.AwaitTask monitor
                     }
                     |> Async.StartAsTask
-                    :> Task
 
-                let abandoned = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
-                let registration = cancellationToken.Register(fun () -> abandoned.TrySetResult() |> ignore)
+                let wait : Flow<unit, Never, unit> =
+                    flow {
+                        let! abandoned = Deferred.make ()
+                        use registration = cancellationToken.Register(fun () -> Deferred.succeedNow () abandoned |> ignore)
+                        // Only this wait is cancellable; the already-started stop retains ownership of cleanup.
+                        let! stoppedSignal = Deferred.fromTask stopped
+                        let completed =
+                            Deferred.await stoppedSignal
+                            |> Flow.recover Flow.die
+                            |> Flow.map (fun () -> true)
+                        let! completedFirst = Flow.race completed (Deferred.await abandoned |> Flow.map (fun () -> false))
+                        if not completedFirst then
+                            logger.LogWarning(
+                                "Axial root application cleanup was still running when the host shutdown timeout expired; the process may exit before its finalizers finish"
+                            )
+                    }
 
-                Task.WhenAny(stopped, abandoned.Task)
-                    .ContinueWith(
-                        (fun (first: Task<Task>) ->
-                            registration.Dispose()
-
-                            if obj.ReferenceEquals(first.Result, stopped) then
-                                stopped
-                            else
-                                logger.LogWarning(
-                                    "Axial root application cleanup was still running when the host shutdown timeout expired; the process may exit before its finalizers finish"
-                                )
-
-                                Task.CompletedTask),
-                        TaskScheduler.Default
-                    )
-                    .Unwrap()
+                async {
+                    let! exit = Flow.toAsync () wait
+                    return exit |> Exit.toResult |> Result.defaultWith Never.absurd
+                }
+                |> Async.StartAsTask
+                :> Task
 
 /// <summary>Transport for systemd notification datagrams.</summary>
 type ISystemdNotifier =
@@ -241,20 +244,17 @@ module Hosting =
                             Interlocked.Increment(&progress) |> ignore
                             return! heartbeat ()
                         }
-                        let! fiber = Flow.fork (heartbeat ())
-                        try
-                            let rec ping last = flow {
-                                do! Flow.sleep interval
-                                let current = Interlocked.Read(&progress)
-                                if current <> last then
-                                    let! healthy = isHealthy
-                                    if healthy then notifier.Notify "WATCHDOG=1"
-                                return! ping current
-                            }
-                            return! ping (Interlocked.Read(&progress))
-                        finally
-                            // The fork belongs to this Flow scope and is interrupted on cancellation.
-                            ignore fiber
+                        // The enclosing Flow scope owns and interrupts the heartbeat on cancellation.
+                        let! _ = Flow.fork (heartbeat ())
+                        let rec ping last = flow {
+                            do! Flow.sleep interval
+                            let current = Interlocked.Read(&progress)
+                            if current <> last then
+                                let! healthy = isHealthy
+                                if healthy then notifier.Notify "WATCHDOG=1"
+                            return! ping current
+                        }
+                        return! ping (Interlocked.Read(&progress))
         }
 
     /// <summary>Runs the scheduler heartbeat with an application-owned progress check; use this to detect stalled work.</summary>

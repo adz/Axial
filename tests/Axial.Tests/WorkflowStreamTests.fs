@@ -72,6 +72,7 @@ module WorkflowStreamTests =
                 while current > observed && Interlocked.CompareExchange(&maximum, current, observed) <> observed do
                     observed <- Volatile.Read(&maximum)
                 try
+                    // axial-note AXG013: stagger worker completion to exercise batch ordering and its concurrency bound.
                     do! Task.Delay(10 + (5 - value % 5) * 5, cancellationToken)
                     return value * 10
                 finally
@@ -124,6 +125,7 @@ module WorkflowStreamTests =
                 while current > observed && Interlocked.CompareExchange(&maximum, current, observed) <> observed do
                     observed <- Volatile.Read(&maximum)
                 try
+                    // axial-note AXG013: stagger completions to exercise replenishment of the bounded parallel window.
                     do! Task.Delay(10 + (5 - value % 5) * 5, cancellationToken)
                     return value * 10
                 finally

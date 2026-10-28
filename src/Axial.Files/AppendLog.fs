@@ -106,6 +106,7 @@ module AppendLog =
                             log.Stream <- log.FileSystem.OpenFile(log.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read)
                             log.Stream.Position <- log.Stream.Length
                         else log.Failed <- true
+                    // axial-note AXG010: failed recovery poisons the log; rethrow the original write failure below rather than replace it with the reopen failure.
                     with _ -> log.Failed <- true
                     System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
             let stream = log.Stream

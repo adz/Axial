@@ -157,6 +157,8 @@ module WorkflowParallelTests =
         let peak = ref 0
         let caller = Thread.CurrentThread.ManagedThreadId
         let callerRuns = ref 0
+        let entered = ref 0
+        let total = 8
         let operation value : Flow<unit, string, int> =
             Flow.delay (fun () ->
                 if Thread.CurrentThread.ManagedThreadId = caller then
@@ -165,13 +167,18 @@ module WorkflowParallelTests =
                 let mutable seen = peak.Value
                 while now > seen && Interlocked.CompareExchange(&peak.contents, now, seen) <> seen do
                     seen <- peak.Value
-                Thread.Sleep 10
+                Interlocked.Increment(&entered.contents) |> ignore
+                // Hold the slot until overlap is observed: two were active at once (peak is monotonic), or too few operations remain to ever overlap.
+                TestSupport.waitUntil
+                    (fun () -> Volatile.Read(&peak.contents) >= 2 || Volatile.Read(&entered.contents) >= total)
+                    (TimeSpan.FromSeconds 10.)
+                |> ignore
                 Interlocked.Decrement(&active.contents) |> ignore
                 Flow.ok value)
         let policy = Parallelism.bounded 2 |> Parallelism.runOn RunOn.ThreadPool
-        let result = [ 1..8 ] |> List.map operation |> Flow.sequenceParWith policy |> Flow.runSync ()
+        let result = [ 1..total ] |> List.map operation |> Flow.sequenceParWith policy |> Flow.runSync ()
 
-        test <@ result = Exit.Success [ 1..8 ] @>
+        test <@ result = Exit.Success [ 1..total ] @>
         test <@ peak.Value = 2 @>
         test <@ callerRuns.Value = 0 @>
 

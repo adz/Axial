@@ -424,7 +424,6 @@ module WorkflowConcurrencyTests =
         let value =
             Flow.fromBlocking (fun _ ->
                 blockingThread.Value <- Thread.CurrentThread.ManagedThreadId
-                Thread.Sleep 10
                 42)
             |> Flow.runSync (TestSupport.clockEnv ())
 
@@ -449,8 +448,7 @@ module WorkflowConcurrencyTests =
                 Flow.fromBlocking (fun token ->
                     started.Set()
 
-                    while not token.IsCancellationRequested do
-                        Thread.Sleep 5
+                    token.WaitHandle.WaitOne() |> ignore
 
                     finished.Value <- true
                     token.ThrowIfCancellationRequested())
