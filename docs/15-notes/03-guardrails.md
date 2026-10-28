@@ -138,7 +138,7 @@ policy change. Ordinary policy approval refuses baseline growth.
 | `AXG004` | `Fixture` | Shared module-level values in xUnit test modules |
 | `AXG005` | `DiscardedCancellation` | Task adapters that discard their cancellation token |
 | `AXG006` | `ReflectionFormatting` | Formatting that needs F# reflection, which NativeAOT and trimming remove |
-| `AXG009` | `RawConcurrency` | Raw task bridges and synchronization outside their allowed roles/files |
+| `AXG009` | `RawConcurrency` | Raw task bridges (`TaskCompletionSource`, `Task.Run`, `ContinueWith`, threads, `CancellationTokenSource`) outside their allowed roles/files |
 | `AXG010` | `SwallowedException` | Catch-all handlers ignoring the exception (guide) |
 | `AXG011` | `UncancellableWork` | `CancellationToken.None` outside the cleanup primitive (temporarily warning) |
 | `AXG012` | `DiscardedWork` | Typed Task/ValueTask/Fiber discards |
@@ -149,14 +149,14 @@ policy change. Ordinary policy approval refuses baseline growth.
 `AXG001`, `AXG003`, `AXG005`, `AXG006`, `AXG007`, and `AXG008` run in application and library projects. They don't run in test projects, where direct effects and exceptions are often necessary for setup and assertions. Set `AxialGuardrailsInTests` to `all` to run them in a test project too.
 
 `AXG002`, `RawConcurrency`, and `WaitForFacts` also run in test projects by default. Raw task bridges remain
-exempt in the test role, but synchronization outside declared runtime files is reported.
+exempt in the test role. `lock`, `Monitor` and `Interlocked` are not reported anywhere.
 
 Guide findings (AXG010 and awaited-delay AXG013) warn in ordinary builds. A valid
 `// axial-note AXGnnn: <reason>` on the finding's line or the preceding line changes a guide finding to visible Info.
 Invalid notes warn under AXG002. Verification and release builds set `AxialGuardrailsCheckpoint=true` to reject
 unacknowledged guides and invalid notes; noted findings remain Info. Ordinary Release builds are not checkpoints.
-Block findings do not accept notes or baseline downgrades; AXG011 and AXG009 synchronization remain temporary warnings
-pending runtime consolidation. AXG001–008 retain their existing allowance/baseline behavior.
+Block findings do not accept notes or baseline downgrades; AXG011 remains a temporary warning
+until its last `CancellationToken.None` sites are removed. AXG001–008 retain their existing allowance/baseline behavior.
 
 `AXG004` runs only in projects where MSBuild sets `IsTestProject`. It checks a test-specific risk and does not apply to application or library projects.
 

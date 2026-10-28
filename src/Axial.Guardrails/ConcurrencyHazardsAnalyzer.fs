@@ -34,10 +34,6 @@ let rec private handlerExpressions expr =
 
 let private key (r: range) = r.StartLine, r.StartColumn, r.EndLine, r.EndColumn
 
-let private synchronization owner name =
-    Set.contains owner (set [ "System.Threading.Interlocked"; "System.Threading.Monitor" ])
-    || (owner = "Microsoft.FSharp.Core.Operators" && (name = "Lock" || name = "lock"))
-
 let private symbolRanges code (ctx: CliContext) =
     ctx.GetAllSymbolUsesOfFile()
     |> Seq.choose (fun site ->
@@ -53,14 +49,12 @@ let private symbolRanges code (ctx: CliContext) =
                 || (owner = "System.Threading.CancellationTokenSource" && value.IsConstructor)
                 || (owner = "System.Threading.Thread" && value.IsConstructor)
                 || owner = "System.Threading.ThreadPool"
-                || synchronization owner name
                 || (taskType && Set.contains name (set [ "Run"; "ContinueWith" ]))
                 || (taskFactory && name = "StartNew")
             let matches =
                 match code with
                 | "AXG009" -> raw
                 | "AXG011" -> owner = "System.Threading.CancellationToken" && (name = "get_None" || name = "None")
-                | "synchronization" -> synchronization owner name
                 | _ -> false
             if matches then Some site.Range else None
         | _ -> None)
@@ -215,19 +209,16 @@ let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
         | _ -> false
     if (code = "AXG009" || code = "AXG012") && (runtime || benchmark) then []
     else
-        let synchronizationSites = symbolRanges "synchronization" ctx |> List.map key |> Set.ofList
         rawRanges code ctx
-        |> List.filter (fun r ->
-            if code = "AXG009" && synchronizationSites.Contains(key r) then role <> Some Policy.Test
-            else role <> Some Policy.Test && not tooling && (code <> "AXG009" || role <> Some Policy.Capabilities))
+        |> List.filter (fun _ -> role <> Some Policy.Test && not tooling && (code <> "AXG009" || role <> Some Policy.Capabilities))
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]
               Severity = Severity.Error; Range = r; Fixes = [] })
         |> List.map (fun message -> if code = "AXG010" then Suppressions.guideMessage config ctx message else message)
         |> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx
-        // Temporary until the primitives lane removes adapter synchronization and all other None sites.
+        // Temporary until the remaining None sites are removed.
         |> List.map (fun message ->
-            if code = "AXG011" || (code = "AXG009" && synchronizationSites.Contains(key message.Range)) then
+            if code = "AXG011" then
                 { message with Severity = Severity.Warning }
             else message)
 

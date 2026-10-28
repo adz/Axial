@@ -170,7 +170,7 @@ module PackagePropsTests =
             Directory.Delete(dir, true)
 
     [<Fact>]
-    let ``test project defaults run synchronization and note integrity without promoting deferred blocks`` () =
+    let ``test project defaults run note integrity and ignore lock`` () =
         let dir = Path.Combine(Path.GetTempPath(), "axial-guide-test-defaults-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory dir |> ignore
         try
@@ -178,7 +178,7 @@ module PackagePropsTests =
             let project = Path.Combine(dir, "Consumer.fsproj")
             let checkpoint = runBuildWithArgs [ "-p:AxialGuardrailsCheckpoint=true" ] project None
             Assert.True(checkpoint.ExitCode = 0, checkpoint.Output)
-            Assert.Contains("warning AXG009", checkpoint.Output)
+            Assert.DoesNotContain("AXG009", checkpoint.Output)
             File.AppendAllText(Path.Combine(dir, "Program.fs"), "// axial-note AXG010: stale\n")
             let invalid = runBuild project None
             Assert.True(invalid.ExitCode = 0, invalid.Output)

@@ -325,7 +325,7 @@ let ownedWork () = Flow.succeed 1
 ```
 
 Raw task findings are errors and cannot be acknowledged or suppressed; move bridges into capability-role modules.
-Synchronization findings remain warnings until runtime consolidation; notes do not downgrade them.
+`lock`, `Monitor` and `Interlocked` are not reported: use `Ref` or `STM` where they fit, but the analyzer does not require it.
 Exact repository-relative paths in `[runtime].files` exempt runtime implementations from AXG009 only.
 This approval-sensitive list is protected by the policy lock; `[boundaries].files` does not exempt raw concurrency.
 
@@ -379,7 +379,7 @@ let retained () = System.Threading.Tasks.Task.FromResult 1
 
 This is an error. Await the task or retain and join the fiber; neither `axial-allow` nor `axial-note` exempts it.
 
-Except for AXG009 synchronization findings, AXG009–AXG012 exempt the `test` role and host-role tooling
+AXG009–AXG012 exempt the `test` role and host-role tooling
 projects under `src/Axial.Guardrails` or `src/Axial.Tool*`; an ordinary host is not exempt.
 AXG001–008 retain their boundary-allowance and baseline behavior. AXG009–013 do not accept allowances or baseline
 severity downgrades. Only guide findings (AXG010 and awaited-delay AXG013) accept `axial-note`; no boundary

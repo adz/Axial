@@ -337,18 +337,12 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("let mutable n = 0\nlet x = Interlocked.Increment(&n)")>]
     [<InlineData("let x = lock (obj()) (fun () -> 1)")>]
     [<InlineData("let x = Monitor.Enter(obj())")>]
-    member _.``synchronization warns outside runtime and tests including capabilities until primitives land`` body =
+    member _.``lock, Monitor and Interlocked are not reported in any role`` body =
         task {
             for role in [ "domain"; "services"; "capabilities"; "host"; "test" ] do
-                for project in [ "Fixture.fsproj"; "src/Axial.Tool/Axial.Tool.fsproj" ] do
-                    let input = "module M\nopen System.Threading\n" + body
-                    let! messages = runWith role false false project input "AXG009"
-                    if role = "test" then Assert.Empty messages
-                    else
-                        let message = Assert.Single messages
-                        Assert.Equal(Severity.Warning, message.Severity)
-                    let! runtime = runWith role true false project input "AXG009"
-                    Assert.Empty runtime
+                let input = "module M\nopen System.Threading\n" + body
+                let! messages = runWith role false false "Fixture.fsproj" input "AXG009"
+                Assert.Empty messages
         }
 
     [<Theory>]
@@ -370,7 +364,6 @@ type ConcurrencyHazardsPolicyTests() =
     [<InlineData("AXG009", "let x = System.Threading.Tasks.TaskCompletionSource<int>()", "Error")>]
     [<InlineData("AXG012", "let f () = System.Threading.Tasks.Task.FromResult 1 |> ignore", "Error")>]
     [<InlineData("AXG011", "let x = System.Threading.CancellationToken.None", "Warning")>]
-    [<InlineData("AXG009", "let x = lock (obj()) (fun () -> 1)", "Warning")>]
     member _.``block and deferred block findings cannot be noted or checkpoint promoted`` (code: string) (body: string) (expected: string) =
         task {
             for checkpoint in [ "false"; "true" ] do
