@@ -63,3 +63,39 @@ Same quiet-machine setup and suites. The change is behaviour-preserving: `Cancel
   "regression" was noise.
 
 Net for the day: Race −27% allocation and −26% time. No case regressed in allocation beyond run-to-run variance.
+
+## Final run: after the guardrails and adapter work (main `ed2c2f891`, 2026-10-28)
+
+The same quiet-machine setup and both suites, 41 minutes, after the guardrails policy, the adapter conversions and
+the `CancellationToken.None` removal. The core runtime changed only in the `FiberLocal` id allocator and comments. The
+Axial runtime paths measured here are unchanged.
+
+- **Allocation.** No Axial case moved by more than 2% against the morning baseline, the cancellation-primitives run or
+  the race run. The allocation flags in the comparison tool are FIO's own runtimes (Bang 200×5000 Direct 27 GB,
+  Fibonacci WorkStealing +5.6%).
+- **Core suite (100 cases).** Geometric-mean time is 0.95× the morning baseline and 1.015× the cancellation-primitives
+  run. The slowest cases against that run are the `DotNetControl` rows (plain .NET code Axial does not touch), up
+  18–21%, which sizes the run-to-run noise.
+- **Against FIO** the shape is the same as the morning baseline:
+
+  | Workload | Axial ÷ best FIO, time | Axial ÷ best FIO, allocation |
+  |---|---|---|
+  | Bang | 0.58–0.73 | 0.49–0.51 |
+  | Fork | 0.75–0.93 | 0.98–0.99 |
+  | Counting | 0.77 | 0.72 |
+  | ZipRace | 0.07–0.08 | 0.22 |
+  | Pingpong, Threadring | 1.36–1.70 | 1.47–1.49 |
+
+  Pingpong and Threadring remain the one place Axial is clearly behind FIO (queue hand-off, follow-up 1 above).
+- **Two Axial cases were flagged slower in the full run:** Big 25×100 (51.8 ms against 44.5) and Pingpong 10,000
+  (49.8 ms against 44.5), with FIO's own rows swinging up to 80% in the same run. Two reruns of those workloads:
+
+  | Case | Baseline | Full run | Rerun 1 | Rerun 2 |
+  |---|---|---|---|---|
+  | Big 25×100, Axial | 44.5 ms | 51.8 | 46.2 | 46.6 |
+  | Pingpong 10,000, Axial | 44.5 ms | 49.8 | 39.0 | 43.8 |
+
+  Both are back within a few percent of the baseline, so the flags were noise. Raw data is in
+  `~/projects/scratch/axial-coord/bench/final-2026-10-28*` (not in the repo).
+
+No performance regression from the guardrails and adapter work.
