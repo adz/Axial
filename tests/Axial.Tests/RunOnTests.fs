@@ -257,6 +257,7 @@ module RunOnTests =
         let branch () : Flow<unit, string, unit> =
             flow {
                 do! phase ()
+                // axial-note AXG013: force an asynchronous suspension between phases to test scheduler resumption, not elapsed-time readiness.
                 do! Flow.fromTask (fun _ -> task { do! Task.Delay 10 })
                 do! phase ()
             }

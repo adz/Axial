@@ -72,6 +72,7 @@ module Files =
                         owned <- false
                     with error ->
                         if owned then
+                            // axial-note AXG010: temporary-file cleanup must not replace the original atomic-write failure rethrown below.
                             try fs.DeleteFile temporary with _ -> ()
                         System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw())
                 |> Flow.mapError (FileSystemError.fromException (Some path))

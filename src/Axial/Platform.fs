@@ -1080,6 +1080,7 @@ let timeoutExecution
                 try
                     let! discarded = running
                     onDiscardedExit discarded
+                // axial-note AXG010: the timeout owns the result; a faulted losing task or defect-reporting sink must not replace that timeout result.
                 with _ -> ()
                 return! onTimeout ()
             else
@@ -1332,6 +1333,7 @@ let private awaitRaceLoser
             let! exit = losing
             onLoserSettled (Some exit)
         with _ ->
+            // axial-note AXG010: a faulted interop task has no Exit to report; None tells race settlement to retain the selected winner.
             onLoserSettled None
     }
 

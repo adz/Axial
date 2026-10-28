@@ -418,6 +418,7 @@ module ProcessStreamingTests =
                         entered.TrySetResult() |> ignore
 
                         try
+                            // axial-note AXG013: keep the consumer suspended after entered so interruption must run the stopped finalizer.
                             do! Async.Sleep 30000
                         finally
                             stopped.TrySetResult() |> ignore
@@ -454,6 +455,7 @@ module ProcessStreamingTests =
                 (fun values item ->
                     Flow.fromAsync (
                         async {
+                            // axial-note AXG013: simulate a slow fold consumer to exercise bounded output backpressure rather than wait for readiness.
                             do! Async.Sleep 250
                             return item :: values
                         }
@@ -597,6 +599,7 @@ module ProcessStreamingTests =
             |> streamStdoutLines
             |> ProcessStream.runForEachFlow (fun _ ->
                 flow {
+                    // axial-note AXG013: delay the consumer failure until after the child's nonzero exit to test preservation of both failures.
                     do! Flow.fromAsync (async { do! Async.Sleep 200 })
                     return! Flow.fail "consumer"
                 })

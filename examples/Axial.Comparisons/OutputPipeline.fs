@@ -82,6 +82,7 @@ module Ordinary =
             try
                 do! producer
             with _ ->
+                // axial-note AXG010: the raw-task comparison preserves the consumer failure below when observing a producer fault during cleanup.
                 ()
 
             match failure with

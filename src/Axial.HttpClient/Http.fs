@@ -553,6 +553,7 @@ module Http =
                 |> Array.tryPick (fun part ->
                     let part = part.Trim()
                     if part.StartsWith("charset=", StringComparison.OrdinalIgnoreCase) then
+                        // axial-note AXG010: untrusted charset names and custom encoding providers can fail; response text decoding intentionally falls back to UTF8 below.
                         try Some(Encoding.GetEncoding(part.Substring(8).Trim('"'))) with _ -> None
                     else None))
             |> Option.defaultValue Encoding.UTF8

@@ -41,6 +41,7 @@ module internal OutcomeText =
             try
                 other.ToString()
             with _ ->
+                // axial-note AXG010: arbitrary payload ToString implementations can throw; cause rendering must retain the type-name fallback rather than fail while reporting the original cause.
                 "<" + other.GetType().Name + ">"
 #endif
 

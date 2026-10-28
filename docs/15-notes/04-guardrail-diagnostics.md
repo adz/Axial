@@ -278,7 +278,10 @@ open System
 open System.Threading.Tasks
 
 let waitForReady (ready: TaskCompletionSource<unit>) (assertReady: unit -> unit) = task {
-    do! ready.Task.WaitAsync(TimeSpan.FromSeconds 30.)
+    let! completed = Task.WhenAny(ready.Task :> Task, Task.Delay(TimeSpan.FromSeconds 30.))
+    if not (obj.ReferenceEquals(completed, ready.Task)) then
+        raise (TimeoutException("Worker did not become ready"))
+    do! ready.Task
     assertReady ()
 }
 ```

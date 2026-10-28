@@ -16,6 +16,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
     let calls = round.Size 120
 
     flow {
+        let! clock = Flow.envWith (fun (environment: ClockEnvironment) -> environment.Clock)
         let interruptionsSeen = ref 0
 
         // The operation waits a little, observing its cancellation token, then produces its kind of outcome.
@@ -32,7 +33,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
         let asyncOperation kind : Async<int> =
             async {
                 let! token = Async.CancellationToken
-                do! Async.Sleep(round.Next 3)
+                do! clock.Sleep(TimeSpan.FromMilliseconds(float (round.Next 3)), token) |> Async.AwaitTask
 
                 if token.IsCancellationRequested then
                     increment interruptionsSeen |> ignore

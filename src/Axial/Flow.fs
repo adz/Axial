@@ -1021,6 +1021,7 @@ module Flow =
         Flow(fun environment cancellationToken ->
             let currentRuntime = RuntimeState.current()
             // A diagnostics sink must never fail the workflow that annotated.
+            // axial-note AXG010: annotation sink failures must not replace the annotated workflow's result.
             (try currentRuntime.AnnotationSink name value with _ -> ())
             let runtime = currentRuntime |> RuntimeContext.withAnnotation name value
 
@@ -1541,6 +1542,7 @@ module Flow =
                                 let text = Cause.prettyPrint (fun error -> OutcomeText.plain (box error)) cause
 
                                 for registry in parentRuntime.Registries do
+                                    // axial-note AXG010: diagnostic history failure must not prevent settlement or replace the original fiber failure.
                                     try registry.RecordFailure metadata text with _ -> ()
                             | Exit.Success _ -> ()
 
@@ -1641,6 +1643,7 @@ module Flow =
 
                     if settledClean.Value then
                         releaseRegistration ())
+            // axial-note AXG010: a closing scope can reject registration after startup; keep publishing the already started fiber's handle and interrupt registration.
             with _ -> ()
 
             // A fiber that settled before this line removed nothing, so it is removed again after registering.

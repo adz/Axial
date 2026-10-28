@@ -212,3 +212,13 @@ Steps 2-5 not run. Because ElmishFlows/Hosting fail, dependent test projects sti
   `/home/adam/projects/scratch/axial-coord/pi/guardrails-adapters.report.md` (Phase 3) and ignored
   `artifacts/verify/`. Check their actual statuses; this handover does not claim full-slice DONE.
 - No source/policy/protected-file changes or push. Stop after phase 3; repair needs a new instruction.
+
+### Phase 4: checkpoint verification repairs
+
+- Runtime AXG010 handlers retain their existing failure/cleanup semantics, with site-specific visible notes explaining why a secondary failure cannot replace the primary outcome. Additional findings in Files, HttpClient, ElmishFlows diagnostics and comparison code are covered too. Per-site audit and final validation results: `/home/adam/projects/scratch/axial-coord/pi/guardrails-adapters.report.md`, Phase 4.
+- PackagePropsTests had an obsolete expectation: ordinary awaited-delay guides warn, checkpoints reject. Reproduced the old assertion failing with warning AXG013, corrected it, and added the checkpoint assertion. No targets, policy, lock, baseline, approval, or bypass changes.
+- Inventory normalizes MSBuild backslash separators before resolving linked sources; its existing check fails before and passes after. Documentation uses Task.WhenAny plus an explicit timeout check and then awaits the fact, avoiding unavailable Task.WaitAsync.
+- Checkpoint exposed further intentional test waits; notes distinguish suspended callbacks, cancellation races, backpressure observation windows and scheduler/stream perturbation from readiness waits. Linked torture code cannot carry role-specific notes that become stale in another project: Errors narrows its expected exception to InvalidOperationException; Interop takes jitter from the supplied clock.
+- ProcessServiceTests phase-3 flake log contains only the failed test name, not the exception/assertion. No claim about its exact cause is possible from that log. At phase-3 HEAD, Process runtime/core sources are identical to origin/main; the only ProcessServiceTests change is a polling helper unused by this failing test. This is evidence of a pre-existing test flake, not a diagnosed runtime regression. Phase 4 changes there are comments only.
+- Repeat scope: PackagePropsTests, ProcessServiceTests, ProcessStreamingTests, RunOnTests, WorkflowSchedulingTests, WorkflowStreamTests, 20x each, serialized and bounded by timeout. Final detached full verification, done-check and fail-first statuses live in the external report and artifacts/verify/result.json; this handover alone does not assert their success.
+- Stop after Phase 4. No push; no subsequent phase authorized.

@@ -239,8 +239,17 @@ module PackagePropsTests =
 
         let guessedWait =
             build "module Consumer\nlet wait () = task { do! System.Threading.Tasks.Task.Delay 10 }\n"
-        Assert.True(guessedWait.ExitCode <> 0, guessedWait.Output)
-        Assert.Contains("error AXG013", guessedWait.Output)
+        Assert.True(guessedWait.ExitCode = 0, guessedWait.Output)
+        Assert.Contains("warning AXG013", guessedWait.Output)
+
+        let checkpoint =
+            buildConsumerInTemp (fun dir ->
+                writeConsumerProject dir
+                    "<TargetFramework>net10.0</TargetFramework><IsTestProject>true</IsTestProject><AxialGuardrailsCheckpoint>true</AxialGuardrailsCheckpoint>"
+                    "module Consumer\nlet wait () = task { do! System.Threading.Tasks.Task.Delay 10 }\n"
+                writeV2Policy dir "test" "deny")
+        Assert.True(checkpoint.ExitCode <> 0, checkpoint.Output)
+        Assert.Contains("error AXG013", checkpoint.Output)
 
     [<Fact>]
     let ``missing analyzer folder fails instead of silently skipping`` () =
