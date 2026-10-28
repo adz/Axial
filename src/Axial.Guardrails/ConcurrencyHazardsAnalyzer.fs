@@ -207,20 +207,26 @@ let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
         match config.Policy, config.PolicyRoot with
         | Some policy, Some root -> policy.Runtime |> List.exists (fun path -> Path.GetFullPath(Path.Combine(root, path)) = Path.GetFullPath ctx.FileName)
         | _ -> false
+    // The one definition that owns the uncancellable token: nothing else in src may name CancellationToken.None.
+    let rec primitiveDefinitions declaration =
+        match declaration with
+        | FSharpImplementationFileDeclaration.Entity(_, nested) -> List.collect primitiveDefinitions nested
+        | FSharpImplementationFileDeclaration.MemberOrFunctionOrValue(value, _, body)
+            when value.CompiledName = "never"
+                 && (value.DeclaringEntity |> Option.bind _.TryFullName) = Some "Axial.Platform.Cancellation" -> [ body.Range ]
+        | _ -> []
+    let primitives = ctx.TypedTree |> Option.map (fun tree -> List.collect primitiveDefinitions tree.Declarations) |> Option.defaultValue []
     if (code = "AXG009" || code = "AXG012") && (runtime || benchmark) then []
     else
         rawRanges code ctx
-        |> List.filter (fun _ -> role <> Some Policy.Test && not tooling && (code <> "AXG009" || role <> Some Policy.Capabilities))
+        |> List.filter (fun r ->
+            not (code = "AXG011" && primitives |> List.exists (fun definition -> Range.rangeContainsRange definition r))
+            && role <> Some Policy.Test && not tooling && (code <> "AXG009" || role <> Some Policy.Capabilities))
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]
               Severity = Severity.Error; Range = r; Fixes = [] })
         |> List.map (fun message -> if code = "AXG010" then Suppressions.guideMessage config ctx message else message)
         |> GuardrailConfig.applyWith config EffectCatalog.CoreGuardrail ctx
-        // Temporary until the remaining None sites are removed.
-        |> List.map (fun message ->
-            if code = "AXG011" then
-                { message with Severity = Severity.Warning }
-            else message)
 
 [<CliAnalyzer("RawConcurrency", "Flags raw concurrency outside the runtime.", "https://github.com/adz/Axial")>]
 let rawConcurrencyAnalyzer: Analyzer<CliContext> = fun ctx -> async { return analyzeWithConfig (GuardrailConfig.load ()) "AXG009" ctx }

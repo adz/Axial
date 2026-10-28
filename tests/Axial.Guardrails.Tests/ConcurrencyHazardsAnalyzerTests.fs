@@ -186,7 +186,7 @@ module ConcurrencyHazardsAnalyzerTests =
     [<Theory>]
     [<InlineData("AXG009", "Error")>]
     [<InlineData("AXG010", "Info")>]
-    [<InlineData("AXG011", "Warning")>]
+    [<InlineData("AXG011", "Error")>]
     [<InlineData("AXG012", "Error")>]
     [<InlineData("AXG013", "Error")>]
     let ``baselines cannot change tiered severity`` code expected =
@@ -360,10 +360,20 @@ type ConcurrencyHazardsPolicyTests() =
             if note <> "" then Assert.Contains("foreign observer is best effort", message.Message)
         }
 
+    [<Fact>]
+    member _.``only the Cancellation never definition owns the uncancellable token`` () =
+        task {
+            let input = "module Axial.Platform.Cancellation\nopen System.Threading\nlet never: CancellationToken = CancellationToken.None\nlet other = CancellationToken.None"
+            let! messages = runWith "services" false false "Fixture.fsproj" input "AXG011"
+            let message = Assert.Single messages
+            Assert.Equal(4, message.Range.StartLine)
+            Assert.Equal(Severity.Error, message.Severity)
+        }
+
     [<Theory>]
     [<InlineData("AXG009", "let x = System.Threading.Tasks.TaskCompletionSource<int>()", "Error")>]
     [<InlineData("AXG012", "let f () = System.Threading.Tasks.Task.FromResult 1 |> ignore", "Error")>]
-    [<InlineData("AXG011", "let x = System.Threading.CancellationToken.None", "Warning")>]
+    [<InlineData("AXG011", "let x = System.Threading.CancellationToken.None", "Error")>]
     member _.``block and deferred block findings cannot be noted or checkpoint promoted`` (code: string) (body: string) (expected: string) =
         task {
             for checkpoint in [ "false"; "true" ] do

@@ -890,6 +890,11 @@ module RunOn =
         RunOn.Adaptive(AdaptiveRunOnState options)
 #endif
 
+/// Process-wide identities for fiber-local handles, including handles of different value types.
+module internal RuntimeIds =
+    let private nextValue = ref 0L
+    let next () = Platform.nextId nextValue
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 [<RequireQualifiedAccess>]
 module internal FiberId =

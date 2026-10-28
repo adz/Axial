@@ -178,7 +178,8 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
 
         // A flow that checks the runtime's token stops when interrupted, even while it never suspends.
         let spins = ref 0
-        let spinnerToken = ref CancellationToken.None
+        let! parentToken = Flow.cancellationToken
+        let spinnerToken = ref parentToken
 
         let spinner : Flow<Axial.ClockEnvironment, Never, unit> =
             flow {
@@ -192,7 +193,7 @@ let run (round: Round) : Flow<Axial.ClockEnvironment, Never, Check list> =
                     do! Flow.sleep TimeSpan.Zero
             }
 
-        let! spinning = Flow.fork spinner
+        let! spinning = Flow.forkNamed "interop-token-spinner" spinner
         do! Flow.sleep (TimeSpan.FromMilliseconds 2.0)
         let! spinExit = Fiber.interrupt spinning
 

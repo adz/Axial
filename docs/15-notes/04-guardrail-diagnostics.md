@@ -350,16 +350,15 @@ The finding stays visible as Info with the reason. An unacknowledged finding bec
 
 ## AXG011: Explain uncancellable work
 
-`CancellationToken.None` is temporarily a warning, including inside runtime files. Pass the owner's token;
-cleanup that must finish after cancellation belongs in the runtime's uninterruptible cleanup primitive.
-It is intended to become an error after that consolidation, with one exact runtime primitive exempt.
+`CancellationToken.None` is an error everywhere except the runtime's single `Cancellation.never` definition. Pass the
+owner's token; cleanup that must finish after cancellation belongs in the runtime's uninterruptible cleanup primitive.
 
 ```fsharp
 let unownedToken = System.Threading.CancellationToken.None
 let ownedToken (token: System.Threading.CancellationToken) = token
 ```
 
-Neither `axial-allow` nor `axial-note` exempts this finding. Checkpoints do not promote this temporary warning.
+Neither `axial-allow` nor `axial-note` exempts this finding. It is already an error, so checkpoints change nothing.
 
 ## AXG012: Retain ownership of concurrent work
 

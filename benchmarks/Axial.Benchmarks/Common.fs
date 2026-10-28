@@ -22,7 +22,7 @@ module internal Shared =
     [<Literal>]
     let CancellationCheckpoints = 5
 
-    let noCancellation = CancellationToken.None
+    let noCancellation = Platform.Cancellation.never
 
     let consumeResult (result: Result<int, string>) =
         match result with

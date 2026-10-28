@@ -231,7 +231,7 @@ type SynchronousCompletionBenchmarks() =
     [<Benchmark(Description = "Candidate ValueTaskFlow")>]
     member _.CandidateValueTaskFlow() =
         valueTaskFlow
-        |> CandidateValueTaskFlow.run 0 CancellationToken.None
+        |> CandidateValueTaskFlow.run 0 Platform.Cancellation.never
         |> fun operation -> operation.GetAwaiter().GetResult()
         |> Shared.consumeValueTaskResult
 
