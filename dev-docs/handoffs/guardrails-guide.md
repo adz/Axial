@@ -193,3 +193,22 @@ Steps 2-5 not run. Because ElmishFlows/Hosting fail, dependent test projects sti
 - Phase 3 still owns 20x runs, full detached axial-verify, done-check and final fail-first proof.
   No new artifacts/verify/result.json; no full-slice verification claim. No protected edits, approvals,
   baseline changes, suppressions, new runtime files, or push. STOP after this phase's commit.
+
+
+### Phase 3 (validation only; stop, do not repair failures)
+
+- Repeated every class in the Exact steps list plus ScopedResourceOwnershipTests, SubscriptionTests,
+  TestRuntimeTests, HostingTests, ConcurrencyHazardsAnalyzerTests, PackagePropsTests, PolicyLockTests,
+  and WaitForFactsAnalyzerTests 20 times, each dotnet command wrapped in timeout 900.
+- Seventeen classes completed 20 passing runs each. ProcessServiceTests additionally failed its first
+  attempt: `CloseStdIn cancels an active feeder without faulting the run` (78 passed / 1 failed), then
+  passed unchanged on all 20 recorded runs; preserve this as a flake, not an unqualified green result.
+- PackagePropsTests failed all 20 runs: `default test builds report guessed waits without enabling
+  ambient effect rules` (12 passed / 1 failed per run). No implementation edits attempted in this phase.
+- Logs: `/home/adam/projects/scratch/axial-coord/pi/adapters-phase3-repeat/` and
+  `adapters-phase3-first-failure.log`. The loop completed every class; a live edit of the external runner's
+  verbosity caused a trailing shell parsing error after completion, unrelated to test results.
+- Final detached axial-verify, done-check and fail-first evidence are recorded in
+  `/home/adam/projects/scratch/axial-coord/pi/guardrails-adapters.report.md` (Phase 3) and ignored
+  `artifacts/verify/`. Check their actual statuses; this handover does not claim full-slice DONE.
+- No source/policy/protected-file changes or push. Stop after phase 3; repair needs a new instruction.
