@@ -79,7 +79,7 @@ module PolicyReviewTests =
     let ``review evaluates disabled projects without expanding inactive guardrails globs`` () =
         repository (fun root write _ cli ->
             let project = File.ReadAllText(Path.Combine(root, "App.fsproj"))
-            let targets = """<PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'"><_AxialGuardrailsPolicyGlobRoot>$(MSBuildProjectDirectory)</_AxialGuardrailsPolicyGlobRoot></PropertyGroup><ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'"><Protected Include="$(_AxialGuardrailsPolicyGlobRoot)/**/*.props" Exclude="$(_AxialGuardrailsPolicyGlobRoot)/**/obj/**" /></ItemGroup>"""
+            let targets = """<PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'"><_AxialGuardrailsPolicyGlobRoot>$(MSBuildProjectDirectory)</_AxialGuardrailsPolicyGlobRoot></PropertyGroup><ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'"><Protected Include="$(_AxialGuardrailsPolicyGlobRoot)\**\*.props" Exclude="$(_AxialGuardrailsPolicyGlobRoot)\**\bin\**;$(_AxialGuardrailsPolicyGlobRoot)\**\obj\**" /></ItemGroup>"""
             write "App.fsproj" (project.Replace("Enabled>true", "Enabled>false").Replace("</Project>", targets + "</Project>"))
             let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"]
             Assert.Equal(0, code)
