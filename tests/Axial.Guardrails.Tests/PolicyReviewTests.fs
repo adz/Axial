@@ -255,6 +255,20 @@ module PolicyReviewTests =
             Assert.Contains("introduced note", output))
 
     [<Fact>]
+    let ``approval text records HEAD even without policy differences`` () =
+        repository (fun root write git cli ->
+            let snapshot = inspect root |> function Ok value -> value | Error error -> failwith error
+            let text = Axial.Tool.PolicyReview.prepareReviewedLock root snapshot
+            Assert.Contains("REVIEWED_POINT  " + git ["rev-parse"; "HEAD"], text)
+            write LockName text
+            let code, output = cli ["policy"; "review"; "--check"]
+            Assert.True((code = 0), output)
+            write "App.fs" "module App\n// axial-note AXG001: after review\n"
+            let code, output = cli ["policy"; "review"; "--check"]
+            Assert.NotEqual(0, code)
+            Assert.Contains("after review", output))
+
+    [<Fact>]
     let ``malformed reviewed point is rejected`` () =
         repository (fun root write _ cli ->
             write LockName (File.ReadAllText(Path.Combine(root, LockName)) + "REVIEWED_POINT  invalid\n")
