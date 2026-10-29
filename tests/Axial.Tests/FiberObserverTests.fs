@@ -243,7 +243,7 @@ module FiberObserverTests =
                 Platform.ofAwaitable (task {
                     started.TrySetResult() |> ignore
                     do! Task.Delay(Timeout.Infinite, token)
-                    return 0
+                    return Exit.Success 0
                 }))
         let operation =
             if race then
