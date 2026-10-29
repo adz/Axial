@@ -40,6 +40,63 @@ module ProcessServiceTests =
         | failure -> failwithf "Expected success, got %A" failure
 
     [<Fact>]
+    let ``best effort cleanup runs once and preserves effects before ordinary failure`` () =
+        let mutable calls = 0
+        let effects = ResizeArray<string>()
+        ProcessRun.bestEffort (fun () ->
+            calls <- calls + 1
+            effects.Add "disposed"
+            raise (InvalidOperationException "already closed"))
+        test <@ calls = 1 @>
+        test <@ List.ofSeq effects = [ "disposed" ] @>
+        ProcessRun.bestEffort (fun () -> effects.Add "next")
+        test <@ List.ofSeq effects = [ "disposed"; "next" ] @>
+
+    [<Fact>]
+    let ``best effort cleanup does not swallow fatal exceptions`` () =
+        let fatal = OutOfMemoryException "synthetic fatal exception"
+        let observed = Assert.Throws<OutOfMemoryException>(fun () -> ProcessRun.bestEffort (fun () -> raise fatal))
+        test <@ obj.ReferenceEquals(fatal, observed) @>
+
+    [<Fact>]
+    let ``cleanup preserves an already exited child's result`` () =
+        let result = shText "exit 0" |> toFlow |> run
+        test <@ result.ExitCode = 0 @>
+
+    [<Fact>]
+    let ``cleanup tolerates stdin closed by the child`` () =
+        let result =
+            shText "exec 0<&-; printf done"
+            |> stdinFrom (Input.text "input")
+            |> toFlow |> run
+        test <@ result.ExitCode = 0 @>
+        test <@ result.StdOut = "done" @>
+
+    [<Fact>]
+    let ``cleanup tolerates throwing timer cancellation callbacks`` () =
+        let mutable canceled = 0
+        let clock =
+            { new IClock with
+                member _.UtcNow() = Clock.live.UtcNow()
+                member _.Elapsed() = Clock.live.Elapsed()
+                member _.Sleep(_, token) =
+                    let pending = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+                    token.Register(fun () ->
+                        Interlocked.Increment(&canceled) |> ignore
+                        pending.TrySetCanceled(token) |> ignore
+                        raise (InvalidOperationException "timer callback")) |> ignore
+                    pending.Task }
+        let testEnv = { Process = Process.live clock FileSystem.live Console.live; Clock = clock }
+        let outcome =
+            shText "exit 0"
+            |> timeout (TimeSpan.FromHours 1.0)
+            |> toFlow |> Flow.runSync testEnv
+        match outcome with
+        | Exit.Success result -> test <@ result.ExitCode = 0 @>
+        | other -> failwithf "Timer cleanup replaced success: %A" other
+        test <@ canceled > 0 @>
+
+    [<Fact>]
     let ``flow stream input and flow callback transfer bytes in order`` () =
         let received = ResizeArray<byte>()
         let source =
@@ -1131,6 +1188,8 @@ module ProcessServiceTests =
         let! handle = started.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
         let! closeResult = handle.Close StopRequest.CloseStdIn |> fun workflow -> workflow.StartAsTask(())
         test <@ closeResult = Exit.Success () @>
+        let! closeAgain = handle.Close StopRequest.CloseStdIn |> fun workflow -> workflow.StartAsTask(())
+        test <@ closeAgain = Exit.Success () @>
         let! outcome = running.WaitAsync(TimeSpan.FromSeconds 5.0)
         match outcome with
         | Exit.Success result -> test <@ result.ExitCode = 0 @>
