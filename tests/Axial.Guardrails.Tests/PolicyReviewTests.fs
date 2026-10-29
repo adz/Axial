@@ -222,6 +222,20 @@ module PolicyReviewTests =
             Assert.Contains("net10.0", output))
 
     [<Fact>]
+    let ``review supports the required pre TOML starting tag`` () =
+        repository (fun root write git cli ->
+            let config = File.ReadAllText(Path.Combine(root, ConfigName))
+            let lockText = File.ReadAllText(Path.Combine(root, LockName))
+            git ["rm"; ConfigName; LockName; DefaultBaseline] |> ignore
+            git ["commit"; "-qm"; "pre-policy state like Axial v0.11.3"] |> ignore
+            git ["tag"; "legacy"] |> ignore
+            write ConfigName config
+            write LockName lockText
+            write DefaultBaseline ""
+            let code, output = cli ["policy"; "review"; "--since"; "legacy"]
+            Assert.True((code = 0), output))
+
+    [<Fact>]
     let ``malformed reviewed point is rejected`` () =
         repository (fun root write _ cli ->
             write LockName (File.ReadAllText(Path.Combine(root, LockName)) + "REVIEWED_POINT  invalid\n")

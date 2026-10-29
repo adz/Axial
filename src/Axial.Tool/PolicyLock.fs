@@ -38,10 +38,13 @@ module PolicyLock =
         let git = ProcessStartInfo("git", "ls-files -z --cached --others --exclude-standard")
         git.WorkingDirectory <- root
         git.RedirectStandardOutput <- true
+        git.RedirectStandardError <- true
         git.UseShellExecute <- false
         use childProcess = Process.Start git
+        let errors = childProcess.StandardError.ReadToEndAsync()
         let output = childProcess.StandardOutput.ReadToEnd()
         childProcess.WaitForExit()
+        errors.GetAwaiter().GetResult() |> ignore
         if childProcess.ExitCode = 0 then
             output.Split('\000',StringSplitOptions.RemoveEmptyEntries) |> Array.map(fun path -> Path.Combine(root,path))
         else
@@ -164,6 +167,7 @@ module PolicyLock =
             let lines=File.ReadAllLines path
             let fail line message = failwith $"{path}:{line}: {message}; regenerate the lock with 'axial policy approve' after review"
             if lines.Length=0 || not (set ["version = 1"; "version = 2"] |> Set.contains lines[0]) then fail 1 "the first record must be exactly 'version = 1' or 'version = 2'"
+            let mutable reviewedPointSeen=false
             let mutable baselinePathSeen=false
             let mutable s={ Version=(if lines[0]="version = 1" then 1 else 2); BaselinePath=DefaultBaseline; Hashes=Map.empty; Baseline=[]; BaselineRoles=Map.empty; Rules=Map.empty; Capabilities=Set.empty; Boundaries=Set.empty; Suppressions=Set.empty }
             let unique line kind key exists = if exists then fail line $"duplicate {kind} record '{key}'"
@@ -171,6 +175,11 @@ module PolicyLock =
                 let lineNumber=index+1
                 let line=lines[index]
                 if line="version = 1" || line.StartsWith("version = ") then fail lineNumber "duplicate or unsupported version record"
+                elif line.StartsWith("REVIEWED_POINT  ") then
+                    let value = line.Substring(16)
+                    if not (Regex.IsMatch(value, "^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")) then fail lineNumber "REVIEWED_POINT requires a commit SHA"
+                    unique lineNumber "REVIEWED_POINT" value reviewedPointSeen
+                    reviewedPointSeen <- true
                 elif line.StartsWith("BASELINE_PATH  ") then
                     let value=line.Substring(15)
                     if String.IsNullOrWhiteSpace value then fail lineNumber "BASELINE_PATH requires a non-empty path"
@@ -235,7 +244,7 @@ module PolicyLock =
         let show label values =
             let joined = String.concat "; " values
             if List.isEmpty values then $"  {label,-24} none" else $"  {label,-24} {joined}"
-        [ "AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED"
+        [ "AXIAL GUARDRAILS POLICY CHANGED"
           show "rules downgraded:" x.RulesDowngraded
           show "baseline entries added:" (x.BaselineAdded|>List.map(fun b -> $"{b.Rule}/{b.File}/{b.Fingerprint} x{b.Count}"))
           show "suppressions added:" x.SuppressionsAdded; show "boundaries added:" x.BoundariesAdded
@@ -255,7 +264,7 @@ module PolicyLock =
             match value.Split([|'\t'|], 3) with
             | [|file; occurrence; comment|] -> file, $"#{occurrence}  {comment}"
             | _ -> value, value
-        [ ["AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED"]
+        [ ["AXIAL GUARDRAILS POLICY CHANGED"]
           show "rules downgraded:" x.RulesDowngraded
           grouped "baseline entries added:" (x.BaselineAdded |> List.map (fun b -> b.File, $"{b.Rule}/{b.Fingerprint} x{b.Count}"))
           grouped "suppressions added:" (x.SuppressionsAdded |> List.map suppression)
