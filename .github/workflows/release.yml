@@ -66,6 +66,19 @@ jobs:
           echo "value=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
+      - name: Check out resolved release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.version.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Review release policy
+        run: |
+          dotnet tool restore
+          dotnet restore
+          dotnet build src/Axial.Tool/Axial.Tool.fsproj --configuration Release --no-restore --nologo -v minimal
+          dotnet --roll-forward Major artifacts/bin/Axial.Tool/release/Axial.Tool.dll policy review --check
+
       - name: Check source inventory
         run: bash scripts/check-source-inventory.sh
 

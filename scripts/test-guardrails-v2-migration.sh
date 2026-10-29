@@ -27,6 +27,6 @@ backup=$(mktemp)
 cp Axial.Guardrails.toml "$backup"
 trap 'cp "$backup" Axial.Guardrails.toml; rm -f "$backup"' EXIT
 printf '\n# deliberate policy drift\n' >> Axial.Guardrails.toml
-if dotnet --roll-forward Major "$tool" check >/dev/null 2>&1; then
-    fail "axial check accepted deliberate policy drift"
-fi
+output=$(dotnet --roll-forward Major "$tool" check 2>&1) || fail "axial check rejected deliberate policy drift"
+grep -q 'WARNING: Policy changed since the last review:' <<<"$output" || fail "axial check did not warn about deliberate policy drift"
+grep -q 'axial policy review' <<<"$output" || fail "policy drift warning did not point to review"

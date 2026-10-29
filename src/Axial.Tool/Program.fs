@@ -9,10 +9,11 @@ module Program =
     let private workflow = """Axial policy workflow:
   1. axial init
   2. axial check
-  3. If policy changed, ask a human to review and run axial policy approve.
+  3. axial policy review [--since <ref>] [--check] [--json]
+  4. A human reads the review, then runs axial policy approve [--yes-i-reviewed].
 
-The lock is a workflow guard, not a security boundary. Direct lock edits remain visible in Git; phase 3 agent hooks will block them.
-HUMAN DECISION — agents must not run policy approval commands; ask the user."""
+The lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.
+Approval means a human read the review. The first review requires --since <ref>."""
     let private policyWarning = "HUMAN DECISION — agents must not run this; ask the user."
     let private jsonString (value: string) = "\"" + JavaScriptEncoder.Default.Encode(value) + "\""
     let private jsonArray values = values |> List.map jsonString |> String.concat "," |> fun content -> "[" + content + "]"
@@ -54,8 +55,10 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
         | Error e, _ | _, Error e -> emit asJson false e
         | Ok current, Ok locked ->
             let changes=diff locked current
-            if isEmpty changes then emit asJson true ("Axial policy check passed.\nThe lock is a workflow guard, not a security boundary; direct edits remain visible in Git.")
-            else emitWith (Some changes) asJson false ((if asJson then formatJsonSummary changes else formatSummary changes)+"\nThe lock is a workflow guard, not a security boundary; direct edits remain visible in Git.")
+            if isEmpty changes then emit asJson true ("Axial policy check passed.\nThe lock is tamper-evident, not a security boundary. Enforcement is the repository's choice.")
+            else
+                let count = changes.RulesDowngraded.Length + changes.BaselineAdded.Length + changes.SuppressionsAdded.Length + changes.BoundariesAdded.Length + (changes.ProtectedChanged |> List.filter ((<>) LockName) |> List.length)
+                emitWith (Some changes) asJson true $"WARNING: Policy changed since the last review: {max 1 count} changes. Run `axial policy review`."
 
     let private confirm () =
         printf "Type 'approve' to record this reviewed policy change: "
@@ -66,18 +69,18 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
         | Error e, _ | _, Error e -> emit asJson false e
         | Ok current, Ok locked ->
             let changes=diff locked current
-            if isEmpty changes then emit asJson true "No policy changes to approve."
-            else
-                let approval = match baselineRule with Some r->BaselineRule r | None->Normal
-                match validateApproval approval locked current changes with
-                | Error e -> emitWith (Some changes) asJson false ((if asJson then formatJsonSummary changes else formatSummary changes)+Environment.NewLine+e)
-                | Ok () ->
-                    let summary=if asJson then formatJsonSummary changes else formatSummary changes
-                    if not asJson then printfn "%s\n%s" policyWarning summary
-                    if nonInteractive || (not asJson && confirm()) then
-                        writeAtomic (Path.Combine(root(),LockName)) (serialize current)
-                        emitWith (Some changes) asJson true (summary+Environment.NewLine+"Policy lock updated after human review.")
-                    else emit asJson false "Approval cancelled. Use --yes-i-reviewed for reviewed non-interactive changes."
+            let approval = match baselineRule with Some r->BaselineRule r | None->Normal
+            match validateApproval approval locked current changes with
+            | Error e -> emitWith (Some changes) asJson false ((if asJson then formatJsonSummary changes else formatSummary changes)+Environment.NewLine+e)
+            | Ok () ->
+                let summary=if asJson then formatJsonSummary changes else formatSummary changes
+                if not asJson then printfn "%s\n%s" policyWarning summary
+                if nonInteractive || (not asJson && confirm()) then
+                    try
+                        writeAtomic (Path.Combine(root(),LockName)) (PolicyReview.prepareReviewedLock (root()) current)
+                        emitWith (Some changes) asJson true (summary+Environment.NewLine+"Policy lock updated: a human read the review.")
+                    with error -> emit asJson false error.Message
+                else emit asJson false "Approval cancelled. Use --yes-i-reviewed for reviewed non-interactive changes."
 
     let private init asJson =
         let config=Path.Combine(root(),ConfigName)
@@ -102,6 +105,22 @@ HUMAN DECISION — agents must not run policy approval commands; ask the user.""
         | [] -> help asJson
         | ["check"] -> check asJson
         | ["init"] -> init asJson
+        | "policy"::"review"::rest ->
+            let rec options (since: string option) checkOnly = function
+                | [] -> Ok (since, checkOnly)
+                | "--since"::point::tail when since.IsNone -> options (Some point) checkOnly tail
+                | "--check"::tail when not checkOnly -> options since true tail
+                | _ -> Error "Usage: axial policy review [--since <ref>] [--check] [--json]"
+            match options None false rest with
+            | Error error -> emit asJson false error
+            | Ok (since, checkOnly) ->
+                match PolicyReview.review (root()) since with
+                | Error error -> emit asJson false error
+                | Ok result ->
+                    if asJson then
+                        printfn "%s" (System.Text.Json.JsonSerializer.Serialize {| schema = "axial.policy.review.v1"; since = result.Since; loosened = result.Loosened; removed = result.Removed |})
+                    else printfn "%s" (PolicyReview.format result)
+                    if checkOnly && not result.Loosened.IsEmpty then 1 else 0
         | ["policy";"approve";"--help"] | ["policy";"baseline";"--help"] -> emit asJson true (policyWarning+"\n"+workflow)
         | "policy"::"approve"::rest ->
             if rest |> List.exists((<>) "--yes-i-reviewed") then emit asJson false (policyWarning+"\nUsage: axial policy approve [--yes-i-reviewed] [--json]")

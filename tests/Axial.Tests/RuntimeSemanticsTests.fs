@@ -94,16 +94,18 @@ module RuntimeSemanticsTests =
 
     [<Fact>]
     let ``Fiber metadata records identity parent and lifecycle status`` () =
+        let release = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let workflow =
             flow {
                 let! fiber =
                     flow {
-                        do! Flow.sleep (TimeSpan.FromMilliseconds 20.0)
+                        do! Flow.fromTask (fun _ -> release.Task)
                         return 42
                     }
                     |> Flow.fork
 
                 let initial = Fiber.dump fiber
+                release.SetResult(())
                 let! value = Fiber.join fiber
                 let completed = Fiber.dump fiber
                 return initial, completed, value

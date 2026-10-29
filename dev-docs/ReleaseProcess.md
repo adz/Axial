@@ -25,7 +25,14 @@ dotnet livedocs history-check
    the versioned site. Backfill immutable GitHub Release capsules with `dotnet livedocs history-sync adz/Axial --output
    .livedocs/history.json`, then commit the result. Before the tag, `history-check --capsule <candidate> --version <version>`
    must render the candidate with the committed history.
-4. Commit and push `main`, then create and push the release tag.
+4. Commit the release inputs, then run `axial policy review` and read every loosening and added exception. For the
+   first review, use `axial policy review --since v0.11.3`. A human then runs `axial policy approve` (or
+   `axial policy approve --yes-i-reviewed`) and commits `Axial.Guardrails.lock`. Approval records the current commit as
+   the reviewed point; do not make unreviewed policy changes afterward. Run `axial policy review --check` before tagging.
+   The lock is tamper-evident, not a security boundary; enforcement is the repository's choice. Axial chooses to refuse
+   publication when this check finds loosening after the reviewed point.
+5. Push `main`, then create and push the release tag. The workflow builds and runs the tool from that tag's own
+   checkout, including when resuming a release, and checks policy before packaging or publishing.
 
 The tag-triggered release workflow validates Axial, captures an immutable FsLiveDocs documentation capsule, verifies the
 candidate against the committed history, and publishes the capsule and NuGet packages as GitHub release assets. It then

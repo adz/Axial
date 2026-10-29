@@ -52,12 +52,18 @@ module PackagePropsTests =
         child.WaitForExit()
         Assert.True(child.ExitCode = 0, output)
 
+    let private writeFixtureLock dir =
+        // Construct a temporary consumer fixture; never invoke a human approval command.
+        match Axial.Tool.PolicyLock.inspect dir with
+        | Error error -> failwith error
+        | Ok snapshot -> File.WriteAllText(Path.Combine(dir, Axial.Tool.PolicyLock.LockName), Axial.Tool.PolicyLock.serialize snapshot)
+
     let private writeV2Policy dir role level =
         runPolicyTool dir [ "init" ]
         File.WriteAllText(
             Path.Combine(dir, "Axial.Guardrails.toml"),
             $"version = 2\nbaseline = \"Axial.Guardrails.baseline\"\n\n[default]\nrole = \"{role}\"\n\n[roles.domain.rules]\n\"effects.ambient\" = \"{level}\"\n")
-        runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+        writeFixtureLock dir
 
     let private xmlEscape (value: string) =
         value.Replace("&", "&amp;").Replace("\"", "&quot;").Replace("<", "&lt;").Replace(">", "&gt;")
@@ -204,7 +210,7 @@ module PackagePropsTests =
             Assert.DoesNotContain(removed, imports)
 
     [<Fact>]
-    let ``v2 policy roles levels and lock are enforced before analysis`` () =
+    let ``v2 roles and levels remain enforced while lock drift only warns`` () =
         let build role level mutateAfterLock =
             buildConsumerInTemp
                 (fun dir ->
@@ -223,8 +229,11 @@ module PackagePropsTests =
 
         let drift = build "domain" "deny" true
         Assert.NotEqual(0, drift.ExitCode)
-        Assert.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED", drift.Output)
-        Assert.Contains("protected files changed:", drift.Output)
+        Assert.Contains("Policy changed since the last review:", drift.Output)
+        Assert.Contains("error AXG001", drift.Output)
+        let openDrift = build "capabilities" "deny" true
+        Assert.True(openDrift.ExitCode = 0, openDrift.Output)
+        Assert.Contains("axial policy review", openDrift.Output)
 
     [<Fact>]
     let ``default test builds report guessed waits without enabling ambient effect rules`` () =
@@ -334,8 +343,8 @@ module PackagePropsTests =
             File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
             File.AppendAllText(Path.Combine(dir, "Axial.Guardrails.toml"), "# drift\n")
             let drift = runBuild project None
-            Assert.NotEqual(0, drift.ExitCode)
-            Assert.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED", drift.Output)
+            Assert.True(drift.ExitCode = 0, drift.Output)
+            Assert.Contains("Policy changed since the last review:", drift.Output)
         finally
             Directory.Delete(dir, true)
 
@@ -354,17 +363,17 @@ module PackagePropsTests =
 
             let policy = Path.Combine(dir, "Axial.Guardrails.toml")
             File.WriteAllText(policy, File.ReadAllText(policy).Replace("\"effects.ambient\" = \"allow\"", "\"effects.ambient\" = \"deny\""))
-            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+            writeFixtureLock dir
             let denied = build ()
             Assert.NotEqual(0, denied.ExitCode)
             Assert.Contains("error AXG001", denied.Output)
 
             File.WriteAllText(policy, File.ReadAllText(policy).Replace("\"effects.ambient\" = \"deny\"", "\"effects.ambient\" = \"allow\""))
-            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+            writeFixtureLock dir
             Assert.Equal(0, (build ()).ExitCode)
             File.SetLastWriteTimeUtc(stamp, DateTime.UtcNow.AddDays(1.0))
             File.WriteAllText(Path.Combine(dir, ".editorconfig"), "root = true\n[*.fs]\ndotnet_diagnostic.AXG001.severity = error\n")
-            runPolicyTool dir [ "policy"; "approve"; "--yes-i-reviewed" ]
+            writeFixtureLock dir
             assertAnalysisRan true (build ())
         finally
             Directory.Delete(dir, true)
