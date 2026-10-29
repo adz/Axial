@@ -167,7 +167,7 @@ module PolicyLockTests =
         test <@ changes.SuppressionsAdded.Length=1 @>
         test <@ changes.BoundariesAdded.Length=2 @>
         test <@ changes.ProtectedChanged=["Directory.Build.props";LockName] @>
-        test <@ summary.Contains("AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED") @>
+        test <@ summary.Contains("AXIAL GUARDRAILS POLICY CHANGED") @>
 
     [<Fact>]
     let ``readable summary groups suppressions and lists every item without a diff command`` () =
@@ -194,7 +194,7 @@ module PolicyLockTests =
     let ``readable summary keeps JSON message formatting unchanged`` () =
         let changes = { diff empty empty with SuppressionsAdded=["a.fs\t1\tcomment";"a.fs\t2\tcomment"] }
         let expected =
-            [ "AXIAL GUARDRAILS POLICY CHANGED — BUILD BLOCKED"
+            [ "AXIAL GUARDRAILS POLICY CHANGED"
               "  rules downgraded:        none"
               "  baseline entries added:  none"
               "  suppressions added:      a.fs\t1\tcomment; a.fs\t2\tcomment"

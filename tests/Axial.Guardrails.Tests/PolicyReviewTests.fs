@@ -172,3 +172,58 @@ module PolicyReviewTests =
             Assert.Equal(0, code)
             let code, _ = cli ["policy"; "review"; "--since"; "missing-ref"]
             Assert.NotEqual(0, code))
+
+    [<Fact>]
+    let ``adding an allow override relaxes the default deny`` () =
+        repository (fun root write _ cli ->
+            let config = File.ReadAllText(Path.Combine(root, ConfigName))
+            write ConfigName (config + "\"effects.ambient\" = \"allow\"\n")
+            let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"; "--check"]
+            Assert.NotEqual(0, code)
+            Assert.Contains("effects.ambient", output))
+
+    [<Fact>]
+    let ``removing an allow override tightens to the default deny`` () =
+        repository (fun root write git cli ->
+            let config = File.ReadAllText(Path.Combine(root, ConfigName))
+            write ConfigName (config + "\"effects.ambient\" = \"allow\"\n")
+            git ["add"; "."] |> ignore
+            git ["commit"; "-qm"; "allow ambient"] |> ignore
+            write ConfigName config
+            let code, _ = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.Equal(0, code))
+
+    [<Theory>]
+    [<InlineData("scripts/verify.sh")>]
+    [<InlineData(".github/workflows/release.yml")>]
+    [<InlineData("Directory.Packages.props")>]
+    let ``removing enforcement or analyzer package is reviewed`` path =
+        repository (fun root write git cli ->
+            let text = if path.EndsWith(".props") then "<Project><ItemGroup><PackageVersion Include=\"Axial.Guardrails\" Version=\"0.12.0\"/></ItemGroup></Project>" else "original\n"
+            write path text
+            git ["add"; "."] |> ignore
+            git ["commit"; "-qm"; "enforcement"] |> ignore
+            File.Delete(Path.Combine(root, path))
+            let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.NotEqual(0, code)
+            Assert.Contains(path, output))
+
+    [<Fact>]
+    let ``conditional imported settings are evaluated for every target`` () =
+        repository (fun root write git cli ->
+            let project = File.ReadAllText(Path.Combine(root, "App.fsproj"))
+            write "App.fsproj" (project.Replace("<TargetFramework>net8.0</TargetFramework>", "<TargetFrameworks>net8.0;net10.0</TargetFrameworks>").Replace("</Project>", "<Import Project=\"policy.props\"/></Project>"))
+            write "policy.props" "<Project/>"
+            git ["add"; "."] |> ignore
+            git ["commit"; "-qm"; "multitarget"] |> ignore
+            write "policy.props" "<Project><PropertyGroup Condition=\"'$(TargetFramework)' == 'net10.0'\"><AxialGuardrailsEnabled>false</AxialGuardrailsEnabled></PropertyGroup></Project>"
+            let code, output = cli ["policy"; "review"; "--since"; "HEAD"; "--check"]
+            Assert.NotEqual(0, code)
+            Assert.Contains("net10.0", output))
+
+    [<Fact>]
+    let ``malformed reviewed point is rejected`` () =
+        repository (fun root write _ cli ->
+            write LockName (File.ReadAllText(Path.Combine(root, LockName)) + "REVIEWED_POINT  invalid\n")
+            let code, _ = cli ["check"]
+            Assert.NotEqual(0, code))
