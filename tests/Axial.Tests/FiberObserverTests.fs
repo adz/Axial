@@ -189,10 +189,19 @@ module FiberObserverTests =
         test <@ recording.Unobserved = [] @>
 
     [<Theory>]
-    [<InlineData(false)>]
-    [<InlineData(true)>]
-    let ``Escaped loser exception is reported once without replacing winner`` (race: bool) =
+    [<InlineData(false, false)>]
+    [<InlineData(false, true)>]
+    [<InlineData(true, false)>]
+    [<InlineData(true, true)>]
+    let ``Escaped loser exception is reported once without replacing winner`` (race: bool, throwingSink: bool) =
         let recording = Recording()
+        let observer =
+            if throwingSink then
+                { recording.Observer with
+                    OnUnobservedDefect = fun metadata error ->
+                        recording.Observer.OnUnobservedDefect metadata error
+                        failwith "reporting sink failed" }
+            else recording.Observer
         let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
         let defect = InvalidOperationException "escaped loser"
         let loser : Flow<ClockEnvironment, string, int> =
@@ -215,7 +224,7 @@ module FiberObserverTests =
                 loser |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
         let result =
             operation
-            |> Flow.withFiberObserver recording.Observer
+            |> Flow.withFiberObserver observer
             |> Flow.runSync (TestSupport.clockEnv ())
         if race then test <@ result = Exit.Success 42 @>
         else test <@ result = Exit.Failure(Cause.Fail "timed out") @>
