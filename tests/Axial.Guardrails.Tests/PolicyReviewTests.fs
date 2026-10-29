@@ -25,13 +25,13 @@ module PolicyReviewTests =
         let root = Path.Combine(Path.GetTempPath(), "axial-review-" + Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory root |> ignore
         try
-            let write name text =
+            let write name (text: string) =
                 let path = Path.Combine(root, name)
                 Directory.CreateDirectory(Path.GetDirectoryName path) |> ignore
                 File.WriteAllText(path, text)
             let git args =
                 let code, text = run root "git" args
-                Assert.True(code = 0, text)
+                Assert.True((code = 0), text)
                 text.Trim()
             git ["init"; "-q"] |> ignore
             git ["config"; "user.email"; "tests@example.invalid"] |> ignore
