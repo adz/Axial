@@ -76,6 +76,32 @@ module PolicyReviewTests =
             Assert.NotEqual(0, code))
 
     [<Fact>]
+    let ``review evaluates disabled projects without expanding inactive guardrails globs`` () =
+        repository (fun root write _ cli ->
+            let project = File.ReadAllText(Path.Combine(root, "App.fsproj"))
+            let targets = """<PropertyGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'"><_AxialGuardrailsPolicyGlobRoot>$(MSBuildProjectDirectory)</_AxialGuardrailsPolicyGlobRoot></PropertyGroup><ItemGroup Condition="'$(AxialGuardrailsEnabled)' == 'true'"><Protected Include="$(_AxialGuardrailsPolicyGlobRoot)/**/*.props" Exclude="$(_AxialGuardrailsPolicyGlobRoot)/**/obj/**" /></ItemGroup>"""
+            write "App.fsproj" (project.Replace("Enabled>true", "Enabled>false").Replace("</Project>", targets + "</Project>"))
+            let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"]
+            Assert.Equal(0, code)
+            Assert.DoesNotContain("cannot evaluate", output)
+            Assert.Contains("App.fsproj: AxialGuardrailsEnabled: true -> false", output))
+
+    [<Fact>]
+    let ``review reports unevaluable projects and continues reviewing other projects`` () =
+        repository (fun _ write _ cli ->
+            write "Broken.fsproj" "<Project><Import Project=\"missing.targets\" /></Project>"
+            write "App.fs" "module App\n// axial-allow-AXG001: foreign boundary\n"
+            let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"]
+            Assert.Equal(0, code)
+            Assert.Contains("cannot evaluate Broken.fsproj:", output)
+            Assert.Contains("missing.targets", output)
+            Assert.Contains("foreign boundary", output)
+            let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"; "--check"; "--json"]
+            Assert.NotEqual(0, code)
+            use document = System.Text.Json.JsonDocument.Parse output
+            Assert.Contains("cannot evaluate Broken.fsproj:", document.RootElement.GetProperty("loosened").ToString()))
+
+    [<Fact>]
     let ``first review requires since and explicit tag works`` () =
         repository (fun _ _ _ cli ->
             let code, output = cli ["policy"; "review"]
