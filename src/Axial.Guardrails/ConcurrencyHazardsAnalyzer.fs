@@ -191,17 +191,12 @@ let private descriptions =
 
 let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
     let role = GuardrailConfig.resolvedPolicy config ctx |> Option.map _.Role
-    let tooling =
-        match role, config.PolicyRoot, config.ProjectPath with
-        | Some Policy.Host, Some root, Some project ->
-            match Path.GetRelativePath(root, Path.GetFullPath project).Replace('\\', '/').Split('/') with
-            | [| "src"; folder; _ |] -> folder = "Axial.Guardrails" || folder.StartsWith("Axial.Tool", StringComparison.Ordinal)
-            | _ -> false
-        | _ -> false
-    let benchmark =
-        match role, config.PolicyRoot, config.ProjectPath with
-        | Some Policy.Host, Some root, Some project ->
-            Path.GetRelativePath(root, Path.GetFullPath project).Replace('\\', '/').StartsWith("benchmarks/", StringComparison.Ordinal)
+    let exempt =
+        match role, config.Policy, config.PolicyRoot, config.ProjectPath with
+        | Some Policy.Host, Some policy, Some root, Some project ->
+            let relative = Path.GetRelativePath(root, Path.GetFullPath project).Replace('\\', '/')
+            policy.Exemptions |> Map.tryFind code |> Option.defaultValue []
+            |> List.exists (fun pattern -> Policy.matchesGlob pattern relative)
         | _ -> false
     let runtime =
         match config.Policy, config.PolicyRoot with
@@ -216,12 +211,12 @@ let analyzeWithConfig (config: GuardrailConfig.Config) code (ctx: CliContext) =
                  && (value.DeclaringEntity |> Option.bind _.TryFullName) = Some "Axial.Platform.Cancellation" -> [ body.Range ]
         | _ -> []
     let primitives = ctx.TypedTree |> Option.map (fun tree -> List.collect primitiveDefinitions tree.Declarations) |> Option.defaultValue []
-    if (code = "AXG009" || code = "AXG012") && (runtime || benchmark) then []
+    if (code = "AXG009" || code = "AXG012") && runtime then []
     else
         rawRanges code ctx
         |> List.filter (fun r ->
             not (code = "AXG011" && primitives |> List.exists (fun definition -> Range.rangeContainsRange definition r))
-            && role <> Some Policy.Test && not tooling && (code <> "AXG009" || role <> Some Policy.Capabilities))
+            && role <> Some Policy.Test && not exempt && (code <> "AXG009" || role <> Some Policy.Capabilities))
         |> List.map (fun r ->
             { Type = "Axial Concurrency Hazard"; Code = code; Message = descriptions[code]
               Severity = Severity.Error; Range = r; Fixes = [] })

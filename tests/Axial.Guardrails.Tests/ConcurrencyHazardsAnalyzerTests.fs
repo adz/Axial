@@ -310,6 +310,8 @@ type ConcurrencyHazardsPolicyTests() =
                 let declaration = $"policy:\n[exemptions]\n{code} = [\"{project}\"]\n"
                 let! messages = runWithSettings [declaration] "host" false false project source code
                 Assert.Empty messages
+                let! service = runWithSettings [declaration] "services" false false project source code
+                Assert.NotEmpty service
         }
 
     [<Theory>]
@@ -325,7 +327,7 @@ type ConcurrencyHazardsPolicyTests() =
             Assert.Empty messages
             let! outside = runWith "host" false false "samples/benchmarks/Axial.Benchmarks.fsproj" source code
             Assert.NotEmpty outside
-            let! service = runWith "services" false false "benchmarks/Axial.Benchmarks/Axial.Benchmarks.fsproj" source code
+            let! service = runWithSettings [declaration] "services" false false project source code
             Assert.NotEmpty service
         }
 
