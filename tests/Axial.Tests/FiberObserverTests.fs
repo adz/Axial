@@ -223,6 +223,45 @@ module FiberObserverTests =
         | [ None, reported ] -> test <@ obj.ReferenceEquals(reported, defect) @>
         | other -> failwithf "Expected exactly one escaped defect, got %A" other
 
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``Task interop loser exceptions follow the Cause Die contract`` (race: bool) =
+        let recording = Recording()
+        let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let defect = InvalidOperationException "interop loser"
+        let loser : Flow<ClockEnvironment, string, int> =
+            Flow.fromTask (fun token -> task {
+                started.TrySetResult() |> ignore
+                try
+                    do! Task.Delay(Timeout.Infinite, token)
+                with :? OperationCanceledException -> ()
+                return raise defect
+            })
+        let operation =
+            if race then
+                let winner = Flow.fromTask (fun _ -> task {
+                    do! started.Task
+                    return 42
+                })
+                Flow.race winner loser
+            else
+                loser |> Flow.timeout (TimeSpan.FromMilliseconds 20.0) "timed out"
+        let result =
+            operation
+            |> Flow.withFiberObserver recording.Observer
+            |> Flow.runSync (TestSupport.clockEnv ())
+        if race then
+            match result with
+            | Exit.Failure(Cause.Die reported) -> test <@ obj.ReferenceEquals(reported, defect) @>
+            | other -> failwithf "Expected the consumed loser defect, got %A" other
+            test <@ recording.Unobserved = [] @>
+        else
+            test <@ result = Exit.Failure(Cause.Fail "timed out") @>
+            match recording.Unobserved with
+            | [ None, reported ] -> test <@ obj.ReferenceEquals(reported, defect) @>
+            | other -> failwithf "Expected exactly one interop defect, got %A" other
+
     [<Fact>]
     let ``Timeout loser defect is reported without fiber metadata`` () =
         let recording = Recording()
