@@ -88,15 +88,17 @@ module PolicyReviewTests =
             Assert.DoesNotContain("cannot evaluate", output)
             Assert.Contains("App.fsproj: AxialGuardrailsEnabled: true -> false", output))
 
-    [<Fact>]
-    let ``review reports unevaluable projects and continues reviewing other projects`` () =
+    [<Theory>]
+    [<InlineData("<Project><Import Project=\"missing.targets\" /></Project>", "missing.targets")>]
+    [<InlineData("<Project>", "MSB4025")>]
+    let ``review reports unevaluable projects and continues reviewing other projects`` contents reason =
         repository (fun _ write _ cli ->
-            write "Broken.fsproj" "<Project><Import Project=\"missing.targets\" /></Project>"
+            write "Broken.fsproj" contents
             write "App.fs" "module App\n// axial-allow-AXG001: foreign boundary\n"
             let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"]
             Assert.Equal(0, code)
             Assert.Contains("cannot evaluate Broken.fsproj:", output)
-            Assert.Contains("missing.targets", output)
+            Assert.Contains(reason, output)
             Assert.Contains("foreign boundary", output)
             let code, output = cli ["policy"; "review"; "--since"; "v0.11.3"; "--check"; "--json"]
             Assert.NotEqual(0, code)
