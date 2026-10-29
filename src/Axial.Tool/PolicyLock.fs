@@ -87,8 +87,8 @@ module PolicyLock =
         |> Seq.collect (fun path ->
             File.ReadLines path
             |> Seq.choose (fun text ->
-                let matched=Regex.Match(text,"//\\s*axial-allow-(AXG[0-9]+):(.*)$")
-                if matched.Success then Some $"// axial-allow-{matched.Groups[1].Value}:{matched.Groups[2].Value.Trim()}" else None)
+                let matched=Regex.Match(text,"//\\s*(axial-allow-(?:file-)?AXG[0-9]+|axial-note\\s+AXG[0-9]+):(.*)$", RegexOptions.IgnoreCase)
+                if matched.Success then Some $"// {matched.Groups[1].Value}:{matched.Groups[2].Value.Trim()}" else None)
             |> Seq.countBy id
             |> Seq.collect (fun (text,count) ->
                 seq { for occurrence in 1..count -> $"{relative root path}\t{occurrence}\t{text}" }))

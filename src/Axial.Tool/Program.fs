@@ -77,8 +77,7 @@ Approval means a human read the review. The first review requires --since <ref>.
                 if not asJson then printfn "%s\n%s" policyWarning summary
                 if nonInteractive || (not asJson && confirm()) then
                     try
-                        let commit = PolicyReview.currentCommit (root())
-                        writeAtomic (Path.Combine(root(),LockName)) (serialize current + $"REVIEWED_POINT  {commit}\n")
+                        writeAtomic (Path.Combine(root(),LockName)) (PolicyReview.prepareReviewedLock (root()) current)
                         emitWith (Some changes) asJson true (summary+Environment.NewLine+"Policy lock updated: a human read the review.")
                     with error -> emit asJson false error.Message
                 else emit asJson false "Approval cancelled. Use --yes-i-reviewed for reviewed non-interactive changes."

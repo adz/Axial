@@ -1,31 +1,27 @@
-# Guardrails review A — phase 1 blocked on legacy comparison semantics
+# Guardrails review A — phase 1
 
-Worktree: `/home/adam/projects/Axial/chore/guardrails-review`. No push/merge. No protected files changed; no approval/baseline command executed.
+Worktree: `/home/adam/projects/Axial/chore/guardrails-review`. Commit locally; no push/merge. Protected files remain untouched. No approval/baseline command should be executed.
 
-## Actual design conflict
+## Legacy comparison decision (owner)
 
-The required first reference `v0.11.3` contains **none** of `Axial.Guardrails.toml`, `Axial.Guardrails.lock`, or `Axial.Guardrails.baseline`. Confirm with:
+The required reference `v0.11.3` contains no TOML, lock, or baseline. Do not reconstruct historical analyzer policy. Instead, emit a first `Policy introduced since <ref>` section explaining that policy files did not exist and summarizing current roles/project counts, non-error rule levels, runtime/exemption/boundary/ignore/baseline counts. Introduction counts as one loosening item for `--check`. Compare source suppressions/notes at that ref with the working tree using the same lexer. Automation/package changes still have concrete history and are compared independently.
 
-```sh
-git ls-tree --name-only v0.11.3 Axial.Guardrails.toml Axial.Guardrails.lock Axial.Guardrails.baseline
-```
+Implemented and covered by `review supports the required pre TOML starting tag`. Real `v0.11.3` review also succeeds.
 
-The design specifies a fallback when a historical lock lacks suppression inventory, but does not define historical role/rule/runtime/boundary state when TOML itself does not exist. Historical behavior was encoded in build configuration and analyzer implementation. Inventing an empty/default v2 policy could falsely call tightening a relaxation or miss legacy exceptions, contrary to the requirement to show only loosening and the no-behavior-changing-fallback instruction.
+## Implementation
 
-Need owner direction: define the pre-TOML comparison semantics (for example explicitly report v2 policy introduction separately while comparing source exceptions and evaluated legacy settings), or require legacy-policy reconstruction. Do not silently substitute today's v2 defaults.
+- `axial check` emits one warning with a change count and review instruction for lock drift, exiting zero; malformed lock/config still fails.
+- `policy review [--since <ref>] [--json] [--check]` compares repository state, inventories exceptions and policy changes, and evaluates project properties/items with MSBuild for every target framework.
+- Missing reviewed point requires explicit `--since`; lock supports a validated `REVIEWED_POINT` SHA.
+- Approval prepares the lock with the current commit even if policy itself did not change. The metadata helper is tested without executing the command. `--yes-i-reviewed` remains; help describes approval as human review, not authority.
+- Consumer-build tests now assert warn-only drift while analyzer errors remain errors. Consumer fixtures construct their temporary locks directly rather than invoking approval commands.
 
-## Work completed
+## Proof and verification
 
-- Tests committed before fixes; valid original red run: 21 failures, 2 passes, `artifacts/verify/phase1-red.log`.
-- Implemented warn-only check, CLI review/JSON/check/since/default reviewed point, commit metadata on approval (without executing approval), help wording.
-- Review scans historical and working source comments with one lexer, compares policy inventories, evaluates project settings through MSBuild including each TFM, and reports automation/package changes.
-- Follow-up edge-case tests were run red before fixes (`artifacts/verify/phase1-extra-red.log`).
-- Focused suite before adding the legacy blocker reproducer: 57 passed, 0 failed (`artifacts/verify/phase1-green.log`).
-- New `review supports the required pre TOML starting tag` test intentionally remains red, reproducing the real required-tag failure (`artifacts/verify/legacy-ref-red.log`).
-- Real repository reproduction: `dotnet --roll-forward Major artifacts/bin/Axial.Tool/debug/Axial.Tool.dll policy review --since v0.11.3 --json` exits 1 because historical TOML does not exist (`artifacts/verify/repository-review.json`).
+Original behavioral red: 21 failed, 2 passed (`artifacts/verify/phase1-red.log`). Extra edge-case red runs cover defaults, removed enforcement, conditional per-TFM settings, notes/file-wide exceptions, and legacy introduction. The approval-text helper test initially failed compilation before implementation.
 
-## Not done
+Focused policy suite: 61 passed, 0 failed (`artifacts/verify/phase1-green.log`). Consumer policy/cache integration slice: 4 passed (`artifacts/verify/package-policy.log`). Final verification status belongs in `artifacts/verify/result.json` and the persistent report `/home/adam/projects/scratch/axial-coord/pi/guardrails-review-A.report.md`; check those rather than assuming this handoff certifies completion.
 
-Full verification, final fail-first script, done-check, phase 2 docs/release automation, and final review are not done. Do not treat this as PHASE 1 DONE.
+Phase 2 docs/release automation, its 20x repetitions, and release notes remain explicitly deferred to phase 2. A human must approve the repository lock after merge; agents must not edit it.
 
-The installed SDK is .NET 10 only; invoking net8 tool directly needs `--roll-forward Major` (tests supply their net10 runtimeconfig). Verification wrapper is `/home/adam/projects/scratch/axial-coord/limits/bin/axial-verify`, not initially on PATH.
+SDK here is .NET 10 only; invoking the net8 tool directly needs `dotnet --roll-forward Major <tool.dll>` (tests supply their net10 runtimeconfig). Verification wrapper: `/home/adam/projects/scratch/axial-coord/limits/bin/axial-verify`.

@@ -30,6 +30,10 @@ module PolicyReview =
 
     let currentCommit root = command root "git" ["rev-parse"; "--verify"; "HEAD^{commit}"] |> _.Trim()
 
+    let prepareReviewedLock root snapshot =
+        let commit = currentCommit root
+        serialize snapshot + $"REVIEWED_POINT  {commit}\n"
+
     let reviewedPoint root =
         match parseLock (Path.Combine(root, LockName)) with
         | Error e -> Error e
@@ -112,6 +116,29 @@ module PolicyReview =
                 evaluateProject root project [$"-p:TargetFramework={framework}"]
                 |> Map.toSeq |> Seq.map (fun (key, value) -> $"{framework}:{key}", value)) |> Map.ofSeq
 
+    let private suppressionInventory root allFiles ignores =
+        allFiles |> List.filter (fun (path: string) -> path.EndsWith(".fs", StringComparison.Ordinal) && not (ignores |> List.exists (fun pattern -> matchesGlob pattern path)))
+        |> List.collect (fun path ->
+            comments (File.ReadAllText(Path.Combine(root, path))) |> List.countBy id
+            |> List.collect (fun (text, count) -> [for occurrence in 1..count -> $"{path}\t#{occurrence} {text}"]))
+        |> Set.ofList
+
+    let private automationInventory root allFiles =
+        allFiles |> List.filter (fun (path: string) -> path = "scripts/verify.sh" || path.StartsWith(".github/workflows/", StringComparison.Ordinal))
+        |> List.map (fun path -> path + "\t" + (System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(root, path))) |> Convert.ToHexString))
+
+    let private versionInventory root allFiles =
+        allFiles |> List.filter (fun (path: string) -> path.EndsWith(".props") || path.EndsWith(".fsproj") || path.EndsWith(".targets"))
+        |> List.collect (fun path ->
+            let document = System.Xml.Linq.XDocument.Load(Path.Combine(root, path))
+            document.Descendants()
+            |> Seq.filter (fun item -> item.Name.LocalName = "PackageReference" || item.Name.LocalName = "PackageVersion")
+            |> Seq.filter (fun item ->
+                ["Include"; "Update"] |> List.exists (fun name ->
+                    let attribute = item.Attribute(System.Xml.Linq.XName.Get name)
+                    not (isNull attribute) && String.Equals(attribute.Value, "Axial.Guardrails", StringComparison.OrdinalIgnoreCase)))
+            |> Seq.map (fun item -> path + ": " + item.ToString(System.Xml.Linq.SaveOptions.DisableFormatting)) |> Seq.toList)
+
     let private inspectState root tracked =
         let allFiles = files root tracked
         let config =
@@ -121,23 +148,13 @@ module PolicyReview =
         let roleName = function Domain -> "domain" | Capabilities -> "capabilities" | Services -> "services" | Host -> "host" | Test -> "test"
         let assignments kind entries =
             entries |> List.collect (fun entry -> entry.Patterns |> List.map (fun pattern -> $"{kind}:{pattern} => {roleName entry.Role}"))
-        let suppressionInventory =
-            allFiles |> List.filter (fun path -> path.EndsWith(".fs", StringComparison.Ordinal) && not (config.SuppressionIgnores |> List.exists (fun pattern -> matchesGlob pattern path)))
-            |> List.collect (fun path ->
-                comments (File.ReadAllText(Path.Combine(root, path))) |> List.countBy id
-                |> List.collect (fun (text, count) -> [for occurrence in 1..count -> $"{path}\t#{occurrence} {text}"]))
+        let suppressions = suppressionInventory root allFiles config.SuppressionIgnores
         let baseline = snapshot.Baseline |> List.collect (fun entry -> [for occurrence in 1..entry.Count -> $"{entry.Rule}/{entry.File}/{entry.Fingerprint} #{occurrence}"])
-        let automation =
-            allFiles |> List.filter (fun path -> path = "scripts/verify.sh" || path.StartsWith(".github/workflows/", StringComparison.Ordinal))
-            |> List.map (fun path -> path + "\t" + (System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(root, path))) |> Convert.ToHexString))
+        let automation = automationInventory root allFiles
         // Central package versions are visible even before a project references the analyzer.
-        let versions =
-            allFiles |> List.filter (fun path -> path.EndsWith(".props") || path.EndsWith(".fsproj") || path.EndsWith(".targets"))
-            |> List.collect (fun path ->
-                Regex.Matches(File.ReadAllText(Path.Combine(root, path)), "<(?:PackageReference|PackageVersion)\\b[^>]*(?:Include|Update)=\"Axial.Guardrails\"[^>]*>")
-                |> Seq.cast<Match> |> Seq.map (fun m -> path + ": " + m.Value) |> Seq.toList)
+        let versions = versionInventory root allFiles
         { Entries =
-            [ "suppressions/notes", suppressionInventory
+            [ "suppressions/notes", Set.toList suppressions
               "roles", ("default => " + roleName config.DefaultRole) :: (assignments "project" config.Projects @ assignments "file" config.Files)
               "runtime", config.Runtime; "boundaries", config.Boundaries; "ignore", config.SuppressionIgnores
               "baseline", baseline; "automation", automation; "analyzer package", versions ]
@@ -165,12 +182,34 @@ module PolicyReview =
                     if not (target.StartsWith(historicalRoot + string Path.DirectorySeparatorChar, StringComparison.Ordinal)) then failwith "Unsafe git path"
                     Directory.CreateDirectory(Path.GetDirectoryName target) |> ignore
                     File.WriteAllText(target, command root "git" ["show"; commit + ":" + path])
-                let before = inspectState historicalRoot false
                 let after = inspectState root true
+                let introduced = not (File.Exists(Path.Combine(historicalRoot, ConfigName))) && not (File.Exists(Path.Combine(historicalRoot, LockName)))
+                let before =
+                    if introduced then
+                        let historicalFiles = files historicalRoot false
+                        // A pre-policy ref has no v2 role semantics to reconstruct. Introduction is
+                        // one review item; source directives and automation still have real history.
+                        { after with Entries = after.Entries
+                                                  .Add("suppressions/notes", suppressionInventory historicalRoot historicalFiles [])
+                                                  .Add("automation", automationInventory historicalRoot historicalFiles |> Set.ofList)
+                                                  .Add("analyzer package", versionInventory historicalRoot historicalFiles |> Set.ofList) }
+                    else inspectState historicalRoot false
                 let added = ResizeArray<Finding>()
                 let removed = ResizeArray<Finding>()
                 let add group detail = added.Add { Group = group; Detail = detail }
                 let remove group detail = removed.Add { Group = group; Detail = detail }
+                if introduced then
+                    let roles = after.Entries["roles"] |> Seq.map (fun entry -> entry.Split(" => ") |> Array.last) |> Seq.distinct |> Seq.sort |> String.concat ", "
+                    let levels = after.Rules |> Map.toList |> List.filter (fun (_, level) -> level = "allow" || level = "warn") |> List.map (fun (rule, level) -> $"{rule}={level}")
+                    let nonError = if levels.IsEmpty then "none" else String.concat ", " levels
+                    let exemptions = after.Entries["roles"] |> Seq.filter (fun entry -> not (entry.StartsWith("default")) && entry.EndsWith(" => capabilities")) |> Seq.length
+                    let summary =
+                        [ "The policy files did not exist then. Current policy:"
+                          $"""roles: {roles}; projects: {after.Projects.Count}; role assignments: {after.Entries["roles"].Count - 1}"""
+                          $"rule levels that are not error: {nonError}"
+                          $"""runtime: {after.Entries["runtime"].Count}; exemptions: {exemptions}; boundary: {after.Entries["boundaries"].Count}; ignore: {after.Entries["ignore"].Count}; baseline: {after.Entries["baseline"].Count}""" ]
+                        |> String.concat Environment.NewLine
+                    add ($"Policy introduced since {point}") summary
                 for KeyValue(group, current) in after.Entries do
                     let old = before.Entries[group]
                     let display (value: string) = if group = "automation" then value.Split('\t')[0] else value
